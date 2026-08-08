@@ -71,6 +71,25 @@ function useReducedMotion() {
 
 // ─── Progress Indicator ──────────────────────────────────────────────────────
 
+const STEP_ICONS = [
+  /* 1 — Video */
+  <svg key="1" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M3 8a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z" />
+  </svg>,
+  /* 2 — Campaign / target */
+  <svg key="2" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+    <circle cx="12" cy="12" r="3" /><circle cx="12" cy="12" r="7" /><circle cx="12" cy="12" r="11" />
+  </svg>,
+  /* 3 — DM / chat */
+  <svg key="3" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-3 3v-3z" />
+  </svg>,
+  /* 4 — Closed / checkmark */
+  <svg key="4" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+  </svg>,
+];
+
 function ProgressIndicator({ step }: { step: number }) {
   const dots = [
     { color: "#2563EB", glow: "rgba(37,99,235,0.35)" },
@@ -79,21 +98,37 @@ function ProgressIndicator({ step }: { step: number }) {
     { color: "#22C55E", glow: "rgba(34,197,94,0.35)" },
   ];
   return (
-    <div className="flex items-center justify-center mb-12">
-      <div className="flex items-center">
+    <div className="flex items-end justify-center mb-10">
+      <div className="flex items-end">
         {dots.map((dot, i) => (
           <React.Fragment key={i}>
-            <div
-              className="relative w-9 h-9 rounded-full flex items-center justify-center text-sm font-black text-white z-10 transition-all duration-500 shrink-0"
-              style={{
-                background: step >= i + 1 ? dot.color : "#E5E7EB",
-                boxShadow: step === i + 1 ? `0 0 0 6px ${dot.glow}` : "none",
-              }}
-            >
-              {i + 1}
+            {/* Column: icon above + dot below */}
+            <div className="flex flex-col items-center gap-2 shrink-0">
+              {/* Icon badge */}
+              <div
+                className="w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-500"
+                style={{
+                  background: step >= i + 1 ? dot.color : "#E5E7EB",
+                  color: step >= i + 1 ? "white" : "#9CA3AF",
+                  boxShadow: step >= i + 1 ? `0 4px 14px ${dot.glow}` : "none",
+                }}
+              >
+                {STEP_ICONS[i]}
+              </div>
+              {/* Numbered dot */}
+              <div
+                className="relative w-9 h-9 rounded-full flex items-center justify-center text-sm font-black text-white z-10 transition-all duration-500"
+                style={{
+                  background: step >= i + 1 ? dot.color : "#E5E7EB",
+                  boxShadow: step === i + 1 ? `0 0 0 6px ${dot.glow}` : "none",
+                }}
+              >
+                {i + 1}
+              </div>
             </div>
+            {/* Connector line — aligned to dot row */}
             {i < 3 && (
-              <div className="relative w-16 sm:w-24 h-1 bg-gray-200 overflow-hidden mx-0.5">
+              <div className="relative w-16 sm:w-24 h-1 bg-gray-200 overflow-hidden mx-0.5 mb-[18px]">
                 <div
                   className="absolute inset-y-0 left-0 h-full rounded transition-all duration-700 ease-in-out"
                   style={{
