@@ -113,10 +113,10 @@ function ProgressIndicator({ step }: { step: number }) {
               </div>
               {/* Numbered dot */}
               <div
-                className="relative w-9 h-9 rounded-full flex items-center justify-center text-sm font-black text-white z-10 transition-all duration-500"
+                className="relative w-11 h-11 rounded-full flex items-center justify-center text-lg font-black text-white z-10 transition-all duration-500"
                 style={{
                   background: step >= i + 1 ? dot.color : "#E5E7EB",
-                  boxShadow: step === i + 1 ? `0 0 0 6px ${dot.glow}` : "none",
+                  boxShadow: step === i + 1 ? `0 0 0 7px ${dot.glow}` : "none",
                 }}
               >
                 {i + 1}
@@ -148,20 +148,20 @@ function CardShell({
       }}
     >
       {/* Header */}
-      <div className="px-5 pt-5 pb-3 shrink-0">
-        <div className="flex items-center gap-2.5 mb-2">
+      <div className="px-6 pt-6 pb-4 shrink-0">
+        <div className="flex items-center gap-3 mb-3">
           <div
-            className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-black text-white shrink-0"
+            className="w-11 h-11 rounded-full flex items-center justify-center text-lg font-black text-white shrink-0"
             style={{ background: accent }}
           >
             {num}
           </div>
-          <h3 className="text-sm font-black text-[#0F172A] leading-tight">{title}</h3>
+          <h3 className="text-xl md:text-2xl font-extrabold text-[#0F172A] leading-tight">{title}</h3>
         </div>
-        <p className="text-[11px] text-[#64748B] leading-snug">{description}</p>
+        <p className="text-sm md:text-base text-[#475569] leading-relaxed">{description}</p>
       </div>
       {/* Visual area — overflow hidden only here */}
-      <div className="flex-1 px-4 pb-5 overflow-hidden min-h-0">
+      <div className="flex-1 px-5 pb-6 overflow-hidden min-h-0">
         {children}
       </div>
     </div>
@@ -210,7 +210,7 @@ function Card1Visual({ active }: { active: boolean }) {
 
         {active && (
           <div
-            className="absolute top-2.5 right-2.5 flex items-center gap-1 bg-black/60 backdrop-blur-sm text-white text-[8px] font-bold uppercase tracking-wider rounded-full px-2 py-1"
+            className="absolute top-3 right-3 flex items-center gap-1.5 bg-black/60 backdrop-blur-sm text-white text-[11px] font-bold uppercase tracking-wider rounded-full px-3 py-1.5"
             style={{ animation: "fadeSlideUp 0.5s ease forwards" }}
           >
             <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse inline-block" />
@@ -236,7 +236,7 @@ function Card1Visual({ active }: { active: boolean }) {
                 : <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" /></svg>
               }
             </button>
-            <span className="text-white text-[7px] font-mono">
+            <span className="text-white text-[10px] font-mono">
               0:{String(Math.floor(elapsed % 60)).padStart(2, "0")} / 0:{String(duration).padStart(2, "0")}
             </span>
           </div>
@@ -262,29 +262,29 @@ function Card2Visual({ active }: { active: boolean }) {
   }, [active]);
 
   return (
-    <div className="flex flex-col gap-3 bg-white rounded-xl border border-gray-100 p-3 shadow-sm h-full">
+    <div className="flex flex-col gap-4 bg-white rounded-xl border border-gray-100 p-4 shadow-sm h-full">
       {/* Campaign identity + status */}
-      <div className="flex items-start gap-2.5 shrink-0">
-        <div className="w-12 h-[68px] rounded-lg overflow-hidden shrink-0 bg-gray-900">
+      <div className="flex items-start gap-3 shrink-0">
+        <div className="w-14 h-20 rounded-lg overflow-hidden shrink-0 bg-gray-900">
           <video src={VIDEO_URL} autoPlay muted loop playsInline className="w-full h-full object-cover" />
         </div>
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-1.5 mb-1.5">
+          <div className="flex items-center gap-2 mb-2">
             <div
-              className="w-2 h-2 rounded-full shrink-0 transition-colors duration-500"
+              className="w-2.5 h-2.5 rounded-full shrink-0 transition-colors duration-500"
               style={{ background: status === "active" ? "#22C55E" : "#9CA3AF" }}
             />
             <span
-              className="text-[10px] font-black uppercase tracking-wider transition-colors duration-500"
+              className="text-xs font-black uppercase tracking-wider transition-colors duration-500"
               style={{ color: status === "active" ? "#22C55E" : "#9CA3AF" }}
             >
               {status === "active" ? "Active" : status === "preparing" ? "Preparing..." : ""}
             </span>
           </div>
-          <div className="text-[10px] text-[#64748B] mb-1">
+          <div className="text-sm text-[#64748B] mb-1.5">
             Objective: <strong className="text-[#0F172A]">Messages</strong>
           </div>
-          <div className="text-[10px] text-[#64748B]">
+          <div className="text-sm text-[#64748B]">
             Audience: <strong className="text-[#0F172A]">Local customers</strong>
           </div>
         </div>
@@ -294,7 +294,7 @@ function Card2Visual({ active }: { active: boolean }) {
 
       {/* Location target — clean SVG map */}
       <div className="shrink-0">
-        <div className="text-[9px] text-[#64748B] font-semibold mb-1.5 uppercase tracking-wide">
+        <div className="text-xs text-[#64748B] font-semibold mb-2 uppercase tracking-wide">
           Location target
         </div>
         <div className="relative bg-[#EFF6FF] rounded-xl overflow-hidden" style={{ height: 84 }}>
@@ -347,14 +347,14 @@ function Card2Visual({ active }: { active: boolean }) {
 
       {/* Audience delivery */}
       <div className="shrink-0">
-        <div className="text-[9px] text-[#64748B] font-semibold mb-1.5 uppercase tracking-wide">
+        <div className="text-xs text-[#64748B] font-semibold mb-2 uppercase tracking-wide">
           Audience delivery
         </div>
-        <div className="flex gap-1 flex-wrap mb-1">
+        <div className="flex gap-1.5 flex-wrap mb-1.5">
           {Array.from({ length: 10 }).map((_, i) => (
             <div
               key={i}
-              className="w-4 h-4 rounded-full transition-all duration-300"
+              className="w-5 h-5 rounded-full transition-all duration-300"
               style={{
                 background: (i / 10) * 100 < deliveryPct ? "#7C3AED" : "#E9D5FF",
                 transitionDelay: `${i * 80}ms`,
@@ -362,7 +362,7 @@ function Card2Visual({ active }: { active: boolean }) {
             />
           ))}
         </div>
-        <div className="text-[9px] text-[#64748B]">Reaching local people in your area.</div>
+        <div className="text-xs text-[#64748B]">Reaching local people in your area.</div>
       </div>
     </div>
   );
@@ -372,13 +372,13 @@ function Card2Visual({ active }: { active: boolean }) {
 
 function TypingIndicator() {
   return (
-    <div className="flex items-center gap-1 px-3 py-2">
+    <div className="flex items-center gap-1.5 px-4 py-2.5">
       {[0, 1, 2].map((i) => (
-        <div key={i} className="w-1.5 h-1.5 rounded-full bg-gray-400"
+        <div key={i} className="w-2 h-2 rounded-full bg-gray-400"
           style={{ animation: `typingDots 1.2s ease ${i * 0.2}s infinite` }}
         />
       ))}
-      <span className="text-[9px] text-[#64748B] ml-1">Someone is typing...</span>
+      <span className="text-xs text-[#64748B] ml-1">Someone is typing...</span>
     </div>
   );
 }
@@ -407,16 +407,16 @@ function Card3Visual({ active }: { active: boolean }) {
   return (
     <div
       className="bg-white rounded-[18px] border border-gray-200 flex flex-col overflow-hidden"
-      style={{ minHeight: 220 }}
+      style={{ minHeight: 240 }}
     >
       {/* Status bar */}
       <div className="flex items-center justify-between px-4 pt-3 pb-1 shrink-0">
-        <span className="text-[9px] font-semibold text-[#0F172A]">9:41</span>
-        <div className="flex items-center gap-1">
-          <svg className="w-3 h-3 text-[#0F172A]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+        <span className="text-xs font-semibold text-[#0F172A]">9:41</span>
+        <div className="flex items-center gap-1.5">
+          <svg className="w-3.5 h-3.5 text-[#0F172A]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
             <path d="M1.5 8.5A13 13 0 0122.5 8.5M5 12a10 10 0 0114 0M8.5 15.5a6 6 0 017 0M12 19h.01" />
           </svg>
-          <svg className="w-3 h-2.5 text-[#0F172A]" fill="none" viewBox="0 0 24 16">
+          <svg className="w-3.5 h-3 text-[#0F172A]" fill="none" viewBox="0 0 24 16">
             <rect x="0" y="3" width="20" height="10" rx="2" stroke="currentColor" strokeWidth="2" fill="none" />
             <rect x="20" y="6" width="4" height="4" rx="1" fill="currentColor" />
             <rect x="1" y="4" width="14" height="8" rx="1" fill="currentColor" />
@@ -426,8 +426,8 @@ function Card3Visual({ active }: { active: boolean }) {
 
       {/* Inbox header */}
       <div className="flex items-center justify-between px-4 pb-2 shrink-0">
-        <span className="text-sm font-black text-[#0F172A]">Inbox</span>
-        <svg className="w-4 h-4 text-[#64748B]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <span className="text-base font-black text-[#0F172A]">Inbox</span>
+        <svg className="w-5 h-5 text-[#64748B]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
         </svg>
       </div>
@@ -439,20 +439,20 @@ function Card3Visual({ active }: { active: boolean }) {
         {MESSAGES.slice(0, msgCount).map((msg, i) => (
           <div
             key={i}
-            className="flex items-center gap-3 px-4 py-2.5 border-b border-gray-50 shrink-0"
+            className="flex items-center gap-3 px-4 py-3 border-b border-gray-50 shrink-0"
             style={{ animation: "messageSlideIn 0.4s ease forwards" }}
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={msg.avatar} alt={msg.name} width={36} height={36}
-              className="w-9 h-9 rounded-full object-cover shrink-0" />
+            <img src={msg.avatar} alt={msg.name} width={40} height={40}
+              className="w-10 h-10 rounded-full object-cover shrink-0" />
             <div className="flex-1 min-w-0">
               <div className="flex items-center justify-between mb-0.5">
-                <span className="text-[11px] font-black text-[#0F172A]">{msg.name}</span>
-                <span className="text-[9px] text-[#64748B]">{msg.time}</span>
+                <span className="text-sm font-black text-[#0F172A]">{msg.name}</span>
+                <span className="text-xs text-[#64748B]">{msg.time}</span>
               </div>
-              <p className="text-[10px] text-[#64748B] truncate">{msg.text}</p>
+              <p className="text-xs text-[#64748B] truncate">{msg.text}</p>
             </div>
-            <div className="w-2 h-2 rounded-full bg-[#2563EB] shrink-0" />
+            <div className="w-2.5 h-2.5 rounded-full bg-[#2563EB] shrink-0" />
           </div>
         ))}
         {typing && <TypingIndicator />}
@@ -461,8 +461,8 @@ function Card3Visual({ active }: { active: boolean }) {
       {/* NEW INQUIRY badge */}
       {showInquiry && (
         <div className="px-4 py-3 shrink-0" style={{ animation: "badgePop 0.4s ease forwards" }}>
-          <button className="w-full flex items-center justify-center gap-2 bg-[#FF6B6B] text-white text-[10px] font-black uppercase tracking-wider rounded-full py-2">
-            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+          <button className="w-full flex items-center justify-center gap-2 bg-[#FF6B6B] text-white text-xs font-black uppercase tracking-wider rounded-full py-2.5">
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
             </svg>
             New Inquiry
@@ -500,14 +500,14 @@ function Card4Visual({ active }: { active: boolean }) {
       </div>
 
       {/* Status card — BELOW the image, not overlaid */}
-      <div className="bg-gray-50 rounded-xl border border-gray-100 p-3 shrink-0">
-        <div className="flex flex-col gap-1">
+      <div className="bg-gray-50 rounded-xl border border-gray-100 p-4 shrink-0">
+        <div className="flex flex-col gap-1.5">
           {CLOSE_STATUSES.map((s, i) => (
             <React.Fragment key={i}>
-              <div className="flex items-center gap-2.5">
+              <div className="flex items-center gap-3">
                 {/* Circle check */}
                 <div
-                  className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 border-2 transition-all duration-500 ${
+                  className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 border-2 transition-all duration-500 ${
                     closeStep >= i
                       ? i === 2 ? "border-green-500 bg-green-50" : "border-[#2563EB] bg-blue-50"
                       : "border-gray-200 bg-white"
@@ -515,7 +515,7 @@ function Card4Visual({ active }: { active: boolean }) {
                 >
                   {closeStep >= i && (
                     <svg
-                      className={`w-2.5 h-2.5 ${i === 2 ? "text-green-600" : "text-[#2563EB]"}`}
+                      className={`w-3.5 h-3.5 ${i === 2 ? "text-green-600" : "text-[#2563EB]"}`}
                       fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}
                     >
                       <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
@@ -523,7 +523,7 @@ function Card4Visual({ active }: { active: boolean }) {
                   )}
                 </div>
                 <span
-                  className={`text-[10px] font-bold flex-1 transition-colors duration-500 ${
+                  className={`text-sm font-bold flex-1 transition-colors duration-500 ${
                     closeStep >= i ? (i === 2 ? "text-green-700" : "text-[#0F172A]") : "text-gray-400"
                   }`}
                 >
@@ -532,16 +532,16 @@ function Card4Visual({ active }: { active: boolean }) {
                 {/* Soft green glow badge on final step */}
                 {i === 2 && closeStep >= 2 && (
                   <div
-                    className="w-5 h-5 rounded-full bg-green-100 flex items-center justify-center"
+                    className="w-6 h-6 rounded-full bg-green-100 flex items-center justify-center"
                     style={{ boxShadow: "0 0 8px rgba(34,197,94,0.5)", animation: "fadeSlideUp 0.4s ease forwards" }}
                   >
-                    <svg className="w-3 h-3 text-green-600" fill="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-3.5 h-3.5 text-green-600" fill="currentColor" viewBox="0 0 24 24">
                       <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
                     </svg>
                   </div>
                 )}
               </div>
-              {i < 2 && <div className="w-px h-2.5 bg-gray-200 ml-[9px]" />}
+              {i < 2 && <div className="w-px h-3 bg-gray-200 ml-[13px]" />}
             </React.Fragment>
           ))}
         </div>
