@@ -13,6 +13,20 @@ export default function Home() {
       <Header />
       <main>
         <HeroSection />
+
+        {/* ── Banner image ── */}
+        <section className="px-4 sm:px-8 lg:px-12 py-10 bg-white">
+          <div className="max-w-6xl mx-auto">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="https://phhczohqidgrvcmszets.supabase.co/storage/v1/object/public/CUSTOMER.direct/images/People/51dc4067-6006-4fb8-b2ac-eb64c3c05661.png"
+              alt="Customers.Direct"
+              className="w-full h-auto rounded-2xl sm:rounded-3xl border border-gray-100 object-cover"
+              style={{ aspectRatio: "16/5", boxShadow: "0 4px 24px rgba(0,0,0,0.08)" }}
+            />
+          </div>
+        </section>
+
         <ProcessSection />
         <IndustriesSection />
         <DeliverablesSection />
