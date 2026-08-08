@@ -83,9 +83,17 @@ export default function Footer() {
 
         {/* Bottom bar */}
         <hr className="border-white/10 mb-6" />
-        <p className="text-sm text-white/40 text-center">
-          © {year} Customers.Direct. All rights reserved.
-        </p>
+        <div className="flex items-center justify-between gap-4">
+          <p className="text-sm text-white/40">
+            © {year} Customers.Direct. All rights reserved.
+          </p>
+          <a
+            href="/admin"
+            className="text-xs text-white/20 hover:text-white/50 transition-colors"
+          >
+            Admin
+          </a>
+        </div>
       </div>
     </footer>
   );
