@@ -122,18 +122,8 @@ function ProgressIndicator({ step }: { step: number }) {
                 {i + 1}
               </div>
             </div>
-            {/* Connector line — aligned to dot row */}
-            {i < 3 && (
-              <div className="relative w-16 sm:w-24 h-1 bg-gray-200 overflow-hidden mx-0.5 mb-[18px]">
-                <div
-                  className="absolute inset-y-0 left-0 h-full rounded transition-all duration-700 ease-in-out"
-                  style={{
-                    width: step >= i + 2 ? "100%" : "0%",
-                    background: `linear-gradient(to right, ${dot.color}, ${dots[i + 1].color})`,
-                  }}
-                />
-              </div>
-            )}
+            {/* Gap between steps */}
+            {i < 3 && <div className="w-8 sm:w-14 mb-[18px]" />}
           </React.Fragment>
         ))}
       </div>
