@@ -9,26 +9,26 @@ const VIDEO_URL =
 const MESSAGES = [
   {
     name: "Sarah M.",
-    initials: "S",
-    msg: "I'm interested. Can I get more information?",
-    color: "#DBEAFE",
-    textColor: "#2563EB",
+    avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=64&h=64&fit=crop&crop=faces&auto=format",
+    msg: "I'm interested. Can I get more info?",
+    dot: "#2563EB",
   },
   {
     name: "James T.",
-    initials: "J",
+    avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=64&h=64&fit=crop&crop=faces&auto=format",
     msg: "Do you offer free consultations?",
-    color: "#F5F3FF",
-    textColor: "#7C3AED",
+    dot: "#7C3AED",
   },
   {
     name: "Diana R.",
-    initials: "D",
-    msg: "Can I get a quote?",
-    color: "#DCFCE7",
-    textColor: "#16A34A",
+    avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=64&h=64&fit=crop&crop=faces&auto=format",
+    msg: "Can I get a quote for my business?",
+    dot: "#16A34A",
   },
 ];
+
+/* Reply from "You" that appears after the 3rd message */
+const YOU_REPLY = "Hey! Thanks for reaching out 👋 Book your free call here 👇";
 
 /* ─── useReducedMotion ───────────────────────────────────────────────────── */
 function useReducedMotion(): boolean {
@@ -50,58 +50,88 @@ function useReducedMotion(): boolean {
 function PhoneInbox({
   msgCount,
   showTyping,
+  showReply,
 }: {
   msgCount: number;
   showTyping: boolean;
+  showReply: boolean;
 }) {
+  /* newCount = messages after the initial pre-loaded Sarah */
+  const newCount = Math.max(0, msgCount - 1);
+
   return (
     <div className="w-full h-full bg-white flex flex-col">
       {/* Top bar */}
       <div className="px-4 pt-8 pb-3 border-b border-gray-100 flex items-center justify-between">
         <span className="text-sm font-black text-[#0F172A]">Messages</span>
-        {msgCount > 0 && (
+        {newCount > 0 && (
           <span className="text-[10px] font-bold text-[#2563EB] bg-[#DBEAFE] px-2 py-0.5 rounded-full">
-            {msgCount} new
+            {newCount} new
           </span>
         )}
       </div>
 
       {/* Message list */}
       <div className="flex-1 overflow-hidden px-3 py-2 flex flex-col gap-2">
-        {MESSAGES.slice(0, msgCount).map((msg) => (
+        {MESSAGES.slice(0, msgCount).map((msg, idx) => (
           <div
             key={msg.name}
-            style={{ animation: "messageSlideIn 0.4s ease forwards" }}
+            /* first message (Sarah) appears instantly, later ones animate in */
+            style={{ animation: idx === 0 ? "none" : "messageSlideIn 0.4s ease forwards" }}
             className="flex items-center gap-2"
           >
-            <div
-              className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 text-[10px] font-black"
-              style={{ background: msg.color, color: msg.textColor }}
-            >
-              {msg.initials}
-            </div>
+            {/* Unsplash avatar */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={msg.avatar}
+              alt={msg.name}
+              className="w-8 h-8 rounded-full object-cover shrink-0"
+            />
             <div className="flex-1 min-w-0">
-              <div className="text-[10px] font-black text-[#0F172A]">
-                {msg.name}
-              </div>
+              <div className="text-[10px] font-black text-[#0F172A]">{msg.name}</div>
               <div className="text-[9px] text-[#64748B] truncate">{msg.msg}</div>
             </div>
-            <div className="w-2 h-2 rounded-full bg-[#2563EB] shrink-0" />
+            {/* unread dot only for new messages */}
+            {idx > 0 && (
+              <div className="w-2 h-2 rounded-full shrink-0" style={{ background: msg.dot }} />
+            )}
           </div>
         ))}
 
         {/* Typing indicator */}
         {showTyping && (
-          <div className="flex items-center gap-1 px-1">
-            {[0, 1, 2].map((i) => (
-              <div
-                key={i}
-                className="w-1.5 h-1.5 rounded-full bg-gray-400"
-                style={{
-                  animation: `typingDots 1s ease ${i * 0.15}s infinite`,
-                }}
-              />
-            ))}
+          <div className="flex items-center gap-2 px-1 py-0.5">
+            <div className="w-6 h-6 rounded-full bg-gray-200 shrink-0" />
+            <div className="flex items-center gap-1">
+              {[0, 1, 2].map((i) => (
+                <div
+                  key={i}
+                  className="w-1.5 h-1.5 rounded-full bg-gray-400"
+                  style={{ animation: `typingDots 1s ease ${i * 0.15}s infinite` }}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Outgoing reply from "You" */}
+        {showReply && (
+          <div
+            className="flex flex-col items-end gap-1"
+            style={{ animation: "messageSlideIn 0.4s ease forwards" }}
+          >
+            <div className="text-[9px] text-[#94A3B8] font-medium">You</div>
+            <div
+              className="max-w-[80%] bg-[#2563EB] text-white text-[9px] leading-relaxed rounded-2xl rounded-tr-sm px-3 py-1.5"
+            >
+              {YOU_REPLY}
+            </div>
+            <div className="text-[8px] text-[#94A3B8] flex items-center gap-1">
+              <svg className="w-2.5 h-2.5 text-[#2563EB]" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+              </svg>
+              Delivered
+            </div>
           </div>
         )}
       </div>
@@ -109,7 +139,7 @@ function PhoneInbox({
       {/* Bottom bar */}
       <div className="px-3 pb-3 pt-1 border-t border-gray-100">
         <div className="bg-gray-100 rounded-full px-3 py-1.5 text-[9px] text-[#64748B]">
-          Reply to message...
+          {showReply ? "Message sent ✓" : "Reply to message..."}
         </div>
       </div>
     </div>
@@ -203,8 +233,9 @@ function HeroVisualWrapper() {
   const reducedMotion = useReducedMotion();
 
   const [seqStep, setSeqStep] = useState(0);
-  const [msgCount, setMsgCount] = useState(0);
+  const [msgCount, setMsgCount] = useState(1);   // Sarah pre-loaded
   const [showTyping, setShowTyping] = useState(false);
+  const [showReply, setShowReply] = useState(false);
   const [showNotif, setShowNotif] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [inView, setInView] = useState(false);
@@ -234,6 +265,7 @@ function HeroVisualWrapper() {
       const t = setTimeout(() => {
         setSeqStep(5);
         setMsgCount(3);
+        setShowReply(true);
         setShowNotif(false);
       }, 0);
       return () => clearTimeout(t);
@@ -258,38 +290,34 @@ function HeroVisualWrapper() {
 
     const timers: ReturnType<typeof setTimeout>[] = [];
 
+    // James T. types in
     timers.push(setTimeout(() => setShowTyping(true), 0));
-    timers.push(
-      setTimeout(() => {
-        setShowTyping(false);
-        setMsgCount(1);
-      }, 800)
-    );
-    timers.push(setTimeout(() => setShowTyping(true), 1200));
-    timers.push(
-      setTimeout(() => {
-        setShowTyping(false);
-        setMsgCount(2);
-      }, 2000)
-    );
-    timers.push(setTimeout(() => setShowTyping(true), 2400));
-    timers.push(
-      setTimeout(() => {
-        setShowTyping(false);
-        setMsgCount(3);
-        setSeqStep(5);
-      }, 3200)
-    );
-    timers.push(setTimeout(() => setShowNotif(true), 3800));
-    timers.push(
-      setTimeout(() => {
-        setShowNotif(false);
-        setSeqStep(0);
-        setMsgCount(0);
-        setShowTyping(false);
-        setTimeout(() => setReplay((r) => r + 1), 200);
-      }, 7000)
-    );
+    timers.push(setTimeout(() => { setShowTyping(false); setMsgCount(2); }, 900));
+
+    // Diana R. types in
+    timers.push(setTimeout(() => setShowTyping(true), 1400));
+    timers.push(setTimeout(() => { setShowTyping(false); setMsgCount(3); }, 2300));
+
+    // "You" reply types & sends
+    timers.push(setTimeout(() => setShowTyping(true), 2900));
+    timers.push(setTimeout(() => {
+      setShowTyping(false);
+      setShowReply(true);
+      setSeqStep(5);
+    }, 3800));
+
+    // Success notification
+    timers.push(setTimeout(() => setShowNotif(true), 4400));
+
+    // Reset and loop — keep Sarah (msgCount=1)
+    timers.push(setTimeout(() => {
+      setShowNotif(false);
+      setShowReply(false);
+      setSeqStep(0);
+      setMsgCount(1);
+      setShowTyping(false);
+      setTimeout(() => setReplay((r) => r + 1), 200);
+    }, 8000));
 
     return () => timers.forEach(clearTimeout);
   }, [seqStep]);
@@ -333,7 +361,7 @@ function HeroVisualWrapper() {
             <div className="w-full h-full bg-[#111] rounded-[36px] shadow-2xl p-[3px] relative">
               <div className="absolute top-[10px] left-1/2 -translate-x-1/2 w-[70px] h-[20px] bg-[#111] rounded-full z-10" />
               <div className="w-full h-full bg-white rounded-[34px] overflow-hidden flex flex-col">
-                <PhoneInbox msgCount={msgCount} showTyping={showTyping} />
+                <PhoneInbox msgCount={msgCount} showTyping={showTyping} showReply={showReply} />
               </div>
             </div>
             <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 w-[140px] h-[14px] bg-black/20 blur-xl rounded-full" />
@@ -364,7 +392,7 @@ function HeroVisualWrapper() {
             <div className="w-full h-full bg-[#111] rounded-[32px] shadow-2xl p-[3px] relative">
               <div className="absolute top-[8px] left-1/2 -translate-x-1/2 w-[60px] h-[18px] bg-[#111] rounded-full z-10" />
               <div className="w-full h-full bg-white rounded-[30px] overflow-hidden flex flex-col">
-                <PhoneInbox msgCount={msgCount} showTyping={showTyping} />
+                <PhoneInbox msgCount={msgCount} showTyping={showTyping} showReply={showReply} />
               </div>
             </div>
           </div>
