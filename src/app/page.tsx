@@ -30,6 +30,20 @@ export default function Home() {
         <ProcessSection />
         <IndustriesSection />
         <DeliverablesSection />
+
+        {/* ── DM banner ── */}
+        <section className="px-4 sm:px-8 lg:px-12 py-6 bg-white">
+          <div className="max-w-6xl mx-auto">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="https://phhczohqidgrvcmszets.supabase.co/storage/v1/object/public/CUSTOMER.direct/images/People/Banners.png"
+              alt="Customers Are Messaging You — Direct Messenger"
+              className="w-full h-auto rounded-2xl sm:rounded-3xl border border-gray-100 object-cover"
+              style={{ boxShadow: "0 4px 24px rgba(0,0,0,0.08)" }}
+            />
+          </div>
+        </section>
+
         <PricingSection />
         <StrategyCallSection />
       </main>
