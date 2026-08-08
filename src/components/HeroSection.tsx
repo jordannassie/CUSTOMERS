@@ -59,21 +59,23 @@ export default function HeroSection() {
         {/* Right — Visual Collage */}
         <div className="relative h-[520px] hidden lg:block">
           {/* Video Ad Card */}
-          <div className="absolute top-0 left-0 w-[160px] h-[280px] bg-[#0F172A] rounded-2xl shadow-2xl overflow-hidden flex flex-col justify-between p-4 z-10">
-            <div className="flex items-center gap-1.5">
+          <div className="absolute top-0 left-0 w-[160px] h-[280px] rounded-2xl shadow-2xl overflow-hidden z-10">
+            <video
+              src="https://phhczohqidgrvcmszets.supabase.co/storage/v1/object/public/CUSTOMER.direct/Video/Girl%20ugc.mp4"
+              autoPlay
+              muted
+              loop
+              playsInline
+              className="absolute inset-0 w-full h-full object-cover"
+            />
+            <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-black/80" />
+            <div className="absolute top-3 left-3 flex items-center gap-1.5">
               <div className="w-2 h-2 rounded-full bg-red-400" />
-              <span className="text-white text-[10px] font-semibold opacity-70">Video Ad</span>
+              <span className="text-white text-[10px] font-semibold opacity-80">Video Ad</span>
             </div>
-            <div className="flex flex-col items-center gap-3">
-              <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
-                <svg className="w-5 h-5 text-white ml-1" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M8 5v14l11-7z" />
-                </svg>
-              </div>
-              <div className="bg-gradient-to-t from-black/80 to-transparent rounded-lg p-2 w-full">
-                <p className="text-white text-[9px] font-semibold leading-tight">Personal Injury</p>
-                <p className="text-white/70 text-[8px] leading-tight mt-0.5">We fight for what you deserve.</p>
-              </div>
+            <div className="absolute bottom-3 left-3 right-3">
+              <p className="text-white text-[9px] font-semibold leading-tight">Personal Injury</p>
+              <p className="text-white/70 text-[8px] leading-tight mt-0.5">We fight for what you deserve.</p>
             </div>
           </div>
 

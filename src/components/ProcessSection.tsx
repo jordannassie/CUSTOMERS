@@ -9,13 +9,19 @@ export default function ProcessSection() {
       description: "Scroll-stopping video ads made for your audience.",
       visual: (
         <div className="w-full flex justify-center py-4">
-          <div className="w-20 h-36 bg-[#0F172A] rounded-xl flex flex-col items-center justify-center gap-2">
-            <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
-              <svg className="w-4 h-4 text-white ml-0.5" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M8 5v14l11-7z" />
-              </svg>
+          <div className="w-20 h-36 rounded-xl overflow-hidden relative shadow-md">
+            <video
+              src="https://phhczohqidgrvcmszets.supabase.co/storage/v1/object/public/CUSTOMER.direct/Video/Girl%20ugc.mp4"
+              autoPlay
+              muted
+              loop
+              playsInline
+              className="absolute inset-0 w-full h-full object-cover"
+            />
+            <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/60" />
+            <div className="absolute bottom-2 left-0 right-0 text-center">
+              <span className="text-white text-[7px] font-semibold opacity-90 tracking-wider">VIDEO AD</span>
             </div>
-            <span className="text-white text-[8px] font-semibold opacity-60">VIDEO AD</span>
           </div>
         </div>
       ),

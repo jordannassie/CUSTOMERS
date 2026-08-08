@@ -11,15 +11,26 @@ export default function FlowSection() {
         {/* Flow */}
         <div className="flex flex-col md:flex-row items-center justify-center gap-4 mb-12">
           {/* Step 1: Video Ad Creative */}
-          <div className="bg-[#0F172A] rounded-2xl p-6 flex flex-col items-center gap-3 w-full md:w-56 shadow-lg">
-            <div className="w-12 h-12 bg-white/15 rounded-full flex items-center justify-center">
-              <svg className="w-6 h-6 text-white ml-0.5" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M8 5v14l11-7z" />
-              </svg>
-            </div>
-            <div className="text-center">
-              <div className="text-white font-bold text-sm">Video Ad Creative</div>
-              <div className="text-white/60 text-xs mt-1">Custom-made for your business</div>
+          <div className="relative rounded-2xl overflow-hidden w-full md:w-56 shadow-lg" style={{ minHeight: "180px" }}>
+            <video
+              src="https://phhczohqidgrvcmszets.supabase.co/storage/v1/object/public/CUSTOMER.direct/Video/Girl%20ugc.mp4"
+              autoPlay
+              muted
+              loop
+              playsInline
+              className="absolute inset-0 w-full h-full object-cover"
+            />
+            <div className="absolute inset-0 bg-gradient-to-b from-black/30 to-black/70" />
+            <div className="relative z-10 p-6 flex flex-col items-center gap-3 h-full justify-center" style={{ minHeight: "180px" }}>
+              <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center border border-white/30 backdrop-blur-sm">
+                <svg className="w-6 h-6 text-white ml-0.5" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M8 5v14l11-7z" />
+                </svg>
+              </div>
+              <div className="text-center">
+                <div className="text-white font-bold text-sm">Video Ad Creative</div>
+                <div className="text-white/70 text-xs mt-1">Custom-made for your business</div>
+              </div>
             </div>
           </div>
 
