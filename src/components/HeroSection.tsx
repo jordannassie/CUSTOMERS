@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect } from "react";
 
 /* ─── Constants ──────────────────────────────────────────────────────────── */
 const VIDEO_URL =
@@ -116,6 +116,88 @@ function PhoneInbox({
   );
 }
 
+/* ─── VideoCard (outside wrapper to satisfy hooks/static-components rule) ── */
+function VideoCard({
+  width, height, videoRef, isPaused, setIsPaused,
+}: {
+  width: number; height: number;
+  videoRef: React.RefObject<HTMLVideoElement | null>;
+  isPaused: boolean;
+  setIsPaused: (v: boolean) => void;
+}) {
+  return (
+    <div className="relative rounded-2xl shadow-2xl overflow-hidden" style={{ width, height }}>
+      <video ref={videoRef} src={VIDEO_URL} autoPlay muted loop playsInline
+        className="absolute inset-0 w-full h-full object-cover" />
+      <div className="absolute inset-0 bg-gradient-to-b from-black/25 via-transparent to-black/75" />
+      <div className="absolute top-3 left-3 flex items-center gap-1.5">
+        <div className="w-2 h-2 rounded-full bg-red-400 animate-pulse" />
+        <span className="text-white text-[10px] font-bold uppercase tracking-wide opacity-90">VIDEO AD</span>
+      </div>
+      <button
+        className="absolute bottom-3 right-3 w-7 h-7 bg-white/20 rounded-full flex items-center justify-center border border-white/30 backdrop-blur-sm"
+        onClick={() => {
+          const v = videoRef.current;
+          if (!v) return;
+          if (v.paused) { v.play(); setIsPaused(false); }
+          else { v.pause(); setIsPaused(true); }
+        }}
+        aria-label={isPaused ? "Play video" : "Pause video"}
+      >
+        {isPaused
+          ? <svg className="w-3.5 h-3.5 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
+          : <svg className="w-3.5 h-3.5 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" /></svg>
+        }
+      </button>
+    </div>
+  );
+}
+
+/* ─── CampaignCard (outside wrapper) ────────────────────────────────────── */
+function CampaignCard({ seqStep, campaignStatus }: { seqStep: number; campaignStatus: string }) {
+  return (
+    <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-4">
+      <div className="flex items-center gap-2">
+        <div className="w-6 h-6 rounded bg-[#2563EB] flex items-center justify-center">
+          <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <circle cx="12" cy="12" r="3" /><circle cx="12" cy="12" r="7" /><circle cx="12" cy="12" r="11" />
+          </svg>
+        </div>
+        <span className="font-bold text-xs text-[#0F172A]">Targeted Campaign</span>
+      </div>
+      <div className="flex items-center gap-1.5 mt-2">
+        <div className={`w-2 h-2 rounded-full transition-colors duration-500 ${seqStep >= 2 ? "bg-green-400 animate-pulse" : "bg-gray-300"}`} />
+        <span className={`text-[10px] font-semibold transition-colors duration-500 ${seqStep >= 2 ? "text-green-600" : "text-gray-400"}`}>
+          {campaignStatus}
+        </span>
+      </div>
+      <div className="border-t border-gray-100 my-2" />
+      <div className="flex justify-between text-[10px] text-[#64748B]">
+        <span>Objective</span><span className="font-medium text-[#0F172A]">Messages</span>
+      </div>
+      <div className="flex justify-between text-[10px] text-[#64748B] mt-1">
+        <span>Audience</span><span className="font-medium text-[#0F172A]">Local customers</span>
+      </div>
+      <div className="mt-2 bg-gray-100 rounded-full h-1.5 overflow-hidden">
+        <div className="h-full bg-gradient-to-r from-[#2563EB] to-[#7C3AED] rounded-full"
+          style={{ width: seqStep >= 2 ? "75%" : "0%", transition: "width 1.5s ease" }} />
+      </div>
+      <div className="flex mt-2 -space-x-1.5">
+        {(["#DBEAFE", "#F5F3FF", "#DCFCE7"] as const).map((bg, i) => (
+          <div key={i} className="w-6 h-6 rounded-full border-2 border-white flex items-center justify-center text-[8px] font-bold"
+            style={{ background: bg, opacity: seqStep >= 2 ? 1 : 0, transitionDelay: `${i * 200}ms`, transition: "opacity 0.4s ease" }}>
+            {["S", "J", "D"][i]}
+          </div>
+        ))}
+        <span className="text-[9px] text-[#64748B] ml-2 self-center"
+          style={{ opacity: seqStep >= 2 ? 1 : 0, transition: "opacity 0.4s ease 0.6s" }}>
+          reaching audience
+        </span>
+      </div>
+    </div>
+  );
+}
+
 /* ─── HeroVisualWrapper — all animation state lives here ─────────────────── */
 function HeroVisualWrapper() {
   const reducedMotion = useReducedMotion();
@@ -215,315 +297,98 @@ function HeroVisualWrapper() {
   const campaignStatus = seqStep >= 2 ? "Active" : "Preparing...";
 
   return (
-    <div ref={containerRef}>
+    <div ref={containerRef} className="min-w-0 w-full">
+
       {/* ══════════════════════════════════════════════════
-          DESKTOP  (hidden on mobile)
+          DESKTOP  lg+
       ══════════════════════════════════════════════════ */}
-      <div className="relative h-[580px] w-full hidden lg:block">
+      <div className="hidden lg:block">
+        {/* Bounded relative container — all absolutes inside here */}
+        <div className="relative w-full max-w-[620px] mx-auto" style={{ height: 500 }}>
 
-        {/* ── Connector 1: video → campaign ── */}
-        <div
-          className="absolute"
-          style={{
-            top: "120px",
-            left: "155px",
-            width: "40px",
-            height: "2px",
-            background: "linear-gradient(to right, #2563EB, #7C3AED)",
-            zIndex: 5,
-          }}
-        />
-        <div
-          className="absolute overflow-hidden"
-          style={{
-            top: "119px",
-            left: "155px",
-            width: "40px",
-            height: "4px",
-            zIndex: 5,
-          }}
-        >
-          <div
-            className="absolute top-0 h-full rounded"
-            style={{
-              width: "40%",
-              background: "rgba(255,255,255,0.7)",
-              animation:
-                seqStep >= 2 ? "flowPulse 1.2s ease-in-out infinite" : "none",
-            }}
-          />
-        </div>
-
-        {/* ── Element 1: Video Card ── */}
-        <div className="absolute top-4 left-0 w-[155px] h-[270px] rounded-2xl shadow-2xl overflow-hidden z-10">
-          <video
-            ref={videoRef}
-            src={VIDEO_URL}
-            autoPlay
-            muted
-            loop
-            playsInline
-            className="absolute inset-0 w-full h-full object-cover"
-          />
-          <div className="absolute inset-0 bg-gradient-to-b from-black/25 via-transparent to-black/75" />
-          <div className="absolute top-3 left-3 flex items-center gap-1.5">
-            <div className="w-2 h-2 rounded-full bg-red-400 animate-pulse" />
-            <span className="text-white text-[10px] font-bold uppercase tracking-wide opacity-90">
-              VIDEO AD
-            </span>
+          {/* Connector 1: video → campaign */}
+          <div className="absolute" style={{ top: 148, left: 185, width: 36, height: 2, background: "linear-gradient(to right,#2563EB,#7C3AED)", zIndex: 5 }} />
+          <div className="absolute overflow-hidden" style={{ top: 147, left: 185, width: 36, height: 4, zIndex: 5 }}>
+            <div className="absolute top-0 h-full w-[40%] rounded" style={{ background: "rgba(255,255,255,0.7)", animation: seqStep >= 2 ? "flowPulse 1.2s ease-in-out infinite" : "none" }} />
           </div>
-          <button
-            className="absolute bottom-3 right-3 w-7 h-7 bg-white/20 rounded-full flex items-center justify-center border border-white/30 cursor-pointer backdrop-blur-sm"
-            onClick={() => {
-              const v = videoRef.current;
-              if (!v) return;
-              if (v.paused) {
-                v.play();
-                setIsPaused(false);
-              } else {
-                v.pause();
-                setIsPaused(true);
-              }
-            }}
-            aria-label={isPaused ? "Play video" : "Pause video"}
-          >
-            {isPaused ? (
-              <svg
-                className="w-3.5 h-3.5 text-white"
-                fill="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path d="M8 5v14l11-7z" />
-              </svg>
-            ) : (
-              <svg
-                className="w-3.5 h-3.5 text-white"
-                fill="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
-              </svg>
+
+          {/* Element 1: Video */}
+          <div className="absolute" style={{ top: 16, left: 0, width: 185, height: 320, position: "absolute" }}>
+            <VideoCard width={185} height={320} videoRef={videoRef} isPaused={isPaused} setIsPaused={setIsPaused} />
+          </div>
+
+          {/* Element 2: Campaign card */}
+          <div className="absolute z-20" style={{ top: 24, left: 160, width: 232 }}>
+            <CampaignCard seqStep={seqStep} campaignStatus={campaignStatus} />
+          </div>
+
+          {/* Connector 2: campaign → phone */}
+          <div className="absolute" style={{ top: 80, left: 392, width: 28, height: 2, background: "linear-gradient(to right,#7C3AED,#2563EB)", zIndex: 15 }} />
+          <div className="absolute overflow-hidden" style={{ top: 79, left: 392, width: 28, height: 4, zIndex: 15 }}>
+            <div className="absolute top-0 h-full w-[40%] rounded" style={{ background: "rgba(255,255,255,0.7)", animation: seqStep >= 3 ? "flowPulse 1.0s ease-in-out infinite" : "none" }} />
+          </div>
+
+          {/* Element 3: Phone */}
+          <div className="absolute z-30" style={{ top: 10, right: 0, width: 210, height: 465 }}>
+            <div className="w-full h-full bg-[#111] rounded-[36px] shadow-2xl p-[3px] relative">
+              <div className="absolute top-[10px] left-1/2 -translate-x-1/2 w-[70px] h-[20px] bg-[#111] rounded-full z-10" />
+              <div className="w-full h-full bg-white rounded-[34px] overflow-hidden flex flex-col">
+                <PhoneInbox msgCount={msgCount} showTyping={showTyping} />
+              </div>
+            </div>
+            <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 w-[140px] h-[14px] bg-black/20 blur-xl rounded-full" />
+            {showNotif && (
+              <div className="absolute top-5 right-[-8px] z-40 bg-white rounded-xl shadow-lg border border-gray-100 px-3 py-2 flex items-center gap-2"
+                style={{ animation: "fadeSlideUp 0.5s ease forwards" }}>
+                <div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center">
+                  <svg className="w-3.5 h-3.5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+                <span className="text-[10px] font-bold text-[#0F172A]">New customer inquiry</span>
+              </div>
             )}
-          </button>
-        </div>
-
-        {/* ── Element 2: Campaign Card ── */}
-        <div className="absolute top-8 left-[140px] z-20 w-[210px] bg-white rounded-2xl shadow-xl border border-gray-100 p-4">
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded bg-[#2563EB] flex items-center justify-center">
-              <svg
-                className="w-3.5 h-3.5 text-white"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={2}
-              >
-                <circle cx="12" cy="12" r="3" />
-                <circle cx="12" cy="12" r="7" />
-                <circle cx="12" cy="12" r="11" />
-              </svg>
-            </div>
-            <span className="font-bold text-xs text-[#0F172A]">
-              Targeted Campaign
-            </span>
           </div>
-
-          <div className="flex items-center gap-1.5 mt-2">
-            <div
-              className={`w-2 h-2 rounded-full transition-colors duration-500 ${
-                seqStep >= 2
-                  ? "bg-green-400 animate-pulse"
-                  : "bg-gray-300"
-              }`}
-            />
-            <span
-              className={`text-[10px] font-semibold transition-colors duration-500 ${
-                seqStep >= 2 ? "text-green-600" : "text-gray-400"
-              }`}
-            >
-              {campaignStatus}
-            </span>
-          </div>
-
-          <div className="border-t border-gray-100 my-2" />
-
-          <div className="flex justify-between text-[10px] text-[#64748B]">
-            <span>Objective</span>
-            <span className="font-medium text-[#0F172A]">Messages</span>
-          </div>
-          <div className="flex justify-between text-[10px] text-[#64748B] mt-1">
-            <span>Audience</span>
-            <span className="font-medium text-[#0F172A]">Local customers</span>
-          </div>
-
-          <div className="mt-2 bg-gray-100 rounded-full h-1.5 overflow-hidden">
-            <div
-              className="h-full bg-gradient-to-r from-[#2563EB] to-[#7C3AED] rounded-full"
-              style={{
-                width: seqStep >= 2 ? "75%" : "0%",
-                transition: "width 1.5s ease",
-              }}
-            />
-          </div>
-
-          <div className="flex mt-2 -space-x-1.5">
-            {(["#DBEAFE", "#F5F3FF", "#DCFCE7"] as const).map((bg, i) => (
-              <div
-                key={i}
-                className="w-6 h-6 rounded-full border-2 border-white flex items-center justify-center text-[8px] font-bold"
-                style={{
-                  background: bg,
-                  opacity: seqStep >= 2 ? 1 : 0,
-                  transitionDelay: `${i * 200}ms`,
-                  transition: "opacity 0.4s ease",
-                }}
-              >
-                {["S", "J", "D"][i]}
-              </div>
-            ))}
-            <span
-              className="text-[9px] text-[#64748B] ml-2 self-center"
-              style={{
-                opacity: seqStep >= 2 ? 1 : 0,
-                transition: "opacity 0.4s ease 0.6s",
-              }}
-            >
-              reaching audience
-            </span>
-          </div>
-        </div>
-
-        {/* ── Connector 2: campaign → phone ── */}
-        <div
-          className="absolute"
-          style={{
-            top: "80px",
-            left: "350px",
-            width: "30px",
-            height: "2px",
-            background: "linear-gradient(to right, #7C3AED, #2563EB)",
-            zIndex: 15,
-          }}
-        />
-        <div
-          className="absolute overflow-hidden"
-          style={{
-            top: "79px",
-            left: "350px",
-            width: "30px",
-            height: "4px",
-            zIndex: 15,
-          }}
-        >
-          <div
-            className="absolute top-0 h-full rounded"
-            style={{
-              width: "40%",
-              background: "rgba(255,255,255,0.7)",
-              animation:
-                seqStep >= 3 ? "flowPulse 1.0s ease-in-out infinite" : "none",
-            }}
-          />
-        </div>
-
-        {/* ── Element 3: Large Phone ── */}
-        <div className="absolute top-[30px] right-0 z-30 w-[210px] h-[430px]">
-          <div className="w-full h-full bg-[#111] rounded-[36px] shadow-2xl p-[3px] relative">
-            {/* Notch */}
-            <div className="absolute top-[10px] left-1/2 -translate-x-1/2 w-[70px] h-[20px] bg-[#111] rounded-full z-10" />
-            {/* Screen */}
-            <div className="w-full h-full bg-white rounded-[34px] overflow-hidden flex flex-col">
-              <PhoneInbox msgCount={msgCount} showTyping={showTyping} />
-            </div>
-          </div>
-          {/* Phone shadow */}
-          <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 w-[140px] h-[16px] bg-black/20 blur-xl rounded-full" />
-
-          {/* ── Floating success notification ── */}
-          {showNotif && (
-            <div
-              className="absolute top-[20px] right-[-10px] z-40 bg-white rounded-xl shadow-lg border border-gray-100 px-3 py-2 flex items-center gap-2"
-              style={{ animation: "fadeSlideUp 0.5s ease forwards" }}
-            >
-              <div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center">
-                <svg
-                  className="w-3.5 h-3.5 text-green-600"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  strokeWidth={2.5}
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M5 13l4 4L19 7"
-                  />
-                </svg>
-              </div>
-              <span className="text-[10px] font-bold text-[#0F172A]">
-                New customer inquiry
-              </span>
-            </div>
-          )}
         </div>
       </div>
 
       {/* ══════════════════════════════════════════════════
-          MOBILE  (hidden on desktop)
+          MOBILE  < lg
       ══════════════════════════════════════════════════ */}
-      <div className="lg:hidden w-full flex justify-center px-4 mt-6">
-        <div className="relative w-full max-w-[340px]">
-          {/* Phone — centered */}
-          <div className="mx-auto w-[200px] h-[360px] bg-[#111] rounded-[32px] shadow-2xl p-[3px]">
-            <div className="w-full h-full bg-white rounded-[30px] overflow-hidden flex flex-col">
-              <PhoneInbox msgCount={msgCount} showTyping={showTyping} />
+      <div className="lg:hidden w-full mt-10 mb-2">
+        {/* Bounded container — all absolutes relative to this */}
+        <div className="relative mx-auto" style={{ width: "100%", maxWidth: 380, height: 420 }}>
+
+          {/* Phone — center-right */}
+          <div className="absolute z-30" style={{ top: 36, right: 0, width: 220, height: 380 }}>
+            <div className="w-full h-full bg-[#111] rounded-[32px] shadow-2xl p-[3px] relative">
+              <div className="absolute top-[8px] left-1/2 -translate-x-1/2 w-[60px] h-[18px] bg-[#111] rounded-full z-10" />
+              <div className="w-full h-full bg-white rounded-[30px] overflow-hidden flex flex-col">
+                <PhoneInbox msgCount={msgCount} showTyping={showTyping} />
+              </div>
             </div>
           </div>
 
           {/* Video card — upper left */}
-          <div className="absolute top-[-20px] left-0 w-[100px] h-[180px] rounded-2xl shadow-xl overflow-hidden">
-            <video
-              src={VIDEO_URL}
-              autoPlay
-              muted
-              loop
-              playsInline
-              className="absolute inset-0 w-full h-full object-cover"
-            />
-            <div className="absolute inset-0 bg-gradient-to-b from-black/30 to-black/60" />
-            <div className="absolute top-2 left-2 flex items-center gap-1">
-              <div className="w-1.5 h-1.5 rounded-full bg-red-400" />
-              <span className="text-white text-[8px] font-bold">VIDEO AD</span>
-            </div>
+          <div className="absolute z-20" style={{ top: 0, left: 0, width: 118, height: 208, position: "absolute" }}>
+            <VideoCard width={118} height={208} videoRef={videoRef} isPaused={isPaused} setIsPaused={setIsPaused} />
           </div>
 
-          {/* Campaign card — upper right */}
-          <div className="absolute top-[-10px] right-0 w-[130px] bg-white rounded-xl shadow-lg border border-gray-100 p-3">
-            <div className="text-[9px] font-black text-[#0F172A] mb-1">
-              Targeted Campaign
-            </div>
-            <div className="flex items-center gap-1 mb-1">
-              <div
-                className={`w-1.5 h-1.5 rounded-full transition-colors duration-500 ${
-                  seqStep >= 2 ? "bg-green-400" : "bg-gray-300"
-                }`}
-              />
-              <span
-                className={`text-[8px] font-semibold transition-colors duration-500 ${
-                  seqStep >= 2 ? "text-green-600" : "text-gray-400"
-                }`}
-              >
-                {seqStep >= 2 ? "Active" : "Preparing..."}
-              </span>
-            </div>
-            <div className="bg-gray-100 rounded-full h-1 overflow-hidden">
-              <div
-                className="h-full bg-gradient-to-r from-[#2563EB] to-[#7C3AED] rounded-full"
-                style={{
-                  width: seqStep >= 2 ? "70%" : "0%",
-                  transition: "width 1.5s ease",
-                }}
-              />
+          {/* Campaign card — below video */}
+          <div className="absolute z-10" style={{ top: 220, left: 0, width: 152 }}>
+            <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-3">
+              <div className="text-[9px] font-black text-[#0F172A] mb-1">Targeted Campaign</div>
+              <div className="flex items-center gap-1 mb-1.5">
+                <div className={`w-1.5 h-1.5 rounded-full transition-colors duration-500 ${seqStep >= 2 ? "bg-green-400" : "bg-gray-300"}`} />
+                <span className={`text-[8px] font-semibold transition-colors duration-500 ${seqStep >= 2 ? "text-green-600" : "text-gray-400"}`}>
+                  {seqStep >= 2 ? "Active" : "Preparing..."}
+                </span>
+              </div>
+              <div className="bg-gray-100 rounded-full h-1 overflow-hidden">
+                <div className="h-full bg-gradient-to-r from-[#2563EB] to-[#7C3AED] rounded-full"
+                  style={{ width: seqStep >= 2 ? "70%" : "0%", transition: "width 1.5s ease" }} />
+              </div>
+              <div className="text-[8px] text-[#64748B] mt-1.5">Objective: Messages</div>
             </div>
           </div>
         </div>
@@ -539,10 +404,10 @@ export default function HeroSection() {
   }
 
   return (
-    <section className="bg-white pt-8 pb-20 px-4 overflow-hidden">
-      <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+    <section className="bg-white pt-12 pb-16 px-5" style={{ overflowX: "clip" }}>
+      <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-[48%_52%] gap-10 xl:gap-16 items-center">
         {/* Left — Text */}
-        <div className="flex flex-col gap-6">
+        <div className="flex flex-col gap-6 min-w-0">
           {/* Eyebrow */}
           <span className="text-xs font-semibold tracking-widest text-[#2563EB] uppercase">
             Customer Acquisition, Done For You
