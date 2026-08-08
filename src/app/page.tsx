@@ -4,6 +4,7 @@ import ProcessSection from "@/components/ProcessSection";
 import IndustriesSection from "@/components/IndustriesSection";
 import DeliverablesSection from "@/components/DeliverablesSection";
 import PricingSection from "@/components/PricingSection";
+import FAQSection from "@/components/FAQSection";
 import StrategyCallSection from "@/components/StrategyCallSection";
 import Footer from "@/components/Footer";
 
@@ -45,20 +46,7 @@ export default function Home() {
         </section>
 
         <PricingSection />
-
-        {/* ── Cost banner ── */}
-        <section className="px-4 sm:px-8 lg:px-12 py-6 bg-white">
-          <div className="max-w-6xl mx-auto">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="https://phhczohqidgrvcmszets.supabase.co/storage/v1/object/public/CUSTOMER.direct/images/People/Cost.png"
-              alt="Typical DM Cost $5–$10 per customer conversation"
-              className="w-full h-auto rounded-2xl sm:rounded-3xl border border-gray-100 object-cover"
-              style={{ boxShadow: "0 4px 24px rgba(0,0,0,0.08)" }}
-            />
-          </div>
-        </section>
-
+        <FAQSection />
         <StrategyCallSection />
       </main>
       <Footer />
