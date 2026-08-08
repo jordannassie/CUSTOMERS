@@ -42,8 +42,17 @@ const COLS = [
   { key: "daily",   label: "Daily Ad Spend" },
   { key: "service", label: "Our Service" },
   { key: "total",   label: "Total Investment" },
-  { key: "dms",     label: "Est. Customer DMs" },
-] as const;
+  {
+    key: "dms", label: (
+      <span className="flex items-center gap-1.5">
+        <svg className="w-3.5 h-3.5 text-[#2563EB] shrink-0" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/>
+        </svg>
+        Est. Customer DMs
+      </span>
+    )
+  },
+];
 
 // ─── Main section ─────────────────────────────────────────────────────────────
 
@@ -117,10 +126,15 @@ export default function PricingSection() {
                     </td>
                     {/* Est. DMs */}
                     <td className="px-6 py-5">
-                      <span className={`font-black text-lg ${row.recommended ? "text-[#2563EB]" : "text-[#0F172A]"}`}>
-                        {row.dms}
-                      </span>
-                      <div className="text-[10px] text-[#94A3B8] font-medium mt-0.5">conversations/mo*</div>
+                      <div className="flex items-center gap-1.5">
+                        <svg className={`w-4 h-4 shrink-0 ${row.recommended ? "text-[#2563EB]" : "text-[#64748B]"}`} fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/>
+                        </svg>
+                        <span className={`font-black text-lg ${row.recommended ? "text-[#2563EB]" : "text-[#0F172A]"}`}>
+                          {row.dms}
+                        </span>
+                      </div>
+                      <div className="text-[10px] text-[#94A3B8] font-medium mt-0.5 pl-5">conversations/mo*</div>
                     </td>
                   </tr>
                 ))}
@@ -167,7 +181,12 @@ export default function PricingSection() {
                     <div className="font-black text-lg text-[#0F172A]">{row.total}</div>
                   </div>
                   <div>
-                    <div className="text-xs text-[#94A3B8] font-medium mb-0.5">Est. customer DMs*</div>
+                    <div className="text-xs text-[#94A3B8] font-medium mb-0.5 flex items-center gap-1">
+                      <svg className="w-3 h-3 text-[#2563EB]" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/>
+                      </svg>
+                      Est. customer DMs*
+                    </div>
                     <div className={`font-black text-lg ${row.recommended ? "text-[#2563EB]" : "text-[#0F172A]"}`}>
                       {row.dms}
                     </div>
