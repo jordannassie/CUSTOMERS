@@ -7,7 +7,7 @@ import { NextResponse, type NextRequest } from "next/server";
  *
  * Add any route-level auth guards below the session refresh block.
  */
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
 
   const supabase = createServerClient(
