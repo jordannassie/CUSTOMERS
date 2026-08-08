@@ -1,36 +1,130 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Customers — Next.js + Supabase + Netlify
+
+A production-ready Next.js 15 starter pre-wired for **Supabase** (auth, database, storage) and **Netlify** (continuous deployment).
+
+---
+
+## Tech Stack
+
+| Layer      | Technology                          |
+|------------|-------------------------------------|
+| Framework  | Next.js 15 (App Router, TypeScript) |
+| Styling    | Tailwind CSS v4                     |
+| Backend    | Supabase (auth · postgres · storage)|
+| Deployment | Netlify + `@netlify/plugin-nextjs`  |
+
+---
 
 ## Getting Started
 
-First, run the development server:
+### 1. Clone & install
+
+```bash
+git clone https://github.com/jordannassie/CUSTOMERS.git
+cd CUSTOMERS
+npm install
+```
+
+### 2. Set up environment variables
+
+```bash
+cp .env.example .env.local
+```
+
+Open `.env.local` and fill in your Supabase credentials:
+
+```env
+NEXT_PUBLIC_SUPABASE_URL=https://your-project-ref.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+```
+
+> Find these in your [Supabase dashboard](https://app.supabase.com) → Project → **Settings → API**.
+
+### 3. Run locally
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+---
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Project Structure
 
-## Learn More
+```
+src/
+├── app/
+│   ├── layout.tsx          # Root layout
+│   └── page.tsx            # Home page (server component — reads Supabase session)
+├── lib/
+│   └── supabase/
+│       ├── client.ts       # Browser/client-component Supabase client
+│       └── server.ts       # Server component / Route Handler client
+└── middleware.ts            # Session refresh middleware (required for SSR auth)
+```
 
-To learn more about Next.js, take a look at the following resources:
+---
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Connecting Supabase
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### Browser (Client Components)
 
-## Deploy on Vercel
+```tsx
+"use client";
+import { createClient } from "@/lib/supabase/client";
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+const supabase = createClient();
+const { data, error } = await supabase.from("your_table").select("*");
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### Server (Server Components / Route Handlers)
+
+```tsx
+import { createClient } from "@/lib/supabase/server";
+
+const supabase = await createClient();
+const { data: { user } } = await supabase.auth.getUser();
+```
+
+---
+
+## Deploying to Netlify
+
+### Option A — Netlify UI (recommended)
+
+1. Push this repo to GitHub (already done ✅).
+2. Go to [app.netlify.com](https://app.netlify.com) → **Add new site → Import an existing project**.
+3. Connect your GitHub account and select **jordannassie/CUSTOMERS**.
+4. Netlify auto-detects `netlify.toml` — build command and publish dir are pre-filled.
+5. Under **Site configuration → Environment variables**, add:
+   - `NEXT_PUBLIC_SUPABASE_URL`
+   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+6. Click **Deploy site** 🚀
+
+### Option B — Netlify CLI
+
+```bash
+npm install -g netlify-cli
+netlify login
+netlify init          # link to your Netlify site
+netlify env:set NEXT_PUBLIC_SUPABASE_URL "https://..."
+netlify env:set NEXT_PUBLIC_SUPABASE_ANON_KEY "your-key"
+netlify deploy --build --prod
+```
+
+---
+
+## Environment Variables Reference
+
+| Variable                        | Required | Description                          |
+|---------------------------------|----------|--------------------------------------|
+| `NEXT_PUBLIC_SUPABASE_URL`      | ✅        | Your Supabase project URL            |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | ✅        | Public anon key (safe for browser)   |
+| `SUPABASE_SERVICE_ROLE_KEY`     | Optional | Admin key — server-side only         |
+
+---
+
+## License
+
+MIT

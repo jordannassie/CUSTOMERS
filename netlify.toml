@@ -1,0 +1,22 @@
+[build]
+  command   = "npm run build"
+  publish   = ".next"
+
+[build.environment]
+  # Node version — bump to 22+ when your host supports it
+  NODE_VERSION = "20"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+
+# Redirect all requests to Next.js (handled by the plugin above)
+# [[redirects]]
+#   from   = "/*"
+#   to     = "/.netlify/functions/___netlify-handler"
+#   status = 200
+
+# Example: set environment variables via Netlify UI or .env files.
+# NEVER commit real secrets here.
+# [context.production.environment]
+#   NEXT_PUBLIC_SUPABASE_URL      = "https://your-project.supabase.co"
+#   NEXT_PUBLIC_SUPABASE_ANON_KEY = "your-anon-key"
