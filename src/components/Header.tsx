@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 
 export default function Header() {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -14,10 +15,16 @@ export default function Header() {
     <header className="sticky top-0 z-50 px-4 pt-4">
       <div className="bg-white rounded-2xl shadow-lg max-w-6xl mx-auto">
         <div className="flex items-center justify-between py-3 px-6">
-          {/* Wordmark */}
-          <span className="font-black italic text-xl text-black select-none">
-            Customers.Direct
-          </span>
+          {/* Logo */}
+          <Image
+            src="https://phhczohqidgrvcmszets.supabase.co/storage/v1/object/public/CUSTOMER.direct/logo/Logo.png"
+            alt="Customers.Direct"
+            width={180}
+            height={45}
+            priority
+            unoptimized
+            className="h-9 w-auto"
+          />
 
           {/* Desktop Nav */}
           <nav className="hidden md:flex items-center gap-8">
