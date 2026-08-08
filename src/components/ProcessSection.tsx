@@ -104,14 +104,10 @@ function ProgressIndicator({ step }: { step: number }) {
           <React.Fragment key={i}>
             {/* Column: icon above + dot below */}
             <div className="flex flex-col items-center gap-2 shrink-0">
-              {/* Icon badge */}
+              {/* Icon — no background, just colored */}
               <div
-                className="w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-500"
-                style={{
-                  background: step >= i + 1 ? dot.color : "#E5E7EB",
-                  color: step >= i + 1 ? "white" : "#9CA3AF",
-                  boxShadow: step >= i + 1 ? `0 4px 14px ${dot.glow}` : "none",
-                }}
+                className="w-6 h-6 flex items-center justify-center transition-all duration-500"
+                style={{ color: step >= i + 1 ? dot.color : "#D1D5DB" }}
               >
                 {STEP_ICONS[i]}
               </div>
