@@ -32,9 +32,7 @@ export async function proxy(request: NextRequest) {
   );
 
   // Refresh session — do NOT remove this line.
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  await supabase.auth.getUser();
 
   // --- Auth guards (uncomment and customise as needed) ---
   // const { pathname } = request.nextUrl;
