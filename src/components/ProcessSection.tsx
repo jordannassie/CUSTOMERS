@@ -33,6 +33,12 @@ const MESSAGES = [
   },
 ];
 
+const CLOSE_STATUSES = [
+  { label: "New inquiry" },
+  { label: "Call scheduled" },
+  { label: "New customer" },
+];
+
 // ─── Hooks ───────────────────────────────────────────────────────────────────
 
 function useInView(threshold = 0.15) {
@@ -42,9 +48,7 @@ function useInView(threshold = 0.15) {
     const el = ref.current;
     if (!el) return;
     const obs = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) setInView(true);
-      },
+      ([entry]) => { if (entry.isIntersecting) setInView(true); },
       { threshold }
     );
     obs.observe(el);
@@ -60,10 +64,7 @@ function useReducedMotion() {
     const t = setTimeout(() => setReduced(mq.matches), 0);
     const handler = () => setReduced(mq.matches);
     mq.addEventListener("change", handler);
-    return () => {
-      clearTimeout(t);
-      mq.removeEventListener("change", handler);
-    };
+    return () => { clearTimeout(t); mq.removeEventListener("change", handler); };
   }, []);
   return reduced;
 }
@@ -72,31 +73,27 @@ function useReducedMotion() {
 
 function ProgressIndicator({ step }: { step: number }) {
   const dots = [
-    { color: "#2563EB", glow: "rgba(37,99,235,0.4)" },
-    { color: "#7C3AED", glow: "rgba(124,58,237,0.4)" },
-    { color: "#FF6B6B", glow: "rgba(255,107,107,0.4)" },
-    { color: "#22C55E", glow: "rgba(34,197,94,0.4)" },
+    { color: "#2563EB", glow: "rgba(37,99,235,0.35)" },
+    { color: "#7C3AED", glow: "rgba(124,58,237,0.35)" },
+    { color: "#FF6B6B", glow: "rgba(255,107,107,0.35)" },
+    { color: "#22C55E", glow: "rgba(34,197,94,0.35)" },
   ];
-
   return (
-    <div className="flex items-center justify-center mb-10">
-      <div className="flex items-center gap-0">
+    <div className="flex items-center justify-center mb-12">
+      <div className="flex items-center">
         {dots.map((dot, i) => (
           <React.Fragment key={i}>
-            {/* Dot */}
             <div
-              className="relative w-9 h-9 rounded-full flex items-center justify-center text-sm font-black text-white z-10 transition-all duration-500"
+              className="relative w-9 h-9 rounded-full flex items-center justify-center text-sm font-black text-white z-10 transition-all duration-500 shrink-0"
               style={{
                 background: step >= i + 1 ? dot.color : "#E5E7EB",
-                boxShadow:
-                  step === i + 1 ? `0 0 0 6px ${dot.glow}` : "none",
+                boxShadow: step === i + 1 ? `0 0 0 6px ${dot.glow}` : "none",
               }}
             >
               {i + 1}
             </div>
-            {/* Connector line between dots */}
             {i < 3 && (
-              <div className="relative w-24 h-1 bg-gray-200 overflow-hidden">
+              <div className="relative w-16 sm:w-24 h-1 bg-gray-200 overflow-hidden mx-0.5">
                 <div
                   className="absolute inset-y-0 left-0 h-full rounded transition-all duration-700 ease-in-out"
                   style={{
@@ -116,32 +113,21 @@ function ProgressIndicator({ step }: { step: number }) {
 // ─── Card Shell ──────────────────────────────────────────────────────────────
 
 function CardShell({
-  num,
-  accent,
-  title,
-  description,
-  active,
-  children,
+  num, accent, title, description, active, children,
 }: {
-  num: number;
-  accent: string;
-  title: string;
-  description: string;
-  active: boolean;
-  children: React.ReactNode;
+  num: number; accent: string; title: string; description: string;
+  active: boolean; children: React.ReactNode;
 }) {
   return (
     <div
-      className="flex flex-col bg-white rounded-[22px] shadow-md border-2 transition-all duration-500 overflow-hidden h-full"
+      className="flex flex-col bg-white rounded-[22px] border-2 transition-all duration-500 h-full"
       style={{
         borderColor: active ? accent : "#F3F4F6",
-        boxShadow: active
-          ? `0 8px 30px ${accent}22`
-          : "0 2px 8px rgba(0,0,0,0.06)",
+        boxShadow: active ? `0 8px 30px ${accent}22` : "0 2px 8px rgba(0,0,0,0.06)",
       }}
     >
       {/* Header */}
-      <div className="px-5 pt-5 pb-3">
+      <div className="px-5 pt-5 pb-3 shrink-0">
         <div className="flex items-center gap-2.5 mb-2">
           <div
             className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-black text-white shrink-0"
@@ -149,12 +135,14 @@ function CardShell({
           >
             {num}
           </div>
-          <h3 className="text-sm font-black text-[#0F172A]">{title}</h3>
+          <h3 className="text-sm font-black text-[#0F172A] leading-tight">{title}</h3>
         </div>
         <p className="text-[11px] text-[#64748B] leading-snug">{description}</p>
       </div>
-      {/* Visual area */}
-      <div className="flex-1 px-4 pb-5">{children}</div>
+      {/* Visual area — overflow hidden only here */}
+      <div className="flex-1 px-4 pb-5 overflow-hidden min-h-0">
+        {children}
+      </div>
     </div>
   );
 }
@@ -178,86 +166,58 @@ function Card1Visual({ active }: { active: boolean }) {
   function togglePlay() {
     const v = videoRef.current;
     if (!v) return;
-    if (v.paused) {
-      v.play();
-      setPaused(false);
-    } else {
-      v.pause();
-      setPaused(true);
-    }
+    if (v.paused) { v.play(); setPaused(false); }
+    else { v.pause(); setPaused(true); }
   }
 
   const progress = Math.min((elapsed / duration) * 100, 100);
 
   return (
-    <div
-      className="bg-black rounded-[20px] overflow-hidden shadow-xl relative"
-      style={{ aspectRatio: "9/16" }}
-    >
-      <video
-        ref={videoRef}
-        src={VIDEO_URL}
-        autoPlay
-        muted
-        loop
-        playsInline
-        className="absolute inset-0 w-full h-full object-cover"
-      />
-      <div className="absolute inset-0 bg-gradient-to-b from-black/10 via-transparent to-black/70" />
+    /* Center a 9:16 video frame — max-width keeps it from being too wide on large cards */
+    <div className="flex items-start justify-center h-full pt-1">
+      <div
+        className="relative bg-black rounded-[18px] overflow-hidden shadow-xl w-full"
+        style={{ aspectRatio: "9/16", maxWidth: 148 }}
+      >
+        <video
+          ref={videoRef}
+          src={VIDEO_URL}
+          autoPlay muted loop playsInline
+          className="absolute inset-0 w-full h-full object-cover"
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/10 via-transparent to-black/70" />
 
-      {active && (
-        <div
-          className="absolute top-3 right-3 flex items-center gap-1.5 bg-black/60 backdrop-blur-sm text-white text-[9px] font-bold uppercase tracking-wider rounded-full px-2.5 py-1"
-          style={{ animation: "fadeSlideUp 0.5s ease forwards" }}
-        >
-          <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse inline-block" />
-          Video Ready
-        </div>
-      )}
-
-      <div className="absolute bottom-0 left-0 right-0 px-3 pb-3">
-        <div className="w-full bg-white/30 rounded-full h-[3px] mb-2 overflow-hidden">
+        {active && (
           <div
-            className="h-full bg-white rounded-full transition-all duration-300"
-            style={{ width: `${progress}%` }}
-          />
-        </div>
-        <div className="flex items-center justify-between">
-          <button
-            onClick={togglePlay}
-            aria-label={paused ? "Play" : "Pause"}
-            className="w-7 h-7 bg-white/20 rounded-full flex items-center justify-center border border-white/30 hover:bg-white/30 transition-colors"
+            className="absolute top-2.5 right-2.5 flex items-center gap-1 bg-black/60 backdrop-blur-sm text-white text-[8px] font-bold uppercase tracking-wider rounded-full px-2 py-1"
+            style={{ animation: "fadeSlideUp 0.5s ease forwards" }}
           >
-            {paused ? (
-              <svg
-                className="w-3 h-3 text-white ml-0.5"
-                fill="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path d="M8 5v14l11-7z" />
-              </svg>
-            ) : (
-              <svg
-                className="w-3 h-3 text-white"
-                fill="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
-              </svg>
-            )}
-          </button>
-          <div className="flex items-center gap-1">
-            <span className="text-white text-[8px] font-mono">
-              0:{String(Math.floor(elapsed % 60)).padStart(2, "0")} / 0:
-              {String(duration).padStart(2, "0")}
-            </span>
-            <svg
-              className="w-3 h-3 text-white/70"
-              fill="currentColor"
-              viewBox="0 0 24 24"
+            <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse inline-block" />
+            Video Ready
+          </div>
+        )}
+
+        <div className="absolute bottom-0 left-0 right-0 px-2.5 pb-2.5">
+          <div className="w-full bg-white/30 rounded-full h-[3px] mb-2 overflow-hidden">
+            <div
+              className="h-full bg-white rounded-full transition-all duration-300"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+          <div className="flex items-center justify-between">
+            <button
+              onClick={togglePlay}
+              aria-label={paused ? "Play" : "Pause"}
+              className="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center border border-white/30 hover:bg-white/30 transition-colors"
             >
-              <path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z" />
-            </svg>
+              {paused
+                ? <svg className="w-3 h-3 text-white ml-0.5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
+                : <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" /></svg>
+              }
+            </button>
+            <span className="text-white text-[7px] font-mono">
+              0:{String(Math.floor(elapsed % 60)).padStart(2, "0")} / 0:{String(duration).padStart(2, "0")}
+            </span>
           </div>
         </div>
       </div>
@@ -268,218 +228,104 @@ function Card1Visual({ active }: { active: boolean }) {
 // ─── Card 2: We run the campaigns ────────────────────────────────────────────
 
 function Card2Visual({ active }: { active: boolean }) {
-  const [status, setStatus] = useState<"idle" | "preparing" | "active">(
-    "idle"
-  );
+  const [status, setStatus] = useState<"idle" | "preparing" | "active">("idle");
   const [deliveryPct, setDeliveryPct] = useState(0);
   const [mapExpanded, setMapExpanded] = useState(false);
 
   useEffect(() => {
     if (!active) return;
     const t0 = setTimeout(() => setStatus("preparing"), 0);
-    const t1 = setTimeout(() => {
-      setStatus("active");
-      setMapExpanded(true);
-    }, 800);
+    const t1 = setTimeout(() => { setStatus("active"); setMapExpanded(true); }, 800);
     const t2 = setTimeout(() => setDeliveryPct(75), 1200);
-    return () => {
-      clearTimeout(t0);
-      clearTimeout(t1);
-      clearTimeout(t2);
-    };
+    return () => { clearTimeout(t0); clearTimeout(t1); clearTimeout(t2); };
   }, [active]);
 
   return (
-    <div className="flex flex-col gap-2.5 bg-white rounded-xl border border-gray-100 p-3 shadow-sm">
-      {/* Top: thumbnail + status */}
-      <div className="flex items-start gap-2.5">
-        <div className="w-14 h-20 rounded-lg overflow-hidden shrink-0 bg-gray-900">
-          <video
-            src={VIDEO_URL}
-            autoPlay
-            muted
-            loop
-            playsInline
-            className="w-full h-full object-cover"
-          />
+    <div className="flex flex-col gap-3 bg-white rounded-xl border border-gray-100 p-3 shadow-sm h-full">
+      {/* Campaign identity + status */}
+      <div className="flex items-start gap-2.5 shrink-0">
+        <div className="w-12 h-[68px] rounded-lg overflow-hidden shrink-0 bg-gray-900">
+          <video src={VIDEO_URL} autoPlay muted loop playsInline className="w-full h-full object-cover" />
         </div>
-        <div className="flex-1">
+        <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5 mb-1.5">
             <div
               className="w-2 h-2 rounded-full shrink-0 transition-colors duration-500"
-              style={{
-                background: status === "active" ? "#22C55E" : "#9CA3AF",
-              }}
+              style={{ background: status === "active" ? "#22C55E" : "#9CA3AF" }}
             />
             <span
               className="text-[10px] font-black uppercase tracking-wider transition-colors duration-500"
               style={{ color: status === "active" ? "#22C55E" : "#9CA3AF" }}
             >
-              {status === "active"
-                ? "Active"
-                : status === "preparing"
-                ? "Preparing..."
-                : ""}
+              {status === "active" ? "Active" : status === "preparing" ? "Preparing..." : ""}
             </span>
           </div>
-          <div className="flex items-center gap-1.5 text-[10px] text-[#64748B] mb-1">
-            <svg
-              className="w-3 h-3 shrink-0"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2}
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-3 3v-3z"
-              />
-            </svg>
-            <span>
-              Objective:{" "}
-              <strong className="text-[#0F172A]">Messages</strong>
-            </span>
+          <div className="text-[10px] text-[#64748B] mb-1">
+            Objective: <strong className="text-[#0F172A]">Messages</strong>
           </div>
-          <div className="flex items-center gap-1.5 text-[10px] text-[#64748B]">
-            <svg
-              className="w-3 h-3 shrink-0"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2}
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"
-              />
-            </svg>
-            <span>
-              Audience:{" "}
-              <strong className="text-[#0F172A]">Local customers</strong>
-            </span>
+          <div className="text-[10px] text-[#64748B]">
+            Audience: <strong className="text-[#0F172A]">Local customers</strong>
           </div>
         </div>
       </div>
 
-      <div className="border-t border-gray-100" />
+      <div className="border-t border-gray-100 shrink-0" />
 
-      {/* Location target map */}
-      <div>
-        <div className="text-[10px] text-[#64748B] font-semibold mb-1.5 uppercase tracking-wide">
+      {/* Location target — clean SVG map */}
+      <div className="shrink-0">
+        <div className="text-[9px] text-[#64748B] font-semibold mb-1.5 uppercase tracking-wide">
           Location target
         </div>
-        <div
-          className="relative bg-[#EFF6FF] rounded-lg overflow-hidden"
-          style={{ height: 80 }}
-        >
+        <div className="relative bg-[#EFF6FF] rounded-xl overflow-hidden" style={{ height: 84 }}>
           <svg
-            className="absolute inset-0 w-full h-full"
-            viewBox="0 0 200 80"
-            preserveAspectRatio="none"
+            className="w-full h-full"
+            viewBox="0 0 240 84"
+            preserveAspectRatio="xMidYMid slice"
           >
-            <defs>
-              <pattern
-                id="mapGrid"
-                width="20"
-                height="20"
-                patternUnits="userSpaceOnUse"
-              >
-                <path
-                  d="M 20 0 L 0 0 0 20"
-                  fill="none"
-                  stroke="#BFDBFE"
-                  strokeWidth="0.5"
-                />
-              </pattern>
-            </defs>
-            <rect width="200" height="80" fill="url(#mapGrid)" />
-            <line
-              x1="0"
-              y1="40"
-              x2="200"
-              y2="40"
-              stroke="#93C5FD"
-              strokeWidth="1.5"
-            />
-            <line
-              x1="100"
-              y1="0"
-              x2="100"
-              y2="80"
-              stroke="#93C5FD"
-              strokeWidth="1.5"
-            />
-            <line
-              x1="0"
-              y1="20"
-              x2="200"
-              y2="20"
-              stroke="#BFDBFE"
-              strokeWidth="0.8"
-            />
-            <line
-              x1="0"
-              y1="60"
-              x2="200"
-              y2="60"
-              stroke="#BFDBFE"
-              strokeWidth="0.8"
-            />
-            <line
-              x1="50"
-              y1="0"
-              x2="50"
-              y2="80"
-              stroke="#BFDBFE"
-              strokeWidth="0.8"
-            />
-            <line
-              x1="150"
-              y1="0"
-              x2="150"
-              y2="80"
-              stroke="#BFDBFE"
-              strokeWidth="0.8"
-            />
-            <circle
-              cx="100"
-              cy="40"
-              r={mapExpanded ? "28" : "0"}
-              fill="rgba(124,58,237,0.12)"
-              stroke="#7C3AED"
-              strokeWidth="1.5"
-              strokeDasharray="4 2"
-              style={{ transition: "r 1s ease" }}
-            />
-            <circle cx="100" cy="40" r="5" fill="#7C3AED" />
-            <circle cx="100" cy="40" r="2" fill="white" />
+            {/* Soft road curves */}
+            <path d="M 0 42 Q 60 26 120 42 Q 180 58 240 42" stroke="#BFDBFE" strokeWidth="9" fill="none" strokeLinecap="round" opacity="0.65"/>
+            <path d="M 120 0 Q 108 42 120 84" stroke="#BFDBFE" strokeWidth="6" fill="none" strokeLinecap="round" opacity="0.45"/>
+            <path d="M 0 68 Q 80 64 150 70 Q 200 74 240 65" stroke="#BFDBFE" strokeWidth="4" fill="none" strokeLinecap="round" opacity="0.35"/>
+
+            {/* Concentric targeting circles */}
+            <circle cx="120" cy="42" r={mapExpanded ? 36 : 0} fill="rgba(124,58,237,0.06)" stroke="#7C3AED" strokeWidth="1.2" strokeDasharray="4 3" style={{ transition: "r 1.2s ease" }}/>
+            <circle cx="120" cy="42" r={mapExpanded ? 20 : 0} fill="rgba(124,58,237,0.09)" stroke="#7C3AED" strokeWidth="1.2" strokeDasharray="3 2" style={{ transition: "r 0.9s ease 0.25s" }}/>
+
+            {/* Location pin */}
+            <circle cx="120" cy="42" r="6" fill="#7C3AED" opacity={mapExpanded ? 1 : 0} style={{ transition: "opacity 0.5s ease 0.5s" }}/>
+            <circle cx="120" cy="42" r="2.5" fill="white" opacity={mapExpanded ? 1 : 0} style={{ transition: "opacity 0.5s ease 0.5s" }}/>
+
+            {/* Customer avatars at radius */}
+            <circle cx="86" cy="19" r="9" fill="#DBEAFE" stroke="white" strokeWidth="1.5" opacity={mapExpanded ? 1 : 0} style={{ transition: "opacity 0.4s ease 0.85s" }}/>
+            <text x="86" y="23" textAnchor="middle" fill="#2563EB" fontSize="8" fontWeight="bold" opacity={mapExpanded ? 1 : 0} style={{ transition: "opacity 0.4s ease 0.85s" }}>S</text>
+
+            <circle cx="156" cy="17" r="9" fill="#F5F3FF" stroke="white" strokeWidth="1.5" opacity={mapExpanded ? 1 : 0} style={{ transition: "opacity 0.4s ease 1.05s" }}/>
+            <text x="156" y="21" textAnchor="middle" fill="#7C3AED" fontSize="8" fontWeight="bold" opacity={mapExpanded ? 1 : 0} style={{ transition: "opacity 0.4s ease 1.05s" }}>J</text>
+
+            <circle cx="148" cy="68" r="9" fill="#DCFCE7" stroke="white" strokeWidth="1.5" opacity={mapExpanded ? 1 : 0} style={{ transition: "opacity 0.4s ease 1.25s" }}/>
+            <text x="148" y="72" textAnchor="middle" fill="#16A34A" fontSize="8" fontWeight="bold" opacity={mapExpanded ? 1 : 0} style={{ transition: "opacity 0.4s ease 1.25s" }}>D</text>
           </svg>
         </div>
       </div>
 
       {/* Audience delivery */}
-      <div>
-        <div className="text-[10px] text-[#64748B] font-semibold mb-1.5 uppercase tracking-wide">
+      <div className="shrink-0">
+        <div className="text-[9px] text-[#64748B] font-semibold mb-1.5 uppercase tracking-wide">
           Audience delivery
         </div>
-        <div className="flex gap-1 mb-1.5">
+        <div className="flex gap-1 flex-wrap mb-1">
           {Array.from({ length: 10 }).map((_, i) => (
             <div
               key={i}
               className="w-4 h-4 rounded-full transition-all duration-300"
               style={{
-                background:
-                  (i / 10) * 100 < deliveryPct ? "#7C3AED" : "#E9D5FF",
+                background: (i / 10) * 100 < deliveryPct ? "#7C3AED" : "#E9D5FF",
                 transitionDelay: `${i * 80}ms`,
               }}
             />
           ))}
         </div>
-        <div className="text-[9px] text-[#64748B]">
-          Reaching more local people like yours.
-        </div>
+        <div className="text-[9px] text-[#64748B]">Reaching local people in your area.</div>
       </div>
     </div>
   );
@@ -491,15 +337,11 @@ function TypingIndicator() {
   return (
     <div className="flex items-center gap-1 px-3 py-2">
       {[0, 1, 2].map((i) => (
-        <div
-          key={i}
-          className="w-1.5 h-1.5 rounded-full bg-gray-400"
+        <div key={i} className="w-1.5 h-1.5 rounded-full bg-gray-400"
           style={{ animation: `typingDots 1.2s ease ${i * 0.2}s infinite` }}
         />
       ))}
-      <span className="text-[9px] text-[#64748B] ml-1">
-        Someone is typing...
-      </span>
+      <span className="text-[9px] text-[#64748B] ml-1">Someone is typing...</span>
     </div>
   );
 }
@@ -512,26 +354,14 @@ function Card3Visual({ active }: { active: boolean }) {
   useEffect(() => {
     if (!active) return;
     const timers: ReturnType<typeof setTimeout>[] = [];
-    const add = (fn: () => void, ms: number) => {
-      const t = setTimeout(fn, ms);
-      timers.push(t);
-    };
+    const add = (fn: () => void, ms: number) => { timers.push(setTimeout(fn, ms)); };
 
     add(() => setTyping(true), 200);
-    add(() => {
-      setTyping(false);
-      setMsgCount(1);
-    }, 900);
+    add(() => { setTyping(false); setMsgCount(1); }, 900);
     add(() => setTyping(true), 1400);
-    add(() => {
-      setTyping(false);
-      setMsgCount(2);
-    }, 2100);
+    add(() => { setTyping(false); setMsgCount(2); }, 2100);
     add(() => setTyping(true), 2600);
-    add(() => {
-      setTyping(false);
-      setMsgCount(3);
-    }, 3300);
+    add(() => { setTyping(false); setMsgCount(3); }, 3300);
     add(() => setShowInquiry(true), 3800);
 
     return () => timers.forEach(clearTimeout);
@@ -539,38 +369,18 @@ function Card3Visual({ active }: { active: boolean }) {
 
   return (
     <div
-      className="bg-white rounded-[20px] overflow-hidden shadow-md border border-gray-200 flex flex-col"
-      style={{ minHeight: 240 }}
+      className="bg-white rounded-[18px] border border-gray-200 flex flex-col overflow-hidden"
+      style={{ minHeight: 220 }}
     >
-      {/* Phone status bar */}
-      <div className="flex items-center justify-between px-4 pt-3 pb-1">
+      {/* Status bar */}
+      <div className="flex items-center justify-between px-4 pt-3 pb-1 shrink-0">
         <span className="text-[9px] font-semibold text-[#0F172A]">9:41</span>
         <div className="flex items-center gap-1">
-          <svg
-            className="w-3 h-3 text-[#0F172A]"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-          >
+          <svg className="w-3 h-3 text-[#0F172A]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
             <path d="M1.5 8.5A13 13 0 0122.5 8.5M5 12a10 10 0 0114 0M8.5 15.5a6 6 0 017 0M12 19h.01" />
           </svg>
-          <svg
-            className="w-3 h-2.5 text-[#0F172A]"
-            fill="none"
-            viewBox="0 0 24 16"
-          >
-            <rect
-              x="0"
-              y="3"
-              width="20"
-              height="10"
-              rx="2"
-              stroke="currentColor"
-              strokeWidth="2"
-              fill="none"
-            />
+          <svg className="w-3 h-2.5 text-[#0F172A]" fill="none" viewBox="0 0 24 16">
+            <rect x="0" y="3" width="20" height="10" rx="2" stroke="currentColor" strokeWidth="2" fill="none" />
             <rect x="20" y="6" width="4" height="4" rx="1" fill="currentColor" />
             <rect x="1" y="4" width="14" height="8" rx="1" fill="currentColor" />
           </svg>
@@ -578,63 +388,29 @@ function Card3Visual({ active }: { active: boolean }) {
       </div>
 
       {/* Inbox header */}
-      <div className="flex items-center justify-between px-4 pb-2">
+      <div className="flex items-center justify-between px-4 pb-2 shrink-0">
         <span className="text-sm font-black text-[#0F172A]">Inbox</span>
-        <div className="flex gap-2">
-          <svg
-            className="w-4 h-4 text-[#64748B]"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            strokeWidth={2}
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-            />
-          </svg>
-          <svg
-            className="w-4 h-4 text-[#64748B]"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            strokeWidth={2}
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-            />
-          </svg>
-        </div>
+        <svg className="w-4 h-4 text-[#64748B]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+        </svg>
       </div>
 
-      <div className="border-t border-gray-100" />
+      <div className="border-t border-gray-100 shrink-0" />
 
       {/* Message rows */}
       <div className="flex-1 overflow-hidden flex flex-col">
         {MESSAGES.slice(0, msgCount).map((msg, i) => (
           <div
             key={i}
-            className="flex items-center gap-3 px-4 py-2.5 border-b border-gray-50"
+            className="flex items-center gap-3 px-4 py-2.5 border-b border-gray-50 shrink-0"
             style={{ animation: "messageSlideIn 0.4s ease forwards" }}
           >
-            <div className="relative shrink-0">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={msg.avatar}
-                alt={msg.name}
-                width={36}
-                height={36}
-                className="w-9 h-9 rounded-full object-cover"
-              />
-            </div>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={msg.avatar} alt={msg.name} width={36} height={36}
+              className="w-9 h-9 rounded-full object-cover shrink-0" />
             <div className="flex-1 min-w-0">
               <div className="flex items-center justify-between mb-0.5">
-                <span className="text-[11px] font-black text-[#0F172A]">
-                  {msg.name}
-                </span>
+                <span className="text-[11px] font-black text-[#0F172A]">{msg.name}</span>
                 <span className="text-[9px] text-[#64748B]">{msg.time}</span>
               </div>
               <p className="text-[10px] text-[#64748B] truncate">{msg.text}</p>
@@ -642,29 +418,15 @@ function Card3Visual({ active }: { active: boolean }) {
             <div className="w-2 h-2 rounded-full bg-[#2563EB] shrink-0" />
           </div>
         ))}
-
         {typing && <TypingIndicator />}
       </div>
 
-      {/* NEW INQUIRY button */}
+      {/* NEW INQUIRY badge */}
       {showInquiry && (
-        <div
-          className="px-4 py-3"
-          style={{ animation: "badgePop 0.4s ease forwards" }}
-        >
+        <div className="px-4 py-3 shrink-0" style={{ animation: "badgePop 0.4s ease forwards" }}>
           <button className="w-full flex items-center justify-center gap-2 bg-[#FF6B6B] text-white text-[10px] font-black uppercase tracking-wider rounded-full py-2">
-            <svg
-              className="w-3 h-3"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2.5}
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
-              />
+            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
             </svg>
             New Inquiry
           </button>
@@ -676,12 +438,6 @@ function Card3Visual({ active }: { active: boolean }) {
 
 // ─── Card 4: You close them ───────────────────────────────────────────────────
 
-const CLOSE_STATUSES = [
-  { label: "New inquiry" },
-  { label: "Call scheduled" },
-  { label: "New customer" },
-];
-
 function Card4Visual({ active }: { active: boolean }) {
   const [closeStep, setCloseStep] = useState(0);
 
@@ -689,104 +445,69 @@ function Card4Visual({ active }: { active: boolean }) {
     if (!active) return;
     const t1 = setTimeout(() => setCloseStep(1), 600);
     const t2 = setTimeout(() => setCloseStep(2), 1400);
-    return () => {
-      clearTimeout(t1);
-      clearTimeout(t2);
-    };
+    return () => { clearTimeout(t1); clearTimeout(t2); };
   }, [active]);
 
   return (
-    <div
-      className="relative rounded-[18px] overflow-hidden"
-      style={{ minHeight: 220 }}
-    >
-      {/* Background photo */}
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src={PEOPLE_IMG}
-        alt="Business owner on phone"
-        className="absolute inset-0 w-full h-full object-cover object-top"
-      />
-      {/* Overlay gradient */}
-      <div className="absolute inset-0 bg-gradient-to-b from-black/5 to-black/40" />
-
-      {/* Status overlay card */}
-      <div className="absolute top-3 right-3 bg-white/95 backdrop-blur-sm rounded-xl shadow-lg p-3 w-[130px]">
-        {CLOSE_STATUSES.map((s, i) => (
-          <div key={i}>
-            <div className="flex items-center gap-2 py-1">
-              <div
-                className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 border-2 transition-all duration-500 ${
-                  closeStep >= i
-                    ? i === 2
-                      ? "border-green-500 bg-green-50"
-                      : "border-[#2563EB] bg-blue-50"
-                    : "border-gray-200 bg-gray-50"
-                }`}
-              >
-                {closeStep >= i && (
-                  <svg
-                    className={`w-2.5 h-2.5 ${
-                      i === 2 ? "text-green-600" : "text-[#2563EB]"
-                    }`}
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    strokeWidth={3}
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M5 13l4 4L19 7"
-                    />
-                  </svg>
-                )}
-              </div>
-              <span
-                className={`text-[9px] font-bold transition-colors duration-500 ${
-                  closeStep >= i
-                    ? i === 2
-                      ? "text-green-700"
-                      : "text-[#0F172A]"
-                    : "text-gray-400"
-                }`}
-              >
-                {s.label}
-              </span>
-            </div>
-            {i < 2 && (
-              <div className="w-px h-3 bg-gray-200 ml-[11px]" />
-            )}
-          </div>
-        ))}
+    <div className="flex flex-col gap-2.5 h-full">
+      {/* Business owner photo — face fully visible */}
+      <div className="relative rounded-xl overflow-hidden flex-1" style={{ minHeight: 110 }}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={PEOPLE_IMG}
+          alt="Business owner on phone"
+          className="w-full h-full object-cover object-top"
+        />
+        {/* Subtle bottom fade only */}
+        <div className="absolute bottom-0 inset-x-0 h-6 bg-gradient-to-t from-black/15 to-transparent" />
       </div>
 
-      {/* Big animated checkmark bottom-right */}
-      <div className="absolute bottom-4 right-4">
-        <svg width="56" height="56" viewBox="0 0 56 56">
-          <circle
-            cx="28"
-            cy="28"
-            r="24"
-            fill="white"
-            fillOpacity="0.15"
-            stroke="#22C55E"
-            strokeWidth="3"
-          />
-          <path
-            d="M18 28l7 8 14-14"
-            fill="none"
-            stroke="#22C55E"
-            strokeWidth="3.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            style={{
-              strokeDasharray: 40,
-              strokeDashoffset: closeStep >= 2 ? 0 : 40,
-              transition: "stroke-dashoffset 0.8s ease 0.3s",
-            }}
-          />
-        </svg>
+      {/* Status card — BELOW the image, not overlaid */}
+      <div className="bg-gray-50 rounded-xl border border-gray-100 p-3 shrink-0">
+        <div className="flex flex-col gap-1">
+          {CLOSE_STATUSES.map((s, i) => (
+            <React.Fragment key={i}>
+              <div className="flex items-center gap-2.5">
+                {/* Circle check */}
+                <div
+                  className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 border-2 transition-all duration-500 ${
+                    closeStep >= i
+                      ? i === 2 ? "border-green-500 bg-green-50" : "border-[#2563EB] bg-blue-50"
+                      : "border-gray-200 bg-white"
+                  }`}
+                >
+                  {closeStep >= i && (
+                    <svg
+                      className={`w-2.5 h-2.5 ${i === 2 ? "text-green-600" : "text-[#2563EB]"}`}
+                      fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                  )}
+                </div>
+                <span
+                  className={`text-[10px] font-bold flex-1 transition-colors duration-500 ${
+                    closeStep >= i ? (i === 2 ? "text-green-700" : "text-[#0F172A]") : "text-gray-400"
+                  }`}
+                >
+                  {s.label}
+                </span>
+                {/* Soft green glow badge on final step */}
+                {i === 2 && closeStep >= 2 && (
+                  <div
+                    className="w-5 h-5 rounded-full bg-green-100 flex items-center justify-center"
+                    style={{ boxShadow: "0 0 8px rgba(34,197,94,0.5)", animation: "fadeSlideUp 0.4s ease forwards" }}
+                  >
+                    <svg className="w-3 h-3 text-green-600" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
+                    </svg>
+                  </div>
+                )}
+              </div>
+              {i < 2 && <div className="w-px h-2.5 bg-gray-200 ml-[9px]" />}
+            </React.Fragment>
+          ))}
+        </div>
       </div>
     </div>
   );
@@ -794,17 +515,10 @@ function Card4Visual({ active }: { active: boolean }) {
 
 // ─── Flow Connectors ──────────────────────────────────────────────────────────
 
-function FlowConnector({
-  active,
-  fromColor,
-  toColor,
-}: {
-  active: boolean;
-  fromColor: string;
-  toColor: string;
-}) {
+/* Desktop 4-col arrow — visible only at xl (1280px+) */
+function FlowConnector({ active, fromColor, toColor }: { active: boolean; fromColor: string; toColor: string }) {
   return (
-    <div className="hidden lg:flex flex-col items-center justify-center shrink-0 w-10 relative">
+    <div className="hidden xl:flex flex-col items-center justify-center shrink-0 w-9 relative self-center" style={{ marginTop: 56 }}>
       {/* Line */}
       <div className="absolute w-full h-0.5 bg-gray-200 overflow-hidden rounded">
         <div
@@ -816,55 +530,28 @@ function FlowConnector({
           }}
         />
       </div>
-      {/* Circular arrow button */}
+      {/* Arrow button */}
       <div
-        className="relative z-10 w-8 h-8 rounded-full bg-white shadow-md border-2 flex items-center justify-center transition-all duration-500"
+        className="relative z-10 w-7 h-7 rounded-full bg-white shadow-md border-2 flex items-center justify-center transition-all duration-500"
         style={{
           borderColor: active ? fromColor : "#E5E7EB",
-          boxShadow: active ? `0 0 12px ${fromColor}44` : "none",
+          boxShadow: active ? `0 0 10px ${fromColor}44` : "none",
         }}
       >
-        <svg
-          className="w-4 h-4"
-          style={{ color: active ? fromColor : "#D1D5DB" }}
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-          strokeWidth={2.5}
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M9 5l7 7-7 7"
-          />
+        <svg className="w-3.5 h-3.5" style={{ color: active ? fromColor : "#D1D5DB" }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
         </svg>
       </div>
     </div>
   );
 }
 
-function MobileConnector({
-  active,
-  color,
-}: {
-  active: boolean;
-  color: string;
-}) {
+/* Mobile single-column down arrow — hidden at md and above */
+function MobileConnector({ active, color }: { active: boolean; color: string }) {
   return (
-    <div className="lg:hidden flex justify-center py-1">
-      <svg
-        className="w-6 h-6"
-        style={{ color: active ? color : "#D1D5DB" }}
-        fill="none"
-        viewBox="0 0 24 24"
-        stroke="currentColor"
-        strokeWidth={2.5}
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          d="M19 9l-7 7-7-7"
-        />
+    <div className="flex justify-center py-1 md:hidden">
+      <svg className="w-5 h-5" style={{ color: active ? color : "#D1D5DB" }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
       </svg>
     </div>
   );
@@ -879,32 +566,14 @@ export default function ProcessSection() {
 
   useEffect(() => {
     if (!inView) return;
-    if (reduced) {
-      const t = setTimeout(() => setStep(4), 0);
-      return () => clearTimeout(t);
-    }
-    if (step === 0) {
-      const t = setTimeout(() => setStep(1), 400);
-      return () => clearTimeout(t);
-    }
-    if (step === 1) {
-      const t = setTimeout(() => setStep(2), 2200);
-      return () => clearTimeout(t);
-    }
-    if (step === 2) {
-      const t = setTimeout(() => setStep(3), 3000);
-      return () => clearTimeout(t);
-    }
-    if (step === 3) {
-      const t = setTimeout(() => setStep(4), 4000);
-      return () => clearTimeout(t);
-    }
+    if (reduced) { const t = setTimeout(() => setStep(4), 0); return () => clearTimeout(t); }
+    if (step === 0) { const t = setTimeout(() => setStep(1), 400); return () => clearTimeout(t); }
+    if (step === 1) { const t = setTimeout(() => setStep(2), 2200); return () => clearTimeout(t); }
+    if (step === 2) { const t = setTimeout(() => setStep(3), 3000); return () => clearTimeout(t); }
+    if (step === 3) { const t = setTimeout(() => setStep(4), 4000); return () => clearTimeout(t); }
   }, [inView, step, reduced]);
 
-  function replay() {
-    setStep(0);
-    setTimeout(() => setStep(1), 100);
-  }
+  function replay() { setStep(0); setTimeout(() => setStep(1), 100); }
 
   const connectors = [
     { fromColor: "#2563EB", toColor: "#7C3AED", activeStep: 2 },
@@ -913,39 +582,15 @@ export default function ProcessSection() {
   ];
 
   const cards = [
-    {
-      num: 1,
-      accent: "#2563EB",
-      title: "We create your ads",
-      description: "Scroll-stopping video ads made for your audience.",
-      visual: <Card1Visual active={step >= 1} />,
-    },
-    {
-      num: 2,
-      accent: "#7C3AED",
-      title: "We run the campaigns",
-      description: "Targeted campaigns reach the right people.",
-      visual: <Card2Visual active={step >= 2} />,
-    },
-    {
-      num: 3,
-      accent: "#FF6B6B",
-      title: "Customers DM you",
-      description: "Interested customers message your business directly.",
-      visual: <Card3Visual active={step >= 3} />,
-    },
-    {
-      num: 4,
-      accent: "#22C55E",
-      title: "You close them",
-      description: "You have the conversation and close the customer.",
-      visual: <Card4Visual active={step >= 4} />,
-    },
+    { num: 1, accent: "#2563EB", title: "We create your ads", description: "Scroll-stopping video ads made for your audience.", visual: <Card1Visual active={step >= 1} /> },
+    { num: 2, accent: "#7C3AED", title: "We run the campaigns", description: "Targeted campaigns reach the right local people.", visual: <Card2Visual active={step >= 2} /> },
+    { num: 3, accent: "#FF6B6B", title: "Customers DM you", description: "Interested customers message your business directly.", visual: <Card3Visual active={step >= 3} /> },
+    { num: 4, accent: "#22C55E", title: "You close them", description: "You have the conversation and close the customer.", visual: <Card4Visual active={step >= 4} /> },
   ];
 
   return (
-    <section id="how-it-works" className="py-20 px-4 bg-white overflow-hidden">
-      <div className="max-w-6xl mx-auto">
+    <section id="how-it-works" className="py-20 px-5 bg-white" style={{ overflowX: "clip" }}>
+      <div className="max-w-7xl mx-auto">
         {/* Heading */}
         <div className="text-center mb-10">
           <h2 className="text-3xl md:text-4xl font-black text-[#0F172A]">
@@ -956,14 +601,29 @@ export default function ProcessSection() {
         {/* Progress indicator */}
         <ProgressIndicator step={step} />
 
-        {/* Cards row with connectors */}
+        {/*
+          Layout strategy:
+          - mobile (<768): grid 1-col with MobileConnectors between cards
+          - tablet 2×2 (768–1279): grid 2-col, no connectors (progress bar communicates)
+          - large desktop (1280+): flexbox row with FlowConnectors interleaved
+          Hidden connectors have display:none so they don't occupy grid cells.
+        */}
         <div
           ref={ref}
-          className="flex flex-col lg:flex-row items-stretch gap-4"
+          className="grid grid-cols-1 md:grid-cols-2 xl:flex xl:flex-row xl:items-stretch gap-5 xl:gap-6"
         >
           {cards.map((card, i) => (
             <React.Fragment key={card.num}>
-              <div className="flex-1 min-w-0">
+              {/* Mobile down-arrow before each card (except first) */}
+              {i > 0 && (
+                <MobileConnector
+                  active={step >= connectors[i - 1].activeStep}
+                  color={connectors[i - 1].fromColor}
+                />
+              )}
+
+              {/* Card */}
+              <div className="xl:flex-1 min-w-0">
                 <CardShell
                   num={card.num}
                   accent={card.accent}
@@ -974,14 +634,8 @@ export default function ProcessSection() {
                   {card.visual}
                 </CardShell>
               </div>
-              {/* Mobile connector after each card except last */}
-              {i < 3 && (
-                <MobileConnector
-                  active={step >= connectors[i].activeStep}
-                  color={connectors[i].fromColor}
-                />
-              )}
-              {/* Desktop connector */}
+
+              {/* Desktop right-arrow after each card (except last) */}
               {i < 3 && (
                 <FlowConnector
                   active={step >= connectors[i].activeStep}
@@ -993,29 +647,16 @@ export default function ProcessSection() {
           ))}
         </div>
 
-        {/* Replay button */}
+        {/* Replay */}
         {step >= 4 && (
-          <div
-            className="flex justify-center mt-10"
-            style={{ animation: "fadeIn 0.5s ease forwards" }}
-          >
+          <div className="flex justify-center mt-10" style={{ animation: "fadeIn 0.5s ease forwards" }}>
             <button
               onClick={replay}
               className="flex items-center gap-2 text-sm font-semibold text-[#2563EB] border-2 border-[#2563EB] px-6 py-2.5 rounded-full hover:bg-[#EFF6FF] transition-colors focus:outline-none focus:ring-2 focus:ring-[#2563EB] focus:ring-offset-2"
               aria-label="Replay animation"
             >
-              <svg
-                className="w-4 h-4"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={2.5}
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                />
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
               </svg>
               Replay
             </button>
