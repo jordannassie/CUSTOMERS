@@ -23,9 +23,10 @@ export default function AdminLoginPage() {
 
       if (res.ok) {
         router.push("/admin/dashboard");
+      } else if (res.status === 401) {
+        setError("Incorrect PIN");
       } else {
-        const data = await res.json();
-        setError(data.error || "Incorrect PIN");
+        setError("Something went wrong. Please try again.");
       }
     } catch {
       setError("Something went wrong. Please try again.");
