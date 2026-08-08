@@ -295,15 +295,31 @@ function Card2Visual({ active }: { active: boolean }) {
             <circle cx="120" cy="42" r="6" fill="#7C3AED" opacity={mapExpanded ? 1 : 0} style={{ transition: "opacity 0.5s ease 0.5s" }}/>
             <circle cx="120" cy="42" r="2.5" fill="white" opacity={mapExpanded ? 1 : 0} style={{ transition: "opacity 0.5s ease 0.5s" }}/>
 
-            {/* Customer avatars at radius */}
-            <circle cx="86" cy="19" r="9" fill="#DBEAFE" stroke="white" strokeWidth="1.5" opacity={mapExpanded ? 1 : 0} style={{ transition: "opacity 0.4s ease 0.85s" }}/>
-            <text x="86" y="23" textAnchor="middle" fill="#2563EB" fontSize="8" fontWeight="bold" opacity={mapExpanded ? 1 : 0} style={{ transition: "opacity 0.4s ease 0.85s" }}>S</text>
+            {/* Clip paths for circular avatar photos */}
+            <defs>
+              <clipPath id="clip-s"><circle cx="86" cy="19" r="9"/></clipPath>
+              <clipPath id="clip-j"><circle cx="156" cy="17" r="9"/></clipPath>
+              <clipPath id="clip-d"><circle cx="148" cy="68" r="9"/></clipPath>
+            </defs>
 
-            <circle cx="156" cy="17" r="9" fill="#F5F3FF" stroke="white" strokeWidth="1.5" opacity={mapExpanded ? 1 : 0} style={{ transition: "opacity 0.4s ease 1.05s" }}/>
-            <text x="156" y="21" textAnchor="middle" fill="#7C3AED" fontSize="8" fontWeight="bold" opacity={mapExpanded ? 1 : 0} style={{ transition: "opacity 0.4s ease 1.05s" }}>J</text>
+            {/* Customer avatars at radius — photo circles */}
+            {/* Avatar S */}
+            <g opacity={mapExpanded ? 1 : 0} style={{ transition: "opacity 0.4s ease 0.85s" }}>
+              <image href="https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=60&h=60&fit=crop&crop=face&auto=format" x="77" y="10" width="18" height="18" clipPath="url(#clip-s)" preserveAspectRatio="xMidYMid slice"/>
+              <circle cx="86" cy="19" r="9" fill="none" stroke="white" strokeWidth="1.5"/>
+            </g>
 
-            <circle cx="148" cy="68" r="9" fill="#DCFCE7" stroke="white" strokeWidth="1.5" opacity={mapExpanded ? 1 : 0} style={{ transition: "opacity 0.4s ease 1.25s" }}/>
-            <text x="148" y="72" textAnchor="middle" fill="#16A34A" fontSize="8" fontWeight="bold" opacity={mapExpanded ? 1 : 0} style={{ transition: "opacity 0.4s ease 1.25s" }}>D</text>
+            {/* Avatar J */}
+            <g opacity={mapExpanded ? 1 : 0} style={{ transition: "opacity 0.4s ease 1.05s" }}>
+              <image href="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=60&h=60&fit=crop&crop=face&auto=format" x="147" y="8" width="18" height="18" clipPath="url(#clip-j)" preserveAspectRatio="xMidYMid slice"/>
+              <circle cx="156" cy="17" r="9" fill="none" stroke="white" strokeWidth="1.5"/>
+            </g>
+
+            {/* Avatar D */}
+            <g opacity={mapExpanded ? 1 : 0} style={{ transition: "opacity 0.4s ease 1.25s" }}>
+              <image href="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=60&h=60&fit=crop&crop=face&auto=format" x="139" y="59" width="18" height="18" clipPath="url(#clip-d)" preserveAspectRatio="xMidYMid slice"/>
+              <circle cx="148" cy="68" r="9" fill="none" stroke="white" strokeWidth="1.5"/>
+            </g>
           </svg>
         </div>
       </div>
