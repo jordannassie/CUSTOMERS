@@ -468,17 +468,58 @@ export default function HeroSection() {
             </button>
           </div>
 
-          {/* Benefit Pills */}
+          {/* Benefit Chips */}
           <div className="flex flex-wrap gap-2 mt-1">
-            <span className="bg-[#EFF6FF] text-[#0F172A] text-sm font-medium px-4 py-2 rounded-full">
-              📍 Targeted video ads
-            </span>
-            <span className="bg-[#EFF6FF] text-[#0F172A] text-sm font-medium px-4 py-2 rounded-full">
-              💬 More conversations in your DMs
-            </span>
-            <span className="bg-[#EFF6FF] text-[#0F172A] text-sm font-medium px-4 py-2 rounded-full">
-              👥 Real people interested in you
-            </span>
+            {(
+              [
+                { Icon: "Video",          label: "Targeted video ads" },
+                { Icon: "MessageCircle",  label: "More conversations in your DMs" },
+                { Icon: "Users",          label: "Real people interested in you" },
+              ] as const
+            ).map(({ Icon: name, label }) => {
+              // Inline Lucide SVG paths — avoids a client component boundary
+              const paths: Record<string, React.ReactNode> = {
+                Video: (
+                  <>
+                    <polygon points="23 7 16 12 23 17 23 7" />
+                    <rect x="1" y="5" width="15" height="14" rx="2" ry="2" />
+                  </>
+                ),
+                MessageCircle: (
+                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                ),
+                Users: (
+                  <>
+                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                    <circle cx="9" cy="7" r="4" />
+                    <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                    <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                  </>
+                ),
+              };
+              return (
+                <span
+                  key={label}
+                  className="inline-flex items-center gap-1.5 bg-[#EFF6FF] border border-[#DBEAFE] text-[#0F172A] text-sm font-medium px-3.5 py-2 rounded-xl"
+                >
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="#2563EB"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true"
+                    className="shrink-0"
+                  >
+                    {paths[name]}
+                  </svg>
+                  {label}
+                </span>
+              );
+            })}
           </div>
         </div>
 
