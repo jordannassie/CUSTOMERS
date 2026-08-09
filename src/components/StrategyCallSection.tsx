@@ -116,7 +116,7 @@ export default function StrategyCallSection() {
               <img
                 src="https://phhczohqidgrvcmszets.supabase.co/storage/v1/object/public/CUSTOMER.direct/images/People/Jordan%20Profile.PNG"
                 alt="Jordan Nassie, Customers.Direct"
-                className="w-16 h-16 rounded-full object-cover object-center border-2 border-white"
+                className="w-32 h-32 rounded-full object-cover object-center border-2 border-white"
                 style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.12)" }}
                 onError={(e) => {
                   const img = e.currentTarget;
@@ -127,7 +127,7 @@ export default function StrategyCallSection() {
               />
               {/* Fallback initials — hidden unless image fails */}
               <div
-                className="w-16 h-16 rounded-full bg-[#2563EB] items-center justify-center text-white font-black text-base absolute inset-0"
+                className="w-32 h-32 rounded-full bg-[#2563EB] items-center justify-center text-white font-black text-base absolute inset-0"
                 style={{ display: "none" }}
               >
                 JN
