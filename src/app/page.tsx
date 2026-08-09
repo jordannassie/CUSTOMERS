@@ -2,6 +2,7 @@ import Header from "@/components/Header";
 import HeroSection from "@/components/HeroSection";
 import LogosBanner from "@/components/LogosBanner";
 import ProcessSection from "@/components/ProcessSection";
+import WhyDMsSection from "@/components/WhyDMsSection";
 import IndustriesSection from "@/components/IndustriesSection";
 import DeliverablesSection from "@/components/DeliverablesSection";
 import PricingSection from "@/components/PricingSection";
@@ -31,6 +32,7 @@ export default function Home() {
         </section>
 
         <ProcessSection />
+        <WhyDMsSection />
         <IndustriesSection />
         <DeliverablesSection />
 
