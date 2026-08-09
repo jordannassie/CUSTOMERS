@@ -351,16 +351,34 @@ function Card2Visual({ active }: { active: boolean }) {
           Audience delivery
         </div>
         <div className="flex gap-1.5 flex-wrap mb-1.5">
-          {Array.from({ length: 10 }).map((_, i) => (
-            <div
-              key={i}
-              className="w-5 h-5 rounded-full transition-all duration-300"
-              style={{
-                background: (i / 10) * 100 < deliveryPct ? "#7C3AED" : "#E9D5FF",
-                transitionDelay: `${i * 80}ms`,
-              }}
-            />
-          ))}
+          {[
+            "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=40&h=40&fit=crop&crop=face&auto=format",
+            "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=40&h=40&fit=crop&crop=face&auto=format",
+            "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=40&h=40&fit=crop&crop=face&auto=format",
+            "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=40&h=40&fit=crop&crop=face&auto=format",
+            "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=40&h=40&fit=crop&crop=face&auto=format",
+            "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=40&h=40&fit=crop&crop=face&auto=format",
+            "https://images.unsplash.com/photo-1552058544-f2b08422138a?w=40&h=40&fit=crop&crop=face&auto=format",
+            "https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=40&h=40&fit=crop&crop=face&auto=format",
+            "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=40&h=40&fit=crop&crop=face&auto=format",
+            "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=40&h=40&fit=crop&crop=face&auto=format",
+          ].map((src, i) => {
+            const reached = (i / 10) * 100 < deliveryPct;
+            return (
+              /* eslint-disable-next-line @next/next/no-img-element */
+              <img
+                key={i}
+                src={src}
+                alt="Audience member"
+                className="w-6 h-6 rounded-full object-cover border-2 transition-all duration-300"
+                style={{
+                  borderColor: reached ? "#7C3AED" : "#E9D5FF",
+                  opacity: reached ? 1 : 0.25,
+                  transitionDelay: `${i * 80}ms`,
+                }}
+              />
+            );
+          })}
         </div>
         <div className="text-xs text-[#64748B]">Reaching local people in your area.</div>
       </div>
