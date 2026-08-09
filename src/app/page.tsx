@@ -1,5 +1,6 @@
 import Header from "@/components/Header";
 import HeroSection from "@/components/HeroSection";
+import LogosBanner from "@/components/LogosBanner";
 import ProcessSection from "@/components/ProcessSection";
 import IndustriesSection from "@/components/IndustriesSection";
 import DeliverablesSection from "@/components/DeliverablesSection";
@@ -14,6 +15,7 @@ export default function Home() {
       <Header />
       <main>
         <HeroSection />
+        <LogosBanner />
 
         {/* ── Banner image ── */}
         <section className="px-4 sm:px-8 lg:px-12 py-10 bg-white">
