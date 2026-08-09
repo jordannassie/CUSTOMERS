@@ -63,48 +63,95 @@ export default function StrategyCallSection() {
   return (
     <section id="strategy-call" className="gradient-bg py-20 px-4">
       <div className="max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
-        {/* Left — Timeline */}
+        {/* Left — Steps */}
         <div>
-          <h2 className="text-3xl md:text-4xl font-black text-[#0F172A] mb-10">
-            Your next step
+          <h2 className="text-3xl md:text-4xl font-black text-[#0F172A] mb-2">
+            What happens next
           </h2>
+          <p className="text-base text-[#64748B] mb-10">
+            Three simple steps to start getting customer conversations.
+          </p>
 
-          <div className="flex flex-col gap-0">
+          <div className="flex flex-col gap-3">
             {[
               {
-                num: "1",
+                num: "01",
+                // Building2 Lucide path
+                iconPath: (
+                  <>
+                    <path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z" />
+                    <path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2" />
+                    <path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2" />
+                    <path d="M10 6h4" /><path d="M10 10h4" /><path d="M10 14h4" /><path d="M10 18h4" />
+                  </>
+                ),
                 title: "Tell us about your business",
-                body: "Share a few details so we can learn about your goals.",
+                body: "We learn about your business, customers, and goals.",
               },
               {
-                num: "2",
-                title: "Choose an available time",
-                body: "Pick a time that works for you from our calendar.",
+                num: "02",
+                // CalendarDays Lucide path
+                iconPath: (
+                  <>
+                    <rect width="18" height="18" x="3" y="4" rx="2" ry="2" />
+                    <line x1="16" x2="16" y1="2" y2="6" />
+                    <line x1="8" x2="8" y1="2" y2="6" />
+                    <line x1="3" x2="21" y1="10" y2="10" />
+                    <path d="M8 14h.01" /><path d="M12 14h.01" /><path d="M16 14h.01" />
+                    <path d="M8 18h.01" /><path d="M12 18h.01" /><path d="M16 18h.01" />
+                  </>
+                ),
+                title: "Book your strategy call",
+                body: "Choose a time that works for you.",
               },
               {
-                num: "3",
-                title: "We build your customer plan",
-                body: "We'll create a custom plan to bring new customers to your DMs.",
+                num: "03",
+                // Target Lucide path
+                iconPath: (
+                  <>
+                    <circle cx="12" cy="12" r="10" />
+                    <circle cx="12" cy="12" r="6" />
+                    <circle cx="12" cy="12" r="2" />
+                  </>
+                ),
+                title: "We build your acquisition plan",
+                body: "We map out the ads, targeting, and DM strategy for your business.",
               },
-            ].map((step, i, arr) => (
-              <div key={step.num} className="flex gap-4">
-                {/* Line + dot */}
-                <div className="flex flex-col items-center">
-                  <div className="w-9 h-9 rounded-full bg-[#2563EB] flex items-center justify-center text-white font-black text-sm shrink-0">
-                    {step.num}
-                  </div>
-                  {i < arr.length - 1 && (
-                    <div className="w-0.5 h-full bg-[#DBEAFE] my-1 min-h-[32px]" />
-                  )}
+            ].map(({ num, iconPath, title, body }) => (
+              <div
+                key={num}
+                className="flex items-start gap-4 bg-white border border-gray-100 rounded-2xl px-5 py-5"
+                style={{ boxShadow: "0 1px 4px rgba(0,0,0,0.04)" }}
+              >
+                {/* Icon container */}
+                <div className="w-10 h-10 rounded-xl bg-[#EFF6FF] border border-[#DBEAFE] flex items-center justify-center shrink-0">
+                  <svg
+                    width="18" height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="#2563EB"
+                    strokeWidth="1.75"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true"
+                  >
+                    {iconPath}
+                  </svg>
                 </div>
                 {/* Text */}
-                <div className="pb-8">
-                  <h3 className="font-bold text-[#0F172A] text-base mb-1">{step.title}</h3>
-                  <p className="text-sm text-[#64748B] leading-relaxed">{step.body}</p>
+                <div className="flex-1 min-w-0">
+                  <div className="text-[10px] font-black uppercase tracking-widest text-[#94A3B8] mb-0.5">{num}</div>
+                  <h3 className="font-bold text-[#0F172A] text-base mb-0.5 leading-snug">{title}</h3>
+                  <p className="text-sm text-[#64748B] leading-relaxed">{body}</p>
                 </div>
               </div>
             ))}
           </div>
+
+          {/* Subtle footer line */}
+          <p className="text-xs text-[#94A3B8] mt-6 text-center tracking-wide">
+            30-minute call &nbsp;·&nbsp; Free &nbsp;·&nbsp; No obligation
+          </p>
         </div>
 
         {/* Right — Form Card */}
