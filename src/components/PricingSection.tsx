@@ -69,6 +69,43 @@ export default function PricingSection() {
         <div>
           {/* Heading */}
           <div className="text-center mb-10">
+
+            {/* Social proof faces */}
+            <div className="flex items-center justify-center mb-6">
+              <div className="flex -space-x-3">
+                {[
+                  "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=80&h=80&fit=crop&crop=faces&auto=format",
+                  "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=80&h=80&fit=crop&crop=faces&auto=format",
+                  "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=80&h=80&fit=crop&crop=faces&auto=format",
+                  "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=80&h=80&fit=crop&crop=faces&auto=format",
+                  "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=80&h=80&fit=crop&crop=faces&auto=format",
+                  "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=80&h=80&fit=crop&crop=faces&auto=format",
+                  "https://images.unsplash.com/photo-1488161628813-04466f872be2?w=80&h=80&fit=crop&crop=faces&auto=format",
+                  "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=80&h=80&fit=crop&crop=faces&auto=format",
+                  "https://images.unsplash.com/photo-1552058544-f2b08422138a?w=80&h=80&fit=crop&crop=faces&auto=format",
+                  "https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=80&h=80&fit=crop&crop=faces&auto=format",
+                  "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=80&h=80&fit=crop&crop=faces&auto=format",
+                  "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=80&h=80&fit=crop&crop=faces&auto=format",
+                ].map((src, i) => (
+                  /* eslint-disable-next-line @next/next/no-img-element */
+                  <img
+                    key={i}
+                    src={src}
+                    alt="Customer"
+                    className="w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover border-2 border-white"
+                    style={{ zIndex: 12 - i }}
+                  />
+                ))}
+                {/* +more bubble */}
+                <div
+                  className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-[#2563EB] border-2 border-white flex items-center justify-center text-white text-xs font-black"
+                  style={{ zIndex: 0 }}
+                >
+                  +
+                </div>
+              </div>
+            </div>
+
             <h2 className="text-3xl md:text-4xl font-black text-[#0F172A] mb-3">
               See your complete customer-acquisition cost.
             </h2>
