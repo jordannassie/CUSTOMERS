@@ -7,7 +7,7 @@ import React, { useRef, useState, useEffect } from "react";
 const VIDEO_URL =
   "https://phhczohqidgrvcmszets.supabase.co/storage/v1/object/public/CUSTOMER.direct/Video/Girl%20ugc.mp4";
 const PEOPLE_IMG =
-  "https://phhczohqidgrvcmszets.supabase.co/storage/v1/object/public/CUSTOMER.direct/images/People/a9c61524-bac4-4800-b36b-040183de7cec.png";
+  "https://phhczohqidgrvcmszets.supabase.co/storage/v1/object/public/CUSTOMER.direct/images/People/Doctors.png";
 
 const MESSAGES = [
   {
