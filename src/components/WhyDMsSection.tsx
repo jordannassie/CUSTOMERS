@@ -200,7 +200,7 @@ export default function WhyDMsSection() {
                 <img
                   src="https://phhczohqidgrvcmszets.supabase.co/storage/v1/object/public/CUSTOMER.direct/images/People/Meta-Logo.png"
                   alt="Meta"
-                  className="h-10 w-auto object-contain"
+                  className="h-40 w-auto object-contain"
                 />
               </div>
 
@@ -209,16 +209,10 @@ export default function WhyDMsSection() {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m0 0l-6-6m6 6l6-6" />
               </svg>
 
-              {/* Messenger + Instagram */}
-              <div className="flex items-center gap-6">
-                <div className="flex flex-col items-center gap-2">
-                  <MessengerIcon className="w-16 h-16" />
-                  <span className="text-[11px] font-bold text-[#475569] uppercase tracking-wider">Messenger</span>
-                </div>
-                <div className="flex flex-col items-center gap-2">
-                  <InstagramIcon className="w-11 h-11" />
-                  <span className="text-[11px] font-bold text-[#475569] uppercase tracking-wider">Instagram</span>
-                </div>
+              {/* Messenger */}
+              <div className="flex flex-col items-center gap-2">
+                <MessengerIcon className="w-16 h-16" />
+                <span className="text-[11px] font-bold text-[#475569] uppercase tracking-wider">Messenger</span>
               </div>
 
               {/* Down arrow */}
