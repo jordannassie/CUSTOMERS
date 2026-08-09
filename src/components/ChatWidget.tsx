@@ -315,9 +315,9 @@ export default function ChatWidget() {
           className={[
             "fixed z-50 bg-white border border-gray-200 flex flex-col",
             "shadow-2xl",
-            // Desktop: bottom-right panel
-            "sm:bottom-20 sm:right-5 sm:w-[380px] sm:max-h-[75vh] sm:rounded-2xl",
-            // Mobile: bottom sheet
+            // Desktop: bottom-right panel, above launcher
+            "sm:bottom-[72px] sm:right-5 sm:left-auto sm:w-[380px] sm:max-h-[75vh] sm:rounded-2xl",
+            // Mobile: bottom sheet (full width)
             "bottom-0 left-0 right-0 max-h-[90vh] rounded-t-2xl",
           ].join(" ")}
           style={{ animation: "chatSlideUp 0.25s ease forwards" }}
