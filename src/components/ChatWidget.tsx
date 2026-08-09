@@ -272,6 +272,7 @@ export default function ChatWidget() {
         onClick={() => { setOpen(v => !v); setUnread(false); }}
         aria-label={open ? "Close chat" : "Chat with Jordan"}
         className="fixed bottom-5 right-6 z-50 flex flex-col items-center gap-1.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB] focus-visible:ring-offset-2 rounded-full group"
+        style={{ bottom: "max(20px, env(safe-area-inset-bottom, 20px))" }}
       >
         <div
           className="relative w-16 h-16 sm:w-[68px] sm:h-[68px] rounded-full bg-[#2563EB] flex items-center justify-center text-white ring-2 ring-white transition-all duration-200 group-hover:scale-[1.04] group-hover:shadow-2xl"
@@ -298,11 +299,17 @@ export default function ChatWidget() {
           role="dialog"
           aria-label="Chat with Jordan"
           className={[
-            "fixed z-50 bg-white border border-gray-200 flex flex-col shadow-2xl",
+            "fixed z-50 bg-white border border-gray-200 flex flex-col shadow-2xl overflow-hidden",
+            // Desktop — panel above launcher, right-aligned
             "sm:bottom-[72px] sm:right-5 sm:left-auto sm:w-[380px] sm:max-h-[75vh] sm:rounded-2xl",
-            "bottom-0 left-0 right-0 max-h-[90vh] rounded-t-2xl",
+            // Mobile — full-width bottom sheet, shrinks with keyboard via dvh
+            "bottom-0 left-0 right-0 rounded-t-2xl",
           ].join(" ")}
-          style={{ animation: "chatSlideUp 0.25s ease forwards" }}
+          style={{
+            animation: "chatSlideUp 0.25s ease forwards",
+            // dvh = dynamic viewport height — shrinks when software keyboard appears
+            maxHeight: "min(90dvh, 90vh)",
+          }}
         >
           {/* Header */}
           <div className="flex items-center gap-3 px-4 py-3 border-b border-gray-100 shrink-0">
@@ -362,10 +369,13 @@ export default function ChatWidget() {
 
           {/* Opening quick replies */}
           {showQuick && (
-            <div className="px-4 pt-2 pb-3 flex flex-wrap gap-2 shrink-0 border-t border-gray-50">
+            <div
+              className="px-4 pt-3 flex flex-wrap gap-2 shrink-0 border-t border-gray-100 bg-white"
+              style={{ paddingBottom: "max(16px, env(safe-area-inset-bottom))" }}
+            >
               {OPENING_OPTIONS.map(opt => (
                 <button key={opt} onClick={() => submitAnswer(opt)}
-                  className="text-xs font-medium bg-[#F1F5F9] hover:bg-[#DBEAFE] border border-gray-200 hover:border-[#BFDBFE] text-[#0F172A] px-3 py-1.5 rounded-full transition-colors">
+                  className="text-sm font-medium bg-[#F1F5F9] hover:bg-[#DBEAFE] active:bg-[#DBEAFE] border border-gray-200 hover:border-[#BFDBFE] text-[#0F172A] px-4 py-2.5 rounded-full transition-colors">
                   {opt}
                 </button>
               ))}
@@ -374,9 +384,12 @@ export default function ChatWidget() {
 
           {/* Text input */}
           {showInput && (
-            <div className="px-4 pb-4 pt-2 shrink-0 border-t border-gray-100">
+            <div
+              className="px-4 pt-3 shrink-0 border-t border-gray-100 bg-white"
+              style={{ paddingBottom: "max(16px, env(safe-area-inset-bottom))" }}
+            >
               {validErr && <p className="text-xs text-red-500 mb-1.5">{validErr}</p>}
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 w-full">
                 <input
                   ref={inputRef}
                   type={step === "email" ? "email" : step === "phone" ? "tel" : step === "website" ? "url" : "text"}
@@ -391,18 +404,25 @@ export default function ChatWidget() {
                     step === "website"  ? "yourwebsite.com" :
                     "Type your answer…"
                   }
-                  className="flex-1 border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm text-[#0F172A] placeholder-[#94A3B8] focus:outline-none focus:ring-2 focus:ring-[#2563EB] focus:border-transparent transition"
+                  className="min-w-0 flex-1 border border-gray-200 rounded-xl px-3.5 py-3 text-base text-[#0F172A] placeholder-[#94A3B8] focus:outline-none focus:ring-2 focus:ring-[#2563EB] focus:border-transparent transition"
                 />
-                <button onClick={() => submitAnswer(input)} aria-label="Send"
-                  className="w-10 h-10 bg-[#2563EB] rounded-xl flex items-center justify-center text-white hover:bg-[#1d4ed8] transition-colors shrink-0">
+                <button
+                  onClick={() => submitAnswer(input)}
+                  aria-label="Send"
+                  className="w-11 h-11 bg-[#2563EB] rounded-xl flex items-center justify-center text-white hover:bg-[#1d4ed8] active:bg-[#1e40af] transition-colors shrink-0"
+                >
                   <IconSend />
                 </button>
               </div>
             </div>
           )}
 
+          {/* Quick replies — safe area bottom padding */}
           {step === "saving" && (
-            <div className="px-4 pb-4 pt-2 shrink-0 text-center text-xs text-[#94A3B8]">
+            <div
+              className="px-4 pt-2 shrink-0 text-center text-xs text-[#94A3B8] bg-white"
+              style={{ paddingBottom: "max(16px, env(safe-area-inset-bottom))" }}
+            >
               Saving your information…
             </div>
           )}
