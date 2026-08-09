@@ -195,16 +195,13 @@ export default function WhyDMsSection() {
               {/* Meta label + logo */}
               <div className="flex flex-col items-center gap-2">
                 <span className="text-[10px] font-black uppercase tracking-widest text-[#94A3B8]">Powered by</span>
-                {/* Official-style Meta wordmark */}
-                <div className="flex items-center gap-2">
-                  <svg width="36" height="36" viewBox="0 0 36 36" fill="none" aria-label="Meta" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M4 22C4 14 9 8 15 8C19.5 8 23 11.5 27 17C31 11.5 33 8 37 8" stroke="#0082FB" strokeWidth="3.5" strokeLinecap="round" fill="none"/>
-                    <path d="M4 22C4 28 8 32 14 32C18 32 21 29 24 24C27 29 30 32 33 32C39 32 44 27 44 22C44 14.5 39 9 33.5 9C29 9 26 12.5 22.5 18" stroke="#0082FB" strokeWidth="3.5" strokeLinecap="round" fill="none"/>
-                  </svg>
-                  <span className="text-3xl font-black text-[#0082FB] tracking-tight" style={{ fontFamily: "system-ui, -apple-system, sans-serif" }}>
-                    Meta
-                  </span>
-                </div>
+                {/* Official Meta logo */}
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src="https://phhczohqidgrvcmszets.supabase.co/storage/v1/object/public/CUSTOMER.direct/images/People/Meta-Logo.png"
+                  alt="Meta"
+                  className="h-10 w-auto object-contain"
+                />
               </div>
 
               {/* Down arrow */}
