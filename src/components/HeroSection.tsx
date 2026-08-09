@@ -212,15 +212,20 @@ function CampaignCard({ seqStep, campaignStatus }: { seqStep: number; campaignSt
         <div className="h-full bg-gradient-to-r from-[#2563EB] to-[#7C3AED] rounded-full"
           style={{ width: seqStep >= 2 ? "75%" : "0%", transition: "width 1.5s ease" }} />
       </div>
-      <div className="flex mt-2 -space-x-1.5">
-        {(["#DBEAFE", "#F5F3FF", "#DCFCE7"] as const).map((bg, i) => (
-          <div key={i} className="w-6 h-6 rounded-full border-2 border-white flex items-center justify-center text-[8px] font-bold"
-            style={{ background: bg, opacity: seqStep >= 2 ? 1 : 0, transitionDelay: `${i * 200}ms`, transition: "opacity 0.4s ease" }}>
-            {["S", "J", "D"][i]}
-          </div>
+      <div className="flex mt-2 -space-x-1.5 items-center">
+        {[
+          "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=40&h=40&fit=crop&crop=face&auto=format",
+          "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=40&h=40&fit=crop&crop=face&auto=format",
+          "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=40&h=40&fit=crop&crop=face&auto=format",
+        ].map((src, i) => (
+          /* eslint-disable-next-line @next/next/no-img-element */
+          <img key={i} src={src} alt="Audience member"
+            className="w-6 h-6 rounded-full object-cover border-2 border-white"
+            style={{ opacity: seqStep >= 2 ? 1 : 0, transitionDelay: `${i * 150}ms`, transition: "opacity 0.3s ease" }}
+          />
         ))}
         <span className="text-[9px] text-[#64748B] ml-2 self-center"
-          style={{ opacity: seqStep >= 2 ? 1 : 0, transition: "opacity 0.4s ease 0.6s" }}>
+          style={{ opacity: seqStep >= 2 ? 1 : 0, transition: "opacity 0.3s ease 0.45s" }}>
           reaching audience
         </span>
       </div>
@@ -271,10 +276,10 @@ function HeroVisualWrapper() {
       return () => clearTimeout(t);
     }
 
-    const t1 = setTimeout(() => setSeqStep(1), 300);
-    const t2 = setTimeout(() => setSeqStep(2), 2100);
-    const t3 = setTimeout(() => setSeqStep(3), 4100);
-    const t4 = setTimeout(() => setSeqStep(4), 5300);
+    const t1 = setTimeout(() => setSeqStep(1), 200);
+    const t2 = setTimeout(() => setSeqStep(2), 900);
+    const t3 = setTimeout(() => setSeqStep(3), 2000);
+    const t4 = setTimeout(() => setSeqStep(4), 2800);
 
     return () => {
       clearTimeout(t1);
