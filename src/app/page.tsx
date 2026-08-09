@@ -1,6 +1,7 @@
 import Header from "@/components/Header";
 import HeroSection from "@/components/HeroSection";
 import LogosBanner from "@/components/LogosBanner";
+import DifferenceSection from "@/components/DifferenceSection";
 import ProcessSection from "@/components/ProcessSection";
 import WhyDMsSection from "@/components/WhyDMsSection";
 import IndustriesSection from "@/components/IndustriesSection";
@@ -31,25 +32,7 @@ export default function Home() {
           </div>
         </section>
 
-        {/* ── Old vs New banner ── */}
-        <section className="px-4 sm:px-8 lg:px-12 pt-2 pb-10 bg-white">
-          <div className="max-w-6xl mx-auto">
-            {/* Overflow-x scroll only on very narrow screens to prevent full-page scroll */}
-            <div className="overflow-x-auto rounded-2xl sm:rounded-3xl">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src="https://phhczohqidgrvcmszets.supabase.co/storage/v1/object/public/CUSTOMER.direct/images/People/New.png"
-                alt="Traditional advertising sends people through a website, form, wait and phone call, while Customers.Direct sends people from an ad directly into a DM conversation."
-                className="w-full h-auto border border-gray-100 rounded-2xl sm:rounded-3xl"
-                style={{
-                  minWidth: 480,
-                  boxShadow: "0 4px 24px rgba(0,0,0,0.08)",
-                  display: "block",
-                }}
-              />
-            </div>
-          </div>
-        </section>
+        <DifferenceSection />
 
         <ProcessSection />
         <WhyDMsSection />
