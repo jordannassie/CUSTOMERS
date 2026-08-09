@@ -294,17 +294,37 @@ export default function ChatWidget() {
         }
       `}</style>
 
-      {/* ── Floating button ──────────────────────────────────────────────── */}
+      {/* ── Floating launcher (circle + label) ──────────────────────────── */}
       <button
         onClick={toggleOpen}
         aria-label={open ? "Close chat" : "Chat with Jordan"}
-        className="fixed bottom-5 right-5 z-50 flex items-center gap-2 bg-[#2563EB] text-white font-bold text-sm px-5 py-3 rounded-full shadow-lg hover:bg-[#1d4ed8] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB] focus-visible:ring-offset-2"
+        className="fixed bottom-5 right-6 z-50 flex flex-col items-center gap-1.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB] focus-visible:ring-offset-2 rounded-full group"
       >
-        <IconMessage />
-        <span className="hidden sm:inline">Chat with Jordan</span>
-        {unread && (
-          <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-red-500 border-2 border-white" />
-        )}
+        {/* Circle */}
+        <div
+          className="relative w-16 h-16 sm:w-[68px] sm:h-[68px] rounded-full bg-[#2563EB] flex items-center justify-center text-white ring-2 ring-white transition-all duration-200 group-hover:scale-[1.04] group-hover:shadow-2xl"
+          style={{ boxShadow: "0 8px 24px rgba(37,99,235,0.35)" }}
+        >
+          {/* Icon — MessageCircle or X when open */}
+          {open ? <IconX /> : (
+            <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+            </svg>
+          )}
+
+          {/* Green online dot */}
+          <span className="absolute top-0.5 right-0.5 w-3.5 h-3.5 rounded-full bg-green-400 border-2 border-white" />
+
+          {/* Unread indicator */}
+          {unread && (
+            <span className="absolute -top-1 -left-1 w-4 h-4 rounded-full bg-red-500 border-2 border-white text-[8px] text-white font-black flex items-center justify-center">!</span>
+          )}
+        </div>
+
+        {/* Label */}
+        <span className="text-[13px] font-bold text-[#0F172A] leading-none select-none">
+          Chat
+        </span>
       </button>
 
       {/* ── Chat Panel ───────────────────────────────────────────────────── */}
