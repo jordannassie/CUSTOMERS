@@ -104,7 +104,7 @@ function VideoCard({ title, subtitle, isMuted, onHoverEnter, onHoverLeave, onTog
         aria-label={isMuted ? "Turn sound on" : "Mute video"}
         className={[
           "absolute top-3 right-3 w-9 h-9 rounded-full flex items-center justify-center",
-          "bg-black/50 backdrop-blur-sm text-white border border-white/10",
+          isMuted ? "bg-black/50 backdrop-blur-sm text-white border border-white/10" : "bg-green-500 text-white border border-green-400",
           "transition-opacity duration-200",
           isTouch ? "opacity-100" : "opacity-0 group-hover:opacity-100",
         ].join(" ")}
