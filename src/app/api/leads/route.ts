@@ -40,6 +40,11 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Invalid website URL." }, { status: 400 });
   }
 
+  // Optional extra fields (chat widget / future sources)
+  const source        = typeof body.source        === "string" ? body.source.trim().slice(0, 100)  : null;
+  const business_type = typeof body.business_type === "string" ? body.business_type.trim().slice(0, 200) : null;
+  const goal          = typeof body.goal          === "string" ? body.goal.trim().slice(0, 500)    : null;
+
   const supabase = createServiceClient();
   const { error } = await supabase.from("customers_direct_leads").insert({
     full_name,
@@ -47,6 +52,9 @@ export async function POST(request: NextRequest) {
     email,
     business_name,
     website,
+    ...(source        ? { source }        : {}),
+    ...(business_type ? { business_type } : {}),
+    ...(goal          ? { goal }          : {}),
   });
 
   if (error) {

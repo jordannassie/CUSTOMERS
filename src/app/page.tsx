@@ -10,6 +10,7 @@ import PricingSection from "@/components/PricingSection";
 import FAQSection from "@/components/FAQSection";
 import StrategyCallSection from "@/components/StrategyCallSection";
 import Footer from "@/components/Footer";
+import ChatWidget from "@/components/ChatWidget";
 
 export default function Home() {
   return (
@@ -57,6 +58,7 @@ export default function Home() {
         <StrategyCallSection />
       </main>
       <Footer />
+      <ChatWidget />
     </>
   );
 }
