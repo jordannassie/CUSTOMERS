@@ -255,53 +255,114 @@ export default function PricingSection() {
           </div>
         </div>
 
-        {/* ══ EXISTING PRICING CARD ════════════════════════════════════════════ */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-          {/* Left — Text */}
-          <div>
-            <h2 className="text-3xl md:text-4xl font-black text-[#0F172A] mb-4">
-              Simple, transparent pricing.
-            </h2>
-            <p className="text-lg text-[#64748B] leading-relaxed">
-              High-performing video ads. Real conversations. More customers.
-            </p>
-          </div>
-
-          {/* Right — Pricing Card */}
-          <div className="bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
-            <div className="mb-1">
-              <span className="text-4xl font-black text-[#0F172A]">$2,500</span>
-              <span className="text-lg font-semibold text-[#64748B] ml-1">/ month</span>
+        {/* ══ TWO PRICING CARDS ════════════════════════════════════════════════ */}
+        <div>
+          {/* Section heading */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
+            {/* Left — Text */}
+            <div className="lg:pt-10">
+              <h2 className="text-3xl md:text-4xl font-black text-[#0F172A] mb-4">
+                Simple, transparent pricing.
+              </h2>
+              <p className="text-lg text-[#64748B] leading-relaxed">
+                High-performing video ads. Real conversations. More customers.
+              </p>
             </div>
-            <p className="text-sm text-[#64748B] mb-6">Ad spend paid separately.</p>
 
-            <hr className="border-gray-100 mb-6" />
+            {/* Right — Two cards */}
+            <div className="flex flex-col sm:flex-row gap-5 items-stretch">
 
-            <ul className="flex flex-col gap-3 mb-8">
-              {[
-                "Video ad creation",
-                "Meta campaign management",
-                "Leads sent to your DMs",
-                "Ongoing campaign optimization",
-              ].map((item) => (
-                <li key={item} className="flex items-center gap-3">
-                  <div className="w-5 h-5 rounded-full bg-[#EFF6FF] flex items-center justify-center shrink-0">
-                    <svg className="w-3 h-3 text-[#2563EB]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                    </svg>
-                  </div>
-                  <span className="text-sm font-medium text-[#0F172A]">{item}</span>
-                </li>
-              ))}
-            </ul>
+              {/* ── Growth (primary / most popular) ── */}
+              <div className="relative flex-1 bg-white rounded-2xl shadow-xl p-8 border-2 border-[#2563EB]">
+                {/* Most Popular badge */}
+                <div className="absolute -top-3.5 left-1/2 -translate-x-1/2">
+                  <span className="bg-[#2563EB] text-white text-[10px] font-black uppercase tracking-widest px-4 py-1 rounded-full shadow">
+                    Most Popular
+                  </span>
+                </div>
 
-            <button
-              onClick={() => scrollTo("strategy-call")}
-              className="w-full bg-[#2563EB] text-white font-bold py-4 rounded-full hover:bg-[#1d4ed8] transition-colors text-base"
-            >
-              Book a Strategy Call
-            </button>
+                <p className="text-base font-black text-[#0F172A] mb-2 mt-2">Growth</p>
+                <div className="mb-1">
+                  <span className="text-4xl font-black text-[#0F172A]">$2,500</span>
+                  <span className="text-base font-semibold text-[#64748B] ml-1">/ month</span>
+                </div>
+                <p className="text-sm text-[#64748B] mb-5">Ad spend paid separately.</p>
+
+                <hr className="border-gray-100 mb-5" />
+
+                <ul className="flex flex-col gap-3 mb-8">
+                  {[
+                    "Video ad creation",
+                    "Meta campaign management",
+                    "Leads sent directly to your Instagram DMs",
+                    "Ongoing campaign optimization",
+                    "1 business / offer",
+                  ].map((item) => (
+                    <li key={item} className="flex items-start gap-3">
+                      <div className="w-5 h-5 rounded-full bg-[#EFF6FF] flex items-center justify-center shrink-0 mt-0.5">
+                        <svg className="w-3 h-3 text-[#2563EB]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                        </svg>
+                      </div>
+                      <span className="text-sm font-medium text-[#0F172A]">{item}</span>
+                    </li>
+                  ))}
+                </ul>
+
+                <button
+                  onClick={() => scrollTo("strategy-call")}
+                  className="w-full bg-[#2563EB] text-white font-bold py-4 rounded-full hover:bg-[#1d4ed8] transition-colors text-base shadow-lg"
+                >
+                  Book a Strategy Call
+                </button>
+              </div>
+
+              {/* ── Scale (secondary) ── */}
+              <div className="flex-1 bg-white rounded-2xl shadow-md p-8 border border-gray-100">
+                <p className="text-base font-black text-[#0F172A] mb-2 mt-2">Scale</p>
+                <div className="mb-1">
+                  <span className="text-4xl font-black text-[#0F172A]">$5,000</span>
+                  <span className="text-base font-semibold text-[#64748B] ml-1">/ month</span>
+                </div>
+                <p className="text-sm text-[#64748B] mb-5">Ad spend paid separately.</p>
+
+                <hr className="border-gray-100 mb-5" />
+
+                <ul className="flex flex-col gap-3 mb-8">
+                  {[
+                    "Everything in Growth",
+                    "Multiple campaigns / offers",
+                    "Multiple locations or markets",
+                    "More ad creative testing",
+                    "Higher-volume campaign management",
+                    "Priority optimization",
+                  ].map((item) => (
+                    <li key={item} className="flex items-start gap-3">
+                      <div className="w-5 h-5 rounded-full bg-[#F8FAFC] flex items-center justify-center shrink-0 mt-0.5">
+                        <svg className="w-3 h-3 text-[#64748B]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                        </svg>
+                      </div>
+                      <span className="text-sm font-medium text-[#0F172A]">{item}</span>
+                    </li>
+                  ))}
+                </ul>
+
+                <button
+                  onClick={() => scrollTo("strategy-call")}
+                  className="w-full bg-[#0F172A] text-white font-bold py-4 rounded-full hover:bg-[#1e293b] transition-colors text-base"
+                >
+                  Book a Strategy Call
+                </button>
+              </div>
+
+            </div>
           </div>
+
+          {/* Disclaimer */}
+          <p className="text-center text-sm text-[#94A3B8] mt-8 max-w-2xl mx-auto leading-relaxed">
+            Ad spend is paid separately. Start with a budget that makes sense for your business and scale as results improve.
+          </p>
         </div>
 
       </div>
