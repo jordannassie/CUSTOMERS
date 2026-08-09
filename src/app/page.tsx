@@ -38,7 +38,7 @@ export default function Home() {
             <div className="overflow-x-auto rounded-2xl sm:rounded-3xl">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src="https://phhczohqidgrvcmszets.supabase.co/storage/v1/object/public/CUSTOMER.direct/images/People/Oldvsnew.png"
+                src="https://phhczohqidgrvcmszets.supabase.co/storage/v1/object/public/CUSTOMER.direct/images/People/New.png"
                 alt="Traditional advertising sends people through a website, form, wait and phone call, while Customers.Direct sends people from an ad directly into a DM conversation."
                 className="w-full h-auto border border-gray-100 rounded-2xl sm:rounded-3xl"
                 style={{
