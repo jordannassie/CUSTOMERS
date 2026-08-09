@@ -76,20 +76,6 @@ export default function StrategyCallSection() {
             {[
               {
                 num: "01",
-                // Building2 Lucide path
-                iconPath: (
-                  <>
-                    <path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z" />
-                    <path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2" />
-                    <path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2" />
-                    <path d="M10 6h4" /><path d="M10 10h4" /><path d="M10 14h4" /><path d="M10 18h4" />
-                  </>
-                ),
-                title: "Tell us about your business",
-                body: "We learn about your business, customers, and goals.",
-              },
-              {
-                num: "02",
                 // CalendarDays Lucide path
                 iconPath: (
                   <>
@@ -101,8 +87,17 @@ export default function StrategyCallSection() {
                     <path d="M8 18h.01" /><path d="M12 18h.01" /><path d="M16 18h.01" />
                   </>
                 ),
-                title: "Book your strategy call",
+                title: "Book a Strategy Call",
                 body: "Choose a time that works for you.",
+              },
+              {
+                num: "02",
+                // MessageCircle Lucide path
+                iconPath: (
+                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                ),
+                title: "We Talk About Your Business",
+                body: "We learn about your business, customers, and goals.",
               },
               {
                 num: "03",
@@ -114,8 +109,8 @@ export default function StrategyCallSection() {
                     <circle cx="12" cy="12" r="2" />
                   </>
                 ),
-                title: "We build your acquisition plan",
-                body: "We map out the ads, targeting, and DM strategy for your business.",
+                title: "We Build Your Customer Acquisition Plan",
+                body: "We create a clear plan for your ads, targeting, and customer conversations.",
               },
             ].map(({ num, iconPath, title, body }) => (
               <div
