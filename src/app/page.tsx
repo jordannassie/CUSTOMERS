@@ -38,7 +38,6 @@ export default function Home() {
 
         <DifferenceSection />
 
-        {/* <ProcessSection /> — hidden temporarily */}
         <WhyDMsSection />
         <IndustriesSection />
         <DeliverablesSection />

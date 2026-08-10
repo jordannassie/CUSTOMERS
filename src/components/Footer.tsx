@@ -40,7 +40,7 @@ export default function Footer() {
             <h4 className="font-bold text-sm text-white mb-4">Company</h4>
             <ul className="flex flex-col gap-2.5">
               {[
-                { label: "How It Works", href: "#how-it-works" },
+                { label: "How It Works", href: "/how-it-works" },
                 { label: "Industries", href: "#industries" },
                 { label: "Pricing", href: "#pricing" },
                 { label: "Contact", href: "#strategy-call" },
@@ -58,6 +58,11 @@ export default function Footer() {
           <div>
             <h4 className="font-bold text-sm text-white mb-4">Resources</h4>
             <ul className="flex flex-col gap-2.5">
+              <li>
+                <a href="/how-it-works" className="text-sm text-white/60 hover:text-white transition-colors">
+                  How It Works
+                </a>
+              </li>
               <li>
                 <span className="text-sm text-white/40 cursor-default">Ad Examples</span>
               </li>
