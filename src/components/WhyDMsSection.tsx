@@ -225,9 +225,9 @@ export default function WhyDMsSection() {
                       className="absolute flex items-center justify-center rounded-full bg-red-500 text-white font-black border-2 border-white"
                       style={{
                         ...style,
-                        width: 28,
-                        height: 28,
-                        fontSize: 12,
+                      width: 56,
+                      height: 56,
+                      fontSize: 20,
                         animation: `notifPop ${dur} ${delay} ease-in-out infinite`,
                         opacity: 0,
                       }}
