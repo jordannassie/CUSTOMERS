@@ -154,6 +154,20 @@ export default function AdminDashboardPage() {
     } catch { setLogoutLoading(false); }
   }
 
+  async function deleteLead(lead: Lead) {
+    if (!window.confirm(`Delete lead from ${lead.full_name}? This cannot be undone.`)) return;
+    // Optimistic remove
+    setLeads((ls) => ls.filter((l) => l.id !== lead.id));
+    try {
+      await fetch(`/api/admin/leads/${lead.id}`, { method: "DELETE" });
+    } catch {
+      // Restore on failure
+      setLeads((ls) => [...ls, lead].sort((a, b) =>
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      ));
+    }
+  }
+
   async function toggleFollowedUp(lead: Lead) {
     if (statusUpdating[lead.id]) return;
     const newStatus = lead.status === "followed_up" ? "new" : "followed_up";
@@ -361,6 +375,16 @@ export default function AdminDashboardPage() {
                           <div className="flex items-center gap-3 flex-wrap">
                             {followUpCheckbox(lead)}
                             {notesButton(lead)}
+                            <button
+                              onClick={() => deleteLead(lead)}
+                              title="Delete lead"
+                              aria-label="Delete lead"
+                              className="p-1.5 rounded-lg text-gray-300 hover:text-red-500 hover:bg-red-50 transition-colors"
+                            >
+                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                              </svg>
+                            </button>
                           </div>
                         </td>
                       </tr>
@@ -424,6 +448,16 @@ export default function AdminDashboardPage() {
                       <span className="text-sm font-medium text-[#64748B]">Followed up</span>
                     </label>
                     {notesButton(lead)}
+                    <button
+                      onClick={() => deleteLead(lead)}
+                      title="Delete lead"
+                      aria-label="Delete lead"
+                      className="ml-auto p-2 rounded-lg text-gray-300 hover:text-red-500 hover:bg-red-50 transition-colors"
+                    >
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                    </button>
                   </div>
 
                   {/* Notes panel */}

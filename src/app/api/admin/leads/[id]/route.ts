@@ -68,3 +68,29 @@ export async function PATCH(req: NextRequest, ctx: RouteContext) {
 
   return NextResponse.json({ lead: data });
 }
+
+export async function DELETE(_req: NextRequest, ctx: RouteContext) {
+  // Auth
+  const session = await getAdminSession();
+  if (!session.isAdmin) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const { id } = await ctx.params;
+  if (!id || typeof id !== "string" || id.length < 10) {
+    return NextResponse.json({ error: "Invalid lead ID" }, { status: 400 });
+  }
+
+  const supabase = createServiceClient();
+  const { error } = await supabase
+    .from("customers_direct_leads")
+    .delete()
+    .eq("id", id);
+
+  if (error) {
+    console.error("Lead delete error:", error.message);
+    return NextResponse.json({ error: "Failed to delete lead" }, { status: 500 });
+  }
+
+  return NextResponse.json({ success: true });
+}
