@@ -46,20 +46,41 @@ export async function POST(request: NextRequest) {
   const goal          = typeof body.goal          === "string" ? body.goal.trim().slice(0, 500)    : null;
 
   const supabase = createServiceClient();
+
+  // Core payload — always works regardless of schema version
+  const corePayload = { full_name, phone, email, business_name, website };
+
+  // Try with optional fields first (requires migration 003 to have been run)
   const { error } = await supabase.from("customers_direct_leads").insert({
-    full_name,
-    phone,
-    email,
-    business_name,
-    website,
+    ...corePayload,
     ...(source        ? { source }        : {}),
     ...(business_type ? { business_type } : {}),
     ...(goal          ? { goal }          : {}),
   });
 
   if (error) {
-    console.error("Supabase insert error:", error.message);
-    return NextResponse.json({ error: "Failed to save lead." }, { status: 500 });
+    // If the error is about unknown columns (migration not yet applied),
+    // retry with only the core fields so the lead is never lost.
+    const isSchemaMismatch =
+      error.message.includes('column') ||
+      error.message.includes('schema') ||
+      error.code === 'PGRST204' ||
+      error.code === '42703';
+
+    if (isSchemaMismatch) {
+      console.warn("Optional columns missing — retrying with core payload only:", error.message);
+      const { error: retryError } = await supabase
+        .from("customers_direct_leads")
+        .insert(corePayload);
+
+      if (retryError) {
+        console.error("Supabase retry insert error:", retryError.message);
+        return NextResponse.json({ error: "Failed to save lead." }, { status: 500 });
+      }
+    } else {
+      console.error("Supabase insert error:", error.message);
+      return NextResponse.json({ error: "Failed to save lead." }, { status: 500 });
+    }
   }
 
   return NextResponse.json({ success: true });
