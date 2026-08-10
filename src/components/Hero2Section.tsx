@@ -8,7 +8,8 @@ const VIDEO_URL =
   "https://phhczohqidgrvcmszets.supabase.co/storage/v1/object/public/CUSTOMER.direct/images/aliens/AlienHorizontal.mp4";
 
 export default function Hero2Section() {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen]           = useState(false);
+  const [buffering, setBuffering] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
 
   // Play on open, pause/reset on close
@@ -16,11 +17,13 @@ export default function Hero2Section() {
     const v = videoRef.current;
     if (!v) return;
     if (open) {
+      setBuffering(true);   // assume buffering until canplay fires
       v.currentTime = 0;
       v.play().catch(() => {});
     } else {
       v.pause();
       v.currentTime = 0;
+      setBuffering(false);
     }
   }, [open]);
 
@@ -55,6 +58,10 @@ export default function Hero2Section() {
           className="w-full h-auto block transition-transform duration-500 group-hover:scale-[1.02]"
           style={{ maxHeight: "90vh", objectFit: "cover", objectPosition: "center" }}
         />
+
+        {/* Hidden preload video — starts buffering in background immediately */}
+        {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
+        <video src={VIDEO_URL} preload="auto" className="hidden" aria-hidden="true" />
 
         {/* Dark scrim on hover */}
         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/25 transition-colors duration-300" />
@@ -108,12 +115,29 @@ export default function Hero2Section() {
             className="relative w-full max-w-5xl rounded-2xl overflow-hidden shadow-2xl"
             onClick={e => e.stopPropagation()}
           >
+            {/* Buffering spinner */}
+            {buffering && (
+              <div className="absolute inset-0 flex items-center justify-center bg-black/60 z-10 rounded-2xl">
+                <div className="flex flex-col items-center gap-3">
+                  <svg className="w-12 h-12 text-white animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-20" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
+                    <path className="opacity-80" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                  </svg>
+                  <span className="text-white/70 text-sm font-medium">Loading video…</span>
+                </div>
+              </div>
+            )}
+
             <video
               ref={videoRef}
               src={VIDEO_URL}
               controls
               autoPlay
               playsInline
+              preload="auto"
+              onWaiting={() => setBuffering(true)}
+              onCanPlay={() => setBuffering(false)}
+              onPlaying={() => setBuffering(false)}
               onEnded={() => setOpen(false)}
               className="w-full h-auto block bg-black"
               style={{ maxHeight: "80vh" }}
