@@ -10,6 +10,7 @@ import PricingSection from "@/components/PricingSection";
 import FAQSection from "@/components/FAQSection";
 import StrategyCallSection from "@/components/StrategyCallSection";
 import Footer from "@/components/Footer";
+import Hero2Section from "@/components/Hero2Section";
 import ChatWidget from "@/components/ChatWidget";
 
 export default function Home() {
@@ -17,16 +18,7 @@ export default function Home() {
     <>
       <Header />
       <main>
-        {/* ── Hero 2 — full-width banner ── */}
-        <section className="w-full bg-black">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="https://phhczohqidgrvcmszets.supabase.co/storage/v1/object/public/CUSTOMER.direct/images/aliens/9859418e-4aaa-457f-8cc3-e841889b625e.png"
-            alt="Apparently humans love DMs."
-            className="w-full h-auto block"
-            style={{ maxHeight: "90vh", objectFit: "cover", objectPosition: "center" }}
-          />
-        </section>
+        <Hero2Section />
 
         <HeroSection />
         <LogosBanner />
