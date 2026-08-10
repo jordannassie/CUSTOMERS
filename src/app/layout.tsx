@@ -26,9 +26,15 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      {/* Preload the hero video as early as possible — browser starts fetching
-          before React hydrates, so it's ready when the user taps Play. */}
+      {/* Preload hero banner slide 1 + video before React hydrates */}
       <head>
+        {/* Slide 1 — shown immediately on load */}
+        <link
+          rel="preload"
+          as="image"
+          href="https://phhczohqidgrvcmszets.supabase.co/storage/v1/object/public/CUSTOMER.direct/images/aliens/9859418e-4aaa-457f-8cc3-e841889b625e.png"
+        />
+        {/* Video */}
         <link
           rel="preload"
           as="video"

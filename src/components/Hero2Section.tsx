@@ -26,6 +26,14 @@ export default function Hero2Section() {
   const blobRef  = useRef<string | null>(null);
   const slideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Eagerly preload all slide images into the browser cache on mount
+  useEffect(() => {
+    IMAGES.forEach(src => {
+      const img = new Image();
+      img.src = src;
+    });
+  }, []);
+
   // Auto-advance slides (pause when video modal is open)
   useEffect(() => {
     if (open) return;
@@ -122,6 +130,8 @@ export default function Hero2Section() {
               key={src}
               src={src}
               alt={`Slide ${i + 1}`}
+              loading="eager"
+              decoding="async"
               className="w-full h-auto block absolute inset-0 w-full h-full object-cover transition-opacity duration-700"
               style={{
                 opacity: i === slide ? 1 : 0,
