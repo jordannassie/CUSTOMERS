@@ -2,20 +2,37 @@
 
 import { useState, useEffect, useRef } from "react";
 
-const IMAGE_URL =
-  "https://phhczohqidgrvcmszets.supabase.co/storage/v1/object/public/CUSTOMER.direct/images/aliens/9859418e-4aaa-457f-8cc3-e841889b625e.png";
+const IMAGES = [
+  "https://phhczohqidgrvcmszets.supabase.co/storage/v1/object/public/CUSTOMER.direct/images/aliens/9859418e-4aaa-457f-8cc3-e841889b625e.png",
+  "https://phhczohqidgrvcmszets.supabase.co/storage/v1/object/public/CUSTOMER.direct/images/aliens/Banners/ChatGPT%20Image%20Aug%2010,%202026,%2008_10_17%20AM%20(1).png",
+  "https://phhczohqidgrvcmszets.supabase.co/storage/v1/object/public/CUSTOMER.direct/images/aliens/Banners/ChatGPT%20Image%20Aug%2010,%202026,%2008_10_17%20AM%20(2).png",
+  "https://phhczohqidgrvcmszets.supabase.co/storage/v1/object/public/CUSTOMER.direct/images/aliens/Banners/ChatGPT%20Image%20Aug%2010,%202026,%2008_10_18%20AM%20(8).png",
+];
 const VIDEO_URL =
   "https://phhczohqidgrvcmszets.supabase.co/storage/v1/object/public/CUSTOMER.direct/images/aliens/AlienHorizontal.mp4";
 
 type LoadState = "loading" | "ready" | "error";
 
+const SLIDE_INTERVAL = 5000; // ms between auto-advances
+
 export default function Hero2Section() {
   const [open, setOpen]         = useState(false);
+  const [slide, setSlide]       = useState(0);
   const [loadState, setLoad]    = useState<LoadState>("loading");
   const [progress, setProgress] = useState(0); // 0–100
   const [videoSrc, setVideoSrc] = useState<string | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const blobRef  = useRef<string | null>(null);
+  const slideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Auto-advance slides (pause when video modal is open)
+  useEffect(() => {
+    if (open) return;
+    slideTimer.current = setTimeout(() => {
+      setSlide(s => (s + 1) % IMAGES.length);
+    }, SLIDE_INTERVAL);
+    return () => { if (slideTimer.current) clearTimeout(slideTimer.current); };
+  }, [slide, open]);
 
   // Download the entire video as a blob on mount so playback is instant.
   // Only blob:// src means ZERO network stalls during playback.
@@ -96,13 +113,40 @@ export default function Hero2Section() {
         aria-label="Play video"
         onKeyDown={e => e.key === "Enter" && setOpen(true)}
       >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={IMAGE_URL}
-          alt="Apparently humans love DMs."
-          className="w-full h-auto block transition-transform duration-500 group-hover:scale-[1.02]"
-          style={{ maxHeight: "90vh", objectFit: "cover", objectPosition: "center" }}
-        />
+        {/* Slides */}
+        <div className="relative w-full overflow-hidden" style={{ maxHeight: "90vh" }}>
+          {IMAGES.map((src, i) => (
+            /* eslint-disable-next-line @next/next/no-img-element */
+            <img
+              key={src}
+              src={src}
+              alt={`Slide ${i + 1}`}
+              className="w-full h-auto block absolute inset-0 w-full h-full object-cover transition-opacity duration-700"
+              style={{
+                opacity: i === slide ? 1 : 0,
+                position: i === 0 ? "relative" : "absolute",
+                maxHeight: "90vh",
+              }}
+            />
+          ))}
+        </div>
+
+        {/* Dot indicators */}
+        <div className="absolute bottom-5 left-1/2 -translate-x-1/2 flex gap-2 z-10">
+          {IMAGES.map((_, i) => (
+            <button
+              key={i}
+              onClick={e => { e.stopPropagation(); setSlide(i); }}
+              aria-label={`Go to slide ${i + 1}`}
+              className="transition-all duration-300 rounded-full"
+              style={{
+                width: i === slide ? 24 : 8,
+                height: 8,
+                background: i === slide ? "white" : "rgba(255,255,255,0.45)",
+              }}
+            />
+          ))}
+        </div>
 
 
         {/* Dark scrim on hover */}
