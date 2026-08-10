@@ -12,12 +12,19 @@ export default function Hero2Section() {
   const [buffering, setBuffering] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
 
-  // Play on open, pause/reset on close
+  // Start buffering immediately on mount (before user clicks Play)
+  useEffect(() => {
+    const v = videoRef.current;
+    if (!v) return;
+    v.load(); // kick off buffering right away
+  }, []);
+
+  // Play/pause when modal opens or closes
   useEffect(() => {
     const v = videoRef.current;
     if (!v) return;
     if (open) {
-      setBuffering(true);   // assume buffering until canplay fires
+      setBuffering(v.readyState < 3); // show spinner only if not yet ready
       v.currentTime = 0;
       v.play().catch(() => {});
     } else {
@@ -59,9 +66,6 @@ export default function Hero2Section() {
           style={{ maxHeight: "90vh", objectFit: "cover", objectPosition: "center" }}
         />
 
-        {/* Hidden preload video — starts buffering in background immediately */}
-        {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
-        <video src={VIDEO_URL} preload="auto" className="hidden" aria-hidden="true" />
 
         {/* Dark scrim on hover */}
         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/25 transition-colors duration-300" />
@@ -81,59 +85,61 @@ export default function Hero2Section() {
         </div>
       </section>
 
-      {/* ── Modal video player ──────────────────────────────────────────── */}
-      {open && (
-        <div
-          className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-8"
-          style={{ backgroundColor: "rgba(0,0,0,0.92)" }}
+      {/* ── Modal — always in DOM, visibility toggled so video buffers in background */}
+      <div
+        className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-8 transition-opacity duration-300"
+        style={{
+          backgroundColor: "rgba(0,0,0,0.92)",
+          opacity: open ? 1 : 0,
+          pointerEvents: open ? "auto" : "none",
+        }}
+        onClick={() => setOpen(false)}
+      >
+        {/* Close button */}
+        <button
           onClick={() => setOpen(false)}
+          aria-label="Close video"
+          className="absolute top-4 right-4 sm:top-6 sm:right-6 w-11 h-11 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 flex items-center justify-center text-white transition-colors z-10"
         >
-          {/* Close button */}
-          <button
-            onClick={() => setOpen(false)}
-            aria-label="Close video"
-            className="absolute top-4 right-4 sm:top-6 sm:right-6 w-11 h-11 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 flex items-center justify-center text-white transition-colors z-10"
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true">
-              <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-            </svg>
-          </button>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true">
+            <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
+        </button>
 
-          {/* Video container — stop click propagation so clicking video doesn't close modal */}
-          <div
-            className="relative w-full max-w-5xl rounded-2xl overflow-hidden shadow-2xl"
-            onClick={e => e.stopPropagation()}
-          >
-            {/* Buffering spinner */}
-            {buffering && (
-              <div className="absolute inset-0 flex items-center justify-center bg-black/60 z-10 rounded-2xl">
-                <div className="flex flex-col items-center gap-3">
-                  <svg className="w-12 h-12 text-white animate-spin" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-20" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
-                    <path className="opacity-80" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                  </svg>
-                  <span className="text-white/70 text-sm font-medium">Loading video…</span>
-                </div>
+        {/* Video container */}
+        <div
+          className="relative w-full max-w-5xl rounded-2xl overflow-hidden shadow-2xl"
+          onClick={e => e.stopPropagation()}
+        >
+          {/* Buffering spinner */}
+          {buffering && open && (
+            <div className="absolute inset-0 flex items-center justify-center bg-black/60 z-10 rounded-2xl">
+              <div className="flex flex-col items-center gap-3">
+                <svg className="w-12 h-12 text-white animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-20" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
+                  <path className="opacity-80" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                </svg>
+                <span className="text-white/70 text-sm font-medium">Loading video…</span>
               </div>
-            )}
+            </div>
+          )}
 
-            <video
-              ref={videoRef}
-              src={VIDEO_URL}
-              controls
-              autoPlay
-              playsInline
-              preload="auto"
-              onWaiting={() => setBuffering(true)}
-              onCanPlay={() => setBuffering(false)}
-              onPlaying={() => setBuffering(false)}
-              onEnded={() => setOpen(false)}
-              className="w-full h-auto block bg-black"
-              style={{ maxHeight: "80vh" }}
-            />
-          </div>
+          {/* Video — always mounted so it buffers as soon as the page loads */}
+          <video
+            ref={videoRef}
+            src={VIDEO_URL}
+            controls
+            playsInline
+            preload="auto"
+            onWaiting={() => setBuffering(true)}
+            onCanPlay={() => setBuffering(false)}
+            onPlaying={() => setBuffering(false)}
+            onEnded={() => setOpen(false)}
+            className="w-full h-auto block bg-black"
+            style={{ maxHeight: "80vh" }}
+          />
         </div>
-      )}
+      </div>
     </>
   );
 }

@@ -15,16 +15,18 @@ export default function Header() {
     <header className="sticky top-0 z-50 px-4 pt-4">
       <div className="bg-white rounded-2xl shadow-lg max-w-6xl mx-auto">
         <div className="flex items-center justify-between py-3 px-6">
-          {/* Logo */}
-          <Image
-            src="https://phhczohqidgrvcmszets.supabase.co/storage/v1/object/public/CUSTOMER.direct/logo/Logo.png"
-            alt="Customers.Direct"
-            width={180}
-            height={45}
-            priority
-            unoptimized
-            className="h-9 w-auto"
-          />
+          {/* Logo — always returns to top of homepage */}
+          <a href="/" aria-label="Customers.Direct — Home">
+            <Image
+              src="https://phhczohqidgrvcmszets.supabase.co/storage/v1/object/public/CUSTOMER.direct/logo/Logo.png"
+              alt="Customers.Direct"
+              width={180}
+              height={45}
+              priority
+              unoptimized
+              className="h-9 w-auto"
+            />
+          </a>
 
           {/* Desktop Nav */}
           <nav className="hidden md:flex items-center gap-8">
