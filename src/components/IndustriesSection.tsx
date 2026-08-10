@@ -2,14 +2,27 @@
 
 import { useRef, useState, useEffect, useCallback } from "react";
 
-const VIDEO_URL =
-  "https://phhczohqidgrvcmszets.supabase.co/storage/v1/object/public/CUSTOMER.direct/Video/Girl%20ugc.mp4";
-
 const industries = [
-  { title: "Personal Injury",  subtitle: "We help put your firm in front of people searching for answers." },
-  { title: "Roofing",          subtitle: "Reach homeowners who need estimates and repairs." },
-  { title: "Med Spa",          subtitle: "Turn your treatments and offers into new conversations." },
-  { title: "Real Estate",      subtitle: "Get more buyers, sellers, and listing conversations." },
+  {
+    title: "Personal Injury",
+    subtitle: "We help put your firm in front of people searching for answers.",
+    video: "https://phhczohqidgrvcmszets.supabase.co/storage/v1/object/public/CUSTOMER.direct/Video/UGC/Lawyer%20ugc.mp4",
+  },
+  {
+    title: "Roofing",
+    subtitle: "Reach homeowners who need estimates and repairs.",
+    video: "https://phhczohqidgrvcmszets.supabase.co/storage/v1/object/public/CUSTOMER.direct/Video/UGC/ROOF%20ugc.mp4",
+  },
+  {
+    title: "Med Spa",
+    subtitle: "Turn your treatments and offers into new conversations.",
+    video: "https://phhczohqidgrvcmszets.supabase.co/storage/v1/object/public/CUSTOMER.direct/Video/UGC/MEDSPA%20ugc.mp4",
+  },
+  {
+    title: "Real Estate",
+    subtitle: "Get more buyers, sellers, and listing conversations.",
+    video: "https://phhczohqidgrvcmszets.supabase.co/storage/v1/object/public/CUSTOMER.direct/Video/UGC/Dentistugc.mp4",
+  },
 ];
 
 // ─── Volume icons ─────────────────────────────────────────────────────────────
@@ -39,6 +52,7 @@ function IconVolumeX() {
 interface VideoCardProps {
   title: string;
   subtitle: string;
+  video: string;
   isMuted: boolean;
   onHoverEnter: () => void;
   onHoverLeave: () => void;
@@ -46,7 +60,7 @@ interface VideoCardProps {
   isTouch: boolean;
 }
 
-function VideoCard({ title, subtitle, isMuted, onHoverEnter, onHoverLeave, onToggleAudio, isTouch }: VideoCardProps) {
+function VideoCard({ title, subtitle, video, isMuted, onHoverEnter, onHoverLeave, onToggleAudio, isTouch }: VideoCardProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
 
   // Sync muted state → video element imperatively to avoid rerender race
@@ -78,7 +92,7 @@ function VideoCard({ title, subtitle, isMuted, onHoverEnter, onHoverLeave, onTog
       {/* Video */}
       <video
         ref={videoRef}
-        src={VIDEO_URL}
+        src={video}
         autoPlay
         muted
         loop
@@ -163,6 +177,7 @@ export default function IndustriesSection() {
               key={industry.title}
               title={industry.title}
               subtitle={industry.subtitle}
+              video={industry.video}
               isMuted={activeAudio !== idx}
               onHoverEnter={() => handleHoverEnter(idx)}
               onHoverLeave={handleHoverLeave}
