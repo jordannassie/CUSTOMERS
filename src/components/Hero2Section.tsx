@@ -7,6 +7,7 @@ const IMAGES = [
   "https://phhczohqidgrvcmszets.supabase.co/storage/v1/object/public/CUSTOMER.direct/images/aliens/Banners/ChatGPT%20Image%20Aug%2010,%202026,%2008_10_17%20AM%20(1).png",
   "https://phhczohqidgrvcmszets.supabase.co/storage/v1/object/public/CUSTOMER.direct/images/aliens/Banners/ChatGPT%20Image%20Aug%2010,%202026,%2008_10_17%20AM%20(2).png",
   "https://phhczohqidgrvcmszets.supabase.co/storage/v1/object/public/CUSTOMER.direct/images/aliens/Banners/ChatGPT%20Image%20Aug%2010,%202026,%2008_10_18%20AM%20(8).png",
+  "https://phhczohqidgrvcmszets.supabase.co/storage/v1/object/public/CUSTOMER.direct/images/aliens/Banners/Girl.png",
 ];
 const VIDEO_URL =
   "https://phhczohqidgrvcmszets.supabase.co/storage/v1/object/public/CUSTOMER.direct/images/aliens/AlienHorizontal.mp4";
