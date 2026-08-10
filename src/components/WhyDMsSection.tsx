@@ -209,11 +209,46 @@ export default function WhyDMsSection() {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m0 0l-6-6m6 6l6-6" />
               </svg>
 
-              {/* Messenger */}
+              {/* Messenger — 2× larger with looping notification bubbles */}
               <div className="flex flex-col items-center gap-2">
-                <MessengerIcon className="w-16 h-16" />
+                <div className="relative">
+                  <MessengerIcon className="w-32 h-32" />
+
+                  {/* Animated notification bubbles */}
+                  {[
+                    { num: 1, style: { top: "-6px", right: "-6px" },       delay: "0s",    dur: "2.4s" },
+                    { num: 3, style: { top: "-6px", right: "-6px" },       delay: "0.8s",  dur: "2.4s" },
+                    { num: 7, style: { top: "-6px", right: "-6px" },       delay: "1.6s",  dur: "2.4s" },
+                  ].map(({ num, style, delay, dur }) => (
+                    <span
+                      key={`${num}-${delay}`}
+                      className="absolute flex items-center justify-center rounded-full bg-red-500 text-white font-black border-2 border-white"
+                      style={{
+                        ...style,
+                        width: 28,
+                        height: 28,
+                        fontSize: 12,
+                        animation: `notifPop ${dur} ${delay} ease-in-out infinite`,
+                        opacity: 0,
+                      }}
+                    >
+                      {num}
+                    </span>
+                  ))}
+                </div>
                 <span className="text-[11px] font-bold text-[#475569] uppercase tracking-wider">Messenger</span>
               </div>
+
+              <style>{`
+                @keyframes notifPop {
+                  0%   { opacity: 0; transform: scale(0.4); }
+                  12%  { opacity: 1; transform: scale(1.15); }
+                  20%  { opacity: 1; transform: scale(1); }
+                  55%  { opacity: 1; transform: scale(1); }
+                  70%  { opacity: 0; transform: scale(0.7); }
+                  100% { opacity: 0; transform: scale(0.4); }
+                }
+              `}</style>
 
               {/* Down arrow */}
               <svg className="w-5 h-5 text-[#CBD5E1]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
