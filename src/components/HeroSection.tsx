@@ -61,14 +61,45 @@ function PhoneInbox({
 
   return (
     <div className="w-full h-full bg-white flex flex-col">
+      {/* Notification bubble keyframes */}
+      <style>{`
+        @keyframes heroBubblePop {
+          0%   { opacity: 0; transform: scale(0.3); }
+          15%  { opacity: 1; transform: scale(1.2); }
+          25%  { opacity: 1; transform: scale(1); }
+          70%  { opacity: 1; transform: scale(1); }
+          85%  { opacity: 0; transform: scale(0.6); }
+          100% { opacity: 0; }
+        }
+      `}</style>
+
       {/* Top bar */}
       <div className="px-4 pt-8 pb-3 border-b border-gray-100 flex items-center justify-between">
         <span className="text-sm font-black text-[#0F172A]">Messages</span>
-        {newCount > 0 && (
-          <span className="text-[10px] font-bold text-[#2563EB] bg-[#DBEAFE] px-2 py-0.5 rounded-full">
-            {newCount} new
-          </span>
-        )}
+        <div className="relative flex items-center">
+          {newCount > 0 && (
+            <span className="text-[10px] font-bold text-[#2563EB] bg-[#DBEAFE] px-2 py-0.5 rounded-full">
+              {newCount} new
+            </span>
+          )}
+          {/* Animated red notification bubbles — appear when messages arrive */}
+          {newCount > 0 && [
+            { num: newCount, delay: "0s",   dur: "2s" },
+            { num: newCount, delay: "0.7s", dur: "2s" },
+          ].map(({ num, delay, dur }, i) => (
+            <span
+              key={i}
+              className="absolute -top-2 -right-2 flex items-center justify-center rounded-full bg-red-500 text-white font-black border-2 border-white pointer-events-none"
+              style={{
+                width: 22, height: 22, fontSize: 10,
+                animation: `heroBubblePop ${dur} ${delay} ease-in-out infinite`,
+                opacity: 0,
+              }}
+            >
+              {num}
+            </span>
+          ))}
+        </div>
       </div>
 
       {/* Message list */}
