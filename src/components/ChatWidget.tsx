@@ -315,12 +315,12 @@ export default function ChatWidget() {
           <div className="flex items-center gap-3 px-4 py-3 border-b border-gray-100 shrink-0">
             <div className="relative shrink-0">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={JORDAN_PHOTO} alt="Jordan Nassie"
+              <img src={JORDAN_PHOTO} alt="Jordan"
                 className="w-10 h-10 rounded-full object-cover object-center border border-gray-100" />
               <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-400 rounded-full border-2 border-white" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="font-bold text-[#0F172A] text-sm leading-tight">Jordan Nassie</p>
+              <p className="font-bold text-[#0F172A] text-sm leading-tight">Jordan</p>
               <p className="text-xs text-[#64748B]">Customers.Direct &nbsp;·&nbsp; Here to help</p>
             </div>
             <button onClick={() => setOpen(false)} aria-label="Close chat"

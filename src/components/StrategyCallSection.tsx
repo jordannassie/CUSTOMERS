@@ -157,7 +157,7 @@ export default function StrategyCallSection() {
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src="https://phhczohqidgrvcmszets.supabase.co/storage/v1/object/public/CUSTOMER.direct/images/People/Jordan%20Profile.PNG"
-                alt="Jordan Nassie, Customers.Direct"
+                alt="Jordan, Customers.Direct"
                 className="w-32 h-32 rounded-full object-cover object-center border-2 border-white"
                 style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.12)" }}
                 onError={(e) => {
@@ -176,7 +176,7 @@ export default function StrategyCallSection() {
               </div>
             </div>
             <div>
-              <div className="font-bold text-[#0F172A] text-sm">Jordan Nassie</div>
+              <div className="font-bold text-[#0F172A] text-sm">Jordan</div>
               <div className="text-xs text-[#64748B]">Customers.Direct</div>
             </div>
           </div>
