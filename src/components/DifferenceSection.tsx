@@ -92,7 +92,7 @@ const CD = [
 
 export default function DifferenceSection() {
   return (
-    <section className="bg-white py-20 px-4 sm:px-8 lg:px-12">
+    <section id="how-it-works" className="bg-white py-20 px-4 sm:px-8 lg:px-12">
       <div className="max-w-6xl mx-auto">
 
         {/* ── Headline ── */}
