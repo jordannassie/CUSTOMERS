@@ -66,22 +66,11 @@ export default function Hero2Section() {
         {/* Dark scrim on hover */}
         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/25 transition-colors duration-300" />
 
-        {/* Centered play button */}
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div
-            className="flex flex-col items-center gap-3 transition-transform duration-300 group-hover:scale-110"
-          >
-            {/* Circle */}
-            <div
-              className="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-white/20 backdrop-blur-md border-2 border-white/60 flex items-center justify-center shadow-2xl"
-            >
-              {/* Play triangle */}
-              <svg
-                className="w-8 h-8 sm:w-10 sm:h-10 text-white ml-1.5"
-                fill="currentColor"
-                viewBox="0 0 24 24"
-                aria-hidden="true"
-              >
+        {/* Bottom-left play button — under the headline text */}
+        <div className="absolute bottom-8 left-6 sm:bottom-10 sm:left-10 lg:left-16">
+          <div className="flex items-center gap-3 transition-transform duration-300 group-hover:scale-105">
+            <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-white/20 backdrop-blur-md border-2 border-white/60 flex items-center justify-center shadow-xl shrink-0">
+              <svg className="w-6 h-6 sm:w-7 sm:h-7 text-white ml-1" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                 <path d="M8 5v14l11-7z" />
               </svg>
             </div>
