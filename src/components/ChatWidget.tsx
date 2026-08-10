@@ -350,7 +350,7 @@ export default function ChatWidget() {
             {/* Done — CTA */}
             {step === "done" && !typing && (
               <div className="flex justify-center mt-2" style={{ animation: "chatSlideUp 0.3s ease forwards" }}>
-                <a href="#strategy-call" onClick={() => setOpen(false)}
+                <a href="https://calendar.app.google/SZmANmexmVxVt6BH8" target="_blank" rel="noopener noreferrer"
                   className="w-full bg-[#2563EB] text-white font-bold text-sm text-center py-3.5 px-6 rounded-full hover:bg-[#1d4ed8] transition-colors shadow-md">
                   Book a Strategy Call
                 </a>
