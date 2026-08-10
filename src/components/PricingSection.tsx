@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+
 // ─── Cost matrix data ─────────────────────────────────────────────────────────
 
 const ROWS = [
@@ -57,6 +59,8 @@ const COLS = [
 // ─── Main section ─────────────────────────────────────────────────────────────
 
 export default function PricingSection() {
+  const [matrixOpen, setMatrixOpen] = useState(false);
+
   function scrollTo(id: string) {
     document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
   }
@@ -109,10 +113,36 @@ export default function PricingSection() {
             <h2 className="text-3xl md:text-4xl font-black text-[#0F172A] mb-3">
               See your complete customer-acquisition cost.
             </h2>
-            <p className="text-base md:text-lg text-[#64748B] leading-relaxed max-w-2xl mx-auto">
+            <p className="text-base md:text-lg text-[#64748B] leading-relaxed max-w-2xl mx-auto mb-6">
               Our service stays at $2,500 per month. Choose how much you want to invest directly into Meta advertising.
             </p>
+
+            {/* Toggle button */}
+            <button
+              onClick={() => setMatrixOpen(v => !v)}
+              aria-expanded={matrixOpen}
+              className="inline-flex items-center gap-2 border border-gray-200 bg-white hover:bg-[#F8FAFC] text-[#0F172A] font-semibold text-sm px-5 py-2.5 rounded-full transition-colors shadow-sm"
+            >
+              <span>{matrixOpen ? "Hide cost breakdown" : "See cost breakdown"}</span>
+              <svg
+                className="w-4 h-4 text-[#2563EB] transition-transform duration-300"
+                style={{ transform: matrixOpen ? "rotate(180deg)" : "rotate(0deg)" }}
+                fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
           </div>
+
+          {/* ── Collapsible table + footnotes + CTA ── */}
+          <div
+            style={{
+              display: "grid",
+              gridTemplateRows: matrixOpen ? "1fr" : "0fr",
+              transition: "grid-template-rows 0.4s ease",
+            }}
+          >
+          <div className="overflow-hidden">
 
           {/* ── Desktop table (md+) ── */}
           <div className="hidden md:block bg-white rounded-2xl shadow-md border border-gray-100 overflow-hidden mb-4">
@@ -253,6 +283,8 @@ export default function PricingSection() {
               Book a Strategy Call
             </button>
           </div>
+          </div>{/* end overflow-hidden */}
+          </div>{/* end grid collapse */}
         </div>
 
         {/* ══ TWO PRICING CARDS ════════════════════════════════════════════════ */}
