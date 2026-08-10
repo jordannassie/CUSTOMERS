@@ -10,12 +10,14 @@ import PricingSection from "@/components/PricingSection";
 import FAQSection from "@/components/FAQSection";
 import StrategyCallSection from "@/components/StrategyCallSection";
 import Footer from "@/components/Footer";
+import PromoBar from "@/components/PromoBar";
 import Hero2Section from "@/components/Hero2Section";
 import ChatWidget from "@/components/ChatWidget";
 
 export default function Home() {
   return (
     <>
+      <PromoBar />
       <Header />
       <main>
         <Hero2Section />
