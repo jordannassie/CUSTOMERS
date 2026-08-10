@@ -12,11 +12,22 @@ export default function Hero2Section() {
   const [buffering, setBuffering] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
 
-  // Start buffering immediately on mount (before user clicks Play)
+  // Aggressively pre-fetch the video into the browser cache on mount.
+  // Mobile Safari ignores preload="auto" — a Fetch request bypasses that.
   useEffect(() => {
-    const v = videoRef.current;
-    if (!v) return;
-    v.load(); // kick off buffering right away
+    // Kick the video element's own buffer too
+    videoRef.current?.load();
+
+    // Force-download via fetch so it lands in the HTTP cache.
+    // Only fetch the first 5 MB (enough for ~10-15s of playback) to avoid
+    // wasting mobile data on visitors who never click Play.
+    const controller = new AbortController();
+    fetch(VIDEO_URL, {
+      signal: controller.signal,
+      headers: { Range: "bytes=0-5242880" }, // 5 MB
+    }).catch(() => { /* ignore — just a warm-up */ });
+
+    return () => controller.abort();
   }, []);
 
   // Play/pause when modal opens or closes
@@ -132,6 +143,7 @@ export default function Hero2Section() {
             playsInline
             preload="auto"
             onWaiting={() => setBuffering(true)}
+            onCanPlayThrough={() => setBuffering(false)}
             onCanPlay={() => setBuffering(false)}
             onPlaying={() => setBuffering(false)}
             onEnded={() => setOpen(false)}
