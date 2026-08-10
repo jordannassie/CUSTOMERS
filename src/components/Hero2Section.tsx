@@ -114,6 +114,7 @@ export default function Hero2Section() {
               controls
               autoPlay
               playsInline
+              onEnded={() => setOpen(false)}
               className="w-full h-auto block bg-black"
               style={{ maxHeight: "80vh" }}
             />
