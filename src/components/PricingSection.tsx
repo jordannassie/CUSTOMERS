@@ -307,8 +307,8 @@ export default function PricingSection() {
               {/* ── Growth (primary / most popular) ── */}
               <div className="relative flex-1 bg-white rounded-2xl shadow-xl p-8 border-2 border-[#2563EB]">
                 {/* Most Popular badge */}
-                <div className="absolute -top-3.5 left-1/2 -translate-x-1/2">
-                  <span className="bg-[#2563EB] text-white text-[10px] font-black uppercase tracking-widest px-4 py-1 rounded-full shadow">
+                <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 whitespace-nowrap">
+                  <span className="bg-[#2563EB] text-white text-[10px] font-black uppercase tracking-widest px-4 py-1 rounded-full shadow whitespace-nowrap">
                     Most Popular
                   </span>
                 </div>
