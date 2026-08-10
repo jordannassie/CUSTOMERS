@@ -12,22 +12,32 @@ export default function Hero2Section() {
   const [buffering, setBuffering] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
 
-  // Aggressively pre-fetch the video into the browser cache on mount.
-  // Mobile Safari ignores preload="auto" — a Fetch request bypasses that.
+  // Pre-fetch into a blob URL the moment the component mounts.
+  // Using a blob: src means the browser serves video from memory — no network
+  // wait when the user taps Play, even on slow mobile connections.
+  const [videoSrc, setVideoSrc] = useState(VIDEO_URL);
+
   useEffect(() => {
-    // Kick the video element's own buffer too
-    videoRef.current?.load();
-
-    // Force-download via fetch so it lands in the HTTP cache.
-    // Only fetch the first 5 MB (enough for ~10-15s of playback) to avoid
-    // wasting mobile data on visitors who never click Play.
+    let objectUrl: string | null = null;
     const controller = new AbortController();
-    fetch(VIDEO_URL, {
-      signal: controller.signal,
-      headers: { Range: "bytes=0-5242880" }, // 5 MB
-    }).catch(() => { /* ignore — just a warm-up */ });
 
-    return () => controller.abort();
+    fetch(VIDEO_URL, { signal: controller.signal })
+      .then(res => res.blob())
+      .then(blob => {
+        objectUrl = URL.createObjectURL(blob);
+        setVideoSrc(objectUrl);
+        // Point the already-mounted video element at the local blob
+        if (videoRef.current) {
+          videoRef.current.src = objectUrl;
+          videoRef.current.load();
+        }
+      })
+      .catch(() => { /* network error — keep original URL */ });
+
+    return () => {
+      controller.abort();
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
   }, []);
 
   // Play/pause when modal opens or closes
@@ -138,7 +148,7 @@ export default function Hero2Section() {
           {/* Video — always mounted so it buffers as soon as the page loads */}
           <video
             ref={videoRef}
-            src={VIDEO_URL}
+            src={videoSrc}
             controls
             playsInline
             preload="auto"

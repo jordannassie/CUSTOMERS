@@ -26,6 +26,16 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
+      {/* Preload the hero video as early as possible — browser starts fetching
+          before React hydrates, so it's ready when the user taps Play. */}
+      <head>
+        <link
+          rel="preload"
+          as="video"
+          href="https://phhczohqidgrvcmszets.supabase.co/storage/v1/object/public/CUSTOMER.direct/images/aliens/AlienHorizontal.mp4"
+          type="video/mp4"
+        />
+      </head>
       <body className="min-h-full flex flex-col">{children}</body>
     </html>
   );
