@@ -8,8 +8,8 @@ export default function PromoBar() {
         letterSpacing: "0.01em",
       }}
     >
-      Book a call and get $200 off your 1st month:&nbsp;
-      <span className="font-black tracking-wide">CODE DEAL</span>
+      Book a call and get $200 off your 1st month: code&nbsp;
+      <span className="font-black tracking-wide">DEAL26</span>
     </a>
   );
 }
