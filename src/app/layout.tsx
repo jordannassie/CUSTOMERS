@@ -26,20 +26,13 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      {/* Preload hero banner slide 1 + video before React hydrates */}
+      {/* Preload the first home hero banner before React hydrates */}
       <head>
         {/* Slide 1 — shown immediately on load */}
         <link
           rel="preload"
           as="image"
-          href="https://phhczohqidgrvcmszets.supabase.co/storage/v1/object/public/CUSTOMER.direct/images/aliens/9859418e-4aaa-457f-8cc3-e841889b625e.png"
-        />
-        {/* Home hero video */}
-        <link
-          rel="preload"
-          as="video"
-          href="https://phhczohqidgrvcmszets.supabase.co/storage/v1/object/public/CUSTOMER.direct/images/aliens/0812%20(1).mov"
-          type="video/mp4"
+          href="https://phhczohqidgrvcmszets.supabase.co/storage/v1/object/public/CUSTOMER.direct/images/banners/DM/ChatGPT%20Image%20Aug%2012,%202026,%2002_03_22%20PM%20(6).png"
         />
         {/* AI homepage video */}
         <link

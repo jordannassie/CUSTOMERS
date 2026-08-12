@@ -52,6 +52,15 @@ export default function AIPricingSection() {
             </div>
 
             {/* Price */}
+            <div className="mb-1">
+              <p className="text-xs font-medium text-[#94A3B8]">
+                Comparable agency price
+              </p>
+              <div className="text-[#94A3B8] line-through decoration-2">
+                <span className="text-3xl font-bold">$1,497</span>
+                <span className="text-sm font-medium ml-1">/month</span>
+              </div>
+            </div>
             <div className="flex items-end gap-2 mb-2">
               <span className="text-5xl font-black text-[#0F172A]">$997</span>
               <span className="text-[#64748B] text-base mb-1.5 font-medium">/month</span>

@@ -315,6 +315,15 @@ export default function PricingSection() {
 
                 <p className="text-base font-black text-[#0F172A] mb-2 mt-2">Growth</p>
                 <div className="mb-1">
+                  <p className="text-xs font-medium text-[#94A3B8]">
+                    Comparable agency price
+                  </p>
+                  <div className="text-[#94A3B8] line-through decoration-2">
+                    <span className="text-[22px] font-bold">$3,500</span>
+                    <span className="text-sm font-medium ml-1">/month</span>
+                  </div>
+                </div>
+                <div className="mb-1">
                   <span className="text-4xl font-black text-[#0F172A]">$2,500</span>
                   <span className="text-base font-semibold text-[#64748B] ml-1">/ month</span>
                 </div>
@@ -352,6 +361,15 @@ export default function PricingSection() {
               {/* ── Scale (secondary) ── */}
               <div className="flex-1 bg-white rounded-2xl shadow-md p-8 border border-gray-100">
                 <p className="text-base font-black text-[#0F172A] mb-2 mt-2">Scale</p>
+                <div className="mb-1">
+                  <p className="text-xs font-medium text-[#94A3B8]">
+                    Comparable agency price
+                  </p>
+                  <div className="text-[#94A3B8] line-through decoration-2">
+                    <span className="text-[22px] font-bold">$6,500</span>
+                    <span className="text-sm font-medium ml-1">/month</span>
+                  </div>
+                </div>
                 <div className="mb-1">
                   <span className="text-4xl font-black text-[#0F172A]">$5,000</span>
                   <span className="text-base font-semibold text-[#64748B] ml-1">/ month</span>
