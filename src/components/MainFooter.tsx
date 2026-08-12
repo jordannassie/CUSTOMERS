@@ -74,7 +74,7 @@ export default function MainFooter() {
               {[
                 { label: "AI Customer Acquisition", href: "/#how-it-works" },
                 { label: "AI Phone", href: "/ai-phone" },
-                { label: "How It Works", href: "/#how-it-works" },
+                { label: "How It Works", href: "/how-it-works" },
                 { label: "Pricing", href: "/#pricing" },
               ].map(({ label, href }) => (
                 <li key={label}>
