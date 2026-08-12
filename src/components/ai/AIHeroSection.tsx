@@ -10,7 +10,7 @@ const IMAGES = [
 ];
 
 const VIDEO_URL =
-  "https://phhczohqidgrvcmszets.supabase.co/storage/v1/object/public/CUSTOMER.direct/images/aliens/0812%20(1).mov";
+  "https://phhczohqidgrvcmszets.supabase.co/storage/v1/object/public/CUSTOMER.direct/images/AI/Video/0812%20(1)%20Ai.mov";
 
 const SLIDE_INTERVAL = 5000;
 

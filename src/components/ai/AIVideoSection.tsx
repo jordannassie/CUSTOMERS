@@ -8,7 +8,7 @@ export default function AIVideoSection() {
         >
           {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
           <video
-            src="https://phhczohqidgrvcmszets.supabase.co/storage/v1/object/public/CUSTOMER.direct/images/aliens/0812%20(1).mov"
+            src="https://phhczohqidgrvcmszets.supabase.co/storage/v1/object/public/CUSTOMER.direct/images/AI/Video/0812%20(1)%20Ai.mov"
             autoPlay
             muted
             loop
