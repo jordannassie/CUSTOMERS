@@ -7,9 +7,15 @@ import { useState, useEffect, useRef, useCallback } from "react";
 type Role = "jordan" | "user";
 interface Msg { role: Role; text: string; }
 
-type Step = "opening" | "name" | "phone" | "email" | "business" | "website" | "saving" | "done" | "error";
+type Step =
+  | "opening"
+  | "ai_phone"
+  | "ai_phone_how"
+  | "ai_phone_book"
+  | "ai_phone_cost"
+  | "name" | "phone" | "email" | "business" | "website"
+  | "saving" | "done" | "error";
 
-// Matches the existing lead form exactly — no extra fields
 interface Answers {
   full_name: string;
   phone: string;
@@ -24,15 +30,26 @@ const JORDAN_PHOTO =
 
 const OPENING_OPTIONS = [
   "Get more customers",
-  "Run better ads",
   "Get more DM conversations",
+  "AI Phone Service",
+  "Run better ads",
   "Not sure yet",
 ];
 
+const AI_PHONE_OPTIONS = [
+  "How does it work?",
+  "Can it book appointments?",
+  "How much does it cost?",
+  "I want a demo",
+];
+
+const DEMO_OPTION = ["I want a demo"];
+const BOOK_OPTION = ["Book a Demo"];
+
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-// Bump version key to clear old corrupt sessionStorage
-const SK = "cd_chat_v2";
+// Bump version key when step types change to avoid stale state
+const SK = "cd_chat_v3";
 
 function loadSession(): { messages: Msg[]; step: Step; answers: Answers } | null {
   try {
@@ -72,29 +89,41 @@ function TypingDots() {
   );
 }
 
+// ─── Quick reply options by step ─────────────────────────────────────────────
+
+function getQuickOptions(step: Step): string[] | null {
+  switch (step) {
+    case "opening":      return OPENING_OPTIONS;
+    case "ai_phone":     return AI_PHONE_OPTIONS;
+    case "ai_phone_how": return DEMO_OPTION;
+    case "ai_phone_book":return DEMO_OPTION;
+    case "ai_phone_cost":return BOOK_OPTION;
+    default:             return null;
+  }
+}
+
 // ─── Main Widget ─────────────────────────────────────────────────────────────
 
 export default function ChatWidget() {
-  const [open, setOpen]       = useState(false);
+  const [open, setOpen]         = useState(false);
   const [messages, setMessages] = useState<Msg[]>([]);
-  const [step, setStep]       = useState<Step>("opening");
-  const [answers, setAnswers] = useState<Answers>(EMPTY);
-  const [input, setInput]     = useState("");
-  const [typing, setTyping]   = useState(false);
+  const [step, setStep]         = useState<Step>("opening");
+  const [answers, setAnswers]   = useState<Answers>(EMPTY);
+  const [input, setInput]       = useState("");
+  const [typing, setTyping]     = useState(false);
   const [validErr, setValidErr] = useState("");
-  const [unread, setUnread]   = useState(false);
+  const [unread, setUnread]     = useState(false);
 
-  // ── Ref mirrors answers synchronously — avoids stale-closure bug ──────────
   const answersRef = useRef<Answers>(EMPTY);
   function updateAnswers(patch: Partial<Answers>) {
     answersRef.current = { ...answersRef.current, ...patch };
     setAnswers({ ...answersRef.current });
   }
 
-  const bottomRef  = useRef<HTMLDivElement>(null);
-  const inputRef   = useRef<HTMLInputElement>(null);
+  const bottomRef = useRef<HTMLDivElement>(null);
+  const inputRef  = useRef<HTMLInputElement>(null);
 
-  // ── Restore session ───────────────────────────────────────────────────────
+  // ── Restore session ────────────────────────────────────────────────────────
   useEffect(() => {
     const saved = loadSession();
     if (saved?.messages?.length) {
@@ -110,19 +139,19 @@ export default function ChatWidget() {
     if (messages.length > 0) saveSession(messages, step, answersRef.current);
   }, [messages, step]);
 
-  // ── Start intro when first opened ─────────────────────────────────────────
+  // ── Open / focus ──────────────────────────────────────────────────────────
   useEffect(() => {
     if (open && messages.length === 0) startIntro();
     if (open) { setUnread(false); setTimeout(() => inputRef.current?.focus(), 300); }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
-  // ── Scroll ───────────────────────────────────────────────────────────────
+  // ── Scroll ────────────────────────────────────────────────────────────────
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, typing]);
 
-  // ── Add Jordan messages with typing pause between each ────────────────────
+  // ── Jordan say helper ─────────────────────────────────────────────────────
   const jordanSay = useCallback((texts: string[], onDone?: () => void) => {
     setTyping(true);
     let i = 0;
@@ -145,6 +174,11 @@ export default function ChatWidget() {
     );
   }, [jordanSay]);
 
+  // ── Kick off name/phone/email lead collection ─────────────────────────────
+  const startLeadCapture = useCallback((greeting: string) => {
+    jordanSay([greeting], () => setStep("name"));
+  }, [jordanSay]);
+
   // ── Validate ──────────────────────────────────────────────────────────────
   function validate(value: string): string {
     if (!value.trim()) return "Please enter a response.";
@@ -152,7 +186,7 @@ export default function ChatWidget() {
     return "";
   }
 
-  // ── Submit answer (uses ref — never stale) ────────────────────────────────
+  // ── Submit answer ─────────────────────────────────────────────────────────
   const submitAnswer = useCallback((value: string) => {
     const err = validate(value.trim());
     if (err) { setValidErr(err); return; }
@@ -163,10 +197,45 @@ export default function ChatWidget() {
     setMessages(prev => [...prev, { role: "user", text: v }]);
 
     switch (step) {
+      // ── Opening ────────────────────────────────────────────────────────
       case "opening":
-        // Opening answer is conversational context only — not saved to DB
-        jordanSay([`Got it. I just need a few details. What's your name?`], () => setStep("name"));
+        if (v === "AI Phone Service") {
+          jordanSay([
+            "Our AI Phone Service gives your business an AI phone assistant that can answer calls 24/7, talk with customers, answer common questions, capture leads, and book appointments — even after hours.",
+          ], () => setStep("ai_phone"));
+        } else {
+          jordanSay(["Got it. I just need a few details. What's your name?"], () => setStep("name"));
+        }
         break;
+
+      // ── AI Phone menu ──────────────────────────────────────────────────
+      case "ai_phone":
+        if (v === "How does it work?") {
+          jordanSay([
+            "We set up an AI phone assistant specifically for your business. It answers incoming calls, talks naturally with customers, answers common questions, captures their information, and can route or book qualified leads.",
+          ], () => setStep("ai_phone_how"));
+        } else if (v === "Can it book appointments?") {
+          jordanSay([
+            "Yes. Your AI phone assistant can collect customer information and book appointments based on your business's availability and rules.",
+          ], () => setStep("ai_phone_book"));
+        } else if (v === "How much does it cost?") {
+          jordanSay([
+            "Pricing depends on your business, call volume, and what you want your AI phone assistant to handle. We can show you exactly how it would work for your business on a quick demo.",
+          ], () => setStep("ai_phone_cost"));
+        } else {
+          // "I want a demo"
+          startLeadCapture("Great! I just need a few details. What's your name?");
+        }
+        break;
+
+      // ── AI Phone sub-steps → all lead to demo ──────────────────────────
+      case "ai_phone_how":
+      case "ai_phone_book":
+      case "ai_phone_cost":
+        startLeadCapture("Perfect. Let me grab your details. What's your name?");
+        break;
+
+      // ── Lead capture ───────────────────────────────────────────────────
       case "name":
         updateAnswers({ full_name: v });
         jordanSay([`Nice to meet you, ${v.split(" ")[0]}. What's the best phone number to reach you?`], () => setStep("phone"));
@@ -185,19 +254,17 @@ export default function ChatWidget() {
         break;
       case "website":
         updateAnswers({ website: v });
-        // Read from ref — guaranteed fresh regardless of React batching
         saveLead({ ...answersRef.current, website: v });
         break;
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [step, jordanSay]);
+  }, [step, jordanSay, startLeadCapture]);
 
-  // ── Save lead — same API + payload as the existing lead form ──────────────
+  // ── Save lead ─────────────────────────────────────────────────────────────
   async function saveLead(a: Answers) {
     setStep("saving");
     setTyping(true);
 
-    // Normalise website protocol exactly as the existing form does
     let website = a.website.trim();
     if (!/^https?:\/\//i.test(website)) website = `https://${website}`;
 
@@ -205,14 +272,13 @@ export default function ChatWidget() {
       const res = await fetch("/api/leads", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        // Payload matches the existing lead form exactly, plus optional source
         body: JSON.stringify({
           full_name:     a.full_name,
           phone:         a.phone,
           email:         a.email,
           business_name: a.business_name,
           website,
-          source:        "Website Chat",   // optional field added in migration 003
+          source: "Website Chat",
         }),
       });
 
@@ -222,16 +288,13 @@ export default function ChatWidget() {
         setStep("done");
         jordanSay([
           "Thanks — I've got your information.",
-          "The next step is to book a strategy call so we can talk about your business and build your customer acquisition plan.",
+          "The next step is to book a strategy call so we can talk about your business and build your plan.",
         ]);
       } else {
-        const body = await res.json().catch(() => ({}));
-        console.error("Chat lead save error:", body);
         setStep("error");
         jordanSay(["Sorry, something went wrong. Please try again or use the form below."]);
       }
-    } catch (err) {
-      console.error("Chat lead network error:", err);
+    } catch {
       setTyping(false);
       setStep("error");
       jordanSay(["Sorry, there was a connection issue. Please try the form below."]);
@@ -251,8 +314,9 @@ export default function ChatWidget() {
     if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); submitAnswer(input); }
   }
 
-  const showInput  = !typing && step !== "opening" && step !== "saving" && step !== "done" && step !== "error";
-  const showQuick  = !typing && step === "opening";
+  const quickOptions = getQuickOptions(step);
+  const showQuick  = !typing && quickOptions !== null;
+  const showInput  = !typing && quickOptions === null && step !== "saving" && step !== "done" && step !== "error";
 
   return (
     <>
@@ -300,14 +364,11 @@ export default function ChatWidget() {
           aria-label="Chat with Jordan"
           className={[
             "fixed z-50 bg-white border border-gray-200 flex flex-col shadow-2xl overflow-hidden",
-            // Desktop — panel above launcher, right-aligned
             "sm:bottom-[72px] sm:right-5 sm:left-auto sm:w-[380px] sm:max-h-[75vh] sm:rounded-2xl",
-            // Mobile — full-width bottom sheet, shrinks with keyboard via dvh
             "bottom-0 left-0 right-0 rounded-t-2xl",
           ].join(" ")}
           style={{
             animation: "chatSlideUp 0.25s ease forwards",
-            // dvh = dynamic viewport height — shrinks when software keyboard appears
             maxHeight: "min(90dvh, 90vh)",
           }}
         >
@@ -323,10 +384,8 @@ export default function ChatWidget() {
               <p className="font-bold text-[#0F172A] text-sm leading-tight">Jordan</p>
               <p className="text-xs text-[#64748B]">Customers.Direct &nbsp;·&nbsp; Here to help</p>
             </div>
-            <button onClick={reset} aria-label="Restart chat"
-              title="Start over"
+            <button onClick={reset} aria-label="Restart chat" title="Start over"
               className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 text-[#64748B] transition-colors">
-              {/* Restart icon */}
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
                 <path d="M3 3v5h5" />
@@ -359,7 +418,7 @@ export default function ChatWidget() {
             {/* Done — CTA */}
             {step === "done" && !typing && (
               <div className="flex justify-center mt-2" style={{ animation: "chatSlideUp 0.3s ease forwards" }}>
-                <a href="https://calendar.app.google/SZmANmexmVxVt6BH8" target="_blank" rel="noopener noreferrer"
+                <a href="https://calendar.app.google/muM2Kqc8oYnWBPXXA" target="_blank" rel="noopener noreferrer"
                   className="w-full bg-[#2563EB] text-white font-bold text-sm text-center py-3.5 px-6 rounded-full hover:bg-[#1d4ed8] transition-colors shadow-md">
                   Book a Strategy Call
                 </a>
@@ -376,13 +435,13 @@ export default function ChatWidget() {
             <div ref={bottomRef} />
           </div>
 
-          {/* Opening quick replies */}
+          {/* Quick replies */}
           {showQuick && (
             <div
               className="px-4 pt-3 flex flex-wrap gap-2 shrink-0 border-t border-gray-100 bg-white"
               style={{ paddingBottom: "max(16px, env(safe-area-inset-bottom))" }}
             >
-              {OPENING_OPTIONS.map(opt => (
+              {quickOptions!.map(opt => (
                 <button key={opt} onClick={() => submitAnswer(opt)}
                   className="text-sm font-medium bg-[#F1F5F9] hover:bg-[#DBEAFE] active:bg-[#DBEAFE] border border-gray-200 hover:border-[#BFDBFE] text-[#0F172A] px-4 py-2.5 rounded-full transition-colors">
                   {opt}
@@ -426,7 +485,6 @@ export default function ChatWidget() {
             </div>
           )}
 
-          {/* Quick replies — safe area bottom padding */}
           {step === "saving" && (
             <div
               className="px-4 pt-2 shrink-0 text-center text-xs text-[#94A3B8] bg-white"

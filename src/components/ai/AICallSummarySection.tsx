@@ -128,7 +128,7 @@ function OpenSMS({ visible }: { visible: boolean }) {
           <hr className="border-gray-200 my-2.5" />
           <div className="flex items-start gap-1.5 text-[11px] text-[#15803D] font-semibold">
             <span className="text-base leading-none">✅</span>
-            <span>Booking link sent to Sarah — she&apos;s picking a slot now.</span>
+            <span>Booking link sent to Sarah — she's picking a slot now.</span>
           </div>
           {/* Link card */}
           <div className="mt-2.5 flex items-center gap-2 bg-white border border-gray-200 rounded-xl px-3 py-2">
