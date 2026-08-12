@@ -140,12 +140,24 @@ export default function MainFooter() {
           <p className="text-sm text-white/40">
             © {year} Customers.Direct. All rights reserved.
           </p>
-          <a
-            href="/admin"
-            className="text-xs text-white/20 hover:text-white/50 transition-colors"
-          >
-            Admin
-          </a>
+          <div className="flex items-center gap-5">
+            <a
+              href="tel:9498102010"
+              className="flex items-center gap-2 text-sm text-white/50 hover:text-white transition-colors"
+              aria-label="Call (949) 810-2010"
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81 19.79 19.79 0 01.09 1.2 2 2 0 012.07 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11l-1.27 1.27a16 16 0 006.29 6.29l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z" />
+              </svg>
+              (949) 810-2010
+            </a>
+            <a
+              href="/admin"
+              className="text-xs text-white/20 hover:text-white/50 transition-colors"
+            >
+              Admin
+            </a>
+          </div>
         </div>
       </div>
     </footer>

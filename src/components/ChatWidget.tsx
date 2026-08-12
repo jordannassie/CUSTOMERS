@@ -335,8 +335,7 @@ export default function ChatWidget() {
       <button
         onClick={() => { setOpen(v => !v); setUnread(false); }}
         aria-label={open ? "Close chat" : "Chat with Jordan"}
-        className="fixed bottom-5 right-6 z-50 flex flex-col items-center gap-1.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB] focus-visible:ring-offset-2 rounded-full group"
-        style={{ bottom: "max(20px, env(safe-area-inset-bottom, 20px))" }}
+        className="fixed bottom-[72px] sm:bottom-5 right-6 z-50 flex flex-col items-center gap-1.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB] focus-visible:ring-offset-2 rounded-full group"
       >
         <div
           className="relative w-16 h-16 sm:w-[68px] sm:h-[68px] rounded-full bg-[#2563EB] flex items-center justify-center text-white ring-2 ring-white transition-all duration-200 group-hover:scale-[1.04] group-hover:shadow-2xl"

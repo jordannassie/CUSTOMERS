@@ -14,6 +14,7 @@ import StrategyCallSection from "@/components/StrategyCallSection";
 import MainFooter from "@/components/MainFooter";
 import PromoBar from "@/components/PromoBar";
 import ChatWidget from "@/components/ChatWidget";
+import MobileCallBar from "@/components/MobileCallBar";
 import TestimonialsSection from "@/components/TestimonialsSection";
 
 export const metadata = {
@@ -75,6 +76,7 @@ export default function Home() {
       </main>
       <MainFooter />
       <ChatWidget />
+      <MobileCallBar />
     </>
   );
 }
