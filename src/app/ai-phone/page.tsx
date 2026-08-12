@@ -10,7 +10,7 @@ import AIIndustriesSection from "@/components/ai/AIIndustriesSection";
 import MissedCallCalculator from "@/components/ai/MissedCallCalculator";
 import BusinessAvailabilityScanner from "@/components/ai/BusinessAvailabilityScanner";
 import AIPricingSection from "@/components/ai/AIPricingSection";
-import AIDemoSection from "@/components/ai/AIDemoSection";
+import StrategyCallSection from "@/components/StrategyCallSection";
 import AIFAQSection from "@/components/ai/AIFAQSection";
 import AIFinalCTA from "@/components/ai/AIFinalCTA";
 import AIFooter from "@/components/ai/AIFooter";
@@ -37,7 +37,7 @@ export default function AIPhonePage() {
         <MissedCallCalculator />
         <BusinessAvailabilityScanner />
         <AIPricingSection />
-        <AIDemoSection />
+        <StrategyCallSection sectionId="demo" source="ai_phone" />
         <AIFAQSection />
         <AIFinalCTA />
       </main>

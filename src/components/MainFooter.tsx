@@ -1,4 +1,3 @@
-import Image from "next/image";
 import { Users } from "lucide-react";
 
 const year = new Date().getFullYear();
@@ -29,15 +28,10 @@ export default function MainFooter() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-10 mb-12">
           {/* Brand */}
           <div className="lg:col-span-1">
-            <a href="/" aria-label="Customers.Direct — Home">
-              <Image
-                src="https://phhczohqidgrvcmszets.supabase.co/storage/v1/object/public/CUSTOMER.direct/logo/Logo.png"
-                alt="Customers.Direct"
-                width={160}
-                height={40}
-                unoptimized
-                className="h-8 w-auto brightness-0 invert mb-4"
-              />
+            <a href="/" aria-label="Customers.Direct — Home" className="inline-block mb-4">
+              <span className="text-white font-black text-[26px] tracking-tight">
+                Customers.Direct
+              </span>
             </a>
             <p className="text-sm text-white/50 leading-relaxed">
               Customer Acquisition + AI Receptionist for growing businesses.
@@ -99,7 +93,6 @@ export default function MainFooter() {
               {[
                 { label: "Contact", href: "/#strategy-call" },
                 { label: "Book a Call", href: "/#strategy-call" },
-                { label: "Home 2", href: "/home-2" },
               ].map(({ label, href }) => (
                 <li key={label}>
                   <a href={href} className="text-sm text-white/50 hover:text-white transition-colors">

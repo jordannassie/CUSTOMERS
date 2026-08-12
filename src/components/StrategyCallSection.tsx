@@ -20,7 +20,14 @@ const INITIAL: FormData = {
   _honey: "",
 };
 
-export default function StrategyCallSection() {
+interface Props {
+  /** Override the section's id attribute. Defaults to "strategy-call". */
+  sectionId?: string;
+  /** Optional source tag passed to /api/leads. Hidden from users. */
+  source?: string;
+}
+
+export default function StrategyCallSection({ sectionId = "strategy-call", source }: Props) {
   const [form, setForm] = useState<FormData>(INITIAL);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -42,10 +49,11 @@ export default function StrategyCallSection() {
 
     setLoading(true);
     try {
+      const payload = source ? { ...form, source } : form;
       const res = await fetch("/api/leads", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify(payload),
       });
 
       if (res.ok) {
@@ -61,7 +69,7 @@ export default function StrategyCallSection() {
   }
 
   return (
-    <section id="strategy-call" className="gradient-bg py-20 px-4">
+    <section id={sectionId} className="gradient-bg py-20 px-4">
       <div className="max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
         {/* Left — Steps */}
         <div>
