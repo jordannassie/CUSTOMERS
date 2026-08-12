@@ -2,26 +2,20 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { PhoneCall, Menu, X } from "lucide-react";
+import { Menu, X, PhoneCall } from "lucide-react";
 
-const NAV_ITEMS = [
-  { label: "How It Works", id: "how-it-works" },
-  { label: "Features", id: "features" },
-  { label: "Industries", id: "industries" },
-  { label: "Pricing", id: "pricing" },
-];
-
-export default function AIHeader() {
-  const [mobileOpen, setMobileOpen] = useState(false);
-
-  function scrollTo(id: string) {
-    const el = document.getElementById(id);
-    if (el) {
-      const y = el.getBoundingClientRect().top + window.scrollY - 88;
-      window.scrollTo({ top: y, behavior: "smooth" });
-    }
-    setMobileOpen(false);
+function scrollTo(id: string, closeFn?: () => void) {
+  const el = document.getElementById(id);
+  if (el) {
+    const y = el.getBoundingClientRect().top + window.scrollY - 88;
+    window.scrollTo({ top: y, behavior: "smooth" });
   }
+  closeFn?.();
+}
+
+export default function MainHeader() {
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const close = () => setMobileOpen(false);
 
   return (
     <header className="sticky top-0 z-50 px-4 pt-4">
@@ -40,42 +34,45 @@ export default function AIHeader() {
             />
           </a>
 
-          {/* Desktop Nav */}
+          {/* Desktop nav */}
           <nav
             className="hidden md:flex items-center gap-7"
-            aria-label="AI Phone navigation"
+            aria-label="Main navigation"
           >
-            <a
-              href="/"
+            <button
+              onClick={() => scrollTo("how-it-works")}
               className="text-sm font-medium text-[#64748B] hover:text-[#0F172A] transition-colors"
             >
               Customer Acquisition
-            </a>
-            {NAV_ITEMS.map((item) => (
-              <button
-                key={item.id}
-                onClick={() => scrollTo(item.id)}
-                className="text-sm font-medium text-[#64748B] hover:text-[#0F172A] transition-colors"
-              >
-                {item.label}
-              </button>
-            ))}
+            </button>
             <a
-              href="/sales"
+              href="/ai-phone"
               className="text-sm font-medium text-[#64748B] hover:text-[#0F172A] transition-colors"
             >
-              Sales
+              AI Phone
             </a>
+            <button
+              onClick={() => scrollTo("how-it-works")}
+              className="text-sm font-medium text-[#64748B] hover:text-[#0F172A] transition-colors"
+            >
+              How It Works
+            </button>
+            <button
+              onClick={() => scrollTo("pricing")}
+              className="text-sm font-medium text-[#64748B] hover:text-[#0F172A] transition-colors"
+            >
+              Pricing
+            </button>
           </nav>
 
           {/* CTA + Hamburger */}
           <div className="flex items-center gap-3">
             <button
-              onClick={() => scrollTo("demo")}
+              onClick={() => scrollTo("strategy-call")}
               className="hidden md:inline-flex items-center gap-2 bg-[#2563EB] text-white text-sm font-semibold px-5 py-2.5 rounded-full hover:bg-[#1d4ed8] transition-colors"
             >
               <PhoneCall size={14} aria-hidden="true" />
-              Hear Your AI Receptionist
+              Book a Call
             </button>
 
             <button
@@ -92,35 +89,37 @@ export default function AIHeader() {
         {/* Mobile dropdown */}
         {mobileOpen && (
           <div className="md:hidden border-t border-gray-100 px-6 py-4 flex flex-col gap-3">
-            <a
-              href="/"
-              className="text-sm font-medium text-[#64748B] hover:text-[#0F172A] py-1"
-              onClick={() => setMobileOpen(false)}
+            <button
+              onClick={() => scrollTo("how-it-works", close)}
+              className="text-sm font-medium text-[#64748B] hover:text-[#0F172A] text-left py-1"
             >
               Customer Acquisition
-            </a>
-            {NAV_ITEMS.map((item) => (
-              <button
-                key={item.id}
-                onClick={() => scrollTo(item.id)}
-                className="text-sm font-medium text-[#64748B] hover:text-[#0F172A] text-left py-1"
-              >
-                {item.label}
-              </button>
-            ))}
+            </button>
             <a
-              href="/sales"
+              href="/ai-phone"
+              onClick={close}
               className="text-sm font-medium text-[#64748B] hover:text-[#0F172A] py-1"
-              onClick={() => setMobileOpen(false)}
             >
-              Sales
+              AI Phone
             </a>
             <button
-              onClick={() => scrollTo("demo")}
+              onClick={() => scrollTo("how-it-works", close)}
+              className="text-sm font-medium text-[#64748B] hover:text-[#0F172A] text-left py-1"
+            >
+              How It Works
+            </button>
+            <button
+              onClick={() => scrollTo("pricing", close)}
+              className="text-sm font-medium text-[#64748B] hover:text-[#0F172A] text-left py-1"
+            >
+              Pricing
+            </button>
+            <button
+              onClick={() => scrollTo("strategy-call", close)}
               className="mt-2 inline-flex items-center justify-center gap-2 bg-[#2563EB] text-white text-sm font-semibold px-5 py-3 rounded-full hover:bg-[#1d4ed8] transition-colors"
             >
               <PhoneCall size={14} aria-hidden="true" />
-              Hear Your AI Receptionist
+              Book a Call
             </button>
           </div>
         )}
