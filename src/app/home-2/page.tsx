@@ -17,6 +17,13 @@ export const metadata = {
   title: "Customers.Direct — DM Customer Acquisition",
   description:
     "Customers.Direct creates and runs targeted video ads that start real conversations with people interested in your services.",
+  alternates: {
+    canonical: "/",
+  },
+  robots: {
+    index: false,
+    follow: true,
+  },
 };
 
 export default function Home2() {

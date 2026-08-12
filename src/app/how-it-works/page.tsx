@@ -6,6 +6,9 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "How It Works — Customers.Direct",
   description: "See how Customers.Direct turns video ads into new customer conversations, step by step.",
+  alternates: {
+    canonical: "/how-it-works",
+  },
 };
 
 export default function HowItWorksPage() {

@@ -21,6 +21,9 @@ export const metadata = {
   title: "Customers.Direct — Get More Customers. Never Miss Another One.",
   description:
     "Customer Acquisition + AI Receptionist for growing businesses. We help you create more customer opportunities and make sure you're there when customers respond.",
+  alternates: {
+    canonical: "/",
+  },
 };
 
 export default function Home() {

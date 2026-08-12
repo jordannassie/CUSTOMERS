@@ -12,12 +12,45 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const siteUrl = "https://customers.direct";
+const logoUrl =
+  "https://phhczohqidgrvcmszets.supabase.co/storage/v1/object/public/CUSTOMER.direct/logo/Logo.png";
+
 export const metadata: Metadata = {
-  title: "Customers.Direct",
-  description: "Customers.Direct — your customer platform, powered by Supabase.",
-  icons: {
-    icon: "https://phhczohqidgrvcmszets.supabase.co/storage/v1/object/public/CUSTOMER.direct/logo/Logo.png",
+  metadataBase: new URL(siteUrl),
+  title: {
+    default: "Customers.Direct — Get More Customers. Never Miss Another One.",
+    template: "%s | Customers.Direct",
   },
+  description:
+    "Customer Acquisition + AI Receptionist for growing businesses. We help you create more customer opportunities and make sure you're there when customers respond.",
+  icons: {
+    icon: logoUrl,
+  },
+  openGraph: {
+    type: "website",
+    siteName: "Customers.Direct",
+    url: siteUrl,
+    title: "Customers.Direct — Get More Customers. Never Miss Another One.",
+    description:
+      "Customer Acquisition + AI Receptionist for growing businesses. We help you create more customer opportunities and make sure you're there when customers respond.",
+    images: [{ url: logoUrl }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Customers.Direct — Get More Customers. Never Miss Another One.",
+    description: "Customer Acquisition + AI Receptionist for growing businesses.",
+    images: [logoUrl],
+  },
+};
+
+const organizationJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  name: "Customers.Direct",
+  url: siteUrl,
+  logo: logoUrl,
+  description: "Customer Acquisition + AI Receptionist for growing businesses.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
@@ -40,6 +73,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           as="video"
           href="https://phhczohqidgrvcmszets.supabase.co/storage/v1/object/public/CUSTOMER.direct/images/aliens/0812%20(1).mov"
           type="video/mp4"
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
         />
       </head>
       <body className="min-h-full flex flex-col">{children}</body>
