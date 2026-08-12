@@ -1,4 +1,4 @@
-import { ArrowRight, LayoutDashboard } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 
 export default function SalesHero() {
   return (
@@ -24,13 +24,6 @@ export default function SalesHero() {
           >
             Apply to Sales Program
             <ArrowRight size={17} aria-hidden="true" />
-          </a>
-          <a
-            href="/sales/dashboard"
-            className="inline-flex items-center justify-center gap-2 border border-gray-200 text-[#0F172A] font-semibold px-8 py-4 rounded-full hover:bg-gray-50 transition-colors text-base focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2563EB]"
-          >
-            <LayoutDashboard size={17} aria-hidden="true" />
-            Preview Sales Dashboard
           </a>
         </div>
 

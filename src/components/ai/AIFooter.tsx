@@ -37,7 +37,6 @@ const COLUMNS: FooterColumn[] = [
     heading: "Sales",
     links: [
       { label: "Sales Program", href: "/sales", highlight: true },
-      { label: "Sales Login", href: "/sales/dashboard" },
     ],
   },
   {

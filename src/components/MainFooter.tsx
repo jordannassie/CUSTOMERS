@@ -116,11 +116,6 @@ export default function MainFooter() {
                   Join Sales Program →
                 </a>
               </li>
-              <li>
-                <a href="/sales/dashboard" className="text-sm text-white/50 hover:text-white transition-colors">
-                  Sales Login
-                </a>
-              </li>
             </ul>
           </div>
 
