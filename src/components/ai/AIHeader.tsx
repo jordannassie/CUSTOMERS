@@ -41,14 +41,14 @@ export default function AIHeader() {
 
           {/* Desktop Nav */}
           <nav
-            className="hidden md:flex items-center gap-7"
+            className="hidden md:flex items-center gap-5 lg:gap-7"
             aria-label="AI Phone navigation"
           >
             <a
               href="/"
               className="text-sm font-medium text-[#64748B] hover:text-[#0F172A] transition-colors"
             >
-              Customer Acquisition
+              AI Customer Acquisition
             </a>
             {NAV_ITEMS.map((item) => (
               <button
@@ -90,7 +90,7 @@ export default function AIHeader() {
               className="text-sm font-medium text-[#64748B] hover:text-[#0F172A] py-1"
               onClick={() => setMobileOpen(false)}
             >
-              Customer Acquisition
+              AI Customer Acquisition
             </a>
             {NAV_ITEMS.map((item) => (
               <button

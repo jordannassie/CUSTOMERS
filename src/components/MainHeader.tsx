@@ -36,14 +36,14 @@ export default function MainHeader() {
 
           {/* Desktop nav */}
           <nav
-            className="hidden md:flex items-center gap-7"
+            className="hidden md:flex items-center gap-5 lg:gap-7"
             aria-label="Main navigation"
           >
             <button
               onClick={() => scrollTo("how-it-works")}
               className="text-sm font-medium text-[#64748B] hover:text-[#0F172A] transition-colors"
             >
-              Customer Acquisition
+              AI Customer Acquisition
             </button>
             <a
               href="/ai-phone"
@@ -94,7 +94,7 @@ export default function MainHeader() {
               onClick={() => scrollTo("how-it-works", close)}
               className="text-sm font-medium text-[#64748B] hover:text-[#0F172A] text-left py-1"
             >
-              Customer Acquisition
+              AI Customer Acquisition
             </button>
             <a
               href="/ai-phone"

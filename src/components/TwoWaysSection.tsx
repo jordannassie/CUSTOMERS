@@ -63,7 +63,7 @@ export default function TwoWaysSection() {
             style={{ boxShadow: "0 4px 24px rgba(37,99,235,0.08)" }}
           >
             <span className="text-[10px] font-black uppercase tracking-widest text-[#2563EB] mb-4">
-              Customer Acquisition
+              AI Customer Acquisition
             </span>
             <h3 className="text-2xl font-black text-[#0F172A] mb-6">
               Get More Customers.
@@ -96,7 +96,7 @@ export default function TwoWaysSection() {
               }}
               className="inline-flex items-center justify-center gap-2 border border-[#DBEAFE] bg-white text-[#2563EB] font-bold px-6 py-3.5 rounded-full hover:bg-[#EFF6FF] transition-colors text-sm focus-visible:outline-2 focus-visible:outline-[#2563EB]"
             >
-              Explore Customer Acquisition
+              Explore AI Customer Acquisition
               <ArrowRight size={15} aria-hidden="true" />
             </button>
           </div>

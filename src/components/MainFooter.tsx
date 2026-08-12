@@ -72,7 +72,7 @@ export default function MainFooter() {
             </h4>
             <ul className="flex flex-col gap-2.5">
               {[
-                { label: "Customer Acquisition", href: "/#how-it-works" },
+                { label: "AI Customer Acquisition", href: "/#how-it-works" },
                 { label: "AI Phone", href: "/ai-phone" },
                 { label: "How It Works", href: "/#how-it-works" },
                 { label: "Pricing", href: "/#pricing" },
