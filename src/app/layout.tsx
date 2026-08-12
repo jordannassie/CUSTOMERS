@@ -34,11 +34,11 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           as="image"
           href="https://phhczohqidgrvcmszets.supabase.co/storage/v1/object/public/CUSTOMER.direct/images/aliens/9859418e-4aaa-457f-8cc3-e841889b625e.png"
         />
-        {/* Legacy DM video */}
+        {/* Home hero video */}
         <link
           rel="preload"
           as="video"
-          href="https://phhczohqidgrvcmszets.supabase.co/storage/v1/object/public/CUSTOMER.direct/images/aliens/AlienHorizontal.mp4"
+          href="https://phhczohqidgrvcmszets.supabase.co/storage/v1/object/public/CUSTOMER.direct/images/aliens/0812%20(1).mov"
           type="video/mp4"
         />
         {/* AI homepage video */}
