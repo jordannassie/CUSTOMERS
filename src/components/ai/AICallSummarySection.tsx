@@ -79,10 +79,10 @@ function OpenSMS({ visible }: { visible: boolean }) {
         transition: "opacity 0.35s ease, transform 0.35s ease",
       }}
     >
-      {/* SMS header */}
+      {/* SMS header — padded below dynamic island */}
       <div
         className="bg-[#F8FAFC] border-b border-gray-100 px-4 py-3 flex items-center gap-3 shrink-0"
-        style={{ paddingTop: "14px" }}
+        style={{ paddingTop: "52px" }}
       >
         <button className="text-[#2563EB] text-sm font-semibold flex items-center gap-1">
           <svg width="8" height="13" viewBox="0 0 8 13" fill="none" aria-hidden="true">
