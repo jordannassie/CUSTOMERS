@@ -67,13 +67,14 @@ export default function MainHeader() {
 
           {/* CTA + Hamburger */}
           <div className="flex items-center gap-3">
-            <button
-              onClick={() => scrollTo("strategy-call")}
+            <a
+              href="tel:9498102010"
+              aria-label="Call Customers.Direct at (949) 810-2010"
               className="hidden md:inline-flex items-center gap-2 bg-[#2563EB] text-white text-sm font-semibold px-5 py-2.5 rounded-full hover:bg-[#1d4ed8] transition-colors"
             >
               <PhoneCall size={14} aria-hidden="true" />
-              Book a Call
-            </button>
+              (949) 810-2010
+            </a>
 
             <button
               className="md:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors"
@@ -114,13 +115,15 @@ export default function MainHeader() {
             >
               Pricing
             </button>
-            <button
-              onClick={() => scrollTo("strategy-call", close)}
+            <a
+              href="tel:9498102010"
+              onClick={close}
+              aria-label="Call Customers.Direct at (949) 810-2010"
               className="mt-2 inline-flex items-center justify-center gap-2 bg-[#2563EB] text-white text-sm font-semibold px-5 py-3 rounded-full hover:bg-[#1d4ed8] transition-colors"
             >
               <PhoneCall size={14} aria-hidden="true" />
-              Book a Call
-            </button>
+              (949) 810-2010
+            </a>
           </div>
         )}
       </div>
