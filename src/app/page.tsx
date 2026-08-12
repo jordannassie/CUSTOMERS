@@ -1,6 +1,7 @@
 import AIHeader from "@/components/ai/AIHeader";
 import AIHeroSection from "@/components/ai/AIHeroSection";
 import TrustStrip from "@/components/ai/TrustStrip";
+import AIVideoSection from "@/components/ai/AIVideoSection";
 import AIProblemSection from "@/components/ai/AIProblemSection";
 import AIHowItWorks from "@/components/ai/AIHowItWorks";
 import AIFeaturesSection from "@/components/ai/AIFeaturesSection";
@@ -26,6 +27,7 @@ export default function Home() {
       <main>
         <AIHeroSection />
         <TrustStrip />
+        <AIVideoSection />
         <AIProblemSection />
         <AIHowItWorks />
         <AIFeaturesSection />
