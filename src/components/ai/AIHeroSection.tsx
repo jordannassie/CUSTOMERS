@@ -3,7 +3,6 @@
 import { useState, useEffect, useRef } from "react";
 
 const IMAGES = [
-  "https://phhczohqidgrvcmszets.supabase.co/storage/v1/object/public/CUSTOMER.direct/images/AI/heroimages/Hero%20ai.png",
   "https://phhczohqidgrvcmszets.supabase.co/storage/v1/object/public/CUSTOMER.direct/images/AI/heroimages/91d7e343-2366-4f2e-849b-9991d5b15d75.png",
   "https://phhczohqidgrvcmszets.supabase.co/storage/v1/object/public/CUSTOMER.direct/images/AI/heroimages/0b013d4c-160b-4f4b-96dd-6cf1a75695b0.png",
   "https://phhczohqidgrvcmszets.supabase.co/storage/v1/object/public/CUSTOMER.direct/images/AI/heroimages/43c0d4ff-9bba-4557-97fa-f81e9e13d9ef.png",

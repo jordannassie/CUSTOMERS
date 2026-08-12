@@ -14,6 +14,7 @@ import StrategyCallSection from "@/components/StrategyCallSection";
 import AIFAQSection from "@/components/ai/AIFAQSection";
 import AIFinalCTA from "@/components/ai/AIFinalCTA";
 import AIFooter from "@/components/ai/AIFooter";
+import ChatWidget from "@/components/ChatWidget";
 
 export const metadata = {
   title: "Customers Direct AI Receptionist — Never Miss Another Customer Call",
@@ -42,6 +43,7 @@ export default function AIPhonePage() {
         <AIFinalCTA />
       </main>
       <AIFooter />
+      <ChatWidget />
     </>
   );
 }
