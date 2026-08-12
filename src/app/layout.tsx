@@ -2,6 +2,9 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
+const BRAND_ICON =
+  "https://phhczohqidgrvcmszets.supabase.co/storage/v1/object/public/CUSTOMER.direct/logo/ICON.png";
+
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -25,7 +28,9 @@ export const metadata: Metadata = {
   description:
     "Customer Acquisition + AI Receptionist for growing businesses. We help you create more customer opportunities and make sure you're there when customers respond.",
   icons: {
-    icon: logoUrl,
+    icon: BRAND_ICON,
+    shortcut: BRAND_ICON,
+    apple: BRAND_ICON,
   },
   openGraph: {
     type: "website",
@@ -34,13 +39,20 @@ export const metadata: Metadata = {
     title: "Customers.Direct — Get More Customers. Never Miss Another One.",
     description:
       "Customer Acquisition + AI Receptionist for growing businesses. We help you create more customer opportunities and make sure you're there when customers respond.",
-    images: [{ url: logoUrl }],
+    images: [
+      {
+        url: BRAND_ICON,
+        width: 1024,
+        height: 1024,
+        alt: "Customers.Direct",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
     title: "Customers.Direct — Get More Customers. Never Miss Another One.",
     description: "Customer Acquisition + AI Receptionist for growing businesses.",
-    images: [logoUrl],
+    images: [BRAND_ICON],
   },
 };
 
