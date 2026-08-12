@@ -648,9 +648,9 @@ export default function ProcessSection() {
       <div className="max-w-7xl mx-auto">
         {/* Heading */}
         <div className="text-center mb-10">
-          <h2 className="text-3xl md:text-4xl font-black text-[#0F172A]">
+          <h1 className="text-3xl md:text-4xl font-black text-[#0F172A]">
             From video ad to new customer.
-          </h2>
+          </h1>
         </div>
 
         {/* Progress indicator */}
