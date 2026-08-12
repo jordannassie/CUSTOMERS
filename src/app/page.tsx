@@ -17,12 +17,31 @@ import ChatWidget from "@/components/ChatWidget";
 import MobileCallBar from "@/components/MobileCallBar";
 import TestimonialsSection from "@/components/TestimonialsSection";
 
+const homeTitle = "Customers.Direct — Get More Customers. Never Miss Another One.";
+const homeDescription =
+  "Customer Acquisition + AI Receptionist for growing businesses. We help you create more customer opportunities and make sure you're there when customers respond.";
+const homeImage =
+  "https://phhczohqidgrvcmszets.supabase.co/storage/v1/object/public/CUSTOMER.direct/images/banners/DM/ChatGPT%20Image%20Aug%2012,%202026,%2002_03_22%20PM%20(6).png";
+
 export const metadata = {
-  title: "Customers.Direct — Get More Customers. Never Miss Another One.",
-  description:
-    "Customer Acquisition + AI Receptionist for growing businesses. We help you create more customer opportunities and make sure you're there when customers respond.",
+  title: homeTitle,
+  description: homeDescription,
   alternates: {
     canonical: "/",
+  },
+  openGraph: {
+    type: "website",
+    siteName: "Customers.Direct",
+    url: "https://customers.direct/",
+    title: homeTitle,
+    description: homeDescription,
+    images: [{ url: homeImage }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: homeTitle,
+    description: homeDescription,
+    images: [homeImage],
   },
 };
 
