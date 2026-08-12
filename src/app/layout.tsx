@@ -67,13 +67,6 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           as="image"
           href="https://phhczohqidgrvcmszets.supabase.co/storage/v1/object/public/CUSTOMER.direct/images/banners/DM/ChatGPT%20Image%20Aug%2012,%202026,%2002_03_22%20PM%20(6).png"
         />
-        {/* AI homepage video */}
-        <link
-          rel="preload"
-          as="video"
-          href="https://phhczohqidgrvcmszets.supabase.co/storage/v1/object/public/CUSTOMER.direct/images/aliens/0812%20(1).mov"
-          type="video/mp4"
-        />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
