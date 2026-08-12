@@ -1,85 +1,273 @@
 "use client";
 
-import { Check, PhoneCall, ArrowRight } from "lucide-react";
-import LiveCallCard from "./LiveCallCard";
+import { useState, useEffect, useRef } from "react";
+
+const IMAGES = [
+  "https://phhczohqidgrvcmszets.supabase.co/storage/v1/object/public/CUSTOMER.direct/images/AI/heroimages/Hero%20ai.png",
+  "https://phhczohqidgrvcmszets.supabase.co/storage/v1/object/public/CUSTOMER.direct/images/AI/heroimages/91d7e343-2366-4f2e-849b-9991d5b15d75.png",
+  "https://phhczohqidgrvcmszets.supabase.co/storage/v1/object/public/CUSTOMER.direct/images/AI/heroimages/0b013d4c-160b-4f4b-96dd-6cf1a75695b0.png",
+  "https://phhczohqidgrvcmszets.supabase.co/storage/v1/object/public/CUSTOMER.direct/images/AI/heroimages/43c0d4ff-9bba-4557-97fa-f81e9e13d9ef.png",
+];
+
+const VIDEO_URL =
+  "https://phhczohqidgrvcmszets.supabase.co/storage/v1/object/public/CUSTOMER.direct/images/aliens/0812%20(1).mov";
+
+const SLIDE_INTERVAL = 5000;
+
+type LoadState = "loading" | "ready" | "error";
 
 export default function AIHeroSection() {
-  function scrollTo(id: string) {
-    const el = document.getElementById(id);
-    if (el) {
-      const y = el.getBoundingClientRect().top + window.scrollY - 88;
-      window.scrollTo({ top: y, behavior: "smooth" });
+  const [open, setOpen]         = useState(false);
+  const [slide, setSlide]       = useState(0);
+  const [loadState, setLoad]    = useState<LoadState>("loading");
+  const [progress, setProgress] = useState(0);
+  const [videoSrc, setVideoSrc] = useState<string | null>(null);
+  const videoRef   = useRef<HTMLVideoElement>(null);
+  const blobRef    = useRef<string | null>(null);
+  const slideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Eagerly preload all slide images
+  useEffect(() => {
+    IMAGES.forEach((src) => {
+      const img = new Image();
+      img.src = src;
+    });
+  }, []);
+
+  // Auto-advance slides (pause when modal is open)
+  useEffect(() => {
+    if (open) return;
+    slideTimer.current = setTimeout(() => {
+      setSlide((s) => (s + 1) % IMAGES.length);
+    }, SLIDE_INTERVAL);
+    return () => {
+      if (slideTimer.current) clearTimeout(slideTimer.current);
+    };
+  }, [slide, open]);
+
+  // Download video as blob so playback is instant with no network stalls
+  useEffect(() => {
+    const controller = new AbortController();
+    (async () => {
+      try {
+        const res = await fetch(VIDEO_URL, { signal: controller.signal });
+        if (!res.ok || !res.body) throw new Error("fetch failed");
+        const total = Number(res.headers.get("content-length") ?? 0);
+        const reader = res.body.getReader();
+        const chunks: BlobPart[] = [];
+        let received = 0;
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          chunks.push(value);
+          received += value.length;
+          if (total > 0) setProgress(Math.round((received / total) * 100));
+        }
+        const blob = new Blob(chunks, { type: "video/mp4" });
+        const url  = URL.createObjectURL(blob);
+        blobRef.current = url;
+        setVideoSrc(url);
+        setLoad("ready");
+      } catch (e) {
+        if ((e as Error).name === "AbortError") return;
+        setVideoSrc(VIDEO_URL);
+        setLoad("ready");
+      }
+    })();
+    return () => {
+      controller.abort();
+      if (blobRef.current) URL.revokeObjectURL(blobRef.current);
+    };
+  }, []);
+
+  // Play / pause when modal opens or closes
+  useEffect(() => {
+    const v = videoRef.current;
+    if (!v || !videoSrc) return;
+    if (open) {
+      v.currentTime = 0;
+      v.play().catch(() => {});
+    } else {
+      v.pause();
+      v.currentTime = 0;
     }
-  }
+  }, [open, videoSrc]);
+
+  // Close on Escape
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [open]);
+
+  // Prevent body scroll when modal is open
+  useEffect(() => {
+    document.body.style.overflow = open ? "hidden" : "";
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [open]);
 
   return (
-    <section className="bg-white pt-12 pb-24 px-4 overflow-hidden">
-      <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-        {/* LEFT — Copy */}
-        <div>
-          <div className="inline-flex items-center gap-2 bg-[#EFF6FF] border border-[#DBEAFE] rounded-full px-4 py-1.5 mb-6">
-            <PhoneCall size={13} className="text-[#2563EB]" aria-hidden="true" />
-            <span className="text-xs font-bold uppercase tracking-widest text-[#2563EB]">
-              AI Receptionist for Your Business
-            </span>
-          </div>
-
-          <h1 className="text-4xl sm:text-5xl lg:text-[54px] font-black text-[#0F172A] leading-[1.08] tracking-tight mb-6">
-            Never Miss Another{" "}
-            <span
-              className="text-transparent bg-clip-text"
+    <>
+      {/* ── Slider banner ─────────────────────────────────────────────── */}
+      <section
+        className={`relative w-full bg-black overflow-hidden group ${
+          loadState === "ready" ? "cursor-pointer" : "cursor-default"
+        }`}
+        onClick={() => loadState === "ready" && setOpen(true)}
+        role="button"
+        tabIndex={0}
+        aria-label="Play AI Receptionist video"
+        onKeyDown={(e) => e.key === "Enter" && setOpen(true)}
+      >
+        {/* Slides */}
+        <div className="relative w-full overflow-hidden" style={{ maxHeight: "90vh" }}>
+          {IMAGES.map((src, i) => (
+            /* eslint-disable-next-line @next/next/no-img-element */
+            <img
+              key={src}
+              src={src}
+              alt={`AI Receptionist — slide ${i + 1}`}
+              loading="eager"
+              decoding="async"
+              className="w-full h-auto block absolute inset-0 w-full h-full object-cover transition-opacity duration-700"
               style={{
-                backgroundImage:
-                  "linear-gradient(135deg, #2563EB 0%, #7C3AED 100%)",
+                opacity: i === slide ? 1 : 0,
+                position: i === 0 ? "relative" : "absolute",
+                maxHeight: "90vh",
               }}
-            >
-              Customer Call.
-            </span>
-          </h1>
-
-          <p className="text-lg text-[#64748B] leading-relaxed mb-8 max-w-md">
-            Your AI Receptionist answers 24/7, qualifies callers, books
-            appointments, and sends you the lead — automatically.
-          </p>
-
-          <div className="flex flex-col sm:flex-row gap-3 mb-8">
-            <button
-              onClick={() => scrollTo("demo")}
-              className="inline-flex items-center justify-center gap-2 bg-[#2563EB] text-white font-bold px-7 py-4 rounded-full hover:bg-[#1d4ed8] transition-colors text-base focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2563EB]"
-            >
-              <PhoneCall size={17} aria-hidden="true" />
-              Hear Your AI Receptionist
-            </button>
-            <button
-              onClick={() => scrollTo("how-it-works")}
-              className="inline-flex items-center justify-center gap-2 border border-gray-200 text-[#0F172A] font-semibold px-7 py-4 rounded-full hover:bg-gray-50 transition-colors text-base focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2563EB]"
-            >
-              See How It Works
-              <ArrowRight size={16} aria-hidden="true" />
-            </button>
-          </div>
-
-          <div className="flex flex-col sm:flex-row gap-4">
-            {[
-              "24/7 Call Answering",
-              "Keep Your Existing Number",
-              "Built Around Your Business",
-            ].map((item) => (
-              <div key={item} className="flex items-center gap-2">
-                <div className="w-5 h-5 rounded-full bg-[#EFF6FF] border border-[#DBEAFE] flex items-center justify-center shrink-0">
-                  <Check size={11} className="text-[#2563EB]" aria-hidden="true" />
-                </div>
-                <span className="text-sm font-medium text-[#64748B]">{item}</span>
-              </div>
-            ))}
-          </div>
+            />
+          ))}
         </div>
 
-        {/* RIGHT — Animated Phone UI */}
-        <div className="flex justify-center lg:justify-end pt-8 pb-12 lg:py-0">
-          <LiveCallCard />
+        {/* Dot indicators */}
+        <div className="absolute bottom-5 left-1/2 -translate-x-1/2 flex gap-2 z-10">
+          {IMAGES.map((_, i) => (
+            <button
+              key={i}
+              onClick={(e) => {
+                e.stopPropagation();
+                setSlide(i);
+              }}
+              aria-label={`Go to slide ${i + 1}`}
+              className="transition-all duration-300 rounded-full"
+              style={{
+                width: i === slide ? 24 : 8,
+                height: 8,
+                background:
+                  i === slide ? "white" : "rgba(255,255,255,0.45)",
+              }}
+            />
+          ))}
+        </div>
+
+        {/* Dark scrim on hover */}
+        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/25 transition-colors duration-300" />
+
+        {/* Bottom-left play button */}
+        <div className="absolute bottom-8 left-6 sm:bottom-10 sm:left-10 lg:left-16">
+          <div className="flex items-center gap-3 transition-transform duration-300 group-hover:scale-105">
+            <div className="relative w-14 h-14 sm:w-16 sm:h-16 shrink-0">
+              {loadState === "loading" ? (
+                <>
+                  <svg
+                    className="w-full h-full -rotate-90"
+                    viewBox="0 0 56 56"
+                    aria-hidden="true"
+                  >
+                    <circle
+                      cx="28" cy="28" r="24"
+                      fill="rgba(255,255,255,0.15)"
+                      stroke="rgba(255,255,255,0.3)"
+                      strokeWidth="3"
+                    />
+                    <circle
+                      cx="28" cy="28" r="24"
+                      fill="none"
+                      stroke="white"
+                      strokeWidth="3"
+                      strokeLinecap="round"
+                      strokeDasharray={`${2 * Math.PI * 24}`}
+                      strokeDashoffset={`${2 * Math.PI * 24 * (1 - progress / 100)}`}
+                      style={{ transition: "stroke-dashoffset 0.3s ease" }}
+                    />
+                  </svg>
+                  <span className="absolute inset-0 flex items-center justify-center text-white text-[11px] font-bold">
+                    {progress > 0 ? `${progress}%` : "…"}
+                  </span>
+                </>
+              ) : (
+                <div className="w-full h-full rounded-full bg-white/20 backdrop-blur-md border-2 border-white/60 flex items-center justify-center shadow-xl">
+                  <svg
+                    className="w-6 h-6 sm:w-7 sm:h-7 text-white ml-1"
+                    fill="currentColor"
+                    viewBox="0 0 24 24"
+                    aria-hidden="true"
+                  >
+                    <path d="M8 5v14l11-7z" />
+                  </svg>
+                </div>
+              )}
+            </div>
+            <span className="text-white text-sm sm:text-base font-bold tracking-wide drop-shadow-lg">
+              {loadState === "loading" ? "Preparing video…" : "Watch Video"}
+            </span>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Video modal ────────────────────────────────────────────────── */}
+      <div
+        className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-8 transition-opacity duration-300"
+        style={{
+          backgroundColor: "rgba(0,0,0,0.92)",
+          opacity: open ? 1 : 0,
+          pointerEvents: open ? "auto" : "none",
+        }}
+        onClick={() => setOpen(false)}
+      >
+        {/* Close button */}
+        <button
+          onClick={() => setOpen(false)}
+          aria-label="Close video"
+          className="absolute top-4 right-4 sm:top-6 sm:right-6 w-11 h-11 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 flex items-center justify-center text-white transition-colors z-10"
+        >
+          <svg
+            width="18" height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            aria-hidden="true"
+          >
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
+        </button>
+
+        {/* Video container */}
+        <div
+          className="relative w-full max-w-5xl rounded-2xl overflow-hidden shadow-2xl"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {videoSrc && (
+            <video
+              ref={videoRef}
+              src={videoSrc}
+              controls
+              playsInline
+              onEnded={() => setOpen(false)}
+              className="w-full h-auto block bg-black"
+              style={{ maxHeight: "80vh" }}
+            />
+          )}
         </div>
       </div>
-    </section>
+    </>
   );
 }
