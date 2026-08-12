@@ -33,6 +33,18 @@ export default function SalesHero() {
             Preview Sales Dashboard
           </a>
         </div>
+
+        <div
+          className="mt-12 rounded-2xl sm:rounded-3xl overflow-hidden border border-gray-100"
+          style={{ boxShadow: "0 8px 32px rgba(15,23,42,0.10)" }}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="https://phhczohqidgrvcmszets.supabase.co/storage/v1/object/public/CUSTOMER.direct/images/banners/Employees/1cd0bad4-b644-4240-9c12-37a297de24fe.png"
+            alt="Customers.Direct sales team"
+            className="w-full h-auto block object-cover"
+          />
+        </div>
       </div>
     </section>
   );
