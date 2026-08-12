@@ -22,6 +22,9 @@ export const metadata = {
   title: "Customers Direct AI Receptionist — Never Miss Another Customer Call",
   description:
     "Your AI Receptionist answers 24/7, qualifies callers, books appointments, and sends you the lead automatically. Built for service businesses.",
+  alternates: {
+    canonical: "/ai-phone",
+  },
 };
 
 export default function AIPhonePage() {
