@@ -14,6 +14,7 @@ import StrategyCallSection from "@/components/StrategyCallSection";
 import MainFooter from "@/components/MainFooter";
 import PromoBar from "@/components/PromoBar";
 import ChatWidget from "@/components/ChatWidget";
+import TestimonialsSection from "@/components/TestimonialsSection";
 
 export const metadata = {
   title: "Customers.Direct — Get More Customers. Never Miss Another One.",
@@ -68,6 +69,7 @@ export default function Home() {
         <HomepageAISection />
         <TwoWaysSection />
 
+        <TestimonialsSection />
         <FAQSection />
         <StrategyCallSection />
       </main>

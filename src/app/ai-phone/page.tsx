@@ -11,6 +11,7 @@ import MissedCallCalculator from "@/components/ai/MissedCallCalculator";
 import MissedRevenueScanner from "@/components/ai/MissedRevenueScanner";
 import AIPricingSection from "@/components/ai/AIPricingSection";
 import StrategyCallSection from "@/components/StrategyCallSection";
+import TestimonialsSection from "@/components/TestimonialsSection";
 import AIFAQSection from "@/components/ai/AIFAQSection";
 import AIFinalCTA from "@/components/ai/AIFinalCTA";
 import AIFooter from "@/components/ai/AIFooter";
@@ -38,6 +39,7 @@ export default function AIPhonePage() {
         <MissedCallCalculator />
         <MissedRevenueScanner />
         <AIPricingSection />
+        <TestimonialsSection />
         <StrategyCallSection sectionId="demo" source="ai_phone" />
         <AIFAQSection />
         <AIFinalCTA />
