@@ -128,3 +128,43 @@ body {
   95% { opacity: 1; }
   100% { opacity: 0; }
 }
+
+/* ─── Testimonial marquee ─────────────────────────────────────────────── */
+@keyframes testimonialMarqueeLeft {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+@keyframes testimonialMarqueeRight {
+  from { transform: translateX(-50%); }
+  to { transform: translateX(0); }
+}
+
+.testimonial-marquee-left {
+  animation: testimonialMarqueeLeft 90s linear infinite;
+  will-change: transform;
+}
+
+.testimonial-marquee-right {
+  animation: testimonialMarqueeRight 90s linear infinite;
+  will-change: transform;
+}
+
+.testimonial-marquee:hover {
+  animation-play-state: paused;
+}
+
+@media (max-width: 767px) {
+  .testimonial-marquee-left,
+  .testimonial-marquee-right {
+    animation-duration: 110s;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .testimonial-marquee-left,
+  .testimonial-marquee-right {
+    animation: none;
+    transform: translateX(0);
+  }
+}

@@ -1,4 +1,5 @@
 import { PhoneCall, Users } from "lucide-react";
+import FooterLocations from "../FooterLocations";
 
 const year = new Date().getFullYear();
 
@@ -106,6 +107,7 @@ export default function AIFooter() {
                 </svg>
               </a>
             </div>
+            <FooterLocations />
           </div>
 
           {/* Columns */}

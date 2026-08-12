@@ -1,4 +1,5 @@
 import { PhoneCall, Users } from "lucide-react";
+import FooterLocations from "./FooterLocations";
 
 const year = new Date().getFullYear();
 
@@ -61,6 +62,7 @@ export default function MainFooter() {
                 </svg>
               </a>
             </div>
+            <FooterLocations />
           </div>
 
           {/* Customers Direct */}

@@ -65,11 +65,20 @@ const TESTIMONIALS = [
   },
 ];
 
+type Testimonial = (typeof TESTIMONIALS)[number];
+
 function Stars({ count }: { count: number }) {
   return (
-    <div className="flex gap-0.5 mb-4" aria-label={`${count} out of 5 stars`}>
-      {Array.from({ length: count }).map((_, i) => (
-        <svg key={i} width="16" height="16" viewBox="0 0 24 24" fill="#FBBF24" aria-hidden="true">
+    <div className="flex gap-0.5" aria-label={`${count} out of 5 stars`}>
+      {Array.from({ length: count }).map((_, index) => (
+        <svg
+          key={index}
+          width="14"
+          height="14"
+          viewBox="0 0 24 24"
+          fill="#FBBF24"
+          aria-hidden="true"
+        >
           <path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 21 12 17.77 5.82 21 7 14.14l-5-4.87 6.91-1.01L12 2z" />
         </svg>
       ))}
@@ -82,18 +91,13 @@ function Avatar({
   name,
   initials,
   color,
-}: {
-  photo: string;
-  name: string;
-  initials: string;
-  color: string;
-}) {
+}: Pick<Testimonial, "photo" | "name" | "initials" | "color">) {
   const [failed, setFailed] = useState(false);
 
   if (failed) {
     return (
       <div
-        className="w-10 h-10 rounded-full flex items-center justify-center text-white font-black text-sm shrink-0"
+        className="w-9 h-9 rounded-full flex items-center justify-center text-white font-black text-xs shrink-0"
         style={{ background: color }}
         aria-label={name}
       >
@@ -107,51 +111,104 @@ function Avatar({
     <img
       src={photo}
       alt={name}
-      width={40}
-      height={40}
+      width={36}
+      height={36}
       onError={() => setFailed(true)}
-      className="w-10 h-10 rounded-full object-cover shrink-0"
+      className="w-9 h-9 rounded-full object-cover shrink-0"
       style={{ border: `2px solid ${color}20` }}
     />
   );
 }
 
-export default function TestimonialsSection() {
+function TestimonialCard({ testimonial }: { testimonial: Testimonial }) {
+  const { stars, quote, name, business, initials, color, photo } = testimonial;
+
   return (
-    <section className="bg-[#F0F4FF] py-24 px-4 overflow-hidden">
-      <div className="max-w-6xl mx-auto">
-        {/* Heading */}
+    <article
+      className="w-[280px] sm:w-[310px] shrink-0 bg-white rounded-2xl p-5 flex flex-col gap-3"
+      style={{ boxShadow: "0 2px 16px rgba(0,0,0,0.06)" }}
+    >
+      <Stars count={stars} />
+      <p className="text-[#334155] text-sm leading-relaxed flex-1">
+        &ldquo;{quote}&rdquo;
+      </p>
+      <div className="flex items-center gap-3 pt-2 border-t border-gray-50">
+        <Avatar
+          photo={photo}
+          name={name}
+          initials={initials}
+          color={color}
+        />
+        <div className="min-w-0">
+          <p className="font-bold text-[#0F172A] text-sm leading-tight">
+            {name}
+          </p>
+          <p className="text-xs text-[#64748B] truncate">{business}</p>
+        </div>
+      </div>
+    </article>
+  );
+}
+
+function MarqueeRow({
+  testimonials,
+  direction,
+  accessible = false,
+}: {
+  testimonials: Testimonial[];
+  direction: "left" | "right";
+  accessible?: boolean;
+}) {
+  return (
+    <div className="overflow-hidden">
+      <div
+        className={`testimonial-marquee testimonial-marquee-${direction} flex w-max`}
+      >
+        {[0, 1].map((copy) => (
+          <div
+            key={copy}
+            className="flex shrink-0 gap-3 sm:gap-4 pr-3 sm:pr-4"
+            aria-hidden={copy === 1 || !accessible ? true : undefined}
+          >
+            {testimonials.map((testimonial) => (
+              <TestimonialCard
+                key={`${copy}-${testimonial.name}`}
+                testimonial={testimonial}
+              />
+            ))}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export default function TestimonialsSection() {
+  const rowTwo = [...TESTIMONIALS.slice(2), ...TESTIMONIALS.slice(0, 2)];
+  const rowThree = [...TESTIMONIALS.slice(4), ...TESTIMONIALS.slice(0, 4)];
+
+  return (
+    <section className="bg-[#F0F4FF] py-24 overflow-hidden">
+      <div className="px-4">
         <div className="text-center mb-14">
           <h2 className="text-3xl sm:text-4xl lg:text-[42px] font-black text-[#0F172A] leading-tight">
             Business owners love Customers.Direct.
           </h2>
           <p className="text-base text-[#64748B] mt-4 max-w-lg mx-auto">
-            Real results from real businesses that stopped missing calls and started capturing more customers.
+            Real results from real businesses that stopped missing calls and
+            started capturing more customers.
           </p>
         </div>
+      </div>
 
-        {/* Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {TESTIMONIALS.map(({ stars, quote, name, business, initials, color, photo }) => (
-            <div
-              key={name}
-              className="bg-white rounded-2xl p-6 flex flex-col gap-4"
-              style={{ boxShadow: "0 2px 16px rgba(0,0,0,0.06)" }}
-            >
-              <Stars count={stars} />
-              <p className="text-[#334155] text-sm leading-relaxed flex-1">
-                &ldquo;{quote}&rdquo;
-              </p>
-              <div className="flex items-center gap-3 pt-2 border-t border-gray-50">
-                <Avatar photo={photo} name={name} initials={initials} color={color} />
-                <div>
-                  <p className="font-bold text-[#0F172A] text-sm leading-tight">{name}</p>
-                  <p className="text-xs text-[#64748B]">{business}</p>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
+      <div className="max-w-6xl mx-auto flex flex-col gap-4">
+        <MarqueeRow
+          testimonials={TESTIMONIALS}
+          direction="right"
+          accessible
+        />
+        <MarqueeRow testimonials={rowTwo} direction="left" />
+        <MarqueeRow testimonials={rowThree} direction="right" />
       </div>
     </section>
   );
