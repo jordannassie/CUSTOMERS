@@ -35,6 +35,10 @@ export default function AIHeroSection() {
 
   return (
     <section className="relative w-full bg-black overflow-hidden">
+      {/* Visually hidden but present for SEO/screen readers — this page has no visible text headline (pure image slideshow) */}
+      <h1 className="sr-only">
+        AI Receptionist for Service Businesses — Never Miss Another Customer Call
+      </h1>
       {/* Slides */}
       <div className="relative w-full overflow-hidden" style={{ maxHeight: "90vh" }}>
         {IMAGES.map((src, i) => (
