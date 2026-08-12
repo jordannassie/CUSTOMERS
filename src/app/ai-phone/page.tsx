@@ -18,12 +18,31 @@ import AIFooter from "@/components/ai/AIFooter";
 import ChatWidget from "@/components/ChatWidget";
 import MobileCallBar from "@/components/MobileCallBar";
 
+const aiPhoneTitle = "Customers Direct AI Receptionist — Never Miss Another Customer Call";
+const aiPhoneDescription =
+  "Your AI Receptionist answers 24/7, qualifies callers, books appointments, and sends you the lead automatically. Built for service businesses.";
+const aiPhoneImage =
+  "https://phhczohqidgrvcmszets.supabase.co/storage/v1/object/public/CUSTOMER.direct/images/banners/AIPHONE/ChatGPT%20Image%20Aug%2012,%202026,%2002_02_33%20PM%20(7).png";
+
 export const metadata = {
-  title: "Customers Direct AI Receptionist — Never Miss Another Customer Call",
-  description:
-    "Your AI Receptionist answers 24/7, qualifies callers, books appointments, and sends you the lead automatically. Built for service businesses.",
+  title: aiPhoneTitle,
+  description: aiPhoneDescription,
   alternates: {
     canonical: "/ai-phone",
+  },
+  openGraph: {
+    type: "website",
+    siteName: "Customers.Direct",
+    url: "https://customers.direct/ai-phone",
+    title: aiPhoneTitle,
+    description: aiPhoneDescription,
+    images: [{ url: aiPhoneImage }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: aiPhoneTitle,
+    description: aiPhoneDescription,
+    images: [aiPhoneImage],
   },
 };
 
