@@ -68,8 +68,8 @@ export async function POST(request: NextRequest) {
   if (!Array.isArray(body.prospects) || body.prospects.length === 0) {
     return NextResponse.json({ error: "Select at least one prospect." }, { status: 400 });
   }
-  if (body.prospects.length > 100) {
-    return NextResponse.json({ error: "A maximum of 100 prospects can be saved at once." }, { status: 400 });
+  if (body.prospects.length > 1500) {
+    return NextResponse.json({ error: "A maximum of 1,500 prospects can be saved at once." }, { status: 400 });
   }
 
   const unique = new Map<string, ProspectSearchResult>();
@@ -90,18 +90,21 @@ export async function POST(request: NextRequest) {
   const folderId = typeof body.folderId === "string" && body.folderId ? body.folderId : null;
   const placeIds = Array.from(unique.keys());
   const supabase = createServiceClient();
-  const { data: existingRows, error: existingError } = await supabase
-    .from("prospecting_leads")
-    .select("google_place_id")
-    .in("google_place_id", placeIds);
-
-  if (existingError) {
-    console.error("Prospect duplicate check error:", existingError.message);
-    return NextResponse.json({ error: "Failed to check saved prospects." }, { status: 500 });
+  const existingRows: Array<{ google_place_id: string }> = [];
+  for (let index = 0; index < placeIds.length; index += 200) {
+    const { data, error } = await supabase
+      .from("prospecting_leads")
+      .select("google_place_id")
+      .in("google_place_id", placeIds.slice(index, index + 200));
+    if (error) {
+      console.error("Prospect duplicate check error:", error.message);
+      return NextResponse.json({ error: "Failed to check saved prospects." }, { status: 500 });
+    }
+    existingRows.push(...(data ?? []));
   }
 
   const existingIds = new Set(
-    (existingRows ?? []).map((row) => row.google_place_id as string),
+    existingRows.map((row) => row.google_place_id),
   );
   const rows = Array.from(unique.values())
     .filter((prospect) => !existingIds.has(prospect.placeId))
@@ -122,17 +125,20 @@ export async function POST(request: NextRequest) {
       folder_id: folderId,
     }));
 
-  let inserted: Array<{ google_place_id: string }> = [];
-  if (rows.length > 0) {
+  const inserted: Array<{ google_place_id: string }> = [];
+  for (let index = 0; index < rows.length; index += 200) {
     const { data, error } = await supabase
       .from("prospecting_leads")
-      .upsert(rows, { onConflict: "google_place_id", ignoreDuplicates: true })
+      .upsert(rows.slice(index, index + 200), {
+        onConflict: "google_place_id",
+        ignoreDuplicates: true,
+      })
       .select("google_place_id");
     if (error) {
       console.error("Prospect save error:", error.message);
       return NextResponse.json({ error: "Failed to save prospects." }, { status: 500 });
     }
-    inserted = data ?? [];
+    inserted.push(...(data ?? []));
   }
 
   return NextResponse.json({

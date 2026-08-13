@@ -18,6 +18,8 @@ import ProspectingSidebar from "@/components/admin/ProspectingSidebar";
 import { useDailyCallCounter } from "@/components/admin/useDailyCallCounter";
 import {
   PROSPECT_STATUSES,
+  type ProspectSearchDepth,
+  type ProspectSearchMetadata,
   type ProspectSearchResult,
   type ProspectingFolder,
   type ProspectingLead,
@@ -79,6 +81,8 @@ export default function ProspectingWorkspace() {
   const [results, setResults] = useState<ProspectSearchResult[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [searching, setSearching] = useState(false);
+  const [searchDepth, setSearchDepth] = useState<ProspectSearchDepth>("deep");
+  const [searchMetadata, setSearchMetadata] = useState<ProspectSearchMetadata | null>(null);
   const [searchError, setSearchError] = useState("");
   const [saveMessage, setSaveMessage] = useState("");
   const [saving, setSaving] = useState(false);
@@ -157,11 +161,12 @@ export default function ProspectingWorkspace() {
     setSearchError("");
     setSaveMessage("");
     setSelected(new Set());
+    setSearchMetadata(null);
     try {
       const response = await fetch("/api/admin/prospects/search", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query: query.trim() }),
+        body: JSON.stringify({ query: query.trim(), depth: searchDepth }),
       });
       if (response.status === 401) {
         router.push("/admin");
@@ -170,6 +175,7 @@ export default function ProspectingWorkspace() {
       const data = await response.json();
       if (!response.ok) throw new Error(data.error ?? "Search failed.");
       setResults(data.businesses ?? []);
+      setSearchMetadata(data.metadata ?? null);
       setNewFolderName(suggestedFolderName(query));
     } catch (error) {
       setResults([]);
@@ -325,9 +331,40 @@ export default function ProspectingWorkspace() {
                   <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder='Try "Med Spa in Dallas TX"' maxLength={200} className="w-full rounded-xl border border-slate-200 py-3 pl-11 pr-4 text-base text-slate-950 outline-none focus:border-[#2563EB] focus:ring-2 focus:ring-blue-100" />
                 </div>
                 <button type="submit" disabled={searching || !query.trim()} className="flex min-w-32 items-center justify-center gap-2 rounded-xl bg-[#2563EB] px-6 py-3 font-bold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50">
-                  {searching ? <><Loader2 size={17} className="animate-spin" /> Finding…</> : "Search"}
+                  {searching ? <><Loader2 size={17} className="animate-spin" /> Searching areas…</> : "Search"}
                 </button>
               </form>
+              <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center">
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Search depth</span>
+                <div className="inline-flex w-fit rounded-lg border border-slate-200 bg-slate-50 p-1">
+                  {([
+                    ["quick", "Quick"],
+                    ["standard", "Standard"],
+                    ["deep", "All Available"],
+                  ] as const).map(([value, label]) => (
+                    <button
+                      key={value}
+                      type="button"
+                      disabled={searching}
+                      onClick={() => setSearchDepth(value)}
+                      className={`rounded-md px-3 py-1.5 text-xs font-bold transition ${
+                        searchDepth === value
+                          ? "bg-white text-[#2563EB] shadow-sm"
+                          : "text-slate-500 hover:text-slate-950"
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+                <span className="text-xs text-slate-400">
+                  {searchDepth === "quick"
+                    ? "Fast single search"
+                    : searchDepth === "standard"
+                      ? "Searches several city areas"
+                      : "Scans and subdivides the full city"}
+                </span>
+              </div>
               <div className="mt-4 flex flex-wrap gap-2">
                 {POPULAR_SEARCHES.map((suggestion) => (
                   <button key={suggestion} onClick={() => setQuery(suggestion)} className="rounded-full border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-500 hover:border-blue-200 hover:bg-blue-50 hover:text-[#2563EB]">
@@ -353,7 +390,10 @@ export default function ProspectingWorkspace() {
                   <div className="flex flex-col justify-between gap-4 xl:flex-row xl:items-center">
                     <div>
                       <h2 className="font-black text-slate-950">{results.length} businesses found</h2>
-                      <p className="text-sm text-slate-500">{selected.size} selected · {results.filter((item) => savedPlaceIds.has(item.placeId)).length} already saved</p>
+                      <p className="text-sm text-slate-500">
+                        {selected.size} selected · {results.filter((item) => savedPlaceIds.has(item.placeId)).length} already saved
+                        {searchMetadata?.expanded ? ` · ${searchMetadata.areasSearched} areas searched` : ""}
+                      </p>
                     </div>
                     <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
                       <select value={targetFolder} onChange={(event) => setTargetFolder(event.target.value)} className={inputClass}>

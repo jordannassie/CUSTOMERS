@@ -13,6 +13,14 @@ export const PROSPECT_STATUSES = [
 ] as const;
 
 export type ProspectStatus = (typeof PROSPECT_STATUSES)[number];
+export type ProspectSearchDepth = "quick" | "standard" | "deep";
+
+export interface ProspectSearchMetadata {
+  depth: ProspectSearchDepth;
+  areasSearched: number;
+  location: string | null;
+  expanded: boolean;
+}
 
 export interface ProspectSearchResult {
   placeId: string;
