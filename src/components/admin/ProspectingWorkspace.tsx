@@ -314,12 +314,35 @@ export default function ProspectingWorkspace() {
   }
 
   async function deleteFolder(folder: ProspectingFolder) {
-    if (!window.confirm(`Delete "${folder.name}"? Its prospects will become unassigned.`)) return;
+    if (!window.confirm(`Delete "${folder.name}" and its ${folder.lead_count} saved prospect${folder.lead_count === 1 ? "" : "s"}? This cannot be undone.`)) return;
     const response = await fetch(`/api/admin/prospect-folders/${folder.id}`, { method: "DELETE" });
     if (response.ok) {
       if (activeFolder === folder.id) setActiveFolder("all");
       if (targetFolder === folder.id) setTargetFolder("");
       await loadData();
+    }
+  }
+
+  async function deleteAllProspects() {
+    if (prospects.length === 0) return;
+    if (!window.confirm(`Delete all ${prospects.length} saved prospects? Your Calling Lists will remain, but every saved business will be permanently removed.`)) return;
+    setSaving(true);
+    setSaveMessage("");
+    try {
+      const response = await fetch("/api/admin/prospects", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ all: true }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error ?? "Could not delete saved prospects.");
+      setDrawerProspect(null);
+      setSaveMessage(`${data.deleted} saved prospect${data.deleted === 1 ? "" : "s"} deleted.`);
+      await loadData();
+    } catch (error) {
+      setSaveMessage(error instanceof Error ? error.message : "Could not delete saved prospects.");
+    } finally {
+      setSaving(false);
     }
   }
 
@@ -531,8 +554,12 @@ export default function ProspectingWorkspace() {
                   <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)} className={inputClass}><option value="all">All statuses</option>{PROSPECT_STATUSES.map((status) => <option key={status}>{status}</option>)}</select>
                   <select value={sort} onChange={(event) => setSort(event.target.value)} className={inputClass}><option value="newest">Newest</option><option value="rating">Highest Rating</option><option value="reviews">Most Reviews</option><option value="opportunity">Highest Opportunity</option><option value="name">Business Name</option></select>
                   <label className="flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-600"><input type="checkbox" checked={followUpsOnly} onChange={(event) => setFollowUpsOnly(event.target.checked)} /> Follow-ups due</label>
+                  <button onClick={() => void deleteAllProspects()} disabled={saving || prospects.length === 0} className="rounded-lg border border-red-200 px-3 py-2 text-sm font-bold text-red-600 hover:bg-red-50 disabled:opacity-40">
+                    Delete All Saved
+                  </button>
                 </div>
               </div>
+              {saveMessage && <p className="mt-3 text-sm font-semibold text-[#2563EB]">{saveMessage}</p>}
             </div>
 
             {loadingData ? (

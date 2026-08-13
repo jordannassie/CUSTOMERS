@@ -41,10 +41,19 @@ export async function DELETE(_request: NextRequest, context: RouteContext) {
   }
   const { id } = await context.params;
   const supabase = createServiceClient();
+  const { count: deletedProspects, error: prospectError } = await supabase
+    .from("prospecting_leads")
+    .delete({ count: "exact" })
+    .eq("folder_id", id);
+  if (prospectError) {
+    console.error("Folder prospect delete error:", prospectError.message);
+    return NextResponse.json({ error: "Failed to delete the folder's prospects." }, { status: 500 });
+  }
+
   const { error } = await supabase.from("prospecting_folders").delete().eq("id", id);
   if (error) {
     console.error("Prospecting folder delete error:", error.message);
     return NextResponse.json({ error: "Failed to delete folder." }, { status: 500 });
   }
-  return NextResponse.json({ success: true });
+  return NextResponse.json({ success: true, deletedProspects: deletedProspects ?? 0 });
 }

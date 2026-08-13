@@ -191,12 +191,25 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  let body: { placeIds?: unknown };
+  let body: { placeIds?: unknown; all?: unknown };
   try {
     body = await request.json();
   } catch {
     return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
+  const supabase = createServiceClient();
+  if (body.all === true) {
+    const { count, error } = await supabase
+      .from("prospecting_leads")
+      .delete({ count: "exact" })
+      .not("id", "is", null);
+    if (error) {
+      console.error("Delete all prospects error:", error.message);
+      return NextResponse.json({ error: "Failed to delete saved prospects." }, { status: 500 });
+    }
+    return NextResponse.json({ success: true, deleted: count ?? 0 });
+  }
+
   if (!Array.isArray(body.placeIds) || body.placeIds.length === 0) {
     return NextResponse.json({ error: "Select saved prospects to remove." }, { status: 400 });
   }
@@ -204,7 +217,6 @@ export async function DELETE(request: NextRequest) {
   const placeIds = Array.from(
     new Set(body.placeIds.filter((value): value is string => typeof value === "string")),
   ).slice(0, 1500);
-  const supabase = createServiceClient();
   let deleted = 0;
   for (let index = 0; index < placeIds.length; index += 200) {
     const { count, error } = await supabase
