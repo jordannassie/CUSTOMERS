@@ -45,6 +45,10 @@ function externalUrl(url: string) {
   return /^https?:\/\//i.test(url) ? url : `https://${url}`;
 }
 
+function phoneUrl(phone: string) {
+  return `tel:${phone.replace(/[^\d+]/g, "")}`;
+}
+
 function ResultActions({
   result,
   onCall,
@@ -55,7 +59,7 @@ function ResultActions({
   return (
     <div className="flex items-center gap-1">
       {result.phone && (
-        <a href={`tel:${result.phone}`} onClick={() => onCall(result.placeId)} className="rounded-md p-2 text-[#2563EB] hover:bg-blue-50" aria-label={`Call ${result.businessName}`}>
+        <a href={phoneUrl(result.phone)} onClick={() => onCall(result.placeId)} className="rounded-md p-2 text-[#2563EB] hover:bg-blue-50" aria-label={`Call ${result.businessName}`}>
           <Phone size={16} />
         </a>
       )}
@@ -515,7 +519,7 @@ export default function ProspectingWorkspace() {
                       {filteredProspects.map((prospect) => (
                         <tr key={prospect.id} className="cursor-pointer border-t border-slate-100 hover:bg-slate-50" onClick={() => setDrawerProspect(prospect)}>
                           <td className="max-w-sm px-5 py-4"><p className="font-bold text-slate-950">{prospect.business_name}</p><p className="mt-1 truncate text-xs text-slate-500">{prospect.category} · {prospect.city}, {prospect.state}</p></td>
-                          <td className="px-5 py-4">{prospect.phone ? <a href={`tel:${prospect.phone}`} onClick={(event) => { event.stopPropagation(); calls.increment(prospect.google_place_id); }} className="font-semibold text-[#2563EB]">{prospect.phone}</a> : "—"}</td>
+                          <td className="px-5 py-4">{prospect.phone ? <a href={phoneUrl(prospect.phone)} onClick={(event) => { event.stopPropagation(); calls.increment(prospect.google_place_id); }} className="font-semibold text-[#2563EB]" aria-label={`Call ${prospect.business_name} at ${prospect.phone}`}>{prospect.phone}</a> : "—"}</td>
                           <td className="px-5 py-4">★ {prospect.rating ?? "—"} <span className="text-slate-400">({prospect.review_count ?? 0})</span></td>
                           <td className="px-5 py-4"><select value={prospect.status} onClick={(event) => event.stopPropagation()} onChange={(event) => void patchProspect(prospect.id, { status: event.target.value })} className="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs font-bold text-slate-700">{PROSPECT_STATUSES.map((status) => <option key={status}>{status}</option>)}</select></td>
                           <td className="px-5 py-4">

@@ -126,10 +126,7 @@ function ProspectDrawerContent({
     if (!prospect.phone) return;
     onCall(prospect);
     const phoneNumber = prospect.phone.replace(/[^\d+]/g, "");
-    const isMac = /Macintosh|Mac OS X/.test(window.navigator.userAgent);
-    window.location.href = isMac
-      ? `facetime-audio://${phoneNumber}`
-      : `tel:${phoneNumber}`;
+    window.location.href = `tel:${phoneNumber}`;
   }
 
   const inputClass =
