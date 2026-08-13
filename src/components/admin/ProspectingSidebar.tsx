@@ -4,7 +4,6 @@ import Link from "next/link";
 import {
   BarChart3,
   ChevronDown,
-  Folder,
   FolderOpen,
   Globe2,
   Minus,
@@ -80,17 +79,6 @@ export default function ProspectingSidebar({
             >
               <Globe2 size={15} />
               <span className="flex-1">All Prospects</span>
-            </button>
-            <button
-              onClick={() => onFolderChange("unassigned")}
-              className={`flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-medium transition ${
-                activeFolder === "unassigned"
-                  ? "bg-slate-100 text-slate-950"
-                  : "text-slate-500 hover:bg-slate-50"
-              }`}
-            >
-              <Folder size={15} />
-              <span className="flex-1">Unassigned</span>
             </button>
             {folders.map((folder) => (
               <div key={folder.id} className="group flex items-center">
@@ -168,7 +156,6 @@ export default function ProspectingSidebar({
             className="w-full appearance-none rounded-lg border border-slate-200 bg-white px-3 py-2.5 pr-9 text-sm font-semibold text-slate-700"
           >
             <option value="all">All Prospects</option>
-            <option value="unassigned">Unassigned</option>
             {folders.map((folder) => (
               <option key={folder.id} value={folder.id}>
                 {folder.name} ({folder.lead_count})

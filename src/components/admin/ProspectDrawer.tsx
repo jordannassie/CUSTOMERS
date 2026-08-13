@@ -150,7 +150,7 @@ function ProspectDrawerContent({
               <label className="text-xs font-bold text-slate-600">
                 Folder
                 <select value={form.folder_id} onChange={(event) => update("folder_id", event.target.value)} className={`${inputClass} mt-1`}>
-                  <option value="">Unassigned</option>
+                  <option value="" disabled>Choose a Calling List</option>
                   {folders.map((folder) => <option key={folder.id} value={folder.id}>{folder.name}</option>)}
                 </select>
               </label>

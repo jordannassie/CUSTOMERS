@@ -216,6 +216,10 @@ export default function ProspectingWorkspace() {
   }
 
   async function saveResults(items: ProspectSearchResult[]) {
+    if (!targetFolder) {
+      setSaveMessage("Choose or create a Calling List first.");
+      return;
+    }
     const unsaved = items.filter((item) => !savedPlaceIds.has(item.placeId));
     if (unsaved.length === 0) {
       setSaveMessage("These businesses are already saved.");
@@ -227,7 +231,7 @@ export default function ProspectingWorkspace() {
       const response = await fetch("/api/admin/prospects", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prospects: unsaved, folderId: targetFolder || null }),
+        body: JSON.stringify({ prospects: unsaved, folderId: targetFolder }),
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error ?? "Could not save prospects.");
@@ -291,7 +295,11 @@ export default function ProspectingWorkspace() {
       <ProspectingSidebar
         folders={folders}
         activeFolder={activeFolder}
-        onFolderChange={(folder) => { setActiveFolder(folder); setView("saved"); }}
+        onFolderChange={(folder) => {
+          setActiveFolder(folder);
+          if (folder !== "all") setTargetFolder(folder);
+          setView("saved");
+        }}
         onRenameFolder={renameFolder}
         onDeleteFolder={deleteFolder}
         callCount={calls.count}
@@ -397,21 +405,26 @@ export default function ProspectingWorkspace() {
                     </div>
                     <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
                       <select value={targetFolder} onChange={(event) => setTargetFolder(event.target.value)} className={inputClass}>
-                        <option value="">Save unassigned</option>
+                        <option value="" disabled>Choose a Calling List</option>
                         {folders.map((folder) => <option key={folder.id} value={folder.id}>{folder.name}</option>)}
                       </select>
                       <div className="flex">
                         <input value={newFolderName} onChange={(event) => setNewFolderName(event.target.value)} placeholder="New folder name" className={`${inputClass} min-w-0 rounded-r-none`} />
                         <button onClick={createFolder} disabled={!newFolderName.trim() || creatingFolder} className="rounded-r-lg bg-slate-950 px-3 text-white disabled:opacity-40" aria-label="Create folder"><FolderPlus size={17} /></button>
                       </div>
-                      <button onClick={() => void saveResults(results.filter((item) => selected.has(item.placeId)))} disabled={saving || selected.size === 0} className="rounded-lg border border-[#2563EB] px-4 py-2.5 text-sm font-bold text-[#2563EB] hover:bg-blue-50 disabled:opacity-40">
+                      <button onClick={() => void saveResults(results.filter((item) => selected.has(item.placeId)))} disabled={saving || selected.size === 0 || !targetFolder} className="rounded-lg border border-[#2563EB] px-4 py-2.5 text-sm font-bold text-[#2563EB] hover:bg-blue-50 disabled:opacity-40">
                         Save Selected
                       </button>
-                      <button onClick={() => void saveResults(results)} disabled={saving} className="rounded-lg bg-[#2563EB] px-4 py-2.5 text-sm font-bold text-white hover:bg-blue-700 disabled:opacity-40">
+                      <button onClick={() => void saveResults(results)} disabled={saving || !targetFolder} className="rounded-lg bg-[#2563EB] px-4 py-2.5 text-sm font-bold text-white hover:bg-blue-700 disabled:opacity-40">
                         {saving ? "Saving…" : "Save All Results"}
                       </button>
                     </div>
                   </div>
+                  {!targetFolder && (
+                    <p className="mt-3 text-sm font-semibold text-amber-700">
+                      Choose or create a Calling List first.
+                    </p>
+                  )}
                   {saveMessage && <p className="mt-3 text-sm font-semibold text-[#2563EB]">{saveMessage}</p>}
                 </div>
 
@@ -484,8 +497,8 @@ export default function ProspectingWorkspace() {
             ) : (
               <>
                 <div className="hidden overflow-x-auto md:block">
-                  <table className="w-full min-w-[920px] text-sm">
-                    <thead className="bg-slate-50 text-left text-[11px] font-bold uppercase tracking-wider text-slate-500"><tr><th className="px-5 py-3">Business</th><th className="px-5 py-3">Phone</th><th className="px-5 py-3">Rating</th><th className="px-5 py-3">Status</th><th className="px-5 py-3">Follow Up</th><th className="px-5 py-3"></th></tr></thead>
+                  <table className="w-full min-w-[1080px] text-sm">
+                    <thead className="bg-slate-50 text-left text-[11px] font-bold uppercase tracking-wider text-slate-500"><tr><th className="px-5 py-3">Business</th><th className="px-5 py-3">Phone</th><th className="px-5 py-3">Rating</th><th className="px-5 py-3">Status</th><th className="px-5 py-3">Calling List</th><th className="px-5 py-3">Follow Up</th><th className="px-5 py-3"></th></tr></thead>
                     <tbody>
                       {filteredProspects.map((prospect) => (
                         <tr key={prospect.id} className="cursor-pointer border-t border-slate-100 hover:bg-slate-50" onClick={() => setDrawerProspect(prospect)}>
@@ -493,6 +506,18 @@ export default function ProspectingWorkspace() {
                           <td className="px-5 py-4">{prospect.phone ? <a href={`tel:${prospect.phone}`} onClick={(event) => { event.stopPropagation(); calls.increment(prospect.google_place_id); }} className="font-semibold text-[#2563EB]">{prospect.phone}</a> : "—"}</td>
                           <td className="px-5 py-4">★ {prospect.rating ?? "—"} <span className="text-slate-400">({prospect.review_count ?? 0})</span></td>
                           <td className="px-5 py-4"><select value={prospect.status} onClick={(event) => event.stopPropagation()} onChange={(event) => void patchProspect(prospect.id, { status: event.target.value })} className="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs font-bold text-slate-700">{PROSPECT_STATUSES.map((status) => <option key={status}>{status}</option>)}</select></td>
+                          <td className="px-5 py-4">
+                            <select
+                              value={prospect.folder_id ?? ""}
+                              onClick={(event) => event.stopPropagation()}
+                              onChange={(event) => void patchProspect(prospect.id, { folder_id: event.target.value })}
+                              className="max-w-44 rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs font-semibold text-slate-700"
+                              aria-label={`Move ${prospect.business_name} to a Calling List`}
+                            >
+                              <option value="" disabled>Choose a list</option>
+                              {folders.map((folder) => <option key={folder.id} value={folder.id}>{folder.name}</option>)}
+                            </select>
+                          </td>
                           <td className="px-5 py-4 text-slate-500">{prospect.next_follow_up_at ? new Date(prospect.next_follow_up_at).toLocaleDateString() : "—"}</td>
                           <td className="px-5 py-4 text-right text-slate-400"><ChevronRight size={17} /></td>
                         </tr>

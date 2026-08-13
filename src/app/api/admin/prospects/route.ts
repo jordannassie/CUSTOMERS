@@ -87,9 +87,29 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "No valid prospects were supplied." }, { status: 400 });
   }
 
-  const folderId = typeof body.folderId === "string" && body.folderId ? body.folderId : null;
+  const folderId =
+    typeof body.folderId === "string" ? body.folderId.trim() : "";
+  if (!folderId) {
+    return NextResponse.json(
+      { error: "Choose or create a Calling List first." },
+      { status: 400 },
+    );
+  }
+
   const placeIds = Array.from(unique.keys());
   const supabase = createServiceClient();
+  const { data: folder, error: folderError } = await supabase
+    .from("prospecting_folders")
+    .select("id")
+    .eq("id", folderId)
+    .maybeSingle();
+  if (folderError || !folder) {
+    return NextResponse.json(
+      { error: "The selected Calling List could not be found." },
+      { status: 400 },
+    );
+  }
+
   const existingRows: Array<{ google_place_id: string }> = [];
   for (let index = 0; index < placeIds.length; index += 200) {
     const { data, error } = await supabase
