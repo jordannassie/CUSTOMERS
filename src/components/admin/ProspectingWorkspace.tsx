@@ -174,7 +174,9 @@ export default function ProspectingWorkspace() {
       }
       const data = await response.json();
       if (!response.ok) throw new Error(data.error ?? "Search failed.");
-      setResults(data.businesses ?? []);
+      const businesses: ProspectSearchResult[] = data.businesses ?? [];
+      setResults(businesses);
+      setSelected(new Set(businesses.map((business) => business.placeId)));
       setSearchMetadata(data.metadata ?? null);
       setNewFolderName(suggestedFolderName(query));
     } catch (error) {
@@ -248,38 +250,11 @@ export default function ProspectingWorkspace() {
       setSaveMessage(updates.length ? `${updates.join(" · ")}.` : "Calling List is already up to date.");
       setSelected(new Set());
       await loadData();
+      setActiveFolder(folderId);
+      setTargetFolder(folderId);
+      setView("saved");
     } catch (error) {
       setSaveMessage(error instanceof Error ? error.message : "Could not save prospects.");
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  async function removeSelectedSaved() {
-    const placeIds = results
-      .filter((item) => selected.has(item.placeId) && savedPlaceIds.has(item.placeId))
-      .map((item) => item.placeId);
-    if (placeIds.length === 0) {
-      setSaveMessage("Select saved businesses to remove.");
-      return;
-    }
-    if (!window.confirm(`Remove ${placeIds.length} saved prospect${placeIds.length === 1 ? "" : "s"}? The Google search results will remain visible.`)) return;
-
-    setSaving(true);
-    setSaveMessage("");
-    try {
-      const response = await fetch("/api/admin/prospects", {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ placeIds }),
-      });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error ?? "Could not remove saved prospects.");
-      setSaveMessage(`${data.deleted} saved prospect${data.deleted === 1 ? "" : "s"} removed.`);
-      setSelected(new Set());
-      await loadData();
-    } catch (error) {
-      setSaveMessage(error instanceof Error ? error.message : "Could not remove saved prospects.");
     } finally {
       setSaving(false);
     }
@@ -323,35 +298,16 @@ export default function ProspectingWorkspace() {
     }
   }
 
-  async function deleteAllProspects() {
-    if (prospects.length === 0) return;
-    if (!window.confirm(`Delete all ${prospects.length} saved prospects? Your Calling Lists will remain, but every saved business will be permanently removed.`)) return;
-    setSaving(true);
-    setSaveMessage("");
-    try {
-      const response = await fetch("/api/admin/prospects", {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ all: true }),
-      });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error ?? "Could not delete saved prospects.");
-      setDrawerProspect(null);
-      setSaveMessage(`${data.deleted} saved prospect${data.deleted === 1 ? "" : "s"} deleted.`);
-      await loadData();
-    } catch (error) {
-      setSaveMessage(error instanceof Error ? error.message : "Could not delete saved prospects.");
-    } finally {
-      setSaving(false);
-    }
-  }
-
   async function logout() {
     await fetch("/api/admin/logout", { method: "POST" });
     router.push("/admin");
   }
 
   const inputClass = "rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none focus:border-[#2563EB] focus:ring-2 focus:ring-blue-100";
+  const savedViewTitle =
+    activeFolder === "all"
+      ? "All Prospects"
+      : folders.find((folder) => folder.id === activeFolder)?.name ?? "Calling List";
 
   return (
     <main className="min-h-screen bg-[#F8FAFC] lg:pl-64">
@@ -383,11 +339,8 @@ export default function ProspectingWorkspace() {
 
       <div className="mx-auto max-w-[1500px] px-4 py-6 sm:px-7 sm:py-8">
         <div className="mb-6 inline-flex rounded-lg border border-slate-200 bg-white p-1">
-          <button onClick={() => setView("search")} className={`rounded-md px-4 py-2 text-sm font-bold transition ${view === "search" ? "bg-[#2563EB] text-white" : "text-slate-500 hover:text-slate-950"}`}>
+          <button onClick={() => setView("search")} className={`rounded-md px-4 py-2 text-sm font-bold transition ${view === "search" ? "bg-[#2563EB] text-white" : "text-slate-600 hover:bg-slate-50 hover:text-slate-950"}`}>
             Find Businesses
-          </button>
-          <button onClick={() => setView("saved")} className={`rounded-md px-4 py-2 text-sm font-bold transition ${view === "saved" ? "bg-[#2563EB] text-white" : "text-slate-500 hover:text-slate-950"}`}>
-            Saved Prospects <span className="ml-1 opacity-70">{prospects.length}</span>
           </button>
         </div>
 
@@ -471,21 +424,11 @@ export default function ProspectingWorkspace() {
                         <option value="" disabled>Choose a Calling List</option>
                         {folders.map((folder) => <option key={folder.id} value={folder.id}>{folder.name}</option>)}
                       </select>
-                      <div className="flex">
-                        <input value={newFolderName} onChange={(event) => setNewFolderName(event.target.value)} placeholder="New folder name" className={`${inputClass} min-w-0 rounded-r-none`} />
-                        <button onClick={() => void createFolder()} disabled={!newFolderName.trim() || creatingFolder} className="flex items-center gap-2 rounded-r-lg bg-slate-950 px-3 text-xs font-bold text-white disabled:opacity-40" aria-label="Create and select Calling List"><FolderPlus size={16} /> Create List</button>
-                      </div>
-                      <button onClick={() => void saveResults(results.filter((item) => selected.has(item.placeId)))} disabled={saving || selected.size === 0 || (!targetFolder && !newFolderName.trim())} className="rounded-lg border border-[#2563EB] px-4 py-2.5 text-sm font-bold text-[#2563EB] hover:bg-blue-50 disabled:opacity-40">
-                        Save Selected
+                      <input value={newFolderName} onChange={(event) => setNewFolderName(event.target.value)} placeholder="New Calling List name" className={inputClass} />
+                      <button onClick={() => void saveResults(results.filter((item) => selected.has(item.placeId)))} disabled={saving || selected.size === 0 || (!targetFolder && !newFolderName.trim())} className="flex items-center justify-center gap-2 rounded-lg bg-[#2563EB] px-5 py-2.5 text-sm font-bold text-white hover:bg-blue-700 disabled:opacity-40">
+                        <FolderPlus size={16} />
+                        {saving ? "Saving…" : "Save to List"}
                       </button>
-                      <button onClick={() => void saveResults(results)} disabled={saving || (!targetFolder && !newFolderName.trim())} className="rounded-lg bg-[#2563EB] px-4 py-2.5 text-sm font-bold text-white hover:bg-blue-700 disabled:opacity-40">
-                        {saving ? "Saving…" : "Save All Results"}
-                      </button>
-                      {results.some((item) => selected.has(item.placeId) && savedPlaceIds.has(item.placeId)) && (
-                        <button onClick={() => void removeSelectedSaved()} disabled={saving} className="rounded-lg border border-red-200 px-4 py-2.5 text-sm font-bold text-red-600 hover:bg-red-50 disabled:opacity-40">
-                          Remove Selected Saved
-                        </button>
-                      )}
                     </div>
                   </div>
                   {!targetFolder && !newFolderName.trim() && (
@@ -548,15 +491,12 @@ export default function ProspectingWorkspace() {
           <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
             <div className="border-b border-slate-200 p-4 sm:p-5">
               <div className="flex flex-col justify-between gap-4 xl:flex-row xl:items-center">
-                <div><h2 className="font-black text-slate-950">Saved Prospects</h2><p className="text-sm text-slate-500">{filteredProspects.length} businesses in this view</p></div>
+                <div><h2 className="font-black text-slate-950">{savedViewTitle}</h2><p className="text-sm text-slate-500">{filteredProspects.length} businesses in this Calling List view</p></div>
                 <div className="grid gap-2 sm:grid-cols-2 xl:flex">
                   <input value={savedSearch} onChange={(event) => setSavedSearch(event.target.value)} placeholder="Search name or phone…" className={inputClass} />
                   <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)} className={inputClass}><option value="all">All statuses</option>{PROSPECT_STATUSES.map((status) => <option key={status}>{status}</option>)}</select>
                   <select value={sort} onChange={(event) => setSort(event.target.value)} className={inputClass}><option value="newest">Newest</option><option value="rating">Highest Rating</option><option value="reviews">Most Reviews</option><option value="opportunity">Highest Opportunity</option><option value="name">Business Name</option></select>
                   <label className="flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-600"><input type="checkbox" checked={followUpsOnly} onChange={(event) => setFollowUpsOnly(event.target.checked)} /> Follow-ups due</label>
-                  <button onClick={() => void deleteAllProspects()} disabled={saving || prospects.length === 0} className="rounded-lg border border-red-200 px-3 py-2 text-sm font-bold text-red-600 hover:bg-red-50 disabled:opacity-40">
-                    Delete All Saved
-                  </button>
                 </div>
               </div>
               {saveMessage && <p className="mt-3 text-sm font-semibold text-[#2563EB]">{saveMessage}</p>}
