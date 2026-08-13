@@ -22,6 +22,11 @@ export interface ProspectSearchMetadata {
   expanded: boolean;
 }
 
+export interface ProspectBusinessHours {
+  openNow: boolean | null;
+  weekdayDescriptions: string[];
+}
+
 export interface ProspectSearchResult {
   placeId: string;
   businessName: string;

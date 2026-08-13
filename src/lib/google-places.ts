@@ -1,6 +1,7 @@
 import "server-only";
 
 import type {
+  ProspectBusinessHours,
   ProspectSearchDepth,
   ProspectSearchMetadata,
   ProspectSearchResult,
@@ -377,5 +378,47 @@ export async function searchGooglePlaces(
       location: parsed.location,
       expanded: true,
     },
+  };
+}
+
+interface PlaceHoursResponse {
+  regularOpeningHours?: {
+    weekdayDescriptions?: string[];
+  };
+  currentOpeningHours?: {
+    openNow?: boolean;
+  };
+}
+
+export async function getGooglePlaceHours(
+  placeId: string,
+): Promise<ProspectBusinessHours> {
+  const apiKey = process.env.GOOGLE_PLACES_API_KEY;
+  if (!apiKey) throw new Error("Google Places search is not configured.");
+
+  const response = await fetch(
+    `https://places.googleapis.com/v1/places/${encodeURIComponent(placeId)}`,
+    {
+      headers: {
+        "X-Goog-Api-Key": apiKey,
+        "X-Goog-FieldMask":
+          "regularOpeningHours.weekdayDescriptions,currentOpeningHours.openNow",
+      },
+      cache: "no-store",
+    },
+  );
+  if (!response.ok) {
+    console.error("Google Place hours error:", response.status, await response.text());
+    throw new Error("Business hours are temporarily unavailable.");
+  }
+
+  const place = (await response.json()) as PlaceHoursResponse;
+  return {
+    openNow:
+      typeof place.currentOpeningHours?.openNow === "boolean"
+        ? place.currentOpeningHours.openNow
+        : null,
+    weekdayDescriptions:
+      place.regularOpeningHours?.weekdayDescriptions ?? [],
   };
 }

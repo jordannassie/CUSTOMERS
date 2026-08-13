@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ExternalLink, MapPin, Phone, Save, X } from "lucide-react";
 import {
   PROSPECT_STATUSES,
+  type ProspectBusinessHours,
   type ProspectingFolder,
   type ProspectingLead,
 } from "@/types/prospecting";
@@ -70,6 +71,35 @@ function ProspectDrawerContent({
   const [form, setForm] = useState<EditableFields>(() => valuesFromProspect(prospect));
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [hours, setHours] = useState<ProspectBusinessHours | null>(null);
+  const [hoursLoading, setHoursLoading] = useState(true);
+  const [hoursError, setHoursError] = useState("");
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch(`/api/admin/prospects/${prospect.id}/hours`)
+      .then(async (response) => {
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error ?? "Business hours are unavailable.");
+        return data.hours as ProspectBusinessHours;
+      })
+      .then((data) => {
+        if (!cancelled) setHours(data);
+      })
+      .catch((error: unknown) => {
+        if (!cancelled) {
+          setHoursError(
+            error instanceof Error ? error.message : "Business hours are unavailable.",
+          );
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setHoursLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [prospect.id]);
 
   function update(field: keyof EditableFields, value: string) {
     setForm((current) => ({ ...current, [field]: value }));
@@ -137,6 +167,36 @@ function ProspectDrawerContent({
               <span><strong className="text-slate-950">{prospect.lead_score}</strong> opportunity</span>
             </div>
           </div>
+
+          <section>
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <h3 className="text-xs font-bold uppercase tracking-[0.15em] text-slate-400">
+                Business Hours
+              </h3>
+              {hours?.openNow !== null && hours?.openNow !== undefined && (
+                <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${hours.openNow ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-600"}`}>
+                  {hours.openNow ? "Open now" : "Closed now"}
+                </span>
+              )}
+            </div>
+            <div className="rounded-xl border border-slate-200 p-4">
+              {hoursLoading ? (
+                <p className="text-sm text-slate-400">Loading current hours…</p>
+              ) : hoursError ? (
+                <p className="text-sm text-slate-500">{hoursError}</p>
+              ) : hours?.weekdayDescriptions.length ? (
+                <div className="space-y-1.5">
+                  {hours.weekdayDescriptions.map((description) => (
+                    <p key={description} className="text-sm text-slate-600">
+                      {description}
+                    </p>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-slate-500">Hours were not provided by this business.</p>
+              )}
+            </div>
+          </section>
 
           <section>
             <h3 className="mb-3 text-xs font-bold uppercase tracking-[0.15em] text-slate-400">Pipeline</h3>
