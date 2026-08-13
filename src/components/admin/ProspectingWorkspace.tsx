@@ -46,7 +46,10 @@ function externalUrl(url: string) {
 }
 
 function phoneUrl(phone: string) {
-  return `tel:${phone.replace(/[^\d+]/g, "")}`;
+  const digits = phone.replace(/\D/g, "");
+  const internationalNumber =
+    digits.length === 10 ? `+1${digits}` : `+${digits}`;
+  return `tel:${internationalNumber}`;
 }
 
 function ResultActions({

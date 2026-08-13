@@ -122,11 +122,11 @@ function ProspectDrawerContent({
     }
   }
 
-  function callProspect() {
-    if (!prospect.phone) return;
-    onCall(prospect);
-    const phoneNumber = prospect.phone.replace(/[^\d+]/g, "");
-    window.location.href = `tel:${phoneNumber}`;
+  function phoneUrl(phone: string) {
+    const digits = phone.replace(/\D/g, "");
+    const internationalNumber =
+      digits.length === 10 ? `+1${digits}` : `+${digits}`;
+    return `tel:${internationalNumber}`;
   }
 
   const inputClass =
@@ -150,9 +150,9 @@ function ProspectDrawerContent({
         <div className="space-y-7 p-5 sm:p-7">
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             {prospect.phone && (
-              <button type="button" onClick={callProspect} className="flex items-center justify-center gap-2 rounded-lg bg-[#2563EB] px-3 py-2.5 text-sm font-bold text-white hover:bg-blue-700">
+              <a href={phoneUrl(prospect.phone)} onClick={() => onCall(prospect)} className="flex items-center justify-center gap-2 rounded-lg bg-[#2563EB] px-3 py-2.5 text-sm font-bold text-white hover:bg-blue-700">
                 <Phone size={15} /> {prospect.phone}
-              </button>
+              </a>
             )}
             {prospect.website && (
               <a href={prospect.website} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 rounded-lg border border-slate-200 px-3 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-50">
