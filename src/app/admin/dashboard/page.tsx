@@ -2,6 +2,7 @@
 
 import React, { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 interface Lead {
   id: string;
@@ -284,6 +285,12 @@ export default function AdminDashboardPage() {
             <h1 className="text-base font-bold text-[#64748B]">Strategy Call Leads</h1>
           </div>
           <div className="flex items-center gap-3 shrink-0">
+            <Link
+              href="/admin/prospecting"
+              className="text-sm font-semibold text-white bg-[#2563EB] px-4 py-2 rounded-full hover:bg-[#1d4ed8] transition-colors"
+            >
+              Prospecting
+            </Link>
             <button
               onClick={fetchLeads} disabled={loading}
               className="text-sm font-semibold text-[#2563EB] border border-[#2563EB] px-4 py-2 rounded-full hover:bg-[#EFF6FF] transition-colors disabled:opacity-50"
