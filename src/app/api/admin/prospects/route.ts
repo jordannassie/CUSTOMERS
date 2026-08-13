@@ -110,11 +110,15 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const existingRows: Array<{ google_place_id: string }> = [];
+  const existingRows: Array<{
+    id: string;
+    google_place_id: string;
+    folder_id: string | null;
+  }> = [];
   for (let index = 0; index < placeIds.length; index += 200) {
     const { data, error } = await supabase
       .from("prospecting_leads")
-      .select("google_place_id")
+      .select("id, google_place_id, folder_id")
       .in("google_place_id", placeIds.slice(index, index + 200));
     if (error) {
       console.error("Prospect duplicate check error:", error.message);
@@ -126,6 +130,18 @@ export async function POST(request: NextRequest) {
   const existingIds = new Set(
     existingRows.map((row) => row.google_place_id),
   );
+  const rowsToMove = existingRows.filter((row) => row.folder_id !== folderId);
+  for (let index = 0; index < rowsToMove.length; index += 200) {
+    const { error } = await supabase
+      .from("prospecting_leads")
+      .update({ folder_id: folderId, updated_at: new Date().toISOString() })
+      .in("id", rowsToMove.slice(index, index + 200).map((row) => row.id));
+    if (error) {
+      console.error("Prospect folder move error:", error.message);
+      return NextResponse.json({ error: "Failed to move saved prospects." }, { status: 500 });
+    }
+  }
+
   const rows = Array.from(unique.values())
     .filter((prospect) => !existingIds.has(prospect.placeId))
     .map((prospect) => ({
@@ -164,7 +180,42 @@ export async function POST(request: NextRequest) {
   return NextResponse.json({
     success: true,
     saved: inserted.length,
-    existing: unique.size - inserted.length,
+    moved: rowsToMove.length,
+    existing: existingRows.length - rowsToMove.length,
     savedPlaceIds: [...existingIds, ...inserted.map((row) => row.google_place_id)],
   });
+}
+
+export async function DELETE(request: NextRequest) {
+  if (!(await isAuthorized())) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  let body: { placeIds?: unknown };
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+  }
+  if (!Array.isArray(body.placeIds) || body.placeIds.length === 0) {
+    return NextResponse.json({ error: "Select saved prospects to remove." }, { status: 400 });
+  }
+
+  const placeIds = Array.from(
+    new Set(body.placeIds.filter((value): value is string => typeof value === "string")),
+  ).slice(0, 1500);
+  const supabase = createServiceClient();
+  let deleted = 0;
+  for (let index = 0; index < placeIds.length; index += 200) {
+    const { count, error } = await supabase
+      .from("prospecting_leads")
+      .delete({ count: "exact" })
+      .in("google_place_id", placeIds.slice(index, index + 200));
+    if (error) {
+      console.error("Bulk prospect delete error:", error.message);
+      return NextResponse.json({ error: "Failed to remove saved prospects." }, { status: 500 });
+    }
+    deleted += count ?? 0;
+  }
+  return NextResponse.json({ success: true, deleted });
 }

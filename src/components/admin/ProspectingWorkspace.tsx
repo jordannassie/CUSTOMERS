@@ -194,8 +194,8 @@ export default function ProspectingWorkspace() {
     });
   }
 
-  async function createFolder() {
-    if (!newFolderName.trim() || creatingFolder) return;
+  async function createFolder(): Promise<string | null> {
+    if (!newFolderName.trim() || creatingFolder) return null;
     setCreatingFolder(true);
     try {
       const response = await fetch("/api/admin/prospect-folders", {
@@ -208,21 +208,26 @@ export default function ProspectingWorkspace() {
       setFolders((current) => [data.folder, ...current]);
       setTargetFolder(data.folder.id);
       setNewFolderName("");
+      return data.folder.id as string;
     } catch (error) {
       setSaveMessage(error instanceof Error ? error.message : "Could not create folder.");
+      return null;
     } finally {
       setCreatingFolder(false);
     }
   }
 
   async function saveResults(items: ProspectSearchResult[]) {
-    if (!targetFolder) {
-      setSaveMessage("Choose or create a Calling List first.");
+    if (items.length === 0) {
+      setSaveMessage("Select at least one business first.");
       return;
     }
-    const unsaved = items.filter((item) => !savedPlaceIds.has(item.placeId));
-    if (unsaved.length === 0) {
-      setSaveMessage("These businesses are already saved.");
+    let folderId = targetFolder;
+    if (!folderId && newFolderName.trim()) {
+      folderId = (await createFolder()) ?? "";
+    }
+    if (!folderId) {
+      setSaveMessage("Choose or create a Calling List first.");
       return;
     }
     setSaving(true);
@@ -231,15 +236,50 @@ export default function ProspectingWorkspace() {
       const response = await fetch("/api/admin/prospects", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prospects: unsaved, folderId: targetFolder }),
+        body: JSON.stringify({ prospects: items, folderId }),
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error ?? "Could not save prospects.");
-      setSaveMessage(`${data.saved} prospect${data.saved === 1 ? "" : "s"} saved${data.existing ? ` · ${data.existing} already existed` : ""}.`);
+      const updates = [
+        data.saved ? `${data.saved} saved` : "",
+        data.moved ? `${data.moved} moved to the Calling List` : "",
+        data.existing ? `${data.existing} already in this list` : "",
+      ].filter(Boolean);
+      setSaveMessage(updates.length ? `${updates.join(" · ")}.` : "Calling List is already up to date.");
       setSelected(new Set());
       await loadData();
     } catch (error) {
       setSaveMessage(error instanceof Error ? error.message : "Could not save prospects.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function removeSelectedSaved() {
+    const placeIds = results
+      .filter((item) => selected.has(item.placeId) && savedPlaceIds.has(item.placeId))
+      .map((item) => item.placeId);
+    if (placeIds.length === 0) {
+      setSaveMessage("Select saved businesses to remove.");
+      return;
+    }
+    if (!window.confirm(`Remove ${placeIds.length} saved prospect${placeIds.length === 1 ? "" : "s"}? The Google search results will remain visible.`)) return;
+
+    setSaving(true);
+    setSaveMessage("");
+    try {
+      const response = await fetch("/api/admin/prospects", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ placeIds }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error ?? "Could not remove saved prospects.");
+      setSaveMessage(`${data.deleted} saved prospect${data.deleted === 1 ? "" : "s"} removed.`);
+      setSelected(new Set());
+      await loadData();
+    } catch (error) {
+      setSaveMessage(error instanceof Error ? error.message : "Could not remove saved prospects.");
     } finally {
       setSaving(false);
     }
@@ -410,19 +450,24 @@ export default function ProspectingWorkspace() {
                       </select>
                       <div className="flex">
                         <input value={newFolderName} onChange={(event) => setNewFolderName(event.target.value)} placeholder="New folder name" className={`${inputClass} min-w-0 rounded-r-none`} />
-                        <button onClick={createFolder} disabled={!newFolderName.trim() || creatingFolder} className="rounded-r-lg bg-slate-950 px-3 text-white disabled:opacity-40" aria-label="Create folder"><FolderPlus size={17} /></button>
+                        <button onClick={() => void createFolder()} disabled={!newFolderName.trim() || creatingFolder} className="flex items-center gap-2 rounded-r-lg bg-slate-950 px-3 text-xs font-bold text-white disabled:opacity-40" aria-label="Create and select Calling List"><FolderPlus size={16} /> Create List</button>
                       </div>
-                      <button onClick={() => void saveResults(results.filter((item) => selected.has(item.placeId)))} disabled={saving || selected.size === 0 || !targetFolder} className="rounded-lg border border-[#2563EB] px-4 py-2.5 text-sm font-bold text-[#2563EB] hover:bg-blue-50 disabled:opacity-40">
+                      <button onClick={() => void saveResults(results.filter((item) => selected.has(item.placeId)))} disabled={saving || selected.size === 0 || (!targetFolder && !newFolderName.trim())} className="rounded-lg border border-[#2563EB] px-4 py-2.5 text-sm font-bold text-[#2563EB] hover:bg-blue-50 disabled:opacity-40">
                         Save Selected
                       </button>
-                      <button onClick={() => void saveResults(results)} disabled={saving || !targetFolder} className="rounded-lg bg-[#2563EB] px-4 py-2.5 text-sm font-bold text-white hover:bg-blue-700 disabled:opacity-40">
+                      <button onClick={() => void saveResults(results)} disabled={saving || (!targetFolder && !newFolderName.trim())} className="rounded-lg bg-[#2563EB] px-4 py-2.5 text-sm font-bold text-white hover:bg-blue-700 disabled:opacity-40">
                         {saving ? "Saving…" : "Save All Results"}
                       </button>
+                      {results.some((item) => selected.has(item.placeId) && savedPlaceIds.has(item.placeId)) && (
+                        <button onClick={() => void removeSelectedSaved()} disabled={saving} className="rounded-lg border border-red-200 px-4 py-2.5 text-sm font-bold text-red-600 hover:bg-red-50 disabled:opacity-40">
+                          Remove Selected Saved
+                        </button>
+                      )}
                     </div>
                   </div>
-                  {!targetFolder && (
+                  {!targetFolder && !newFolderName.trim() && (
                     <p className="mt-3 text-sm font-semibold text-amber-700">
-                      Choose or create a Calling List first.
+                      Choose an existing Calling List, or type a new list name first.
                     </p>
                   )}
                   {saveMessage && <p className="mt-3 text-sm font-semibold text-[#2563EB]">{saveMessage}</p>}
@@ -432,7 +477,7 @@ export default function ProspectingWorkspace() {
                   <table className="w-full min-w-[900px] text-sm">
                     <thead className="bg-slate-50 text-left text-[11px] font-bold uppercase tracking-wider text-slate-500">
                       <tr>
-                        <th className="px-5 py-3"><input type="checkbox" aria-label="Select all unsaved results" checked={results.some((item) => !savedPlaceIds.has(item.placeId)) && results.filter((item) => !savedPlaceIds.has(item.placeId)).every((item) => selected.has(item.placeId))} onChange={(event) => setSelected(event.target.checked ? new Set(results.filter((item) => !savedPlaceIds.has(item.placeId)).map((item) => item.placeId)) : new Set())} /></th>
+                        <th className="px-5 py-3"><input type="checkbox" aria-label="Select all results" checked={results.length > 0 && results.every((item) => selected.has(item.placeId))} onChange={(event) => setSelected(event.target.checked ? new Set(results.map((item) => item.placeId)) : new Set())} /></th>
                         <th className="px-5 py-3">Business</th><th className="px-5 py-3">Phone</th><th className="px-5 py-3">Rating</th><th className="px-5 py-3">Opportunity</th><th className="px-5 py-3">Status</th><th className="px-5 py-3">Actions</th>
                       </tr>
                     </thead>
@@ -441,7 +486,7 @@ export default function ProspectingWorkspace() {
                         const isSaved = savedPlaceIds.has(result.placeId);
                         return (
                           <tr key={result.placeId} className="border-t border-slate-100 hover:bg-slate-50/70">
-                            <td className="px-5 py-4"><input type="checkbox" disabled={isSaved} checked={selected.has(result.placeId)} onChange={() => toggleSelection(result.placeId)} aria-label={`Select ${result.businessName}`} /></td>
+                            <td className="px-5 py-4"><input type="checkbox" checked={selected.has(result.placeId)} onChange={() => toggleSelection(result.placeId)} aria-label={`Select ${result.businessName}`} /></td>
                             <td className="max-w-xs px-5 py-4"><p className="font-bold text-slate-950">{result.businessName}</p><p className="mt-1 truncate text-xs text-slate-500">{result.category} · {result.address}</p></td>
                             <td className="px-5 py-4 text-slate-700">{result.phone ?? "—"}</td>
                             <td className="px-5 py-4"><span className="inline-flex items-center gap-1 font-semibold text-slate-700"><Star size={14} className="fill-amber-400 text-amber-400" />{result.rating ?? "—"} <span className="font-normal text-slate-400">({result.reviewCount ?? 0})</span></span></td>
@@ -461,7 +506,7 @@ export default function ProspectingWorkspace() {
                     return (
                       <article key={result.placeId} className="p-4">
                         <div className="flex items-start gap-3">
-                          <input type="checkbox" disabled={isSaved} checked={selected.has(result.placeId)} onChange={() => toggleSelection(result.placeId)} className="mt-1" aria-label={`Select ${result.businessName}`} />
+                          <input type="checkbox" checked={selected.has(result.placeId)} onChange={() => toggleSelection(result.placeId)} className="mt-1" aria-label={`Select ${result.businessName}`} />
                           <div className="min-w-0 flex-1">
                             <div className="flex justify-between gap-2"><h3 className="font-bold text-slate-950">{result.businessName}</h3>{isSaved && <span className="shrink-0 text-xs font-bold text-emerald-600">Saved</span>}</div>
                             <p className="mt-1 text-xs leading-5 text-slate-500">{result.address}</p>
