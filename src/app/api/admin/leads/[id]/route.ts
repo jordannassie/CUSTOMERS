@@ -29,7 +29,15 @@ export async function PATCH(req: NextRequest, ctx: RouteContext) {
 
   // Validate status
   if ("status" in body) {
-    const allowed = ["new", "followed_up"];
+    const allowed = [
+      "new",
+      "called",
+      "left_voicemail",
+      "followed_up",
+      "interested",
+      "closed",
+      "not_interested",
+    ];
     if (!allowed.includes(String(body.status))) {
       return NextResponse.json({ error: "Invalid status value" }, { status: 400 });
     }

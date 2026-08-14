@@ -15,6 +15,7 @@ interface Lead {
   notes: string | null;
   followed_up_at: string | null;
   created_at: string;
+  source?: string | null;
 }
 
 type Filter = "all" | "new" | "followed_up";
@@ -132,7 +133,9 @@ export default function AdminDashboardPage() {
       const res = await fetch("/api/admin/leads");
       if (res.status === 401) { router.push("/admin"); return; }
       const data = await res.json();
-      const fetched: Lead[] = data.leads ?? [];
+      const fetched: Lead[] = (data.leads ?? []).filter(
+        (lead: Lead) => lead.source !== "call_bar",
+      );
       setLeads(fetched);
       setNotesText((prev) => {
         const next = { ...prev };
@@ -285,6 +288,12 @@ export default function AdminDashboardPage() {
             <h1 className="text-base font-bold text-[#64748B]">Strategy Call Leads</h1>
           </div>
           <div className="flex items-center gap-3 shrink-0">
+            <Link
+              href="/admin/call-bar-leads"
+              className="text-sm font-semibold text-white bg-[#7C3AED] px-4 py-2 rounded-full hover:bg-[#6D28D9] transition-colors"
+            >
+              Call Bar Leads
+            </Link>
             <Link
               href="/admin/prospecting"
               className="text-sm font-semibold text-white bg-[#2563EB] px-4 py-2 rounded-full hover:bg-[#1d4ed8] transition-colors"

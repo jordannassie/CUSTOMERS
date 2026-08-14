@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { Menu, X, PhoneCall } from "lucide-react";
 
 function scrollTo(id: string, closeFn?: () => void) {
@@ -22,7 +23,7 @@ export default function MainHeader() {
       <div className="bg-white rounded-2xl shadow-lg max-w-6xl mx-auto">
         <div className="flex items-center justify-between py-3 px-6">
           {/* Logo */}
-          <a href="/" aria-label="Customers.Direct — Home">
+          <Link href="/" aria-label="Customers.Direct — Home">
             <Image
               src="https://phhczohqidgrvcmszets.supabase.co/storage/v1/object/public/CUSTOMER.direct/logo/Logo.png"
               alt="Customers.Direct"
@@ -32,7 +33,7 @@ export default function MainHeader() {
               unoptimized
               className="h-9 w-auto"
             />
-          </a>
+          </Link>
 
           {/* Desktop nav */}
           <nav
@@ -43,13 +44,19 @@ export default function MainHeader() {
               onClick={() => scrollTo("how-it-works")}
               className="text-sm font-medium text-[#64748B] hover:text-[#0F172A] transition-colors"
             >
-              AI Customer Acquisition
+              DM Ads / Customer Acquisition
             </button>
-            <a
-              href="/ai-phone"
+            <Link
+              href="/"
               className="text-sm font-medium text-[#64748B] hover:text-[#0F172A] transition-colors"
             >
-              AI Phone
+              AI Employee
+            </Link>
+            <a
+              href="/call-bar"
+              className="text-sm font-medium text-[#64748B] hover:text-[#0F172A] transition-colors"
+            >
+              Call Bar
             </a>
             <button
               onClick={() => scrollTo("how-it-works")}
@@ -94,14 +101,21 @@ export default function MainHeader() {
               onClick={() => scrollTo("how-it-works", close)}
               className="text-sm font-medium text-[#64748B] hover:text-[#0F172A] text-left py-1"
             >
-              AI Customer Acquisition
+              DM Ads / Customer Acquisition
             </button>
-            <a
-              href="/ai-phone"
+            <Link
+              href="/"
               onClick={close}
               className="text-sm font-medium text-[#64748B] hover:text-[#0F172A] py-1"
             >
-              AI Phone
+              AI Employee
+            </Link>
+            <a
+              href="/call-bar"
+              onClick={close}
+              className="text-sm font-medium text-[#64748B] hover:text-[#0F172A] py-1"
+            >
+              Call Bar
             </a>
             <button
               onClick={() => scrollTo("how-it-works", close)}

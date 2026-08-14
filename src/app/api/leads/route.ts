@@ -21,8 +21,20 @@ export async function POST(request: NextRequest) {
   const full_name = typeof body.full_name === "string" ? body.full_name.trim().slice(0, 200) : "";
   const phone = typeof body.phone === "string" ? body.phone.trim().slice(0, 50) : "";
   const email = typeof body.email === "string" ? body.email.trim().toLowerCase().slice(0, 200) : "";
-  const business_name = typeof body.business_name === "string" ? body.business_name.trim().slice(0, 200) : "";
-  let website = typeof body.website === "string" ? body.website.trim().slice(0, 500) : "";
+  const source = typeof body.source === "string" ? body.source.trim().slice(0, 100) : null;
+  const isCallBar = source === "call_bar";
+  const business_name =
+    typeof body.business_name === "string" && body.business_name.trim()
+      ? body.business_name.trim().slice(0, 200)
+      : isCallBar
+        ? "Call Bar Lead"
+        : "";
+  let website =
+    typeof body.website === "string" && body.website.trim()
+      ? body.website.trim().slice(0, 500)
+      : isCallBar
+        ? "https://customers.direct/call-bar"
+        : "";
 
   if (!full_name) return NextResponse.json({ error: "Full name is required." }, { status: 400 });
   if (!phone) return NextResponse.json({ error: "Phone number is required." }, { status: 400 });
@@ -30,6 +42,43 @@ export async function POST(request: NextRequest) {
   if (!EMAIL_REGEX.test(email)) return NextResponse.json({ error: "Invalid email address." }, { status: 400 });
   if (!business_name) return NextResponse.json({ error: "Business name is required." }, { status: 400 });
   if (!website) return NextResponse.json({ error: "Website is required." }, { status: 400 });
+
+  const callBarBusinessPhone =
+    typeof body.call_bar_business_phone === "string"
+      ? body.call_bar_business_phone.trim().slice(0, 50)
+      : "";
+  const callBarText =
+    typeof body.call_bar_text === "string"
+      ? body.call_bar_text.trim().slice(0, 80)
+      : "";
+  const colorPattern = /^#[0-9a-f]{6}$/i;
+  const callBarBgColor =
+    typeof body.call_bar_bg_color === "string" &&
+    colorPattern.test(body.call_bar_bg_color)
+      ? body.call_bar_bg_color
+      : "#2563EB";
+  const callBarTextColor =
+    typeof body.call_bar_text_color === "string" &&
+    colorPattern.test(body.call_bar_text_color)
+      ? body.call_bar_text_color
+      : "#FFFFFF";
+  const referrerUrl =
+    typeof body.referrer_url === "string"
+      ? body.referrer_url.trim().slice(0, 1000)
+      : null;
+
+  if (isCallBar && !callBarBusinessPhone) {
+    return NextResponse.json(
+      { error: "Business phone number is required." },
+      { status: 400 },
+    );
+  }
+  if (isCallBar && !callBarText) {
+    return NextResponse.json(
+      { error: "Call Bar text is required." },
+      { status: 400 },
+    );
+  }
 
   // Normalize website protocol
   if (!/^https?:\/\//i.test(website)) {
@@ -41,22 +90,67 @@ export async function POST(request: NextRequest) {
   }
 
   // Optional extra fields (chat widget / future sources)
-  const source        = typeof body.source        === "string" ? body.source.trim().slice(0, 100)  : null;
-  const business_type = typeof body.business_type === "string" ? body.business_type.trim().slice(0, 200) : null;
-  const goal          = typeof body.goal          === "string" ? body.goal.trim().slice(0, 500)    : null;
+  const callBarFallback = isCallBar
+    ? JSON.stringify({
+        text: callBarText,
+        backgroundColor: callBarBgColor,
+        textColor: callBarTextColor,
+      })
+    : null;
+  const business_type = isCallBar
+    ? callBarBusinessPhone
+    : typeof body.business_type === "string"
+      ? body.business_type.trim().slice(0, 200)
+      : null;
+  const goal = isCallBar
+    ? callBarFallback
+    : typeof body.goal === "string"
+      ? body.goal.trim().slice(0, 500)
+      : null;
 
   const supabase = createServiceClient();
 
   // Core payload — always works regardless of schema version
   const corePayload = { full_name, phone, email, business_name, website };
-
-  // Try with optional fields first (requires migration 003 to have been run)
-  const { error } = await supabase.from("customers_direct_leads").insert({
+  const legacyPayload = {
     ...corePayload,
-    ...(source        ? { source }        : {}),
+    ...(source ? { source } : {}),
     ...(business_type ? { business_type } : {}),
-    ...(goal          ? { goal }          : {}),
-  });
+    ...(goal ? { goal } : {}),
+  };
+
+  if (isCallBar) {
+    const duplicateCutoff = new Date(Date.now() - 2 * 60 * 1000).toISOString();
+    const { data: duplicate } = await supabase
+      .from("customers_direct_leads")
+      .select("id")
+      .eq("source", "call_bar")
+      .eq("email", email)
+      .gte("created_at", duplicateCutoff)
+      .limit(1)
+      .maybeSingle();
+    if (duplicate) {
+      return NextResponse.json({ success: true, leadId: duplicate.id });
+    }
+  }
+
+  const extendedPayload = {
+    ...legacyPayload,
+    ...(isCallBar
+      ? {
+          call_bar_business_phone: callBarBusinessPhone,
+          call_bar_text: callBarText,
+          call_bar_bg_color: callBarBgColor,
+          call_bar_text_color: callBarTextColor,
+          referrer_url: referrerUrl,
+        }
+      : {}),
+  };
+  const { data, error } = await supabase
+    .from("customers_direct_leads")
+    .insert(extendedPayload)
+    .select("id")
+    .single();
 
   if (error) {
     // If the error is about unknown columns (migration not yet applied),
@@ -68,20 +162,40 @@ export async function POST(request: NextRequest) {
       error.code === '42703';
 
     if (isSchemaMismatch) {
-      console.warn("Optional columns missing — retrying with core payload only:", error.message);
-      const { error: retryError } = await supabase
+      console.warn("Optional columns missing — retrying with legacy payload:", error.message);
+      const { data: retryData, error: retryError } = await supabase
         .from("customers_direct_leads")
-        .insert(corePayload);
+        .insert(legacyPayload)
+        .select("id")
+        .single();
 
       if (retryError) {
-        console.error("Supabase retry insert error:", retryError.message);
-        return NextResponse.json({ error: "Failed to save lead." }, { status: 500 });
+        const retryIsSchemaMismatch =
+          retryError.message.includes("column") ||
+          retryError.message.includes("schema") ||
+          retryError.code === "PGRST204" ||
+          retryError.code === "42703";
+        if (!retryIsSchemaMismatch) {
+          console.error("Supabase retry insert error:", retryError.message);
+          return NextResponse.json({ error: "Failed to save lead." }, { status: 500 });
+        }
+        const { data: coreData, error: coreError } = await supabase
+          .from("customers_direct_leads")
+          .insert(corePayload)
+          .select("id")
+          .single();
+        if (coreError) {
+          console.error("Supabase core insert error:", coreError.message);
+          return NextResponse.json({ error: "Failed to save lead." }, { status: 500 });
+        }
+        return NextResponse.json({ success: true, leadId: coreData.id });
       }
+      return NextResponse.json({ success: true, leadId: retryData.id });
     } else {
       console.error("Supabase insert error:", error.message);
       return NextResponse.json({ error: "Failed to save lead." }, { status: 500 });
     }
   }
 
-  return NextResponse.json({ success: true });
+  return NextResponse.json({ success: true, leadId: data.id });
 }

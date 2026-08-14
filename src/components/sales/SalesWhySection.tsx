@@ -9,7 +9,7 @@ const CARDS = [
   {
     icon: <Monitor size={22} className="text-[#2563EB]" aria-hidden="true" />,
     title: "Live Demonstration",
-    body: "Prospects can experience the AI Receptionist in action instead of only hearing a sales pitch. Seeing it work is the most powerful part of the conversation.",
+    body: "Prospects can experience the AI Employee in action instead of only hearing a sales pitch. Seeing it work is the most powerful part of the conversation.",
   },
   {
     icon: <RefreshCw size={22} className="text-[#2563EB]" aria-hidden="true" />,

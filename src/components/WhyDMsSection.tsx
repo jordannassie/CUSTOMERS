@@ -4,32 +4,6 @@ import { useState, useRef } from "react";
 
 // ─── Brand SVG icons (inline — no extra dependency) ──────────────────────────
 
-function MetaLogo({ className }: { className?: string }) {
-  // Official Meta infinity-M wordmark shape, simplified to a clean SVG
-  return (
-    <svg className={className} viewBox="0 0 200 60" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="Meta">
-      {/* Meta blue infinity-loop M */}
-      <path
-        d="M10 42 C10 28 18 18 28 18 C36 18 42 24 50 35 C58 24 65 16 76 16 C90 16 100 28 100 42 C100 52 94 58 86 58 C78 58 72 52 64 40 C58 50 52 58 40 58 C22 58 10 52 10 42 Z"
-        fill="#0082FB"
-      />
-      <path
-        d="M100 42 C100 28 108 18 118 18 C126 18 132 24 140 35 C148 24 155 16 166 16 C180 16 190 28 190 42 C190 52 184 58 176 58 C168 58 162 52 154 40 C148 50 142 58 130 58 C112 58 100 52 100 42 Z"
-        fill="#0082FB"
-        opacity="0.7"
-      />
-    </svg>
-  );
-}
-
-function MetaWordmark({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 120 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="Meta">
-      <text x="0" y="26" fontFamily="system-ui, -apple-system, sans-serif" fontWeight="800" fontSize="28" fill="#0082FB">meta</text>
-    </svg>
-  );
-}
-
 function MessengerIcon({ className }: { className?: string }) {
   // Messenger chat-bubble with lightning-bolt — accurate brand shape
   return (
@@ -51,30 +25,6 @@ function MessengerIcon({ className }: { className?: string }) {
         d="M22 31l8-14v9h5l-8 14v-9h-5Z"
         fill="white"
       />
-    </svg>
-  );
-}
-
-function InstagramIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="Instagram">
-      <defs>
-        <linearGradient id="ig-grad" x1="0" y1="56" x2="56" y2="0" gradientUnits="userSpaceOnUse">
-          <stop offset="0%" stopColor="#FFDC80" />
-          <stop offset="20%" stopColor="#FCAF45" />
-          <stop offset="40%" stopColor="#F77737" />
-          <stop offset="60%" stopColor="#F56040" />
-          <stop offset="80%" stopColor="#C13584" />
-          <stop offset="100%" stopColor="#833AB4" />
-        </linearGradient>
-      </defs>
-      <rect x="4" y="4" width="48" height="48" rx="14" fill="url(#ig-grad)" />
-      {/* Camera body outline */}
-      <rect x="15" y="15" width="26" height="26" rx="7" fill="none" stroke="white" strokeWidth="2.5" />
-      {/* Lens */}
-      <circle cx="28" cy="28" r="7.5" fill="none" stroke="white" strokeWidth="2.5" />
-      {/* Flash dot */}
-      <circle cx="38" cy="18" r="2" fill="white" />
     </svg>
   );
 }

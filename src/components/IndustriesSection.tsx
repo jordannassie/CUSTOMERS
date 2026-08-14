@@ -144,7 +144,11 @@ export default function IndustriesSection() {
 
   // Detect touch-primary device once on mount
   useEffect(() => {
-    setIsTouch(window.matchMedia("(hover: none)").matches);
+    const timer = window.setTimeout(
+      () => setIsTouch(window.matchMedia("(hover: none)").matches),
+      0,
+    );
+    return () => window.clearTimeout(timer);
   }, []);
 
   // Desktop: hover enters → unmute that card

@@ -38,7 +38,7 @@ const FEATURES = [
   {
     icon: <BookOpen size={20} className="text-[#2563EB]" aria-hidden="true" />,
     title: "Custom Business Knowledge",
-    body: "Train the receptionist around your services, hours, policies, FAQs, and preferred tone.",
+    body: "Train your AI Employee around your services, hours, policies, FAQs, and preferred tone.",
   },
   {
     icon: <Globe size={20} className="text-[#2563EB]" aria-hidden="true" />,
@@ -59,7 +59,7 @@ export default function AIFeaturesSection() {
         {/* Headline */}
         <div className="text-center mb-14">
           <h2 className="text-3xl sm:text-4xl lg:text-[42px] font-black text-[#0F172A] leading-tight max-w-2xl mx-auto">
-            Everything your receptionist needs to capture the opportunity.
+            Everything your AI Employee needs to capture the opportunity.
           </h2>
         </div>
 

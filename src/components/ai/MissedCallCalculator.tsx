@@ -56,11 +56,6 @@ function Slider({
   );
 }
 
-function formatCurrency(v: number) {
-  if (v >= 1000) return `$${(v / 1000).toFixed(v % 1000 === 0 ? 0 : 1)}k`;
-  return `$${v}`;
-}
-
 export default function MissedCallCalculator() {
   const [missedPerDay, setMissedPerDay] = useState(3);
   const [avgValue, setAvgValue] = useState(750);

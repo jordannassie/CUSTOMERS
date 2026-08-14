@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 
 export default function Header() {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -16,7 +17,7 @@ export default function Header() {
       <div className="bg-white rounded-2xl shadow-lg max-w-6xl mx-auto">
         <div className="flex items-center justify-between py-3 px-6">
           {/* Logo — always returns to top of homepage */}
-          <a href="/" aria-label="Customers.Direct — Home">
+          <Link href="/" aria-label="Customers.Direct — Home">
             <Image
               src="https://phhczohqidgrvcmszets.supabase.co/storage/v1/object/public/CUSTOMER.direct/logo/Logo.png"
               alt="Customers.Direct"
@@ -26,7 +27,7 @@ export default function Header() {
               unoptimized
               className="h-9 w-auto"
             />
-          </a>
+          </Link>
 
           {/* Desktop Nav */}
           <nav className="hidden md:flex items-center gap-8">

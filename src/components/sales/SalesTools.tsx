@@ -10,18 +10,18 @@ const TOOL_CARDS = [
   { id: "cold-email", icon: Mail, title: "Cold Email", desc: "An email template for outreach." },
   { id: "followup", icon: FileText, title: "Follow-Up Script", desc: "What to say after a demo or meeting." },
   { id: "objections", icon: AlertCircle, title: "Objection Guide", desc: "Responses to common sales objections." },
-  { id: "one-pager", icon: Users, title: "AI Receptionist One-Pager", desc: "A leave-behind for prospects." },
+  { id: "one-pager", icon: Users, title: "AI Employee One-Pager", desc: "A leave-behind for prospects." },
   { id: "examples", icon: Building, title: "Industry Examples", desc: "Sample use cases by industry." },
 ];
 
 const TOOL_CONTENT: Record<string, { title: string; body: string }> = {
   "cold-call": {
     title: "Cold Call Script",
-    body: `Hi, this is [Your Name] — I work with Customers Direct. I'm reaching out to [Business Name] because I noticed you're a [industry] business, and I wanted to ask you a quick question.\n\nIf a customer calls your business and no one is available to answer, what typically happens?\n\n[Let them answer]\n\nThat's pretty common. We help businesses like yours make sure every call gets answered — with an AI receptionist that qualifies callers, sends booking links, and sends you a summary after the call.\n\nWould you be open to a quick 15-minute demo? I can show you exactly what it would sound like for your business.`,
+    body: `Hi, this is [Your Name] — I work with Customers Direct. I'm reaching out to [Business Name] because I noticed you're a [industry] business, and I wanted to ask you a quick question.\n\nIf a customer calls your business and no one is available to answer, what typically happens?\n\n[Let them answer]\n\nThat's pretty common. We help businesses like yours make sure every call gets answered — with an AI Employee that qualifies callers, sends booking links, and sends you a summary after the call.\n\nWould you be open to a quick 15-minute demo? I can show you exactly what it would sound like for your business.`,
   },
   "cold-email": {
     title: "Cold Email Template",
-    body: `Subject: What happens when a customer calls and no one answers?\n\nHi [First Name],\n\nIf a customer calls [Business Name] after hours or while your team is busy, what happens?\n\nFor most service businesses, that customer ends up calling someone else.\n\nCustomers Direct helps businesses like yours make sure every call gets answered — with an AI receptionist that handles the conversation, qualifies the caller, and sends you the details.\n\nWould you be open to seeing a quick demo built around your business?\n\n[Your Name]`,
+    body: `Subject: What happens when a customer calls and no one answers?\n\nHi [First Name],\n\nIf a customer calls [Business Name] after hours or while your team is busy, what happens?\n\nFor most service businesses, that customer ends up calling someone else.\n\nCustomers Direct helps businesses like yours make sure every call gets answered — with an AI Employee that handles the conversation, qualifies the caller, and sends you the details.\n\nWould you be open to seeing a quick demo built around your business?\n\n[Your Name]`,
   },
   "followup": {
     title: "Follow-Up Script",
@@ -29,11 +29,11 @@ const TOOL_CONTENT: Record<string, { title: string; body: string }> = {
   },
   "objections": {
     title: "Objection Guide",
-    body: `"We already have voicemail."\n→ Voicemail is passive — callers may hang up instead of leaving a message. AI Receptionist actively engages the caller.\n\n"Our customers prefer to talk to a real person."\n→ They do — but if no one is available, they'll call the next business. The AI ensures they always reach someone immediately.\n\n"We're not ready for AI."\n→ The setup is handled entirely by Customers Direct. Your team doesn't need to manage or configure anything.\n\n"We're too busy right now."\n→ That's actually why this makes sense — the busier you are, the more calls you're likely missing.`,
+    body: `"We already have voicemail."\n→ Voicemail is passive — callers may hang up instead of leaving a message. AI Employee actively engages the caller.\n\n"Our customers prefer to talk to a real person."\n→ They do — but if no one is available, they'll call the next business. The AI ensures they always reach someone immediately.\n\n"We're not ready for AI."\n→ The setup is handled entirely by Customers Direct. Your team doesn't need to manage or configure anything.\n\n"We're too busy right now."\n→ That's actually why this makes sense — the busier you are, the more calls you're likely missing.`,
   },
   "one-pager": {
-    title: "AI Receptionist One-Pager",
-    body: `CUSTOMERS DIRECT — AI RECEPTIONIST\n\nNever miss another customer call.\n\nYour AI Receptionist answers 24/7, qualifies callers, books appointments, and sends you the lead — automatically.\n\nWHAT IT DOES:\n• Answers every call, even after hours\n• Asks qualifying questions\n• Sends booking links during the call\n• Delivers a lead summary to your team\n• Works in 50+ languages\n• Keeps your existing business number\n\nSIMPLE PRICING: $997/month\nOne receptionist. One monthly price.\n\nCustomers.Direct`,
+    title: "AI Employee One-Pager",
+    body: `CUSTOMERS DIRECT — AI EMPLOYEE\n\nNever miss another customer call.\n\nYour AI Employee answers 24/7, qualifies callers, books appointments, and sends you the lead — automatically.\n\nWHAT IT DOES:\n• Answers every call, even after hours\n• Asks qualifying questions\n• Sends booking links during the call\n• Delivers a lead summary to your team\n• Works in 50+ languages\n• Keeps your existing business number\n\nSIMPLE PRICING: $997/month\nOne AI Employee. One monthly price.\n\nCustomers.Direct`,
   },
   "examples": {
     title: "Industry Examples",

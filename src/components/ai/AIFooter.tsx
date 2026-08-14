@@ -1,4 +1,5 @@
 import { PhoneCall, Users } from "lucide-react";
+import Link from "next/link";
 import FooterLocations from "../FooterLocations";
 
 const year = new Date().getFullYear();
@@ -19,18 +20,20 @@ const COLUMNS: FooterColumn[] = [
   {
     heading: "Company",
     links: [
-      { label: "How It Works", href: "#how-it-works" },
-      { label: "Features", href: "#features" },
-      { label: "Industries", href: "#industries" },
-      { label: "Pricing", href: "#pricing" },
-      { label: "Contact", href: "#demo" },
+      { label: "How It Works", href: "/#how-it-works" },
+      { label: "Features", href: "/#features" },
+      { label: "Industries", href: "/#industries" },
+      { label: "Pricing", href: "/#pricing" },
+      { label: "Contact / Book Call", href: "/#demo" },
     ],
   },
   {
     heading: "Resources",
     links: [
-      { label: "AI Receptionist", href: "/" },
-      { label: "FAQs", href: "#faq" },
+      { label: "AI Employee", href: "/" },
+      { label: "DM Ads / Customer Acquisition", href: "/customer-acquisition" },
+      { label: "Call Bar", href: "/call-bar" },
+      { label: "FAQs", href: "/#faq" },
     ],
   },
   {
@@ -57,7 +60,7 @@ export default function AIFooter() {
           className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-gradient-to-r from-[#1E293B] to-[#0F172A] border border-white/10 rounded-2xl px-6 py-5 mb-14"
         >
           <div>
-            <p className="font-bold text-white">Want to sell Customers Direct AI Receptionist?</p>
+            <p className="font-bold text-white">Want to sell Customers Direct AI Employee?</p>
             <p className="text-sm text-white/60 mt-0.5">Join our sales program and help businesses capture more opportunities.</p>
           </div>
           <a
@@ -72,11 +75,11 @@ export default function AIFooter() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-10 mb-12">
           {/* Brand */}
           <div className="lg:col-span-1">
-            <a href="/" aria-label="Customers.Direct — Home" className="inline-block mb-4">
+            <Link href="/" aria-label="Customers.Direct — Home" className="inline-block mb-4">
               <span className="text-white font-black text-[26px] tracking-tight">
                 Customers.Direct
               </span>
-            </a>
+            </Link>
             <p className="text-sm text-white/50 leading-relaxed">
               Customers.Direct helps businesses capture more opportunities with
               AI-powered customer communication.

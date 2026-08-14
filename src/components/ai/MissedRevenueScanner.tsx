@@ -349,7 +349,7 @@ export default function MissedRevenueScanner() {
                   answer. When nobody answers, some callers will try the next
                   business.{" "}
                   <span className="font-semibold text-[#0F172A]">
-                    Customers.Direct AI Phone gives those callers someone to
+                    Customers.Direct AI Employee gives those callers someone to
                     talk to immediately.
                   </span>
                 </p>
@@ -385,7 +385,7 @@ export default function MissedRevenueScanner() {
                   }}
                   className="inline-flex items-center justify-center gap-2 text-[#2563EB] font-bold text-sm hover:text-[#1d4ed8] transition-colors"
                 >
-                  See How AI Phone Works{" "}
+                  See How AI Employee Works{" "}
                   <ArrowRight size={14} aria-hidden="true" />
                 </a>
               </div>

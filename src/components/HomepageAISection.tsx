@@ -56,7 +56,7 @@ export default function HomepageAISection() {
           {/* LEFT — Copy */}
           <div>
             <span className="inline-block text-xs font-black uppercase tracking-widest text-[#7C3AED] mb-5">
-              AI Receptionist
+              AI Employee
             </span>
 
             <h2 className="text-3xl sm:text-4xl lg:text-[44px] font-black text-[#0F172A] leading-[1.08] tracking-tight mb-6">
@@ -73,8 +73,7 @@ export default function HomepageAISection() {
             </h2>
 
             <p className="text-base text-[#64748B] leading-relaxed mb-8 max-w-md">
-              Getting the lead is only half the job. Customers Direct AI
-              Receptionist answers your calls 24/7, talks to customers,
+              Getting the lead is only half the job. Customers Direct AI Employee answers your calls 24/7, talks to customers,
               qualifies opportunities, sends booking links, and tells you
               exactly who called.
             </p>
@@ -101,13 +100,13 @@ export default function HomepageAISection() {
                 className="inline-flex items-center justify-center gap-2 bg-[#2563EB] text-white font-bold px-7 py-4 rounded-full hover:bg-[#1d4ed8] transition-colors text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2563EB]"
               >
                 <PhoneCall size={15} aria-hidden="true" />
-                Hear the AI Receptionist
+                Hear the AI Employee
               </a>
               <a
                 href="/ai-phone"
                 className="inline-flex items-center justify-center gap-2 border border-[#DBEAFE] bg-white text-[#2563EB] font-semibold px-7 py-4 rounded-full hover:bg-[#EFF6FF] transition-colors text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2563EB]"
               >
-                Learn About AI Phone →
+                Learn About AI Employee →
               </a>
             </div>
           </div>

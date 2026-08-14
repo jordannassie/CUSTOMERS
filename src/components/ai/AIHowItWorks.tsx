@@ -5,12 +5,12 @@ const STEPS = [
     num: "01",
     icon: <BookOpen size={22} className="text-[#2563EB]" aria-hidden="true" />,
     title: "We Learn Your Business",
-    body: "We use your website, services, hours, common questions, scheduling process, and business rules to configure your receptionist.",
+    body: "We use your website, services, hours, common questions, scheduling process, and business rules to configure your AI Employee.",
   },
   {
     num: "02",
     icon: <Settings size={22} className="text-[#2563EB]" aria-hidden="true" />,
-    title: "We Build Your AI Receptionist",
+    title: "We Build Your AI Employee",
     body: "We configure the voice, greeting, qualifying questions, business knowledge, and call handling to match how your business works.",
   },
   {
@@ -31,7 +31,7 @@ export default function AIHowItWorks() {
             Simple Setup
           </span>
           <h2 className="text-3xl sm:text-4xl lg:text-[42px] font-black text-[#0F172A] leading-tight">
-            Your new receptionist in three steps.
+            Your new AI Employee in three steps.
           </h2>
         </div>
 

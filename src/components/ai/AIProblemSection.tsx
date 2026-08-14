@@ -101,10 +101,10 @@ export default function AIProblemSection() {
                 </span>
               </div>
               <p className="text-xl font-black text-[#0F172A] mb-2">
-                Your AI Receptionist is always ready.
+                Your AI Employee is always ready.
               </p>
               <p className="text-sm text-[#64748B] leading-relaxed">
-                Your AI Receptionist can answer when you are busy, after hours, on
+                Your AI Employee can answer when you are busy, after hours, on
                 another call, or away from the office — so every caller gets a
                 response immediately.
               </p>

@@ -7,7 +7,7 @@ import AIFooter from "@/components/ai/AIFooter";
 export const metadata = {
   title: "Customers Direct Sales Program — Help Businesses Capture More Calls",
   description:
-    "Join the Customers Direct Sales Program and help service businesses stop losing customers to missed calls with AI Receptionist.",
+    "Join the Customers Direct Sales Program and help service businesses stop losing customers to missed calls with AI Employee.",
 };
 
 export default function SalesPage() {

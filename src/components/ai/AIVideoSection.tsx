@@ -6,7 +6,6 @@ export default function AIVideoSection() {
           className="rounded-3xl overflow-hidden border border-gray-100"
           style={{ boxShadow: "0 8px 40px rgba(0,0,0,0.10)" }}
         >
-          {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
           <video
             src="https://phhczohqidgrvcmszets.supabase.co/storage/v1/object/public/CUSTOMER.direct/images/AI/Video/0812%20(1)%20Ai.mov"
             autoPlay
@@ -14,7 +13,7 @@ export default function AIVideoSection() {
             loop
             playsInline
             className="w-full h-auto block"
-            aria-label="Customers Direct AI Receptionist — product overview"
+            aria-label="Customers Direct AI Employee — product overview"
           />
         </div>
       </div>

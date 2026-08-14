@@ -16,8 +16,8 @@ const STEPS = [
   {
     num: "3",
     icon: <Monitor size={20} className="text-[#2563EB]" aria-hidden="true" />,
-    title: "Demo the AI Receptionist",
-    body: "Show the prospect exactly how an AI receptionist would handle their calls, using a demo built around their business.",
+    title: "Demo the AI Employee",
+    body: "Show the prospect exactly how an AI Employee would handle their calls, using a demo built around their business.",
   },
   {
     num: "4",

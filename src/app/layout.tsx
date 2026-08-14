@@ -22,11 +22,11 @@ const logoUrl =
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: "Customers.Direct — Get More Customers. Never Miss Another One.",
+    default: "Customers Direct AI Employee — Never Miss Another Customer",
     template: "%s | Customers.Direct",
   },
   description:
-    "Customer Acquisition + AI Receptionist for growing businesses. We help you create more customer opportunities and make sure you're there when customers respond.",
+    "Every call gets answered. Your AI Employee works alongside your staff, keeps your existing business number, and handles after-hours and overflow calls.",
   icons: {
     icon: BRAND_ICON,
     shortcut: BRAND_ICON,
@@ -36,9 +36,9 @@ export const metadata: Metadata = {
     type: "website",
     siteName: "Customers.Direct",
     url: siteUrl,
-    title: "Customers.Direct — Get More Customers. Never Miss Another One.",
+    title: "Customers Direct AI Employee — Never Miss Another Customer",
     description:
-      "Customer Acquisition + AI Receptionist for growing businesses. We help you create more customer opportunities and make sure you're there when customers respond.",
+      "Every call gets answered. Your AI Employee works alongside your staff, keeps your existing business number, and handles after-hours and overflow calls.",
     images: [
       {
         url: BRAND_ICON,
@@ -50,8 +50,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Customers.Direct — Get More Customers. Never Miss Another One.",
-    description: "Customer Acquisition + AI Receptionist for growing businesses.",
+    title: "Customers Direct AI Employee — Never Miss Another Customer",
+    description: "Every call gets answered with your Customers Direct AI Employee.",
     images: [BRAND_ICON],
   },
 };
@@ -62,7 +62,7 @@ const organizationJsonLd = {
   name: "Customers.Direct",
   url: siteUrl,
   logo: logoUrl,
-  description: "Customer Acquisition + AI Receptionist for growing businesses.",
+  description: "AI Employee and customer acquisition solutions for growing businesses.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
@@ -71,13 +71,11 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      {/* Preload the first home hero banner before React hydrates */}
       <head>
-        {/* Slide 1 — shown immediately on load */}
         <link
           rel="preload"
           as="image"
-          href="https://phhczohqidgrvcmszets.supabase.co/storage/v1/object/public/CUSTOMER.direct/images/banners/DM/ChatGPT%20Image%20Aug%2012,%202026,%2002_03_22%20PM%20(6).png"
+          href="https://phhczohqidgrvcmszets.supabase.co/storage/v1/object/public/CUSTOMER.direct/images/banners/AIPHONE/ChatGPT%20Image%20Aug%2012,%202026,%2002_02_33%20PM%20(7).png"
         />
         <script
           type="application/ld+json"

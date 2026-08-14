@@ -48,7 +48,7 @@ function Bubble({
       }}
     >
       <span className="text-[10px] font-bold uppercase tracking-widest text-[#94A3B8]">
-        {isAI ? "AI Receptionist" : "Caller"}
+        {isAI ? "AI Employee" : "Caller"}
       </span>
       <div
         className={`rounded-2xl px-3 py-2 text-xs leading-relaxed max-w-[88%] ${

@@ -24,7 +24,7 @@ export default function AIPricingSection() {
             Simple Pricing
           </span>
           <h2 className="text-3xl sm:text-4xl lg:text-[42px] font-black text-[#0F172A] leading-tight mb-4">
-            One receptionist. One monthly price.
+            One AI Employee. One monthly price.
           </h2>
         </div>
 
@@ -44,7 +44,7 @@ export default function AIPricingSection() {
             {/* Plan label */}
             <div className="flex items-center justify-between mb-6">
               <span className="text-xs font-black uppercase tracking-widest text-[#64748B]">
-                AI Receptionist
+                AI Employee
               </span>
               <span className="bg-[#EFF6FF] border border-[#DBEAFE] text-[#2563EB] text-xs font-bold px-3 py-1 rounded-full">
                 Most Popular
@@ -66,7 +66,7 @@ export default function AIPricingSection() {
               <span className="text-[#64748B] text-base mb-1.5 font-medium">/month</span>
             </div>
             <p className="text-sm text-[#64748B] mb-8 leading-relaxed">
-              Your AI receptionist, configured and managed for your business.
+              Your AI Employee, configured and managed for your business.
             </p>
 
             {/* Includes */}
@@ -95,7 +95,7 @@ export default function AIPricingSection() {
               className="flex items-center justify-center gap-2 bg-[#2563EB] text-white font-bold py-4 rounded-full hover:bg-[#1d4ed8] transition-colors text-base w-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2563EB]"
             >
               <PhoneCall size={16} aria-hidden="true" />
-              Build My AI Receptionist
+              Build My AI Employee
             </a>
 
             <p className="text-center text-xs text-[#94A3B8] mt-4">

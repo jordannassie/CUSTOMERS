@@ -5,8 +5,8 @@ import { ChevronDown } from "lucide-react";
 
 const FAQS = [
   {
-    q: "What is an AI Receptionist?",
-    a: "An AI Receptionist is a voice-based assistant that answers your business phone, greets callers, responds to their questions, qualifies leads, sends booking links, and delivers a summary of the call back to you — all automatically.",
+    q: "What is an AI Employee?",
+    a: "An AI Employee is a voice-based assistant that answers your business phone, greets callers, responds to their questions, qualifies leads, sends booking links, and delivers a summary of the call back to you — all automatically.",
   },
   {
     q: "Can I keep my existing business number?",
@@ -14,15 +14,15 @@ const FAQS = [
   },
   {
     q: "Can it answer calls after hours?",
-    a: "Yes. Your AI Receptionist can be available 24 hours a day, including evenings, weekends, and holidays — so customers always get a response when they call, even when your team is unavailable.",
+    a: "Yes. Your AI Employee can be available 24 hours a day, including evenings, weekends, and holidays — so customers always get a response when they call, even when your team is unavailable.",
   },
   {
     q: "Can it schedule appointments?",
-    a: "Yes. The AI Receptionist can send booking links during the conversation so callers can select a time that works for them. It can be configured around your scheduling process and tools.",
+    a: "Yes. The AI Employee can send booking links during the conversation so callers can select a time that works for them. It can be configured around your scheduling process and tools.",
   },
   {
     q: "Can it qualify callers?",
-    a: "Yes. The AI Receptionist can ask the qualifying questions that matter to your business — such as service type, location, urgency, budget, or preferred timing — before passing the lead to your team.",
+    a: "Yes. The AI Employee can ask the qualifying questions that matter to your business — such as service type, location, urgency, budget, or preferred timing — before passing the lead to your team.",
   },
   {
     q: "Will I know what happened during the call?",
@@ -30,11 +30,11 @@ const FAQS = [
   },
   {
     q: "Can it answer questions about my specific business?",
-    a: "Yes. Your AI Receptionist is configured with your business information — services, hours, pricing, FAQs, and policies — so it can answer questions the way your business would. If a question falls outside what it knows, it can gather information, send a message, or let the caller know a team member will follow up.",
+    a: "Yes. Your AI Employee is configured with your business information — services, hours, pricing, FAQs, and policies — so it can answer questions the way your business would. If a question falls outside what it knows, it can gather information, send a message, or let the caller know a team member will follow up.",
   },
   {
     q: "Does it support multiple languages?",
-    a: "Yes. Your AI Receptionist can handle conversations in many languages, so customers who prefer to speak in a language other than English can still be helped.",
+    a: "Yes. Your AI Employee can handle conversations in many languages, so customers who prefer to speak in a language other than English can still be helped.",
   },
   {
     q: "What happens if it doesn't know the answer?",
@@ -42,7 +42,7 @@ const FAQS = [
   },
   {
     q: "How long does setup take?",
-    a: "Setup time varies depending on the complexity of your business and call handling needs. We work through the configuration with you to make sure your AI Receptionist is ready before it goes live.",
+    a: "Setup time varies depending on the complexity of your business and call handling needs. We work through the configuration with you to make sure your AI Employee is ready before it goes live.",
   },
 ];
 
@@ -50,7 +50,7 @@ export default function AIFAQSection() {
   const [open, setOpen] = useState<number | null>(null);
 
   return (
-    <section className="bg-[#EFF6FF] py-24 px-4">
+    <section id="faq" className="bg-[#EFF6FF] py-24 px-4">
       <div className="max-w-3xl mx-auto">
         {/* Headline */}
         <div className="text-center mb-12">

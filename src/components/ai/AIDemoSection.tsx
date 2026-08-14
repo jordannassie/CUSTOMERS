@@ -23,7 +23,7 @@ const INITIAL: FormData = {
 
 const STEPS = [
   { num: "1", label: "Tell us about your business" },
-  { num: "2", label: "See how your receptionist could work" },
+  { num: "2", label: "See how your AI Employee could work" },
   { num: "3", label: "Book a strategy call" },
 ];
 
@@ -60,7 +60,7 @@ export default function AIDemoSection() {
         body: JSON.stringify({
           ...form,
           source: "ai_receptionist_demo",
-          goal: "AI Receptionist Demo",
+          goal: "AI Employee Demo",
         }),
       });
 
@@ -98,11 +98,11 @@ export default function AIDemoSection() {
             Hear It for Yourself
           </span>
           <h2 className="text-3xl sm:text-4xl lg:text-[42px] font-black text-[#0F172A] leading-tight mb-5">
-            Hear what an AI Receptionist could sound like for your business.
+            Hear what an AI Employee could sound like for your business.
           </h2>
           <p className="text-lg text-[#64748B] leading-relaxed mb-10 max-w-md">
             Tell us about your business. We&apos;ll use your information to prepare the next step
-            and show you how an AI receptionist could handle your calls.
+            and show you how an AI Employee could handle your calls.
           </p>
 
           <div className="flex flex-col gap-4">
@@ -128,7 +128,7 @@ export default function AIDemoSection() {
               <PhoneCall size={18} className="text-[#2563EB]" aria-hidden="true" />
             </div>
             <div>
-              <p className="font-bold text-[#0F172A] text-sm">AI Receptionist Demo</p>
+              <p className="font-bold text-[#0F172A] text-sm">AI Employee Demo</p>
               <p className="text-xs text-[#64748B]">Customers.Direct</p>
             </div>
           </div>

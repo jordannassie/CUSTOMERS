@@ -14,6 +14,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
 import SalesOverview from "./SalesOverview";
 import SalesLeads from "./SalesLeads";
 import SalesPipeline from "./SalesPipeline";
@@ -84,7 +85,7 @@ export default function SalesDashboard() {
       <aside className="hidden md:flex w-60 shrink-0 bg-white border-r border-gray-100 flex-col h-full">
         {/* Logo */}
         <div className="px-6 pt-6 pb-5 border-b border-gray-100">
-          <a href="/" aria-label="Customers.Direct — Home">
+          <Link href="/" aria-label="Customers.Direct — Home">
             <Image
               src="https://phhczohqidgrvcmszets.supabase.co/storage/v1/object/public/CUSTOMER.direct/logo/Logo.png"
               alt="Customers.Direct"
@@ -93,7 +94,7 @@ export default function SalesDashboard() {
               unoptimized
               className="h-8 w-auto"
             />
-          </a>
+          </Link>
           <span className="mt-2 inline-block text-[10px] font-black uppercase tracking-widest text-[#94A3B8]">
             Sales
           </span>
@@ -129,7 +130,7 @@ export default function SalesDashboard() {
       <div className="flex flex-col flex-1 min-w-0">
         {/* Mobile header */}
         <div className="md:hidden flex items-center justify-between px-4 py-3 bg-white border-b border-gray-100 shrink-0">
-          <a href="/" aria-label="Customers.Direct — Home">
+          <Link href="/" aria-label="Customers.Direct — Home">
             <Image
               src="https://phhczohqidgrvcmszets.supabase.co/storage/v1/object/public/CUSTOMER.direct/logo/Logo.png"
               alt="Customers.Direct"
@@ -138,7 +139,7 @@ export default function SalesDashboard() {
               unoptimized
               className="h-7 w-auto"
             />
-          </a>
+          </Link>
           <div className="flex items-center gap-2">
             <span className="text-sm font-semibold text-[#0F172A]">{activeLabel}</span>
             <button

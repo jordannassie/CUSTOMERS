@@ -2,9 +2,9 @@ import { BookOpen, CheckCircle, ArrowRight } from "lucide-react";
 
 const MODULES = [
   { title: "Getting Started", desc: "Introduction to the Customers Direct Sales Program.", progress: 100, status: "complete" },
-  { title: "Understanding the AI Receptionist", desc: "Learn how the product works and what problems it solves.", progress: 100, status: "complete" },
+  { title: "Understanding the AI Employee", desc: "Learn how the product works and what problems it solves.", progress: 100, status: "complete" },
   { title: "Finding Businesses", desc: "Identify the right prospects and how to approach them.", progress: 60, status: "in-progress" },
-  { title: "Running the Demo", desc: "How to show a prospect exactly what the AI Receptionist does.", progress: 0, status: "start" },
+  { title: "Running the Demo", desc: "How to show a prospect exactly what the AI Employee does.", progress: 0, status: "start" },
   { title: "Handling Objections", desc: "Common questions and how to address them effectively.", progress: 0, status: "start" },
   { title: "Closing the Customer", desc: "The steps to take a prospect from interested to signed.", progress: 0, status: "start" },
   { title: "Following Up", desc: "How to stay in contact without being pushy.", progress: 0, status: "start" },

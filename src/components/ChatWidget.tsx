@@ -31,7 +31,7 @@ const JORDAN_PHOTO =
 const OPENING_OPTIONS = [
   "Get more customers",
   "Get more DM conversations",
-  "AI Phone Service",
+  "AI Employee",
   "Run better ads",
   "Not sure yet",
 ];
@@ -108,7 +108,6 @@ export default function ChatWidget() {
   const [open, setOpen]         = useState(false);
   const [messages, setMessages] = useState<Msg[]>([]);
   const [step, setStep]         = useState<Step>("opening");
-  const [answers, setAnswers]   = useState<Answers>(EMPTY);
   const [input, setInput]       = useState("");
   const [typing, setTyping]     = useState(false);
   const [validErr, setValidErr] = useState("");
@@ -117,39 +116,10 @@ export default function ChatWidget() {
   const answersRef = useRef<Answers>(EMPTY);
   function updateAnswers(patch: Partial<Answers>) {
     answersRef.current = { ...answersRef.current, ...patch };
-    setAnswers({ ...answersRef.current });
   }
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef  = useRef<HTMLInputElement>(null);
-
-  // ── Restore session ────────────────────────────────────────────────────────
-  useEffect(() => {
-    const saved = loadSession();
-    if (saved?.messages?.length) {
-      setMessages(saved.messages);
-      setStep(saved.step as Step);
-      answersRef.current = saved.answers;
-      setAnswers(saved.answers);
-    }
-  }, []);
-
-  // ── Persist ───────────────────────────────────────────────────────────────
-  useEffect(() => {
-    if (messages.length > 0) saveSession(messages, step, answersRef.current);
-  }, [messages, step]);
-
-  // ── Open / focus ──────────────────────────────────────────────────────────
-  useEffect(() => {
-    if (open && messages.length === 0) startIntro();
-    if (open) { setUnread(false); setTimeout(() => inputRef.current?.focus(), 300); }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open]);
-
-  // ── Scroll ────────────────────────────────────────────────────────────────
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, typing]);
 
   // ── Jordan say helper ─────────────────────────────────────────────────────
   const jordanSay = useCallback((texts: string[], onDone?: () => void) => {
@@ -174,6 +144,40 @@ export default function ChatWidget() {
     );
   }, [jordanSay]);
 
+  // ── Restore session ────────────────────────────────────────────────────────
+  useEffect(() => {
+    const saved = loadSession();
+    if (saved?.messages?.length) {
+      answersRef.current = saved.answers;
+      const timer = setTimeout(() => {
+        setMessages(saved.messages);
+        setStep(saved.step as Step);
+      }, 0);
+      return () => clearTimeout(timer);
+    }
+  }, []);
+
+  // ── Persist ───────────────────────────────────────────────────────────────
+  useEffect(() => {
+    if (messages.length > 0) saveSession(messages, step, answersRef.current);
+  }, [messages, step]);
+
+  // ── Open / focus ──────────────────────────────────────────────────────────
+  useEffect(() => {
+    if (!open) return;
+    const introTimer = messages.length === 0 ? setTimeout(startIntro, 0) : null;
+    const focusTimer = setTimeout(() => inputRef.current?.focus(), 300);
+    return () => {
+      if (introTimer) clearTimeout(introTimer);
+      clearTimeout(focusTimer);
+    };
+  }, [open, messages.length, startIntro]);
+
+  // ── Scroll ────────────────────────────────────────────────────────────────
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, typing]);
+
   // ── Kick off name/phone/email lead collection ─────────────────────────────
   const startLeadCapture = useCallback((greeting: string) => {
     jordanSay([greeting], () => setStep("name"));
@@ -185,80 +189,6 @@ export default function ChatWidget() {
     if (step === "email" && !EMAIL_RE.test(value.trim())) return "Please enter a valid email address.";
     return "";
   }
-
-  // ── Submit answer ─────────────────────────────────────────────────────────
-  const submitAnswer = useCallback((value: string) => {
-    const err = validate(value.trim());
-    if (err) { setValidErr(err); return; }
-    setValidErr("");
-    setInput("");
-    const v = value.trim();
-
-    setMessages(prev => [...prev, { role: "user", text: v }]);
-
-    switch (step) {
-      // ── Opening ────────────────────────────────────────────────────────
-      case "opening":
-        if (v === "AI Phone Service") {
-          jordanSay([
-            "Our AI Phone Service gives your business an AI phone assistant that can answer calls 24/7, talk with customers, answer common questions, capture leads, and book appointments — even after hours.",
-          ], () => setStep("ai_phone"));
-        } else {
-          jordanSay(["Got it. I just need a few details. What's your name?"], () => setStep("name"));
-        }
-        break;
-
-      // ── AI Phone menu ──────────────────────────────────────────────────
-      case "ai_phone":
-        if (v === "How does it work?") {
-          jordanSay([
-            "We set up an AI phone assistant specifically for your business. It answers incoming calls, talks naturally with customers, answers common questions, captures their information, and can route or book qualified leads.",
-          ], () => setStep("ai_phone_how"));
-        } else if (v === "Can it book appointments?") {
-          jordanSay([
-            "Yes. Your AI phone assistant can collect customer information and book appointments based on your business's availability and rules.",
-          ], () => setStep("ai_phone_book"));
-        } else if (v === "How much does it cost?") {
-          jordanSay([
-            "Pricing depends on your business, call volume, and what you want your AI phone assistant to handle. We can show you exactly how it would work for your business on a quick demo.",
-          ], () => setStep("ai_phone_cost"));
-        } else {
-          // "I want a demo"
-          startLeadCapture("Great! I just need a few details. What's your name?");
-        }
-        break;
-
-      // ── AI Phone sub-steps → all lead to demo ──────────────────────────
-      case "ai_phone_how":
-      case "ai_phone_book":
-      case "ai_phone_cost":
-        startLeadCapture("Perfect. Let me grab your details. What's your name?");
-        break;
-
-      // ── Lead capture ───────────────────────────────────────────────────
-      case "name":
-        updateAnswers({ full_name: v });
-        jordanSay([`Nice to meet you, ${v.split(" ")[0]}. What's the best phone number to reach you?`], () => setStep("phone"));
-        break;
-      case "phone":
-        updateAnswers({ phone: v });
-        jordanSay(["What's your email address?"], () => setStep("email"));
-        break;
-      case "email":
-        updateAnswers({ email: v });
-        jordanSay(["What's the name of your business?"], () => setStep("business"));
-        break;
-      case "business":
-        updateAnswers({ business_name: v });
-        jordanSay(["What's your business website?"], () => setStep("website"));
-        break;
-      case "website":
-        updateAnswers({ website: v });
-        saveLead({ ...answersRef.current, website: v });
-        break;
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [step, jordanSay, startLeadCapture]);
 
   // ── Save lead ─────────────────────────────────────────────────────────────
   async function saveLead(a: Answers) {
@@ -301,13 +231,86 @@ export default function ChatWidget() {
     }
   }
 
+  // ── Submit answer ─────────────────────────────────────────────────────────
+  const submitAnswer = useCallback((value: string) => {
+    const err = validate(value.trim());
+    if (err) { setValidErr(err); return; }
+    setValidErr("");
+    setInput("");
+    const v = value.trim();
+
+    setMessages(prev => [...prev, { role: "user", text: v }]);
+
+    switch (step) {
+      // ── Opening ────────────────────────────────────────────────────────
+      case "opening":
+        if (v === "AI Employee") {
+          jordanSay([
+            "Our AI Employee works alongside your staff so every call gets answered. It can handle after-hours and overflow calls, answer common questions, capture and qualify leads, and book appointments while you keep your existing business number.",
+          ], () => setStep("ai_phone"));
+        } else {
+          jordanSay(["Got it. I just need a few details. What's your name?"], () => setStep("name"));
+        }
+        break;
+
+      // ── AI Employee menu ──────────────────────────────────────────────────
+      case "ai_phone":
+        if (v === "How does it work?") {
+          jordanSay([
+            "We set up an AI Employee specifically for your business. It answers incoming calls when your team is unavailable, talks naturally with customers, answers common questions, captures and qualifies their information, and can route or book leads.",
+          ], () => setStep("ai_phone_how"));
+        } else if (v === "Can it book appointments?") {
+          jordanSay([
+            "Yes. Your AI Employee can collect customer information and book appointments based on your business's availability and rules.",
+          ], () => setStep("ai_phone_book"));
+        } else if (v === "How much does it cost?") {
+          jordanSay([
+            "Pricing depends on your business, call volume, and what you want your AI Employee to handle. We can show you exactly how it would work for your business on a quick demo.",
+          ], () => setStep("ai_phone_cost"));
+        } else {
+          // "I want a demo"
+          startLeadCapture("Great! I just need a few details. What's your name?");
+        }
+        break;
+
+      // ── AI Employee sub-steps → all lead to demo ──────────────────────────
+      case "ai_phone_how":
+      case "ai_phone_book":
+      case "ai_phone_cost":
+        startLeadCapture("Perfect. Let me grab your details. What's your name?");
+        break;
+
+      // ── Lead capture ───────────────────────────────────────────────────
+      case "name":
+        updateAnswers({ full_name: v });
+        jordanSay([`Nice to meet you, ${v.split(" ")[0]}. What's the best phone number to reach you?`], () => setStep("phone"));
+        break;
+      case "phone":
+        updateAnswers({ phone: v });
+        jordanSay(["What's your email address?"], () => setStep("email"));
+        break;
+      case "email":
+        updateAnswers({ email: v });
+        jordanSay(["What's the name of your business?"], () => setStep("business"));
+        break;
+      case "business":
+        updateAnswers({ business_name: v });
+        jordanSay(["What's your business website?"], () => setStep("website"));
+        break;
+      case "website":
+        updateAnswers({ website: v });
+        saveLead({ ...answersRef.current, website: v });
+        break;
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step, jordanSay, startLeadCapture]);
+
   // ── Reset ─────────────────────────────────────────────────────────────────
   function reset() {
     try { sessionStorage.removeItem(SK); } catch { /* noop */ }
     answersRef.current = EMPTY;
-    setMessages([]); setStep("opening"); setAnswers(EMPTY);
+    setMessages([]); setStep("opening");
     setInput(""); setValidErr(""); setTyping(false);
-    setTimeout(() => startIntro(), 80);
   }
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {

@@ -3,7 +3,7 @@
 import { ArrowDown, ArrowRight } from "lucide-react";
 
 const CA_FLOW = ["AD", "DM", "CONVERSATION", "CUSTOMER"];
-const AI_FLOW = ["CALL", "AI RECEPTIONIST", "QUALIFIED", "BOOKED"];
+const AI_FLOW = ["CALL", "AI EMPLOYEE", "QUALIFIED", "BOOKED"];
 
 function FlowStep({
   label,
@@ -101,13 +101,13 @@ export default function TwoWaysSection() {
             </button>
           </div>
 
-          {/* Card 2 — AI Receptionist */}
+          {/* Card 2 — AI Employee */}
           <div
             className="rounded-3xl border border-[#EDE9FE] bg-gradient-to-br from-[#F5F3FF] to-white p-8 flex flex-col"
             style={{ boxShadow: "0 4px 24px rgba(124,58,237,0.08)" }}
           >
             <span className="text-[10px] font-black uppercase tracking-widest text-[#7C3AED] mb-4">
-              AI Receptionist
+              AI Employee
             </span>
             <h3 className="text-2xl font-black text-[#0F172A] mb-6">
               Never Miss One.
@@ -126,7 +126,7 @@ export default function TwoWaysSection() {
             </div>
 
             <p className="text-sm text-[#64748B] leading-relaxed mb-8 flex-1">
-              Your AI Receptionist answers customer calls, qualifies
+              Your AI Employee answers customer calls, qualifies
               opportunities and helps move callers toward the next step.
             </p>
 
@@ -134,7 +134,7 @@ export default function TwoWaysSection() {
               href="/ai-phone"
               className="inline-flex items-center justify-center gap-2 bg-[#7C3AED] text-white font-bold px-6 py-3.5 rounded-full hover:bg-[#6d28d9] transition-colors text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#7C3AED]"
             >
-              Explore AI Phone
+              Explore AI Employee
               <ArrowRight size={15} aria-hidden="true" />
             </a>
           </div>

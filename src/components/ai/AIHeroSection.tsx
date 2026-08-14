@@ -35,10 +35,6 @@ export default function AIHeroSection() {
 
   return (
     <section className="relative w-full bg-black overflow-hidden">
-      {/* Visually hidden but present for SEO/screen readers — this page has no visible text headline (pure image slideshow) */}
-      <h1 className="sr-only">
-        AI Receptionist for Service Businesses — Never Miss Another Customer Call
-      </h1>
       {/* Slides */}
       <div className="relative w-full overflow-hidden" style={{ maxHeight: "90vh" }}>
         {IMAGES.map((src, i) => (
@@ -46,10 +42,10 @@ export default function AIHeroSection() {
           <img
             key={src}
             src={src}
-            alt={`AI Receptionist — slide ${i + 1}`}
+            alt={`AI Employee helping a service business answer customer calls — slide ${i + 1}`}
             loading="eager"
             decoding="async"
-            className="w-full h-auto block absolute inset-0 w-full h-full object-cover transition-opacity duration-700"
+            className="w-full h-auto block absolute inset-0 h-full object-cover transition-opacity duration-700"
             style={{
               opacity: i === slide ? 1 : 0,
               position: i === 0 ? "relative" : "absolute",
@@ -57,6 +53,22 @@ export default function AIHeroSection() {
             }}
           />
         ))}
+      </div>
+
+      <div className="absolute inset-0 z-[5] flex items-end bg-gradient-to-t from-black/80 via-black/20 to-transparent pointer-events-none">
+        <div className="w-full max-w-6xl mx-auto px-6 sm:px-10 pb-14 sm:pb-16">
+          <p className="text-xs sm:text-sm font-black uppercase tracking-[0.2em] text-blue-300 mb-3">
+            Customers Direct AI Employee
+          </p>
+          <h1 className="max-w-3xl text-4xl sm:text-5xl lg:text-7xl font-black text-white leading-[0.98] tracking-tight">
+            Never Miss Another Customer
+          </h1>
+          <p className="max-w-2xl mt-4 text-base sm:text-xl text-white/90 leading-relaxed">
+            Every call gets answered. Your AI Employee works alongside your staff,
+            keeps your existing business number, and takes over after hours or
+            when your team is busy—capturing, qualifying, and booking new leads.
+          </p>
+        </div>
       </div>
 
       {/* Dot indicators */}

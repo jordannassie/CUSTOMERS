@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 import {
   LayoutDashboard,
   Users,
@@ -30,7 +31,7 @@ export default function SalesSidebar({ active, onChange }: Props) {
     <aside className="w-60 shrink-0 bg-white border-r border-gray-100 flex flex-col h-full">
       {/* Logo */}
       <div className="px-6 pt-6 pb-5 border-b border-gray-100">
-        <a href="/" aria-label="Customers.Direct — Home">
+        <Link href="/" aria-label="Customers.Direct — Home">
           <Image
             src="https://phhczohqidgrvcmszets.supabase.co/storage/v1/object/public/CUSTOMER.direct/logo/Logo.png"
             alt="Customers.Direct"
@@ -39,7 +40,7 @@ export default function SalesSidebar({ active, onChange }: Props) {
             unoptimized
             className="h-8 w-auto"
           />
-        </a>
+        </Link>
         <span className="mt-2 inline-block text-[10px] font-black uppercase tracking-widest text-[#94A3B8]">
           Sales
         </span>

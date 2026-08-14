@@ -14,7 +14,7 @@ export default function SalesHero() {
 
         <p className="text-xl text-[#64748B] max-w-xl mx-auto leading-relaxed mb-10">
           Help businesses stop losing customers to missed calls by introducing them
-          to Customers Direct AI Receptionist.
+          to Customers Direct AI Employee.
         </p>
 
         <div className="flex flex-col sm:flex-row gap-4 justify-center">

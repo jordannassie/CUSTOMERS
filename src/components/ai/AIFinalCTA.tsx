@@ -32,7 +32,7 @@ export default function AIFinalCTA() {
             className="inline-flex items-center justify-center gap-2 bg-[#2563EB] text-white font-bold px-8 py-4 rounded-full hover:bg-[#1d4ed8] transition-colors text-base focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
           >
             <PhoneCall size={17} aria-hidden="true" />
-            Hear Your AI Receptionist
+            Hear Your AI Employee
           </a>
           <a
             href="https://calendar.app.google/muM2Kqc8oYnWBPXXA"

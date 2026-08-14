@@ -1,4 +1,5 @@
 import { PhoneCall, Users } from "lucide-react";
+import Link from "next/link";
 import FooterLocations from "./FooterLocations";
 
 const year = new Date().getFullYear();
@@ -29,13 +30,13 @@ export default function MainFooter() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-10 mb-12">
           {/* Brand */}
           <div className="lg:col-span-1">
-            <a href="/" aria-label="Customers.Direct — Home" className="inline-block mb-4">
+            <Link href="/" aria-label="Customers.Direct — Home" className="inline-block mb-4">
               <span className="text-white font-black text-[26px] tracking-tight">
                 Customers.Direct
               </span>
-            </a>
+            </Link>
             <p className="text-sm text-white/50 leading-relaxed">
-              Customer Acquisition + AI Receptionist for growing businesses.
+              Customer Acquisition + AI Employee for growing businesses.
             </p>
             {/* Social icons */}
             <div className="flex gap-4 mt-5">
@@ -72,10 +73,11 @@ export default function MainFooter() {
             </h4>
             <ul className="flex flex-col gap-2.5">
               {[
-                { label: "AI Customer Acquisition", href: "/#how-it-works" },
-                { label: "AI Phone", href: "/ai-phone" },
+                { label: "AI Employee", href: "/" },
+                { label: "DM Ads / Customer Acquisition", href: "/customer-acquisition" },
+                { label: "Call Bar", href: "/call-bar" },
                 { label: "How It Works", href: "/how-it-works" },
-                { label: "Pricing", href: "/#pricing" },
+                { label: "Pricing", href: "/customer-acquisition#pricing" },
               ].map(({ label, href }) => (
                 <li key={label}>
                   <a href={href} className="text-sm text-white/50 hover:text-white transition-colors">
@@ -93,8 +95,8 @@ export default function MainFooter() {
             </h4>
             <ul className="flex flex-col gap-2.5">
               {[
-                { label: "Contact", href: "/#strategy-call" },
-                { label: "Book a Call", href: "/#strategy-call" },
+                { label: "Contact", href: "/#demo" },
+                { label: "Book a Call", href: "/#demo" },
               ].map(({ label, href }) => (
                 <li key={label}>
                   <a href={href} className="text-sm text-white/50 hover:text-white transition-colors">

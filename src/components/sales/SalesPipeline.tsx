@@ -30,7 +30,6 @@ const CARDS: Card[] = [
 ];
 
 function PipelineCard({ card }: { card: Card }) {
-  const colors = STAGE_COLORS[card.stage];
   return (
     <div
       className="bg-white rounded-xl border border-gray-100 p-4 cursor-default hover:shadow-md transition-shadow"
