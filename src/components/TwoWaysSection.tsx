@@ -131,7 +131,7 @@ export default function TwoWaysSection() {
             </p>
 
             <a
-              href="/ai-phone"
+              href="/ai-employee"
               className="inline-flex items-center justify-center gap-2 bg-[#7C3AED] text-white font-bold px-6 py-3.5 rounded-full hover:bg-[#6d28d9] transition-colors text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#7C3AED]"
             >
               Explore AI Employee

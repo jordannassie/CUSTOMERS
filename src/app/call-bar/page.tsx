@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import AIHeader from "@/components/ai/AIHeader";
 import AIFooter from "@/components/ai/AIFooter";
 import CallBarGenerator from "@/components/call-bar/CallBarGenerator";
+import PromoBar from "@/components/PromoBar";
 
 export const metadata: Metadata = {
   title: "Free Mobile Call Bar Generator | Customers.Direct",
@@ -21,6 +22,7 @@ export const metadata: Metadata = {
 export default function CallBarPage() {
   return (
     <>
+      <PromoBar />
       <AIHeader />
       <CallBarGenerator />
       <AIFooter />

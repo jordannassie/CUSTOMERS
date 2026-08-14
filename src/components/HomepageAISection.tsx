@@ -96,14 +96,14 @@ export default function HomepageAISection() {
             {/* Buttons */}
             <div className="flex flex-col sm:flex-row gap-3">
               <a
-                href="/ai-phone"
+                href="/ai-employee"
                 className="inline-flex items-center justify-center gap-2 bg-[#2563EB] text-white font-bold px-7 py-4 rounded-full hover:bg-[#1d4ed8] transition-colors text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2563EB]"
               >
                 <PhoneCall size={15} aria-hidden="true" />
                 Hear the AI Employee
               </a>
               <a
-                href="/ai-phone"
+                href="/ai-employee"
                 className="inline-flex items-center justify-center gap-2 border border-[#DBEAFE] bg-white text-[#2563EB] font-semibold px-7 py-4 rounded-full hover:bg-[#EFF6FF] transition-colors text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2563EB]"
               >
                 Learn About AI Employee →

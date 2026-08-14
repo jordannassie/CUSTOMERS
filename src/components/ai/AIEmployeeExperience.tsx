@@ -1,5 +1,6 @@
 import ChatWidget from "@/components/ChatWidget";
 import MobileCallBar from "@/components/MobileCallBar";
+import PromoBar from "@/components/PromoBar";
 import StrategyCallSection from "@/components/StrategyCallSection";
 import TestimonialsSection from "@/components/TestimonialsSection";
 import AICallSummarySection from "./AICallSummarySection";
@@ -21,6 +22,7 @@ import TrustStrip from "./TrustStrip";
 export default function AIEmployeeExperience() {
   return (
     <>
+      <PromoBar />
       <AIHeader />
       <main>
         <AIHeroSection />

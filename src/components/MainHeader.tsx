@@ -14,7 +14,7 @@ export default function MainHeader() {
       <div className="bg-white rounded-2xl shadow-lg max-w-6xl mx-auto">
         <div className="flex items-center justify-between py-3 px-6">
           {/* Logo */}
-          <Link href="/" aria-label="Customers.Direct — Home">
+          <Link href="/ai-employee" aria-label="Customers.Direct — AI Employee">
             <Image
               src="https://phhczohqidgrvcmszets.supabase.co/storage/v1/object/public/CUSTOMER.direct/logo/Logo.png"
               alt="Customers.Direct"
@@ -32,13 +32,13 @@ export default function MainHeader() {
             aria-label="Main navigation"
           >
             <Link
-              href="/"
+              href="/ai-employee"
               className="text-sm font-medium text-[#64748B] hover:text-[#0F172A] transition-colors"
             >
               AI Employee
             </Link>
             <Link
-              href="/customer-acquisition"
+              href="/dm-ads"
               className="text-sm font-medium text-[#64748B] hover:text-[#0F172A] transition-colors"
             >
               DM Ads
@@ -77,14 +77,14 @@ export default function MainHeader() {
         {mobileOpen && (
           <div className="md:hidden border-t border-gray-100 px-6 py-4 flex flex-col gap-3">
             <Link
-              href="/"
+              href="/ai-employee"
               onClick={close}
               className="text-sm font-medium text-[#64748B] hover:text-[#0F172A] py-1"
             >
               AI Employee
             </Link>
             <Link
-              href="/customer-acquisition"
+              href="/dm-ads"
               onClick={close}
               className="text-sm font-medium text-[#64748B] hover:text-[#0F172A] py-1"
             >

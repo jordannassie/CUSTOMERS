@@ -6,8 +6,8 @@ import Link from "next/link";
 import { PhoneCall, Menu, X } from "lucide-react";
 
 const NAV_ITEMS = [
-  { label: "AI Employee", href: "/" },
-  { label: "DM Ads", href: "/customer-acquisition" },
+  { label: "AI Employee", href: "/ai-employee" },
+  { label: "DM Ads", href: "/dm-ads" },
   { label: "Call Bar", href: "/call-bar" },
 ];
 
@@ -19,7 +19,7 @@ export default function AIHeader() {
       <div className="bg-white rounded-2xl shadow-lg max-w-6xl mx-auto">
         <div className="flex items-center justify-between py-3 px-6">
           {/* Logo */}
-          <Link href="/" aria-label="Customers.Direct — Home">
+          <Link href="/ai-employee" aria-label="Customers.Direct — AI Employee">
             <Image
               src="https://phhczohqidgrvcmszets.supabase.co/storage/v1/object/public/CUSTOMER.direct/logo/Logo.png"
               alt="Customers.Direct"
@@ -49,13 +49,14 @@ export default function AIHeader() {
 
           {/* CTA + Hamburger */}
           <div className="flex items-center gap-3">
-            <Link
-              href="/#demo"
+            <a
+              href="tel:9498102010"
+              aria-label="Call Customers.Direct at (949) 810-2010"
               className="hidden md:inline-flex items-center gap-2 bg-[#2563EB] text-white text-sm font-semibold px-4 lg:px-5 py-2.5 rounded-full hover:bg-[#1d4ed8] transition-colors"
             >
               <PhoneCall size={14} aria-hidden="true" />
-              Contact / Book Call
-            </Link>
+              (949) 810-2010
+            </a>
 
             <button
               className="md:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors"
@@ -81,14 +82,15 @@ export default function AIHeader() {
                 {item.label}
               </Link>
             ))}
-            <Link
-              href="/#demo"
+            <a
+              href="tel:9498102010"
               onClick={() => setMobileOpen(false)}
+              aria-label="Call Customers.Direct at (949) 810-2010"
               className="mt-2 inline-flex items-center justify-center gap-2 bg-[#2563EB] text-white text-sm font-semibold px-5 py-3 rounded-full hover:bg-[#1d4ed8] transition-colors"
             >
               <PhoneCall size={14} aria-hidden="true" />
-              Contact / Book Call
-            </Link>
+              (949) 810-2010
+            </a>
           </div>
         )}
       </div>

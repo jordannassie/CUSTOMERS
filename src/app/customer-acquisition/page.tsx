@@ -27,12 +27,12 @@ export const metadata = {
   title: pageTitle,
   description: pageDescription,
   alternates: {
-    canonical: "/customer-acquisition",
+    canonical: "/dm-ads",
   },
   openGraph: {
     type: "website",
     siteName: "Customers.Direct",
-    url: "https://customers.direct/customer-acquisition",
+    url: "https://customers.direct/dm-ads",
     title: pageTitle,
     description: pageDescription,
     images: [{ url: pageImage }],

@@ -20,20 +20,20 @@ const COLUMNS: FooterColumn[] = [
   {
     heading: "Company",
     links: [
-      { label: "How It Works", href: "/#how-it-works" },
-      { label: "Features", href: "/#features" },
-      { label: "Industries", href: "/#industries" },
-      { label: "Pricing", href: "/#pricing" },
-      { label: "Contact / Book Call", href: "/#demo" },
+      { label: "How It Works", href: "/ai-employee#how-it-works" },
+      { label: "Features", href: "/ai-employee#features" },
+      { label: "Industries", href: "/ai-employee#industries" },
+      { label: "Pricing", href: "/ai-employee#pricing" },
+      { label: "Contact / Book Call", href: "/ai-employee#demo" },
     ],
   },
   {
     heading: "Resources",
     links: [
-      { label: "AI Employee", href: "/" },
-      { label: "DM Ads / Customer Acquisition", href: "/customer-acquisition" },
+      { label: "AI Employee", href: "/ai-employee" },
+      { label: "DM Ads", href: "/dm-ads" },
       { label: "Call Bar", href: "/call-bar" },
-      { label: "FAQs", href: "/#faq" },
+      { label: "FAQs", href: "/ai-employee#faq" },
     ],
   },
   {
@@ -75,7 +75,7 @@ export default function AIFooter() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-10 mb-12">
           {/* Brand */}
           <div className="lg:col-span-1">
-            <Link href="/" aria-label="Customers.Direct — Home" className="inline-block mb-4">
+            <Link href="/ai-employee" aria-label="Customers.Direct — AI Employee" className="inline-block mb-4">
               <span className="text-white font-black text-[26px] tracking-tight">
                 Customers.Direct
               </span>

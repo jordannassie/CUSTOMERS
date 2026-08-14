@@ -30,7 +30,7 @@ export default function MainFooter() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-10 mb-12">
           {/* Brand */}
           <div className="lg:col-span-1">
-            <Link href="/" aria-label="Customers.Direct — Home" className="inline-block mb-4">
+            <Link href="/ai-employee" aria-label="Customers.Direct — AI Employee" className="inline-block mb-4">
               <span className="text-white font-black text-[26px] tracking-tight">
                 Customers.Direct
               </span>
@@ -73,11 +73,11 @@ export default function MainFooter() {
             </h4>
             <ul className="flex flex-col gap-2.5">
               {[
-                { label: "AI Employee", href: "/" },
-                { label: "DM Ads / Customer Acquisition", href: "/customer-acquisition" },
+                { label: "AI Employee", href: "/ai-employee" },
+                { label: "DM Ads", href: "/dm-ads" },
                 { label: "Call Bar", href: "/call-bar" },
                 { label: "How It Works", href: "/how-it-works" },
-                { label: "Pricing", href: "/customer-acquisition#pricing" },
+                { label: "Pricing", href: "/dm-ads#pricing" },
               ].map(({ label, href }) => (
                 <li key={label}>
                   <a href={href} className="text-sm text-white/50 hover:text-white transition-colors">
@@ -95,8 +95,8 @@ export default function MainFooter() {
             </h4>
             <ul className="flex flex-col gap-2.5">
               {[
-                { label: "Contact", href: "/#demo" },
-                { label: "Book a Call", href: "/#demo" },
+                { label: "Contact", href: "/ai-employee#demo" },
+                { label: "Book a Call", href: "/ai-employee#demo" },
               ].map(({ label, href }) => (
                 <li key={label}>
                   <a href={href} className="text-sm text-white/50 hover:text-white transition-colors">

@@ -21,6 +21,21 @@ const nextConfig: NextConfig = {
   async redirects() {
     return [
       {
+        source: "/",
+        destination: "/ai-employee",
+        permanent: false,
+      },
+      {
+        source: "/ai-phone",
+        destination: "/ai-employee",
+        permanent: true,
+      },
+      {
+        source: "/customer-acquisition",
+        destination: "/dm-ads",
+        permanent: true,
+      },
+      {
         source: "/book",
         destination: "https://calendar.app.google/muM2Kqc8oYnWBPXXA",
         permanent: false,
