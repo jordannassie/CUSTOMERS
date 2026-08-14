@@ -7,7 +7,7 @@ import { PhoneCall, Menu, X } from "lucide-react";
 
 const NAV_ITEMS = [
   { label: "AI Employee", href: "/" },
-  { label: "DM Ads / Customer Acquisition", href: "/customer-acquisition" },
+  { label: "DM Ads", href: "/customer-acquisition" },
   { label: "Call Bar", href: "/call-bar" },
 ];
 
@@ -45,18 +45,6 @@ export default function AIHeader() {
                 {item.label}
               </Link>
             ))}
-            <Link
-              href="/#how-it-works"
-              className="hidden xl:inline text-sm font-medium text-[#64748B] hover:text-[#0F172A] transition-colors"
-            >
-              How It Works
-            </Link>
-            <Link
-              href="/#pricing"
-              className="hidden xl:inline text-sm font-medium text-[#64748B] hover:text-[#0F172A] transition-colors"
-            >
-              Pricing
-            </Link>
           </nav>
 
           {/* CTA + Hamburger */}
@@ -93,20 +81,6 @@ export default function AIHeader() {
                 {item.label}
               </Link>
             ))}
-            <Link
-              href="/#how-it-works"
-              onClick={() => setMobileOpen(false)}
-              className="text-sm font-medium text-[#64748B] hover:text-[#0F172A] py-1"
-            >
-              How It Works
-            </Link>
-            <Link
-              href="/#pricing"
-              onClick={() => setMobileOpen(false)}
-              className="text-sm font-medium text-[#64748B] hover:text-[#0F172A] py-1"
-            >
-              Pricing
-            </Link>
             <Link
               href="/#demo"
               onClick={() => setMobileOpen(false)}

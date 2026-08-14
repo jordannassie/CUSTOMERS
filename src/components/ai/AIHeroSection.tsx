@@ -34,7 +34,8 @@ export default function AIHeroSection() {
   }, [slide]);
 
   return (
-    <section className="relative w-full bg-black overflow-hidden">
+    <>
+      <section className="relative w-full bg-black overflow-hidden">
       {/* Slides */}
       <div className="relative w-full overflow-hidden" style={{ maxHeight: "90vh" }}>
         {IMAGES.map((src, i) => (
@@ -55,22 +56,6 @@ export default function AIHeroSection() {
         ))}
       </div>
 
-      <div className="absolute inset-0 z-[5] flex items-end bg-gradient-to-t from-black/80 via-black/20 to-transparent pointer-events-none">
-        <div className="w-full max-w-6xl mx-auto px-6 sm:px-10 pb-14 sm:pb-16">
-          <p className="text-xs sm:text-sm font-black uppercase tracking-[0.2em] text-blue-300 mb-3">
-            Customers Direct AI Employee
-          </p>
-          <h1 className="max-w-3xl text-4xl sm:text-5xl lg:text-7xl font-black text-white leading-[0.98] tracking-tight">
-            Never Miss Another Customer
-          </h1>
-          <p className="max-w-2xl mt-4 text-base sm:text-xl text-white/90 leading-relaxed">
-            Every call gets answered. Your AI Employee works alongside your staff,
-            keeps your existing business number, and takes over after hours or
-            when your team is busy—capturing, qualifying, and booking new leads.
-          </p>
-        </div>
-      </div>
-
       {/* Dot indicators */}
       <div className="absolute bottom-5 left-1/2 -translate-x-1/2 flex gap-2 z-10">
         {IMAGES.map((_, i) => (
@@ -87,6 +72,23 @@ export default function AIHeroSection() {
           />
         ))}
       </div>
-    </section>
+      </section>
+
+      <section className="bg-white px-4 py-14 sm:px-8 sm:py-20">
+        <div className="mx-auto max-w-6xl">
+          <p className="text-xs font-black uppercase tracking-[0.2em] text-[#2563EB]">
+            Customers Direct AI Employee
+          </p>
+          <h1 className="mt-4 max-w-4xl text-4xl font-black leading-[1.02] tracking-tight text-[#0F172A] sm:text-6xl lg:text-7xl">
+            Never Miss Another Customer
+          </h1>
+          <p className="mt-6 max-w-3xl text-lg leading-8 text-[#64748B] sm:text-xl">
+            Every call gets answered. Your AI Employee works alongside your staff,
+            keeps your existing business number, and takes over after hours or
+            when your team is busy—capturing, qualifying, and booking new leads.
+          </p>
+        </div>
+      </section>
+    </>
   );
 }

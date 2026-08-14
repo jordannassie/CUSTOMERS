@@ -5,15 +5,6 @@ import Image from "next/image";
 import Link from "next/link";
 import { Menu, X, PhoneCall } from "lucide-react";
 
-function scrollTo(id: string, closeFn?: () => void) {
-  const el = document.getElementById(id);
-  if (el) {
-    const y = el.getBoundingClientRect().top + window.scrollY - 88;
-    window.scrollTo({ top: y, behavior: "smooth" });
-  }
-  closeFn?.();
-}
-
 export default function MainHeader() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const close = () => setMobileOpen(false);
@@ -40,36 +31,24 @@ export default function MainHeader() {
             className="hidden md:flex items-center gap-5 lg:gap-7"
             aria-label="Main navigation"
           >
-            <button
-              onClick={() => scrollTo("how-it-works")}
-              className="text-sm font-medium text-[#64748B] hover:text-[#0F172A] transition-colors"
-            >
-              DM Ads / Customer Acquisition
-            </button>
             <Link
               href="/"
               className="text-sm font-medium text-[#64748B] hover:text-[#0F172A] transition-colors"
             >
               AI Employee
             </Link>
-            <a
+            <Link
+              href="/customer-acquisition"
+              className="text-sm font-medium text-[#64748B] hover:text-[#0F172A] transition-colors"
+            >
+              DM Ads
+            </Link>
+            <Link
               href="/call-bar"
               className="text-sm font-medium text-[#64748B] hover:text-[#0F172A] transition-colors"
             >
               Call Bar
-            </a>
-            <button
-              onClick={() => scrollTo("how-it-works")}
-              className="text-sm font-medium text-[#64748B] hover:text-[#0F172A] transition-colors"
-            >
-              How It Works
-            </button>
-            <button
-              onClick={() => scrollTo("pricing")}
-              className="text-sm font-medium text-[#64748B] hover:text-[#0F172A] transition-colors"
-            >
-              Pricing
-            </button>
+            </Link>
           </nav>
 
           {/* CTA + Hamburger */}
@@ -97,12 +76,6 @@ export default function MainHeader() {
         {/* Mobile dropdown */}
         {mobileOpen && (
           <div className="md:hidden border-t border-gray-100 px-6 py-4 flex flex-col gap-3">
-            <button
-              onClick={() => scrollTo("how-it-works", close)}
-              className="text-sm font-medium text-[#64748B] hover:text-[#0F172A] text-left py-1"
-            >
-              DM Ads / Customer Acquisition
-            </button>
             <Link
               href="/"
               onClick={close}
@@ -110,25 +83,20 @@ export default function MainHeader() {
             >
               AI Employee
             </Link>
-            <a
+            <Link
+              href="/customer-acquisition"
+              onClick={close}
+              className="text-sm font-medium text-[#64748B] hover:text-[#0F172A] py-1"
+            >
+              DM Ads
+            </Link>
+            <Link
               href="/call-bar"
               onClick={close}
               className="text-sm font-medium text-[#64748B] hover:text-[#0F172A] py-1"
             >
               Call Bar
-            </a>
-            <button
-              onClick={() => scrollTo("how-it-works", close)}
-              className="text-sm font-medium text-[#64748B] hover:text-[#0F172A] text-left py-1"
-            >
-              How It Works
-            </button>
-            <button
-              onClick={() => scrollTo("pricing", close)}
-              className="text-sm font-medium text-[#64748B] hover:text-[#0F172A] text-left py-1"
-            >
-              Pricing
-            </button>
+            </Link>
             <a
               href="tel:9498102010"
               onClick={close}
