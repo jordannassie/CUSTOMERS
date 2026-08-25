@@ -106,6 +106,18 @@ export default function OnboardingWizard() {
       if (!res.ok) throw new Error(data.error ?? "Could not save business.");
       setBusinessId(data.businessId);
 
+      // Make the newly-created business the active one immediately, so a
+      // user adding a second/third business (or the very first one) lands
+      // on a dashboard showing what they just built, not whatever business
+      // happened to be active before. Best-effort: if this fails, the
+      // switcher still lets them pick it manually, so it shouldn't block
+      // onboarding.
+      fetch("/api/geo/businesses/active", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ businessId: data.businessId }),
+      }).catch(() => {});
+
       const discoverRes = await fetch("/api/geo/competitors/discover", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
