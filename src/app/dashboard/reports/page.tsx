@@ -20,7 +20,7 @@ export default async function ReportsPage() {
   }, {});
 
   return (
-    <DashboardShell businessName={business.name}>
+    <DashboardShell businessId={business.id} businessName={business.name}>
       <h1 className="text-2xl font-black text-[#0F172A] mb-1">Reports</h1>
       <p className="text-sm text-[#64748B] mb-6">A record of every scan and how your Direct Score moved.</p>
 
