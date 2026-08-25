@@ -37,7 +37,7 @@ export default async function DashboardPage() {
   const hasAnyRun = latestRun !== null;
 
   return (
-    <DashboardShell businessName={business.name}>
+    <DashboardShell businessId={business.id} businessName={business.name}>
       <div className="flex items-center justify-between mb-8 flex-wrap gap-4">
         <div>
           <h1 className="text-2xl font-black text-[#0F172A]">Overview</h1>
