@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { PhoneCall, Users } from "lucide-react";
+import { PhoneCall } from "lucide-react";
 import FooterLocations from "@/components/FooterLocations";
 
 const year = new Date().getFullYear();
@@ -9,49 +9,74 @@ const INSTAGRAM_PATH =
 const FACEBOOK_PATH =
   "M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z";
 
+const FOOTER_COLUMNS = [
+  {
+    heading: "Product",
+    links: [
+      { label: "AI Search Visibility", href: "/ai-search" },
+      { label: "AI Employee", href: "/ai-employee" },
+      { label: "DM Ads", href: "/dm-ads" },
+      { label: "Call Bar", href: "/call-bar" },
+      { label: "Pricing", href: "/ai-search#pricing" },
+    ],
+  },
+  {
+    heading: "Solutions",
+    links: [
+      { label: "Local Businesses", href: "/ai-search" },
+      { label: "Agencies", href: "/ai-search#agency" },
+      { label: "Multi-Location", href: "/ai-search" },
+      { label: "Marketing Teams", href: "/ai-search" },
+    ],
+  },
+  {
+    heading: "Resources",
+    links: [
+      { label: "How It Works", href: "/how-it-works" },
+      { label: "AI Search Guide", href: "/ai-search" },
+      { label: "FAQ", href: "/ai-search#faq" },
+      { label: "Book a Call", href: "/book" },
+    ],
+  },
+  {
+    heading: "Company",
+    links: [
+      { label: "Log in", href: "/login" },
+      { label: "Sign up", href: "/signup" },
+      { label: "Sales Program", href: "/sales" },
+      { label: "Privacy Policy", href: "/privacy" },
+      { label: "Terms of Service", href: "/terms" },
+    ],
+  },
+] as const;
+
 export default function SiteFooter() {
   return (
-    <footer className="bg-[#0F172A] text-white px-4 pt-16 pb-8">
-      <div className="max-w-6xl mx-auto">
-        {/* Sales CTA banner */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-white/5 border border-white/10 rounded-2xl px-6 py-5 mb-14">
-          <div>
-            <p className="font-bold text-white">
-              Want to sell Customers.Direct?
-            </p>
-            <p className="text-sm text-white/50 mt-0.5">
-              Join our sales program and earn commissions helping businesses grow.
-            </p>
-          </div>
-          <Link
-            href="/sales"
-            className="inline-flex items-center gap-2 bg-[#2563EB] text-white font-bold px-6 py-3 rounded-full hover:bg-[#1d4ed8] transition-colors text-sm shrink-0 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
-          >
-            <Users size={15} aria-hidden="true" />
-            Join Our Sales Team
-          </Link>
-        </div>
-
+    <footer className="bg-[#0F172A] text-white">
+      {/* Main footer body */}
+      <div className="max-w-6xl mx-auto px-4 pt-16 pb-10">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-10 mb-12">
           {/* Brand — 2 cols */}
           <div className="lg:col-span-2">
             <Link href="/" aria-label="Customers.Direct" className="inline-block mb-4">
-              <span className="text-white font-black text-[22px] tracking-tight">
+              <span className="text-white font-black text-xl tracking-tight">
                 Customers.Direct
               </span>
             </Link>
-            <p className="text-sm text-white/50 leading-relaxed max-w-xs">
-              Customers.Direct helps AI send customers directly to your business — from discovery to conversation to customer.
+            <p className="text-sm text-white/50 leading-relaxed mb-5 max-w-xs">
+              AI-powered customer acquisition platform. Get recommended by AI, answer every call, start more conversations, and convert every visitor.
             </p>
-            <div className="flex gap-4 mt-5">
+
+            {/* Social */}
+            <div className="flex gap-3 mb-6">
               <a
                 href="https://www.instagram.com/customersdirect"
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label="Instagram"
-                className="text-white/40 hover:text-white transition-colors"
+                className="w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors"
               >
-                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
                   <path d={INSTAGRAM_PATH} />
                 </svg>
               </a>
@@ -60,150 +85,66 @@ export default function SiteFooter() {
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label="Facebook"
-                className="text-white/40 hover:text-white transition-colors"
+                className="w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors"
               >
-                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
                   <path d={FACEBOOK_PATH} />
                 </svg>
               </a>
             </div>
+
             <FooterLocations />
           </div>
 
-          {/* Products */}
-          <div>
-            <h4 className="font-bold text-xs text-white/50 uppercase tracking-widest mb-4">
-              Products
-            </h4>
-            <ul className="flex flex-col gap-2.5">
-              {[
-                { label: "AI Search Visibility", href: "/ai-search" },
-                { label: "AI Employee", href: "/ai-employee" },
-                { label: "DM Ads", href: "/dm-ads" },
-                { label: "Call Bar", href: "/call-bar" },
-              ].map(({ label, href }) => (
-                <li key={label}>
-                  <Link
-                    href={href}
-                    className="text-sm text-white/50 hover:text-white transition-colors"
-                  >
-                    {label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* Company */}
-          <div>
-            <h4 className="font-bold text-xs text-white/50 uppercase tracking-widest mb-4">
-              Company
-            </h4>
-            <ul className="flex flex-col gap-2.5">
-              {[
-                { label: "How It Works", href: "/how-it-works" },
-                { label: "Pricing", href: "/ai-search#pricing" },
-                { label: "Contact", href: "/ai-employee#demo" },
-                { label: "Book a Call", href: "/book" },
-              ].map(({ label, href }) => (
-                <li key={label}>
-                  <Link
-                    href={href}
-                    className="text-sm text-white/50 hover:text-white transition-colors"
-                  >
-                    {label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* Account */}
-          <div>
-            <h4 className="font-bold text-xs text-white/50 uppercase tracking-widest mb-4">
-              Account
-            </h4>
-            <ul className="flex flex-col gap-2.5">
-              <li>
-                <Link
-                  href="/signup"
-                  className="inline-flex items-center gap-1 text-sm font-bold text-[#2563EB] hover:text-[#60a5fa] transition-colors"
-                >
-                  Check AI Visibility →
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/login"
-                  className="text-sm text-white/50 hover:text-white transition-colors"
-                >
-                  Log in
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/dashboard"
-                  className="text-sm text-white/50 hover:text-white transition-colors"
-                >
-                  Dashboard
-                </Link>
-              </li>
-            </ul>
-          </div>
-
-          {/* Legal */}
-          <div>
-            <h4 className="font-bold text-xs text-white/50 uppercase tracking-widest mb-4">
-              Legal
-            </h4>
-            <ul className="flex flex-col gap-2.5">
-              {[
-                { label: "Privacy Policy", href: "/privacy" },
-                { label: "Terms of Service", href: "/terms" },
-                { label: "Sales Program", href: "/sales" },
-              ].map(({ label, href }) => (
-                <li key={label}>
-                  <Link
-                    href={href}
-                    className="text-sm text-white/50 hover:text-white transition-colors"
-                  >
-                    {label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
+          {/* Columns */}
+          {FOOTER_COLUMNS.map(({ heading, links }) => (
+            <div key={heading}>
+              <h4 className="font-bold text-xs text-white/40 uppercase tracking-widest mb-4">
+                {heading}
+              </h4>
+              <ul className="flex flex-col gap-2.5">
+                {links.map(({ label, href }) => (
+                  <li key={label}>
+                    <Link
+                      href={href}
+                      className="text-sm text-white/55 hover:text-white transition-colors"
+                    >
+                      {label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
         </div>
 
-        {/* Call CTA */}
-        <div className="flex justify-center mb-10">
-          <a
-            href="tel:9498102010"
-            className="inline-flex items-center justify-center gap-3 bg-[#2563EB] text-white font-bold text-base px-8 py-4 rounded-full hover:bg-[#1d4ed8] transition-colors shadow-lg"
-            aria-label="Call Customers.Direct at (949) 810-2010"
-          >
-            <PhoneCall size={18} aria-hidden="true" />
-            Call (949) 810-2010
-          </a>
-        </div>
+        {/* Bottom strip */}
+        <div className="border-t border-white/8 pt-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+            <p className="text-sm text-white/35">
+              © {year} Customers.Direct. All rights reserved.
+            </p>
+            <p className="text-xs text-white/20 max-w-md leading-relaxed">
+              AI visibility metrics are measured using real buyer-intent prompts. We do not guarantee rankings or placement in any AI product.
+            </p>
+          </div>
 
-        {/* Disclaimer */}
-        <p className="text-center text-xs text-white/25 max-w-2xl mx-auto mb-8 leading-relaxed">
-          Customers.Direct measures AI visibility using real buyer-intent prompts. We do not guarantee rankings, mentions, or placement in any AI product.
-        </p>
-
-        {/* Bottom bar */}
-        <hr className="border-white/10 mb-6" />
-        <div className="flex items-center justify-between gap-4 flex-wrap">
-          <p className="text-sm text-white/40">
-            © {year} Customers.Direct. All rights reserved.
-          </p>
-          <a
-            href="/admin"
-            className="text-xs text-white/20 hover:text-white/50 transition-colors"
-          >
-            Admin
-          </a>
+          <div className="flex items-center gap-4 shrink-0">
+            <a
+              href="tel:9498102010"
+              aria-label="Call Customers.Direct at (949) 810-2010"
+              className="inline-flex items-center gap-2 text-sm font-semibold text-white/60 hover:text-white transition-colors"
+            >
+              <PhoneCall size={14} aria-hidden="true" />
+              (949) 810-2010
+            </a>
+            <a
+              href="/admin"
+              className="text-xs text-white/15 hover:text-white/40 transition-colors"
+            >
+              Admin
+            </a>
+          </div>
         </div>
       </div>
     </footer>
