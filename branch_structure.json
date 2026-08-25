@@ -1,0 +1,21 @@
+{
+  "default_branch": "main",
+  "branches": [
+    "geo-v1",
+    "main",
+    "seo-intel-v1",
+    "seo/technical-seo-foundations"
+  ],
+  "parent": {
+    "geo-v1": "main",
+    "main": null,
+    "seo-intel-v1": "main",
+    "seo/technical-seo-foundations": "main"
+  },
+  "order": [
+    "main",
+    "geo-v1",
+    "seo-intel-v1",
+    "seo/technical-seo-foundations"
+  ]
+}
