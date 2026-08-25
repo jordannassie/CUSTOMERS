@@ -32,16 +32,27 @@ export async function proxy(request: NextRequest) {
   );
 
   // Refresh session — do NOT remove this line.
-  await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-  // --- Auth guards (uncomment and customise as needed) ---
-  // const { pathname } = request.nextUrl;
-  //
-  // if (!user && !pathname.startsWith("/login") && !pathname.startsWith("/auth")) {
-  //   const url = request.nextUrl.clone();
-  //   url.pathname = "/login";
-  //   return NextResponse.redirect(url);
-  // }
+  // --- Auth guard: /dashboard requires a signed-in Supabase Auth user ---
+  const { pathname } = request.nextUrl;
+
+  if (!user && pathname.startsWith("/dashboard")) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/login";
+    url.searchParams.set("next", pathname);
+    return NextResponse.redirect(url);
+  }
+
+  // Signed-in users hitting /login or /signup go straight to their dashboard.
+  if (user && (pathname === "/login" || pathname === "/signup")) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/dashboard";
+    url.search = "";
+    return NextResponse.redirect(url);
+  }
 
   return supabaseResponse;
 }
