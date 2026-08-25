@@ -71,10 +71,14 @@ export default function Footer() {
             <h4 className="font-bold text-sm text-white mb-4">Legal</h4>
             <ul className="flex flex-col gap-2.5">
               <li>
-                <span className="text-sm text-white/40 cursor-default">Privacy Policy</span>
+                <a href="/privacy" className="text-sm text-white/60 hover:text-white transition-colors">
+                  Privacy Policy
+                </a>
               </li>
               <li>
-                <span className="text-sm text-white/40 cursor-default">Terms of Service</span>
+                <a href="/terms" className="text-sm text-white/60 hover:text-white transition-colors">
+                  Terms of Service
+                </a>
               </li>
             </ul>
           </div>
