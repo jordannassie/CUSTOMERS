@@ -13,7 +13,7 @@ export default async function PromptsPage() {
   const prompts = await getTrackedPrompts(business.id);
 
   return (
-    <DashboardShell businessName={business.name}>
+    <DashboardShell businessId={business.id} businessName={business.name}>
       <h1 className="text-2xl font-black text-[#0F172A] mb-1">Tracked Prompts</h1>
       <p className="text-sm text-[#64748B] mb-6">
         The buyer-intent questions we ask AI providers on your behalf. Uncheck a prompt to pause it
