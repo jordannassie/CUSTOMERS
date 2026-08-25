@@ -127,8 +127,8 @@ export default function MainFooter() {
               Legal
             </h4>
             <ul className="flex flex-col gap-2.5">
-              <li><span className="text-sm text-white/30 cursor-default">Privacy Policy</span></li>
-              <li><span className="text-sm text-white/30 cursor-default">Terms of Service</span></li>
+              <li><a href="/privacy" className="text-sm text-white/50 hover:text-white transition-colors">Privacy Policy</a></li>
+              <li><a href="/terms" className="text-sm text-white/50 hover:text-white transition-colors">Terms of Service</a></li>
             </ul>
           </div>
         </div>
