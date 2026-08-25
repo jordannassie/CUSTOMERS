@@ -3,12 +3,12 @@ import MobileCallBar from "@/components/MobileCallBar";
 import PromoBar from "@/components/PromoBar";
 import StrategyCallSection from "@/components/StrategyCallSection";
 import TestimonialsSection from "@/components/TestimonialsSection";
+import SiteHeader from "@/components/site/SiteHeader";
+import SiteFooter from "@/components/site/SiteFooter";
 import AICallSummarySection from "./AICallSummarySection";
 import AIFAQSection from "./AIFAQSection";
 import AIFeaturesSection from "./AIFeaturesSection";
 import AIFinalCTA from "./AIFinalCTA";
-import AIFooter from "./AIFooter";
-import AIHeader from "./AIHeader";
 import AIHeroSection from "./AIHeroSection";
 import AIHowItWorks from "./AIHowItWorks";
 import AIIndustriesSection from "./AIIndustriesSection";
@@ -23,7 +23,7 @@ export default function AIEmployeeExperience() {
   return (
     <>
       <PromoBar />
-      <AIHeader />
+      <SiteHeader />
       <main>
         <AIHeroSection />
         <TrustStrip />
@@ -41,7 +41,7 @@ export default function AIEmployeeExperience() {
         <AIFAQSection />
         <AIFinalCTA />
       </main>
-      <AIFooter />
+      <SiteFooter />
       <ChatWidget />
       <MobileCallBar />
     </>

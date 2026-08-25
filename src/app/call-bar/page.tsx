@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import AIHeader from "@/components/ai/AIHeader";
-import AIFooter from "@/components/ai/AIFooter";
+import SiteHeader from "@/components/site/SiteHeader";
+import SiteFooter from "@/components/site/SiteFooter";
 import CallBarGenerator from "@/components/call-bar/CallBarGenerator";
 import PromoBar from "@/components/PromoBar";
 
@@ -23,9 +23,9 @@ export default function CallBarPage() {
   return (
     <>
       <PromoBar />
-      <AIHeader />
+      <SiteHeader />
       <CallBarGenerator />
-      <AIFooter />
+      <SiteFooter />
     </>
   );
 }

@@ -7,11 +7,11 @@ import HeroSection from "@/components/HeroSection";
 import HomepageAISection from "@/components/HomepageAISection";
 import IndustriesSection from "@/components/IndustriesSection";
 import LogosBanner from "@/components/LogosBanner";
-import MainFooter from "@/components/MainFooter";
-import MainHeader from "@/components/MainHeader";
 import MobileCallBar from "@/components/MobileCallBar";
 import PricingSection from "@/components/PricingSection";
 import PromoBar from "@/components/PromoBar";
+import SiteHeader from "@/components/site/SiteHeader";
+import SiteFooter from "@/components/site/SiteFooter";
 import StrategyCallSection from "@/components/StrategyCallSection";
 import TestimonialsSection from "@/components/TestimonialsSection";
 import TwoWaysSection from "@/components/TwoWaysSection";
@@ -49,7 +49,7 @@ export default function CustomerAcquisitionPage() {
   return (
     <>
       <PromoBar />
-      <MainHeader />
+      <SiteHeader />
       <main>
         <Hero2Section />
         <HeroSection />
@@ -91,7 +91,7 @@ export default function CustomerAcquisitionPage() {
         <FAQSection />
         <StrategyCallSection />
       </main>
-      <MainFooter />
+      <SiteFooter />
       <ChatWidget />
       <MobileCallBar />
     </>

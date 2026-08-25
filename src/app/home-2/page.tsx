@@ -1,4 +1,5 @@
-import Header from "@/components/Header";
+import SiteHeader from "@/components/site/SiteHeader";
+import SiteFooter from "@/components/site/SiteFooter";
 import HeroSection from "@/components/HeroSection";
 import LogosBanner from "@/components/LogosBanner";
 import DifferenceSection from "@/components/DifferenceSection";
@@ -8,7 +9,6 @@ import DeliverablesSection from "@/components/DeliverablesSection";
 import PricingSection from "@/components/PricingSection";
 import FAQSection from "@/components/FAQSection";
 import StrategyCallSection from "@/components/StrategyCallSection";
-import Footer from "@/components/Footer";
 import PromoBar from "@/components/PromoBar";
 import Hero2Section from "@/components/Hero2Section";
 import ChatWidget from "@/components/ChatWidget";
@@ -30,7 +30,7 @@ export default function Home2() {
   return (
     <>
       <PromoBar />
-      <Header />
+      <SiteHeader />
       <main>
         <Hero2Section />
         <HeroSection />
@@ -71,7 +71,7 @@ export default function Home2() {
         <FAQSection />
         <StrategyCallSection />
       </main>
-      <Footer />
+      <SiteFooter />
       <ChatWidget />
     </>
   );
