@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 const title = "Privacy Policy";
 const description = "How Customers.Direct collects, uses, and protects your information.";
 
@@ -13,9 +15,9 @@ export default function PrivacyPage() {
   return (
     <div className="min-h-screen bg-white px-4 py-16">
       <div className="max-w-3xl mx-auto">
-        <a href="/ai-search" className="text-sm font-semibold text-[#2563EB] mb-8 inline-block">
+        <Link href="/" className="text-sm font-semibold text-[#2563EB] mb-8 inline-block">
           ← Back to Customers.Direct
-        </a>
+        </Link>
         <h1 className="text-3xl sm:text-4xl font-black text-[#0F172A] mb-2">Privacy Policy</h1>
         <p className="text-sm text-[#94A3B8] mb-10">Last updated: {UPDATED}</p>
 
