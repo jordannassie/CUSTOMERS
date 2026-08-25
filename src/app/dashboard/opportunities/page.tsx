@@ -15,7 +15,7 @@ export default async function OpportunitiesPage() {
   const closed = opportunities.filter((o) => o.status === "dismissed" || o.status === "resolved");
 
   return (
-    <DashboardShell businessName={business.name}>
+    <DashboardShell businessId={business.id} businessName={business.name}>
       <h1 className="text-2xl font-black text-[#0F172A] mb-1">Opportunities</h1>
       <p className="text-sm text-[#64748B] mb-6">
         Evidence-backed recommendations generated from your latest visibility scan.
