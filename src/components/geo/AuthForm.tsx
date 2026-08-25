@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
@@ -36,10 +36,35 @@ export default function AuthForm({ mode }: AuthFormProps) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState<"google" | "email" | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  // The callback route (src/app/auth/callback/route.ts) redirects back here
+  // with ?error=... when Google sign-in fails server-side (most commonly an
+  // invalid/stale Google OAuth Client Secret on the Supabase provider config,
+  // or the account not being added as a Google test user yet). Without this,
+  // the redirect landed on a clean login form with no feedback at all — it
+  // looked like clicking "Continue with Google" simply did nothing. Read it
+  // via a lazy useState initializer (not an effect) so it's ready on first
+  // render, and SSR-safe since `window` is guarded.
+  const [error, setError] = useState<string | null>(() => {
+    if (typeof window === "undefined") return null;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("error") !== "auth_callback_failed") return null;
+    const reason = params.get("reason");
+    return reason
+      ? `Sign-in failed: ${reason}. This usually means the Google connection isn't fully set up yet — try email/password instead, or contact support.`
+      : "Sign-in failed. This usually means the Google connection isn't fully set up yet — try email/password instead, or contact support.";
+  });
   const [message, setMessage] = useState<string | null>(null);
 
   const isSignup = mode === "signup";
+
+  // Clean the error params out of the URL so a refresh doesn't re-show them.
+  // Pure side effect on the external history API — no setState here.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("error") === "auth_callback_failed") {
+      window.history.replaceState(null, "", window.location.pathname);
+    }
+  }, []);
 
   async function handleGoogle() {
     setError(null);
