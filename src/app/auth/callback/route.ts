@@ -11,12 +11,28 @@ export async function GET(request: NextRequest) {
   const code = searchParams.get("code");
   const next = searchParams.get("next") ?? "/dashboard";
 
+  // Supabase (GoTrue) redirects here with these params instead of `code`
+  // when the provider-side exchange (e.g. Google) fails before Supabase
+  // ever issues us a session code — most commonly an invalid/stale OAuth
+  // Client Secret configured on the Supabase provider.
+  const providerError =
+    searchParams.get("error_code") || searchParams.get("error");
+
   if (code) {
     const supabase = await createClient();
     const { error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error) {
       return NextResponse.redirect(`${origin}${next}`);
     }
+    return NextResponse.redirect(
+      `${origin}/login?error=auth_callback_failed&reason=${encodeURIComponent(error.message)}`
+    );
+  }
+
+  if (providerError) {
+    return NextResponse.redirect(
+      `${origin}/login?error=auth_callback_failed&reason=${encodeURIComponent(providerError)}`
+    );
   }
 
   return NextResponse.redirect(`${origin}/login?error=auth_callback_failed`);
