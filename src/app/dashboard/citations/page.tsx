@@ -24,7 +24,7 @@ export default async function CitationsPage() {
     : 0;
 
   return (
-    <DashboardShell businessName={business.name}>
+    <DashboardShell businessId={business.id} businessName={business.name}>
       <h1 className="text-2xl font-black text-[#0F172A] mb-1">Citations</h1>
       <p className="text-sm text-[#64748B] mb-6">
         Sources cited across your latest visibility run — {ownDomainCount > 0 ? `including ${ownDomainCount} from your own domain.` : "your own domain wasn't cited in this run."}
