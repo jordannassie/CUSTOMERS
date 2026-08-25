@@ -29,7 +29,7 @@ export default async function SettingsPage() {
     .maybeSingle();
 
   return (
-    <DashboardShell businessName={business.name}>
+    <DashboardShell businessId={business.id} businessName={business.name}>
       <h1 className="text-2xl font-black text-[#0F172A] mb-1">Settings</h1>
       <p className="text-sm text-[#64748B] mb-6">Manage your business profile and plan.</p>
 
