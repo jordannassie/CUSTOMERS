@@ -7,6 +7,7 @@ import { PhoneCall, Menu, X } from "lucide-react";
 
 const NAV_ITEMS = [
   { label: "AI Employee", href: "/ai-employee" },
+  { label: "AI Search Visibility", href: "/ai-search" },
   { label: "DM Ads", href: "/dm-ads" },
   { label: "Call Bar", href: "/call-bar" },
 ];
@@ -49,6 +50,12 @@ export default function AIHeader() {
 
           {/* CTA + Hamburger */}
           <div className="flex items-center gap-3">
+            <Link
+              href="/login"
+              className="hidden md:inline-flex text-xs lg:text-sm font-semibold text-[#64748B] hover:text-[#0F172A] transition-colors px-1"
+            >
+              Log in
+            </Link>
             <a
               href="tel:9498102010"
               aria-label="Call Customers.Direct at (949) 810-2010"
@@ -82,6 +89,13 @@ export default function AIHeader() {
                 {item.label}
               </Link>
             ))}
+            <Link
+              href="/login"
+              onClick={() => setMobileOpen(false)}
+              className="text-sm font-semibold text-[#64748B] hover:text-[#0F172A] py-1"
+            >
+              Log in
+            </Link>
             <a
               href="tel:9498102010"
               onClick={() => setMobileOpen(false)}
