@@ -9,9 +9,11 @@ import type {
 } from "@/types/geo";
 
 /**
- * Returns the current user's most recently created business, or null if
- * they haven't onboarded one yet. V1 supports one business per account —
- * multi-business support can reuse this same query with a business_id param.
+ * Returns the business the dashboard should currently show for the signed-in
+ * user: their `profiles.active_business_id` if set and still owned by them,
+ * otherwise their most recently created business (original V1 behavior, and
+ * the fallback for every user who has never switched/added a second
+ * business — so this is a no-op change for the common single-business case).
  */
 export async function getPrimaryBusiness(): Promise<Business | null> {
   const supabase = await createClient();
@@ -19,6 +21,24 @@ export async function getPrimaryBusiness(): Promise<Business | null> {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return null;
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("active_business_id")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  if (profile?.active_business_id) {
+    const { data: active } = await supabase
+      .from("businesses")
+      .select("*")
+      .eq("id", profile.active_business_id)
+      .eq("owner_user_id", user.id)
+      .maybeSingle();
+    if (active) return active as Business;
+    // active_business_id points at a business that's gone or no longer
+    // theirs (e.g. deleted) — fall through to the most-recent fallback below.
+  }
 
   const { data } = await supabase
     .from("businesses")
@@ -29,6 +49,27 @@ export async function getPrimaryBusiness(): Promise<Business | null> {
     .maybeSingle();
 
   return (data as Business) ?? null;
+}
+
+/**
+ * Every business the signed-in user owns, most recently created first — the
+ * source list for the sidebar business switcher and the "+ Add Business"
+ * flow's completeness check.
+ */
+export async function listBusinesses(): Promise<Business[]> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return [];
+
+  const { data } = await supabase
+    .from("businesses")
+    .select("*")
+    .eq("owner_user_id", user.id)
+    .order("created_at", { ascending: false });
+
+  return (data as Business[]) ?? [];
 }
 
 export async function getLatestScore(businessId: string): Promise<VisibilityScore | null> {
