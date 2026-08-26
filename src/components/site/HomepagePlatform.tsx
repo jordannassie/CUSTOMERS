@@ -1301,8 +1301,8 @@ function AgencySection() {
           {/* Body: brands list + metrics */}
           <div className="flex">
             {/* Left — brand list */}
-            <div className="w-[180px] shrink-0 border-r border-white/8 py-4 px-4">
-              <p className="text-[9px] font-bold uppercase tracking-widest text-white/30 mb-3">Your Brands</p>
+            <div className="w-[200px] shrink-0 border-r border-white/8 py-4 px-3">
+              <p className="text-[9px] font-bold uppercase tracking-widest text-white/30 mb-3 px-2">Your Brands</p>
               <div className="flex flex-col gap-1">
                 {[
                   {
@@ -1328,15 +1328,14 @@ function AgencySection() {
                 ].map(({ name, src, active }) => (
                   <div
                     key={name}
-                    className={`flex items-center gap-2.5 px-2.5 py-2 rounded-lg ${active ? "bg-white/10" : "hover:bg-white/5"}`}
+                    className={`flex items-center gap-3 px-2 py-2.5 rounded-xl ${active ? "bg-white/10" : ""}`}
                   >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={src}
-                      alt={name}
-                      className="w-7 h-7 rounded-md object-contain bg-white p-0.5 shrink-0"
-                    />
-                    <span className={`text-[12px] font-medium truncate ${active ? "text-white" : "text-white/50"}`}>
+                    {/* Logo with black bg */}
+                    <div className="w-10 h-10 rounded-lg bg-black flex items-center justify-center shrink-0 overflow-hidden border border-white/10">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={src} alt={name} className="w-9 h-9 object-contain" />
+                    </div>
+                    <span className={`text-[14px] font-semibold truncate ${active ? "text-white" : "text-white/45"}`}>
                       {name}
                     </span>
                   </div>
@@ -1345,36 +1344,54 @@ function AgencySection() {
             </div>
 
             {/* Right — metrics for active brand */}
-            <div className="flex-1 p-4 flex flex-col gap-3">
-              {/* AI Visibility score — large */}
-              <div className="grid grid-cols-2 gap-3">
-                <div className="bg-white/6 rounded-xl border border-white/8 px-4 py-3">
-                  <p className="text-[10px] text-white/35 mb-1">AI Visibility</p>
+            <div className="flex-1 p-4 flex flex-col gap-2.5">
+              <div className="grid grid-cols-2 gap-2.5">
+                {/* AI Visibility */}
+                <div className="bg-white/6 rounded-xl border border-white/8 px-3 py-3">
+                  <div className="flex items-center gap-1.5 mb-1.5">
+                    <img src="/icons/ai-platforms/chatgpt.svg" alt="" width={12} height={12} className="opacity-40 invert" aria-hidden="true" />
+                    <p className="text-[9px] text-white/35 uppercase tracking-wide">AI Visibility</p>
+                  </div>
                   <div className="flex items-end gap-2">
-                    <span className="text-[28px] font-bold text-white leading-none">82</span>
-                    {/* Sparkline */}
-                    <svg width="48" height="22" viewBox="0 0 48 22" fill="none" className="mb-1" aria-hidden="true">
-                      <polyline points="0,18 10,14 20,16 30,8 38,10 48,3" stroke="#4F8EF7" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
+                    <span className="text-[26px] font-bold text-white leading-none">82</span>
+                    <svg width="40" height="18" viewBox="0 0 40 18" fill="none" className="mb-1" aria-hidden="true">
+                      <polyline points="0,15 8,11 16,13 24,6 32,8 40,2" stroke="#4F8EF7" strokeWidth="1.8" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
                     </svg>
                   </div>
                 </div>
-                <div className="bg-white/6 rounded-xl border border-white/8 px-4 py-3">
-                  <p className="text-[10px] text-white/35 mb-1">Prompts Won</p>
-                  <span className="text-[28px] font-bold text-white leading-none">10/12</span>
+                {/* Prompts Won */}
+                <div className="bg-white/6 rounded-xl border border-white/8 px-3 py-3">
+                  <div className="flex items-center gap-1.5 mb-1.5">
+                    <img src="/icons/ai-platforms/perplexity.svg" alt="" width={12} height={12} className="opacity-40 invert" aria-hidden="true" />
+                    <p className="text-[9px] text-white/35 uppercase tracking-wide">Prompts Won</p>
+                  </div>
+                  <span className="text-[26px] font-bold text-white leading-none">10/12</span>
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="bg-white/6 rounded-xl border border-white/8 px-4 py-3">
-                  <p className="text-[10px] text-white/35 mb-1">Competitors</p>
+              <div className="grid grid-cols-2 gap-2.5">
+                {/* Competitors */}
+                <div className="bg-white/6 rounded-xl border border-white/8 px-3 py-3">
+                  <div className="flex items-center gap-1.5 mb-1.5">
+                    <img src="/icons/ai-platforms/gemini.svg" alt="" width={12} height={12} className="opacity-40 invert" aria-hidden="true" />
+                    <p className="text-[9px] text-white/35 uppercase tracking-wide">Competitors</p>
+                  </div>
                   <span className="text-[20px] font-bold text-white leading-none">5 tracked</span>
                 </div>
-                <div className="bg-white/6 rounded-xl border border-white/8 px-4 py-3">
-                  <p className="text-[10px] text-white/35 mb-1">Open Opportunities</p>
-                  <span className="text-[28px] font-bold text-white leading-none">3</span>
+                {/* Open Opportunities */}
+                <div className="bg-white/6 rounded-xl border border-white/8 px-3 py-3">
+                  <div className="flex items-center gap-1.5 mb-1.5">
+                    <img src="/icons/ai-platforms/google.svg" alt="" width={12} height={12} className="opacity-40 invert" aria-hidden="true" />
+                    <p className="text-[9px] text-white/35 uppercase tracking-wide">Open Opps</p>
+                  </div>
+                  <span className="text-[26px] font-bold text-white leading-none">3</span>
                 </div>
               </div>
-              <div className="bg-white/6 rounded-xl border border-white/8 px-4 py-3">
-                <p className="text-[10px] text-white/35 mb-1">Last scan</p>
+              {/* Last scan */}
+              <div className="bg-white/6 rounded-xl border border-white/8 px-3 py-3">
+                <div className="flex items-center gap-1.5 mb-1">
+                  <img src="/icons/ai-platforms/chatgpt-dark.svg" alt="" width={12} height={12} className="opacity-40 invert" aria-hidden="true" />
+                  <p className="text-[9px] text-white/35 uppercase tracking-wide">Last scan</p>
+                </div>
                 <span className="text-[18px] font-bold text-white leading-none">2 hrs ago</span>
               </div>
             </div>
@@ -1755,9 +1772,18 @@ function TestimonialsSection() {
         {TESTIMONIALS.map((t, i) => (
           <div
             key={i}
-            className="break-inside-avoid bg-white border border-[#E5E5E1] rounded-2xl p-6 flex flex-col gap-5"
+            className="break-inside-avoid bg-white border border-[#E5E5E1] rounded-2xl p-6 flex flex-col gap-4"
             style={{ boxShadow: "0 1px 4px rgba(0,0,0,0.04)" }}
           >
+            {/* 5 stars */}
+            <div className="flex gap-0.5" aria-label="5 out of 5 stars">
+              {[...Array(5)].map((_, s) => (
+                <svg key={s} width="16" height="16" viewBox="0 0 24 24" fill="#171717" aria-hidden="true">
+                  <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                </svg>
+              ))}
+            </div>
+
             {/* Quote */}
             <p className="text-[14px] text-[#3D3D3A] leading-relaxed flex-1">
               &ldquo;{t.quote}&rdquo;
@@ -1769,12 +1795,12 @@ function TestimonialsSection() {
               <img
                 src={t.photo}
                 alt={t.name}
-                width={40}
-                height={40}
-                className="w-10 h-10 rounded-full object-cover shrink-0 border border-[#E5E5E1]"
+                width={44}
+                height={44}
+                className="w-11 h-11 rounded-full object-cover shrink-0 border border-[#E5E5E1]"
               />
               <div className="min-w-0">
-                <p className="text-[13px] font-semibold text-[#171717] truncate">{t.name}</p>
+                <p className="text-[14px] font-semibold text-[#171717] truncate">{t.name}</p>
                 <p className="text-[11px] text-[#A3A3A0] truncate">
                   {t.role} · {t.company}
                 </p>
