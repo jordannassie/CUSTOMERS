@@ -10,6 +10,17 @@ async function getAdminUser() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return null;
+
+  // Fast path: email listed in ADMIN_EMAILS env var (comma-separated)
+  const adminEmails = (process.env.ADMIN_EMAILS ?? "")
+    .split(",")
+    .map((e) => e.trim().toLowerCase())
+    .filter(Boolean);
+  if (user.email && adminEmails.includes(user.email.toLowerCase())) {
+    return { email: user.email };
+  }
+
+  // Database check: profiles.account_type = 'admin'
   const service = createServiceClient();
   const { data: profile } = await service
     .from("profiles")

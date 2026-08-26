@@ -177,22 +177,21 @@ export default function SiteFooter() {
         </div>
 
         {/* Bottom strip */}
-        <div className="border-t border-white/8 pt-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+        <div className="border-t border-white/8 pt-8 flex flex-col gap-3">
+          <div className="flex items-center justify-between gap-4">
             <p className="text-[12px] text-white/30">
               © {year} Customers.Direct. All rights reserved.
             </p>
-            <p className="text-[11px] text-white/20 max-w-sm leading-relaxed">
-              AI visibility metrics are measured using real buyer-intent prompts queried via official AI provider APIs. We do not guarantee rankings or placement.
-            </p>
+            <a
+              href="/internal/admin"
+              className="text-[11px] font-medium text-white/50 hover:text-white transition-colors shrink-0"
+            >
+              Admin →
+            </a>
           </div>
-
-          <a
-            href="/internal/admin"
-            className="text-[11px] text-white/40 hover:text-white/70 transition-colors"
-          >
-            Admin
-          </a>
+          <p className="text-[11px] text-white/20 max-w-xl leading-relaxed">
+            AI visibility metrics are measured using real buyer-intent prompts queried via official AI provider APIs. We do not guarantee rankings or placement.
+          </p>
         </div>
       </div>
     </footer>
