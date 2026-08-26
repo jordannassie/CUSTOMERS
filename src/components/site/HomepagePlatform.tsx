@@ -226,9 +226,9 @@ function HeroDashboardPreview() {
         {/* Left sidebar */}
         <div className="w-[110px] shrink-0 bg-white border-r border-[#EEEEEA] flex flex-col py-3">
           <div className="px-3 mb-4">
-            <span className="text-[9px] font-bold text-[#171717] leading-none tracking-tight">
-              Customers<span className="text-[#3B82F6]">.Direct</span>
-            </span>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/images/logos/logo-black.png" alt="Customers.Direct"
+              className="h-4 w-auto" aria-hidden="true" />
           </div>
           <div className="px-2 mb-1">
             <p className="text-[7px] font-semibold uppercase tracking-wider text-[#A3A3A0] mb-1 px-1">Quick Actions</p>

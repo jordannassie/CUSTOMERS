@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { ArrowRight, Loader2, CheckCircle2, X, Plus, AlertTriangle } from "lucide-react";
 import type { ScanResult } from "@/types/geo";
 import type { CompetitorSuggestion } from "@/lib/geo/competitor-discovery";
@@ -235,9 +236,14 @@ export default function OnboardingWizard() {
     <div className="min-h-screen bg-[#FAFAF8] flex items-center justify-center px-4 py-16">
       <div className="w-full max-w-2xl">
         <div className="text-center mb-8">
-          <span className="text-[#171717] font-bold text-xl tracking-tight">
-            Customers<span className="text-[#777773]">.Direct</span>
-          </span>
+          <Image
+            src="/images/logos/logo-black.png"
+            alt="Customers.Direct"
+            width={160}
+            height={40}
+            priority
+            className="h-8 w-auto mx-auto"
+          />
         </div>
 
         <div className="bg-white rounded-2xl border border-[#EEEEEA] p-8 sm:p-10" style={{ boxShadow: "0 8px 40px rgba(15,23,42,0.08)" }}>

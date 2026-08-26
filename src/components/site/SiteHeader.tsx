@@ -18,8 +18,7 @@ import {
   Building2,
 } from "lucide-react";
 
-const LOGO =
-  "https://phhczohqidgrvcmszets.supabase.co/storage/v1/object/public/CUSTOMER.direct/logo/Logo.png";
+const LOGO = "/images/logos/logo-black.png";
 
 const PRODUCT_FEATURES = [
   {

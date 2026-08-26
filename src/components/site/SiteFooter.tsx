@@ -1,8 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 
-const LOGO =
-  "https://phhczohqidgrvcmszets.supabase.co/storage/v1/object/public/CUSTOMER.direct/logo/Logo.png";
+const LOGO = "/images/logos/logo-white.png";
 
 const year = new Date().getFullYear();
 
@@ -65,7 +64,7 @@ export default function SiteFooter() {
                 width={148}
                 height={36}
                 unoptimized
-                className="h-7 w-auto brightness-0 invert"
+                className="h-7 w-auto"
               />
             </Link>
             <p className="text-[13px] text-white/50 leading-relaxed mb-6 max-w-xs">

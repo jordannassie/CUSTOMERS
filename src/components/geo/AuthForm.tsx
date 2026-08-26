@@ -7,8 +7,7 @@ import { useRouter } from "next/navigation";
 import { Loader2, ArrowRight } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
-const LOGO =
-  "https://phhczohqidgrvcmszets.supabase.co/storage/v1/object/public/CUSTOMER.direct/logo/Logo.png";
+const LOGO = "/images/logos/logo-black.png";
 
 interface AuthFormProps {
   mode: "login" | "signup";
