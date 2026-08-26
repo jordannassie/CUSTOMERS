@@ -1,6 +1,9 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { requireUser } from "@/lib/geo/api-auth";
 
+/** PostgreSQL undefined_column error code */
+const PG_UNDEFINED_COLUMN = "42703";
+
 type CompetitorWithBusiness = { id: string; businesses: { owner_user_id: string } };
 
 async function verifyOwnership(supabase: Awaited<ReturnType<typeof requireUser>>["supabase"], id: string, userId: string) {
@@ -78,6 +81,27 @@ export async function PATCH(
     .select()
     .single();
 
-  if (error) return NextResponse.json({ error: "Could not update competitor." }, { status: 500 });
-  return NextResponse.json({ competitor: data });
+  if (!error) return NextResponse.json({ competitor: data });
+
+  // If enrichment_status column doesn't exist yet (migration 010 not applied),
+  // retry without it so domain saves still work.
+  if (error.code === PG_UNDEFINED_COLUMN) {
+    console.warn("[competitors/patch] Enrichment columns missing — retrying without enrichment_status");
+    const { enrichment_status: _dropped, ...basicUpdates } = updates;
+    void _dropped;
+    if (Object.keys(basicUpdates).length === 0) {
+      return NextResponse.json({ error: "No valid fields to update." }, { status: 400 });
+    }
+    const { data: fallbackData, error: fallbackError } = await supabase
+      .from("business_competitors")
+      .update(basicUpdates)
+      .eq("id", id)
+      .select()
+      .single();
+    if (fallbackError) return NextResponse.json({ error: "Could not update competitor." }, { status: 500 });
+    return NextResponse.json({ competitor: fallbackData });
+  }
+
+  console.error("[competitors/patch] Update failed:", error.message);
+  return NextResponse.json({ error: "Could not update competitor." }, { status: 500 });
 }

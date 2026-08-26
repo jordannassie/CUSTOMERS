@@ -28,6 +28,7 @@ export default function BusinessSettingsForm({ business }: { business: Business 
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   function set(field: keyof typeof form) {
     return (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
@@ -61,6 +62,7 @@ export default function BusinessSettingsForm({ business }: { business: Business 
     e.preventDefault();
     setSaving(true);
     setSaved(false);
+    setSaveError(null);
     try {
       const res = await fetch(`/api/geo/businesses/${business.id}`, {
         method: "PATCH",
@@ -71,7 +73,12 @@ export default function BusinessSettingsForm({ business }: { business: Business 
         setSaved(true);
         router.refresh();
         setTimeout(() => setSaved(false), 2500);
+      } else {
+        const json = await res.json().catch(() => ({}));
+        setSaveError(json.error ?? "Could not save business settings. Please try again.");
       }
+    } catch {
+      setSaveError("Connection error — please check your internet and try again.");
     } finally {
       setSaving(false);
     }
@@ -258,6 +265,15 @@ export default function BusinessSettingsForm({ business }: { business: Business 
               {business.domain} ↗
             </a>
           </p>
+        </div>
+      )}
+
+      {saveError && (
+        <div className="flex items-start gap-2.5 bg-[#FEF2F2] border border-[#FECACA] rounded-xl px-4 py-3">
+          <svg width="14" height="14" viewBox="0 0 16 16" className="text-[#DC2626] shrink-0 mt-0.5" fill="currentColor" aria-hidden="true">
+            <path d="M8 1a7 7 0 100 14A7 7 0 008 1zm0 3a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 018 4zm0 7a1 1 0 110-2 1 1 0 010 2z"/>
+          </svg>
+          <p className="text-[12px] text-[#B91C1C]">{saveError}</p>
         </div>
       )}
 

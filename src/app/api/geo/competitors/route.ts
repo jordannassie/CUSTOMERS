@@ -18,6 +18,18 @@ interface CompetitorInput {
   confirmed?: unknown;
 }
 
+/** PostgreSQL undefined_column error code */
+const PG_UNDEFINED_COLUMN = "42703";
+
+function cleanStr(v: unknown, max = 300): string | null {
+  if (typeof v !== "string" || !v.trim()) return null;
+  return v.trim().slice(0, max);
+}
+function cleanNum(v: unknown): number | null {
+  if (typeof v !== "number" || !isFinite(v)) return null;
+  return v;
+}
+
 export async function POST(request: NextRequest) {
   const { user, supabase, unauthorized } = await requireUser();
   if (unauthorized) return unauthorized;
@@ -41,15 +53,6 @@ export async function POST(request: NextRequest) {
     .single();
   if (!business) return NextResponse.json({ error: "Business not found." }, { status: 404 });
 
-  function cleanStr(v: unknown, max = 300): string | null {
-    if (typeof v !== "string" || !v.trim()) return null;
-    return v.trim().slice(0, max);
-  }
-  function cleanNum(v: unknown): number | null {
-    if (typeof v !== "number" || !isFinite(v)) return null;
-    return v;
-  }
-
   const rows = (Array.isArray(body.competitors) ? body.competitors : [])
     .map((c) => ({
       business_id: businessId,
@@ -57,7 +60,7 @@ export async function POST(request: NextRequest) {
       domain: cleanStr(c.domain),
       source: cleanStr(c.source) ?? "manual",
       confirmed: true,
-      // Google Places enrichment fields
+      // Google Places enrichment fields (requires migration 010)
       place_id: cleanStr(c.place_id),
       formatted_address: cleanStr(c.formatted_address),
       city: cleanStr(c.city, 100),
@@ -80,22 +83,50 @@ export async function POST(request: NextRequest) {
     .from("business_competitors")
     .select("name")
     .eq("business_id", businessId);
-  const existingNames = new Set((existing ?? []).map((e: { name: string }) => e.name.toLowerCase()));
+  const existingNames = new Set(
+    (existing ?? []).map((e: { name: string }) => e.name.toLowerCase()),
+  );
   const newRows = rows.filter((r) => !existingNames.has(r.name.toLowerCase()));
 
   if (newRows.length === 0) {
     return NextResponse.json({ competitors: [] });
   }
 
+  // Attempt full insert with enrichment fields
   const { data, error } = await supabase
     .from("business_competitors")
     .insert(newRows)
     .select();
 
-  if (error) {
-    console.error("Save competitors failed:", error.message);
-    return NextResponse.json({ error: "Could not save competitors." }, { status: 500 });
+  if (!error) {
+    return NextResponse.json({ competitors: data });
   }
 
-  return NextResponse.json({ competitors: data });
+  // If insert failed because enrichment columns don't exist yet (migration 010 not applied),
+  // fall back to inserting only the columns that definitely exist.
+  if (error.code === PG_UNDEFINED_COLUMN) {
+    console.warn("[competitors] Enrichment columns missing (migration 010 not applied) — using basic insert");
+    const basicRows = newRows.map(({ business_id, name, domain, source, confirmed }) => ({
+      business_id,
+      name,
+      domain,
+      source,
+      confirmed,
+    }));
+
+    const { data: fallbackData, error: fallbackError } = await supabase
+      .from("business_competitors")
+      .insert(basicRows)
+      .select();
+
+    if (fallbackError) {
+      console.error("[competitors] Basic insert also failed:", fallbackError.message);
+      return NextResponse.json({ error: "Could not save competitors." }, { status: 500 });
+    }
+
+    return NextResponse.json({ competitors: fallbackData, migrationPending: true });
+  }
+
+  console.error("[competitors] Save failed:", error.message);
+  return NextResponse.json({ error: "Could not save competitors." }, { status: 500 });
 }
