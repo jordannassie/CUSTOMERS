@@ -7,7 +7,7 @@ import { DomainFavicon } from "@/components/DomainFavicon";
 import { PROVIDER_LABELS, classifyDomain } from "@/lib/geo/dashboard-aggregator";
 import { getPrimaryBusiness, getLatestRunResults } from "@/lib/geo/dashboard-data";
 
-export const metadata = { title: "Citations & Sources", robots: { index: false } };
+export const metadata = { title: "Sources & Citations", robots: { index: false } };
 
 const TYPE_COLORS: Record<string, { bg: string; text: string; border: string }> = {
   "You":           { bg: "#F0FDF4", text: "#166534", border: "#BBF7D0" },

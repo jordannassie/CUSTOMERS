@@ -11,10 +11,8 @@ import {
   ArrowUpRight,
   ArrowDownLeft,
   Minus,
-  Lock,
   AlertCircle,
   ExternalLink,
-  ChevronRight,
 } from "lucide-react";
 import type { SeoSnapshot, SeoKeyword } from "@/lib/seo/types";
 
@@ -23,7 +21,6 @@ interface SeoDashboardProps {
   businessName: string;
   domain: string | null;
   initialSnapshot: SeoSnapshot | null;
-  hasSeoAccess: boolean;
 }
 
 function MetricCard({
@@ -116,7 +113,6 @@ export default function SeoDashboard({
   businessName,
   domain,
   initialSnapshot,
-  hasSeoAccess,
 }: SeoDashboardProps) {
   const [snapshot, setSnapshot] = useState<SeoSnapshot | null>(initialSnapshot);
   const [loading, setLoading] = useState(false);
@@ -160,40 +156,11 @@ export default function SeoDashboard({
     [businessId],
   );
 
-  // Plan gate
-  if (!hasSeoAccess) {
-    return (
-      <div>
-        <h1 className="text-[18px] font-bold text-[#171717] mb-1">SEO Intelligence</h1>
-        <p className="text-[13px] text-[#777773] mb-6">
-          Traditional search performance alongside your AI visibility.
-        </p>
-        <div className="rounded-2xl border border-[#E5E5E1] bg-white p-10 text-center max-w-lg mx-auto">
-          <div className="w-12 h-12 rounded-full bg-[#F5F3FF] flex items-center justify-center mx-auto mb-4">
-            <Lock size={20} className="text-[#7C3AED]" aria-hidden="true" />
-          </div>
-          <h2 className="text-[16px] font-bold text-[#171717] mb-2">Growth Agent required</h2>
-          <p className="text-[13px] text-[#777773] mb-5 leading-relaxed">
-            SEO intelligence — keyword rankings, competitor gaps, and backlink analysis — is
-            included in the Growth Agent plan and above.
-          </p>
-          <a
-            href="/dashboard/settings"
-            className="inline-flex items-center gap-2 bg-[#171717] text-white text-[13px] font-semibold px-5 py-2.5 rounded-lg hover:bg-[#2A2A2A] transition-colors"
-          >
-            Upgrade plan
-            <ChevronRight size={13} aria-hidden="true" />
-          </a>
-        </div>
-      </div>
-    );
-  }
-
   // No domain configured
   if (!domain) {
     return (
       <div>
-        <h1 className="text-[18px] font-bold text-[#171717] mb-1">SEO Intelligence</h1>
+        <h1 className="text-[18px] font-bold text-[#171717] mb-1">Search Intelligence</h1>
         <div className="rounded-xl border border-[#E5E5E1] bg-white p-8 text-center mt-4">
           <Globe size={28} className="text-[#A3A3A0] mx-auto mb-3" aria-hidden="true" />
           <p className="text-[14px] font-semibold text-[#171717] mb-1">No domain configured</p>
@@ -215,7 +182,7 @@ export default function SeoDashboard({
   if (notConfigured) {
     return (
       <div>
-        <h1 className="text-[18px] font-bold text-[#171717] mb-1">SEO Intelligence</h1>
+        <h1 className="text-[18px] font-bold text-[#171717] mb-1">Search Intelligence</h1>
         <div className="rounded-xl border border-[#E5E5E1] bg-[#FAFAF8] p-8 text-center mt-4">
           <AlertCircle size={28} className="text-[#A3A3A0] mx-auto mb-3" aria-hidden="true" />
           <p className="text-[14px] font-semibold text-[#171717] mb-1">SEO integration not active</p>
@@ -231,7 +198,7 @@ export default function SeoDashboard({
   if (!snapshot) {
     return (
       <div>
-        <h1 className="text-[18px] font-bold text-[#171717] mb-1">SEO Intelligence</h1>
+        <h1 className="text-[18px] font-bold text-[#171717] mb-1">Search Intelligence</h1>
         <p className="text-[13px] text-[#777773] mb-6">
           Keyword rankings, competitor gaps, and backlink analysis for{" "}
           <strong>{domain}</strong>.
@@ -269,7 +236,7 @@ export default function SeoDashboard({
       {/* Header */}
       <div className="flex items-start justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-[18px] font-bold text-[#171717] mb-1">SEO Intelligence</h1>
+          <h1 className="text-[18px] font-bold text-[#171717] mb-1">Search Intelligence</h1>
           <p className="text-[13px] text-[#777773] flex items-center gap-1.5">
             <Globe size={12} aria-hidden="true" />
             {snapshot.domain}

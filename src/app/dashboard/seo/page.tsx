@@ -7,7 +7,7 @@ import type { Metadata } from "next";
 import type { SeoSnapshot } from "@/lib/seo/types";
 
 export const metadata: Metadata = {
-  title: "SEO Intelligence",
+  title: "Search Intelligence",
   robots: { index: false },
 };
 
@@ -23,16 +23,7 @@ export default async function SeoPage() {
     .eq("business_id", business.id)
     .maybeSingle();
 
-  // Check current subscription for plan gating
-  const { data: subscription } = await supabase
-    .from("subscriptions")
-    .select("plan, status")
-    .eq("business_id", business.id)
-    .maybeSingle();
-
-  const hasSeoAccess =
-    subscription?.status === "active" &&
-    (subscription?.plan === "growth_agent" || subscription?.plan === "autonomous_growth");
+  // Free Beta: all authenticated users have full SEO access (no plan gate)
 
   let initialSnapshot: SeoSnapshot | null = null;
   if (rawSnapshot) {
@@ -60,7 +51,6 @@ export default async function SeoPage() {
         businessName={business.name}
         domain={business.domain}
         initialSnapshot={initialSnapshot}
-        hasSeoAccess={hasSeoAccess}
       />
     </DashboardShell>
   );

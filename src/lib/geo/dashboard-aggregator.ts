@@ -103,6 +103,24 @@ export interface OverviewMetrics {
   totalCitations: number;
   uniqueSources: number;
   ownPageCitations: number;
+  /** Rank of this business among itself + all tracked competitors by mention rate */
+  marketRank: number | null;
+  /** Total participants in market rank (business + competitors with data) */
+  marketTotal: number | null;
+}
+
+/**
+ * One data point in the competitor trend chart.
+ * Keyed by entity name (business name or competitor name → mention rate 0-100).
+ */
+export interface TrendPoint {
+  date: string;
+  /** ISO date string for sorting */
+  isoDate: string;
+  /** Business mention rate 0-100 */
+  business: number | null;
+  /** Competitor mention rates: name → rate 0-100 */
+  competitors: Record<string, number>;
 }
 
 export interface ModelMetric {
@@ -148,6 +166,11 @@ export interface DashboardAggregates {
   overview: OverviewMetrics;
   /** Oldest-first history of visibility scores */
   history: VisibilityScore[];
+  /**
+   * Oldest-first trend series combining business + competitor mention rates.
+   * Used by CompetitorTrendChart to show multi-series comparison.
+   */
+  trendSeries: TrendPoint[];
   models: ModelMetric[];
   competitors: CompetitorMetric[];
   citations: CitationAggregate[];
@@ -192,7 +215,7 @@ export async function getDashboardAggregates(
         .select("id, provider, status, started_at, completed_at, error")
         .eq("business_id", businessId)
         .order("started_at", { ascending: false })
-        .limit(5),
+        .limit(8),
       supabase
         .from("business_competitors")
         .select("*")
@@ -341,6 +364,82 @@ export async function getDashboardAggregates(
   });
   competitorMetrics.sort((a, b) => b.mentionCount - a.mentionCount);
 
+  // ── Market Rank ───────────────────────────────────────────────────────────
+  // Rank business among itself + all tracked competitors by current mention rate.
+
+  const currentMentionRate = (mentionRate ?? 0) / 100;
+  const allParticipants = [
+    { name: "__business__", rate: currentMentionRate, isYou: true },
+    ...competitorMetrics.map((c) => ({ name: c.name, rate: c.mentionRate, isYou: false })),
+  ].filter((p) => p.isYou || p.rate > 0 || results.length > 0);
+
+  allParticipants.sort((a, b) => b.rate - a.rate);
+  const marketRankIdx = allParticipants.findIndex((p) => p.isYou);
+  const marketRank = results.length > 0 ? marketRankIdx + 1 : null;
+  const marketTotal = results.length > 0 ? allParticipants.length : null;
+
+  // ── Trend Series (competitor chart) ───────────────────────────────────────
+  // For each historical completed run, compute competitor mention rates.
+  // We fetch all results for the last 8 runs in one query and aggregate in memory.
+
+  const trendSeries: TrendPoint[] = [];
+
+  const completedRuns = runs
+    .filter((r) => r.status === "completed")
+    .slice(0, 8);
+
+  if (completedRuns.length >= 1) {
+    const runIds = completedRuns.map((r) => r.id);
+
+    const { data: historicalResults } = await supabase
+      .from("visibility_results")
+      .select("run_id, business_mentioned, mention_position, competitors_mentioned, created_at")
+      .in("run_id", runIds);
+
+    // Group by run_id
+    const byRun = new Map<string, typeof historicalResults>();
+    for (const row of historicalResults ?? []) {
+      const arr = byRun.get(row.run_id) ?? [];
+      arr.push(row);
+      byRun.set(row.run_id, arr);
+    }
+
+    // Build trend points for each run (oldest first)
+    const sortedRuns = [...completedRuns].reverse();
+    for (const run of sortedRuns) {
+      const runResults = byRun.get(run.id) ?? [];
+      if (runResults.length === 0) continue;
+
+      const total = runResults.length;
+      const businessMentions = runResults.filter((r) => r.business_mentioned).length;
+      const businessRate = Math.round((businessMentions / total) * 100);
+
+      // Count competitor mentions
+      const competitorRates: Record<string, number> = {};
+      for (const comp of competitors) {
+        const key = comp.name.toLowerCase().trim();
+        const count = runResults.filter((r) =>
+          ((r.competitors_mentioned as Array<{ name: string }>) ?? []).some(
+            (c) => c.name.toLowerCase().trim() === key,
+          ),
+        ).length;
+        if (count > 0 || competitors.length <= 5) {
+          competitorRates[comp.name] = Math.round((count / total) * 100);
+        }
+      }
+
+      trendSeries.push({
+        date: new Date(run.started_at).toLocaleDateString("en-US", {
+          month: "short",
+          day: "numeric",
+        }),
+        isoDate: run.started_at,
+        business: businessRate,
+        competitors: competitorRates,
+      });
+    }
+  }
+
   // ── Citations ────────────────────────────────────────────────────────────
 
   const domainMap = new Map<
@@ -438,8 +537,11 @@ export async function getDashboardAggregates(
       totalCitations,
       uniqueSources,
       ownPageCitations,
+      marketRank,
+      marketTotal,
     },
     history,
+    trendSeries,
     models,
     competitors: competitorMetrics,
     citations,

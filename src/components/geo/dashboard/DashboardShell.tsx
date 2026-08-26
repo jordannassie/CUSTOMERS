@@ -31,17 +31,17 @@ import TrialBanner from "@/components/geo/dashboard/TrialBanner";
 const LOGO = "/images/logos/logo-black.png";
 
 const NAV = [
-  { label: "Overview",        href: "/dashboard",                    icon: LayoutDashboard },
-  { label: "AI Insights",     href: "/dashboard/visibility",         icon: Sparkles        },
-  { label: "SEO",             href: "/dashboard/seo",                icon: BarChart2       },
-  { label: "Prompts",         href: "/dashboard/prompts",            icon: MessagesSquare  },
-  { label: "Competitors",     href: "/dashboard/competitors",        icon: Users           },
-  { label: "Sources",         href: "/dashboard/citations",          icon: Link2           },
-  { label: "Agent Readiness", href: "/dashboard/agent-readiness",    icon: ShieldCheck,    badge: "New" },
-  { label: "Opportunities",   href: "/dashboard/opportunities",      icon: Lightbulb       },
-  { label: "Direct Agent",    href: "/dashboard/direct-agent",       icon: Bot             },
-  { label: "Reports",         href: "/dashboard/reports",            icon: FileBarChart    },
-  { label: "Settings",        href: "/dashboard/settings",           icon: Settings        },
+  { label: "Overview",          href: "/dashboard",                  icon: LayoutDashboard },
+  { label: "Competitors",       href: "/dashboard/competitors",      icon: Users           },
+  { label: "AI Visibility",     href: "/dashboard/visibility",       icon: Sparkles        },
+  { label: "Prompts",           href: "/dashboard/prompts",          icon: MessagesSquare  },
+  { label: "Search Intelligence", href: "/dashboard/seo",            icon: BarChart2       },
+  { label: "Sources",           href: "/dashboard/citations",        icon: Link2           },
+  { label: "Agent Readiness",   href: "/dashboard/agent-readiness",  icon: ShieldCheck,    badge: "New" },
+  { label: "Opportunities",     href: "/dashboard/opportunities",    icon: Lightbulb       },
+  { label: "Direct Agent",      href: "/dashboard/direct-agent",     icon: Bot             },
+  { label: "Reports",           href: "/dashboard/reports",          icon: FileBarChart    },
+  { label: "Settings",          href: "/dashboard/settings",         icon: Settings        },
 ];
 
 interface DashboardShellProps {
