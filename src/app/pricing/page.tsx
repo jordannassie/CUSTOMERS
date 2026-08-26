@@ -5,7 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import {
   Check, Minus, ChevronDown, ArrowRight, Building2, Plus,
-  BarChart3, Eye, Wrench, TrendingUp, Shield, Zap,
+  TrendingUp, Shield, Zap,
 } from "lucide-react";
 import SiteFooter from "@/components/site/SiteFooter";
 import { ORDERED_PRICING_PLANS, COMPARISON_TABLE } from "@/config/pricing";
@@ -589,103 +589,6 @@ export default function PricingPage() {
                 </p>
               </div>
             </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ── Value section: SEE → COMPARE → FIX → IMPROVE ── */}
-      <section className="px-4 py-20 bg-[#FAFAF8]">
-        <div className="max-w-[1100px] mx-auto">
-          <div className="text-center mb-14">
-            <h2 className="text-[32px] sm:text-[40px] font-bold text-[#171717] tracking-tight mb-3">
-              More than an AI visibility tracker
-            </h2>
-            <p className="text-[16px] text-[#777773] max-w-[500px] mx-auto">
-              A complete system to measure, understand, and improve how AI recommends your business.
-            </p>
-          </div>
-
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {[
-              {
-                step: "1",
-                label: "SEE",
-                icon: Eye,
-                color: "#0866F5",
-                bg: "#EFF6FF",
-                title: "See where you show up",
-                body: "See exactly where your business appears across ChatGPT, Claude, Perplexity, Gemini, and Google AI search.",
-              },
-              {
-                step: "2",
-                label: "COMPARE",
-                icon: BarChart3,
-                color: "#7C3AED",
-                bg: "#F5F3FF",
-                title: "Compare with competitors",
-                body: "See which competitors are getting recommended instead — prompt by prompt, platform by platform.",
-              },
-              {
-                step: "3",
-                label: "FIX",
-                icon: Wrench,
-                color: "#D97706",
-                bg: "#FFFBEB",
-                title: "Know exactly what to fix",
-                body: "Customers.Direct shows the exact pages, citations, keywords, content, or SEO issues that need attention.",
-              },
-              {
-                step: "4",
-                label: "IMPROVE",
-                icon: TrendingUp,
-                color: "#059669",
-                bg: "#F0FDF4",
-                title: "Track results over time",
-                body: "Use Direct Agent and Claude implementation prompts to make changes and watch your score improve.",
-              },
-            ].map((item) => (
-              <div
-                key={item.step}
-                className="bg-white rounded-2xl border border-[#E5E5E1] p-6 shadow-sm hover:shadow-md transition-shadow"
-              >
-                <div className="flex items-center gap-3 mb-4">
-                  <div
-                    className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
-                    style={{ background: item.bg }}
-                  >
-                    <item.icon size={18} style={{ color: item.color }} />
-                  </div>
-                  <span
-                    className="text-[11px] font-black uppercase tracking-widest"
-                    style={{ color: item.color }}
-                  >
-                    {item.label}
-                  </span>
-                </div>
-                <h3 className="text-[16px] font-bold text-[#171717] mb-2">{item.title}</h3>
-                <p className="text-[13px] text-[#777773] leading-relaxed">{item.body}</p>
-              </div>
-            ))}
-          </div>
-
-          {/* Flow indicator */}
-          <div className="mt-10 flex items-center justify-center gap-3 flex-wrap">
-            {["SEE", "COMPARE", "FIX", "IMPROVE"].map((step, i) => (
-              <React.Fragment key={step}>
-                <span
-                  className="text-[13px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg"
-                  style={{
-                    background: ["#EFF6FF", "#F5F3FF", "#FFFBEB", "#F0FDF4"][i],
-                    color: ["#1D4ED8", "#6D28D9", "#92400E", "#065F46"][i],
-                  }}
-                >
-                  {step}
-                </span>
-                {i < 3 && (
-                  <ArrowRight size={14} className="text-[#D4D4CF] shrink-0" />
-                )}
-              </React.Fragment>
-            ))}
           </div>
         </div>
       </section>

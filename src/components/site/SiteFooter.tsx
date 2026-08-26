@@ -188,7 +188,7 @@ export default function SiteFooter() {
           </div>
 
           <a
-            href="/admin"
+            href="/internal/admin"
             className="text-[11px] text-white/10 hover:text-white/30 transition-colors"
           >
             Admin
