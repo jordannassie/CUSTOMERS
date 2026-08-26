@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Bot, Copy, Loader2 } from "lucide-react";
+import { Copy, Loader2 } from "lucide-react";
+import BotIcon from "@/components/BotIcon";
 
 interface Props {
   question: string;
@@ -37,7 +38,7 @@ export function AgentCTA({ question, label, variant = "ghost" }: Props) {
         {loading ? (
           <Loader2 size={10} className="animate-spin" aria-hidden="true" />
         ) : (
-          <Bot size={10} aria-hidden="true" />
+          <BotIcon size={12} aria-hidden="true" />
         )}
         {label ?? "Ask Direct Agent"}
       </button>
@@ -54,7 +55,7 @@ export function AgentCTA({ question, label, variant = "ghost" }: Props) {
       {loading ? (
         <Loader2 size={10} className="animate-spin" aria-hidden="true" />
       ) : (
-        <Bot size={10} aria-hidden="true" />
+        <BotIcon size={12} aria-hidden="true" />
       )}
       {label ?? "Ask Direct Agent"}
     </button>

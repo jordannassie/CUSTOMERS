@@ -1,9 +1,10 @@
 import Link from "next/link";
 import {
-  ArrowRight, Bot, BarChart2, TrendingUp, TrendingDown,
+  ArrowRight, BarChart2, TrendingUp, TrendingDown,
   Lightbulb, CheckCircle2, Globe, MapPin, Pencil,
   Search, ShieldCheck, Quote,
 } from "lucide-react";
+import BotIcon from "@/components/BotIcon";
 import OnboardingWizard from "@/components/geo/OnboardingWizard";
 import DashboardShell from "@/components/geo/dashboard/DashboardShell";
 import CompetitorTrendChart from "@/components/geo/dashboard/CompetitorTrendChart";
@@ -334,7 +335,7 @@ export default async function DashboardPage({
                       href={`/dashboard/direct-agent?q=${encodeURIComponent(o.claude_prompt.slice(0, 400))}`}
                       className="hidden group-hover:flex items-center gap-1 text-[11px] font-semibold text-[#7C3AED] shrink-0"
                     >
-                      <Bot size={10} /> Ask Claude
+                      <BotIcon size={12} /> Ask Claude
                     </Link>
                   )}
                 </div>
@@ -348,7 +349,7 @@ export default async function DashboardPage({
           <div className="bg-white rounded-xl border border-[#E5E5E1] p-5">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
-                <Bot size={14} className="text-[#A3A3A0]" />
+                <BotIcon size={18} />
                 <h2 className="text-[13px] font-bold text-[#171717]">Direct Agent</h2>
               </div>
               <Link href="/dashboard/direct-agent" className="text-[12px] font-semibold text-[#777773] hover:text-[#171717] flex items-center gap-1">
@@ -367,7 +368,7 @@ export default async function DashboardPage({
                   href={`/dashboard/direct-agent?q=${encodeURIComponent(q)}`}
                   className="flex items-start gap-2 border border-[#E5E5E1] bg-white rounded-lg px-3 py-2.5 text-[#171717] hover:bg-[#F5F5F2] hover:border-[#D4D4CF] transition-colors"
                 >
-                  <Bot size={12} className="text-[#A3A3A0] mt-0.5 shrink-0" />
+                  <BotIcon size={14} className="mt-0.5 shrink-0" />
                   <span className="text-[11.5px]">{q}</span>
                 </Link>
               ))}

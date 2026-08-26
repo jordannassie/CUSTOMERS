@@ -39,7 +39,7 @@ export async function proxy(request: NextRequest) {
   // --- Auth guard: /dashboard requires a signed-in Supabase Auth user ---
   const { pathname } = request.nextUrl;
 
-  if (!user && pathname.startsWith("/dashboard")) {
+  if (!user && (pathname.startsWith("/dashboard") || pathname.startsWith("/internal"))) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     url.searchParams.set("next", pathname);

@@ -6,28 +6,44 @@ import { createServiceClient } from "@/lib/supabase/service";
 // Public metadata — no secrets
 export const metadata = { title: "Admin | Customers.Direct", robots: { index: false } };
 
-// Hardcoded owner admin — always has access regardless of database state
-const OWNER_EMAILS = ["jordannassie@gmail.com"];
-
 async function getAdminUser() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
+  // Not authenticated at all
   if (!user) return null;
 
-  // Owner always gets in
-  if (user.email && OWNER_EMAILS.includes(user.email.toLowerCase())) {
-    return { email: user.email, isOwner: true };
+  // 1. ADMIN_EMAILS env var (comma-separated) — set in Netlify
+  const envEmails = (process.env.ADMIN_EMAILS ?? "")
+    .split(",").map((e) => e.trim().toLowerCase()).filter(Boolean);
+  if (user.email && envEmails.length > 0 && envEmails.includes(user.email.toLowerCase())) {
+    return { email: user.email };
   }
 
-  // Database check: profiles.account_type = 'admin'
+  // 2. Database: profiles.account_type = 'admin'
   const service = createServiceClient();
   const { data: profile } = await service
     .from("profiles")
     .select("account_type")
     .eq("id", user.id)
     .maybeSingle();
-  if (profile?.account_type !== "admin") return null;
-  return { email: user.email ?? "", isOwner: false };
+  if (profile?.account_type === "admin") {
+    return { email: user.email ?? "" };
+  }
+
+  // 3. Beta fallback: first user who reaches this page gets admin role set.
+  //    Check if there are NO other admins yet (single-owner bootstrap).
+  const { count } = await service
+    .from("profiles")
+    .select("id", { count: "exact", head: true })
+    .eq("account_type", "admin");
+
+  if ((count ?? 0) === 0) {
+    // No admin exists yet — grant this authenticated user admin rights
+    await service.from("profiles").update({ account_type: "admin" }).eq("id", user.id);
+    return { email: user.email ?? "" };
+  }
+
+  return null; // Has admins but this user isn't one
 }
 
 const NAV_ITEMS = [

@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Search, CheckCircle2, XCircle, ExternalLink, Bot } from "lucide-react";
+import { Search, CheckCircle2, XCircle, ExternalLink } from "lucide-react";
+import BotIcon from "@/components/BotIcon";
 import Link from "next/link";
 import type { VisibilityResultWithPrompt } from "@/lib/geo/dashboard-data";
 import { PlatformIcon } from "@/components/PlatformIcon";
@@ -133,7 +134,7 @@ export default function PromptPerformanceTable({
                     href={`/dashboard/direct-agent?q=${encodeURIComponent(agentQuestion(r))}`}
                     className="hidden group-hover:inline-flex items-center gap-1 text-[10.5px] font-semibold text-[#777773] hover:text-[#171717] transition-colors"
                   >
-                    <Bot size={10} />
+                    <BotIcon size={12} />
                     {r.business_mentioned ? "Improve position" : "Why didn't I win?"}
                   </Link>
                 </td>

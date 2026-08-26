@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { Bot, Quote, Globe, ExternalLink, Link2, FileText } from "lucide-react";
+import { Quote, Globe, ExternalLink, Link2, FileText } from "lucide-react";
+import BotIcon from "@/components/BotIcon";
 import DashboardShell from "@/components/geo/dashboard/DashboardShell";
 import { EmptyState } from "@/components/geo/dashboard/ui";
 import { DomainFavicon } from "@/components/DomainFavicon";
@@ -123,7 +124,7 @@ export default async function CitationsPage() {
             )}`}
             className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-[#777773] bg-white border border-[#E5E5E1] rounded-lg px-3 py-2 hover:bg-[#F5F5F2] hover:border-[#D4D4CF] hover:text-[#171717] transition-colors"
           >
-            <Bot size={13} aria-hidden="true" />
+            <BotIcon size={14} aria-hidden="true" />
             Ask Direct Agent
           </Link>
         )}
@@ -318,7 +319,7 @@ export default async function CitationsPage() {
                     )}`}
                     className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-[#777773] hover:text-[#171717] transition-colors"
                   >
-                    <Bot size={11} aria-hidden="true" />
+                    <BotIcon size={13} aria-hidden="true" />
                     How to improve
                   </Link>
                 )}

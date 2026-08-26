@@ -4,9 +4,10 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import MarkdownContent from "@/components/MarkdownContent";
 import {
-  Bot, CheckCircle2, AlertCircle, XCircle, ExternalLink,
+  CheckCircle2, AlertCircle, XCircle, ExternalLink,
   Copy, Check, RefreshCw, Loader2, Zap, Info,
 } from "lucide-react";
+import BotIcon from "@/components/BotIcon";
 import type { AgentReadinessScan, AgentReadinessAction } from "@/lib/agent-readiness/types";
 import {
   readinessStatusLabel,
@@ -62,7 +63,7 @@ export default function AgentReadinessClient({ business, initialScan, initialAct
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <Bot size={18} className="text-[#0066FF]" />
+            <BotIcon size={22} />
             <h1 className="text-xl font-bold text-[#171717]">AI Agent Readiness</h1>
             <span className="text-[10px] font-semibold bg-[#0066FF] text-white px-2 py-0.5 rounded-full uppercase tracking-wide">New</span>
           </div>
@@ -101,7 +102,7 @@ export default function AgentReadinessClient({ business, initialScan, initialAct
       {/* No scan yet */}
       {business.domain && !hasScan && !scanning && (
         <EmptyState
-          icon={<Bot size={28} className="text-[#0066FF]" />}
+          icon={<BotIcon size={36} />}
           title="See if AI agents can use your website"
           description="Customers.Direct will scan your website to detect contact forms, booking flows, quote requests, and more — then show you what's missing and create a Claude prompt to fix it."
           cta={{ label: "Scan Website", onClick: runScan }}

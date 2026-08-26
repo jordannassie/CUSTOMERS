@@ -11,7 +11,6 @@ import {
   Users,
   Lightbulb,
   Link2,
-  Bot,
   FileBarChart,
   Settings,
   LogOut,
@@ -28,6 +27,7 @@ import {
 } from "lucide-react";
 import TrialBanner from "@/components/geo/dashboard/TrialBanner";
 import SuggestFeatureModal from "@/components/geo/dashboard/SuggestFeatureModal";
+import BotIcon from "@/components/BotIcon";
 
 const LOGO = "/images/logos/logo-black.png";
 
@@ -40,7 +40,7 @@ const NAV = [
   { label: "Sources",           href: "/dashboard/citations",        icon: Link2           },
   { label: "Agent Readiness",   href: "/dashboard/agent-readiness",  icon: ShieldCheck,    badge: "New" },
   { label: "Opportunities",     href: "/dashboard/opportunities",    icon: Lightbulb       },
-  { label: "Direct Agent",      href: "/dashboard/direct-agent",     icon: Bot             },
+  { label: "Direct Agent",      href: "/dashboard/direct-agent",     icon: BotIcon         },
   { label: "Reports",           href: "/dashboard/reports",          icon: FileBarChart    },
   { label: "Settings",          href: "/dashboard/settings",         icon: Settings        },
 ];

@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Send, Loader2, Bot, User } from "lucide-react";
+import { Send, Loader2, User } from "lucide-react";
+import BotIcon from "@/components/BotIcon";
 import MarkdownContent from "@/components/MarkdownContent";
 
 interface Message {
@@ -73,7 +74,7 @@ export default function DirectAgentChat({
         {messages.length === 0 && (
           <div className="flex flex-col items-center text-center py-10">
             <div className="w-12 h-12 rounded-xl bg-[#171717] flex items-center justify-center mb-4">
-              <Bot size={20} className="text-white" aria-hidden="true" />
+              <BotIcon size={28} aria-hidden="true" />
             </div>
             <p className="font-semibold text-[#171717] mb-1">Ask the Direct Agent</p>
             <p className="text-[13px] text-[#777773] max-w-sm mb-5">
@@ -102,7 +103,7 @@ export default function DirectAgentChat({
             >
               {m.role === "user"
                 ? <User size={14} className="text-white" aria-hidden="true" />
-                : <Bot size={14} className="text-[#777773]" aria-hidden="true" />
+                : <BotIcon size={18} aria-hidden="true" />
               }
             </div>
             <div
@@ -124,7 +125,7 @@ export default function DirectAgentChat({
         {loading && (
           <div className="flex gap-3">
             <div className="w-8 h-8 rounded-full bg-white border border-[#E5E5E1] flex items-center justify-center shrink-0">
-              <Bot size={14} className="text-[#777773]" aria-hidden="true" />
+              <BotIcon size={18} aria-hidden="true" />
             </div>
             <div className="bg-white border border-[#E5E5E1] rounded-xl rounded-tl-sm px-4 py-3">
               <Loader2 size={14} className="animate-spin text-[#A3A3A0]" aria-label="Loading response" />
