@@ -16,6 +16,17 @@ const CATEGORY_LABELS: Record<string, string> = {
   reviews_reputation: "Reviews & Reputation",
   local_presence: "Local Presence",
   competitor_gap: "Competitor Gap",
+  seo_keyword_gap: "Keyword Gap",
+  seo_competitor_gap: "Competitor Keyword Gap",
+  seo_backlink_gap: "Backlink Gap",
+  seo_technical: "Technical SEO",
+  seo_content: "SEO Content",
+  seo_ranking_opportunity: "Ranking Opportunity",
+};
+
+const SOURCE_LABELS: Record<string, string> = {
+  ai_visibility: "AI Visibility",
+  seo: "Search (SEO)",
 };
 
 export default function OpportunityCard({ opportunity, businessId }: { opportunity: Opportunity; businessId: string }) {
@@ -65,6 +76,7 @@ export default function OpportunityCard({ opportunity, businessId }: { opportuni
   }
 
   const isOpen = opportunity.status === "open";
+  const sourceLabel = SOURCE_LABELS[opportunity.source as string] ?? null;
 
   return (
     <div className="bg-white border border-[#E5E5E1] rounded-xl p-5">
@@ -75,6 +87,11 @@ export default function OpportunityCard({ opportunity, businessId }: { opportuni
             <span className="text-[10px] font-semibold uppercase tracking-widest text-[#A3A3A0]">
               {CATEGORY_LABELS[opportunity.category] ?? opportunity.category}
             </span>
+            {sourceLabel && (
+              <span className="text-[10px] font-semibold uppercase tracking-widest text-[#4338CA] bg-[#EEF2FF] border border-[#C7D2FE] px-2 py-0.5 rounded-full">
+                {sourceLabel}
+              </span>
+            )}
             {!isOpen && (
               <span className="text-[10px] font-semibold uppercase tracking-widest text-[#166534] bg-[#F0FDF4] border border-[#BBF7D0] px-2 py-0.5 rounded-full">
                 {opportunity.status.replace("_", " ")}
