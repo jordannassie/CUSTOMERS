@@ -63,7 +63,13 @@ export default function AuthForm({ defaultMode = "login" }: AuthFormProps) {
     const supabase = createClient();
     const params = new URLSearchParams(window.location.search);
     const next = params.get("next") ?? "/dashboard";
-    const callbackUrl = `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`;
+    // Always use the canonical production URL so the OAuth redirect URI
+    // matches what is registered in Google Cloud Console / Supabase,
+    // and so the PKCE code-verifier cookie is on the correct domain.
+    const siteBase =
+      process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ??
+      window.location.origin;
+    const callbackUrl = `${siteBase}/auth/callback?next=${encodeURIComponent(next)}`;
     const { error: oauthError } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: { redirectTo: callbackUrl },
