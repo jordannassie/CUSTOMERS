@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { PhoneCall } from "lucide-react";
-import FooterLocations from "@/components/FooterLocations";
 
 const year = new Date().getFullYear();
 
@@ -13,10 +12,11 @@ const FOOTER_COLUMNS = [
   {
     heading: "Product",
     links: [
-      { label: "AI Search Visibility", href: "/ai-search" },
-      { label: "AI Employee", href: "/ai-employee" },
-      { label: "DM Ads", href: "/dm-ads" },
-      { label: "Call Bar", href: "/call-bar" },
+      { label: "AI Visibility", href: "/#ai-visibility" },
+      { label: "Competitive Intelligence", href: "/#competitors" },
+      { label: "Citations & Sources", href: "/#citations" },
+      { label: "Opportunities", href: "/#opportunities" },
+      { label: "Direct Agent", href: "/#direct-agent" },
       { label: "Pricing", href: "/ai-search#pricing" },
     ],
   },
@@ -24,7 +24,7 @@ const FOOTER_COLUMNS = [
     heading: "Solutions",
     links: [
       { label: "Local Businesses", href: "/ai-search" },
-      { label: "Agencies", href: "/ai-search#agency" },
+      { label: "Agencies & Resellers", href: "/#agencies" },
       { label: "Multi-Location", href: "/ai-search" },
       { label: "Marketing Teams", href: "/ai-search" },
     ],
@@ -39,11 +39,10 @@ const FOOTER_COLUMNS = [
     ],
   },
   {
-    heading: "Company",
+    heading: "Account",
     links: [
       { label: "Log in", href: "/login" },
-      { label: "Sign up", href: "/signup" },
-      { label: "Sales Program", href: "/sales" },
+      { label: "Sign up — Free", href: "/signup" },
       { label: "Privacy Policy", href: "/privacy" },
       { label: "Terms of Service", href: "/terms" },
     ],
@@ -53,22 +52,36 @@ const FOOTER_COLUMNS = [
 export default function SiteFooter() {
   return (
     <footer className="bg-[#0F172A] text-white">
-      {/* Main footer body */}
-      <div className="max-w-6xl mx-auto px-4 pt-16 pb-10">
+      <div className="max-w-[1200px] mx-auto px-4 pt-16 pb-10">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-10 mb-12">
           {/* Brand — 2 cols */}
           <div className="lg:col-span-2">
             <Link href="/" aria-label="Customers.Direct" className="inline-block mb-4">
               <span className="text-white font-black text-xl tracking-tight">
-                Customers.Direct
+                Customers<span className="text-[#3B82F6]">.Direct</span>
               </span>
             </Link>
-            <p className="text-sm text-white/50 leading-relaxed mb-5 max-w-xs">
-              AI-powered customer acquisition platform. Get recommended by AI, answer every call, start more conversations, and convert every visitor.
+            <p className="text-sm text-white/50 leading-relaxed mb-6 max-w-xs">
+              AI Search Visibility platform. Know where AI recommends your business, understand why competitors rank higher, and fix it.
             </p>
 
+            {/* Platform coverage */}
+            <div className="mb-6">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-white/30 mb-3">Tracks AI platforms</p>
+              <div className="flex flex-wrap gap-2">
+                {["ChatGPT", "Claude", "Perplexity", "Gemini", "Google AI"].map((name) => (
+                  <span
+                    key={name}
+                    className="text-[11px] font-semibold text-white/40 bg-white/8 px-2.5 py-1 rounded-md"
+                  >
+                    {name}
+                  </span>
+                ))}
+              </div>
+            </div>
+
             {/* Social */}
-            <div className="flex gap-3 mb-6">
+            <div className="flex gap-3">
               <a
                 href="https://www.instagram.com/customersdirect"
                 target="_blank"
@@ -76,7 +89,7 @@ export default function SiteFooter() {
                 aria-label="Instagram"
                 className="w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors"
               >
-                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
                   <path d={INSTAGRAM_PATH} />
                 </svg>
               </a>
@@ -87,19 +100,17 @@ export default function SiteFooter() {
                 aria-label="Facebook"
                 className="w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors"
               >
-                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
                   <path d={FACEBOOK_PATH} />
                 </svg>
               </a>
             </div>
-
-            <FooterLocations />
           </div>
 
-          {/* Columns */}
+          {/* Nav columns */}
           {FOOTER_COLUMNS.map(({ heading, links }) => (
             <div key={heading}>
-              <h4 className="font-bold text-xs text-white/40 uppercase tracking-widest mb-4">
+              <h4 className="font-bold text-[10px] text-white/35 uppercase tracking-widest mb-4">
                 {heading}
               </h4>
               <ul className="flex flex-col gap-2.5">
@@ -107,7 +118,7 @@ export default function SiteFooter() {
                   <li key={label}>
                     <Link
                       href={href}
-                      className="text-sm text-white/55 hover:text-white transition-colors"
+                      className="text-[13px] text-white/50 hover:text-white transition-colors"
                     >
                       {label}
                     </Link>
@@ -119,28 +130,28 @@ export default function SiteFooter() {
         </div>
 
         {/* Bottom strip */}
-        <div className="border-t border-white/8 pt-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5">
+        <div className="border-t border-white/8 pt-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-            <p className="text-sm text-white/35">
+            <p className="text-[12px] text-white/30">
               © {year} Customers.Direct. All rights reserved.
             </p>
-            <p className="text-xs text-white/20 max-w-md leading-relaxed">
-              AI visibility metrics are measured using real buyer-intent prompts. We do not guarantee rankings or placement in any AI product.
+            <p className="text-[11px] text-white/20 max-w-sm leading-relaxed">
+              AI visibility metrics are measured using real buyer-intent prompts queried via official AI provider APIs. We do not guarantee rankings or placement.
             </p>
           </div>
 
           <div className="flex items-center gap-4 shrink-0">
             <a
               href="tel:9498102010"
-              aria-label="Call Customers.Direct at (949) 810-2010"
-              className="inline-flex items-center gap-2 text-sm font-semibold text-white/60 hover:text-white transition-colors"
+              aria-label="Call Customers.Direct"
+              className="inline-flex items-center gap-2 text-[12px] font-semibold text-white/50 hover:text-white transition-colors"
             >
-              <PhoneCall size={14} aria-hidden="true" />
+              <PhoneCall size={13} aria-hidden="true" />
               (949) 810-2010
             </a>
             <a
               href="/admin"
-              className="text-xs text-white/15 hover:text-white/40 transition-colors"
+              className="text-[11px] text-white/10 hover:text-white/35 transition-colors"
             >
               Admin
             </a>
