@@ -97,8 +97,12 @@ export default function SiteHeader() {
   };
 
   return (
-    <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-slate-200">
-      <div className="max-w-[1200px] mx-auto px-4 lg:px-6 flex items-center justify-between h-14">
+    <header className="sticky top-0 z-50 px-4 pt-3">
+      <div
+        className="bg-white max-w-6xl mx-auto rounded-2xl border border-gray-200/80"
+        style={{ boxShadow: "0 4px 24px rgba(15,23,42,0.08), 0 1px 3px rgba(15,23,42,0.04)" }}
+      >
+        <div className="flex items-center justify-between py-2.5 px-4 lg:px-5">
 
         {/* Logo */}
         <Link href="/" aria-label="Customers.Direct — Home" className="shrink-0">
@@ -244,7 +248,7 @@ export default function SiteHeader() {
 
       {/* Mobile menu */}
       {mobileOpen && (
-        <div className="md:hidden border-t border-slate-200 bg-white px-4 pb-5 pt-3 dropdown-appear">
+        <div className="md:hidden border-t border-gray-100 bg-white px-4 pb-5 pt-3 dropdown-appear rounded-b-2xl">
           <p className="text-[10px] font-bold uppercase tracking-widest text-[#94A3B8] mb-2 px-1">
             Product features
           </p>
@@ -304,6 +308,7 @@ export default function SiteHeader() {
           </Link>
         </div>
       )}
-    </header>
-  );
+    </div>
+  </header>
+);
 }

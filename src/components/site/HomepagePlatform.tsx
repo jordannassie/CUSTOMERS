@@ -42,8 +42,8 @@ function Section({
   className?: string;
 }) {
   return (
-    <section id={id} className={`${bg} py-20 sm:py-24 px-4 ${className}`}>
-      <div className="max-w-[1200px] mx-auto">{children}</div>
+    <section id={id} className={`${bg} py-20 sm:py-24 px-4 overflow-hidden ${className}`}>
+      <div className="max-w-6xl mx-auto">{children}</div>
     </section>
   );
 }
@@ -241,8 +241,8 @@ function HeroDashboardPreview() {
 
 function HeroSection() {
   return (
-    <section className="bg-[#F1F5F9] px-4 pt-14 pb-16 sm:pt-16 sm:pb-20">
-      <div className="max-w-[1200px] mx-auto">
+    <section className="bg-[#F1F5F9] px-4 pt-14 pb-16 sm:pt-16 sm:pb-20 overflow-hidden">
+      <div className="max-w-6xl mx-auto">
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_1fr] gap-14 items-center">
           {/* Left */}
           <div className="fade-up">
@@ -955,8 +955,8 @@ function AgencySection() {
 
 function FinalCTASection() {
   return (
-    <section className="bg-[#F1F5F9] py-20 px-4 border-t border-slate-200">
-      <div className="max-w-2xl mx-auto text-center">
+    <section className="bg-[#F1F5F9] py-20 px-4 border-t border-slate-200 overflow-hidden">
+      <div className="max-w-6xl mx-auto text-center">
         <Eyebrow>Get started</Eyebrow>
         <H2 className="mb-4">
           Start measuring your AI visibility today.

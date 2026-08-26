@@ -19,6 +19,7 @@ import {
   Loader2,
   Globe,
   Menu,
+  Check,
 } from "lucide-react";
 
 const NAV = [
@@ -203,8 +204,9 @@ function BusinessSwitcher({
   const [switching, setSwitching] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Load businesses on mount so they display inline
+  // Load lazily on first open
   useEffect(() => {
+    if (!open || businesses !== null) return;
     let cancelled = false;
     fetch("/api/geo/businesses")
       .then((res) => res.json())
@@ -217,7 +219,7 @@ function BusinessSwitcher({
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [open, businesses]);
 
   useEffect(() => {
     function onClickOutside(e: MouseEvent) {
@@ -230,7 +232,10 @@ function BusinessSwitcher({
   }, []);
 
   async function switchTo(id: string) {
-    if (id === activeBusinessId) return;
+    if (id === activeBusinessId) {
+      setOpen(false);
+      return;
+    }
     setSwitching(id);
     try {
       const res = await fetch("/api/geo/businesses/active", {
@@ -239,6 +244,7 @@ function BusinessSwitcher({
         body: JSON.stringify({ businessId: id }),
       });
       if (!res.ok) throw new Error("Could not switch business.");
+      setOpen(false);
       onSwitch?.();
       router.push("/dashboard");
       router.refresh();
@@ -249,92 +255,71 @@ function BusinessSwitcher({
     }
   }
 
-  const showList = businesses && businesses.length > 0;
+  function locationOf(b: BusinessSummary): string | null {
+    if (b.domain) return b.domain;
+    if (b.primary_city) return b.primary_region ? `${b.primary_city}, ${b.primary_region}` : b.primary_city;
+    return null;
+  }
 
   return (
-    <div ref={containerRef}>
-      {/* Selector button */}
+    <div className="px-1 mb-4 relative" ref={containerRef}>
+      <p className="text-[9px] font-bold text-[#94A3B8] uppercase tracking-widest mb-1.5 px-1">Your businesses</p>
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="w-full flex items-center gap-2 px-2.5 py-2 rounded-lg border border-slate-200 hover:bg-slate-50 transition-colors text-left"
+        className="w-full flex items-center justify-between gap-2 text-left rounded-lg border border-slate-200 px-3 py-2 hover:bg-slate-50 transition-colors"
         aria-haspopup="listbox"
         aria-expanded={open}
       >
-        <Globe size={13} className="text-[#94A3B8] shrink-0" />
-        <span className="text-[13px] font-semibold text-[#0F172A] truncate flex-1">{activeBusinessName}</span>
-        <ChevronDown size={12} className="text-[#94A3B8] shrink-0" aria-hidden="true" />
+        <div className="flex items-center gap-2 min-w-0">
+          <Globe size={12} className="text-[#94A3B8] shrink-0" />
+          <span className="text-[13px] font-semibold text-[#0F172A] truncate">{activeBusinessName}</span>
+        </div>
+        <ChevronDown size={12} className={`text-[#94A3B8] shrink-0 transition-transform duration-200 ${open ? "rotate-180" : ""}`} aria-hidden="true" />
       </button>
 
-      {/* Inline business list */}
-      {showList && (
-        <div className="mt-1.5 flex flex-col gap-0.5">
-          {businesses.map((b) => (
-            <button
-              key={b.id}
-              type="button"
-              onClick={() => switchTo(b.id)}
-              className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[12px] transition-colors text-left ${
-                b.id === activeBusinessId
-                  ? "bg-[#EFF6FF] text-[#2563EB] font-semibold"
-                  : "text-[#64748B] hover:bg-slate-50 font-medium"
-              }`}
-            >
-              <span
-                className={`w-1.5 h-1.5 rounded-full shrink-0 ${
-                  b.id === activeBusinessId ? "bg-[#2563EB]" : "bg-slate-300"
-                }`}
-              />
-              <span className="truncate flex-1">{b.name}</span>
-              {switching === b.id && (
-                <Loader2 size={11} className="animate-spin shrink-0" />
-              )}
-            </button>
-          ))}
-          <Link
-            href="/dashboard/add-business"
-            className="flex items-center gap-2 px-2.5 py-1.5 text-[12px] font-medium text-[#64748B] hover:text-[#2563EB] transition-colors"
-            onClick={onSwitch}
-          >
-            <Plus size={12} />
-            Add business
-          </Link>
-        </div>
-      )}
-
-      {businesses === null && (
-        <div className="mt-2 px-2.5 flex items-center gap-2 text-xs text-[#94A3B8]">
-          <Loader2 size={11} className="animate-spin" />
-          Loading…
-        </div>
-      )}
-
-      {/* Dropdown for small screens (when list is too long) */}
-      {open && businesses && businesses.length > 4 && (
+      {open && (
         <div
-          className="absolute left-0 right-0 top-full mt-1 bg-white rounded-xl border border-slate-200 py-1.5 z-50"
+          className="absolute left-0 right-0 top-full mt-1 bg-white rounded-xl border border-slate-200 py-1.5 z-50 dropdown-appear"
           style={{ boxShadow: "0 12px 32px rgba(15,23,42,0.14)" }}
           role="listbox"
         >
-          {businesses.map((b) => (
+          {businesses === null && (
+            <div className="px-3 py-3 flex items-center gap-2 text-xs text-[#94A3B8]">
+              <Loader2 size={12} className="animate-spin" />
+              Loading businesses…
+            </div>
+          )}
+
+          {businesses?.map((b) => (
             <button
               key={b.id}
               type="button"
-              onClick={() => { switchTo(b.id); setOpen(false); }}
+              role="option"
+              aria-selected={b.id === activeBusinessId}
+              onClick={() => switchTo(b.id)}
               className="w-full flex items-center gap-2.5 px-3 py-2 text-left hover:bg-slate-50 transition-colors"
             >
-              <span className={`text-[13px] font-medium ${b.id === activeBusinessId ? "text-[#2563EB]" : "text-[#0F172A]"}`}>
-                {b.name}
+              <span className="w-4 shrink-0 flex items-center justify-center">
+                {b.id === activeBusinessId && <Check size={13} className="text-[#2563EB]" />}
+                {switching === b.id && <Loader2 size={12} className="animate-spin text-[#94A3B8]" />}
+              </span>
+              <span className="min-w-0">
+                <span className="block text-[13px] font-medium text-[#0F172A] truncate">{b.name}</span>
+                {locationOf(b) && (
+                  <span className="block text-[11px] text-[#94A3B8] truncate">{locationOf(b)}</span>
+                )}
               </span>
             </button>
           ))}
+
           <div className="border-t border-slate-100 mt-1 pt-1">
             <Link
               href="/dashboard/add-business"
-              onClick={() => setOpen(false)}
+              onClick={() => { setOpen(false); onSwitch?.(); }}
               className="flex items-center gap-2.5 px-3 py-2 text-[13px] font-medium text-[#2563EB] hover:bg-slate-50 transition-colors"
             >
-              <Plus size={14} />
+              <Plus size={13} aria-hidden="true" />
               Add business
             </Link>
           </div>
