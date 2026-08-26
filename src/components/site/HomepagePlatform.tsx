@@ -1,5 +1,6 @@
 "use client";
 
+import React from "react";
 import Link from "next/link";
 import {
   ArrowRight,
@@ -1253,7 +1254,7 @@ function FinalCTASection() {
             Check My AI Visibility
             <ArrowRight size={14} aria-hidden="true" />
           </PrimaryBtn>
-          <SecondaryBtn href="/how-it-works">
+          <SecondaryBtn href="/#how-it-works">
             See how it works
           </SecondaryBtn>
         </div>
@@ -1271,6 +1272,131 @@ function FinalCTASection() {
   );
 }
 
+// ─── 10. HOW IT WORKS ─────────────────────────────────────────────────────
+
+const HOW_STEPS = [
+  {
+    num: "01",
+    title: "Connect your business",
+    body: "Tell us your website and business details. We pull what we can automatically — you confirm or correct it. Takes about two minutes.",
+  },
+  {
+    num: "02",
+    title: "We run your first AI scan",
+    body: "Customers.Direct fires real buyer-intent prompts at ChatGPT, Claude, Perplexity, Gemini, and Google AI. We record every mention, ranking, and citation.",
+  },
+  {
+    num: "03",
+    title: "See your visibility vs. competitors",
+    body: "Your Direct Score shows exactly where AI recommends your business, what competitors appear instead, and which sources are shaping the answers.",
+  },
+  {
+    num: "04",
+    title: "Fix what matters, track the change",
+    body: "Every opportunity comes with evidence and a ready-made Claude prompt. Request us to implement it, or do it yourself — then watch your score move.",
+  },
+];
+
+function HowItWorksSection() {
+  return (
+    <Section id="how-it-works" bg="bg-[#FAFAF8]" className="border-t border-[#EEEEEA]">
+      <div className="text-center mb-14">
+        <Eyebrow>How It Works</Eyebrow>
+        <H2 className="mb-4">From sign-up to insight in minutes.</H2>
+        <Body className="max-w-xl mx-auto">
+          No long setup. No guesswork. Your first AI visibility scan runs automatically after a two-minute onboarding.
+        </Body>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-px bg-[#E5E5E1] rounded-2xl overflow-hidden border border-[#E5E5E1]">
+        {HOW_STEPS.map((step, i) => (
+          <div key={step.num} className="bg-white p-8 flex flex-col gap-4 relative">
+            {/* Step number */}
+            <span className="text-[11px] font-bold text-[#A3A3A0] tracking-widest uppercase">{step.num}</span>
+            {/* Connector dot — desktop only */}
+            {i < HOW_STEPS.length - 1 && (
+              <div className="hidden lg:block absolute top-[46px] -right-[5px] w-2.5 h-2.5 rounded-full bg-[#E5E5E1] border-2 border-white z-10" aria-hidden="true" />
+            )}
+            <h3 className="text-[15px] font-semibold text-[#171717] leading-snug">{step.title}</h3>
+            <p className="text-[13px] text-[#777773] leading-relaxed flex-1">{step.body}</p>
+          </div>
+        ))}
+      </div>
+    </Section>
+  );
+}
+
+// ─── 11. FAQ ──────────────────────────────────────────────────────────────
+
+const FAQS = [
+  {
+    q: "Can you guarantee my business will show up in ChatGPT or Google AI Overviews?",
+    a: "No — and be skeptical of anyone who says they can. AI models are controlled by OpenAI, Google, Anthropic, and other providers, not by us. We measure your current visibility honestly, show you the evidence behind it, and help you improve the factors that are actually within your control: your content, structured data, citations, and online presence.",
+  },
+  {
+    q: "How is this different from traditional SEO tools?",
+    a: "Traditional SEO tools track search engine rankings. Customers.Direct runs real buyer-intent prompts against AI providers (like ChatGPT and Claude) and reports what those models actually say — whether your business is mentioned, where competitors show up instead, and what's cited as a source.",
+  },
+  {
+    q: "Do you use the actual ChatGPT or Claude chat apps to test this?",
+    a: "We use each provider's official API, which is the standard, reliable way to test model behaviour programmatically. API responses can differ from what you'd see typing into the consumer chat app — we label our methodology clearly on every result so you know exactly how it was produced.",
+  },
+  {
+    q: "What happens after I sign up?",
+    a: "You'll give us your website, we'll scan it and pull the details we can find automatically, you'll confirm or correct them, we'll suggest a handful of competitors and prompts to track, and then we run your first visibility scan. You can review and adjust everything before it's finalized — nothing is auto-confirmed on your behalf.",
+  },
+  {
+    q: "What's the difference between the plans?",
+    a: "AI Visibility gives you monthly measurement and reporting for one business. Growth Agent adds weekly monitoring, more prompts, and deeper competitive analysis. Autonomous Growth adds hands-on implementation — our team executes approved fixes for you instead of you or your developer doing it.",
+  },
+  {
+    q: "Is this right for agencies managing multiple clients?",
+    a: "Yes. One login gives you access to multiple business workspaces. Each business has its own scan data, prompts, competitors, and reports. You switch between clients from the dashboard sidebar without logging in and out.",
+  },
+];
+
+function FAQSection() {
+  return (
+    <Section id="faq" bg="bg-white" className="border-t border-[#EEEEEA]">
+      <div className="text-center mb-14">
+        <Eyebrow>FAQ</Eyebrow>
+        <H2>Questions, answered honestly.</H2>
+      </div>
+
+      <div className="max-w-3xl mx-auto flex flex-col divide-y divide-[#EEEEEA] border border-[#E5E5E1] rounded-2xl overflow-hidden">
+        {FAQS.map((item) => (
+          <FAQItem key={item.q} q={item.q} a={item.a} />
+        ))}
+      </div>
+    </Section>
+  );
+}
+
+function FAQItem({ q, a }: { q: string; a: string }) {
+  const [open, setOpen] = React.useState(false);
+  return (
+    <div className="bg-white">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="w-full flex items-start justify-between gap-4 px-6 py-5 text-left hover:bg-[#FAFAF8] transition-colors"
+        aria-expanded={open}
+      >
+        <span className="text-[14px] font-semibold text-[#171717] leading-snug">{q}</span>
+        <ChevronRight
+          size={15}
+          className={`text-[#A3A3A0] shrink-0 mt-0.5 transition-transform duration-200 ${open ? "rotate-90" : ""}`}
+          aria-hidden="true"
+        />
+      </button>
+      {open && (
+        <div className="px-6 pb-5 -mt-1">
+          <p className="text-[13px] text-[#777773] leading-relaxed">{a}</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Main export ──────────────────────────────────────────────────────────
 
 export default function HomepagePlatform() {
@@ -1284,7 +1410,9 @@ export default function HomepagePlatform() {
       <OpportunitiesSection />
       <DirectAgentSection />
       <AgencySection />
+      <HowItWorksSection />
       <PricingSection />
+      <FAQSection />
       <FinalCTASection />
     </>
   );

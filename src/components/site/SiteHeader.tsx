@@ -55,8 +55,8 @@ const PRODUCT_FEATURES = [
 ] as const;
 
 const RESOURCES = [
-  { label: "How It Works", href: "/how-it-works", icon: BookOpen },
-  { label: "FAQ", href: "/ai-search#faq", icon: HelpCircle },
+  { label: "How It Works", href: "/#how-it-works", icon: BookOpen },
+  { label: "FAQ", href: "/#faq", icon: HelpCircle },
   { label: "Agencies & Resellers", href: "/#agencies", icon: Building2 },
 ] as const;
 
