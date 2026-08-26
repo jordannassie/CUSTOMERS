@@ -688,6 +688,62 @@ function PromptTrackingSection() {
 
 // ─── 3. AI VISIBILITY ─────────────────────────────────────────────────────
 
+// ─── PRODUCT TABS (replaces 5 separate sections) ──────────────────────────
+
+const PRODUCT_TABS = [
+  { id: "visibility",   label: "AI Visibility" },
+  { id: "competitors",  label: "Competitors" },
+  { id: "sources",      label: "Sources" },
+  { id: "opportunities",label: "Opportunities" },
+  { id: "agent",        label: "Direct Agent" },
+] as const;
+
+type TabId = typeof PRODUCT_TABS[number]["id"];
+
+function ProductTabsSection() {
+  const [active, setActive] = React.useState<TabId>("visibility");
+
+  return (
+    <Section id="product" bg="bg-[#FAFAF8]" className="border-b border-[#EEEEEA] !py-0 !overflow-visible">
+      {/* Sticky tab bar */}
+      <div className="sticky top-0 z-30 bg-[#FAFAF8]/95 backdrop-blur-sm border-b border-[#EEEEEA] -mx-4 px-4">
+        <div className="max-w-[1160px] mx-auto overflow-x-auto scrollbar-none">
+          <div className="flex gap-0 min-w-max">
+            {PRODUCT_TABS.map(({ id, label }) => (
+              <button
+                key={id}
+                type="button"
+                onClick={() => setActive(id)}
+                className={`relative px-5 py-4 text-[13px] font-semibold transition-colors whitespace-nowrap ${
+                  active === id
+                    ? "text-[#171717]"
+                    : "text-[#A3A3A0] hover:text-[#777773]"
+                }`}
+              >
+                {label}
+                {active === id && (
+                  <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#171717] rounded-full" />
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Tab content */}
+      <div className="py-16 sm:py-20">
+        {active === "visibility" && <VisibilityTabContent />}
+        {active === "competitors" && <CompetitorsTabContent />}
+        {active === "sources" && <SourcesTabContent />}
+        {active === "opportunities" && <OpportunitiesTabContent />}
+        {active === "agent" && <AgentTabContent />}
+      </div>
+    </Section>
+  );
+}
+
+// ── Tab: AI Visibility ────────────────────────────────────────────────────
+
 function AIVisibilitySection() {
   const providerData = [
     { name: "ChatGPT", score: 82, mentions: 9, total: 10, color: "#10B981" },
@@ -1235,6 +1291,236 @@ function DirectAgentSection() {
         </div>
       </div>
     </Section>
+  );
+}
+
+// ── Tab content components ─────────────────────────────────────────────────
+
+function VisibilityTabContent() {
+  const providerData = [
+    { name: "ChatGPT", score: 82, mentions: 9, total: 10, color: "#10B981" },
+    { name: "Claude", score: 74, mentions: 7, total: 10, color: "#8B5CF6" },
+    { name: "Perplexity", score: 68, mentions: 6, total: 10, color: "#3B82F6" },
+    { name: "Gemini", score: 51, mentions: 5, total: 10, color: "#EF4444" },
+    { name: "Google AI", score: 44, mentions: 4, total: 10, color: "#EAB308" },
+  ];
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-14 lg:gap-20 items-center">
+      <div>
+        <Eyebrow>AI Visibility</Eyebrow>
+        <H2 className="mb-4">See exactly where AI recommends your business.</H2>
+        <Body className="mb-6 max-w-[460px]">Every scan queries the AI platforms that buyers actually use. You see a Direct Score, a platform-by-platform breakdown, and exactly which prompts you win or lose.</Body>
+        <ul className="flex flex-col gap-3 mb-8">
+          {["Direct Score — your single AI visibility number out of 100","Visibility breakdown by ChatGPT, Claude, Perplexity, Gemini, and Google AI","Historical trend tracking across every scan","Win/loss analysis per buyer-intent prompt"].map(i=>(
+            <li key={i} className="flex items-start gap-2.5 text-[14px] text-[#777773]"><CheckCircle2 size={15} className="text-[#171717] shrink-0 mt-0.5" aria-hidden="true" />{i}</li>
+          ))}
+        </ul>
+        <Link href="/signup" className="inline-flex items-center gap-1.5 text-[14px] font-semibold text-[#171717] hover:underline underline-offset-2">Get your free visibility score <ArrowRight size={13} /></Link>
+      </div>
+      <div className="bg-white rounded-2xl border border-[#E5E5E1] p-5">
+        <div className="grid grid-cols-3 gap-3 mb-4">
+          {[{label:"Direct Score",value:"82",sub:"/ 100",icon:Target,trend:"+12 pts"},{label:"Prompts Won",value:"10/12",sub:"83%",icon:Trophy,trend:"+3"},{label:"Citation Rate",value:"64%",sub:"avg: 48%",icon:Quote,trend:"+18%"}].map(({label,value,sub,icon:Icon,trend})=>(
+            <div key={label} className="bg-[#FAFAF8] rounded-xl border border-[#E5E5E1] p-3.5">
+              <div className="flex items-center justify-between mb-2"><span className="text-[10px] font-semibold text-[#A3A3A0] uppercase tracking-wider">{label}</span><Icon size={12} className="text-[#D4D4CF]" aria-hidden="true"/></div>
+              <div className="flex items-baseline gap-1 mb-0.5"><p className="text-[18px] font-bold text-[#171717] leading-none">{value}</p><p className="text-[11px] text-[#A3A3A0]">{sub}</p></div>
+              <span className="text-[11px] font-semibold text-[#166534]">↑ {trend}</span>
+            </div>
+          ))}
+        </div>
+        <div className="bg-[#FAFAF8] rounded-xl border border-[#E5E5E1] p-4 mb-4">
+          <div className="flex items-center justify-between mb-3"><p className="text-[13px] font-semibold text-[#171717]">Visibility trend</p><span className="text-[11px] text-[#A3A3A0]">Last 10 scans</span></div>
+          <MiniChart h={72} />
+        </div>
+        <div className="bg-[#FAFAF8] rounded-xl border border-[#E5E5E1] p-4">
+          <p className="text-[13px] font-semibold text-[#171717] mb-3">Platform breakdown</p>
+          <div className="flex flex-col gap-2.5">
+            {providerData.map(({name,score,mentions,total,color})=>(
+              <div key={name} className="flex items-center gap-3">
+                <span className="inline-flex items-center gap-1.5 text-[12px] font-medium text-[#171717] w-24 shrink-0"><PlatformIcon platform={name} size={14}/>{name}</span>
+                <div className="flex-1 h-1.5 bg-[#EEEEEA] rounded-full overflow-hidden"><div className="h-full rounded-full" style={{width:`${score}%`,backgroundColor:color}}/></div>
+                <span className="text-[11px] font-semibold text-[#777773] w-12 text-right shrink-0 tabular-nums">{mentions}/{total}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function CompetitorsTabContent() {
+  const competitors = [{name:"Your business",score:47,delta:"+5%",isYou:true},{name:"Competitor A",score:65,delta:"-2%",isYou:false},{name:"Competitor B",score:62,delta:"+1%",isYou:false},{name:"Competitor C",score:34,delta:"-4%",isYou:false}];
+  const promptWins = [{prompt:"Best mountain bike shop near me",you:true,them:false},{prompt:"Top-rated bike repair service",you:false,them:true},{prompt:"Full suspension bike under $4,000",you:true,them:true},{prompt:"Kids bike fitting specialists",you:false,them:true},{prompt:"Bike rental for weekend trails",you:true,them:false}];
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-14 lg:gap-20 items-center">
+      <div className="bg-white rounded-2xl border border-[#E5E5E1] p-5">
+        <p className="text-[13px] font-semibold text-[#171717] mb-4">AI visibility — head-to-head</p>
+        <div className="flex flex-col gap-2.5 mb-5">
+          {competitors.map(({name,score,delta,isYou})=>(
+            <div key={name} className="flex items-center gap-3">
+              <span className={`text-[12px] font-medium w-28 shrink-0 truncate ${isYou?"text-[#171717] font-semibold":"text-[#777773]"}`}>{name}</span>
+              <div className="flex-1 h-2 bg-[#F0F0EC] rounded-full overflow-hidden"><div className="h-full rounded-full" style={{width:`${score}%`,backgroundColor:isYou?"#171717":"#D4D4CF"}}/></div>
+              <span className={`text-[11px] font-semibold w-6 text-right tabular-nums ${isYou?"text-[#171717]":"text-[#A3A3A0]"}`}>{score}</span>
+              <span className={`text-[10px] font-medium w-8 text-right tabular-nums ${delta.startsWith("+")?"text-[#166534]":"text-[#991B1B]"}`}>{delta}</span>
+            </div>
+          ))}
+        </div>
+        <p className="text-[11px] font-semibold text-[#A3A3A0] mb-2.5 uppercase tracking-wider">Prompt win/loss</p>
+        <div className="overflow-x-auto">
+          <table className="w-full text-[11px]">
+            <thead><tr className="border-b border-[#EEEEEA]"><th className="text-left font-semibold text-[#A3A3A0] pb-2 pr-4">Prompt</th><th className="text-center font-semibold text-[#171717] pb-2 px-3">You</th><th className="text-center font-semibold text-[#A3A3A0] pb-2 px-3">Comp A</th></tr></thead>
+            <tbody>{promptWins.map(({prompt,you,them})=>(
+              <tr key={prompt} className="border-b border-[#F5F5F2]">
+                <td className="py-2 pr-4 text-[#777773] max-w-[180px] truncate">{prompt}</td>
+                <td className="py-2 px-3 text-center">{you?<CheckCircle2 size={13} className="text-[#166534] mx-auto" aria-label="Won"/>:<XCircle size={13} className="text-[#D4D4CF] mx-auto" aria-label="Lost"/>}</td>
+                <td className="py-2 px-3 text-center">{them?<CheckCircle2 size={13} className="text-[#991B1B] mx-auto" aria-label="Competitor won"/>:<XCircle size={13} className="text-[#D4D4CF] mx-auto" aria-label="Competitor lost"/>}</td>
+              </tr>
+            ))}</tbody>
+          </table>
+        </div>
+      </div>
+      <div>
+        <Eyebrow>Competitive Intelligence</Eyebrow>
+        <H2 className="mb-4">Know who AI recommends instead of you.</H2>
+        <Body className="mb-6 max-w-[460px]">See every competitor AI favors across your tracked prompts. Understand which categories they dominate, where you win, and what changes would shift the result.</Body>
+        <ul className="flex flex-col gap-3 mb-8">
+          {["Tracked competitor list with per-prompt breakdown","Head-to-head AI visibility percentage comparison","Prompt-level win/loss vs. every competitor","Changes between scans — see when gaps close or widen","Turn competitor gaps into actionable Opportunities"].map(i=>(
+            <li key={i} className="flex items-start gap-2.5 text-[14px] text-[#777773]"><CheckCircle2 size={15} className="text-[#171717] shrink-0 mt-0.5" aria-hidden="true"/>{i}</li>
+          ))}
+        </ul>
+        <Link href="/signup" className="inline-flex items-center gap-1.5 text-[14px] font-semibold text-[#171717] hover:underline underline-offset-2">See your competitor analysis <ArrowRight size={13}/></Link>
+      </div>
+    </div>
+  );
+}
+
+function SourcesTabContent() {
+  const sources = [{rank:1,domain:"reddit.com",type:"UGC",used:"32%",avgCitations:"3.2",isYou:false},{rank:2,domain:"yourbusiness.com",type:"You",used:"43%",avgCitations:"5.2",isYou:true},{rank:3,domain:"wikipedia.org",type:"Reference",used:"31%",avgCitations:"1.4",isYou:false},{rank:4,domain:"hubspot.com",type:"Competitor",used:"39%",avgCitations:"1.1",isYou:false},{rank:5,domain:"techradar.com",type:"Editorial",used:"45%",avgCitations:"2.4",isYou:false}];
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-14 lg:gap-20 items-center">
+      <div>
+        <Eyebrow>Citations & Sources</Eyebrow>
+        <H2 className="mb-4">Find the sources shaping AI answers.</H2>
+        <Body className="mb-6 max-w-[460px]">AI systems cite specific websites when constructing answers. Customers.Direct reveals which domains are cited most, whether your site appears, and where competitors have citation advantages you can close.</Body>
+        <ul className="flex flex-col gap-3 mb-8">
+          {["Full citation source list with appearance counts","Your domain vs. competitor domain citation comparison","Gap analysis — sources citing competitors but not you","Source type classification: review, directory, editorial, UGC"].map(i=>(
+            <li key={i} className="flex items-start gap-2.5 text-[14px] text-[#777773]"><CheckCircle2 size={15} className="text-[#171717] shrink-0 mt-0.5" aria-hidden="true"/>{i}</li>
+          ))}
+        </ul>
+      </div>
+      <div className="bg-[#FAFAF8] rounded-2xl border border-[#E5E5E1] p-5">
+        <div className="bg-white rounded-xl border border-[#E5E5E1] overflow-hidden">
+          <div className="px-4 py-3 border-b border-[#EEEEEA] flex items-center justify-between"><p className="text-[13px] font-semibold text-[#171717]">Top cited sources</p><span className="text-[11px] text-[#A3A3A0]">Latest scan</span></div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-[12px]">
+              <thead><tr className="border-b border-[#EEEEEA] bg-[#FAFAF8]">
+                <th className="text-left font-semibold text-[#A3A3A0] uppercase tracking-wider text-[10px] px-4 py-2.5">#</th>
+                <th className="text-left font-semibold text-[#A3A3A0] uppercase tracking-wider text-[10px] px-4 py-2.5">Domain</th>
+                <th className="text-left font-semibold text-[#A3A3A0] uppercase tracking-wider text-[10px] px-4 py-2.5">Type</th>
+                <th className="text-right font-semibold text-[#A3A3A0] uppercase tracking-wider text-[10px] px-4 py-2.5">Used</th>
+                <th className="text-right font-semibold text-[#A3A3A0] uppercase tracking-wider text-[10px] px-4 py-2.5">Avg cites</th>
+              </tr></thead>
+              <tbody className="divide-y divide-[#EEEEEA]">
+                {sources.map(({rank,domain,type,used,avgCitations,isYou})=>(
+                  <tr key={domain} className={isYou?"bg-[#F0FDF4]/60":"hover:bg-[#FAFAF8]"}>
+                    <td className="px-4 py-2.5 text-[#A3A3A0] tabular-nums">{rank}</td>
+                    <td className="px-4 py-2.5"><span className={`font-semibold ${isYou?"text-[#166534]":"text-[#171717]"}`}>{domain}{isYou?" ★":""}</span></td>
+                    <td className="px-4 py-2.5"><SourceBadge type={type}/></td>
+                    <td className="px-4 py-2.5 text-right text-[#777773] tabular-nums">{used}</td>
+                    <td className="px-4 py-2.5 text-right font-semibold text-[#171717] tabular-nums">{avgCitations}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div className="mt-4 flex items-center gap-2.5 bg-[#171717] text-white rounded-xl px-4 py-3">
+          <CheckCircle2 size={14} className="text-[#22C55E] shrink-0" aria-hidden="true"/>
+          <p className="text-[12px] font-medium">5 source opportunities found</p>
+          <ExternalLink size={11} className="text-white/40 ml-auto shrink-0" aria-hidden="true"/>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function OpportunitiesTabContent() {
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-14 lg:gap-20 items-start">
+      <div className="lg:sticky lg:top-24">
+        <Eyebrow>Opportunities</Eyebrow>
+        <H2 className="mb-4">Know exactly what to fix next.</H2>
+        <Body className="mb-6 max-w-[460px]">Every opportunity is generated from real scan evidence — not generic advice. Each one includes the specific issue, why it matters, and a recommended action. Where the fix involves content or code, you get a ready-made prompt to send to Claude.</Body>
+        <div className="bg-[#FAFAF8] rounded-xl border border-[#E5E5E1] p-4">
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-[#A3A3A0] mb-3">The improvement loop</p>
+          {[{step:"01",label:"Detect",desc:"AI scans identify gaps and missed prompts"},{step:"02",label:"Explain",desc:"Evidence-backed opportunity cards surface"},{step:"03",label:"Fix",desc:"Recommended action + Claude prompt provided"},{step:"04",label:"Rescan",desc:"Run a new scan after implementing the fix"},{step:"05",label:"Measure",desc:"Direct Score reflects the improvement"}].map(({step,label,desc})=>(
+            <div key={step} className="flex items-start gap-3 py-2.5 border-b border-[#EEEEEA] last:border-0">
+              <span className="text-[10px] font-bold text-[#777773] bg-[#F0F0EC] border border-[#E5E5E1] rounded-md w-7 h-7 flex items-center justify-center shrink-0 mt-0.5 tabular-nums">{step}</span>
+              <div><p className="text-[13px] font-semibold text-[#171717]">{label}</p><p className="text-[11px] text-[#777773]">{desc}</p></div>
+            </div>
+          ))}
+        </div>
+      </div>
+      <div className="flex flex-col gap-4">
+        {SAMPLE_OPPORTUNITIES.map(({impact,title,evidence,action,badgeColor})=>(
+          <div key={title} className="bg-white rounded-xl border border-[#E5E5E1] p-5">
+            <div className="flex items-start gap-3 mb-3">
+              <span className={`text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded border shrink-0 mt-0.5 ${badgeColor}`}>{impact} impact</span>
+              <h3 className="text-[14px] font-semibold text-[#171717] leading-snug">{title}</h3>
+            </div>
+            <div className="bg-[#FAFAF8] rounded-lg px-3 py-2.5 mb-3"><p className="text-[10px] font-semibold uppercase tracking-wider text-[#A3A3A0] mb-1">Evidence</p><p className="text-[12px] text-[#777773]">{evidence}</p></div>
+            <p className="text-[12px] text-[#171717] mb-3"><span className="font-semibold">Recommended: </span>{action}</p>
+            <div className="flex gap-2">
+              <button className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-[#777773] bg-[#F5F5F2] border border-[#E5E5E1] px-3 py-1.5 rounded-lg hover:bg-[#EEEEEA] transition-colors"><Copy size={11} aria-hidden="true"/>Copy for Claude</button>
+              <button className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-white bg-[#171717] px-3 py-1.5 rounded-lg hover:bg-[#2A2A2A] transition-colors"><Zap size={11} aria-hidden="true"/>Request fix</button>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function AgentTabContent() {
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-14 lg:gap-20 items-center">
+      <div>
+        <Eyebrow>Direct Agent</Eyebrow>
+        <H2 className="mb-4">Ask anything. Get answers grounded in your data.</H2>
+        <Body className="mb-6 max-w-[460px]">The Direct Agent is your AI analyst — but one that only speaks from evidence. It reads your actual scan data and clearly separates what is factual from what it is inferring. No hallucinations about your business.</Body>
+        <ul className="flex flex-col gap-3 mb-8">
+          {["Answers grounded in your real visibility scan data","Clearly labels EVIDENCE vs. INFERENCE","Identifies root causes behind Direct Score changes","Recommends specific fixes based on your actual gaps","Suggests which prompts to prioritize next scan"].map(i=>(
+            <li key={i} className="flex items-start gap-2.5 text-[14px] text-[#777773]"><CheckCircle2 size={15} className="text-[#171717] shrink-0 mt-0.5" aria-hidden="true"/>{i}</li>
+          ))}
+        </ul>
+        <div className="bg-white rounded-xl border border-[#E5E5E1] p-4">
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-[#A3A3A0] mb-3">Example questions</p>
+          {["Why is my Direct Score this low?","Which competitor is beating me most often?","What should I fix first this week?","Why does ChatGPT recommend them instead of us?"].map(q=>(
+            <div key={q} className="flex items-center gap-2 py-2 border-b border-[#F5F5F2] last:border-0 text-[13px] text-[#777773]"><ChevronRight size={12} className="text-[#A3A3A0] shrink-0" aria-hidden="true"/>{q}</div>
+          ))}
+        </div>
+      </div>
+      <div className="bg-white rounded-2xl border border-[#E5E5E1] overflow-hidden">
+        <div className="border-b border-[#EEEEEA] px-5 py-3 flex items-center gap-3">
+          <div className="w-7 h-7 rounded-lg bg-[#171717] flex items-center justify-center shrink-0"><Bot size={13} className="text-white" aria-hidden="true"/></div>
+          <div><p className="text-[13px] font-semibold text-[#171717]">Direct Agent</p><p className="text-[10px] text-[#A3A3A0]">Grounded in your visibility data</p></div>
+        </div>
+        <div className="p-5 flex flex-col gap-4 bg-[#FAFAF8]">
+          {AGENT_MESSAGES.map((m,i)=>(
+            <div key={i} className={`flex gap-3 ${m.role==="user"?"flex-row-reverse":""}`}>
+              <div className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${m.role==="user"?"bg-[#171717]":"bg-white border border-[#E5E5E1]"}`}>
+                {m.role==="user"?<span className="text-[8px] font-bold text-white">YOU</span>:<Bot size={11} className="text-[#777773]" aria-hidden="true"/>}
+              </div>
+              <div className={`max-w-[80%] rounded-xl px-4 py-3 text-[12px] leading-relaxed whitespace-pre-wrap ${m.role==="user"?"bg-[#171717] text-white rounded-tr-sm":"bg-white border border-[#E5E5E1] text-[#171717] rounded-tl-sm"}`}>{m.text}</div>
+            </div>
+          ))}
+        </div>
+        <div className="border-t border-[#E5E5E1] p-4 flex gap-2 bg-white">
+          <div className="flex-1 bg-[#FAFAF8] border border-[#E5E5E1] rounded-lg px-3 py-2 text-[12px] text-[#A3A3A0]">Ask about your AI visibility…</div>
+          <button className="bg-[#171717] text-white w-9 h-9 rounded-lg flex items-center justify-center hover:bg-[#2A2A2A] transition-colors" aria-label="Send message"><Send size={13} aria-hidden="true"/></button>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -1821,11 +2107,7 @@ export default function HomepagePlatform() {
       <HeroSection />
       <BannerRotationSection />
       <PromptTrackingSection />
-      <AIVisibilitySection />
-      <KeySourcesSection />
-      <CompetitorSection />
-      <OpportunitiesSection />
-      <DirectAgentSection />
+      <ProductTabsSection />
       <AgencySection />
       <HowItWorksSection />
       <PricingSection />
