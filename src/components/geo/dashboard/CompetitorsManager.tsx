@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Trash2, Loader2, Globe } from "lucide-react";
+import { Plus, Trash2, Loader2, Globe, ExternalLink } from "lucide-react";
 import { CompetitorAvatar } from "@/components/CompetitorAvatar";
 import { DomainFavicon } from "@/components/DomainFavicon";
 import type { BusinessCompetitor } from "@/types/geo";
@@ -94,20 +94,42 @@ export default function CompetitorsManager({
                 <span className="text-[12px] text-[#A3A3A0] font-semibold tabular-nums">{i + 1}</span>
 
                 {/* Avatar + name */}
-                <span className="flex items-center gap-2.5 min-w-0">
-                  <CompetitorAvatar name={c.name} size={24} />
-                  <span className="text-[13px] font-semibold text-[#171717] truncate">{c.name}</span>
-                </span>
-
-                {/* Domain with favicon */}
                 {c.domain ? (
-                  <span className="flex items-center gap-1.5 min-w-0">
-                    <DomainFavicon domain={c.domain} size={12} />
-                    <span className="text-[11px] text-[#777773] truncate">{c.domain}</span>
+                  <a
+                    href={`https://${c.domain}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2.5 min-w-0 hover:opacity-80 transition-opacity"
+                    aria-label={`Visit ${c.name}`}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <CompetitorAvatar name={c.name} size={24} />
+                    <span className="text-[13px] font-semibold text-[#171717] truncate">{c.name}</span>
+                  </a>
+                ) : (
+                  <span className="flex items-center gap-2.5 min-w-0">
+                    <CompetitorAvatar name={c.name} size={24} />
+                    <span className="text-[13px] font-semibold text-[#171717] truncate">{c.name}</span>
                   </span>
+                )}
+
+                {/* Domain with favicon — clickable external link */}
+                {c.domain ? (
+                  <a
+                    href={`https://${c.domain}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1.5 min-w-0 group/link hover:text-[#171717] transition-colors"
+                    aria-label={`Visit ${c.domain}`}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <DomainFavicon domain={c.domain} size={12} />
+                    <span className="text-[11px] text-[#777773] group-hover/link:text-[#171717] truncate">{c.domain}</span>
+                    <ExternalLink size={10} className="text-[#D4D4CF] group-hover/link:text-[#777773] shrink-0 transition-colors" aria-hidden="true" />
+                  </a>
                 ) : (
                   <span className="flex items-center gap-1 text-[11px] text-[#A3A3A0]">
-                    <Globe size={11} />
+                    <Globe size={11} aria-hidden="true" />
                     <span>not set</span>
                   </span>
                 )}
