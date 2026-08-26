@@ -1279,62 +1279,112 @@ function AgencySection() {
           </div>
         </div>
 
-        {/* Right — business switcher mock */}
-        <div className="bg-white/6 rounded-2xl border border-white/10 p-5">
-          <div className="bg-[#222222] rounded-xl border border-white/10 overflow-hidden">
-            <div className="flex">
-              {/* Sidebar strip */}
-              <div className="w-[130px] border-r border-white/10 py-4 px-3 flex flex-col gap-1">
-                <p className="text-[8px] font-semibold uppercase tracking-wider text-white/30 mb-2">Your clients</p>
+        {/* Right — agency workspace mock */}
+        <div className="bg-[#1A1A1A] rounded-2xl border border-white/10 overflow-hidden"
+          style={{ boxShadow: "0 24px 64px rgba(0,0,0,0.5)" }}>
+
+          {/* Header bar */}
+          <div className="flex items-center gap-3 px-5 py-4 border-b border-white/8">
+            {/* Agency logo */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="https://wsxusvapciexemfvtadm.supabase.co/storage/v1/object/public/STORAGE/images/Workspace/brandastic.jpg"
+              alt="Brandastic Agency"
+              className="w-8 h-8 rounded-full object-cover border border-white/20 shrink-0"
+            />
+            <span className="text-[15px] font-bold text-white tracking-tight">Brandastic Agency</span>
+            <span className="ml-auto text-[9px] font-bold uppercase tracking-widest text-[#4F8EF7] bg-[#4F8EF7]/15 border border-[#4F8EF7]/30 px-2.5 py-1 rounded-md">
+              Agency Workspace
+            </span>
+          </div>
+
+          {/* Body: brands list + metrics */}
+          <div className="flex">
+            {/* Left — brand list */}
+            <div className="w-[180px] shrink-0 border-r border-white/8 py-4 px-4">
+              <p className="text-[9px] font-bold uppercase tracking-widest text-white/30 mb-3">Your Brands</p>
+              <div className="flex flex-col gap-1">
                 {[
-                  { name: "Bike Shop A", active: true },
-                  { name: "Café Brand B", active: false },
-                  { name: "Law Firm C", active: false },
-                  { name: "Spa & Wellness D", active: false },
-                ].map(({ name, active }) => (
+                  {
+                    name: "UFC Gym",
+                    src: "https://wsxusvapciexemfvtadm.supabase.co/storage/v1/object/public/STORAGE/images/Workspace/ufcgym-square-black.jpg",
+                    active: true,
+                  },
+                  {
+                    name: "Microsoft",
+                    src: "https://wsxusvapciexemfvtadm.supabase.co/storage/v1/object/public/STORAGE/images/Workspace/Microsoft-Logo.png",
+                    active: false,
+                  },
+                  {
+                    name: "T-Mobile",
+                    src: "https://wsxusvapciexemfvtadm.supabase.co/storage/v1/object/public/STORAGE/images/Workspace/T-Mobile-Logo.png",
+                    active: false,
+                  },
+                  {
+                    name: "Vans",
+                    src: "https://wsxusvapciexemfvtadm.supabase.co/storage/v1/object/public/STORAGE/images/Workspace/vans-logo-png_seeklogo-147508.png",
+                    active: false,
+                  },
+                ].map(({ name, src, active }) => (
                   <div
                     key={name}
-                    className={`px-2.5 py-2 rounded-lg text-[10px] font-medium truncate ${
-                      active ? "bg-white/10 text-white" : "text-white/35"
-                    }`}
+                    className={`flex items-center gap-2.5 px-2.5 py-2 rounded-lg ${active ? "bg-white/10" : "hover:bg-white/5"}`}
                   >
-                    {name}
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={src}
+                      alt={name}
+                      className="w-7 h-7 rounded-md object-contain bg-white p-0.5 shrink-0"
+                    />
+                    <span className={`text-[12px] font-medium truncate ${active ? "text-white" : "text-white/50"}`}>
+                      {name}
+                    </span>
                   </div>
                 ))}
-                <button className="mt-2 flex items-center gap-1.5 px-2.5 py-1.5 text-[10px] font-semibold text-white/40 hover:text-white/60 transition-colors">
-                  <span className="text-base leading-none" aria-hidden="true">+</span>
-                  Add client
-                </button>
               </div>
+            </div>
 
-              {/* Main content */}
-              <div className="flex-1 p-4">
-                <div className="flex items-center gap-2 mb-3">
-                  <div className="w-5 h-5 rounded bg-amber-500 flex items-center justify-center text-white text-[9px] font-bold shrink-0" aria-hidden="true">B</div>
-                  <p className="text-[12px] font-semibold text-white">Bike Shop A</p>
-                  <span className="ml-auto text-[9px] text-white/30 bg-white/8 px-2 py-0.5 rounded-md">Score: 82</span>
+            {/* Right — metrics for active brand */}
+            <div className="flex-1 p-4 flex flex-col gap-3">
+              {/* AI Visibility score — large */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="bg-white/6 rounded-xl border border-white/8 px-4 py-3">
+                  <p className="text-[10px] text-white/35 mb-1">AI Visibility</p>
+                  <div className="flex items-end gap-2">
+                    <span className="text-[28px] font-bold text-white leading-none">82</span>
+                    {/* Sparkline */}
+                    <svg width="48" height="22" viewBox="0 0 48 22" fill="none" className="mb-1" aria-hidden="true">
+                      <polyline points="0,18 10,14 20,16 30,8 38,10 48,3" stroke="#4F8EF7" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </div>
                 </div>
-                <div className="grid grid-cols-2 gap-2">
-                  {[
-                    { label: "Prompts Won", value: "10/12" },
-                    { label: "Competitors", value: "5 tracked" },
-                    { label: "Open Opps", value: "3" },
-                    { label: "Last scan", value: "2 hrs ago" },
-                  ].map(({ label, value }) => (
-                    <div key={label} className="bg-white/6 rounded-lg p-2.5 border border-white/8">
-                      <p className="text-[9px] text-white/30 mb-0.5">{label}</p>
-                      <p className="text-[13px] font-semibold text-white">{value}</p>
-                    </div>
-                  ))}
+                <div className="bg-white/6 rounded-xl border border-white/8 px-4 py-3">
+                  <p className="text-[10px] text-white/35 mb-1">Prompts Won</p>
+                  <span className="text-[28px] font-bold text-white leading-none">10/12</span>
                 </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="bg-white/6 rounded-xl border border-white/8 px-4 py-3">
+                  <p className="text-[10px] text-white/35 mb-1">Competitors</p>
+                  <span className="text-[20px] font-bold text-white leading-none">5 tracked</span>
+                </div>
+                <div className="bg-white/6 rounded-xl border border-white/8 px-4 py-3">
+                  <p className="text-[10px] text-white/35 mb-1">Open Opportunities</p>
+                  <span className="text-[28px] font-bold text-white leading-none">3</span>
+                </div>
+              </div>
+              <div className="bg-white/6 rounded-xl border border-white/8 px-4 py-3">
+                <p className="text-[10px] text-white/35 mb-1">Last scan</p>
+                <span className="text-[18px] font-bold text-white leading-none">2 hrs ago</span>
               </div>
             </div>
           </div>
 
-          <div className="mt-4 flex items-center gap-2.5 bg-white/6 rounded-xl border border-white/10 px-4 py-3">
-            <Building2 size={14} className="text-white/40 shrink-0" aria-hidden="true" />
-            <p className="text-[12px] text-white/50">
-              <span className="font-semibold text-white/70">Agency billing:</span> You pay Customers.Direct monthly. Your clients never see our invoices.
+          {/* Billing note */}
+          <div className="flex items-start gap-2.5 bg-white/4 border-t border-white/8 px-5 py-3.5">
+            <Building2 size={13} className="text-white/30 shrink-0 mt-0.5" aria-hidden="true" />
+            <p className="text-[11.5px] text-white/40 leading-snug">
+              <span className="font-semibold text-white/60">Agency billing:</span> You pay Customers.Direct monthly. Your clients never see our invoices.
             </p>
           </div>
         </div>
