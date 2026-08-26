@@ -32,7 +32,8 @@ export default function AuthForm({ defaultMode = "login" }: AuthFormProps) {
   const [error, setError] = useState<string | null>(() => {
     if (typeof window === "undefined") return null;
     const params = new URLSearchParams(window.location.search);
-    if (params.get("error") !== "auth_callback_failed") return null;
+    const err = params.get("error") ?? "";
+    if (!err.includes("oauth") && !err.includes("callback")) return null;
     return "google_failed";
   });
   const [message, setMessage] = useState<string | null>(null);
@@ -41,7 +42,8 @@ export default function AuthForm({ defaultMode = "login" }: AuthFormProps) {
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    if (params.get("error") === "auth_callback_failed") {
+    const err = params.get("error") ?? "";
+    if (err.includes("oauth") || err.includes("callback")) {
       setGoogleFailed(true);
       window.history.replaceState(null, "", window.location.pathname);
     }
