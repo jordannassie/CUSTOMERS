@@ -16,12 +16,20 @@ import { getDashboardAggregates, PROVIDER_LABELS } from "@/lib/geo/dashboard-agg
 
 export const metadata = { title: "Dashboard", robots: { index: false } };
 
+const OWNER_ADMIN_EMAILS = ["jordannassie@gmail.com"];
+
 export default async function DashboardPage() {
   const business = await getPrimaryBusiness();
 
   if (!business || business.status === "onboarding") {
     return <OnboardingWizard />;
   }
+
+  // Check if logged-in user is admin so sidebar shows Admin Panel link
+  const { createClient: createAuthClient } = await import("@/lib/supabase/server");
+  const authClient = await createAuthClient();
+  const { data: { user: authUser } } = await authClient.auth.getUser();
+  const isAdmin = !!(authUser?.email && OWNER_ADMIN_EMAILS.includes(authUser.email.toLowerCase()));
 
   const agg = await getDashboardAggregates(business.id);
   const { overview, trendSeries, models, competitors, citations, results, hasAnyRun } = agg;
@@ -86,6 +94,7 @@ export default async function DashboardPage() {
       businessLogoUrl={business.logo_url}
       businessDomain={business.domain}
       fullBleed
+      isAdmin={isAdmin}
     >
       {/* ── Business identity header ────────────────────────────────────────── */}
       {/*

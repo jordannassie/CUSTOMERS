@@ -53,6 +53,8 @@ interface DashboardShellProps {
   children: React.ReactNode;
   /** When true, children fill the full content area with no padding (overview page). Default: false */
   fullBleed?: boolean;
+  /** When true, shows an Admin link in the sidebar bottom */
+  isAdmin?: boolean;
 }
 
 export default function DashboardShell({
@@ -62,6 +64,7 @@ export default function DashboardShell({
   businessDomain,
   children,
   fullBleed = false,
+  isAdmin = false,
 }: DashboardShellProps) {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -76,6 +79,7 @@ export default function DashboardShell({
           businessName={businessName}
           businessLogoUrl={businessLogoUrl}
           businessDomain={businessDomain}
+          isAdmin={isAdmin}
         />
       </aside>
 
@@ -95,6 +99,7 @@ export default function DashboardShell({
               businessLogoUrl={businessLogoUrl}
               businessDomain={businessDomain}
               onNavClick={() => setMobileOpen(false)}
+              isAdmin={isAdmin}
             />
           </aside>
         </div>
@@ -151,6 +156,7 @@ function SidebarContent({
   businessLogoUrl,
   businessDomain,
   onNavClick,
+  isAdmin = false,
 }: {
   pathname: string;
   businessId: string;
@@ -158,6 +164,7 @@ function SidebarContent({
   businessLogoUrl?: string | null;
   businessDomain?: string | null;
   onNavClick?: () => void;
+  isAdmin?: boolean;
 }) {
   return (
     <div className="flex flex-col h-full">
@@ -229,8 +236,17 @@ function SidebarContent({
       {/* Trial status banner */}
       <TrialBanner />
 
-      {/* Sign out + Suggest a Feature */}
+      {/* Sign out + Suggest a Feature + Admin */}
       <div className="px-3 py-3 border-t border-[#EEEEEA] shrink-0 flex flex-col gap-0.5">
+        {isAdmin && (
+          <Link
+            href="/internal/admin"
+            className="flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-[12.5px] font-semibold text-[#0866F5] hover:bg-blue-50 transition-colors w-full"
+          >
+            <ShieldCheck size={14} aria-hidden="true" />
+            Admin Panel
+          </Link>
+        )}
         <SuggestFeatureModal businessId={businessId} />
         <form action="/auth/signout" method="POST">
           <button
