@@ -65,7 +65,8 @@ export const config = {
      *  - _next/image   (image optimisation)
      *  - favicon.ico
      *  - public folder files
+     *  - auth/callback  (must not be intercepted — it exchanges the OAuth code and sets cookies)
      */
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:js|svg|png|jpg|jpeg|gif|webp)$).*)",
+    "/((?!_next/static|_next/image|favicon.ico|auth/callback|.*\\.(?:js|svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };

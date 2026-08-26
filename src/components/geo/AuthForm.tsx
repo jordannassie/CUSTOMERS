@@ -51,11 +51,14 @@ export default function AuthForm({ mode }: AuthFormProps) {
     setError(null);
     setLoading("google");
     const supabase = createClient();
+    // Preserve any ?next= param the proxy placed on /login so that after
+    // the OAuth callback we return the user to the page they were trying to reach.
+    const params = new URLSearchParams(window.location.search);
+    const next = params.get("next") ?? "/dashboard";
+    const callbackUrl = `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`;
     const { error: oauthError } = await supabase.auth.signInWithOAuth({
       provider: "google",
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
-      },
+      options: { redirectTo: callbackUrl },
     });
     if (oauthError) {
       setError(oauthError.message);
