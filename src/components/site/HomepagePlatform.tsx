@@ -479,25 +479,43 @@ function InlineAIIcon() {
     <span
       className="inline-flex items-center justify-center bg-white border border-[#E5E5E1] rounded-2xl shadow-[0_2px_10px_rgba(0,0,0,0.07)] align-middle mx-1.5"
       style={{
-        width: "clamp(44px,7vw,60px)",
-        height: "clamp(44px,7vw,60px)",
+        width: "clamp(52px,8vw,68px)",
+        height: "clamp(52px,8vw,68px)",
         opacity: visible ? 1 : 0,
         transform: visible ? "scale(1)" : "scale(0.82)",
         transition: "opacity 0.2s ease, transform 0.2s ease",
       }}
       aria-label={platform.name}
     >
-      <PlatformIcon platform={platform.name} size={26} />
+      <PlatformIcon platform={platform.name} size={42} />
     </span>
   );
 }
 
 // ─── Hero section ─────────────────────────────────────────────────────────────
 
+/** Animated racing-border compare bar */
 function HeroCompareBar() {
   const router = useRouter();
   const [myUrl, setMyUrl] = React.useState("");
   const [themUrl, setThemUrl] = React.useState("");
+  const wrapRef = React.useRef<HTMLDivElement>(null);
+  const [perimeter, setPerimeter] = React.useState(0);
+
+  // Measure the wrapper once so the SVG stroke matches the real border-radius rect
+  React.useEffect(() => {
+    function measure() {
+      if (!wrapRef.current) return;
+      const { width, height } = wrapRef.current.getBoundingClientRect();
+      const r = 16; // matches rounded-2xl (16px)
+      // Perimeter of a rounded rect: 4 straight segments + 4 quarter-circle arcs
+      const p = 2 * (width - 2 * r) + 2 * (height - 2 * r) + 2 * Math.PI * r;
+      setPerimeter(Math.round(p));
+    }
+    measure();
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
+  }, []);
 
   function handleCompare(e: React.FormEvent) {
     e.preventDefault();
@@ -507,42 +525,106 @@ function HeroCompareBar() {
     router.push(`/compare?my=${encodeURIComponent(my)}&them=${encodeURIComponent(them)}`);
   }
 
+  // Dash = 28% of perimeter, gap = rest
+  const dash = perimeter > 0 ? Math.round(perimeter * 0.28) : 0;
+  const gap  = perimeter > 0 ? perimeter - dash : 0;
+
   return (
-    <form onSubmit={handleCompare} className="w-full max-w-[720px] mx-auto">
-      <div className="bg-white border border-[#E5E5E1] rounded-2xl p-2 flex flex-col sm:flex-row items-stretch sm:items-center gap-2 shadow-md"
-        style={{ boxShadow: "0 4px 24px rgba(0,0,0,0.06), 0 1px 4px rgba(0,0,0,0.04)" }}>
-        <input
-          type="text"
-          value={myUrl}
-          onChange={(e) => setMyUrl(e.target.value)}
-          placeholder="yourbusiness.com"
-          className="flex-1 px-4 py-3 text-[14px] text-[#171717] placeholder:text-[#C0C0BB] bg-transparent focus:outline-none"
-          autoComplete="off"
-        />
-        <div className="hidden sm:flex items-center justify-center px-1">
-          <span className="text-[10.5px] font-bold text-[#A3A3A0] bg-[#F5F5F2] rounded-full px-2.5 py-0.5">VS</span>
-        </div>
-        <input
-          type="text"
-          value={themUrl}
-          onChange={(e) => setThemUrl(e.target.value)}
-          placeholder="competitor.com"
-          className="flex-1 px-4 py-3 text-[14px] text-[#171717] placeholder:text-[#C0C0BB] bg-transparent focus:outline-none border-t sm:border-t-0 sm:border-l border-[#F0F0EC]"
-          autoComplete="off"
-        />
-        <button
-          type="submit"
-          disabled={!myUrl.trim() || !themUrl.trim()}
-          className="flex items-center justify-center gap-2 bg-[#0866F5] hover:bg-[#0757D4] text-white text-[13.5px] font-bold px-5 py-3 rounded-xl transition-colors disabled:opacity-50 shrink-0 active:scale-[0.97]"
-        >
-          Compare Free
-          <ArrowRight size={14} aria-hidden="true" />
-        </button>
+    <div className="w-full max-w-[720px] mx-auto">
+      {/* keyframe injected once */}
+      <style>{`
+        @keyframes cd-race {
+          from { stroke-dashoffset: 0; }
+          to   { stroke-dashoffset: -${perimeter}px; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .cd-race-svg { display: none; }
+        }
+      `}</style>
+
+      {/* Wrapper: relative so SVG can overlay it */}
+      <div ref={wrapRef} className="relative">
+        {/* Racing-border SVG — sits on top, pointer-events: none */}
+        {perimeter > 0 && (
+          <svg
+            className="cd-race-svg absolute inset-0 w-full h-full pointer-events-none"
+            style={{ borderRadius: 18, zIndex: 10 }}
+            aria-hidden="true"
+          >
+            {/* base ring */}
+            <rect
+              x="1" y="1"
+              width="calc(100% - 2px)" height="calc(100% - 2px)"
+              rx="15" ry="15"
+              fill="none"
+              stroke="#E5E5E1"
+              strokeWidth="1.5"
+            />
+            {/* racing blue arc */}
+            <rect
+              x="1" y="1"
+              width="calc(100% - 2px)" height="calc(100% - 2px)"
+              rx="15" ry="15"
+              fill="none"
+              stroke="url(#cd-grad)"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeDasharray={`${dash} ${gap}`}
+              style={{
+                animation: `cd-race ${2.4}s linear infinite`,
+                transformOrigin: "center",
+              }}
+            />
+            <defs>
+              <linearGradient id="cd-grad" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%"   stopColor="#0866F5" stopOpacity="0" />
+                <stop offset="50%"  stopColor="#0866F5" stopOpacity="1" />
+                <stop offset="100%" stopColor="#38BDF8" stopOpacity="0.7" />
+              </linearGradient>
+            </defs>
+          </svg>
+        )}
+
+        <form onSubmit={handleCompare}>
+          <div
+            className="bg-white rounded-2xl p-2 flex flex-col sm:flex-row items-stretch sm:items-center gap-2"
+            style={{ boxShadow: "0 4px 24px rgba(0,0,0,0.06), 0 1px 4px rgba(0,0,0,0.04)" }}
+          >
+            <input
+              type="text"
+              value={myUrl}
+              onChange={(e) => setMyUrl(e.target.value)}
+              placeholder="yourbusiness.com"
+              className="flex-1 px-4 py-3 text-[14px] text-[#171717] placeholder:text-[#C0C0BB] bg-transparent focus:outline-none"
+              autoComplete="off"
+            />
+            <div className="hidden sm:flex items-center justify-center px-1">
+              <span className="text-[10.5px] font-bold text-[#A3A3A0] bg-[#F5F5F2] rounded-full px-2.5 py-0.5">VS</span>
+            </div>
+            <input
+              type="text"
+              value={themUrl}
+              onChange={(e) => setThemUrl(e.target.value)}
+              placeholder="competitor.com"
+              className="flex-1 px-4 py-3 text-[14px] text-[#171717] placeholder:text-[#C0C0BB] bg-transparent focus:outline-none border-t sm:border-t-0 sm:border-l border-[#F0F0EC]"
+              autoComplete="off"
+            />
+            <button
+              type="submit"
+              disabled={!myUrl.trim() || !themUrl.trim()}
+              className="flex items-center justify-center gap-2 bg-[#0866F5] hover:bg-[#0757D4] text-white text-[13.5px] font-bold px-5 py-3 rounded-xl transition-colors disabled:opacity-50 shrink-0 active:scale-[0.97]"
+            >
+              Compare Free
+              <ArrowRight size={14} aria-hidden="true" />
+            </button>
+          </div>
+        </form>
       </div>
+
       <p className="text-[11.5px] text-[#A3A3A0] text-center mt-2.5">
         Free · No account needed · Results in ~10 seconds
       </p>
-    </form>
+    </div>
   );
 }
 
