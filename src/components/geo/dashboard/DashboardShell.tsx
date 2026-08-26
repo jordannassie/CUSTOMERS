@@ -27,6 +27,7 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import TrialBanner from "@/components/geo/dashboard/TrialBanner";
+import SuggestFeatureModal from "@/components/geo/dashboard/SuggestFeatureModal";
 
 const LOGO = "/images/logos/logo-black.png";
 
@@ -228,8 +229,9 @@ function SidebarContent({
       {/* Trial status banner */}
       <TrialBanner />
 
-      {/* Sign out */}
-      <div className="px-3 py-3 border-t border-[#EEEEEA] shrink-0">
+      {/* Sign out + Suggest a Feature */}
+      <div className="px-3 py-3 border-t border-[#EEEEEA] shrink-0 flex flex-col gap-0.5">
+        <SuggestFeatureModal businessId={businessId} />
         <form action="/auth/signout" method="POST">
           <button
             type="submit"

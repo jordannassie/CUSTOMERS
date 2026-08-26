@@ -1,3 +1,4 @@
+import React from "react";
 import { requireAdmin } from "@/lib/admin/require";
 import { createServiceClient } from "@/lib/supabase/service";
 import Link from "next/link";
@@ -8,7 +9,7 @@ function fmt(iso: string) {
   });
 }
 
-function KpiCard({ label, value, sub }: { label: string; value: string | number; sub?: string }) {
+function KpiCard({ label, value, sub }: { label: string; value: string | number; sub?: React.ReactNode }) {
   return (
     <div className="bg-[#1E293B] border border-white/8 rounded-xl p-5">
       <p className="text-[11px] text-white/40 uppercase tracking-wider mb-1">{label}</p>
@@ -27,13 +28,14 @@ export default async function AdminOverviewPage() {
   const ago7d  = new Date(now.getTime() - 7  * 24 * 60 * 60 * 1000).toISOString();
 
   const [
-    { count: totalUsers   },
-    { count: totalBiz     },
-    { count: newBiz7d     },
-    { count: totalComp    },
-    { count: scans24h     },
-    { count: scans7d      },
-    { count: failedScans  },
+    { count: totalUsers         },
+    { count: totalBiz           },
+    { count: newBiz7d           },
+    { count: totalComp          },
+    { count: scans24h           },
+    { count: scans7d            },
+    { count: failedScans        },
+    { count: newFeatureRequests },
   ] = await Promise.all([
     svc.from("profiles").select("*", { count: "exact", head: true }),
     svc.from("businesses").select("*", { count: "exact", head: true }),
@@ -42,6 +44,7 @@ export default async function AdminOverviewPage() {
     svc.from("visibility_runs").select("*", { count: "exact", head: true }).gte("created_at", ago24h),
     svc.from("visibility_runs").select("*", { count: "exact", head: true }).gte("created_at", ago7d),
     svc.from("visibility_runs").select("*", { count: "exact", head: true }).eq("status", "failed"),
+    svc.from("feature_requests").select("*", { count: "exact", head: true }).eq("status", "new"),
   ]);
 
   // Recent signups — use service role admin API
@@ -93,8 +96,9 @@ export default async function AdminOverviewPage() {
         <KpiCard label="Failed Scans"    value={failedScans  ?? 0} sub="all time" />
         <KpiCard label="AI Scans (24h)"  value={scans24h     ?? 0} />
         <KpiCard label="AI Scans (7d)"   value={scans7d      ?? 0} />
-        <KpiCard label="Beta Users"      value={totalUsers   ?? 0} sub="all access is free beta" />
-        <KpiCard label="New Biz (7d)"    value={newBiz7d     ?? 0} />
+        <KpiCard label="Beta Users"       value={totalUsers          ?? 0} sub="all access is free beta" />
+        <KpiCard label="New Biz (7d)"    value={newBiz7d            ?? 0} />
+        <KpiCard label="Feature Requests" value={newFeatureRequests ?? 0} sub={<><a href="/internal/admin/feature-requests" className="text-[#0866F5] hover:underline text-[10px]">View all →</a></>} />
       </div>
 
       <div className="grid lg:grid-cols-2 gap-6 mb-8">

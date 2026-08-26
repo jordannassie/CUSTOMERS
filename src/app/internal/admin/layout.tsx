@@ -21,13 +21,14 @@ async function getAdminUser() {
 }
 
 const NAV_ITEMS = [
-  { label: "Overview",   href: "/internal/admin"           },
-  { label: "Users",      href: "/internal/admin/users"     },
-  { label: "Businesses", href: "/internal/admin/businesses"},
-  { label: "Scans",      href: "/internal/admin/scans"     },
-  { label: "Usage",      href: "/internal/admin/usage"     },
-  { label: "Errors",     href: "/internal/admin/errors"    },
-  { label: "Settings",   href: "/internal/admin/settings"  },
+  { label: "Overview",         href: "/internal/admin"                        },
+  { label: "Users",            href: "/internal/admin/users"                  },
+  { label: "Businesses",       href: "/internal/admin/businesses"             },
+  { label: "Scans",            href: "/internal/admin/scans"                  },
+  { label: "Usage",            href: "/internal/admin/usage"                  },
+  { label: "Errors",           href: "/internal/admin/errors"                 },
+  { label: "Feature Requests", href: "/internal/admin/feature-requests"       },
+  { label: "Settings",         href: "/internal/admin/settings"               },
 ] as const;
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
