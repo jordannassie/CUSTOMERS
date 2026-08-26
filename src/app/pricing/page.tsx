@@ -442,48 +442,151 @@ export default function PricingPage() {
                 you need. Each business has its own dashboard, competitors, scans, opportunities,
                 history, and plan.
               </p>
-              <p className="text-[14px] text-[#A3A3A0] leading-relaxed">
+              <p className="text-[14px] text-[#A3A3A0] leading-relaxed mb-8">
                 Perfect for agencies, consultants, multi-brand operators, and business owners
                 managing multiple locations or companies.
               </p>
+              <Link
+                href="/signup"
+                className="inline-flex items-center gap-2 bg-[#171717] text-white font-semibold px-5 py-3 rounded-full text-[14px] hover:bg-[#2A2A2A] transition-all active:scale-[0.97]"
+              >
+                Start free — add clients later
+                <ArrowRight size={14} />
+              </Link>
             </div>
 
-            {/* Right: workspace preview */}
-            <div className="bg-white border border-[#E5E5E1] rounded-2xl shadow-sm overflow-hidden">
-              <div className="px-5 py-4 border-b border-[#EEEEEA] bg-[#FAFAF8]">
-                <p className="text-[11px] font-bold uppercase tracking-widest text-[#A3A3A0]">
-                  Your businesses
-                </p>
-              </div>
-              <div className="divide-y divide-[#EEEEEA]">
-                {[
-                  { name: "ABC Roofing", plan: "Growth", price: "$297/mo", color: "#0866F5", initial: "A" },
-                  { name: "Glow Med Spa", plan: "Starter", price: "$149/mo", color: "#8B5CF6", initial: "G" },
-                  { name: "Smith Dental", plan: "Pro", price: "$497/mo", color: "#059669", initial: "S" },
-                ].map((biz) => (
-                  <div key={biz.name} className="flex items-center gap-4 px-5 py-4 hover:bg-[#FAFAF8] transition-colors">
-                    <div
-                      className="w-9 h-9 rounded-xl flex items-center justify-center text-white font-bold text-[14px] shrink-0"
-                      style={{ background: biz.color }}
-                    >
-                      {biz.initial}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-[14px] font-semibold text-[#171717]">{biz.name}</p>
-                      <p className="text-[12px] text-[#A3A3A0]">{biz.plan} — {biz.price}</p>
-                    </div>
-                    <ChevronDown size={14} className="-rotate-90 text-[#D4D4CF]" />
+            {/* Right: Brandastic Agency workspace mock */}
+            <div
+              className="rounded-2xl overflow-hidden shadow-2xl"
+              style={{ background: "#111111" }}
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between px-5 py-4 border-b border-white/10">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-[#0866F5] flex items-center justify-center text-white font-bold text-[13px] shrink-0">
+                    B
                   </div>
-                ))}
+                  <span className="text-white font-semibold text-[14px]">Brandastic Agency</span>
+                </div>
+                <span className="text-[10px] font-bold uppercase tracking-widest text-[#0866F5] bg-[#0866F5]/15 border border-[#0866F5]/30 px-2.5 py-1 rounded">
+                  Agency Workspace
+                </span>
               </div>
-              <div className="px-5 py-4 border-t border-[#EEEEEA]">
-                <button
-                  type="button"
-                  className="flex items-center gap-2 text-[13px] font-semibold text-[#0866F5] hover:text-[#063B9D] transition-colors"
-                >
-                  <Plus size={14} />
-                  Add business
-                </button>
+
+              {/* Body: brands left, stats right */}
+              <div className="flex divide-x divide-white/10">
+                {/* Brands list */}
+                <div className="w-[48%] py-3">
+                  <p className="text-[9px] font-bold uppercase tracking-widest text-white/30 px-4 py-2">
+                    Your Brands
+                  </p>
+                  {[
+                    {
+                      name: "UFC Gym",
+                      bg: "#D4001A",
+                      logo: (
+                        <svg viewBox="0 0 28 28" width="16" height="16" aria-hidden="true">
+                          <rect width="28" height="28" rx="3" fill="#D4001A" />
+                          <text x="14" y="20" textAnchor="middle" fill="white" fontSize="10" fontWeight="900" fontFamily="Arial">UFC</text>
+                        </svg>
+                      ),
+                    },
+                    {
+                      name: "Microsoft",
+                      bg: "#ffffff",
+                      logo: (
+                        <svg viewBox="0 0 21 21" width="16" height="16" aria-hidden="true">
+                          <rect x="0" y="0" width="10" height="10" fill="#F25022" />
+                          <rect x="11" y="0" width="10" height="10" fill="#7FBA00" />
+                          <rect x="0" y="11" width="10" height="10" fill="#00A4EF" />
+                          <rect x="11" y="11" width="10" height="10" fill="#FFB900" />
+                        </svg>
+                      ),
+                    },
+                    {
+                      name: "T-Mobile",
+                      bg: "#E20074",
+                      logo: (
+                        <svg viewBox="0 0 28 28" width="16" height="16" aria-hidden="true">
+                          <rect width="28" height="28" rx="3" fill="#E20074" />
+                          <text x="14" y="20" textAnchor="middle" fill="white" fontSize="14" fontWeight="900" fontFamily="Arial">T</text>
+                        </svg>
+                      ),
+                    },
+                    {
+                      name: "Vans",
+                      bg: "#1a1a1a",
+                      logo: (
+                        <svg viewBox="0 0 28 28" width="16" height="16" aria-hidden="true">
+                          <rect width="28" height="28" rx="3" fill="#111" />
+                          <text x="14" y="20" textAnchor="middle" fill="white" fontSize="11" fontWeight="900" fontFamily="Arial">VANS</text>
+                        </svg>
+                      ),
+                    },
+                  ].map((brand, i) => (
+                    <div
+                      key={brand.name}
+                      className={`flex items-center gap-3 px-4 py-2.5 ${i === 0 ? "bg-white/10" : "hover:bg-white/5"} transition-colors cursor-default`}
+                    >
+                      <div className="w-7 h-7 rounded-lg overflow-hidden flex items-center justify-center shrink-0 bg-white/10">
+                        {brand.logo}
+                      </div>
+                      <span className="text-[13px] font-medium text-white">{brand.name}</span>
+                    </div>
+                  ))}
+                  {/* Add Business button */}
+                  <div className="px-4 pt-3 pb-2">
+                    <button
+                      type="button"
+                      className="flex items-center gap-1.5 text-[12px] font-semibold text-[#0866F5] hover:text-[#60A5FA] transition-colors"
+                    >
+                      <Plus size={13} />
+                      Add Business
+                    </button>
+                  </div>
+                </div>
+
+                {/* Stats grid */}
+                <div className="flex-1 p-3 grid grid-cols-2 gap-2 content-start">
+                  {[
+                    {
+                      label: "AI Visibility",
+                      value: "82",
+                      icon: (
+                        <svg viewBox="0 0 24 8" width="32" height="10" className="mt-0.5" aria-hidden="true">
+                          <polyline points="0,7 4,5 8,3 12,4 16,2 20,1 24,0" fill="none" stroke="#3B82F6" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                      ),
+                      iconColor: "#3B82F6",
+                    },
+                    { label: "Prompts Won", value: "10/12", iconColor: "#22C55E" },
+                    { label: "Competitors", value: "5 tracked", iconColor: "#F59E0B" },
+                    { label: "Open Opps", value: "3", iconColor: "#A78BFA" },
+                    { label: "Last Scan", value: "2 hrs ago", iconColor: "#9CA3AF", wide: true },
+                  ].map((stat) => (
+                    <div
+                      key={stat.label}
+                      className={`bg-white/5 border border-white/10 rounded-xl p-3 ${stat.wide ? "col-span-2" : ""}`}
+                    >
+                      <p className="text-[9px] font-bold uppercase tracking-widest mb-1.5 flex items-center gap-1.5" style={{ color: stat.iconColor }}>
+                        <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: stat.iconColor }} aria-hidden="true" />
+                        {stat.label}
+                      </p>
+                      <div className="flex items-end gap-2">
+                        <p className="text-[18px] font-bold text-white leading-none">{stat.value}</p>
+                        {stat.icon}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div className="px-5 py-3 border-t border-white/10 flex items-center gap-2">
+                <Shield size={11} className="text-white/30 shrink-0" />
+                <p className="text-[10.5px] text-white/40 leading-snug">
+                  <strong className="text-white/60">Agency billing:</strong> You pay Customers.Direct monthly. Your clients never see our invoices.
+                </p>
               </div>
             </div>
           </div>

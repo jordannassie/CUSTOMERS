@@ -2171,7 +2171,6 @@ export default function HomepagePlatform() {
       <ProductTabsSection />
       <AgencySection />
       <HowItWorksSection />
-      <PricingSection />
       <TestimonialsSection />
       <FAQSection />
       <FinalCTASection />
