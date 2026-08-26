@@ -16,6 +16,17 @@ export default function ContactPage() {
       <main className="bg-[#FAFAF8] min-h-screen">
         <section className="max-w-5xl mx-auto px-4 py-16 sm:py-24">
 
+          {/* Team photo */}
+          <div className="mb-10 rounded-2xl overflow-hidden border border-[#E5E5E1] shadow-sm">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="https://wsxusvapciexemfvtadm.supabase.co/storage/v1/object/public/STORAGE/images/people/66a95df7-6aa3-4550-a5cf-73026946a51f.png"
+              alt="The Customers.Direct team"
+              className="w-full object-cover"
+              style={{ maxHeight: "400px", objectPosition: "center top" }}
+            />
+          </div>
+
           {/* Header */}
           <div className="max-w-xl mb-12">
             <div className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-[#777773] bg-[#F0F0EC] border border-[#E5E5E1] px-3 py-1 rounded-full mb-6 uppercase tracking-wider">

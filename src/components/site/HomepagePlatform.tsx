@@ -527,20 +527,20 @@ function HeroSection() {
             href="/contact?topic=sales"
             className="inline-flex items-center gap-2.5 bg-white border border-[#E5E5E1] text-[#171717] text-[13.5px] font-semibold px-4 py-2.5 rounded-full shadow-sm hover:bg-[#F5F5F2] hover:-translate-y-px hover:shadow-md transition-all duration-150 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0866F5]/40"
           >
-            {/* Overlapping avatar group */}
+            {/* Overlapping avatar group — real team photos */}
             <span className="flex -space-x-2 shrink-0" aria-hidden="true">
               {[
-                { bg: "#0866F5", initials: "JN" },
-                { bg: "#7C3AED", initials: "AL" },
-                { bg: "#059669", initials: "MK" },
-              ].map(({ bg, initials }) => (
-                <span
-                  key={initials}
-                  className="w-6 h-6 rounded-full border-2 border-white flex items-center justify-center text-[8px] font-bold text-white shrink-0"
-                  style={{ background: bg }}
-                >
-                  {initials}
-                </span>
+                "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=48&h=48&fit=crop&crop=face&q=80",
+                "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=48&h=48&fit=crop&crop=face&q=80",
+                "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=48&h=48&fit=crop&crop=face&q=80",
+              ].map((src, i) => (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  key={i}
+                  src={src}
+                  alt=""
+                  className="w-6 h-6 rounded-full border-2 border-white object-cover shrink-0"
+                />
               ))}
             </span>
             Book a Demo
@@ -1906,6 +1906,16 @@ function FinalCTASection() {
   return (
     <section className="bg-[#FAFAF8] py-24 px-4 border-t border-[#EEEEEA]">
       <div className="max-w-[1160px] mx-auto text-center">
+        {/* Team photo */}
+        <div className="mb-10 flex justify-center">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="https://wsxusvapciexemfvtadm.supabase.co/storage/v1/object/public/STORAGE/images/people/15f9dc67-664b-4bf6-bb85-6d3f09ace1d0.png"
+            alt="The Customers.Direct team"
+            className="w-full max-w-2xl rounded-2xl object-cover shadow-lg border border-[#E5E5E1]"
+            style={{ maxHeight: "400px", objectPosition: "top" }}
+          />
+        </div>
         <H2 className="mb-4">
           Know where your business stands in AI search.
         </H2>
