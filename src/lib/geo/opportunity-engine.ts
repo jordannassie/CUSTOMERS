@@ -16,12 +16,32 @@ interface VisibilityResultLike {
   cited_sources: Array<{ url: string }>;
 }
 
+export interface SeoOpportunityInput {
+  keywordGaps?: Array<{
+    keyword: string;
+    competitorDomain: string;
+    competitorPosition: number;
+    searchVolume: number;
+    difficulty?: number;
+  }>;
+  topKeywords?: Array<{
+    keyword: string;
+    position: number;
+    searchVolume: number;
+    difficulty?: number;
+  }>;
+  overviewKeywords?: number;
+  overviewTraffic?: number;
+}
+
 interface OpportunityEngineInput {
   businessName: string;
   domain: string | null;
   description: string | null;
   primaryCity: string | null;
   results: VisibilityResultLike[];
+  /** Optional SEO data to generate additional keyword/ranking opportunities */
+  seo?: SeoOpportunityInput;
 }
 
 function claudePromptFor(
@@ -51,7 +71,7 @@ function claudePromptFor(
  * business it wasn't given.
  */
 export function generateOpportunities(input: OpportunityEngineInput): OpportunityDraft[] {
-  const { businessName, domain, description, primaryCity, results } = input;
+  const { businessName, domain, description, primaryCity, results, seo } = input;
   const opportunities: OpportunityDraft[] = [];
   const promptsTested = results.length;
 
@@ -181,6 +201,59 @@ export function generateOpportunities(input: OpportunityEngineInput): Opportunit
         "Not applicable — this is a data-entry task in the Customers.Direct dashboard, not a content task.",
       ),
     });
+  }
+
+  // F) SEO keyword gaps (if SEO data is available)
+  if (seo?.keywordGaps && seo.keywordGaps.length > 0) {
+    const topGap = seo.keywordGaps
+      .sort((a, b) => b.searchVolume - a.searchVolume)
+      .slice(0, 1)[0];
+
+    if (topGap && topGap.searchVolume > 50) {
+      const evidence = `"${topGap.keyword}" has ${topGap.searchVolume.toLocaleString()} monthly searches. ${topGap.competitorDomain} ranks #${topGap.competitorPosition}. You are not ranking for this keyword.`;
+      opportunities.push({
+        title: `Missing keyword opportunity: "${topGap.keyword}"`,
+        description: `A competitor ranks for a high-value keyword you're not targeting. This represents direct traffic you're missing.`,
+        evidence,
+        impact: topGap.searchVolume > 500 ? "high" : "medium",
+        category: "content",
+        recommended_action: `Create or optimize a page targeting "${topGap.keyword}" with clear service descriptions, local relevance, FAQ content, and proper schema markup.`,
+        claude_prompt: claudePromptFor(
+          "Ask:",
+          businessName,
+          domain,
+          evidence,
+          `Write a page outline for a new or updated page targeting "${topGap.keyword}". Include: target keyword in title and H1, service description (3–4 paragraphs), local relevance signals, FAQ section (5 questions buyers ask), and JSON-LD schema suggestions. Do not invent specific facts — use placeholders for details I need to fill in.`,
+        ),
+      });
+    }
+  }
+
+  // G) SEO ranking opportunities (pages ranking #11–20)
+  if (seo?.topKeywords && seo.topKeywords.length > 0) {
+    const nearMissKeywords = seo.topKeywords.filter(
+      (kw) => kw.position >= 11 && kw.position <= 20 && kw.searchVolume > 100,
+    );
+
+    if (nearMissKeywords.length > 0) {
+      const best = nearMissKeywords.sort((a, b) => b.searchVolume - a.searchVolume)[0];
+      const evidence = `You rank #${best.position} for "${best.keyword}" (${best.searchVolume.toLocaleString()} monthly searches). Ranking on page 1 could significantly increase traffic.`;
+      opportunities.push({
+        title: `Rank improvement opportunity: "${best.keyword}"`,
+        description: `You're ranking just outside page 1 for a valuable keyword. Small improvements could move you into top 10.`,
+        evidence,
+        impact: best.searchVolume > 200 ? "high" : "medium",
+        category: "content",
+        recommended_action: `Strengthen the page currently ranking #${best.position} for "${best.keyword}" by improving title, H1, content depth, internal links, and schema.`,
+        claude_prompt: claudePromptFor(
+          "Ask:",
+          businessName,
+          domain,
+          evidence,
+          `I have a page ranking #${best.position} for "${best.keyword}" with ${best.searchVolume.toLocaleString()} monthly searches. Help me improve this page to rank in the top 10. Review what typical top-10 pages for this keyword include, then suggest specific improvements for: title tag, H1, content depth/comprehensiveness, FAQ section, internal linking, and schema. Keep suggestions practical and avoid keyword stuffing.`,
+        ),
+      });
+    }
   }
 
   return opportunities;

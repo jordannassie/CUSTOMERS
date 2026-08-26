@@ -4,18 +4,27 @@ import DashboardShell from "@/components/geo/dashboard/DashboardShell";
 import { Card, PageHeader } from "@/components/geo/dashboard/ui";
 import BusinessSettingsForm from "@/components/geo/dashboard/BusinessSettingsForm";
 import { getPrimaryBusiness } from "@/lib/geo/dashboard-data";
-import { Building2, Check, CreditCard, User, Lock, Palette } from "lucide-react";
+import { Building2, Check, CreditCard, User, AlertCircle, ExternalLink } from "lucide-react";
+import { getPlan, PLANS, type PlanId } from "@/lib/plans";
+import { stripeEnabled } from "@/lib/stripe";
+import CheckoutButton from "@/components/geo/CheckoutButton";
+import BillingPortalButton from "@/components/geo/BillingPortalButton";
 
 export const metadata = { title: "Settings", robots: { index: false } };
 
-const PLAN_LABELS: Record<string, string> = {
-  none: "No active plan",
-  ai_visibility: "AI Visibility — $497/mo",
-  growth_agent: "Growth Agent — $997/mo",
-  autonomous_growth: "Autonomous Growth — from $1,997/mo",
+const STATUS_LABELS: Record<string, { label: string; color: string }> = {
+  active: { label: "Active", color: "text-[#166534]" },
+  trialing: { label: "Trial", color: "text-[#166534]" },
+  past_due: { label: "Payment failed", color: "text-[#991B1B]" },
+  canceled: { label: "Canceled", color: "text-[#777773]" },
+  inactive: { label: "Inactive", color: "text-[#777773]" },
 };
 
-export default async function SettingsPage() {
+export default async function SettingsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ checkout?: string }>;
+}) {
   const business = await getPrimaryBusiness();
   if (!business || business.status === "onboarding") redirect("/dashboard");
 
@@ -29,12 +38,54 @@ export default async function SettingsPage() {
     .eq("business_id", business.id)
     .maybeSingle();
 
+  const params = await searchParams;
+  const checkoutSuccess = params.checkout === "success";
+  const currentPlan = getPlan(subscription?.plan);
+  const statusInfo =
+    STATUS_LABELS[subscription?.status ?? "inactive"] ?? STATUS_LABELS.inactive;
+  const hasActiveSub =
+    subscription?.status === "active" || subscription?.status === "trialing";
+  const hasStripeRecord = !!subscription?.stripe_customer_id;
+
   return (
-    <DashboardShell businessId={business.id} businessName={business.name} businessLogoUrl={business.logo_url} businessDomain={business.domain}>
+    <DashboardShell
+      businessId={business.id}
+      businessName={business.name}
+      businessLogoUrl={business.logo_url}
+      businessDomain={business.domain}
+    >
       <PageHeader
         title="Settings"
         description="Manage your business profile, plan, and account."
       />
+
+      {/* Checkout success banner */}
+      {checkoutSuccess && (
+        <div className="mb-5 flex items-center gap-3 bg-[#F0FDF4] border border-[#BBF7D0] rounded-xl px-4 py-3">
+          <Check size={16} className="text-[#166534] shrink-0" aria-hidden="true" />
+          <p className="text-[13px] text-[#166534] font-medium">
+            Subscription activated! Your plan is now live.
+          </p>
+        </div>
+      )}
+
+      {/* Past-due warning */}
+      {subscription?.status === "past_due" && (
+        <div className="mb-5 flex items-start gap-3 bg-[#FEF2F2] border border-[#FECACA] rounded-xl px-4 py-3">
+          <AlertCircle size={16} className="text-[#991B1B] shrink-0 mt-0.5" aria-hidden="true" />
+          <p className="text-[13px] text-[#991B1B]">
+            <strong>Payment failed.</strong> Update your payment method to keep your subscription active.{" "}
+            {hasStripeRecord && (
+              <BillingPortalButton
+                businessId={business.id}
+                className="underline cursor-pointer"
+              >
+                Update now
+              </BillingPortalButton>
+            )}
+          </p>
+        </div>
+      )}
 
       {/* Business Profile */}
       <Card className="mb-5">
@@ -45,77 +96,49 @@ export default async function SettingsPage() {
         <BusinessSettingsForm business={business} />
       </Card>
 
-      {/* Plan */}
+      {/* Plan & Billing */}
       <Card className="mb-5">
-        <div className="flex items-center gap-2 mb-1">
-          <CreditCard size={15} className="text-[#777773]" />
-          <h2 className="font-bold text-[#171717]">Plan & billing</h2>
+        <div className="flex items-center justify-between gap-2 mb-4">
+          <div className="flex items-center gap-2">
+            <CreditCard size={15} className="text-[#777773]" />
+            <h2 className="font-bold text-[#171717]">Plan & billing</h2>
+          </div>
+          {hasActiveSub && hasStripeRecord && (
+            <BillingPortalButton
+              businessId={business.id}
+              className="flex items-center gap-1.5 text-[12px] font-medium text-[#777773] hover:text-[#171717] transition-colors"
+            >
+              Manage billing
+              <ExternalLink size={11} aria-hidden="true" />
+            </BillingPortalButton>
+          )}
         </div>
-        <p className="text-[12px] text-[#A3A3A0] mb-5">
-          Current status:{" "}
-          <span className={`font-semibold ${subscription?.status === "active" ? "text-[#166534]" : "text-[#777773]"}`}>
-            {subscription?.status ?? "inactive"}
+
+        {/* Current plan summary */}
+        <div className="flex items-center gap-3 mb-5 p-3.5 rounded-lg bg-[#FAFAF8] border border-[#E5E5E1]">
+          <div className="flex-1 min-w-0">
+            <p className="text-[13px] font-semibold text-[#171717]">{currentPlan.name}</p>
+            <p className="text-[12px] text-[#777773]">{currentPlan.priceLabel}</p>
+          </div>
+          <span className={`text-[12px] font-semibold ${statusInfo.color}`}>
+            {statusInfo.label}
           </span>
-          {" · "}Billing is handled separately — contact us to activate or change your plan.
-        </p>
+        </div>
 
         {/* Plan cards */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-5">
-          {[
-            {
-              id: "ai_visibility",
-              name: "AI Visibility",
-              price: "$497",
-              period: "/mo",
-              tagline: "Know exactly where you stand.",
-              features: [
-                "Visibility scores across 5 AI platforms",
-                "Competitor benchmarking",
-                "Citation & source tracking",
-                "Monthly AI scan",
-                "Opportunity recommendations",
-              ],
-            },
-            {
-              id: "growth_agent",
-              name: "Growth Agent",
-              price: "$997",
-              period: "/mo",
-              tagline: "Actively improve your visibility.",
-              popular: true,
-              features: [
-                "Everything in AI Visibility",
-                "Weekly AI scans",
-                "Direct Agent (AI chat analyst)",
-                "Implementation prompts for Claude",
-                "Priority support",
-              ],
-            },
-            {
-              id: "autonomous_growth",
-              name: "Autonomous Growth",
-              price: "from $1,997",
-              period: "/mo",
-              tagline: "We handle the improvements for you.",
-              features: [
-                "Everything in Growth Agent",
-                "Done-for-you implementation",
-                "Dedicated account manager",
-                "Daily scans & monitoring",
-                "Agency/white-label option",
-              ],
-            },
-          ].map((plan) => {
-            const isActive = subscription?.plan === plan.id;
+          {(["ai_visibility", "growth_agent", "autonomous_growth"] as PlanId[]).map((planId) => {
+            const plan = PLANS[planId];
+            const isActive = subscription?.plan === planId && hasActiveSub;
             return (
               <div
-                key={plan.id}
+                key={planId}
                 className={`relative rounded-xl border p-5 flex flex-col gap-3 ${
                   isActive
                     ? "border-[#171717] bg-white"
                     : plan.popular
-                    ? "border-[#171717]/30 bg-white"
-                    : "border-[#E5E5E1] bg-[#FAFAF8]"
+                      ? "border-[#171717]/30 bg-white"
+                      : "border-[#E5E5E1] bg-[#FAFAF8]"
                 }`}
               >
                 {isActive && (
@@ -133,11 +156,15 @@ export default async function SettingsPage() {
                   <p className="text-[11px] text-[#777773] mt-0.5">{plan.tagline}</p>
                 </div>
                 <div className="flex items-baseline gap-1">
-                  <span className="text-[22px] font-bold text-[#171717]">{plan.price}</span>
-                  <span className="text-[12px] text-[#A3A3A0]">{plan.period}</span>
+                  <span className="text-[20px] font-bold text-[#171717]">
+                    {plan.priceLabel.split("/")[0]}
+                  </span>
+                  {plan.priceLabel.includes("/") && (
+                    <span className="text-[12px] text-[#A3A3A0]">/mo</span>
+                  )}
                 </div>
-                <ul className="flex flex-col gap-1.5">
-                  {plan.features.map((f) => (
+                <ul className="flex flex-col gap-1.5 flex-1">
+                  {plan.features.slice(0, 5).map((f) => (
                     <li key={f} className="flex items-start gap-2 text-[11.5px] text-[#555552]">
                       <Check size={11} className="text-[#166534] mt-0.5 shrink-0" aria-hidden="true" />
                       {f}
@@ -145,88 +172,80 @@ export default async function SettingsPage() {
                   ))}
                 </ul>
                 {!isActive && (
-                  <a
-                    href="mailto:hello@customers.direct?subject=Plan enquiry"
-                    className="mt-auto inline-flex items-center justify-center gap-1.5 text-[12px] font-semibold bg-[#171717] text-white px-3 py-2 rounded-lg hover:bg-[#2A2A2A] transition-colors"
-                  >
-                    Contact us →
-                  </a>
+                  <div className="mt-auto">
+                    {plan.id === "autonomous_growth" ? (
+                      <a
+                        href="/book"
+                        className="mt-auto inline-flex items-center justify-center gap-1.5 text-[12px] font-semibold border border-[#E5E5E1] text-[#777773] px-3 py-2 rounded-lg hover:bg-[#F5F5F2] transition-colors w-full"
+                      >
+                        Talk to us →
+                      </a>
+                    ) : stripeEnabled && plan.stripePriceId ? (
+                      <CheckoutButton
+                        planId={plan.id as PlanId}
+                        businessId={business.id}
+                        className="inline-flex items-center justify-center gap-1.5 text-[12px] font-semibold bg-[#171717] text-white px-3 py-2 rounded-lg hover:bg-[#2A2A2A] transition-colors w-full"
+                      >
+                        Upgrade →
+                      </CheckoutButton>
+                    ) : (
+                      <a
+                        href="mailto:hello@customers.direct?subject=Plan enquiry"
+                        className="inline-flex items-center justify-center gap-1.5 text-[12px] font-semibold bg-[#171717] text-white px-3 py-2 rounded-lg hover:bg-[#2A2A2A] transition-colors w-full"
+                      >
+                        Contact us →
+                      </a>
+                    )}
+                  </div>
                 )}
               </div>
             );
           })}
         </div>
-        <p className="text-[11px] text-[#A3A3A0]">
-          All plans billed monthly. No long-term contract required.{" "}
-          <a href="mailto:hello@customers.direct" className="underline hover:no-underline">Contact us</a> to upgrade, downgrade, or cancel.
-        </p>
+
+        {hasActiveSub && hasStripeRecord ? (
+          <div className="flex items-center gap-2">
+            <p className="text-[11px] text-[#A3A3A0]">
+              Billing is managed via Stripe.{" "}
+            </p>
+            <BillingPortalButton
+              businessId={business.id}
+              className="text-[11px] text-[#777773] underline hover:no-underline cursor-pointer"
+            >
+              Open billing portal
+            </BillingPortalButton>
+            <span className="text-[11px] text-[#A3A3A0]">to update payment, view invoices, or cancel.</span>
+          </div>
+        ) : (
+          <p className="text-[11px] text-[#A3A3A0]">
+            All plans billed monthly. No long-term contract required.{" "}
+            <a href="mailto:hello@customers.direct" className="underline hover:no-underline">
+              Contact us
+            </a>{" "}
+            to discuss custom arrangements.
+          </p>
+        )}
       </Card>
 
       {/* Agency / White-Label */}
       <Card className="mb-5">
         <div className="flex items-center gap-2 mb-1">
-          <Palette size={15} className="text-[#7C3AED]" />
+          <div className="w-3 h-3 rounded-full bg-[#7C3AED]" aria-hidden="true" />
           <h2 className="font-bold text-[#171717]">Agency & white-label</h2>
           <span className="text-[9px] font-bold uppercase tracking-wider text-[#7C3AED] bg-[#F5F3FF] border border-[#EDE9FE] px-1.5 py-0.5 rounded">
             Coming soon
           </span>
         </div>
-        <p className="text-[13px] text-[#777773] mb-5">
-          Manage multiple client businesses under one login and generate white-labeled reports with your agency branding.
+        <p className="text-[13px] text-[#777773] mb-4">
+          Manage multiple client businesses under one login. White-labeled reports under your agency branding.
         </p>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-5">
-          {[
-            {
-              title: "Agency branding",
-              desc: "Add your logo and name to reports. Clients see your brand, not Customers.Direct.",
-              available: false,
-            },
-            {
-              title: "White-label reports",
-              desc: "Generate shareable client reports under your agency brand.",
-              available: false,
-            },
-            {
-              title: "Client billing separation",
-              desc: "You are invoiced by Customers.Direct. Your clients are never contacted about billing.",
-              available: true,
-            },
-            {
-              title: "Multi-business management",
-              desc: "Each business is its own workspace. Switch between them from the left sidebar.",
-              available: true,
-            },
-          ].map(({ title, desc, available }) => (
-            <div
-              key={title}
-              className={`rounded-lg border p-4 ${
-                available ? "border-[#E5E5E1] bg-white" : "border-dashed border-[#E5E5E1] bg-[#F5F5F2]/50"
-              }`}
-            >
-              <div className="flex items-center gap-2 mb-1.5">
-                <p className={`text-[13px] font-bold ${available ? "text-[#171717]" : "text-[#A3A3A0]"}`}>
-                  {title}
-                </p>
-                <span
-                  className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded ${
-                    available
-                      ? "bg-[#F0FDF4] text-[#166534]"
-                      : "bg-[#F0F0EC] text-[#A3A3A0]"
-                  }`}
-                >
-                  {available ? "Active" : "Coming soon"}
-                </span>
-              </div>
-              <p className="text-[12px] text-[#777773] leading-snug">{desc}</p>
-            </div>
-          ))}
-        </div>
-
         <div className="bg-[#F5F3FF] rounded-lg border border-[#EDE9FE] px-4 py-3">
           <p className="text-[12px] text-[#7C3AED]">
-            <span className="font-bold">Interested in agency/reseller pricing?</span>{" "}
-            <a href="/book" className="underline hover:no-underline">Book a call</a> to discuss wholesale pricing and white-label rollout.
+            <strong>Interested in agency/reseller pricing?</strong>{" "}
+            <a href="/book" className="underline hover:no-underline">
+              Book a call
+            </a>{" "}
+            to discuss wholesale pricing and white-label rollout.
           </p>
         </div>
       </Card>
@@ -243,13 +262,18 @@ export default async function SettingsPage() {
           </div>
           <div>
             <p className="text-[13px] font-semibold text-[#171717]">{user?.email}</p>
-            <p className="text-[11px] text-[#A3A3A0]">Google login via Supabase Auth</p>
+            <p className="text-[11px] text-[#A3A3A0]">
+              Authenticated via Supabase Auth (email or Google)
+            </p>
           </div>
         </div>
-        <div className="flex items-center gap-2 text-[12px] text-[#A3A3A0]">
-          <Lock size={12} />
-          <span>Authentication is managed by Google OAuth. No password to change.</span>
-        </div>
+        <p className="text-[12px] text-[#A3A3A0]">
+          To change your password, use the{" "}
+          <a href="/forgot-password" className="underline hover:no-underline">
+            forgot password
+          </a>{" "}
+          flow on the login page.
+        </p>
       </Card>
     </DashboardShell>
   );

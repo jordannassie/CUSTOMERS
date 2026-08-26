@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { requireUser } from "@/lib/geo/api-auth";
 import { generateOpportunities } from "@/lib/geo/opportunity-engine";
+import type { SeoOpportunityInput } from "@/lib/geo/opportunity-engine";
 
 export async function POST(request: NextRequest) {
   const { user, supabase, unauthorized } = await requireUser();
@@ -45,12 +46,51 @@ export async function POST(request: NextRequest) {
     .select("business_mentioned, competitors_mentioned, cited_sources")
     .eq("run_id", latestRun.id);
 
+  // Load cached SEO snapshot to enrich opportunities (non-blocking)
+  let seoInput: SeoOpportunityInput | undefined;
+  try {
+    const { data: seoSnapshot } = await supabase
+      .from("seo_snapshots")
+      .select("top_keywords, keyword_gaps, overview")
+      .eq("business_id", businessId)
+      .maybeSingle();
+
+    if (seoSnapshot) {
+      type SnapshotRow = {
+        keyword_gaps?: Array<{
+          keyword: string;
+          competitorDomain: string;
+          competitorPosition: number;
+          searchVolume: number;
+          difficulty?: number;
+        }>;
+        top_keywords?: Array<{
+          keyword: string;
+          position: number;
+          searchVolume: number;
+          difficulty?: number;
+        }>;
+        overview?: { keywords?: number; organicTraffic?: number };
+      };
+      const snap = seoSnapshot as SnapshotRow;
+      seoInput = {
+        keywordGaps: snap.keyword_gaps ?? [],
+        topKeywords: snap.top_keywords ?? [],
+        overviewKeywords: snap.overview?.keywords,
+        overviewTraffic: snap.overview?.organicTraffic,
+      };
+    }
+  } catch {
+    // SEO enrichment is best-effort — don't fail the whole opportunity generation
+  }
+
   const drafts = generateOpportunities({
     businessName: business.name,
     domain: business.domain,
     description: business.description,
     primaryCity: business.primary_city,
     results: results ?? [],
+    seo: seoInput,
   });
 
   // Replace previously-generated "open" opportunities with the fresh set —

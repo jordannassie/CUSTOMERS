@@ -23,6 +23,7 @@ import {
   Check,
   Search,
   ExternalLink,
+  BarChart2,
 } from "lucide-react";
 
 const LOGO = "/images/logos/logo-black.png";
@@ -30,6 +31,7 @@ const LOGO = "/images/logos/logo-black.png";
 const NAV = [
   { label: "Overview",       href: "/dashboard",              icon: LayoutDashboard },
   { label: "AI Insights",    href: "/dashboard/visibility",   icon: Sparkles        },
+  { label: "SEO",            href: "/dashboard/seo",          icon: BarChart2       },
   { label: "Prompts",        href: "/dashboard/prompts",      icon: MessagesSquare  },
   { label: "Competitors",    href: "/dashboard/competitors",  icon: Users           },
   { label: "Sources",        href: "/dashboard/citations",    icon: Link2           },
