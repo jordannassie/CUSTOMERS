@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -81,6 +81,25 @@ export default function SiteHeader() {
 
   const productRef   = useRef<HTMLDivElement>(null);
   const resourcesRef = useRef<HTMLDivElement>(null);
+
+  /**
+   * Navigate to a product feature section.
+   * When already on the homepage, setting window.location.hash directly
+   * fires the `hashchange` event so ProductTabsSection activates the right tab.
+   * Next.js <Link href="/#hash"> uses pushState which does NOT fire hashchange.
+   */
+  const navigateToFeature = useCallback((href: string) => {
+    setProductOpen(false);
+    setMobileOpen(false);
+    if (typeof window === "undefined") return;
+    const hash = href.replace("/#", "#");
+    if (window.location.pathname === "/") {
+      // Same page — set hash directly to trigger hashchange + tab activation
+      window.location.hash = hash;
+    } else {
+      window.location.href = href;
+    }
+  }, []);
 
   // Close dropdowns on outside click
   useEffect(() => {
@@ -166,12 +185,12 @@ export default function SiteHeader() {
                   role="menu"
                 >
                   {PRODUCT_FEATURES.map(({ label, description, href, icon: Icon, bg, shadow }) => (
-                    <Link
+                    <button
                       key={href}
-                      href={href}
+                      type="button"
                       role="menuitem"
-                      onClick={() => setProductOpen(false)}
-                      className="flex items-start gap-3 p-3 rounded-xl hover:bg-[#F5F5F2] transition-colors group"
+                      onClick={() => navigateToFeature(href)}
+                      className="flex items-start gap-3 p-3 rounded-xl hover:bg-[#F5F5F2] transition-colors group w-full text-left"
                     >
                       <div className={`w-9 h-9 rounded-xl ${bg} ${shadow} shadow-md flex items-center justify-center shrink-0 mt-0.5`}>
                         <Icon size={15} className="text-white" aria-hidden="true" />
@@ -182,7 +201,7 @@ export default function SiteHeader() {
                         </p>
                         <p className="text-[11px] text-[#A3A3A0] leading-snug">{description}</p>
                       </div>
-                    </Link>
+                    </button>
                   ))}
                 </div>
               )}
@@ -277,17 +296,17 @@ export default function SiteHeader() {
           </p>
           <div className="flex flex-col gap-px mb-4">
             {PRODUCT_FEATURES.map(({ label, href, icon: Icon, bg }) => (
-              <Link
+              <button
                 key={href}
-                href={href}
-                onClick={closeAll}
-                className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/10 transition-colors"
+                type="button"
+                onClick={() => navigateToFeature(href)}
+                className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/10 transition-colors w-full text-left"
               >
                 <div className={`w-7 h-7 rounded-lg ${bg} flex items-center justify-center shrink-0 opacity-90`}>
                   <Icon size={13} className="text-white" aria-hidden="true" />
                 </div>
                 <span className="text-[13px] font-medium text-white/85">{label}</span>
-              </Link>
+              </button>
             ))}
           </div>
 
