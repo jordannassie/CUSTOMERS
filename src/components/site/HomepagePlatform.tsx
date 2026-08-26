@@ -3,7 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { PlatformIcon } from "@/components/PlatformIcon";
-import AIOrbitAnimation from "@/components/site/AIOrbitAnimation";
+// AIOrbitAnimation removed — replaced with inline cycling icon in hero headline
 import {
   ArrowRight,
   Check,
@@ -454,92 +454,106 @@ function HeroDashboardPreview() {
   );
 }
 
+// ─── Inline cycling AI platform icon for the hero headline ──────────────────
+
+function InlineAIIcon() {
+  const [idx, setIdx] = React.useState(0);
+  const [visible, setVisible] = React.useState(true);
+
+  React.useEffect(() => {
+    const timer = setInterval(() => {
+      // Fade out
+      setVisible(false);
+      setTimeout(() => {
+        setIdx((i) => (i + 1) % AI_PLATFORMS.length);
+        setVisible(true);
+      }, 220);
+    }, 2600);
+    return () => clearInterval(timer);
+  }, []);
+
+  const platform = AI_PLATFORMS[idx];
+
+  return (
+    <span
+      className="inline-flex items-center justify-center bg-white border border-[#E5E5E1] rounded-2xl shadow-[0_2px_10px_rgba(0,0,0,0.07)] align-middle mx-1.5"
+      style={{
+        width: "clamp(44px,7vw,60px)",
+        height: "clamp(44px,7vw,60px)",
+        opacity: visible ? 1 : 0,
+        transform: visible ? "scale(1)" : "scale(0.82)",
+        transition: "opacity 0.2s ease, transform 0.2s ease",
+      }}
+      aria-label={platform.name}
+    >
+      <PlatformIcon platform={platform.name} size={26} />
+    </span>
+  );
+}
+
+// ─── Hero section ─────────────────────────────────────────────────────────────
+
 function HeroSection() {
   return (
-    <section className="bg-[#FAFAF8] px-4 pt-16 pb-8 sm:pt-20 sm:pb-10 overflow-hidden border-b border-[#EEEEEA]">
-      <div className="max-w-[1160px] mx-auto">
+    <section className="bg-[#FAFAF8] px-4 pt-16 pb-10 sm:pt-20 sm:pb-12 overflow-hidden border-b border-[#EEEEEA]">
+      <div className="max-w-[780px] mx-auto text-center fade-up">
 
-        {/* ── Two-column hero: copy left, orbit right ── */}
-        <div className="flex flex-col lg:flex-row items-center gap-12 lg:gap-8 mb-14">
-
-          {/* Left: copy */}
-          <div className="flex-1 min-w-0 text-center lg:text-left fade-up">
-            <div className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-[#777773] bg-[#F0F0EC] border border-[#E5E5E1] px-3 py-1 rounded-full mb-6 uppercase tracking-wider">
-              AI search visibility for businesses and agencies
-            </div>
-
-            <h1 className="text-[42px] sm:text-[54px] lg:text-[56px] font-bold text-[#171717] leading-[1.06] tracking-tight mb-5">
-              See how AI finds, ranks,{" "}
-              <br className="hidden sm:block" />
-              and recommends{" "}
-              <br className="hidden lg:block" />
-              your business.
-            </h1>
-
-            <p className="text-[16px] sm:text-[17px] text-[#777773] leading-relaxed mb-8 max-w-xl mx-auto lg:mx-0">
-              Track your visibility across ChatGPT, Claude, Perplexity, Gemini, and Google AI.
-              Compare competitors, uncover the sources shaping AI answers, and turn every insight
-              into an actionable fix.
-            </p>
-
-            <div className="flex flex-wrap items-center justify-center lg:justify-start gap-3 mb-8">
-              <PrimaryBtn href="/signup">
-                Check My AI Visibility
-                <ArrowRight size={14} aria-hidden="true" />
-              </PrimaryBtn>
-              <SecondaryBtn href="/how-it-works">
-                See How It Works
-              </SecondaryBtn>
-            </div>
-
-            {/* Trust signals */}
-            <div className="flex flex-wrap items-center justify-center lg:justify-start gap-x-6 gap-y-2 text-[12px] text-[#A3A3A0]">
-              {["No credit card required", "Set up in minutes", "Built for businesses and agencies"].map((s) => (
-                <span key={s} className="inline-flex items-center gap-1.5">
-                  <Check size={12} className="text-[#777773] shrink-0" aria-hidden="true" />
-                  {s}
-                </span>
-              ))}
-            </div>
-          </div>
-
-          {/* Right: orbit animation */}
-          <div
-            className="shrink-0 fade-up fade-up-delay-1 flex flex-col items-center"
-            aria-hidden="false"
-          >
-            {/* Label */}
-            <p className="text-[11px] font-semibold uppercase tracking-widest text-[#A3A3A0] mb-5 text-center">
-              Platforms we monitor
-            </p>
-
-            {/* Desktop: 380px orbit / mobile: 280px */}
-            <div className="hidden sm:block">
-              <AIOrbitAnimation size={380} />
-            </div>
-            <div className="sm:hidden">
-              <AIOrbitAnimation size={280} />
-            </div>
-
-            {/* Platform name tags below (subtle confirmation) */}
-            <div className="flex flex-wrap justify-center gap-2 mt-5 max-w-[320px]">
-              {AI_PLATFORMS.map(({ name }) => (
-                <span
-                  key={name}
-                  className="inline-flex items-center gap-1.5 text-[11px] font-medium text-[#777773] bg-white border border-[#E5E5E1] px-2.5 py-1 rounded-full"
-                >
-                  <PlatformIcon platform={name} size={12} />
-                  {name}
-                </span>
-              ))}
-            </div>
-          </div>
+        {/* Eyebrow */}
+        <div className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-[#777773] bg-[#F0F0EC] border border-[#E5E5E1] px-3 py-1 rounded-full mb-6 uppercase tracking-wider">
+          AI search visibility for businesses and agencies
         </div>
 
-        {/* ── Dashboard preview (full width below) ── */}
-        <div className="fade-up fade-up-delay-2 max-w-4xl mx-auto">
-          <HeroDashboardPreview />
+        {/* Headline with inline cycling icon */}
+        <h1 className="text-[40px] sm:text-[54px] lg:text-[60px] font-bold text-[#171717] leading-[1.1] tracking-tight mb-6">
+          See how <InlineAIIcon /> AI finds, ranks,{" "}
+          and recommends your business.
+        </h1>
+
+        {/* Sub-description */}
+        <p className="text-[16px] sm:text-[17px] text-[#777773] leading-relaxed mb-8 max-w-[580px] mx-auto">
+          Track your visibility across ChatGPT, Claude, Perplexity, Gemini, and Google AI.
+          Compare competitors, uncover the sources shaping AI answers, and turn every insight
+          into an actionable fix.
+        </p>
+
+        {/* CTAs */}
+        <div className="flex flex-wrap items-center justify-center gap-3 mb-7">
+          <PrimaryBtn href="/signup">
+            Check My AI Visibility
+            <ArrowRight size={14} aria-hidden="true" />
+          </PrimaryBtn>
+          <SecondaryBtn href="/how-it-works">
+            See How It Works
+          </SecondaryBtn>
         </div>
+
+        {/* Trust signals */}
+        <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-[12px] text-[#A3A3A0] mb-8">
+          {["No credit card required", "Set up in minutes", "Built for businesses and agencies"].map((s) => (
+            <span key={s} className="inline-flex items-center gap-1.5">
+              <Check size={12} className="text-[#777773] shrink-0" aria-hidden="true" />
+              {s}
+            </span>
+          ))}
+        </div>
+
+        {/* Platform pills */}
+        <div className="flex flex-wrap justify-center gap-2">
+          {AI_PLATFORMS.map(({ name }) => (
+            <span
+              key={name}
+              className="inline-flex items-center gap-1.5 text-[11px] font-medium text-[#777773] bg-white border border-[#E5E5E1] px-2.5 py-1 rounded-full"
+            >
+              <PlatformIcon platform={name} size={12} />
+              {name}
+            </span>
+          ))}
+        </div>
+      </div>
+
+      {/* Dashboard preview — full-width below the centered copy */}
+      <div className="fade-up fade-up-delay-2 max-w-4xl mx-auto mt-14">
+        <HeroDashboardPreview />
       </div>
     </section>
   );
