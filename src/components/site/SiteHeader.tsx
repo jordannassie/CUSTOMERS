@@ -176,7 +176,7 @@ export default function SiteHeader() {
               )}
             </div>
 
-            <Link href="/#pricing" className={navLink()}>Pricing</Link>
+            <Link href="/pricing" className={navLink()}>Pricing</Link>
 
             {/* Resources dropdown */}
             <div className="relative" ref={resourcesRef}>
@@ -281,7 +281,7 @@ export default function SiteHeader() {
 
           {/* Other links */}
           <div className="border-t border-white/10 pt-3 flex flex-col gap-px mb-5">
-            <Link href="/#pricing" onClick={closeAll}
+            <Link href="/pricing" onClick={closeAll}
               className="px-3 py-2.5 text-[13px] font-medium text-white/85 hover:text-white rounded-xl hover:bg-white/10 transition-colors">
               Pricing
             </Link>
