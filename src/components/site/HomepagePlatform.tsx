@@ -1877,21 +1877,25 @@ const HOW_STEPS = [
     num: "01",
     title: "Connect your business",
     body: "Tell us your website and business details. We pull what we can automatically — you confirm or correct it. Takes about two minutes.",
+    image: "https://wsxusvapciexemfvtadm.supabase.co/storage/v1/object/public/STORAGE/images/steps/ChatGPT%20Image%20Aug%2026,%202026,%2002_16_54%20PM%20(1).png",
   },
   {
     num: "02",
     title: "We run your first AI scan",
     body: "Customers.Direct fires real buyer-intent prompts at ChatGPT, Claude, Perplexity, Gemini, and Google AI. We record every mention, ranking, and citation.",
+    image: "https://wsxusvapciexemfvtadm.supabase.co/storage/v1/object/public/STORAGE/images/steps/ChatGPT%20Image%20Aug%2026,%202026,%2002_16_54%20PM%20(2).png",
   },
   {
     num: "03",
     title: "See your visibility vs. competitors",
     body: "Your Direct Score shows exactly where AI recommends your business, what competitors appear instead, and which sources are shaping the answers.",
+    image: "https://wsxusvapciexemfvtadm.supabase.co/storage/v1/object/public/STORAGE/images/steps/ChatGPT%20Image%20Aug%2026,%202026,%2002_16_55%20PM%20(3).png",
   },
   {
     num: "04",
     title: "Fix what matters, track the change",
     body: "Every opportunity comes with evidence and a ready-made Claude prompt. Request us to implement it, or do it yourself — then watch your score move.",
+    image: "https://wsxusvapciexemfvtadm.supabase.co/storage/v1/object/public/STORAGE/images/steps/ChatGPT%20Image%20Aug%2026,%202026,%2002_16_55%20PM%20(4).png",
   },
 ];
 
@@ -1908,15 +1912,27 @@ function HowItWorksSection() {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-px bg-[#E5E5E1] rounded-2xl overflow-hidden border border-[#E5E5E1]">
         {HOW_STEPS.map((step, i) => (
-          <div key={step.num} className="bg-white p-8 flex flex-col gap-4 relative">
-            {/* Step number */}
-            <span className="text-[11px] font-bold text-[#A3A3A0] tracking-widest uppercase">{step.num}</span>
-            {/* Connector dot — desktop only */}
-            {i < HOW_STEPS.length - 1 && (
-              <div className="hidden lg:block absolute top-[46px] -right-[5px] w-2.5 h-2.5 rounded-full bg-[#E5E5E1] border-2 border-white z-10" aria-hidden="true" />
-            )}
-            <h3 className="text-[15px] font-semibold text-[#171717] leading-snug">{step.title}</h3>
-            <p className="text-[13px] text-[#777773] leading-relaxed flex-1">{step.body}</p>
+          <div key={step.num} className="bg-white flex flex-col relative">
+            {/* Image */}
+            <div className="w-full aspect-square overflow-hidden bg-[#F5F5F2]">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={step.image}
+                alt={step.title}
+                className="w-full h-full object-cover"
+              />
+            </div>
+
+            <div className="p-8 flex flex-col gap-3 flex-1">
+              {/* Step number */}
+              <span className="text-[11px] font-bold text-[#A3A3A0] tracking-widest uppercase">{step.num}</span>
+              {/* Connector dot — desktop only */}
+              {i < HOW_STEPS.length - 1 && (
+                <div className="hidden lg:block absolute top-[calc(50%-5px)] -right-[5px] w-2.5 h-2.5 rounded-full bg-[#E5E5E1] border-2 border-white z-10" aria-hidden="true" />
+              )}
+              <h3 className="text-[15px] font-semibold text-[#171717] leading-snug">{step.title}</h3>
+              <p className="text-[13px] text-[#777773] leading-relaxed flex-1">{step.body}</p>
+            </div>
           </div>
         ))}
       </div>
