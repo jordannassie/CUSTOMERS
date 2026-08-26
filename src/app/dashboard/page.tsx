@@ -344,7 +344,10 @@ export default async function DashboardPage() {
                   Manage <ArrowRight size={11} />
                 </Link>
               </div>
-              <PromptPerformanceTable results={results} />
+              {/* px-5 pt-4 supplies the padding that PromptPerformanceTable's inner -mx-5 cancels out */}
+              <div className="px-5 pt-4 pb-2">
+                <PromptPerformanceTable results={results} />
+              </div>
             </div>
           )}
         </div>
