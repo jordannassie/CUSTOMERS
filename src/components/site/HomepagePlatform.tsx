@@ -2,6 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
+import { PlatformIcon } from "@/components/PlatformIcon";
 import {
   ArrowRight,
   Check,
@@ -274,7 +275,7 @@ function HeroDashboardPreview() {
               ].map(({ name, val, color }) => (
                 <div key={name} className="flex-1">
                   <div className="flex items-center justify-between mb-0.5">
-                    <span className="text-[7px] text-[#777773]">{name}</span>
+                    <PlatformIcon platform={name} size={8} />
                     <span className="text-[7px] font-semibold" style={{ color }}>{val}</span>
                   </div>
                   <div className="h-1 bg-[#F0F0EC] rounded-full overflow-hidden">
@@ -334,12 +335,12 @@ function HeroSection() {
 
         {/* Platform pills */}
         <div className="flex flex-wrap items-center justify-center gap-2 mb-12">
-          {AI_PLATFORMS.map(({ name, color }) => (
+          {AI_PLATFORMS.map(({ name }) => (
             <span
               key={name}
               className="inline-flex items-center gap-1.5 text-[12px] font-medium text-[#777773] bg-white border border-[#E5E5E1] px-3 py-1.5 rounded-full"
             >
-              <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: color }} aria-hidden="true" />
+              <PlatformIcon platform={name} size={14} />
               {name}
             </span>
           ))}
@@ -369,13 +370,6 @@ const SAMPLE_PROMPTS = [
   { text: "Who offers same-day HVAC repair in Phoenix?", platform: "Gemini" },
 ];
 
-const PLATFORM_COLORS: Record<string, string> = {
-  ChatGPT: "#10B981",
-  Claude: "#8B5CF6",
-  Perplexity: "#3B82F6",
-  Gemini: "#EF4444",
-  "Google AI": "#EAB308",
-};
 
 function PromptTrackingSection() {
   const doubled = [...SAMPLE_PROMPTS, ...SAMPLE_PROMPTS];
@@ -400,10 +394,7 @@ function PromptTrackingSection() {
               key={i}
               className="shrink-0 flex items-center gap-2.5 bg-[#FAFAF8] border border-[#E5E5E1] rounded-full px-4 py-2 whitespace-nowrap"
             >
-              <span
-                className="w-2 h-2 rounded-full shrink-0"
-                style={{ backgroundColor: PLATFORM_COLORS[platform] }}
-              />
+              <PlatformIcon platform={platform} size={14} />
               <span className="text-[13px] font-medium text-[#171717]">{text}</span>
               <span className="text-[11px] text-[#A3A3A0]">{platform}</span>
             </div>
@@ -525,7 +516,10 @@ function AIVisibilitySection() {
             <div className="flex flex-col gap-2.5">
               {providerData.map(({ name, score, mentions, total, color }) => (
                 <div key={name} className="flex items-center gap-3">
-                  <span className="text-[12px] font-medium text-[#171717] w-20 shrink-0">{name}</span>
+                  <span className="inline-flex items-center gap-1.5 text-[12px] font-medium text-[#171717] w-24 shrink-0">
+                    <PlatformIcon platform={name} size={14} />
+                    {name}
+                  </span>
                   <div className="flex-1 h-1.5 bg-[#EEEEEA] rounded-full overflow-hidden">
                     <div
                       className="h-full rounded-full"

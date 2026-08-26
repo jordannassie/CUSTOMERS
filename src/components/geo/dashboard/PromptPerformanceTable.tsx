@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Search, CheckCircle2, XCircle, ExternalLink } from "lucide-react";
 import type { VisibilityResultWithPrompt } from "@/lib/geo/dashboard-data";
+import { PlatformIcon } from "@/components/PlatformIcon";
 
 const PROVIDER_LABELS: Record<string, string> = {
   openai: "ChatGPT",
@@ -162,18 +163,9 @@ export default function PromptPerformanceTable({ results }: { results: Visibilit
 
 function ProviderChip({ provider }: { provider: string }) {
   const label = PROVIDER_LABELS[provider] ?? provider;
-  const colors: Record<string, string> = {
-    openai: "bg-[#F0FDF4] text-[#15803D]",
-    anthropic: "bg-[#FDF4FF] text-[#7E22CE]",
-    perplexity: "bg-[#F0F0EC] text-[#1D4ED8]",
-    google_ai_overviews: "bg-[#FFFBEB] text-[#B45309]",
-  };
   return (
-    <span
-      className={`inline-block text-[11px] font-semibold px-2 py-0.5 rounded ${
-        colors[provider] ?? "bg-[#F0F0EC] text-slate-600"
-      }`}
-    >
+    <span className="inline-flex items-center gap-1.5 text-[12px] font-medium text-[#777773] bg-[#F5F5F2] border border-[#E5E5E1] px-2 py-0.5 rounded-md">
+      <PlatformIcon platform={label} size={12} />
       {label}
     </span>
   );

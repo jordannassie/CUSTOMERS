@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { CheckCircle2, XCircle, TrendingUp, TrendingDown } from "lucide-react";
 import DashboardShell from "@/components/geo/dashboard/DashboardShell";
+import { PlatformIcon } from "@/components/PlatformIcon";
 import { Card, EmptyState, PageHeader } from "@/components/geo/dashboard/ui";
 import ScoreTrendChart from "@/components/geo/dashboard/ScoreTrendChart";
 import { getPrimaryBusiness, getLatestRun, getLatestRunResults, getScoreHistory } from "@/lib/geo/dashboard-data";
@@ -141,10 +142,12 @@ export default async function VisibilityPage() {
                 {Array.from(providerMap.entries()).map(([provider, { won: w, total: t }]) => {
                   const pct = Math.round((w / t) * 100);
                   const color = PROVIDER_COLORS[provider] ?? "#94A3B8";
+                  const label = PROVIDER_LABELS[provider] ?? provider;
                   return (
                     <div key={provider} className="flex items-center gap-4">
-                      <span className="text-[13px] font-semibold text-[#171717] w-28 shrink-0">
-                        {PROVIDER_LABELS[provider] ?? provider}
+                      <span className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-[#171717] w-32 shrink-0">
+                        <PlatformIcon platform={label} size={15} />
+                        {label}
                       </span>
                       <div className="flex-1 h-2.5 bg-[#F0F0EC] rounded-full overflow-hidden">
                         <div
@@ -189,15 +192,15 @@ export default async function VisibilityPage() {
                         )}
                       </td>
                       <td className="px-4 py-3">
-                        <span
-                          className="inline-block text-[11px] font-semibold px-2 py-0.5 rounded"
-                          style={{
-                            backgroundColor: `${PROVIDER_COLORS[r.provider] ?? "#94A3B8"}15`,
-                            color: PROVIDER_COLORS[r.provider] ?? "#94A3B8",
-                          }}
-                        >
-                          {PROVIDER_LABELS[r.provider] ?? r.provider}
-                        </span>
+                        {(() => {
+                          const lbl = PROVIDER_LABELS[r.provider] ?? r.provider;
+                          return (
+                            <span className="inline-flex items-center gap-1.5 text-[12px] font-medium text-[#777773] bg-[#F5F5F2] border border-[#E5E5E1] px-2 py-0.5 rounded-md">
+                              <PlatformIcon platform={lbl} size={12} />
+                              {lbl}
+                            </span>
+                          );
+                        })()}
                       </td>
                       <td className="px-4 py-3">
                         {r.business_mentioned ? (
