@@ -38,14 +38,14 @@ export default function RunScanButton({ businessId }: { businessId: string }) {
   }
 
   return (
-    <div className="flex flex-col items-end gap-1.5">
+    <div className="flex flex-col items-end gap-1.5 shrink-0">
       <button
         type="button"
         onClick={handleRun}
         disabled={loading}
-        className="flex items-center gap-2 bg-[#0F172A] text-white text-sm font-semibold px-5 py-2.5 rounded-full hover:bg-[#1e293b] transition-colors disabled:opacity-60"
+        className="flex items-center gap-2 bg-[#2563EB] text-white text-sm font-semibold px-4 py-2 rounded-lg hover:bg-[#1d4ed8] transition-colors disabled:opacity-60 whitespace-nowrap"
       >
-        {loading ? <Loader2 size={15} className="animate-spin" /> : <RefreshCw size={15} />}
+        {loading ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
         {loading ? "Running scan…" : "Run New Scan"}
       </button>
       {error && <p className="text-xs text-[#DC2626] max-w-[240px] text-right">{error}</p>}
