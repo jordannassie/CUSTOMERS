@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { requireUser } from "@/lib/geo/api-auth";
 import { listConfiguredProviders } from "@/lib/geo/providers";
+import { createServiceClient } from "@/lib/supabase/service";
 
 export async function POST(request: NextRequest) {
   const { user, supabase, unauthorized } = await requireUser();
@@ -27,7 +28,8 @@ export async function POST(request: NextRequest) {
     .single();
   if (!business) return NextResponse.json({ error: "Business not found." }, { status: 404 });
 
-  const [{ data: score }, { data: opportunities }, { data: latestRun }] = await Promise.all([
+  const serviceForAgent = createServiceClient();
+  const [{ data: score }, { data: opportunities }, { data: latestRun }, { data: agentReadiness }] = await Promise.all([
     supabase
       .from("visibility_scores")
       .select("*")
@@ -41,6 +43,14 @@ export async function POST(request: NextRequest) {
       .select("id, provider, status, started_at")
       .eq("business_id", businessId)
       .order("started_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+    serviceForAgent
+      .from("agent_readiness_scans")
+      .select("readiness_score, readiness_status, webmcp_detected, webmcp_tool_count, actions_detected, actions_ready, completed_at")
+      .eq("business_id", businessId)
+      .eq("status", "completed")
+      .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle(),
   ]);
@@ -63,6 +73,24 @@ export async function POST(request: NextRequest) {
   } else {
     evidenceLines.push("No open opportunities on file.");
   }
+
+  // AI Agent Readiness evidence
+  if (agentReadiness) {
+    const statusLabel =
+      agentReadiness.readiness_status === "agent_ready" ? "Agent Ready"
+      : agentReadiness.readiness_status === "partially_ready" ? "Partially Ready"
+      : agentReadiness.readiness_status === "needs_work" ? "Needs Work"
+      : "Not Ready";
+    evidenceLines.push(
+      `AI Agent Readiness: ${agentReadiness.readiness_score}/100 — ${statusLabel}. ` +
+      `${agentReadiness.actions_ready}/${agentReadiness.actions_detected} actions agent-ready. ` +
+      `WebMCP ${agentReadiness.webmcp_detected ? `detected (${agentReadiness.webmcp_tool_count} tool${agentReadiness.webmcp_tool_count !== 1 ? "s" : ""})` : "not detected"}. ` +
+      `Last scanned ${agentReadiness.completed_at ? new Date(agentReadiness.completed_at).toLocaleDateString() : "unknown"}.`
+    );
+  } else {
+    evidenceLines.push("AI Agent Readiness: No scan completed yet. WebMCP status unknown.");
+  }
+
   const evidence = evidenceLines.join("\n\n");
 
   const configured = listConfiguredProviders();

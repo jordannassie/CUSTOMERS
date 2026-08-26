@@ -24,22 +24,24 @@ import {
   Search,
   ExternalLink,
   BarChart2,
+  ShieldCheck,
 } from "lucide-react";
 import TrialBanner from "@/components/geo/dashboard/TrialBanner";
 
 const LOGO = "/images/logos/logo-black.png";
 
 const NAV = [
-  { label: "Overview",       href: "/dashboard",              icon: LayoutDashboard },
-  { label: "AI Insights",    href: "/dashboard/visibility",   icon: Sparkles        },
-  { label: "SEO",            href: "/dashboard/seo",          icon: BarChart2       },
-  { label: "Prompts",        href: "/dashboard/prompts",      icon: MessagesSquare  },
-  { label: "Competitors",    href: "/dashboard/competitors",  icon: Users           },
-  { label: "Sources",        href: "/dashboard/citations",    icon: Link2           },
-  { label: "Opportunities",  href: "/dashboard/opportunities",icon: Lightbulb       },
-  { label: "Direct Agent",   href: "/dashboard/direct-agent", icon: Bot             },
-  { label: "Reports",        href: "/dashboard/reports",      icon: FileBarChart    },
-  { label: "Settings",       href: "/dashboard/settings",     icon: Settings        },
+  { label: "Overview",        href: "/dashboard",                    icon: LayoutDashboard },
+  { label: "AI Insights",     href: "/dashboard/visibility",         icon: Sparkles        },
+  { label: "SEO",             href: "/dashboard/seo",                icon: BarChart2       },
+  { label: "Prompts",         href: "/dashboard/prompts",            icon: MessagesSquare  },
+  { label: "Competitors",     href: "/dashboard/competitors",        icon: Users           },
+  { label: "Sources",         href: "/dashboard/citations",          icon: Link2           },
+  { label: "Agent Readiness", href: "/dashboard/agent-readiness",    icon: ShieldCheck,    badge: "New" },
+  { label: "Opportunities",   href: "/dashboard/opportunities",      icon: Lightbulb       },
+  { label: "Direct Agent",    href: "/dashboard/direct-agent",       icon: Bot             },
+  { label: "Reports",         href: "/dashboard/reports",            icon: FileBarChart    },
+  { label: "Settings",        href: "/dashboard/settings",           icon: Settings        },
 ];
 
 interface DashboardShellProps {
@@ -193,7 +195,7 @@ function SidebarContent({
         <p className="text-[9px] font-bold uppercase tracking-widest text-[#A3A3A0] mb-1.5 px-2">
           Pages
         </p>
-        {NAV.map(({ label, href, icon: Icon }) => {
+        {NAV.map(({ label, href, icon: Icon, badge }) => {
           const active = href === "/dashboard" ? pathname === href : pathname.startsWith(href);
           return (
             <Link
@@ -212,7 +214,12 @@ function SidebarContent({
                 aria-hidden="true"
                 className={active ? "text-[#555552]" : "text-[#A3A3A0]"}
               />
-              {label}
+              <span className="flex-1">{label}</span>
+              {badge && (
+                <span className="text-[9px] font-bold bg-[#0066FF] text-white px-1.5 py-0.5 rounded-full uppercase tracking-wide leading-none">
+                  {badge}
+                </span>
+              )}
             </Link>
           );
         })}

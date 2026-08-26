@@ -1589,7 +1589,161 @@ function AgentTabContent() {
   );
 }
 
-// ─── 8. AGENCY / RESELLER ──────────────────────────────────────────────────
+// ─── 8. AI AGENT READY WEBSITE ────────────────────────────────────────────
+
+function AgentReadySection() {
+  return (
+    <Section id="agent-ready" bg="bg-white" className="border-b border-[#EEEEEA]">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-14 lg:gap-20 items-center">
+        {/* Left copy */}
+        <div>
+          <Eyebrow>
+            <Bot size={11} />
+            AI Agent Ready
+          </Eyebrow>
+          <H2 className="mb-4">
+            Is your website ready for AI agents?
+          </H2>
+          <Body className="mb-4">
+            AI search is changing. Websites need to be ready for agents, not just humans.
+            Customers.Direct scans your website to detect whether AI agents can understand and use the actions that matter most — contacting you, requesting a quote, booking, searching, or purchasing.
+          </Body>
+          <Body className="mb-6">
+            If something is missing, Customers.Direct shows you exactly what needs to change and creates the Claude prompt to help update your website.
+          </Body>
+
+          <div className="flex items-center gap-3 flex-wrap mb-8">
+            <a
+              href="/signup"
+              className="inline-flex items-center gap-2 bg-[#171717] text-white font-semibold px-5 py-3 rounded-lg hover:bg-[#2A2A2A] transition-all text-[14px]"
+            >
+              Check My Website <ArrowRight size={14} />
+            </a>
+            <a
+              href="/signup"
+              className="inline-flex items-center gap-2 border border-[#E5E5E1] text-[#171717] font-semibold px-5 py-3 rounded-lg hover:border-[#AAAAAA] transition-all text-[14px]"
+            >
+              Start Free
+            </a>
+          </div>
+
+          <div className="space-y-3">
+            {[
+              "Detects contact, booking, quote, and purchase flows",
+              "Checks for WebMCP support — the emerging agentic web standard",
+              "Creates the exact Claude prompt to make each action agent-ready",
+              "Verifies the update worked after you apply the fix",
+            ].map((point) => (
+              <div key={point} className="flex items-start gap-2.5">
+                <CheckCircle2 size={15} className="text-[#0066FF] mt-0.5 shrink-0" />
+                <p className="text-[14px] text-[#444440]">{point}</p>
+              </div>
+            ))}
+          </div>
+
+          <p className="mt-6 text-[12px] text-[#AAAAAA]">
+            WebMCP is an emerging web standard for exposing structured website tools to compatible AI agents and agentic browsers. Support is still evolving.
+          </p>
+        </div>
+
+        {/* Right: demo readiness card */}
+        <div className="flex justify-center">
+          <AgentReadinessDemoCard />
+        </div>
+      </div>
+    </Section>
+  );
+}
+
+function AgentReadinessDemoCard() {
+  const actions = [
+    { label: "Business information", status: "ready" as const, tool: null },
+    { label: "Contact form", status: "ready" as const, tool: "contact_business" },
+    { label: "Request a Quote", status: "needs_update" as const, tool: "request_quote" },
+    { label: "Book an Appointment", status: "needs_update" as const, tool: "book_appointment" },
+    { label: "WebMCP detected", status: "not_found" as const, tool: null },
+  ];
+
+  return (
+    <div className="w-full max-w-[380px] bg-white border border-[#E5E5E1] rounded-2xl shadow-xl overflow-hidden">
+      {/* Header */}
+      <div className="bg-[#FAFAF8] border-b border-[#EEEEEA] px-5 py-4">
+        <div className="flex items-center gap-2 mb-0.5">
+          <Bot size={14} className="text-[#0066FF]" />
+          <p className="text-[12px] font-bold text-[#171717]">AI Agent Readiness</p>
+          <span className="ml-auto text-[10px] text-[#AAAAAA]">example.com</span>
+        </div>
+      </div>
+
+      {/* Score */}
+      <div className="px-5 py-5 border-b border-[#EEEEEA]">
+        <div className="flex items-center gap-4">
+          <div>
+            <p className="text-[42px] font-bold text-[#171717] leading-none">42</p>
+            <p className="text-[10px] text-[#A3A3A0] mt-0.5">out of 100</p>
+          </div>
+          <div>
+            <p className="text-[15px] font-bold text-amber-600 mb-1">Partially Ready</p>
+            <div className="w-[140px] h-2 bg-[#F0F0EC] rounded-full overflow-hidden">
+              <div className="h-full bg-[#0066FF] rounded-full" style={{ width: "42%" }} />
+            </div>
+          </div>
+        </div>
+        <p className="text-[11px] text-[#AAAAAA] mt-3">3 improvements found</p>
+      </div>
+
+      {/* Action list */}
+      <div className="px-5 py-4 space-y-2.5">
+        {actions.map((action) => (
+          <div key={action.label} className="flex items-center gap-2.5">
+            {action.status === "ready" ? (
+              <CheckCircle2 size={14} className="text-emerald-500 shrink-0" />
+            ) : action.status === "needs_update" ? (
+              <span className="w-3.5 h-3.5 rounded-full border-2 border-amber-400 shrink-0 flex items-center justify-center">
+                <span className="w-1.5 h-1.5 bg-amber-400 rounded-full" />
+              </span>
+            ) : (
+              <XCircle size={14} className="text-[#D4D4CF] shrink-0" />
+            )}
+            <span className={`text-[12px] flex-1 ${
+              action.status === "ready" ? "text-[#444440]"
+              : action.status === "needs_update" ? "text-amber-700"
+              : "text-[#AAAAAA]"
+            }`}>
+              {action.label}
+            </span>
+            {action.status === "needs_update" && (
+              <span className="text-[9px] text-amber-600 font-semibold bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded-full">
+                Needs Update
+              </span>
+            )}
+            {action.status === "not_found" && (
+              <span className="text-[9px] text-[#AAAAAA] font-semibold bg-[#F5F5F3] border border-[#E5E5E1] px-1.5 py-0.5 rounded-full">
+                Not Detected
+              </span>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {/* CTA buttons */}
+      <div className="px-5 pb-5 flex gap-2">
+        <div className="flex-1 bg-[#171717] text-white text-[12px] font-semibold px-3 py-2 rounded-lg text-center">
+          Fix with Claude
+        </div>
+        <div className="flex-1 border border-[#E5E5E1] text-[#171717] text-[12px] font-semibold px-3 py-2 rounded-lg text-center">
+          Verify Update
+        </div>
+      </div>
+
+      <div className="px-5 pb-4">
+        <p className="text-[10px] text-[#CBCBC8] text-center">Illustrative example — your results will vary</p>
+      </div>
+    </div>
+  );
+}
+
+// ─── 9. AGENCY / RESELLER ──────────────────────────────────────────────────
 
 function AgencySection() {
   return (
@@ -2199,6 +2353,7 @@ export default function HomepagePlatform() {
       <BannerRotationSection />
       <PromptTrackingSection />
       <ProductTabsSection />
+      <AgentReadySection />
       <AgencySection />
       <HowItWorksSection />
       <TestimonialsSection />

@@ -31,16 +31,29 @@ export default async function DashboardPage() {
   const agg = await getDashboardAggregates(business.id);
   const { overview, history, models, competitors, citations, ownPages, results, hasAnyRun } = agg;
 
-  // Opportunities — fetch separately (not in aggregator to keep it lean)
+  // Opportunities + Agent Readiness — fetch separately (not in aggregator to keep it lean)
   const { createClient } = await import("@/lib/supabase/server");
+  const { createServiceClient } = await import("@/lib/supabase/service");
   const supabase = await createClient();
-  const { data: oppsData } = await supabase
-    .from("opportunities")
-    .select("id, title, description, evidence, impact, status, category, claude_prompt, affected_url")
-    .eq("business_id", business.id)
-    .eq("status", "open")
-    .order("created_at", { ascending: false })
-    .limit(5);
+  const service = createServiceClient();
+
+  const [{ data: oppsData }, { data: agentScan }] = await Promise.all([
+    supabase
+      .from("opportunities")
+      .select("id, title, description, evidence, impact, status, category, claude_prompt, affected_url")
+      .eq("business_id", business.id)
+      .eq("status", "open")
+      .order("created_at", { ascending: false })
+      .limit(5),
+    service
+      .from("agent_readiness_scans")
+      .select("readiness_score, readiness_status, webmcp_detected, webmcp_tool_count, actions_detected, actions_ready, completed_at")
+      .eq("business_id", business.id)
+      .eq("status", "completed")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+  ]);
   const openOpps = oppsData ?? [];
 
   const { directScore, directScoreDelta, mentionRate, mentionRateDelta,
@@ -425,6 +438,56 @@ export default async function DashboardPage() {
               />
             </div>
           )}
+
+          {/* ── AI Agent Readiness card ───────────────────────────── */}
+          <div className="border-b border-[#EEEEEA] px-5 py-4">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-1.5">
+                <p className="text-[12px] font-bold text-[#171717]">AI Agent Readiness</p>
+                <span className="text-[8px] font-bold bg-[#0066FF] text-white px-1.5 py-0.5 rounded-full uppercase tracking-wide">New</span>
+              </div>
+              <CheckCircle2 size={12} className="text-[#D4D4CF]" />
+            </div>
+            {agentScan ? (
+              <div>
+                <div className="flex items-center gap-3 mb-2">
+                  <span className="text-2xl font-bold text-[#171717]">{agentScan.readiness_score ?? 0}</span>
+                  <div>
+                    <p className={`text-[11px] font-semibold ${
+                      agentScan.readiness_status === "agent_ready" ? "text-emerald-600"
+                      : agentScan.readiness_status === "partially_ready" ? "text-amber-600"
+                      : agentScan.readiness_status === "needs_work" ? "text-orange-600"
+                      : "text-red-600"
+                    }`}>
+                      {agentScan.readiness_status === "agent_ready" ? "Agent Ready"
+                        : agentScan.readiness_status === "partially_ready" ? "Partially Ready"
+                        : agentScan.readiness_status === "needs_work" ? "Needs Work"
+                        : "Not Ready"}
+                    </p>
+                    <p className="text-[10px] text-[#A3A3A0]">
+                      {agentScan.actions_ready}/{agentScan.actions_detected} actions ready
+                      · WebMCP {agentScan.webmcp_detected ? `✓ (${agentScan.webmcp_tool_count})` : "not detected"}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex gap-2 flex-wrap">
+                  <Link href="/dashboard/agent-readiness" className="text-[11px] font-semibold text-[#0066FF] hover:underline flex items-center gap-0.5">
+                    View details <ArrowRight size={10} />
+                  </Link>
+                </div>
+              </div>
+            ) : (
+              <div>
+                <p className="text-[11px] text-[#A3A3A0] mb-2">Check if AI agents can understand and use your website.</p>
+                <Link
+                  href="/dashboard/agent-readiness"
+                  className="text-[11.5px] font-semibold text-[#0066FF] hover:underline flex items-center gap-0.5"
+                >
+                  Scan Website <ArrowRight size={10} />
+                </Link>
+              </div>
+            )}
+          </div>
 
           {/* ── Opportunities ─────────────────────────────────────── */}
           <div className="flex-1 px-5 py-4">
