@@ -22,36 +22,39 @@ import {
   Menu,
   X,
   Check,
+  Search,
 } from "lucide-react";
 
 const LOGO = "/images/logos/logo-black.png";
 
 const NAV = [
-  { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard, badge: null },
-  { label: "AI Insights", href: "/dashboard/visibility", icon: Sparkles, badge: "NEW" },
-  { label: "Prompts", href: "/dashboard/prompts", icon: MessagesSquare, badge: null },
-  { label: "Competitors", href: "/dashboard/competitors", icon: Users, badge: null },
-  { label: "Opportunities", href: "/dashboard/opportunities", icon: Lightbulb, badge: null },
-  { label: "Citations", href: "/dashboard/citations", icon: Link2, badge: null },
-  { label: "Direct Agent", href: "/dashboard/direct-agent", icon: Bot, badge: null },
-  { label: "Reports", href: "/dashboard/reports", icon: FileBarChart, badge: null },
-  { label: "Settings", href: "/dashboard/settings", icon: Settings, badge: null },
+  { label: "Overview",       href: "/dashboard",              icon: LayoutDashboard },
+  { label: "AI Insights",    href: "/dashboard/visibility",   icon: Sparkles        },
+  { label: "Prompts",        href: "/dashboard/prompts",      icon: MessagesSquare  },
+  { label: "Competitors",    href: "/dashboard/competitors",  icon: Users           },
+  { label: "Sources",        href: "/dashboard/citations",    icon: Link2           },
+  { label: "Opportunities",  href: "/dashboard/opportunities",icon: Lightbulb       },
+  { label: "Direct Agent",   href: "/dashboard/direct-agent", icon: Bot             },
+  { label: "Reports",        href: "/dashboard/reports",      icon: FileBarChart    },
+  { label: "Settings",       href: "/dashboard/settings",     icon: Settings        },
 ];
 
 interface DashboardShellProps {
   businessId: string;
   businessName: string;
   children: React.ReactNode;
+  /** When true, children fill the full content area with no padding (overview page). Default: false */
+  fullBleed?: boolean;
 }
 
-export default function DashboardShell({ businessId, businessName, children }: DashboardShellProps) {
+export default function DashboardShell({ businessId, businessName, children, fullBleed = false }: DashboardShellProps) {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
     <div className="min-h-screen bg-[#FAFAF8] flex">
       {/* Desktop sidebar */}
-      <aside className="hidden lg:flex flex-col w-[220px] shrink-0 bg-white border-r border-[#E5E5E1] h-screen sticky top-0 overflow-y-auto">
+      <aside className="hidden lg:flex flex-col w-[200px] shrink-0 bg-white border-r border-[#E5E5E1] h-screen sticky top-0 overflow-y-auto">
         <SidebarContent
           pathname={pathname}
           businessId={businessId}
@@ -66,7 +69,8 @@ export default function DashboardShell({ businessId, businessName, children }: D
             className="absolute inset-0 bg-black/20 backdrop-blur-[2px]"
             onClick={() => setMobileOpen(false)}
           />
-          <aside className="relative z-10 w-[220px] bg-white h-full flex flex-col overflow-y-auto border-r border-[#E5E5E1]" style={{ boxShadow: "4px 0 24px rgba(0,0,0,0.08)" }}>
+          <aside className="relative z-10 w-[200px] bg-white h-full flex flex-col overflow-y-auto border-r border-[#E5E5E1]"
+            style={{ boxShadow: "4px 0 24px rgba(0,0,0,0.08)" }}>
             <SidebarContent
               pathname={pathname}
               businessId={businessId}
@@ -77,7 +81,7 @@ export default function DashboardShell({ businessId, businessName, children }: D
         </div>
       )}
 
-      {/* Main content area */}
+      {/* Main content */}
       <div className="flex-1 min-w-0 flex flex-col">
         {/* Mobile top bar */}
         <div className="lg:hidden sticky top-0 z-40 bg-white border-b border-[#E5E5E1] px-4 py-3 flex items-center justify-between">
@@ -91,25 +95,35 @@ export default function DashboardShell({ businessId, businessName, children }: D
             {mobileOpen ? <X size={20} aria-hidden="true" /> : <Menu size={20} aria-hidden="true" />}
           </button>
           <Link href="/dashboard" aria-label="Customers.Direct — Dashboard">
-            <Image
-              src={LOGO}
-              alt="Customers.Direct"
-              width={120}
-              height={30}
-              unoptimized
-              className="h-9 w-auto"
-          />
+            <Image src={LOGO} alt="Customers.Direct" width={120} height={30} className="h-9 w-auto" />
           </Link>
           <div className="w-8" aria-hidden="true" />
         </div>
 
-        <main className="flex-1 p-5 sm:p-8 max-w-[1200px] w-full mx-auto">
-          {children}
+        <main className="flex-1 min-w-0">
+          {fullBleed ? (
+            children
+          ) : (
+            <div className="p-5 sm:p-8 max-w-[1200px] w-full mx-auto">
+              {children}
+            </div>
+          )}
         </main>
       </div>
     </div>
   );
 }
+
+/** Thin wrapper used by every non-overview dashboard page to get standard padding */
+export function PageWrapper({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="p-5 sm:p-8 max-w-[1200px] w-full mx-auto">
+      {children}
+    </div>
+  );
+}
+
+// ─── Sidebar ──────────────────────────────────────────────────────────────────
 
 function SidebarContent({
   pathname,
@@ -123,50 +137,48 @@ function SidebarContent({
   onNavClick?: () => void;
 }) {
   return (
-    <>
+    <div className="flex flex-col h-full">
       {/* Logo */}
-      <div className="px-4 pt-5 pb-3 shrink-0 border-b border-[#EEEEEA]">
-        <Link
-          href="/dashboard"
-          aria-label="Customers.Direct — Dashboard"
-          onClick={onNavClick}
-        >
-          <Image
-            src={LOGO}
-            alt="Customers.Direct"
-            width={130}
-            height={32}
-            unoptimized
-            className="h-9 w-auto"
-          />
+      <div className="px-4 pt-5 pb-4 shrink-0 border-b border-[#EEEEEA]">
+        <Link href="/dashboard" aria-label="Customers.Direct — Dashboard" onClick={onNavClick}>
+          <Image src={LOGO} alt="Customers.Direct" width={130} height={32} className="h-9 w-auto" />
         </Link>
       </div>
 
-      {/* Business selector */}
-      <div className="px-3 pt-3 pb-2 shrink-0">
-        <p className="text-[9px] font-semibold uppercase tracking-widest text-[#A3A3A0] mb-1.5 px-1">
-          Business
+      {/* Quick actions */}
+      <div className="px-3 pt-4 pb-2 shrink-0">
+        <p className="text-[9px] font-bold uppercase tracking-widest text-[#A3A3A0] mb-2 px-1">
+          Quick Actions
         </p>
         <BusinessSwitcher
           activeBusinessId={businessId}
           activeBusinessName={businessName}
           onSwitch={onNavClick}
         />
+        <button
+          className="mt-1.5 w-full flex items-center gap-2 text-[12px] text-[#A3A3A0] px-3 py-2 rounded-lg hover:bg-[#F5F5F2] hover:text-[#777773] transition-colors"
+          aria-label="Find anything"
+        >
+          <Search size={12} aria-hidden="true" />
+          Find anything…
+        </button>
       </div>
 
-      {/* Divider */}
-      <div className="mx-3 border-t border-[#EEEEEA] mb-2" />
+      <div className="mx-3 border-t border-[#EEEEEA]" />
 
-      {/* Navigation */}
-      <nav className="flex-1 px-3 flex flex-col gap-0.5 overflow-y-auto pb-2" aria-label="Dashboard navigation">
-        {NAV.map(({ label, href, icon: Icon, badge }) => {
+      {/* Pages nav */}
+      <nav className="flex-1 px-3 pt-3 flex flex-col gap-px overflow-y-auto" aria-label="Dashboard navigation">
+        <p className="text-[9px] font-bold uppercase tracking-widest text-[#A3A3A0] mb-1.5 px-2">
+          Pages
+        </p>
+        {NAV.map(({ label, href, icon: Icon }) => {
           const active = href === "/dashboard" ? pathname === href : pathname.startsWith(href);
           return (
             <Link
               key={href}
               href={href}
               onClick={onNavClick}
-              className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] font-medium transition-colors ${
+              className={`flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-[12.5px] font-medium transition-colors ${
                 active
                   ? "bg-[#F0F0EC] text-[#171717]"
                   : "text-[#777773] hover:bg-[#F5F5F2] hover:text-[#171717]"
@@ -174,16 +186,11 @@ function SidebarContent({
               aria-current={active ? "page" : undefined}
             >
               <Icon
-                size={15}
+                size={14}
                 aria-hidden="true"
-                className={active ? "text-[#171717]" : "text-[#A3A3A0]"}
+                className={active ? "text-[#555552]" : "text-[#A3A3A0]"}
               />
-              <span className="flex-1">{label}</span>
-              {badge && (
-                <span className="text-[9px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded-md bg-[#EEEEEA] text-[#777773]">
-                  {badge}
-                </span>
-              )}
+              {label}
             </Link>
           );
         })}
@@ -194,16 +201,18 @@ function SidebarContent({
         <form action="/auth/signout" method="POST">
           <button
             type="submit"
-            className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] font-medium text-[#A3A3A0] hover:bg-[#F5F5F2] hover:text-[#777773] transition-colors w-full"
+            className="flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-[12.5px] font-medium text-[#A3A3A0] hover:bg-[#F5F5F2] hover:text-[#777773] transition-colors w-full"
           >
-            <LogOut size={15} aria-hidden="true" />
+            <LogOut size={14} aria-hidden="true" />
             Log out
           </button>
         </form>
       </div>
-    </>
+    </div>
   );
 }
+
+// ─── Business Switcher ────────────────────────────────────────────────────────
 
 interface BusinessSummary {
   id: string;
@@ -232,33 +241,22 @@ function BusinessSwitcher({
     if (!open || businesses !== null) return;
     let cancelled = false;
     fetch("/api/geo/businesses")
-      .then((res) => res.json())
-      .then((data) => {
-        if (!cancelled) setBusinesses(data.businesses ?? []);
-      })
-      .catch(() => {
-        if (!cancelled) setBusinesses([]);
-      });
-    return () => {
-      cancelled = true;
-    };
+      .then((r) => r.json())
+      .then((d) => { if (!cancelled) setBusinesses(d.businesses ?? []); })
+      .catch(() => { if (!cancelled) setBusinesses([]); });
+    return () => { cancelled = true; };
   }, [open, businesses]);
 
   useEffect(() => {
     function onClickOutside(e: MouseEvent) {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) setOpen(false);
     }
     document.addEventListener("mousedown", onClickOutside);
     return () => document.removeEventListener("mousedown", onClickOutside);
   }, []);
 
   async function switchTo(id: string) {
-    if (id === activeBusinessId) {
-      setOpen(false);
-      return;
-    }
+    if (id === activeBusinessId) { setOpen(false); return; }
     setSwitching(id);
     try {
       const res = await fetch("/api/geo/businesses/active", {
@@ -266,40 +264,47 @@ function BusinessSwitcher({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ businessId: id }),
       });
-      if (!res.ok) throw new Error("Could not switch business.");
+      if (!res.ok) throw new Error();
       setOpen(false);
       onSwitch?.();
       router.push("/dashboard");
       router.refresh();
-    } catch {
-      // silent no-op
-    } finally {
-      setSwitching(null);
-    }
+    } catch { /* silent */ } finally { setSwitching(null); }
   }
 
-  function locationOf(b: BusinessSummary): string | null {
+  function locationOf(b: BusinessSummary) {
     if (b.domain) return b.domain;
     if (b.primary_city) return b.primary_region ? `${b.primary_city}, ${b.primary_region}` : b.primary_city;
     return null;
   }
+
+  // Generate a consistent color for the business pill
+  const initials = activeBusinessName.split(" ").map(w => w[0]).slice(0, 2).join("").toUpperCase();
+  const PILL_COLORS = ["#F59E0B","#3B82F6","#10B981","#8B5CF6","#EF4444","#EC4899","#06B6D4"];
+  const pillColor = PILL_COLORS[activeBusinessName.length % PILL_COLORS.length];
 
   return (
     <div className="relative" ref={containerRef}>
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="w-full flex items-center justify-between gap-2 text-left rounded-lg border border-[#E5E5E1] px-3 py-2 hover:bg-[#F5F5F2] hover:border-[#D4D4CF] transition-colors"
+        className="w-full flex items-center justify-between gap-2 text-left rounded-lg border border-[#E5E5E1] px-2.5 py-2 hover:bg-[#F5F5F2] hover:border-[#D4D4CF] transition-colors"
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-label="Switch business"
       >
         <div className="flex items-center gap-2 min-w-0">
-          <Globe size={12} className="text-[#A3A3A0] shrink-0" aria-hidden="true" />
-          <span className="text-[13px] font-medium text-[#171717] truncate">{activeBusinessName}</span>
+          <span
+            className="w-5 h-5 rounded-md flex items-center justify-center text-white font-bold text-[9px] shrink-0"
+            style={{ background: pillColor }}
+            aria-hidden="true"
+          >
+            {initials}
+          </span>
+          <span className="text-[12.5px] font-semibold text-[#171717] truncate">{activeBusinessName}</span>
         </div>
         <ChevronDown
-          size={12}
+          size={11}
           className={`text-[#A3A3A0] shrink-0 transition-transform duration-200 ${open ? "rotate-180" : ""}`}
           aria-hidden="true"
         />
@@ -314,11 +319,9 @@ function BusinessSwitcher({
         >
           {businesses === null && (
             <div className="px-3 py-3 flex items-center gap-2 text-xs text-[#A3A3A0]">
-              <Loader2 size={12} className="animate-spin" aria-hidden="true" />
-              Loading businesses…
+              <Loader2 size={12} className="animate-spin" aria-hidden="true" /> Loading…
             </div>
           )}
-
           {businesses?.map((b) => (
             <button
               key={b.id}
@@ -333,19 +336,16 @@ function BusinessSwitcher({
                 {switching === b.id && <Loader2 size={12} className="animate-spin text-[#A3A3A0]" aria-hidden="true" />}
               </span>
               <span className="min-w-0">
-                <span className="block text-[13px] font-medium text-[#171717] truncate">{b.name}</span>
-                {locationOf(b) && (
-                  <span className="block text-[11px] text-[#A3A3A0] truncate">{locationOf(b)}</span>
-                )}
+                <span className="block text-[12.5px] font-medium text-[#171717] truncate">{b.name}</span>
+                {locationOf(b) && <span className="block text-[11px] text-[#A3A3A0] truncate">{locationOf(b)}</span>}
               </span>
             </button>
           ))}
-
           <div className="border-t border-[#EEEEEA] mt-1 pt-1">
             <Link
               href="/dashboard/add-business"
               onClick={() => { setOpen(false); onSwitch?.(); }}
-              className="flex items-center gap-2.5 px-3 py-2 text-[13px] font-medium text-[#777773] hover:text-[#171717] hover:bg-[#F5F5F2] transition-colors"
+              className="flex items-center gap-2.5 px-3 py-2 text-[12.5px] font-medium text-[#777773] hover:text-[#171717] hover:bg-[#F5F5F2] transition-colors"
             >
               <Plus size={13} aria-hidden="true" />
               Add business
