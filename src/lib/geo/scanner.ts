@@ -15,6 +15,54 @@ function normalizeUrl(input: string): string {
   return url;
 }
 
+/**
+ * Basic SSRF guard: rejects URLs that point at private networks, loopback
+ * addresses, cloud metadata endpoints, or non-http(s) schemes.
+ *
+ * This is a best-effort client-supplied URL check. It does NOT resolve DNS
+ * (which would require an async call and still wouldn't fully prevent TOCTOU
+ * attacks), but it blocks the most common attack vectors.
+ */
+function assertSafeUrl(raw: string): void {
+  let parsed: URL;
+  try {
+    parsed = new URL(raw);
+  } catch {
+    throw new Error("Invalid URL");
+  }
+
+  if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+    throw new Error("Only http and https URLs are allowed");
+  }
+
+  const host = parsed.hostname.toLowerCase();
+
+  // Loopback / localhost
+  if (
+    host === "localhost" ||
+    host === "127.0.0.1" ||
+    host === "[::1]" ||
+    host.endsWith(".localhost")
+  ) {
+    throw new Error("Private URL not allowed");
+  }
+
+  // AWS/GCP/Azure metadata
+  if (host === "169.254.169.254" || host === "metadata.google.internal") {
+    throw new Error("Private URL not allowed");
+  }
+
+  // RFC 1918 private ranges (simple string-prefix checks)
+  if (
+    /^10\./.test(host) ||
+    /^192\.168\./.test(host) ||
+    /^172\.(1[6-9]|2\d|3[01])\./.test(host) ||
+    host === "0.0.0.0"
+  ) {
+    throw new Error("Private URL not allowed");
+  }
+}
+
 function extractMeta(html: string, patterns: RegExp[]): string | null {
   for (const pattern of patterns) {
     const match = html.match(pattern);
@@ -69,6 +117,25 @@ function extractJsonLd(html: string): JsonLdOrg | null {
 
 export async function scanWebsite(rawUrl: string): Promise<ScanResult> {
   const url = normalizeUrl(rawUrl);
+
+  // SSRF guard — reject private/loopback targets before making any network call
+  try {
+    assertSafeUrl(url);
+  } catch {
+    // Return a blank scan result; the onboarding wizard handles missing fields gracefully
+    return {
+      name: null,
+      domain: new URL(url).hostname.replace(/^www\./, ""),
+      description: null,
+      industry: null,
+      city: null,
+      region: null,
+      country: null,
+      logoUrl: null,
+      confidence: "deterministic",
+    };
+  }
+
   const domain = new URL(url).hostname.replace(/^www\./, "");
 
   let html = "";

@@ -25,6 +25,7 @@ import {
   ExternalLink,
   BarChart2,
 } from "lucide-react";
+import TrialBanner from "@/components/geo/dashboard/TrialBanner";
 
 const LOGO = "/images/logos/logo-black.png";
 
@@ -216,6 +217,9 @@ function SidebarContent({
           );
         })}
       </nav>
+
+      {/* Trial status banner */}
+      <TrialBanner />
 
       {/* Sign out */}
       <div className="px-3 py-3 border-t border-[#EEEEEA] shrink-0">

@@ -4,11 +4,11 @@ import DashboardShell from "@/components/geo/dashboard/DashboardShell";
 import { Card, PageHeader } from "@/components/geo/dashboard/ui";
 import BusinessSettingsForm from "@/components/geo/dashboard/BusinessSettingsForm";
 import { getPrimaryBusiness } from "@/lib/geo/dashboard-data";
-import { Building2, Check, CreditCard, User, AlertCircle, ExternalLink } from "lucide-react";
+import { Building2, Check, CreditCard, User, AlertCircle, ExternalLink, Clock } from "lucide-react";
 import { getPlan, PLANS, type PlanId } from "@/lib/plans";
 import { stripeEnabled } from "@/lib/stripe";
-import CheckoutButton from "@/components/geo/CheckoutButton";
 import BillingPortalButton from "@/components/geo/BillingPortalButton";
+import { getTrialStatus } from "@/lib/trial";
 
 export const metadata = { title: "Settings", robots: { index: false } };
 
@@ -40,12 +40,15 @@ export default async function SettingsPage({
 
   const params = await searchParams;
   const checkoutSuccess = params.checkout === "success";
+  const trialStatus = await getTrialStatus();
   const currentPlan = getPlan(subscription?.plan);
   const statusInfo =
     STATUS_LABELS[subscription?.status ?? "inactive"] ?? STATUS_LABELS.inactive;
   const hasActiveSub =
     subscription?.status === "active" || subscription?.status === "trialing";
   const hasStripeRecord = !!subscription?.stripe_customer_id;
+  // Trial display: show trial info when no paid sub exists
+  const showTrialStatus = !hasActiveSub && !hasStripeRecord;
 
   return (
     <DashboardShell
@@ -114,100 +117,123 @@ export default async function SettingsPage({
           )}
         </div>
 
-        {/* Current plan summary */}
-        <div className="flex items-center gap-3 mb-5 p-3.5 rounded-lg bg-[#FAFAF8] border border-[#E5E5E1]">
-          <div className="flex-1 min-w-0">
-            <p className="text-[13px] font-semibold text-[#171717]">{currentPlan.name}</p>
-            <p className="text-[12px] text-[#777773]">{currentPlan.priceLabel}</p>
-          </div>
-          <span className={`text-[12px] font-semibold ${statusInfo.color}`}>
-            {statusInfo.label}
-          </span>
-        </div>
-
-        {/* Plan cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-5">
-          {(["ai_visibility", "growth_agent", "autonomous_growth"] as PlanId[]).map((planId) => {
-            const plan = PLANS[planId];
-            const isActive = subscription?.plan === planId && hasActiveSub;
-            return (
-              <div
-                key={planId}
-                className={`relative rounded-xl border p-5 flex flex-col gap-3 ${
-                  isActive
-                    ? "border-[#171717] bg-white"
-                    : plan.popular
-                      ? "border-[#171717]/30 bg-white"
-                      : "border-[#E5E5E1] bg-[#FAFAF8]"
-                }`}
-              >
-                {isActive && (
-                  <span className="absolute -top-2.5 left-4 text-[10px] font-bold uppercase tracking-wider bg-[#171717] text-white px-2.5 py-0.5 rounded-full">
-                    Current plan
-                  </span>
-                )}
-                {plan.popular && !isActive && (
-                  <span className="absolute -top-2.5 left-4 text-[10px] font-bold uppercase tracking-wider bg-[#F5F3FF] text-[#7C3AED] border border-[#EDE9FE] px-2.5 py-0.5 rounded-full">
-                    Most popular
-                  </span>
-                )}
-                <div>
-                  <p className="text-[13px] font-bold text-[#171717]">{plan.name}</p>
-                  <p className="text-[11px] text-[#777773] mt-0.5">{plan.tagline}</p>
-                </div>
-                <div className="flex items-baseline gap-1">
-                  <span className="text-[20px] font-bold text-[#171717]">
-                    {plan.priceLabel.split("/")[0]}
-                  </span>
-                  {plan.priceLabel.includes("/") && (
-                    <span className="text-[12px] text-[#A3A3A0]">/mo</span>
-                  )}
-                </div>
-                <ul className="flex flex-col gap-1.5 flex-1">
-                  {plan.features.slice(0, 5).map((f) => (
-                    <li key={f} className="flex items-start gap-2 text-[11.5px] text-[#555552]">
-                      <Check size={11} className="text-[#166534] mt-0.5 shrink-0" aria-hidden="true" />
-                      {f}
-                    </li>
-                  ))}
-                </ul>
-                {!isActive && (
-                  <div className="mt-auto">
-                    {plan.id === "autonomous_growth" ? (
-                      <a
-                        href="/book"
-                        className="mt-auto inline-flex items-center justify-center gap-1.5 text-[12px] font-semibold border border-[#E5E5E1] text-[#777773] px-3 py-2 rounded-lg hover:bg-[#F5F5F2] transition-colors w-full"
-                      >
-                        Talk to us →
-                      </a>
-                    ) : stripeEnabled && plan.stripePriceId ? (
-                      <CheckoutButton
-                        planId={plan.id as PlanId}
-                        businessId={business.id}
-                        className="inline-flex items-center justify-center gap-1.5 text-[12px] font-semibold bg-[#171717] text-white px-3 py-2 rounded-lg hover:bg-[#2A2A2A] transition-colors w-full"
-                      >
-                        Upgrade →
-                      </CheckoutButton>
-                    ) : (
-                      <a
-                        href="mailto:hello@customers.direct?subject=Plan enquiry"
-                        className="inline-flex items-center justify-center gap-1.5 text-[12px] font-semibold bg-[#171717] text-white px-3 py-2 rounded-lg hover:bg-[#2A2A2A] transition-colors w-full"
-                      >
-                        Contact us →
-                      </a>
-                    )}
-                  </div>
+        {/* Trial / current plan summary */}
+        {showTrialStatus ? (
+          <div className={`mb-5 p-4 rounded-xl border ${
+            trialStatus.isExpired
+              ? "bg-[#FEF2F2] border-[#FECACA]"
+              : trialStatus.daysLeft <= 3
+                ? "bg-[#FEF2F2] border-[#FECACA]"
+                : trialStatus.daysLeft <= 7
+                  ? "bg-[#FFFBEB] border-[#FDE68A]"
+                  : "bg-[#F0FDF4] border-[#BBF7D0]"
+          }`}>
+            <div className="flex items-start gap-3">
+              <Clock size={18} className={`shrink-0 mt-0.5 ${
+                trialStatus.isExpired || trialStatus.daysLeft <= 3
+                  ? "text-[#DC2626]"
+                  : trialStatus.daysLeft <= 7
+                    ? "text-[#D97706]"
+                    : "text-[#166534]"
+              }`} />
+              <div>
+                <p className="text-[13px] font-semibold text-[#171717]">
+                  {trialStatus.isExpired
+                    ? "Free trial ended"
+                    : `14-Day Free Trial — ${trialStatus.daysLeft} day${trialStatus.daysLeft !== 1 ? "s" : ""} remaining`}
+                </p>
+                <p className="text-[12px] text-[#777773] mt-0.5">
+                  {trialStatus.isExpired
+                    ? "Your 14-day free trial has ended. Your data is safe and preserved."
+                    : "Full platform access during your trial. No credit card required."}
+                </p>
+                {trialStatus.trialEndsAt && !trialStatus.isExpired && (
+                  <p className="text-[11px] text-[#A3A3A0] mt-1">
+                    Trial ends: {new Date(trialStatus.trialEndsAt).toLocaleDateString("en-US", {
+                      month: "long", day: "numeric", year: "numeric"
+                    })}
+                  </p>
                 )}
               </div>
-            );
-          })}
-        </div>
+            </div>
+          </div>
+        ) : (
+          <div className="flex items-center gap-3 mb-5 p-3.5 rounded-lg bg-[#FAFAF8] border border-[#E5E5E1]">
+            <div className="flex-1 min-w-0">
+              <p className="text-[13px] font-semibold text-[#171717]">{currentPlan.name}</p>
+              <p className="text-[12px] text-[#777773]">{currentPlan.priceLabel}</p>
+            </div>
+            <span className={`text-[12px] font-semibold ${statusInfo.color}`}>
+              {statusInfo.label}
+            </span>
+          </div>
+        )}
 
-        {hasActiveSub && hasStripeRecord ? (
-          <div className="flex items-center gap-2">
-            <p className="text-[11px] text-[#A3A3A0]">
-              Billing is managed via Stripe.{" "}
+        {/* Paid plan cards — only shown when Stripe is live and user has active paid sub, or always for reference */}
+        {hasActiveSub && (
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-5">
+            {(["ai_visibility", "growth_agent", "autonomous_growth"] as PlanId[]).map((planId) => {
+              const plan = PLANS[planId];
+              const isActive = subscription?.plan === planId && hasActiveSub;
+              return (
+                <div
+                  key={planId}
+                  className={`relative rounded-xl border p-5 flex flex-col gap-3 ${
+                    isActive
+                      ? "border-[#171717] bg-white"
+                      : plan.popular
+                        ? "border-[#171717]/30 bg-white"
+                        : "border-[#E5E5E1] bg-[#FAFAF8]"
+                  }`}
+                >
+                  {isActive && (
+                    <span className="absolute -top-2.5 left-4 text-[10px] font-bold uppercase tracking-wider bg-[#171717] text-white px-2.5 py-0.5 rounded-full">
+                      Current plan
+                    </span>
+                  )}
+                  {plan.popular && !isActive && (
+                    <span className="absolute -top-2.5 left-4 text-[10px] font-bold uppercase tracking-wider bg-[#F5F3FF] text-[#7C3AED] border border-[#EDE9FE] px-2.5 py-0.5 rounded-full">
+                      Most popular
+                    </span>
+                  )}
+                  <div>
+                    <p className="text-[13px] font-bold text-[#171717]">{plan.name}</p>
+                    <p className="text-[11px] text-[#777773] mt-0.5">{plan.tagline}</p>
+                  </div>
+                  <ul className="flex flex-col gap-1.5 flex-1">
+                    {plan.features.slice(0, 5).map((f) => (
+                      <li key={f} className="flex items-start gap-2 text-[11.5px] text-[#555552]">
+                        <Check size={11} className="text-[#166534] mt-0.5 shrink-0" aria-hidden="true" />
+                        {f}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Upgrade CTA for trial / expired users */}
+        {showTrialStatus && (
+          <div className="bg-[#FAFAF8] border border-[#E5E5E1] rounded-xl p-4 mb-2">
+            <p className="text-[13px] font-semibold text-[#171717] mb-1">Paid plans — coming soon</p>
+            <p className="text-[12px] text-[#777773] mb-3">
+              Self-serve subscription plans are launching soon. In the meantime, reach out and
+              we&rsquo;ll set you up directly.
             </p>
+            <a
+              href="mailto:hello@customers.direct?subject=I want to continue with Customers.Direct"
+              className="inline-flex items-center gap-1.5 text-[12px] font-semibold bg-[#171717] text-white px-4 py-2.5 rounded-lg hover:bg-[#2A2A2A] transition-colors"
+            >
+              Contact us to upgrade →
+            </a>
+          </div>
+        )}
+
+        {hasActiveSub && hasStripeRecord && stripeEnabled ? (
+          <div className="flex items-center gap-2">
+            <p className="text-[11px] text-[#A3A3A0]">Billing is managed via Stripe. </p>
             <BillingPortalButton
               businessId={business.id}
               className="text-[11px] text-[#777773] underline hover:no-underline cursor-pointer"
@@ -216,7 +242,7 @@ export default async function SettingsPage({
             </BillingPortalButton>
             <span className="text-[11px] text-[#A3A3A0]">to update payment, view invoices, or cancel.</span>
           </div>
-        ) : (
+        ) : !showTrialStatus && (
           <p className="text-[11px] text-[#A3A3A0]">
             All plans billed monthly. No long-term contract required.{" "}
             <a href="mailto:hello@customers.direct" className="underline hover:no-underline">

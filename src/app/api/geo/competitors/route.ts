@@ -5,6 +5,17 @@ interface CompetitorInput {
   name?: unknown;
   domain?: unknown;
   source?: unknown;
+  place_id?: unknown;
+  formatted_address?: unknown;
+  city?: unknown;
+  region?: unknown;
+  country?: unknown;
+  latitude?: unknown;
+  longitude?: unknown;
+  category?: unknown;
+  phone?: unknown;
+  enrichment_status?: unknown;
+  confirmed?: unknown;
 }
 
 export async function POST(request: NextRequest) {
@@ -30,13 +41,33 @@ export async function POST(request: NextRequest) {
     .single();
   if (!business) return NextResponse.json({ error: "Business not found." }, { status: 404 });
 
+  function cleanStr(v: unknown, max = 300): string | null {
+    if (typeof v !== "string" || !v.trim()) return null;
+    return v.trim().slice(0, max);
+  }
+  function cleanNum(v: unknown): number | null {
+    if (typeof v !== "number" || !isFinite(v)) return null;
+    return v;
+  }
+
   const rows = (Array.isArray(body.competitors) ? body.competitors : [])
     .map((c) => ({
       business_id: businessId,
       name: typeof c.name === "string" ? c.name.trim().slice(0, 200) : "",
-      domain: typeof c.domain === "string" && c.domain.trim() ? c.domain.trim().slice(0, 300) : null,
-      source: typeof c.source === "string" ? c.source.trim().slice(0, 100) : "manual",
+      domain: cleanStr(c.domain),
+      source: cleanStr(c.source) ?? "manual",
       confirmed: true,
+      // Google Places enrichment fields
+      place_id: cleanStr(c.place_id),
+      formatted_address: cleanStr(c.formatted_address),
+      city: cleanStr(c.city, 100),
+      region: cleanStr(c.region, 100),
+      country: cleanStr(c.country, 100),
+      latitude: cleanNum(c.latitude),
+      longitude: cleanNum(c.longitude),
+      category: cleanStr(c.category, 150),
+      phone: cleanStr(c.phone, 50),
+      enrichment_status: cleanStr(c.enrichment_status, 50) ?? "none",
     }))
     .filter((c) => c.name);
 
@@ -44,7 +75,22 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ competitors: [] });
   }
 
-  const { data, error } = await supabase.from("business_competitors").insert(rows).select();
+  // De-duplicate against existing competitors (case-insensitive name match)
+  const { data: existing } = await supabase
+    .from("business_competitors")
+    .select("name")
+    .eq("business_id", businessId);
+  const existingNames = new Set((existing ?? []).map((e: { name: string }) => e.name.toLowerCase()));
+  const newRows = rows.filter((r) => !existingNames.has(r.name.toLowerCase()));
+
+  if (newRows.length === 0) {
+    return NextResponse.json({ competitors: [] });
+  }
+
+  const { data, error } = await supabase
+    .from("business_competitors")
+    .insert(newRows)
+    .select();
 
   if (error) {
     console.error("Save competitors failed:", error.message);

@@ -29,6 +29,18 @@ export interface BusinessCompetitor {
   source: string | null;
   confirmed: boolean;
   created_at: string;
+  // Google Places enrichment fields (added in migration 010)
+  place_id: string | null;
+  formatted_address: string | null;
+  city: string | null;
+  region: string | null;
+  country: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  category: string | null;
+  phone: string | null;
+  /** 'none' | 'partial' | 'complete' | 'failed' */
+  enrichment_status: string;
 }
 
 export interface TrackedPrompt {
