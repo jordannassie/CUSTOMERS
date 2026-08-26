@@ -5,9 +5,16 @@ import { getPrimaryBusiness } from "@/lib/geo/dashboard-data";
 
 export const metadata = { title: "Direct Agent", robots: { index: false } };
 
-export default async function DirectAgentPage() {
+export default async function DirectAgentPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string }>;
+}) {
   const business = await getPrimaryBusiness();
   if (!business || business.status === "onboarding") redirect("/dashboard");
+
+  const { q } = await searchParams;
+  const initialQuestion = typeof q === "string" && q.trim() ? q.trim() : undefined;
 
   return (
     <DashboardShell businessId={business.id} businessName={business.name} businessLogoUrl={business.logo_url} businessDomain={business.domain}>
@@ -15,7 +22,7 @@ export default async function DirectAgentPage() {
       <p className="text-[13px] text-[#777773] mb-6">
         A business-specific assistant grounded in your real visibility data.
       </p>
-      <DirectAgentChat businessId={business.id} />
+      <DirectAgentChat businessId={business.id} initialQuestion={initialQuestion} />
     </DashboardShell>
   );
 }

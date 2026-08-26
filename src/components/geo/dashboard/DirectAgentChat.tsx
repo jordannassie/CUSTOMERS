@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { Send, Loader2, Bot, User } from "lucide-react";
 
 interface Message {
@@ -14,21 +14,30 @@ const SUGGESTIONS = [
   "How do I compare to my tracked competitors?",
 ];
 
-export default function DirectAgentChat({ businessId }: { businessId: string }) {
+export default function DirectAgentChat({
+  businessId,
+  initialQuestion,
+}: {
+  businessId: string;
+  initialQuestion?: string;
+}) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const loadingRef = useRef(false);
   const endRef = useRef<HTMLDivElement>(null);
+  const sentInitial = useRef(false);
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  async function send(question: string) {
+  const send = useCallback(async function send(question: string) {
     const trimmed = question.trim();
-    if (!trimmed || loading) return;
+    if (!trimmed || loadingRef.current) return;
     setMessages((prev) => [...prev, { role: "user", text: trimmed }]);
     setInput("");
+    loadingRef.current = true;
     setLoading(true);
     try {
       const res = await fetch("/api/geo/direct-agent", {
@@ -44,9 +53,18 @@ export default function DirectAgentChat({ businessId }: { businessId: string }) 
     } catch {
       setMessages((prev) => [...prev, { role: "agent", text: "Something went wrong reaching the Direct Agent." }]);
     } finally {
+      loadingRef.current = false;
       setLoading(false);
     }
-  }
+  }, [businessId]);
+
+  // Auto-send initial question from ?q= URL param
+  useEffect(() => {
+    if (initialQuestion && !sentInitial.current) {
+      sentInitial.current = true;
+      send(initialQuestion);
+    }
+  }, [initialQuestion, send]);
 
   return (
     <div className="bg-white rounded-xl border border-[#E5E5E1] flex flex-col h-[560px]">
