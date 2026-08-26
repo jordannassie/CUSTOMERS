@@ -22,11 +22,38 @@ export async function getPrimaryBusiness(): Promise<Business | null> {
   } = await supabase.auth.getUser();
   if (!user) return null;
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("active_business_id")
-    .eq("id", user.id)
-    .maybeSingle();
+  // Lazy profile upsert: if the auth trigger silently failed (e.g. database
+  // quota exhaustion during signup), create the profile row now so the user
+  // can proceed normally without needing to re-register.
+  let profile: { active_business_id: string | null } | null = null;
+  try {
+    const upsertResult = await supabase
+      .from("profiles")
+      .upsert(
+        {
+          id: user.id,
+          email: user.email ?? "",
+          full_name: (user.user_metadata?.full_name ?? user.user_metadata?.name) as string | undefined,
+          avatar_url: user.user_metadata?.avatar_url as string | undefined,
+        },
+        { onConflict: "id", ignoreDuplicates: true }
+      )
+      .select("active_business_id")
+      .maybeSingle();
+    profile = upsertResult.data;
+  } catch {
+    // Upsert failed (e.g. quota) — try a plain read instead
+    try {
+      const readResult = await supabase
+        .from("profiles")
+        .select("active_business_id")
+        .eq("id", user.id)
+        .maybeSingle();
+      profile = readResult.data;
+    } catch {
+      profile = null;
+    }
+  }
 
   if (profile?.active_business_id) {
     const { data: active } = await supabase

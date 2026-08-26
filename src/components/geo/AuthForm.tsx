@@ -186,14 +186,24 @@ export default function AuthForm({ defaultMode = "login" }: AuthFormProps) {
               : "Log in to your Customers.Direct dashboard."}
           </p>
 
-          {/* Google OAuth failure notice */}
+          {/* OAuth callback failure notice */}
           {googleFailed && (
             <div
               className="text-[12px] text-[#92400E] bg-[#FFFBEB] border border-[#FDE68A] rounded-lg px-3.5 py-3 mb-4 flex flex-col gap-1.5"
               role="alert"
             >
-              <p className="font-semibold">Google sign-in is temporarily unavailable.</p>
-              <p>Please use email and password below, or{" "}
+              <p className="font-semibold">Sign-in couldn&apos;t complete — please try again.</p>
+              <p>
+                Google authentication succeeded, but the session couldn&apos;t be saved.
+                This is usually temporary.{" "}
+                <button
+                  type="button"
+                  onClick={handleGoogle}
+                  className="underline font-semibold hover:no-underline"
+                >
+                  Retry with Google
+                </button>{" "}
+                or{" "}
                 <Link href="/contact?topic=support" className="underline font-semibold hover:no-underline">
                   contact support
                 </Link>.
