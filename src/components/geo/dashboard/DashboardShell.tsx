@@ -23,6 +23,8 @@ import {
   Check,
   Search,
   ExternalLink,
+  TrendingUp,
+  Link as LinkIcon,
 } from "lucide-react";
 
 const LOGO = "/images/logos/logo-black.png";
@@ -32,6 +34,9 @@ const NAV = [
   { label: "AI Insights",    href: "/dashboard/visibility",   icon: Sparkles        },
   { label: "Prompts",        href: "/dashboard/prompts",      icon: MessagesSquare  },
   { label: "Competitors",    href: "/dashboard/competitors",  icon: Users           },
+  { label: "SEO Overview",   href: "/dashboard/seo",          icon: Search          },
+  { label: "Keywords",       href: "/dashboard/keywords",     icon: TrendingUp      },
+  { label: "Backlinks",      href: "/dashboard/backlinks",    icon: LinkIcon        },
   { label: "Sources",        href: "/dashboard/citations",    icon: Link2           },
   { label: "Opportunities",  href: "/dashboard/opportunities",icon: Lightbulb       },
   { label: "Direct Agent",   href: "/dashboard/direct-agent", icon: Bot             },
