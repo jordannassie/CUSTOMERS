@@ -18,11 +18,20 @@ export const metadata = { title: "Dashboard", robots: { index: false } };
 
 const OWNER_ADMIN_EMAILS = ["jordannassie@gmail.com"];
 
-export default async function DashboardPage() {
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ my?: string; them?: string }>;
+}) {
+  // Read comparison state from URL params (passed through from /compare → /signup → here)
+  const params = await (searchParams ?? Promise.resolve({} as { my?: string; them?: string }));
+  const initialUrl        = typeof (params as Record<string, string>).my   === "string" ? (params as Record<string, string>).my.trim()   : "";
+  const initialCompetitor = typeof (params as Record<string, string>).them === "string" ? (params as Record<string, string>).them.trim() : "";
+
   const business = await getPrimaryBusiness();
 
   if (!business || business.status === "onboarding") {
-    return <OnboardingWizard />;
+    return <OnboardingWizard initialUrl={initialUrl} initialCompetitor={initialCompetitor} />;
   }
 
   // Check if logged-in user is admin so sidebar shows Admin Panel link

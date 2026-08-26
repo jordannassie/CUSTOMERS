@@ -2,6 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { PlatformIcon } from "@/components/PlatformIcon";
 // AIOrbitAnimation removed — replaced with inline cycling icon in hero headline
 import {
@@ -493,6 +494,58 @@ function InlineAIIcon() {
 
 // ─── Hero section ─────────────────────────────────────────────────────────────
 
+function HeroCompareBar() {
+  const router = useRouter();
+  const [myUrl, setMyUrl] = React.useState("");
+  const [themUrl, setThemUrl] = React.useState("");
+
+  function handleCompare(e: React.FormEvent) {
+    e.preventDefault();
+    const my = myUrl.trim();
+    const them = themUrl.trim();
+    if (!my || !them) return;
+    router.push(`/compare?my=${encodeURIComponent(my)}&them=${encodeURIComponent(them)}`);
+  }
+
+  return (
+    <form onSubmit={handleCompare} className="w-full max-w-[720px] mx-auto">
+      <div className="bg-white border border-[#E5E5E1] rounded-2xl p-2 flex flex-col sm:flex-row items-stretch sm:items-center gap-2 shadow-md"
+        style={{ boxShadow: "0 4px 24px rgba(0,0,0,0.06), 0 1px 4px rgba(0,0,0,0.04)" }}>
+        <input
+          type="text"
+          value={myUrl}
+          onChange={(e) => setMyUrl(e.target.value)}
+          placeholder="yourbusiness.com"
+          className="flex-1 px-4 py-3 text-[14px] text-[#171717] placeholder:text-[#C0C0BB] bg-transparent focus:outline-none"
+          autoComplete="off"
+        />
+        <div className="hidden sm:flex items-center justify-center px-1">
+          <span className="text-[10.5px] font-bold text-[#A3A3A0] bg-[#F5F5F2] rounded-full px-2.5 py-0.5">VS</span>
+        </div>
+        <input
+          type="text"
+          value={themUrl}
+          onChange={(e) => setThemUrl(e.target.value)}
+          placeholder="competitor.com"
+          className="flex-1 px-4 py-3 text-[14px] text-[#171717] placeholder:text-[#C0C0BB] bg-transparent focus:outline-none border-t sm:border-t-0 sm:border-l border-[#F0F0EC]"
+          autoComplete="off"
+        />
+        <button
+          type="submit"
+          disabled={!myUrl.trim() || !themUrl.trim()}
+          className="flex items-center justify-center gap-2 bg-[#0866F5] hover:bg-[#0757D4] text-white text-[13.5px] font-bold px-5 py-3 rounded-xl transition-colors disabled:opacity-50 shrink-0 active:scale-[0.97]"
+        >
+          Compare Free
+          <ArrowRight size={14} aria-hidden="true" />
+        </button>
+      </div>
+      <p className="text-[11.5px] text-[#A3A3A0] text-center mt-2.5">
+        Free · No account needed · Results in ~10 seconds
+      </p>
+    </form>
+  );
+}
+
 function HeroSection() {
   return (
     <section className="bg-[#FAFAF8] px-4 pt-16 pb-10 sm:pt-20 sm:pb-12 overflow-hidden border-b border-[#EEEEEA]">
@@ -500,34 +553,32 @@ function HeroSection() {
 
         {/* Eyebrow */}
         <div className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-[#777773] bg-[#F0F0EC] border border-[#E5E5E1] px-3 py-1 rounded-full mb-6 uppercase tracking-wider">
-          AI search visibility for businesses and agencies
+          AI Visibility Platform
         </div>
 
-        {/* Headline with inline cycling icon */}
-        <h1 className="text-[40px] sm:text-[54px] lg:text-[60px] font-bold text-[#171717] leading-[1.1] tracking-tight mb-6">
-          See how <InlineAIIcon /> AI finds, ranks,{" "}
-          and recommends your business.
+        {/* Headline */}
+        <h1 className="text-[40px] sm:text-[54px] lg:text-[60px] font-bold text-[#171717] leading-[1.1] tracking-tight mb-4">
+          See who AI recommends.
+          <br />
+          <span className="text-[#0866F5]">You or your competitor?</span>
         </h1>
 
         {/* Sub-description */}
-        <p className="text-[16px] sm:text-[17px] text-[#777773] leading-relaxed mb-8 max-w-[580px] mx-auto">
-          Track your visibility across ChatGPT, Claude, Perplexity, Gemini, and Google AI.
-          Compare competitors, uncover the sources shaping AI answers, and turn every insight
-          into an actionable fix.
+        <p className="text-[16px] sm:text-[17px] text-[#777773] leading-relaxed mb-8 max-w-[520px] mx-auto">
+          Compare your website against a competitor in AI search — free, instant, no signup needed.
         </p>
 
-        {/* CTAs */}
+        {/* Compare bar */}
+        <div className="mb-7">
+          <HeroCompareBar />
+        </div>
+
+        {/* Secondary CTA */}
         <div className="flex flex-wrap items-center justify-center gap-3 mb-7">
-          <PrimaryBtn href="/signup">
-            Check My AI Visibility
-            <ArrowRight size={14} aria-hidden="true" />
-          </PrimaryBtn>
-          {/* Book a Demo — overlapping avatar group */}
           <a
             href="/contact?topic=sales"
-            className="inline-flex items-center gap-2.5 bg-white border border-[#E5E5E1] text-[#171717] text-[13.5px] font-semibold px-4 py-2.5 rounded-full shadow-sm hover:bg-[#F5F5F2] hover:-translate-y-px hover:shadow-md transition-all duration-150 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0866F5]/40"
+            className="inline-flex items-center gap-2.5 bg-white border border-[#E5E5E1] text-[#171717] text-[13.5px] font-semibold px-4 py-2.5 rounded-full shadow-sm hover:bg-[#F5F5F2] hover:-translate-y-px hover:shadow-md transition-all duration-150 active:scale-[0.97]"
           >
-            {/* Overlapping avatar group — real team photos */}
             <span className="flex -space-x-2 shrink-0" aria-hidden="true">
               {[
                 "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=48&h=48&fit=crop&crop=face&q=80",
@@ -535,26 +586,11 @@ function HeroSection() {
                 "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=48&h=48&fit=crop&crop=face&q=80",
               ].map((src, i) => (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  key={i}
-                  src={src}
-                  alt=""
-                  className="w-6 h-6 rounded-full border-2 border-white object-cover shrink-0"
-                />
+                <img key={i} src={src} alt="" className="w-6 h-6 rounded-full border-2 border-white object-cover shrink-0" />
               ))}
             </span>
             Book a Demo
           </a>
-        </div>
-
-        {/* Trust signals */}
-        <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-[12px] text-[#A3A3A0] mb-8">
-          {["Free during beta", "No credit card required", "Built for businesses and agencies"].map((s) => (
-            <span key={s} className="inline-flex items-center gap-1.5">
-              <Check size={12} className="text-[#777773] shrink-0" aria-hidden="true" />
-              {s}
-            </span>
-          ))}
         </div>
 
         {/* Platform pills */}
@@ -571,7 +607,7 @@ function HeroSection() {
         </div>
       </div>
 
-      {/* Dashboard preview — full-width below the centered copy */}
+      {/* Dashboard preview */}
       <div className="fade-up fade-up-delay-2 max-w-4xl mx-auto mt-14">
         <HeroDashboardPreview />
       </div>

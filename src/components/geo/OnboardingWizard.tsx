@@ -23,12 +23,19 @@ const INDUSTRY_SUGGESTIONS = [
   "landscaping company",
 ];
 
-export default function OnboardingWizard() {
+interface OnboardingWizardProps {
+  /** Pre-fill the website URL from a comparison (from /?my=...) */
+  initialUrl?: string;
+  /** Pre-fill the competitor from a comparison (from /?them=...) */
+  initialCompetitor?: string;
+}
+
+export default function OnboardingWizard({ initialUrl = "", initialCompetitor = "" }: OnboardingWizardProps) {
   const router = useRouter();
   const [step, setStep] = useState<Step>("url");
   const [error, setError] = useState<string | null>(null);
 
-  const [url, setUrl] = useState("");
+  const [url, setUrl] = useState(initialUrl);
   const [scan, setScan] = useState<ScanResult | null>(null);
 
   const [form, setForm] = useState({
@@ -125,8 +132,30 @@ export default function OnboardingWizard() {
         body: JSON.stringify({ business_id: data.businessId }),
       });
       const discoverData = await discoverRes.json();
-      setSuggestions(discoverData.suggestions ?? []);
-      setSelectedCompetitors(discoverData.suggestions ?? []);
+      const baseSuggestions: CompetitorSuggestion[] = discoverData.suggestions ?? [];
+
+      // Prepend the competitor from the homepage comparison (if any and not a duplicate)
+      let allSuggestions = baseSuggestions;
+      let preSelected = baseSuggestions;
+      if (initialCompetitor) {
+        const domain = initialCompetitor
+          .replace(/^https?:\/\//i, "")
+          .replace(/^www\./i, "")
+          .split("/")[0]
+          .toLowerCase();
+        const name = domain;
+        const alreadyIn = baseSuggestions.some(
+          (s) => s.domain?.toLowerCase() === domain || s.name.toLowerCase() === name
+        );
+        if (!alreadyIn) {
+          const prefilledEntry: CompetitorSuggestion = { name: domain, domain, source: "manual" };
+          allSuggestions = [prefilledEntry, ...baseSuggestions];
+          preSelected = [prefilledEntry, ...baseSuggestions];
+        }
+      }
+
+      setSuggestions(allSuggestions);
+      setSelectedCompetitors(preSelected);
       setStep("competitors");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong.");
