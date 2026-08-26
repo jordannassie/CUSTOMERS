@@ -6,18 +6,17 @@ import { createServiceClient } from "@/lib/supabase/service";
 // Public metadata — no secrets
 export const metadata = { title: "Admin | Customers.Direct", robots: { index: false } };
 
+// Hardcoded owner admin — always has access regardless of database state
+const OWNER_EMAILS = ["jordannassie@gmail.com"];
+
 async function getAdminUser() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return null;
 
-  // Fast path: email listed in ADMIN_EMAILS env var (comma-separated)
-  const adminEmails = (process.env.ADMIN_EMAILS ?? "")
-    .split(",")
-    .map((e) => e.trim().toLowerCase())
-    .filter(Boolean);
-  if (user.email && adminEmails.includes(user.email.toLowerCase())) {
-    return { email: user.email };
+  // Owner always gets in
+  if (user.email && OWNER_EMAILS.includes(user.email.toLowerCase())) {
+    return { email: user.email, isOwner: true };
   }
 
   // Database check: profiles.account_type = 'admin'
@@ -28,7 +27,7 @@ async function getAdminUser() {
     .eq("id", user.id)
     .maybeSingle();
   if (profile?.account_type !== "admin") return null;
-  return { email: user.email ?? "" };
+  return { email: user.email ?? "", isOwner: false };
 }
 
 const NAV_ITEMS = [
@@ -71,9 +70,9 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           <span className="text-[11px] text-white/30 hidden sm:block">{admin.email}</span>
           <Link
             href="/dashboard"
-            className="text-[11px] text-white/30 hover:text-white/60 transition-colors"
+            className="text-[11px] font-semibold text-[#0866F5] hover:text-blue-300 transition-colors border border-[#0866F5]/30 hover:border-blue-300/50 px-3 py-1 rounded-full"
           >
-            ← App
+            ← User View
           </Link>
         </div>
       </header>
