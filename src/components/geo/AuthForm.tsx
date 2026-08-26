@@ -10,7 +10,7 @@ import { createClient } from "@/lib/supabase/client";
 const LOGO = "/images/logos/logo-black.png";
 
 interface AuthFormProps {
-  mode: "login" | "signup";
+  defaultMode?: "login" | "signup";
 }
 
 const GoogleIcon = () => (
@@ -22,8 +22,9 @@ const GoogleIcon = () => (
   </svg>
 );
 
-export default function AuthForm({ mode }: AuthFormProps) {
+export default function AuthForm({ defaultMode = "login" }: AuthFormProps) {
   const router = useRouter();
+  const [mode, setMode] = useState<"login" | "signup">(defaultMode);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState<"google" | "email" | null>(null);
@@ -47,12 +48,19 @@ export default function AuthForm({ mode }: AuthFormProps) {
     }
   }, []);
 
+  // Clear form state when switching tabs
+  function switchMode(next: "login" | "signup") {
+    setMode(next);
+    setEmail("");
+    setPassword("");
+    setError(null);
+    setMessage(null);
+  }
+
   async function handleGoogle() {
     setError(null);
     setLoading("google");
     const supabase = createClient();
-    // Preserve any ?next= param the proxy placed on /login so that after
-    // the OAuth callback we return the user to the page they were trying to reach.
     const params = new URLSearchParams(window.location.search);
     const next = params.get("next") ?? "/dashboard";
     const callbackUrl = `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`;
@@ -103,7 +111,7 @@ export default function AuthForm({ mode }: AuthFormProps) {
   }
 
   return (
-    <div className="w-full max-w-[400px]">
+    <div className="w-full max-w-[420px]">
       {/* Logo */}
       <div className="text-center mb-8">
         <Link href="/" aria-label="Customers.Direct — Home">
@@ -121,111 +129,117 @@ export default function AuthForm({ mode }: AuthFormProps) {
 
       {/* Card */}
       <div
-        className="bg-white rounded-2xl border border-[#E5E5E1] p-8"
+        className="bg-white rounded-2xl border border-[#E5E5E1] overflow-hidden"
         style={{ boxShadow: "0 4px 24px rgba(0,0,0,0.06), 0 1px 4px rgba(0,0,0,0.04)" }}
       >
-        <h1 className="text-[22px] font-bold text-[#171717] mb-1.5">
-          {isSignup ? "Check your AI visibility" : "Welcome back"}
-        </h1>
-        <p className="text-[13px] text-[#777773] mb-7">
-          {isSignup
-            ? "Create your Customers.Direct account to get started."
-            : "Log in to your Customers.Direct dashboard."}
-        </p>
-
-        {/* Google button */}
-        <button
-          type="button"
-          onClick={handleGoogle}
-          disabled={loading !== null}
-          className="w-full flex items-center justify-center gap-2.5 bg-white border border-[#E5E5E1] rounded-lg py-2.5 text-[13px] font-medium text-[#171717] hover:bg-[#F5F5F2] hover:border-[#D4D4CF] transition-colors disabled:opacity-60 mb-5 active:scale-[0.98]"
-        >
-          {loading === "google" ? (
-            <Loader2 size={16} className="animate-spin text-[#777773]" aria-hidden="true" />
-          ) : (
-            <GoogleIcon />
-          )}
-          Continue with Google
-        </button>
-
-        {/* Divider */}
-        <div className="flex items-center gap-3 mb-5">
-          <div className="h-px bg-[#EEEEEA] flex-1" />
-          <span className="text-[11px] text-[#A3A3A0] font-medium">or continue with email</span>
-          <div className="h-px bg-[#EEEEEA] flex-1" />
+        {/* ── Tab switcher ──────────────────────────────────────────────── */}
+        <div className="flex border-b border-[#E5E5E1]">
+          {(["login", "signup"] as const).map((tab) => (
+            <button
+              key={tab}
+              type="button"
+              onClick={() => switchMode(tab)}
+              className={`flex-1 py-3.5 text-[13px] font-semibold transition-colors ${
+                mode === tab
+                  ? "text-[#171717] bg-white border-b-2 border-[#171717] -mb-px"
+                  : "text-[#A3A3A0] bg-[#FAFAF8] hover:text-[#777773]"
+              }`}
+              aria-pressed={mode === tab}
+            >
+              {tab === "login" ? "Log In" : "Sign Up"}
+            </button>
+          ))}
         </div>
 
-        {/* Email form */}
-        <form onSubmit={handleEmailAuth} className="flex flex-col gap-4">
-          <div>
-            <label htmlFor="email" className="block text-[11px] font-semibold text-[#777773] uppercase tracking-wide mb-1.5">
-              Email
-            </label>
-            <input
-              id="email"
-              type="email"
-              required
-              autoComplete="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full border border-[#E5E5E1] rounded-lg px-3.5 py-2.5 text-[13px] text-[#171717] bg-white placeholder:text-[#A3A3A0] focus:outline-none focus:ring-2 focus:ring-[#171717]/10 focus:border-[#171717] transition-colors"
-              placeholder="you@business.com"
-            />
-          </div>
-          <div>
-            <label htmlFor="password" className="block text-[11px] font-semibold text-[#777773] uppercase tracking-wide mb-1.5">
-              Password
-            </label>
-            <input
-              id="password"
-              type="password"
-              required
-              minLength={8}
-              autoComplete={isSignup ? "new-password" : "current-password"}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full border border-[#E5E5E1] rounded-lg px-3.5 py-2.5 text-[13px] text-[#171717] bg-white placeholder:text-[#A3A3A0] focus:outline-none focus:ring-2 focus:ring-[#171717]/10 focus:border-[#171717] transition-colors"
-              placeholder="••••••••"
-            />
-          </div>
+        <div className="p-8">
+          {/* Headline */}
+          <h1 className="text-[20px] font-bold text-[#171717] mb-1">
+            {isSignup ? "Check your AI visibility" : "Welcome back"}
+          </h1>
+          <p className="text-[13px] text-[#777773] mb-7">
+            {isSignup
+              ? "Create your Customers.Direct account to get started."
+              : "Log in to your Customers.Direct dashboard."}
+          </p>
 
-          {error && (
-            <div className="text-[12px] text-[#991B1B] bg-[#FEF2F2] border border-[#FECACA] rounded-lg px-3.5 py-2.5" role="alert">
-              {error}
-            </div>
-          )}
-          {message && (
-            <div className="text-[12px] text-[#166534] bg-[#F0FDF4] border border-[#BBF7D0] rounded-lg px-3.5 py-2.5" role="status">
-              {message}
-            </div>
-          )}
-
+          {/* Google button */}
           <button
-            type="submit"
+            type="button"
+            onClick={handleGoogle}
             disabled={loading !== null}
-            className="w-full flex items-center justify-center gap-2 bg-[#171717] text-white font-semibold py-2.5 rounded-lg hover:bg-[#2A2A2A] transition-colors text-[13px] disabled:opacity-60 active:scale-[0.98]"
+            className="w-full flex items-center justify-center gap-2.5 bg-white border border-[#E5E5E1] rounded-lg py-2.5 text-[13px] font-medium text-[#171717] hover:bg-[#F5F5F2] hover:border-[#D4D4CF] transition-colors disabled:opacity-60 mb-5 active:scale-[0.98]"
           >
-            {loading === "email" && <Loader2 size={15} className="animate-spin" aria-hidden="true" />}
-            {isSignup ? "Create Account" : "Log In"}
-            {loading !== "email" && <ArrowRight size={13} aria-hidden="true" />}
+            {loading === "google" ? (
+              <Loader2 size={16} className="animate-spin text-[#777773]" aria-hidden="true" />
+            ) : (
+              <GoogleIcon />
+            )}
+            Continue with Google
           </button>
-        </form>
 
-        <p className="text-center text-[12px] text-[#777773] mt-6">
-          {isSignup ? (
-            <>Already have an account?{" "}
-              <Link href="/login" className="font-semibold text-[#171717] hover:underline underline-offset-2">
-                Log in
-              </Link>
-            </>
-          ) : (
-            <>Don&apos;t have an account?{" "}
-              <Link href="/signup" className="font-semibold text-[#171717] hover:underline underline-offset-2">
-                Sign up
-              </Link>
-            </>
-          )}
-        </p>
+          {/* Divider */}
+          <div className="flex items-center gap-3 mb-5">
+            <div className="h-px bg-[#EEEEEA] flex-1" />
+            <span className="text-[11px] text-[#A3A3A0] font-medium">or continue with email</span>
+            <div className="h-px bg-[#EEEEEA] flex-1" />
+          </div>
+
+          {/* Email form */}
+          <form onSubmit={handleEmailAuth} className="flex flex-col gap-4">
+            <div>
+              <label htmlFor="email" className="block text-[11px] font-semibold text-[#777773] uppercase tracking-wide mb-1.5">
+                Email
+              </label>
+              <input
+                id="email"
+                type="email"
+                required
+                autoComplete="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full border border-[#E5E5E1] rounded-lg px-3.5 py-2.5 text-[13px] text-[#171717] bg-white placeholder:text-[#A3A3A0] focus:outline-none focus:ring-2 focus:ring-[#171717]/10 focus:border-[#171717] transition-colors"
+                placeholder="you@business.com"
+              />
+            </div>
+            <div>
+              <label htmlFor="password" className="block text-[11px] font-semibold text-[#777773] uppercase tracking-wide mb-1.5">
+                Password
+              </label>
+              <input
+                id="password"
+                type="password"
+                required
+                minLength={8}
+                autoComplete={isSignup ? "new-password" : "current-password"}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full border border-[#E5E5E1] rounded-lg px-3.5 py-2.5 text-[13px] text-[#171717] bg-white placeholder:text-[#A3A3A0] focus:outline-none focus:ring-2 focus:ring-[#171717]/10 focus:border-[#171717] transition-colors"
+                placeholder="••••••••"
+              />
+            </div>
+
+            {error && (
+              <div className="text-[12px] text-[#991B1B] bg-[#FEF2F2] border border-[#FECACA] rounded-lg px-3.5 py-2.5" role="alert">
+                {error}
+              </div>
+            )}
+            {message && (
+              <div className="text-[12px] text-[#166534] bg-[#F0FDF4] border border-[#BBF7D0] rounded-lg px-3.5 py-2.5" role="status">
+                {message}
+              </div>
+            )}
+
+            <button
+              type="submit"
+              disabled={loading !== null}
+              className="w-full flex items-center justify-center gap-2 bg-[#171717] text-white font-semibold py-2.5 rounded-lg hover:bg-[#2A2A2A] transition-colors text-[13px] disabled:opacity-60 active:scale-[0.98]"
+            >
+              {loading === "email" && <Loader2 size={15} className="animate-spin" aria-hidden="true" />}
+              {isSignup ? "Create Account" : "Log In"}
+              {loading !== "email" && <ArrowRight size={13} aria-hidden="true" />}
+            </button>
+          </form>
+        </div>
       </div>
     </div>
   );
