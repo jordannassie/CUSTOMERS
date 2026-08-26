@@ -545,60 +545,39 @@ const BANNERS = [
 
 function BannerRotationSection() {
   const [active, setActive] = React.useState(0);
-  const [fading, setFading] = React.useState(false);
 
   React.useEffect(() => {
     const id = setInterval(() => {
-      setFading(true);
-      setTimeout(() => {
-        setActive((a) => (a + 1) % BANNERS.length);
-        setFading(false);
-      }, 400);
-    }, 4500);
+      setActive((a) => (a + 1) % BANNERS.length);
+    }, 4000);
     return () => clearInterval(id);
   }, []);
-
-  function goTo(i: number) {
-    if (i === active) return;
-    setFading(true);
-    setTimeout(() => { setActive(i); setFading(false); }, 400);
-  }
 
   const banner = BANNERS[active];
 
   return (
     <section className="bg-[#171717] overflow-hidden" aria-label="AI sends customers directly to your business">
-      {/* Heading strip */}
+      {/* Heading only */}
       <div className="text-center px-4 pt-12 pb-8">
-        <p className="text-[11px] font-semibold uppercase tracking-widest text-white/30 mb-3">
-          Real impact · Every industry
-        </p>
         <h2 className="text-[28px] sm:text-[36px] font-bold text-white leading-tight tracking-tight max-w-2xl mx-auto">
           AI is already sending customers to businesses that show up.
         </h2>
-        <p className="text-[14px] text-white/40 mt-3 max-w-lg mx-auto">
-          When someone asks an AI assistant for a recommendation, one business gets the customer.
-          Make sure it's yours.
-        </p>
       </div>
 
-      {/* Image */}
-      <div className="relative w-full max-w-5xl mx-auto px-4 pb-4">
+      {/* Image — instant swap, no transition */}
+      <div className="w-full max-w-5xl mx-auto px-4 pb-10">
         <div className="relative rounded-2xl overflow-hidden" style={{ aspectRatio: "16/9" }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
+            key={active}
             src={banner.src}
             alt={banner.alt}
-            className="absolute inset-0 w-full h-full object-cover transition-opacity duration-400"
-            style={{ opacity: fading ? 0 : 1 }}
+            className="absolute inset-0 w-full h-full object-cover"
           />
-          {/* Bottom gradient for pill */}
-          <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/60 to-transparent pointer-events-none" />
-          {/* Industry pill */}
-          <div
-            className="absolute bottom-4 left-4 flex items-center gap-2 bg-white/10 backdrop-blur-sm border border-white/20 rounded-full px-3 py-1.5 transition-opacity duration-400"
-            style={{ opacity: fading ? 0 : 1 }}
-          >
+          {/* Bottom gradient */}
+          <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-black/50 to-transparent pointer-events-none" />
+          {/* Industry label */}
+          <div className="absolute bottom-4 left-4 flex items-center gap-2 bg-white/10 backdrop-blur-sm border border-white/20 rounded-full px-3 py-1.5">
             <span className="text-[11px] font-semibold text-white/90">{banner.industry}</span>
             <span className="text-white/30 text-[10px]">·</span>
             <span className="text-[11px] text-white/60">{banner.platform}</span>
@@ -606,14 +585,14 @@ function BannerRotationSection() {
         </div>
 
         {/* Dot pagination */}
-        <div className="flex items-center justify-center gap-2 mt-5 pb-8">
+        <div className="flex items-center justify-center gap-2 mt-5">
           {BANNERS.map((_, i) => (
             <button
               key={i}
               type="button"
-              onClick={() => goTo(i)}
+              onClick={() => setActive(i)}
               aria-label={`Show slide ${i + 1}`}
-              className="transition-all duration-300 rounded-full"
+              className="rounded-full"
               style={{
                 width: i === active ? 24 : 8,
                 height: 8,
