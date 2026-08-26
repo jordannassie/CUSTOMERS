@@ -742,7 +742,7 @@ export default function PricingPage() {
                   <ArrowRight size={15} />
                 </Link>
                 <Link
-                  href="mailto:hello@customers.direct?subject=Sales enquiry"
+                  href="/contact?topic=enterprise"
                   className="flex items-center gap-2 border border-white/30 text-white font-semibold px-6 py-3.5 rounded-full hover:bg-white/10 transition-all text-[14px] active:scale-[0.97]"
                 >
                   Talk to Sales

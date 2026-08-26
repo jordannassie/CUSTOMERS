@@ -16,6 +16,7 @@ import {
   BookOpen,
   HelpCircle,
   Building2,
+  Mail,
 } from "lucide-react";
 
 const LOGO_WHITE = "/images/logos/logo-white.png";
@@ -57,9 +58,10 @@ const PRODUCT_FEATURES = [
 ] as const;
 
 const RESOURCES = [
-  { label: "How It Works",       href: "/#how-it-works", icon: BookOpen  },
-  { label: "FAQ",                href: "/#faq",           icon: HelpCircle },
-  { label: "Agencies & Resellers", href: "/#agencies",   icon: Building2  },
+  { label: "How It Works",         href: "/#how-it-works", icon: BookOpen  },
+  { label: "FAQ",                  href: "/#faq",           icon: HelpCircle },
+  { label: "Agencies & Resellers", href: "/#agencies",     icon: Building2  },
+  { label: "Contact",              href: "/contact",        icon: Mail      },
 ] as const;
 
 export default function SiteHeader() {

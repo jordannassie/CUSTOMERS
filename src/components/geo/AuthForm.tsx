@@ -28,14 +28,12 @@ export default function AuthForm({ defaultMode = "login" }: AuthFormProps) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState<"google" | "email" | null>(null);
+  const [googleFailed, setGoogleFailed] = useState(false);
   const [error, setError] = useState<string | null>(() => {
     if (typeof window === "undefined") return null;
     const params = new URLSearchParams(window.location.search);
     if (params.get("error") !== "auth_callback_failed") return null;
-    const reason = params.get("reason");
-    return reason
-      ? `Sign-in failed: ${reason}. This usually means the Google connection isn't fully set up yet — try email/password instead, or contact support.`
-      : "Sign-in failed. This usually means the Google connection isn't fully set up yet — try email/password instead, or contact support.";
+    return "google_failed";
   });
   const [message, setMessage] = useState<string | null>(null);
 
@@ -44,6 +42,7 @@ export default function AuthForm({ defaultMode = "login" }: AuthFormProps) {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get("error") === "auth_callback_failed") {
+      setGoogleFailed(true);
       window.history.replaceState(null, "", window.location.pathname);
     }
   }, []);
@@ -75,7 +74,7 @@ export default function AuthForm({ defaultMode = "login" }: AuthFormProps) {
       options: { redirectTo: callbackUrl },
     });
     if (oauthError) {
-      setError(oauthError.message);
+      setGoogleFailed(true);
       setLoading(null);
     }
   }
@@ -88,16 +87,26 @@ export default function AuthForm({ defaultMode = "login" }: AuthFormProps) {
     const supabase = createClient();
 
     if (isSignup) {
+      const siteBase =
+        process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ??
+        window.location.origin;
       const { error: signupError } = await supabase.auth.signUp({
         email,
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback`,
+          emailRedirectTo: `${siteBase}/auth/callback`,
         },
       });
       setLoading(null);
       if (signupError) {
-        setError(signupError.message);
+        const msg = signupError.message.toLowerCase();
+        if (msg.includes("already registered") || msg.includes("already been registered") || msg.includes("user already")) {
+          setError("An account with this email already exists. Try logging in instead.");
+        } else if (msg.includes("password")) {
+          setError("Password must be at least 8 characters.");
+        } else {
+          setError("Unable to create account. Please try again.");
+        }
         return;
       }
       setMessage(
@@ -109,7 +118,14 @@ export default function AuthForm({ defaultMode = "login" }: AuthFormProps) {
     const { error: loginError } = await supabase.auth.signInWithPassword({ email, password });
     setLoading(null);
     if (loginError) {
-      setError(loginError.message);
+      const msg = loginError.message.toLowerCase();
+      if (msg.includes("invalid") || msg.includes("credentials") || msg.includes("password") || msg.includes("email")) {
+        setError("Email or password is incorrect.");
+      } else if (msg.includes("not found") || msg.includes("no user")) {
+        setError("No account found with that email.");
+      } else {
+        setError("Unable to log in. Please try again.");
+      }
       return;
     }
     router.push("/dashboard");
@@ -167,6 +183,21 @@ export default function AuthForm({ defaultMode = "login" }: AuthFormProps) {
               ? "Create your Customers.Direct account to get started."
               : "Log in to your Customers.Direct dashboard."}
           </p>
+
+          {/* Google OAuth failure notice */}
+          {googleFailed && (
+            <div
+              className="text-[12px] text-[#92400E] bg-[#FFFBEB] border border-[#FDE68A] rounded-lg px-3.5 py-3 mb-4 flex flex-col gap-1.5"
+              role="alert"
+            >
+              <p className="font-semibold">Google sign-in is temporarily unavailable.</p>
+              <p>Please use email and password below, or{" "}
+                <Link href="/contact?topic=support" className="underline font-semibold hover:no-underline">
+                  contact support
+                </Link>.
+              </p>
+            </div>
+          )}
 
           {/* Google button */}
           <button
@@ -231,7 +262,7 @@ export default function AuthForm({ defaultMode = "login" }: AuthFormProps) {
               />
             </div>
 
-            {error && (
+            {error && error !== "google_failed" && (
               <div className="text-[12px] text-[#991B1B] bg-[#FEF2F2] border border-[#FECACA] rounded-lg px-3.5 py-2.5" role="alert">
                 {error}
               </div>
@@ -252,8 +283,21 @@ export default function AuthForm({ defaultMode = "login" }: AuthFormProps) {
               {loading !== "email" && <ArrowRight size={13} aria-hidden="true" />}
             </button>
           </form>
+
+          {/* Support link */}
+          <p className="text-center text-[11.5px] text-[#A3A3A0] mt-5">
+            Having trouble signing in?{" "}
+            <Link href="/contact?topic=support" className="text-[#777773] underline hover:text-[#171717] transition-colors font-medium">
+              Contact support
+            </Link>
+          </p>
         </div>
       </div>
+
+      {/* Beta notice */}
+      <p className="text-center text-[11.5px] text-[#A3A3A0] mt-4">
+        Free during beta · No credit card required
+      </p>
     </div>
   );
 }

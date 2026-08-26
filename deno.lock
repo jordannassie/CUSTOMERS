@@ -20,9 +20,13 @@
         "npm:@types/react@19",
         "npm:eslint-config-next@16.3.0",
         "npm:eslint@9",
+        "npm:iron-session@^8.0.4",
+        "npm:lucide-react@^1.31.0",
         "npm:next@16.3.0",
         "npm:react-dom@19.2.8",
         "npm:react@19.2.8",
+        "npm:recharts@^2.15.4",
+        "npm:stripe@^22.5.0",
         "npm:tailwindcss@4",
         "npm:typescript@5"
       ]

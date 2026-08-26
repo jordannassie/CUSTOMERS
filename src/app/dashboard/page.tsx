@@ -351,6 +351,16 @@ export default async function DashboardPage() {
               </div>
             </div>
           )}
+
+          {/* ── Competitor leaderboard (center column — visible below xl) ── */}
+          <div className="xl:hidden mt-5">
+            <CompetitorLeaderboard
+              business={{ id: business.id, name: business.name }}
+              mentionRate={mentionRate}
+              competitors={competitors}
+              totalResults={results.length}
+            />
+          </div>
         </div>
 
         {/* ── Right panel ─────────────────────────────────────────── */}

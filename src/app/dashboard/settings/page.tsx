@@ -197,7 +197,7 @@ export default async function SettingsPage({
               If you&rsquo;d like early access or a custom arrangement, reach out and we&rsquo;ll sort it.
             </p>
             <a
-              href="mailto:hello@customers.direct?subject=Customers.Direct — early plan enquiry"
+              href="/contact?topic=sales"
               className="inline-flex items-center gap-1.5 mt-3 text-[12px] font-semibold text-[#0866F5] hover:text-[#063B9D] transition-colors"
             >
               Get in touch →

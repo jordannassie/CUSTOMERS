@@ -190,7 +190,7 @@ export const PRICING_PLANS: Record<PricingPlanId, PricingPlan> = {
     trialDays: 0,
     trialLabel: "Contact sales",
     cta: "Talk to Sales",
-    ctaHref: "mailto:hello@customers.direct?subject=Enterprise enquiry",
+    ctaHref: "/contact?topic=enterprise",
     secondaryCta: { label: "Book a call", href: "/book" },
     features: [
       "Custom tracked search volume",

@@ -522,9 +522,29 @@ function HeroSection() {
             Check My AI Visibility
             <ArrowRight size={14} aria-hidden="true" />
           </PrimaryBtn>
-          <SecondaryBtn href="/how-it-works">
-            See How It Works
-          </SecondaryBtn>
+          {/* Book a Demo — overlapping avatar group */}
+          <a
+            href="/contact?topic=sales"
+            className="inline-flex items-center gap-2.5 bg-white border border-[#E5E5E1] text-[#171717] text-[13.5px] font-semibold px-4 py-2.5 rounded-full shadow-sm hover:bg-[#F5F5F2] hover:-translate-y-px hover:shadow-md transition-all duration-150 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0866F5]/40"
+          >
+            {/* Overlapping avatar group */}
+            <span className="flex -space-x-2 shrink-0" aria-hidden="true">
+              {[
+                { bg: "#0866F5", initials: "JN" },
+                { bg: "#7C3AED", initials: "AL" },
+                { bg: "#059669", initials: "MK" },
+              ].map(({ bg, initials }) => (
+                <span
+                  key={initials}
+                  className="w-6 h-6 rounded-full border-2 border-white flex items-center justify-center text-[8px] font-bold text-white shrink-0"
+                  style={{ background: bg }}
+                >
+                  {initials}
+                </span>
+              ))}
+            </span>
+            Book a Demo
+          </a>
         </div>
 
         {/* Trust signals */}
