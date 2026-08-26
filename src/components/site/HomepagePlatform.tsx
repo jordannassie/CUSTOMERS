@@ -41,7 +41,7 @@ function Section({
   className?: string;
 }) {
   return (
-    <section id={id} className={`${bg} py-20 sm:py-24 px-4 overflow-hidden ${className}`}>
+    <section id={id} className={`${bg} py-20 sm:py-24 px-4 overflow-hidden scroll-mt-24 ${className}`}>
       <div className="max-w-[1160px] mx-auto">{children}</div>
     </section>
   );
@@ -770,6 +770,17 @@ function ProductTabsSection() {
 
   return (
     <Section id="product" bg="bg-[#FAFAF8]" className="border-b border-[#EEEEEA] !py-0 !overflow-visible">
+      {/*
+        Anchor IDs for each product feature — always present in the DOM so that
+        direct navigation to /#ai-visibility, /#competitors etc. works from any page.
+        They sit at the top of this section (behind the sticky nav).
+      */}
+      <span id="ai-visibility"  className="block h-0" aria-hidden="true" />
+      <span id="competitors"    className="block h-0" aria-hidden="true" />
+      <span id="citations"      className="block h-0" aria-hidden="true" />
+      <span id="opportunities"  className="block h-0" aria-hidden="true" />
+      <span id="direct-agent"   className="block h-0" aria-hidden="true" />
+
       {/* Sticky tab bar */}
       <div className="sticky top-0 z-30 bg-[#FAFAF8]/95 backdrop-blur-sm border-b border-[#EEEEEA] -mx-4 px-4">
         <div className="max-w-[1160px] mx-auto overflow-x-auto scrollbar-none">

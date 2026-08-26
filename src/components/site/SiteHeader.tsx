@@ -30,38 +30,48 @@ const PRODUCT_FEATURES = [
     description: "See exactly where AI recommends your business across ChatGPT, Claude, Perplexity, and Gemini.",
     href: "/#ai-visibility",
     icon: BarChart3,
+    bg: "bg-blue-500",
+    shadow: "shadow-blue-200",
   },
   {
     label: "Competitive Intelligence",
     description: "Discover which competitors AI favors on every prompt, and close the gap.",
     href: "/#competitors",
     icon: Users,
+    bg: "bg-violet-500",
+    shadow: "shadow-violet-200",
   },
   {
     label: "Citations & Sources",
     description: "Understand which sources AI cites and find opportunities to appear in them.",
     href: "/#citations",
     icon: Link2,
+    bg: "bg-teal-500",
+    shadow: "shadow-teal-200",
   },
   {
     label: "Opportunities",
     description: "Evidence-backed, actionable fixes — each with a ready-made Claude prompt to implement.",
     href: "/#opportunities",
     icon: Lightbulb,
+    bg: "bg-orange-500",
+    shadow: "shadow-orange-200",
   },
   {
     label: "Direct Agent",
     description: "Ask anything about your AI visibility. Grounded in real scan data, not hallucinations.",
     href: "/#direct-agent",
     icon: Bot,
+    bg: "bg-pink-500",
+    shadow: "shadow-pink-200",
   },
 ] as const;
 
 const RESOURCES = [
   { label: "How It Works",         href: "/#how-it-works", icon: BookOpen  },
   { label: "FAQ",                  href: "/#faq",           icon: HelpCircle },
-  { label: "Agencies & Resellers", href: "/#agencies",     icon: Building2  },
-  { label: "Contact",              href: "/contact",        icon: Mail      },
+  { label: "Agencies & Resellers", href: "/#agencies",      icon: Building2  },
+  { label: "Contact",              href: "/contact",         icon: Mail      },
 ] as const;
 
 export default function SiteHeader() {
@@ -155,7 +165,7 @@ export default function SiteHeader() {
                   style={{ boxShadow: "0 12px 32px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.06)" }}
                   role="menu"
                 >
-                  {PRODUCT_FEATURES.map(({ label, description, href, icon: Icon }) => (
+                  {PRODUCT_FEATURES.map(({ label, description, href, icon: Icon, bg, shadow }) => (
                     <Link
                       key={href}
                       href={href}
@@ -163,8 +173,8 @@ export default function SiteHeader() {
                       onClick={() => setProductOpen(false)}
                       className="flex items-start gap-3 p-3 rounded-xl hover:bg-[#F5F5F2] transition-colors group"
                     >
-                      <div className="w-8 h-8 rounded-lg bg-[#F0F0EC] border border-[#E5E5E1] flex items-center justify-center shrink-0 mt-0.5">
-                        <Icon size={14} className="text-[#777773]" aria-hidden="true" />
+                      <div className={`w-9 h-9 rounded-xl ${bg} ${shadow} shadow-md flex items-center justify-center shrink-0 mt-0.5`}>
+                        <Icon size={15} className="text-white" aria-hidden="true" />
                       </div>
                       <div className="min-w-0">
                         <p className="text-[13px] font-semibold text-[#171717] leading-snug mb-0.5">
@@ -266,15 +276,15 @@ export default function SiteHeader() {
             Product
           </p>
           <div className="flex flex-col gap-px mb-4">
-            {PRODUCT_FEATURES.map(({ label, href, icon: Icon }) => (
+            {PRODUCT_FEATURES.map(({ label, href, icon: Icon, bg }) => (
               <Link
                 key={href}
                 href={href}
                 onClick={closeAll}
                 className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/10 transition-colors"
               >
-                <div className="w-7 h-7 rounded-lg bg-white/10 flex items-center justify-center shrink-0">
-                  <Icon size={13} className="text-white/70" aria-hidden="true" />
+                <div className={`w-7 h-7 rounded-lg ${bg} flex items-center justify-center shrink-0 opacity-90`}>
+                  <Icon size={13} className="text-white" aria-hidden="true" />
                 </div>
                 <span className="text-[13px] font-medium text-white/85">{label}</span>
               </Link>
