@@ -552,13 +552,13 @@ function HeroSection() {
       <div className="max-w-[780px] mx-auto text-center fade-up">
 
         {/* Eyebrow */}
-        <div className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-[#777773] bg-[#F0F0EC] border border-[#E5E5E1] px-3 py-1 rounded-full mb-6 uppercase tracking-wider">
-          AI Visibility Platform
+        <div className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-[#777773] bg-[#F0F0EC] border border-[#E5E5E1] px-3 py-1 rounded-full mb-6 tracking-wide">
+          Get more Customers with AI Search
         </div>
 
         {/* Headline */}
-        <h1 className="text-[40px] sm:text-[54px] lg:text-[60px] font-bold text-[#171717] leading-[1.1] tracking-tight mb-4">
-          See who AI recommends.
+        <h1 className="text-[40px] sm:text-[54px] lg:text-[60px] font-bold text-[#171717] leading-[1.15] tracking-tight mb-4">
+          See who <InlineAIIcon /> AI recommends.
           <br />
           <span className="text-[#0866F5]">You or your competitor?</span>
         </h1>
