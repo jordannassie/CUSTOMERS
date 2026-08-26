@@ -823,22 +823,12 @@ function ShopperImageSection() {
           className="absolute inset-0"
           style={{
             background:
-              "linear-gradient(to bottom, transparent 30%, rgba(10,10,10,0.55) 65%, rgba(10,10,10,0.90) 100%)",
+              "linear-gradient(to bottom, transparent 60%, rgba(10,10,10,0.55) 100%)",
           }}
           aria-hidden="true"
         />
-        {/* Overlaid copy */}
+        {/* CTA button only */}
         <div className="absolute bottom-0 left-0 right-0 px-6 pb-10 sm:pb-14 text-center">
-          <p className="text-[12px] sm:text-[13px] font-semibold text-white/50 uppercase tracking-widest mb-2">
-            The new customer journey
-          </p>
-          <h2 className="text-[28px] sm:text-[38px] lg:text-[44px] font-bold text-white leading-tight tracking-tight max-w-2xl mx-auto mb-4">
-            Your next customer is already asking AI where to go.
-          </h2>
-          <p className="text-[15px] sm:text-[16px] text-white/70 max-w-xl mx-auto mb-6 leading-relaxed">
-            ChatGPT, Claude, Gemini, and Perplexity are recommending businesses in real time.
-            Customers.Direct shows you exactly where you stand — and what to fix next.
-          </p>
           <a
             href="/signup"
             className="inline-flex items-center gap-2 bg-[#0866F5] hover:bg-[#0757D4] text-white text-[14px] font-bold px-6 py-3 rounded-full transition-colors active:scale-[0.97] shadow-lg"
