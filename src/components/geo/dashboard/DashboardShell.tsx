@@ -18,11 +18,11 @@ import {
   ChevronDown,
   Plus,
   Loader2,
-  Globe,
   Menu,
   X,
   Check,
   Search,
+  ExternalLink,
 } from "lucide-react";
 
 const LOGO = "/images/logos/logo-black.png";
@@ -42,12 +42,21 @@ const NAV = [
 interface DashboardShellProps {
   businessId: string;
   businessName: string;
+  businessLogoUrl?: string | null;
+  businessDomain?: string | null;
   children: React.ReactNode;
   /** When true, children fill the full content area with no padding (overview page). Default: false */
   fullBleed?: boolean;
 }
 
-export default function DashboardShell({ businessId, businessName, children, fullBleed = false }: DashboardShellProps) {
+export default function DashboardShell({
+  businessId,
+  businessName,
+  businessLogoUrl,
+  businessDomain,
+  children,
+  fullBleed = false,
+}: DashboardShellProps) {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -59,6 +68,8 @@ export default function DashboardShell({ businessId, businessName, children, ful
           pathname={pathname}
           businessId={businessId}
           businessName={businessName}
+          businessLogoUrl={businessLogoUrl}
+          businessDomain={businessDomain}
         />
       </aside>
 
@@ -75,6 +86,8 @@ export default function DashboardShell({ businessId, businessName, children, ful
               pathname={pathname}
               businessId={businessId}
               businessName={businessName}
+              businessLogoUrl={businessLogoUrl}
+              businessDomain={businessDomain}
               onNavClick={() => setMobileOpen(false)}
             />
           </aside>
@@ -129,11 +142,15 @@ function SidebarContent({
   pathname,
   businessId,
   businessName,
+  businessLogoUrl,
+  businessDomain,
   onNavClick,
 }: {
   pathname: string;
   businessId: string;
   businessName: string;
+  businessLogoUrl?: string | null;
+  businessDomain?: string | null;
   onNavClick?: () => void;
 }) {
   return (
@@ -153,6 +170,8 @@ function SidebarContent({
         <BusinessSwitcher
           activeBusinessId={businessId}
           activeBusinessName={businessName}
+          activeBusinessLogoUrl={businessLogoUrl}
+          activeBusinessDomain={businessDomain}
           onSwitch={onNavClick}
         />
         <button
@@ -218,17 +237,65 @@ interface BusinessSummary {
   id: string;
   name: string;
   domain: string | null;
+  logo_url: string | null;
   primary_city: string | null;
   primary_region: string | null;
+}
+
+/** Small square logo or colored-initial fallback — used in both trigger and list */
+function BusinessLogo({
+  name,
+  logoUrl,
+  size = 20,
+}: {
+  name: string;
+  logoUrl?: string | null;
+  size?: number;
+}) {
+  const [failed, setFailed] = useState(false);
+
+  if (logoUrl && !failed) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={logoUrl}
+        alt={name}
+        width={size}
+        height={size}
+        className="rounded-md object-contain bg-white border border-[#E5E5E1] shrink-0"
+        style={{ width: size, height: size }}
+        onError={() => setFailed(true)}
+        aria-hidden="true"
+      />
+    );
+  }
+
+  // Colored-initial pill
+  const PALETTE = ["#F59E0B", "#3B82F6", "#10B981", "#8B5CF6", "#EF4444", "#EC4899", "#06B6D4"];
+  const color = PALETTE[name.length % PALETTE.length];
+  const initials = name.split(" ").map((w) => w[0]).slice(0, 2).join("").toUpperCase();
+  return (
+    <span
+      className="rounded-md flex items-center justify-center text-white font-bold shrink-0"
+      style={{ width: size, height: size, background: color, fontSize: Math.round(size * 0.4) }}
+      aria-hidden="true"
+    >
+      {initials}
+    </span>
+  );
 }
 
 function BusinessSwitcher({
   activeBusinessId,
   activeBusinessName,
+  activeBusinessLogoUrl,
+  activeBusinessDomain,
   onSwitch,
 }: {
   activeBusinessId: string;
   activeBusinessName: string;
+  activeBusinessLogoUrl?: string | null;
+  activeBusinessDomain?: string | null;
   onSwitch?: () => void;
 }) {
   const router = useRouter();
@@ -272,19 +339,9 @@ function BusinessSwitcher({
     } catch { /* silent */ } finally { setSwitching(null); }
   }
 
-  function locationOf(b: BusinessSummary) {
-    if (b.domain) return b.domain;
-    if (b.primary_city) return b.primary_region ? `${b.primary_city}, ${b.primary_region}` : b.primary_city;
-    return null;
-  }
-
-  // Generate a consistent color for the business pill
-  const initials = activeBusinessName.split(" ").map(w => w[0]).slice(0, 2).join("").toUpperCase();
-  const PILL_COLORS = ["#F59E0B","#3B82F6","#10B981","#8B5CF6","#EF4444","#EC4899","#06B6D4"];
-  const pillColor = PILL_COLORS[activeBusinessName.length % PILL_COLORS.length];
-
   return (
     <div className="relative" ref={containerRef}>
+      {/* Trigger */}
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
@@ -294,13 +351,7 @@ function BusinessSwitcher({
         aria-label="Switch business"
       >
         <div className="flex items-center gap-2 min-w-0">
-          <span
-            className="w-5 h-5 rounded-md flex items-center justify-center text-white font-bold text-[9px] shrink-0"
-            style={{ background: pillColor }}
-            aria-hidden="true"
-          >
-            {initials}
-          </span>
+          <BusinessLogo name={activeBusinessName} logoUrl={activeBusinessLogoUrl} size={20} />
           <span className="text-[12.5px] font-semibold text-[#171717] truncate">{activeBusinessName}</span>
         </div>
         <ChevronDown
@@ -310,6 +361,7 @@ function BusinessSwitcher({
         />
       </button>
 
+      {/* Dropdown */}
       {open && (
         <div
           className="absolute left-0 right-0 top-full mt-1 bg-white rounded-xl border border-[#E5E5E1] py-1.5 z-50 dropdown-appear"
@@ -323,25 +375,59 @@ function BusinessSwitcher({
             </div>
           )}
           {businesses?.map((b) => (
-            <button
-              key={b.id}
-              type="button"
-              role="option"
-              aria-selected={b.id === activeBusinessId}
-              onClick={() => switchTo(b.id)}
-              className="w-full flex items-center gap-2.5 px-3 py-2 text-left hover:bg-[#F5F5F2] transition-colors"
-            >
-              <span className="w-4 shrink-0 flex items-center justify-center">
-                {b.id === activeBusinessId && <Check size={13} className="text-[#171717]" aria-hidden="true" />}
-                {switching === b.id && <Loader2 size={12} className="animate-spin text-[#A3A3A0]" aria-hidden="true" />}
-              </span>
-              <span className="min-w-0">
-                <span className="block text-[12.5px] font-medium text-[#171717] truncate">{b.name}</span>
-                {locationOf(b) && <span className="block text-[11px] text-[#A3A3A0] truncate">{locationOf(b)}</span>}
-              </span>
-            </button>
+            <div key={b.id} className="flex items-center group hover:bg-[#F5F5F2] transition-colors">
+              <button
+                type="button"
+                role="option"
+                aria-selected={b.id === activeBusinessId}
+                onClick={() => switchTo(b.id)}
+                className="flex-1 flex items-center gap-2.5 px-3 py-2 text-left"
+              >
+                <span className="w-4 shrink-0 flex items-center justify-center">
+                  {b.id === activeBusinessId && <Check size={13} className="text-[#171717]" aria-hidden="true" />}
+                  {switching === b.id && <Loader2 size={12} className="animate-spin text-[#A3A3A0]" aria-hidden="true" />}
+                </span>
+                <BusinessLogo name={b.name} logoUrl={b.logo_url} size={18} />
+                <span className="min-w-0">
+                  <span className="block text-[12.5px] font-medium text-[#171717] truncate">{b.name}</span>
+                  {b.domain && (
+                    <span className="block text-[11px] text-[#A3A3A0] truncate">{b.domain}</span>
+                  )}
+                </span>
+              </button>
+              {/* External website link */}
+              {b.domain && (
+                <a
+                  href={`https://${b.domain}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={(e) => e.stopPropagation()}
+                  className="px-2 py-2 text-[#D4D4CF] hover:text-[#777773] opacity-0 group-hover:opacity-100 transition-all shrink-0"
+                  aria-label={`Open ${b.domain}`}
+                >
+                  <ExternalLink size={12} />
+                </a>
+              )}
+            </div>
           ))}
-          <div className="border-t border-[#EEEEEA] mt-1 pt-1">
+
+          {/* Active business website link */}
+          {activeBusinessDomain && (
+            <div className="border-t border-[#EEEEEA] mt-1 pt-1">
+              <a
+                href={`https://${activeBusinessDomain}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 px-3 py-2 text-[12px] text-[#777773] hover:text-[#171717] hover:bg-[#F5F5F2] transition-colors"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <ExternalLink size={12} aria-hidden="true" />
+                {activeBusinessDomain}
+              </a>
+            </div>
+          )}
+
+          <div className={activeBusinessDomain ? "" : "border-t border-[#EEEEEA] mt-1 pt-1"}>
             <Link
               href="/dashboard/add-business"
               onClick={() => { setOpen(false); onSwitch?.(); }}

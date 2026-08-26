@@ -13,7 +13,7 @@ export default async function CompetitorsPage() {
   const competitors = await getCompetitors(business.id);
 
   return (
-    <DashboardShell businessId={business.id} businessName={business.name}>
+    <DashboardShell businessId={business.id} businessName={business.name} businessLogoUrl={business.logo_url} businessDomain={business.domain}>
       <h1 className="text-[18px] font-bold text-[#171717] mb-1">Competitors</h1>
       <p className="text-[13px] text-[#777773] mb-6">
         The businesses we compare your AI mentions against.

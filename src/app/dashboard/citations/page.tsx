@@ -47,7 +47,7 @@ export default async function CitationsPage() {
   ).length;
 
   return (
-    <DashboardShell businessId={business.id} businessName={business.name}>
+    <DashboardShell businessId={business.id} businessName={business.name} businessLogoUrl={business.logo_url} businessDomain={business.domain}>
       <div className="flex items-start justify-between mb-6 flex-wrap gap-3">
         <div>
           <h1 className="text-[18px] font-bold text-[#171717] mb-1">Citations & Sources</h1>

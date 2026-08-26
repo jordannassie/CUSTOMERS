@@ -65,7 +65,7 @@ export default async function VisibilityPage() {
   }
 
   return (
-    <DashboardShell businessId={business.id} businessName={business.name}>
+    <DashboardShell businessId={business.id} businessName={business.name} businessLogoUrl={business.logo_url} businessDomain={business.domain}>
       <PageHeader
         title="AI Insights"
         description={

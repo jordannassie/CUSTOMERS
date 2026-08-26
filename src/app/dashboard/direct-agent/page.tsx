@@ -10,7 +10,7 @@ export default async function DirectAgentPage() {
   if (!business || business.status === "onboarding") redirect("/dashboard");
 
   return (
-    <DashboardShell businessId={business.id} businessName={business.name}>
+    <DashboardShell businessId={business.id} businessName={business.name} businessLogoUrl={business.logo_url} businessDomain={business.domain}>
       <h1 className="text-[18px] font-bold text-[#171717] mb-1">Direct Agent</h1>
       <p className="text-[13px] text-[#777773] mb-6">
         A business-specific assistant grounded in your real visibility data.

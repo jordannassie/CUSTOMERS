@@ -34,7 +34,7 @@ export default async function ReportsPage() {
   const scoreDelta = latestScore && prevScore ? latestScore.score - prevScore.score : null;
 
   return (
-    <DashboardShell businessId={business.id} businessName={business.name}>
+    <DashboardShell businessId={business.id} businessName={business.name} businessLogoUrl={business.logo_url} businessDomain={business.domain}>
       <PageHeader
         title="Reports"
         description="Visibility scan history and performance summary."

@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, Check, Building2, Upload } from "lucide-react";
+import { Loader2, Check, Building2, Camera, X } from "lucide-react";
 import type { Business } from "@/types/geo";
 import { CompetitorAvatar } from "@/components/CompetitorAvatar";
 
@@ -11,6 +11,8 @@ const INPUT_CLS =
 
 export default function BusinessSettingsForm({ business }: { business: Business }) {
   const router = useRouter();
+  const fileRef = useRef<HTMLInputElement>(null);
+
   const [form, setForm] = useState({
     name: business.name,
     industry: business.industry ?? "",
@@ -18,17 +20,39 @@ export default function BusinessSettingsForm({ business }: { business: Business 
     primary_city: business.primary_city ?? "",
     primary_region: business.primary_region ?? "",
     primary_country: business.primary_country ?? "",
-    logo_url: business.logo_url ?? "",
   });
+  const [logoUrl, setLogoUrl] = useState<string | null>(business.logo_url ?? null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
-  const [logoPreviewError, setLogoPreviewError] = useState(false);
 
   function set(field: keyof typeof form) {
-    return (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    return (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
       setForm((f) => ({ ...f, [field]: e.target.value }));
-      if (field === "logo_url") setLogoPreviewError(false);
-    };
+  }
+
+  async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadError(null);
+    setUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      fd.append("businessId", business.id);
+      const res = await fetch("/api/geo/businesses/logo", { method: "POST", body: fd });
+      const json = await res.json();
+      if (!res.ok) { setUploadError(json.error ?? "Upload failed."); return; }
+      setLogoUrl(json.url);
+      router.refresh();
+    } catch {
+      setUploadError("Upload failed — please try again.");
+    } finally {
+      setUploading(false);
+      // reset file input so same file can be re-picked
+      if (fileRef.current) fileRef.current.value = "";
+    }
   }
 
   async function save(e: React.FormEvent) {
@@ -51,54 +75,91 @@ export default function BusinessSettingsForm({ business }: { business: Business 
     }
   }
 
-  const showLogoPreview = form.logo_url.trim().length > 0 && !logoPreviewError;
-
   return (
     <form onSubmit={save} className="flex flex-col gap-5">
 
-      {/* Logo preview + upload row */}
+      {/* Logo upload */}
       <div className="flex items-start gap-5">
-        {/* Preview circle */}
-        <div className="shrink-0">
-          <div className="w-20 h-20 rounded-2xl border-2 border-dashed border-[#E5E5E1] bg-[#F5F5F2] overflow-hidden flex items-center justify-center"
-            style={{ boxShadow: showLogoPreview ? "0 2px 8px rgba(0,0,0,0.08)" : "none" }}>
-            {showLogoPreview ? (
+        {/* Clickable preview */}
+        <div className="shrink-0 relative">
+          <button
+            type="button"
+            onClick={() => fileRef.current?.click()}
+            disabled={uploading}
+            className="group relative w-20 h-20 rounded-2xl border-2 border-[#E5E5E1] bg-[#F5F5F2] overflow-hidden flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-[#171717]/20 hover:border-[#171717] transition-colors"
+            aria-label="Upload business logo"
+          >
+            {logoUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={form.logo_url}
-                alt={form.name}
-                className="w-full h-full object-contain p-2"
-                onError={() => setLogoPreviewError(true)}
-              />
+              <img src={logoUrl} alt={form.name} className="w-full h-full object-contain p-1.5" />
             ) : (
               <CompetitorAvatar name={form.name || "B"} size={48} className="rounded-xl" />
             )}
-          </div>
-          <p className="text-[10px] text-[#A3A3A0] text-center mt-1.5">Preview</p>
+            {/* Overlay */}
+            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center">
+              {uploading ? (
+                <Loader2 size={16} className="text-white animate-spin" />
+              ) : (
+                <Camera size={16} className="text-white opacity-0 group-hover:opacity-100 transition-opacity" aria-hidden="true" />
+              )}
+            </div>
+          </button>
+          {/* Remove logo */}
+          {logoUrl && !uploading && (
+            <button
+              type="button"
+              onClick={async () => {
+                setLogoUrl(null);
+                await fetch(`/api/geo/businesses/${business.id}`, {
+                  method: "PATCH",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ logo_url: "" }),
+                });
+                router.refresh();
+              }}
+              className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-[#171717] border-2 border-white flex items-center justify-center hover:bg-[#DC2626] transition-colors"
+              aria-label="Remove logo"
+            >
+              <X size={9} className="text-white" />
+            </button>
+          )}
+          <p className="text-[10px] text-[#A3A3A0] text-center mt-1.5">
+            {uploading ? "Uploading…" : "Click to change"}
+          </p>
         </div>
 
-        {/* Logo URL input */}
-        <div className="flex-1 min-w-0">
+        {/* Instructions */}
+        <div className="flex-1 min-w-0 pt-1">
           <label className="block text-[11px] font-bold text-[#777773] uppercase tracking-wider mb-2">
             Business Logo
           </label>
-          <div className="relative">
-            <Upload size={13} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#A3A3A0] pointer-events-none" />
-            <input
-              type="url"
-              value={form.logo_url}
-              onChange={set("logo_url")}
-              placeholder="https://yoursite.com/logo.png"
-              className={`${INPUT_CLS} pl-9`}
-            />
-          </div>
-          <p className="text-[11px] text-[#A3A3A0] mt-1.5">
-            Paste a direct link to your logo image (PNG, SVG, or JPG).
-            {logoPreviewError && (
-              <span className="text-[#DC2626] ml-1">Could not load that URL — please check the link.</span>
-            )}
+          <p className="text-[12px] text-[#A3A3A0] leading-snug mb-3">
+            Click the preview to upload your logo. PNG, JPG, SVG, or WebP — max 2 MB.
+            {" "}Square or wide logos work best.
           </p>
+          <button
+            type="button"
+            onClick={() => fileRef.current?.click()}
+            disabled={uploading}
+            className="inline-flex items-center gap-2 text-[12px] font-semibold bg-[#F5F5F2] border border-[#E5E5E1] text-[#171717] px-3 py-1.5 rounded-lg hover:bg-[#EFEFEB] hover:border-[#D4D4CF] transition-colors disabled:opacity-50"
+          >
+            <Camera size={12} aria-hidden="true" />
+            {uploading ? "Uploading…" : logoUrl ? "Replace logo" : "Upload logo"}
+          </button>
+          {uploadError && (
+            <p className="text-[11px] text-[#DC2626] mt-2">{uploadError}</p>
+          )}
         </div>
+
+        {/* Hidden file input */}
+        <input
+          ref={fileRef}
+          type="file"
+          accept="image/png,image/jpeg,image/jpg,image/svg+xml,image/webp"
+          className="hidden"
+          onChange={handleFileChange}
+          aria-hidden="true"
+        />
       </div>
 
       <div className="border-t border-[#EEEEEA]" />
@@ -134,12 +195,20 @@ export default function BusinessSettingsForm({ business }: { business: Business 
         </FormField>
       </div>
 
-      {/* Domain reminder */}
       {business.domain && (
         <div className="flex items-center gap-2.5 bg-[#F5F5F2] border border-[#E5E5E1] rounded-xl px-4 py-3">
           <Building2 size={13} className="text-[#A3A3A0] shrink-0" aria-hidden="true" />
           <p className="text-[12px] text-[#777773]">
-            Tracking <strong className="text-[#171717]">{business.domain}</strong> — domain changes require a new scan.
+            Tracking{" "}
+            <a
+              href={`https://${business.domain}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-semibold text-[#171717] underline underline-offset-2 hover:no-underline"
+            >
+              {business.domain}
+            </a>
+            {" "}— domain changes require a new scan.
           </p>
         </div>
       )}

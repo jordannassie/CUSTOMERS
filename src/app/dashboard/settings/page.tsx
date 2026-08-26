@@ -4,7 +4,7 @@ import DashboardShell from "@/components/geo/dashboard/DashboardShell";
 import { Card, PageHeader } from "@/components/geo/dashboard/ui";
 import BusinessSettingsForm from "@/components/geo/dashboard/BusinessSettingsForm";
 import { getPrimaryBusiness } from "@/lib/geo/dashboard-data";
-import { Building2, CreditCard, User, Lock, Palette } from "lucide-react";
+import { Building2, Check, CreditCard, User, Lock, Palette } from "lucide-react";
 
 export const metadata = { title: "Settings", robots: { index: false } };
 
@@ -30,7 +30,7 @@ export default async function SettingsPage() {
     .maybeSingle();
 
   return (
-    <DashboardShell businessId={business.id} businessName={business.name}>
+    <DashboardShell businessId={business.id} businessName={business.name} businessLogoUrl={business.logo_url} businessDomain={business.domain}>
       <PageHeader
         title="Settings"
         description="Manage your business profile, plan, and account."
@@ -47,32 +47,119 @@ export default async function SettingsPage() {
 
       {/* Plan */}
       <Card className="mb-5">
-        <div className="flex items-center gap-2 mb-4">
+        <div className="flex items-center gap-2 mb-1">
           <CreditCard size={15} className="text-[#777773]" />
           <h2 className="font-bold text-[#171717]">Plan & billing</h2>
         </div>
-        <div className="flex items-start justify-between gap-4 flex-wrap">
-          <div>
-            <p className="text-[15px] font-bold text-[#171717] mb-0.5">
-              {PLAN_LABELS[subscription?.plan ?? "none"]}
-            </p>
-            <p className="text-[12px] text-[#A3A3A0] mb-4">
-              Status: <span className="font-semibold">{subscription?.status ?? "inactive"}</span>
-              {" · "}
-              Billing is handled separately — contact us to activate or change your plan.
-            </p>
-            <a
-              href="/ai-search#pricing"
-              className="inline-flex text-[13px] font-semibold text-[#777773] hover:text-[#171717] transition-colors"
-            >
-              View plans →
-            </a>
-          </div>
-          <div className="bg-[#F5F5F2] rounded-lg border border-[#E5E5E1] px-4 py-3 text-center min-w-[140px]">
-            <p className="text-[11px] text-[#A3A3A0] uppercase tracking-wider font-semibold mb-1">Business</p>
-            <p className="text-[13px] font-bold text-[#171717] truncate">{business.name}</p>
-          </div>
+        <p className="text-[12px] text-[#A3A3A0] mb-5">
+          Current status:{" "}
+          <span className={`font-semibold ${subscription?.status === "active" ? "text-[#166534]" : "text-[#777773]"}`}>
+            {subscription?.status ?? "inactive"}
+          </span>
+          {" · "}Billing is handled separately — contact us to activate or change your plan.
+        </p>
+
+        {/* Plan cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-5">
+          {[
+            {
+              id: "ai_visibility",
+              name: "AI Visibility",
+              price: "$497",
+              period: "/mo",
+              tagline: "Know exactly where you stand.",
+              features: [
+                "Visibility scores across 5 AI platforms",
+                "Competitor benchmarking",
+                "Citation & source tracking",
+                "Monthly AI scan",
+                "Opportunity recommendations",
+              ],
+            },
+            {
+              id: "growth_agent",
+              name: "Growth Agent",
+              price: "$997",
+              period: "/mo",
+              tagline: "Actively improve your visibility.",
+              popular: true,
+              features: [
+                "Everything in AI Visibility",
+                "Weekly AI scans",
+                "Direct Agent (AI chat analyst)",
+                "Implementation prompts for Claude",
+                "Priority support",
+              ],
+            },
+            {
+              id: "autonomous_growth",
+              name: "Autonomous Growth",
+              price: "from $1,997",
+              period: "/mo",
+              tagline: "We handle the improvements for you.",
+              features: [
+                "Everything in Growth Agent",
+                "Done-for-you implementation",
+                "Dedicated account manager",
+                "Daily scans & monitoring",
+                "Agency/white-label option",
+              ],
+            },
+          ].map((plan) => {
+            const isActive = subscription?.plan === plan.id;
+            return (
+              <div
+                key={plan.id}
+                className={`relative rounded-xl border p-5 flex flex-col gap-3 ${
+                  isActive
+                    ? "border-[#171717] bg-white"
+                    : plan.popular
+                    ? "border-[#171717]/30 bg-white"
+                    : "border-[#E5E5E1] bg-[#FAFAF8]"
+                }`}
+              >
+                {isActive && (
+                  <span className="absolute -top-2.5 left-4 text-[10px] font-bold uppercase tracking-wider bg-[#171717] text-white px-2.5 py-0.5 rounded-full">
+                    Current plan
+                  </span>
+                )}
+                {plan.popular && !isActive && (
+                  <span className="absolute -top-2.5 left-4 text-[10px] font-bold uppercase tracking-wider bg-[#F5F3FF] text-[#7C3AED] border border-[#EDE9FE] px-2.5 py-0.5 rounded-full">
+                    Most popular
+                  </span>
+                )}
+                <div>
+                  <p className="text-[13px] font-bold text-[#171717]">{plan.name}</p>
+                  <p className="text-[11px] text-[#777773] mt-0.5">{plan.tagline}</p>
+                </div>
+                <div className="flex items-baseline gap-1">
+                  <span className="text-[22px] font-bold text-[#171717]">{plan.price}</span>
+                  <span className="text-[12px] text-[#A3A3A0]">{plan.period}</span>
+                </div>
+                <ul className="flex flex-col gap-1.5">
+                  {plan.features.map((f) => (
+                    <li key={f} className="flex items-start gap-2 text-[11.5px] text-[#555552]">
+                      <Check size={11} className="text-[#166534] mt-0.5 shrink-0" aria-hidden="true" />
+                      {f}
+                    </li>
+                  ))}
+                </ul>
+                {!isActive && (
+                  <a
+                    href="mailto:hello@customers.direct?subject=Plan enquiry"
+                    className="mt-auto inline-flex items-center justify-center gap-1.5 text-[12px] font-semibold bg-[#171717] text-white px-3 py-2 rounded-lg hover:bg-[#2A2A2A] transition-colors"
+                  >
+                    Contact us →
+                  </a>
+                )}
+              </div>
+            );
+          })}
         </div>
+        <p className="text-[11px] text-[#A3A3A0]">
+          All plans billed monthly. No long-term contract required.{" "}
+          <a href="mailto:hello@customers.direct" className="underline hover:no-underline">Contact us</a> to upgrade, downgrade, or cancel.
+        </p>
       </Card>
 
       {/* Agency / White-Label */}

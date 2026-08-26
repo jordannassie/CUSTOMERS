@@ -101,7 +101,7 @@ export default async function DashboardPage() {
   };
 
   return (
-    <DashboardShell businessId={business.id} businessName={business.name} fullBleed>
+    <DashboardShell businessId={business.id} businessName={business.name} businessLogoUrl={business.logo_url} businessDomain={business.domain} fullBleed>
 
       {/* ── Business identity header ─────────────────────────────────────── */}
       <Link
