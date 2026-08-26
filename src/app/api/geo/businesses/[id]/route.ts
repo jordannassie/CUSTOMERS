@@ -20,8 +20,8 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   }
 
   const updates: Record<string, string | null> = {};
-  for (const key of ["name", "industry", "description", "primary_city", "primary_region", "primary_country", "domain"]) {
-    if (key in body) updates[key] = clean(body[key], key === "description" ? 1000 : 300);
+  for (const key of ["name", "industry", "description", "primary_city", "primary_region", "primary_country", "domain", "logo_url"]) {
+    if (key in body) updates[key] = clean(body[key], key === "description" ? 1000 : 2000);
   }
 
   if (Object.keys(updates).length === 0) {

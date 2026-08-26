@@ -1,8 +1,9 @@
 import Link from "next/link";
+import Image from "next/image";
 import { redirect } from "next/navigation";
 import {
-  Target, Quote, Trophy, Users, AlertCircle, ArrowRight,
-  Calendar, Filter, Cpu, RefreshCw,
+  Target, Quote, Trophy, AlertCircle, ArrowRight,
+  Calendar, Filter, Cpu, RefreshCw, Pencil, Globe, MapPin,
 } from "lucide-react";
 import OnboardingWizard from "@/components/geo/OnboardingWizard";
 import DashboardShell from "@/components/geo/dashboard/DashboardShell";
@@ -101,6 +102,67 @@ export default async function DashboardPage() {
 
   return (
     <DashboardShell businessId={business.id} businessName={business.name} fullBleed>
+
+      {/* ── Business identity header ─────────────────────────────────────── */}
+      <Link
+        href="/dashboard/settings"
+        className="group flex items-center gap-4 px-5 sm:px-7 py-4 bg-white border-b border-[#E5E5E1] hover:bg-[#F5F5F2] transition-colors"
+        aria-label={`${business.name} — click to edit business settings`}
+      >
+        {/* Logo or avatar */}
+        <div className="relative shrink-0">
+          {business.logo_url ? (
+            <div className="w-14 h-14 rounded-xl border border-[#E5E5E1] overflow-hidden bg-white flex items-center justify-center"
+              style={{ boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={business.logo_url}
+                alt={business.name}
+                className="w-full h-full object-contain p-1"
+              />
+            </div>
+          ) : (
+            <CompetitorAvatar name={business.name} size={56} className="rounded-xl" />
+          )}
+          {/* Edit badge */}
+          <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-[#171717] border-2 border-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+            <Pencil size={9} className="text-white" aria-hidden="true" />
+          </div>
+        </div>
+
+        {/* Name + meta */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2">
+            <h1 className="text-[18px] font-bold text-[#171717] leading-tight truncate">
+              {business.name}
+            </h1>
+            <span className="hidden sm:inline-flex items-center gap-1 text-[10px] font-semibold text-[#777773] bg-[#F0F0EC] border border-[#E5E5E1] px-2 py-0.5 rounded-full">
+              <Pencil size={8} aria-hidden="true" />
+              Edit
+            </span>
+          </div>
+          <div className="flex items-center gap-3 mt-1 flex-wrap">
+            {business.industry && (
+              <span className="text-[12px] text-[#777773]">{business.industry}</span>
+            )}
+            {business.domain && (
+              <span className="flex items-center gap-1 text-[12px] text-[#A3A3A0]">
+                <Globe size={11} aria-hidden="true" />
+                {business.domain}
+              </span>
+            )}
+            {(business.primary_city || business.primary_region) && (
+              <span className="flex items-center gap-1 text-[12px] text-[#A3A3A0]">
+                <MapPin size={11} aria-hidden="true" />
+                {[business.primary_city, business.primary_region].filter(Boolean).join(", ")}
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Right arrow hint */}
+        <ArrowRight size={16} className="text-[#D4D4CF] group-hover:text-[#777773] transition-colors shrink-0" aria-hidden="true" />
+      </Link>
 
       {/* ── Filter / top bar ─────────────────────────────────────────────── */}
       <div className="flex items-center gap-2 px-5 sm:px-7 py-3 bg-white border-b border-[#E5E5E1] flex-wrap">
