@@ -98,8 +98,15 @@ export type OpportunityCategory =
   | "citations"
   | "reviews_reputation"
   | "local_presence"
-  | "competitor_gap";
+  | "competitor_gap"
+  | "seo_keyword_gap"
+  | "seo_competitor_gap"
+  | "seo_backlink_gap"
+  | "seo_technical"
+  | "seo_content"
+  | "seo_ranking_opportunity";
 export type OpportunityStatus = "open" | "in_progress" | "resolved" | "dismissed";
+export type OpportunitySource = "ai_visibility" | "seo";
 
 export interface Opportunity {
   id: string;
@@ -113,6 +120,7 @@ export interface Opportunity {
   status: OpportunityStatus;
   recommended_action: string | null;
   claude_prompt: string | null;
+  source: OpportunitySource;
   created_at: string;
   updated_at: string;
 }
