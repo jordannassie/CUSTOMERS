@@ -15,12 +15,14 @@ export default function BusinessSettingsForm({ business }: { business: Business 
 
   const [form, setForm] = useState({
     name: business.name,
+    domain: business.domain ?? "",
     industry: business.industry ?? "",
     description: business.description ?? "",
     primary_city: business.primary_city ?? "",
     primary_region: business.primary_region ?? "",
     primary_country: business.primary_country ?? "",
   });
+  const domainChanged = form.domain.trim() !== (business.domain ?? "");
   const [logoUrl, setLogoUrl] = useState<string | null>(business.logo_url ?? null);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
@@ -169,6 +171,52 @@ export default function BusinessSettingsForm({ business }: { business: Business 
         <input value={form.name} onChange={set("name")} required className={INPUT_CLS} />
       </FormField>
 
+      <FormField label="Website domain">
+        <div className="relative">
+          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[13px] text-[#A3A3A0] pointer-events-none select-none">
+            https://
+          </span>
+          <input
+            value={form.domain}
+            onChange={set("domain")}
+            placeholder="yourbusiness.com"
+            className={`${INPUT_CLS} pl-[72px]`}
+            autoComplete="off"
+            spellCheck={false}
+          />
+        </div>
+
+        {domainChanged ? (
+          /* Warn when domain has been edited */
+          <div className="flex items-start gap-2.5 mt-2.5 bg-[#FFF7ED] border border-[#FED7AA] rounded-xl px-4 py-3">
+            <svg width="15" height="15" viewBox="0 0 16 16" className="text-[#C2410C] shrink-0 mt-0.5" fill="currentColor" aria-hidden="true">
+              <path d="M8 1a7 7 0 100 14A7 7 0 008 1zm0 3a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 018 4zm0 7a1 1 0 110-2 1 1 0 010 2z"/>
+            </svg>
+            <div>
+              <p className="text-[12px] font-semibold text-[#92400E] mb-1">New scan required after saving</p>
+              <p className="text-[11.5px] text-[#92400E]/80 leading-snug">
+                AI visibility data, citation sources, and prompt results are tied to the domain.
+                After saving, go to the Overview and click <strong>Run Scan</strong> to rebuild
+                visibility data for the new domain.
+              </p>
+              <p className="text-[11.5px] text-[#92400E]/70 mt-1.5 leading-snug">
+                Your competitors and prompt list will carry over — review and update them if needed.
+              </p>
+            </div>
+          </div>
+        ) : (
+          /* Quiet tip when domain is unchanged */
+          <p className="text-[11px] text-[#A3A3A0] mt-1.5 leading-snug">
+            Only update this if your website moved to a new address. For a completely different
+            business,{" "}
+            <a href="/dashboard/add-business" className="underline hover:no-underline text-[#777773]">
+              add it as a new business
+            </a>{" "}
+            instead — it gets its own fresh scan, competitors, and data.
+          </p>
+        )}
+      </FormField>
+
       <FormField label="Industry">
         <input value={form.industry} onChange={set("industry")} placeholder="e.g. Church, HVAC, Law Firm" className={INPUT_CLS} />
       </FormField>
@@ -195,20 +243,20 @@ export default function BusinessSettingsForm({ business }: { business: Business 
         </FormField>
       </div>
 
-      {business.domain && (
+      {/* Currently tracked domain — link to visit */}
+      {business.domain && !domainChanged && (
         <div className="flex items-center gap-2.5 bg-[#F5F5F2] border border-[#E5E5E1] rounded-xl px-4 py-3">
           <Building2 size={13} className="text-[#A3A3A0] shrink-0" aria-hidden="true" />
           <p className="text-[12px] text-[#777773]">
-            Tracking{" "}
+            Currently tracking{" "}
             <a
               href={`https://${business.domain}`}
               target="_blank"
               rel="noopener noreferrer"
               className="font-semibold text-[#171717] underline underline-offset-2 hover:no-underline"
             >
-              {business.domain}
+              {business.domain} ↗
             </a>
-            {" "}— domain changes require a new scan.
           </p>
         </div>
       )}
