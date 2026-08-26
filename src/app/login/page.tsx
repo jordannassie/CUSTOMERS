@@ -1,4 +1,3 @@
-import Link from "next/link";
 import AuthForm from "@/components/geo/AuthForm";
 
 export const metadata = {
@@ -8,10 +7,7 @@ export const metadata = {
 
 export default function LoginPage() {
   return (
-    <div className="min-h-screen gradient-bg flex flex-col items-center justify-center px-4 py-16">
-      <Link href="/" className="mb-8 text-[#0F172A] font-black text-xl tracking-tight">
-        Customers<span className="text-[#2563EB]">.Direct</span>
-      </Link>
+    <div className="min-h-screen bg-[#FAFAF8] flex flex-col items-center justify-center px-4 py-16">
       <AuthForm mode="login" />
     </div>
   );

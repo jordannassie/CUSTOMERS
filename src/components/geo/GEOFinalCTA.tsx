@@ -13,7 +13,7 @@ export default function GEOFinalCTA() {
             style={{ background: "radial-gradient(circle, #7C3AED, transparent 70%)" }}
             aria-hidden="true"
           />
-          <h2 className="text-3xl sm:text-4xl font-black text-white leading-tight mb-4 relative">
+          <h2 className="text-3xl sm:text-4xl font-bold text-white leading-tight mb-4 relative">
             See how AI talks about your business today.
           </h2>
           <p className="text-white/60 max-w-xl mx-auto mb-8 relative">
@@ -21,7 +21,7 @@ export default function GEOFinalCTA() {
           </p>
           <Link
             href="/signup"
-            className="inline-flex items-center gap-2 bg-white text-[#0F172A] font-bold px-8 py-4 rounded-full hover:bg-gray-100 transition-colors text-base relative"
+            className="inline-flex items-center gap-2 bg-white text-[#171717] font-bold px-8 py-4 rounded-full hover:bg-gray-100 transition-colors text-base relative"
           >
             Check My AI Visibility
             <ArrowRight size={18} aria-hidden="true" />

@@ -25,8 +25,8 @@ export default async function CitationsPage() {
 
   return (
     <DashboardShell businessId={business.id} businessName={business.name}>
-      <h1 className="text-2xl font-black text-[#0F172A] mb-1">Citations</h1>
-      <p className="text-sm text-[#64748B] mb-6">
+      <h1 className="text-[18px] font-bold text-[#171717] mb-1">Citations</h1>
+      <p className="text-[13px] text-[#777773] mb-6">
         Sources cited across your latest visibility run — {ownDomainCount > 0 ? `including ${ownDomainCount} from your own domain.` : "your own domain wasn't cited in this run."}
       </p>
 
@@ -45,13 +45,13 @@ export default async function CitationsPage() {
                   target="_blank"
                   rel="noopener noreferrer"
                   className={`text-sm flex items-center gap-1.5 truncate ${
-                    business.domain && url.includes(business.domain) ? "text-[#2563EB] font-semibold" : "text-[#64748B]"
+                    business.domain && url.includes(business.domain) ? "text-[#777773] font-semibold" : "text-[#777773]"
                   }`}
                 >
                   <ExternalLink size={12} className="shrink-0" />
                   <span className="truncate">{url}</span>
                 </a>
-                <span className="text-xs font-bold text-[#94A3B8] shrink-0">{count}×</span>
+                <span className="text-xs font-bold text-[#A3A3A0] shrink-0">{count}×</span>
               </div>
             ))}
           </div>

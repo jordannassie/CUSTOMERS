@@ -232,15 +232,15 @@ export default function OnboardingWizard() {
   }
 
   return (
-    <div className="min-h-screen gradient-bg flex items-center justify-center px-4 py-16">
+    <div className="min-h-screen bg-[#FAFAF8] flex items-center justify-center px-4 py-16">
       <div className="w-full max-w-2xl">
         <div className="text-center mb-8">
-          <span className="text-[#0F172A] font-black text-xl tracking-tight">
-            Customers<span className="text-[#2563EB]">.Direct</span>
+          <span className="text-[#171717] font-bold text-xl tracking-tight">
+            Customers<span className="text-[#777773]">.Direct</span>
           </span>
         </div>
 
-        <div className="bg-white rounded-3xl border border-gray-100 p-8 sm:p-10" style={{ boxShadow: "0 8px 40px rgba(15,23,42,0.08)" }}>
+        <div className="bg-white rounded-2xl border border-[#EEEEEA] p-8 sm:p-10" style={{ boxShadow: "0 8px 40px rgba(15,23,42,0.08)" }}>
           {error && (
             <div className="flex items-start gap-2 text-sm text-[#DC2626] bg-[#FEF2F2] border border-[#FECACA] rounded-xl px-4 py-3 mb-6">
               <AlertTriangle size={16} className="shrink-0 mt-0.5" aria-hidden="true" />
@@ -250,8 +250,8 @@ export default function OnboardingWizard() {
 
           {step === "url" && (
             <form onSubmit={handleScan}>
-              <h1 className="text-2xl font-black text-[#0F172A] mb-2">What&apos;s your website?</h1>
-              <p className="text-sm text-[#64748B] mb-6">
+              <h1 className="text-2xl font-bold text-[#171717] mb-2">What&apos;s your website?</h1>
+              <p className="text-sm text-[#777773] mb-6">
                 We&apos;ll scan it for the basics — you&apos;ll confirm everything before we save it.
               </p>
               <input
@@ -260,11 +260,11 @@ export default function OnboardingWizard() {
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
                 placeholder="yourbusiness.com"
-                className="w-full border border-gray-200 rounded-xl px-4 py-3.5 text-base text-[#0F172A] focus:outline-none focus:ring-2 focus:ring-[#2563EB]/30 focus:border-[#2563EB] mb-6"
+                className="w-full border border-[#E5E5E1] rounded-xl px-4 py-3.5 text-base text-[#171717] focus:outline-none focus:ring-2 focus:ring-[#171717]/10 focus:border-[#171717] mb-6"
               />
               <button
                 type="submit"
-                className="w-full flex items-center justify-center gap-2 bg-[#2563EB] text-white font-bold py-3.5 rounded-full hover:bg-[#1d4ed8] transition-colors text-sm"
+                className="w-full flex items-center justify-center gap-2 bg-[#171717] text-white font-bold py-3 rounded-lg hover:bg-[#2A2A2A] transition-colors text-sm"
               >
                 Scan My Website
                 <ArrowRight size={16} aria-hidden="true" />
@@ -274,16 +274,16 @@ export default function OnboardingWizard() {
 
           {step === "scanning" && (
             <div className="py-12 flex flex-col items-center text-center">
-              <Loader2 size={32} className="animate-spin text-[#2563EB] mb-4" />
-              <p className="text-sm font-semibold text-[#0F172A]">Working on it…</p>
-              <p className="text-xs text-[#94A3B8] mt-1">This uses real data — no placeholder results.</p>
+              <Loader2 size={32} className="animate-spin text-[#777773] mb-4" />
+              <p className="text-sm font-semibold text-[#171717]">Working on it…</p>
+              <p className="text-xs text-[#A3A3A0] mt-1">This uses real data — no placeholder results.</p>
             </div>
           )}
 
           {step === "confirm" && (
             <form onSubmit={handleConfirmBusiness}>
-              <h1 className="text-2xl font-black text-[#0F172A] mb-2">Confirm your business</h1>
-              <p className="text-sm text-[#64748B] mb-6">
+              <h1 className="text-2xl font-bold text-[#171717] mb-2">Confirm your business</h1>
+              <p className="text-sm text-[#777773] mb-6">
                 {scan?.name || scan?.description
                   ? "We found some of this automatically — please check it's correct."
                   : "We couldn't auto-detect much from your site — please fill this in."}
@@ -295,7 +295,7 @@ export default function OnboardingWizard() {
                     required
                     value={form.name}
                     onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-                    className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm text-[#0F172A] focus:outline-none focus:ring-2 focus:ring-[#2563EB]/30 focus:border-[#2563EB]"
+                    className="w-full border border-[#E5E5E1] rounded-xl px-4 py-3 text-sm text-[#171717] focus:outline-none focus:ring-2 focus:ring-[#171717]/10 focus:border-[#171717]"
                   />
                 </Field>
 
@@ -305,7 +305,7 @@ export default function OnboardingWizard() {
                     list="industry-suggestions"
                     value={form.industry}
                     onChange={(e) => setForm((f) => ({ ...f, industry: e.target.value }))}
-                    className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm text-[#0F172A] focus:outline-none focus:ring-2 focus:ring-[#2563EB]/30 focus:border-[#2563EB]"
+                    className="w-full border border-[#E5E5E1] rounded-xl px-4 py-3 text-sm text-[#171717] focus:outline-none focus:ring-2 focus:ring-[#171717]/10 focus:border-[#171717]"
                   />
                   <datalist id="industry-suggestions">
                     {INDUSTRY_SUGGESTIONS.map((s) => (
@@ -319,7 +319,7 @@ export default function OnboardingWizard() {
                     value={form.description}
                     onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
                     rows={3}
-                    className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm text-[#0F172A] focus:outline-none focus:ring-2 focus:ring-[#2563EB]/30 focus:border-[#2563EB] resize-none"
+                    className="w-full border border-[#E5E5E1] rounded-xl px-4 py-3 text-sm text-[#171717] focus:outline-none focus:ring-2 focus:ring-[#171717]/10 focus:border-[#171717] resize-none"
                   />
                 </Field>
 
@@ -328,14 +328,14 @@ export default function OnboardingWizard() {
                     <input
                       value={form.city}
                       onChange={(e) => setForm((f) => ({ ...f, city: e.target.value }))}
-                      className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm text-[#0F172A] focus:outline-none focus:ring-2 focus:ring-[#2563EB]/30 focus:border-[#2563EB]"
+                      className="w-full border border-[#E5E5E1] rounded-xl px-4 py-3 text-sm text-[#171717] focus:outline-none focus:ring-2 focus:ring-[#171717]/10 focus:border-[#171717]"
                     />
                   </Field>
                   <Field label="State / Region">
                     <input
                       value={form.region}
                       onChange={(e) => setForm((f) => ({ ...f, region: e.target.value }))}
-                      className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm text-[#0F172A] focus:outline-none focus:ring-2 focus:ring-[#2563EB]/30 focus:border-[#2563EB]"
+                      className="w-full border border-[#E5E5E1] rounded-xl px-4 py-3 text-sm text-[#171717] focus:outline-none focus:ring-2 focus:ring-[#171717]/10 focus:border-[#171717]"
                     />
                   </Field>
                 </div>
@@ -343,7 +343,7 @@ export default function OnboardingWizard() {
 
               <button
                 type="submit"
-                className="w-full mt-7 flex items-center justify-center gap-2 bg-[#2563EB] text-white font-bold py-3.5 rounded-full hover:bg-[#1d4ed8] transition-colors text-sm"
+                className="w-full mt-7 flex items-center justify-center gap-2 bg-[#171717] text-white font-bold py-3 rounded-lg hover:bg-[#2A2A2A] transition-colors text-sm"
               >
                 Continue
                 <ArrowRight size={16} aria-hidden="true" />
@@ -353,8 +353,8 @@ export default function OnboardingWizard() {
 
           {step === "competitors" && (
             <div>
-              <h1 className="text-2xl font-black text-[#0F172A] mb-2">Who are your competitors?</h1>
-              <p className="text-sm text-[#64748B] mb-6">
+              <h1 className="text-2xl font-bold text-[#171717] mb-2">Who are your competitors?</h1>
+              <p className="text-sm text-[#777773] mb-6">
                 {suggestions.length > 0
                   ? "We found a few nearby businesses in your category — confirm the ones worth tracking, or add your own."
                   : "We couldn't find suggestions automatically — add a few competitors yourself."}
@@ -367,17 +367,17 @@ export default function OnboardingWizard() {
                     <label
                       key={s.name}
                       className={`flex items-center gap-3 border rounded-xl px-4 py-3 cursor-pointer transition-colors ${
-                        checked ? "border-[#2563EB] bg-[#EFF6FF]" : "border-gray-200"
+                        checked ? "border-[#171717] bg-[#F0F0EC]" : "border-[#E5E5E1]"
                       }`}
                     >
                       <input
                         type="checkbox"
                         checked={checked}
                         onChange={() => toggleCompetitor(s)}
-                        className="accent-[#2563EB]"
+                        className="accent-[#171717]"
                       />
-                      <span className="text-sm font-medium text-[#0F172A]">{s.name}</span>
-                      {s.domain && <span className="text-xs text-[#94A3B8] ml-auto">{s.domain}</span>}
+                      <span className="text-sm font-medium text-[#171717]">{s.name}</span>
+                      {s.domain && <span className="text-xs text-[#A3A3A0] ml-auto">{s.domain}</span>}
                     </label>
                   );
                 })}
@@ -394,12 +394,12 @@ export default function OnboardingWizard() {
                     }
                   }}
                   placeholder="Add a competitor by name"
-                  className="flex-1 border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-[#0F172A] focus:outline-none focus:ring-2 focus:ring-[#2563EB]/30 focus:border-[#2563EB]"
+                  className="flex-1 border border-[#E5E5E1] rounded-xl px-4 py-2.5 text-sm text-[#171717] focus:outline-none focus:ring-2 focus:ring-[#171717]/10 focus:border-[#171717]"
                 />
                 <button
                   type="button"
                   onClick={addCustomCompetitor}
-                  className="shrink-0 flex items-center gap-1.5 border border-gray-200 rounded-xl px-4 py-2.5 text-sm font-semibold text-[#0F172A] hover:bg-gray-50"
+                  className="shrink-0 flex items-center gap-1.5 border border-[#E5E5E1] rounded-xl px-4 py-2.5 text-sm font-semibold text-[#171717] hover:bg-[#F5F5F2]"
                 >
                   <Plus size={15} aria-hidden="true" />
                   Add
@@ -409,7 +409,7 @@ export default function OnboardingWizard() {
               <button
                 type="button"
                 onClick={handleConfirmCompetitors}
-                className="w-full mt-7 flex items-center justify-center gap-2 bg-[#2563EB] text-white font-bold py-3.5 rounded-full hover:bg-[#1d4ed8] transition-colors text-sm"
+                className="w-full mt-7 flex items-center justify-center gap-2 bg-[#171717] text-white font-bold py-3 rounded-lg hover:bg-[#2A2A2A] transition-colors text-sm"
               >
                 Continue
                 <ArrowRight size={16} aria-hidden="true" />
@@ -419,21 +419,21 @@ export default function OnboardingWizard() {
 
           {step === "prompts" && (
             <div>
-              <h1 className="text-2xl font-black text-[#0F172A] mb-2">Prompts we&apos;ll track</h1>
-              <p className="text-sm text-[#64748B] mb-6">
+              <h1 className="text-2xl font-bold text-[#171717] mb-2">Prompts we&apos;ll track</h1>
+              <p className="text-sm text-[#777773] mb-6">
                 These are the buyer-intent questions we&apos;ll ask AI models on your behalf. Remove any
                 that don&apos;t fit.
               </p>
 
               <div className="flex flex-col gap-2 max-h-80 overflow-y-auto mb-6 pr-1">
                 {prompts.map((p, i) => (
-                  <div key={`${p.prompt}-${i}`} className="flex items-start gap-3 border border-gray-200 rounded-xl px-4 py-3">
-                    <span className="text-sm text-[#0F172A] flex-1">{p.prompt}</span>
+                  <div key={`${p.prompt}-${i}`} className="flex items-start gap-3 border border-[#E5E5E1] rounded-xl px-4 py-3">
+                    <span className="text-sm text-[#171717] flex-1">{p.prompt}</span>
                     <button
                       type="button"
                       onClick={() => removePrompt(i)}
                       aria-label="Remove prompt"
-                      className="shrink-0 text-[#94A3B8] hover:text-[#DC2626]"
+                      className="shrink-0 text-[#A3A3A0] hover:text-[#DC2626]"
                     >
                       <X size={16} />
                     </button>
@@ -441,12 +441,12 @@ export default function OnboardingWizard() {
                 ))}
               </div>
 
-              <p className="text-xs text-[#94A3B8] mb-4">{prompts.length} prompts will be tracked.</p>
+              <p className="text-xs text-[#A3A3A0] mb-4">{prompts.length} prompts will be tracked.</p>
 
               <button
                 type="button"
                 onClick={handleConfirmPrompts}
-                className="w-full flex items-center justify-center gap-2 bg-[#2563EB] text-white font-bold py-3.5 rounded-full hover:bg-[#1d4ed8] transition-colors text-sm"
+                className="w-full flex items-center justify-center gap-2 bg-[#171717] text-white font-bold py-3 rounded-lg hover:bg-[#2A2A2A] transition-colors text-sm"
               >
                 Save & Run First Scan
                 <ArrowRight size={16} aria-hidden="true" />
@@ -456,9 +456,9 @@ export default function OnboardingWizard() {
 
           {step === "finishing" && (
             <div className="py-12 flex flex-col items-center text-center">
-              <Loader2 size={32} className="animate-spin text-[#2563EB] mb-4" />
-              <p className="text-sm font-semibold text-[#0F172A]">{finishingMessage}</p>
-              <p className="text-xs text-[#94A3B8] mt-1">
+              <Loader2 size={32} className="animate-spin text-[#777773] mb-4" />
+              <p className="text-sm font-semibold text-[#171717]">{finishingMessage}</p>
+              <p className="text-xs text-[#A3A3A0] mt-1">
                 Real AI providers are being queried live — this can take up to a minute.
               </p>
             </div>
@@ -467,8 +467,8 @@ export default function OnboardingWizard() {
           {step === "done" && (
             <div className="py-12 flex flex-col items-center text-center">
               <CheckCircle2 size={36} className="text-[#16A34A] mb-4" />
-              <p className="text-base font-bold text-[#0F172A]">You&apos;re all set.</p>
-              <p className="text-xs text-[#94A3B8] mt-1">Taking you to your dashboard…</p>
+              <p className="text-base font-bold text-[#171717]">You&apos;re all set.</p>
+              <p className="text-xs text-[#A3A3A0] mt-1">Taking you to your dashboard…</p>
             </div>
           )}
         </div>
@@ -480,11 +480,11 @@ export default function OnboardingWizard() {
 function Field({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
   return (
     <div>
-      <label className="block text-xs font-bold text-[#64748B] uppercase tracking-wide mb-1.5">
+      <label className="block text-xs font-bold text-[#777773] uppercase tracking-wide mb-1.5">
         {label}
       </label>
       {children}
-      {hint && <p className="text-xs text-[#94A3B8] mt-1">{hint}</p>}
+      {hint && <p className="text-xs text-[#A3A3A0] mt-1">{hint}</p>}
     </div>
   );
 }

@@ -62,13 +62,13 @@ export default function CompetitorsManager({
             }
           }}
           placeholder="Add a competitor by name"
-          className="flex-1 border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-[#0F172A] focus:outline-none focus:ring-2 focus:ring-[#2563EB]/30 focus:border-[#2563EB]"
+          className="flex-1 border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-[#171717] focus:outline-none focus:ring-2 focus:ring-[#171717]/30 focus:border-[#E5E5E1]"
         />
         <button
           type="button"
           onClick={addCompetitor}
           disabled={adding}
-          className="shrink-0 flex items-center gap-1.5 bg-[#2563EB] text-white rounded-xl px-4 py-2.5 text-sm font-semibold hover:bg-[#1d4ed8] disabled:opacity-60"
+          className="shrink-0 flex items-center gap-1.5 bg-[#171717] text-white rounded-xl px-4 py-2.5 text-sm font-semibold hover:bg-[#2A2A2A] disabled:opacity-60"
         >
           {adding ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
           Add
@@ -78,9 +78,9 @@ export default function CompetitorsManager({
       <div className="flex flex-col gap-2">
         {competitors.map((c) => (
           <div key={c.id} className="flex items-center gap-3 border border-gray-100 rounded-xl px-4 py-3">
-            <span className="text-sm font-medium text-[#0F172A] flex-1">{c.name}</span>
-            {c.domain && <span className="text-xs text-[#94A3B8]">{c.domain}</span>}
-            <span className="text-[10px] font-bold uppercase tracking-widest text-[#94A3B8]">
+            <span className="text-sm font-medium text-[#171717] flex-1">{c.name}</span>
+            {c.domain && <span className="text-xs text-[#A3A3A0]">{c.domain}</span>}
+            <span className="text-[10px] font-bold uppercase tracking-widest text-[#A3A3A0]">
               {c.source ?? "manual"}
             </span>
             <button
@@ -88,7 +88,7 @@ export default function CompetitorsManager({
               onClick={() => remove(c.id)}
               disabled={busyId === c.id}
               aria-label="Remove competitor"
-              className="text-[#94A3B8] hover:text-[#DC2626]"
+              className="text-[#A3A3A0] hover:text-[#991B1B]"
             >
               <Trash2 size={15} />
             </button>

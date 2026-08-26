@@ -18,10 +18,10 @@ export default function GEOHeader() {
       <div className="bg-white/90 backdrop-blur rounded-2xl shadow-lg max-w-6xl mx-auto border border-gray-100">
         <div className="flex items-center justify-between py-3 px-6">
           <Link href="/ai-search" aria-label="Customers.Direct — AI Search Visibility" className="flex items-center gap-2">
-            <span className="text-[#0F172A] font-black text-lg tracking-tight">
-              Customers<span className="text-[#2563EB]">.Direct</span>
+            <span className="text-[#171717] font-bold text-lg tracking-tight">
+              Customers<span className="text-[#777773]">.Direct</span>
             </span>
-            <span className="hidden sm:inline-block text-[10px] font-black uppercase tracking-widest text-[#7C3AED] bg-[#F5F3FF] border border-[#EDE9FE] px-2 py-0.5 rounded-full">
+            <span className="hidden sm:inline-block text-[10px] font-bold uppercase tracking-widest text-[#7C3AED] bg-[#F5F3FF] border border-[#EDE9FE] px-2 py-0.5 rounded-full">
               AI Search
             </span>
           </Link>
@@ -31,7 +31,7 @@ export default function GEOHeader() {
               <Link
                 key={item.href}
                 href={item.href}
-                className="text-sm font-medium text-[#64748B] hover:text-[#0F172A] transition-colors"
+                className="text-sm font-medium text-[#777773] hover:text-[#171717] transition-colors"
               >
                 {item.label}
               </Link>
@@ -41,7 +41,7 @@ export default function GEOHeader() {
           <div className="flex items-center gap-3">
             <Link
               href="/login"
-              className="hidden md:inline-flex text-sm font-semibold text-[#64748B] hover:text-[#0F172A] transition-colors px-2"
+              className="hidden md:inline-flex text-sm font-semibold text-[#777773] hover:text-[#171717] transition-colors px-2"
             >
               Log in
             </Link>
@@ -70,7 +70,7 @@ export default function GEOHeader() {
                 key={item.href}
                 href={item.href}
                 onClick={() => setMobileOpen(false)}
-                className="text-sm font-medium text-[#64748B] hover:text-[#0F172A] py-1"
+                className="text-sm font-medium text-[#777773] hover:text-[#171717] py-1"
               >
                 {item.label}
               </Link>
@@ -78,7 +78,7 @@ export default function GEOHeader() {
             <Link
               href="/login"
               onClick={() => setMobileOpen(false)}
-              className="text-sm font-semibold text-[#64748B] py-1"
+              className="text-sm font-semibold text-[#777773] py-1"
             >
               Log in
             </Link>

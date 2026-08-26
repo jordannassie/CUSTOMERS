@@ -67,34 +67,34 @@ export default function OpportunityCard({ opportunity, businessId }: { opportuni
   const isOpen = opportunity.status === "open";
 
   return (
-    <div className="border border-gray-100 rounded-2xl p-5">
+    <div className="bg-white border border-[#E5E5E1] rounded-xl p-5">
       <div className="flex items-start justify-between gap-3 mb-2">
         <div>
           <div className="flex items-center gap-2 mb-1.5 flex-wrap">
             <ImpactBadge impact={opportunity.impact} />
-            <span className="text-[10px] font-bold uppercase tracking-widest text-[#94A3B8]">
+            <span className="text-[10px] font-semibold uppercase tracking-widest text-[#A3A3A0]">
               {CATEGORY_LABELS[opportunity.category] ?? opportunity.category}
             </span>
             {!isOpen && (
-              <span className="text-[10px] font-bold uppercase tracking-widest text-[#16A34A] bg-[#F0FDF4] border border-[#BBF7D0] px-2 py-0.5 rounded-full">
+              <span className="text-[10px] font-semibold uppercase tracking-widest text-[#166534] bg-[#F0FDF4] border border-[#BBF7D0] px-2 py-0.5 rounded-full">
                 {opportunity.status.replace("_", " ")}
               </span>
             )}
           </div>
-          <h3 className="font-bold text-[#0F172A]">{opportunity.title}</h3>
+          <h3 className="font-semibold text-[#171717] text-[15px]">{opportunity.title}</h3>
         </div>
       </div>
 
-      <p className="text-sm text-[#64748B] mb-3">{opportunity.description}</p>
+      <p className="text-[13px] text-[#777773] mb-3">{opportunity.description}</p>
 
-      <div className="bg-[#F8FAFC] border border-gray-100 rounded-xl px-4 py-3 mb-3">
-        <p className="text-[10px] font-bold uppercase tracking-widest text-[#94A3B8] mb-1">Evidence</p>
-        <p className="text-xs text-[#475569]">{opportunity.evidence}</p>
+      <div className="bg-[#FAFAF8] border border-[#EEEEEA] rounded-lg px-4 py-3 mb-3">
+        <p className="text-[10px] font-semibold uppercase tracking-widest text-[#A3A3A0] mb-1">Evidence</p>
+        <p className="text-[12px] text-[#777773]">{opportunity.evidence}</p>
       </div>
 
       <div className="mb-4">
-        <p className="text-[10px] font-bold uppercase tracking-widest text-[#94A3B8] mb-1">Recommended action</p>
-        <p className="text-sm text-[#0F172A]">{opportunity.recommended_action}</p>
+        <p className="text-[10px] font-semibold uppercase tracking-widest text-[#A3A3A0] mb-1">Recommended action</p>
+        <p className="text-[13px] text-[#171717]">{opportunity.recommended_action}</p>
       </div>
 
       {isOpen && (
@@ -102,27 +102,27 @@ export default function OpportunityCard({ opportunity, businessId }: { opportuni
           <button
             type="button"
             onClick={copyForClaude}
-            className="inline-flex items-center gap-1.5 text-xs font-bold text-[#7C3AED] bg-[#F5F3FF] border border-[#EDE9FE] px-3.5 py-2 rounded-full hover:bg-[#EDE9FE] transition-colors"
+            className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-[#777773] bg-[#F5F5F2] border border-[#E5E5E1] px-3.5 py-2 rounded-lg hover:bg-[#EEEEEA] transition-colors"
           >
-            {copied ? <Check size={13} /> : <Copy size={13} />}
-            {copied ? "Copied" : "Copy for Claude"}
+            {copied ? <Check size={12} aria-hidden="true" /> : <Copy size={12} aria-hidden="true" />}
+            {copied ? "Copied!" : "Copy for Claude"}
           </button>
           <button
             type="button"
             onClick={requestFix}
             disabled={requesting || requested}
-            className="inline-flex items-center gap-1.5 text-xs font-bold text-white bg-[#2563EB] px-3.5 py-2 rounded-full hover:bg-[#1d4ed8] transition-colors disabled:opacity-60"
+            className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-white bg-[#171717] px-3.5 py-2 rounded-lg hover:bg-[#2A2A2A] transition-colors disabled:opacity-60 active:scale-[0.97]"
           >
-            {requesting ? <Loader2 size={13} className="animate-spin" /> : <Wrench size={13} />}
-            {requested ? "Requested" : "Have Customers.Direct Fix It"}
+            {requesting ? <Loader2 size={12} className="animate-spin" aria-hidden="true" /> : <Wrench size={12} aria-hidden="true" />}
+            {requested ? "Requested" : "Request Fix"}
           </button>
           <button
             type="button"
             onClick={dismiss}
             disabled={updating}
-            className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#94A3B8] px-3 py-2 rounded-full hover:text-[#64748B] transition-colors ml-auto disabled:opacity-60"
+            className="inline-flex items-center gap-1.5 text-[12px] font-medium text-[#A3A3A0] px-3 py-2 rounded-lg hover:text-[#777773] hover:bg-[#F5F5F2] transition-colors ml-auto disabled:opacity-60"
           >
-            <X size={13} />
+            <X size={12} aria-hidden="true" />
             Dismiss
           </button>
         </div>

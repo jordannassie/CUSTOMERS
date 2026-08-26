@@ -109,15 +109,15 @@ export default async function VisibilityPage() {
                 up: null,
               },
             ].map(({ label, value, sub, up }) => (
-              <div key={label} className="bg-white rounded-xl border border-slate-200 p-4">
-                <p className="text-[11px] font-semibold text-[#94A3B8] uppercase tracking-wider mb-2">{label}</p>
+              <div key={label} className="bg-white rounded-xl border border-[#E5E5E1] p-4">
+                <p className="text-[11px] font-semibold text-[#A3A3A0] uppercase tracking-wider mb-2">{label}</p>
                 <div className="flex items-end gap-1.5">
-                  <p className="text-2xl font-black text-[#0F172A] leading-none">{value}</p>
+                  <p className="text-[18px] font-bold text-[#171717] leading-none">{value}</p>
                   {up !== null && (
-                    up ? <TrendingUp size={14} className="text-[#16A34A] mb-0.5" /> : <TrendingDown size={14} className="text-[#DC2626] mb-0.5" />
+                    up ? <TrendingUp size={14} className="text-[#166534] mb-0.5" /> : <TrendingDown size={14} className="text-[#991B1B] mb-0.5" />
                   )}
                 </div>
-                <p className="text-[11px] text-[#94A3B8] mt-1">{sub}</p>
+                <p className="text-[11px] text-[#A3A3A0] mt-1">{sub}</p>
               </div>
             ))}
           </div>
@@ -126,8 +126,8 @@ export default async function VisibilityPage() {
           {history.length >= 2 && (
             <Card>
               <div className="flex items-center justify-between mb-3">
-                <h2 className="font-bold text-[#0F172A] text-[15px]">Direct Score trend</h2>
-                <span className="text-[11px] text-[#94A3B8]">{history.length} scans</span>
+                <h2 className="font-bold text-[#171717] text-[15px]">Direct Score trend</h2>
+                <span className="text-[11px] text-[#A3A3A0]">{history.length} scans</span>
               </div>
               <ScoreTrendChart history={history} />
             </Card>
@@ -136,23 +136,23 @@ export default async function VisibilityPage() {
           {/* Provider breakdown */}
           {providerMap.size > 0 && (
             <Card>
-              <h2 className="font-bold text-[#0F172A] text-[15px] mb-4">Platform breakdown</h2>
+              <h2 className="font-bold text-[#171717] text-[15px] mb-4">Platform breakdown</h2>
               <div className="flex flex-col gap-3">
                 {Array.from(providerMap.entries()).map(([provider, { won: w, total: t }]) => {
                   const pct = Math.round((w / t) * 100);
                   const color = PROVIDER_COLORS[provider] ?? "#94A3B8";
                   return (
                     <div key={provider} className="flex items-center gap-4">
-                      <span className="text-[13px] font-semibold text-[#0F172A] w-28 shrink-0">
+                      <span className="text-[13px] font-semibold text-[#171717] w-28 shrink-0">
                         {PROVIDER_LABELS[provider] ?? provider}
                       </span>
-                      <div className="flex-1 h-2.5 bg-slate-100 rounded-full overflow-hidden">
+                      <div className="flex-1 h-2.5 bg-[#F0F0EC] rounded-full overflow-hidden">
                         <div
                           className="h-full rounded-full transition-all duration-500"
                           style={{ width: `${pct}%`, backgroundColor: color }}
                         />
                       </div>
-                      <span className="text-[13px] font-bold text-[#0F172A] w-16 text-right shrink-0 tabular-nums">
+                      <span className="text-[13px] font-bold text-[#171717] w-16 text-right shrink-0 tabular-nums">
                         {w}/{t} — {pct}%
                       </span>
                     </div>
@@ -164,26 +164,26 @@ export default async function VisibilityPage() {
 
           {/* Result list */}
           <Card>
-            <h2 className="font-bold text-[#0F172A] text-[15px] mb-4">Prompt-level results</h2>
+            <h2 className="font-bold text-[#171717] text-[15px] mb-4">Prompt-level results</h2>
             <div className="overflow-x-auto -mx-5">
               <table className="w-full text-[13px]">
                 <thead>
-                  <tr className="border-b border-slate-100">
-                    <th className="text-left text-[10px] font-semibold text-[#94A3B8] uppercase tracking-wider px-5 py-2.5">Prompt</th>
-                    <th className="text-left text-[10px] font-semibold text-[#94A3B8] uppercase tracking-wider px-4 py-2.5">Provider</th>
-                    <th className="text-left text-[10px] font-semibold text-[#94A3B8] uppercase tracking-wider px-4 py-2.5">Result</th>
-                    <th className="text-right text-[10px] font-semibold text-[#94A3B8] uppercase tracking-wider px-5 py-2.5 hidden sm:table-cell">Citations</th>
+                  <tr className="border-b border-[#EEEEEA]">
+                    <th className="text-left text-[10px] font-semibold text-[#A3A3A0] uppercase tracking-wider px-5 py-2.5">Prompt</th>
+                    <th className="text-left text-[10px] font-semibold text-[#A3A3A0] uppercase tracking-wider px-4 py-2.5">Provider</th>
+                    <th className="text-left text-[10px] font-semibold text-[#A3A3A0] uppercase tracking-wider px-4 py-2.5">Result</th>
+                    <th className="text-right text-[10px] font-semibold text-[#A3A3A0] uppercase tracking-wider px-5 py-2.5 hidden sm:table-cell">Citations</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-50">
                   {results.map((r) => (
-                    <tr key={r.id} className="hover:bg-slate-50 transition-colors">
+                    <tr key={r.id} className="hover:bg-[#F5F5F2] transition-colors">
                       <td className="px-5 py-3 max-w-[280px]">
-                        <span className="block text-[13px] text-[#0F172A] font-medium line-clamp-2 leading-snug">
-                          {r.prompt ?? <span className="text-[#94A3B8] italic">prompt removed</span>}
+                        <span className="block text-[13px] text-[#171717] font-medium line-clamp-2 leading-snug">
+                          {r.prompt ?? <span className="text-[#A3A3A0] italic">prompt removed</span>}
                         </span>
                         {r.competitors_mentioned.length > 0 && (
-                          <span className="text-[11px] text-[#94A3B8]">
+                          <span className="text-[11px] text-[#A3A3A0]">
                             {r.competitors_mentioned.map((c) => c.name).join(", ")} mentioned
                           </span>
                         )}
@@ -201,20 +201,20 @@ export default async function VisibilityPage() {
                       </td>
                       <td className="px-4 py-3">
                         {r.business_mentioned ? (
-                          <span className="inline-flex items-center gap-1 text-[12px] font-semibold text-[#16A34A]">
+                          <span className="inline-flex items-center gap-1 text-[12px] font-semibold text-[#166534]">
                             <CheckCircle2 size={13} />
                             Mentioned
-                            {r.mention_position && <span className="text-[#94A3B8] font-normal">#{r.mention_position}</span>}
+                            {r.mention_position && <span className="text-[#A3A3A0] font-normal">#{r.mention_position}</span>}
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1 text-[12px] font-medium text-[#94A3B8]">
+                          <span className="inline-flex items-center gap-1 text-[12px] font-medium text-[#A3A3A0]">
                             <XCircle size={13} />
                             Not mentioned
                           </span>
                         )}
                       </td>
                       <td className="px-5 py-3 text-right hidden sm:table-cell">
-                        <span className="text-[12px] text-[#64748B]">
+                        <span className="text-[12px] text-[#777773]">
                           {r.cited_sources.length > 0 ? `${r.cited_sources.length}×` : "—"}
                         </span>
                       </td>

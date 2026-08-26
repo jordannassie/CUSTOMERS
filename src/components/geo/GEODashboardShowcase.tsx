@@ -63,16 +63,16 @@ function VisibilityTab() {
     <div className="p-5">
       <div className="grid grid-cols-2 gap-4 mb-5">
         <div className="bg-gray-50 rounded-xl p-4">
-          <p className="text-[10px] uppercase tracking-wider font-bold text-[#94A3B8] mb-1">Direct Score</p>
+          <p className="text-[10px] uppercase tracking-wider font-bold text-[#A3A3A0] mb-1">Direct Score</p>
           <div className="flex items-end gap-1.5">
-            <span className="text-2xl font-black text-[#0F172A]">35.1%</span>
+            <span className="text-2xl font-bold text-[#171717]">35.1%</span>
             <span className="text-xs font-bold text-emerald-500 flex items-center gap-0.5 mb-0.5"><TrendingUp size={10} />+11.9%</span>
           </div>
         </div>
         <div className="bg-gray-50 rounded-xl p-4">
-          <p className="text-[10px] uppercase tracking-wider font-bold text-[#94A3B8] mb-1">Avg Position</p>
+          <p className="text-[10px] uppercase tracking-wider font-bold text-[#A3A3A0] mb-1">Avg Position</p>
           <div className="flex items-end gap-1.5">
-            <span className="text-2xl font-black text-[#0F172A]">#2.4</span>
+            <span className="text-2xl font-bold text-[#171717]">#2.4</span>
             <span className="text-xs font-bold text-emerald-500 mb-0.5">↑ +0.8</span>
           </div>
         </div>
@@ -84,18 +84,18 @@ function VisibilityTab() {
           />
         ))}
       </div>
-      <p className="text-[10px] text-[#94A3B8] mb-5">7-day visibility trend</p>
+      <p className="text-[10px] text-[#A3A3A0] mb-5">7-day visibility trend</p>
       <div className="flex flex-col gap-2">
         {PLATFORMS.map(({ name, n, total, color }) => (
           <div key={name} className="flex items-center gap-2.5">
-            <span className="text-[11px] font-medium text-[#64748B] w-20 shrink-0">{name}</span>
+            <span className="text-[11px] font-medium text-[#777773] w-20 shrink-0">{name}</span>
             <div className="flex gap-0.5 flex-1">
               {Array.from({ length: total }).map((_, j) => (
                 <div key={j} className="flex-1 h-1.5 rounded-full"
                   style={{ backgroundColor: j < n ? color : "#E2E8F0" }} />
               ))}
             </div>
-            <span className="text-[10px] text-[#94A3B8] w-7 text-right">{n}/{total}</span>
+            <span className="text-[10px] text-[#A3A3A0] w-7 text-right">{n}/{total}</span>
           </div>
         ))}
       </div>
@@ -106,22 +106,22 @@ function VisibilityTab() {
 function CompetitorsTab() {
   return (
     <div className="p-5">
-      <p className="text-[10px] uppercase tracking-wider font-bold text-[#94A3B8] mb-3">Visibility Ranking</p>
+      <p className="text-[10px] uppercase tracking-wider font-bold text-[#A3A3A0] mb-3">Visibility Ranking</p>
       <div className="flex flex-col gap-1.5">
         {COMPETITORS.map(({ domain, score, delta, rank, isYou }) => (
-          <div key={domain} className={`flex items-center gap-3 px-3 py-2.5 rounded-xl ${isYou ? "bg-[#EFF6FF] border border-[#DBEAFE]" : "bg-gray-50"}`}>
-            <span className={`text-[10px] font-black w-5 text-center ${isYou ? "text-[#2563EB]" : "text-[#94A3B8]"}`}>#{rank}</span>
+          <div key={domain} className={`flex items-center gap-3 px-3 py-2.5 rounded-xl ${isYou ? "bg-[#F0F0EC] border border-[#DBEAFE]" : "bg-gray-50"}`}>
+            <span className={`text-[10px] font-bold w-5 text-center ${isYou ? "text-[#777773]" : "text-[#A3A3A0]"}`}>#{rank}</span>
             <div className="flex-1 min-w-0">
-              <p className={`text-xs font-semibold truncate ${isYou ? "text-[#1D4ED8]" : "text-[#0F172A]"}`}>
+              <p className={`text-xs font-semibold truncate ${isYou ? "text-[#1D4ED8]" : "text-[#171717]"}`}>
                 {domain}
-                {isYou && <span className="ml-1.5 text-[9px] font-black text-[#2563EB] uppercase">You</span>}
+                {isYou && <span className="ml-1.5 text-[9px] font-bold text-[#777773] uppercase">You</span>}
               </p>
             </div>
             <div className="flex items-center gap-2 shrink-0">
               <div className="h-1.5 rounded-full bg-gray-200 w-16 overflow-hidden">
                 <div className="h-full rounded-full" style={{ width: `${score}%`, backgroundColor: isYou ? "#2563EB" : "#CBD5E1" }} />
               </div>
-              <span className="text-[10px] font-bold text-[#64748B] w-8 text-right">{score}%</span>
+              <span className="text-[10px] font-bold text-[#777773] w-8 text-right">{score}%</span>
               <span className={`text-[10px] font-bold w-7 text-right ${delta.startsWith("+") ? "text-emerald-500" : "text-red-400"}`}>{delta}</span>
             </div>
           </div>
@@ -138,12 +138,12 @@ function CompetitorsTab() {
 function PromptsTab() {
   return (
     <div className="p-5">
-      <p className="text-[10px] uppercase tracking-wider font-bold text-[#94A3B8] mb-3">Tracked Prompts</p>
+      <p className="text-[10px] uppercase tracking-wider font-bold text-[#A3A3A0] mb-3">Tracked Prompts</p>
       <div className="flex flex-col gap-1.5">
         {PROMPTS.map(({ text, appearances, total, trend }) => (
           <div key={text} className="flex items-center gap-3 px-3 py-2.5 bg-gray-50 rounded-xl">
             <div className="flex-1 min-w-0">
-              <p className="text-xs font-medium text-[#0F172A] truncate">{text}</p>
+              <p className="text-xs font-medium text-[#171717] truncate">{text}</p>
             </div>
             <div className="flex items-center gap-2 shrink-0">
               <div className="flex gap-0.5">
@@ -152,13 +152,13 @@ function PromptsTab() {
                     style={{ backgroundColor: j < appearances ? "#2563EB" : "#E2E8F0" }} />
                 ))}
               </div>
-              <span className="text-[10px] text-[#94A3B8]">{appearances}/{total}</span>
+              <span className="text-[10px] text-[#A3A3A0]">{appearances}/{total}</span>
               <span className="text-[10px]">{trend === "up" ? "↑" : "→"}</span>
             </div>
           </div>
         ))}
       </div>
-      <p className="text-[10px] text-[#94A3B8] mt-3">Showing 5 of 47 tracked prompts · Updated on last scan</p>
+      <p className="text-[10px] text-[#A3A3A0] mt-3">Showing 5 of 47 tracked prompts · Updated on last scan</p>
     </div>
   );
 }
@@ -166,22 +166,22 @@ function PromptsTab() {
 function OpportunitiesTab() {
   return (
     <div className="p-5">
-      <p className="text-[10px] uppercase tracking-wider font-bold text-[#94A3B8] mb-3">Prioritized Actions</p>
+      <p className="text-[10px] uppercase tracking-wider font-bold text-[#A3A3A0] mb-3">Prioritized Actions</p>
       <div className="flex flex-col gap-2">
         {OPPORTUNITIES.map(({ priority, prompt, gap, fix }) => (
           <div key={prompt} className="border border-gray-100 rounded-xl p-3 bg-white">
             <div className="flex items-center gap-2 mb-1.5">
-              <span className={`text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full ${
+              <span className={`text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${
                 priority === "High" ? "bg-red-50 text-red-600" :
                 priority === "Medium" ? "bg-amber-50 text-amber-600" :
                 "bg-gray-50 text-gray-500"
               }`}>{priority}</span>
-              <span className="text-xs font-semibold text-[#0F172A] leading-snug flex-1">{prompt}</span>
+              <span className="text-xs font-semibold text-[#171717] leading-snug flex-1">{prompt}</span>
             </div>
-            <p className="text-[10px] text-[#94A3B8] mb-1.5">{gap}</p>
+            <p className="text-[10px] text-[#A3A3A0] mb-1.5">{gap}</p>
             <div className="flex items-start gap-1.5">
-              <Zap size={9} className="text-[#2563EB] shrink-0 mt-0.5" />
-              <p className="text-[10px] font-medium text-[#2563EB] leading-snug">{fix}</p>
+              <Zap size={9} className="text-[#777773] shrink-0 mt-0.5" />
+              <p className="text-[10px] font-medium text-[#777773] leading-snug">{fix}</p>
             </div>
           </div>
         ))}
@@ -193,12 +193,12 @@ function OpportunitiesTab() {
 function ReportsTab() {
   return (
     <div className="p-5">
-      <p className="text-[10px] uppercase tracking-wider font-bold text-[#94A3B8] mb-3">Citation Analysis</p>
+      <p className="text-[10px] uppercase tracking-wider font-bold text-[#A3A3A0] mb-3">Citation Analysis</p>
       <div className="flex flex-col gap-1.5 mb-4">
         {CITATION_SOURCES.map(({ name, impact, status }) => (
           <div key={name} className="flex items-center gap-3 px-3 py-2.5 bg-gray-50 rounded-xl">
-            <Link2 size={12} className="text-[#94A3B8] shrink-0" />
-            <span className="text-xs font-medium text-[#0F172A] flex-1">{name}</span>
+            <Link2 size={12} className="text-[#A3A3A0] shrink-0" />
+            <span className="text-xs font-medium text-[#171717] flex-1">{name}</span>
             <span className={`text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${
               impact === "High" ? "bg-blue-50 text-blue-600" : "bg-gray-100 text-gray-500"
             }`}>{impact}</span>
@@ -210,8 +210,8 @@ function ReportsTab() {
           </div>
         ))}
       </div>
-      <div className="bg-[#EFF6FF] border border-[#DBEAFE] rounded-xl px-3 py-2.5 flex items-start gap-2">
-        <Bot size={12} className="text-[#2563EB] shrink-0 mt-0.5" />
+      <div className="bg-[#F0F0EC] border border-[#DBEAFE] rounded-xl px-3 py-2.5 flex items-start gap-2">
+        <Bot size={12} className="text-[#777773] shrink-0 mt-0.5" />
         <p className="text-[10px] font-medium text-[#1D4ED8]">
           Direct Agent: &ldquo;Completing your Yelp profile could improve visibility on 8 relevant prompts based on competitor citations.&rdquo;
         </p>
@@ -236,13 +236,13 @@ export default function GEODashboardShowcase() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-14 lg:gap-20 items-start">
           {/* Left: features */}
           <div>
-            <span className="inline-block text-[11px] font-black uppercase tracking-[0.12em] text-[#64748B] mb-4">
+            <span className="inline-block text-[11px] font-bold uppercase tracking-[0.12em] text-[#777773] mb-4">
               What You&apos;ll See
             </span>
-            <h2 className="text-3xl sm:text-4xl font-black text-[#0F172A] leading-[1.08] tracking-tight mb-5">
+            <h2 className="text-3xl sm:text-4xl font-bold text-[#171717] leading-[1.08] tracking-tight mb-5">
               Your complete AI visibility picture.
             </h2>
-            <p className="text-base text-[#475569] leading-relaxed mb-10">
+            <p className="text-base text-[#777773] leading-relaxed mb-10">
               Track your Direct Score, discover which competitors AI recommends instead of you, understand what citations and sources drive those answers, and get specific fixes — all in one dashboard.
             </p>
 
@@ -253,8 +253,8 @@ export default function GEODashboardShowcase() {
                     <Icon size={17} className="text-[#7C3AED]" />
                   </div>
                   <div>
-                    <p className="text-sm font-bold text-[#0F172A] mb-1">{label}</p>
-                    <p className="text-sm text-[#64748B] leading-relaxed">{desc}</p>
+                    <p className="text-sm font-bold text-[#171717] mb-1">{label}</p>
+                    <p className="text-sm text-[#777773] leading-relaxed">{desc}</p>
                   </div>
                 </div>
               ))}
@@ -262,7 +262,7 @@ export default function GEODashboardShowcase() {
 
             <Link
               href="/signup"
-              className="inline-flex items-center gap-2 bg-[#2563EB] text-white font-bold px-6 py-3.5 rounded-xl hover:bg-[#1d4ed8] transition-colors text-sm shadow-lg shadow-blue-500/20"
+              className="inline-flex items-center gap-2 bg-[#171717] text-white font-bold px-6 py-3.5 rounded-xl hover:bg-[#2A2A2A] transition-colors text-sm shadow-lg shadow-blue-500/20"
             >
               Check My AI Visibility — Free
               <ArrowRight size={14} aria-hidden="true" />
@@ -288,12 +288,12 @@ export default function GEODashboardShowcase() {
               {/* Business selector */}
               <div className="flex items-center justify-between px-5 py-2.5 border-b border-gray-100">
                 <div className="flex items-center gap-2">
-                  <div className="w-5 h-5 rounded-md bg-red-100 text-red-600 text-[9px] font-black flex items-center justify-center shrink-0">
+                  <div className="w-5 h-5 rounded-md bg-red-100 text-red-600 text-[9px] font-bold flex items-center justify-center shrink-0">
                     B
                   </div>
-                  <span className="text-[12px] font-semibold text-[#0F172A]">yourbusiness.com</span>
+                  <span className="text-[12px] font-semibold text-[#171717]">yourbusiness.com</span>
                 </div>
-                <span className="text-[9px] text-[#94A3B8] bg-gray-50 border border-gray-100 px-2 py-0.5 rounded">Last 7 days</span>
+                <span className="text-[9px] text-[#A3A3A0] bg-gray-50 border border-gray-100 px-2 py-0.5 rounded">Last 7 days</span>
               </div>
 
               {/* Tabs */}
@@ -304,8 +304,8 @@ export default function GEODashboardShowcase() {
                     onClick={() => setActiveTab(id)}
                     className={`flex items-center gap-1.5 px-3.5 py-2.5 text-xs font-semibold border-b-2 transition-colors whitespace-nowrap ${
                       activeTab === id
-                        ? "border-[#2563EB] text-[#2563EB]"
-                        : "border-transparent text-[#94A3B8] hover:text-[#64748B]"
+                        ? "border-[#E5E5E1] text-[#777773]"
+                        : "border-transparent text-[#A3A3A0] hover:text-[#777773]"
                     }`}
                   >
                     <Icon size={11} aria-hidden="true" />
@@ -322,7 +322,7 @@ export default function GEODashboardShowcase() {
               {activeTab === "reports" && <ReportsTab />}
             </div>
 
-            <p className="text-center text-xs text-[#94A3B8] mt-4">
+            <p className="text-center text-xs text-[#A3A3A0] mt-4">
               Representative dashboard — your actual data will vary
             </p>
           </div>

@@ -9,7 +9,7 @@ export default function GEOFooter() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10 mb-12">
           <div className="lg:col-span-2">
             <Link href="/ai-search" className="inline-block mb-4">
-              <span className="text-white font-black text-[22px] tracking-tight">
+              <span className="text-white font-bold text-[22px] tracking-tight">
                 Customers.Direct
               </span>
             </Link>

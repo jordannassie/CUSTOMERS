@@ -33,10 +33,10 @@ export default function GEOFAQSection() {
     <section id="faq" className="gradient-bg py-20 sm:py-24 px-4">
       <div className="max-w-3xl mx-auto">
         <div className="text-center mb-12">
-          <span className="inline-block text-xs font-black uppercase tracking-widest text-[#64748B] mb-4">
+          <span className="inline-block text-xs font-bold uppercase tracking-widest text-[#777773] mb-4">
             FAQ
           </span>
-          <h2 className="text-3xl sm:text-4xl font-black text-[#0F172A] leading-tight">
+          <h2 className="text-3xl sm:text-4xl font-bold text-[#171717] leading-tight">
             Questions, answered honestly.
           </h2>
         </div>
@@ -49,16 +49,16 @@ export default function GEOFAQSection() {
                 className="w-full flex items-center justify-between gap-4 px-6 py-5 text-left"
                 aria-expanded={open === i}
               >
-                <span className="font-bold text-[#0F172A] text-sm sm:text-base">{item.q}</span>
+                <span className="font-bold text-[#171717] text-sm sm:text-base">{item.q}</span>
                 <ChevronDown
                   size={18}
-                  className={`text-[#94A3B8] shrink-0 transition-transform ${open === i ? "rotate-180" : ""}`}
+                  className={`text-[#A3A3A0] shrink-0 transition-transform ${open === i ? "rotate-180" : ""}`}
                   aria-hidden="true"
                 />
               </button>
               {open === i && (
                 <div className="px-6 pb-5 -mt-1">
-                  <p className="text-sm text-[#64748B] leading-relaxed">{item.a}</p>
+                  <p className="text-sm text-[#777773] leading-relaxed">{item.a}</p>
                 </div>
               )}
             </div>

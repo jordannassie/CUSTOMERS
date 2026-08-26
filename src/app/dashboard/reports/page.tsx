@@ -44,7 +44,7 @@ export default async function ReportsPage() {
               type="button"
               disabled
               title="Export coming soon"
-              className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-[#94A3B8] border border-slate-200 rounded-lg px-3 py-2 cursor-not-allowed"
+              className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-[#A3A3A0] border border-[#E5E5E1] rounded-lg px-3 py-2 cursor-not-allowed"
             >
               <Download size={13} />
               Export
@@ -53,7 +53,7 @@ export default async function ReportsPage() {
               type="button"
               disabled
               title="Sharing coming soon"
-              className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-[#94A3B8] border border-slate-200 rounded-lg px-3 py-2 cursor-not-allowed"
+              className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-[#A3A3A0] border border-[#E5E5E1] rounded-lg px-3 py-2 cursor-not-allowed"
             >
               <Share2 size={13} />
               Share
@@ -95,16 +95,16 @@ export default async function ReportsPage() {
                   trend: null,
                 },
               ].map(({ label, value, sub, trend }) => (
-                <div key={label} className="bg-white rounded-xl border border-slate-200 p-4">
-                  <p className="text-[11px] font-semibold text-[#94A3B8] uppercase tracking-wider mb-2">{label}</p>
+                <div key={label} className="bg-white rounded-xl border border-[#E5E5E1] p-4">
+                  <p className="text-[11px] font-semibold text-[#A3A3A0] uppercase tracking-wider mb-2">{label}</p>
                   <div className="flex items-end gap-1.5">
-                    <p className="text-2xl font-black text-[#0F172A] leading-none">{value}</p>
-                    <p className="text-[12px] text-[#94A3B8] mb-0.5">{sub}</p>
+                    <p className="text-[18px] font-bold text-[#171717] leading-none">{value}</p>
+                    <p className="text-[12px] text-[#A3A3A0] mb-0.5">{sub}</p>
                   </div>
                   {trend !== null && (
                     <span
                       className={`inline-flex items-center gap-0.5 text-[11px] font-bold mt-1 ${
-                        trend > 0 ? "text-[#16A34A]" : trend < 0 ? "text-[#DC2626]" : "text-[#94A3B8]"
+                        trend > 0 ? "text-[#166534]" : trend < 0 ? "text-[#991B1B]" : "text-[#A3A3A0]"
                       }`}
                     >
                       {trend > 0 ? <TrendingUp size={11} /> : trend < 0 ? <TrendingDown size={11} /> : "—"}
@@ -120,8 +120,8 @@ export default async function ReportsPage() {
           {history.length >= 2 && (
             <Card>
               <div className="flex items-center justify-between mb-3">
-                <h2 className="font-bold text-[#0F172A] text-[15px]">Direct Score over time</h2>
-                <span className="text-[11px] text-[#94A3B8]">{history.length} scans</span>
+                <h2 className="font-bold text-[#171717] text-[15px]">Direct Score over time</h2>
+                <span className="text-[11px] text-[#A3A3A0]">{history.length} scans</span>
               </div>
               <ScoreTrendChart history={history} />
             </Card>
@@ -129,15 +129,15 @@ export default async function ReportsPage() {
 
           {/* Scan history table */}
           <Card>
-            <h2 className="font-bold text-[#0F172A] text-[15px] mb-4">Scan history</h2>
+            <h2 className="font-bold text-[#171717] text-[15px] mb-4">Scan history</h2>
             <div className="overflow-x-auto -mx-5">
               <table className="w-full text-[13px]">
                 <thead>
-                  <tr className="border-b border-slate-100">
-                    <th className="text-left text-[10px] font-semibold text-[#94A3B8] uppercase tracking-wider px-5 py-2.5">Date</th>
-                    <th className="text-right text-[10px] font-semibold text-[#94A3B8] uppercase tracking-wider px-4 py-2.5">Score</th>
-                    <th className="text-right text-[10px] font-semibold text-[#94A3B8] uppercase tracking-wider px-4 py-2.5">Change</th>
-                    <th className="text-right text-[10px] font-semibold text-[#94A3B8] uppercase tracking-wider px-5 py-2.5">Won</th>
+                  <tr className="border-b border-[#EEEEEA]">
+                    <th className="text-left text-[10px] font-semibold text-[#A3A3A0] uppercase tracking-wider px-5 py-2.5">Date</th>
+                    <th className="text-right text-[10px] font-semibold text-[#A3A3A0] uppercase tracking-wider px-4 py-2.5">Score</th>
+                    <th className="text-right text-[10px] font-semibold text-[#A3A3A0] uppercase tracking-wider px-4 py-2.5">Change</th>
+                    <th className="text-right text-[10px] font-semibold text-[#A3A3A0] uppercase tracking-wider px-5 py-2.5">Won</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-50">
@@ -145,29 +145,29 @@ export default async function ReportsPage() {
                     const prev = arr[i + 1];
                     const delta = prev ? h.score - prev.score : null;
                     return (
-                      <tr key={h.id} className="hover:bg-slate-50 transition-colors">
-                        <td className="px-5 py-3 text-[#64748B]">
+                      <tr key={h.id} className="hover:bg-[#F5F5F2] transition-colors">
+                        <td className="px-5 py-3 text-[#777773]">
                           {new Date(h.calculated_at).toLocaleDateString("en-US", {
                             month: "short",
                             day: "numeric",
                             year: "numeric",
                           })}
                         </td>
-                        <td className="px-4 py-3 text-right font-bold text-[#0F172A]">{h.score}</td>
+                        <td className="px-4 py-3 text-right font-bold text-[#171717]">{h.score}</td>
                         <td className="px-4 py-3 text-right">
                           {delta !== null ? (
                             <span
                               className={`font-bold ${
-                                delta > 0 ? "text-[#16A34A]" : delta < 0 ? "text-[#DC2626]" : "text-[#94A3B8]"
+                                delta > 0 ? "text-[#166534]" : delta < 0 ? "text-[#991B1B]" : "text-[#A3A3A0]"
                               }`}
                             >
                               {delta > 0 ? `+${delta}` : delta === 0 ? "—" : delta}
                             </span>
                           ) : (
-                            <span className="text-[#94A3B8]">—</span>
+                            <span className="text-[#A3A3A0]">—</span>
                           )}
                         </td>
-                        <td className="px-5 py-3 text-right text-[#64748B]">
+                        <td className="px-5 py-3 text-right text-[#777773]">
                           {h.prompts_won}/{h.prompts_tested}
                         </td>
                       </tr>
@@ -181,9 +181,9 @@ export default async function ReportsPage() {
           {/* Opportunities summary */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             {["open", "in_progress", "resolved", "dismissed"].map((status) => (
-              <div key={status} className="bg-white rounded-xl border border-slate-200 p-4 text-center">
-                <p className="text-2xl font-black text-[#0F172A] mb-1">{statusCounts[status] ?? 0}</p>
-                <p className="text-[10px] text-[#94A3B8] uppercase tracking-widest font-bold">
+              <div key={status} className="bg-white rounded-xl border border-[#E5E5E1] p-4 text-center">
+                <p className="text-[18px] font-bold text-[#171717] mb-1">{statusCounts[status] ?? 0}</p>
+                <p className="text-[10px] text-[#A3A3A0] uppercase tracking-widest font-bold">
                   {status.replace("_", " ")}
                 </p>
               </div>
@@ -194,7 +194,7 @@ export default async function ReportsPage() {
           <div className="bg-[#0F172A] rounded-xl p-6">
             <div className="flex items-start justify-between gap-6 flex-wrap">
               <div>
-                <p className="text-[11px] font-black uppercase tracking-wider text-[#3B82F6] mb-2">
+                <p className="text-[11px] font-bold uppercase tracking-wider text-[#3B82F6] mb-2">
                   Agency & white-label — coming soon
                 </p>
                 <h3 className="text-[17px] font-bold text-white mb-2">

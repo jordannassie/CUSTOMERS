@@ -1,5 +1,8 @@
 import Link from "next/link";
-import { PhoneCall } from "lucide-react";
+import Image from "next/image";
+
+const LOGO =
+  "https://phhczohqidgrvcmszets.supabase.co/storage/v1/object/public/CUSTOMER.direct/logo/Logo.png";
 
 const year = new Date().getFullYear();
 
@@ -35,14 +38,13 @@ const FOOTER_COLUMNS = [
       { label: "How It Works", href: "/how-it-works" },
       { label: "AI Search Guide", href: "/ai-search" },
       { label: "FAQ", href: "/ai-search#faq" },
-      { label: "Book a Call", href: "/book" },
     ],
   },
   {
     heading: "Account",
     links: [
       { label: "Log in", href: "/login" },
-      { label: "Sign up — Free", href: "/signup" },
+      { label: "Sign up", href: "/signup" },
       { label: "Privacy Policy", href: "/privacy" },
       { label: "Terms of Service", href: "/terms" },
     ],
@@ -51,28 +53,35 @@ const FOOTER_COLUMNS = [
 
 export default function SiteFooter() {
   return (
-    <footer className="bg-[#0F172A] text-white">
-      <div className="max-w-[1200px] mx-auto px-4 pt-16 pb-10">
+    <footer className="bg-[#171717] text-white">
+      <div className="max-w-[1200px] mx-auto px-4 sm:px-6 pt-16 pb-10">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-10 mb-12">
           {/* Brand — 2 cols */}
           <div className="lg:col-span-2">
-            <Link href="/" aria-label="Customers.Direct" className="inline-block mb-4">
-              <span className="text-white font-black text-xl tracking-tight">
-                Customers<span className="text-[#3B82F6]">.Direct</span>
-              </span>
+            <Link href="/" aria-label="Customers.Direct" className="inline-block mb-5">
+              <Image
+                src={LOGO}
+                alt="Customers.Direct"
+                width={148}
+                height={36}
+                unoptimized
+                className="h-7 w-auto brightness-0 invert"
+              />
             </Link>
-            <p className="text-sm text-white/50 leading-relaxed mb-6 max-w-xs">
+            <p className="text-[13px] text-white/50 leading-relaxed mb-6 max-w-xs">
               AI Search Visibility platform. Know where AI recommends your business, understand why competitors rank higher, and fix it.
             </p>
 
-            {/* Platform coverage */}
+            {/* AI platform coverage */}
             <div className="mb-6">
-              <p className="text-[10px] font-bold uppercase tracking-widest text-white/30 mb-3">Tracks AI platforms</p>
+              <p className="text-[10px] font-semibold uppercase tracking-widest text-white/30 mb-3">
+                Tracks AI platforms
+              </p>
               <div className="flex flex-wrap gap-2">
                 {["ChatGPT", "Claude", "Perplexity", "Gemini", "Google AI"].map((name) => (
                   <span
                     key={name}
-                    className="text-[11px] font-semibold text-white/40 bg-white/8 px-2.5 py-1 rounded-md"
+                    className="text-[11px] font-medium text-white/40 bg-white/6 border border-white/10 px-2.5 py-1 rounded-md"
                   >
                     {name}
                   </span>
@@ -87,9 +96,9 @@ export default function SiteFooter() {
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label="Instagram"
-                className="w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors"
+                className="w-8 h-8 rounded-lg bg-white/8 hover:bg-white/15 border border-white/10 flex items-center justify-center transition-colors"
               >
-                <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
+                <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                   <path d={INSTAGRAM_PATH} />
                 </svg>
               </a>
@@ -98,9 +107,9 @@ export default function SiteFooter() {
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label="Facebook"
-                className="w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors"
+                className="w-8 h-8 rounded-lg bg-white/8 hover:bg-white/15 border border-white/10 flex items-center justify-center transition-colors"
               >
-                <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
+                <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                   <path d={FACEBOOK_PATH} />
                 </svg>
               </a>
@@ -110,7 +119,7 @@ export default function SiteFooter() {
           {/* Nav columns */}
           {FOOTER_COLUMNS.map(({ heading, links }) => (
             <div key={heading}>
-              <h4 className="font-bold text-[10px] text-white/35 uppercase tracking-widest mb-4">
+              <h4 className="font-semibold text-[10px] text-white/30 uppercase tracking-widest mb-4">
                 {heading}
               </h4>
               <ul className="flex flex-col gap-2.5">
@@ -118,7 +127,7 @@ export default function SiteFooter() {
                   <li key={label}>
                     <Link
                       href={href}
-                      className="text-[13px] text-white/50 hover:text-white transition-colors"
+                      className="text-[13px] text-white/50 hover:text-white/80 transition-colors"
                     >
                       {label}
                     </Link>
@@ -140,22 +149,12 @@ export default function SiteFooter() {
             </p>
           </div>
 
-          <div className="flex items-center gap-4 shrink-0">
-            <a
-              href="tel:9498102010"
-              aria-label="Call Customers.Direct"
-              className="inline-flex items-center gap-2 text-[12px] font-semibold text-white/50 hover:text-white transition-colors"
-            >
-              <PhoneCall size={13} aria-hidden="true" />
-              (949) 810-2010
-            </a>
-            <a
-              href="/admin"
-              className="text-[11px] text-white/10 hover:text-white/35 transition-colors"
-            >
-              Admin
-            </a>
-          </div>
+          <a
+            href="/admin"
+            className="text-[11px] text-white/10 hover:text-white/30 transition-colors"
+          >
+            Admin
+          </a>
         </div>
       </div>
     </footer>

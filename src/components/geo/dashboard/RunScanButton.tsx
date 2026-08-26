@@ -43,12 +43,12 @@ export default function RunScanButton({ businessId }: { businessId: string }) {
         type="button"
         onClick={handleRun}
         disabled={loading}
-        className="flex items-center gap-2 bg-[#2563EB] text-white text-sm font-semibold px-4 py-2 rounded-lg hover:bg-[#1d4ed8] transition-colors disabled:opacity-60 whitespace-nowrap"
+        className="flex items-center gap-2 bg-[#171717] text-white text-[13px] font-semibold px-4 py-2 rounded-lg hover:bg-[#2A2A2A] transition-colors disabled:opacity-60 whitespace-nowrap active:scale-[0.97]"
       >
         {loading ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
         {loading ? "Running scan…" : "Run New Scan"}
       </button>
-      {error && <p className="text-xs text-[#DC2626] max-w-[240px] text-right">{error}</p>}
+      {error && <p className="text-xs text-[#991B1B] max-w-[240px] text-right">{error}</p>}
     </div>
   );
 }

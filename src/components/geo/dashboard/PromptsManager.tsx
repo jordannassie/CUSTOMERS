@@ -67,13 +67,13 @@ export default function PromptsManager({ businessId, prompts }: { businessId: st
             }
           }}
           placeholder="Add a custom buyer-intent prompt to track"
-          className="flex-1 border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-[#0F172A] focus:outline-none focus:ring-2 focus:ring-[#2563EB]/30 focus:border-[#2563EB]"
+          className="flex-1 border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-[#171717] focus:outline-none focus:ring-2 focus:ring-[#171717]/30 focus:border-[#E5E5E1]"
         />
         <button
           type="button"
           onClick={addPrompt}
           disabled={adding}
-          className="shrink-0 flex items-center gap-1.5 bg-[#2563EB] text-white rounded-xl px-4 py-2.5 text-sm font-semibold hover:bg-[#1d4ed8] disabled:opacity-60"
+          className="shrink-0 flex items-center gap-1.5 bg-[#171717] text-white rounded-xl px-4 py-2.5 text-sm font-semibold hover:bg-[#2A2A2A] disabled:opacity-60"
         >
           {adding ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
           Add
@@ -92,11 +92,11 @@ export default function PromptsManager({ businessId, prompts }: { businessId: st
                 className="accent-[#2563EB]"
               />
             </label>
-            <span className={`text-sm flex-1 ${p.active ? "text-[#0F172A]" : "text-[#94A3B8] line-through"}`}>
+            <span className={`text-sm flex-1 ${p.active ? "text-[#171717]" : "text-[#A3A3A0] line-through"}`}>
               {p.prompt}
             </span>
             {p.category && (
-              <span className="text-[10px] font-bold uppercase tracking-widest text-[#94A3B8] shrink-0">
+              <span className="text-[10px] font-bold uppercase tracking-widest text-[#A3A3A0] shrink-0">
                 {p.category}
               </span>
             )}
@@ -105,7 +105,7 @@ export default function PromptsManager({ businessId, prompts }: { businessId: st
               onClick={() => remove(p)}
               disabled={busyId === p.id}
               aria-label="Delete prompt"
-              className="shrink-0 text-[#94A3B8] hover:text-[#DC2626]"
+              className="shrink-0 text-[#A3A3A0] hover:text-[#991B1B]"
             >
               <Trash2 size={15} />
             </button>

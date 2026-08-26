@@ -38,13 +38,13 @@ export default function GEOProductLoop() {
     <section id="how-it-works" className="gradient-bg py-20 sm:py-24 px-4">
       <div className="max-w-6xl mx-auto">
         <div className="text-center mb-14">
-          <span className="inline-block text-xs font-black uppercase tracking-widest text-[#64748B] mb-4">
+          <span className="inline-block text-xs font-bold uppercase tracking-widest text-[#777773] mb-4">
             How It Works
           </span>
-          <h2 className="text-3xl sm:text-4xl lg:text-[42px] font-black text-[#0F172A] leading-tight mb-4">
+          <h2 className="text-3xl sm:text-4xl lg:text-[42px] font-bold text-[#171717] leading-tight mb-4">
             One loop, always running.
           </h2>
-          <p className="text-[#64748B] max-w-xl mx-auto text-lg">
+          <p className="text-[#777773] max-w-xl mx-auto text-lg">
             Not a one-time audit — a continuous system for improving how AI talks about
             your business.
           </p>
@@ -61,12 +61,12 @@ export default function GEOProductLoop() {
                   <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#2563EB] to-[#7C3AED] flex items-center justify-center shrink-0">
                     <Icon size={17} className="text-white" aria-hidden="true" />
                   </div>
-                  <span className="text-xs font-black text-[#CBD5E1]">
+                  <span className="text-xs font-bold text-[#CBD5E1]">
                     0{i + 1}
                   </span>
                 </div>
-                <h3 className="font-bold text-[#0F172A] text-base mb-2">{title}</h3>
-                <p className="text-sm text-[#64748B] leading-relaxed">{body}</p>
+                <h3 className="font-bold text-[#171717] text-base mb-2">{title}</h3>
+                <p className="text-sm text-[#777773] leading-relaxed">{body}</p>
               </div>
             </div>
           ))}

@@ -14,8 +14,8 @@ export default async function CompetitorsPage() {
 
   return (
     <DashboardShell businessId={business.id} businessName={business.name}>
-      <h1 className="text-2xl font-black text-[#0F172A] mb-1">Competitors</h1>
-      <p className="text-sm text-[#64748B] mb-6">
+      <h1 className="text-[18px] font-bold text-[#171717] mb-1">Competitors</h1>
+      <p className="text-[13px] text-[#777773] mb-6">
         The businesses we compare your AI mentions against.
       </p>
 

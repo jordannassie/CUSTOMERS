@@ -75,8 +75,8 @@ export default async function DashboardPage() {
       {/* Page header */}
       <div className="flex items-start justify-between mb-6 gap-4 flex-wrap">
         <div>
-          <h1 className="text-lg font-black text-[#0F172A]">Dashboard</h1>
-          <p className="text-sm text-[#64748B] mt-0.5">
+          <h1 className="text-[18px] font-bold text-[#171717]">Dashboard</h1>
+          <p className="text-[13px] text-[#777773] mt-0.5">
             AI search visibility overview for {business.name}
             {business.primary_city
               ? ` · ${business.primary_city}${business.primary_region ? `, ${business.primary_region}` : ""}`
@@ -95,7 +95,7 @@ export default async function DashboardPage() {
       )}
 
       {latestRun?.status === "failed" && (
-        <div className="flex items-start gap-2 text-sm text-[#B45309] bg-[#FFFBEB] border border-[#FDE68A] rounded-xl px-4 py-3 mb-5">
+        <div className="flex items-start gap-2 text-[13px] text-[#92400E] bg-[#FFFBEB] border border-[#FDE68A] rounded-xl px-4 py-3 mb-5">
           <AlertCircle size={15} className="shrink-0 mt-0.5" />
           <span>
             Your last scan didn&apos;t complete: {latestRun.error ?? "Unknown error."} This usually
@@ -152,19 +152,19 @@ export default async function DashboardPage() {
       {/* Second row — tracked prompts / stats */}
       {hasAnyRun && latestScore && (
         <div className="grid grid-cols-3 gap-4 mb-6">
-          <div className="bg-white rounded-xl border border-slate-200 px-4 py-3 text-center">
-            <p className="text-xl font-black text-[#0F172A]">{prompts.length}</p>
-            <p className="text-[11px] text-[#94A3B8] mt-0.5 uppercase tracking-wider font-semibold">Tracked prompts</p>
+          <div className="bg-white rounded-xl border border-[#E5E5E1] px-4 py-3 text-center">
+            <p className="text-[20px] font-bold text-[#171717]">{prompts.length}</p>
+            <p className="text-[11px] text-[#A3A3A0] mt-0.5 uppercase tracking-wider font-semibold">Tracked prompts</p>
           </div>
-          <div className="bg-white rounded-xl border border-slate-200 px-4 py-3 text-center">
-            <p className="text-xl font-black text-[#0F172A]">{totalMentions}</p>
-            <p className="text-[11px] text-[#94A3B8] mt-0.5 uppercase tracking-wider font-semibold">Total mentions</p>
+          <div className="bg-white rounded-xl border border-[#E5E5E1] px-4 py-3 text-center">
+            <p className="text-[20px] font-bold text-[#171717]">{totalMentions}</p>
+            <p className="text-[11px] text-[#A3A3A0] mt-0.5 uppercase tracking-wider font-semibold">Total mentions</p>
           </div>
-          <div className="bg-white rounded-xl border border-slate-200 px-4 py-3 text-center">
-            <p className="text-xl font-black text-[#0F172A]">
+          <div className="bg-white rounded-xl border border-[#E5E5E1] px-4 py-3 text-center">
+            <p className="text-[20px] font-bold text-[#171717]">
               {opportunities.filter((o) => o.status === "open").length}
             </p>
-            <p className="text-[11px] text-[#94A3B8] mt-0.5 uppercase tracking-wider font-semibold">Open opportunities</p>
+            <p className="text-[11px] text-[#A3A3A0] mt-0.5 uppercase tracking-wider font-semibold">Open opportunities</p>
           </div>
         </div>
       )}
@@ -174,14 +174,14 @@ export default async function DashboardPage() {
         <Card className="mb-6">
           <div className="flex items-center justify-between mb-1">
             <div>
-              <h2 className="font-bold text-[#0F172A] text-[15px]">Prompt performance</h2>
-              <p className="text-[12px] text-[#94A3B8] mt-0.5">
+              <h2 className="font-bold text-[#171717] text-[15px]">Prompt performance</h2>
+              <p className="text-[12px] text-[#A3A3A0] mt-0.5">
                 How your business appears in AI-generated answers
               </p>
             </div>
             <Link
               href="/dashboard/prompts"
-              className="text-[13px] font-semibold text-[#2563EB] hover:text-[#1d4ed8] transition-colors flex items-center gap-1"
+              className="text-[13px] font-semibold text-[#777773] hover:text-[#171717] transition-colors flex items-center gap-1"
             >
               Manage <ArrowRight size={13} />
             </Link>
@@ -194,39 +194,39 @@ export default async function DashboardPage() {
       {hasAnyRun && latestScore && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
           {/* Visibility trend */}
-          <div className="lg:col-span-1 bg-white rounded-xl border border-slate-200 p-5">
+          <div className="lg:col-span-1 bg-white rounded-xl border border-[#E5E5E1] p-5">
             <div className="flex items-center justify-between mb-3">
-              <h2 className="font-bold text-[#0F172A] text-[14px]">Visibility trend</h2>
-              <span className="text-[11px] text-[#94A3B8]">Last {history.length} scans</span>
+              <h2 className="font-semibold text-[#171717] text-[14px]">Visibility trend</h2>
+              <span className="text-[11px] text-[#A3A3A0]">Last {history.length} scans</span>
             </div>
             <ScoreTrendChart history={history} />
           </div>
 
           {/* Top sources */}
-          <div className="bg-white rounded-xl border border-slate-200 p-5">
+          <div className="bg-white rounded-xl border border-[#E5E5E1] p-5">
             <div className="flex items-center justify-between mb-3">
-              <h2 className="font-bold text-[#0F172A] text-[14px]">Top sources mentioning you</h2>
+              <h2 className="font-semibold text-[#171717] text-[14px]">Top sources mentioning you</h2>
               <Link
                 href="/dashboard/citations"
-                className="text-[12px] font-semibold text-[#2563EB] hover:text-[#1d4ed8]"
+                className="text-[12px] font-semibold text-[#777773] hover:text-[#171717] transition-colors"
               >
                 View all
               </Link>
             </div>
             {topSources.length === 0 ? (
-              <p className="text-sm text-[#94A3B8]">No citation data yet.</p>
+              <p className="text-[13px] text-[#A3A3A0]">No citation data yet.</p>
             ) : (
               <div className="flex flex-col gap-2">
                 {topSources.map(([domain, count]) => {
                   const pct = results.length > 0 ? Math.round((count / results.length) * 100) : 0;
                   return (
                     <div key={domain} className="flex items-center gap-3">
-                      <div className="w-5 h-5 rounded bg-slate-100 flex items-center justify-center shrink-0">
-                        <TrendingUp size={10} className="text-[#94A3B8]" />
+                      <div className="w-5 h-5 rounded bg-[#F5F5F2] flex items-center justify-center shrink-0">
+                        <TrendingUp size={10} className="text-[#A3A3A0]" aria-hidden="true" />
                       </div>
-                      <span className="text-[13px] text-[#0F172A] truncate flex-1">{domain}</span>
-                      <span className="text-[13px] font-semibold text-[#0F172A] tabular-nums">{count}</span>
-                      <span className="text-[12px] text-[#94A3B8] tabular-nums w-8 text-right">{pct}%</span>
+                      <span className="text-[13px] text-[#171717] truncate flex-1">{domain}</span>
+                      <span className="text-[13px] font-semibold text-[#171717] tabular-nums">{count}</span>
+                      <span className="text-[12px] text-[#A3A3A0] tabular-nums w-8 text-right">{pct}%</span>
                     </div>
                   );
                 })}
@@ -235,18 +235,18 @@ export default async function DashboardPage() {
           </div>
 
           {/* Opportunities */}
-          <div className="bg-white rounded-xl border border-slate-200 p-5">
+          <div className="bg-white rounded-xl border border-[#E5E5E1] p-5">
             <div className="flex items-center justify-between mb-3">
-              <h2 className="font-bold text-[#0F172A] text-[14px]">Opportunities</h2>
+              <h2 className="font-semibold text-[#171717] text-[14px]">Opportunities</h2>
               <Link
                 href="/dashboard/opportunities"
-                className="text-[12px] font-semibold text-[#2563EB] hover:text-[#1d4ed8]"
+                className="text-[12px] font-semibold text-[#777773] hover:text-[#171717] transition-colors"
               >
                 View all
               </Link>
             </div>
             {openOpportunities.length === 0 ? (
-              <p className="text-sm text-[#94A3B8]">
+              <p className="text-[13px] text-[#A3A3A0]">
                 {hasAnyRun
                   ? "No open opportunities right now."
                   : "Opportunities appear after your first scan."}
@@ -256,7 +256,7 @@ export default async function DashboardPage() {
                 {openOpportunities.map((o) => (
                   <div key={o.id} className="flex items-start gap-2.5">
                     <ImpactBadge impact={o.impact} />
-                    <p className="text-[13px] text-[#0F172A] leading-snug flex-1">{o.title}</p>
+                    <p className="text-[13px] text-[#171717] leading-snug flex-1">{o.title}</p>
                   </div>
                 ))}
               </div>
@@ -265,7 +265,7 @@ export default async function DashboardPage() {
         </div>
       )}
 
-      <p className="text-[11px] text-[#94A3B8] mt-6 max-w-2xl">
+      <p className="text-[11px] text-[#A3A3A0] mt-6 max-w-2xl">
         Direct Score and results reflect the AI providers currently configured for your account,
         queried via their official APIs. Results can differ from what you&apos;d see in a live consumer
         chat session. Customers.Direct never guarantees AI rankings or mentions.

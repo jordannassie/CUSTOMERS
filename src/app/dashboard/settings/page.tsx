@@ -39,8 +39,8 @@ export default async function SettingsPage() {
       {/* Business Profile */}
       <Card className="mb-5">
         <div className="flex items-center gap-2 mb-4">
-          <Building2 size={15} className="text-[#2563EB]" />
-          <h2 className="font-bold text-[#0F172A]">Business profile</h2>
+          <Building2 size={15} className="text-[#777773]" />
+          <h2 className="font-bold text-[#171717]">Business profile</h2>
         </div>
         <BusinessSettingsForm business={business} />
       </Card>
@@ -48,29 +48,29 @@ export default async function SettingsPage() {
       {/* Plan */}
       <Card className="mb-5">
         <div className="flex items-center gap-2 mb-4">
-          <CreditCard size={15} className="text-[#2563EB]" />
-          <h2 className="font-bold text-[#0F172A]">Plan & billing</h2>
+          <CreditCard size={15} className="text-[#777773]" />
+          <h2 className="font-bold text-[#171717]">Plan & billing</h2>
         </div>
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div>
-            <p className="text-[15px] font-bold text-[#0F172A] mb-0.5">
+            <p className="text-[15px] font-bold text-[#171717] mb-0.5">
               {PLAN_LABELS[subscription?.plan ?? "none"]}
             </p>
-            <p className="text-[12px] text-[#94A3B8] mb-4">
+            <p className="text-[12px] text-[#A3A3A0] mb-4">
               Status: <span className="font-semibold">{subscription?.status ?? "inactive"}</span>
               {" · "}
               Billing is handled separately — contact us to activate or change your plan.
             </p>
             <a
               href="/ai-search#pricing"
-              className="inline-flex text-[13px] font-semibold text-[#2563EB] hover:text-[#1d4ed8] transition-colors"
+              className="inline-flex text-[13px] font-semibold text-[#777773] hover:text-[#171717] transition-colors"
             >
               View plans →
             </a>
           </div>
-          <div className="bg-slate-50 rounded-lg border border-slate-200 px-4 py-3 text-center min-w-[140px]">
-            <p className="text-[11px] text-[#94A3B8] uppercase tracking-wider font-semibold mb-1">Business</p>
-            <p className="text-[13px] font-bold text-[#0F172A] truncate">{business.name}</p>
+          <div className="bg-[#F5F5F2] rounded-lg border border-[#E5E5E1] px-4 py-3 text-center min-w-[140px]">
+            <p className="text-[11px] text-[#A3A3A0] uppercase tracking-wider font-semibold mb-1">Business</p>
+            <p className="text-[13px] font-bold text-[#171717] truncate">{business.name}</p>
           </div>
         </div>
       </Card>
@@ -79,12 +79,12 @@ export default async function SettingsPage() {
       <Card className="mb-5">
         <div className="flex items-center gap-2 mb-1">
           <Palette size={15} className="text-[#7C3AED]" />
-          <h2 className="font-bold text-[#0F172A]">Agency & white-label</h2>
-          <span className="text-[9px] font-black uppercase tracking-wider text-[#7C3AED] bg-[#F5F3FF] border border-[#EDE9FE] px-1.5 py-0.5 rounded">
+          <h2 className="font-bold text-[#171717]">Agency & white-label</h2>
+          <span className="text-[9px] font-bold uppercase tracking-wider text-[#7C3AED] bg-[#F5F3FF] border border-[#EDE9FE] px-1.5 py-0.5 rounded">
             Coming soon
           </span>
         </div>
-        <p className="text-[13px] text-[#64748B] mb-5">
+        <p className="text-[13px] text-[#777773] mb-5">
           Manage multiple client businesses under one login and generate white-labeled reports with your agency branding.
         </p>
 
@@ -114,24 +114,24 @@ export default async function SettingsPage() {
             <div
               key={title}
               className={`rounded-lg border p-4 ${
-                available ? "border-slate-200 bg-white" : "border-dashed border-slate-200 bg-slate-50/50"
+                available ? "border-[#E5E5E1] bg-white" : "border-dashed border-[#E5E5E1] bg-[#F5F5F2]/50"
               }`}
             >
               <div className="flex items-center gap-2 mb-1.5">
-                <p className={`text-[13px] font-bold ${available ? "text-[#0F172A]" : "text-[#94A3B8]"}`}>
+                <p className={`text-[13px] font-bold ${available ? "text-[#171717]" : "text-[#A3A3A0]"}`}>
                   {title}
                 </p>
                 <span
-                  className={`text-[9px] font-black uppercase px-1.5 py-0.5 rounded ${
+                  className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded ${
                     available
-                      ? "bg-[#F0FDF4] text-[#16A34A]"
-                      : "bg-slate-100 text-[#94A3B8]"
+                      ? "bg-[#F0FDF4] text-[#166534]"
+                      : "bg-[#F0F0EC] text-[#A3A3A0]"
                   }`}
                 >
                   {available ? "Active" : "Coming soon"}
                 </span>
               </div>
-              <p className="text-[12px] text-[#64748B] leading-snug">{desc}</p>
+              <p className="text-[12px] text-[#777773] leading-snug">{desc}</p>
             </div>
           ))}
         </div>
@@ -147,19 +147,19 @@ export default async function SettingsPage() {
       {/* Account */}
       <Card>
         <div className="flex items-center gap-2 mb-4">
-          <User size={15} className="text-[#2563EB]" />
-          <h2 className="font-bold text-[#0F172A]">Account</h2>
+          <User size={15} className="text-[#777773]" />
+          <h2 className="font-bold text-[#171717]">Account</h2>
         </div>
-        <div className="flex items-center gap-3 py-2 border-b border-slate-100 mb-3">
-          <div className="w-8 h-8 rounded-full bg-[#EFF6FF] flex items-center justify-center shrink-0">
-            <User size={14} className="text-[#2563EB]" />
+        <div className="flex items-center gap-3 py-2 border-b border-[#EEEEEA] mb-3">
+          <div className="w-8 h-8 rounded-full bg-[#F0F0EC] flex items-center justify-center shrink-0">
+            <User size={14} className="text-[#777773]" />
           </div>
           <div>
-            <p className="text-[13px] font-semibold text-[#0F172A]">{user?.email}</p>
-            <p className="text-[11px] text-[#94A3B8]">Google login via Supabase Auth</p>
+            <p className="text-[13px] font-semibold text-[#171717]">{user?.email}</p>
+            <p className="text-[11px] text-[#A3A3A0]">Google login via Supabase Auth</p>
           </div>
         </div>
-        <div className="flex items-center gap-2 text-[12px] text-[#94A3B8]">
+        <div className="flex items-center gap-2 text-[12px] text-[#A3A3A0]">
           <Lock size={12} />
           <span>Authentication is managed by Google OAuth. No password to change.</span>
         </div>

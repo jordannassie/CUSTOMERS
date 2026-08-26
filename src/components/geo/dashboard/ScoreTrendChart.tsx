@@ -10,7 +10,7 @@ export default function ScoreTrendChart({
   if (history.length < 2) {
     if (compact) return null;
     return (
-      <div className="h-32 flex items-center justify-center text-sm text-[#94A3B8]">
+      <div className="h-32 flex items-center justify-center text-sm text-[#A3A3A0]">
         Run at least two scans to see your trend.
       </div>
     );
@@ -39,21 +39,21 @@ export default function ScoreTrendChart({
     >
       <defs>
         <linearGradient id={compact ? "scoreAreaCompact" : "scoreArea"} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#2563EB" stopOpacity={compact ? 0.1 : 0.18} />
-          <stop offset="100%" stopColor="#2563EB" stopOpacity="0" />
+          <stop offset="0%" stopColor="#3B82F6" stopOpacity={compact ? 0.1 : 0.15} />
+          <stop offset="100%" stopColor="#3B82F6" stopOpacity="0" />
         </linearGradient>
       </defs>
       <path d={areaPath} fill={`url(#${compact ? "scoreAreaCompact" : "scoreArea"})`} />
       <path
         d={path}
         fill="none"
-        stroke="#2563EB"
-        strokeWidth={compact ? 1.5 : 2.5}
+        stroke="#3B82F6"
+        strokeWidth={compact ? 1.5 : 2}
         strokeLinecap="round"
         strokeLinejoin="round"
       />
       {!compact &&
-        points.map((p, i) => <circle key={i} cx={p.x} cy={p.y} r="3" fill="#2563EB" />)}
+        points.map((p, i) => <circle key={i} cx={p.x} cy={p.y} r="2.5" fill="#3B82F6" />)}
     </svg>
   );
 }

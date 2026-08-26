@@ -68,10 +68,10 @@ export default function GEOPricingSection() {
     <section id="pricing" className="bg-white py-20 sm:py-24 px-4">
       <div className="max-w-6xl mx-auto">
         <div className="text-center mb-14">
-          <span className="inline-block text-xs font-black uppercase tracking-widest text-[#64748B] mb-4">
+          <span className="inline-block text-xs font-bold uppercase tracking-widest text-[#777773] mb-4">
             Simple Pricing
           </span>
-          <h2 className="text-3xl sm:text-4xl lg:text-[42px] font-black text-[#0F172A] leading-tight mb-4">
+          <h2 className="text-3xl sm:text-4xl lg:text-[42px] font-bold text-[#171717] leading-tight mb-4">
             Pick the level of help you need.
           </h2>
         </div>
@@ -98,20 +98,20 @@ export default function GEOPricingSection() {
               )}
 
               <span
-                className={`text-xs font-black uppercase tracking-widest mb-4 ${
-                  plan.highlight ? "text-white/60" : "text-[#64748B]"
+                className={`text-xs font-bold uppercase tracking-widest mb-4 ${
+                  plan.highlight ? "text-white/60" : "text-[#777773]"
                 }`}
               >
                 {plan.name}
               </span>
 
               <div className="flex items-end gap-2 mb-2">
-                <span className="text-4xl font-black">{plan.price}</span>
-                <span className={`text-sm mb-1 font-medium ${plan.highlight ? "text-white/60" : "text-[#64748B]"}`}>
+                <span className="text-4xl font-bold">{plan.price}</span>
+                <span className={`text-sm mb-1 font-medium ${plan.highlight ? "text-white/60" : "text-[#777773]"}`}>
                   /month
                 </span>
               </div>
-              <p className={`text-sm mb-7 leading-relaxed ${plan.highlight ? "text-white/70" : "text-[#64748B]"}`}>
+              <p className={`text-sm mb-7 leading-relaxed ${plan.highlight ? "text-white/70" : "text-[#777773]"}`}>
                 {plan.description}
               </p>
 
@@ -122,12 +122,12 @@ export default function GEOPricingSection() {
                       className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${
                         plan.highlight
                           ? "bg-white/10 border border-white/20"
-                          : "bg-[#EFF6FF] border border-[#DBEAFE]"
+                          : "bg-[#F0F0EC] border border-[#DBEAFE]"
                       }`}
                     >
-                      <Check size={11} className={plan.highlight ? "text-white" : "text-[#2563EB]"} aria-hidden="true" />
+                      <Check size={11} className={plan.highlight ? "text-white" : "text-[#777773]"} aria-hidden="true" />
                     </div>
-                    <span className={`text-sm ${plan.highlight ? "text-white/80" : "text-[#64748B]"}`}>
+                    <span className={`text-sm ${plan.highlight ? "text-white/80" : "text-[#777773]"}`}>
                       {feature}
                     </span>
                   </div>
@@ -138,8 +138,8 @@ export default function GEOPricingSection() {
                 href="/signup"
                 className={`flex items-center justify-center gap-2 font-bold py-3.5 rounded-full transition-colors text-sm w-full ${
                   plan.highlight
-                    ? "bg-white text-[#0F172A] hover:bg-gray-100"
-                    : "bg-[#2563EB] text-white hover:bg-[#1d4ed8]"
+                    ? "bg-white text-[#171717] hover:bg-gray-100"
+                    : "bg-[#171717] text-white hover:bg-[#2A2A2A]"
                 }`}
               >
                 {plan.cta}

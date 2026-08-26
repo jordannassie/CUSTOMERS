@@ -23,7 +23,7 @@ export default function GEOHeroSection() {
           AI Search Visibility, Measured
         </div>
 
-        <h1 className="text-4xl sm:text-5xl lg:text-[64px] font-black text-[#0F172A] leading-[1.05] tracking-tight mb-6">
+        <h1 className="text-4xl sm:text-5xl lg:text-[64px] font-bold text-[#171717] leading-[1.05] tracking-tight mb-6">
           Customers.Direct helps AI
           <br className="hidden sm:block" />
           send customers{" "}
@@ -33,7 +33,7 @@ export default function GEOHeroSection() {
           .
         </h1>
 
-        <p className="text-lg sm:text-xl text-[#64748B] max-w-2xl mx-auto leading-relaxed mb-10">
+        <p className="text-lg sm:text-xl text-[#777773] max-w-2xl mx-auto leading-relaxed mb-10">
           Buyers now ask ChatGPT, Claude, Perplexity, and Google AI Overviews before they
           ever open a search results page. We measure whether your business shows up in
           those answers, diagnose why or why not, and help you fix it.
@@ -42,20 +42,20 @@ export default function GEOHeroSection() {
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-6">
           <Link
             href="/signup"
-            className="inline-flex items-center gap-2 bg-[#2563EB] text-white font-bold px-8 py-4 rounded-full hover:bg-[#1d4ed8] transition-colors text-base shadow-lg shadow-blue-500/20"
+            className="inline-flex items-center gap-2 bg-[#171717] text-white font-bold px-8 py-4 rounded-full hover:bg-[#2A2A2A] transition-colors text-base shadow-lg shadow-blue-500/20"
           >
             Check My AI Visibility — Free
             <ArrowRight size={18} aria-hidden="true" />
           </Link>
           <a
             href="#how-it-works"
-            className="inline-flex items-center gap-2 bg-white border border-gray-200 text-[#0F172A] font-semibold px-8 py-4 rounded-full hover:border-gray-300 transition-colors text-base"
+            className="inline-flex items-center gap-2 bg-white border border-gray-200 text-[#171717] font-semibold px-8 py-4 rounded-full hover:border-gray-300 transition-colors text-base"
           >
             See How It Works
           </a>
         </div>
 
-        <p className="text-xs text-[#94A3B8]">
+        <p className="text-xs text-[#A3A3A0]">
           Takes about 2 minutes. No credit card required to see your first scan.
         </p>
       </div>
@@ -65,7 +65,7 @@ export default function GEOHeroSection() {
         <div className="bg-white rounded-2xl border border-gray-100 shadow-lg px-6 py-5 flex flex-wrap items-center justify-center gap-x-3 gap-y-3">
           {["Measure", "Diagnose", "Recommend", "Execute", "Measure Again"].map((step, i, arr) => (
             <div key={step} className="flex items-center gap-3">
-              <span className="text-sm font-bold text-[#0F172A] whitespace-nowrap">
+              <span className="text-sm font-bold text-[#171717] whitespace-nowrap">
                 {step}
               </span>
               {i < arr.length - 1 && (

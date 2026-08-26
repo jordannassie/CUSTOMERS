@@ -16,8 +16,8 @@ export default async function OpportunitiesPage() {
 
   return (
     <DashboardShell businessId={business.id} businessName={business.name}>
-      <h1 className="text-2xl font-black text-[#0F172A] mb-1">Opportunities</h1>
-      <p className="text-sm text-[#64748B] mb-6">
+      <h1 className="text-[18px] font-bold text-[#171717] mb-1">Opportunities</h1>
+      <p className="text-[13px] text-[#777773] mb-6">
         Evidence-backed recommendations generated from your latest visibility scan.
       </p>
 
@@ -36,7 +36,7 @@ export default async function OpportunitiesPage() {
 
       {closed.length > 0 && (
         <div className="mt-8">
-          <h2 className="text-sm font-bold text-[#94A3B8] uppercase tracking-widest mb-4">
+          <h2 className="text-[11px] font-semibold text-[#A3A3A0] uppercase tracking-widest mb-4">
             Resolved / dismissed
           </h2>
           <div className="flex flex-col gap-4 opacity-70">
