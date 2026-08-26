@@ -18,7 +18,10 @@ import {
   Building2,
 } from "lucide-react";
 
-const LOGO = "/images/logos/logo-black.png";
+const LOGO_WHITE = "/images/logos/logo-white.png";
+
+const NAV_GRADIENT = "linear-gradient(110deg, #063B9D 0%, #0866F5 55%, #168BFF 100%)";
+const NAV_SHADOW   = "0 14px 32px rgba(6, 59, 157, 0.20), inset 0 1px 0 rgba(255,255,255,0.18)";
 
 const PRODUCT_FEATURES = [
   {
@@ -54,38 +57,36 @@ const PRODUCT_FEATURES = [
 ] as const;
 
 const RESOURCES = [
-  { label: "How It Works", href: "/#how-it-works", icon: BookOpen },
-  { label: "FAQ", href: "/#faq", icon: HelpCircle },
-  { label: "Agencies & Resellers", href: "/#agencies", icon: Building2 },
+  { label: "How It Works",       href: "/#how-it-works", icon: BookOpen  },
+  { label: "FAQ",                href: "/#faq",           icon: HelpCircle },
+  { label: "Agencies & Resellers", href: "/#agencies",   icon: Building2  },
 ] as const;
 
 export default function SiteHeader() {
-  const [mobileOpen, setMobileOpen] = useState(false);
-  const [productOpen, setProductOpen] = useState(false);
+  const [mobileOpen,   setMobileOpen]   = useState(false);
+  const [productOpen,  setProductOpen]  = useState(false);
   const [resourcesOpen, setResourcesOpen] = useState(false);
-  const [scrolled, setScrolled] = useState(false);
-  const productRef = useRef<HTMLDivElement>(null);
+
+  const productRef   = useRef<HTMLDivElement>(null);
   const resourcesRef = useRef<HTMLDivElement>(null);
 
+  // Close dropdowns on outside click
   useEffect(() => {
     function handleClick(e: MouseEvent) {
-      if (productRef.current && !productRef.current.contains(e.target as Node)) {
-        setProductOpen(false);
-      }
-      if (resourcesRef.current && !resourcesRef.current.contains(e.target as Node)) {
-        setResourcesOpen(false);
-      }
+      if (productRef.current   && !productRef.current.contains(e.target as Node))   setProductOpen(false);
+      if (resourcesRef.current && !resourcesRef.current.contains(e.target as Node)) setResourcesOpen(false);
     }
     document.addEventListener("mousedown", handleClick);
     return () => document.removeEventListener("mousedown", handleClick);
   }, []);
 
+  // Close mobile menu on Escape
   useEffect(() => {
-    function onScroll() {
-      setScrolled(window.scrollY > 8);
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") { setMobileOpen(false); setProductOpen(false); setResourcesOpen(false); }
     }
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
   }, []);
 
   const closeAll = () => {
@@ -94,24 +95,35 @@ export default function SiteHeader() {
     setResourcesOpen(false);
   };
 
+  // Shared nav-link classes (desktop, inside gradient bar)
+  const navLink = (active = false) =>
+    `flex items-center gap-1 text-[13px] font-medium px-3 py-1.5 rounded-lg transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 ${
+      active
+        ? "text-white bg-white/15"
+        : "text-white/80 hover:text-white hover:bg-white/10"
+    }`;
+
   return (
-    <header
-      className={`sticky top-0 z-50 bg-[#FAFAF8] border-b transition-all duration-200 ${
-        scrolled ? "border-[#E5E5E1] shadow-[0_1px_0_0_rgba(0,0,0,0.04)]" : "border-[#EEEEEA]"
-      }`}
-    >
-      <div className="max-w-[1200px] mx-auto px-4 sm:px-6">
-        <div className="flex items-center h-14">
+    <header className="sticky top-0 z-50 px-4 sm:px-6 py-3 pointer-events-none">
+      {/* ── Floating gradient nav bar ───────────────────────────────────── */}
+      <div
+        className="max-w-[1200px] mx-auto rounded-[20px] pointer-events-auto"
+        style={{ background: NAV_GRADIENT, boxShadow: NAV_SHADOW }}
+      >
+        <div className="flex items-center h-[58px] px-5">
 
           {/* Logo */}
-          <Link href="/" aria-label="Customers.Direct — Home" className="shrink-0 mr-8">
+          <Link
+            href="/"
+            aria-label="Customers.Direct — Home"
+            className="shrink-0 mr-8 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 rounded-md"
+          >
             <Image
-              src={LOGO}
+              src={LOGO_WHITE}
               alt="Customers.Direct"
-              width={148}
-              height={36}
+              width={160}
+              height={40}
               priority
-              unoptimized
               className="h-7 w-auto"
             />
           </Link>
@@ -123,11 +135,7 @@ export default function SiteHeader() {
             <div className="relative" ref={productRef}>
               <button
                 onClick={() => { setProductOpen((v) => !v); setResourcesOpen(false); }}
-                className={`flex items-center gap-1 text-[13px] font-medium transition-colors duration-150 px-3 py-1.5 rounded-md ${
-                  productOpen
-                    ? "text-[#171717] bg-[#F0F0EC]"
-                    : "text-[#777773] hover:text-[#171717] hover:bg-[#F0F0EC]"
-                }`}
+                className={navLink(productOpen)}
                 aria-expanded={productOpen}
                 aria-haspopup="true"
               >
@@ -141,8 +149,8 @@ export default function SiteHeader() {
 
               {productOpen && (
                 <div
-                  className="absolute left-0 top-full mt-1.5 w-[400px] bg-white rounded-xl border border-[#E5E5E1] p-1.5 dropdown-appear"
-                  style={{ boxShadow: "0 8px 24px rgba(0,0,0,0.08), 0 2px 8px rgba(0,0,0,0.04)" }}
+                  className="absolute left-0 top-full mt-2 w-[420px] bg-white rounded-2xl border border-[#E5E5E1] p-2 dropdown-appear"
+                  style={{ boxShadow: "0 12px 32px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.06)" }}
                   role="menu"
                 >
                   {PRODUCT_FEATURES.map(({ label, description, href, icon: Icon }) => (
@@ -151,13 +159,13 @@ export default function SiteHeader() {
                       href={href}
                       role="menuitem"
                       onClick={() => setProductOpen(false)}
-                      className="flex items-start gap-3 p-3 rounded-lg hover:bg-[#F5F5F2] transition-colors group"
+                      className="flex items-start gap-3 p-3 rounded-xl hover:bg-[#F5F5F2] transition-colors group"
                     >
                       <div className="w-8 h-8 rounded-lg bg-[#F0F0EC] border border-[#E5E5E1] flex items-center justify-center shrink-0 mt-0.5">
                         <Icon size={14} className="text-[#777773]" aria-hidden="true" />
                       </div>
                       <div className="min-w-0">
-                        <p className="text-[13px] font-semibold text-[#171717] group-hover:text-[#171717] leading-snug mb-0.5">
+                        <p className="text-[13px] font-semibold text-[#171717] leading-snug mb-0.5">
                           {label}
                         </p>
                         <p className="text-[11px] text-[#A3A3A0] leading-snug">{description}</p>
@@ -168,22 +176,13 @@ export default function SiteHeader() {
               )}
             </div>
 
-            <Link
-              href="/#pricing"
-              className="text-[13px] font-medium text-[#777773] hover:text-[#171717] transition-colors duration-150 px-3 py-1.5 rounded-md hover:bg-[#F0F0EC]"
-            >
-              Pricing
-            </Link>
+            <Link href="/#pricing" className={navLink()}>Pricing</Link>
 
             {/* Resources dropdown */}
             <div className="relative" ref={resourcesRef}>
               <button
                 onClick={() => { setResourcesOpen((v) => !v); setProductOpen(false); }}
-                className={`flex items-center gap-1 text-[13px] font-medium transition-colors duration-150 px-3 py-1.5 rounded-md ${
-                  resourcesOpen
-                    ? "text-[#171717] bg-[#F0F0EC]"
-                    : "text-[#777773] hover:text-[#171717] hover:bg-[#F0F0EC]"
-                }`}
+                className={navLink(resourcesOpen)}
                 aria-expanded={resourcesOpen}
                 aria-haspopup="true"
               >
@@ -197,8 +196,8 @@ export default function SiteHeader() {
 
               {resourcesOpen && (
                 <div
-                  className="absolute left-0 top-full mt-1.5 w-52 bg-white rounded-xl border border-[#E5E5E1] py-1.5 dropdown-appear"
-                  style={{ boxShadow: "0 8px 24px rgba(0,0,0,0.08)" }}
+                  className="absolute left-0 top-full mt-2 w-56 bg-white rounded-2xl border border-[#E5E5E1] py-2 dropdown-appear"
+                  style={{ boxShadow: "0 12px 32px rgba(0,0,0,0.12)" }}
                   role="menu"
                 >
                   {RESOURCES.map(({ label, href, icon: Icon }) => (
@@ -207,9 +206,9 @@ export default function SiteHeader() {
                       href={href}
                       role="menuitem"
                       onClick={() => setResourcesOpen(false)}
-                      className="flex items-center gap-2.5 px-4 py-2 hover:bg-[#F5F5F2] transition-colors group"
+                      className="flex items-center gap-2.5 px-4 py-2.5 hover:bg-[#F5F5F2] transition-colors group"
                     >
-                      <Icon size={13} className="text-[#A3A3A0] group-hover:text-[#777773] shrink-0" />
+                      <Icon size={13} className="text-[#A3A3A0] group-hover:text-[#777773] shrink-0" aria-hidden="true" />
                       <span className="text-[13px] font-medium text-[#777773] group-hover:text-[#171717] transition-colors">
                         {label}
                       </span>
@@ -219,104 +218,97 @@ export default function SiteHeader() {
               )}
             </div>
 
-            <Link
-              href="/#agencies"
-              className="text-[13px] font-medium text-[#777773] hover:text-[#171717] transition-colors duration-150 px-3 py-1.5 rounded-md hover:bg-[#F0F0EC]"
-            >
-              Agencies
-            </Link>
+            <Link href="/#agencies" className={navLink()}>Agencies</Link>
           </nav>
 
           {/* Right side */}
           <div className="flex items-center gap-2 ml-auto">
+            {/* Log in (desktop) */}
             <Link
               href="/login"
-              className="hidden md:inline-flex text-[13px] font-medium text-[#777773] hover:text-[#171717] transition-colors duration-150 px-3 py-1.5 rounded-md hover:bg-[#F0F0EC]"
+              className="hidden md:inline-flex text-[13px] font-medium text-white/80 hover:text-white px-3 py-1.5 rounded-lg hover:bg-white/10 transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
             >
               Log in
             </Link>
+
+            {/* CTA pill (desktop) */}
             <Link
               href="/signup"
-              className="hidden md:inline-flex items-center gap-1.5 bg-[#171717] text-white text-[13px] font-semibold px-4 py-2 rounded-lg hover:bg-[#2A2A2A] transition-all duration-150 active:scale-[0.97] whitespace-nowrap"
+              className="hidden md:inline-flex items-center gap-1.5 bg-white text-[#0866F5] text-[13px] font-semibold px-5 py-2 rounded-full border border-white/30 shadow-sm hover:bg-blue-50 hover:-translate-y-px hover:shadow-md transition-all duration-150 active:scale-[0.97] whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
             >
               Check My Visibility
               <ArrowRight size={12} aria-hidden="true" />
             </Link>
+
+            {/* Hamburger (mobile) */}
             <button
-              className="md:hidden p-1.5 rounded-lg hover:bg-[#F0F0EC] transition-colors text-[#777773]"
+              className="md:hidden p-1.5 rounded-lg hover:bg-white/10 transition-colors text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
               onClick={() => setMobileOpen((v) => !v)}
               aria-label={mobileOpen ? "Close menu" : "Open menu"}
               aria-expanded={mobileOpen}
             >
-              {mobileOpen ? <X size={20} /> : <Menu size={20} />}
+              {mobileOpen ? <X size={20} aria-hidden="true" /> : <Menu size={20} aria-hidden="true" />}
             </button>
           </div>
         </div>
       </div>
 
-      {/* Mobile menu */}
+      {/* ── Mobile menu (floating, same gradient) ───────────────────────── */}
       {mobileOpen && (
-        <div className="md:hidden border-t border-[#E5E5E1] bg-[#FAFAF8] px-4 pb-5 pt-3 dropdown-appear">
-          <p className="text-[10px] font-semibold uppercase tracking-widest text-[#A3A3A0] mb-2 px-1">
+        <div
+          className="md:hidden max-w-[1200px] mx-auto mt-2 rounded-[20px] px-5 pb-5 pt-4 dropdown-appear pointer-events-auto"
+          style={{ background: NAV_GRADIENT, boxShadow: NAV_SHADOW }}
+        >
+          {/* Product section */}
+          <p className="text-[10px] font-bold uppercase tracking-widest text-white/50 mb-2 px-1">
             Product
           </p>
-          <div className="flex flex-col gap-0.5 mb-4">
+          <div className="flex flex-col gap-px mb-4">
             {PRODUCT_FEATURES.map(({ label, href, icon: Icon }) => (
               <Link
                 key={href}
                 href={href}
                 onClick={closeAll}
-                className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-[#F5F5F2] transition-colors"
+                className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/10 transition-colors"
               >
-                <div className="w-7 h-7 rounded-lg bg-[#F0F0EC] border border-[#E5E5E1] flex items-center justify-center shrink-0">
-                  <Icon size={13} className="text-[#777773]" aria-hidden="true" />
+                <div className="w-7 h-7 rounded-lg bg-white/10 flex items-center justify-center shrink-0">
+                  <Icon size={13} className="text-white/70" aria-hidden="true" />
                 </div>
-                <span className="text-[13px] font-medium text-[#171717]">{label}</span>
+                <span className="text-[13px] font-medium text-white/85">{label}</span>
               </Link>
             ))}
           </div>
 
-          <div className="border-t border-[#E5E5E1] pt-3 flex flex-col gap-0.5 mb-4">
-            <Link
-              href="/#pricing"
-              onClick={closeAll}
-              className="px-3 py-2 text-[13px] font-medium text-[#777773] hover:text-[#171717] rounded-lg hover:bg-[#F5F5F2] transition-colors"
-            >
+          {/* Other links */}
+          <div className="border-t border-white/10 pt-3 flex flex-col gap-px mb-5">
+            <Link href="/#pricing" onClick={closeAll}
+              className="px-3 py-2.5 text-[13px] font-medium text-white/85 hover:text-white rounded-xl hover:bg-white/10 transition-colors">
               Pricing
             </Link>
             {RESOURCES.map(({ label, href }) => (
-              <Link
-                key={href}
-                href={href}
-                onClick={closeAll}
-                className="px-3 py-2 text-[13px] font-medium text-[#777773] hover:text-[#171717] rounded-lg hover:bg-[#F5F5F2] transition-colors"
-              >
+              <Link key={href} href={href} onClick={closeAll}
+                className="px-3 py-2.5 text-[13px] font-medium text-white/85 hover:text-white rounded-xl hover:bg-white/10 transition-colors">
                 {label}
               </Link>
             ))}
-            <Link
-              href="/#agencies"
-              onClick={closeAll}
-              className="px-3 py-2 text-[13px] font-medium text-[#777773] hover:text-[#171717] rounded-lg hover:bg-[#F5F5F2] transition-colors"
-            >
+            <Link href="/#agencies" onClick={closeAll}
+              className="px-3 py-2.5 text-[13px] font-medium text-white/85 hover:text-white rounded-xl hover:bg-white/10 transition-colors">
               Agencies
             </Link>
-            <Link
-              href="/login"
-              onClick={closeAll}
-              className="px-3 py-2 text-[13px] font-medium text-[#777773] hover:text-[#171717] rounded-lg hover:bg-[#F5F5F2] transition-colors"
-            >
+            <Link href="/login" onClick={closeAll}
+              className="px-3 py-2.5 text-[13px] font-medium text-white/85 hover:text-white rounded-xl hover:bg-white/10 transition-colors">
               Log in
             </Link>
           </div>
 
+          {/* CTA */}
           <Link
             href="/signup"
             onClick={closeAll}
-            className="flex items-center justify-center gap-2 bg-[#171717] text-white text-sm font-semibold px-5 py-2.5 rounded-lg hover:bg-[#2A2A2A] transition-colors active:scale-[0.97]"
+            className="flex items-center justify-center gap-2 bg-white text-[#0866F5] text-sm font-bold px-5 py-3 rounded-full border border-white/30 shadow-sm hover:bg-blue-50 transition-all active:scale-[0.97]"
           >
             Check My AI Visibility
-            <ArrowRight size={13} aria-hidden="true" />
+            <ArrowRight size={14} aria-hidden="true" />
           </Link>
         </div>
       )}
