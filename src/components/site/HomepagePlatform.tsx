@@ -805,6 +805,53 @@ const SAMPLE_PROMPTS = [
 ];
 
 
+// ─── Full-width lifestyle image section ───────────────────────────────────────
+function ShopperImageSection() {
+  return (
+    <section className="relative overflow-hidden bg-[#0A0A0A]">
+      {/* Image — full width, slight overlay at bottom for text legibility */}
+      <div className="relative w-full" style={{ maxHeight: "600px", overflow: "hidden" }}>
+        <img
+          src="https://wsxusvapciexemfvtadm.supabase.co/storage/v1/object/public/STORAGE/images/people/linedss.png"
+          alt="Customer discovering a business through AI search"
+          className="w-full object-cover object-center"
+          style={{ maxHeight: "600px", display: "block" }}
+          loading="lazy"
+        />
+        {/* Bottom fade so text overlays cleanly */}
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              "linear-gradient(to bottom, transparent 30%, rgba(10,10,10,0.55) 65%, rgba(10,10,10,0.90) 100%)",
+          }}
+          aria-hidden="true"
+        />
+        {/* Overlaid copy */}
+        <div className="absolute bottom-0 left-0 right-0 px-6 pb-10 sm:pb-14 text-center">
+          <p className="text-[12px] sm:text-[13px] font-semibold text-white/50 uppercase tracking-widest mb-2">
+            The new customer journey
+          </p>
+          <h2 className="text-[28px] sm:text-[38px] lg:text-[44px] font-bold text-white leading-tight tracking-tight max-w-2xl mx-auto mb-4">
+            Your next customer is already asking AI where to go.
+          </h2>
+          <p className="text-[15px] sm:text-[16px] text-white/70 max-w-xl mx-auto mb-6 leading-relaxed">
+            ChatGPT, Claude, Gemini, and Perplexity are recommending businesses in real time.
+            Customers.Direct shows you exactly where you stand — and what to fix next.
+          </p>
+          <a
+            href="/signup"
+            className="inline-flex items-center gap-2 bg-[#0866F5] hover:bg-[#0757D4] text-white text-[14px] font-bold px-6 py-3 rounded-full transition-colors active:scale-[0.97] shadow-lg"
+          >
+            See where you show up
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M2.5 7h9M8 3.5l3.5 3.5L8 10.5" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/></svg>
+          </a>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function PromptTrackingSection() {
   const doubled = [...SAMPLE_PROMPTS, ...SAMPLE_PROMPTS];
   return (
@@ -2514,6 +2561,7 @@ export default function HomepagePlatform() {
     <>
       <HeroSection />
       <BannerRotationSection />
+      <ShopperImageSection />
       <PromptTrackingSection />
       <ProductTabsSection />
       <AgentReadySection />
