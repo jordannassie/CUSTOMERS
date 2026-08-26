@@ -97,8 +97,8 @@ export default function DashboardShell({ businessId, businessName, children }: D
               width={120}
               height={30}
               unoptimized
-              className="h-6 w-auto"
-            />
+              className="h-9 w-auto"
+          />
           </Link>
           <div className="w-8" aria-hidden="true" />
         </div>
@@ -137,7 +137,7 @@ function SidebarContent({
             width={130}
             height={32}
             unoptimized
-            className="h-6 w-auto"
+            className="h-9 w-auto"
           />
         </Link>
       </div>

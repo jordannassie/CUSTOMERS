@@ -111,7 +111,7 @@ export default function AuthForm({ mode }: AuthFormProps) {
             height={36}
             priority
             unoptimized
-            className="h-7 w-auto mx-auto"
+            className="h-14 w-auto mx-auto"
           />
         </Link>
       </div>

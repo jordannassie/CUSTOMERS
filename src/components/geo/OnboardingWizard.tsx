@@ -242,7 +242,7 @@ export default function OnboardingWizard() {
             width={160}
             height={40}
             priority
-            className="h-8 w-auto mx-auto"
+            className="h-16 w-auto mx-auto"
           />
         </div>
 

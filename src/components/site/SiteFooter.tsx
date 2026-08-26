@@ -64,7 +64,7 @@ export default function SiteFooter() {
                 width={148}
                 height={36}
                 unoptimized
-                className="h-7 w-auto"
+                className="h-14 w-auto"
               />
             </Link>
             <p className="text-[13px] text-white/50 leading-relaxed mb-6 max-w-xs">

@@ -1380,10 +1380,10 @@ function PricingSection() {
         ))}
       </div>
 
-      <div className="max-w-2xl mx-auto mt-10 flex items-start gap-3 bg-[#FFFBEB] border border-[#FDE68A] rounded-xl px-5 py-4">
-        <Zap size={15} className="text-[#B45309] shrink-0 mt-0.5" aria-hidden="true" />
-        <p className="text-[12px] text-[#92400E] leading-relaxed">
-          <strong>No guaranteed AI rankings — ever.</strong> AI models change constantly and no company can promise a specific mention, position, or outcome inside ChatGPT, Claude, Perplexity, or any other AI product. Customers.Direct measures your visibility honestly and helps you improve the factors within your control.
+      <div className="max-w-2xl mx-auto mt-10 flex items-start gap-3 bg-[#F5F5F2] border border-[#E5E5E1] rounded-xl px-5 py-4">
+        <Zap size={15} className="text-[#A3A3A0] shrink-0 mt-0.5" aria-hidden="true" />
+        <p className="text-[12px] text-[#777773] leading-relaxed">
+          <strong className="text-[#555552]">No guaranteed AI rankings — ever.</strong> AI models change constantly and no company can promise a specific mention, position, or outcome inside ChatGPT, Claude, Perplexity, or any other AI product. Customers.Direct measures your visibility honestly and helps you improve the factors within your control.
         </p>
       </div>
     </Section>

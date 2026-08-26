@@ -110,7 +110,7 @@ export default function SiteHeader() {
         className="max-w-[1200px] mx-auto rounded-[20px] pointer-events-auto"
         style={{ background: NAV_GRADIENT, boxShadow: NAV_SHADOW }}
       >
-        <div className="flex items-center h-[58px] px-5">
+        <div className="flex items-center h-[68px] px-5">
 
           {/* Logo */}
           <Link
@@ -124,7 +124,7 @@ export default function SiteHeader() {
               width={160}
               height={40}
               priority
-              className="h-7 w-auto"
+              className="h-12 w-auto"
             />
           </Link>
 
