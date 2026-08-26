@@ -1097,25 +1097,140 @@ function AgencySection() {
   );
 }
 
-// ─── 9. PRICING BRIDGE ────────────────────────────────────────────────────
+// ─── 9. PRICING ───────────────────────────────────────────────────────────
 
-function PricingBridgeSection() {
+const PLANS = [
+  {
+    id: "ai_visibility",
+    name: "AI Visibility",
+    price: "$497",
+    period: "/month",
+    description: "See where you stand today.",
+    features: [
+      "1 business tracked",
+      "~50 buyer-intent prompts monitored",
+      "Monthly monitoring runs",
+      "Direct Score + competitor comparison",
+      "Opportunity recommendations",
+      '"Send to Claude" implementation packages',
+    ],
+    cta: "Start AI Visibility",
+    highlight: false,
+  },
+  {
+    id: "growth_agent",
+    name: "Growth Agent",
+    price: "$997",
+    period: "/month",
+    badge: "Most Popular",
+    description: "Track it weekly and go deeper.",
+    features: [
+      "Everything in AI Visibility",
+      "Weekly monitoring runs",
+      "~100 buyer-intent prompts monitored",
+      "Deeper competitive analysis",
+      "Full GEO audit of your site",
+      "Priority opportunity generation",
+    ],
+    cta: "Start Growth Agent",
+    highlight: true,
+  },
+  {
+    id: "autonomous_growth",
+    name: "Autonomous Growth",
+    price: "From $1,997",
+    period: "/month",
+    description: "We implement the fixes for you.",
+    features: [
+      "Everything in Growth Agent",
+      "Customers.Direct executes approved changes",
+      "Human-in-the-loop approval workflow",
+      "Priority implementation queue",
+      "Dedicated account oversight",
+    ],
+    cta: "Talk to Us",
+    highlight: false,
+  },
+];
+
+function PricingSection() {
   return (
-    <Section bg="bg-white" className="border-b border-[#EEEEEA]">
-      <div className="text-center">
+    <Section id="pricing" bg="bg-white" className="border-t border-[#EEEEEA]">
+      <div className="text-center mb-14">
         <Eyebrow>Pricing</Eyebrow>
-        <H2 className="mb-4">Simple, transparent pricing.</H2>
-        <Body className="mb-8 max-w-xl mx-auto">
-          Start free to see your AI visibility score. Upgrade for continuous monitoring, competitor tracking, opportunities, and the Direct Agent.
+        <H2 className="mb-4">Pick the level of help you need.</H2>
+        <Body className="max-w-xl mx-auto">
+          Start with a free visibility score. Upgrade for continuous monitoring, competitor tracking, opportunities, and the Direct Agent.
         </Body>
-        <div className="flex flex-wrap items-center justify-center gap-3">
-          <PrimaryBtn href="/ai-search#pricing">
-            View full pricing <ArrowRight size={14} aria-hidden="true" />
-          </PrimaryBtn>
-          <SecondaryBtn href="/signup">
-            Start free
-          </SecondaryBtn>
-        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 items-stretch">
+        {PLANS.map((plan) => (
+          <div
+            key={plan.id}
+            className={`relative rounded-2xl border flex flex-col p-8 ${
+              plan.highlight
+                ? "bg-[#171717] border-[#171717] text-white"
+                : "bg-white border-[#E5E5E1]"
+            }`}
+            style={
+              plan.highlight
+                ? { boxShadow: "0 20px 48px rgba(23,23,23,0.22)" }
+                : undefined
+            }
+          >
+            {plan.badge && (
+              <span className="absolute -top-3 left-7 bg-[#171717] text-white text-[10px] font-bold tracking-widest uppercase px-3 py-1 rounded-full border border-white/20">
+                {plan.badge}
+              </span>
+            )}
+
+            <p className={`text-[10px] font-bold uppercase tracking-widest mb-5 ${plan.highlight ? "text-white/50" : "text-[#A3A3A0]"}`}>
+              {plan.name}
+            </p>
+
+            <div className="flex items-end gap-1 mb-2">
+              <span className="text-[38px] font-bold leading-none tracking-tight">{plan.price}</span>
+              <span className={`text-sm mb-1 ${plan.highlight ? "text-white/50" : "text-[#A3A3A0]"}`}>{plan.period}</span>
+            </div>
+            <p className={`text-sm mb-7 leading-relaxed ${plan.highlight ? "text-white/60" : "text-[#777773]"}`}>
+              {plan.description}
+            </p>
+
+            <div className="flex flex-col gap-3 mb-8 flex-1">
+              {plan.features.map((feature) => (
+                <div key={feature} className="flex items-start gap-2.5">
+                  <div className={`w-[18px] h-[18px] rounded-full flex items-center justify-center shrink-0 mt-0.5 ${
+                    plan.highlight ? "bg-white/10" : "bg-[#F0F0EC]"
+                  }`}>
+                    <Check size={10} className={plan.highlight ? "text-white" : "text-[#777773]"} aria-hidden="true" />
+                  </div>
+                  <span className={`text-[13px] leading-snug ${plan.highlight ? "text-white/75" : "text-[#777773]"}`}>
+                    {feature}
+                  </span>
+                </div>
+              ))}
+            </div>
+
+            <Link
+              href="/signup"
+              className={`flex items-center justify-center gap-2 font-semibold py-3 rounded-lg transition-all text-sm active:scale-[0.97] ${
+                plan.highlight
+                  ? "bg-white text-[#171717] hover:bg-[#F0F0EC]"
+                  : "bg-[#171717] text-white hover:bg-[#2A2A2A]"
+              }`}
+            >
+              {plan.cta}
+            </Link>
+          </div>
+        ))}
+      </div>
+
+      <div className="max-w-2xl mx-auto mt-10 flex items-start gap-3 bg-[#FFFBEB] border border-[#FDE68A] rounded-xl px-5 py-4">
+        <Zap size={15} className="text-[#B45309] shrink-0 mt-0.5" aria-hidden="true" />
+        <p className="text-[12px] text-[#92400E] leading-relaxed">
+          <strong>No guaranteed AI rankings — ever.</strong> AI models change constantly and no company can promise a specific mention, position, or outcome inside ChatGPT, Claude, Perplexity, or any other AI product. Customers.Direct measures your visibility honestly and helps you improve the factors within your control.
+        </p>
       </div>
     </Section>
   );
@@ -1138,8 +1253,8 @@ function FinalCTASection() {
             Check My AI Visibility
             <ArrowRight size={14} aria-hidden="true" />
           </PrimaryBtn>
-          <SecondaryBtn href="/ai-search#pricing">
-            View pricing
+          <SecondaryBtn href="/how-it-works">
+            See how it works
           </SecondaryBtn>
         </div>
 
@@ -1169,7 +1284,7 @@ export default function HomepagePlatform() {
       <OpportunitiesSection />
       <DirectAgentSection />
       <AgencySection />
-      <PricingBridgeSection />
+      <PricingSection />
       <FinalCTASection />
     </>
   );

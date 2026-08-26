@@ -170,7 +170,7 @@ export default function SiteHeader() {
             </div>
 
             <Link
-              href="/ai-search#pricing"
+              href="/#pricing"
               className="text-[13px] font-medium text-[#777773] hover:text-[#171717] transition-colors duration-150 px-3 py-1.5 rounded-md hover:bg-[#F0F0EC]"
             >
               Pricing
@@ -279,7 +279,7 @@ export default function SiteHeader() {
 
           <div className="border-t border-[#E5E5E1] pt-3 flex flex-col gap-0.5 mb-4">
             <Link
-              href="/ai-search#pricing"
+              href="/#pricing"
               onClick={closeAll}
               className="px-3 py-2 text-[13px] font-medium text-[#777773] hover:text-[#171717] rounded-lg hover:bg-[#F5F5F2] transition-colors"
             >
