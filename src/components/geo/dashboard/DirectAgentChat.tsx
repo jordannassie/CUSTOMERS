@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { Send, Loader2, Bot, User } from "lucide-react";
+import MarkdownContent from "@/components/MarkdownContent";
 
 interface Message {
   role: "user" | "agent";
@@ -105,13 +106,17 @@ export default function DirectAgentChat({
               }
             </div>
             <div
-              className={`max-w-[75%] rounded-xl px-4 py-3 text-[13px] whitespace-pre-wrap leading-relaxed ${
+              className={`max-w-[75%] rounded-xl px-4 py-3 ${
                 m.role === "user"
-                  ? "bg-[#171717] text-white rounded-tr-sm"
-                  : "bg-white border border-[#E5E5E1] text-[#171717] rounded-tl-sm"
+                  ? "bg-[#171717] text-white rounded-tr-sm text-[13px] leading-relaxed whitespace-pre-wrap"
+                  : "bg-white border border-[#E5E5E1] rounded-tl-sm"
               }`}
             >
-              {m.text}
+              {m.role === "user" ? (
+                m.text
+              ) : (
+                <MarkdownContent compact>{m.text}</MarkdownContent>
+              )}
             </div>
           </div>
         ))}

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import MarkdownContent from "@/components/MarkdownContent";
 import {
   Bot, CheckCircle2, AlertCircle, XCircle, ExternalLink,
   Copy, Check, RefreshCw, Loader2, Zap, Info,
@@ -330,13 +331,13 @@ function ActionCard({
               {action.evidence && (
                 <div>
                   <p className="text-[10px] uppercase tracking-wide text-[#AAAAAA] mb-1">Evidence</p>
-                  <p className="text-[12px] text-[#555553]">{action.evidence}</p>
+                  <MarkdownContent compact>{action.evidence}</MarkdownContent>
                 </div>
               )}
               {action.recommendation && (
                 <div>
                   <p className="text-[10px] uppercase tracking-wide text-[#AAAAAA] mb-1">Recommendation</p>
-                  <p className="text-[12px] text-[#555553]">{action.recommendation}</p>
+                  <MarkdownContent compact>{action.recommendation}</MarkdownContent>
                 </div>
               )}
               {action.recommended_tool_name && (

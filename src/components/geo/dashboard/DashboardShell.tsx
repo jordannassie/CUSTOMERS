@@ -22,7 +22,7 @@ import {
   X,
   Check,
   Search,
-  ExternalLink,
+
   BarChart2,
   ShieldCheck,
 } from "lucide-react";
@@ -410,39 +410,10 @@ function BusinessSwitcher({
                   )}
                 </span>
               </button>
-              {/* External website link */}
-              {b.domain && (
-                <a
-                  href={`https://${b.domain}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={(e) => e.stopPropagation()}
-                  className="px-2 py-2 text-[#D4D4CF] hover:text-[#777773] opacity-0 group-hover:opacity-100 transition-all shrink-0"
-                  aria-label={`Open ${b.domain}`}
-                >
-                  <ExternalLink size={12} />
-                </a>
-              )}
             </div>
           ))}
 
-          {/* Active business website link */}
-          {activeBusinessDomain && (
-            <div className="border-t border-[#EEEEEA] mt-1 pt-1">
-              <a
-                href={`https://${activeBusinessDomain}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-2 px-3 py-2 text-[12px] text-[#777773] hover:text-[#171717] hover:bg-[#F5F5F2] transition-colors"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <ExternalLink size={12} aria-hidden="true" />
-                {activeBusinessDomain}
-              </a>
-            </div>
-          )}
-
-          <div className={activeBusinessDomain ? "" : "border-t border-[#EEEEEA] mt-1 pt-1"}>
+          <div className="border-t border-[#EEEEEA] mt-1 pt-1">
             <Link
               href="/dashboard/add-business"
               onClick={() => { setOpen(false); onSwitch?.(); }}

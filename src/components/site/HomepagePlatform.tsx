@@ -756,65 +756,99 @@ function PromptTrackingSection() {
 // ─── PRODUCT TABS (replaces 5 separate sections) ──────────────────────────
 
 const PRODUCT_TABS = [
-  { id: "visibility",   label: "AI Visibility" },
-  { id: "competitors",  label: "Competitors" },
-  { id: "sources",      label: "Sources" },
-  { id: "opportunities",label: "Opportunities" },
-  { id: "agent",        label: "Direct Agent" },
+  { id: "visibility",    label: "AI Visibility",   hash: "ai-visibility"  },
+  { id: "competitors",   label: "Competitors",      hash: "competitors"    },
+  { id: "sources",       label: "Sources",          hash: "citations"      },
+  { id: "opportunities", label: "Opportunities",    hash: "opportunities"  },
+  { id: "agent",         label: "Direct Agent",     hash: "direct-agent"   },
 ] as const;
 
 type TabId = typeof PRODUCT_TABS[number]["id"];
 
+/** Map from URL hash → TabId */
+const HASH_TO_TAB: Record<string, TabId> = {
+  "ai-visibility":  "visibility",
+  "competitors":    "competitors",
+  "citations":      "sources",
+  "opportunities":  "opportunities",
+  "direct-agent":   "agent",
+};
+
 function ProductTabsSection() {
   const [active, setActive] = React.useState<TabId>("visibility");
+  const sectionRef = React.useRef<HTMLElement | null>(null);
+
+  // On mount and hash change, activate the right tab and scroll to section
+  React.useEffect(() => {
+    function activateFromHash() {
+      const hash = window.location.hash.replace("#", "");
+      const tabId = HASH_TO_TAB[hash];
+      if (tabId) {
+        setActive(tabId);
+        // Smooth scroll to the section after a short delay (lets the tab render)
+        setTimeout(() => {
+          const el = document.getElementById("product");
+          if (el) {
+            const top = el.getBoundingClientRect().top + window.scrollY - 90; // 90px offset for sticky header
+            window.scrollTo({ top, behavior: "smooth" });
+          }
+        }, 50);
+      }
+    }
+
+    activateFromHash();
+    window.addEventListener("hashchange", activateFromHash);
+    return () => window.removeEventListener("hashchange", activateFromHash);
+  }, []);
+
+  function selectTab(id: TabId, hash: string) {
+    setActive(id);
+    // Update hash without triggering a page reload
+    history.pushState(null, "", `#${hash}`);
+  }
 
   return (
-    <Section id="product" bg="bg-[#FAFAF8]" className="border-b border-[#EEEEEA] !py-0 !overflow-visible">
-      {/*
-        Anchor IDs for each product feature — always present in the DOM so that
-        direct navigation to /#ai-visibility, /#competitors etc. works from any page.
-        They sit at the top of this section (behind the sticky nav).
-      */}
-      <span id="ai-visibility"  className="block h-0" aria-hidden="true" />
-      <span id="competitors"    className="block h-0" aria-hidden="true" />
-      <span id="citations"      className="block h-0" aria-hidden="true" />
-      <span id="opportunities"  className="block h-0" aria-hidden="true" />
-      <span id="direct-agent"   className="block h-0" aria-hidden="true" />
-
-      {/* Sticky tab bar */}
-      <div className="sticky top-0 z-30 bg-[#FAFAF8]/95 backdrop-blur-sm border-b border-[#EEEEEA] -mx-4 px-4">
-        <div className="max-w-[1160px] mx-auto overflow-x-auto scrollbar-none">
-          <div className="flex gap-0 min-w-max">
-            {PRODUCT_TABS.map(({ id, label }) => (
-              <button
-                key={id}
-                type="button"
-                onClick={() => setActive(id)}
-                className={`relative px-5 py-4 text-[13px] font-semibold transition-colors whitespace-nowrap ${
-                  active === id
-                    ? "text-[#171717]"
-                    : "text-[#A3A3A0] hover:text-[#777773]"
-                }`}
-              >
-                {label}
-                {active === id && (
-                  <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#171717] rounded-full" />
-                )}
-              </button>
-            ))}
+    <section
+      id="product"
+      ref={sectionRef}
+      className="bg-[#FAFAF8] border-b border-[#EEEEEA] scroll-mt-24 overflow-visible"
+    >
+      <div className="max-w-[1160px] mx-auto">
+        {/* Sticky tab bar */}
+        <div className="sticky top-0 z-30 bg-[#FAFAF8]/95 backdrop-blur-sm border-b border-[#EEEEEA] -mx-4 px-4">
+          <div className="max-w-[1160px] mx-auto overflow-x-auto scrollbar-none">
+            <div className="flex gap-0 min-w-max">
+              {PRODUCT_TABS.map(({ id, label, hash }) => (
+                <button
+                  key={id}
+                  type="button"
+                  onClick={() => selectTab(id, hash)}
+                  className={`relative px-5 py-4 text-[13px] font-semibold transition-colors whitespace-nowrap ${
+                    active === id
+                      ? "text-[#171717]"
+                      : "text-[#A3A3A0] hover:text-[#777773]"
+                  }`}
+                >
+                  {label}
+                  {active === id && (
+                    <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#171717] rounded-full" />
+                  )}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Tab content */}
-      <div className="py-16 sm:py-20">
-        {active === "visibility" && <VisibilityTabContent />}
-        {active === "competitors" && <CompetitorsTabContent />}
-        {active === "sources" && <SourcesTabContent />}
-        {active === "opportunities" && <OpportunitiesTabContent />}
-        {active === "agent" && <AgentTabContent />}
+        {/* Tab content */}
+        <div className="py-16 sm:py-20 px-4">
+          {active === "visibility"    && <VisibilityTabContent />}
+          {active === "competitors"   && <CompetitorsTabContent />}
+          {active === "sources"       && <SourcesTabContent />}
+          {active === "opportunities" && <OpportunitiesTabContent />}
+          {active === "agent"         && <AgentTabContent />}
+        </div>
       </div>
-    </Section>
+    </section>
   );
 }
 

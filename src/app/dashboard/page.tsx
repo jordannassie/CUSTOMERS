@@ -88,47 +88,52 @@ export default async function DashboardPage() {
       fullBleed
     >
       {/* ── Business identity header ────────────────────────────────────────── */}
-      <Link
-        href="/dashboard/settings"
-        className="group flex items-center gap-4 px-5 sm:px-7 py-4 bg-white border-b border-[#E5E5E1] hover:bg-[#F5F5F2] transition-colors"
-        aria-label={`${business.name} — click to edit business settings`}
-      >
-        <div className="relative shrink-0">
-          {business.logo_url ? (
-            <div className="w-12 h-12 rounded-xl border border-[#E5E5E1] overflow-hidden bg-white flex items-center justify-center">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={business.logo_url} alt={business.name} className="w-full h-full object-contain p-1" />
+      {/*
+        RunScanButton MUST stay outside the Link — a <button> nested inside <a>
+        is invalid HTML and causes button clicks to bubble to the Link (→ Settings).
+      */}
+      <div className="flex items-center gap-4 px-5 sm:px-7 py-4 bg-white border-b border-[#E5E5E1]">
+        <Link
+          href="/dashboard/settings"
+          className="group flex items-center gap-4 flex-1 min-w-0 hover:bg-[#F5F5F2] -mx-2 px-2 py-1 rounded-xl transition-colors"
+          aria-label={`${business.name} — click to edit business settings`}
+        >
+          <div className="relative shrink-0">
+            {business.logo_url ? (
+              <div className="w-12 h-12 rounded-xl border border-[#E5E5E1] overflow-hidden bg-white flex items-center justify-center">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={business.logo_url} alt={business.name} className="w-full h-full object-contain p-1" />
+              </div>
+            ) : (
+              <CompetitorAvatar name={business.name} size={48} className="rounded-xl" />
+            )}
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              <h1 className="text-[17px] font-bold text-[#171717] leading-tight truncate">{business.name}</h1>
+              <span className="hidden sm:flex items-center gap-1 text-[10px] font-semibold text-[#A3A3A0] group-hover:text-[#777773]">
+                <Pencil size={9} /> Edit
+              </span>
             </div>
-          ) : (
-            <CompetitorAvatar name={business.name} size={48} className="rounded-xl" />
-          )}
-        </div>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
-            <h1 className="text-[17px] font-bold text-[#171717] leading-tight truncate">{business.name}</h1>
+            <div className="flex items-center gap-3 mt-0.5 flex-wrap">
+              {business.industry && <span className="text-[12px] text-[#777773]">{business.industry}</span>}
+              {business.domain && (
+                <span className="flex items-center gap-1 text-[12px] text-[#A3A3A0]">
+                  <Globe size={10} aria-hidden="true" />{business.domain}
+                </span>
+              )}
+              {(business.primary_city || business.primary_region) && (
+                <span className="flex items-center gap-1 text-[12px] text-[#A3A3A0]">
+                  <MapPin size={10} aria-hidden="true" />
+                  {[business.primary_city, business.primary_region].filter(Boolean).join(", ")}
+                </span>
+              )}
+            </div>
           </div>
-          <div className="flex items-center gap-3 mt-0.5 flex-wrap">
-            {business.industry && <span className="text-[12px] text-[#777773]">{business.industry}</span>}
-            {business.domain && (
-              <span className="flex items-center gap-1 text-[12px] text-[#A3A3A0]">
-                <Globe size={10} aria-hidden="true" />{business.domain}
-              </span>
-            )}
-            {(business.primary_city || business.primary_region) && (
-              <span className="flex items-center gap-1 text-[12px] text-[#A3A3A0]">
-                <MapPin size={10} aria-hidden="true" />
-                {[business.primary_city, business.primary_region].filter(Boolean).join(", ")}
-              </span>
-            )}
-          </div>
-        </div>
-        <div className="flex items-center gap-3 shrink-0">
-          <RunScanButton businessId={business.id} />
-          <span className="hidden sm:flex items-center gap-1 text-[11px] font-semibold text-[#A3A3A0] group-hover:text-[#777773]">
-            <Pencil size={10} /> Edit
-          </span>
-        </div>
-      </Link>
+        </Link>
+        {/* RunScanButton is sibling to the Link, never inside it */}
+        <RunScanButton businessId={business.id} />
+      </div>
 
       {/* ── Error banner ─────────────────────────────────────────────────────── */}
       {agg.latestRunStatus === "failed" && (

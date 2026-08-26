@@ -1,18 +1,11 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useMemo } from "react";
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer, Legend,
 } from "recharts";
 import type { TrendPoint, CompetitorMetric } from "@/lib/geo/dashboard-aggregator";
-
-type Metric = "ai_visibility" | "share_of_voice";
-
-const METRIC_LABELS: Record<Metric, string> = {
-  ai_visibility: "AI Visibility",
-  share_of_voice: "Share of Voice",
-};
 
 // Business line gets the primary blue; competitors get muted sequential colors
 const BUSINESS_COLOR = "#2563EB";
@@ -48,8 +41,6 @@ interface Props {
 }
 
 export default function CompetitorTrendChart({ businessName, trendSeries, competitors }: Props) {
-  const [activeMetric] = useState<Metric>("ai_visibility");
-
   // Determine which competitors actually have data in the trend series
   const competitorsWithData = useMemo(() => {
     const names = new Set<string>();
@@ -90,26 +81,9 @@ export default function CompetitorTrendChart({ businessName, trendSeries, compet
   // With only one data point we still render a single dot
   return (
     <div>
-      {/* Metric toggle */}
-      <div className="flex items-center gap-3 mb-4 flex-wrap">
-        <div className="flex items-center gap-1.5">
-          {(Object.entries(METRIC_LABELS) as [Metric, string][]).map(([key, label]) => (
-            <span
-              key={key}
-              className={`px-3 py-1 rounded-full text-[11.5px] font-semibold border transition-colors ${
-                activeMetric === key
-                  ? "bg-[#171717] text-white border-transparent"
-                  : "text-[#777773] bg-white border-[#E5E5E1]"
-              }`}
-            >
-              {label}
-            </span>
-          ))}
-        </div>
-        {trendSeries.length === 1 && (
-          <span className="text-[11px] text-[#A3A3A0]">Run more scans to see trend</span>
-        )}
-      </div>
+      {trendSeries.length === 1 && (
+        <p className="text-[11px] text-[#A3A3A0] mb-3">Run more scans to see the full trend line.</p>
+      )}
 
       <ResponsiveContainer width="100%" height={220}>
         <LineChart data={chartData} margin={{ top: 4, right: 4, bottom: 0, left: -20 }}>

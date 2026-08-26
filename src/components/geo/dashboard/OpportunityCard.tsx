@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Copy, Check, Wrench, X, Loader2 } from "lucide-react";
 import type { Opportunity } from "@/types/geo";
 import { ImpactBadge } from "./ui";
+import MarkdownContent from "@/components/MarkdownContent";
 
 const CATEGORY_LABELS: Record<string, string> = {
   content: "Content",
@@ -85,17 +86,25 @@ export default function OpportunityCard({ opportunity, businessId }: { opportuni
         </div>
       </div>
 
-      <p className="text-[13px] text-[#777773] mb-3">{opportunity.description}</p>
+      {opportunity.description && (
+        <div className="mb-3 text-[#777773]">
+          <MarkdownContent compact>{opportunity.description}</MarkdownContent>
+        </div>
+      )}
 
-      <div className="bg-[#FAFAF8] border border-[#EEEEEA] rounded-lg px-4 py-3 mb-3">
-        <p className="text-[10px] font-semibold uppercase tracking-widest text-[#A3A3A0] mb-1">Evidence</p>
-        <p className="text-[12px] text-[#777773]">{opportunity.evidence}</p>
-      </div>
+      {opportunity.evidence && (
+        <div className="bg-[#FAFAF8] border border-[#EEEEEA] rounded-lg px-4 py-3 mb-3">
+          <p className="text-[10px] font-semibold uppercase tracking-widest text-[#A3A3A0] mb-1">Evidence</p>
+          <MarkdownContent compact>{opportunity.evidence}</MarkdownContent>
+        </div>
+      )}
 
-      <div className="mb-4">
-        <p className="text-[10px] font-semibold uppercase tracking-widest text-[#A3A3A0] mb-1">Recommended action</p>
-        <p className="text-[13px] text-[#171717]">{opportunity.recommended_action}</p>
-      </div>
+      {opportunity.recommended_action && (
+        <div className="mb-4">
+          <p className="text-[10px] font-semibold uppercase tracking-widest text-[#A3A3A0] mb-1">Recommended action</p>
+          <MarkdownContent compact>{opportunity.recommended_action}</MarkdownContent>
+        </div>
+      )}
 
       {isOpen && (
         <div className="flex flex-wrap items-center gap-2">
