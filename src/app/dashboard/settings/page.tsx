@@ -4,11 +4,11 @@ import DashboardShell from "@/components/geo/dashboard/DashboardShell";
 import { Card, PageHeader } from "@/components/geo/dashboard/ui";
 import BusinessSettingsForm from "@/components/geo/dashboard/BusinessSettingsForm";
 import { getPrimaryBusiness } from "@/lib/geo/dashboard-data";
-import { Building2, Check, CreditCard, User, AlertCircle, ExternalLink, Clock } from "lucide-react";
+import { Building2, Check, CreditCard, User, AlertCircle, ExternalLink } from "lucide-react";
 import { getPlan, PLANS, type PlanId } from "@/lib/plans";
 import { stripeEnabled } from "@/lib/stripe";
 import BillingPortalButton from "@/components/geo/BillingPortalButton";
-import { getTrialStatus } from "@/lib/trial";
+import { PRODUCT_ACCESS } from "@/config/product-access";
 
 export const metadata = { title: "Settings", robots: { index: false } };
 
@@ -40,15 +40,12 @@ export default async function SettingsPage({
 
   const params = await searchParams;
   const checkoutSuccess = params.checkout === "success";
-  const trialStatus = await getTrialStatus();
   const currentPlan = getPlan(subscription?.plan);
   const statusInfo =
     STATUS_LABELS[subscription?.status ?? "inactive"] ?? STATUS_LABELS.inactive;
   const hasActiveSub =
     subscription?.status === "active" || subscription?.status === "trialing";
   const hasStripeRecord = !!subscription?.stripe_customer_id;
-  // Trial display: show trial info when no paid sub exists
-  const showTrialStatus = !hasActiveSub && !hasStripeRecord;
 
   return (
     <DashboardShell
@@ -104,7 +101,7 @@ export default async function SettingsPage({
         <div className="flex items-center justify-between gap-2 mb-4">
           <div className="flex items-center gap-2">
             <CreditCard size={15} className="text-[#777773]" />
-            <h2 className="font-bold text-[#171717]">Plan & billing</h2>
+            <h2 className="font-bold text-[#171717]">Plan &amp; billing</h2>
           </div>
           {hasActiveSub && hasStripeRecord && (
             <BillingPortalButton
@@ -117,47 +114,24 @@ export default async function SettingsPage({
           )}
         </div>
 
-        {/* Trial / current plan summary */}
-        {showTrialStatus ? (
-          <div className={`mb-5 p-4 rounded-xl border ${
-            trialStatus.isExpired
-              ? "bg-[#FEF2F2] border-[#FECACA]"
-              : trialStatus.daysLeft <= 3
-                ? "bg-[#FEF2F2] border-[#FECACA]"
-                : trialStatus.daysLeft <= 7
-                  ? "bg-[#FFFBEB] border-[#FDE68A]"
-                  : "bg-[#F0FDF4] border-[#BBF7D0]"
-          }`}>
+        {/* Beta free access — current state */}
+        {PRODUCT_ACCESS.betaFreeAccess && !hasActiveSub && (
+          <div className="mb-5 p-4 rounded-xl bg-[#EFF6FF] border border-[#DBEAFE]">
             <div className="flex items-start gap-3">
-              <Clock size={18} className={`shrink-0 mt-0.5 ${
-                trialStatus.isExpired || trialStatus.daysLeft <= 3
-                  ? "text-[#DC2626]"
-                  : trialStatus.daysLeft <= 7
-                    ? "text-[#D97706]"
-                    : "text-[#166534]"
-              }`} />
+              <span className="w-2 h-2 mt-1.5 rounded-full bg-[#3B82F6] shrink-0" aria-hidden="true" />
               <div>
-                <p className="text-[13px] font-semibold text-[#171717]">
-                  {trialStatus.isExpired
-                    ? "Free trial ended"
-                    : `14-Day Free Trial — ${trialStatus.daysLeft} day${trialStatus.daysLeft !== 1 ? "s" : ""} remaining`}
+                <p className="text-[13px] font-semibold text-[#1D4ED8]">Free Beta</p>
+                <p className="text-[12px] text-[#1E40AF] mt-0.5 leading-relaxed">
+                  Customers.Direct is currently free while we test the platform with early users.
+                  Paid plans will be introduced later — you&rsquo;ll be notified before anything changes.
                 </p>
-                <p className="text-[12px] text-[#777773] mt-0.5">
-                  {trialStatus.isExpired
-                    ? "Your 14-day free trial has ended. Your data is safe and preserved."
-                    : "Full platform access during your trial. No credit card required."}
-                </p>
-                {trialStatus.trialEndsAt && !trialStatus.isExpired && (
-                  <p className="text-[11px] text-[#A3A3A0] mt-1">
-                    Trial ends: {new Date(trialStatus.trialEndsAt).toLocaleDateString("en-US", {
-                      month: "long", day: "numeric", year: "numeric"
-                    })}
-                  </p>
-                )}
               </div>
             </div>
           </div>
-        ) : (
+        )}
+
+        {/* Active paid subscription summary */}
+        {hasActiveSub && (
           <div className="flex items-center gap-3 mb-5 p-3.5 rounded-lg bg-[#FAFAF8] border border-[#E5E5E1]">
             <div className="flex-1 min-w-0">
               <p className="text-[13px] font-semibold text-[#171717]">{currentPlan.name}</p>
@@ -169,7 +143,7 @@ export default async function SettingsPage({
           </div>
         )}
 
-        {/* Paid plan cards — only shown when Stripe is live and user has active paid sub, or always for reference */}
+        {/* Paid plan cards — only shown when user has active paid subscription */}
         {hasActiveSub && (
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-5">
             {(["ai_visibility", "growth_agent", "autonomous_growth"] as PlanId[]).map((planId) => {
@@ -214,26 +188,27 @@ export default async function SettingsPage({
           </div>
         )}
 
-        {/* Upgrade CTA for trial / expired users */}
-        {showTrialStatus && (
-          <div className="bg-[#FAFAF8] border border-[#E5E5E1] rounded-xl p-4 mb-2">
+        {/* Future plans teaser — beta mode only */}
+        {PRODUCT_ACCESS.betaFreeAccess && !hasActiveSub && (
+          <div className="bg-[#FAFAF8] border border-[#E5E5E1] rounded-xl p-4">
             <p className="text-[13px] font-semibold text-[#171717] mb-1">Paid plans — coming soon</p>
-            <p className="text-[12px] text-[#777773] mb-3">
-              Self-serve subscription plans are launching soon. In the meantime, reach out and
-              we&rsquo;ll set you up directly.
+            <p className="text-[12px] text-[#777773] leading-relaxed">
+              Starter, Growth, and Pro self-serve plans are being finalised.
+              If you&rsquo;d like early access or a custom arrangement, reach out and we&rsquo;ll sort it.
             </p>
             <a
-              href="mailto:hello@customers.direct?subject=I want to continue with Customers.Direct"
-              className="inline-flex items-center gap-1.5 text-[12px] font-semibold bg-[#171717] text-white px-4 py-2.5 rounded-lg hover:bg-[#2A2A2A] transition-colors"
+              href="mailto:hello@customers.direct?subject=Customers.Direct — early plan enquiry"
+              className="inline-flex items-center gap-1.5 mt-3 text-[12px] font-semibold text-[#0866F5] hover:text-[#063B9D] transition-colors"
             >
-              Contact us to upgrade →
+              Get in touch →
             </a>
           </div>
         )}
 
+        {/* Stripe billing portal (active subscribers only) */}
         {hasActiveSub && hasStripeRecord && stripeEnabled ? (
-          <div className="flex items-center gap-2">
-            <p className="text-[11px] text-[#A3A3A0]">Billing is managed via Stripe. </p>
+          <div className="flex items-center gap-2 mt-3">
+            <p className="text-[11px] text-[#A3A3A0]">Billing is managed via Stripe.</p>
             <BillingPortalButton
               businessId={business.id}
               className="text-[11px] text-[#777773] underline hover:no-underline cursor-pointer"
@@ -242,22 +217,20 @@ export default async function SettingsPage({
             </BillingPortalButton>
             <span className="text-[11px] text-[#A3A3A0]">to update payment, view invoices, or cancel.</span>
           </div>
-        ) : !showTrialStatus && (
-          <p className="text-[11px] text-[#A3A3A0]">
-            All plans billed monthly. No long-term contract required.{" "}
-            <a href="mailto:hello@customers.direct" className="underline hover:no-underline">
-              Contact us
-            </a>{" "}
+        ) : !PRODUCT_ACCESS.betaFreeAccess && !hasActiveSub ? (
+          <p className="text-[11px] text-[#A3A3A0] mt-3">
+            All plans billed monthly. No long-term contract.{" "}
+            <a href="mailto:hello@customers.direct" className="underline hover:no-underline">Contact us</a>{" "}
             to discuss custom arrangements.
           </p>
-        )}
+        ) : null}
       </Card>
 
       {/* Agency / White-Label */}
       <Card className="mb-5">
         <div className="flex items-center gap-2 mb-1">
           <div className="w-3 h-3 rounded-full bg-[#7C3AED]" aria-hidden="true" />
-          <h2 className="font-bold text-[#171717]">Agency & white-label</h2>
+          <h2 className="font-bold text-[#171717]">Agency &amp; white-label</h2>
           <span className="text-[9px] font-bold uppercase tracking-wider text-[#7C3AED] bg-[#F5F3FF] border border-[#EDE9FE] px-1.5 py-0.5 rounded">
             Coming soon
           </span>

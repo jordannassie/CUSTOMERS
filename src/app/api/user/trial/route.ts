@@ -1,10 +1,3 @@
-/**
- * GET /api/user/trial
- *
- * Returns the current user's trial status. Clients (dashboard components)
- * call this to display trial indicators without duplicating the logic.
- * All state is server-authoritative.
- */
 import "server-only";
 import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/geo/api-auth";
@@ -22,5 +15,6 @@ export async function GET() {
     daysLeft: status.daysLeft,
     trialEndsAt: status.trialEndsAt?.toISOString() ?? null,
     isAdmin: status.isAdmin,
+    isBeta: status.isBeta,
   });
 }

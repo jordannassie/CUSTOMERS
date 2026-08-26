@@ -104,7 +104,7 @@ function PlanCard({ plan }: { plan: PricingPlan }) {
               </div>
               <p className="text-[12px] text-[#059669] font-medium mt-1 flex items-center gap-1">
                 <Shield size={11} />
-                {plan.trialLabel} · No credit card required
+                {plan.trialLabel} · No credit card
               </p>
             </div>
           )}
@@ -211,36 +211,36 @@ function ComparisonTable() {
 
 const FAQ_ITEMS = [
   {
+    q: "Is Customers.Direct really free right now?",
+    a: "Yes. The product is completely free during beta. Sign up, create businesses, add competitors, run scans, and use the full dashboard — no credit card, no time limit.",
+  },
+  {
+    q: "When will paid plans start?",
+    a: "We're testing the platform with early users before activating billing. We'll notify you well in advance before anything changes. Your data is always safe.",
+  },
+  {
     q: "Is pricing per business?",
-    a: "Yes. Each business workspace has its own plan. One login can manage unlimited businesses — each with its own dashboard, competitors, scans, and data.",
-  },
-  {
-    q: "Do you offer a free trial?",
-    a: "Yes. Starter, Growth, and Pro all include a 14-day free trial with full platform access.",
-  },
-  {
-    q: "Do I need a credit card to start?",
-    a: "No. For the current MVP, no credit card is required to start your free trial.",
+    a: "Yes. When billing is introduced, each business workspace will have its own plan. One login can manage unlimited businesses — each with its own dashboard, competitors, scans, and data.",
   },
   {
     q: "What counts as a tracked AI search?",
     a: "A tracked search is a customer question or buying-intent prompt that Customers.Direct monitors across supported AI platforms such as ChatGPT, Claude, Perplexity, and Gemini.",
   },
   {
-    q: "What happens after my trial ends?",
-    a: "Your business data, scans, competitors, and history remain saved. Paid subscription activation will be available when billing is fully enabled. We'll notify you before your trial expires.",
+    q: "What happens to my data when billing starts?",
+    a: "All your business data, scans, competitors, and history will remain. You'll be able to choose a paid plan that fits your needs — or we'll work something out.",
   },
   {
     q: "Can agencies use Customers.Direct?",
-    a: "Yes. Agencies can manage multiple client businesses from one login. Each business selects its own plan. There is no separate agency plan — the multi-business architecture is built in.",
+    a: "Yes. Agencies can manage multiple client businesses from one login. Each business gets its own dashboard, competitors, scans, and data. There is no separate agency plan — the multi-business architecture is built in.",
   },
   {
     q: "Can I change plans later?",
-    a: "Yes. Businesses can upgrade or downgrade independently once billing is enabled.",
+    a: "Yes. When billing is enabled, businesses can choose, upgrade, or downgrade plans independently.",
   },
   {
     q: "Does Customers.Direct actually fix my website?",
-    a: "Customers.Direct identifies what needs to be fixed and provides Direct Agent guidance and Claude implementation prompts. Autonomous website changes are not part of the current MVP.",
+    a: "Customers.Direct identifies what needs to be fixed and provides Direct Agent guidance and Claude implementation prompts. Autonomous website changes are not part of the current product.",
   },
 ];
 
@@ -303,19 +303,35 @@ export default function PricingPage() {
               href="/signup"
               className="flex items-center gap-1.5 bg-white text-[#0866F5] text-[13px] font-semibold px-4 py-2 rounded-full hover:bg-blue-50 transition-all shadow-sm"
             >
-              Start Free Trial <ArrowRight size={12} />
+              Join Free Beta <ArrowRight size={12} />
             </Link>
           </div>
         </div>
       </header>
 
-      {/* ── Hero ── */}
-      <section className="pt-16 pb-12 px-4 text-center">
-        <div className="max-w-[780px] mx-auto">
-          <div className="inline-flex items-center gap-2 bg-[#EFF6FF] text-[#1D4ED8] text-[11px] font-bold uppercase tracking-wider px-3.5 py-1.5 rounded-full mb-6 border border-[#DBEAFE]">
-            <Zap size={10} />
-            14-Day Free Trial · No credit card required
+      {/* ── Beta announcement banner ── */}
+      <div className="px-4 pt-6">
+        <div className="max-w-[1100px] mx-auto">
+          <div className="flex items-start gap-4 bg-[#EFF6FF] border border-[#BFDBFE] rounded-2xl px-6 py-5">
+            <Zap size={18} className="text-[#1D4ED8] shrink-0 mt-0.5" aria-hidden="true" />
+            <div>
+              <p className="text-[15px] font-bold text-[#1D4ED8] mb-1">
+                Free during beta — no credit card required
+              </p>
+              <p className="text-[13px] text-[#1E40AF] leading-relaxed">
+                Customers.Direct is currently free for early users while we finish testing the
+                platform. Sign up, run scans, add competitors, and use the full dashboard — no
+                payment or time limit. Paid plans will be introduced later and you&rsquo;ll be
+                notified in advance.
+              </p>
+            </div>
           </div>
+        </div>
+      </div>
+
+      {/* ── Hero ── */}
+      <section className="pt-12 pb-8 px-4 text-center">
+        <div className="max-w-[780px] mx-auto">
           <h1 className="text-[44px] sm:text-[58px] font-bold text-[#171717] leading-[1.05] tracking-tight mb-5">
             Know where customers
             <br />
@@ -326,12 +342,24 @@ export default function PricingPage() {
               can find you.
             </span>
           </h1>
-          <p className="text-[18px] text-[#777773] leading-relaxed max-w-[560px] mx-auto">
+          <p className="text-[18px] text-[#777773] leading-relaxed max-w-[560px] mx-auto mb-5">
             Track your visibility across AI search and Google, compare competitors, uncover
             opportunities, and let Customers.Direct help you improve.
           </p>
+          <p className="text-[13px] font-semibold text-[#059669]">
+            ✓ Free during beta &nbsp;·&nbsp; No credit card &nbsp;·&nbsp; Full product access
+          </p>
         </div>
       </section>
+
+      {/* ── Future pricing label ── */}
+      <div className="px-4 pb-2">
+        <div className="max-w-[1100px] mx-auto">
+          <p className="text-[11px] font-bold uppercase tracking-widest text-[#A3A3A0] text-center">
+            Planned pricing after beta
+          </p>
+        </div>
+      </div>
 
       {/* ── Plan positioning row ── */}
       <section className="px-4 pb-4">
@@ -599,15 +627,15 @@ export default function PricingPage() {
                 your competitors.
               </h2>
               <p className="text-[16px] text-white/75 max-w-[480px] mx-auto mb-10 leading-relaxed">
-                Start your 14-day free trial and discover how your business appears across AI search
-                and Google.
+                Join free during beta and discover exactly how your business appears across AI
+                search and Google — no credit card, no time limit.
               </p>
               <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
                 <Link
                   href="/signup"
                   className="flex items-center gap-2 bg-white text-[#0866F5] font-bold px-7 py-3.5 rounded-full hover:bg-blue-50 transition-all shadow-lg hover:shadow-xl hover:-translate-y-px text-[15px] active:scale-[0.97]"
                 >
-                  Start Free Trial
+                  Start Free
                   <ArrowRight size={15} />
                 </Link>
                 <Link
@@ -618,7 +646,7 @@ export default function PricingPage() {
                 </Link>
               </div>
               <p className="text-[12px] text-white/50 mt-6">
-                No credit card required · 14-day free trial · Cancel anytime
+                Free during beta · No credit card required · Full product access
               </p>
             </div>
           </div>

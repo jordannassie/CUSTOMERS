@@ -1,77 +1,93 @@
 /**
- * Trial system utilities — server-authoritative.
+ * Trial / access status utilities — server-authoritative.
  *
- * FAIL-OPEN DESIGN: Any error or missing data returns "in trial" (safe state).
- * isExpired=true is only ever returned when there is explicit, positive evidence
- * that the trial period has definitively ended. When in doubt, give access.
+ * Access is determined by PRODUCT_ACCESS.betaFreeAccess (in src/config/product-access.ts).
  *
- * Admin bypass (multiple layers, checked in order):
- *   1. ADMIN_USER_IDS env var (comma-separated Supabase UUIDs) — fastest, no DB
- *   2. ADMIN_EMAILS env var (comma-separated email addresses) — no DB
- *   3. profiles.account_type = 'admin' in the database
+ * CURRENT STATE (betaFreeAccess = true):
+ *   getTrialStatus() returns full access for every authenticated user.
+ *   trial_starts_at / trial_ends_at database fields are ignored for access.
+ *   They are preserved in the DB for future use when billing is enabled.
  *
- * Trial limits (usage controls — keep abuse in check without killing UX):
+ * FUTURE STATE (betaFreeAccess = false):
+ *   The trial date evaluation logic below takes effect and gates access
+ *   based on trial expiry / active subscriptions.
+ *
+ * FAIL-OPEN DESIGN: Any DB error → safe "in trial" state, never "expired".
  */
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
+import { PRODUCT_ACCESS } from "@/config/product-access";
 
-// ─── Trial limits ─────────────────────────────────────────────────────────────
+// ─── Beta usage safeguards ────────────────────────────────────────────────────
+// Internal cost-protection limits during beta.
+// These are NOT presented as plan limits to users.
 
+export const BETA_LIMITS = PRODUCT_ACCESS.betaLimits;
+
+/**
+ * @deprecated Use BETA_LIMITS during beta. Will be replaced by per-plan limits
+ *   when billing is enabled.
+ */
 export const TRIAL_LIMITS = {
-  maxBusinesses: 2,
-  maxCompetitors: 6,
-  maxPrompts: 20,
-  maxManualScans: 5,
-  seoRefreshCooldownHours: 24,
+  maxBusinesses: BETA_LIMITS.maxBusinessesPerAccount,
+  maxCompetitors: BETA_LIMITS.maxCompetitorsPerBusiness,
+  maxPrompts: BETA_LIMITS.maxPromptsPerBusiness,
+  maxManualScans: BETA_LIMITS.maxManualScansPerDay,
+  seoRefreshCooldownHours: BETA_LIMITS.seoRefreshCooldownHours,
 } as const;
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-/** Safe state: user is in trial and can use all features. Used on any uncertainty. */
-const SAFE_IN_TRIAL = Object.freeze({
-  isInTrial: true,
-  isExpired: false,
-  daysLeft: 30,
-  trialStartsAt: null,
-  trialEndsAt: null,
-  isAdmin: false,
-});
-
-function parseEnvList(envVar: string | undefined): string[] {
-  if (!envVar) return [];
-  return envVar
-    .split(",")
-    .map((s) => s.trim().toLowerCase())
-    .filter(Boolean);
-}
-
-/** Returns true if the user ID or email matches any configured admin list. */
-function isAdminByEnv(userId: string, userEmail: string | null | undefined): boolean {
-  const adminIds = parseEnvList(process.env.ADMIN_USER_IDS);
-  if (adminIds.length && adminIds.includes(userId.toLowerCase())) return true;
-  if (userEmail) {
-    const adminEmails = parseEnvList(process.env.ADMIN_EMAILS);
-    if (adminEmails.length && adminEmails.includes(userEmail.toLowerCase())) return true;
-  }
-  return false;
-}
 
 // ─── Trial status ─────────────────────────────────────────────────────────────
 
 export interface TrialStatus {
+  /** User is within an active trial/beta window */
   isInTrial: boolean;
+  /** Trial has ended (only ever true when betaFreeAccess = false) */
   isExpired: boolean;
+  /** Whole days remaining — 999 for beta/admin/paid */
   daysLeft: number;
   trialStartsAt: Date | null;
   trialEndsAt: Date | null;
+  /** true for admin accounts */
   isAdmin: boolean;
+  /** true when betaFreeAccess mode is active — product is free for all users */
+  isBeta: boolean;
+}
+
+/** Safe default — full access, never expired. Used on any error or beta mode. */
+const FULL_ACCESS = Object.freeze({
+  isInTrial: true,
+  isExpired: false,
+  daysLeft: 999,
+  trialStartsAt: null,
+  trialEndsAt: null,
+  isAdmin: false,
+  isBeta: true,
+});
+
+function parseEnvList(v: string | undefined): string[] {
+  return (v ?? "").split(",").map((s) => s.trim().toLowerCase()).filter(Boolean);
+}
+
+function isAdminByEnv(userId: string, userEmail: string | null | undefined): boolean {
+  const ids = parseEnvList(process.env.ADMIN_USER_IDS);
+  if (ids.length && ids.includes(userId.toLowerCase())) return true;
+  if (userEmail) {
+    const emails = parseEnvList(process.env.ADMIN_EMAILS);
+    if (emails.length && emails.includes(userEmail.toLowerCase())) return true;
+  }
+  return false;
 }
 
 /**
- * Returns the server-authoritative trial status for the current user.
+ * Returns the server-authoritative access status for the current user.
  *
- * Never throws. Returns SAFE_IN_TRIAL on any error or missing data.
- * Only returns isExpired=true when trial_ends_at is explicitly in the past.
+ * During beta (PRODUCT_ACCESS.betaFreeAccess = true):
+ *   Returns full access immediately after confirming auth. No DB trial queries.
+ *
+ * After beta (betaFreeAccess = false):
+ *   Evaluates trial_ends_at and active subscriptions.
+ *
+ * Never throws. Returns FULL_ACCESS on any error.
  */
 export async function getTrialStatus(): Promise<TrialStatus> {
   try {
@@ -82,12 +98,11 @@ export async function getTrialStatus(): Promise<TrialStatus> {
       const { data } = await supabase.auth.getUser();
       user = data.user ?? null;
     } catch {
-      // Auth lookup failed — cannot determine trial state
-      return { ...SAFE_IN_TRIAL };
+      return { ...FULL_ACCESS };
     }
 
     if (!user) {
-      // Not authenticated — caller should redirect, not block on trial logic
+      // Not authenticated — return a clearly "no access" state so callers can redirect
       return {
         isInTrial: false,
         isExpired: false,
@@ -95,22 +110,22 @@ export async function getTrialStatus(): Promise<TrialStatus> {
         trialStartsAt: null,
         trialEndsAt: null,
         isAdmin: false,
+        isBeta: PRODUCT_ACCESS.betaFreeAccess,
       };
     }
 
-    // ── Layer 1: env-var admin bypass (no DB required) ──────────────────────
+    // ── Admin bypass (env-var — no DB required) ──────────────────────────────
     if (isAdminByEnv(user.id, user.email)) {
-      return {
-        isInTrial: true,
-        isExpired: false,
-        daysLeft: 999,
-        trialStartsAt: null,
-        trialEndsAt: null,
-        isAdmin: true,
-      };
+      return { ...FULL_ACCESS, isAdmin: true };
     }
 
-    // ── Layer 2: profile query (account_type + trial dates) ─────────────────
+    // ── BETA MODE: all authenticated users get full access ───────────────────
+    if (PRODUCT_ACCESS.betaFreeAccess) {
+      return { ...FULL_ACCESS, isBeta: true };
+    }
+
+    // ── NORMAL MODE (betaFreeAccess = false) — evaluate trial/subscription ──
+
     let profile: {
       account_type: string | null;
       trial_starts_at: string | null;
@@ -118,7 +133,6 @@ export async function getTrialStatus(): Promise<TrialStatus> {
     } | null = null;
 
     try {
-      // Select only account_type first (this column definitely exists)
       const { data: p } = await supabase
         .from("profiles")
         .select("account_type, trial_starts_at, trial_ends_at")
@@ -126,23 +140,14 @@ export async function getTrialStatus(): Promise<TrialStatus> {
         .maybeSingle();
       profile = p;
     } catch {
-      // Column may not exist yet (migration 010 not applied) — fail open
-      console.warn("[trial] Profile query error — defaulting to safe trial state");
+      console.warn("[trial] Profile query failed — defaulting to safe access");
+      return { ...FULL_ACCESS, isBeta: false };
     }
 
-    // ── Layer 3: DB account_type admin bypass ────────────────────────────────
     if (profile?.account_type === "admin") {
-      return {
-        isInTrial: true,
-        isExpired: false,
-        daysLeft: 999,
-        trialStartsAt: null,
-        trialEndsAt: null,
-        isAdmin: true,
-      };
+      return { ...FULL_ACCESS, isAdmin: true, isBeta: false };
     }
 
-    // ── Check for active paid subscription ───────────────────────────────────
     try {
       const { data: activeSub } = await supabase
         .from("subscriptions")
@@ -150,64 +155,48 @@ export async function getTrialStatus(): Promise<TrialStatus> {
         .in("status", ["active", "trialing"])
         .limit(1)
         .maybeSingle();
-
       if (activeSub) {
-        // Paid/trialing subscriber — full access, no expiry
         return {
           isInTrial: false,
           isExpired: false,
           daysLeft: 999,
-          trialStartsAt: profile?.trial_starts_at
-            ? new Date(profile.trial_starts_at)
-            : null,
-          trialEndsAt: profile?.trial_ends_at
-            ? new Date(profile.trial_ends_at)
-            : null,
+          trialStartsAt: profile?.trial_starts_at ? new Date(profile.trial_starts_at) : null,
+          trialEndsAt: profile?.trial_ends_at ? new Date(profile.trial_ends_at) : null,
           isAdmin: false,
+          isBeta: false,
         };
       }
     } catch {
-      // Subscription query failed — don't penalize user, continue
+      // Subscription query failed — don't penalize user
     }
 
-    // ── Trial date evaluation ────────────────────────────────────────────────
-
-    // If profile is null or trial_ends_at is missing → columns may not exist yet
-    // OR user hasn't been given trial dates yet. Either way: safe in trial.
-    if (!profile || !profile.trial_ends_at) {
-      return { ...SAFE_IN_TRIAL };
+    if (!profile?.trial_ends_at) {
+      return { ...FULL_ACCESS, isBeta: false };
     }
 
     let trialEndsAt: Date;
     try {
       trialEndsAt = new Date(profile.trial_ends_at);
-      if (isNaN(trialEndsAt.getTime())) {
-        // Unparseable date — fail open
-        console.warn("[trial] Unparseable trial_ends_at, defaulting to safe state");
-        return { ...SAFE_IN_TRIAL };
-      }
+      if (isNaN(trialEndsAt.getTime())) return { ...FULL_ACCESS, isBeta: false };
     } catch {
-      return { ...SAFE_IN_TRIAL };
+      return { ...FULL_ACCESS, isBeta: false };
     }
 
-    const trialStartsAt = profile.trial_starts_at
-      ? new Date(profile.trial_starts_at)
-      : null;
+    const trialStartsAt = profile.trial_starts_at ? new Date(profile.trial_starts_at) : null;
     const msLeft = trialEndsAt.getTime() - Date.now();
     const daysLeft = Math.max(0, Math.floor(msLeft / 86_400_000));
-    const isInTrial = msLeft > 0;
 
     return {
-      isInTrial,
-      isExpired: !isInTrial,
+      isInTrial: msLeft > 0,
+      isExpired: msLeft <= 0,
       daysLeft,
       trialStartsAt,
       trialEndsAt,
       isAdmin: false,
+      isBeta: false,
     };
   } catch (err) {
-    // Catch-all: something unexpected failed — never lock the user out
-    console.error("[trial] getTrialStatus unexpected error, safe state returned:", err);
-    return { ...SAFE_IN_TRIAL };
+    console.error("[trial] getTrialStatus unexpected error, returning safe access:", err);
+    return { ...FULL_ACCESS };
   }
 }

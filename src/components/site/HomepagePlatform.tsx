@@ -529,7 +529,7 @@ function HeroSection() {
 
         {/* Trust signals */}
         <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-[12px] text-[#A3A3A0] mb-8">
-          {["No credit card required", "Set up in minutes", "Built for businesses and agencies"].map((s) => (
+          {["Free during beta", "No credit card required", "Built for businesses and agencies"].map((s) => (
             <span key={s} className="inline-flex items-center gap-1.5">
               <Check size={12} className="text-[#777773] shrink-0" aria-hidden="true" />
               {s}
@@ -1804,7 +1804,7 @@ function PricingSection() {
         <Eyebrow>Pricing</Eyebrow>
         <H2 className="mb-4">Pick the level of help you need.</H2>
         <Body className="max-w-xl mx-auto">
-          Start with a free visibility score. Upgrade for continuous monitoring, competitor tracking, opportunities, and the Direct Agent.
+              Start free during beta. Track your visibility across AI search and Google, monitor competitors, uncover opportunities, and use the Direct Agent.
         </Body>
       </div>
 
