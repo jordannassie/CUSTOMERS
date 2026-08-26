@@ -134,33 +134,45 @@ export default async function VisibilityPage() {
             </Card>
           )}
 
-          {/* Provider breakdown */}
+          {/* Provider breakdown — table style */}
           {providerMap.size > 0 && (
             <Card>
               <h2 className="font-bold text-[#171717] text-[15px] mb-4">Platform breakdown</h2>
-              <div className="flex flex-col gap-3">
-                {Array.from(providerMap.entries()).map(([provider, { won: w, total: t }]) => {
-                  const pct = Math.round((w / t) * 100);
-                  const color = PROVIDER_COLORS[provider] ?? "#94A3B8";
-                  const label = PROVIDER_LABELS[provider] ?? provider;
-                  return (
-                    <div key={provider} className="flex items-center gap-4">
-                      <span className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-[#171717] w-32 shrink-0">
-                        <PlatformIcon platform={label} size={15} />
-                        {label}
-                      </span>
-                      <div className="flex-1 h-2.5 bg-[#F0F0EC] rounded-full overflow-hidden">
-                        <div
-                          className="h-full rounded-full transition-all duration-500"
-                          style={{ width: `${pct}%`, backgroundColor: color }}
-                        />
+              <div className="border border-[#E5E5E1] rounded-xl overflow-hidden">
+                {/* Header */}
+                <div className="grid items-center px-5 py-2.5 border-b border-[#EEEEEA] bg-[#FAFAF8]"
+                  style={{ gridTemplateColumns: "180px 1fr 80px 60px" }}>
+                  {["Platform", "Visibility", "Won / Total", "Rate"].map(h => (
+                    <span key={h} className="text-[10px] font-semibold text-[#A3A3A0] uppercase tracking-wider">{h}</span>
+                  ))}
+                </div>
+                {/* Rows */}
+                <div className="divide-y divide-[#EEEEEA]">
+                  {Array.from(providerMap.entries()).map(([provider, { won: w, total: t }]) => {
+                    const pct = Math.round((w / t) * 100);
+                    const color = PROVIDER_COLORS[provider] ?? "#94A3B8";
+                    const label = PROVIDER_LABELS[provider] ?? provider;
+                    return (
+                      <div key={provider}
+                        className="grid items-center px-5 py-3 hover:bg-[#F5F5F2] transition-colors"
+                        style={{ gridTemplateColumns: "180px 1fr 80px 60px" }}>
+                        <span className="inline-flex items-center gap-2 text-[13px] font-semibold text-[#171717]">
+                          <PlatformIcon platform={label} size={15} />
+                          {label}
+                        </span>
+                        <div className="flex items-center gap-3">
+                          <div className="flex-1 h-1.5 bg-[#F0F0EC] rounded-full overflow-hidden max-w-[200px]">
+                            <div className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: color }} />
+                          </div>
+                        </div>
+                        <span className="text-[12px] text-[#777773] tabular-nums">{w} / {t}</span>
+                        <span className="text-[13px] font-bold tabular-nums" style={{ color: pct >= 50 ? "#15803D" : pct >= 25 ? "#B45309" : "#DC2626" }}>
+                          {pct}%
+                        </span>
                       </div>
-                      <span className="text-[13px] font-bold text-[#171717] w-16 text-right shrink-0 tabular-nums">
-                        {w}/{t} — {pct}%
-                      </span>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
+                </div>
               </div>
             </Card>
           )}
@@ -178,7 +190,7 @@ export default async function VisibilityPage() {
                     <th className="text-right text-[10px] font-semibold text-[#A3A3A0] uppercase tracking-wider px-5 py-2.5 hidden sm:table-cell">Citations</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-50">
+                <tbody className="divide-y divide-[#EEEEEA]">
                   {results.map((r) => (
                     <tr key={r.id} className="hover:bg-[#F5F5F2] transition-colors">
                       <td className="px-5 py-3 max-w-[280px]">

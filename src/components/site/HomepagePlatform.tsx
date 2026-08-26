@@ -151,145 +151,304 @@ const AI_PLATFORMS = [
   { name: "Google AI", color: "#EAB308" },
 ];
 
-const COMPETITOR_DATA = [
-  { name: "Your Business", score: 47, isYou: true },
-  { name: "Monday.com", score: 65, isYou: false },
-  { name: "Competitor B", score: 62, isYou: false },
-  { name: "Competitor C", score: 34, isYou: false },
+// Demo data for hero dashboard preview
+const DEMO_SERIES = [
+  { name: "Bike Shop", color: "#171717", w: 2, data: [34,38,42,45,50,54,58,55,61,65] },
+  { name: "Trek Store", color: "#3B82F6", w: 1.5, data: [65,63,68,70,72,69,74,76,73,78] },
+  { name: "REI", color: "#EF4444", w: 1.5, data: [52,55,57,60,58,62,60,64,62,66] },
+  { name: "Giant Bikes", color: "#F59E0B", w: 1.5, data: [40,38,42,44,45,48,46,50,48,52] },
+  { name: "Specialized", color: "#8B5CF6", w: 1.5, data: [28,30,28,32,34,32,36,38,36,40] },
 ];
+const DEMO_COMPETITORS = [
+  { rank:1, name:"Trek Store",   color:"#3B82F6", vis:"78%", delta:"+0.3", up:true,  isYou:false },
+  { rank:2, name:"REI",          color:"#EF4444", vis:"66%", delta:"-0.1", up:false, isYou:false },
+  { rank:3, name:"Bike Shop",    color:"#171717", vis:"65%", delta:"+0.3", up:true,  isYou:true  },
+  { rank:4, name:"Giant Bikes",  color:"#F59E0B", vis:"52%", delta:"-0.2", up:false, isYou:false },
+  { rank:5, name:"Specialized",  color:"#8B5CF6", vis:"40%", delta:"+0.4", up:true,  isYou:false },
+];
+const DEMO_DOMAINS = [
+  { domain:"reddit.com",    type:"UGC",        used:"32%", avg:"3.2" },
+  { domain:"bikeshop.com",  type:"You",        used:"43%", avg:"5.2" },
+  { domain:"wikipedia.org", type:"Reference",  used:"31%", avg:"1.4" },
+  { domain:"bikeradar.com", type:"Editorial",  used:"45%", avg:"2.4" },
+];
+const TYPE_BADGE: Record<string,{bg:string;text:string}> = {
+  UGC:       {bg:"#EFF6FF",text:"#1D4ED8"},
+  Editorial: {bg:"#FFF7ED",text:"#C2410C"},
+  Reference: {bg:"#F5F3FF",text:"#6D28D9"},
+  Competitor:{bg:"#FEF2F2",text:"#DC2626"},
+  You:       {bg:"#F0FDF4",text:"#15803D"},
+};
+const CHART_W = 400, CHART_H = 90;
+const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct"];
+
+function smoothPath(data: number[], w: number, h: number): string {
+  const pts: [number,number][] = data.map((v,i) => [
+    (i/(data.length-1))*w, h-(v/100)*h,
+  ]);
+  let d = `M ${pts[0][0].toFixed(1)} ${pts[0][1].toFixed(1)}`;
+  for (let i=1; i<pts.length; i++) {
+    const p = pts[i-1], c = pts[i];
+    const cpx = ((p[0]+c[0])/2).toFixed(1);
+    d += ` C ${cpx} ${p[1].toFixed(1)} ${cpx} ${c[1].toFixed(1)} ${c[0].toFixed(1)} ${c[1].toFixed(1)}`;
+  }
+  return d;
+}
 
 function HeroDashboardPreview() {
+  const tooltipAt = 6; // index where the tooltip shows
+  const tooltipX = (tooltipAt/(DEMO_SERIES[0].data.length-1))*CHART_W;
+
   return (
-    <div className="bg-white rounded-2xl border border-[#E5E5E1] overflow-hidden w-full" style={{ boxShadow: "0 4px 40px rgba(0,0,0,0.08), 0 1px 4px rgba(0,0,0,0.04)" }}>
-      <div className="flex" style={{ height: 380 }}>
-        {/* Sidebar */}
-        <div className="w-[130px] shrink-0 bg-white border-r border-[#EEEEEA] flex flex-col py-3">
+    <div className="bg-white rounded-2xl border border-[#E5E5E1] overflow-hidden w-full"
+      style={{ boxShadow: "0 4px 40px rgba(0,0,0,0.08), 0 1px 4px rgba(0,0,0,0.04)" }}>
+
+      {/* Top filter bar */}
+      <div className="flex items-center gap-1.5 px-4 py-2 border-b border-[#EEEEEA] bg-white">
+        <div className="flex items-center gap-1 bg-[#F5F5F2] border border-[#E5E5E1] rounded-md px-2 py-1">
+          <div className="w-2.5 h-2.5 rounded-sm bg-amber-500 shrink-0" />
+          <span className="text-[9px] font-semibold text-[#171717]">Bike Shop</span>
+        </div>
+        {["Last 7 days","All tags","All Models"].map(l => (
+          <span key={l} className="flex items-center gap-1 border border-[#E5E5E1] rounded-md px-2 py-1 text-[9px] text-[#777773]">
+            <span className="w-1.5 h-1.5 rounded-full border border-[#A3A3A0]" />
+            {l}
+          </span>
+        ))}
+        <div className="ml-auto flex items-center gap-3 text-[8px] text-[#777773]">
+          <span>Visibility: <strong className="text-[#171717]">3/14</strong> <span className="text-[#EF4444]">↓</span></span>
+          <span>Sentiment: <strong className="text-[#171717]">2/14</strong> <span className="text-[#10B981]">↑</span></span>
+          <span>Position: <strong className="text-[#171717]">5/14</strong> <span className="text-[#10B981]">↑</span></span>
+        </div>
+      </div>
+
+      <div className="flex overflow-hidden" style={{ height: 420 }}>
+        {/* Left sidebar */}
+        <div className="w-[110px] shrink-0 bg-white border-r border-[#EEEEEA] flex flex-col py-3">
           <div className="px-3 mb-4">
-            <span className="text-[10px] font-bold text-[#171717] leading-none">
+            <span className="text-[9px] font-bold text-[#171717] leading-none tracking-tight">
               Customers<span className="text-[#3B82F6]">.Direct</span>
             </span>
           </div>
-          <div className="px-2 mb-3">
-            <p className="text-[7px] font-semibold uppercase tracking-wider text-[#A3A3A0] mb-1.5 px-1">Business</p>
-            <div className="flex items-center gap-1.5 bg-[#F5F5F2] border border-[#E5E5E1] rounded-md px-2 py-1.5">
-              <div className="w-3 h-3 rounded bg-amber-500 shrink-0" />
-              <span className="text-[9px] font-semibold text-[#171717] truncate">Bike Shop</span>
+          <div className="px-2 mb-1">
+            <p className="text-[7px] font-semibold uppercase tracking-wider text-[#A3A3A0] mb-1 px-1">Quick Actions</p>
+            <div className="flex items-center gap-1 px-2 py-1.5 rounded-md text-[8px] text-[#A3A3A0]">
+              <Target size={8} aria-hidden="true" />
+              Find anything…
             </div>
           </div>
-          <nav className="flex flex-col gap-0.5 px-2">
+          <p className="text-[7px] font-semibold uppercase tracking-wider text-[#A3A3A0] px-3 mb-1 mt-2">Pages</p>
+          <nav className="flex flex-col gap-px px-2">
             {[
-              { label: "Dashboard", icon: LayoutDashboard, active: true },
-              { label: "AI Insights", icon: BarChart3, active: false },
-              { label: "Prompts", icon: MessagesSquare, active: false },
-              { label: "Competitors", icon: Users, active: false },
-              { label: "Opportunities", icon: Lightbulb, active: false },
+              { label:"Overview",     icon:LayoutDashboard,  active:true  },
+              { label:"Prompts",      icon:MessagesSquare,   active:false },
+              { label:"Sources",      icon:ExternalLink,     active:false },
+              { label:"Models",       icon:BarChart3,        active:false },
+              { label:"Competitors",  icon:Users,            active:false },
+              { label:"Settings",     icon:RefreshCw,        active:false },
             ].map(({ label, icon: Icon, active }) => (
-              <div
-                key={label}
-                className={`flex items-center gap-1.5 px-2 py-1.5 rounded-md text-[9px] font-medium ${
-                  active
-                    ? "bg-[#F0F0EC] text-[#171717]"
-                    : "text-[#A3A3A0]"
-                }`}
-              >
-                <Icon size={9} aria-hidden="true" />
+              <div key={label}
+                className={`flex items-center gap-1.5 px-2 py-1.5 rounded-md text-[8px] font-medium ${
+                  active ? "bg-[#F0F0EC] text-[#171717]" : "text-[#A3A3A0]"
+                }`}>
+                <Icon size={8} aria-hidden="true" />
                 {label}
               </div>
             ))}
           </nav>
         </div>
 
-        {/* Main content */}
-        <div className="flex-1 min-w-0 bg-[#FAFAF8] p-3.5 flex flex-col gap-2.5 overflow-hidden">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-[11px] font-bold text-[#171717]">Dashboard</p>
-              <p className="text-[8px] text-[#A3A3A0]">AI search visibility overview</p>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <span className="text-[8px] text-[#777773] bg-white border border-[#E5E5E1] px-2 py-1 rounded-md">Last 7 days</span>
-              <button className="flex items-center gap-1 bg-[#171717] text-white text-[8px] font-semibold px-2.5 py-1.5 rounded-md">
-                <RefreshCw size={7} aria-hidden="true" />
-                Run Scan
-              </button>
-            </div>
+        {/* Centre main area */}
+        <div className="flex-1 min-w-0 flex flex-col overflow-hidden border-r border-[#EEEEEA]">
+          {/* Status bar */}
+          <div className="flex items-center justify-between px-4 py-1.5 border-b border-[#EEEEEA] bg-white">
+            <span className="text-[8px] text-[#777773]">
+              <span className="text-[#171717] font-semibold">Overview</span>
+              &nbsp;·&nbsp;Your visibility is up 5.2% this month
+            </span>
           </div>
 
-          {/* Metric cards */}
-          <div className="grid grid-cols-3 gap-2">
-            {[
-              { label: "DIRECT SCORE", value: "82", sub: "/ 100", trend: "+12", up: true },
-              { label: "PROMPTS WON", value: "10/12", sub: "83%", trend: "+3", up: true },
-              { label: "CITATION RATE", value: "64%", sub: "vs 48% avg", trend: "+18%", up: true },
-            ].map(({ label, value, sub, trend, up }) => (
-              <div key={label} className="bg-white rounded-lg border border-[#E5E5E1] p-2.5">
-                <p className="text-[7px] font-semibold text-[#A3A3A0] uppercase tracking-wider mb-1">{label}</p>
-                <div className="flex items-baseline gap-1">
-                  <p className="text-[15px] font-bold text-[#171717] leading-none">{value}</p>
-                  <p className="text-[8px] text-[#A3A3A0]">{sub}</p>
-                </div>
-                <span className={`text-[8px] font-semibold ${up ? "text-[#166534]" : "text-[#991B1B]"}`}>
-                  {up ? "↑" : "↓"} {trend}
-                </span>
-              </div>
+          {/* Tab row */}
+          <div className="flex items-center gap-0 px-4 border-b border-[#EEEEEA] bg-white">
+            {["Visibility","Sentiment","Position"].map((t,i) => (
+              <span key={t}
+                className={`px-3 py-2 text-[9px] font-semibold border-b-[1.5px] ${
+                  i===0
+                    ? "border-[#171717] text-[#171717]"
+                    : "border-transparent text-[#A3A3A0]"
+                }`}>
+                {t}
+              </span>
             ))}
           </div>
 
-          {/* Chart + Competitors */}
-          <div className="grid grid-cols-2 gap-2 flex-1 min-h-0">
-            <div className="bg-white rounded-lg border border-[#E5E5E1] p-2.5">
-              <div className="flex items-center justify-between mb-1.5">
-                <p className="text-[9px] font-semibold text-[#171717]">Visibility trend</p>
-                <span className="text-[7px] text-[#A3A3A0]">10 scans</span>
-              </div>
-              <MiniChart h={72} />
-            </div>
-            <div className="bg-white rounded-lg border border-[#E5E5E1] p-2.5">
-              <p className="text-[9px] font-semibold text-[#171717] mb-2">Competitor ranking</p>
-              <div className="flex flex-col gap-1.5">
-                {COMPETITOR_DATA.map(({ name, score, isYou }) => (
-                  <div key={name} className="flex items-center gap-1.5">
-                    <span className={`text-[8px] truncate w-[60px] shrink-0 ${isYou ? "font-bold text-[#171717]" : "text-[#777773]"}`}>{name}</span>
-                    <div className="flex-1 h-1.5 bg-[#F0F0EC] rounded-full overflow-hidden">
-                      <div
-                        className="h-full rounded-full"
-                        style={{ width: `${score}%`, backgroundColor: isYou ? "#171717" : "#D4D4CF" }}
-                      />
-                    </div>
-                    <span className={`text-[8px] font-semibold w-5 text-right tabular-nums ${isYou ? "text-[#171717]" : "text-[#A3A3A0]"}`}>{score}</span>
+          {/* Chart */}
+          <div className="relative px-4 pt-3 pb-0 bg-white">
+            <svg
+              viewBox={`0 0 ${CHART_W} ${CHART_H+16}`}
+              className="w-full overflow-visible"
+              aria-hidden="true"
+            >
+              {/* Grid */}
+              {[0,25,50,75,100].map(v => {
+                const y = CHART_H-(v/100)*CHART_H;
+                return <line key={v} x1="0" y1={y} x2={CHART_W} y2={y} stroke="#EEEEEA" strokeWidth="0.6" />;
+              })}
+              {/* Lines */}
+              {DEMO_SERIES.map(s => (
+                <path key={s.name} d={smoothPath(s.data, CHART_W, CHART_H)}
+                  fill="none" stroke={s.color} strokeWidth={s.w}
+                  strokeLinecap="round" strokeLinejoin="round" />
+              ))}
+              {/* Tooltip vertical line */}
+              <line x1={tooltipX} y1="0" x2={tooltipX} y2={CHART_H}
+                stroke="#D4D4CF" strokeWidth="1" strokeDasharray="3 2" />
+              {/* Endpoint dots */}
+              {DEMO_SERIES.map(s => {
+                const v = s.data[s.data.length-1];
+                const cx = CHART_W;
+                const cy = CHART_H-(v/100)*CHART_H;
+                return (
+                  <circle key={s.name} cx={cx} cy={cy} r="3"
+                    fill="white" stroke={s.color} strokeWidth="1.5" />
+                );
+              })}
+              {/* Tooltip dots at tooltipAt */}
+              {DEMO_SERIES.map(s => {
+                const v = s.data[tooltipAt];
+                const cy = CHART_H-(v/100)*CHART_H;
+                return (
+                  <circle key={s.name+"t"} cx={tooltipX} cy={cy} r="2.5"
+                    fill="white" stroke={s.color} strokeWidth="1.5" />
+                );
+              })}
+              {/* Month labels */}
+              {[0,2,4,6,8].map(i => (
+                <text key={i} x={(i/(DEMO_SERIES[0].data.length-1))*CHART_W}
+                  y={CHART_H+13} textAnchor="middle" fontSize="7.5" fill="#A3A3A0">
+                  {MONTHS[i]}
+                </text>
+              ))}
+            </svg>
+            {/* Tooltip overlay */}
+            <div className="absolute top-3 pointer-events-none"
+              style={{ left: `calc(${(tooltipX/CHART_W)*100}% + 6px)` }}>
+              <div className="bg-[#171717] text-white rounded-xl px-3 py-2 shadow-xl whitespace-nowrap">
+                <p className="text-[7px] font-semibold text-white/50 mb-1.5">Jul 2025</p>
+                {DEMO_SERIES.map(s => (
+                  <div key={s.name} className="flex items-center gap-2 mb-1 last:mb-0">
+                    <span className="w-2 h-2 rounded-full shrink-0" style={{backgroundColor:s.color}} />
+                    <span className="text-[8px] text-white/80 flex-1 min-w-[60px]">{s.name}</span>
+                    <span className="text-[8px] font-bold text-white tabular-nums">+{s.data[tooltipAt]}%</span>
                   </div>
                 ))}
               </div>
             </div>
           </div>
 
-          {/* Platform bar */}
-          <div className="bg-white rounded-lg border border-[#E5E5E1] p-2.5">
-            <p className="text-[8px] font-semibold text-[#171717] mb-1.5">Platform visibility breakdown</p>
-            <div className="flex gap-2">
-              {[
-                { name: "ChatGPT", val: 82, color: "#10B981" },
-                { name: "Claude", val: 74, color: "#8B5CF6" },
-                { name: "Perplexity", val: 68, color: "#3B82F6" },
-                { name: "Gemini", val: 51, color: "#EF4444" },
-              ].map(({ name, val, color }) => (
-                <div key={name} className="flex-1">
-                  <div className="flex items-center justify-between mb-0.5">
-                    <PlatformIcon platform={name} size={8} />
-                    <span className="text-[7px] font-semibold" style={{ color }}>{val}</span>
-                  </div>
-                  <div className="h-1 bg-[#F0F0EC] rounded-full overflow-hidden">
-                    <div className="h-full rounded-full" style={{ width: `${val}%`, backgroundColor: color }} />
-                  </div>
-                </div>
+          {/* Domain table */}
+          <div className="flex-1 overflow-hidden bg-[#FAFAF8] border-t border-[#EEEEEA]">
+            {/* Tab bar */}
+            <div className="flex items-center gap-0 px-4 bg-white border-b border-[#EEEEEA]">
+              {["Domains","URLs"].map((t,i) => (
+                <span key={t} className={`px-3 py-1.5 text-[9px] font-semibold border-b-[1.5px] ${
+                  i===0 ? "border-[#171717] text-[#171717]" : "border-transparent text-[#A3A3A0]"
+                }`}>{t}</span>
               ))}
             </div>
+            {/* Header */}
+            <div className="grid px-4 py-1.5 border-b border-[#EEEEEA] bg-white"
+              style={{ gridTemplateColumns:"20px 1fr 80px 50px 70px" }}>
+              {["#","Domain","Type","Used","Avg. Citations"].map(h => (
+                <span key={h} className="text-[7px] font-semibold text-[#A3A3A0] uppercase tracking-wider">{h}</span>
+              ))}
+            </div>
+            {/* Rows */}
+            {DEMO_DOMAINS.map(({ domain, type, used, avg }, i) => {
+              const badge = TYPE_BADGE[type] ?? {bg:"#F0F0EC",text:"#777773"};
+              return (
+                <div key={domain}
+                  className={`grid items-center px-4 py-2 border-b border-[#EEEEEA] ${
+                    type==="You" ? "bg-[#F0FDF4]/60" : i%2===0 ? "bg-white" : "bg-[#FAFAF8]"
+                  }`}
+                  style={{ gridTemplateColumns:"20px 1fr 80px 50px 70px" }}>
+                  <span className="text-[8px] text-[#A3A3A0]">{i+1}</span>
+                  <span className="flex items-center gap-1.5">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={`https://www.google.com/s2/favicons?domain=${domain}&sz=16`}
+                      width={12} height={12} alt="" aria-hidden="true"
+                      className="rounded-sm shrink-0" />
+                    <span className="text-[8px] font-medium text-[#171717] truncate">{domain}</span>
+                  </span>
+                  <span className="text-[7px] font-semibold rounded-full px-1.5 py-px w-fit"
+                    style={{background:badge.bg, color:badge.text}}>
+                    {type}
+                  </span>
+                  <span className="text-[8px] font-semibold text-[#777773]">{used}</span>
+                  <span className="text-[8px] font-semibold text-[#777773]">{avg}</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Right competitors panel */}
+        <div className="w-[185px] shrink-0 bg-white flex flex-col overflow-hidden">
+          <div className="px-4 pt-3 pb-2 border-b border-[#EEEEEA]">
+            <p className="text-[9px] font-bold text-[#171717]">Your competitors</p>
+            <p className="text-[7px] text-[#A3A3A0]">Compare with AI results</p>
+          </div>
+          {/* Header row */}
+          <div className="grid px-3 py-1 border-b border-[#EEEEEA]"
+            style={{ gridTemplateColumns:"14px 1fr 36px 28px" }}>
+            {["#","Brand","Vis.","+/-"].map(h => (
+              <span key={h} className="text-[6.5px] font-semibold text-[#A3A3A0] uppercase tracking-wider">{h}</span>
+            ))}
+          </div>
+          {/* Competitor rows */}
+          {DEMO_COMPETITORS.map(({ rank, name, color, vis, delta, up, isYou }) => (
+            <div key={name}
+              className={`grid items-center px-3 py-2 border-b border-[#EEEEEA] ${isYou ? "bg-[#F0F0EC]/50" : ""}`}
+              style={{ gridTemplateColumns:"14px 1fr 36px 28px" }}>
+              <span className="text-[7px] text-[#A3A3A0] font-semibold">{rank}</span>
+              <span className="flex items-center gap-1.5 min-w-0">
+                <span className="w-3.5 h-3.5 rounded-full flex items-center justify-center text-white font-bold shrink-0"
+                  style={{ background: color, fontSize: 5.5 }}>
+                  {name[0]}
+                </span>
+                <span className={`text-[8px] font-semibold truncate ${isYou ? "text-[#171717]" : "text-[#777773]"}`}>
+                  {name}{isYou ? " ★" : ""}
+                </span>
+              </span>
+              <span className="text-[7.5px] font-bold text-[#171717] tabular-nums">{vis}</span>
+              <span className={`text-[7px] font-semibold tabular-nums ${up ? "text-[#15803D]" : "text-[#DC2626]"}`}>
+                {up?"↑":"↓"}{delta.replace(/[+-]/,"")}
+              </span>
+            </div>
+          ))}
+          {/* Domains by type mini section */}
+          <div className="px-3 pt-3">
+            <p className="text-[8px] font-bold text-[#171717] mb-1">Domains by Type</p>
+            <p className="text-[7px] text-[#A3A3A0] mb-2">Most cited, by category</p>
+            {[
+              { label:"UGC",      pct:32, color:"#3B82F6" },
+              { label:"Editorial",pct:28, color:"#F59E0B" },
+              { label:"Reference",pct:21, color:"#8B5CF6" },
+              { label:"You",      pct:12, color:"#10B981" },
+              { label:"Other",    pct:7,  color:"#D4D4CF" },
+            ].map(({ label, pct, color }) => (
+              <div key={label} className="flex items-center gap-2 mb-1.5">
+                <span className="w-2 h-2 rounded-sm shrink-0" style={{ background: color }} />
+                <span className="text-[7.5px] text-[#777773] flex-1">{label}</span>
+                <span className="text-[7.5px] font-bold text-[#171717] tabular-nums">{pct}%</span>
+              </div>
+            ))}
           </div>
         </div>
       </div>
 
       {/* Soft bottom fade */}
-      <div className="h-8 bg-gradient-to-t from-white/60 to-transparent -mt-8 relative pointer-events-none" />
+      <div className="h-10 bg-gradient-to-t from-white/80 to-transparent -mt-10 relative pointer-events-none" />
     </div>
   );
 }

@@ -1,11 +1,12 @@
 import Link from "next/link";
-import { Target, Quote, Trophy, Users, AlertCircle, ArrowRight, TrendingUp } from "lucide-react";
+import { Target, Quote, Trophy, Users, AlertCircle, ArrowRight } from "lucide-react";
 import OnboardingWizard from "@/components/geo/OnboardingWizard";
 import DashboardShell from "@/components/geo/dashboard/DashboardShell";
 import ScoreTrendChart from "@/components/geo/dashboard/ScoreTrendChart";
 import RunScanButton from "@/components/geo/dashboard/RunScanButton";
 import PromptPerformanceTable from "@/components/geo/dashboard/PromptPerformanceTable";
 import { MetricCard, EmptyState, ImpactBadge, Card } from "@/components/geo/dashboard/ui";
+import { DomainFavicon } from "@/components/DomainFavicon";
 import {
   getPrimaryBusiness,
   getLatestScore,
@@ -216,17 +217,20 @@ export default async function DashboardPage() {
             {topSources.length === 0 ? (
               <p className="text-[13px] text-[#A3A3A0]">No citation data yet.</p>
             ) : (
-              <div className="flex flex-col gap-2">
+              <div className="flex flex-col divide-y divide-[#EEEEEA]">
                 {topSources.map(([domain, count]) => {
-                  const pct = results.length > 0 ? Math.round((count / results.length) * 100) : 0;
+                  const total = topSources.reduce((s, [, c]) => s + c, 0);
+                  const pct = total > 0 ? Math.round((count / total) * 100) : 0;
                   return (
-                    <div key={domain} className="flex items-center gap-3">
-                      <div className="w-5 h-5 rounded bg-[#F5F5F2] flex items-center justify-center shrink-0">
-                        <TrendingUp size={10} className="text-[#A3A3A0]" aria-hidden="true" />
+                    <div key={domain} className="flex items-center gap-2.5 py-2">
+                      <DomainFavicon domain={domain} size={14} />
+                      <span className="text-[12px] text-[#171717] truncate flex-1">{domain}</span>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <div className="w-12 h-1 bg-[#F0F0EC] rounded-full overflow-hidden">
+                          <div className="h-full rounded-full bg-[#171717]" style={{ width: `${pct}%` }} />
+                        </div>
+                        <span className="text-[11px] font-semibold text-[#171717] tabular-nums w-7 text-right">{count}×</span>
                       </div>
-                      <span className="text-[13px] text-[#171717] truncate flex-1">{domain}</span>
-                      <span className="text-[13px] font-semibold text-[#171717] tabular-nums">{count}</span>
-                      <span className="text-[12px] text-[#A3A3A0] tabular-nums w-8 text-right">{pct}%</span>
                     </div>
                   );
                 })}

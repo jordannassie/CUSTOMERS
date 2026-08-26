@@ -80,9 +80,9 @@ function IconSend() {
 
 function TypingDots() {
   return (
-    <div className="flex items-center gap-1 px-4 py-3 bg-[#F1F5F9] rounded-2xl rounded-tl-sm w-fit">
+    <div className="flex items-center gap-1 px-4 py-3 bg-[#F0F0EC] rounded-2xl rounded-tl-sm w-fit">
       {[0, 1, 2].map((i) => (
-        <span key={i} className="w-1.5 h-1.5 rounded-full bg-[#94A3B8]"
+        <span key={i} className="w-1.5 h-1.5 rounded-full bg-[#A3A3A0]"
           style={{ animation: `chatDot 1.2s ${i * 0.2}s ease-in-out infinite` }} />
       ))}
     </div>
@@ -338,11 +338,11 @@ export default function ChatWidget() {
       <button
         onClick={() => { setOpen(v => !v); setUnread(false); }}
         aria-label={open ? "Close chat" : "Chat with Jordan"}
-        className="fixed bottom-[72px] sm:bottom-5 right-6 z-50 flex flex-col items-center gap-1.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB] focus-visible:ring-offset-2 rounded-full group"
+        className="fixed bottom-6 right-6 z-50 flex flex-col items-center gap-1.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#171717] focus-visible:ring-offset-2 rounded-full group"
       >
         <div
-          className="relative w-16 h-16 sm:w-[68px] sm:h-[68px] rounded-full bg-[#2563EB] flex items-center justify-center text-white ring-2 ring-white transition-all duration-200 group-hover:scale-[1.04] group-hover:shadow-2xl"
-          style={{ boxShadow: "0 8px 24px rgba(37,99,235,0.35)" }}
+          className="relative w-14 h-14 rounded-full bg-[#171717] flex items-center justify-center text-white ring-2 ring-white transition-all duration-200 group-hover:scale-[1.05] group-hover:bg-[#2A2A2A] group-hover:shadow-2xl"
+          style={{ boxShadow: "0 8px 28px rgba(0,0,0,0.22)" }}
         >
           {open
             ? <IconX />
@@ -356,7 +356,7 @@ export default function ChatWidget() {
             <span className="absolute -top-1 -left-1 w-4 h-4 rounded-full bg-red-500 border-2 border-white text-[8px] text-white font-black flex items-center justify-center">!</span>
           )}
         </div>
-        <span className="text-[13px] font-bold text-[#0F172A] leading-none select-none">Chat</span>
+        <span className="text-[11px] font-semibold text-[#171717] leading-none select-none tracking-tight">Chat</span>
       </button>
 
       {/* ── Panel ────────────────────────────────────────────────────────── */}
@@ -366,7 +366,7 @@ export default function ChatWidget() {
           aria-label="Chat with Jordan"
           className={[
             "fixed z-50 bg-white border border-gray-200 flex flex-col shadow-2xl overflow-hidden",
-            "sm:bottom-[72px] sm:right-5 sm:left-auto sm:w-[380px] sm:max-h-[75vh] sm:rounded-2xl",
+            "sm:bottom-[88px] sm:right-6 sm:left-auto sm:w-[380px] sm:max-h-[75vh] sm:rounded-2xl",
             "bottom-0 left-0 right-0 rounded-t-2xl",
           ].join(" ")}
           style={{
@@ -383,8 +383,8 @@ export default function ChatWidget() {
               <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-400 rounded-full border-2 border-white" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="font-bold text-[#0F172A] text-sm leading-tight">Jordan</p>
-              <p className="text-xs text-[#64748B]">Customers.Direct &nbsp;·&nbsp; Here to help</p>
+              <p className="font-bold text-[#171717] text-sm leading-tight">Jordan</p>
+              <p className="text-xs text-[#777773]">Customers.Direct &nbsp;·&nbsp; Here to help</p>
             </div>
             <button onClick={reset} aria-label="Restart chat" title="Start over"
               className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 text-[#64748B] transition-colors">
@@ -407,8 +407,8 @@ export default function ChatWidget() {
                 <div className={[
                   "max-w-[80%] px-4 py-2.5 rounded-2xl text-sm leading-relaxed",
                   m.role === "jordan"
-                    ? "bg-[#F1F5F9] text-[#0F172A] rounded-tl-sm"
-                    : "bg-[#2563EB] text-white rounded-tr-sm",
+                    ? "bg-[#F0F0EC] text-[#171717] rounded-tl-sm"
+                    : "bg-[#171717] text-white rounded-tr-sm",
                 ].join(" ")}>
                   {m.text}
                 </div>
@@ -421,7 +421,7 @@ export default function ChatWidget() {
             {step === "done" && !typing && (
               <div className="flex justify-center mt-2" style={{ animation: "chatSlideUp 0.3s ease forwards" }}>
                 <a href="https://calendar.app.google/muM2Kqc8oYnWBPXXA" target="_blank" rel="noopener noreferrer"
-                  className="w-full bg-[#2563EB] text-white font-bold text-sm text-center py-3.5 px-6 rounded-full hover:bg-[#1d4ed8] transition-colors shadow-md">
+                  className="w-full bg-[#171717] text-white font-bold text-sm text-center py-3.5 px-6 rounded-full hover:bg-[#2A2A2A] transition-colors shadow-md">
                   Book a Strategy Call
                 </a>
               </div>
@@ -429,7 +429,7 @@ export default function ChatWidget() {
 
             {/* Error — restart */}
             {step === "error" && !typing && (
-              <button onClick={reset} className="text-xs text-[#2563EB] underline mt-1 self-center">
+              <button onClick={reset} className="text-xs text-[#777773] underline mt-1 self-center">
                 Start over
               </button>
             )}
@@ -445,7 +445,7 @@ export default function ChatWidget() {
             >
               {quickOptions!.map(opt => (
                 <button key={opt} onClick={() => submitAnswer(opt)}
-                  className="text-sm font-medium bg-[#F1F5F9] hover:bg-[#DBEAFE] active:bg-[#DBEAFE] border border-gray-200 hover:border-[#BFDBFE] text-[#0F172A] px-4 py-2.5 rounded-full transition-colors">
+                  className="text-sm font-medium bg-[#F5F5F2] hover:bg-[#EFEFEB] active:bg-[#EFEFEB] border border-[#E5E5E1] hover:border-[#D4D4CF] text-[#171717] px-4 py-2.5 rounded-full transition-colors active:scale-[0.97]">
                   {opt}
                 </button>
               ))}
@@ -474,12 +474,12 @@ export default function ChatWidget() {
                     step === "website"  ? "yourwebsite.com" :
                     "Type your answer…"
                   }
-                  className="min-w-0 flex-1 border border-gray-200 rounded-xl px-3.5 py-3 text-base text-[#0F172A] placeholder-[#94A3B8] focus:outline-none focus:ring-2 focus:ring-[#2563EB] focus:border-transparent transition"
+                  className="min-w-0 flex-1 border border-[#E5E5E1] rounded-xl px-3.5 py-3 text-base text-[#171717] placeholder:text-[#A3A3A0] focus:outline-none focus:ring-2 focus:ring-[#171717]/20 transition"
                 />
                 <button
                   onClick={() => submitAnswer(input)}
                   aria-label="Send"
-                  className="w-11 h-11 bg-[#2563EB] rounded-xl flex items-center justify-center text-white hover:bg-[#1d4ed8] active:bg-[#1e40af] transition-colors shrink-0"
+                  className="w-11 h-11 bg-[#171717] rounded-xl flex items-center justify-center text-white hover:bg-[#2A2A2A] active:scale-[0.95] transition-all shrink-0"
                 >
                   <IconSend />
                 </button>

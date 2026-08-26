@@ -1,6 +1,7 @@
 import SiteHeader from "@/components/site/SiteHeader";
 import SiteFooter from "@/components/site/SiteFooter";
 import HomepagePlatform from "@/components/site/HomepagePlatform";
+import ChatWidget from "@/components/ChatWidget";
 
 const homeTitle = "Customers.Direct — AI sends customers directly to your business";
 const homeDescription =
@@ -38,6 +39,7 @@ export default function Home() {
         <HomepagePlatform />
       </main>
       <SiteFooter />
+      <ChatWidget />
     </>
   );
 }
