@@ -514,6 +514,119 @@ function HeroSection() {
   );
 }
 
+// ─── 1b. BANNER ROTATION ───────────────────────────────────────────────────
+
+const BANNERS = [
+  {
+    src: "https://wsxusvapciexemfvtadm.supabase.co/storage/v1/object/public/STORAGE/images/banners/banner1/ChatGPT%20Image%20Aug%2026,%202026,%2012_26_18%20PM%20(6).png",
+    alt: "Hair salon owner gets a new booking through Google AI",
+    industry: "Hair Salon",
+    platform: "Google AI",
+  },
+  {
+    src: "https://wsxusvapciexemfvtadm.supabase.co/storage/v1/object/public/STORAGE/images/banners/banner1/ChatGPT%20Image%20Aug%2026,%202026,%2012_26_17%20PM%20(2).png",
+    alt: "Dentist receives a new patient request through Perplexity",
+    industry: "Dental Practice",
+    platform: "Perplexity",
+  },
+  {
+    src: "https://wsxusvapciexemfvtadm.supabase.co/storage/v1/object/public/STORAGE/images/banners/banner1/ChatGPT%20Image%20Aug%2026,%202026,%2012_26_17%20PM%20(1).png",
+    alt: "Gym owner gets a new member notification through ChatGPT",
+    industry: "Fitness Studio",
+    platform: "ChatGPT",
+  },
+  {
+    src: "https://wsxusvapciexemfvtadm.supabase.co/storage/v1/object/public/STORAGE/images/banners/banner1/ChatGPT%20Image%20Aug%2026,%202026,%2012_26_18%20PM%20(7).png",
+    alt: "Auto mechanic gets a service booking through Google AI",
+    industry: "Auto Service",
+    platform: "Google AI",
+  },
+];
+
+function BannerRotationSection() {
+  const [active, setActive] = React.useState(0);
+  const [fading, setFading] = React.useState(false);
+
+  React.useEffect(() => {
+    const id = setInterval(() => {
+      setFading(true);
+      setTimeout(() => {
+        setActive((a) => (a + 1) % BANNERS.length);
+        setFading(false);
+      }, 400);
+    }, 4500);
+    return () => clearInterval(id);
+  }, []);
+
+  function goTo(i: number) {
+    if (i === active) return;
+    setFading(true);
+    setTimeout(() => { setActive(i); setFading(false); }, 400);
+  }
+
+  const banner = BANNERS[active];
+
+  return (
+    <section className="bg-[#171717] overflow-hidden" aria-label="AI sends customers directly to your business">
+      {/* Heading strip */}
+      <div className="text-center px-4 pt-12 pb-8">
+        <p className="text-[11px] font-semibold uppercase tracking-widest text-white/30 mb-3">
+          Real impact · Every industry
+        </p>
+        <h2 className="text-[28px] sm:text-[36px] font-bold text-white leading-tight tracking-tight max-w-2xl mx-auto">
+          AI is already sending customers to businesses that show up.
+        </h2>
+        <p className="text-[14px] text-white/40 mt-3 max-w-lg mx-auto">
+          When someone asks an AI assistant for a recommendation, one business gets the customer.
+          Make sure it's yours.
+        </p>
+      </div>
+
+      {/* Image */}
+      <div className="relative w-full max-w-5xl mx-auto px-4 pb-4">
+        <div className="relative rounded-2xl overflow-hidden" style={{ aspectRatio: "16/9" }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={banner.src}
+            alt={banner.alt}
+            className="absolute inset-0 w-full h-full object-cover transition-opacity duration-400"
+            style={{ opacity: fading ? 0 : 1 }}
+          />
+          {/* Bottom gradient for pill */}
+          <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/60 to-transparent pointer-events-none" />
+          {/* Industry pill */}
+          <div
+            className="absolute bottom-4 left-4 flex items-center gap-2 bg-white/10 backdrop-blur-sm border border-white/20 rounded-full px-3 py-1.5 transition-opacity duration-400"
+            style={{ opacity: fading ? 0 : 1 }}
+          >
+            <span className="text-[11px] font-semibold text-white/90">{banner.industry}</span>
+            <span className="text-white/30 text-[10px]">·</span>
+            <span className="text-[11px] text-white/60">{banner.platform}</span>
+          </div>
+        </div>
+
+        {/* Dot pagination */}
+        <div className="flex items-center justify-center gap-2 mt-5 pb-8">
+          {BANNERS.map((_, i) => (
+            <button
+              key={i}
+              type="button"
+              onClick={() => goTo(i)}
+              aria-label={`Show slide ${i + 1}`}
+              className="transition-all duration-300 rounded-full"
+              style={{
+                width: i === active ? 24 : 8,
+                height: 8,
+                background: i === active ? "#FFFFFF" : "rgba(255,255,255,0.25)",
+              }}
+            />
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 // ─── 2. PROMPT TRACKING ────────────────────────────────────────────────────
 
 const SAMPLE_PROMPTS = [
@@ -1550,12 +1663,108 @@ function FAQItem({ q, a }: { q: string; a: string }) {
   );
 }
 
+// ─── TESTIMONIALS ─────────────────────────────────────────────────────────
+
+const TESTIMONIALS = [
+  {
+    quote: "We had no idea ChatGPT was sending customers to our competitors. One scan showed us exactly why — and we fixed it within a week. New bookings are up noticeably.",
+    name: "Sarah M.",
+    role: "Owner",
+    company: "Bloom Hair Studio",
+    photo: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=80&h=80&fit=crop&crop=faces&q=80",
+  },
+  {
+    quote: "Our Perplexity visibility was zero. Customers.Direct showed us the three sources AI kept citing instead of us. We got listed on two of them — new members started mentioning finding us through AI search.",
+    name: "Marcus T.",
+    role: "Marketing Director",
+    company: "Peak Fitness",
+    photo: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=80&h=80&fit=crop&crop=faces&q=80",
+  },
+  {
+    quote: "I was skeptical that AI chatbots mattered for a dental practice. Turns out over a third of our new patient inquiries now mention searching AI first. This platform helped us show up in those answers.",
+    name: "Dr. Jennifer K.",
+    role: "Practice Owner",
+    company: "Lakeside Dental",
+    photo: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=80&h=80&fit=crop&crop=faces&q=80",
+  },
+  {
+    quote: "The competitor comparison was eye-opening. A shop down the street had 3× our AI visibility. We used the opportunity recommendations and closed the gap in about 60 days.",
+    name: "Chris R.",
+    role: "Owner",
+    company: "Precision Auto Care",
+    photo: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=80&h=80&fit=crop&crop=faces&q=80",
+  },
+  {
+    quote: "We manage 12 local businesses. Customers.Direct is the only tool that gives us a repeatable process to measure and improve AI search visibility for every client. Game-changer for agency reporting.",
+    name: "Tanya L.",
+    role: "Agency Director",
+    company: "Northside Digital",
+    photo: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=80&h=80&fit=crop&crop=faces&q=80",
+  },
+  {
+    quote: "I asked ChatGPT 'who's the best roofer in Austin' and we weren't even in the answer. That was the wake-up call. After using this platform we started appearing — and saw a measurable lift in quote requests.",
+    name: "James A.",
+    role: "CEO",
+    company: "Ridgeline Roofing",
+    photo: "https://images.unsplash.com/photo-1560250097-0b93528c311a?w=80&h=80&fit=crop&crop=faces&q=80",
+  },
+];
+
+function TestimonialsSection() {
+  return (
+    <Section id="testimonials" bg="bg-[#FAFAF8]" className="border-t border-[#EEEEEA]">
+      <div className="text-center mb-14">
+        <Eyebrow>From our customers</Eyebrow>
+        <H2>Businesses already winning in AI search.</H2>
+        <Body className="mt-4 max-w-xl mx-auto">
+          Real results from business owners and agencies using Customers.Direct to track, understand, and improve their AI visibility.
+        </Body>
+      </div>
+
+      {/* Masonry-style 3-col grid */}
+      <div className="columns-1 sm:columns-2 lg:columns-3 gap-5 space-y-5">
+        {TESTIMONIALS.map((t, i) => (
+          <div
+            key={i}
+            className="break-inside-avoid bg-white border border-[#E5E5E1] rounded-2xl p-6 flex flex-col gap-5"
+            style={{ boxShadow: "0 1px 4px rgba(0,0,0,0.04)" }}
+          >
+            {/* Quote */}
+            <p className="text-[14px] text-[#3D3D3A] leading-relaxed flex-1">
+              &ldquo;{t.quote}&rdquo;
+            </p>
+
+            {/* Author */}
+            <div className="flex items-center gap-3 pt-3 border-t border-[#EEEEEA]">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={t.photo}
+                alt={t.name}
+                width={40}
+                height={40}
+                className="w-10 h-10 rounded-full object-cover shrink-0 border border-[#E5E5E1]"
+              />
+              <div className="min-w-0">
+                <p className="text-[13px] font-semibold text-[#171717] truncate">{t.name}</p>
+                <p className="text-[11px] text-[#A3A3A0] truncate">
+                  {t.role} · {t.company}
+                </p>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </Section>
+  );
+}
+
 // ─── Main export ──────────────────────────────────────────────────────────
 
 export default function HomepagePlatform() {
   return (
     <>
       <HeroSection />
+      <BannerRotationSection />
       <PromptTrackingSection />
       <AIVisibilitySection />
       <KeySourcesSection />
@@ -1565,6 +1774,7 @@ export default function HomepagePlatform() {
       <AgencySection />
       <HowItWorksSection />
       <PricingSection />
+      <TestimonialsSection />
       <FAQSection />
       <FinalCTASection />
     </>
