@@ -11,28 +11,33 @@ type Period = "24h" | "48h" | "7d";
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const CATEGORY_COLORS: Record<string, string> = {
-  "AI News":    "bg-[#EFF6FF] text-[#0866F5] border-[#BFDBFE]",
-  "New Models": "bg-[#F5F3FF] text-[#7C3AED] border-[#DDD6FE]",
-  "AI Tools":   "bg-[#F0FDF4] text-[#15803D] border-[#BBF7D0]",
-  "Business":   "bg-[#FFFBEB] text-[#D97706] border-[#FDE68A]",
-  "Research":   "bg-[#EFF6FF] text-[#0369A1] border-[#BAE6FD]",
-  "Funding":    "bg-[#FFF7ED] text-[#EA580C] border-[#FED7AA]",
-  "Regulation": "bg-[#FEF2F2] text-[#DC2626] border-[#FECACA]",
-  "Safety":     "bg-[#FEF2F2] text-[#9F1239] border-[#FECACA]",
+  "AI Tools":      "bg-[#EFF6FF] text-[#0866F5] border-[#BFDBFE]",
+  "AI Marketing":  "bg-[#F5F3FF] text-[#7C3AED] border-[#DDD6FE]",
+  "AI Sales":      "bg-[#F0FDF4] text-[#15803D] border-[#BBF7D0]",
+  "AI Agents":     "bg-[#FFF7ED] text-[#EA580C] border-[#FED7AA]",
+  "AI Content":    "bg-[#EFF6FF] text-[#0369A1] border-[#BAE6FD]",
+  "AI E-commerce": "bg-[#FFFBEB] text-[#D97706] border-[#FDE68A]",
+  "Business AI":   "bg-[#F8FAFD] text-[#374151] border-[#E2E8F0]",
+  "New Features":  "bg-[#FEF2F2] text-[#DC2626] border-[#FECACA]",
+  "Automation":    "bg-[#F0FDF4] text-[#166534] border-[#86EFAC]",
+  "AI Productivity": "bg-[#EFF6FF] text-[#1D4ED8] border-[#BFDBFE]",
 };
 
 function categoryStyle(cat: string) {
   return CATEGORY_COLORS[cat] ?? "bg-[#F8FAFD] text-[#6B7280] border-[#E2E8F0]";
 }
 
-function formatDate(iso: string | null) {
+/** Returns a formatted date string, or null if the value is invalid or missing. */
+function formatDate(iso: string | null): string | null {
   if (!iso) return null;
   try {
-    return new Date(iso).toLocaleDateString("en-US", {
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return null;
+    return d.toLocaleDateString("en-US", {
       month: "short", day: "numeric", year: "numeric",
     });
   } catch {
-    return iso;
+    return null;
   }
 }
 
@@ -300,52 +305,95 @@ function StoryCard({
   writingId: string | null;
   onWriteArticle: (story: NewsStory) => void;
 }) {
-  const isWriting = writingId === String(story.rank);
+  const isWriting  = writingId === String(story.rank);
+  const pubDate    = formatDate(story.publishedAt);
 
   return (
     <div
-      className="bg-white border border-[#E2E8F0] rounded-2xl p-5 flex flex-col gap-3"
+      className="bg-white border border-[#E2E8F0] rounded-2xl overflow-hidden"
       style={{ boxShadow: "0 1px 4px rgba(0,0,0,0.04)" }}
     >
-      {/* Top row */}
-      <div className="flex items-start gap-3">
-        <div className="w-7 h-7 rounded-full bg-[#F1F5F9] flex items-center justify-center text-[11px] font-bold text-[#6B7280] shrink-0">
-          {story.rank}
-        </div>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border uppercase tracking-wide ${categoryStyle(story.category)}`}>
-              {story.category}
-            </span>
-            {story.publishedAt && (
-              <span className="text-[10.5px] text-[#9CA3AF]">{formatDate(story.publishedAt)}</span>
-            )}
+      {/* Card header */}
+      <div className="px-5 pt-4 pb-3 border-b border-[#F8FAFD]">
+        <div className="flex items-start gap-3">
+          {/* Rank badge */}
+          <div className="w-7 h-7 rounded-full bg-[#F1F5F9] flex items-center justify-center text-[11px] font-bold text-[#6B7280] shrink-0 mt-0.5">
+            {story.rank}
           </div>
-          <h3 className="text-[14px] font-bold text-[#111827] leading-snug mb-1">{story.headline}</h3>
-          <p className="text-[12.5px] text-[#6B7280] leading-relaxed">{story.summary}</p>
+          <div className="flex-1 min-w-0">
+            {/* Category + date */}
+            <div className="flex items-center gap-2 mb-2 flex-wrap">
+              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border uppercase tracking-wide ${categoryStyle(story.category)}`}>
+                {story.category}
+              </span>
+              {pubDate && (
+                <span className="text-[10.5px] text-[#9CA3AF]">{pubDate}</span>
+              )}
+            </div>
+            {/* Headline */}
+            <h3 className="text-[14.5px] font-bold text-[#111827] leading-snug">
+              {story.headline}
+            </h3>
+          </div>
         </div>
       </div>
 
-      {/* Why it matters */}
-      {story.whyItMatters && (
-        <div className="bg-[#F8FAFD] border border-[#F1F5F9] rounded-xl px-3.5 py-2.5">
-          <p className="text-[10px] font-bold text-[#9CA3AF] uppercase tracking-wider mb-1">Why it matters</p>
-          <p className="text-[12px] text-[#374151] leading-relaxed">{story.whyItMatters}</p>
-        </div>
-      )}
+      {/* Card body */}
+      <div className="px-5 py-4 flex flex-col gap-3">
 
-      {/* Angle */}
-      {story.suggestedAngle && (
-        <div className="flex items-start gap-2">
-          <svg width="13" height="13" viewBox="0 0 16 16" fill="#0866F5" className="shrink-0 mt-0.5" aria-hidden="true">
-            <path d="M8 1a7 7 0 100 14A7 7 0 008 1zm1 10H7V7h2v4zm0-5H7V4h2v2z"/>
-          </svg>
-          <p className="text-[11.5px] text-[#0866F5] italic leading-relaxed">{story.suggestedAngle}</p>
-        </div>
-      )}
+        {/* What's New */}
+        {story.whatIsNew && (
+          <div>
+            <p className="text-[9.5px] font-bold text-[#9CA3AF] uppercase tracking-wider mb-1">What&apos;s New</p>
+            <p className="text-[12.5px] text-[#374151] leading-relaxed">{story.whatIsNew}</p>
+          </div>
+        )}
 
-      {/* Actions */}
-      <div className="flex items-center justify-between pt-1 border-t border-[#F8FAFD]">
+        {/* What It Helps You Do */}
+        {story.whatItHelpsDo && (
+          <div className="flex items-start gap-2 bg-[#EFF6FF] border border-[#BFDBFE] rounded-xl px-3.5 py-2.5">
+            <svg width="13" height="13" viewBox="0 0 16 16" fill="#0866F5" className="shrink-0 mt-0.5" aria-hidden="true">
+              <path d="M13 4l-7 7-3-3 1-1 2 2 6-6 1 1z"/>
+            </svg>
+            <div>
+              <p className="text-[9.5px] font-bold text-[#0866F5] uppercase tracking-wider mb-0.5">What It Helps You Do</p>
+              <p className="text-[12.5px] font-semibold text-[#1D4ED8] leading-snug">{story.whatItHelpsDo}</p>
+            </div>
+          </div>
+        )}
+
+        {/* Best For + Business Opportunity */}
+        <div className="grid sm:grid-cols-2 gap-2.5">
+          {story.bestFor && (
+            <div className="bg-[#F8FAFD] border border-[#F1F5F9] rounded-xl px-3.5 py-2.5">
+              <p className="text-[9.5px] font-bold text-[#9CA3AF] uppercase tracking-wider mb-1">Best For</p>
+              <p className="text-[12px] text-[#374151] leading-relaxed">{story.bestFor}</p>
+            </div>
+          )}
+          {story.businessOpportunity && (
+            <div className="bg-[#F8FAFD] border border-[#F1F5F9] rounded-xl px-3.5 py-2.5">
+              <p className="text-[9.5px] font-bold text-[#9CA3AF] uppercase tracking-wider mb-1">Business Opportunity</p>
+              <p className="text-[12px] text-[#374151] leading-relaxed">{story.businessOpportunity}</p>
+            </div>
+          )}
+        </div>
+
+        {/* How to Try It */}
+        {story.howToTryIt && (
+          <div className="flex items-start gap-2">
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="#6B7280" className="shrink-0 mt-0.5" aria-hidden="true">
+              <path d="M8 1a7 7 0 100 14A7 7 0 008 1zm1 10H7V7h2v4zm0-5H7V4h2v2z"/>
+            </svg>
+            <div>
+              <p className="text-[9.5px] font-bold text-[#9CA3AF] uppercase tracking-wider mb-0.5">How to Try It</p>
+              <p className="text-[12px] text-[#374151] leading-relaxed">{story.howToTryIt}</p>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Card footer */}
+      <div className="px-5 pb-4 flex items-center justify-between pt-1 border-t border-[#F8FAFD]">
         <div className="flex items-center gap-1.5">
           {story.sourceName && (
             <span className="text-[11px] text-[#9CA3AF] font-medium">{story.sourceName}</span>
@@ -442,19 +490,20 @@ export default function NewsClient() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          headline:       story.headline,
-          summary:        story.summary,
-          whyItMatters:   story.whyItMatters,
-          sourceUrl:      story.sourceUrl,
-          sourceName:     story.sourceName,
-          category:       story.category,
-          suggestedAngle: story.suggestedAngle,
+          headline:            story.headline,
+          whatIsNew:           story.whatIsNew,
+          whatItHelpsDo:       story.whatItHelpsDo,
+          businessOpportunity: story.businessOpportunity,
+          howToTryIt:          story.howToTryIt,
+          sourceUrl:           story.sourceUrl,
+          sourceName:          story.sourceName,
+          category:            story.category,
+          bestFor:             story.bestFor,
         }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Article generation failed");
       setArticle(data.article);
-      // Scroll to article panel
       setTimeout(() => articleRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 100);
     } catch (err) {
       setWriteError(err instanceof Error ? err.message : "Article generation failed. Please try again.");
@@ -484,7 +533,7 @@ export default function NewsClient() {
             <h1 className="text-[22px] font-bold text-[#111827]">AI Newsroom</h1>
           </div>
           <p className="text-[12.5px] text-[#9CA3AF]">
-            Find today&apos;s biggest AI stories and turn them into original articles for Customers.Direct AI.
+            Business-focused AI news for CEOs, marketers and entrepreneurs — curated and written by AI.
           </p>
         </div>
 
@@ -527,7 +576,7 @@ export default function NewsClient() {
                 <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
                   <path d="M11.7 10.3l2.9 2.9-1.4 1.4-2.9-2.9A6 6 0 112 7a6 6 0 019.7 3.3zm-1.4.4A4 4 0 107 3a4 4 0 003.3 7.7z"/>
                 </svg>
-                Find Latest AI News
+                Find AI Business News
               </>
             )}
           </button>
@@ -542,8 +591,8 @@ export default function NewsClient() {
               <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
             </svg>
           </div>
-          <p className="text-[15px] font-semibold text-[#111827] mb-1">Searching today&apos;s AI news and verifying sources…</p>
-          <p className="text-[12px] text-[#9CA3AF]">This usually takes 15–30 seconds.</p>
+          <p className="text-[15px] font-semibold text-[#111827] mb-1">Searching for AI news that matters to your business…</p>
+          <p className="text-[12px] text-[#9CA3AF]">Filtering for CEOs, marketers and entrepreneurs. Usually takes 15–30 seconds.</p>
         </div>
       )}
 
@@ -566,7 +615,7 @@ export default function NewsClient() {
             </svg>
           </div>
           <p className="text-[14px] font-semibold text-[#374151] mb-1">No stories yet</p>
-          <p className="text-[12px] text-[#9CA3AF]">Click "Find Latest AI News" to search the web for today&apos;s top AI stories.</p>
+          <p className="text-[12px] text-[#9CA3AF]">Click &ldquo;Find AI Business News&rdquo; to search for today&apos;s top stories for CEOs, marketers and entrepreneurs.</p>
         </div>
       )}
 
@@ -575,7 +624,7 @@ export default function NewsClient() {
         <div className="flex flex-col gap-4">
           <div className="flex items-center justify-between mb-1">
             <p className="text-[12px] font-semibold text-[#9CA3AF] uppercase tracking-wider">
-              {stories.length} Stories Found
+              {stories.length} Business-Relevant {stories.length === 1 ? "Story" : "Stories"} Found
             </p>
             {writingId && (
               <p className="text-[12px] text-[#0866F5] font-medium animate-pulse">

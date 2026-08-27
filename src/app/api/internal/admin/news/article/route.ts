@@ -54,7 +54,6 @@ const ARTICLE_SCHEMA = {
 function extractAndParseJson(raw: string): unknown {
   let text = raw.trim();
 
-  // Strip ``` or ```json fences
   if (text.startsWith("```")) {
     const nl = text.indexOf("\n");
     text = nl !== -1 ? text.slice(nl + 1) : text.slice(3);
@@ -63,7 +62,6 @@ function extractAndParseJson(raw: string): unknown {
     text = text.trim();
   }
 
-  // Locate the outermost JSON object
   const start = text.indexOf("{");
   const end   = text.lastIndexOf("}");
   if (start === -1 || end === -1 || end <= start) {
@@ -111,64 +109,88 @@ export async function POST(request: NextRequest) {
 
   // ── Request body ──────────────────────────────────────────────────────────
   let body: {
-    headline?: unknown;
-    summary?: unknown;
-    whyItMatters?: unknown;
-    sourceUrl?: unknown;
-    sourceName?: unknown;
-    category?: unknown;
-    suggestedAngle?: unknown;
+    headline?:            unknown;
+    whatIsNew?:           unknown;
+    whatItHelpsDo?:       unknown;
+    businessOpportunity?: unknown;
+    howToTryIt?:          unknown;
+    sourceUrl?:           unknown;
+    sourceName?:          unknown;
+    category?:            unknown;
+    bestFor?:             unknown;
   };
   try { body = await request.json(); }
   catch { return NextResponse.json({ error: "Invalid request body." }, { status: 400 }); }
 
-  const headline       = typeof body.headline       === "string" ? body.headline.trim()       : "";
-  const summary        = typeof body.summary        === "string" ? body.summary.trim()        : "";
-  const whyItMatters   = typeof body.whyItMatters   === "string" ? body.whyItMatters.trim()   : "";
-  const sourceUrl      = typeof body.sourceUrl      === "string" ? body.sourceUrl.trim()      : "";
-  const sourceName     = typeof body.sourceName     === "string" ? body.sourceName.trim()     : "";
-  const category       = typeof body.category       === "string" ? body.category.trim()       : "AI News";
-  const suggestedAngle = typeof body.suggestedAngle === "string" ? body.suggestedAngle.trim() : "";
+  const headline            = typeof body.headline            === "string" ? body.headline.trim()            : "";
+  const whatIsNew           = typeof body.whatIsNew           === "string" ? body.whatIsNew.trim()           : "";
+  const whatItHelpsDo       = typeof body.whatItHelpsDo       === "string" ? body.whatItHelpsDo.trim()       : "";
+  const businessOpportunity = typeof body.businessOpportunity === "string" ? body.businessOpportunity.trim() : "";
+  const howToTryIt          = typeof body.howToTryIt          === "string" ? body.howToTryIt.trim()          : "";
+  const sourceUrl           = typeof body.sourceUrl           === "string" ? body.sourceUrl.trim()           : "";
+  const sourceName          = typeof body.sourceName          === "string" ? body.sourceName.trim()          : "";
+  const category            = typeof body.category            === "string" ? body.category.trim()            : "AI Tools";
+  const bestFor             = typeof body.bestFor             === "string" ? body.bestFor.trim()             : "";
 
   if (!headline) {
     return NextResponse.json({ error: "Headline is required." }, { status: 400 });
   }
 
   // ── Prompt ────────────────────────────────────────────────────────────────
-  const prompt = `You are the senior editor of "Customers.Direct AI," a professional newsletter for business owners and professionals who want to use AI to grow their businesses.
+  const prompt = `You are the senior editor of "Customers.Direct AI" — a newsletter for CEOs, founders, entrepreneurs, small-business owners, marketing executives, and sales leaders who want to use AI to grow faster.
 
+EDITORIAL PROMISE: "Customers.Direct AI finds the AI news that helps business leaders get customers, grow revenue, save time and move faster."
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 STORY BRIEF:
-Headline: ${headline}
-Summary: ${summary}
-Why It Matters: ${whyItMatters}
-Primary Source: ${sourceName} — ${sourceUrl}
 Category: ${category}
-Suggested Angle: ${suggestedAngle}
+Headline: ${headline}
+What's New: ${whatIsNew}
+What It Helps You Do: ${whatItHelpsDo}
+Best For: ${bestFor}
+Business Opportunity: ${businessOpportunity}
+How to Try It: ${howToTryIt}
+Primary Source: ${sourceName} — ${sourceUrl}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 YOUR TASK:
-1. Use web search to read the primary source and, where helpful, 1–2 additional authoritative sources.
-2. Verify the key facts before writing.
-3. Write an ORIGINAL article for Customers.Direct AI. Do NOT copy or lightly reword the source.
+1. Use web search to read the primary source and up to 2 additional authoritative sources.
+2. Verify all key facts, pricing, and product details before writing.
+3. Write an ORIGINAL article for Customers.Direct AI. Do NOT copy or reword the source.
+
+MANDATORY ARTICLE STRUCTURE — your articleBody must answer all 8 of these questions in order:
+1. What was released or launched? (factual, specific, no hype)
+2. What business problem does it solve? (practical framing for non-technical readers)
+3. Who should use it? (specific roles: marketers, e-commerce founders, sales teams, agencies, etc.)
+4. How can it generate revenue, attract customers, reduce costs or save time? (specific mechanisms)
+5. How can someone begin using it today? (step-by-step or clear first action)
+6. What is a realistic business example? (describe a real scenario, not hypothetical fluff)
+7. What is the verified pricing, access and limitations? (be accurate; state if pricing was not found)
+8. Is it genuinely worth trying? (honest, balanced recommendation)
 
 WRITING REQUIREMENTS:
-- Audience: business owners and professionals who want to use AI practically
-- Tone: Clear, energetic, professional, useful — not overly technical
-- Length: 600–900 words for the article body
-- Use short paragraphs (2–4 sentences max) and useful subheadings (##)
-- Explain WHY the development matters to business professionals specifically
+- Audience: CEOs, founders, marketers, sales leaders, entrepreneurs — NOT engineers or researchers
+- Tone: Clear, energetic, practical, opportunity-focused — never condescending or overly technical
+- Length: 650–900 words for articleBody
+- Use short paragraphs (2–4 sentences max) and ## subheadings for each major section
+- Do not write like a press release — write like a trusted business advisor explaining an opportunity
 - No exaggerated promises, no fabricated quotes, no unsupported financial figures
-- Make clear when something is inference or interpretation
-- Do not reproduce long passages from the source
-- No generic AI filler phrases or repetitive conclusions
+- When something is inference or interpretation, say so clearly
+- No generic AI filler phrases ("the future of AI", "game-changing", "revolutionary") unless directly quoting a source
+- End with a specific, actionable recommendation
 
-CONTENT REQUIREMENTS:
+CONTENT RULES:
 - Verify important claims before including them
-- Attribute facts to sources inline where relevant
-- Include clickable source URLs in the sources field
+- Attribute facts to sources inline: e.g. "According to [Source]..."
+- Include source URLs in the sources field
 - Never claim Customers.Direct independently tested anything
-- The headline should be compelling but strictly truthful
+- State pricing accurately — if pricing is not publicly available, say so
 
-Return a JSON object with all 12 required fields populated. The articleBody should use ## subheadings and be 600–900 words in plain Markdown (no code fences). The keyTakeaways array must contain exactly 3 actionable one-sentence strings.`;
+SOCIAL COPY RULES:
+- linkedinPost: Professional, 150–200 words, max 3 relevant hashtags, no clichés
+- instagramCaption: Conversational, 80–120 words, 5–8 relevant hashtags at end
+
+Return a JSON object with all 12 required fields. The articleBody must use ## subheadings and be in plain Markdown — no code fences inside the body. The keyTakeaways array must contain exactly 3 specific, actionable one-sentence strings aimed at business readers.`;
 
   // ── OpenAI request ────────────────────────────────────────────────────────
   let res: Response;
@@ -182,7 +204,6 @@ Return a JSON object with all 12 required fields populated. The articleBody shou
       body: JSON.stringify({
         model: NEWS_MODEL,
         tools: [{ type: "web_search" }],
-        // Force structured JSON output — prevents markdown fences and prose wrapping.
         text: {
           format: {
             type:   "json_schema",
