@@ -7,15 +7,10 @@ import {
   Check, Minus, ChevronDown, ArrowRight, Building2, Plus,
   TrendingUp, Shield, Zap,
 } from "lucide-react";
+import SiteHeader from "@/components/site/SiteHeader";
 import SiteFooter from "@/components/site/SiteFooter";
 import { ORDERED_PRICING_PLANS, COMPARISON_TABLE } from "@/config/pricing";
 import type { PricingPlan } from "@/config/pricing";
-
-// ─── Metadata is exported from a sibling layout or separate metadata.ts ─────
-// (This page is "use client" for FAQ accordion; metadata moved to layout.)
-
-const LOGO = "/images/logos/logo-black.png";
-const NAV_GRADIENT = "linear-gradient(110deg, #063B9D 0%, #0866F5 55%, #168BFF 100%)";
 
 // ─── Shared design tokens ─────────────────────────────────────────────────────
 
@@ -277,37 +272,7 @@ function FAQItem({ q, a }: { q: string; a: string }) {
 export default function PricingPage() {
   return (
     <div className="min-h-screen bg-white">
-      {/* ── Navbar ── */}
-      <header className="sticky top-0 z-50 px-4 sm:px-6 py-3">
-        <div
-          className="max-w-[1200px] mx-auto rounded-[20px] px-5"
-          style={{
-            background: NAV_GRADIENT,
-            boxShadow: "0 14px 32px rgba(6, 59, 157, 0.20), inset 0 1px 0 rgba(255,255,255,0.18)",
-          }}
-        >
-          <div className="flex items-center h-[68px] gap-4">
-            <Link href="/" aria-label="Customers.Direct — Home" className="shrink-0 mr-auto">
-              <Image src={LOGO} alt="Customers.Direct" width={160} height={40} className="h-10 w-auto brightness-0 invert" priority />
-            </Link>
-            <Link href="/" className="hidden sm:inline text-[13px] text-white/80 hover:text-white transition-colors">
-              Home
-            </Link>
-            <Link
-              href="/login"
-              className="text-[13px] font-medium text-white/80 hover:text-white px-3 py-1.5 rounded-lg hover:bg-white/10 transition-all"
-            >
-              Log in
-            </Link>
-            <Link
-              href="/signup"
-              className="flex items-center gap-1.5 bg-white text-[#0866F5] text-[13px] font-semibold px-4 py-2 rounded-full hover:bg-blue-50 transition-all shadow-sm"
-            >
-              Join Free Beta <ArrowRight size={12} />
-            </Link>
-          </div>
-        </div>
-      </header>
+      <SiteHeader />
 
       {/* ── Beta announcement banner ── */}
       <div className="px-4 pt-6">
@@ -337,7 +302,7 @@ export default function PricingPage() {
             <br />
             <span
               className="bg-clip-text text-transparent"
-              style={{ backgroundImage: NAV_GRADIENT }}
+              style={{ backgroundImage: "linear-gradient(110deg, #063B9D 0%, #0866F5 55%, #168BFF 100%)" }}
             >
               can find you.
             </span>
@@ -612,7 +577,7 @@ export default function PricingPage() {
         <div className="max-w-[900px] mx-auto">
           <div
             className="rounded-3xl overflow-hidden relative text-center px-8 py-16 sm:py-20"
-            style={{ background: NAV_GRADIENT }}
+            style={{ background: "linear-gradient(110deg, #063B9D 0%, #0866F5 55%, #168BFF 100%)" }}
           >
             {/* Subtle radial glow */}
             <div

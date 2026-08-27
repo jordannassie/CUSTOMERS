@@ -12,12 +12,17 @@ import {
   Users,
   Link2,
   Lightbulb,
-  Bot,
   BookOpen,
   HelpCircle,
   Building2,
   Mail,
 } from "lucide-react";
+import BotIcon from "@/components/BotIcon";
+
+// Wrapper so BotIcon fits the lucide icon signature used in PRODUCT_FEATURES
+const BotNavIcon = ({ size, className }: { size?: number; className?: string; "aria-hidden"?: boolean | string }) => (
+  <BotIcon size={size} className={className} />
+);
 
 const LOGO_WHITE = "/images/logos/logo-white.png";
 
@@ -61,7 +66,7 @@ const PRODUCT_FEATURES = [
     label: "Direct Agent",
     description: "Ask anything about your AI visibility. Grounded in real scan data, not hallucinations.",
     href: "/#direct-agent",
-    icon: Bot,
+    icon: BotNavIcon,
     bg: "bg-pink-500",
     shadow: "shadow-pink-200",
   },

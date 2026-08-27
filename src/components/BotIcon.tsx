@@ -7,7 +7,7 @@
 interface BotIconProps {
   size?: number;
   className?: string;
-  "aria-hidden"?: boolean | "true" | "false";
+  "aria-hidden"?: boolean | "true" | "false" | string;
 }
 
 export default function BotIcon({ size = 16, className = "" }: BotIconProps) {
