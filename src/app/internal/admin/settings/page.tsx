@@ -50,8 +50,6 @@ export default async function AdminSettingsPage() {
     gemini:              !!(process.env.GEMINI_API_KEY || process.env.GOOGLE_AI_API_KEY),
     dataForSeo:          !!(process.env.DATAFORSEO_LOGIN && process.env.DATAFORSEO_PASSWORD),
     googlePlaces:        !!process.env.GOOGLE_PLACES_API_KEY,
-    adminPin:            !!process.env.ADMIN_PIN,
-    adminSessionSecret:  !!process.env.ADMIN_SESSION_SECRET,
     siteUrl:             !!process.env.NEXT_PUBLIC_SITE_URL,
     googleOAuthInSupa:   true,
   };
@@ -82,8 +80,6 @@ export default async function AdminSettingsPage() {
           <ConfigRow label="Supabase Anon Key"     configured={env.supabaseAnon}        note="NEXT_PUBLIC_SUPABASE_ANON_KEY" />
           <ConfigRow label="Supabase Service Role" configured={env.supabaseServiceRole} note="SUPABASE_SERVICE_ROLE_KEY" />
           <ConfigRow label="Site URL"              configured={env.siteUrl}             note="NEXT_PUBLIC_SITE_URL" />
-          <ConfigRow label="Admin PIN"             configured={env.adminPin}            note="ADMIN_PIN" />
-          <ConfigRow label="Admin Session Secret"  configured={env.adminSessionSecret}  note="ADMIN_SESSION_SECRET" />
         </div>
 
         {/* AI Providers */}

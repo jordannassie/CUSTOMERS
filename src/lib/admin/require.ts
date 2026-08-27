@@ -2,7 +2,6 @@ import "server-only";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
-import { getAdminSession } from "@/lib/admin-session";
 
 export type AdminContext = {
   userId: string;
@@ -12,20 +11,23 @@ export type AdminContext = {
 /**
  * Server-side admin gate. Verifies:
  * 1. Authenticated Supabase user
- * 2. profiles.account_type = 'admin'
- * 3. Valid PIN session via iron-session
+ * 2. profiles.account_type = 'admin' OR email in ADMIN_EMAILS env var
  *
- * Redirects on any failure — never leaks data to unauthorized users.
+ * No PIN required — authentication via Google / email login is sufficient.
  */
 export async function requireAdmin(): Promise<AdminContext> {
-  // 1. Must be authenticated
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) {
-    redirect("/login?next=/internal/admin");
+  if (!user) redirect("/login?next=/internal/admin");
+
+  // ADMIN_EMAILS env shortcut (comma-separated)
+  const envEmails = (process.env.ADMIN_EMAILS ?? "")
+    .split(",").map((e) => e.trim().toLowerCase()).filter(Boolean);
+  if (user.email && envEmails.includes(user.email.toLowerCase())) {
+    return { userId: user.id, email: user.email };
   }
 
-  // 2. Must have account_type = 'admin'
+  // profiles.account_type = 'admin'
   const service = createServiceClient();
   const { data: profile } = await service
     .from("profiles")
@@ -33,40 +35,12 @@ export async function requireAdmin(): Promise<AdminContext> {
     .eq("id", user.id)
     .maybeSingle();
 
-  if (profile?.account_type !== "admin") {
-    redirect("/dashboard");
+  if (profile?.account_type === "admin") {
+    return { userId: user.id, email: user.email ?? "" };
   }
 
-  // 3. Must have a verified PIN session
-  const session = await getAdminSession();
-  if (!session.isAdmin) {
-    redirect("/internal/admin/pin");
-  }
-
-  return { userId: user.id, email: user.email ?? "" };
+  redirect("/dashboard");
 }
 
-/**
- * Checks admin role only (no PIN), used for the PIN page itself to ensure
- * only actual admins can even reach the PIN form.
- */
-export async function requireAdminRole(): Promise<{ userId: string; email: string }> {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) {
-    redirect("/login?next=/internal/admin");
-  }
-
-  const service = createServiceClient();
-  const { data: profile } = await service
-    .from("profiles")
-    .select("account_type")
-    .eq("id", user.id)
-    .maybeSingle();
-
-  if (profile?.account_type !== "admin") {
-    redirect("/dashboard");
-  }
-
-  return { userId: user.id, email: user.email ?? "" };
-}
+/** Alias — kept for any callers that used requireAdminRole separately */
+export const requireAdminRole = requireAdmin;
