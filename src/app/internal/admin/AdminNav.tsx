@@ -72,6 +72,15 @@ const NAV_ITEMS = [
     ),
   },
   {
+    label: "News",
+    href: "/internal/admin/news",
+    icon: (
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+        <path d="M1 2h11v1H3v10H1V2zm2 2h11v11H3V4zm2 2v1h7V6H5zm0 3v1h7V9H5zm0 3v1h4v-1H5z"/>
+      </svg>
+    ),
+  },
+  {
     label: "Settings",
     href: "/internal/admin/settings",
     icon: (
