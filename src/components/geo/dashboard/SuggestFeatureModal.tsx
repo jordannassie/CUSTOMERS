@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, FormEvent } from "react";
 import { createPortal } from "react-dom";
+import { useRouter } from "next/navigation";
 import { X, Lightbulb, CheckCircle2, Loader2 } from "lucide-react";
 
 interface Props {
@@ -9,6 +10,7 @@ interface Props {
 }
 
 export default function SuggestFeatureModal({ businessId }: Props) {
+  const router = useRouter();
   const [open, setOpen]       = useState(false);
   const [state, setState]     = useState<"idle" | "submitting" | "success" | "error">("idle");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -66,6 +68,11 @@ export default function SuggestFeatureModal({ businessId }: Props) {
         setState("error");
       } else {
         setState("success");
+        // Auto-close and go back to dashboard after 2 seconds
+        setTimeout(() => {
+          setOpen(false);
+          router.push("/dashboard");
+        }, 2000);
       }
     } catch {
       setErrorMsg("Network error. Please try again.");
@@ -121,18 +128,12 @@ export default function SuggestFeatureModal({ businessId }: Props) {
             <div className="px-6 pt-4 pb-6">
               {state === "success" ? (
                 <div className="flex flex-col items-center gap-3 py-6 text-center">
-                  <div className="w-12 h-12 rounded-full bg-[#F0FDF4] flex items-center justify-center">
-                    <CheckCircle2 size={24} className="text-[#16A34A]" />
+                  <div className="w-14 h-14 rounded-full bg-[#F0FDF4] flex items-center justify-center">
+                    <CheckCircle2 size={28} className="text-[#16A34A]" />
                   </div>
-                  <p className="text-[15px] font-bold text-[#171717]">Thanks — we received your suggestion.</p>
-                  <p className="text-[12.5px] text-[#777773]">We read every idea from our beta users.</p>
-                  <button
-                    type="button"
-                    onClick={() => setOpen(false)}
-                    className="mt-2 px-5 py-2 bg-[#171717] text-white text-[13px] font-semibold rounded-lg hover:bg-[#2A2A2A] transition-colors"
-                  >
-                    Done
-                  </button>
+                  <p className="text-[16px] font-bold text-[#171717]">Thank you!</p>
+                  <p className="text-[13px] text-[#777773]">We received your suggestion and read every idea from our beta users.</p>
+                  <p className="text-[11.5px] text-[#A3A3A0]">Taking you back to the dashboard…</p>
                 </div>
               ) : (
                 <form onSubmit={handleSubmit} noValidate>
