@@ -1,0 +1,148 @@
+"use client";
+
+import Link from "next/link";
+import Image from "next/image";
+import { usePathname } from "next/navigation";
+
+const LOGO = "/images/logos/logo-black.png";
+
+const NAV_ITEMS = [
+  {
+    label: "Overview",
+    href: "/internal/admin",
+    exact: true,
+    icon: (
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+        <path d="M2 2h5v5H2V2zm7 0h5v5H9V2zM2 9h5v5H2V9zm7 0h5v5H9V9z" opacity="0.85"/>
+      </svg>
+    ),
+  },
+  {
+    label: "Users",
+    href: "/internal/admin/users",
+    icon: (
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+        <path d="M8 8a3 3 0 100-6 3 3 0 000 6zm-5 6a5 5 0 0110 0H3z"/>
+      </svg>
+    ),
+  },
+  {
+    label: "Businesses",
+    href: "/internal/admin/businesses",
+    icon: (
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+        <path d="M1 3h14v2H1V3zm1 3h12v9H2V6zm2 2v1h4V8H4zm0 3v1h4v-1H4zm6-3v4h2V8h-2z"/>
+      </svg>
+    ),
+  },
+  {
+    label: "Scans",
+    href: "/internal/admin/scans",
+    icon: (
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+        <path d="M1 10l3-6 3 4 2-2 3 4H1zm13-7a1 1 0 11-2 0 1 1 0 012 0zM0 14h16v1.5H0V14z"/>
+      </svg>
+    ),
+  },
+  {
+    label: "Usage",
+    href: "/internal/admin/usage",
+    icon: (
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+        <path d="M1 13h2V6H1v7zm4 0h2V2H5v11zm4 0h2V8H9v5zm4 0h2V4h-2v9z"/>
+      </svg>
+    ),
+  },
+  {
+    label: "Errors",
+    href: "/internal/admin/errors",
+    icon: (
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+        <path d="M8 1L1 13h14L8 1zm0 3l4.5 7.8H3.5L8 4zM7 8v2h2V8H7zm0 3v1h2v-1H7z"/>
+      </svg>
+    ),
+  },
+  {
+    label: "Feature Requests",
+    href: "/internal/admin/feature-requests",
+    icon: (
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+        <path d="M2 2h12v9H9l-3 3v-3H2V2zm2 3v1h8V5H4zm0 3v1h5V8H4z"/>
+      </svg>
+    ),
+  },
+  {
+    label: "Settings",
+    href: "/internal/admin/settings",
+    icon: (
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+        <path d="M8 10a2 2 0 100-4 2 2 0 000 4zm5.7-2.7l1.3.8-1.5 2.6-1.4-.5a5 5 0 01-1 .6l-.2 1.5H7l-.2-1.5a5 5 0 01-1-.6l-1.4.5L2.9 8.1l1.3-.8a5 5 0 010-1.2L2.9 5.3l1.5-2.6 1.4.5a5 5 0 011-.6L7 1h2l.2 1.6a5 5 0 011 .6l1.4-.5 1.5 2.6-1.3.8a5 5 0 010 1.2z"/>
+      </svg>
+    ),
+  },
+];
+
+export default function AdminNav({ adminEmail }: { adminEmail: string }) {
+  const pathname = usePathname();
+
+  function isActive(href: string, exact = false) {
+    if (exact) return pathname === href;
+    return pathname.startsWith(href);
+  }
+
+  return (
+    <aside className="w-56 shrink-0 bg-white border-r border-[#E2E8F0] flex flex-col min-h-screen">
+      {/* Logo */}
+      <div className="px-5 py-4 border-b border-[#F1F5F9]">
+        <Link href="/internal/admin">
+          <Image src={LOGO} alt="Customers.Direct" width={130} height={28} className="h-6 w-auto" priority />
+        </Link>
+      </div>
+
+      {/* Nav */}
+      <nav className="flex-1 px-3 py-3 flex flex-col gap-0.5" aria-label="Admin navigation">
+        {NAV_ITEMS.map(({ label, href, icon, exact }) => {
+          const active = isActive(href, exact);
+          return (
+            <Link
+              key={href}
+              href={href}
+              className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-[13px] font-medium transition-colors ${
+                active
+                  ? "bg-[#EFF6FF] text-[#0866F5]"
+                  : "text-[#6B7280] hover:text-[#111827] hover:bg-[#F8FAFD]"
+              }`}
+            >
+              <span className={active ? "text-[#0866F5]" : "text-[#9CA3AF]"}>{icon}</span>
+              {label}
+            </Link>
+          );
+        })}
+      </nav>
+
+      {/* Footer */}
+      <div className="px-4 py-4 border-t border-[#F1F5F9]">
+        <Link
+          href="/dashboard"
+          className="flex items-center gap-2 text-[12px] font-medium text-[#6B7280] hover:text-[#0866F5] transition-colors mb-3"
+        >
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+            <path d="M6 3L1 8l5 5V9.5h8v-3H6V3z"/>
+          </svg>
+          Back to User View
+        </Link>
+        <div className="flex items-center gap-2">
+          <div className="w-7 h-7 rounded-full bg-[#0866F5] flex items-center justify-center text-white text-[10px] font-bold shrink-0">
+            {adminEmail.charAt(0).toUpperCase()}
+          </div>
+          <div className="min-w-0">
+            <p className="text-[11.5px] font-semibold text-[#111827] truncate">
+              {adminEmail.split("@")[0]}
+            </p>
+            <p className="text-[10px] text-[#9CA3AF]">Admin</p>
+          </div>
+        </div>
+      </div>
+    </aside>
+  );
+}

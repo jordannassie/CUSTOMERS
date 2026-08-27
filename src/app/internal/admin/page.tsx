@@ -9,12 +9,24 @@ function fmt(iso: string) {
   });
 }
 
-function KpiCard({ label, value, sub }: { label: string; value: string | number; sub?: React.ReactNode }) {
+function KpiCard({ label, value, sub, icon }: {
+  label: string;
+  value: string | number;
+  sub?: React.ReactNode;
+  icon?: React.ReactNode;
+}) {
   return (
-    <div className="bg-[#1E293B] border border-white/8 rounded-xl p-5">
-      <p className="text-[11px] text-white/40 uppercase tracking-wider mb-1">{label}</p>
-      <p className="text-[28px] font-bold text-white">{value}</p>
-      {sub && <p className="text-[11px] text-white/30 mt-0.5">{sub}</p>}
+    <div className="bg-white border border-[#E2E8F0] rounded-2xl p-5" style={{ boxShadow: "0 1px 4px rgba(0,0,0,0.04)" }}>
+      <div className="flex items-start justify-between mb-3">
+        <p className="text-[12px] font-semibold text-[#6B7280]">{label}</p>
+        {icon && (
+          <div className="w-8 h-8 rounded-xl bg-[#EFF6FF] flex items-center justify-center text-[#0866F5]">
+            {icon}
+          </div>
+        )}
+      </div>
+      <p className="text-[28px] font-bold text-[#111827] leading-none mb-1">{value}</p>
+      {sub && <p className="text-[11px] text-[#9CA3AF] mt-1">{sub}</p>}
     </div>
   );
 }
@@ -47,33 +59,26 @@ export default async function AdminOverviewPage() {
     svc.from("feature_requests").select("*", { count: "exact", head: true }).eq("status", "new"),
   ]);
 
-  // Recent signups — use service role admin API
   const { data: authUsers } = await svc.auth.admin.listUsers({ perPage: 20, page: 1 });
   const recentUsers = (authUsers?.users ?? [])
     .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
     .slice(0, 10);
 
-  // Business counts per user
-  const { data: bizCounts } = await svc
-    .from("businesses")
-    .select("owner_user_id");
+  const { data: bizCounts } = await svc.from("businesses").select("owner_user_id");
   const bizByUser: Record<string, number> = {};
   for (const b of bizCounts ?? []) {
     bizByUser[b.owner_user_id] = (bizByUser[b.owner_user_id] ?? 0) + 1;
   }
 
-  // Recent businesses
   const { data: recentBiz } = await svc
     .from("businesses")
     .select("id, name, domain, created_at, owner_user_id, profiles(id, account_type)")
     .order("created_at", { ascending: false })
     .limit(10);
 
-  // Profile emails (from auth users map)
   const emailMap: Record<string, string> = {};
   for (const u of authUsers?.users ?? []) emailMap[u.id] = u.email ?? u.id;
 
-  // Recent failures
   const { data: failures } = await svc
     .from("visibility_runs")
     .select("id, provider, business_id, error, created_at, businesses(name)")
@@ -83,69 +88,95 @@ export default async function AdminOverviewPage() {
 
   return (
     <div className="max-w-6xl mx-auto px-6 py-8">
+      {/* Page header */}
       <div className="mb-8">
-        <h1 className="text-[22px] font-bold text-white">Overview</h1>
-        <p className="text-[12px] text-white/30 mt-1">Live operational snapshot · {now.toLocaleString()}</p>
+        <h1 className="text-[22px] font-bold text-[#111827]">Overview</h1>
+        <p className="text-[12px] text-[#9CA3AF] mt-1">Customers.Direct operations at a glance</p>
       </div>
 
       {/* KPI grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-10">
-        <KpiCard label="Total Users"     value={totalUsers   ?? 0} />
-        <KpiCard label="Total Businesses" value={totalBiz    ?? 0} sub={`+${newBiz7d ?? 0} this week`} />
-        <KpiCard label="Competitors"     value={totalComp    ?? 0} />
-        <KpiCard label="Failed Scans"    value={failedScans  ?? 0} sub="all time" />
-        <KpiCard label="AI Scans (24h)"  value={scans24h     ?? 0} />
-        <KpiCard label="AI Scans (7d)"   value={scans7d      ?? 0} />
-        <KpiCard label="Beta Users"       value={totalUsers          ?? 0} sub="all access is free beta" />
-        <KpiCard label="New Biz (7d)"    value={newBiz7d            ?? 0} />
-        <KpiCard label="Feature Requests" value={newFeatureRequests ?? 0} sub={<><a href="/internal/admin/feature-requests" className="text-[#0866F5] hover:underline text-[10px]">View all →</a></>} />
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
+        <KpiCard
+          label="Total Users" value={totalUsers ?? 0}
+          icon={<svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 8a3 3 0 100-6 3 3 0 000 6zm-5 6a5 5 0 0110 0H3z"/></svg>}
+        />
+        <KpiCard
+          label="Active Trials" value={totalUsers ?? 0}
+          sub={`+${newBiz7d ?? 0} this week`}
+          icon={<svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 1a7 7 0 100 14A7 7 0 008 1zm0 2a5 5 0 110 10A5 5 0 018 3zm.5 2H7v5l4 2.4.75-1.23-3.25-1.97V5z"/></svg>}
+        />
+        <KpiCard
+          label="Paying Customers" value={0}
+          sub="No change"
+          icon={<svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M1 4h14v9H1V4zm0-2h14v1H1V2zm2 5v1h2V7H3zm0 3v1h4v-1H3zm6-3v4h4V7H9z"/></svg>}
+        />
+        <KpiCard
+          label="MRR" value="$0"
+          sub="No change"
+          icon={<svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 1a7 7 0 100 14A7 7 0 008 1zm1 10.93V13H7v-1.08A3 3 0 015 9h2a1 1 0 001 1 1 1 0 001-1c0-.55-.45-1-1-1a3 3 0 110-6V2h2v1.07A3 3 0 0111 6H9a1 1 0 10-2 0c0 .55.45 1 1 1a3 3 0 110 6z" opacity="0.85"/></svg>}
+        />
       </div>
 
-      <div className="grid lg:grid-cols-2 gap-6 mb-8">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
+        <KpiCard label="AI Scans (24h)"   value={scans24h        ?? 0} />
+        <KpiCard label="AI Scans (7d)"    value={scans7d         ?? 0} />
+        <KpiCard label="Competitors"      value={totalComp       ?? 0} />
+        <KpiCard
+          label="Feature Requests" value={newFeatureRequests ?? 0}
+          sub={<Link href="/internal/admin/feature-requests" className="text-[#0866F5] hover:underline text-[10px]">View all →</Link>}
+        />
+      </div>
+
+      <div className="grid lg:grid-cols-2 gap-6 mb-6">
         {/* Recent signups */}
-        <div className="bg-[#1E293B] border border-white/8 rounded-xl overflow-hidden">
-          <div className="flex items-center justify-between px-5 py-4 border-b border-white/8">
-            <h2 className="text-[13px] font-bold text-white">Recent Signups</h2>
-            <Link href="/internal/admin/users" className="text-[11px] text-[#0866F5] hover:underline">View all</Link>
+        <div className="bg-white border border-[#E2E8F0] rounded-2xl overflow-hidden" style={{ boxShadow: "0 1px 4px rgba(0,0,0,0.04)" }}>
+          <div className="flex items-center justify-between px-5 py-4 border-b border-[#F1F5F9]">
+            <h2 className="text-[13px] font-bold text-[#111827]">Recent Signups</h2>
+            <Link href="/internal/admin/users" className="text-[11px] text-[#0866F5] hover:underline font-medium">View all</Link>
           </div>
-          <div className="divide-y divide-white/5">
+          <div className="divide-y divide-[#F8FAFD]">
             {recentUsers.map((u) => (
-              <div key={u.id} className="flex items-center justify-between px-5 py-3">
-                <div className="min-w-0">
-                  <p className="text-[12.5px] text-white truncate">{u.email}</p>
-                  <p className="text-[10.5px] text-white/30">{fmt(u.created_at)}</p>
+              <div key={u.id} className="flex items-center justify-between px-5 py-3 hover:bg-[#F8FAFD] transition-colors">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="w-7 h-7 rounded-full bg-[#EFF6FF] flex items-center justify-center text-[#0866F5] text-[10px] font-bold shrink-0">
+                    {(u.email ?? "?").charAt(0).toUpperCase()}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-[12.5px] text-[#111827] font-medium truncate">{u.email}</p>
+                    <p className="text-[10.5px] text-[#9CA3AF]">{fmt(u.created_at)}</p>
+                  </div>
                 </div>
-                <span className="text-[11px] text-white/40 shrink-0 ml-3">
+                <span className="text-[11px] text-[#9CA3AF] shrink-0 ml-3">
                   {bizByUser[u.id] ?? 0} biz
                 </span>
               </div>
             ))}
             {recentUsers.length === 0 && (
-              <p className="px-5 py-4 text-[12px] text-white/30">No users yet.</p>
+              <p className="px-5 py-6 text-[12px] text-[#9CA3AF] text-center">No users yet.</p>
             )}
           </div>
         </div>
 
         {/* Recent businesses */}
-        <div className="bg-[#1E293B] border border-white/8 rounded-xl overflow-hidden">
-          <div className="flex items-center justify-between px-5 py-4 border-b border-white/8">
-            <h2 className="text-[13px] font-bold text-white">Recent Businesses</h2>
-            <Link href="/internal/admin/businesses" className="text-[11px] text-[#0866F5] hover:underline">View all</Link>
+        <div className="bg-white border border-[#E2E8F0] rounded-2xl overflow-hidden" style={{ boxShadow: "0 1px 4px rgba(0,0,0,0.04)" }}>
+          <div className="flex items-center justify-between px-5 py-4 border-b border-[#F1F5F9]">
+            <h2 className="text-[13px] font-bold text-[#111827]">Recent Businesses</h2>
+            <Link href="/internal/admin/businesses" className="text-[11px] text-[#0866F5] hover:underline font-medium">View all</Link>
           </div>
-          <div className="divide-y divide-white/5">
+          <div className="divide-y divide-[#F8FAFD]">
             {(recentBiz ?? []).map((b) => (
-              <div key={b.id} className="flex items-center justify-between px-5 py-3">
+              <div key={b.id} className="flex items-center justify-between px-5 py-3 hover:bg-[#F8FAFD] transition-colors">
                 <div className="min-w-0">
-                  <p className="text-[12.5px] text-white truncate">{b.name}</p>
-                  <p className="text-[10.5px] text-white/30">
+                  <p className="text-[12.5px] text-[#111827] font-medium truncate">{b.name}</p>
+                  <p className="text-[10.5px] text-[#9CA3AF]">
                     {emailMap[b.owner_user_id] ?? b.owner_user_id} · {b.domain ?? "no domain"}
                   </p>
                 </div>
-                <span className="text-[10.5px] text-white/30 shrink-0 ml-3">{fmt(b.created_at)}</span>
+                <span className="text-[10.5px] text-[#9CA3AF] shrink-0 ml-3">{fmt(b.created_at)}</span>
               </div>
             ))}
             {!recentBiz?.length && (
-              <p className="px-5 py-4 text-[12px] text-white/30">No businesses yet.</p>
+              <p className="px-5 py-6 text-[12px] text-[#9CA3AF] text-center">No businesses yet.</p>
             )}
           </div>
         </div>
@@ -153,21 +184,23 @@ export default async function AdminOverviewPage() {
 
       {/* Recent failures */}
       {(failures?.length ?? 0) > 0 && (
-        <div className="bg-[#1E293B] border border-red-900/40 rounded-xl overflow-hidden">
-          <div className="flex items-center justify-between px-5 py-4 border-b border-white/8">
-            <h2 className="text-[13px] font-bold text-red-400">Recent Failures</h2>
-            <Link href="/internal/admin/errors" className="text-[11px] text-[#0866F5] hover:underline">View all</Link>
+        <div className="bg-white border border-[#FEE2E2] rounded-2xl overflow-hidden" style={{ boxShadow: "0 1px 4px rgba(0,0,0,0.04)" }}>
+          <div className="flex items-center justify-between px-5 py-4 border-b border-[#FEF2F2]">
+            <h2 className="text-[13px] font-bold text-[#DC2626]">Recent Failures</h2>
+            <Link href="/internal/admin/errors" className="text-[11px] text-[#0866F5] hover:underline font-medium">View all</Link>
           </div>
-          <div className="divide-y divide-white/5">
+          <div className="divide-y divide-[#FEF9F9]">
             {(failures ?? []).map((f) => (
               <div key={f.id} className="grid grid-cols-[80px_1fr_120px] items-center px-5 py-3 gap-3">
-                <span className="text-[11px] font-semibold text-red-400 uppercase tracking-wide truncate">{f.provider}</span>
+                <span className="text-[11px] font-bold text-[#DC2626] bg-[#FEF2F2] px-2 py-0.5 rounded-full uppercase tracking-wide truncate text-center">
+                  {f.provider}
+                </span>
                 <div className="min-w-0">
                   {/* @ts-expect-error join shape */}
-                  <p className="text-[12px] text-white truncate">{f.businesses?.name ?? f.business_id}</p>
-                  <p className="text-[10.5px] text-white/30 truncate">{f.error ?? "No error message"}</p>
+                  <p className="text-[12px] text-[#111827] font-medium truncate">{f.businesses?.name ?? f.business_id}</p>
+                  <p className="text-[10.5px] text-[#9CA3AF] truncate">{f.error ?? "No error message"}</p>
                 </div>
-                <span className="text-[10.5px] text-white/30 text-right">{fmt(f.created_at)}</span>
+                <span className="text-[10.5px] text-[#9CA3AF] text-right">{fmt(f.created_at)}</span>
               </div>
             ))}
           </div>

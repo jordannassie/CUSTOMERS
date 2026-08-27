@@ -29,37 +29,39 @@ export default async function AdminUsersPage() {
 
   return (
     <div className="max-w-6xl mx-auto px-6 py-8">
-      <h1 className="text-[22px] font-bold text-white mb-2">Users</h1>
-      <p className="text-[12px] text-white/30 mb-8">{sorted.length} total accounts</p>
+      <div className="mb-6">
+        <h1 className="text-[22px] font-bold text-[#111827]">Users</h1>
+        <p className="text-[12px] text-[#9CA3AF] mt-1">{sorted.length} total accounts</p>
+      </div>
 
-      <div className="bg-[#1E293B] border border-white/8 rounded-xl overflow-hidden">
+      <div className="bg-white border border-[#E2E8F0] rounded-2xl overflow-hidden" style={{ boxShadow: "0 1px 4px rgba(0,0,0,0.04)" }}>
         <div className="overflow-x-auto">
           <table className="w-full text-[12.5px]">
             <thead>
-              <tr className="border-b border-white/8 bg-[#0F172A]/50">
+              <tr className="border-b border-[#F1F5F9] bg-[#F8FAFD]">
                 {["Email", "Account Type", "Businesses", "Signed Up", "Last Sign In"].map((h) => (
-                  <th key={h} className="text-left px-5 py-3 text-[10.5px] font-semibold text-white/30 uppercase tracking-wider whitespace-nowrap">
+                  <th key={h} className="text-left px-5 py-3 text-[10.5px] font-semibold text-[#9CA3AF] uppercase tracking-wider whitespace-nowrap">
                     {h}
                   </th>
                 ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-white/5">
+            <tbody className="divide-y divide-[#F8FAFD]">
               {sorted.map((u) => {
                 const profile = profileMap[u.id];
                 const businesses = bizByUser[u.id] ?? [];
                 const isAdmin = profile?.account_type === "admin";
                 return (
-                  <tr key={u.id} className={`hover:bg-white/2 ${isAdmin ? "bg-[#0866F5]/5" : ""}`}>
-                    <td className="px-5 py-3 text-white truncate max-w-[220px]">
+                  <tr key={u.id} className={`hover:bg-[#F8FAFD] transition-colors ${isAdmin ? "bg-[#EFF6FF]/40" : ""}`}>
+                    <td className="px-5 py-3 text-[#111827] font-medium truncate max-w-[220px]">
                       {u.email}
                       {isAdmin && (
-                        <span className="ml-2 text-[9px] font-bold bg-[#0866F5]/20 text-[#60A5FA] px-1.5 py-0.5 rounded uppercase tracking-wide">
+                        <span className="ml-2 text-[9px] font-bold bg-[#EFF6FF] text-[#0866F5] px-1.5 py-0.5 rounded uppercase tracking-wide">
                           Admin
                         </span>
                       )}
                     </td>
-                    <td className="px-5 py-3 text-white/50">
+                    <td className="px-5 py-3 text-[#6B7280]">
                       {profile?.account_type ?? "—"}
                     </td>
                     <td className="px-5 py-3">
@@ -68,21 +70,21 @@ export default async function AdminUsersPage() {
                           {businesses.map((b) => (
                             <a
                               key={b.id}
-                              href={`/internal/admin/businesses`}
-                              className="text-[#60A5FA] hover:underline truncate max-w-[180px] block"
+                              href="/internal/admin/businesses"
+                              className="text-[#0866F5] hover:underline truncate max-w-[180px] block"
                             >
                               {b.name}
                             </a>
                           ))}
                         </div>
                       ) : (
-                        <span className="text-white/20">—</span>
+                        <span className="text-[#D1D5DB]">—</span>
                       )}
                     </td>
-                    <td className="px-5 py-3 text-white/40 whitespace-nowrap">
+                    <td className="px-5 py-3 text-[#9CA3AF] whitespace-nowrap">
                       {fmt(u.created_at)}
                     </td>
-                    <td className="px-5 py-3 text-white/40 whitespace-nowrap">
+                    <td className="px-5 py-3 text-[#9CA3AF] whitespace-nowrap">
                       {u.last_sign_in_at ? fmt(u.last_sign_in_at) : "—"}
                     </td>
                   </tr>
