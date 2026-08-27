@@ -4,9 +4,9 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
 const BRAND_ICON =
-  "https://phhczohqidgrvcmszets.supabase.co/storage/v1/object/public/CUSTOMER.direct/logo/ICON.png";
+  "https://wsxusvapciexemfvtadm.supabase.co/storage/v1/object/public/STORAGE/images/logos/Customerdirectlogo.jpg";
 const LOGO_URL =
-  "https://phhczohqidgrvcmszets.supabase.co/storage/v1/object/public/CUSTOMER.direct/logo/Logo.png";
+  "https://wsxusvapciexemfvtadm.supabase.co/storage/v1/object/public/STORAGE/images/people/heroimage.png";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -43,9 +43,9 @@ export const metadata: Metadata = {
     images: [
       {
         url: LOGO_URL,
-        width: 800,
-        height: 200,
-        alt: "Customers.Direct",
+        width: 1200,
+        height: 630,
+        alt: "Customers.Direct — AI sends customers directly to your business",
       },
     ],
   },
@@ -54,7 +54,7 @@ export const metadata: Metadata = {
     title: "Customers.Direct — AI sends customers directly to your business",
     description:
       "Customers.Direct helps AI recommend your business to buyers — measuring AI visibility, answering every call, starting conversations, and converting visitors.",
-    images: [BRAND_ICON],
+    images: [LOGO_URL],
   },
 };
 
