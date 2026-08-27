@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, FormEvent } from "react";
+import { createPortal } from "react-dom";
 import { X, Lightbulb, CheckCircle2, Loader2 } from "lucide-react";
 
 interface Props {
@@ -84,8 +85,8 @@ export default function SuggestFeatureModal({ businessId }: Props) {
         Suggest a Feature
       </button>
 
-      {/* Modal overlay */}
-      {open && (
+      {/* Modal overlay — rendered in a portal so chart canvases can't bleed through */}
+      {open && createPortal(
         <div
           className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/40"
           onClick={(e) => { if (e.target === e.currentTarget) setOpen(false); }}
@@ -203,7 +204,8 @@ export default function SuggestFeatureModal({ businessId }: Props) {
               )}
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );
