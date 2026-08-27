@@ -182,12 +182,6 @@ export default function SiteFooter() {
             <p className="text-[12px] text-white/30">
               © {year} Customers.Direct. All rights reserved.
             </p>
-            <a
-              href="/internal/admin"
-              className="text-[11px] font-medium text-white/50 hover:text-white transition-colors shrink-0"
-            >
-              Admin →
-            </a>
           </div>
           <p className="text-[11px] text-white/20 max-w-xl leading-relaxed">
             AI visibility metrics are measured using real buyer-intent prompts queried via official AI provider APIs. We do not guarantee rankings or placement.
