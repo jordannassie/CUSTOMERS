@@ -75,7 +75,7 @@ const PRODUCT_FEATURES = [
 const RESOURCES = [
   { label: "How It Works",         href: "/#how-it-works", icon: BookOpen  },
   { label: "FAQ",                  href: "/#faq",           icon: HelpCircle },
-  { label: "Agencies & Resellers", href: "/#agencies",      icon: Building2  },
+  { label: "Agencies & Resellers", href: "/agency",          icon: Building2  },
   { label: "Contact",              href: "/contact",         icon: Mail      },
 ] as const;
 
@@ -254,7 +254,7 @@ export default function SiteHeader() {
               )}
             </div>
 
-            <Link href="/#agencies" className={navLink()}>Agencies</Link>
+            <Link href="/agency" className={navLink()}>Agencies</Link>
           </nav>
 
           {/* Right side */}
@@ -327,7 +327,7 @@ export default function SiteHeader() {
                 {label}
               </Link>
             ))}
-            <Link href="/#agencies" onClick={closeAll}
+            <Link href="/agency" onClick={closeAll}
               className="px-3 py-2.5 text-[13px] font-medium text-white/85 hover:text-white rounded-xl hover:bg-white/10 transition-colors">
               Agencies
             </Link>

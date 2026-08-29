@@ -64,7 +64,7 @@ const FOOTER_COLUMNS = [
     heading: "Solutions",
     links: [
       { label: "Local Businesses", href: "/ai-search" },
-      { label: "Agencies & Resellers", href: "/#agencies" },
+      { label: "Agencies & Resellers", href: "/agency" },
       { label: "Multi-Location", href: "/ai-search" },
       { label: "Marketing Teams", href: "/ai-search" },
     ],
