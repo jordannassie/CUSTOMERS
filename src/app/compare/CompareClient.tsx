@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ArrowRight, Loader2, AlertCircle, CheckCircle2, XCircle, AlertTriangle, Info } from "lucide-react";
+import { ArrowRight, Loader2, AlertCircle, CheckCircle2, XCircle, AlertTriangle, Info, ExternalLink } from "lucide-react";
 import type { WebsiteSignals } from "@/app/api/public/compare/route";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -315,6 +315,91 @@ function SignalRow({
   );
 }
 
+// ─── Website screenshot components ───────────────────────────────────────────
+
+/** Polished fallback shown when a screenshot cannot be loaded */
+function ScreenshotFallback({ domain }: { domain: string }) {
+  return (
+    <div className="absolute inset-0 flex items-center justify-center bg-[#F3F5F8] px-4">
+      <div className="w-full max-w-[240px]">
+        {/* Fake browser chrome */}
+        <div className="bg-[#DDE1E7] rounded-t-xl px-3 py-2 flex items-center gap-1.5">
+          <div className="flex gap-1 shrink-0">
+            {(["#FF5F57", "#FEBC2E", "#28C840"] as const).map((c) => (
+              <div key={c} className="w-1.5 h-1.5 rounded-full" style={{ background: c }} aria-hidden="true" />
+            ))}
+          </div>
+          <div className="flex-1 bg-white/70 rounded text-[8px] text-[#9CA3AF] px-1.5 py-0.5 truncate text-center">
+            {domain}
+          </div>
+        </div>
+        <div className="bg-white border border-t-0 border-[#E2E8F0] rounded-b-xl px-4 py-5 flex flex-col items-center gap-2">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={getFavicon(domain)}
+            alt=""
+            width={24}
+            height={24}
+            className="rounded"
+            aria-hidden="true"
+          />
+          <span className="text-[10px] font-medium text-[#9CA3AF] text-center">{domain}</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Loads a website screenshot from our secure server-side proxy.
+ * Shows a skeleton while loading and a branded fallback on failure.
+ * Screenshot failure never affects comparison scores.
+ */
+function WebsiteScreenshot({ domain }: { domain: string }) {
+  const [status, setStatus] = useState<"loading" | "loaded" | "error">("loading");
+  const src = `/api/public/screenshot?domain=${encodeURIComponent(domain)}`;
+
+  return (
+    <a
+      href={`https://${domain}`}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="relative block w-full overflow-hidden border-b border-[#E2E8F0] bg-[#F3F5F8] aspect-video"
+      aria-label={`Open ${domain} in a new tab`}
+    >
+      {/* Skeleton shimmer while loading */}
+      {status === "loading" && (
+        <div className="absolute inset-0 skeleton-shimmer" aria-hidden="true" />
+      )}
+
+      {/* Polished fallback when screenshot unavailable */}
+      {status === "error" && <ScreenshotFallback domain={domain} />}
+
+      {/* The screenshot itself — hidden until loaded to prevent flicker */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={src}
+        alt={`Screenshot of ${domain}`}
+        className={`w-full h-full object-cover object-top ${
+          status !== "loaded" ? "opacity-0 absolute inset-0" : "opacity-100"
+        }`}
+        onLoad={() => setStatus("loaded")}
+        onError={() => setStatus("error")}
+      />
+
+      {/* External-link affordance (pointer-events-none so the <a> handles the click) */}
+      {status === "loaded" && (
+        <span
+          className="absolute top-2 right-2 w-6 h-6 bg-black/50 hover:bg-black/70 rounded-md flex items-center justify-center transition-colors pointer-events-none"
+          aria-hidden="true"
+        >
+          <ExternalLink size={11} className="text-white" />
+        </span>
+      )}
+    </a>
+  );
+}
+
 // Small AI platform logos in the header
 const AI_PLATFORM_ICONS = [
   { name: "ChatGPT",    src: "/icons/ai-platforms/chatgpt.svg"    },
@@ -367,6 +452,7 @@ export default function CompareClient() {
   }, []);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (initialMy && initialThem) runComparison(initialMy, initialThem);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -536,56 +622,119 @@ export default function CompareClient() {
               className="bg-white rounded-2xl border border-[#E2E8F0] overflow-hidden"
               style={{ boxShadow: "0 1px 8px rgba(0,0,0,0.05)" }}
             >
-              <div className="grid grid-cols-[1fr_96px_1fr] sm:grid-cols-[1fr_108px_1fr]">
+              {/* ── Desktop (sm+): 3-column grid ──────────────────────── */}
+              <div className="hidden sm:grid sm:grid-cols-[1fr_108px_1fr]">
 
                 {/* My site */}
                 <div
-                  className={`p-5 sm:p-7 flex flex-col items-center text-center border-r border-[#F1F5F9] ${
+                  className={`flex flex-col overflow-hidden border-r border-[#F1F5F9] ${
                     myWins ? "ring-2 ring-inset ring-[#0866F5]/30 bg-[#F0F6FF]" : ""
                   }`}
                 >
-                  {myWins && (
-                    <div className="mb-2 px-2 py-0.5 bg-[#0866F5] text-white text-[9px] font-bold uppercase tracking-widest rounded-full">
-                      Winning
+                  <WebsiteScreenshot domain={result.mine.domain} />
+                  <div className="p-7 flex flex-col items-center text-center">
+                    {myWins && (
+                      <div className="mb-2 px-2 py-0.5 bg-[#0866F5] text-white text-[9px] font-bold uppercase tracking-widest rounded-full">
+                        Winning
+                      </div>
+                    )}
+                    <div className="flex items-center gap-1.5 mb-1">
+                      <img src={getFavicon(result.mine.domain)} alt="" width={14} height={14} className="rounded-sm" />
+                      <p className="text-[12px] font-semibold text-[#374151] truncate max-w-[120px]">{result.mine.domain}</p>
                     </div>
-                  )}
-                  <div className="flex items-center gap-1.5 mb-1">
-                    <img src={getFavicon(result.mine.domain)} alt="" width={14} height={14} className="rounded-sm" />
-                    <p className="text-[12px] font-semibold text-[#374151] truncate max-w-[120px]">{result.mine.domain}</p>
+                    <ScoreCircle score={myScore} isWinner={myWins} animate={animate} />
+                    <p className="text-[10.5px] text-[#9CA3AF] mt-1 mb-2">AI Readiness Score</p>
+                    <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full border ${scoreLabelBg(myScore)} ${scoreLabelColor(myScore)}`}>
+                      {scoreLabel(myScore)}
+                    </span>
                   </div>
-                  <ScoreCircle score={myScore} isWinner={myWins} animate={animate} />
-                  <p className="text-[10.5px] text-[#9CA3AF] mt-1 mb-2">AI Readiness Score</p>
-                  <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full border ${scoreLabelBg(myScore)} ${scoreLabelColor(myScore)}`}>
-                    {scoreLabel(myScore)}
-                  </span>
                 </div>
 
-                {/* Center gap */}
+                {/* Center visibility gap */}
                 <div className="flex flex-col items-center justify-center bg-[#F8FAFD] px-2 py-6 border-r border-[#F1F5F9] gap-1">
-                  <div className="text-[22px] sm:text-[28px] font-black text-[#111827] leading-none">{scoreDiff}</div>
-                  <div className="text-[8.5px] font-bold text-[#9CA3AF] uppercase tracking-wider text-center leading-tight">point{"\n"}visibility{"\n"}gap</div>
+                  <div className="text-[28px] font-black text-[#111827] leading-none">{scoreDiff}</div>
+                  <div className="text-[8.5px] font-bold text-[#9CA3AF] uppercase tracking-wider text-center leading-tight">
+                    {"point\nvisibility\ngap"}
+                  </div>
                 </div>
 
                 {/* Competitor */}
                 <div
-                  className={`p-5 sm:p-7 flex flex-col items-center text-center ${
+                  className={`flex flex-col overflow-hidden ${
                     !myWins ? "ring-2 ring-inset ring-[#0866F5]/30 bg-[#F0F6FF]" : ""
                   }`}
                 >
-                  {!myWins && (
-                    <div className="mb-2 px-2 py-0.5 bg-[#0866F5] text-white text-[9px] font-bold uppercase tracking-widest rounded-full">
-                      Winning
+                  <WebsiteScreenshot domain={result.them.domain} />
+                  <div className="p-7 flex flex-col items-center text-center">
+                    {!myWins && (
+                      <div className="mb-2 px-2 py-0.5 bg-[#0866F5] text-white text-[9px] font-bold uppercase tracking-widest rounded-full">
+                        Winning
+                      </div>
+                    )}
+                    <div className="flex items-center gap-1.5 mb-1">
+                      <img src={getFavicon(result.them.domain)} alt="" width={14} height={14} className="rounded-sm" />
+                      <p className="text-[12px] font-semibold text-[#374151] truncate max-w-[120px]">{result.them.domain}</p>
                     </div>
-                  )}
-                  <div className="flex items-center gap-1.5 mb-1">
-                    <img src={getFavicon(result.them.domain)} alt="" width={14} height={14} className="rounded-sm" />
-                    <p className="text-[12px] font-semibold text-[#374151] truncate max-w-[120px]">{result.them.domain}</p>
+                    <ScoreCircle score={themScore} isWinner={!myWins} animate={animate} />
+                    <p className="text-[10.5px] text-[#9CA3AF] mt-1 mb-2">AI Readiness Score</p>
+                    <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full border ${scoreLabelBg(themScore)} ${scoreLabelColor(themScore)}`}>
+                      {scoreLabel(themScore)}
+                    </span>
                   </div>
-                  <ScoreCircle score={themScore} isWinner={!myWins} animate={animate} />
-                  <p className="text-[10.5px] text-[#9CA3AF] mt-1 mb-2">AI Readiness Score</p>
-                  <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full border ${scoreLabelBg(themScore)} ${scoreLabelColor(themScore)}`}>
-                    {scoreLabel(themScore)}
+                </div>
+              </div>
+
+              {/* ── Mobile (<sm): stacked layout ──────────────────────── */}
+              <div className="sm:hidden flex flex-col divide-y divide-[#F1F5F9]">
+
+                {/* My site */}
+                <div className={`flex flex-col overflow-hidden ${myWins ? "ring-2 ring-inset ring-[#0866F5]/30 bg-[#F0F6FF]" : ""}`}>
+                  <WebsiteScreenshot domain={result.mine.domain} />
+                  <div className="p-5 flex flex-col items-center text-center">
+                    {myWins && (
+                      <div className="mb-2 px-2 py-0.5 bg-[#0866F5] text-white text-[9px] font-bold uppercase tracking-widest rounded-full">
+                        Winning
+                      </div>
+                    )}
+                    <div className="flex items-center gap-1.5 mb-1">
+                      <img src={getFavicon(result.mine.domain)} alt="" width={14} height={14} className="rounded-sm" />
+                      <p className="text-[12px] font-semibold text-[#374151] truncate max-w-[150px]">{result.mine.domain}</p>
+                    </div>
+                    <ScoreCircle score={myScore} isWinner={myWins} animate={animate} />
+                    <p className="text-[10.5px] text-[#9CA3AF] mt-1 mb-2">AI Readiness Score</p>
+                    <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full border ${scoreLabelBg(myScore)} ${scoreLabelColor(myScore)}`}>
+                      {scoreLabel(myScore)}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Visibility gap summary — mobile */}
+                <div className="flex items-center justify-center gap-3 bg-[#F8FAFD] py-4 px-4">
+                  <span className="text-[26px] font-black text-[#111827] leading-none">{scoreDiff}</span>
+                  <span className="text-[10px] font-bold text-[#9CA3AF] uppercase tracking-wider">
+                    point visibility gap
                   </span>
+                </div>
+
+                {/* Competitor */}
+                <div className={`flex flex-col overflow-hidden ${!myWins ? "ring-2 ring-inset ring-[#0866F5]/30 bg-[#F0F6FF]" : ""}`}>
+                  <WebsiteScreenshot domain={result.them.domain} />
+                  <div className="p-5 flex flex-col items-center text-center">
+                    {!myWins && (
+                      <div className="mb-2 px-2 py-0.5 bg-[#0866F5] text-white text-[9px] font-bold uppercase tracking-widest rounded-full">
+                        Winning
+                      </div>
+                    )}
+                    <div className="flex items-center gap-1.5 mb-1">
+                      <img src={getFavicon(result.them.domain)} alt="" width={14} height={14} className="rounded-sm" />
+                      <p className="text-[12px] font-semibold text-[#374151] truncate max-w-[150px]">{result.them.domain}</p>
+                    </div>
+                    <ScoreCircle score={themScore} isWinner={!myWins} animate={animate} />
+                    <p className="text-[10.5px] text-[#9CA3AF] mt-1 mb-2">AI Readiness Score</p>
+                    <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full border ${scoreLabelBg(themScore)} ${scoreLabelColor(themScore)}`}>
+                      {scoreLabel(themScore)}
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
