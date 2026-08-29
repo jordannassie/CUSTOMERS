@@ -494,134 +494,131 @@ function InlineAIIcon() {
 
 // ─── Hero section ─────────────────────────────────────────────────────────────
 
-/** Animated racing-border compare bar */
+/** Premium compare bar with large VS badge and per-input validation checkmarks */
 function HeroCompareBar() {
   const router = useRouter();
   const [myUrl, setMyUrl] = React.useState("");
   const [themUrl, setThemUrl] = React.useState("");
-  const wrapRef = React.useRef<HTMLDivElement>(null);
-  const [perimeter, setPerimeter] = React.useState(0);
 
-  // Measure the wrapper once so the SVG stroke matches the real border-radius rect
-  React.useEffect(() => {
-    function measure() {
-      if (!wrapRef.current) return;
-      const { width, height } = wrapRef.current.getBoundingClientRect();
-      const r = 16; // matches rounded-2xl (16px)
-      // Perimeter of a rounded rect: 4 straight segments + 4 quarter-circle arcs
-      const p = 2 * (width - 2 * r) + 2 * (height - 2 * r) + 2 * Math.PI * r;
-      setPerimeter(Math.round(p));
-    }
-    measure();
-    window.addEventListener("resize", measure);
-    return () => window.removeEventListener("resize", measure);
-  }, []);
+  /** Real domain validation — strips protocol/path before testing */
+  function isValidDomain(value: string): boolean {
+    const v = value.trim().replace(/^https?:\/\//i, "").split("/")[0].split("?")[0];
+    if (!v) return false;
+    return /^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z]{2,})+$/.test(v);
+  }
+
+  const myValid   = isValidDomain(myUrl);
+  const themValid = isValidDomain(themUrl);
 
   function handleCompare(e: React.FormEvent) {
     e.preventDefault();
-    const my = myUrl.trim();
+    const my   = myUrl.trim();
     const them = themUrl.trim();
     if (!my || !them) return;
     router.push(`/compare?my=${encodeURIComponent(my)}&them=${encodeURIComponent(them)}`);
   }
 
-  // Dash = 28% of perimeter, gap = rest
-  const dash = perimeter > 0 ? Math.round(perimeter * 0.28) : 0;
-  const gap  = perimeter > 0 ? perimeter - dash : 0;
-
   return (
-    <div className="w-full max-w-[720px] mx-auto">
-      {/* keyframe injected once */}
-      <style>{`
-        @keyframes cd-race {
-          from { stroke-dashoffset: 0; }
-          to   { stroke-dashoffset: -${perimeter}px; }
-        }
-        @media (prefers-reduced-motion: reduce) {
-          .cd-race-svg { display: none; }
-        }
-      `}</style>
+    <div className="w-full max-w-[1060px] mx-auto">
+      <form onSubmit={handleCompare}>
+        <div
+          className="bg-white rounded-[26px] p-3 border border-[#BFDBFE]"
+          style={{
+            boxShadow:
+              "0 4px 32px rgba(8,102,245,0.08), 0 8px 48px rgba(8,102,245,0.04), 0 1px 6px rgba(0,0,0,0.05)",
+          }}
+        >
+          {/*
+           * Single flex container: column on mobile, row on desktop.
+           * order-* ensures VS badge stays between the two inputs in both layouts.
+           */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3">
 
-      {/* Wrapper: relative so SVG can overlay it */}
-      <div ref={wrapRef} className="relative">
-        {/* Racing-border SVG — sits on top, pointer-events: none */}
-        {perimeter > 0 && (
-          <svg
-            className="cd-race-svg absolute inset-0 w-full h-full pointer-events-none"
-            style={{ borderRadius: 18, zIndex: 10 }}
-            aria-hidden="true"
-          >
-            {/* base ring */}
-            <rect
-              x="1" y="1"
-              width="calc(100% - 2px)" height="calc(100% - 2px)"
-              rx="15" ry="15"
-              fill="none"
-              stroke="#E5E5E1"
-              strokeWidth="1.5"
-            />
-            {/* racing blue arc */}
-            <rect
-              x="1" y="1"
-              width="calc(100% - 2px)" height="calc(100% - 2px)"
-              rx="15" ry="15"
-              fill="none"
-              stroke="url(#cd-grad)"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeDasharray={`${dash} ${gap}`}
-              style={{
-                animation: `cd-race ${2.4}s linear infinite`,
-                transformOrigin: "center",
-              }}
-            />
-            <defs>
-              <linearGradient id="cd-grad" x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="0%"   stopColor="#0866F5" stopOpacity="0" />
-                <stop offset="50%"  stopColor="#0866F5" stopOpacity="1" />
-                <stop offset="100%" stopColor="#38BDF8" stopOpacity="0.7" />
-              </linearGradient>
-            </defs>
-          </svg>
-        )}
-
-        <form onSubmit={handleCompare}>
-          <div
-            className="bg-white rounded-2xl p-2 flex flex-col sm:flex-row items-stretch sm:items-center gap-2"
-            style={{ boxShadow: "0 4px 24px rgba(0,0,0,0.06), 0 1px 4px rgba(0,0,0,0.04)" }}
-          >
-            <input
-              type="text"
-              value={myUrl}
-              onChange={(e) => setMyUrl(e.target.value)}
-              placeholder="yourbusiness.com"
-              className="flex-1 px-4 py-3 text-[14px] text-[#171717] placeholder:text-[#C0C0BB] bg-transparent focus:outline-none"
-              autoComplete="off"
-            />
-            <div className="hidden sm:flex items-center justify-center px-1">
-              <span className="text-[10.5px] font-bold text-[#A3A3A0] bg-[#F5F5F2] rounded-full px-2.5 py-0.5">VS</span>
+            {/* ── Your website input ─────────────────────────────────── */}
+            <div className="relative flex-1 order-1">
+              <input
+                type="text"
+                value={myUrl}
+                onChange={(e) => setMyUrl(e.target.value)}
+                placeholder="yourbusiness.com"
+                className="w-full h-[58px] sm:h-[70px] pl-4 sm:pl-5 pr-11 text-[15px] text-[#171717] placeholder:text-[#C0C0BB] bg-[#F9F9F8] border border-[#E8E8E4] rounded-[12px] sm:rounded-[14px] focus:outline-none focus:border-[#BFDBFE] focus:bg-white transition-all"
+                autoComplete="off"
+                autoCorrect="off"
+                autoCapitalize="off"
+                spellCheck={false}
+                aria-label="Your website"
+              />
+              {myValid && (
+                <span
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 w-5 h-5 sm:w-[22px] sm:h-[22px] rounded-full bg-emerald-500 flex items-center justify-center pointer-events-none"
+                  role="img"
+                  aria-label="Valid website"
+                >
+                  <Check size={11} className="text-white" strokeWidth={2.5} aria-hidden="true" />
+                </span>
+              )}
             </div>
-            <input
-              type="text"
-              value={themUrl}
-              onChange={(e) => setThemUrl(e.target.value)}
-              placeholder="competitor.com"
-              className="flex-1 px-4 py-3 text-[14px] text-[#171717] placeholder:text-[#C0C0BB] bg-transparent focus:outline-none border-t sm:border-t-0 sm:border-l border-[#F0F0EC]"
-              autoComplete="off"
-            />
+
+            {/* ── VS Badge ──────────────────────────────────────────── */}
+            <div
+              className="order-2 shrink-0 flex items-center justify-center relative z-10"
+              aria-hidden="true"
+            >
+              <div
+                className="relative w-[56px] h-[56px] sm:w-[76px] sm:h-[76px] rounded-full bg-[#0866F5] flex items-center justify-center"
+                style={{
+                  boxShadow:
+                    "0 0 0 3px #ffffff, 0 0 0 5px rgba(8,102,245,0.22), 0 6px 20px rgba(8,102,245,0.32)",
+                }}
+              >
+                {/* Inner white ring */}
+                <div className="absolute inset-[4px] sm:inset-[5px] rounded-full border border-white/25 pointer-events-none" />
+                <span className="text-white font-black text-[21px] sm:text-[27px] leading-none tracking-tight relative">
+                  VS
+                </span>
+              </div>
+            </div>
+
+            {/* ── Competitor input ───────────────────────────────────── */}
+            <div className="relative flex-1 order-3">
+              <input
+                type="text"
+                value={themUrl}
+                onChange={(e) => setThemUrl(e.target.value)}
+                placeholder="competitor.com"
+                className="w-full h-[58px] sm:h-[70px] pl-4 sm:pl-5 pr-11 text-[15px] text-[#171717] placeholder:text-[#C0C0BB] bg-[#F9F9F8] border border-[#E8E8E4] rounded-[12px] sm:rounded-[14px] focus:outline-none focus:border-[#BFDBFE] focus:bg-white transition-all"
+                autoComplete="off"
+                autoCorrect="off"
+                autoCapitalize="off"
+                spellCheck={false}
+                aria-label="Competitor website"
+              />
+              {themValid && (
+                <span
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 w-5 h-5 sm:w-[22px] sm:h-[22px] rounded-full bg-emerald-500 flex items-center justify-center pointer-events-none"
+                  role="img"
+                  aria-label="Valid competitor website"
+                >
+                  <Check size={11} className="text-white" strokeWidth={2.5} aria-hidden="true" />
+                </span>
+              )}
+            </div>
+
+            {/* ── Compare Free button — always blue ─────────────────── */}
             <button
               type="submit"
-              disabled={!myUrl.trim() || !themUrl.trim()}
-              className="flex items-center justify-center gap-2 bg-[#0866F5] hover:bg-[#0757D4] text-white text-[13.5px] font-bold px-5 py-3 rounded-xl transition-colors disabled:opacity-50 shrink-0 active:scale-[0.97]"
+              className="order-4 shrink-0 flex items-center justify-center gap-2 bg-[#0866F5] hover:bg-[#0757D4] text-white text-[14px] sm:text-[14.5px] font-bold h-[58px] sm:h-[70px] w-full sm:w-[240px] rounded-[14px] sm:rounded-[16px] transition-colors active:scale-[0.97]"
+              style={{ boxShadow: "0 4px 16px rgba(8,102,245,0.28)" }}
             >
               Compare Free
               <ArrowRight size={14} aria-hidden="true" />
             </button>
-          </div>
-        </form>
-      </div>
 
-      <p className="text-[11.5px] text-[#A3A3A0] text-center mt-2.5">
+          </div>
+        </div>
+      </form>
+
+      <p className="text-[11.5px] text-[#A3A3A0] text-center mt-3">
         Free · No account needed · Results in ~10 seconds
       </p>
     </div>
@@ -631,6 +628,8 @@ function HeroCompareBar() {
 function HeroSection() {
   return (
     <section className="bg-[#FAFAF8] px-4 pt-16 pb-10 sm:pt-20 sm:pb-12 overflow-hidden border-b border-[#EEEEEA]">
+
+      {/* Headline area — constrained to 780px */}
       <div className="max-w-[780px] mx-auto text-center fade-up">
 
         {/* Eyebrow */}
@@ -649,11 +648,15 @@ function HeroSection() {
         <p className="text-[16px] sm:text-[17px] text-[#777773] leading-relaxed mb-8 max-w-[520px] mx-auto">
           Compare your website against a competitor in AI search — free, instant, no signup needed.
         </p>
+      </div>
 
-        {/* Compare bar */}
-        <div className="mb-7">
-          <HeroCompareBar />
-        </div>
+      {/* Compare bar — wider than headline, up to 1060px */}
+      <div className="mt-2 mb-6 fade-up fade-up-delay-1">
+        <HeroCompareBar />
+      </div>
+
+      {/* Secondary CTA + platform pills */}
+      <div className="max-w-[780px] mx-auto text-center fade-up fade-up-delay-2">
 
         {/* Secondary CTA */}
         <div className="flex flex-wrap items-center justify-center gap-3 mb-7">
