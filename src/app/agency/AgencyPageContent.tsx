@@ -1,6 +1,8 @@
 "use client";
 
 import React from "react";
+import Link from "next/link";
+import { ArrowRight } from "lucide-react";
 
 // ─── Hero Banner ──────────────────────────────────────────────────────────────
 
@@ -184,6 +186,58 @@ export default function AgencyPageContent() {
 
           </div>
         </section>
+
+        {/* ── Final CTA ── */}
+        <section className="px-4 pb-24">
+          <div className="max-w-[900px] mx-auto">
+            <div
+              className="rounded-3xl overflow-hidden relative text-center px-8 py-16 sm:py-20"
+              style={{ background: "linear-gradient(110deg, #063B9D 0%, #0866F5 55%, #168BFF 100%)" }}
+            >
+              <div
+                className="absolute inset-0 opacity-30 pointer-events-none"
+                style={{
+                  background:
+                    "radial-gradient(ellipse 60% 50% at 50% 0%, rgba(255,255,255,0.25) 0%, transparent 100%)",
+                }}
+                aria-hidden="true"
+              />
+              <div className="relative z-10">
+                <p className="text-[13px] font-bold uppercase tracking-widest text-white/60 mb-4">
+                  Get started today
+                </p>
+                <h2 className="text-[32px] sm:text-[44px] font-bold text-white leading-[1.1] tracking-tight mb-5">
+                  See where customers are finding
+                  <br className="hidden sm:block" />
+                  your competitors.
+                </h2>
+                <p className="text-[16px] text-white/75 max-w-[480px] mx-auto mb-10 leading-relaxed">
+                  Join free during beta and discover exactly how your business appears across AI
+                  search and Google — no credit card, no time limit.
+                </p>
+                <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+                  <Link
+                    href="/signup"
+                    className="flex items-center gap-2 bg-white text-[#0866F5] font-bold px-7 py-3.5 rounded-full hover:bg-blue-50 transition-all shadow-lg hover:shadow-xl hover:-translate-y-px text-[15px] active:scale-[0.97]"
+                  >
+                    Start Free
+                    <ArrowRight size={15} />
+                  </Link>
+                  <Link
+                    href="/contact?topic=enterprise"
+                    className="flex items-center gap-2 border border-white/30 text-white font-semibold px-6 py-3.5 rounded-full hover:bg-white/10 transition-all text-[14px] active:scale-[0.97]"
+                  >
+                    Talk to Sales
+                  </Link>
+                </div>
+                <p className="text-[12px] text-white/50 mt-6">
+                  Free during beta · No credit card required · Full product access
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+
       </div>
     </>
   );
