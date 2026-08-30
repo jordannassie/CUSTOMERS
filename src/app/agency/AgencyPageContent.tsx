@@ -109,10 +109,10 @@ export default function AgencyPageContent() {
 
             <div className="text-center mb-12">
               <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-[#171717] leading-tight tracking-tight mb-4">
-                Turn AI Visibility Into Recurring Revenue
+                Turn AI Search Into Your Agency&apos;s Next Recurring Service
               </h2>
-              <p className="text-base text-[#777773] max-w-xl mx-auto">
-                Customers.Direct gives you the platform. You choose what to charge your clients.
+              <p className="text-base text-[#777773] max-w-2xl mx-auto">
+                Show clients where competitors appear in AI answers, uncover opportunities to improve their visibility, and deliver clear reports — all from one agency dashboard.
               </p>
             </div>
 
@@ -204,34 +204,36 @@ export default function AgencyPageContent() {
               />
               <div className="relative z-10">
                 <p className="text-[13px] font-bold uppercase tracking-widest text-white/60 mb-4">
-                  Get started today
+                  Grow your agency with AI search
                 </p>
                 <h2 className="text-[32px] sm:text-[44px] font-bold text-white leading-[1.1] tracking-tight mb-5">
-                  See where customers are finding
+                  Your clients want to show up in AI.
                   <br className="hidden sm:block" />
-                  your competitors.
+                  Be the agency that helps them.
                 </h2>
-                <p className="text-[16px] text-white/75 max-w-[480px] mx-auto mb-10 leading-relaxed">
-                  Join free during beta and discover exactly how your business appears across AI
-                  search and Google — no credit card, no time limit.
+                <p className="text-[16px] text-white/75 max-w-[520px] mx-auto mb-3 leading-relaxed">
+                  Track their AI visibility against competitors, generate client-ready PDF reports, and turn findings into actionable website improvements with ready-to-use Claude prompts.
+                </p>
+                <p className="text-[16px] text-white/60 max-w-[440px] mx-auto mb-10 leading-relaxed">
+                  Start with your first client. Build a service you can sell every month.
                 </p>
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
                   <Link
                     href="/signup"
                     className="flex items-center gap-2 bg-white text-[#0866F5] font-bold px-7 py-3.5 rounded-full hover:bg-blue-50 transition-all shadow-lg hover:shadow-xl hover:-translate-y-px text-[15px] active:scale-[0.97]"
                   >
-                    Start Free
+                    Start Your 14-Day Trial
                     <ArrowRight size={15} />
                   </Link>
                   <Link
-                    href="/contact?topic=enterprise"
+                    href="/contact?topic=agency"
                     className="flex items-center gap-2 border border-white/30 text-white font-semibold px-6 py-3.5 rounded-full hover:bg-white/10 transition-all text-[14px] active:scale-[0.97]"
                   >
                     Talk to Sales
                   </Link>
                 </div>
                 <p className="text-[12px] text-white/50 mt-6">
-                  Free during beta · No credit card required · Full product access
+                  14-day free trial · Credit card required · Paid subscription begins after trial
                 </p>
               </div>
             </div>
