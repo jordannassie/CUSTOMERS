@@ -315,12 +315,20 @@ function SignalRow({
   );
 }
 
+const _AI_ICON_BASE =
+  "https://wsxusvapciexemfvtadm.supabase.co/storage/v1/object/public/STORAGE/images/icons/New%20AI%20Icons";
+
 // Small AI platform logos in the header
 const AI_PLATFORM_ICONS = [
-  { name: "ChatGPT",    src: "/icons/ai-platforms/chatgpt.svg"    },
-  { name: "Perplexity", src: "/icons/ai-platforms/perplexity.svg" },
-  { name: "Gemini",     src: "/icons/ai-platforms/gemini.svg"     },
-  { name: "Google AI",  src: "/icons/ai-platforms/google.svg"     },
+  { name: "ChatGPT",            src: "/icons/ai-platforms/chatgpt.svg"              },
+  { name: "Claude",             src: `${_AI_ICON_BASE}/Claude.svg`                  },
+  { name: "Gemini",             src: `${_AI_ICON_BASE}/Gemini.svg`                  },
+  { name: "Perplexity",         src: `${_AI_ICON_BASE}/Perplexity.svg`              },
+  { name: "Google AI",          src: `${_AI_ICON_BASE}/GoogleAI.svg`                },
+  { name: "Mistral",            src: `${_AI_ICON_BASE}/Mistral.svg`                 },
+  { name: "Microsoft Copilot",  src: `${_AI_ICON_BASE}/MicrosoftCopilot.svg`        },
+  { name: "Deepseek",           src: `${_AI_ICON_BASE}/Deepseek.svg`                },
+  { name: "Qwen",               src: `${_AI_ICON_BASE}/Qwen.svg`                    },
 ];
 
 const LOGO = "/images/logos/logo-black.png";

@@ -18,8 +18,8 @@ const NAV_ITEMS = [
     ),
   },
   {
-    label: "Users",
-    href: "/internal/admin/users",
+    label: "Accounts",
+    href: "/internal/admin/accounts",
     icon: (
       <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
         <path d="M8 8a3 3 0 100-6 3 3 0 000 6zm-5 6a5 5 0 0110 0H3z"/>
@@ -32,6 +32,24 @@ const NAV_ITEMS = [
     icon: (
       <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
         <path d="M1 3h14v2H1V3zm1 3h12v9H2V6zm2 2v1h4V8H4zm0 3v1h4v-1H4zm6-3v4h2V8h-2z"/>
+      </svg>
+    ),
+  },
+  {
+    label: "Billing",
+    href: "/internal/admin/billing",
+    icon: (
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+        <path d="M1 4h14v9H1V4zm0-2h14v1H1V2zm2 5v1h2V7H3zm0 3v1h4v-1H3zm6-3v4h4V7H9z"/>
+      </svg>
+    ),
+  },
+  {
+    label: "Pricing",
+    href: "/internal/admin/pricing",
+    icon: (
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+        <path d="M8 1a7 7 0 100 14A7 7 0 008 1zm1 10.93V13H7v-1.08A3 3 0 015 9h2a1 1 0 001 1 1 1 0 001-1c0-.55-.45-1-1-1a3 3 0 110-6V2h2v1.07A3 3 0 0111 6H9a1 1 0 10-2 0c0 .55.45 1 1 1a3 3 0 110 6z"/>
       </svg>
     ),
   },

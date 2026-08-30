@@ -1,22 +1,34 @@
 /**
  * PlatformIcon — renders the correct AI platform logo for a given platform name.
- * Uses locally-hosted SVGs from /icons/ai-platforms/.
- * Claude has no downloadable logo so renders a styled initial fallback.
+ * Uses Supabase-hosted SVGs for new AI icons; ChatGPT uses local SVG.
  */
 import Image from "next/image";
 
-export type Platform = "ChatGPT" | "Claude" | "Perplexity" | "Gemini" | "Google AI";
+export type Platform =
+  | "ChatGPT"
+  | "Claude"
+  | "Perplexity"
+  | "Gemini"
+  | "Google AI"
+  | "Mistral"
+  | "Microsoft Copilot"
+  | "Deepseek"
+  | "Qwen";
+
+const AI_ICON_BASE =
+  "https://wsxusvapciexemfvtadm.supabase.co/storage/v1/object/public/STORAGE/images/icons/New%20AI%20Icons";
 
 const ICON_MAP: Partial<Record<Platform, string>> = {
   ChatGPT: "/icons/ai-platforms/chatgpt.svg",
-  Perplexity: "/icons/ai-platforms/perplexity.svg",
-  Gemini: "/icons/ai-platforms/gemini.svg",
-  "Google AI": "/icons/ai-platforms/google.svg",
+  Claude: `${AI_ICON_BASE}/Claude.svg`,
+  Perplexity: `${AI_ICON_BASE}/Perplexity.svg`,
+  Gemini: `${AI_ICON_BASE}/Gemini.svg`,
+  "Google AI": `${AI_ICON_BASE}/GoogleAI.svg`,
+  Mistral: `${AI_ICON_BASE}/Mistral.svg`,
+  "Microsoft Copilot": `${AI_ICON_BASE}/MicrosoftCopilot.svg`,
+  Deepseek: `${AI_ICON_BASE}/Deepseek.svg`,
+  Qwen: `${AI_ICON_BASE}/Qwen.svg`,
 };
-
-// Claude brand colours (no official downloadable logo)
-const CLAUDE_BG = "#D97757";
-const CLAUDE_TEXT = "#ffffff";
 
 interface PlatformIconProps {
   platform: string;
@@ -28,7 +40,7 @@ export function PlatformIcon({ platform, size = 16, className = "" }: PlatformIc
   const src = ICON_MAP[platform as Platform];
 
   if (!src) {
-    // Fallback: initial pill (used for Claude and any unknown platform)
+    // Fallback: initial pill for any unknown platform
     const initial = platform.charAt(0).toUpperCase();
     const px = Math.round(size * 0.55);
     return (
@@ -37,8 +49,8 @@ export function PlatformIcon({ platform, size = 16, className = "" }: PlatformIc
         style={{
           width: size,
           height: size,
-          background: CLAUDE_BG,
-          color: CLAUDE_TEXT,
+          background: "#6B7280",
+          color: "#ffffff",
           fontSize: px,
           lineHeight: 1,
         }}

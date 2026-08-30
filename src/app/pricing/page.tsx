@@ -99,7 +99,7 @@ function PlanCard({ plan }: { plan: PricingPlan }) {
               </div>
               <p className="text-[12px] text-[#059669] font-medium mt-1 flex items-center gap-1">
                 <Shield size={11} />
-                {plan.trialLabel} · No credit card
+                14-day free trial · Card required
               </p>
             </div>
           )}

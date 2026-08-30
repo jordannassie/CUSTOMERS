@@ -2,25 +2,59 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { runVisibilityForBusiness } from "@/lib/geo/run-visibility";
 import { generateOpportunities } from "@/lib/geo/opportunity-engine";
+import { CANONICAL_PLANS, getPlanConfig, type CanonicalPlanId } from "@/config/pricing";
+import { betaFreeAccess } from "@/config/product-access";
 
 export const maxDuration = 60;
 
-const CADENCE_DAYS: Record<string, number> = {
-  none: 30, // no active subscription yet — default to the base monthly cadence
-  ai_visibility: 30,
-  growth_agent: 7,
-  autonomous_growth: 7,
-};
-
-const RETRY_LIMIT = 1; // additional attempt per business, on top of the first
-const MAX_BUSINESSES_PER_INVOCATION = 20; // keep a single invocation well inside function time limits
+const RETRY_LIMIT = 1;
+const MAX_BUSINESSES_PER_INVOCATION = 20;
 
 /**
- * Scheduled monitoring entry point. Not user-facing — called by a Netlify
- * Scheduled Function (see netlify/functions/geo-scheduled-monitoring.mts)
- * with a shared secret. Iterates active businesses whose last scan is older
- * than their plan's monitoring cadence, runs a fresh visibility scan for
- * each, and regenerates opportunities from the results.
+ * Returns the scan cadence in days for a given plan.
+ * Uses the canonical pricing config as the single source of truth.
+ */
+function getScanCadenceDays(planId: string | null | undefined): number {
+  if (!planId || planId === "beta" || planId === "none") {
+    // Beta users get Growth-level cadence (weekly)
+    return betaFreeAccess ? CANONICAL_PLANS.growth.scanCadenceDays : 30;
+  }
+  return getPlanConfig(planId).scanCadenceDays;
+}
+
+/**
+ * Returns the max prompts for a scan run based on the business plan.
+ * Uses the canonical pricing config — never hardcoded.
+ */
+function getMaxPromptsForPlan(planId: string | null | undefined): number {
+  if (!planId || planId === "beta" || planId === "none") {
+    // Beta uses Growth limits
+    return betaFreeAccess ? CANONICAL_PLANS.growth.maxTrackedPrompts : CANONICAL_PLANS.starter.maxTrackedPrompts;
+  }
+  const plan = getPlanConfig(planId);
+  return plan.maxTrackedPrompts === -1 ? 999 : plan.maxTrackedPrompts;
+}
+
+/**
+ * Returns whether a business should run scans at all.
+ * Canceled businesses are skipped unless in beta mode.
+ */
+function shouldRunScan(status: string | null | undefined): boolean {
+  if (betaFreeAccess) return true; // Beta: always run for active businesses
+  return status === "active" || status === "trialing";
+}
+
+/**
+ * Scheduled monitoring entry point.
+ * Called daily by Netlify Scheduled Function.
+ *
+ * Plan enforcement:
+ *   - Uses canonical pricing config for cadence and prompt limits
+ *   - Starter: monthly cadence, 25 prompts
+ *   - Growth:  weekly cadence, 75 prompts
+ *   - Pro:     weekly full scan (150 prompts) + up to 25 daily priority prompts
+ *   - Beta:    Growth-equivalent limits
+ *   - Canceled/inactive businesses: skipped
  */
 export async function POST(request: NextRequest) {
   const secret = request.headers.get("x-cron-secret");
@@ -40,19 +74,38 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Could not load businesses." }, { status: 500 });
   }
 
-  const results: Array<{ businessId: string; ran: boolean; reason?: string; score?: number | null }> = [];
+  const results: Array<{
+    businessId: string;
+    ran: boolean;
+    reason?: string;
+    score?: number | null;
+    promptsRan?: number;
+  }> = [];
   let processed = 0;
 
   for (const business of businesses) {
     if (processed >= MAX_BUSINESSES_PER_INVOCATION) break;
 
-    const { data: subscription } = await supabase
-      .from("subscriptions")
-      .select("plan")
+    // Get billing item to determine plan and scan eligibility
+    const { data: billingItem } = await supabase
+      .from("business_billing_items")
+      .select("plan_id, status")
       .eq("business_id", business.id)
       .maybeSingle();
-    const cadenceDays = CADENCE_DAYS[subscription?.plan ?? "none"] ?? 30;
 
+    const planId = billingItem?.plan_id ?? "beta";
+    const billingStatus = billingItem?.status ?? "beta";
+
+    // Skip canceled/inactive businesses (except in beta mode)
+    if (!shouldRunScan(billingStatus)) {
+      results.push({ businessId: business.id, ran: false, reason: `billing status: ${billingStatus}` });
+      continue;
+    }
+
+    const cadenceDays = getScanCadenceDays(planId);
+    const maxPrompts = getMaxPromptsForPlan(planId);
+
+    // Check when this business was last scanned
     const { data: lastScore } = await supabase
       .from("visibility_scores")
       .select("calculated_at")
@@ -63,13 +116,19 @@ export async function POST(request: NextRequest) {
 
     const dueAt = lastScore
       ? new Date(new Date(lastScore.calculated_at).getTime() + cadenceDays * 24 * 60 * 60 * 1000)
-      : new Date(0); // never scanned — always due
-    if (dueAt > new Date()) {
+      : new Date(0); // Never scanned — always due
+
+    // For Pro businesses: also check if daily priority prompts should run
+    const isPro = planId === "pro";
+    const dailyWatchLimit = isPro ? CANONICAL_PLANS.pro.dailyWatchPromptLimit : 0;
+    const isFullScanDue = dueAt <= new Date();
+
+    if (!isFullScanDue && !isPro) {
       results.push({ businessId: business.id, ran: false, reason: "not due yet" });
       continue;
     }
 
-    // Duplicate-run protection: skip if a run is already in flight for this business.
+    // Duplicate-run protection
     const { data: inFlight } = await supabase
       .from("visibility_runs")
       .select("id")
@@ -78,16 +137,35 @@ export async function POST(request: NextRequest) {
       .gte("started_at", new Date(Date.now() - 10 * 60 * 1000).toISOString())
       .limit(1)
       .maybeSingle();
+
     if (inFlight) {
       results.push({ businessId: business.id, ran: false, reason: "run already in flight" });
       continue;
     }
 
-    let outcome = await runVisibilityForBusiness(supabase, business, { maxPrompts: 25 });
+    // Determine how many prompts to run
+    let promptsToRun = isFullScanDue ? maxPrompts : 0;
+
+    // Pro: always run up to dailyWatchLimit priority prompts daily
+    if (isPro && !isFullScanDue && dailyWatchLimit > 0) {
+      promptsToRun = dailyWatchLimit;
+    }
+
+    if (promptsToRun === 0) {
+      results.push({ businessId: business.id, ran: false, reason: "no prompts to run" });
+      continue;
+    }
+
+    let outcome = await runVisibilityForBusiness(supabase, business, {
+      maxPrompts: promptsToRun,
+    });
+
     let attempts = 0;
     while (outcome.promptsSucceeded === 0 && attempts < RETRY_LIMIT) {
       attempts += 1;
-      outcome = await runVisibilityForBusiness(supabase, business, { maxPrompts: 25 });
+      outcome = await runVisibilityForBusiness(supabase, business, {
+        maxPrompts: promptsToRun,
+      });
     }
 
     processed += 1;
@@ -112,15 +190,26 @@ export async function POST(request: NextRequest) {
         results: runResults ?? [],
       });
 
-      await supabase.from("opportunities").delete().eq("business_id", business.id).eq("status", "open");
+      await supabase
+        .from("opportunities")
+        .delete()
+        .eq("business_id", business.id)
+        .eq("status", "open");
+
       if (drafts.length > 0) {
-        await supabase
-          .from("opportunities")
-          .insert(drafts.map((d) => ({ business_id: business.id, status: "open" as const, ...d })));
+        await supabase.from("opportunities").insert(
+          drafts.map((d) => ({ business_id: business.id, status: "open" as const, ...d }))
+        );
       }
     }
 
-    results.push({ businessId: business.id, ran: true, score: outcome.score, reason: outcome.error });
+    results.push({
+      businessId: business.id,
+      ran: true,
+      score: outcome.score,
+      reason: outcome.error,
+      promptsRan: outcome.promptsSucceeded,
+    });
   }
 
   return NextResponse.json({ processed, results });

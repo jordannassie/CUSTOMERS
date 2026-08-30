@@ -21,9 +21,9 @@ import {
   X,
   Check,
   Search,
-
   BarChart2,
   ShieldCheck,
+  CreditCard,
 } from "lucide-react";
 import TrialBanner from "@/components/geo/dashboard/TrialBanner";
 import SuggestFeatureModal from "@/components/geo/dashboard/SuggestFeatureModal";
@@ -32,17 +32,18 @@ import BotIcon from "@/components/BotIcon";
 const LOGO = "/images/logos/logo-black.png";
 
 const NAV = [
-  { label: "Overview",          href: "/dashboard",                  icon: LayoutDashboard },
-  { label: "Competitors",       href: "/dashboard/competitors",      icon: Users           },
-  { label: "AI Visibility",     href: "/dashboard/visibility",       icon: Sparkles        },
-  { label: "Prompts",           href: "/dashboard/prompts",          icon: MessagesSquare  },
-  { label: "Search Intelligence", href: "/dashboard/seo",            icon: BarChart2       },
-  { label: "Sources",           href: "/dashboard/citations",        icon: Link2           },
-  { label: "Agent Readiness",   href: "/dashboard/agent-readiness",  icon: ShieldCheck,    badge: "New" },
-  { label: "Opportunities",     href: "/dashboard/opportunities",    icon: Lightbulb       },
-  { label: "Direct Agent",      href: "/dashboard/direct-agent",     icon: BotIcon         },
-  { label: "Reports",           href: "/dashboard/reports",          icon: FileBarChart    },
-  { label: "Settings",          href: "/dashboard/settings",         icon: Settings        },
+  { label: "Overview",            href: "/dashboard",                  icon: LayoutDashboard },
+  { label: "Competitors",         href: "/dashboard/competitors",      icon: Users           },
+  { label: "AI Visibility",       href: "/dashboard/visibility",       icon: Sparkles        },
+  { label: "Prompts",             href: "/dashboard/prompts",          icon: MessagesSquare  },
+  { label: "Search Intelligence", href: "/dashboard/seo",              icon: BarChart2       },
+  { label: "Sources",             href: "/dashboard/citations",        icon: Link2           },
+  { label: "Agent Readiness",     href: "/dashboard/agent-readiness",  icon: ShieldCheck,    badge: "New" },
+  { label: "Opportunities",       href: "/dashboard/opportunities",    icon: Lightbulb       },
+  { label: "Direct Agent",        href: "/dashboard/direct-agent",     icon: BotIcon         },
+  { label: "Reports",             href: "/dashboard/reports",          icon: FileBarChart    },
+  { label: "Billing",             href: "/dashboard/billing",          icon: CreditCard      },
+  { label: "Settings",            href: "/dashboard/settings",         icon: Settings        },
 ];
 
 interface DashboardShellProps {

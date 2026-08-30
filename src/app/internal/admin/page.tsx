@@ -59,6 +59,32 @@ export default async function AdminOverviewPage() {
     svc.from("feature_requests").select("*", { count: "exact", head: true }).eq("status", "new"),
   ]);
 
+  // Real billing KPIs from billing_accounts + business_billing_items
+  const { data: activeItems } = await svc
+    .from("business_billing_items")
+    .select("plan_id, price_monthly_cents, status")
+    .in("status", ["active", "trialing"]);
+
+  const { count: payingAccounts } = await svc
+    .from("billing_accounts")
+    .select("*", { count: "exact", head: true })
+    .in("status", ["active", "trialing"]);
+
+  const { count: trialingAccounts } = await svc
+    .from("billing_accounts")
+    .select("*", { count: "exact", head: true })
+    .eq("status", "trialing");
+
+  const { getPlanConfig } = await import("@/config/pricing");
+  const totalMrrCents = (activeItems ?? []).reduce((sum, item) => {
+    return sum + (item.price_monthly_cents ?? getPlanConfig(item.plan_id).priceMonthly);
+  }, 0);
+
+  function fmtMrr(cents: number) {
+    if (cents === 0) return "$0";
+    return `$${(cents / 100).toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
+  }
+
   const { data: authUsers } = await svc.auth.admin.listUsers({ perPage: 20, page: 1 });
   const recentUsers = (authUsers?.users ?? [])
     .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
@@ -101,18 +127,18 @@ export default async function AdminOverviewPage() {
           icon={<svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 8a3 3 0 100-6 3 3 0 000 6zm-5 6a5 5 0 0110 0H3z"/></svg>}
         />
         <KpiCard
-          label="Active Trials" value={totalUsers ?? 0}
-          sub={`+${newBiz7d ?? 0} this week`}
+          label="Trialing" value={trialingAccounts ?? 0}
+          sub={`+${newBiz7d ?? 0} biz this week`}
           icon={<svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 1a7 7 0 100 14A7 7 0 008 1zm0 2a5 5 0 110 10A5 5 0 018 3zm.5 2H7v5l4 2.4.75-1.23-3.25-1.97V5z"/></svg>}
         />
         <KpiCard
-          label="Paying Customers" value={0}
-          sub="No change"
+          label="Paying Accounts" value={payingAccounts ?? 0}
+          sub={`${(activeItems ?? []).length} paid businesses`}
           icon={<svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M1 4h14v9H1V4zm0-2h14v1H1V2zm2 5v1h2V7H3zm0 3v1h4v-1H3zm6-3v4h4V7H9z"/></svg>}
         />
         <KpiCard
-          label="MRR" value="$0"
-          sub="No change"
+          label="MRR" value={fmtMrr(totalMrrCents)}
+          sub={totalMrrCents === 0 ? "Beta — no paid subs yet" : `${(activeItems ?? []).filter(i => i.status === "active").length} active businesses`}
           icon={<svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 1a7 7 0 100 14A7 7 0 008 1zm1 10.93V13H7v-1.08A3 3 0 015 9h2a1 1 0 001 1 1 1 0 001-1c0-.55-.45-1-1-1a3 3 0 110-6V2h2v1.07A3 3 0 0111 6H9a1 1 0 10-2 0c0 .55.45 1 1 1a3 3 0 110 6z" opacity="0.85"/></svg>}
         />
       </div>
