@@ -5,6 +5,80 @@ import Link from "next/link";
 import { ArrowRight, CheckCircle2, UserPlus, BarChart3, Lightbulb, FileText } from "lucide-react";
 import AgencyWorkspaceDemo from "@/components/site/AgencyWorkspaceDemo";
 
+// ─── Rotating Banner ──────────────────────────────────────────────────────────
+
+const AGENCY_BANNERS = [
+  {
+    src: "https://wsxusvapciexemfvtadm.supabase.co/storage/v1/object/public/STORAGE/images/banners/banner2/ChatGPT%20Image%20Aug%2026,%202026,%2012_44_50%20PM%20(5).png",
+    alt: "Auto service client gets a booking through Google AI",
+    industry: "Auto Service",
+    platform: "Google AI",
+  },
+  {
+    src: "https://wsxusvapciexemfvtadm.supabase.co/storage/v1/object/public/STORAGE/images/banners/banner2/ChatGPT%20Image%20Aug%2026,%202026,%2012_44_50%20PM%20(8).png",
+    alt: "Retail shopper books a product demo through ChatGPT",
+    industry: "Retail",
+    platform: "ChatGPT",
+  },
+  {
+    src: "https://wsxusvapciexemfvtadm.supabase.co/storage/v1/object/public/STORAGE/images/banners/banner2/ChatGPT%20Image%20Aug%2026,%202026,%2012_44_50%20PM%20(3).png",
+    alt: "Restaurant family places dinner order through ChatGPT",
+    industry: "Restaurant",
+    platform: "ChatGPT",
+  },
+];
+
+function AgencyBannerSlider() {
+  const [active, setActive] = React.useState(0);
+
+  React.useEffect(() => {
+    const id = setInterval(() => {
+      setActive((a) => (a + 1) % AGENCY_BANNERS.length);
+    }, 4000);
+    return () => clearInterval(id);
+  }, []);
+
+  const banner = AGENCY_BANNERS[active];
+
+  return (
+    <section className="bg-[#171717] overflow-hidden" aria-label="AI is already sending customers to businesses that show up">
+      <div className="w-full max-w-5xl mx-auto px-4 pb-12">
+        <div className="relative rounded-2xl overflow-hidden" style={{ aspectRatio: "16/9" }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            key={active}
+            src={banner.src}
+            alt={banner.alt}
+            className="absolute inset-0 w-full h-full object-cover"
+          />
+          <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-black/50 to-transparent pointer-events-none" />
+          <div className="absolute bottom-4 left-4 flex items-center gap-2 bg-white/10 backdrop-blur-sm border border-white/20 rounded-full px-3 py-1.5">
+            <span className="text-[11px] font-semibold text-white/90">{banner.industry}</span>
+            <span className="text-white/30 text-[10px]">·</span>
+            <span className="text-[11px] text-white/60">{banner.platform}</span>
+          </div>
+        </div>
+        <div className="flex items-center justify-center gap-2 mt-5">
+          {AGENCY_BANNERS.map((_, i) => (
+            <button
+              key={i}
+              type="button"
+              onClick={() => setActive(i)}
+              aria-label={`Show slide ${i + 1}`}
+              className="rounded-full transition-all"
+              style={{
+                width: i === active ? 24 : 8,
+                height: 8,
+                background: i === active ? "#FFFFFF" : "rgba(255,255,255,0.25)",
+              }}
+            />
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 // ─── Hero ──────────────────────────────────────────────────────────────────────
 
 function AgencyHero() {
@@ -277,6 +351,7 @@ export default function AgencyPageContent() {
   return (
     <>
       <AgencyHero />
+      <AgencyBannerSlider />
       <WorkflowSection />
       <RevenueSection />
       <ClosingCTA />
