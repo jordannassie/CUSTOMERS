@@ -3,6 +3,9 @@
 import React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+
+const _HP_AI_ICON_BASE =
+  "https://wsxusvapciexemfvtadm.supabase.co/storage/v1/object/public/STORAGE/images/icons/New%20AI%20Icons";
 import { PlatformIcon } from "@/components/PlatformIcon";
 // AIOrbitAnimation removed — replaced with inline cycling icon in hero headline
 import {
@@ -2070,7 +2073,7 @@ function AgencySection() {
                 {/* Prompts Won */}
                 <div className="bg-white/6 rounded-xl border border-white/8 px-3 py-3">
                   <div className="flex items-center gap-1.5 mb-1.5">
-                    <img src="/icons/ai-platforms/perplexity.svg" alt="" width={12} height={12} className="opacity-40 invert" aria-hidden="true" />
+                    <img src={`${_HP_AI_ICON_BASE}/Perplexity.svg`} alt="" width={12} height={12} className="opacity-40 invert" aria-hidden="true" />
                     <p className="text-[9px] text-white/35 uppercase tracking-wide">Prompts Won</p>
                   </div>
                   <span className="text-[26px] font-bold text-white leading-none">10/12</span>
@@ -2088,7 +2091,7 @@ function AgencySection() {
                 {/* Open Opportunities */}
                 <div className="bg-white/6 rounded-xl border border-white/8 px-3 py-3">
                   <div className="flex items-center gap-1.5 mb-1.5">
-                    <img src="/icons/ai-platforms/google.svg" alt="" width={12} height={12} className="opacity-40 invert" aria-hidden="true" />
+                    <img src={`${_HP_AI_ICON_BASE}/GoogleAI.svg`} alt="" width={12} height={12} className="opacity-40 invert" aria-hidden="true" />
                     <p className="text-[9px] text-white/35 uppercase tracking-wide">Open Opps</p>
                   </div>
                   <span className="text-[26px] font-bold text-white leading-none">3</span>
@@ -2097,7 +2100,7 @@ function AgencySection() {
               {/* Last scan */}
               <div className="bg-white/6 rounded-xl border border-white/8 px-3 py-3">
                 <div className="flex items-center gap-1.5 mb-1">
-                  <img src="/icons/ai-platforms/chatgpt-dark.svg" alt="" width={12} height={12} className="opacity-40 invert" aria-hidden="true" />
+                  <img src="/icons/ai-platforms/chatgpt.svg" alt="" width={12} height={12} className="opacity-40 invert" aria-hidden="true" />
                   <p className="text-[9px] text-white/35 uppercase tracking-wide">Last scan</p>
                 </div>
                 <span className="text-[18px] font-bold text-white leading-none">2 hrs ago</span>

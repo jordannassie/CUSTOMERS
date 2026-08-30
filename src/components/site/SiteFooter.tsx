@@ -11,7 +11,9 @@ const INSTAGRAM_PATH =
 const FACEBOOK_PATH =
   "M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z";
 
-// Small inline SVGs for each AI platform — kept here to avoid extra imports
+const _AI_ICON_BASE =
+  "https://wsxusvapciexemfvtadm.supabase.co/storage/v1/object/public/STORAGE/images/icons/New%20AI%20Icons";
+
 const AI_PLATFORMS: { name: string; icon: React.ReactNode }[] = [
   {
     name: "ChatGPT",
@@ -21,29 +23,26 @@ const AI_PLATFORMS: { name: string; icon: React.ReactNode }[] = [
   },
   {
     name: "Claude",
-    // Anthropic "leaf" mark — simple inline SVG
     icon: (
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true" className="opacity-60">
-        <path d="M13.83 3.52l7.86 13.59a.96.96 0 01-.83 1.44H2.42a.96.96 0 01-.83-1.44L9.45 3.52a.96.96 0 011.66 0l.86 1.48.86-1.48a.96.96 0 011.0 0z" fill="currentColor"/>
-      </svg>
+      <img src={`${_AI_ICON_BASE}/Claude.svg`} alt="" width={14} height={14} className="opacity-60 invert" aria-hidden="true" />
     ),
   },
   {
     name: "Perplexity",
     icon: (
-      <img src="/icons/ai-platforms/perplexity.svg" alt="" width={14} height={14} className="opacity-60 invert" aria-hidden="true" />
+      <img src={`${_AI_ICON_BASE}/Perplexity.svg`} alt="" width={14} height={14} className="opacity-60 invert" aria-hidden="true" />
     ),
   },
   {
     name: "Gemini",
     icon: (
-      <img src="/icons/ai-platforms/gemini.svg" alt="" width={14} height={14} className="opacity-60 invert" aria-hidden="true" />
+      <img src={`${_AI_ICON_BASE}/Gemini.svg`} alt="" width={14} height={14} className="opacity-60 invert" aria-hidden="true" />
     ),
   },
   {
     name: "Google AI",
     icon: (
-      <img src="/icons/ai-platforms/google.svg" alt="" width={14} height={14} className="opacity-60 invert" aria-hidden="true" />
+      <img src={`${_AI_ICON_BASE}/GoogleAI.svg`} alt="" width={14} height={14} className="opacity-60 invert" aria-hidden="true" />
     ),
   },
 ];
