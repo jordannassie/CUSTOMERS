@@ -4,21 +4,21 @@ import SiteFooter from "@/components/site/SiteFooter";
 import AgencyPageContent from "./AgencyPageContent";
 
 export const metadata: Metadata = {
-  title: "AI Visibility Software for Agencies",
+  title: "AEO Software for Marketing Agencies | Customers.Direct",
   description:
-    "Help your agency track client visibility across AI search, compare competitors, and turn AI visibility into a recurring service for your clients.",
+    "Help your agency track client visibility in AI search, compare competitors, identify improvements, and deliver client-ready reports from one dashboard.",
   openGraph: {
     type: "website",
-    title: "AI Visibility Software for Agencies | Customers.Direct",
+    title: "AEO Software for Marketing Agencies | Customers.Direct",
     description:
-      "Help your agency track client visibility across AI search, compare competitors, and turn AI visibility into a recurring service for your clients.",
+      "Help your agency track client visibility in AI search, compare competitors, identify improvements, and deliver client-ready reports from one dashboard.",
     url: "https://customers.direct/agency",
   },
   twitter: {
     card: "summary_large_image",
-    title: "AI Visibility Software for Agencies | Customers.Direct",
+    title: "AEO Software for Marketing Agencies | Customers.Direct",
     description:
-      "Help your agency track client visibility across AI search, compare competitors, and turn AI visibility into a recurring service for your clients.",
+      "Help your agency track client visibility in AI search, compare competitors, identify improvements, and deliver client-ready reports from one dashboard.",
   },
 };
 

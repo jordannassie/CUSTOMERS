@@ -3,6 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import AgencyWorkspaceDemo from "@/components/site/AgencyWorkspaceDemo";
 
 const _HP_AI_ICON_BASE =
   "https://wsxusvapciexemfvtadm.supabase.co/storage/v1/object/public/STORAGE/images/icons/New%20AI%20Icons";
@@ -1949,7 +1950,7 @@ function AgentReadinessDemoCard() {
   );
 }
 
-// ─── 9. AGENCY / RESELLER ──────────────────────────────────────────────────
+// ─── 9. AGENCY ──────────────────────────────────────────────────────────────
 
 function AgencySection() {
   return (
@@ -1958,21 +1959,21 @@ function AgencySection() {
         {/* Left copy */}
         <div>
           <div className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-white/50 bg-white/8 border border-white/12 px-3 py-1 rounded-full mb-5 uppercase tracking-wider">
-            Agencies & Resellers
+            Built for Marketing Agencies
           </div>
           <h2 className="text-[32px] sm:text-[40px] font-bold text-white leading-[1.1] tracking-tight mb-4">
-            Manage every client&apos;s AI visibility from one login.
+            Every client&apos;s brand. One agency dashboard.
           </h2>
           <p className="text-[15px] text-white/50 leading-relaxed mb-6 max-w-[460px]">
-            Customers.Direct is built for agencies from the ground up. One login. Multiple client workspaces. You own the billing relationship — your clients never see a Customers.Direct invoice.
+            Add your clients&apos; brands, track their AI visibility against competitors, and turn insights into actionable improvements and client-ready reports.
           </p>
           <ul className="flex flex-col gap-3 mb-8">
             {[
-              "One login → unlimited client businesses",
-              "Per-business subscriptions billed to you, not your client",
-              "Business switcher for seamless client switching",
-              "Repeatable reporting workflow per client",
-              "Actionable opportunities for each client business",
+              "Manage multiple brands from one account",
+              "Track competitors and prompts for each brand",
+              "Switch between brand dashboards",
+              "Generate client-ready PDF reports",
+              "Find actionable improvements for each brand",
             ].map((item) => (
               <li key={item} className="flex items-start gap-2.5 text-[14px] text-white/50">
                 <CheckCircle2 size={15} className="text-white/40 shrink-0 mt-0.5" aria-hidden="true" />
@@ -1980,142 +1981,24 @@ function AgencySection() {
               </li>
             ))}
           </ul>
-          <div className="flex gap-3">
+          <div className="flex flex-wrap gap-3">
             <Link
-              href="/signup"
+              href="/agency"
               className="inline-flex items-center gap-2 bg-white text-[#171717] font-semibold px-5 py-2.5 rounded-lg hover:bg-[#F5F5F2] transition-colors text-[14px] active:scale-[0.97]"
             >
-              Start free — add clients later <ArrowRight size={13} aria-hidden="true" />
+              Explore Agency Features <ArrowRight size={13} aria-hidden="true" />
+            </Link>
+            <Link
+              href="/signup"
+              className="inline-flex items-center gap-2 border border-white/20 text-white/70 font-semibold px-5 py-2.5 rounded-lg hover:bg-white/8 transition-colors text-[14px] active:scale-[0.97]"
+            >
+              Start Your Agency Trial
             </Link>
           </div>
         </div>
 
-        {/* Right — agency workspace mock */}
-        <div className="bg-[#1A1A1A] rounded-2xl border border-white/10 overflow-hidden"
-          style={{ boxShadow: "0 24px 64px rgba(0,0,0,0.5)" }}>
-
-          {/* Header bar */}
-          <div className="flex items-center gap-3 px-5 py-4 border-b border-white/8">
-            {/* Agency logo */}
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="https://wsxusvapciexemfvtadm.supabase.co/storage/v1/object/public/STORAGE/images/Workspace/brandastic.jpg"
-              alt="Brandastic Agency"
-              className="w-8 h-8 rounded-full object-cover border border-white/20 shrink-0"
-            />
-            <span className="text-[15px] font-bold text-white tracking-tight">Brandastic Agency</span>
-            <span className="ml-auto text-[9px] font-bold uppercase tracking-widest text-[#4F8EF7] bg-[#4F8EF7]/15 border border-[#4F8EF7]/30 px-2.5 py-1 rounded-md">
-              Agency Workspace
-            </span>
-          </div>
-
-          {/* Body: brands list + metrics */}
-          <div className="flex">
-            {/* Left — brand list */}
-            <div className="w-[200px] shrink-0 border-r border-white/8 py-4 px-3">
-              <p className="text-[9px] font-bold uppercase tracking-widest text-white/30 mb-3 px-2">Your Brands</p>
-              <div className="flex flex-col gap-1">
-                {[
-                  {
-                    name: "UFC Gym",
-                    src: "https://wsxusvapciexemfvtadm.supabase.co/storage/v1/object/public/STORAGE/images/Workspace/ufcgym-square-black.jpg",
-                    active: true,
-                  },
-                  {
-                    name: "Microsoft",
-                    src: "https://wsxusvapciexemfvtadm.supabase.co/storage/v1/object/public/STORAGE/images/Workspace/Microsoft-Logo.png",
-                    active: false,
-                  },
-                  {
-                    name: "T-Mobile",
-                    src: "https://wsxusvapciexemfvtadm.supabase.co/storage/v1/object/public/STORAGE/images/Workspace/T-Mobile-Logo.png",
-                    active: false,
-                  },
-                  {
-                    name: "Vans",
-                    src: "https://wsxusvapciexemfvtadm.supabase.co/storage/v1/object/public/STORAGE/images/Workspace/vans-logo-png_seeklogo-147508.png",
-                    active: false,
-                  },
-                ].map(({ name, src, active }) => (
-                  <div
-                    key={name}
-                    className={`flex items-center gap-3 px-2 py-2.5 rounded-xl ${active ? "bg-white/10" : ""}`}
-                  >
-                    {/* Logo with black bg */}
-                    <div className="w-10 h-10 rounded-lg bg-black flex items-center justify-center shrink-0 overflow-hidden border border-white/10">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={src} alt={name} className="w-9 h-9 object-contain" />
-                    </div>
-                    <span className={`text-[14px] font-semibold truncate ${active ? "text-white" : "text-white/45"}`}>
-                      {name}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Right — metrics for active brand */}
-            <div className="flex-1 p-4 flex flex-col gap-2.5">
-              <div className="grid grid-cols-2 gap-2.5">
-                {/* AI Visibility */}
-                <div className="bg-white/6 rounded-xl border border-white/8 px-3 py-3">
-                  <div className="flex items-center gap-1.5 mb-1.5">
-                    <img src="/icons/ai-platforms/chatgpt.svg" alt="" width={12} height={12} className="opacity-40 invert" aria-hidden="true" />
-                    <p className="text-[9px] text-white/35 uppercase tracking-wide">AI Visibility</p>
-                  </div>
-                  <div className="flex items-end gap-2">
-                    <span className="text-[26px] font-bold text-white leading-none">82</span>
-                    <svg width="40" height="18" viewBox="0 0 40 18" fill="none" className="mb-1" aria-hidden="true">
-                      <polyline points="0,15 8,11 16,13 24,6 32,8 40,2" stroke="#4F8EF7" strokeWidth="1.8" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                  </div>
-                </div>
-                {/* Prompts Won */}
-                <div className="bg-white/6 rounded-xl border border-white/8 px-3 py-3">
-                  <div className="flex items-center gap-1.5 mb-1.5">
-                    <img src={`${_HP_AI_ICON_BASE}/Perplexity.svg`} alt="" width={12} height={12} className="opacity-40 invert" aria-hidden="true" />
-                    <p className="text-[9px] text-white/35 uppercase tracking-wide">Prompts Won</p>
-                  </div>
-                  <span className="text-[26px] font-bold text-white leading-none">10/12</span>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-2.5">
-                {/* Competitors */}
-                <div className="bg-white/6 rounded-xl border border-white/8 px-3 py-3">
-                  <div className="flex items-center gap-1.5 mb-1.5">
-                    <img src="/icons/ai-platforms/gemini.svg" alt="" width={12} height={12} className="opacity-40 invert" aria-hidden="true" />
-                    <p className="text-[9px] text-white/35 uppercase tracking-wide">Competitors</p>
-                  </div>
-                  <span className="text-[20px] font-bold text-white leading-none">5 tracked</span>
-                </div>
-                {/* Open Opportunities */}
-                <div className="bg-white/6 rounded-xl border border-white/8 px-3 py-3">
-                  <div className="flex items-center gap-1.5 mb-1.5">
-                    <img src={`${_HP_AI_ICON_BASE}/GoogleAI.svg`} alt="" width={12} height={12} className="opacity-40 invert" aria-hidden="true" />
-                    <p className="text-[9px] text-white/35 uppercase tracking-wide">Open Opps</p>
-                  </div>
-                  <span className="text-[26px] font-bold text-white leading-none">3</span>
-                </div>
-              </div>
-              {/* Last scan */}
-              <div className="bg-white/6 rounded-xl border border-white/8 px-3 py-3">
-                <div className="flex items-center gap-1.5 mb-1">
-                  <img src="/icons/ai-platforms/chatgpt.svg" alt="" width={12} height={12} className="opacity-40 invert" aria-hidden="true" />
-                  <p className="text-[9px] text-white/35 uppercase tracking-wide">Last scan</p>
-                </div>
-                <span className="text-[18px] font-bold text-white leading-none">2 hrs ago</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Billing note */}
-          <div className="flex items-start gap-2.5 bg-white/4 border-t border-white/8 px-5 py-3.5">
-            <Building2 size={13} className="text-white/30 shrink-0 mt-0.5" aria-hidden="true" />
-            <p className="text-[11.5px] text-white/40 leading-snug">
-              <span className="font-semibold text-white/60">Agency billing:</span> You pay Customers.Direct monthly. Your clients never see our invoices.
-            </p>
-          </div>
-        </div>
+        {/* Right — animated agency workspace demo */}
+        <AgencyWorkspaceDemo />
       </div>
     </Section>
   );

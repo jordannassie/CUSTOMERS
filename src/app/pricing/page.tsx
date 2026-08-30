@@ -206,16 +206,12 @@ function ComparisonTable() {
 
 const FAQ_ITEMS = [
   {
-    q: "Is Customers.Direct really free right now?",
-    a: "Yes. The product is completely free during beta. Sign up, create businesses, add competitors, run scans, and use the full dashboard — no credit card, no time limit.",
-  },
-  {
-    q: "When will paid plans start?",
-    a: "We're testing the platform with early users before activating billing. We'll notify you well in advance before anything changes. Your data is always safe.",
+    q: "How does the 14-day trial work?",
+    a: "Start your trial with a credit card. You get full access to your chosen plan for 14 days. If you cancel before the trial ends, you won't be charged. After 14 days, your paid subscription begins automatically.",
   },
   {
     q: "Is pricing per business?",
-    a: "Yes. When billing is introduced, each business workspace will have its own plan. One login can manage unlimited businesses — each with its own dashboard, competitors, scans, and data.",
+    a: "Yes. Each business workspace has its own plan — Starter, Growth, or Pro. One login can manage multiple businesses, each with its own dashboard, competitors, scans, and data.",
   },
   {
     q: "What counts as a tracked AI search?",
@@ -274,26 +270,6 @@ export default function PricingPage() {
     <div className="min-h-screen bg-white">
       <SiteHeader />
 
-      {/* ── Beta announcement banner ── */}
-      <div className="px-4 pt-6">
-        <div className="max-w-[1100px] mx-auto">
-          <div className="flex items-start gap-4 bg-[#EFF6FF] border border-[#BFDBFE] rounded-2xl px-6 py-5">
-            <Zap size={18} className="text-[#1D4ED8] shrink-0 mt-0.5" aria-hidden="true" />
-            <div>
-              <p className="text-[15px] font-bold text-[#1D4ED8] mb-1">
-                Free during beta — no credit card required
-              </p>
-              <p className="text-[13px] text-[#1E40AF] leading-relaxed">
-                Customers.Direct is currently free for early users while we finish testing the
-                platform. Sign up, run scans, add competitors, and use the full dashboard — no
-                payment or time limit. Paid plans will be introduced later and you&rsquo;ll be
-                notified in advance.
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-
       {/* ── Hero ── */}
       <section className="pt-12 pb-8 px-4 text-center">
         <div className="max-w-[780px] mx-auto">
@@ -312,19 +288,10 @@ export default function PricingPage() {
             opportunities, and let Customers.Direct help you improve.
           </p>
           <p className="text-[13px] font-semibold text-[#059669]">
-            ✓ Free during beta &nbsp;·&nbsp; No credit card &nbsp;·&nbsp; Full product access
+            ✓ 14-day free trial &nbsp;·&nbsp; Credit card required &nbsp;·&nbsp; Paid subscription begins after trial
           </p>
         </div>
       </section>
-
-      {/* ── Future pricing label ── */}
-      <div className="px-4 pb-2">
-        <div className="max-w-[1100px] mx-auto">
-          <p className="text-[11px] font-bold uppercase tracking-widest text-[#A3A3A0] text-center">
-            Planned pricing after beta
-          </p>
-        </div>
-      </div>
 
       {/* ── Plan positioning row ── */}
       <section className="px-4 pb-4">
@@ -598,8 +565,8 @@ export default function PricingPage() {
                 your competitors.
               </h2>
               <p className="text-[16px] text-white/75 max-w-[480px] mx-auto mb-10 leading-relaxed">
-                Join free during beta and discover exactly how your business appears across AI
-                search and Google — no credit card, no time limit.
+                Track your visibility across AI search and Google, compare competitors, uncover
+                opportunities, and improve with Direct Agent and Claude prompts.
               </p>
               <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
                 <Link
@@ -617,7 +584,7 @@ export default function PricingPage() {
                 </Link>
               </div>
               <p className="text-[12px] text-white/50 mt-6">
-                Free during beta · No credit card required · Full product access
+                14-day free trial · Credit card required · Paid subscription begins after trial
               </p>
             </div>
           </div>
