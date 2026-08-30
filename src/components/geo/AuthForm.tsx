@@ -306,9 +306,8 @@ export default function AuthForm({ defaultMode = "login" }: AuthFormProps) {
         </div>
       </div>
 
-      {/* Beta notice */}
       <p className="text-center text-[11.5px] text-[#A3A3A0] mt-4">
-        Free during beta · No credit card required
+        14-day free trial · Credit card required
       </p>
     </div>
   );

@@ -2067,7 +2067,7 @@ function PricingSection() {
         <Eyebrow>Pricing</Eyebrow>
         <H2 className="mb-4">Pick the level of help you need.</H2>
         <Body className="max-w-xl mx-auto">
-              Start free during beta. Track your visibility across AI search and Google, monitor competitors, uncover opportunities, and use the Direct Agent.
+              Track your visibility across AI search and Google, monitor competitors, uncover opportunities, and use the Direct Agent.
         </Body>
       </div>
 

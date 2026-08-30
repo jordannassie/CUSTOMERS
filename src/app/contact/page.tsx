@@ -71,10 +71,9 @@ export default function ContactPage() {
               </div>
 
               <div className="bg-[#0866F5]/5 border border-[#0866F5]/15 rounded-2xl p-5">
-                <p className="text-[13px] font-semibold text-[#0866F5] mb-1">Free during beta</p>
+                <p className="text-[13px] font-semibold text-[#0866F5] mb-1">14-day free trial</p>
                 <p className="text-[12px] text-[#777773] leading-relaxed">
-                  Customers.Direct is currently free for early users.
-                  No credit card required — full product access.
+                  Start your trial with full product access. Credit card required — paid subscription begins after 14 days.
                 </p>
               </div>
             </div>

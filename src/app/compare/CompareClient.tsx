@@ -694,7 +694,7 @@ export default function CompareClient() {
                     <span>✓ Continuous monitoring</span>
                     <span>✓ Track vs competitors</span>
                   </div>
-                  <p className="text-[10.5px] text-white/40">Free during beta · No credit card required</p>
+                  <p className="text-[10.5px] text-white/40">14-day free trial · Credit card required</p>
                 </div>
               </div>
             </div>
