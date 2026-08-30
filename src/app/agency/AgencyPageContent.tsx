@@ -135,7 +135,7 @@ export default function AgencyPageContent() {
                           </div>
                         </div>
                       </th>
-                      <th scope="col" className="pb-6 px-3 text-center relative">
+                      <th scope="col" className="pb-6 pt-5 px-3 text-center relative">
                         <div className="bg-[#EFF6FF] rounded-xl px-4 py-3 border-2 border-[#2563EB] relative">
                           <div className="absolute -top-3.5 left-0 right-0 flex justify-center">
                             <span className="bg-[#2563EB] text-white text-[10px] font-bold uppercase tracking-wider px-3 py-0.5 rounded-full whitespace-nowrap">
