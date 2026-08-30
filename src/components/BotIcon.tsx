@@ -1,9 +1,12 @@
 "use client";
 
 /**
- * BotIcon — custom robot image replaces all Bot icon usages.
- * Renders the Customers.Direct bot at the specified pixel size.
+ * BotIcon — renders the lucide-react Bot icon.
+ * Drop-in replacement that accepts the same size/className props
+ * used across DirectAgentChat, DashboardShell, AgentCTA, etc.
  */
+import { Bot } from "lucide-react";
+
 interface BotIconProps {
   size?: number;
   className?: string;
@@ -12,12 +15,9 @@ interface BotIconProps {
 
 export default function BotIcon({ size = 16, className = "" }: BotIconProps) {
   return (
-    <img
-      src="https://wsxusvapciexemfvtadm.supabase.co/storage/v1/object/public/STORAGE/images/bot/Bot.png"
-      alt="Direct Agent"
-      width={size}
-      height={size}
-      className={`inline-block object-contain shrink-0 ${className}`}
+    <Bot
+      size={size}
+      className={`shrink-0 ${className}`}
       aria-hidden="true"
     />
   );
