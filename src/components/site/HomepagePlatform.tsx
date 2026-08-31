@@ -2433,12 +2433,97 @@ function TestimonialsSection() {
   );
 }
 
+// ─── Hero Video Section ───────────────────────────────────────────────────
+
+const HERO_VIDEO_URL =
+  "https://wsxusvapciexemfvtadm.supabase.co/storage/v1/object/public/STORAGE/images/video/hf_20260831_214758_299967b8-b6e7-4877-bc9c-c75e6ad905f5.mp4";
+
+function HeroVideoSection() {
+  const videoRef = React.useRef<HTMLVideoElement>(null);
+  const [muted, setMuted] = React.useState(true);
+  const [hovered, setHovered] = React.useState(false);
+
+  function handleMouseEnter() {
+    setHovered(true);
+    if (videoRef.current) {
+      videoRef.current.muted = false;
+      setMuted(false);
+    }
+  }
+
+  function handleMouseLeave() {
+    setHovered(false);
+    if (videoRef.current) {
+      videoRef.current.muted = true;
+      setMuted(true);
+    }
+  }
+
+  function toggleAudio() {
+    if (!videoRef.current) return;
+    const next = !videoRef.current.muted;
+    videoRef.current.muted = next;
+    setMuted(next);
+  }
+
+  return (
+    <section className="bg-[#FAFAF8] px-4 py-10 sm:py-14 border-b border-[#EEEEEA]">
+      <div className="max-w-4xl mx-auto">
+        <div
+          className="relative rounded-2xl overflow-hidden shadow-xl shadow-black/10 group"
+          onMouseEnter={handleMouseEnter}
+          onMouseLeave={handleMouseLeave}
+        >
+          {/* Video */}
+          <video
+            ref={videoRef}
+            src={HERO_VIDEO_URL}
+            autoPlay
+            loop
+            muted
+            playsInline
+            className="w-full h-auto block"
+            aria-label="Customers.Direct product overview"
+          />
+
+          {/* Audio toggle button — bottom-right corner */}
+          <button
+            onClick={toggleAudio}
+            aria-label={muted ? "Unmute video" : "Mute video"}
+            className={`absolute bottom-4 right-4 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11.5px] font-semibold transition-all duration-200 backdrop-blur-sm border ${
+              hovered && !muted
+                ? "bg-[#22C55E]/90 text-white border-[#16A34A]/40 shadow-lg"
+                : "bg-black/40 text-white border-white/10 opacity-0 group-hover:opacity-100"
+            }`}
+          >
+            {muted ? (
+              /* Speaker off */
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+                <line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/>
+              </svg>
+            ) : (
+              /* Speaker on */
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+                <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
+              </svg>
+            )}
+            {muted ? "Sound off" : "Sound on"}
+          </button>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 // ─── Main export ──────────────────────────────────────────────────────────
 
 export default function HomepagePlatform() {
   return (
     <>
       <HeroSection />
+      <HeroVideoSection />
       <BannerRotationSection />
       <ShopperImageSection />
       <PromptTrackingSection />
