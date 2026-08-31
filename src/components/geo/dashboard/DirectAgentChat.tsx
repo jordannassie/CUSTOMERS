@@ -74,7 +74,7 @@ export default function DirectAgentChat({
         {messages.length === 0 && (
           <div className="flex flex-col items-center text-center py-10">
             <div className="w-12 h-12 rounded-xl bg-[#171717] flex items-center justify-center mb-4">
-              <BotIcon size={28} aria-hidden="true" />
+              <BotIcon size={28} className="text-white" aria-hidden="true" />
             </div>
             <p className="font-semibold text-[#171717] mb-1">Ask the Direct Agent</p>
             <p className="text-[13px] text-[#777773] max-w-sm mb-5">
