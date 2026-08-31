@@ -6,10 +6,10 @@ import crypto from "crypto";
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 // New canonical interest values (also used as topic in the DB)
-const NEW_INTERESTS = ["ai_visibility", "chatgpt_ads", "other"] as const;
+const NEW_INTERESTS = ["ai_visibility", "chatgpt_ads", "agency", "other"] as const;
 
 // Legacy topic values preserved for backward compatibility with old records
-const LEGACY_TOPICS = ["product", "support", "sales", "enterprise", "agency"] as const;
+const LEGACY_TOPICS = ["product", "support", "sales", "enterprise"] as const;
 
 const ALL_VALID_TOPICS = [...NEW_INTERESTS, ...LEGACY_TOPICS] as const;
 type ValidTopic = (typeof ALL_VALID_TOPICS)[number];

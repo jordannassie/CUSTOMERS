@@ -1,16 +1,46 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback, Suspense } from "react";
+import React, { useState, useEffect, useRef, useCallback, Suspense } from "react";
 import ContactForm, { type InterestValue } from "@/components/site/ContactForm";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 type Stage = "opening" | "form" | "done";
 
-const CHAT_CHOICES: { value: InterestValue; label: string; emoji: string }[] = [
-  { value: "ai_visibility", label: "AI Visibility",   emoji: "📊" },
-  { value: "chatgpt_ads",   label: "ChatGPT Ads",     emoji: "📢" },
-  { value: "other",         label: "Other",            emoji: "💬" },
+function IconBarChart() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>
+    </svg>
+  );
+}
+function IconMegaphone() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M3 11l18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/>
+    </svg>
+  );
+}
+function IconBuilding() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <rect x="3" y="3" width="18" height="18" rx="1"/><path d="M9 22V12h6v10"/><path d="M9 7h1"/><path d="M9 11h1"/><path d="M14 7h1"/><path d="M14 11h1"/>
+    </svg>
+  );
+}
+function IconChat() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+    </svg>
+  );
+}
+
+const CHAT_CHOICES: { value: InterestValue; label: string; icon: React.ReactNode }[] = [
+  { value: "ai_visibility", label: "AI Visibility",   icon: <IconBarChart /> },
+  { value: "chatgpt_ads",   label: "ChatGPT Ads",     icon: <IconMegaphone /> },
+  { value: "agency",        label: "Join as Agency",  icon: <IconBuilding /> },
+  { value: "other",         label: "Other",            icon: <IconChat /> },
 ];
 
 const JORDAN_PHOTO =
@@ -232,7 +262,7 @@ export default function ChatWidget() {
                       onClick={() => handleChoice(choice.value)}
                       className="flex items-center gap-3 w-full text-left bg-white border border-[#E5E5E1] hover:border-[#0866F5]/40 hover:bg-[#EFF6FF]/30 text-[#171717] px-4 py-3 rounded-xl transition-colors text-[13.5px] font-medium active:scale-[0.98]"
                     >
-                      <span className="text-[18px] shrink-0">{choice.emoji}</span>
+                      <span className="text-[#6B7280] shrink-0">{choice.icon}</span>
                       {choice.label}
                     </button>
                   ))}

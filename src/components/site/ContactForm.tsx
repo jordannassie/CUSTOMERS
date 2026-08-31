@@ -7,26 +7,28 @@ import Link from "next/link";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-export type InterestValue = "ai_visibility" | "chatgpt_ads" | "other";
+export type InterestValue = "ai_visibility" | "chatgpt_ads" | "agency" | "other";
 
 const INTERESTS: { value: InterestValue; label: string }[] = [
   { value: "ai_visibility", label: "AI Visibility" },
   { value: "chatgpt_ads",   label: "ChatGPT Ads" },
+  { value: "agency",        label: "Join as Agency" },
   { value: "other",         label: "Other" },
 ];
 
 const MESSAGE_PLACEHOLDERS: Record<InterestValue, string> = {
   ai_visibility: "Tell us about your business and what you'd like to track.",
   chatgpt_ads:   "Tell us what you sell, where your customers are located, and your approximate monthly advertising budget.",
+  agency:        "Tell us about your agency, how many client brands you manage, and how we can help.",
   other:         "How can we help?",
 };
 
 export type ContactSource = "contact_page" | "ads_page" | "chat" | "agency" | "other";
 
 function interestFromParam(param: string | null): InterestValue {
-  if (param === "ai_visibility" || param === "chatgpt_ads" || param === "other") return param;
+  if (param === "ai_visibility" || param === "chatgpt_ads" || param === "agency" || param === "other") return param;
   // Legacy topic → interest mapping for backward compat
-  if (param === "sales" || param === "enterprise" || param === "agency") return "ai_visibility";
+  if (param === "sales" || param === "enterprise") return "ai_visibility";
   return "other";
 }
 
@@ -194,14 +196,16 @@ export default function ContactForm({
       {/* Company + Website */}
       <div className="grid sm:grid-cols-2 gap-5">
         <div>
-          <label htmlFor="cf-company" className={labelClass}>Company / Business</label>
+          <label htmlFor="cf-company" className={labelClass}>
+            {interest === "agency" ? "Agency name" : "Company / Business"}
+          </label>
           <input
             id="cf-company"
             type="text"
             maxLength={200}
             value={company}
             onChange={(e) => setCompany(e.target.value)}
-            placeholder="Your business name"
+            placeholder={interest === "agency" ? "Your agency name" : "Your business name"}
             className={inputClass}
             autoComplete="organization"
           />
@@ -214,7 +218,7 @@ export default function ContactForm({
             maxLength={500}
             value={website}
             onChange={(e) => setWebsite(e.target.value)}
-            placeholder="yourbusiness.com"
+            placeholder={interest === "agency" ? "youragency.com" : "yourbusiness.com"}
             className={inputClass}
             autoComplete="url"
           />

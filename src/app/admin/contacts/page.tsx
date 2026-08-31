@@ -22,13 +22,13 @@ interface Contact {
 const INTEREST_LABELS: Record<string, string> = {
   ai_visibility: "AI Visibility",
   chatgpt_ads:   "ChatGPT Ads",
+  agency:        "Join as Agency",
   other:         "Other",
   // Legacy values
   product:       "Product Question",
   support:       "Account / Support",
   sales:         "Sales",
   enterprise:    "Enterprise",
-  agency:        "Agency",
 };
 
 const SOURCE_LABELS: Record<string, string> = {
@@ -42,6 +42,7 @@ const SOURCE_LABELS: Record<string, string> = {
 const TOPIC_COLORS: Record<string, string> = {
   ai_visibility: "bg-[#EFF6FF] text-[#0866F5] border-[#BFDBFE]",
   chatgpt_ads:   "bg-[#F5F3FF] text-[#7C3AED] border-[#DDD6FE]",
+  agency:        "bg-[#F0FDF4] text-[#15803D] border-[#BBF7D0]",
   other:         "bg-[#F8FAFD] text-[#6B7280] border-[#E2E8F0]",
 };
 
