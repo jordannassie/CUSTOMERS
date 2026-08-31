@@ -2438,77 +2438,154 @@ function TestimonialsSection() {
 const HERO_VIDEO_URL =
   "https://wsxusvapciexemfvtadm.supabase.co/storage/v1/object/public/STORAGE/images/video/hf_20260831_214758_299967b8-b6e7-4877-bc9c-c75e6ad905f5.mp4";
 
+function SpeakerOff() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+      <line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/>
+    </svg>
+  );
+}
+function SpeakerOn() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+      <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
+    </svg>
+  );
+}
+
 function HeroVideoSection() {
-  const videoRef = React.useRef<HTMLVideoElement>(null);
-  const [muted, setMuted] = React.useState(true);
-  const [hovered, setHovered] = React.useState(false);
+  const videoRef   = React.useRef<HTMLVideoElement>(null);
+  const [muted,    setMuted]    = React.useState(true);
+  const [playing,  setPlaying]  = React.useState(false);
+  const [loading,  setLoading]  = React.useState(true);
+  const [errored,  setErrored]  = React.useState(false);
+  const [hovered,  setHovered]  = React.useState(false);
+
+  // Kick off playback as soon as the component mounts — don't rely on the
+  // `autoPlay` attribute alone, which browsers often ignore for non-muted video.
+  React.useEffect(() => {
+    const v = videoRef.current;
+    if (!v) return;
+    v.muted = true;
+    v.play().then(() => {
+      setPlaying(true);
+    }).catch(() => {
+      // Autoplay still blocked (rare for muted) — show manual play button
+      setPlaying(false);
+    });
+  }, []);
+
+  function handleCanPlay() {
+    setLoading(false);
+  }
+  function handleError() {
+    setLoading(false);
+    setErrored(true);
+  }
+  function handlePlay() { setPlaying(true); }
+  function handlePause() { setPlaying(false); }
+
+  function toggleAudio() {
+    const v = videoRef.current;
+    if (!v) return;
+    const next = !v.muted;
+    v.muted = next;
+    setMuted(next);
+  }
+
+  function manualPlay() {
+    const v = videoRef.current;
+    if (!v) return;
+    v.play().then(() => setPlaying(true)).catch(() => {});
+  }
 
   function handleMouseEnter() {
     setHovered(true);
-    if (videoRef.current) {
-      videoRef.current.muted = false;
-      setMuted(false);
-    }
+    // Unmute on hover for a richer experience
+    const v = videoRef.current;
+    if (v && playing) { v.muted = false; setMuted(false); }
   }
-
   function handleMouseLeave() {
     setHovered(false);
-    if (videoRef.current) {
-      videoRef.current.muted = true;
-      setMuted(true);
-    }
-  }
-
-  function toggleAudio() {
-    if (!videoRef.current) return;
-    const next = !videoRef.current.muted;
-    videoRef.current.muted = next;
-    setMuted(next);
+    const v = videoRef.current;
+    if (v) { v.muted = true; setMuted(true); }
   }
 
   return (
     <section className="bg-[#FAFAF8] px-4 py-10 sm:py-14 border-b border-[#EEEEEA]">
       <div className="max-w-4xl mx-auto">
         <div
-          className="relative rounded-2xl overflow-hidden shadow-xl shadow-black/10 group"
+          className="relative rounded-2xl overflow-hidden shadow-xl shadow-black/10 bg-[#0D0D0D] group"
+          style={{ aspectRatio: "16/9" }}
           onMouseEnter={handleMouseEnter}
           onMouseLeave={handleMouseLeave}
         >
-          {/* Video */}
+          {/* Buffering spinner — shown until canplay fires */}
+          {loading && !errored && (
+            <div className="absolute inset-0 flex items-center justify-center z-10">
+              <div className="w-10 h-10 rounded-full border-2 border-white/20 border-t-white animate-spin" />
+            </div>
+          )}
+
+          {/* Error fallback */}
+          {errored && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-white z-10">
+              <p className="text-[13px] font-semibold opacity-70">Unable to load video</p>
+              <a
+                href={HERO_VIDEO_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[12px] underline opacity-50 hover:opacity-80"
+              >
+                Open directly
+              </a>
+            </div>
+          )}
+
+          {/* Video element */}
           <video
             ref={videoRef}
             src={HERO_VIDEO_URL}
-            autoPlay
             loop
             muted
             playsInline
-            className="w-full h-auto block"
+            preload="auto"
+            onCanPlay={handleCanPlay}
+            onError={handleError}
+            onPlay={handlePlay}
+            onPause={handlePause}
+            className="w-full h-full object-cover block"
             aria-label="Customers.Direct product overview"
           />
 
-          {/* Audio toggle button — bottom-right corner */}
+          {/* Manual play button — shown when autoplay was blocked */}
+          {!playing && !loading && !errored && (
+            <button
+              onClick={manualPlay}
+              aria-label="Play video"
+              className="absolute inset-0 flex items-center justify-center z-10 bg-black/30 hover:bg-black/40 transition-colors"
+            >
+              <div className="w-16 h-16 rounded-full bg-white/90 flex items-center justify-center shadow-xl">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="#171717" aria-hidden="true">
+                  <polygon points="5 3 19 12 5 21 5 3"/>
+                </svg>
+              </div>
+            </button>
+          )}
+
+          {/* Audio toggle — appears on hover */}
           <button
             onClick={toggleAudio}
             aria-label={muted ? "Unmute video" : "Mute video"}
-            className={`absolute bottom-4 right-4 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11.5px] font-semibold transition-all duration-200 backdrop-blur-sm border ${
-              hovered && !muted
-                ? "bg-[#22C55E]/90 text-white border-[#16A34A]/40 shadow-lg"
-                : "bg-black/40 text-white border-white/10 opacity-0 group-hover:opacity-100"
+            className={`absolute bottom-4 right-4 z-20 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11.5px] font-semibold transition-all duration-200 backdrop-blur-sm border shadow-md ${
+              !muted
+                ? "bg-[#22C55E] text-white border-[#16A34A]/60"
+                : "bg-black/50 text-white border-white/15 opacity-0 group-hover:opacity-100"
             }`}
           >
-            {muted ? (
-              /* Speaker off */
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
-                <line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/>
-              </svg>
-            ) : (
-              /* Speaker on */
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
-                <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
-              </svg>
-            )}
+            {muted ? <SpeakerOff /> : <SpeakerOn />}
             {muted ? "Sound off" : "Sound on"}
           </button>
         </div>
