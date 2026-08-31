@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
   if (!email)   return NextResponse.json({ error: "Email is required." },   { status: 400 });
   if (!EMAIL_REGEX.test(email))
     return NextResponse.json({ error: "Invalid email address." }, { status: 400 });
-  if (!message || message.length < 5)
+  if (!message)
     return NextResponse.json({ error: "Message is required." }, { status: 400 });
 
   // Optionally link to the authenticated user

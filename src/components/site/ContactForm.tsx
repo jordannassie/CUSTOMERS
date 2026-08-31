@@ -157,8 +157,8 @@ export default function ContactForm({
       {/* Honeypot */}
       <input type="text" name="_honey" className="hidden" aria-hidden="true" tabIndex={-1} />
 
-      {/* Name + Email */}
-      <div className="grid sm:grid-cols-2 gap-5">
+      {/* Name + Email — single column in compact/chat mode */}
+      <div className={compact ? "flex flex-col gap-5" : "grid sm:grid-cols-2 gap-5"}>
         <div>
           <label htmlFor="cf-name" className={labelClass}>
             Full Name <span className="text-[#DC2626]">*</span>
@@ -193,8 +193,8 @@ export default function ContactForm({
         </div>
       </div>
 
-      {/* Company + Website */}
-      <div className="grid sm:grid-cols-2 gap-5">
+      {/* Company + Website — single column in compact/chat mode */}
+      <div className={compact ? "flex flex-col gap-5" : "grid sm:grid-cols-2 gap-5"}>
         <div>
           <label htmlFor="cf-company" className={labelClass}>
             {interest === "agency" ? "Agency name" : "Company / Business"}
@@ -266,7 +266,6 @@ export default function ContactForm({
         <textarea
           id="cf-message"
           required
-          minLength={5}
           maxLength={5000}
           rows={compact ? 4 : 6}
           value={message}

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
+import { useState, useEffect } from "react";
 
 const LOGO = "/images/logos/logo-black.png";
 
@@ -14,6 +15,17 @@ const NAV_ITEMS = [
     icon: (
       <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
         <path d="M2 2h5v5H2V2zm7 0h5v5H9V2zM2 9h5v5H2V9zm7 0h5v5H9V9z" opacity="0.85"/>
+      </svg>
+    ),
+  },
+  {
+    label: "Leads",
+    href: "/internal/admin/leads",
+    isLeads: true,
+    icon: (
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/>
+        <path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/>
       </svg>
     ),
   },
@@ -111,6 +123,14 @@ const NAV_ITEMS = [
 
 export default function AdminNav({ adminEmail }: { adminEmail: string }) {
   const pathname = usePathname();
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    fetch("/api/internal/admin/leads?count=1")
+      .then((r) => r.ok ? r.json() : null)
+      .then((d) => { if (d?.count != null) setUnreadCount(d.count); })
+      .catch(() => {/* ignore */});
+  }, [pathname]); // refresh count on navigation
 
   function isActive(href: string, exact = false) {
     if (exact) return pathname === href;
@@ -128,7 +148,7 @@ export default function AdminNav({ adminEmail }: { adminEmail: string }) {
 
       {/* Nav */}
       <nav className="flex-1 px-3 py-3 flex flex-col gap-0.5" aria-label="Admin navigation">
-        {NAV_ITEMS.map(({ label, href, icon, exact }) => {
+        {NAV_ITEMS.map(({ label, href, icon, exact, isLeads }) => {
           const active = isActive(href, exact);
           return (
             <Link
@@ -142,6 +162,11 @@ export default function AdminNav({ adminEmail }: { adminEmail: string }) {
             >
               <span className={active ? "text-[#0866F5]" : "text-[#9CA3AF]"}>{icon}</span>
               {label}
+              {isLeads && unreadCount > 0 && (
+                <span className="ml-auto text-[10px] font-black bg-[#0866F5] text-white rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
+                  {unreadCount > 99 ? "99+" : unreadCount}
+                </span>
+              )}
             </Link>
           );
         })}
