@@ -7,12 +7,13 @@ import Link from "next/link";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-export type InterestValue = "ai_visibility" | "chatgpt_ads" | "agency" | "other";
+export type InterestValue = "ai_visibility" | "chatgpt_ads" | "agency" | "book_demo" | "other";
 
 const INTERESTS: { value: InterestValue; label: string }[] = [
   { value: "ai_visibility", label: "AI Visibility" },
   { value: "chatgpt_ads",   label: "ChatGPT Ads" },
   { value: "agency",        label: "Join as Agency" },
+  { value: "book_demo",     label: "Book Demo Call" },
   { value: "other",         label: "Other" },
 ];
 
@@ -20,13 +21,14 @@ const MESSAGE_PLACEHOLDERS: Record<InterestValue, string> = {
   ai_visibility: "Tell us about your business and what you'd like to track.",
   chatgpt_ads:   "Tell us what you sell, where your customers are located, and your approximate monthly advertising budget.",
   agency:        "Tell us about your agency, how many client brands you manage, and how we can help.",
+  book_demo:     "Tell us about your business and what you'd like to cover in the demo.",
   other:         "How can we help?",
 };
 
 export type ContactSource = "contact_page" | "ads_page" | "chat" | "agency" | "other";
 
 function interestFromParam(param: string | null): InterestValue {
-  if (param === "ai_visibility" || param === "chatgpt_ads" || param === "agency" || param === "other") return param;
+  if (param === "ai_visibility" || param === "chatgpt_ads" || param === "agency" || param === "book_demo" || param === "other") return param;
   // Legacy topic → interest mapping for backward compat
   if (param === "sales" || param === "enterprise") return "ai_visibility";
   return "other";

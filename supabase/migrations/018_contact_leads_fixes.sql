@@ -26,7 +26,7 @@ ALTER TABLE public.contact_submissions
   ADD CONSTRAINT contact_submissions_topic_check
     CHECK (topic IN (
       'product', 'support', 'sales', 'enterprise',
-      'ai_visibility', 'chatgpt_ads', 'agency', 'other'
+      'ai_visibility', 'chatgpt_ads', 'agency', 'book_demo', 'other'
     ));
 
 -- 4. Extend status values to match sales pipeline.
