@@ -255,6 +255,20 @@ export default function SiteHeader() {
             </div>
 
             <Link href="/agency" className={navLink()}>Agencies</Link>
+
+            {/* Ads — ChatGPT ad management */}
+            <Link href="/ads" className={navLink()}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/icons/ai-platforms/chatgpt.svg"
+                alt=""
+                aria-hidden="true"
+                width={14}
+                height={14}
+                className="opacity-75 invert shrink-0"
+              />
+              Ads
+            </Link>
           </nav>
 
           {/* Right side */}
@@ -330,6 +344,12 @@ export default function SiteHeader() {
             <Link href="/agency" onClick={closeAll}
               className="px-3 py-2.5 text-[13px] font-medium text-white/85 hover:text-white rounded-xl hover:bg-white/10 transition-colors">
               Agencies
+            </Link>
+            <Link href="/ads" onClick={closeAll}
+              className="flex items-center gap-2 px-3 py-2.5 text-[13px] font-medium text-white/85 hover:text-white rounded-xl hover:bg-white/10 transition-colors">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/icons/ai-platforms/chatgpt.svg" alt="" aria-hidden="true" width={13} height={13} className="opacity-75 invert shrink-0" />
+              Ads
             </Link>
             <Link href="/login" onClick={closeAll}
               className="px-3 py-2.5 text-[13px] font-medium text-white/85 hover:text-white rounded-xl hover:bg-white/10 transition-colors">

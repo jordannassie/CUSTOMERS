@@ -289,6 +289,12 @@ export default function AdminDashboardPage() {
           </div>
           <div className="flex items-center gap-3 shrink-0">
             <Link
+              href="/admin/contacts"
+              className="text-sm font-semibold text-white bg-[#0866F5] px-4 py-2 rounded-full hover:bg-[#0755D4] transition-colors"
+            >
+              Contact Submissions
+            </Link>
+            <Link
               href="/admin/call-bar-leads"
               className="text-sm font-semibold text-white bg-[#7C3AED] px-4 py-2 rounded-full hover:bg-[#6D28D9] transition-colors"
             >
