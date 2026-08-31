@@ -1,8 +1,7 @@
 "use client";
 
 import { Suspense } from "react";
-import Link from "next/link";
-import { ArrowRight, CheckCircle2, BarChart3 } from "lucide-react";
+import { ArrowRight, CheckCircle2 } from "lucide-react";
 import ContactForm from "@/components/site/ContactForm";
 
 // ─── Sourced stats config ─────────────────────────────────────────────────────
@@ -142,51 +141,6 @@ const INCLUDED: { icon: string; title: string; desc: string }[] = [
   },
 ];
 
-// ─── How it works steps ───────────────────────────────────────────────────────
-
-const HOW_IT_WORKS = [
-  {
-    step: "01",
-    title: "Tell us about your business",
-    desc: "Share your website, what you sell, and the customers you want to reach.",
-  },
-  {
-    step: "02",
-    title: "Confirm your campaign",
-    desc: "We review availability, goals, budget, and the materials needed for your ads.",
-  },
-  {
-    step: "03",
-    title: "Approve and launch",
-    desc: "We prepare your ads for your approval and manage your campaign once the account and ads are approved.",
-  },
-];
-
-// ─── Two products comparison ──────────────────────────────────────────────────
-
-const PRODUCTS = [
-  {
-    icon: <BarChart3 size={20} className="text-[#0866F5]" />,
-    name: "AI Visibility",
-    price: "From $149/month",
-    desc: "Track how your business appears in AI answers, compare competitors, and identify opportunities to improve visibility.",
-    href: "/pricing",
-    cta: "See plans",
-    highlight: false,
-  },
-  {
-    icon: (
-      /* eslint-disable-next-line @next/next/no-img-element */
-      <img src="/icons/ai-platforms/chatgpt.svg" alt="" aria-hidden="true" width={20} height={20} className="opacity-90" />
-    ),
-    name: "ChatGPT Ads",
-    price: "$1,000/month + ad spend",
-    desc: "Ad creation and campaign management for paid placements in ChatGPT.",
-    href: "#contact",
-    cta: "Get started",
-    highlight: true,
-  },
-] as const;
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
@@ -315,93 +269,6 @@ export default function AdsPageContent() {
         <div className="bg-[#F5F5F2] border border-[#E5E5E1] rounded-xl px-5 py-4 text-[12.5px] text-[#777773] leading-relaxed">
           $1,000/month is our service fee. Your advertising budget is separate and paid through your advertising account. Campaign launch is subject to account eligibility, supported markets, and ad approval.
         </div>
-      </section>
-
-      {/* ── How it works ──────────────────────────────────────────────────── */}
-      <section className="bg-white border-y border-[#E5E5E1] py-16 sm:py-20">
-        <div className="max-w-4xl mx-auto px-4">
-          <div className="text-center mb-12">
-            <h2 className="text-[28px] sm:text-[34px] font-bold text-[#171717] mb-3">
-              Here&apos;s what we need from you to get started.
-            </h2>
-            <p className="text-[15px] text-[#777773]">
-              You own your advertising account and pay ad spend directly to the platform.
-            </p>
-          </div>
-
-          <div className="grid sm:grid-cols-3 gap-6">
-            {HOW_IT_WORKS.map((s) => (
-              <div key={s.step} className="flex flex-col gap-3">
-                <div className="w-10 h-10 rounded-xl bg-[#EFF6FF] border border-[#BFDBFE] flex items-center justify-center">
-                  <span className="text-[12px] font-bold text-[#0866F5]">{s.step}</span>
-                </div>
-                <div>
-                  <p className="text-[14.5px] font-bold text-[#171717] mb-1">{s.title}</p>
-                  <p className="text-[13px] text-[#777773] leading-relaxed">{s.desc}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <div className="mt-10 bg-[#F5F5F2] border border-[#E5E5E1] rounded-xl px-5 py-4 text-[12.5px] text-[#777773] leading-relaxed">
-            We use supported account access and invitation methods during onboarding. We will never ask for your password, API keys, or payment card details through the contact form.
-          </div>
-        </div>
-      </section>
-
-      {/* ── Two products ──────────────────────────────────────────────────── */}
-      <section className="max-w-4xl mx-auto px-4 py-16 sm:py-20">
-        <div className="text-center mb-10">
-          <h2 className="text-[28px] sm:text-[34px] font-bold text-[#171717] mb-3">
-            Our two products
-          </h2>
-        </div>
-
-        <div className="grid sm:grid-cols-2 gap-5 mb-8">
-          {PRODUCTS.map((p) => (
-            <div
-              key={p.name}
-              className={`bg-white border rounded-2xl p-6 flex flex-col gap-3 ${
-                p.highlight
-                  ? "border-[#0866F5] shadow-md shadow-[#0866F5]/10"
-                  : "border-[#E5E5E1]"
-              }`}
-            >
-              <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-[#EFF6FF] flex items-center justify-center shrink-0">
-                  {p.icon}
-                </div>
-                <div>
-                  <p className="text-[14px] font-bold text-[#171717]">{p.name}</p>
-                  <p className="text-[12px] font-semibold text-[#0866F5]">{p.price}</p>
-                </div>
-              </div>
-              <p className="text-[13px] text-[#777773] leading-relaxed flex-1">{p.desc}</p>
-              <Link
-                href={p.href}
-                className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-[#0866F5] hover:underline"
-              >
-                {p.cta}
-                <ArrowRight size={12} aria-hidden="true" />
-              </Link>
-            </div>
-          ))}
-        </div>
-
-        {/* Important clarification */}
-        <div className="flex items-start gap-3 bg-[#FFFBEB] border border-[#FDE68A] rounded-xl px-5 py-4 mb-4">
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="#D97706" className="shrink-0 mt-0.5" aria-hidden="true">
-            <path d="M8 1L1 13h14L8 1zm0 3l4.5 7.8H3.5L8 4zM7 8v2h2V8H7zm0 3v1h2v-1H7z"/>
-          </svg>
-          <p className="text-[12.5px] text-[#92400E] leading-relaxed">
-            <strong>Paid ads are separate from organic AI answers.</strong> Buying ads does not buy or change ChatGPT recommendations. AI Visibility tracks organic mentions; ChatGPT Ads is a separate paid placement service.
-          </p>
-        </div>
-
-        {/* Disclaimer */}
-        <p className="text-[11.5px] text-[#A3A3A0] text-center leading-relaxed">
-          Customers.Direct is an independent service provider and is not affiliated with or endorsed by OpenAI.
-        </p>
       </section>
 
       {/* ── Contact form ──────────────────────────────────────────────────── */}
