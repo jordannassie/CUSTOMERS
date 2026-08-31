@@ -278,8 +278,11 @@ export default function AdsPageContent() {
       >
         <div className="max-w-2xl mx-auto px-4">
           <div className="text-center mb-10">
-            <h2 className="text-[28px] sm:text-[34px] font-bold text-[#171717] mb-3">
-              Get started with ChatGPT Ads
+            <h2 className="text-[28px] sm:text-[34px] font-bold text-[#171717] mb-3 flex items-center justify-center gap-3">
+              Get started with
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/icons/ai-platforms/chatgpt.svg" alt="ChatGPT" width={32} height={32} className="inline-block opacity-90 shrink-0" />
+              ChatGPT Ads
             </h2>
             <p className="text-[15px] text-[#777773]">
               Tell us about your business and we&apos;ll reach out to discuss your campaign.
