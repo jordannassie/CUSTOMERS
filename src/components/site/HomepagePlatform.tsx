@@ -2436,7 +2436,7 @@ function TestimonialsSection() {
 // ─── Hero Video Section ───────────────────────────────────────────────────
 
 const HERO_VIDEO_URL =
-  "https://wsxusvapciexemfvtadm.supabase.co/storage/v1/object/public/STORAGE/images/video/hf_20260831_214758_299967b8-b6e7-4877-bc9c-c75e6ad905f5.mp4";
+  "https://wsxusvapciexemfvtadm.supabase.co/storage/v1/object/public/STORAGE/images/video/Biz.mp4";
 
 function SpeakerOff() {
   return (
