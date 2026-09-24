@@ -23,6 +23,7 @@ Code status comes from the live local audit on 2026-09-23. Technical fixes (secu
 | T6 | Redesign and trimming | Agreed in call | Not started |
 | T7 | Copy fix prompt for Claude | Agreed in call | Done: already built |
 | T8 | Business and budget | Open | n/a |
+| T9 | Businesses with no website or listing | Proposed | Missing: onboarding requires a website |
 
 ---
 
@@ -228,4 +229,49 @@ Code status comes from the live local audit on 2026-09-23. Technical fixes (secu
 - [ ] Regular call schedule?
 
 **Decisions:**
+-
+
+---
+
+## T9. Businesses with no website or listing
+
+**Status:** Proposed (not raised in the call; came up in planning)
+
+**Why it matters:** Many local businesses have no website, no Google Business Profile and no listings. AI assistants can only recommend businesses they can find online, so these owners score 0% today and have no way into the product.
+
+**Proposed flow:**
+1. **Signup:** an "I don't have a website" option on the first onboarding step. The owner types business name, type (for example "coffee shop"), city, phone and address. The website scan is skipped.
+2. **First scan:** same customer questions ("best coffee shop in Orange, CA"). Mentions are matched by name plus phone plus city, since there is no domain. Expected result is 0%, shown in plain words: "AI can't recommend you because it can't find you online. These 5 shops show up instead."
+3. **Competitors:** who AI picks instead and why, for example "Google listing, 320 reviews at 4.7, website with menu and hours", side by side with what the business has.
+4. **Opportunities as a checklist** instead of website fixes:
+   - Create a Google Business Profile (step-by-step guide)
+   - Add free Yelp, Bing Places and Apple Business Connect listings
+   - Get the first 10 reviews (message template to send customers)
+   - Keep name, address and phone identical everywhere
+   - Build a simple one-page website ("Copy for Claude" prompt, or ask the agency)
+   - List in local and industry directories
+   Each item can be ticked off, and verified where possible (for example a Google Places lookup confirms the listing exists).
+5. **Progress:** weekly rescans show the move from 0% to first mentions.
+6. **Agency angle:** agencies can sell the whole checklist as a "get online" package (listings, reviews, website).
+
+**Code today:**
+- Onboarding requires a website URL and has no skip option (`src/components/geo/OnboardingWizard.tsx:63`).
+- The backend already allows a business with no domain (`domain` is optional in `/api/geo/businesses`).
+- Mention matching is a plain name substring check, which will over-count generic names like "Best Plumbing" (roadmap CORE-03).
+
+**To build:**
+- [ ] "No website" onboarding path
+- [ ] Mention matching by name, phone and city
+- [ ] Opportunity rules for businesses with no web presence
+- [ ] Listing check through Google Places
+- [ ] Checklist with progress tracking
+
+**Open questions:**
+- [ ] Does Jordan want to target these businesses at launch, or only businesses with a website?
+- [ ] Cheaper plan or fewer credits for them?
+
+**Decisions:**
+-
+
+**Tasks:**
 -
