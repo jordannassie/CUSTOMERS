@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Customers.Direct Palette Preview</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #FAFAF8; --surface: #FFFFFF; --muted: #F5F5F2;
+    --border: #E5E5E1; --input-border: #8F8F8A;
+    --text: #171717; --text-2: #6B6B67; --hint: #737370;
+    --primary: #2563EB; --primary-hover: #1D4ED8; --primary-tint: #EFF6FF;
+    --good: #16A34A; --good-text: #15803D; --good-bg: #F0FDF4;
+    --mid: #D97706; --mid-text: #B45309; --mid-bg: #FFFBEB;
+    --low: #DC2626; --low-text: #B91C1C; --low-bg: #FEF2F2;
+    --chatgpt: #10A37F; --claude: #D97757; --perplexity: #20808D;
+    --comp-1: #525250; --comp-2: #A3A3A0; --comp-3: #C9C9C4;
+  }
+  * { box-sizing: border-box; margin: 0; }
+  body { background: var(--bg); color: var(--text); font: 15px/1.5 "Geist", system-ui, sans-serif; }
+  .num { font-variant-numeric: tabular-nums; }
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 0 24px; }
+
+  header { position: sticky; top: 0; background: rgb(250 250 248 / 0.9); border-bottom: 1px solid var(--border); backdrop-filter: saturate(1.2) blur(6px); z-index: 1; }
+  header .wrap { display: flex; align-items: center; gap: 32px; height: 64px; }
+  .logo { font-weight: 700; letter-spacing: -0.02em; font-size: 17px; }
+  .logo span { color: var(--primary); }
+  nav { display: flex; gap: 24px; flex: 1; }
+  nav a { color: var(--text-2); text-decoration: none; font-size: 14px; }
+  nav a:hover, nav a.active { color: var(--text); }
+  .btn { border: 0; border-radius: 4px; padding: 10px 16px; font: 500 14px "Geist", sans-serif; cursor: pointer; transition: background-color .15s ease-out, color .15s ease-out; }
+  .btn-primary { background: var(--primary); color: #fff; }
+  .btn-primary:hover { background: var(--primary-hover); }
+  .btn-ghost { background: transparent; color: var(--text); }
+  .btn-ghost:hover { background: var(--muted); }
+  .btn:focus-visible, input:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+
+  .hero { padding: 88px 0 48px; text-align: center; }
+  .eyebrow { display: inline-block; background: var(--primary-tint); color: var(--primary-hover); font-size: 13px; font-weight: 500; padding: 4px 12px; border-radius: 4px; }
+  h1 { font-size: clamp(36px, 6vw, 60px); line-height: 1.05; letter-spacing: -0.035em; font-weight: 700; margin: 20px auto 16px; max-width: 760px; }
+  h1 em { font-style: normal; color: var(--primary); }
+  .lead { color: var(--text-2); font-size: 18px; max-width: 560px; margin: 0 auto; }
+  .search { display: flex; gap: 8px; max-width: 520px; margin: 32px auto 12px; background: var(--surface); padding: 6px; border: 1px solid var(--input-border); border-radius: 4px; }
+  .search input { flex: 1; border: 0; padding: 0 12px; font: 15px "Geist", sans-serif; color: var(--text); background: transparent; }
+  .search input::placeholder { color: var(--hint); }
+  .fine { color: var(--hint); font-size: 13px; }
+  .models { display: flex; gap: 8px; justify-content: center; margin-top: 20px; flex-wrap: wrap; }
+  .chip { display: inline-flex; align-items: center; gap: 8px; background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 6px 12px; font-size: 13px; font-weight: 500; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; }
+
+  .product { display: grid; grid-template-columns: 280px 1fr; gap: 16px; background: var(--muted); border: 1px solid var(--border); border-radius: 4px; padding: 16px; margin: 40px 0 24px; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 20px; }
+  .card h3 { font-size: 13px; font-weight: 500; color: var(--text-2); margin-bottom: 12px; }
+  .example { font-size: 12px; color: var(--hint); text-align: right; margin-top: -8px; }
+  .score { display: flex; align-items: center; gap: 16px; }
+  .ring { --v: 62; width: 92px; height: 92px; border-radius: 50%; display: grid; place-items: center; background: conic-gradient(var(--c) calc(var(--v) * 1%), var(--muted) 0); }
+  .ring b { width: 72px; height: 72px; border-radius: 50%; background: var(--surface); display: grid; place-items: center; font-size: 24px; font-weight: 700; }
+  .badge { display: inline-block; font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 3px; }
+  .b-good { color: var(--good-text); background: var(--good-bg); }
+  .b-mid { color: var(--mid-text); background: var(--mid-bg); }
+  .b-low { color: var(--low-text); background: var(--low-bg); }
+  .rings { display: flex; gap: 12px; margin-top: 16px; }
+  .rings .ring { width: 48px; height: 48px; }
+  .rings .ring b { width: 36px; height: 36px; font-size: 12px; }
+  .row { display: grid; grid-template-columns: 110px 1fr 44px; align-items: center; gap: 12px; margin: 10px 0; font-size: 14px; }
+  .bar { height: 8px; background: var(--muted); border-radius: 2px; overflow: hidden; }
+  .bar i { display: block; height: 100%; border-radius: 2px; }
+  .right { text-align: right; }
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px; }
+  .you { color: var(--primary); font-weight: 600; }
+  .usage-label { display: flex; justify-content: space-between; font-size: 13px; color: var(--text-2); margin-bottom: 8px; }
+
+  .palette { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; margin: 24px 0 64px; }
+  .sw { border: 1px solid var(--border); border-radius: 4px; overflow: hidden; background: var(--surface); font-size: 12px; }
+  .sw div { height: 44px; }
+  .sw p { padding: 8px 10px; }
+  .sw small { color: var(--text-2); display: block; font-family: "Geist Mono", monospace; }
+  h2 { font-size: 20px; letter-spacing: -0.02em; margin-top: 16px; }
+
+  @media (max-width: 760px) {
+    nav { display: none; }
+    .product, .two { grid-template-columns: 1fr; }
+  }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <div class="logo">Customers<span>.</span>Direct</div>
+    <nav>
+      <a href="#" class="active">Product</a><a href="#">Pricing</a><a href="#">Agencies</a><a href="#">FAQ</a>
+    </nav>
+    <button class="btn btn-ghost">Log in</button>
+    <button class="btn btn-primary">Start free trial</button>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="hero">
+    <span class="eyebrow">For local businesses and agencies</span>
+    <h1>Is AI recommending <em>your business</em>, or your competitor?</h1>
+    <p class="lead">See what ChatGPT, Claude and Perplexity tell your customers, why competitors show up, and exactly what to fix.</p>
+    <form class="search" onsubmit="return false">
+      <input aria-label="Your website" placeholder="yourbusiness.com">
+      <button class="btn btn-primary">Check my visibility</button>
+    </form>
+    <p class="fine">7-day free trial. Cancel anytime.</p>
+    <div class="models">
+      <span class="chip"><span class="dot" style="background:var(--chatgpt)"></span>ChatGPT</span>
+      <span class="chip"><span class="dot" style="background:var(--claude)"></span>Claude</span>
+      <span class="chip"><span class="dot" style="background:var(--perplexity)"></span>Perplexity</span>
+    </div>
+  </section>
+
+  <section class="product" aria-label="Example dashboard">
+    <div>
+      <div class="card">
+        <h3>Visibility score</h3>
+        <div class="score">
+          <div class="ring" style="--c:var(--mid)"><b class="num">62</b></div>
+          <div><span class="badge b-good num">+8 this week</span><p class="fine" style="margin-top:6px">Mentioned in 22 of 36 checks</p></div>
+        </div>
+        <div class="rings" aria-label="Score colors">
+          <div class="ring" style="--v:84;--c:var(--good)"><b class="num">84</b></div>
+          <div class="ring" style="--v:62;--c:var(--mid)"><b class="num">62</b></div>
+          <div class="ring" style="--v:18;--c:var(--low)"><b class="num">18</b></div>
+        </div>
+        <p style="margin-top:12px;display:flex;gap:6px;flex-wrap:wrap"><span class="badge b-good">Good</span><span class="badge b-mid">Needs work</span><span class="badge b-low">Not visible</span></p>
+      </div>
+      <div class="card" style="margin-top:16px">
+        <div class="usage-label"><span>Credits</span><span class="num">620 of 1,200</span></div>
+        <div class="bar"><i style="width:52%;background:var(--primary)"></i></div>
+        <p class="fine" style="margin-top:8px">Renews in 12 days</p>
+      </div>
+    </div>
+
+    <div>
+      <p class="example">Example data</p>
+      <div class="card">
+        <h3>You vs competitors</h3>
+        <div class="row"><span class="you">Bean House (you)</span><div class="bar"><i style="width:62%;background:var(--primary)"></i></div><span class="right num you">62%</span></div>
+        <div class="row"><span>Daily Grind</span><div class="bar"><i style="width:71%;background:var(--comp-1)"></i></div><span class="right num">71%</span></div>
+        <div class="row"><span>Brew Lab</span><div class="bar"><i style="width:40%;background:var(--comp-2)"></i></div><span class="right num">40%</span></div>
+        <div class="row"><span>Cup &amp; Co</span><div class="bar"><i style="width:22%;background:var(--comp-3)"></i></div><span class="right num">22%</span></div>
+      </div>
+      <div class="two">
+        <div class="card">
+          <h3>By AI model</h3>
+          <div class="row"><span>ChatGPT</span><div class="bar"><i style="width:75%;background:var(--chatgpt)"></i></div><span class="right num">75%</span></div>
+          <div class="row"><span>Claude</span><div class="bar"><i style="width:58%;background:var(--claude)"></i></div><span class="right num">58%</span></div>
+          <div class="row"><span>Perplexity</span><div class="bar"><i style="width:50%;background:var(--perplexity)"></i></div><span class="right num">50%</span></div>
+        </div>
+        <div class="card">
+          <h3>Top fix</h3>
+          <p style="font-weight:600">Get more Google reviews</p>
+          <p class="fine" style="margin:6px 0 14px">Daily Grind has 320 reviews at 4.7. You have 12 at 4.2.</p>
+          <span class="badge b-low">High impact</span>
+          <div style="margin-top:14px;display:flex;gap:8px"><button class="btn btn-primary">See steps</button><button class="btn btn-ghost">Copy for Claude</button></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <h2>Palette</h2>
+  <div class="palette">
+    <div class="sw"><div style="background:var(--bg)"></div><p>Background<small>#FAFAF8</small></p></div>
+    <div class="sw"><div style="background:var(--surface)"></div><p>Surface<small>#FFFFFF</small></p></div>
+    <div class="sw"><div style="background:var(--muted)"></div><p>Muted<small>#F5F5F2</small></p></div>
+    <div class="sw"><div style="background:var(--border)"></div><p>Border<small>#E5E5E1</small></p></div>
+    <div class="sw"><div style="background:var(--input-border)"></div><p>Input border 3.3:1<small>#8F8F8A</small></p></div>
+    <div class="sw"><div style="background:var(--text)"></div><p>Text 17:1<small>#171717</small></p></div>
+    <div class="sw"><div style="background:var(--text-2)"></div><p>Text secondary 5.1:1<small>#6B6B67</small></p></div>
+    <div class="sw"><div style="background:var(--hint)"></div><p>Hint 4.6:1<small>#737370</small></p></div>
+    <div class="sw"><div style="background:var(--primary)"></div><p>Primary 5.2:1<small>#2563EB</small></p></div>
+    <div class="sw"><div style="background:var(--primary-hover)"></div><p>Primary hover<small>#1D4ED8</small></p></div>
+    <div class="sw"><div style="background:var(--primary-tint)"></div><p>Primary tint<small>#EFF6FF</small></p></div>
+    <div class="sw"><div style="background:var(--good)"></div><p>Good (fill)<small>#16A34A / text #15803D</small></p></div>
+    <div class="sw"><div style="background:var(--mid)"></div><p>Mid (fill)<small>#D97706 / text #B45309</small></p></div>
+    <div class="sw"><div style="background:var(--low)"></div><p>Low (fill)<small>#DC2626 / text #B91C1C</small></p></div>
+    <div class="sw"><div style="background:var(--chatgpt)"></div><p>ChatGPT<small>#10A37F</small></p></div>
+    <div class="sw"><div style="background:var(--claude)"></div><p>Claude<small>#D97757</small></p></div>
+    <div class="sw"><div style="background:var(--perplexity)"></div><p>Perplexity<small>#20808D</small></p></div>
+    <div class="sw"><div style="background:var(--comp-1)"></div><p>Competitors<small>#525250 / #A3A3A0 / #C9C9C4</small></p></div>
+  </div>
+</main>
+
+</body>
+</html>
