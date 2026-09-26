@@ -32,7 +32,7 @@ export async function proxy(request: NextRequest) {
     }
   );
 
-  // Refresh session — do NOT remove this line.
+  // Refresh session: do NOT remove this line.
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -40,7 +40,7 @@ export async function proxy(request: NextRequest) {
   // --- Auth guard: /dashboard requires a signed-in Supabase Auth user ---
   const { pathname } = request.nextUrl;
 
-  if (!user && (pathname.startsWith("/dashboard") || pathname.startsWith("/internal"))) {
+  if (!user && (pathname.startsWith("/dashboard") || pathname.startsWith("/internal") || pathname === "/design-preview")) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     url.searchParams.set("next", pathname);
@@ -66,7 +66,7 @@ export const config = {
      *  - _next/image   (image optimisation)
      *  - favicon.ico
      *  - public folder files
-     *  - auth/callback  (must not be intercepted — it exchanges the OAuth code and sets cookies)
+     *  - auth/callback  (must not be intercepted, it exchanges the OAuth code and sets cookies)
      */
     "/((?!_next/static|_next/image|favicon.ico|auth/callback|.*\\.(?:js|svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
