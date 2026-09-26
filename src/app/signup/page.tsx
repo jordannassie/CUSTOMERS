@@ -5,13 +5,18 @@ export const metadata = {
   robots: { index: false },
 };
 
-export default function SignupPage() {
+export default async function SignupPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string }>;
+}) {
+  const { error } = await searchParams;
   return (
     <div className="min-h-screen bg-[#FAFAF8] flex items-center justify-center px-4 py-16">
       <div className="w-full max-w-6xl flex flex-col md:flex-row items-center gap-8">
         {/* Left: Auth form defaulting to Sign Up tab */}
         <div className="w-full md:w-[420px] mx-auto md:mx-0">
-          <AuthForm defaultMode="signup" />
+          <AuthForm defaultMode="signup" errorParam={error} />
         </div>
 
         {/* Right: Banner image (desktop only) */}

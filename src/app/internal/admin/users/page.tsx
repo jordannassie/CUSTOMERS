@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { requireAdmin } from "@/lib/admin/require";
 import { createServiceClient } from "@/lib/supabase/service";
 
@@ -68,13 +69,13 @@ export default async function AdminUsersPage() {
                       {businesses.length > 0 ? (
                         <div className="flex flex-col gap-0.5">
                           {businesses.map((b) => (
-                            <a
+                            <Link
                               key={b.id}
                               href="/internal/admin/businesses"
                               className="text-[#0866F5] hover:underline truncate max-w-[180px] block"
                             >
                               {b.name}
-                            </a>
+                            </Link>
                           ))}
                         </div>
                       ) : (
