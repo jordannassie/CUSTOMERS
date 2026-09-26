@@ -2,9 +2,8 @@ import Link from "next/link";
 import {
   ArrowRight, BarChart2, TrendingUp, TrendingDown,
   Lightbulb, CheckCircle2, Globe, MapPin, Pencil,
-  Search, ShieldCheck, Quote,
+  Search, Quote,
 } from "lucide-react";
-import BotIcon from "@/components/BotIcon";
 import OnboardingWizard from "@/components/geo/OnboardingWizard";
 import DashboardShell from "@/components/geo/dashboard/DashboardShell";
 import CompetitorTrendChart from "@/components/geo/dashboard/CompetitorTrendChart";
@@ -44,13 +43,11 @@ export default async function DashboardPage({
   const agg = await getDashboardAggregates(business.id);
   const { overview, trendSeries, models, competitors, citations, results, hasAnyRun } = agg;
 
-  // Opportunities + Agent Readiness — fetch separately
+  // Opportunities: fetched separately
   const { createClient } = await import("@/lib/supabase/server");
-  const { createServiceClient } = await import("@/lib/supabase/service");
   const supabase = await createClient();
-  const service = createServiceClient();
 
-  const [{ data: oppsData }, { data: agentScan }, { data: seoSnapshot }] = await Promise.all([
+  const [{ data: oppsData }, { data: seoSnapshot }] = await Promise.all([
     supabase
       .from("opportunities")
       .select("id, title, description, evidence, impact, status, category, claude_prompt, affected_url")
@@ -58,14 +55,6 @@ export default async function DashboardPage({
       .eq("status", "open")
       .order("created_at", { ascending: false })
       .limit(5),
-    service
-      .from("agent_readiness_scans")
-      .select("readiness_score, readiness_status, webmcp_detected, webmcp_tool_count, actions_detected, actions_ready, completed_at")
-      .eq("business_id", business.id)
-      .eq("status", "completed")
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle(),
     supabase
       .from("seo_snapshots")
       .select("id, fetched_at")
@@ -241,7 +230,7 @@ export default async function DashboardPage({
         </div>
 
         {/* 4. THREE INSIGHT CARDS ─────────────────────────────────────────── */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
 
           {/* Search Intelligence */}
           <InsightCard
@@ -272,30 +261,6 @@ export default async function DashboardPage({
                   }
                 : { label: "No citation data yet", sub: "Run a scan to discover your source coverage", color: "text-[#777773]" }
             }
-          />
-
-          {/* AI Agent Readiness */}
-          <InsightCard
-            icon={<ShieldCheck size={15} className="text-[#0066FF]" />}
-            title="AI Agent Readiness"
-            badge="New"
-            href="/dashboard/agent-readiness"
-            ctaLabel="View Readiness"
-            status={
-              agentScan
-                ? {
-                    label: agentScan.readiness_status === "agent_ready" ? "Agent Ready"
-                      : agentScan.readiness_status === "partially_ready" ? "Partially Ready"
-                      : agentScan.readiness_status === "needs_work" ? "Needs Work"
-                      : "Not Ready",
-                    sub: `${agentScan.actions_ready}/${agentScan.actions_detected} actions ready · WebMCP ${agentScan.webmcp_detected ? "detected" : "not detected"}`,
-                    color: agentScan.readiness_status === "agent_ready" ? "text-emerald-600"
-                      : agentScan.readiness_status === "partially_ready" ? "text-amber-600"
-                      : "text-orange-600",
-                  }
-                : { label: "Not yet scanned", sub: "Check whether AI agents can use your website", color: "text-[#777773]" }
-            }
-            ctaSecondary={!agentScan ? { label: "Scan Website", href: "/dashboard/agent-readiness" } : undefined}
           />
         </div>
 
@@ -330,51 +295,11 @@ export default async function DashboardPage({
                     <p className="text-[12.5px] text-[#171717] leading-snug font-medium">{o.title}</p>
                     {o.evidence && <p className="text-[11px] text-[#A3A3A0] mt-0.5 line-clamp-1">{o.evidence}</p>}
                   </div>
-                  {o.claude_prompt && (
-                    <Link
-                      href={`/dashboard/direct-agent?q=${encodeURIComponent(o.claude_prompt.slice(0, 400))}`}
-                      className="hidden group-hover:flex items-center gap-1 text-[11px] font-semibold text-[#7C3AED] shrink-0"
-                    >
-                      <BotIcon size={12} /> Ask Claude
-                    </Link>
-                  )}
                 </div>
               ))}
             </div>
           )}
         </div>
-
-        {/* 6. DIRECT AGENT QUICK LINKS ────────────────────────────────────── */}
-        {hasAnyRun && (
-          <div className="bg-white rounded-xl border border-[#E5E5E1] p-5">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <BotIcon size={18} />
-                <h2 className="text-[13px] font-bold text-[#171717]">Direct Agent</h2>
-              </div>
-              <Link href="/dashboard/direct-agent" className="text-[12px] font-semibold text-[#777773] hover:text-[#171717] flex items-center gap-1">
-                Open <ArrowRight size={11} />
-              </Link>
-            </div>
-            <p className="text-[11.5px] text-[#A3A3A0] mb-3">Ask anything about your AI visibility — grounded in your real data.</p>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-              {[
-                "Why is my AI Visibility score what it is?",
-                "What's the highest-impact fix right now?",
-                "How do I beat my top competitor?",
-              ].map((q) => (
-                <Link
-                  key={q}
-                  href={`/dashboard/direct-agent?q=${encodeURIComponent(q)}`}
-                  className="flex items-start gap-2 border border-[#E5E5E1] bg-white rounded-lg px-3 py-2.5 text-[#171717] hover:bg-[#F5F5F2] hover:border-[#D4D4CF] transition-colors"
-                >
-                  <BotIcon size={14} className="mt-0.5 shrink-0" />
-                  <span className="text-[11.5px]">{q}</span>
-                </Link>
-              ))}
-            </div>
-          </div>
-        )}
 
       </div>
 

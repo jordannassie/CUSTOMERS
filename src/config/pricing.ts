@@ -1,5 +1,5 @@
 /**
- * Customers.Direct — CANONICAL Pricing & Billing Configuration.
+ * Customers.Direct: CANONICAL Pricing & Billing Configuration.
  *
  * THIS IS THE SINGLE SOURCE OF TRUTH FOR ALL PRICING, LIMITS, AND PLAN LOGIC.
  *
@@ -168,7 +168,6 @@ export const CANONICAL_PLANS: Record<CanonicalPlanId, CanonicalPlan> = {
       "Share of Voice & AI Position",
       "Citations & source tracking",
       "Basic Search Intelligence",
-      "Basic Direct Agent",
       "Claude fix prompts (10/mo)",
       "3 months history",
     ],
@@ -180,7 +179,7 @@ export const CANONICAL_PLANS: Record<CanonicalPlanId, CanonicalPlan> = {
     id: "growth",
     name: "Growth",
     positioning: "Help me improve",
-    description: "Find out why competitors are beating you — and fix it.",
+    description: "Find out why competitors are beating you, and fix it.",
 
     priceMonthly: 29700,
     priceLabel: "$297",
@@ -218,7 +217,6 @@ export const CANONICAL_PLANS: Record<CanonicalPlanId, CanonicalPlan> = {
       "Competitor keyword gaps",
       "SEO competitor analysis",
       "Backlink opportunities",
-      "Full Direct Agent",
       "Claude fixes (30/mo)",
       "Advanced opportunity detection",
       "12 months history",
@@ -268,7 +266,6 @@ export const CANONICAL_PLANS: Record<CanonicalPlanId, CanonicalPlan> = {
       "Advanced Search Intelligence",
       "Advanced competitor intelligence",
       "Advanced backlink analysis",
-      "Higher Direct Agent usage",
       "More Claude fix prompts (100/mo)",
       "Priority opportunity detection",
       "Full historical reporting",
@@ -384,7 +381,7 @@ export interface PricingFeatureRow {
   enterprise: string | boolean;
 }
 
-/** Generated from canonical plan values — never manually duplicated. */
+/** Generated from canonical plan values: never manually duplicated. */
 export const COMPARISON_TABLE: { section: string; rows: PricingFeatureRow[] }[] = [
   {
     section: "Monitoring",
@@ -455,7 +452,6 @@ export const COMPARISON_TABLE: { section: string; rows: PricingFeatureRow[] }[] 
   {
     section: "AI Agent",
     rows: [
-      { feature: "Direct Agent", starter: "Basic", growth: "Full", pro: "Full + higher usage", enterprise: "Custom" },
       { feature: "Claude fix prompts / month", starter: `${CANONICAL_PLANS.starter.claudeFixesPerMonth}`, growth: `${CANONICAL_PLANS.growth.claudeFixesPerMonth}`, pro: `${CANONICAL_PLANS.pro.claudeFixesPerMonth}`, enterprise: "Custom" },
       { feature: "Opportunity Detection", starter: "Basic", growth: "Advanced", pro: "Priority", enterprise: "Priority" },
     ],
@@ -470,13 +466,13 @@ export const COMPARISON_TABLE: { section: string; rows: PricingFeatureRow[] }[] 
 ];
 
 // ─────────────────────────────────────────────────────────────────────────────
-// INTERNAL COST / MARGIN CONFIG  (server-side only — never expose to client)
+// INTERNAL COST / MARGIN CONFIG  (server-side only: never expose to client)
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
  * Approximate provider cost per 1,000 tokens (USD).
  * Used to estimate variable costs in the usage ledger.
- * These are internal estimates — never expose to customers.
+ * These are internal estimates: never expose to customers.
  */
 export const PROVIDER_COST_CONFIG = {
   chatgpt: {
@@ -522,25 +518,3 @@ export const MARGIN_THRESHOLDS = {
   warning: 0.80,   // < 80% gross margin → warning
   severe: 0.70,    // < 70% gross margin → severe warning
 } as const;
-
-// ─────────────────────────────────────────────────────────────────────────────
-// LEGACY COMPAT — deprecated aliases, remove once all imports updated
-// ─────────────────────────────────────────────────────────────────────────────
-
-/** @deprecated Use CANONICAL_PLANS */
-export const PRICING_PLANS = CANONICAL_PLANS;
-
-/** @deprecated Use CanonicalPlanId */
-export type PricingPlanId = CanonicalPlanId;
-
-/** @deprecated Use CanonicalPlan */
-export type PricingPlan = CanonicalPlan;
-
-/** @deprecated Use ORDERED_PLANS */
-export const ORDERED_PRICING_PLANS = ORDERED_PLANS;
-
-/** @deprecated Use PRODUCT_ACCESS from @/config/product-access */
-export const PRODUCT_ACCESS_CONFIG = {
-  billingEnabled: process.env.BILLING_ENABLED === "true",
-  betaFreeAccess: process.env.BETA_FREE_ACCESS !== "false",
-};

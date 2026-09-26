@@ -14,6 +14,7 @@ AEO SaaS for local businesses and the agencies that manage them: checks whether 
 | Look and feel | `docs/design/DESIGN.md` |
 | What the client asked for | `docs/CLIENT_REQUIREMENTS.md` |
 | Known bugs and security fixes | `docs/MVP_ROADMAP.md` |
+| Bugs found during the build (log new ones here) | `docs/BUGS.md` |
 
 Do not change a `Decided` item in DECISIONS.md without the user's approval. `Proposed` and `Ask Jordan` items must be confirmed before building on them.
 

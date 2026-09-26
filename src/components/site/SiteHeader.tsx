@@ -17,12 +17,6 @@ import {
   Building2,
   Mail,
 } from "lucide-react";
-import BotIcon from "@/components/BotIcon";
-
-// Wrapper so BotIcon fits the lucide icon signature used in PRODUCT_FEATURES
-const BotNavIcon = ({ size, className }: { size?: number; className?: string; "aria-hidden"?: boolean | string }) => (
-  <BotIcon size={size} className={className} />
-);
 
 const LOGO_WHITE = "/images/logos/logo-white.png";
 
@@ -56,19 +50,11 @@ const PRODUCT_FEATURES = [
   },
   {
     label: "Opportunities",
-    description: "Evidence-backed, actionable fixes — each with a ready-made Claude prompt to implement.",
+    description: "Evidence-backed, actionable fixes, each with a ready-made Claude prompt to implement.",
     href: "/#opportunities",
     icon: Lightbulb,
     bg: "bg-orange-500",
     shadow: "shadow-orange-200",
-  },
-  {
-    label: "Direct Agent",
-    description: "Ask anything about your AI visibility. Grounded in real scan data, not hallucinations.",
-    href: "/#direct-agent",
-    icon: BotNavIcon,
-    bg: "bg-pink-500",
-    shadow: "shadow-pink-200",
   },
 ] as const;
 
@@ -99,7 +85,7 @@ export default function SiteHeader() {
     if (typeof window === "undefined") return;
     const hash = href.replace("/#", "#");
     if (window.location.pathname === "/") {
-      // Same page — set hash directly to trigger hashchange + tab activation
+      // Same page: set hash directly to trigger hashchange + tab activation
       window.location.hash = hash;
     } else {
       window.location.href = href;
@@ -151,7 +137,7 @@ export default function SiteHeader() {
           {/* Logo */}
           <Link
             href="/"
-            aria-label="Customers.Direct — Home"
+            aria-label="Customers.Direct home"
             className="shrink-0 mr-8 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 rounded-md"
           >
             <Image
@@ -256,19 +242,6 @@ export default function SiteHeader() {
 
             <Link href="/agency" className={navLink()}>Agencies</Link>
 
-            {/* Ads — ChatGPT ad management */}
-            <Link href="/ads" className={navLink()}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src="/icons/ai-platforms/chatgpt.svg"
-                alt=""
-                aria-hidden="true"
-                width={14}
-                height={14}
-                className="opacity-75 invert shrink-0"
-              />
-              Ads
-            </Link>
           </nav>
 
           {/* Right side */}
@@ -344,12 +317,6 @@ export default function SiteHeader() {
             <Link href="/agency" onClick={closeAll}
               className="px-3 py-2.5 text-[13px] font-medium text-white/85 hover:text-white rounded-xl hover:bg-white/10 transition-colors">
               Agencies
-            </Link>
-            <Link href="/ads" onClick={closeAll}
-              className="flex items-center gap-2 px-3 py-2.5 text-[13px] font-medium text-white/85 hover:text-white rounded-xl hover:bg-white/10 transition-colors">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/icons/ai-platforms/chatgpt.svg" alt="" aria-hidden="true" width={13} height={13} className="opacity-75 invert shrink-0" />
-              Ads
             </Link>
             <Link href="/login" onClick={closeAll}
               className="px-3 py-2.5 text-[13px] font-medium text-white/85 hover:text-white rounded-xl hover:bg-white/10 transition-colors">

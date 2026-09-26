@@ -32,22 +32,23 @@ interface LeadsResponse {
 
 const INTEREST_LABELS: Record<string, string> = {
   ai_visibility: "AI Visibility",
-  chatgpt_ads:   "ChatGPT Ads",
   agency:        "Join as Agency",
   book_demo:     "Book Demo Call",
   other:         "Other",
+  // Legacy values, kept so old records still show a label
   product:       "Product",
   support:       "Support",
   sales:         "Sales",
   enterprise:    "Enterprise",
+  chatgpt_ads:   "ChatGPT Ads",
 };
 
 const SOURCE_LABELS: Record<string, string> = {
   contact_page: "Contact Page",
-  ads_page:     "Ads Page",
   chat:         "Chat Widget",
   agency:       "Agency Page",
   other:        "Other",
+  ads_page:     "Ads Page (legacy)",
 };
 
 const STATUS_OPTIONS = [
