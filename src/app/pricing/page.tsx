@@ -1,3 +1,4 @@
+/* eslint-disable max-lines, local/max-lines-hard -- TODO(B-72): replaced by the new pricing page. */
 "use client";
 
 import React, { useState } from "react";

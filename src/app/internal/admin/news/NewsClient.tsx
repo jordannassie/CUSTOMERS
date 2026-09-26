@@ -1,3 +1,4 @@
+/* eslint-disable max-lines, local/max-lines-hard -- TODO(D-07): split once LinkedIn Studio is decided. */
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";

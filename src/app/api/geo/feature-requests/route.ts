@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { requireUser } from "@/lib/geo/api-auth";
 import { createServiceClient } from "@/lib/supabase/service";
 
 const MAX_TITLE = 200;
@@ -7,12 +7,8 @@ const MAX_DESC  = 2000;
 
 export async function POST(request: NextRequest) {
   // 1. Verify authenticated user
-  const supabase = await createClient();
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
-
-  if (authError || !user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const { user, supabase, unauthorized } = await requireUser();
+  if (unauthorized) return unauthorized;
 
   // 2. Parse body
   let body: unknown;

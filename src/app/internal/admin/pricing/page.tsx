@@ -1,3 +1,4 @@
+/* eslint-disable max-lines, local/max-lines-hard -- TODO(B-68): the old pricing viewer is removed in admin settings. */
 import { requireAdmin } from "@/lib/admin/require";
 import { Check, X, AlertTriangle } from "lucide-react";
 import {
