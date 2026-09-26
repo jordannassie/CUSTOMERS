@@ -21,7 +21,8 @@
     "test": "bash scripts/test-db-reset.sh && vitest run --project unit",
     "test:e2e": "playwright test",
     "evals": "vitest run --project evals",
-    "evals:ai": "vitest run --project evals-ai --passWithNoTests"
+    "evals:ai": "vitest run --project evals-ai --passWithNoTests",
+    "dev:openai-check": "vitest run --project dev scripts/dev/openai-check.dev.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.4",

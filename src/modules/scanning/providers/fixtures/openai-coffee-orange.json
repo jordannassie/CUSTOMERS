@@ -1,0 +1,98 @@
+{
+  "id": "resp_0a1b2c3d4e5f60718293a4b5c6d7e8f9",
+  "object": "response",
+  "created_at": 1790467200,
+  "status": "completed",
+  "error": null,
+  "incomplete_details": null,
+  "model": "gpt-4.1-mini-2025-04-14",
+  "output": [
+    {
+      "type": "web_search_call",
+      "id": "ws_0a1b2c3d4e5f607182930001",
+      "status": "completed",
+      "action": {
+        "type": "search",
+        "query": "best coffee shop Orange CA"
+      }
+    },
+    {
+      "type": "web_search_call",
+      "id": "ws_0a1b2c3d4e5f607182930002",
+      "status": "completed",
+      "action": {
+        "type": "open_page",
+        "url": "https://www.yelp.com/biz/contra-coffee-and-tea-orange"
+      }
+    },
+    {
+      "type": "message",
+      "id": "msg_0a1b2c3d4e5f607182930003",
+      "status": "completed",
+      "role": "assistant",
+      "content": [
+        {
+          "type": "output_text",
+          "text": "Here are some of the best coffee shops in Orange, CA:\n\n1. **Contra Coffee & Tea**: A bright spot in Old Towne Orange known for its nitro cold brew and seasonal lattes. ([yelp.com](https://www.yelp.com/biz/contra-coffee-and-tea-orange?utm_source=openai))\n\n2. **Portola Coffee Roasters**: Small-batch roaster with carefully made pour-overs and espresso. ([portolacoffeeroasters.com](https://www.portolacoffeeroasters.com/?utm_source=openai))\n\n3. **Chapman Crafted Coffee**: Popular with students near Chapman University, with plenty of seating. ([yelp.com](https://www.yelp.com/search?find_desc=coffee&find_loc=Orange%2C+CA&utm_source=openai))\n\nContra Coffee & Tea is the most often recommended of these in local reviews. ([yelp.com](https://www.yelp.com/biz/contra-coffee-and-tea-orange?utm_source=openai))",
+          "annotations": [
+            {
+              "type": "url_citation",
+              "start_index": 168,
+              "end_index": 253,
+              "url": "https://www.yelp.com/biz/contra-coffee-and-tea-orange?utm_source=openai",
+              "title": "CONTRA COFFEE & TEA - Orange CA - Yelp"
+            },
+            {
+              "type": "url_citation",
+              "start_index": 352,
+              "end_index": 439,
+              "url": "https://www.portolacoffeeroasters.com/?utm_source=openai",
+              "title": "Portola Coffee Roasters"
+            },
+            {
+              "type": "url_citation",
+              "start_index": 543,
+              "end_index": 641,
+              "url": "https://www.yelp.com/search?find_desc=coffee&find_loc=Orange%2C+CA&utm_source=openai",
+              "title": "Best Coffee in Orange, CA - Yelp"
+            },
+            {
+              "type": "url_citation",
+              "start_index": 720,
+              "end_index": 805,
+              "url": "https://www.yelp.com/biz/contra-coffee-and-tea-orange?utm_source=openai",
+              "title": "CONTRA COFFEE & TEA - Orange CA - Yelp"
+            }
+          ],
+          "logprobs": []
+        }
+      ]
+    }
+  ],
+  "tools": [
+    {
+      "type": "web_search",
+      "search_context_size": "medium",
+      "user_location": {
+        "type": "approximate",
+        "city": "Orange",
+        "country": "US",
+        "region": "CA",
+        "timezone": null
+      }
+    }
+  ],
+  "store": false,
+  "max_output_tokens": 2000,
+  "usage": {
+    "input_tokens": 8214,
+    "input_tokens_details": {
+      "cached_tokens": 0
+    },
+    "output_tokens": 286,
+    "output_tokens_details": {
+      "reasoning_tokens": 0
+    },
+    "total_tokens": 8500
+  }
+}
