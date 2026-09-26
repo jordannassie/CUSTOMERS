@@ -49,3 +49,8 @@ temp_interactive_push.bat
 
 # Supabase CLI link state
 supabase/.temp/
+
+# Test and eval output
+/test-results/
+/playwright-report/
+/blob-report/
