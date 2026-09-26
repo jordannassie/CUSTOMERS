@@ -19,6 +19,7 @@
 import "server-only";
 import { createServiceClient } from "@/lib/supabase/service";
 import { PROVIDER_COST_CONFIG } from "@/config/pricing";
+import type { Json } from "@/types/database.types";
 
 export type UsageType =
   | "ai_visibility_check"
@@ -115,7 +116,7 @@ export async function recordUsage(params: RecordUsageParams): Promise<void> {
       request_count: params.requestCount ?? 1,
       estimated_cost_usd: estimatedCostUsd,
       visibility_run_id: params.visibilityRunId ?? null,
-      metadata: params.metadata ?? null,
+      metadata: (params.metadata ?? null) as Json,
     });
   } catch (err) {
     // Never throw — usage recording failure must not block core functionality

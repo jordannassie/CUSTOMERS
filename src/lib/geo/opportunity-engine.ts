@@ -10,7 +10,7 @@ export interface OpportunityDraft {
   claude_prompt: string;
 }
 
-interface VisibilityResultLike {
+export interface VisibilityResultLike {
   business_mentioned: boolean;
   competitors_mentioned: Array<{ name: string }>;
   cited_sources: Array<{ url: string }>;

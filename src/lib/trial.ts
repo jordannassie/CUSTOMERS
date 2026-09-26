@@ -17,6 +17,7 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import { PRODUCT_ACCESS } from "@/config/product-access";
+import { env } from "@/lib/env";
 
 // ─── Beta usage safeguards ────────────────────────────────────────────────────
 // Internal cost-protection limits during beta.
@@ -57,10 +58,10 @@ function parseEnvList(v: string | undefined): string[] {
 }
 
 function isAdminByEnv(userId: string, userEmail: string | null | undefined): boolean {
-  const ids = parseEnvList(process.env.ADMIN_USER_IDS);
+  const ids = parseEnvList(env.ADMIN_USER_IDS);
   if (ids.length && ids.includes(userId.toLowerCase())) return true;
   if (userEmail) {
-    const emails = parseEnvList(process.env.ADMIN_EMAILS);
+    const emails = parseEnvList(env.ADMIN_EMAILS);
     if (emails.length && emails.includes(userEmail.toLowerCase())) return true;
   }
   return false;

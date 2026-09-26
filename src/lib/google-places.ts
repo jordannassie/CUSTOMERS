@@ -6,6 +6,7 @@ import type {
   ProspectSearchMetadata,
   ProspectSearchResult,
 } from "@/types/prospecting";
+import { env } from "@/lib/env";
 
 const HIGH_VALUE_CATEGORIES = [
   "med spa",
@@ -141,7 +142,7 @@ async function googlePlacesRequest<T>(
   body: Record<string, unknown>,
   fieldMask: string,
 ): Promise<T> {
-  const apiKey = process.env.GOOGLE_PLACES_API_KEY;
+  const apiKey = env.GOOGLE_PLACES_API_KEY;
   if (!apiKey) throw new Error("Google Places search is not configured.");
 
   for (let attempt = 0; attempt < 2; attempt += 1) {
@@ -393,7 +394,7 @@ interface PlaceHoursResponse {
 export async function getGooglePlaceHours(
   placeId: string,
 ): Promise<ProspectBusinessHours> {
-  const apiKey = process.env.GOOGLE_PLACES_API_KEY;
+  const apiKey = env.GOOGLE_PLACES_API_KEY;
   if (!apiKey) throw new Error("Google Places search is not configured.");
 
   const response = await fetch(

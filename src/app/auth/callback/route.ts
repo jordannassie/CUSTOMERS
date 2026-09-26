@@ -1,6 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { NextResponse, type NextRequest } from "next/server";
+import { env } from "@/lib/env";
 
 /**
  * OAuth / magic-link callback.
@@ -20,7 +21,7 @@ export async function GET(request: NextRequest) {
   const forwardedHost  = request.headers.get("x-forwarded-host");
   const forwardedProto = request.headers.get("x-forwarded-proto") ?? "https";
   const baseUrl =
-    process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ??
+    env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ??
     (forwardedHost ? `${forwardedProto}://${forwardedHost}` : new URL(request.url).origin);
 
   // Supabase sends error_code / error when the provider-side exchange fails
@@ -47,8 +48,8 @@ export async function GET(request: NextRequest) {
   const cookieStore = await cookies();
 
   const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    env.NEXT_PUBLIC_SUPABASE_URL,
+    env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
     {
       cookies: {
         getAll() {

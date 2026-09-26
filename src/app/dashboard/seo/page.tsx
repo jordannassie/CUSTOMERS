@@ -30,11 +30,11 @@ export default async function SeoPage() {
     initialSnapshot = {
       businessId: business.id,
       domain: rawSnapshot.domain as string,
-      overview: (rawSnapshot.overview as SeoSnapshot["overview"]) ?? {},
-      topKeywords: (rawSnapshot.top_keywords as SeoSnapshot["topKeywords"]) ?? [],
-      competitors: (rawSnapshot.competitors as SeoSnapshot["competitors"]) ?? [],
-      backlinks: (rawSnapshot.backlinks as SeoSnapshot["backlinks"]) ?? {},
-      keywordGaps: (rawSnapshot.keyword_gaps as SeoSnapshot["keywordGaps"]) ?? [],
+      overview: (rawSnapshot.overview as unknown as SeoSnapshot["overview"]) ?? {},
+      topKeywords: (rawSnapshot.top_keywords as unknown as SeoSnapshot["topKeywords"]) ?? [],
+      competitors: (rawSnapshot.competitors as unknown as SeoSnapshot["competitors"]) ?? [],
+      backlinks: (rawSnapshot.backlinks as unknown as SeoSnapshot["backlinks"]) ?? {},
+      keywordGaps: (rawSnapshot.keyword_gaps as unknown as SeoSnapshot["keywordGaps"]) ?? [],
       fetchedAt: rawSnapshot.fetched_at as string,
     };
   }

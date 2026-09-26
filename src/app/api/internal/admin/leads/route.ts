@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/admin/require";
 import { createServiceClient } from "@/lib/supabase/service";
+import type { TablesUpdate } from "@/types/database.types";
 
 const PAGE_SIZE = 30;
 
@@ -90,7 +91,7 @@ export async function PATCH(req: NextRequest) {
   const VALID_STATUSES = ["new", "contacted", "qualified", "closed", "in_progress", "resolved"] as const;
   type LeadStatus = (typeof VALID_STATUSES)[number];
 
-  const updates: Record<string, unknown> = {};
+  const updates: TablesUpdate<"contact_submissions"> = {};
 
   if (typeof body.status === "string" && VALID_STATUSES.includes(body.status as LeadStatus)) {
     updates.status = body.status;

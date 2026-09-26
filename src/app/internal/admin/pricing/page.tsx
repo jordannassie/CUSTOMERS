@@ -10,6 +10,7 @@ import {
   PROVIDER_COST_CONFIG,
   MARGIN_THRESHOLDS,
 } from "@/config/pricing";
+import { env } from "@/lib/env";
 
 export const metadata = { title: "Admin — Pricing & Billing Config" };
 
@@ -21,8 +22,15 @@ function fmt$(cents: number): string {
   return `$${(cents / 100).toLocaleString()}`;
 }
 
-function EnvStatus({ name }: { name: string }) {
-  const value = process.env[name];
+type StripeEnvKey =
+  | "STRIPE_SECRET_KEY"
+  | "STRIPE_WEBHOOK_SECRET"
+  | "STRIPE_PRICE_STARTER_MONTHLY"
+  | "STRIPE_PRICE_GROWTH_MONTHLY"
+  | "STRIPE_PRICE_PRO_MONTHLY";
+
+function EnvStatus({ name }: { name: StripeEnvKey }) {
+  const value = env[name];
   if (!value) {
     return (
       <span className="flex items-center gap-1 text-[#991B1B]">
@@ -37,8 +45,8 @@ function EnvStatus({ name }: { name: string }) {
   );
 }
 
-function PriceIdStatus({ name }: { name: string }) {
-  const value = process.env[name];
+function PriceIdStatus({ name }: { name: StripeEnvKey }) {
+  const value = env[name];
   if (!value) {
     return (
       <span className="flex items-center gap-1.5 text-[#991B1B] font-mono text-[11px]">
@@ -66,9 +74,9 @@ function FeatureCell({ value }: { value: string | boolean }) {
 export default async function AdminPricingPage() {
   await requireAdmin();
 
-  const stripeMode = process.env.STRIPE_SECRET_KEY?.startsWith("sk_live_")
+  const stripeMode = env.STRIPE_SECRET_KEY?.startsWith("sk_live_")
     ? "Live"
-    : process.env.STRIPE_SECRET_KEY?.startsWith("sk_test_")
+    : env.STRIPE_SECRET_KEY?.startsWith("sk_test_")
     ? "Test"
     : "Not configured";
 
@@ -295,15 +303,15 @@ export default async function AdminPricingPage() {
           <div className="bg-[#F8FAFD] border border-[#E2E8F0] rounded-xl p-4">
             <p className="text-[11px] font-bold text-[#6B7280] uppercase tracking-wider mb-3">Required Netlify Environment Variables</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-1">
-              {[
+              {([
                 "STRIPE_SECRET_KEY",
                 "STRIPE_WEBHOOK_SECRET",
                 "STRIPE_PRICE_STARTER_MONTHLY",
                 "STRIPE_PRICE_GROWTH_MONTHLY",
                 "STRIPE_PRICE_PRO_MONTHLY",
-              ].map((key) => (
+              ] as const).map((key) => (
                 <div key={key} className="flex items-center gap-2">
-                  <span className={`w-2 h-2 rounded-full shrink-0 ${process.env[key] ? "bg-[#166534]" : "bg-[#991B1B]"}`} />
+                  <span className={`w-2 h-2 rounded-full shrink-0 ${env[key] ? "bg-[#166534]" : "bg-[#991B1B]"}`} />
                   <code className="font-mono text-[11px] text-[#374151]">{key}</code>
                 </div>
               ))}
@@ -325,7 +333,7 @@ export default async function AdminPricingPage() {
               { label: "Entitlement service", ok: true, note: "src/lib/billing/entitlements.ts" },
               { label: "Cron scanner", ok: true, note: "Uses getPlanConfig() for cadence + limits" },
               { label: "Billing page", ok: true, note: "/dashboard/billing" },
-              { label: "Stripe Price ID mapping", ok: !!process.env.STRIPE_PRICE_STARTER_MONTHLY, note: process.env.STRIPE_PRICE_STARTER_MONTHLY ? "Configured" : "⚠ Set STRIPE_PRICE_*_MONTHLY env vars" },
+              { label: "Stripe Price ID mapping", ok: !!env.STRIPE_PRICE_STARTER_MONTHLY, note: env.STRIPE_PRICE_STARTER_MONTHLY ? "Configured" : "⚠ Set STRIPE_PRICE_*_MONTHLY env vars" },
               { label: "Usage ledger", ok: true, note: "src/lib/billing/usage.ts" },
               { label: "Legacy plans.ts", ok: true, note: "Shim only — re-exports from canonical config" },
             ].map(({ label, ok, note }) => (

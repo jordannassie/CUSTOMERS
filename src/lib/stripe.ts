@@ -7,8 +7,9 @@
  */
 import "server-only";
 import Stripe from "stripe";
+import { env } from "@/lib/env";
 
-const key = process.env.STRIPE_SECRET_KEY;
+const key = env.STRIPE_SECRET_KEY;
 
 if (!key) {
   console.warn("[stripe] STRIPE_SECRET_KEY is not set — self-serve billing is disabled.");

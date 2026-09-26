@@ -62,7 +62,6 @@ export default async function AdminScansPage() {
                 <tr key={s.id} className={`transition-colors ${s.status === "failed" ? "bg-[#FEF9F9] hover:bg-[#FEF2F2]/60" : "hover:bg-[#F8FAFD]"}`}>
                   <td className="px-4 py-3 text-[#111827] font-medium whitespace-nowrap">{s.provider}</td>
                   <td className="px-4 py-3 text-[#6B7280] truncate max-w-[160px]">
-                    {/* @ts-expect-error join shape */}
                     {s.businesses?.name ?? s.business_id}
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap">
