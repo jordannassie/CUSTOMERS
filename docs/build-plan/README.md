@@ -8,7 +8,7 @@ Anyone should be able to pick up the next task from this plan without asking.
 
 | # | Phase | File | Tasks | Estimate |
 |---|---|---|---|---|
-| 1 | Safety and setup | [01-setup.md](./01-setup.md) | B-01 to B-09 | 9.5 days |
+| 1 | Safety and setup | [01-setup.md](./01-setup.md) | B-01 to B-09, B-18 | 10 days |
 | 2 | Foundation (database, credits, data move) | [02-foundation.md](./02-foundation.md) | B-10 to B-17 | 10 days |
 | 3 | Scan engine | [03-scan-engine.md](./03-scan-engine.md) | B-20 to B-31 | 15.5 days |
 | 4 | Onboarding | [04-onboarding.md](./04-onboarding.md) | B-32 to B-38 | 16 days |
@@ -19,7 +19,7 @@ Anyone should be able to pick up the next task from this plan without asking.
 | 9 | Marketing site | [09-marketing.md](./09-marketing.md) | B-70 to B-74 | 9 days |
 | 10 | Launch readiness | [10-launch.md](./10-launch.md) | B-75 to B-83 | 12 days |
 
-**Total: 78 tasks, about 127 developer days.** One developer: about 6 months. Two developers working in parallel (see below): about 3 to 3.5 months. Estimates use S = half a day, M = 1 to 2 days, L = 3 to 5 days, and include tests. Gaps in the numbering (B-18, B-19, B-39, B-47, B-63) are spare IDs for tasks added later.
+**Total: 79 tasks, about 127.5 developer days.** One developer: about 6 months. Two developers working in parallel (see below): about 3 to 3.5 months. Estimates use S = half a day, M = 1 to 2 days, L = 3 to 5 days, and include tests. Gaps in the numbering (B-19, B-39, B-47, B-63) are spare IDs for tasks added later.
 
 ## Branches (D-45)
 
@@ -32,7 +32,7 @@ Anyone should be able to pick up the next task from this plan without asking.
 
 | Target | Tasks |
 |---|---|
-| `main` (short task branches) | B-02 to B-07, B-10 to B-13, B-16, B-20 to B-25, B-30, B-31, B-81, B-83 |
+| `main` (short task branches) | B-02 to B-07, B-10 to B-13, B-16, B-18, B-20 to B-25, B-30, B-31, B-81, B-83 |
 | `mvp` (short task branches) | B-08, B-09, B-14, B-15, B-17, B-26 to B-29, B-32 to B-79 (except B-80), B-82 |
 | `mvp` into `main` | B-80 (go-live) |
 | No branch | B-01 (keys and accounts) |
@@ -118,4 +118,5 @@ Every task must also pass these; tasks only list extra checks.
 - Testing uses an `is_test` agency (no real AI credits or payments) and Stripe sandbox keys.
 - Back up Supabase before any migration (the database is shared with the live site).
 - When a task is merged, tick it here and add the PR number.
+- Before starting a task, run `npm run task:ready B-xx` (B-18). It checks that every task in "Depends on:" is merged into this task's target branch.
 - If a task needs a new decision, add it to DECISIONS.md first.

@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|resume|clear",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd \"$CLAUDE_PROJECT_DIR\" && node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/task-ready.ts --hook",
+            "timeout": 60
+          }
+        ]
+      }
+    ]
+  }
+}
