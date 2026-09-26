@@ -3,8 +3,6 @@ import { createServiceClient } from "@/lib/supabase/service";
 import FeatureRequestsClient from "./FeatureRequestsClient";
 
 export const metadata = { title: "Feature Requests | Admin", robots: { index: false } };
-// Never cache — always fetch fresh
-export const dynamic = "force-dynamic";
 
 export default async function AdminFeatureRequestsPage() {
   await requireAdmin();
