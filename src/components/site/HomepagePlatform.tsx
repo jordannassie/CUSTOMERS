@@ -4,18 +4,13 @@ import React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import AgencyWorkspaceDemo from "@/components/site/AgencyWorkspaceDemo";
-
-const _HP_AI_ICON_BASE =
-  "https://wsxusvapciexemfvtadm.supabase.co/storage/v1/object/public/STORAGE/images/icons/New%20AI%20Icons";
 import { PlatformIcon } from "@/components/PlatformIcon";
-// AIOrbitAnimation removed — replaced with inline cycling icon in hero headline
 import {
   ArrowRight,
   Check,
   BarChart3,
   Users,
   Lightbulb,
-  Bot,
   RefreshCw,
   LayoutDashboard,
   MessagesSquare,
@@ -25,10 +20,7 @@ import {
   CheckCircle2,
   XCircle,
   Copy,
-  Send,
-  Building2,
   ChevronRight,
-  Zap,
   ExternalLink,
 } from "lucide-react";
 
@@ -504,7 +496,7 @@ function HeroCompareBar() {
   const [myUrl, setMyUrl] = React.useState("");
   const [themUrl, setThemUrl] = React.useState("");
 
-  /** Real domain validation — strips protocol/path before testing */
+  /** Real domain validation: strips protocol/path before testing */
   function isValidDomain(value: string): boolean {
     const v = value.trim().replace(/^https?:\/\//i, "").split("/")[0].split("?")[0];
     if (!v) return false;
@@ -608,7 +600,7 @@ function HeroCompareBar() {
               )}
             </div>
 
-            {/* ── Compare Free button — always blue ─────────────────── */}
+            {/* ── Compare Free button: always blue ─────────────────── */}
             <button
               type="submit"
               className="order-4 shrink-0 flex items-center justify-center gap-2 bg-[#0866F5] hover:bg-[#0757D4] text-white text-[14px] sm:text-[14.5px] font-bold h-[58px] sm:h-[70px] w-full sm:w-[240px] rounded-[14px] sm:rounded-[16px] transition-colors active:scale-[0.97]"
@@ -633,7 +625,7 @@ function HeroSection() {
   return (
     <section className="bg-[#FAFAF8] px-4 pt-16 pb-10 sm:pt-20 sm:pb-12 overflow-hidden border-b border-[#EEEEEA]">
 
-      {/* Headline area — constrained to 780px */}
+      {/* Headline area: constrained to 780px */}
       <div className="max-w-[780px] mx-auto text-center fade-up">
 
         {/* Eyebrow */}
@@ -650,11 +642,11 @@ function HeroSection() {
 
         {/* Sub-description */}
         <p className="text-[16px] sm:text-[17px] text-[#777773] leading-relaxed mb-8 max-w-[520px] mx-auto">
-          Compare your website against a competitor in AI search — free, instant, no signup needed.
+          Compare your website against a competitor in AI search. Free, instant, no signup needed.
         </p>
       </div>
 
-      {/* Compare bar — wider than headline, up to 1060px */}
+      {/* Compare bar: wider than headline, up to 1060px */}
       <div className="mt-2 mb-6 fade-up fade-up-delay-1">
         <HeroCompareBar />
       </div>
@@ -754,7 +746,7 @@ function BannerRotationSection() {
         </h2>
       </div>
 
-      {/* Image — instant swap, no transition */}
+      {/* Image: instant swap, no transition */}
       <div className="w-full max-w-5xl mx-auto px-4 pb-10">
         <div className="relative rounded-2xl overflow-hidden" style={{ aspectRatio: "16/9" }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -816,7 +808,7 @@ const SAMPLE_PROMPTS = [
 function ShopperImageSection() {
   return (
     <section className="relative overflow-hidden bg-[#0A0A0A]">
-      {/* Image — full width, slight overlay at bottom for text legibility */}
+      {/* Image: full width, slight overlay at bottom for text legibility */}
       <div className="relative w-full" style={{ maxHeight: "600px", overflow: "hidden" }}>
         <img
           src="https://wsxusvapciexemfvtadm.supabase.co/storage/v1/object/public/STORAGE/images/people/linedss.png"
@@ -913,8 +905,6 @@ function PromptTrackingSection() {
   );
 }
 
-// ─── 3. AI VISIBILITY ─────────────────────────────────────────────────────
-
 // ─── PRODUCT TABS (replaces 5 separate sections) ──────────────────────────
 
 const PRODUCT_TABS = [
@@ -922,7 +912,6 @@ const PRODUCT_TABS = [
   { id: "competitors",   label: "Competitors",      hash: "competitors"    },
   { id: "sources",       label: "Sources",          hash: "citations"      },
   { id: "opportunities", label: "Opportunities",    hash: "opportunities"  },
-  { id: "agent",         label: "Direct Agent",     hash: "direct-agent"   },
 ] as const;
 
 type TabId = typeof PRODUCT_TABS[number]["id"];
@@ -933,7 +922,6 @@ const HASH_TO_TAB: Record<string, TabId> = {
   "competitors":    "competitors",
   "citations":      "sources",
   "opportunities":  "opportunities",
-  "direct-agent":   "agent",
 };
 
 function ProductTabsSection() {
@@ -1007,114 +995,9 @@ function ProductTabsSection() {
           {active === "competitors"   && <CompetitorsTabContent />}
           {active === "sources"       && <SourcesTabContent />}
           {active === "opportunities" && <OpportunitiesTabContent />}
-          {active === "agent"         && <AgentTabContent />}
         </div>
       </div>
     </section>
-  );
-}
-
-// ── Tab: AI Visibility ────────────────────────────────────────────────────
-
-function AIVisibilitySection() {
-  const providerData = [
-    { name: "ChatGPT", score: 82, mentions: 9, total: 10, color: "#10B981" },
-    { name: "Claude", score: 74, mentions: 7, total: 10, color: "#8B5CF6" },
-    { name: "Perplexity", score: 68, mentions: 6, total: 10, color: "#3B82F6" },
-    { name: "Gemini", score: 51, mentions: 5, total: 10, color: "#EF4444" },
-    { name: "Google AI", score: 44, mentions: 4, total: 10, color: "#EAB308" },
-  ];
-
-  return (
-    <Section id="ai-visibility" bg="bg-[#FAFAF8]" className="border-b border-[#EEEEEA]">
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-14 lg:gap-20 items-center">
-        {/* Left copy */}
-        <div>
-          <Eyebrow>AI Visibility</Eyebrow>
-          <H2 className="mb-4">See exactly where AI recommends your business.</H2>
-          <Body className="mb-6 max-w-[460px]">
-            Every scan queries the AI platforms that buyers actually use. You see a Direct Score,
-            a platform-by-platform breakdown, and exactly which prompts you win or lose.
-          </Body>
-          <ul className="flex flex-col gap-3 mb-8">
-            {[
-              "Direct Score — your single AI visibility number out of 100",
-              "Visibility breakdown by ChatGPT, Claude, Perplexity, Gemini, and Google AI",
-              "Historical trend tracking across every scan",
-              "Win/loss analysis per buyer-intent prompt",
-            ].map((item) => (
-              <li key={item} className="flex items-start gap-2.5 text-[14px] text-[#777773]">
-                <CheckCircle2 size={15} className="text-[#171717] shrink-0 mt-0.5" aria-hidden="true" />
-                {item}
-              </li>
-            ))}
-          </ul>
-          <Link
-            href="/signup"
-            className="inline-flex items-center gap-1.5 text-[14px] font-semibold text-[#171717] hover:text-[#2A2A2A] transition-colors underline-offset-2 hover:underline"
-          >
-            Get your free visibility score <ArrowRight size={13} aria-hidden="true" />
-          </Link>
-        </div>
-
-        {/* Right mock */}
-        <div className="bg-white rounded-2xl border border-[#E5E5E1] p-5">
-          {/* Score cards */}
-          <div className="grid grid-cols-3 gap-3 mb-4">
-            {[
-              { label: "Direct Score", value: "82", sub: "/ 100", icon: Target, trend: "+12 pts" },
-              { label: "Prompts Won", value: "10/12", sub: "83%", icon: Trophy, trend: "+3" },
-              { label: "Citation Rate", value: "64%", sub: "avg: 48%", icon: Quote, trend: "+18%" },
-            ].map(({ label, value, sub, icon: Icon, trend }) => (
-              <div key={label} className="bg-[#FAFAF8] rounded-xl border border-[#E5E5E1] p-3.5">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-[10px] font-semibold text-[#A3A3A0] uppercase tracking-wider">{label}</span>
-                  <Icon size={12} className="text-[#D4D4CF]" aria-hidden="true" />
-                </div>
-                <div className="flex items-baseline gap-1 mb-0.5">
-                  <p className="text-[18px] font-bold text-[#171717] leading-none">{value}</p>
-                  <p className="text-[11px] text-[#A3A3A0]">{sub}</p>
-                </div>
-                <span className="text-[11px] font-semibold text-[#166534]">↑ {trend}</span>
-              </div>
-            ))}
-          </div>
-
-          {/* Chart */}
-          <div className="bg-[#FAFAF8] rounded-xl border border-[#E5E5E1] p-4 mb-4">
-            <div className="flex items-center justify-between mb-3">
-              <p className="text-[13px] font-semibold text-[#171717]">Visibility trend</p>
-              <span className="text-[11px] text-[#A3A3A0]">Last 10 scans</span>
-            </div>
-            <MiniChart h={72} />
-          </div>
-
-          {/* Platform breakdown */}
-          <div className="bg-[#FAFAF8] rounded-xl border border-[#E5E5E1] p-4">
-            <p className="text-[13px] font-semibold text-[#171717] mb-3">Platform breakdown</p>
-            <div className="flex flex-col gap-2.5">
-              {providerData.map(({ name, score, mentions, total, color }) => (
-                <div key={name} className="flex items-center gap-3">
-                  <span className="inline-flex items-center gap-1.5 text-[12px] font-medium text-[#171717] w-24 shrink-0">
-                    <PlatformIcon platform={name} size={14} />
-                    {name}
-                  </span>
-                  <div className="flex-1 h-1.5 bg-[#EEEEEA] rounded-full overflow-hidden">
-                    <div
-                      className="h-full rounded-full"
-                      style={{ width: `${score}%`, backgroundColor: color }}
-                    />
-                  </div>
-                  <span className="text-[11px] font-semibold text-[#777773] w-12 text-right shrink-0 tabular-nums">
-                    {mentions}/{total}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-    </Section>
   );
 }
 
@@ -1139,210 +1022,6 @@ function SourceBadge({ type }: { type: string }) {
     >
       {s.label}
     </span>
-  );
-}
-
-function KeySourcesSection() {
-  const sources = [
-    { rank: 1, domain: "reddit.com", type: "UGC", used: "32%", avgCitations: "3.2", isYou: false },
-    { rank: 2, domain: "yourbusiness.com", type: "You", used: "43%", avgCitations: "5.2", isYou: true },
-    { rank: 3, domain: "wikipedia.org", type: "Reference", used: "31%", avgCitations: "1.4", isYou: false },
-    { rank: 4, domain: "hubspot.com", type: "Competitor", used: "39%", avgCitations: "1.1", isYou: false },
-    { rank: 5, domain: "techradar.com", type: "Editorial", used: "45%", avgCitations: "2.4", isYou: false },
-  ];
-
-  return (
-    <Section id="citations" bg="bg-white" className="border-b border-[#EEEEEA]">
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-14 lg:gap-20 items-center">
-        {/* Left copy */}
-        <div>
-          <Eyebrow>Citations & Sources</Eyebrow>
-          <H2 className="mb-4">Find the sources shaping AI answers.</H2>
-          <Body className="mb-6 max-w-[460px]">
-            AI systems cite specific websites when constructing answers. Customers.Direct reveals which domains are cited most, whether your site appears, and where competitors have citation advantages you can close.
-          </Body>
-          <ul className="flex flex-col gap-3 mb-8">
-            {[
-              "Full citation source list with appearance counts",
-              "Your domain vs. competitor domain citation comparison",
-              "Gap analysis — sources citing competitors but not you",
-              "Source type classification: review, directory, editorial, UGC",
-            ].map((item) => (
-              <li key={item} className="flex items-start gap-2.5 text-[14px] text-[#777773]">
-                <CheckCircle2 size={15} className="text-[#171717] shrink-0 mt-0.5" aria-hidden="true" />
-                {item}
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        {/* Right mock */}
-        <div className="bg-[#FAFAF8] rounded-2xl border border-[#E5E5E1] p-5 relative">
-          <div className="bg-white rounded-xl border border-[#E5E5E1] overflow-hidden">
-            <div className="px-4 py-3 border-b border-[#EEEEEA] flex items-center justify-between">
-              <p className="text-[13px] font-semibold text-[#171717]">Top cited sources</p>
-              <span className="text-[11px] text-[#A3A3A0]">Latest scan</span>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="w-full text-[12px]">
-                <thead>
-                  <tr className="border-b border-[#EEEEEA] bg-[#FAFAF8]">
-                    <th className="text-left font-semibold text-[#A3A3A0] uppercase tracking-wider text-[10px] px-4 py-2.5">#</th>
-                    <th className="text-left font-semibold text-[#A3A3A0] uppercase tracking-wider text-[10px] px-4 py-2.5">Domain</th>
-                    <th className="text-left font-semibold text-[#A3A3A0] uppercase tracking-wider text-[10px] px-4 py-2.5">Type</th>
-                    <th className="text-right font-semibold text-[#A3A3A0] uppercase tracking-wider text-[10px] px-4 py-2.5">Used</th>
-                    <th className="text-right font-semibold text-[#A3A3A0] uppercase tracking-wider text-[10px] px-4 py-2.5">Avg cites</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-[#EEEEEA]">
-                  {sources.map(({ rank, domain, type, used, avgCitations, isYou }) => (
-                    <tr
-                      key={domain}
-                      className={isYou ? "bg-[#F0FDF4]/60" : "hover:bg-[#FAFAF8]"}
-                    >
-                      <td className="px-4 py-2.5 text-[#A3A3A0] tabular-nums">{rank}</td>
-                      <td className="px-4 py-2.5">
-                        <span className={`font-semibold ${isYou ? "text-[#166534]" : "text-[#171717]"}`}>
-                          {domain}
-                        </span>
-                      </td>
-                      <td className="px-4 py-2.5">
-                        <SourceBadge type={type} />
-                      </td>
-                      <td className="px-4 py-2.5 text-right text-[#777773] tabular-nums">{used}</td>
-                      <td className="px-4 py-2.5 text-right font-semibold text-[#171717] tabular-nums">{avgCitations}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          {/* Recommendation toast */}
-          <div className="mt-4 flex items-center gap-2.5 bg-[#171717] text-white rounded-xl px-4 py-3">
-            <CheckCircle2 size={14} className="text-[#22C55E] shrink-0" aria-hidden="true" />
-            <p className="text-[12px] font-medium">5 source opportunities found</p>
-            <ExternalLink size={11} className="text-white/40 ml-auto shrink-0" aria-hidden="true" />
-          </div>
-        </div>
-      </div>
-    </Section>
-  );
-}
-
-// ─── 5. COMPETITOR INTELLIGENCE ───────────────────────────────────────────
-
-function CompetitorSection() {
-  const competitors = [
-    { name: "Your business", score: 47, delta: "+5%", isYou: true },
-    { name: "Competitor A", score: 65, delta: "-2%", isYou: false },
-    { name: "Competitor B", score: 62, delta: "+1%", isYou: false },
-    { name: "Competitor C", score: 34, delta: "-4%", isYou: false },
-  ];
-
-  const promptWins = [
-    { prompt: "Best mountain bike shop near me", you: true, them: false },
-    { prompt: "Top-rated bike repair service", you: false, them: true },
-    { prompt: "Full suspension bike under $4,000", you: true, them: true },
-    { prompt: "Kids bike fitting specialists", you: false, them: true },
-    { prompt: "Bike rental for weekend trails", you: true, them: false },
-  ];
-
-  return (
-    <Section id="competitors" bg="bg-[#FAFAF8]" className="border-b border-[#EEEEEA]">
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-14 lg:gap-20 items-center">
-        {/* Left mock */}
-        <div className="bg-white rounded-2xl border border-[#E5E5E1] p-5">
-          {/* Head-to-head */}
-          <p className="text-[13px] font-semibold text-[#171717] mb-4">AI visibility — head-to-head</p>
-          <div className="flex flex-col gap-2.5 mb-5">
-            {competitors.map(({ name, score, delta, isYou }) => (
-              <div key={name} className="flex items-center gap-3">
-                <span className={`text-[12px] font-medium w-28 shrink-0 truncate ${isYou ? "text-[#171717] font-semibold" : "text-[#777773]"}`}>
-                  {name}
-                </span>
-                <div className="flex-1 h-2 bg-[#F0F0EC] rounded-full overflow-hidden">
-                  <div
-                    className="h-full rounded-full transition-all"
-                    style={{ width: `${score}%`, backgroundColor: isYou ? "#171717" : "#D4D4CF" }}
-                  />
-                </div>
-                <span className={`text-[11px] font-semibold w-6 text-right tabular-nums ${isYou ? "text-[#171717]" : "text-[#A3A3A0]"}`}>
-                  {score}
-                </span>
-                <span className={`text-[10px] font-medium w-8 text-right tabular-nums ${delta.startsWith("+") ? "text-[#166534]" : "text-[#991B1B]"}`}>
-                  {delta}
-                </span>
-              </div>
-            ))}
-          </div>
-
-          {/* Prompt win/loss grid */}
-          <p className="text-[11px] font-semibold text-[#A3A3A0] mb-2.5 uppercase tracking-wider">Prompt win/loss</p>
-          <div className="overflow-x-auto">
-            <table className="w-full text-[11px]">
-              <thead>
-                <tr className="border-b border-[#EEEEEA]">
-                  <th className="text-left font-semibold text-[#A3A3A0] pb-2 pr-4">Prompt</th>
-                  <th className="text-center font-semibold text-[#171717] pb-2 px-3">You</th>
-                  <th className="text-center font-semibold text-[#A3A3A0] pb-2 px-3">Comp A</th>
-                </tr>
-              </thead>
-              <tbody>
-                {promptWins.map(({ prompt, you, them }) => (
-                  <tr key={prompt} className="border-b border-[#F5F5F2]">
-                    <td className="py-2 pr-4 text-[#777773] max-w-[180px] truncate">{prompt}</td>
-                    <td className="py-2 px-3 text-center">
-                      {you ? (
-                        <CheckCircle2 size={13} className="text-[#166534] mx-auto" aria-label="Won" />
-                      ) : (
-                        <XCircle size={13} className="text-[#D4D4CF] mx-auto" aria-label="Lost" />
-                      )}
-                    </td>
-                    <td className="py-2 px-3 text-center">
-                      {them ? (
-                        <CheckCircle2 size={13} className="text-[#991B1B] mx-auto" aria-label="Competitor won" />
-                      ) : (
-                        <XCircle size={13} className="text-[#D4D4CF] mx-auto" aria-label="Competitor lost" />
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        {/* Right copy */}
-        <div>
-          <Eyebrow>Competitive Intelligence</Eyebrow>
-          <H2 className="mb-4">Know who AI recommends instead of you.</H2>
-          <Body className="mb-6 max-w-[460px]">
-            See every competitor AI favors across your tracked prompts. Understand which categories they dominate, where you win, and what changes would shift the result.
-          </Body>
-          <ul className="flex flex-col gap-3 mb-8">
-            {[
-              "Tracked competitor list with per-prompt breakdown",
-              "Head-to-head AI visibility percentage comparison",
-              "Prompt-level win/loss vs. every competitor",
-              "Changes between scans — see when gaps close or widen",
-              "Turn competitor gaps into actionable Opportunities",
-            ].map((item) => (
-              <li key={item} className="flex items-start gap-2.5 text-[14px] text-[#777773]">
-                <CheckCircle2 size={15} className="text-[#171717] shrink-0 mt-0.5" aria-hidden="true" />
-                {item}
-              </li>
-            ))}
-          </ul>
-          <Link
-            href="/signup"
-            className="inline-flex items-center gap-1.5 text-[14px] font-semibold text-[#171717] hover:text-[#2A2A2A] transition-colors underline-offset-2 hover:underline"
-          >
-            See your competitor analysis <ArrowRight size={13} aria-hidden="true" />
-          </Link>
-        </div>
-      </div>
-    </Section>
   );
 }
 
@@ -1372,200 +1051,6 @@ const SAMPLE_OPPORTUNITIES = [
   },
 ];
 
-function OpportunitiesSection() {
-  return (
-    <Section id="opportunities" bg="bg-white" className="border-b border-[#EEEEEA]">
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-14 lg:gap-20 items-start">
-        {/* Left copy */}
-        <div className="lg:sticky lg:top-24">
-          <Eyebrow>Opportunities</Eyebrow>
-          <H2 className="mb-4">Know exactly what to fix next.</H2>
-          <Body className="mb-6 max-w-[460px]">
-            Every opportunity is generated from real scan evidence — not generic advice. Each one includes the specific issue, why it matters, and a recommended action. Where the fix involves content or code, you get a ready-made prompt to send to Claude.
-          </Body>
-
-          <div className="bg-[#FAFAF8] rounded-xl border border-[#E5E5E1] p-4 mb-6">
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-[#A3A3A0] mb-3">
-              The improvement loop
-            </p>
-            {[
-              { step: "01", label: "Detect", desc: "AI scans identify gaps and missed prompts" },
-              { step: "02", label: "Explain", desc: "Evidence-backed opportunity cards surface" },
-              { step: "03", label: "Fix", desc: "Recommended action + Claude prompt provided" },
-              { step: "04", label: "Rescan", desc: "Run a new scan after implementing the fix" },
-              { step: "05", label: "Measure", desc: "Direct Score reflects the improvement" },
-            ].map(({ step, label, desc }) => (
-              <div key={step} className="flex items-start gap-3 py-2.5 border-b border-[#EEEEEA] last:border-0">
-                <span className="text-[10px] font-bold text-[#777773] bg-[#F0F0EC] border border-[#E5E5E1] rounded-md w-7 h-7 flex items-center justify-center shrink-0 mt-0.5 tabular-nums">
-                  {step}
-                </span>
-                <div>
-                  <p className="text-[13px] font-semibold text-[#171717]">{label}</p>
-                  <p className="text-[11px] text-[#777773]">{desc}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Right — opportunity cards */}
-        <div className="flex flex-col gap-4">
-          {SAMPLE_OPPORTUNITIES.map(({ impact, title, evidence, action, badgeColor }) => (
-            <div key={title} className="bg-white rounded-xl border border-[#E5E5E1] p-5">
-              <div className="flex items-start gap-3 mb-3">
-                <span className={`text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded border shrink-0 mt-0.5 ${badgeColor}`}>
-                  {impact} impact
-                </span>
-                <h3 className="text-[14px] font-semibold text-[#171717] leading-snug">{title}</h3>
-              </div>
-              <div className="bg-[#FAFAF8] rounded-lg px-3 py-2.5 mb-3">
-                <p className="text-[10px] font-semibold uppercase tracking-wider text-[#A3A3A0] mb-1">Evidence</p>
-                <p className="text-[12px] text-[#777773]">{evidence}</p>
-              </div>
-              <p className="text-[12px] text-[#171717] mb-3">
-                <span className="font-semibold">Recommended: </span>{action}
-              </p>
-              <div className="flex gap-2">
-                <button className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-[#777773] bg-[#F5F5F2] border border-[#E5E5E1] px-3 py-1.5 rounded-lg hover:bg-[#EEEEEA] transition-colors">
-                  <Copy size={11} aria-hidden="true" />
-                  Copy for Claude
-                </button>
-                <button className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-white bg-[#171717] px-3 py-1.5 rounded-lg hover:bg-[#2A2A2A] transition-colors">
-                  <Zap size={11} aria-hidden="true" />
-                  Request fix
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </Section>
-  );
-}
-
-// ─── 7. DIRECT AGENT ──────────────────────────────────────────────────────
-
-const AGENT_MESSAGES = [
-  {
-    role: "user",
-    text: "Why did my Direct Score drop from 74 to 68 this week?",
-  },
-  {
-    role: "agent",
-    text: `EVIDENCE: Your scan from May 14 shows that Perplexity stopped mentioning your business on 2 prompts where it previously included you — specifically "best bike shop in Austin" and "Trek dealer near downtown Austin."
-
-EVIDENCE: A new competitor (specialized-austin.com) was detected appearing on those same prompts starting May 13.
-
-INFERENCE: This drop is likely driven by Perplexity increasing citations of a competitor who recently updated their location entity data. Fixing your Google Business Profile structured data for the downtown Austin location is the highest-priority recommended action.`,
-  },
-];
-
-function DirectAgentSection() {
-  return (
-    <Section id="direct-agent" bg="bg-[#FAFAF8]" className="border-b border-[#EEEEEA]">
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-14 lg:gap-20 items-center">
-        {/* Left copy */}
-        <div>
-          <Eyebrow>Direct Agent</Eyebrow>
-          <H2 className="mb-4">Ask anything. Get answers grounded in your data.</H2>
-          <Body className="mb-6 max-w-[460px]">
-            The Direct Agent is your AI analyst — but one that only speaks from evidence. It reads your actual scan data and clearly separates what is factual from what it is inferring. No hallucinations about your business.
-          </Body>
-          <ul className="flex flex-col gap-3 mb-8">
-            {[
-              "Answers grounded in your real visibility scan data",
-              "Clearly labels EVIDENCE vs. INFERENCE",
-              "Identifies root causes behind Direct Score changes",
-              "Recommends specific fixes based on your actual gaps",
-              "Suggests which prompts to prioritize next scan",
-            ].map((item) => (
-              <li key={item} className="flex items-start gap-2.5 text-[14px] text-[#777773]">
-                <CheckCircle2 size={15} className="text-[#171717] shrink-0 mt-0.5" aria-hidden="true" />
-                {item}
-              </li>
-            ))}
-          </ul>
-
-          <div className="bg-white rounded-xl border border-[#E5E5E1] p-4">
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-[#A3A3A0] mb-3">
-              Example questions
-            </p>
-            {[
-              "Why is my Direct Score this low?",
-              "Which competitor is beating me most often?",
-              "What should I fix first this week?",
-              "Why does ChatGPT recommend them instead of us?",
-            ].map((q) => (
-              <div
-                key={q}
-                className="flex items-center gap-2 py-2 border-b border-[#F5F5F2] last:border-0 text-[13px] text-[#777773]"
-              >
-                <ChevronRight size={12} className="text-[#A3A3A0] shrink-0" aria-hidden="true" />
-                {q}
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Right — chat mock */}
-        <div className="bg-white rounded-2xl border border-[#E5E5E1] overflow-hidden">
-          {/* Chat header */}
-          <div className="border-b border-[#EEEEEA] px-5 py-3 flex items-center gap-3">
-            <div className="w-7 h-7 rounded-lg bg-[#171717] flex items-center justify-center shrink-0">
-              <Bot size={13} className="text-white" aria-hidden="true" />
-            </div>
-            <div>
-              <p className="text-[13px] font-semibold text-[#171717]">Direct Agent</p>
-              <p className="text-[10px] text-[#A3A3A0]">Grounded in your visibility data</p>
-            </div>
-          </div>
-
-          {/* Messages */}
-          <div className="p-5 flex flex-col gap-4 bg-[#FAFAF8]">
-            {AGENT_MESSAGES.map((m, i) => (
-              <div key={i} className={`flex gap-3 ${m.role === "user" ? "flex-row-reverse" : ""}`}>
-                <div
-                  className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${
-                    m.role === "user" ? "bg-[#171717]" : "bg-white border border-[#E5E5E1]"
-                  }`}
-                >
-                  {m.role === "user" ? (
-                    <span className="text-[8px] font-bold text-white">YOU</span>
-                  ) : (
-                    <Bot size={11} className="text-[#777773]" aria-hidden="true" />
-                  )}
-                </div>
-                <div
-                  className={`max-w-[80%] rounded-xl px-4 py-3 text-[12px] leading-relaxed whitespace-pre-wrap ${
-                    m.role === "user"
-                      ? "bg-[#171717] text-white rounded-tr-sm"
-                      : "bg-white border border-[#E5E5E1] text-[#171717] rounded-tl-sm"
-                  }`}
-                >
-                  {m.text}
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Input */}
-          <div className="border-t border-[#E5E5E1] p-4 flex gap-2 bg-white">
-            <div className="flex-1 bg-[#FAFAF8] border border-[#E5E5E1] rounded-lg px-3 py-2 text-[12px] text-[#A3A3A0]">
-              Ask about your AI visibility…
-            </div>
-            <button
-              className="bg-[#171717] text-white w-9 h-9 rounded-lg flex items-center justify-center hover:bg-[#2A2A2A] transition-colors"
-              aria-label="Send message"
-            >
-              <Send size={13} aria-hidden="true" />
-            </button>
-          </div>
-        </div>
-      </div>
-    </Section>
-  );
-}
-
 // ── Tab content components ─────────────────────────────────────────────────
 
 function VisibilityTabContent() {
@@ -1583,7 +1068,7 @@ function VisibilityTabContent() {
         <H2 className="mb-4">See exactly where AI recommends your business.</H2>
         <Body className="mb-6 max-w-[460px]">Every scan queries the AI platforms that buyers actually use. You see a Direct Score, a platform-by-platform breakdown, and exactly which prompts you win or lose.</Body>
         <ul className="flex flex-col gap-3 mb-8">
-          {["Direct Score — your single AI visibility number out of 100","Visibility breakdown by ChatGPT, Claude, Perplexity, Gemini, and Google AI","Historical trend tracking across every scan","Win/loss analysis per buyer-intent prompt"].map(i=>(
+          {["Direct Score: your single AI visibility number out of 100","Visibility breakdown by ChatGPT, Claude, Perplexity, Gemini, and Google AI","Historical trend tracking across every scan","Win/loss analysis per buyer-intent prompt"].map(i=>(
             <li key={i} className="flex items-start gap-2.5 text-[14px] text-[#777773]"><CheckCircle2 size={15} className="text-[#171717] shrink-0 mt-0.5" aria-hidden="true" />{i}</li>
           ))}
         </ul>
@@ -1626,7 +1111,7 @@ function CompetitorsTabContent() {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-14 lg:gap-20 items-center">
       <div className="bg-white rounded-2xl border border-[#E5E5E1] p-5">
-        <p className="text-[13px] font-semibold text-[#171717] mb-4">AI visibility — head-to-head</p>
+        <p className="text-[13px] font-semibold text-[#171717] mb-4">AI visibility: head-to-head</p>
         <div className="flex flex-col gap-2.5 mb-5">
           {competitors.map(({name,score,delta,isYou})=>(
             <div key={name} className="flex items-center gap-3">
@@ -1656,7 +1141,7 @@ function CompetitorsTabContent() {
         <H2 className="mb-4">Know who AI recommends instead of you.</H2>
         <Body className="mb-6 max-w-[460px]">See every competitor AI favors across your tracked prompts. Understand which categories they dominate, where you win, and what changes would shift the result.</Body>
         <ul className="flex flex-col gap-3 mb-8">
-          {["Tracked competitor list with per-prompt breakdown","Head-to-head AI visibility percentage comparison","Prompt-level win/loss vs. every competitor","Changes between scans — see when gaps close or widen","Turn competitor gaps into actionable Opportunities"].map(i=>(
+          {["Tracked competitor list with per-prompt breakdown","Head-to-head AI visibility percentage comparison","Prompt-level win/loss vs. every competitor","Changes between scans, see when gaps close or widen","Turn competitor gaps into actionable Opportunities"].map(i=>(
             <li key={i} className="flex items-start gap-2.5 text-[14px] text-[#777773]"><CheckCircle2 size={15} className="text-[#171717] shrink-0 mt-0.5" aria-hidden="true"/>{i}</li>
           ))}
         </ul>
@@ -1675,7 +1160,7 @@ function SourcesTabContent() {
         <H2 className="mb-4">Find the sources shaping AI answers.</H2>
         <Body className="mb-6 max-w-[460px]">AI systems cite specific websites when constructing answers. Customers.Direct reveals which domains are cited most, whether your site appears, and where competitors have citation advantages you can close.</Body>
         <ul className="flex flex-col gap-3 mb-8">
-          {["Full citation source list with appearance counts","Your domain vs. competitor domain citation comparison","Gap analysis — sources citing competitors but not you","Source type classification: review, directory, editorial, UGC"].map(i=>(
+          {["Full citation source list with appearance counts","Your domain vs. competitor domain citation comparison","Gap analysis: sources citing competitors but not you","Source type classification: review, directory, editorial, UGC"].map(i=>(
             <li key={i} className="flex items-start gap-2.5 text-[14px] text-[#777773]"><CheckCircle2 size={15} className="text-[#171717] shrink-0 mt-0.5" aria-hidden="true"/>{i}</li>
           ))}
         </ul>
@@ -1722,7 +1207,7 @@ function OpportunitiesTabContent() {
       <div className="lg:sticky lg:top-24">
         <Eyebrow>Opportunities</Eyebrow>
         <H2 className="mb-4">Know exactly what to fix next.</H2>
-        <Body className="mb-6 max-w-[460px]">Every opportunity is generated from real scan evidence — not generic advice. Each one includes the specific issue, why it matters, and a recommended action. Where the fix involves content or code, you get a ready-made prompt to send to Claude.</Body>
+        <Body className="mb-6 max-w-[460px]">Every opportunity is generated from real scan evidence, not generic advice. Each one includes the specific issue, why it matters, and a recommended action. Where the fix involves content or code, you get a ready-made prompt to send to Claude.</Body>
         <div className="bg-[#FAFAF8] rounded-xl border border-[#E5E5E1] p-4">
           <p className="text-[11px] font-semibold uppercase tracking-wider text-[#A3A3A0] mb-3">The improvement loop</p>
           {[{step:"01",label:"Detect",desc:"AI scans identify gaps and missed prompts"},{step:"02",label:"Explain",desc:"Evidence-backed opportunity cards surface"},{step:"03",label:"Fix",desc:"Recommended action + Claude prompt provided"},{step:"04",label:"Rescan",desc:"Run a new scan after implementing the fix"},{step:"05",label:"Measure",desc:"Direct Score reflects the improvement"}].map(({step,label,desc})=>(
@@ -1744,207 +1229,9 @@ function OpportunitiesTabContent() {
             <p className="text-[12px] text-[#171717] mb-3"><span className="font-semibold">Recommended: </span>{action}</p>
             <div className="flex gap-2">
               <button className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-[#777773] bg-[#F5F5F2] border border-[#E5E5E1] px-3 py-1.5 rounded-lg hover:bg-[#EEEEEA] transition-colors"><Copy size={11} aria-hidden="true"/>Copy for Claude</button>
-              <button className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-white bg-[#171717] px-3 py-1.5 rounded-lg hover:bg-[#2A2A2A] transition-colors"><Zap size={11} aria-hidden="true"/>Request fix</button>
             </div>
           </div>
         ))}
-      </div>
-    </div>
-  );
-}
-
-function AgentTabContent() {
-  return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-14 lg:gap-20 items-center">
-      <div>
-        <Eyebrow>Direct Agent</Eyebrow>
-        <H2 className="mb-4">Ask anything. Get answers grounded in your data.</H2>
-        <Body className="mb-6 max-w-[460px]">The Direct Agent is your AI analyst — but one that only speaks from evidence. It reads your actual scan data and clearly separates what is factual from what it is inferring. No hallucinations about your business.</Body>
-        <ul className="flex flex-col gap-3 mb-8">
-          {["Answers grounded in your real visibility scan data","Clearly labels EVIDENCE vs. INFERENCE","Identifies root causes behind Direct Score changes","Recommends specific fixes based on your actual gaps","Suggests which prompts to prioritize next scan"].map(i=>(
-            <li key={i} className="flex items-start gap-2.5 text-[14px] text-[#777773]"><CheckCircle2 size={15} className="text-[#171717] shrink-0 mt-0.5" aria-hidden="true"/>{i}</li>
-          ))}
-        </ul>
-        <div className="bg-white rounded-xl border border-[#E5E5E1] p-4">
-          <p className="text-[11px] font-semibold uppercase tracking-wider text-[#A3A3A0] mb-3">Example questions</p>
-          {["Why is my Direct Score this low?","Which competitor is beating me most often?","What should I fix first this week?","Why does ChatGPT recommend them instead of us?"].map(q=>(
-            <div key={q} className="flex items-center gap-2 py-2 border-b border-[#F5F5F2] last:border-0 text-[13px] text-[#777773]"><ChevronRight size={12} className="text-[#A3A3A0] shrink-0" aria-hidden="true"/>{q}</div>
-          ))}
-        </div>
-      </div>
-      <div className="bg-white rounded-2xl border border-[#E5E5E1] overflow-hidden">
-        <div className="border-b border-[#EEEEEA] px-5 py-3 flex items-center gap-3">
-          <div className="w-7 h-7 rounded-lg bg-[#171717] flex items-center justify-center shrink-0"><Bot size={13} className="text-white" aria-hidden="true"/></div>
-          <div><p className="text-[13px] font-semibold text-[#171717]">Direct Agent</p><p className="text-[10px] text-[#A3A3A0]">Grounded in your visibility data</p></div>
-        </div>
-        <div className="p-5 flex flex-col gap-4 bg-[#FAFAF8]">
-          {AGENT_MESSAGES.map((m,i)=>(
-            <div key={i} className={`flex gap-3 ${m.role==="user"?"flex-row-reverse":""}`}>
-              <div className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${m.role==="user"?"bg-[#171717]":"bg-white border border-[#E5E5E1]"}`}>
-                {m.role==="user"?<span className="text-[8px] font-bold text-white">YOU</span>:<Bot size={11} className="text-[#777773]" aria-hidden="true"/>}
-              </div>
-              <div className={`max-w-[80%] rounded-xl px-4 py-3 text-[12px] leading-relaxed whitespace-pre-wrap ${m.role==="user"?"bg-[#171717] text-white rounded-tr-sm":"bg-white border border-[#E5E5E1] text-[#171717] rounded-tl-sm"}`}>{m.text}</div>
-            </div>
-          ))}
-        </div>
-        <div className="border-t border-[#E5E5E1] p-4 flex gap-2 bg-white">
-          <div className="flex-1 bg-[#FAFAF8] border border-[#E5E5E1] rounded-lg px-3 py-2 text-[12px] text-[#A3A3A0]">Ask about your AI visibility…</div>
-          <button className="bg-[#171717] text-white w-9 h-9 rounded-lg flex items-center justify-center hover:bg-[#2A2A2A] transition-colors" aria-label="Send message"><Send size={13} aria-hidden="true"/></button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ─── 8. AI AGENT READY WEBSITE ────────────────────────────────────────────
-
-function AgentReadySection() {
-  return (
-    <Section id="agent-ready" bg="bg-white" className="border-b border-[#EEEEEA]">
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-14 lg:gap-20 items-center">
-        {/* Left copy */}
-        <div>
-          <Eyebrow>
-            <Bot size={11} />
-            AI Agent Ready
-          </Eyebrow>
-          <H2 className="mb-4">
-            Is your website ready for AI agents?
-          </H2>
-          <Body className="mb-4">
-            AI search is changing. Websites need to be ready for agents, not just humans.
-            Customers.Direct scans your website to detect whether AI agents can understand and use the actions that matter most — contacting you, requesting a quote, booking, searching, or purchasing.
-          </Body>
-          <Body className="mb-6">
-            If something is missing, Customers.Direct shows you exactly what needs to change and creates the Claude prompt to help update your website.
-          </Body>
-
-          <div className="flex items-center gap-3 flex-wrap mb-8">
-            <a
-              href="/signup"
-              className="inline-flex items-center gap-2 bg-[#171717] text-white font-semibold px-5 py-3 rounded-lg hover:bg-[#2A2A2A] transition-all text-[14px]"
-            >
-              Check My Website <ArrowRight size={14} />
-            </a>
-            <a
-              href="/signup"
-              className="inline-flex items-center gap-2 border border-[#E5E5E1] text-[#171717] font-semibold px-5 py-3 rounded-lg hover:border-[#AAAAAA] transition-all text-[14px]"
-            >
-              Start Free
-            </a>
-          </div>
-
-          <div className="space-y-3">
-            {[
-              "Detects contact, booking, quote, and purchase flows",
-              "Checks for WebMCP support — the emerging agentic web standard",
-              "Creates the exact Claude prompt to make each action agent-ready",
-              "Verifies the update worked after you apply the fix",
-            ].map((point) => (
-              <div key={point} className="flex items-start gap-2.5">
-                <CheckCircle2 size={15} className="text-[#0066FF] mt-0.5 shrink-0" />
-                <p className="text-[14px] text-[#444440]">{point}</p>
-              </div>
-            ))}
-          </div>
-
-          <p className="mt-6 text-[12px] text-[#AAAAAA]">
-            WebMCP is an emerging web standard for exposing structured website tools to compatible AI agents and agentic browsers. Support is still evolving.
-          </p>
-        </div>
-
-        {/* Right: demo readiness card */}
-        <div className="flex justify-center">
-          <AgentReadinessDemoCard />
-        </div>
-      </div>
-    </Section>
-  );
-}
-
-function AgentReadinessDemoCard() {
-  const actions = [
-    { label: "Business information", status: "ready" as const, tool: null },
-    { label: "Contact form", status: "ready" as const, tool: "contact_business" },
-    { label: "Request a Quote", status: "needs_update" as const, tool: "request_quote" },
-    { label: "Book an Appointment", status: "needs_update" as const, tool: "book_appointment" },
-    { label: "WebMCP detected", status: "not_found" as const, tool: null },
-  ];
-
-  return (
-    <div className="w-full max-w-[380px] bg-white border border-[#E5E5E1] rounded-2xl shadow-xl overflow-hidden">
-      {/* Header */}
-      <div className="bg-[#FAFAF8] border-b border-[#EEEEEA] px-5 py-4">
-        <div className="flex items-center gap-2 mb-0.5">
-          <Bot size={14} className="text-[#0066FF]" />
-          <p className="text-[12px] font-bold text-[#171717]">AI Agent Readiness</p>
-          <span className="ml-auto text-[10px] text-[#AAAAAA]">example.com</span>
-        </div>
-      </div>
-
-      {/* Score */}
-      <div className="px-5 py-5 border-b border-[#EEEEEA]">
-        <div className="flex items-center gap-4">
-          <div>
-            <p className="text-[42px] font-bold text-[#171717] leading-none">42</p>
-            <p className="text-[10px] text-[#A3A3A0] mt-0.5">out of 100</p>
-          </div>
-          <div>
-            <p className="text-[15px] font-bold text-amber-600 mb-1">Partially Ready</p>
-            <div className="w-[140px] h-2 bg-[#F0F0EC] rounded-full overflow-hidden">
-              <div className="h-full bg-[#0066FF] rounded-full" style={{ width: "42%" }} />
-            </div>
-          </div>
-        </div>
-        <p className="text-[11px] text-[#AAAAAA] mt-3">3 improvements found</p>
-      </div>
-
-      {/* Action list */}
-      <div className="px-5 py-4 space-y-2.5">
-        {actions.map((action) => (
-          <div key={action.label} className="flex items-center gap-2.5">
-            {action.status === "ready" ? (
-              <CheckCircle2 size={14} className="text-emerald-500 shrink-0" />
-            ) : action.status === "needs_update" ? (
-              <span className="w-3.5 h-3.5 rounded-full border-2 border-amber-400 shrink-0 flex items-center justify-center">
-                <span className="w-1.5 h-1.5 bg-amber-400 rounded-full" />
-              </span>
-            ) : (
-              <XCircle size={14} className="text-[#D4D4CF] shrink-0" />
-            )}
-            <span className={`text-[12px] flex-1 ${
-              action.status === "ready" ? "text-[#444440]"
-              : action.status === "needs_update" ? "text-amber-700"
-              : "text-[#AAAAAA]"
-            }`}>
-              {action.label}
-            </span>
-            {action.status === "needs_update" && (
-              <span className="text-[9px] text-amber-600 font-semibold bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded-full">
-                Needs Update
-              </span>
-            )}
-            {action.status === "not_found" && (
-              <span className="text-[9px] text-[#AAAAAA] font-semibold bg-[#F5F5F3] border border-[#E5E5E1] px-1.5 py-0.5 rounded-full">
-                Not Detected
-              </span>
-            )}
-          </div>
-        ))}
-      </div>
-
-      {/* CTA buttons */}
-      <div className="px-5 pb-5 flex gap-2">
-        <div className="flex-1 bg-[#171717] text-white text-[12px] font-semibold px-3 py-2 rounded-lg text-center">
-          Fix with Claude
-        </div>
-        <div className="flex-1 border border-[#E5E5E1] text-[#171717] text-[12px] font-semibold px-3 py-2 rounded-lg text-center">
-          Verify Update
-        </div>
-      </div>
-
-      <div className="px-5 pb-4">
-        <p className="text-[10px] text-[#CBCBC8] text-center">Illustrative example — your results will vary</p>
       </div>
     </div>
   );
@@ -1997,147 +1284,8 @@ function AgencySection() {
           </div>
         </div>
 
-        {/* Right — animated agency workspace demo */}
+        {/* Right: animated agency workspace demo */}
         <AgencyWorkspaceDemo />
-      </div>
-    </Section>
-  );
-}
-
-// ─── 9. PRICING ───────────────────────────────────────────────────────────
-
-const PLANS = [
-  {
-    id: "ai_visibility",
-    name: "AI Visibility",
-    price: "$497",
-    period: "/month",
-    description: "See where you stand today.",
-    features: [
-      "1 business tracked",
-      "~50 buyer-intent prompts monitored",
-      "Monthly monitoring runs",
-      "Direct Score + competitor comparison",
-      "Opportunity recommendations",
-      '"Send to Claude" implementation packages',
-    ],
-    cta: "Start AI Visibility",
-    highlight: false,
-  },
-  {
-    id: "growth_agent",
-    name: "Growth Agent",
-    price: "$997",
-    period: "/month",
-    badge: "Most Popular",
-    description: "Track it weekly and go deeper.",
-    features: [
-      "Everything in AI Visibility",
-      "Weekly monitoring runs",
-      "~100 buyer-intent prompts monitored",
-      "Deeper competitive analysis",
-      "Full GEO audit of your site",
-      "Priority opportunity generation",
-    ],
-    cta: "Start Growth Agent",
-    highlight: true,
-  },
-  {
-    id: "autonomous_growth",
-    name: "Autonomous Growth",
-    price: "From $1,997",
-    period: "/month",
-    description: "We implement the fixes for you.",
-    features: [
-      "Everything in Growth Agent",
-      "Customers.Direct executes approved changes",
-      "Human-in-the-loop approval workflow",
-      "Priority implementation queue",
-      "Dedicated account oversight",
-    ],
-    cta: "Talk to Us",
-    highlight: false,
-  },
-];
-
-function PricingSection() {
-  return (
-    <Section id="pricing" bg="bg-white" className="border-t border-[#EEEEEA]">
-      <div className="text-center mb-14">
-        <Eyebrow>Pricing</Eyebrow>
-        <H2 className="mb-4">Pick the level of help you need.</H2>
-        <Body className="max-w-xl mx-auto">
-              Track your visibility across AI search and Google, monitor competitors, uncover opportunities, and use the Direct Agent.
-        </Body>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 items-stretch">
-        {PLANS.map((plan) => (
-          <div
-            key={plan.id}
-            className={`relative rounded-2xl border flex flex-col p-8 ${
-              plan.highlight
-                ? "bg-[#171717] border-[#171717] text-white"
-                : "bg-white border-[#E5E5E1]"
-            }`}
-            style={
-              plan.highlight
-                ? { boxShadow: "0 20px 48px rgba(23,23,23,0.22)" }
-                : undefined
-            }
-          >
-            {plan.badge && (
-              <span className="absolute -top-3 left-7 bg-[#171717] text-white text-[10px] font-bold tracking-widest uppercase px-3 py-1 rounded-full border border-white/20">
-                {plan.badge}
-              </span>
-            )}
-
-            <p className={`text-[10px] font-bold uppercase tracking-widest mb-5 ${plan.highlight ? "text-white/50" : "text-[#A3A3A0]"}`}>
-              {plan.name}
-            </p>
-
-            <div className="flex items-end gap-1 mb-2">
-              <span className="text-[38px] font-bold leading-none tracking-tight">{plan.price}</span>
-              <span className={`text-sm mb-1 ${plan.highlight ? "text-white/50" : "text-[#A3A3A0]"}`}>{plan.period}</span>
-            </div>
-            <p className={`text-sm mb-7 leading-relaxed ${plan.highlight ? "text-white/60" : "text-[#777773]"}`}>
-              {plan.description}
-            </p>
-
-            <div className="flex flex-col gap-3 mb-8 flex-1">
-              {plan.features.map((feature) => (
-                <div key={feature} className="flex items-start gap-2.5">
-                  <div className={`w-[18px] h-[18px] rounded-full flex items-center justify-center shrink-0 mt-0.5 ${
-                    plan.highlight ? "bg-white/10" : "bg-[#F0F0EC]"
-                  }`}>
-                    <Check size={10} className={plan.highlight ? "text-white" : "text-[#777773]"} aria-hidden="true" />
-                  </div>
-                  <span className={`text-[13px] leading-snug ${plan.highlight ? "text-white/75" : "text-[#777773]"}`}>
-                    {feature}
-                  </span>
-                </div>
-              ))}
-            </div>
-
-            <Link
-              href="/signup"
-              className={`flex items-center justify-center gap-2 font-semibold py-3 rounded-lg transition-all text-sm active:scale-[0.97] ${
-                plan.highlight
-                  ? "bg-white text-[#171717] hover:bg-[#F0F0EC]"
-                  : "bg-[#171717] text-white hover:bg-[#2A2A2A]"
-              }`}
-            >
-              {plan.cta}
-            </Link>
-          </div>
-        ))}
-      </div>
-
-      <div className="max-w-2xl mx-auto mt-10 flex items-start gap-3 bg-[#F5F5F2] border border-[#E5E5E1] rounded-xl px-5 py-4">
-        <Zap size={15} className="text-[#A3A3A0] shrink-0 mt-0.5" aria-hidden="true" />
-        <p className="text-[12px] text-[#777773] leading-relaxed">
-          <strong className="text-[#555552]">No guaranteed AI rankings — ever.</strong> AI models change constantly and no company can promise a specific mention, position, or outcome inside ChatGPT, Claude, Perplexity, or any other AI product. Customers.Direct measures your visibility honestly and helps you improve the factors within your control.
-        </p>
       </div>
     </Section>
   );
@@ -2194,7 +1342,7 @@ const HOW_STEPS = [
   {
     num: "01",
     title: "Connect your business",
-    body: "Tell us your website and business details. We pull what we can automatically — you confirm or correct it. Takes about two minutes.",
+    body: "Tell us your website and business details. We pull what we can automatically and you confirm or correct it. Takes about two minutes.",
     image: "https://wsxusvapciexemfvtadm.supabase.co/storage/v1/object/public/STORAGE/images/steps/ChatGPT%20Image%20Aug%2026,%202026,%2002_16_54%20PM%20(1).png",
   },
   {
@@ -2212,7 +1360,7 @@ const HOW_STEPS = [
   {
     num: "04",
     title: "Fix what matters, track the change",
-    body: "Every opportunity comes with evidence and a ready-made Claude prompt. Request us to implement it, or do it yourself — then watch your score move.",
+    body: "Every opportunity comes with evidence and a ready-made Claude prompt. Follow the step-by-step fix yourself, then watch your score move.",
     image: "https://wsxusvapciexemfvtadm.supabase.co/storage/v1/object/public/STORAGE/images/steps/ChatGPT%20Image%20Aug%2026,%202026,%2002_16_55%20PM%20(4).png",
   },
 ];
@@ -2244,7 +1392,7 @@ function HowItWorksSection() {
             <div className="p-8 flex flex-col gap-3 flex-1">
               {/* Step number */}
               <span className="text-[11px] font-bold text-[#A3A3A0] tracking-widest uppercase">{step.num}</span>
-              {/* Connector dot — desktop only */}
+              {/* Connector dot: desktop only */}
               {i < HOW_STEPS.length - 1 && (
                 <div className="hidden lg:block absolute top-[calc(50%-5px)] -right-[5px] w-2.5 h-2.5 rounded-full bg-[#E5E5E1] border-2 border-white z-10" aria-hidden="true" />
               )}
@@ -2263,23 +1411,23 @@ function HowItWorksSection() {
 const FAQS = [
   {
     q: "Can you guarantee my business will show up in ChatGPT or Google AI Overviews?",
-    a: "No — and be skeptical of anyone who says they can. AI models are controlled by OpenAI, Google, Anthropic, and other providers, not by us. We measure your current visibility honestly, show you the evidence behind it, and help you improve the factors that are actually within your control: your content, structured data, citations, and online presence.",
+    a: "No, and be skeptical of anyone who says they can. AI models are controlled by OpenAI, Google, Anthropic, and other providers, not by us. We measure your current visibility honestly, show you the evidence behind it, and help you improve the factors that are actually within your control: your content, structured data, citations, and online presence.",
   },
   {
     q: "How is this different from traditional SEO tools?",
-    a: "Traditional SEO tools track search engine rankings. Customers.Direct runs real buyer-intent prompts against AI providers (like ChatGPT and Claude) and reports what those models actually say — whether your business is mentioned, where competitors show up instead, and what's cited as a source.",
+    a: "Traditional SEO tools track search engine rankings. Customers.Direct runs real buyer-intent prompts against AI providers (like ChatGPT and Claude) and reports what those models actually say, whether your business is mentioned, where competitors show up instead, and what's cited as a source.",
   },
   {
     q: "Do you use the actual ChatGPT or Claude chat apps to test this?",
-    a: "We use each provider's official API, which is the standard, reliable way to test model behaviour programmatically. API responses can differ from what you'd see typing into the consumer chat app — we label our methodology clearly on every result so you know exactly how it was produced.",
+    a: "We use each provider's official API, which is the standard, reliable way to test model behaviour programmatically. API responses can differ from what you'd see typing into the consumer chat app, we label our methodology clearly on every result so you know exactly how it was produced.",
   },
   {
     q: "What happens after I sign up?",
-    a: "You'll give us your website, we'll scan it and pull the details we can find automatically, you'll confirm or correct them, we'll suggest a handful of competitors and prompts to track, and then we run your first visibility scan. You can review and adjust everything before it's finalized — nothing is auto-confirmed on your behalf.",
+    a: "You'll give us your website, we'll scan it and pull the details we can find automatically, you'll confirm or correct them, we'll suggest a handful of competitors and prompts to track, and then we run your first visibility scan. You can review and adjust everything before it's finalized, nothing is auto-confirmed on your behalf.",
   },
   {
     q: "What's the difference between the plans?",
-    a: "AI Visibility gives you monthly measurement and reporting for one business. Growth Agent adds weekly monitoring, more prompts, and deeper competitive analysis. Autonomous Growth adds hands-on implementation — our team executes approved fixes for you instead of you or your developer doing it.",
+    a: "AI Visibility gives you monthly measurement and reporting for one business. Growth Agent adds weekly monitoring, more prompts, and deeper competitive analysis. Autonomous Growth adds hands-on implementation, our team executes approved fixes for you instead of you or your developer doing it.",
   },
   {
     q: "Is this right for agencies managing multiple clients?",
@@ -2333,14 +1481,14 @@ function FAQItem({ q, a }: { q: string; a: string }) {
 
 const TESTIMONIALS = [
   {
-    quote: "We had no idea ChatGPT was sending customers to our competitors. One scan showed us exactly why — and we fixed it within a week. New bookings are up noticeably.",
+    quote: "We had no idea ChatGPT was sending customers to our competitors. One scan showed us exactly why, and we fixed it within a week. New bookings are up noticeably.",
     name: "Sarah M.",
     role: "Owner",
     company: "Bloom Hair Studio",
     photo: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=80&h=80&fit=crop&crop=faces&q=80",
   },
   {
-    quote: "Our Perplexity visibility was zero. Customers.Direct showed us the three sources AI kept citing instead of us. We got listed on two of them — new members started mentioning finding us through AI search.",
+    quote: "Our Perplexity visibility was zero. Customers.Direct showed us the three sources AI kept citing instead of us. We got listed on two of them, new members started mentioning finding us through AI search.",
     name: "Marcus T.",
     role: "Marketing Director",
     company: "Peak Fitness",
@@ -2368,7 +1516,7 @@ const TESTIMONIALS = [
     photo: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=80&h=80&fit=crop&crop=faces&q=80",
   },
   {
-    quote: "I asked ChatGPT 'who's the best roofer in Austin' and we weren't even in the answer. That was the wake-up call. After using this platform we started appearing — and saw a measurable lift in quote requests.",
+    quote: "I asked ChatGPT 'who's the best roofer in Austin' and we weren't even in the answer. That was the wake-up call. After using this platform we started appearing, and saw a measurable lift in quote requests.",
     name: "James A.",
     role: "CEO",
     company: "Ridgeline Roofing",
@@ -2463,7 +1611,7 @@ function HeroVideoSection() {
   const [errored,  setErrored]  = React.useState(false);
   const [hovered,  setHovered]  = React.useState(false);
 
-  // Kick off playback as soon as the component mounts — don't rely on the
+  // Kick off playback as soon as the component mounts: don't rely on the
   // `autoPlay` attribute alone, which browsers often ignore for non-muted video.
   React.useEffect(() => {
     const v = videoRef.current;
@@ -2472,7 +1620,7 @@ function HeroVideoSection() {
     v.play().then(() => {
       setPlaying(true);
     }).catch(() => {
-      // Autoplay still blocked (rare for muted) — show manual play button
+      // Autoplay still blocked (rare for muted): show manual play button
       setPlaying(false);
     });
   }, []);
@@ -2522,7 +1670,7 @@ function HeroVideoSection() {
           onMouseEnter={handleMouseEnter}
           onMouseLeave={handleMouseLeave}
         >
-          {/* Buffering spinner — shown until canplay fires */}
+          {/* Buffering spinner: shown until canplay fires */}
           {loading && !errored && (
             <div className="absolute inset-0 flex items-center justify-center z-10">
               <div className="w-10 h-10 rounded-full border-2 border-white/20 border-t-white animate-spin" />
@@ -2560,7 +1708,7 @@ function HeroVideoSection() {
             aria-label="Customers.Direct product overview"
           />
 
-          {/* Manual play button — shown when autoplay was blocked */}
+          {/* Manual play button: shown when autoplay was blocked */}
           {!playing && !loading && !errored && (
             <button
               onClick={manualPlay}
@@ -2575,7 +1723,7 @@ function HeroVideoSection() {
             </button>
           )}
 
-          {/* Audio toggle — appears on hover */}
+          {/* Audio toggle: appears on hover */}
           <button
             onClick={toggleAudio}
             aria-label={muted ? "Unmute video" : "Mute video"}
@@ -2605,7 +1753,6 @@ export default function HomepagePlatform() {
       <ShopperImageSection />
       <PromptTrackingSection />
       <ProductTabsSection />
-      <AgentReadySection />
       <AgencySection />
       <HowItWorksSection />
       <TestimonialsSection />

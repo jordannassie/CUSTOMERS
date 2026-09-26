@@ -95,7 +95,7 @@ function AgencyHero() {
               AI search analytics for marketing agencies
             </h1>
             <p className="text-[16px] sm:text-[17px] text-white/55 leading-relaxed mb-8 max-w-[480px]">
-              Track, analyze, and improve your clients&apos; visibility across AI search platforms. Compare competitors, uncover actionable improvements, and deliver client-ready reports — all from one dashboard.
+              Track, analyze, and improve your clients&apos; visibility across AI search platforms. Compare competitors, uncover actionable improvements, and deliver client-ready reports, all from one dashboard.
             </p>
             <div className="flex flex-wrap gap-3">
               <Link
@@ -116,7 +116,7 @@ function AgencyHero() {
             </p>
           </div>
 
-          {/* Right — animated dashboard demo */}
+          {/* Right: animated dashboard demo */}
           <AgencyWorkspaceDemo />
         </div>
       </div>
@@ -185,7 +185,7 @@ function WorkflowSection() {
           ))}
         </div>
         <p className="text-center text-[11px] text-[#B0B0A8] mt-8 max-w-lg mx-auto leading-relaxed">
-          Customers.Direct identifies improvements and provides Direct Agent guidance and Claude implementation prompts. Autonomous website changes are not part of the current product.
+          Customers.Direct identifies improvements and provides step-by-step fixes and Claude implementation prompts. Autonomous website changes are not part of the current product.
         </p>
       </div>
     </section>
@@ -280,7 +280,7 @@ function RevenueSection() {
         </div>
 
         <p className="text-center text-[11px] text-[#A3A3A0] mt-6 max-w-lg mx-auto leading-relaxed">
-          Illustrative gross agency revenue only — not profit or guaranteed earnings. Excludes Customers.Direct subscription fees and your service delivery costs.
+          Illustrative gross agency revenue only, not profit or guaranteed earnings. Excludes Customers.Direct subscription fees and your service delivery costs.
         </p>
       </div>
     </section>
