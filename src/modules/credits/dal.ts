@@ -25,7 +25,10 @@ function fail(fn: string, error: PostgrestError): never {
   throw new Error(`${fn} failed: ${error.message}`);
 }
 
-/** Reserves a scan's credits at start. Returns the hold ID; a retried job gets its first hold back. */
+/**
+ * Reserves a scan's credits at start. Returns the hold ID; a retried job gets its first hold back.
+ * Call entitlements canStartScan first: this spends any grant, top-ups included, whatever the agency status (F-20).
+ */
 export async function holdCredits(agencyId: string, amount: number, scanJobId: string): Promise<string> {
   const { data, error } = await createServiceClient().rpc("hold_credits", {
     p_agency_id: agencyId,
