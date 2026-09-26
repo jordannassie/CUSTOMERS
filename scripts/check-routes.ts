@@ -1,6 +1,8 @@
 // Checks that kept routes load and removed routes redirect (B-03).
 // Usage: node scripts/check-routes.ts [baseUrl]   (default http://localhost:3000)
 
+export {};
+
 const base = (process.argv[2] ?? "http://localhost:3000").replace(/\/$/, "");
 
 // Public pages must return 200; signed-in areas may redirect to /login instead.
