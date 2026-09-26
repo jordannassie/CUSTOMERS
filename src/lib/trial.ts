@@ -17,7 +17,7 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import { PRODUCT_ACCESS } from "@/config/product-access";
-import { env } from "@/lib/env";
+import { isCurrentUserAdmin } from "@/modules/auth";
 
 // ─── Beta usage safeguards ────────────────────────────────────────────────────
 // Internal cost-protection limits during beta.
@@ -52,20 +52,6 @@ const FULL_ACCESS = Object.freeze({
   isAdmin: false,
   isBeta: true,
 });
-
-function parseEnvList(v: string | undefined): string[] {
-  return (v ?? "").split(",").map((s) => s.trim().toLowerCase()).filter(Boolean);
-}
-
-function isAdminByEnv(userId: string, userEmail: string | null | undefined): boolean {
-  const ids = parseEnvList(env.ADMIN_USER_IDS);
-  if (ids.length && ids.includes(userId.toLowerCase())) return true;
-  if (userEmail) {
-    const emails = parseEnvList(env.ADMIN_EMAILS);
-    if (emails.length && emails.includes(userEmail.toLowerCase())) return true;
-  }
-  return false;
-}
 
 /**
  * Returns the server-authoritative access status for the current user.
@@ -103,8 +89,7 @@ export async function getTrialStatus(): Promise<TrialStatus> {
       };
     }
 
-    // ── Admin bypass (env-var — no DB required) ──────────────────────────────
-    if (isAdminByEnv(user.id, user.email)) {
+    if (await isCurrentUserAdmin()) {
       return { ...FULL_ACCESS, isAdmin: true };
     }
 
@@ -116,7 +101,6 @@ export async function getTrialStatus(): Promise<TrialStatus> {
     // ── NORMAL MODE (betaFreeAccess = false) — evaluate trial/subscription ──
 
     let profile: {
-      account_type: string | null;
       trial_starts_at: string | null;
       trial_ends_at: string | null;
     } | null = null;
@@ -124,17 +108,13 @@ export async function getTrialStatus(): Promise<TrialStatus> {
     try {
       const { data: p } = await supabase
         .from("profiles")
-        .select("account_type, trial_starts_at, trial_ends_at")
+        .select("trial_starts_at, trial_ends_at")
         .eq("id", user.id)
         .maybeSingle();
       profile = p;
     } catch {
       console.warn("[trial] Profile query failed — defaulting to safe access");
       return { ...FULL_ACCESS, isBeta: false };
-    }
-
-    if (profile?.account_type === "admin") {
-      return { ...FULL_ACCESS, isAdmin: true, isBeta: false };
     }
 
     try {
