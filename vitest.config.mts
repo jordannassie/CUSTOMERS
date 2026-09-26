@@ -42,6 +42,14 @@ export default defineConfig({
           testTimeout: 120_000,
         },
       },
+      {
+        // Live developer checks (scripts/dev); each one also needs LIVE_AI_CALL=1 to call a real model.
+        extends: true,
+        test: {
+          name: "dev",
+          include: ["scripts/dev/**/*.dev.ts"],
+        },
+      },
     ],
   },
 });

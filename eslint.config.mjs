@@ -85,7 +85,12 @@ const NO_SERVICE_CLIENT = {
 };
 
 const CLIENT_LIBRARIES = ["@supabase/*", "stripe", "@stripe/*", "openai", "@anthropic-ai/sdk"];
-const CLIENT_WRAPPERS = ["src/lib/supabase/**", "src/lib/stripe.ts", "src/lib/geo/providers/**"];
+const CLIENT_WRAPPERS = [
+  "src/lib/supabase/**",
+  "src/lib/stripe.ts",
+  "src/lib/geo/providers/**",
+  "src/modules/scanning/providers/**",
+];
 
 const dependencyPolicies = [
   // Components never talk to Supabase, Stripe or AI providers, or to a module's data layer.
