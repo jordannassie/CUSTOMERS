@@ -156,7 +156,7 @@ const eslintConfig = defineConfig([
     rules: { "local/no-select-star": "off", "no-restricted-imports": "off" },
   },
   {
-    files: ["src/**/*.test.ts"],
+    files: ["src/**/*.test.ts", "src/**/*.test-helpers.ts"],
     rules: { "no-restricted-imports": "off" },
   },
   {
