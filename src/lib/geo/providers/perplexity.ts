@@ -1,6 +1,7 @@
 import "server-only";
 import type { VisibilityProviderContext, VisibilityProviderResult } from "@/types/geo";
 import { extractMentionSignals, extractCitedSources, type VisibilityProviderAdapter } from "./types";
+import { env } from "@/lib/env";
 
 const MODEL = "sonar";
 
@@ -8,10 +9,10 @@ export const perplexityAdapter: VisibilityProviderAdapter = {
   id: "perplexity",
   label: "Perplexity (Sonar API)",
   isConfigured() {
-    return Boolean(process.env.PERPLEXITY_API_KEY);
+    return Boolean(env.PERPLEXITY_API_KEY);
   },
   async run(prompt: string, context: VisibilityProviderContext): Promise<VisibilityProviderResult> {
-    const apiKey = process.env.PERPLEXITY_API_KEY;
+    const apiKey = env.PERPLEXITY_API_KEY;
     if (!apiKey) throw new Error("PERPLEXITY_API_KEY is not configured.");
 
     const response = await fetch("https://api.perplexity.ai/chat/completions", {

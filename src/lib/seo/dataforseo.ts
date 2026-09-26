@@ -21,10 +21,11 @@ import type {
   DomainOverview,
   KeywordGap,
 } from "./types";
+import { env } from "@/lib/env";
 
 const BASE_URL = "https://api.dataforseo.com/v3";
-const USERNAME = process.env.DATAFORSEO_USERNAME;
-const PASSWORD = process.env.DATAFORSEO_PASSWORD;
+const USERNAME = env.DATAFORSEO_USERNAME;
+const PASSWORD = env.DATAFORSEO_PASSWORD;
 
 export const dataForSeoEnabled = !!(USERNAME && PASSWORD);
 

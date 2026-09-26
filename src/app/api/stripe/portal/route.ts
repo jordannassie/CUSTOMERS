@@ -10,6 +10,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { requireUser } from "@/lib/geo/api-auth";
 import { requireStripe } from "@/lib/stripe";
 import { createServiceClient } from "@/lib/supabase/service";
+import { env } from "@/lib/env";
 
 export async function POST(request: NextRequest) {
   const { user, unauthorized } = await requireUser();
@@ -37,7 +38,7 @@ export async function POST(request: NextRequest) {
   }
 
   const baseUrl =
-    process.env.NEXT_PUBLIC_APP_URL ??
+    env.NEXT_PUBLIC_APP_URL ??
     `${request.nextUrl.protocol}//${request.nextUrl.host}`;
 
   const session = await stripeClient.billingPortal.sessions.create({

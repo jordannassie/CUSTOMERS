@@ -45,7 +45,6 @@ export default async function AdminUsagePage() {
     if (r.created_at < ago30d) continue;
     const bizId = r.business_id;
     if (!bizUsage[bizId]) {
-      // @ts-expect-error join shape
       bizUsage[bizId] = { name: r.businesses?.name ?? bizId, count: 0 };
     }
     bizUsage[bizId].count++;

@@ -13,6 +13,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { requireUser } from "@/lib/geo/api-auth";
 import { fetchSeoSnapshot, dataForSeoEnabled } from "@/lib/seo/dataforseo";
 import type { SeoSnapshot } from "@/lib/seo/types";
+import type { Json } from "@/types/database.types";
 
 const CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 
@@ -67,11 +68,11 @@ export async function GET(request: NextRequest) {
         const snapshot: SeoSnapshot = {
           businessId,
           domain: cached.domain as string,
-          overview: (cached.overview as SeoSnapshot["overview"]) ?? {},
-          topKeywords: (cached.top_keywords as SeoSnapshot["topKeywords"]) ?? [],
-          competitors: (cached.competitors as SeoSnapshot["competitors"]) ?? [],
-          backlinks: (cached.backlinks as SeoSnapshot["backlinks"]) ?? {},
-          keywordGaps: (cached.keyword_gaps as SeoSnapshot["keywordGaps"]) ?? [],
+          overview: (cached.overview as unknown as SeoSnapshot["overview"]) ?? {},
+          topKeywords: (cached.top_keywords as unknown as SeoSnapshot["topKeywords"]) ?? [],
+          competitors: (cached.competitors as unknown as SeoSnapshot["competitors"]) ?? [],
+          backlinks: (cached.backlinks as unknown as SeoSnapshot["backlinks"]) ?? {},
+          keywordGaps: (cached.keyword_gaps as unknown as SeoSnapshot["keywordGaps"]) ?? [],
           fetchedAt: cached.fetched_at as string,
         };
         return NextResponse.json({ ok: true, snapshot, cached: true });
@@ -97,11 +98,11 @@ export async function GET(request: NextRequest) {
     {
       business_id: businessId,
       domain: snapshot.domain,
-      overview: snapshot.overview,
-      top_keywords: snapshot.topKeywords,
-      competitors: snapshot.competitors,
-      backlinks: snapshot.backlinks,
-      keyword_gaps: snapshot.keywordGaps,
+      overview: snapshot.overview as unknown as Json,
+      top_keywords: snapshot.topKeywords as unknown as Json,
+      competitors: snapshot.competitors as unknown as Json,
+      backlinks: snapshot.backlinks as unknown as Json,
+      keyword_gaps: snapshot.keywordGaps as unknown as Json,
       fetched_at: snapshot.fetchedAt,
     },
     { onConflict: "business_id" },

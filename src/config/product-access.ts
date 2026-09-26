@@ -19,6 +19,8 @@
  *   integration only — not rewriting every route.
  */
 
+import { env } from "@/lib/env";
+
 export const PRODUCT_ACCESS = {
   /**
    * Beta free access flag.
@@ -32,7 +34,7 @@ export const PRODUCT_ACCESS = {
    *
    * Override: set environment variable BETA_FREE_ACCESS=false to disable.
    */
-  betaFreeAccess: process.env.BETA_FREE_ACCESS !== "false",
+  betaFreeAccess: env.BETA_FREE_ACCESS !== "false",
 
   /**
    * Stripe/billing flag.
@@ -44,7 +46,7 @@ export const PRODUCT_ACCESS = {
    *
    * Override: set environment variable BILLING_ENABLED=true to activate.
    */
-  billingEnabled: process.env.BILLING_ENABLED === "true",
+  billingEnabled: env.BILLING_ENABLED === "true",
 
   /**
    * Trial expiration flag.
@@ -59,7 +61,7 @@ export const PRODUCT_ACCESS = {
    *
    * Override: set environment variable TRIAL_ENABLED=true to activate.
    */
-  trialEnabled: process.env.TRIAL_ENABLED === "true",
+  trialEnabled: env.TRIAL_ENABLED === "true",
 
   /**
    * Beta usage safeguards — internal cost-protection limits.

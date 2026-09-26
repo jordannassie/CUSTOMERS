@@ -9,12 +9,14 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "db:types": "supabase gen types typescript --linked > src/types/database.types.ts",
     "prepare": "husky",
     "scan": "bash scripts/scan-payload.sh && bash scripts/scan-secrets.sh --rev HEAD"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.4",
     "@supabase/supabase-js": "^2.109.0",
+    "@t3-oss/env-nextjs": "^0.13.11",
     "lucide-react": "^1.31.0",
     "next": "16.3.0",
     "react": "19.2.8",
@@ -22,7 +24,9 @@
     "react-markdown": "^10.1.0",
     "recharts": "^2.15.4",
     "remark-gfm": "^4.0.1",
-    "stripe": "^22.5.0"
+    "server-only": "^0.0.1",
+    "stripe": "^22.5.0",
+    "zod": "^4.6.5"
   },
   "devDependencies": {
     "@netlify/plugin-nextjs": "^5.15.13",

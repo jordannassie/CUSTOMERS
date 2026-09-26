@@ -12,6 +12,7 @@
  */
 import "server-only";
 import { searchGooglePlaces } from "@/lib/google-places";
+import { env } from "@/lib/env";
 
 export interface CompetitorPlaceResult {
   /** Google Place ID — use to prevent duplicates */
@@ -58,7 +59,7 @@ export async function searchCompetitorPlaces(
   region: string | null,
   excludeDomain: string | null,
 ): Promise<CompetitorPlaceResult[]> {
-  if (!process.env.GOOGLE_PLACES_API_KEY) return [];
+  if (!env.GOOGLE_PLACES_API_KEY) return [];
 
   const trimmed = query.trim();
   if (trimmed.length < 2) return [];

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/admin/require";
+import { env } from "@/lib/env";
 
 export const maxDuration = 60;
 
@@ -41,7 +42,7 @@ const WEEKDAY_ANGLES: Record<Weekday, { theme: string; focus: string; exclude: s
   },
 };
 
-const NEWS_MODEL = process.env.OPENAI_NEWS_MODEL ?? "gpt-4o";
+const NEWS_MODEL = env.OPENAI_NEWS_MODEL;
 
 export interface NewsStory {
   rank:                number;
@@ -128,7 +129,7 @@ export async function POST(request: NextRequest) {
   try { await requireAdmin(); }
   catch { return NextResponse.json({ error: "Unauthorized" }, { status: 401 }); }
 
-  const apiKey = process.env.OPENAI_API_KEY;
+  const apiKey = env.OPENAI_API_KEY;
   if (!apiKey) {
     return NextResponse.json(
       { error: "OpenAI API key is not configured." },

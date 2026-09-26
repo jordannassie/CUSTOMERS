@@ -222,7 +222,6 @@ export default async function AdminOverviewPage() {
                   {f.provider}
                 </span>
                 <div className="min-w-0">
-                  {/* @ts-expect-error join shape */}
                   <p className="text-[12px] text-[#111827] font-medium truncate">{f.businesses?.name ?? f.business_id}</p>
                   <p className="text-[10.5px] text-[#9CA3AF] truncate">{f.error ?? "No error message"}</p>
                 </div>
