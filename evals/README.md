@@ -43,5 +43,7 @@ Each suite has `dataset.v1.jsonl`, `grader.ts`, `*.eval.ts` and a `README.md` wi
 
 ## When they run
 
-- Code-graded suites: every pull request (`eval-fast.yml`, B-07).
-- AI-graded suites: only when files under `src/modules/*/prompts/`, model settings or `evals/` change (`eval-ai.yml`, B-07).
+- Code-graded suites (`*.eval.ts`, `npm run evals`): every pull request (`eval-fast.yml`, B-07).
+- AI-graded suites (`*.ai.eval.ts`, `npm run evals:ai`): only when files under `src/modules/*/prompts/`, model settings (`src/modules/*/models.ts`, `src/lib/geo/providers/`) or `evals/` change (`eval-ai.yml`, B-07). They use the `ANTHROPIC_API_KEY`, `OPENAI_API_KEY` and `PERPLEXITY_API_KEY` repository secrets.
+
+Name a suite `*.ai.eval.ts` whenever any grader in it calls a model; the fast run excludes those files.

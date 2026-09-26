@@ -29,6 +29,16 @@ export default defineConfig({
         test: {
           name: "evals",
           include: ["evals/**/*.eval.ts"],
+          exclude: ["evals/**/*.ai.eval.ts"],
+          testTimeout: 120_000,
+        },
+      },
+      {
+        // AI-graded suites call real models, so they run only in eval-ai.yml (B-07).
+        extends: true,
+        test: {
+          name: "evals-ai",
+          include: ["evals/**/*.ai.eval.ts"],
           testTimeout: 120_000,
         },
       },

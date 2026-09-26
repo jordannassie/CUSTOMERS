@@ -14,3 +14,5 @@ while read -r _local_ref local_sha _remote_ref _remote_sha; do
 done
 
 npx tsc --noEmit || exit 1
+npm run lint || exit 1
+npm run build || exit 1
