@@ -5,12 +5,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-
-// Accepts "example.com", "https://example.com/page" and similar; only the host is checked.
-export function isValidDomain(value: string): boolean {
-  const host = value.trim().replace(/^https?:\/\//i, "").split(/[/?#]/)[0];
-  return /^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?(\.[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)*\.[a-z]{2,}$/i.test(host);
-}
+import { isValidDomain } from "./lib";
 
 export function CompareBox() {
   const router = useRouter();
