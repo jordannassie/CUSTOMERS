@@ -32,7 +32,7 @@ export async function proxy(request: NextRequest) {
     }
   );
 
-  // Refresh session — do NOT remove this line.
+  // Refresh session: do NOT remove this line.
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -66,7 +66,7 @@ export const config = {
      *  - _next/image   (image optimisation)
      *  - favicon.ico
      *  - public folder files
-     *  - auth/callback  (must not be intercepted — it exchanges the OAuth code and sets cookies)
+     *  - auth/callback  (must not be intercepted, it exchanges the OAuth code and sets cookies)
      */
     "/((?!_next/static|_next/image|favicon.ico|auth/callback|.*\\.(?:js|svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
