@@ -80,7 +80,7 @@ Phase 3 · S · Depends on: B-20, B-11 · Blocked by Jordan: no · MVP_SPEC 5.4,
 ---
 
 ### B-24 Mention detection v2 and its eval
-- [ ] Done
+- [ ] Done (code in PR #32; waits for labelled dataset, F-04)
 
 Phase 3 · L · Depends on: B-06 · Blocked by Jordan: no · MVP_SPEC 5.5, 25, D-66 · Branch: `task/B-24-mention-detection-v2-and-its` → `main`
 

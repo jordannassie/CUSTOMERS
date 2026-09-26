@@ -24,7 +24,7 @@ Phase 9 · M · Depends on: B-09 · Blocked by Jordan: no · MVP_SPEC 12, D-52, 
 ---
 
 ### B-71 New homepage
-- [ ] Done
+- [x] Done (PR #28, merged into mvp)
 
 Phase 9 · L · Depends on: B-70 · Blocked by Jordan: no · MVP_SPEC 12.2, D-34, D-52 · Branch: `task/B-71-new-homepage` → `mvp`
 

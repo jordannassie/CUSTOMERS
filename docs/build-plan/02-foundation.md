@@ -25,7 +25,7 @@ Phase 2 · M · Depends on: B-06 · Blocked by Jordan: no · MVP_ROADMAP OPS-02,
 ---
 
 ### B-11 Core tables
-- [ ] Done
+- [x] Done (PR #31)
 
 Phase 2 · M · Depends on: B-10 · Blocked by Jordan: no · MVP_SPEC 13, D-20, D-56, D-58, D-61, D-62 · Branch: `task/B-11-core-tables` → `main`
 
@@ -49,7 +49,7 @@ One migration adding (nothing existing changed or dropped):
 ---
 
 ### B-12 Credit tables
-- [ ] Done
+- [x] Done (PR #34)
 
 Phase 2 · S · Depends on: B-11 · Blocked by Jordan: no · MVP_SPEC 4.2, 13, D-58 · Branch: `task/B-12-credit-tables` → `main`
 
@@ -68,7 +68,7 @@ Phase 2 · S · Depends on: B-11 · Blocked by Jordan: no · MVP_SPEC 4.2, 13, D
 ---
 
 ### B-13 Credit SQL functions
-- [ ] Done
+- [x] Done (PR #36)
 
 Phase 2 · M · Depends on: B-12 · Blocked by Jordan: no · MVP_SPEC 4.2, D-53, D-54, D-55 · Branch: `task/B-13-credit-sql-functions` → `main`
 
@@ -95,7 +95,7 @@ Phase 2 · M · Depends on: B-12 · Blocked by Jordan: no · MVP_SPEC 4.2, D-53,
 ---
 
 ### B-14 Move existing data
-- [ ] Done
+- [x] Done (PR #40, merged into mvp; live run waits for go-live, see PR)
 
 Phase 2 · M · Depends on: B-13 · Blocked by Jordan: beta-user treatment (B-81) only affects the trial grant · MVP_SPEC 19, D-69 · Branch: `task/B-14-move-existing-data` → `mvp`
 
@@ -116,7 +116,7 @@ Phase 2 · M · Depends on: B-13 · Blocked by Jordan: beta-user treatment (B-81
 ---
 
 ### B-15 Auth helpers and Data Access Layer scaffolding
-- [ ] Done
+- [x] Done (PR #35, merged into mvp)
 
 Phase 2 · M · Depends on: B-11 · Blocked by Jordan: no · MVP_SPEC 18.1 rules 1, 2, 8, D-59, D-79 · Branch: `task/B-15-auth-helpers-and-data-access` → `mvp`
 
@@ -137,7 +137,7 @@ Phase 2 · M · Depends on: B-11 · Blocked by Jordan: no · MVP_SPEC 18.1 rules
 ---
 
 ### B-16 Entitlements module
-- [ ] Done
+- [x] Done (PR #39, merged into mvp)
 
 Phase 2 · M · Depends on: B-13, B-15 · Blocked by Jordan: no · MVP_SPEC 4, D-16, D-25, D-60 · Branch: `task/B-16-entitlements-module` → `mvp`
 
@@ -157,7 +157,7 @@ Phase 2 · M · Depends on: B-13, B-15 · Blocked by Jordan: no · MVP_SPEC 4, D
 ---
 
 ### B-17 Admin access cleanup
-- [ ] Done
+- [x] Done (PR #37, merged into mvp)
 
 Phase 2 · S · Depends on: B-15 · Blocked by Jordan: no · D-35, MVP_ROADMAP SEC-09 · Branch: `task/B-17-admin-access-cleanup` → `mvp`
 
