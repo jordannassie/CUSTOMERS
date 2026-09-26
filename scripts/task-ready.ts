@@ -120,7 +120,8 @@ function check(taskId: string): { ready: boolean; lines: string[] } {
   const sameTask = open.filter((pr) => prTask(pr.title) === taskId || pr.headRefName.startsWith(`task/${taskId}-`));
   for (const pr of sameTask) lines.push(`  WARNING  ${taskId} already has open PR #${pr.number} (${pr.headRefName}); another session may own it`);
 
-  const others = open.filter((pr) => !sameTask.includes(pr));
+  const branch = run("git", ["branch", "--show-current"]);
+  const others = open.filter((pr) => !sameTask.includes(pr) && pr.headRefName !== branch);
   if (others.length > 0) {
     const mine = changedFiles(target);
     lines.push("  In progress elsewhere:");
