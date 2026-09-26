@@ -52,7 +52,10 @@ for (const path of KEPT_PRIVATE) {
 
 for (const [path, target] of Object.entries(REMOVED)) {
   const { status, location } = await head(path);
-  report(status === 308 && location === target, `${path} -> ${status} ${location ?? ""} (want 308 ${target})`);
+  const redirected = status === 308 && location === target;
+  // On Netlify the login check runs before config redirects, so logged-out visits to old dashboard pages go to login first.
+  const sentToLogin = path.startsWith("/dashboard/") && status >= 300 && status < 400 && location?.startsWith("/login") === true;
+  report(redirected || sentToLogin, `${path} -> ${status} ${location ?? ""} (want 308 ${target})`);
 }
 
 console.log(failed ? `\n${failed} check(s) failed` : "\nAll route checks passed");
