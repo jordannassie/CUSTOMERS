@@ -336,12 +336,14 @@ $$;
 
 -- ---------------------------------------------------------------------------
 -- admin_adjust_credits: add (never-expiring admin grant) or remove credits by hand. Returns the ledger row ID.
+-- p_request_id is made once per admin submit, so a double submit applies once (D-55).
 -- ---------------------------------------------------------------------------
 create or replace function public.admin_adjust_credits(
   p_agency_id uuid,
   p_delta integer,
   p_admin_user_id uuid,
-  p_note text
+  p_note text,
+  p_request_id uuid
 )
 returns uuid
 language plpgsql
@@ -349,7 +351,6 @@ security definer
 set search_path = ''
 as $$
 declare
-  v_adjust_id uuid := gen_random_uuid();
   v_grant_id uuid;
   v_left integer;
   v_grant record;
@@ -362,13 +363,27 @@ begin
   if p_admin_user_id is null or p_note is null or btrim(p_note) = '' then
     raise exception 'admin_and_note_required' using errcode = '22023';
   end if;
+  if p_request_id is null then
+    raise exception 'request_id_required' using errcode = '22023';
+  end if;
 
   perform public.credit_lock_agency(p_agency_id);
 
-  if p_delta > 0 then
-    v_grant_id := public.credit_add_grant(
-      p_agency_id, 'admin', v_adjust_id::text, p_delta, null, 'admin_adjust', p_admin_user_id, p_note
-    );
+  -- A replayed addition finds its grant; a replayed removal finds its ledger row.
+  select id into v_grant_id from public.credit_grants where source = 'admin' and source_id = p_request_id::text;
+  if not found then
+    select id into v_tx_id from public.credit_transactions where source_type = 'admin' and source_id = p_request_id::text;
+    if found then
+      return v_tx_id;
+    end if;
+    if p_delta > 0 then
+      v_grant_id := public.credit_add_grant(
+        p_agency_id, 'admin', p_request_id::text, p_delta, null, 'admin_adjust', p_admin_user_id, p_note
+      );
+    end if;
+  end if;
+
+  if v_grant_id is not null then
     select id into v_tx_id from public.credit_transactions
     where grant_id = v_grant_id order by kind = 'admin_adjust' desc limit 1;
     return v_tx_id;
@@ -393,7 +408,7 @@ begin
   end if;
 
   insert into public.credit_transactions (agency_id, delta, kind, source_type, source_id, admin_user_id, note)
-  values (p_agency_id, p_delta, 'admin_adjust', 'admin', v_adjust_id::text, p_admin_user_id, p_note)
+  values (p_agency_id, p_delta, 'admin_adjust', 'admin', p_request_id::text, p_admin_user_id, p_note)
   returning id into v_tx_id;
 
   return v_tx_id;
@@ -411,7 +426,7 @@ revoke all on function
   public.release_hold(uuid),
   public.grant_credits(uuid, text, text, integer, timestamptz),
   public.expire_grants(),
-  public.admin_adjust_credits(uuid, integer, uuid, text)
+  public.admin_adjust_credits(uuid, integer, uuid, text, uuid)
 from public, anon, authenticated;
 
 revoke all on function
@@ -425,5 +440,5 @@ grant execute on function
   public.release_hold(uuid),
   public.grant_credits(uuid, text, text, integer, timestamptz),
   public.expire_grants(),
-  public.admin_adjust_credits(uuid, integer, uuid, text)
+  public.admin_adjust_credits(uuid, integer, uuid, text, uuid)
 to service_role;

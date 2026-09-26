@@ -2,75 +2,23 @@ import { randomUUID } from "node:crypto";
 import { createClient } from "@supabase/supabase-js";
 import { afterAll, describe, expect, it } from "vitest";
 import { env } from "@/lib/env";
-import { createServiceClient } from "@/lib/supabase/service";
 import type { Database } from "@/types/database.types";
-import {
-  adminAdjustCredits,
-  captureCredit,
-  expireGrants,
-  grantCredits,
-  holdCredits,
-  InsufficientCreditsError,
-  releaseHold,
-} from "./dal";
+import { captureCredit, expireGrants, grantCredits, holdCredits, InsufficientCreditsError, releaseHold } from "./dal";
 import { estimateMonthlyCredits, getBalance } from "./service";
+import {
+  balanceOf,
+  createAgency,
+  DAY,
+  deleteTestUsers,
+  ledgerSum,
+  newScanJob,
+  service,
+  topup,
+  userIds,
+} from "./credits.test-helpers";
 
 // B-13: the credit SQL functions against the local database (MVP_SPEC 4.2, D-53, D-54, D-55).
-const service = createServiceClient();
-const DAY = 24 * 60 * 60 * 1000;
-const userIds: string[] = [];
-
-type Agency = { agencyId: string; businessIds: string[]; email: string };
-
-async function createAgency(businesses = 1): Promise<Agency> {
-  const email = `vitest-credits-${randomUUID()}@example.test`;
-  const { data: user, error } = await service.auth.admin.createUser({ email, password: `pw-${randomUUID()}`, email_confirm: true });
-  if (error || !user.user) throw error ?? new Error("no user");
-  userIds.push(user.user.id);
-
-  const { data: agency, error: agencyError } = await service
-    .from("agencies")
-    .insert({ owner_user_id: user.user.id, name: "Credits test", is_test: true })
-    .select("id")
-    .single();
-  if (agencyError) throw agencyError;
-
-  const rows = Array.from({ length: businesses }, (_, i) => ({
-    owner_user_id: user.user.id,
-    agency_id: agency.id,
-    name: `Business ${i}`,
-  }));
-  const { data: made, error: businessError } = await service.from("businesses").insert(rows).select("id");
-  if (businessError) throw businessError;
-  return { agencyId: agency.id, businessIds: made.map((b) => b.id), email };
-}
-
-async function newScanJob(agency: Agency, business = 0): Promise<string> {
-  const { data, error } = await service
-    .from("scan_jobs")
-    .insert({ agency_id: agency.agencyId, business_id: agency.businessIds[business] })
-    .select("id")
-    .single();
-  if (error) throw error;
-  return data.id;
-}
-
-async function balanceOf(agency: Agency) {
-  return (await getBalance(agency.agencyId)).balance;
-}
-
-async function ledgerSum(agency: Agency) {
-  const { data } = await service.from("credit_transactions").select("delta").eq("agency_id", agency.agencyId);
-  return data!.reduce((sum, row) => sum + row.delta, 0);
-}
-
-function topup(agency: Agency, amount: number) {
-  return grantCredits({ agencyId: agency.agencyId, source: "topup", sourceId: `cs-${randomUUID()}`, amount, expiresAt: null });
-}
-
-afterAll(async () => {
-  for (const id of userIds) await service.auth.admin.deleteUser(id);
-});
+afterAll(deleteTestUsers);
 
 describe("credit functions (B-13)", () => {
   it("lowers the balance by exactly 36 for 12 questions on 3 models", async () => {
@@ -201,24 +149,6 @@ describe("credit functions (B-13)", () => {
     const [a, b] = await Promise.all([grantCredits(input), grantCredits(input)]);
     expect(a).toBe(b);
     expect(await balanceOf(agency)).toBe(1200);
-  });
-
-  it("adjusts by hand in both directions, settling or creating overdraft", async () => {
-    const agency = await createAgency();
-    const { data: admin } = await service.auth.admin.createUser({ email: `vitest-admin-${randomUUID()}@example.test`, email_confirm: true });
-    userIds.push(admin.user!.id);
-    const by = { agencyId: agency.agencyId, adminUserId: admin.user!.id };
-
-    await adminAdjustCredits({ ...by, delta: 10, note: "goodwill" });
-    expect(await balanceOf(agency)).toBe(10);
-    await adminAdjustCredits({ ...by, delta: -15, note: "correction" });
-    expect(await getBalance(agency.agencyId)).toMatchObject({ balance: -5, overdraft: 5 });
-    await adminAdjustCredits({ ...by, delta: 7, note: "refund" });
-    expect(await getBalance(agency.agencyId)).toMatchObject({ balance: 2, overdraft: 0 });
-    expect(await ledgerSum(agency)).toBe(2);
-
-    const { data: rows } = await service.from("credit_transactions").select("admin_user_id, note").eq("agency_id", agency.agencyId);
-    expect(rows!.every((r) => r.admin_user_id === admin.user!.id && r.note)).toBe(true);
   });
 
   it("cannot be called by visitors or signed-in users", async () => {

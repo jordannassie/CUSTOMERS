@@ -1838,6 +1838,7 @@ export type Database = {
           p_agency_id: string
           p_delta: number
           p_note: string
+          p_request_id: string
         }
         Returns: string
       }

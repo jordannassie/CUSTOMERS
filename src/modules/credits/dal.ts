@@ -79,18 +79,20 @@ export async function expireGrants(): Promise<number> {
   return data;
 }
 
-/** Adds or removes credits by hand. Returns the ledger row ID. */
+/** Adds or removes credits by hand. requestId is one uuid per submit, so a double submit applies once. */
 export async function adminAdjustCredits(input: {
   agencyId: string;
   delta: number;
   adminUserId: string;
   note: string;
+  requestId: string;
 }): Promise<string> {
   const { data, error } = await createServiceClient().rpc("admin_adjust_credits", {
     p_agency_id: input.agencyId,
     p_delta: input.delta,
     p_admin_user_id: input.adminUserId,
     p_note: input.note,
+    p_request_id: input.requestId,
   });
   if (error) fail("admin_adjust_credits", error);
   return data;
