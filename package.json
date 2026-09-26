@@ -11,6 +11,7 @@
     "lint": "eslint",
     "check:auth": "node scripts/check-auth-calls.ts",
     "check:routes": "node scripts/check-routes.ts",
+    "task:ready": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/task-ready.ts",
     "db:types": "supabase gen types typescript --linked > src/types/database.types.ts",
     "prepare": "husky",
     "scan": "bash scripts/scan-payload.sh && bash scripts/scan-secrets.sh --rev HEAD"
