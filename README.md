@@ -1,4 +1,4 @@
-# Customers — Next.js + Supabase + Netlify
+# Customers: Next.js + Supabase + Netlify
 
 A production-ready Next.js 15 starter pre-wired for **Supabase** (auth, database, storage) and **Netlify** (continuous deployment).
 
@@ -56,7 +56,7 @@ Open [http://localhost:3000](http://localhost:3000).
 src/
 ├── app/
 │   ├── layout.tsx          # Root layout
-│   └── page.tsx            # Home page (server component — reads Supabase session)
+│   └── page.tsx            # Home page (server component, reads Supabase session)
 ├── lib/
 │   └── supabase/
 │       ├── client.ts       # Browser/client-component Supabase client
@@ -89,20 +89,29 @@ const { data: { user } } = await supabase.auth.getUser();
 
 ---
 
+## Branches
+
+- `main` is the live site. Netlify publishes every merge to it. Never push to it directly.
+- `mvp` is the MVP rebuild, with its own Netlify staging URL. It merges into `main` once, at go-live.
+- Each task gets its own `task/B-xx-name` branch, merged by pull request into `main` or `mvp` as the build plan says (`docs/build-plan/README.md`).
+- The `original-backup` tag marks `main` as it was before the rebuild started.
+
+---
+
 ## Deploying to Netlify
 
-### Option A — Netlify UI (recommended)
+### Option A: Netlify UI (recommended)
 
 1. Push this repo to GitHub (already done ✅).
 2. Go to [app.netlify.com](https://app.netlify.com) → **Add new site → Import an existing project**.
 3. Connect your GitHub account and select **jordannassie/CUSTOMERS**.
-4. Netlify auto-detects `netlify.toml` — build command and publish dir are pre-filled.
+4. Netlify auto-detects `netlify.toml`; build command and publish dir are pre-filled.
 5. Under **Site configuration → Environment variables**, add:
    - `NEXT_PUBLIC_SUPABASE_URL`
    - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 6. Click **Deploy site** 🚀
 
-### Option B — Netlify CLI
+### Option B: Netlify CLI
 
 ```bash
 npm install -g netlify-cli
@@ -121,7 +130,7 @@ netlify deploy --build --prod
 |---------------------------------|----------|--------------------------------------|
 | `NEXT_PUBLIC_SUPABASE_URL`      | ✅        | Your Supabase project URL            |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | ✅        | Public anon key (safe for browser)   |
-| `SUPABASE_SERVICE_ROLE_KEY`     | Optional | Admin key — server-side only         |
+| `SUPABASE_SERVICE_ROLE_KEY`     | Optional | Admin key, server-side only         |
 
 ---
 
