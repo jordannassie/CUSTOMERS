@@ -1,0 +1,23 @@
+name: CI
+
+# Lint and build join this workflow in build-plan task B-07, once today's lint errors are fixed
+# and the build no longer needs production secrets.
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  typecheck:
+    name: Typecheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      # Scan before installing: install scripts are how injected packages run.
+      - run: bash scripts/scan-payload.sh
+      - run: npm ci --ignore-scripts
+      - run: npx tsc --noEmit

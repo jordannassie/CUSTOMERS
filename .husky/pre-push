@@ -1,0 +1,16 @@
+# Scans the full tree of every pushed commit: infected commits here arrived with harmless-looking
+# messages, and `git commit --no-verify` skips pre-commit, so this layer assumes it was bypassed.
+bash scripts/scan-payload.sh --selftest || exit 1
+bash scripts/scan-secrets.sh --selftest || exit 1
+
+while read -r _local_ref local_sha _remote_ref _remote_sha; do
+  # An all-zero sha is a branch delete; there is no tree to scan.
+  case "$local_sha" in
+    '' | *[!0]*) ;;
+    *) continue ;;
+  esac
+  bash scripts/scan-payload.sh --rev "$local_sha" || exit 1
+  bash scripts/scan-secrets.sh --rev "$local_sha" || exit 1
+done
+
+npx tsc --noEmit || exit 1

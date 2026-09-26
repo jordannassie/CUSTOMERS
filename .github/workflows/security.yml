@@ -1,0 +1,21 @@
+name: Security
+
+# Make "Supply-chain scan" a required status check on main (repo settings, admin only).
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  supply-chain:
+    name: Supply-chain scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      # A scanner that cannot detect its own known-bad samples must fail CI, not report clean.
+      - run: bash scripts/scan-payload.sh --selftest
+      - run: bash scripts/scan-payload.sh
+      - run: bash scripts/scan-secrets.sh --selftest
+      - run: bash scripts/scan-secrets.sh
