@@ -4,7 +4,7 @@ import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 
 const ROOT = join(import.meta.dirname, "..");
-const AUTH_CALL = /\brequire(User|Admin)\s*\(/;
+const AUTH_CALL = /\brequire(User|Agency|Admin)\s*\(/;
 
 // Reachable without a login on purpose. Each entry says how it protects itself.
 const PUBLIC: Record<string, string> = {
@@ -33,7 +33,7 @@ const missing = targets.filter(
 );
 const stalePublic = Object.keys(PUBLIC).filter((file) => !targets.includes(file));
 
-for (const file of missing) console.log(`FAIL ${file}: no requireUser() or requireAdmin() call and not listed as public`);
+for (const file of missing) console.log(`FAIL ${file}: no requireUser(), requireAgency() or requireAdmin() call and not listed as public`);
 for (const file of stalePublic) console.log(`FAIL ${file}: listed as public but the file no longer exists`);
 
 console.log(`\nChecked ${targets.length} route and action files, ${Object.keys(PUBLIC).length} public.`);
