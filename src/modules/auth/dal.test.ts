@@ -15,7 +15,7 @@ vi.mock("next/navigation", () => ({
   },
 }));
 
-const { requireAdmin, requireAgency, requireUser } = await import("./dal");
+const { isCurrentUserAdmin, requireAdmin, requireAgency, requireUser } = await import("./dal");
 
 const service = createServiceClient();
 const password = `pw-${randomUUID()}`;
@@ -70,6 +70,10 @@ describe("signed out", () => {
     await expect(requireAgency()).rejects.toMatchObject({ status: 401 });
     await expect(requireAdmin()).rejects.toMatchObject({ status: 401 });
   });
+
+  it("isCurrentUserAdmin is false", async () => {
+    expect(await isCurrentUserAdmin()).toBe(false);
+  });
 });
 
 describe("signed in", () => {
@@ -108,11 +112,13 @@ describe("signed in", () => {
   it("requireAdmin rejects a normal user", async () => {
     await expect(requireAdmin()).rejects.toMatchObject({ reason: "forbidden", status: 403 });
     await expect(requireAdmin({ next: "/internal/admin" })).rejects.toThrow("REDIRECT /dashboard");
+    expect(await isCurrentUserAdmin()).toBe(false);
   });
 
   it("requireAdmin accepts profiles.account_type = admin", async () => {
     const { error } = await service.from("profiles").update({ account_type: "admin" }).eq("id", userId);
     if (error) throw error;
     expect(await requireAdmin()).toEqual({ id: userId, email });
+    expect(await isCurrentUserAdmin()).toBe(true);
   });
 });

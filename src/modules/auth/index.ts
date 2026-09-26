@@ -1,6 +1,7 @@
 export {
   getCurrentAgency,
   getCurrentUser,
+  isCurrentUserAdmin,
   requireAdmin,
   requireAgency,
   requireUser,

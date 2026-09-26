@@ -1,4 +1,4 @@
-import { requireAdmin } from "@/lib/admin/require";
+import { requireAdmin } from "@/modules/auth";
 import { createServiceClient } from "@/lib/supabase/service";
 
 export const metadata = { title: "Admin — Usage" };
@@ -8,7 +8,7 @@ function fmtUsd(usd: number): string {
 }
 
 export default async function AdminUsagePage() {
-  await requireAdmin();
+  await requireAdmin({ next: "/internal/admin/usage" });
   const svc = createServiceClient();
 
   const now = new Date();

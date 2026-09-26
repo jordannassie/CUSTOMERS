@@ -1,4 +1,4 @@
-import { requireAdmin } from "@/lib/admin/require";
+import { requireAdmin } from "@/modules/auth";
 import { createServiceClient } from "@/lib/supabase/service";
 import Link from "next/link";
 import { getPlanConfig } from "@/config/pricing";
@@ -24,7 +24,7 @@ const STATUS_STYLES: Record<string, string> = {
 };
 
 export default async function AdminAccountsPage() {
-  await requireAdmin();
+  await requireAdmin({ next: "/internal/admin/accounts" });
   const svc = createServiceClient();
 
   // Load all billing accounts

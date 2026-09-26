@@ -16,3 +16,4 @@ Things the build could not settle on its own: checks that could not be run, deci
 | F-10 | 2026-09-27 | B-10 (PR #27) | Migration 015 (safer signup trigger) never ran on live, and `020_live_baseline.sql` restores live's older trigger on fresh databases. Decide whether to reapply 015's version in a new migration. | Open |
 | F-11 | 2026-09-27 | B-10 (PR #27) | Go-live: live has no migration history. Run the migration repair in `supabase/migrations/README.md` (after a backup) before the first push to live. Belongs in the B-80 checklist. | Open |
 | F-12 | 2026-09-27 | B-61 | Needs Jordan's DNS access to verify the sending domain in Resend. B-61 also waits for B-11 (agencies table). | Open |
+| F-13 | 2026-09-27 | B-17 | Security item found while verifying admin access; reported to the user directly (private notes). Affects the live site. | Open |

@@ -1,5 +1,5 @@
 import React from "react";
-import { requireAdmin } from "@/lib/admin/require";
+import { requireAdmin } from "@/modules/auth";
 import { createServiceClient } from "@/lib/supabase/service";
 import Link from "next/link";
 
@@ -32,7 +32,7 @@ function KpiCard({ label, value, sub, icon }: {
 }
 
 export default async function AdminOverviewPage() {
-  await requireAdmin();
+  await requireAdmin({ next: "/internal/admin" });
 
   const svc = createServiceClient();
   const now = new Date();

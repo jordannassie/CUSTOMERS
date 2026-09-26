@@ -62,6 +62,12 @@ export async function requireAdmin(options: GuardOptions = {}): Promise<SessionU
   throw new AuthError("forbidden");
 }
 
+// For showing admin-only links; access checks still go through requireAdmin().
+export async function isCurrentUserAdmin(): Promise<boolean> {
+  const user = await getCurrentUser();
+  return !!user && (await isAdmin(user));
+}
+
 async function isAdmin(user: SessionUser): Promise<boolean> {
   if (isAdminEmail(user.email, parseAdminEmails(env.ADMIN_EMAILS))) return true;
 

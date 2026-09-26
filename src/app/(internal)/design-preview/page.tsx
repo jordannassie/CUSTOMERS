@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
-import { requireAdmin } from "@/lib/admin/require";
+import { requireAdmin } from "@/modules/auth";
 import PageLoading from "@/components/PageLoading";
 import { DesignPreview } from "./_components/design-preview";
 
@@ -19,6 +19,6 @@ export default function DesignPreviewPage() {
 
 // Reads the session, so it must stream behind Suspense under Cache Components (D-80).
 async function AdminOnlyPreview() {
-  await requireAdmin();
+  await requireAdmin({ next: "/design-preview" });
   return <DesignPreview />;
 }

@@ -1,6 +1,5 @@
 import { Suspense } from "react";
-import { redirect } from "next/navigation";
-import { requireAdmin } from "@/lib/admin/require";
+import { requireAdmin } from "@/modules/auth";
 import PageLoading from "@/components/PageLoading";
 import AdminNav from "./AdminNav";
 
@@ -18,16 +17,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
 // Reads the session, so it must stream behind Suspense under Cache Components (D-80).
 async function AdminFrame({ children }: { children: React.ReactNode }) {
-  let admin: { userId: string; email: string };
-  try {
-    admin = await requireAdmin();
-  } catch {
-    redirect("/dashboard");
-  }
+  const admin = await requireAdmin({ next: "/internal/admin" });
 
   return (
     <>
-      <AdminNav adminEmail={admin!.email} />
+      <AdminNav adminEmail={admin.email ?? ""} />
       <main className="flex-1 overflow-auto">{children}</main>
     </>
   );

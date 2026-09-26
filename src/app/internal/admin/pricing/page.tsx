@@ -1,5 +1,5 @@
 /* eslint-disable max-lines, local/max-lines-hard -- TODO(B-68): the old pricing viewer is removed in admin settings. */
-import { requireAdmin } from "@/lib/admin/require";
+import { requireAdmin } from "@/modules/auth";
 import { Check, X, AlertTriangle } from "lucide-react";
 import {
   CANONICAL_PLANS,
@@ -73,7 +73,7 @@ function FeatureCell({ value }: { value: string | boolean }) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export default async function AdminPricingPage() {
-  await requireAdmin();
+  await requireAdmin({ next: "/internal/admin/pricing" });
 
   const stripeMode = env.STRIPE_SECRET_KEY?.startsWith("sk_live_")
     ? "Live"

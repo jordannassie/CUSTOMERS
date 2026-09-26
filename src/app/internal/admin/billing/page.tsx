@@ -1,4 +1,4 @@
-import { requireAdmin } from "@/lib/admin/require";
+import { requireAdmin } from "@/modules/auth";
 import { createServiceClient } from "@/lib/supabase/service";
 import { getPlanConfig } from "@/config/pricing";
 
@@ -14,7 +14,7 @@ function fmtDate(iso: string | null | undefined): string {
 }
 
 export default async function AdminBillingPage() {
-  await requireAdmin();
+  await requireAdmin({ next: "/internal/admin/billing" });
   const svc = createServiceClient();
 
   // All billing accounts

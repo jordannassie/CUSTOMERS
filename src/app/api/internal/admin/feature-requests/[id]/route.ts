@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireAdmin } from "@/lib/admin/require";
+import { authErrorResponse, requireAdmin } from "@/modules/auth";
 import { createServiceClient } from "@/lib/supabase/service";
 
 const VALID_STATUSES = ["new", "reviewing", "planned", "shipped", "declined"] as const;
@@ -10,8 +10,8 @@ export async function PATCH(
 ) {
   try {
     await requireAdmin();
-  } catch {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  } catch (error) {
+    return authErrorResponse(error);
   }
 
   const { id } = await params;

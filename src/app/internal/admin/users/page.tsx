@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { requireAdmin } from "@/lib/admin/require";
+import { requireAdmin } from "@/modules/auth";
 import { createServiceClient } from "@/lib/supabase/service";
 
 function fmt(iso: string) {
@@ -7,7 +7,7 @@ function fmt(iso: string) {
 }
 
 export default async function AdminUsersPage() {
-  await requireAdmin();
+  await requireAdmin({ next: "/internal/admin/users" });
 
   const svc = createServiceClient();
 
