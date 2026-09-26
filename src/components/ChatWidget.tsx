@@ -46,7 +46,7 @@ const CHAT_CHOICES: { value: InterestValue; label: string; icon: React.ReactNode
 const JORDAN_PHOTO =
   "https://phhczohqidgrvcmszets.supabase.co/storage/v1/object/public/CUSTOMER.direct/images/People/Jordan%20Profile.PNG";
 
-// Session key — bump version to reset saved sessions when logic changes
+// Session key: bump version to reset saved sessions when logic changes
 const SK = "cd_chat_v4";
 
 interface SavedState { interest: InterestValue; stage: Stage; }
@@ -141,10 +141,10 @@ export default function ChatWidget() {
         }
       `}</style>
 
-      {/* ── Greeting bubble ──────────────────────────────────────────────── */}
+      {/* Hidden on phones, where it covers the homepage compare button (B-71). */}
       {showMsg && !open && (
         <div
-          className="fixed bottom-[90px] right-6 z-50 bg-white border border-[#E5E5E1] rounded-2xl rounded-br-sm px-4 py-3 shadow-lg text-[13px] text-[#171717] max-w-[220px] cursor-pointer"
+          className="fixed bottom-[90px] right-6 z-50 hidden sm:block bg-white border border-[#E5E5E1] rounded-2xl rounded-br-sm px-4 py-3 shadow-lg text-[13px] text-[#171717] max-w-[220px] cursor-pointer"
           style={{ animation: "chatBubblePop 0.25s ease forwards" }}
           onClick={handleToggle}
           role="button"
