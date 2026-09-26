@@ -75,7 +75,7 @@ Phase 1 · M · Depends on: B-02 · Blocked by Jordan: no · MVP_SPEC 17, D-04, 
 ---
 
 ### B-04 Env validation, zod, server-only, generated types
-- [ ] Done
+- [x] Done (PR #13)
 
 Phase 1 · M · Depends on: B-03 · Blocked by Jordan: no · MVP_SPEC 18.1 rules 6 and 7, D-79 · Branch: `task/B-04-env-validation-zod-server-only` → `main`
 
