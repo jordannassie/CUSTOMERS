@@ -7,7 +7,7 @@ Goal: accurate, affordable checks on ChatGPT, Claude and Perplexity, run as back
 ### B-20 Provider interface and OpenAI adapter
 - [ ] Done
 
-Phase 3 · M · Depends on: B-15 · Blocked by Jordan: no · MVP_SPEC 5.1, 5.2, D-67, D-68, MVP_ROADMAP REL-01 · Branch: `task/B-20-provider-interface-and-openai-adapter` → `main`
+Phase 3 · M · Depends on: B-15 · Blocked by Jordan: no · MVP_SPEC 5.1, 5.2, D-67, D-68, MVP_ROADMAP REL-01 · Branch: `task/B-20-provider-interface-and-openai-adapter` → `mvp`
 
 **Build**
 1. `src/modules/scanning/providers/types.ts`: `runCheck({ question, location: { city, region, country }, model }) => { answerText, citations[], model, usage: { inputTokens, outputTokens, searchCalls }, costUsd, latencyMs }`.
@@ -27,7 +27,7 @@ Phase 3 · M · Depends on: B-15 · Blocked by Jordan: no · MVP_SPEC 5.1, 5.2, 
 ### B-21 Claude adapter
 - [ ] Done
 
-Phase 3 · M · Depends on: B-20 · Blocked by Jordan: no · MVP_SPEC 5.1, D-67 · Branch: `task/B-21-claude-adapter` → `main`
+Phase 3 · M · Depends on: B-20 · Blocked by Jordan: no · MVP_SPEC 5.1, D-67 · Branch: `task/B-21-claude-adapter` → `mvp`
 
 **Build**
 1. `providers/anthropic.ts` using the official `@anthropic-ai/sdk`: model `claude-haiku-4-5`, tool `{ type: "web_search_20250305", name: "web_search", max_uses: 3, user_location: { type: "approximate", city, region, country } }`.
@@ -47,7 +47,7 @@ Phase 3 · M · Depends on: B-20 · Blocked by Jordan: no · MVP_SPEC 5.1, D-67 
 ### B-22 Perplexity adapter
 - [ ] Done
 
-Phase 3 · S · Depends on: B-20 · Blocked by Jordan: no · MVP_SPEC 5.1, D-67 · Branch: `task/B-22-perplexity-adapter` → `main`
+Phase 3 · S · Depends on: B-20 · Blocked by Jordan: no · MVP_SPEC 5.1, D-67 · Branch: `task/B-22-perplexity-adapter` → `mvp`
 
 **Build**
 1. `providers/perplexity.ts`: model `sonar`, `web_search_options: { user_location: { country, region, city } }`, citations from the response.
@@ -64,7 +64,7 @@ Phase 3 · S · Depends on: B-20 · Blocked by Jordan: no · MVP_SPEC 5.1, D-67 
 ### B-23 Answer cache
 - [ ] Done
 
-Phase 3 · S · Depends on: B-20, B-11 · Blocked by Jordan: no · MVP_SPEC 5.4, D-24 · Branch: `task/B-23-answer-cache` → `main`
+Phase 3 · S · Depends on: B-20, B-11 · Blocked by Jordan: no · MVP_SPEC 5.4, D-24 · Branch: `task/B-23-answer-cache` → `mvp`
 
 **Build**
 1. `src/modules/scanning/cache.ts`: key = sha256 of `model + normalised question + city/region/country`; normalisation lowercases and trims spaces and punctuation.
@@ -102,7 +102,7 @@ Phase 3 · L · Depends on: B-06 · Blocked by Jordan: no · MVP_SPEC 5.5, 25, D
 ### B-25 "Also recommended by AI" extraction and its eval
 - [ ] Done
 
-Phase 3 · M · Depends on: B-21 · Blocked by Jordan: no · MVP_SPEC 5.2, D-74 · Branch: `task/B-25-also-recommended-by-ai-extraction` → `main`
+Phase 3 · M · Depends on: B-21 · Blocked by Jordan: no · MVP_SPEC 5.2, D-74 · Branch: `task/B-25-also-recommended-by-ai-extraction` → `mvp`
 
 **Build**
 1. `src/modules/scanning/extract.ts`: Claude Haiku with structured output returns every business name in an answer (name, position, whether it matches the business or a tracked competitor).
@@ -200,7 +200,7 @@ Phase 3 · S · Depends on: B-27, B-16 · Blocked by Jordan: no · MVP_SPEC 6.4 
 ### B-30 Scoring and confidence
 - [ ] Done
 
-Phase 3 · M · Depends on: B-26 · Blocked by Jordan: no · MVP_SPEC 5.6, D-63 to D-65 · Branch: `task/B-30-scoring-and-confidence` → `main`
+Phase 3 · M · Depends on: B-26 · Blocked by Jordan: no · MVP_SPEC 5.6, D-63 to D-65 · Branch: `task/B-30-scoring-and-confidence` → `mvp`
 
 **Build**
 1. `src/modules/scanning/scoring.ts`:
@@ -223,7 +223,7 @@ Phase 3 · M · Depends on: B-26 · Blocked by Jordan: no · MVP_SPEC 5.6, D-63 
 ### B-31 Test mode with recorded answers
 - [ ] Done
 
-Phase 3 · S · Depends on: B-26 · Blocked by Jordan: no · D-61 · Branch: `task/B-31-test-mode-with-recorded-answers` → `main`
+Phase 3 · S · Depends on: B-26 · Blocked by Jordan: no · D-61 · Branch: `task/B-31-test-mode-with-recorded-answers` → `mvp`
 
 **Build**
 1. Record about 50 real answers per model for 3 industries in 2 cities into `tests/fixtures/ai-answers/`.

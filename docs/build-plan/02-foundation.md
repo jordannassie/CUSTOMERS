@@ -139,7 +139,7 @@ Phase 2 · M · Depends on: B-11 · Blocked by Jordan: no · MVP_SPEC 18.1 rules
 ### B-16 Entitlements module
 - [ ] Done
 
-Phase 2 · M · Depends on: B-13, B-15 · Blocked by Jordan: no · MVP_SPEC 4, D-16, D-25, D-60 · Branch: `task/B-16-entitlements-module` → `main`
+Phase 2 · M · Depends on: B-13, B-15 · Blocked by Jordan: no · MVP_SPEC 4, D-16, D-25, D-60 · Branch: `task/B-16-entitlements-module` → `mvp`
 
 **Build**
 1. `src/modules/entitlements/service.ts` with one function per question: `canAddBusiness(agency)` (trial: max 2), `canStartScan(agency, business)` (balance above 0, status `trialing` or `active`, no job already queued), `maxQuestions(business)`, `maxCompetitors(business)` (from the `plans` table), `canSpendTopUps(agency)` (active plan or trial).

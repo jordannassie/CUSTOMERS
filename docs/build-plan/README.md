@@ -4,6 +4,8 @@ The ordered task list to build the MVP described in [MVP_SPEC.md](../MVP_SPEC.md
 
 Anyone should be able to pick up the next task from this plan without asking.
 
+Live progress: [STATUS.md](./STATUS.md)
+
 ## Phases
 
 | # | Phase | File | Tasks | Estimate |
@@ -32,8 +34,8 @@ Anyone should be able to pick up the next task from this plan without asking.
 
 | Target | Tasks |
 |---|---|
-| `main` (short task branches) | B-02 to B-07, B-10 to B-13, B-16, B-18, B-20 to B-25, B-30, B-31, B-81, B-83 |
-| `mvp` (short task branches) | B-08, B-09, B-14, B-15, B-17, B-26 to B-29, B-32 to B-79 (except B-80), B-82 |
+| `main` (short task branches) | B-02 to B-07, B-10 to B-13, B-18, B-24, B-81, B-83 |
+| `mvp` (short task branches) | B-08, B-09, B-14 to B-17, B-20 to B-23, B-25 to B-79 (except B-80), B-82 |
 | `mvp` into `main` | B-80 (go-live) |
 | No branch | B-01 (keys and accounts) |
 

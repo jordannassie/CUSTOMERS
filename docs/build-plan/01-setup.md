@@ -200,7 +200,7 @@ Phase 1 · M · Depends on: B-03 · Blocked by Jordan: no · design/DESIGN.md, D
 ---
 
 ### B-18 Parallel session safety
-- [ ] Done
+- [x] Done (PR #18)
 
 Phase 1 · S · Depends on: nothing · Blocked by Jordan: no · D-45 · Branch: `task/B-18-parallel-session-safety` → `main`
 
