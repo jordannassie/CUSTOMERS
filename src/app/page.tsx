@@ -1,11 +1,11 @@
-import SiteHeader from "@/components/site/SiteHeader";
-import SiteFooter from "@/components/site/SiteFooter";
+import Header from "@/components/marketing/Header";
+import Footer from "@/components/marketing/Footer";
 import HomepagePlatform from "@/components/site/HomepagePlatform";
 import ChatWidget from "@/components/ChatWidget";
 
-const homeTitle = "Customers.Direct — AI sends customers directly to your business";
+const homeTitle = "Customers.Direct: AI sends customers directly to your business";
 const homeDescription =
-  "Customers.Direct helps businesses and agencies measure AI search visibility across ChatGPT, Claude, Perplexity, Gemini, and Google AI — and turn every gap into an actionable fix.";
+  "Customers.Direct helps businesses and agencies measure AI search visibility across ChatGPT, Claude, Perplexity, Gemini, and Google AI, and turn every gap into an actionable fix.";
 const homeImage =
   "https://phhczohqidgrvcmszets.supabase.co/storage/v1/object/public/CUSTOMER.direct/logo/Logo.png";
 
@@ -34,11 +34,11 @@ export const metadata = {
 export default function Home() {
   return (
     <>
-      <SiteHeader />
+      <Header />
       <main>
         <HomepagePlatform />
       </main>
-      <SiteFooter />
+      <Footer />
       <ChatWidget />
     </>
   );

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import SiteHeader from "@/components/site/SiteHeader";
-import SiteFooter from "@/components/site/SiteFooter";
+import Header from "@/components/marketing/Header";
+import Footer from "@/components/marketing/Footer";
 import AgencyPageContent from "./AgencyPageContent";
 
 export const metadata: Metadata = {
@@ -25,11 +25,11 @@ export const metadata: Metadata = {
 export default function AgencyPage() {
   return (
     <>
-      <SiteHeader />
+      <Header />
       <main>
         <AgencyPageContent />
       </main>
-      <SiteFooter />
+      <Footer />
     </>
   );
 }
