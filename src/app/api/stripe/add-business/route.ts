@@ -15,6 +15,7 @@ import { requireUser } from "@/lib/geo/api-auth";
 import { requireStripe } from "@/lib/stripe";
 import { createServiceClient } from "@/lib/supabase/service";
 import { CANONICAL_PLANS, SELF_SERVE_PLAN_IDS, type CanonicalPlanId } from "@/config/pricing";
+import { env } from "@/lib/env";
 
 export async function POST(request: NextRequest) {
   const { user, supabase, unauthorized } = await requireUser();
@@ -66,7 +67,7 @@ export async function POST(request: NextRequest) {
   // If no active subscription — redirect to checkout (creates subscription)
   if (!ba?.stripe_subscription_id || ba.status === "none" || ba.status === "canceled") {
     const baseUrl =
-      process.env.NEXT_PUBLIC_APP_URL ??
+      env.NEXT_PUBLIC_APP_URL ??
       `${request.nextUrl.protocol}//${request.nextUrl.host}`;
 
     // Fall through to checkout flow (no trial for additional businesses)

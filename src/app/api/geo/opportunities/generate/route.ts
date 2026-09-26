@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { requireUser } from "@/lib/geo/api-auth";
-import { generateOpportunities } from "@/lib/geo/opportunity-engine";
+import { generateOpportunities, type VisibilityResultLike } from "@/lib/geo/opportunity-engine";
 import type { SeoOpportunityInput } from "@/lib/geo/opportunity-engine";
 
 export async function POST(request: NextRequest) {
@@ -89,7 +89,8 @@ export async function POST(request: NextRequest) {
     domain: business.domain,
     description: business.description,
     primaryCity: business.primary_city,
-    results: results ?? [],
+    // JSON columns written by our own scan code, in the shape the engine expects.
+    results: (results ?? []) as unknown as VisibilityResultLike[],
     seo: seoInput,
   });
 

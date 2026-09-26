@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/admin/require";
+import { env } from "@/lib/env";
 
 export const maxDuration = 90;
 
 type Weekday = "monday" | "tuesday" | "wednesday" | "thursday" | "friday";
 
-const NEWS_MODEL = process.env.OPENAI_NEWS_MODEL ?? "gpt-4o";
+const NEWS_MODEL = env.OPENAI_NEWS_MODEL;
 
 const WEEKDAY_WRITING_ANGLE: Record<Weekday, string> = {
   monday:    "Share a verified AI search development and explain clearly what it means for the agency's clients — what has changed, why it matters for brand visibility, and what they should do next.",
@@ -95,7 +96,7 @@ export async function POST(request: NextRequest) {
   try { await requireAdmin(); }
   catch { return NextResponse.json({ error: "Unauthorized" }, { status: 401 }); }
 
-  const apiKey = process.env.OPENAI_API_KEY;
+  const apiKey = env.OPENAI_API_KEY;
   if (!apiKey) {
     return NextResponse.json({ error: "OpenAI API key is not configured." }, { status: 503 });
   }

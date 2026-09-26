@@ -2,6 +2,7 @@ import "server-only";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
+import { env } from "@/lib/env";
 
 export type AdminContext = {
   userId: string;
@@ -21,7 +22,7 @@ export async function requireAdmin(): Promise<AdminContext> {
   if (!user) redirect("/login?next=/internal/admin");
 
   // ADMIN_EMAILS env shortcut (comma-separated)
-  const envEmails = (process.env.ADMIN_EMAILS ?? "")
+  const envEmails = (env.ADMIN_EMAILS ?? "")
     .split(",").map((e) => e.trim().toLowerCase()).filter(Boolean);
   if (user.email && envEmails.includes(user.email.toLowerCase())) {
     return { userId: user.id, email: user.email };

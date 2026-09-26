@@ -1,6 +1,7 @@
 import "server-only";
 import type { VisibilityProviderContext, VisibilityProviderResult } from "@/types/geo";
 import { extractMentionSignals, extractCitedSources, type VisibilityProviderAdapter } from "./types";
+import { env } from "@/lib/env";
 
 const MODEL = "claude-3-5-haiku-20241022";
 
@@ -8,10 +9,10 @@ export const anthropicAdapter: VisibilityProviderAdapter = {
   id: "anthropic",
   label: "Claude (Anthropic API)",
   isConfigured() {
-    return Boolean(process.env.ANTHROPIC_API_KEY);
+    return Boolean(env.ANTHROPIC_API_KEY);
   },
   async run(prompt: string, context: VisibilityProviderContext): Promise<VisibilityProviderResult> {
-    const apiKey = process.env.ANTHROPIC_API_KEY;
+    const apiKey = env.ANTHROPIC_API_KEY;
     if (!apiKey) throw new Error("ANTHROPIC_API_KEY is not configured.");
 
     const response = await fetch("https://api.anthropic.com/v1/messages", {

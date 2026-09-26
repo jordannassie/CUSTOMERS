@@ -20,7 +20,7 @@ interface BillingAccount {
   stripe_customer_id: string | null;
   stripe_subscription_id: string | null;
   status: string;
-  trial_starts_at: string | null;
+  trial_started_at: string | null;
   trial_ends_at: string | null;
   current_period_start: string | null;
   current_period_end: string | null;

@@ -41,7 +41,7 @@ export default async function AdminBusinessDetailPage({ params }: { params: Prom
     { data: opps },
   ] = await Promise.all([
     svc.from("business_competitors").select("id, name, domain, source, enrichment_status, created_at").eq("business_id", id).order("created_at", { ascending: false }),
-    svc.from("tracked_prompts").select("id, prompt_text, active, created_at").eq("business_id", id).order("created_at", { ascending: false }),
+    svc.from("tracked_prompts").select("id, prompt, active, created_at").eq("business_id", id).order("created_at", { ascending: false }),
     svc.from("visibility_runs").select("id, provider, status, error, started_at, completed_at, created_at").eq("business_id", id).order("created_at", { ascending: false }).limit(20),
     svc.from("opportunities").select("id, title, status, impact, created_at").eq("business_id", id).order("created_at", { ascending: false }).limit(10),
   ]);
@@ -62,10 +62,10 @@ export default async function AdminBusinessDetailPage({ params }: { params: Prom
         <Row label="ID"         value={biz.id} />
         <Row label="Domain"     value={biz.domain} />
         <Row label="Status"     value={biz.status} />
-        <Row label="City"       value={biz.city} />
-        <Row label="Region"     value={biz.region} />
-        <Row label="Country"    value={biz.country} />
-        <Row label="Category"   value={biz.category} />
+        <Row label="City"       value={biz.primary_city} />
+        <Row label="Region"     value={biz.primary_region} />
+        <Row label="Country"    value={biz.primary_country} />
+        <Row label="Industry"   value={biz.industry} />
         <Row label="Created"    value={fmt(biz.created_at)} />
       </div>
 
@@ -97,7 +97,7 @@ export default async function AdminBusinessDetailPage({ params }: { params: Prom
           <div className="divide-y divide-white/5 max-h-60 overflow-y-auto">
             {(prompts ?? []).map((p) => (
               <div key={p.id} className="px-5 py-2.5">
-                <p className="text-[12px] text-white truncate">{p.prompt_text}</p>
+                <p className="text-[12px] text-white truncate">{p.prompt}</p>
                 <p className="text-[10.5px] text-white/30">{p.active ? "active" : "inactive"}</p>
               </div>
             ))}

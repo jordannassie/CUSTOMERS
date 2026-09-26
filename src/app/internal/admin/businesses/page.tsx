@@ -12,7 +12,7 @@ export default async function AdminBusinessesPage() {
 
   const { data: businesses } = await svc
     .from("businesses")
-    .select("id, name, domain, city, region, country, status, created_at, owner_user_id")
+    .select("id, name, domain, primary_city, primary_region, primary_country, status, created_at, owner_user_id")
     .order("created_at", { ascending: false });
 
   const { data: authData } = await svc.auth.admin.listUsers({ perPage: 200, page: 1 });
@@ -77,7 +77,7 @@ export default async function AdminBusinessesPage() {
                       {b.domain ?? "—"}
                     </td>
                     <td className="px-4 py-3 text-[#9CA3AF] whitespace-nowrap">
-                      {[b.city, b.region, b.country].filter(Boolean).join(", ") || "—"}
+                      {[b.primary_city, b.primary_region, b.primary_country].filter(Boolean).join(", ") || "—"}
                     </td>
                     <td className="px-4 py-3 text-[#6B7280] text-center">{compByBiz[b.id] ?? 0}</td>
                     <td className="px-4 py-3 text-[#6B7280] text-center">{promptByBiz[b.id] ?? 0}</td>

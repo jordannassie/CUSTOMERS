@@ -1,5 +1,6 @@
 import "server-only";
 import { searchGooglePlaces } from "@/lib/google-places";
+import { env } from "@/lib/env";
 
 export interface CompetitorSuggestion {
   name: string;
@@ -31,7 +32,7 @@ export async function discoverCompetitors(
   const location = [city, region].filter(Boolean).join(", ");
   const query = location ? `${industry} in ${location}` : industry;
 
-  if (!process.env.GOOGLE_PLACES_API_KEY) return [];
+  if (!env.GOOGLE_PLACES_API_KEY) return [];
 
   try {
     const result = await searchGooglePlaces(query, "quick");

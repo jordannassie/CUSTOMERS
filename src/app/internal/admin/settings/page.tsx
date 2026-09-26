@@ -1,5 +1,6 @@
 import { requireAdmin } from "@/lib/admin/require";
 import { PRODUCT_ACCESS } from "@/config/product-access";
+import { env } from "@/lib/env";
 
 function ConfigRow({ label, configured, note }: { label: string; configured: boolean; note?: string }) {
   return (
@@ -40,17 +41,16 @@ function FlagRow({ label, value, note }: { label: string; value: boolean; note?:
 export default async function AdminSettingsPage() {
   await requireAdmin();
 
-  const env = {
-    supabaseUrl:         !!process.env.NEXT_PUBLIC_SUPABASE_URL,
-    supabaseAnon:        !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-    supabaseServiceRole: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
-    openai:              !!process.env.OPENAI_API_KEY,
-    anthropic:           !!(process.env.ANTHROPIC_API_KEY || process.env.CLAUDE_API_KEY),
-    perplexity:          !!process.env.PERPLEXITY_API_KEY,
-    gemini:              !!(process.env.GEMINI_API_KEY || process.env.GOOGLE_AI_API_KEY),
-    dataForSeo:          !!(process.env.DATAFORSEO_LOGIN && process.env.DATAFORSEO_PASSWORD),
-    googlePlaces:        !!process.env.GOOGLE_PLACES_API_KEY,
-    siteUrl:             !!process.env.NEXT_PUBLIC_SITE_URL,
+  const configured = {
+    supabaseUrl:         !!env.NEXT_PUBLIC_SUPABASE_URL,
+    supabaseAnon:        !!env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+    supabaseServiceRole: !!env.SUPABASE_SERVICE_ROLE_KEY,
+    openai:              !!env.OPENAI_API_KEY,
+    anthropic:           !!env.ANTHROPIC_API_KEY,
+    perplexity:          !!env.PERPLEXITY_API_KEY,
+    dataForSeo:          !!(env.DATAFORSEO_USERNAME && env.DATAFORSEO_PASSWORD),
+    googlePlaces:        !!env.GOOGLE_PLACES_API_KEY,
+    siteUrl:             !!env.NEXT_PUBLIC_SITE_URL,
     googleOAuthInSupa:   true,
   };
 
@@ -76,27 +76,26 @@ export default async function AdminSettingsPage() {
         {/* Infrastructure */}
         <div className="bg-white border border-[#E2E8F0] rounded-2xl p-5" style={{ boxShadow: "0 1px 4px rgba(0,0,0,0.04)" }}>
           <h2 className="text-[13px] font-bold text-[#111827] mb-4">Infrastructure</h2>
-          <ConfigRow label="Supabase URL"          configured={env.supabaseUrl}         note="NEXT_PUBLIC_SUPABASE_URL" />
-          <ConfigRow label="Supabase Anon Key"     configured={env.supabaseAnon}        note="NEXT_PUBLIC_SUPABASE_ANON_KEY" />
-          <ConfigRow label="Supabase Service Role" configured={env.supabaseServiceRole} note="SUPABASE_SERVICE_ROLE_KEY" />
-          <ConfigRow label="Site URL"              configured={env.siteUrl}             note="NEXT_PUBLIC_SITE_URL" />
+          <ConfigRow label="Supabase URL"          configured={configured.supabaseUrl}         note="NEXT_PUBLIC_SUPABASE_URL" />
+          <ConfigRow label="Supabase Anon Key"     configured={configured.supabaseAnon}        note="NEXT_PUBLIC_SUPABASE_ANON_KEY" />
+          <ConfigRow label="Supabase Service Role" configured={configured.supabaseServiceRole} note="SUPABASE_SERVICE_ROLE_KEY" />
+          <ConfigRow label="Site URL"              configured={configured.siteUrl}             note="NEXT_PUBLIC_SITE_URL" />
         </div>
 
         {/* AI Providers */}
         <div className="bg-white border border-[#E2E8F0] rounded-2xl p-5" style={{ boxShadow: "0 1px 4px rgba(0,0,0,0.04)" }}>
           <h2 className="text-[13px] font-bold text-[#111827] mb-4">AI Providers</h2>
-          <ConfigRow label="OpenAI / ChatGPT"    configured={env.openai}           note="OPENAI_API_KEY" />
-          <ConfigRow label="Anthropic / Claude"  configured={env.anthropic}        note="ANTHROPIC_API_KEY" />
-          <ConfigRow label="Perplexity"          configured={env.perplexity}       note="PERPLEXITY_API_KEY" />
-          <ConfigRow label="Google Gemini"       configured={env.gemini}           note="GEMINI_API_KEY" />
-          <ConfigRow label="Google OAuth"        configured={env.googleOAuthInSupa} note="Configured in Supabase dashboard" />
+          <ConfigRow label="OpenAI / ChatGPT"    configured={configured.openai}           note="OPENAI_API_KEY" />
+          <ConfigRow label="Anthropic / Claude"  configured={configured.anthropic}        note="ANTHROPIC_API_KEY" />
+          <ConfigRow label="Perplexity"          configured={configured.perplexity}       note="PERPLEXITY_API_KEY" />
+          <ConfigRow label="Google OAuth"        configured={configured.googleOAuthInSupa} note="Configured in Supabase dashboard" />
         </div>
 
         {/* Data providers */}
         <div className="bg-white border border-[#E2E8F0] rounded-2xl p-5" style={{ boxShadow: "0 1px 4px rgba(0,0,0,0.04)" }}>
           <h2 className="text-[13px] font-bold text-[#111827] mb-4">Data Providers</h2>
-          <ConfigRow label="DataForSEO"    configured={env.dataForSeo}    note="DATAFORSEO_LOGIN + DATAFORSEO_PASSWORD" />
-          <ConfigRow label="Google Places" configured={env.googlePlaces}  note="GOOGLE_PLACES_API_KEY" />
+          <ConfigRow label="DataForSEO"    configured={configured.dataForSeo}    note="DATAFORSEO_USERNAME + DATAFORSEO_PASSWORD" />
+          <ConfigRow label="Google Places" configured={configured.googlePlaces}  note="GOOGLE_PLACES_API_KEY" />
         </div>
       </div>
     </div>

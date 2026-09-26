@@ -1,9 +1,10 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { runVisibilityForBusiness } from "@/lib/geo/run-visibility";
-import { generateOpportunities } from "@/lib/geo/opportunity-engine";
+import { generateOpportunities, type VisibilityResultLike } from "@/lib/geo/opportunity-engine";
 import { CANONICAL_PLANS, getPlanConfig, type CanonicalPlanId } from "@/config/pricing";
 import { betaFreeAccess } from "@/config/product-access";
+import { env } from "@/lib/env";
 
 export const maxDuration = 60;
 
@@ -58,7 +59,7 @@ function shouldRunScan(status: string | null | undefined): boolean {
  */
 export async function POST(request: NextRequest) {
   const secret = request.headers.get("x-cron-secret");
-  if (!process.env.GEO_CRON_SECRET || secret !== process.env.GEO_CRON_SECRET) {
+  if (!env.GEO_CRON_SECRET || secret !== env.GEO_CRON_SECRET) {
     return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
   }
 
@@ -187,7 +188,8 @@ export async function POST(request: NextRequest) {
         domain: business.domain,
         description: businessRow?.description ?? null,
         primaryCity: businessRow?.primary_city ?? null,
-        results: runResults ?? [],
+        // JSON columns written by our own scan code, in the shape the engine expects.
+        results: (runResults ?? []) as unknown as VisibilityResultLike[],
       });
 
       await supabase

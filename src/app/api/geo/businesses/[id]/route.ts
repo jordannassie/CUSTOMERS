@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { requireUser } from "@/lib/geo/api-auth";
+import type { TablesUpdate } from "@/types/database.types";
 
 function clean(value: unknown, max = 300): string | null {
   if (typeof value !== "string") return null;
@@ -30,7 +31,8 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
   const { data, error } = await supabase
     .from("businesses")
-    .update(updates)
+    // Keys come from the fixed allowlist above.
+    .update(updates as TablesUpdate<"businesses">)
     .eq("id", id)
     .eq("owner_user_id", user!.id)
     .select()

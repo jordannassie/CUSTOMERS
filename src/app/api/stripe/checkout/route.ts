@@ -28,6 +28,7 @@ import {
   SELF_SERVE_PLAN_IDS,
 } from "@/config/pricing";
 import { getOrCreateBillingAccount } from "@/lib/billing/accounts";
+import { env } from "@/lib/env";
 
 export async function POST(request: NextRequest) {
   const { user, supabase, unauthorized } = await requireUser();
@@ -101,7 +102,7 @@ export async function POST(request: NextRequest) {
   const billingAccount = await getOrCreateBillingAccount(user!.id);
 
   const baseUrl =
-    process.env.NEXT_PUBLIC_APP_URL ??
+    env.NEXT_PUBLIC_APP_URL ??
     `${request.nextUrl.protocol}//${request.nextUrl.host}`;
 
   const sessionParams: Parameters<typeof stripeClient.checkout.sessions.create>[0] = {

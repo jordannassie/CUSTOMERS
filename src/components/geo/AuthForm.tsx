@@ -6,6 +6,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Loader2, ArrowRight } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { env } from "@/lib/env";
 
 const LOGO = "/images/logos/logo-black.png";
 
@@ -68,7 +69,7 @@ export default function AuthForm({ defaultMode = "login" }: AuthFormProps) {
     // matches what is registered in Google Cloud Console / Supabase,
     // and so the PKCE code-verifier cookie is on the correct domain.
     const siteBase =
-      process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ??
+      env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ??
       window.location.origin;
     const callbackUrl = `${siteBase}/auth/callback?next=${encodeURIComponent(next)}`;
     const { error: oauthError } = await supabase.auth.signInWithOAuth({
@@ -90,7 +91,7 @@ export default function AuthForm({ defaultMode = "login" }: AuthFormProps) {
 
     if (isSignup) {
       const siteBase =
-        process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ??
+        env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ??
         window.location.origin;
       const { error: signupError } = await supabase.auth.signUp({
         email,

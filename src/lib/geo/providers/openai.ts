@@ -1,6 +1,7 @@
 import "server-only";
 import type { VisibilityProviderContext, VisibilityProviderResult } from "@/types/geo";
 import { extractMentionSignals, extractCitedSources, type VisibilityProviderAdapter } from "./types";
+import { env } from "@/lib/env";
 
 const MODEL = "gpt-4o-mini";
 
@@ -8,10 +9,10 @@ export const openAIAdapter: VisibilityProviderAdapter = {
   id: "openai",
   label: "ChatGPT (OpenAI API)",
   isConfigured() {
-    return Boolean(process.env.OPENAI_API_KEY);
+    return Boolean(env.OPENAI_API_KEY);
   },
   async run(prompt: string, context: VisibilityProviderContext): Promise<VisibilityProviderResult> {
-    const apiKey = process.env.OPENAI_API_KEY;
+    const apiKey = env.OPENAI_API_KEY;
     if (!apiKey) throw new Error("OPENAI_API_KEY is not configured.");
 
     const response = await fetch("https://api.openai.com/v1/chat/completions", {

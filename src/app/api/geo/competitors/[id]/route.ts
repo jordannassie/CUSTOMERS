@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { requireUser } from "@/lib/geo/api-auth";
+import type { TablesUpdate } from "@/types/database.types";
 
 /** PostgreSQL undefined_column error code */
 const PG_UNDEFINED_COLUMN = "42703";
@@ -53,7 +54,7 @@ export async function PATCH(
   }
 
   // Only allow updating specific fields — never trust arbitrary client data
-  const updates: Record<string, unknown> = {};
+  const updates: TablesUpdate<"business_competitors"> = {};
 
   if (typeof body.domain === "string") {
     const raw = body.domain.trim().toLowerCase();

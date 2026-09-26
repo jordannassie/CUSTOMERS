@@ -60,7 +60,6 @@ export default async function AdminErrorsPage() {
                     </span>
                   </td>
                   <td className="px-5 py-3 text-[#6B7280] truncate max-w-[160px]">
-                    {/* @ts-expect-error join shape */}
                     {f.businesses?.name ?? f.business_id}
                   </td>
                   <td className="px-5 py-3 text-[#9CA3AF] max-w-[300px]">

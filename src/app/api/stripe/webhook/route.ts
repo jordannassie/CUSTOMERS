@@ -29,6 +29,7 @@ import Stripe from "stripe";
 import { requireStripe } from "@/lib/stripe";
 import { createServiceClient } from "@/lib/supabase/service";
 import { getPlanIdFromStripePrice, type CanonicalPlanId } from "@/config/pricing";
+import { env } from "@/lib/env";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Stripe field helpers (API version compatibility)
@@ -227,7 +228,7 @@ async function syncSubscriptionToAccount(
 // ─────────────────────────────────────────────────────────────────────────────
 
 export async function POST(request: NextRequest) {
-  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+  const webhookSecret = env.STRIPE_WEBHOOK_SECRET;
   if (!webhookSecret) {
     console.error("[stripe/webhook] STRIPE_WEBHOOK_SECRET not set");
     return NextResponse.json({ error: "Webhook not configured." }, { status: 503 });

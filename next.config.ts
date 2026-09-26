@@ -1,4 +1,6 @@
 import type { NextConfig } from "next";
+// Validates environment variables at build time; a missing required one stops the build.
+import "./src/lib/env";
 
 // Products cut from the MVP (D-04); old links and search results land on the homepage.
 const CUT_PAGES = [

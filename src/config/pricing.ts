@@ -22,6 +22,8 @@
  * Effective date:  2026-08-01
  */
 
+import { env } from "@/lib/env";
+
 // ─────────────────────────────────────────────────────────────────────────────
 // VERSION
 // ─────────────────────────────────────────────────────────────────────────────
@@ -73,8 +75,8 @@ export interface CanonicalPlan {
 
   // ── Stripe mapping ────────────────────────────────────────────────────────
   /** Environment variable name holding the Stripe Monthly Price ID */
-  stripeMonthlyPriceEnvKey: string | null;
-  /** Resolved Stripe Monthly Price ID (from process.env at runtime) */
+  stripeMonthlyPriceEnvKey: "STRIPE_PRICE_STARTER_MONTHLY" | "STRIPE_PRICE_GROWTH_MONTHLY" | "STRIPE_PRICE_PRO_MONTHLY" | null;
+  /** Resolved Stripe Monthly Price ID (from env at runtime; null in the browser, where server vars are not readable) */
   stripePriceMonthly: string | null;
 
   // ── Core limits ───────────────────────────────────────────────────────────
@@ -139,7 +141,7 @@ export const CANONICAL_PLANS: Record<CanonicalPlanId, CanonicalPlan> = {
 
     stripeMonthlyPriceEnvKey: "STRIPE_PRICE_STARTER_MONTHLY",
     get stripePriceMonthly() {
-      return process.env.STRIPE_PRICE_STARTER_MONTHLY ?? null;
+      return typeof window === "undefined" ? env.STRIPE_PRICE_STARTER_MONTHLY ?? null : null;
     },
 
     maxTrackedPrompts: 25,
@@ -187,7 +189,7 @@ export const CANONICAL_PLANS: Record<CanonicalPlanId, CanonicalPlan> = {
 
     stripeMonthlyPriceEnvKey: "STRIPE_PRICE_GROWTH_MONTHLY",
     get stripePriceMonthly() {
-      return process.env.STRIPE_PRICE_GROWTH_MONTHLY ?? null;
+      return typeof window === "undefined" ? env.STRIPE_PRICE_GROWTH_MONTHLY ?? null : null;
     },
 
     maxTrackedPrompts: 75,
@@ -237,7 +239,7 @@ export const CANONICAL_PLANS: Record<CanonicalPlanId, CanonicalPlan> = {
 
     stripeMonthlyPriceEnvKey: "STRIPE_PRICE_PRO_MONTHLY",
     get stripePriceMonthly() {
-      return process.env.STRIPE_PRICE_PRO_MONTHLY ?? null;
+      return typeof window === "undefined" ? env.STRIPE_PRICE_PRO_MONTHLY ?? null : null;
     },
 
     maxTrackedPrompts: 150,
