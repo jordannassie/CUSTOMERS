@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import ContactForm from "@/components/site/ContactForm";
-import SiteHeader from "@/components/site/SiteHeader";
-import SiteFooter from "@/components/site/SiteFooter";
+import Header from "@/components/marketing/Header";
+import Footer from "@/components/marketing/Footer";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { BarChart3, ArrowRight } from "lucide-react";
@@ -15,13 +15,9 @@ export const metadata: Metadata = {
 export default function ContactPage() {
   return (
     <>
-      <SiteHeader />
+      <Header />
       <main className="bg-[#FAFAF8] min-h-screen">
-        {/*
-          pt-[100px] accounts for the sticky navigation (≈68px pill + 3px padding + extra breathing room).
-          Without this the heading renders behind the floating nav bar.
-        */}
-        <section className="max-w-5xl mx-auto px-4 pt-28 sm:pt-32 pb-16 sm:pb-24">
+        <section className="max-w-5xl mx-auto px-4 pt-12 sm:pt-16 pb-16 sm:pb-24">
 
           {/* Team photo */}
           <div className="mb-10 rounded-2xl overflow-hidden border border-[#E5E5E1] shadow-sm">
@@ -100,7 +96,7 @@ export default function ContactPage() {
           </div>
         </section>
       </main>
-      <SiteFooter />
+      <Footer />
     </>
   );
 }

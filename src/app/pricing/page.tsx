@@ -8,8 +8,8 @@ import {
   Check, Minus, ChevronDown, ArrowRight, Building2, Plus,
   TrendingUp, Shield, Zap,
 } from "lucide-react";
-import SiteHeader from "@/components/site/SiteHeader";
-import SiteFooter from "@/components/site/SiteFooter";
+import Header from "@/components/marketing/Header";
+import Footer from "@/components/marketing/Footer";
 import { ORDERED_PLANS, COMPARISON_TABLE } from "@/config/pricing";
 import type { CanonicalPlan } from "@/config/pricing";
 
@@ -269,7 +269,7 @@ function FAQItem({ q, a }: { q: string; a: string }) {
 export default function PricingPage() {
   return (
     <div className="min-h-screen bg-white">
-      <SiteHeader />
+      <Header />
 
       {/* ── Hero ── */}
       <section className="pt-12 pb-8 px-4 text-center">
@@ -592,7 +592,7 @@ export default function PricingPage() {
         </div>
       </section>
 
-      <SiteFooter />
+      <Footer />
     </div>
   );
 }

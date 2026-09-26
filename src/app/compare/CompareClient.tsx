@@ -3,10 +3,11 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowRight, Loader2, AlertCircle, CheckCircle2, XCircle, AlertTriangle, Info } from "lucide-react";
 import type { WebsiteSignals } from "@/app/api/public/compare/route";
+import Header from "@/components/marketing/Header";
+import Footer from "@/components/marketing/Footer";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -42,7 +43,7 @@ function getFavicon(domain: string): string {
   return `https://www.google.com/s2/favicons?domain=${domain}&sz=32`;
 }
 
-/** Derive sub-scores from raw WebsiteSignals (0–100) */
+/** Derive sub-scores from raw WebsiteSignals (0 to 100) */
 function techScore(s: WebsiteSignals): number {
   if (!s.accessible) return 0;
   let score = 0;
@@ -107,7 +108,7 @@ function buildFindings(mine: WebsiteSignals, them: WebsiteSignals): Finding[] {
     findings.push({
       severity: "High Impact",
       title: "Competitor has local business markup",
-      detail: "Local business structured data signals trust and location to AI — your competitor already has it.",
+      detail: "Local business structured data signals trust and location to AI. Your competitor already has it.",
       winner: "competitor",
     });
   }
@@ -156,7 +157,7 @@ function buildFindings(mine: WebsiteSignals, them: WebsiteSignals): Finding[] {
   if (mine.schemaTypes.length && !them.schemaTypes.length) {
     findings.push({
       severity: "Opportunity",
-      title: "Your schema is an advantage — maintain it",
+      title: "Your schema is an advantage, maintain it",
       detail: "You have structured data your competitor lacks. Expanding it further will widen the gap.",
       winner: "you",
     });
@@ -332,8 +333,6 @@ const AI_PLATFORM_ICONS = [
   { name: "Qwen",               src: `${_AI_ICON_BASE}/Qwen.svg`                    },
 ];
 
-const LOGO = "/images/logos/logo-black.png";
-
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export default function CompareClient() {
@@ -420,27 +419,7 @@ export default function CompareClient() {
   return (
     <div className="min-h-screen" style={{ background: "#F8FAFD" }}>
 
-      {/* ── Compact top nav ─────────────────────────────────────────────── */}
-      <header className="bg-white border-b border-[#E2E8F0] px-4 sm:px-6 py-3 sticky top-0 z-20">
-        <div className="max-w-[1100px] mx-auto flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <Link href="/" aria-label="Customers.Direct — Home">
-              <Image src={LOGO} alt="Customers.Direct" width={140} height={32} className="h-7 w-auto" priority />
-            </Link>
-            <div className="hidden sm:flex items-center gap-2">
-              <span className="text-[#D1D5DB]">|</span>
-              <span className="text-[12px] font-semibold text-[#6B7280] tracking-wide uppercase">AI Competitor Analysis</span>
-            </div>
-          </div>
-          <Link
-            href="/signup"
-            className="flex items-center gap-1.5 bg-[#0866F5] hover:bg-[#0757D4] text-white text-[12.5px] font-semibold px-4 py-2 rounded-full transition-colors active:scale-[0.97]"
-          >
-            Start Free Trial
-            <ArrowRight size={12} aria-hidden="true" />
-          </Link>
-        </div>
-      </header>
+      <Header />
 
       <div className="max-w-[1100px] mx-auto px-4 sm:px-6 py-8">
 
@@ -740,6 +719,7 @@ export default function CompareClient() {
           </div>
         )}
       </div>
+      <Footer />
     </div>
   );
 }
