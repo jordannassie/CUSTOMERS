@@ -8,6 +8,15 @@ Rules set by the user on 2026-09-26: 3 worker sessions at once; the leader revie
 
 | Task | Worker pane | Worktree | Dev port | PR |
 |---|---|---|---|---|
+| B-08 Cache Components | 180 | CUSTOMERS-B08 | 3003 | #23 (rebasing on B-09) |
+| B-07 CI on every pull request | 181 | CUSTOMERS-B07 | 3004 | not yet |
+| B-10 Migration workflow and baseline | 182 | CUSTOMERS-B10 | 3005 | not yet |
+
+## Done
+
+B-06 (#22, main), B-09 (#21, mvp).
+
+Open questions for people are in [FLAGS.md](./FLAGS.md).
 
 ## Waiting on people
 

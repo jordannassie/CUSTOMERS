@@ -1,0 +1,4 @@
+# Run output. Only one committed baseline per suite (B-75).
+*
+!.gitignore
+!*.baseline.json

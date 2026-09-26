@@ -1,11 +1,16 @@
 name: CI
 
-# Lint and build join this workflow in build-plan task B-07, once today's lint errors are fixed
-# and the build no longer needs production secrets.
 on:
   push:
     branches: [main]
   pull_request:
+
+# Placeholder values: the build and smoke tests need these set, but never reach a real database.
+env:
+  NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-placeholder-anon-key
+  SUPABASE_SERVICE_ROLE_KEY: ci-placeholder-service-role-key
+  NEXT_TELEMETRY_DISABLED: 1
 
 jobs:
   typecheck:
@@ -21,3 +26,67 @@ jobs:
       - run: bash scripts/scan-payload.sh
       - run: npm ci --ignore-scripts
       - run: npx tsc --noEmit
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: bash scripts/scan-payload.sh
+      - run: npm ci --ignore-scripts
+      - run: npm run lint
+      - run: npm run check:auth
+
+  unit:
+    name: Unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: bash scripts/scan-payload.sh
+      - run: npm ci --ignore-scripts
+      # npm test starts a local Supabase in Docker and rebuilds it from supabase/migrations.
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 2.108.0
+      - run: npm test
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: bash scripts/scan-payload.sh
+      - run: npm ci --ignore-scripts
+      - run: npm run build
+
+  e2e:
+    name: Smoke tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: bash scripts/scan-payload.sh
+      - run: npm ci --ignore-scripts
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-traces
+          path: test-results/
+          retention-days: 7

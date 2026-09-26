@@ -95,6 +95,20 @@ const { data: { user } } = await supabase.auth.getUser();
 
 ---
 
+## Tests and evals
+
+Needs Docker and the Supabase CLI (MVP_SPEC 21, D-75, D-81).
+
+```bash
+npm test                  # rebuilds the local Supabase database from supabase/migrations, then runs Vitest
+npx playwright test       # end-to-end at 1440px and 390px; starts the dev server on E2E_PORT (default 3106)
+npx vitest run evals      # AI evals, see evals/README.md
+```
+
+- Unit tests sit next to the code as `src/**/*.test.ts`.
+- Tests read only `.env.test.local`, which `scripts/test-db-reset.sh` writes with the local database keys. They never touch the shared database.
+- The local stack uses ports 54620 to 54629 so it can run beside other Supabase projects.
+
 ## Branches
 
 - `main` is the live site. Netlify publishes every merge to it. Never push to it directly.

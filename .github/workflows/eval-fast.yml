@@ -1,0 +1,21 @@
+name: Evals (code-graded)
+
+# Code-graded suites replay recorded answers, so they cost nothing and run on every pull request (MVP_SPEC 25).
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  eval-fast:
+    name: Fast evals
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: bash scripts/scan-payload.sh
+      - run: npm ci --ignore-scripts
+      - run: npm run evals

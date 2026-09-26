@@ -117,7 +117,7 @@ Phase 1 · S · Depends on: B-04 · Blocked by Jordan: no · MVP_SPEC 18.1 rules
 ---
 
 ### B-06 Test and eval tooling
-- [ ] Done
+- [x] Done (PR #22)
 
 Phase 1 · M · Depends on: B-04 · Blocked by Jordan: no · MVP_SPEC 21, 25, D-75, D-81 · Branch: `task/B-06-test-and-eval-tooling` → `main`
 
@@ -179,7 +179,7 @@ Phase 1 · M · Depends on: B-03 · Blocked by Jordan: no · D-80, MVP_SPEC 18.1
 ---
 
 ### B-09 Design system foundation
-- [ ] Done
+- [x] Done (PR #21, merged into mvp)
 
 Phase 1 · M · Depends on: B-03 · Blocked by Jordan: no · design/DESIGN.md, D-46 to D-50 · Branch: `task/B-09-design-system-foundation` → `mvp`
 
