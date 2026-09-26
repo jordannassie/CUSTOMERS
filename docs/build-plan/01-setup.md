@@ -96,7 +96,7 @@ Phase 1 · M · Depends on: B-03 · Blocked by Jordan: no · MVP_SPEC 18.1 rules
 ---
 
 ### B-05 Lint rules that enforce the architecture
-- [ ] Done
+- [x] Done (PR #17)
 
 Phase 1 · S · Depends on: B-04 · Blocked by Jordan: no · MVP_SPEC 18.1 rules 1, 4, 5, 6, 8, 11, 12 · Branch: `task/B-05-lint-rules-that-enforce-the` → `main`
 
