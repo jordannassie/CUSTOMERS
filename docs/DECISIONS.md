@@ -68,8 +68,15 @@ To change a decision, edit its row, add the new date, and keep the old choice in
 | D-26 | Track ChatGPT, Claude and Perplexity, all on by default. The user can turn models off, with a clear explanation of what they lose. Gemini later. | Decided | Most customers use ChatGPT; tracking only Claude would miss most of the market. | Claude only; Gemini at launch |
 | D-27 | Scan frequency is the user's choice: daily, weekly or monthly. Default weekly. Show the monthly credit estimate while choosing. | Decided (default weekly is Proposed) | User control; weekly default cuts AI cost about 75% for new users. | Fixed frequency per plan |
 | D-28 | 12 questions per business by default, 25 maximum in the MVP. Every question is scanned (fix today's "25 saved, 12 scanned" bug). | Proposed | Accuracy vs credit use. | Unlimited questions |
-| D-29 | Questions are written by Claude Haiku 4.5 at onboarding, tailored to business type, services and city. The user reviews and edits. Templates stay as a fallback. | Decided | Natural, industry-specific questions (Jordan's per-industry prompts request). | Templates only |
+| D-29 | Questions are prepared by Claude Haiku 4.5 at onboarding, fitted to business type, services and city. The user reviews and edits. Templates stay as a fallback. Refined by D-62 (industry library). | Decided | Natural, industry-specific questions (Jordan's per-industry prompts request). | Templates only |
 | D-30 | Claude Haiku 4.5 (`claude-haiku-4-5`) for auto-fill and question writing. Claude Sonnet 5 (`claude-sonnet-5`) for "why competitors win" explanations. | Decided | Cheap model where quality matters less, stronger model where it matters (07:36). | One model for everything |
+| D-62 | Questions come from a reviewed industry question library (about 40 per industry, city filled in). Claude Haiku picks the 12 that fit each business; users can add custom questions. First 10 industries (Proposed): dentist, lawyer, restaurant, coffee shop, plumber, HVAC, med spa, real estate, auto repair, salon. Unknown industries: Claude writes the questions directly. | Decided | Shared wording makes the 24-hour cache work, makes scores comparable across businesses, and keeps question quality reviewed. Still industry-specific (Jordan's request). | Fully tailored questions per business (cache almost useless); half standard, half tailored |
+| D-63 | Visibility score = how often the business is mentioned (mentions ÷ checks) over the last 30 days, with a 7-day trend line. No list-position weighting and no "rank in AI". | Decided | Research (2026-09-26): answers vary run to run; SparkToro found under 1 in 1,000 chance of the same order, while appearance is fairly stable. Industry norm (Peec AI and others) is one run per question per model per day, smoothed over time. Variety of questions and models improves reliability more than repeats. | Latest-scan-only score (too noisy); asking each question twice (doubles cost); top-3 position bonus |
+| D-64 | Show confidence: a simple label (Early estimate / Good / High confidence) with details behind "How is this calculated?". Margin computed per question cluster from unique answers (cached answers count once). Changes, competitor gaps and alerts only reported when larger than the margin. | Decided | No competitor shows uncertainty (independent review of 35+ tools); easy for users while honest. | Showing a bare number as if exact |
+| D-65 | Overall score = equal-weight average of the chosen models; per-model scores always shown. | Decided | Simple and transparent for the MVP. | Weighting by each AI's user share (needs a source and upkeep) |
+| D-66 | Accuracy gates before launch: mention detection test set (about 200 answers, at least 95% correct, runs on every change) and an internal calibration check against the real ChatGPT, Claude and Perplexity apps (by hand, 1 to 2 hours, repeated every few months). Users never do this. | Decided | Detection errors and API-vs-app differences affect accuracy more than sample size. | Launching without measuring accuracy; automating the consumer apps (breaks their terms) |
+| D-67 | Every check passes the business location (city, region, country) to the AI's web search as `user_location`, and the question text also names the city. | Decided | Answers then match what a customer in that city sees. Supported by all three (OpenAI Responses API, Anthropic web search, Perplexity `web_search_options`). | City only in the question text |
+| D-68 | ChatGPT checks use `gpt-4.1-mini` (or its current cheap equivalent) through the OpenAI Responses API. | Decided | Live test 2026-09-26: `gpt-4o-mini` did not search; `gpt-4.1-mini` searched with location for about $0.03; `gpt-5-mini` cost 3 to 4 times more. Location is not supported on the older Chat Completions search models. | `gpt-4o-mini` (today's code); `gpt-5-mini` (cost) |
 
 ## 6. Screens
 
@@ -100,8 +107,8 @@ To change a decision, edit its row, add the new date, and keep the old choice in
 
 | ID | Decision | Status | Why | Rejected |
 |---|---|---|---|---|
-| D-41 | Host on Vercel. Database and auth stay on Supabase. | Proposed | 300-second function time fits scans (Netlify's sync limit is 10 to 26 seconds, and a scan already takes 23). Preview link per branch. | Staying on Netlify |
-| D-42 | Background scans use a `scan_jobs` table in Supabase, scheduled by Supabase pg_cron, which calls a Vercel worker endpoint through pg_net. No Vercel Cron. | Decided | Free per-minute scheduling, jobs visible in the database, credits charged per job. | Vercel Cron (per-minute needs Pro); Upstash QStash; Inngest (overkill for now) |
+| D-41 | Hosting: test the rebuilt app on Netlify first (preview deploy with Cache Components on and a real scan through the worker). Stay on Netlify if everything works; move to Vercel only if something breaks. Database and auth stay on Supabase. (Updated 2026-09-26.) | Decided | Netlify limits (checked 2026-09-26): 60-second normal functions, 15-minute background functions; enough if the worker runs as a background function or stays under 60 seconds. Vercel's advantage: it is a Next.js verified adapter (full Next.js test suite), while Netlify's integration is "not verified… feature support may vary" (Next.js 16 docs, `17-deploying.md`). Staying avoids a DNS and webhook move. Correction: an earlier version of this row wrongly said Netlify's limit was 10 to 26 seconds. | Moving to Vercel up front without testing |
+| D-42 | Background scans use a `scan_jobs` table in Supabase, scheduled by Supabase pg_cron, which calls the worker endpoint (a Netlify background function, or a Vercel route if we move, D-41) through pg_net. No Vercel Cron. | Decided | Free per-minute scheduling, jobs visible in the database, credits charged per job. | Vercel Cron (per-minute needs Pro); Upstash QStash; Inngest (overkill for now) |
 | D-43 | One Supabase database for now. Back up before each migration. Only add tables and columns until the MVP is live. | Decided | No need for a second project yet; the live site shares the database. | Separate dev and prod databases (later) |
 | D-44 | Error tracking and analytics come after the MVP. | Decided | Not needed to launch. | Sentry and PostHog now |
 | D-45 | Git: tag today's code as `original-backup`, then keep working on `main`. Pause Netlify auto-deploy if live changes are not wanted mid-build. | Proposed | Simplest way to keep a copy of the original. | New default branch |
@@ -120,6 +127,50 @@ Full system in [design/DESIGN.md](./design/DESIGN.md); visual sample in [design/
 | D-51 | Build the design straight away, no mockup approval round with Jordan. | Decided | Jordan gave full design freedom (07:49). | Mockups first |
 | D-52 | Homepage is rebuilt as a fresh page, reusing about 40% (section structure, compare box logic, demo content, chart helper, FAQ and How it works text, agency pitch). | Decided | Current file has 2,616 lines, 536 hard-coded colours, rounded styling that clashes with D-49, and about 900 lines of dead code. | Restyling the existing file |
 
+## 11. Credit and billing rules
+
+Details in [MVP_SPEC.md](./MVP_SPEC.md) sections 4.2, 11.4, 11.5 and 13.
+
+| ID | Decision | Status | Why | Rejected |
+|---|---|---|---|---|
+| D-53 | Hold, charge, release: a scan holds its credits at start, each successful check (including cache hits) is charged, failed checks are released, leftovers released at the end. | Decided | Users never pay for our errors; retries never double-charge. Same pattern as card authorisations. | Charging failed checks; charging the whole scan up front |
+| D-54 | A scan that started always finishes. It may overdraw the pool by at most one scan; the negative amount is taken from the next grant. No new scan starts at 0 or below. | Decided | Users never get half a report; the loss is capped. | Stopping scans mid-way |
+| D-55 | Credits change only through SQL functions that lock the agency row in one transaction. One queued or running job per business (unique index). Every ledger row has a unique source key. | Decided | App-level checks race; the database lock cannot be bypassed. Replays can never apply twice. | Balance checks in application code |
+| D-56 | One Stripe subscription per agency, one item per business, one renewal date. USD only, automatic currency conversion off. | Decided | Simple invoices; the trial covers the whole subscription. Test checkout showed PKR. | One subscription per business |
+| D-57 | Plan changes: upgrade and add business now (prorated charge and credits); downgrade, remove business and cancel at period end (no refund). Failed payment: Stripe retries, scheduled scans pause at once. Refunds: none on plans, unused top-ups within 14 days. Top-ups only usable with an active plan. | Decided | Standard SaaS practice; blocks "upgrade, use credits, downgrade for a refund". | Immediate downgrades with refunds |
+| D-58 | Credits are stored as grants (each with amount, remaining, expiry, source), spent soonest-expiring first, with an append-only transaction ledger. Plans (price, credits, limits, Stripe price ID) live in a database table. | Decided | One design covers plan credits, top-ups, trials, promos, prorations and refunds with no schema changes later; prices change without a deploy. Same model as prepaid-credit systems like OpenAI's and Stripe billing credits. | Two balance columns (plan / top-up) on the agency |
+
+## 12. Architecture
+
+| ID | Decision | Status | Why | Rejected |
+|---|---|---|---|---|
+| D-59 | Code layout (refined 2026-09-26): thin routes in `src/app` with route groups; each feature in `src/modules/<feature>` has `dal.ts` (server-only data access with auth checks), `actions.ts`, `service.ts`, `schema.ts`, `prompts/` and tests. Full layout and 14 rules in MVP_SPEC section 18. | Decided | Matches the Next.js 16 docs' Data Access Layer recommendation for new projects; today the logic is scattered, files are huge and limit checks are never called. | Keeping the current `lib/geo` / `components/geo` layout |
+| D-60 | One entitlements module answers every "can this agency do X?" question; every route that spends money or adds data calls it. | Decided | Today's `entitlements.ts` has the checks but no route calls them. | Checks scattered in each route |
+| D-61 | Agencies can be marked `is_test`; the worker skips real AI calls for them. | Proposed | One shared database (D-43) means testing must not spend real credits or money. | Separate database (later) |
+
+## 13. Moving to the new system
+
+| ID | Decision | Status | Why | Rejected |
+|---|---|---|---|---|
+| D-69 | Existing data moves through additive, idempotent SQL migrations with a backup, verification and a 30-day grace period before old tables are dropped. Stripe data is not carried over (it is WorkNex sandbox test data). Plan in MVP_SPEC section 19. | Proposed | Only 9 profiles and 5 businesses exist today, but a scripted move can be rehearsed and rolled back. | Editing tables in place |
+| D-70 | Go-live on the chosen host (D-41): Netlify path = new environment variables, worker as a background function, re-enable deploys; Vercel path = preview test, DNS switch, Netlify kept 7 days as fallback. Plan in MVP_SPEC section 20. | Proposed | Either path has no downtime and an easy rollback. | Switching hosts in one step |
+
+## 14. Tools, quality and compliance
+
+| ID | Decision | Status | Why | Rejected |
+|---|---|---|---|---|
+| D-71 | PDFs: print the share page through Browserless (hosted Chrome) behind one `renderPdf(url)` function. Fallbacks: our own headless Chrome in a function, and browser print styling. Weekly emails link to the share page instead of attaching PDFs. | Decided | One report design for web and PDF, charts print exactly; hosted Chrome is the most reliable with no upkeep; free plan covers 1,000 PDFs a month (checked 2026-09-26). Input is just a URL, so switching provider is small. | React PDF (report built twice, charts rebuilt); DocRaptor (weak JavaScript, ownership changed twice in 2025); PDFShift and PDFBolt (small or new); own Chrome as primary (upkeep) |
+| D-72 | Emails: React Email templates sent through Resend. | Decided | Standard, templates in React; Resend key already exists. | |
+| D-73 | Google Places: store only `place_id`; fetch ratings and details live with attribution; Places only pre-fills onboarding forms; competitor names confirmed by the user; explanations use placeholders filled with live data. | Decided (legal reading to confirm) | Google's terms forbid saving business names, addresses and reviews and allow caching only `place_id` (and lat/lng for 30 days). Quoted in MVP_SPEC section 26. | Storing Places data monthly (breaks the terms) |
+| D-74 | "Also recommended by AI": Claude Haiku extracts business names from each answer; stored with the cached answer; Batches API for scheduled scans; no extra credits. | Decided | About $0.0014 per check, absorbed by the margin. | Charging extra credits; skipping the feature |
+| D-75 | Testing: Vitest unit and integration tests, Stripe CLI webhook fixtures, Playwright end-to-end, all on every pull request, plus a written definition of done (MVP_SPEC section 21). | Decided | Credits and money need tests; Vitest cannot render async Server Components. | Manual testing only |
+| D-76 | Alerts without Sentry: pg_cron checks every 15 minutes and emails the admin (failed scans, stuck jobs, webhook failures, provider errors, negative balances, daily AI cost). | Decided | Uses tables we already have; no new service. | Sentry now (after the MVP, D-44) |
+| D-77 | Account and business deletion: soft delete at once, permanent deletion after 30 days by pg_cron, invoices kept in Stripe, credit history anonymised. | Decided (legal deadlines to confirm) | Allows undo for mistakes; meets typical deletion laws. | Immediate hard delete; no self-service deletion |
+| D-78 | Terms and Privacy must be updated before launch (list in MVP_SPEC section 24). | Ask Jordan (lawyer review) | Legal text; trial auto-charge and auto-renewal rules vary by state. | |
+| D-79 | Engineering rules: Data Access Layer per feature, auth checked in every action and route, `proxy.ts` for redirects only, validated env, generated DB types, `getUser`/`getClaims` only, RLS everywhere, feature boundaries and file size enforced by lint in CI (MVP_SPEC 18.1). | Decided | From the Next.js 16 docs in this repo and Supabase/Stripe guidance; enforced by tooling so it holds when people change. | Rules by convention only |
+| D-80 | Turn on Next.js 16 Cache Components (`cacheComponents: true`) at the start of the rebuild. | Decided | It is off today; switching later changes caching everywhere. | Staying on the old caching model |
+| D-81 | AI evals with `vitest-evals` (plus `autoevals` scorers) in an `evals/` folder: six suites, code graders first, calibrated AI graders, fast suite on every PR, AI-graded suite on prompt or model change (MVP_SPEC section 25). | Decided | Protects the AI parts that drive scores and advice; in-repo, no lock-in. vitest-evals is actively maintained (updated 2026-09-10). | Hosted eval platforms (LangSmith, Braintrust platform); evalite (last updated February 2026) |
+
 ---
 
 ## Ask Jordan
@@ -135,3 +186,7 @@ Send when he is back (about 14 days from 2026-09-25).
 - [ ] Design reference: the Voxtell style? (D-36)
 - [ ] Change all API keys (malware found in the repo; his commit `80d3b13` brought it in, so his machine may be infected)
 - [ ] Budget, milestones and launch date (T8)
+- [ ] Who controls the domain's DNS settings (needed for the Vercel move, D-70)
+- [ ] Existing beta users at launch: fresh 7-day trial with 100 credits? (D-69)
+- [ ] New Anthropic and Perplexity API keys (the local setup only has an OpenAI key)
+- [ ] Lawyer (or Jordan) review: Terms and Privacy updates (D-78), our reading of Google's Places terms (D-73), and deletion deadlines (D-77)

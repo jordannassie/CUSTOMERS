@@ -34,21 +34,23 @@ Planning after this audit changed the scope. The decisions are in [DECISIONS.md]
 | CORE-02 | Gemini later (D-26). Remove the claims now (MVP_SPEC 12). |
 | CORE-03 | Unchanged, see MVP_SPEC 5.5. |
 | CORE-04 | Replaced by the Sources page and citations (MVP_SPEC 8.1). |
-| CORE-05, CORE-06 | Replaced by the credit system: `credit_ledger`, reservations, `usage_events` on every check (MVP_SPEC 4 and 13). |
+| CORE-05, CORE-06 | Replaced by the credit system: `credit_grants`, `credit_holds`, `credit_transactions`, `usage_events` on every check, and the entitlements module (MVP_SPEC 4.2, 13, D-58, D-60). |
 | REL-01 | Unchanged (30-second timeout, 2 retries). |
 | REL-02, REL-03 | Replaced by `scan_jobs` + pg_cron + Vercel worker (MVP_SPEC 6, D-41, D-42). |
 | REL-04, REL-05 | Folded into the new onboarding (MVP_SPEC 3.1: saves after each step). |
 | REL-06 | Unchanged. |
-| REL-07 | Error tracking moved to after the MVP (D-44). |
+| REL-07 | Error tracking moved to after the MVP (D-44); interim alerts in MVP_SPEC section 22. |
 | REL-08 | Unchanged. |
 | BILL-01 to BILL-04 | Replaced by the new billing model: `agencies`, `business_subscriptions`, webhooks in MVP_SPEC 11. Tax only after a Stripe tax registration is confirmed. |
 | EMAIL-01 | Confirmed: welcome, trial ending, payment failed, low credits, weekly report (D-37). |
-| ACC-01 to ACC-04 | Unchanged. |
+| ACC-01, ACC-02 | Replaced by MVP_SPEC section 23 (soft delete, permanent after 30 days). |
+| ACC-03, ACC-04 | Unchanged. |
 | ACC-05 | Needed only once analytics is added (after the MVP). |
 | GROW-01 | Analytics moved to after the MVP (D-44). |
 | GROW-02, GROW-03 | Folded into the marketing site work (MVP_SPEC 12). |
 | GROW-04 | In the MVP: Export PDF with agency logo, share link (D-12). |
-| OPS-01 to OPS-06 | Unchanged. OPS-02: also add the new tables in MVP_SPEC 13. OPS-05: env var changes in MVP_SPEC 14. |
+| OPS-01 | Replaced by MVP_SPEC sections 21 (tests, CI, definition of done) and 25 (AI evals). |
+| OPS-02 to OPS-06 | Unchanged. OPS-02: also add the new tables in MVP_SPEC 13. OPS-04: zod everywhere (MVP_SPEC 18.1). OPS-05: env var changes in MVP_SPEC 14. |
 | CLEAN-01 to CLEAN-03 | Folded into the removal list (MVP_SPEC 17). |
 | NICE-01 | Team members: after the MVP (D-10). |
 
