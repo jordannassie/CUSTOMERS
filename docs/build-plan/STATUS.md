@@ -8,14 +8,17 @@ Rules set by the user on 2026-09-26: 3 worker sessions at once; the leader revie
 
 | Task | Worker pane | Worktree | Dev port | PR |
 |---|---|---|---|---|
-| B-71 New homepage | 184 | CUSTOMERS-B71 | 3006 | #28 (draft) |
-| B-11 Core tables (only session changing migrations) | 186 | CUSTOMERS-B11 | 3008 | not yet |
+| B-64 Admin shell | 196 | CUSTOMERS-B64 | 3016 | not yet |
+| B-48 App shell | 197 | CUSTOMERS-B48 | 3017 | not yet |
+| B-20 Provider interface and OpenAI adapter | 198 | CUSTOMERS-B20 | 3018 | not yet |
 
-Next when a slot frees: B-12 after B-11; B-61 after B-11. B-24 waits for eval labelling (F-04).
+Waiting for keys, people or Jordan: B-24 dataset (F-04), B-32 (F-16), B-34 (F-28), B-40 (F-17), B-61 (F-12).
 
 ## Done
 
-B-06 (#22, main), B-07 (#25, main), B-08 (#23, mvp), B-09 (#21, mvp), B-10 (#27, main), B-70 (#26, mvp). Main synced into mvp in #29.
+Into main: B-06 (#22), B-07 (#25), B-10 (#27), B-11 (#31), B-12 (#34), B-13 (#36). B-24 code (#32), task open for labelling.
+Into mvp: B-08 (#23), B-09 (#21), B-70 (#26), B-71 (#28), B-15 (#35), B-17 (#37), B-16 (#39), B-14 (#40, live run waits for go-live).
+Main synced into mvp: #29, #33, #38.
 
 Open questions for people are in [FLAGS.md](./FLAGS.md).
 
@@ -33,4 +36,6 @@ Open questions for people are in [FLAGS.md](./FLAGS.md).
 
 ## Migrations applied to customers-dev but not yet to live
 
-None yet.
+021_core_tables, 022_credit_tables, 023_credit_functions (applied by B-13 after a backup).
+
+Not yet on customers-dev either (F-24): 024_legacy_data_columns, 025_backfill_existing_data (on mvp).
