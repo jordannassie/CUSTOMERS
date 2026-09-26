@@ -96,7 +96,7 @@ Phase 1 · M · Depends on: B-03 · Blocked by Jordan: no · MVP_SPEC 18.1 rules
 ---
 
 ### B-05 Lint rules that enforce the architecture
-- [ ] Done
+- [x] Done (PR #17)
 
 Phase 1 · S · Depends on: B-04 · Blocked by Jordan: no · MVP_SPEC 18.1 rules 1, 4, 5, 6, 8, 11, 12 · Branch: `task/B-05-lint-rules-that-enforce-the` → `main`
 
@@ -196,6 +196,27 @@ Phase 1 · M · Depends on: B-03 · Blocked by Jordan: no · design/DESIGN.md, D
 **Engineering checks**
 - Contrast of text tokens re-checked with the DevTools contrast checker (values in DESIGN.md).
 - No raw hex colours in `src/components/ui`.
+
+---
+
+### B-18 Parallel session safety
+- [x] Done (PR #18)
+
+Phase 1 · S · Depends on: nothing · Blocked by Jordan: no · D-45 · Branch: `task/B-18-parallel-session-safety` → `main`
+
+Added after planning so several Claude sessions can work on separate tasks at once, each in its own git worktree.
+
+**Build**
+1. `scripts/task-ready.ts` (`npm run task:ready B-xx`): reads the task's "Depends on:" line, checks each dependency's merged PR is present in the branch this task targets, and lists open task PRs with overlapping files.
+2. A SessionStart hook in `.claude/settings.json` runs the check for the task named in the branch (`task/B-xx-*`) and gives the result to the session.
+3. A "Parallel sessions" section in CLAUDE.md with the rules every session follows.
+
+**What the user sees**
+- Nothing in the app. A session started on a task whose dependencies are not merged says so and does not start.
+
+**Engineering checks**
+- `task:ready B-06` passes; `task:ready B-07` and `B-10` fail and name the missing tasks.
+- The hook prints valid JSON.
 
 ---
 

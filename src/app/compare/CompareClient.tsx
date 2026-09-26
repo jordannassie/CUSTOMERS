@@ -1,3 +1,4 @@
+/* eslint-disable max-lines, local/max-lines-hard -- TODO(B-73): split while rebuilding the free compare tool. */
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";

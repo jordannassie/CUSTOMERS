@@ -63,6 +63,16 @@ Run `npx tsc --noEmit`, `npx eslint src`, the tests, and `npm run build`, and re
 - Git hooks scan every commit and push for malware and secrets; never use `--no-verify`. If a scan fails, stop and report it.
 - Never open or run code from branches the scanner flags.
 
+## Parallel sessions (B-18)
+
+Several sessions may work at once, each in its own git worktree on its own `task/B-xx-*` branch.
+- At start, the SessionStart hook runs `npm run task:ready B-xx`. If it says NOT READY, do not start; tell the user what it reported.
+- If you find mid-task that you need code from a task that is not merged, stop. Do not build that work here. Add the missing task to this task's "Depends on:" line and report it.
+- Open a draft PR as soon as you push your first commit, so other sessions can see the task is taken.
+- Before marking the PR ready: rebase on the latest target branch, then rerun all checks.
+- Only one session at a time adds files to `supabase/migrations/` or changes the database.
+- Run the dev server on the port you were given (`npm run dev -- -p <port>`), never on another session's port.
+
 ## Safety
 
 - The database is shared with the live site (D-43): back up before migrations, and test with an `is_test` agency so no real AI credits or payments are spent (D-61).
