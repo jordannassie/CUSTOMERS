@@ -12,6 +12,8 @@ const LOGO = "/images/logos/logo-black.png";
 
 interface AuthFormProps {
   defaultMode?: "login" | "signup";
+  // The page's ?error= value; read on the server so the notice is in the first render.
+  errorParam?: string;
 }
 
 const GoogleIcon = () => (
@@ -23,32 +25,22 @@ const GoogleIcon = () => (
   </svg>
 );
 
-export default function AuthForm({ defaultMode = "login" }: AuthFormProps) {
+export default function AuthForm({ defaultMode = "login", errorParam = "" }: AuthFormProps) {
   const router = useRouter();
+  const oauthFailed = errorParam.includes("oauth") || errorParam.includes("callback");
   const [mode, setMode] = useState<"login" | "signup">(defaultMode);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState<"google" | "email" | null>(null);
-  const [googleFailed, setGoogleFailed] = useState(false);
-  const [error, setError] = useState<string | null>(() => {
-    if (typeof window === "undefined") return null;
-    const params = new URLSearchParams(window.location.search);
-    const err = params.get("error") ?? "";
-    if (!err.includes("oauth") && !err.includes("callback")) return null;
-    return "google_failed";
-  });
+  const [googleFailed, setGoogleFailed] = useState(oauthFailed);
+  const [error, setError] = useState<string | null>(oauthFailed ? "google_failed" : null);
   const [message, setMessage] = useState<string | null>(null);
 
   const isSignup = mode === "signup";
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const err = params.get("error") ?? "";
-    if (err.includes("oauth") || err.includes("callback")) {
-      setGoogleFailed(true);
-      window.history.replaceState(null, "", window.location.pathname);
-    }
-  }, []);
+    if (oauthFailed) window.history.replaceState(null, "", window.location.pathname);
+  }, [oauthFailed]);
 
   // Clear form state when switching tabs
   function switchMode(next: "login" | "signup") {

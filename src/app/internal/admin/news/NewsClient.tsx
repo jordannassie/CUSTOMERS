@@ -1,7 +1,7 @@
 /* eslint-disable max-lines, local/max-lines-hard -- TODO(D-07): split once LinkedIn Studio is decided. */
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useCallback } from "react";
 import type { NewsStory } from "@/app/api/internal/admin/news/search/route";
 import type { GeneratedArticle } from "@/app/api/internal/admin/news/article/route";
 
@@ -259,8 +259,6 @@ function LinkedInPostEditor({ initialPost }: { initialPost: string }) {
   const charCount       = text.length;
   const isOver          = charCount > LINKEDIN_LIMIT;
 
-  useEffect(() => { setText(initialPost); }, [initialPost]);
-
   return (
     <div className="flex flex-col gap-2">
       {/* Toolbar */}
@@ -369,7 +367,8 @@ function OutputPanel({
             <span className="w-5 h-5 rounded-full bg-[#0866F5] text-white text-[9px] font-bold flex items-center justify-center shrink-0">A</span>
             <h3 className="text-[13px] font-bold text-[#111827] uppercase tracking-wider">LinkedIn Post</h3>
           </div>
-          <LinkedInPostEditor initialPost={article.linkedinPost} />
+          {/* The key resets the editor when a new article's post arrives. */}
+          <LinkedInPostEditor key={article.linkedinPost} initialPost={article.linkedinPost} />
         </section>
 
         {/* B — Image Prompt */}
@@ -420,7 +419,7 @@ function OutputPanel({
             <CopyButton label="Copy Reply + Link" text={AEO_REPLY} />
           </div>
           <p className="text-[11px] text-[#166534] mb-2.5">
-            Send this manually to anyone who comments "AEO" on your post.
+            Send this manually to anyone who comments &ldquo;AEO&rdquo; on your post.
           </p>
           <p className="text-[12.5px] text-[#166534] whitespace-pre-wrap leading-relaxed font-medium">
             {AEO_REPLY}

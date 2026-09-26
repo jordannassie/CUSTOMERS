@@ -1,0 +1,7 @@
+{
+  "_note": "Made-up answers for the tooling smoke test only. Real recorded answers live in tests/fixtures/ai-answers/ (B-31) and real datasets are labelled by people.",
+  "answers": [
+    { "id": "smoke-1", "business": "Harbor Plumbing", "text": "For a leaking pipe in Austin, try Harbor Plumbing or Rapid Rooter.", "mentioned": true },
+    { "id": "smoke-2", "business": "Harbor Plumbing", "text": "Rapid Rooter and Ace Drains both offer same-day repairs.", "mentioned": false }
+  ]
+}

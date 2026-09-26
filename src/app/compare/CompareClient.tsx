@@ -1,7 +1,7 @@
 /* eslint-disable max-lines, local/max-lines-hard -- TODO(B-73): split while rebuilding the free compare tool. */
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowRight, Loader2, AlertCircle, CheckCircle2, XCircle, AlertTriangle, Info } from "lucide-react";
@@ -335,6 +335,17 @@ const AI_PLATFORM_ICONS = [
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
+async function requestComparison(my: string, them: string): Promise<CompareResult> {
+  const res  = await fetch("/api/public/compare", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ myUrl: my, competitorUrl: them }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error ?? "Comparison failed.");
+  return data as CompareResult;
+}
+
 export default function CompareClient() {
   const router       = useRouter();
   const searchParams = useSearchParams();
@@ -344,38 +355,36 @@ export default function CompareClient() {
 
   const [myUrl,   setMyUrl]   = useState(initialMy);
   const [themUrl, setThemUrl] = useState(initialThem);
-  const [loading, setLoading] = useState(false);
+  const autoRun = Boolean(initialMy && initialThem);
+  const [loading, setLoading] = useState(autoRun);
   const [error,   setError]   = useState<string | null>(null);
   const [result,  setResult]  = useState<CompareResult | null>(null);
   const [animate, setAnimate] = useState(false);
   const [analysisDate, setAnalysisDate] = useState("");
 
-  const runComparison = useCallback(async (my: string, them: string) => {
+  function showResult(data: CompareResult) {
+    setResult(data);
+    setAnalysisDate(new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }));
+    // Trigger animations after a tiny delay so layout is painted
+    setTimeout(() => setAnimate(true), 80);
+    setLoading(false);
+  }
+
+  function showError(err: unknown) {
+    setError(err instanceof Error ? err.message : "We couldn't complete this comparison. Please try again.");
+    setLoading(false);
+  }
+
+  function runComparison(my: string, them: string) {
     setLoading(true);
     setError(null);
     setResult(null);
     setAnimate(false);
-    try {
-      const res  = await fetch("/api/public/compare", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ myUrl: my, competitorUrl: them }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Comparison failed.");
-      setResult(data as CompareResult);
-      setAnalysisDate(new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }));
-      // Trigger animations after a tiny delay so layout is painted
-      setTimeout(() => setAnimate(true), 80);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "We couldn't complete this comparison. Please try again.");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+    requestComparison(my, them).then(showResult, showError);
+  }
 
   useEffect(() => {
-    if (initialMy && initialThem) runComparison(initialMy, initialThem);
+    if (autoRun) requestComparison(initialMy, initialThem).then(showResult, showError);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

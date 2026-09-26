@@ -51,24 +51,20 @@ export default async function AdminAccountsPage() {
   const emailMap: Record<string, string> = {};
   for (const u of authData?.users ?? []) emailMap[u.id] = u.email ?? u.id;
 
-  // Compute totals
-  let totalMrr = 0;
-  let activeAccounts = 0;
-  let trialingAccounts = 0;
-  let pastDueAccounts = 0;
-
   const accountRows = (accounts ?? []).map((ba) => {
     const items = itemsByAccount[ba.id] ?? [];
     const activeItems = items.filter((i) => i.status === "active" || i.status === "trialing");
     const mrr = activeItems.reduce((sum, item) => {
       return sum + (item.price_monthly_cents ?? getPlanConfig(item.plan_id).priceMonthly);
     }, 0);
-    totalMrr += mrr;
-    if (ba.status === "active") activeAccounts++;
-    if (ba.status === "trialing") trialingAccounts++;
-    if (ba.status === "past_due") pastDueAccounts++;
     return { ...ba, items, activeBusinessCount: activeItems.length, mrr };
   });
+
+  const totalMrr = accountRows.reduce((sum, row) => sum + row.mrr, 0);
+  const countStatus = (status: string) => accountRows.filter((row) => row.status === status).length;
+  const activeAccounts = countStatus("active");
+  const trialingAccounts = countStatus("trialing");
+  const pastDueAccounts = countStatus("past_due");
 
   return (
     <div className="max-w-7xl mx-auto px-6 py-8">

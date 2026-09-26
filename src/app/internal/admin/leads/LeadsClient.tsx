@@ -1,7 +1,7 @@
 /* eslint-disable max-lines, local/max-lines-hard -- TODO: Leads stays out of MVP scope (08-admin); split when it is next changed. */
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -293,6 +293,27 @@ function LeadDetail({
   );
 }
 
+interface LeadsQuery {
+  page: number; search: string; interest: string; source: string; status: string; unread: boolean;
+}
+
+async function requestLeads(q: LeadsQuery): Promise<LeadsResponse> {
+  const params = new URLSearchParams({
+    page: String(q.page),
+    search: q.search,
+    interest: q.interest,
+    source: q.source,
+    status: q.status,
+    unread: q.unread ? "1" : "0",
+  });
+  const res = await fetch(`/api/internal/admin/leads?${params}`);
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error ?? `HTTP ${res.status}`);
+  }
+  return res.json();
+}
+
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export default function LeadsClient() {
@@ -314,39 +335,30 @@ export default function LeadsClient() {
   const searchRef = useRef<HTMLInputElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const fetchLeads = useCallback(async (opts: {
-    page?: number; search?: string; interest?: string; source?: string; status?: string; unread?: boolean;
-  } = {}) => {
+  function showLeads(data: LeadsResponse) {
+    setLeads(data.leads);
+    setTotal(data.total);
+    setPages(data.pages);
+    setPage(data.page);
+    setLoading(false);
+  }
+
+  function showLoadError(err: unknown) {
+    setLoadError(err instanceof Error ? err.message : "Failed to load leads.");
+    setLoading(false);
+  }
+
+  function fetchLeads(opts: Partial<LeadsQuery> = {}) {
     setLoading(true);
     setLoadError(null);
-    const params = new URLSearchParams({
-      page:     String(opts.page     ?? page),
-      search:   opts.search          ?? search,
-      interest: opts.interest        ?? interest,
-      source:   opts.source          ?? source,
-      status:   opts.status          ?? status,
-      unread:   (opts.unread ?? unread) ? "1" : "0",
-    });
-    try {
-      const res = await fetch(`/api/internal/admin/leads?${params}`);
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(data.error ?? `HTTP ${res.status}`);
-      }
-      const data: LeadsResponse = await res.json();
-      setLeads(data.leads);
-      setTotal(data.total);
-      setPages(data.pages);
-      setPage(data.page);
-    } catch (err) {
-      setLoadError(err instanceof Error ? err.message : "Failed to load leads.");
-    } finally {
-      setLoading(false);
-    }
-  }, [page, search, interest, source, status, unread]);
+    requestLeads({ page, search, interest, source, status, unread, ...opts }).then(showLeads, showLoadError);
+  }
 
   // Initial load
-  useEffect(() => { fetchLeads(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    requestLeads({ page: 1, search: "", interest: "", source: "", status: "", unread: false })
+      .then(showLeads, showLoadError);
+  }, []);
 
   // Debounced search
   function handleSearchChange(val: string) {
