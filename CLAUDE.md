@@ -54,7 +54,7 @@ Use the design tokens and shadcn/ui; no raw hex colours in components. Blue `#25
 
 ## Before calling a task done (MVP_SPEC 21)
 
-Run `npx tsc --noEmit`, `npx eslint src`, the tests, and `npm run build`, and report the actual output. For UI changes, check screenshots at 1440px and 390px. Reference the decision or roadmap ID (`D-xx`, `SEC-01`) in commit and PR titles.
+Run `npx tsc --noEmit`, `npx eslint src`, the tests, and `npm run build`, and report the actual output. Then verify in the running app with the project verify skill (`.claude/skills/verify/SKILL.md`, or `/verify`): the user-facing result named in the task, with screenshots at 1440px and 390px for UI changes. Reference the decision or roadmap ID (`D-xx`, `SEC-01`) in commit and PR titles.
 
 ## Branches and protection (D-45, D-82)
 
