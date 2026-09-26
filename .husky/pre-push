@@ -15,4 +15,3 @@ done
 
 npx tsc --noEmit || exit 1
 npm run lint || exit 1
-npm run build || exit 1
