@@ -14,7 +14,7 @@ Bugs found while building or verifying a task. Planned audit fixes (SEC-xx, CORE
 
 | ID | Found | Where | What the user sees | Severity | Fix in | Status |
 |---|---|---|---|---|---|---|
-| BUG-001 | 2026-09-26, B-03 verify | `/` at 390px | Page scrolls sideways; the hero dashboard preview is 16px too wide | Low | B-70 (homepage rebuild) | Open |
+| BUG-001 | 2026-09-26, B-03 verify | `/` at 390px | Page scrolls sideways; the hero dashboard preview is 16px too wide | Low | B-71 (homepage rebuild) | Fixed (PR #28) |
 | BUG-002 | 2026-09-26, B-03 verify | Site header, mobile menu | "Agencies" appears twice ("Agencies & Resellers" and "Agencies") | Low | B-70 (marketing rebuild) | Open |
 | BUG-003 | 2026-09-26, B-03 verify | `/contact` | Browser tab title repeats: "Contact \| Customers.Direct \| Customers.Direct" | Low | B-70 (marketing rebuild) | Open |
 | BUG-004 | 2026-09-26, B-03 verify | `/dashboard/billing` at 390px | Page scrolls sideways; content is 57px too wide | Low | Phase 5 (billing pages) | Open |
@@ -23,3 +23,6 @@ Bugs found while building or verifying a task. Planned audit fixes (SEC-xx, CORE
 | BUG-007 | 2026-09-26, B-04 | `/internal/admin/businesses/[id]` | Prompts list selected `prompt_text` (the column is `prompt`), and city, region, country and category read missing columns | Medium | B-04 | Fixed (B-04) |
 | BUG-008 | 2026-09-26, B-04 | `/internal/admin/settings` | DataForSEO showed "not configured" because it checked `DATAFORSEO_LOGIN` while the code uses `DATAFORSEO_USERNAME` | Low | B-04 | Fixed (B-04) |
 | BUG-009 | 2026-09-26, B-04 verify | `/login?next=...` (email and password) | After logging in, the user always lands on `/dashboard` instead of the page they asked for; only Google login honours `next` (`AuthForm.tsx:134`) | Low | B-15 (its "come back after logging in" result) | Open |
+| BUG-010 | 2026-09-26, B-71 | `/` (old homepage) | Site icons in the hero preview table loaded from Google's favicon service and showed as broken images | Low | B-71 | Fixed (PR #28, old homepage removed) |
+| BUG-011 | 2026-09-26, B-71 verify | `/compare` | Browser tab title says "Customers.Direct" twice, and joins the parts with a long dash | Low | B-73 (compare tool rebuild) | Open |
+| BUG-012 | 2026-09-26, B-71 verify | Chat widget on `/` at 390px | The "Hi! What can we help you with?" bubble covered the homepage "Compare free" button | Low | B-71 | Fixed (PR #28, bubble hidden on phones) |
