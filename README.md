@@ -93,6 +93,8 @@ const { data: { user } } = await supabase.auth.getUser();
 
 `src/types/database.types.ts` is generated, never edited by hand. After a migration, link the Supabase CLI once (`supabase link --project-ref <ref>`) and run `npm run db:types`.
 
+How to write and apply migrations: [supabase/migrations/README.md](supabase/migrations/README.md).
+
 ---
 
 ## Tests and evals
