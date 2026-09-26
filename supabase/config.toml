@@ -21,7 +21,8 @@ max_rows = 1000
 # without explicit GRANTs. When unset, new entities are NOT auto-exposed, matching the new cloud
 # default. Set to `true` to keep the legacy behaviour of auto-exposing new entities; this is
 # deprecated and the field is removed on 2026-10-30 once the always-revoked behaviour is permanent.
-# The live project predates the new default, so match it until B-10 pulls a baseline with explicit grants.
+# Live still auto-grants new public tables to the Data API roles, so local matches it. Decide before the
+# field is removed whether to write those grants into a migration or revoke them on live (B-10 PR).
 auto_expose_new_tables = true
 
 [api.tls]
@@ -59,8 +60,7 @@ max_client_conn = 100
 
 [db.migrations]
 # If disabled, migrations will be skipped during a db push or reset.
-# Off until B-10 renames the duplicate 013_* file; scripts/test-db-reset.sh applies them meanwhile.
-enabled = false
+enabled = true
 # Specifies an ordered list of schema files that describe your database.
 # Supports glob patterns relative to supabase directory: "./schemas/*.sql"
 schema_paths = []

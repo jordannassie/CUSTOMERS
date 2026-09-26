@@ -7,13 +7,105 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instantiate createClient with right options
-  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
-  __InternalSupabase: {
-    PostgrestVersion: "14.5"
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
   }
   public: {
     Tables: {
+      admin_audit_log: {
+        Row: {
+          action: string
+          admin_user_id: string | null
+          created_at: string
+          details: Json
+          id: string
+          target_id: string | null
+          target_type: string
+        }
+        Insert: {
+          action: string
+          admin_user_id?: string | null
+          created_at?: string
+          details?: Json
+          id?: string
+          target_id?: string | null
+          target_type: string
+        }
+        Update: {
+          action?: string
+          admin_user_id?: string | null
+          created_at?: string
+          details?: Json
+          id?: string
+          target_id?: string | null
+          target_type?: string
+        }
+        Relationships: []
+      }
+      agencies: {
+        Row: {
+          created_at: string
+          current_period_end: string | null
+          id: string
+          is_test: boolean
+          logo_url: string | null
+          name: string
+          owner_user_id: string
+          status: string
+          stripe_customer_id: string | null
+          stripe_subscription_id: string | null
+          trial_ends_at: string | null
+        }
+        Insert: {
+          created_at?: string
+          current_period_end?: string | null
+          id?: string
+          is_test?: boolean
+          logo_url?: string | null
+          name: string
+          owner_user_id: string
+          status?: string
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          trial_ends_at?: string | null
+        }
+        Update: {
+          created_at?: string
+          current_period_end?: string | null
+          id?: string
+          is_test?: boolean
+          logo_url?: string | null
+          name?: string
+          owner_user_id?: string
+          status?: string
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          trial_ends_at?: string | null
+        }
+        Relationships: []
+      }
       agent_readiness_actions: {
         Row: {
           action_type: string
@@ -145,6 +237,36 @@ export type Database = {
           },
         ]
       }
+      ai_answer_cache: {
+        Row: {
+          answer: string
+          cache_key: string
+          citations: Json
+          created_at: string
+          location: string
+          model: string
+          question: string
+        }
+        Insert: {
+          answer: string
+          cache_key: string
+          citations?: Json
+          created_at?: string
+          location: string
+          model: string
+          question: string
+        }
+        Update: {
+          answer?: string
+          cache_key?: string
+          citations?: Json
+          created_at?: string
+          location?: string
+          model?: string
+          question?: string
+        }
+        Relationships: []
+      }
       billing_accounts: {
         Row: {
           billing_interval: string
@@ -261,6 +383,7 @@ export type Database = {
           name: string
           phone: string | null
           place_id: string | null
+          places_id: string | null
           region: string | null
           source: string | null
         }
@@ -280,6 +403,7 @@ export type Database = {
           name: string
           phone?: string | null
           place_id?: string | null
+          places_id?: string | null
           region?: string | null
           source?: string | null
         }
@@ -299,6 +423,7 @@ export type Database = {
           name?: string
           phone?: string | null
           place_id?: string | null
+          places_id?: string | null
           region?: string | null
           source?: string | null
         }
@@ -312,59 +437,175 @@ export type Database = {
           },
         ]
       }
+      business_site_facts: {
+        Row: {
+          business_id: string
+          data: Json
+          fetched_at: string
+        }
+        Insert: {
+          business_id: string
+          data?: Json
+          fetched_at?: string
+        }
+        Update: {
+          business_id?: string
+          data?: Json
+          fetched_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "business_site_facts_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: true
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      business_subscriptions: {
+        Row: {
+          agency_id: string
+          business_id: string
+          created_at: string
+          current_period_end: string | null
+          plan_id: string
+          status: string
+          stripe_subscription_item_id: string | null
+        }
+        Insert: {
+          agency_id: string
+          business_id: string
+          created_at?: string
+          current_period_end?: string | null
+          plan_id: string
+          status?: string
+          stripe_subscription_item_id?: string | null
+        }
+        Update: {
+          agency_id?: string
+          business_id?: string
+          created_at?: string
+          current_period_end?: string | null
+          plan_id?: string
+          status?: string
+          stripe_subscription_item_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "business_subscriptions_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "business_subscriptions_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: true
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "business_subscriptions_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       businesses: {
         Row: {
+          agency_id: string | null
+          aliases: string[]
           created_at: string
           description: string | null
           domain: string | null
+          has_website: boolean | null
           id: string
           industry: string | null
           language: string
           logo_url: string | null
+          models: string[]
           name: string
+          next_scan_at: string | null
+          onboarding_step: number | null
           owner_user_id: string
+          phone: string | null
+          places_id: string | null
           primary_city: string | null
           primary_country: string | null
           primary_region: string | null
           reach_type: string | null
+          scan_frequency: string
+          services: string[]
           status: string
           updated_at: string
         }
         Insert: {
+          agency_id?: string | null
+          aliases?: string[]
           created_at?: string
           description?: string | null
           domain?: string | null
+          has_website?: boolean | null
           id?: string
           industry?: string | null
           language?: string
           logo_url?: string | null
+          models?: string[]
           name: string
+          next_scan_at?: string | null
+          onboarding_step?: number | null
           owner_user_id: string
+          phone?: string | null
+          places_id?: string | null
           primary_city?: string | null
           primary_country?: string | null
           primary_region?: string | null
           reach_type?: string | null
+          scan_frequency?: string
+          services?: string[]
           status?: string
           updated_at?: string
         }
         Update: {
+          agency_id?: string | null
+          aliases?: string[]
           created_at?: string
           description?: string | null
           domain?: string | null
+          has_website?: boolean | null
           id?: string
           industry?: string | null
           language?: string
           logo_url?: string | null
+          models?: string[]
           name?: string
+          next_scan_at?: string | null
+          onboarding_step?: number | null
           owner_user_id?: string
+          phone?: string | null
+          places_id?: string | null
           primary_city?: string | null
           primary_country?: string | null
           primary_region?: string | null
           reach_type?: string | null
+          scan_frequency?: string
+          services?: string[]
           status?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "businesses_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       contact_submissions: {
         Row: {
@@ -583,6 +824,39 @@ export type Database = {
           },
         ]
       }
+      plans: {
+        Row: {
+          active: boolean
+          id: string
+          max_competitors: number | null
+          max_questions: number | null
+          monthly_credits: number | null
+          name: string
+          price_cents: number | null
+          stripe_price_id: string | null
+        }
+        Insert: {
+          active?: boolean
+          id: string
+          max_competitors?: number | null
+          max_questions?: number | null
+          monthly_credits?: number | null
+          name: string
+          price_cents?: number | null
+          stripe_price_id?: string | null
+        }
+        Update: {
+          active?: boolean
+          id?: string
+          max_competitors?: number | null
+          max_questions?: number | null
+          monthly_credits?: number | null
+          name?: string
+          price_cents?: number | null
+          stripe_price_id?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           account_type: string
@@ -739,6 +1013,134 @@ export type Database = {
             columns: ["folder_id"]
             isOneToOne: false
             referencedRelation: "prospecting_folders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      question_library: {
+        Row: {
+          active: boolean
+          created_at: string
+          id: string
+          industry: string
+          intent: string
+          tags: string[]
+          template: string
+          version: number
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          industry: string
+          intent: string
+          tags?: string[]
+          template: string
+          version?: number
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          industry?: string
+          intent?: string
+          tags?: string[]
+          template?: string
+          version?: number
+        }
+        Relationships: []
+      }
+      report_shares: {
+        Row: {
+          business_id: string
+          created_at: string
+          id: string
+          revoked_at: string | null
+          token: string
+        }
+        Insert: {
+          business_id: string
+          created_at?: string
+          id?: string
+          revoked_at?: string | null
+          token: string
+        }
+        Update: {
+          business_id?: string
+          created_at?: string
+          id?: string
+          revoked_at?: string | null
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "report_shares_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      scan_jobs: {
+        Row: {
+          agency_id: string
+          attempts: number
+          business_id: string
+          created_at: string
+          credits_charged: number
+          error: string | null
+          finished_at: string | null
+          hold_id: string | null
+          id: string
+          locked_at: string | null
+          priority: number
+          run_after: string
+          status: string
+        }
+        Insert: {
+          agency_id: string
+          attempts?: number
+          business_id: string
+          created_at?: string
+          credits_charged?: number
+          error?: string | null
+          finished_at?: string | null
+          hold_id?: string | null
+          id?: string
+          locked_at?: string | null
+          priority?: number
+          run_after?: string
+          status?: string
+        }
+        Update: {
+          agency_id?: string
+          attempts?: number
+          business_id?: string
+          created_at?: string
+          credits_charged?: number
+          error?: string | null
+          finished_at?: string | null
+          hold_id?: string | null
+          id?: string
+          locked_at?: string | null
+          priority?: number
+          run_after?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scan_jobs_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scan_jobs_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
             referencedColumns: ["id"]
           },
         ]
@@ -908,6 +1310,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      system_alerts: {
+        Row: {
+          created_at: string
+          details: Json
+          emailed_at: string | null
+          id: string
+          kind: string
+          message: string
+          resolved_at: string | null
+          severity: string
+        }
+        Insert: {
+          created_at?: string
+          details?: Json
+          emailed_at?: string | null
+          id?: string
+          kind: string
+          message: string
+          resolved_at?: string | null
+          severity?: string
+        }
+        Update: {
+          created_at?: string
+          details?: Json
+          emailed_at?: string | null
+          id?: string
+          kind?: string
+          message?: string
+          resolved_at?: string | null
+          severity?: string
+        }
+        Relationships: []
       }
       tracked_prompts: {
         Row: {
@@ -1188,12 +1623,12 @@ export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends (DefaultSchemaTableNameOrOptions extends {
+  TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never) = never,
+    : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1217,11 +1652,11 @@ export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends (DefaultSchemaTableNameOrOptions extends {
+  TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never) = never,
+    : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1242,11 +1677,11 @@ export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends (DefaultSchemaTableNameOrOptions extends {
+  TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never) = never,
+    : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1267,11 +1702,11 @@ export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
     | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
+  EnumName extends DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never) = never,
+    : never = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1284,11 +1719,11 @@ export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
+  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never) = never,
+    : never = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1298,7 +1733,11 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {},
   },
 } as const
+
