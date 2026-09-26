@@ -13,7 +13,7 @@ import {
 } from "@/config/pricing";
 import { env } from "@/lib/env";
 
-export const metadata = { title: "Admin — Pricing & Billing Config" };
+export const metadata = { title: "Admin: Pricing & Billing Config" };
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Helpers
@@ -123,13 +123,13 @@ export default async function AdminPricingPage() {
                   { label: "AI Models",        values: ORDERED_SELF_SERVE_PLANS.map((p) => p.aiModelCount) },
                   { label: "Full Scan",        values: ORDERED_SELF_SERVE_PLANS.map((p) => p.scanFrequencyLabel) },
                   { label: "Cadence (days)",   values: ORDERED_SELF_SERVE_PLANS.map((p) => p.scanCadenceDays) },
-                  { label: "Daily Watch Limit", values: ORDERED_SELF_SERVE_PLANS.map((p) => p.dailyWatchPromptLimit || "—") },
+                  { label: "Daily Watch Limit", values: ORDERED_SELF_SERVE_PLANS.map((p) => p.dailyWatchPromptLimit || "-") },
                   { label: "SEO Intelligence", values: ORDERED_SELF_SERVE_PLANS.map((p) => p.seoIntelligence) },
                   { label: "Direct Agent",     values: ORDERED_SELF_SERVE_PLANS.map((p) => p.directAgentLevel) },
                   { label: "History",          values: ORDERED_SELF_SERVE_PLANS.map((p) => p.historyMonths === -1 ? "Unlimited" : `${p.historyMonths} months`) },
                   { label: "Agent Msg/Day",    values: ORDERED_SELF_SERVE_PLANS.map((p) => p.agentMessagesPerDay) },
                   { label: "Claude Fixes/Mo",  values: ORDERED_SELF_SERVE_PLANS.map((p) => p.claudeFixesPerMonth) },
-                  { label: "Priority Support", values: ORDERED_SELF_SERVE_PLANS.map((p) => p.prioritySupport ? "✓" : "—") },
+                  { label: "Priority Support", values: ORDERED_SELF_SERVE_PLANS.map((p) => p.prioritySupport ? "✓" : "-") },
                 ].map(({ label, values }) => (
                   <tr key={label} className="hover:bg-[#F8FAFD]">
                     <td className="px-4 py-2.5 text-[11px] font-semibold text-[#6B7280] bg-[#F8FAFD]">{label}</td>
@@ -331,12 +331,12 @@ export default async function AdminPricingPage() {
               { label: "Public /pricing page", ok: true, note: "Reads from canonical config" },
               { label: "Checkout route", ok: true, note: "Uses CANONICAL_PLANS" },
               { label: "Webhook handler", ok: true, note: "Maps Stripe Price IDs via getPlanIdFromStripePrice()" },
-              { label: "Entitlement service", ok: true, note: "src/lib/billing/entitlements.ts" },
+              { label: "Entitlement service", ok: true, note: "src/modules/entitlements" },
               { label: "Cron scanner", ok: true, note: "Uses getPlanConfig() for cadence + limits" },
               { label: "Billing page", ok: true, note: "/dashboard/billing" },
               { label: "Stripe Price ID mapping", ok: !!env.STRIPE_PRICE_STARTER_MONTHLY, note: env.STRIPE_PRICE_STARTER_MONTHLY ? "Configured" : "⚠ Set STRIPE_PRICE_*_MONTHLY env vars" },
               { label: "Usage ledger", ok: true, note: "src/lib/billing/usage.ts" },
-              { label: "Legacy plans.ts", ok: true, note: "Shim only — re-exports from canonical config" },
+              { label: "Legacy plans.ts", ok: true, note: "Shim only: re-exports from canonical config" },
             ].map(({ label, ok, note }) => (
               <div key={label} className="flex items-start gap-2.5 p-3 rounded-lg bg-[#F8FAFD] border border-[#E2E8F0]">
                 {ok
