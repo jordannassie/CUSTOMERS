@@ -1,4 +1,4 @@
-import { requireAdmin } from "@/lib/admin/require";
+import { requireAdmin } from "@/modules/auth";
 import { createServiceClient } from "@/lib/supabase/service";
 
 function fmt(iso: string) {
@@ -21,7 +21,7 @@ const STATUS_STYLES: Record<string, string> = {
 };
 
 export default async function AdminScansPage() {
-  await requireAdmin();
+  await requireAdmin({ next: "/internal/admin/scans" });
   const svc = createServiceClient();
 
   const { data: scans } = await svc

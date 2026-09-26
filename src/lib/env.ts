@@ -33,7 +33,6 @@ export const env = createEnv({
     WORKER_SECRET: optional,
 
     ADMIN_EMAILS: optional,
-    ADMIN_USER_IDS: optional,
 
     BILLING_ENABLED: flag,
     BETA_FREE_ACCESS: flag,
@@ -66,7 +65,6 @@ export const env = createEnv({
     GEO_CRON_SECRET: process.env.GEO_CRON_SECRET,
     WORKER_SECRET: process.env.WORKER_SECRET,
     ADMIN_EMAILS: process.env.ADMIN_EMAILS,
-    ADMIN_USER_IDS: process.env.ADMIN_USER_IDS,
     BILLING_ENABLED: process.env.BILLING_ENABLED,
     BETA_FREE_ACCESS: process.env.BETA_FREE_ACCESS,
     TRIAL_ENABLED: process.env.TRIAL_ENABLED,

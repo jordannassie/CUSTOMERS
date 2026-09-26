@@ -1,4 +1,4 @@
-import { requireAdmin } from "@/lib/admin/require";
+import { requireAdmin } from "@/modules/auth";
 import { PRODUCT_ACCESS } from "@/config/product-access";
 import { env } from "@/lib/env";
 
@@ -39,7 +39,7 @@ function FlagRow({ label, value, note }: { label: string; value: boolean; note?:
 }
 
 export default async function AdminSettingsPage() {
-  await requireAdmin();
+  await requireAdmin({ next: "/internal/admin/settings" });
 
   const configured = {
     supabaseUrl:         !!env.NEXT_PUBLIC_SUPABASE_URL,

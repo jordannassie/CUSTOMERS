@@ -1,4 +1,4 @@
-import { requireAdmin } from "@/lib/admin/require";
+import { requireAdmin } from "@/modules/auth";
 import { createServiceClient } from "@/lib/supabase/service";
 
 function fmt(iso: string) {
@@ -8,7 +8,7 @@ function fmt(iso: string) {
 }
 
 export default async function AdminErrorsPage() {
-  await requireAdmin();
+  await requireAdmin({ next: "/internal/admin/errors" });
   const svc = createServiceClient();
 
   const { data: failures } = await svc

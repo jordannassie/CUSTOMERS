@@ -1,11 +1,11 @@
-import { requireAdmin } from "@/lib/admin/require";
+import { requireAdmin } from "@/modules/auth";
 import { createServiceClient } from "@/lib/supabase/service";
 import FeatureRequestsClient from "./FeatureRequestsClient";
 
 export const metadata = { title: "Feature Requests | Admin", robots: { index: false } };
 
 export default async function AdminFeatureRequestsPage() {
-  await requireAdmin();
+  await requireAdmin({ next: "/internal/admin/feature-requests" });
 
   const svc = createServiceClient();
 

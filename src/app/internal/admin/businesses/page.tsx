@@ -1,4 +1,4 @@
-import { requireAdmin } from "@/lib/admin/require";
+import { requireAdmin } from "@/modules/auth";
 import { createServiceClient } from "@/lib/supabase/service";
 import Link from "next/link";
 
@@ -7,7 +7,7 @@ function fmt(iso: string) {
 }
 
 export default async function AdminBusinessesPage() {
-  await requireAdmin();
+  await requireAdmin({ next: "/internal/admin/businesses" });
   const svc = createServiceClient();
 
   const { data: businesses } = await svc

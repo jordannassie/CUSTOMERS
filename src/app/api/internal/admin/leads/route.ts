@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireAdmin } from "@/lib/admin/require";
+import { authErrorResponse, requireAdmin } from "@/modules/auth";
 import { createServiceClient } from "@/lib/supabase/service";
 import type { TablesUpdate } from "@/types/database.types";
 
@@ -10,8 +10,8 @@ const PAGE_SIZE = 30;
 export async function GET(req: NextRequest) {
   try {
     await requireAdmin();
-  } catch {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  } catch (error) {
+    return authErrorResponse(error);
   }
 
   const { searchParams } = new URL(req.url);
@@ -74,8 +74,8 @@ export async function GET(req: NextRequest) {
 export async function PATCH(req: NextRequest) {
   try {
     await requireAdmin();
-  } catch {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  } catch (error) {
+    return authErrorResponse(error);
   }
 
   let body: Record<string, unknown>;

@@ -1,4 +1,4 @@
-import { requireAdmin } from "@/lib/admin/require";
+import { requireAdmin } from "@/modules/auth";
 import { createServiceClient } from "@/lib/supabase/service";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -20,8 +20,8 @@ function Row({ label, value }: { label: string; value: React.ReactNode }) {
 }
 
 export default async function AdminBusinessDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  await requireAdmin();
   const { id } = await params;
+  await requireAdmin({ next: `/internal/admin/businesses/${id}` });
   const svc = createServiceClient();
 
   const { data: biz } = await svc

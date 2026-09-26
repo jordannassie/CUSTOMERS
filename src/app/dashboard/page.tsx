@@ -13,10 +13,9 @@ import { EmptyState, ImpactBadge } from "@/components/geo/dashboard/ui";
 import { CompetitorAvatar } from "@/components/CompetitorAvatar";
 import { getPrimaryBusiness } from "@/lib/geo/dashboard-data";
 import { getDashboardAggregates, PROVIDER_LABELS } from "@/lib/geo/dashboard-aggregator";
+import { isCurrentUserAdmin } from "@/modules/auth";
 
 export const metadata = { title: "Dashboard", robots: { index: false } };
-
-const OWNER_ADMIN_EMAILS = ["jordannassie@gmail.com"];
 
 export default async function DashboardPage({
   searchParams,
@@ -34,11 +33,7 @@ export default async function DashboardPage({
     return <OnboardingWizard initialUrl={initialUrl} initialCompetitor={initialCompetitor} />;
   }
 
-  // Check if logged-in user is admin so sidebar shows Admin Panel link
-  const { createClient: createAuthClient } = await import("@/lib/supabase/server");
-  const authClient = await createAuthClient();
-  const { data: { user: authUser } } = await authClient.auth.getUser();
-  const isAdmin = !!(authUser?.email && OWNER_ADMIN_EMAILS.includes(authUser.email.toLowerCase()));
+  const isAdmin = await isCurrentUserAdmin();
 
   const agg = await getDashboardAggregates(business.id);
   const { overview, trendSeries, models, competitors, citations, results, hasAnyRun } = agg;
