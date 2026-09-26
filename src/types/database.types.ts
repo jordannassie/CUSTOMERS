@@ -67,6 +67,7 @@ export type Database = {
       agencies: {
         Row: {
           created_at: string
+          credit_overdraft: number
           current_period_end: string | null
           id: string
           is_test: boolean
@@ -80,6 +81,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          credit_overdraft?: number
           current_period_end?: string | null
           id?: string
           is_test?: boolean
@@ -93,6 +95,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          credit_overdraft?: number
           current_period_end?: string | null
           id?: string
           is_test?: boolean
@@ -1821,6 +1824,7 @@ export type Database = {
           agency_id: string | null
           balance: number | null
           held: number | null
+          overdraft: number | null
           plan_remaining: number | null
           topup_remaining: number | null
         }
@@ -1828,7 +1832,49 @@ export type Database = {
       }
     }
     Functions: {
-      [_ in never]: never
+      admin_adjust_credits: {
+        Args: {
+          p_admin_user_id: string
+          p_agency_id: string
+          p_delta: number
+          p_note: string
+        }
+        Returns: string
+      }
+      capture_credit: {
+        Args: { p_check_id: string; p_hold_id: string }
+        Returns: boolean
+      }
+      credit_add_grant: {
+        Args: {
+          p_admin_user_id: string
+          p_agency_id: string
+          p_amount: number
+          p_expires_at: string
+          p_kind: string
+          p_note: string
+          p_source: string
+          p_source_id: string
+        }
+        Returns: string
+      }
+      credit_lock_agency: { Args: { p_agency_id: string }; Returns: number }
+      expire_grants: { Args: never; Returns: number }
+      grant_credits: {
+        Args: {
+          p_agency_id: string
+          p_amount: number
+          p_expires_at?: string
+          p_source: string
+          p_source_id: string
+        }
+        Returns: string
+      }
+      hold_credits: {
+        Args: { p_agency_id: string; p_amount: number; p_scan_job_id: string }
+        Returns: string
+      }
+      release_hold: { Args: { p_hold_id: string }; Returns: number }
     }
     Enums: {
       [_ in never]: never
