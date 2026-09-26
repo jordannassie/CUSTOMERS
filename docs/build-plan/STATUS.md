@@ -8,13 +8,14 @@ Rules set by the user on 2026-09-26: 3 worker sessions at once; the leader revie
 
 | Task | Worker pane | Worktree | Dev port | PR |
 |---|---|---|---|---|
-| B-08 Cache Components | 180 | CUSTOMERS-B08 | 3003 | #23 (rebasing on B-09) |
-| B-07 CI on every pull request | 181 | CUSTOMERS-B07 | 3004 | not yet |
-| B-10 Migration workflow and baseline | 182 | CUSTOMERS-B10 | 3005 | not yet |
+| B-71 New homepage | 184 | CUSTOMERS-B71 | 3006 | #28 (draft) |
+| B-11 Core tables (only session changing migrations) | 186 | CUSTOMERS-B11 | 3008 | not yet |
+
+Next when a slot frees: B-12 after B-11; B-61 after B-11. B-24 waits for eval labelling (F-04).
 
 ## Done
 
-B-06 (#22, main), B-09 (#21, mvp).
+B-06 (#22, main), B-07 (#25, main), B-08 (#23, mvp), B-09 (#21, mvp), B-10 (#27, main), B-70 (#26, mvp). Main synced into mvp in #29.
 
 Open questions for people are in [FLAGS.md](./FLAGS.md).
 

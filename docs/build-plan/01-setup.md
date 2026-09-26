@@ -137,7 +137,7 @@ Phase 1 · M · Depends on: B-04 · Blocked by Jordan: no · MVP_SPEC 21, 25, D-
 ---
 
 ### B-07 CI on every pull request
-- [ ] Done
+- [x] Done (PR #25)
 
 Phase 1 · S · Depends on: B-05, B-06 · Blocked by Jordan: no · MVP_SPEC 21 · Branch: `task/B-07-ci-on-every-pull-request` → `main`
 
@@ -158,7 +158,7 @@ Already in place from PR #4: `.github/workflows/security.yml` (scanners) and `ci
 ---
 
 ### B-08 Turn on Next.js 16 Cache Components
-- [ ] Done
+- [x] Done (PR #23, merged into mvp)
 
 Phase 1 · M · Depends on: B-03 · Blocked by Jordan: no · D-80, MVP_SPEC 18.1 rule 14 · Branch: `task/B-08-turn-on-next-js-16` → `mvp`
 

@@ -5,7 +5,7 @@ Goal: an honest, premium public site that explains the AEO tool and sends visito
 ---
 
 ### B-70 Header, footer and section building blocks
-- [ ] Done
+- [x] Done (PR #26, merged into mvp)
 
 Phase 9 · M · Depends on: B-09 · Blocked by Jordan: no · MVP_SPEC 12, D-52, design/DESIGN.md · Branch: `task/B-70-header-footer-and-section-building` → `mvp`
 

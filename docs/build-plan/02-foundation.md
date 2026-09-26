@@ -5,7 +5,7 @@ Goal: the new database, credit system, entitlements and moved data that every fe
 ---
 
 ### B-10 Migration workflow and baseline
-- [ ] Done
+- [x] Done (PR #27)
 
 Phase 2 · M · Depends on: B-06 · Blocked by Jordan: no · MVP_ROADMAP OPS-02, D-43 · Branch: `task/B-10-migration-workflow-and-baseline` → `main`
 
