@@ -1572,6 +1572,7 @@ export type Database = {
           id: string
           location: string | null
           prompt: string
+          source: string
         }
         Insert: {
           active?: boolean
@@ -1582,6 +1583,7 @@ export type Database = {
           id?: string
           location?: string | null
           prompt: string
+          source?: string
         }
         Update: {
           active?: boolean
@@ -1592,6 +1594,7 @@ export type Database = {
           id?: string
           location?: string | null
           prompt?: string
+          source?: string
         }
         Relationships: [
           {

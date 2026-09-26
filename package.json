@@ -12,6 +12,7 @@
     "check:auth": "node scripts/check-auth-calls.ts",
     "check:routes": "node scripts/check-routes.ts",
     "check:rls": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/check-migration-rls.ts",
+    "verify:migration": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/verify-migration.ts",
     "task:ready": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/task-ready.ts",
     "db:types": "supabase gen types typescript --linked > src/types/database.types.ts",
     "db:drift": "bash scripts/db-drift.sh",
