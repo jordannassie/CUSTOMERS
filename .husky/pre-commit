@@ -1,0 +1,6 @@
+# Scans the index, not the working tree: the payload can sit staged while the files on disk look clean.
+# Each scanner proves it still detects a known-bad sample before its result is trusted.
+bash scripts/scan-payload.sh --selftest || exit 1
+bash scripts/scan-payload.sh --staged || exit 1
+bash scripts/scan-secrets.sh --selftest || exit 1
+bash scripts/scan-secrets.sh --staged || exit 1

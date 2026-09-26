@@ -1,0 +1,9 @@
+# Warn, never block: the merge already happened, and a failing pull teaches people to skip hooks.
+bash scripts/scan-payload.sh --selftest >/dev/null 2>&1 || {
+  printf '\033[33mscan-payload selftest failed. The scanner cannot be trusted.\033[0m\n'; exit 0; }
+bash scripts/scan-payload.sh >/dev/null 2>&1 || {
+  printf '\n\033[31mINJECTED PAYLOAD IN THE CODE YOU JUST PULLED\033[0m\n'
+  bash scripts/scan-payload.sh | grep CRITICAL
+  printf '\033[33mDo NOT open this folder in VS Code or Cursor, and do NOT run npm install, dev or build.\033[0m\n\n'
+}
+exit 0
