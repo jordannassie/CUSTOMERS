@@ -1,3 +1,4 @@
+/* eslint-disable max-lines, local/max-lines-hard -- TODO(B-42): split into per-event handlers when the webhook is rebuilt. */
 /**
  * Stripe Webhook Handler — Customers.Direct.
  *
