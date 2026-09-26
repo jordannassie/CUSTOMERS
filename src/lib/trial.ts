@@ -24,18 +24,6 @@ import { PRODUCT_ACCESS } from "@/config/product-access";
 
 export const BETA_LIMITS = PRODUCT_ACCESS.betaLimits;
 
-/**
- * @deprecated Use BETA_LIMITS during beta. Will be replaced by per-plan limits
- *   when billing is enabled.
- */
-export const TRIAL_LIMITS = {
-  maxBusinesses: BETA_LIMITS.maxBusinessesPerAccount,
-  maxCompetitors: BETA_LIMITS.maxCompetitorsPerBusiness,
-  maxPrompts: BETA_LIMITS.maxPromptsPerBusiness,
-  maxManualScans: BETA_LIMITS.maxManualScansPerDay,
-  seoRefreshCooldownHours: BETA_LIMITS.seoRefreshCooldownHours,
-} as const;
-
 // ─── Trial status ─────────────────────────────────────────────────────────────
 
 export interface TrialStatus {

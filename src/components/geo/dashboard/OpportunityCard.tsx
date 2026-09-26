@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Copy, Check, Wrench, X, Loader2 } from "lucide-react";
+import { Copy, Check, X } from "lucide-react";
 import type { Opportunity } from "@/types/geo";
 import { ImpactBadge } from "./ui";
 import MarkdownContent from "@/components/MarkdownContent";
@@ -19,11 +19,9 @@ const CATEGORY_LABELS: Record<string, string> = {
   competitor_gap: "Competitor Gap",
 };
 
-export default function OpportunityCard({ opportunity, businessId }: { opportunity: Opportunity; businessId: string }) {
+export default function OpportunityCard({ opportunity }: { opportunity: Opportunity }) {
   const router = useRouter();
   const [copied, setCopied] = useState(false);
-  const [requesting, setRequesting] = useState(false);
-  const [requested, setRequested] = useState(false);
   const [updating, setUpdating] = useState(false);
 
   async function copyForClaude() {
@@ -31,23 +29,6 @@ export default function OpportunityCard({ opportunity, businessId }: { opportuni
       await navigator.clipboard.writeText(opportunity.claude_prompt);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
-    }
-  }
-
-  async function requestFix() {
-    setRequesting(true);
-    try {
-      const res = await fetch("/api/geo/service-requests", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ business_id: businessId, opportunity_id: opportunity.id }),
-      });
-      if (res.ok) {
-        setRequested(true);
-        router.refresh();
-      }
-    } finally {
-      setRequesting(false);
     }
   }
 
@@ -115,15 +96,6 @@ export default function OpportunityCard({ opportunity, businessId }: { opportuni
           >
             {copied ? <Check size={12} aria-hidden="true" /> : <Copy size={12} aria-hidden="true" />}
             {copied ? "Copied!" : "Copy for Claude"}
-          </button>
-          <button
-            type="button"
-            onClick={requestFix}
-            disabled={requesting || requested}
-            className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-white bg-[#171717] px-3.5 py-2 rounded-lg hover:bg-[#2A2A2A] transition-colors disabled:opacity-60 active:scale-[0.97]"
-          >
-            {requesting ? <Loader2 size={12} className="animate-spin" aria-hidden="true" /> : <Wrench size={12} aria-hidden="true" />}
-            {requested ? "Requested" : "Request Fix"}
           </button>
           <button
             type="button"

@@ -522,25 +522,3 @@ export const MARGIN_THRESHOLDS = {
   warning: 0.80,   // < 80% gross margin → warning
   severe: 0.70,    // < 70% gross margin → severe warning
 } as const;
-
-// ─────────────────────────────────────────────────────────────────────────────
-// LEGACY COMPAT — deprecated aliases, remove once all imports updated
-// ─────────────────────────────────────────────────────────────────────────────
-
-/** @deprecated Use CANONICAL_PLANS */
-export const PRICING_PLANS = CANONICAL_PLANS;
-
-/** @deprecated Use CanonicalPlanId */
-export type PricingPlanId = CanonicalPlanId;
-
-/** @deprecated Use CanonicalPlan */
-export type PricingPlan = CanonicalPlan;
-
-/** @deprecated Use ORDERED_PLANS */
-export const ORDERED_PRICING_PLANS = ORDERED_PLANS;
-
-/** @deprecated Use PRODUCT_ACCESS from @/config/product-access */
-export const PRODUCT_ACCESS_CONFIG = {
-  billingEnabled: process.env.BILLING_ENABLED === "true",
-  betaFreeAccess: process.env.BETA_FREE_ACCESS !== "false",
-};

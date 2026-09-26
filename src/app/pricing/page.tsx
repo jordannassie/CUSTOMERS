@@ -9,8 +9,8 @@ import {
 } from "lucide-react";
 import SiteHeader from "@/components/site/SiteHeader";
 import SiteFooter from "@/components/site/SiteFooter";
-import { ORDERED_PRICING_PLANS, COMPARISON_TABLE } from "@/config/pricing";
-import type { PricingPlan } from "@/config/pricing";
+import { ORDERED_PLANS, COMPARISON_TABLE } from "@/config/pricing";
+import type { CanonicalPlan } from "@/config/pricing";
 
 // ─── Shared design tokens ─────────────────────────────────────────────────────
 
@@ -53,7 +53,7 @@ function Cell({ value }: { value: string | boolean }) {
 
 // ─── Plan card ────────────────────────────────────────────────────────────────
 
-function PlanCard({ plan }: { plan: PricingPlan }) {
+function PlanCard({ plan }: { plan: CanonicalPlan }) {
   const colors = PLAN_COLORS[plan.id];
   const isEnterprise = plan.id === "enterprise";
 
@@ -147,7 +147,7 @@ function ComparisonTable() {
         {/* Header */}
         <div className="grid grid-cols-5 gap-0 mb-2 sticky top-0 bg-white z-10 border-b border-[#EEEEEA]">
           <div className="py-3 pr-4" />
-          {ORDERED_PRICING_PLANS.map((plan) => (
+          {ORDERED_PLANS.map((plan) => (
             <div key={plan.id} className="py-3 px-3 text-center">
               <p
                 className={`text-[13px] font-bold ${
@@ -296,7 +296,7 @@ export default function PricingPage() {
       {/* ── Plan positioning row ── */}
       <section className="px-4 pb-4">
         <div className="max-w-[1100px] mx-auto grid grid-cols-2 sm:grid-cols-4 gap-3">
-          {ORDERED_PRICING_PLANS.map((plan) => (
+          {ORDERED_PLANS.map((plan) => (
             <div key={plan.id} className="text-center">
               <p
                 className={`text-[11px] font-bold uppercase tracking-widest mb-0.5 ${
@@ -314,7 +314,7 @@ export default function PricingPage() {
       {/* ── Plan cards ── */}
       <section className="px-4 pb-16">
         <div className="max-w-[1100px] mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mt-4">
-          {ORDERED_PRICING_PLANS.map((plan) => (
+          {ORDERED_PLANS.map((plan) => (
             <PlanCard key={plan.id} plan={plan} />
           ))}
         </div>
@@ -335,7 +335,7 @@ export default function PricingPage() {
 
           {/* Bottom CTAs */}
           <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mt-8">
-            {ORDERED_PRICING_PLANS.map((plan) => (
+            {ORDERED_PLANS.map((plan) => (
               <Link
                 key={plan.id}
                 href={plan.ctaHref}

@@ -28,7 +28,7 @@ Phase 1 · S · Depends on: nothing · Blocked by Jordan: partly (keys in accoun
 ---
 
 ### B-02 Backup tag, database backup, staging branch
-- [ ] Done
+- [x] Done (PR #6)
 
 Phase 1 · S · Depends on: nothing · Blocked by Jordan: no · D-45 · Branch: `task/B-02-backup-and-staging` → `main`
 

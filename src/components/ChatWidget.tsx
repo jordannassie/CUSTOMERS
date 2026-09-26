@@ -14,13 +14,6 @@ function IconBarChart() {
     </svg>
   );
 }
-function IconMegaphone() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M3 11l18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/>
-    </svg>
-  );
-}
 function IconBuilding() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -45,7 +38,6 @@ function IconCalendar() {
 
 const CHAT_CHOICES: { value: InterestValue; label: string; icon: React.ReactNode }[] = [
   { value: "ai_visibility", label: "AI Visibility",   icon: <IconBarChart /> },
-  { value: "chatgpt_ads",   label: "ChatGPT Ads",     icon: <IconMegaphone /> },
   { value: "agency",        label: "Join as Agency",  icon: <IconBuilding /> },
   { value: "book_demo",     label: "Book Demo Call",  icon: <IconCalendar /> },
   { value: "other",         label: "Other",            icon: <IconChat /> },
