@@ -28,7 +28,7 @@ Phase 1 · S · Depends on: nothing · Blocked by Jordan: partly (keys in accoun
 ---
 
 ### B-02 Backup tag, database backup, staging branch
-- [ ] Done
+- [x] Done (PR #6)
 
 Phase 1 · S · Depends on: nothing · Blocked by Jordan: no · D-45 · Branch: `task/B-02-backup-and-staging` → `main`
 
@@ -49,7 +49,7 @@ Phase 1 · S · Depends on: nothing · Blocked by Jordan: no · D-45 · Branch: 
 ---
 
 ### B-03 Remove cut products and dead code
-- [ ] Done
+- [x] Done (PR #10)
 
 Phase 1 · M · Depends on: B-02 · Blocked by Jordan: no · MVP_SPEC 17, D-04, D-05, D-06 · Branch: `task/B-03-remove-cut-products-and-dead` → `main`
 

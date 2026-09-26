@@ -1,7 +1,5 @@
 import { redirect } from "next/navigation";
-import Link from "next/link";
 import { Quote, Globe, ExternalLink, Link2, FileText } from "lucide-react";
-import BotIcon from "@/components/BotIcon";
 import DashboardShell from "@/components/geo/dashboard/DashboardShell";
 import { EmptyState } from "@/components/geo/dashboard/ui";
 import { DomainFavicon } from "@/components/DomainFavicon";
@@ -116,18 +114,6 @@ export default async function CitationsPage() {
               : "Sources cited by AI when responding to your tracked prompts."}
           </p>
         </div>
-        {/* Direct Agent */}
-        {totalCitations > 0 && (
-          <Link
-            href={`/dashboard/direct-agent?q=${encodeURIComponent(
-              "How can I get cited by more high-quality sources in AI responses?",
-            )}`}
-            className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-[#777773] bg-white border border-[#E5E5E1] rounded-lg px-3 py-2 hover:bg-[#F5F5F2] hover:border-[#D4D4CF] hover:text-[#171717] transition-colors"
-          >
-            <BotIcon size={14} aria-hidden="true" />
-            Ask Direct Agent
-          </Link>
-        )}
       </div>
 
       {sorted.length === 0 ? (
@@ -312,17 +298,6 @@ export default async function CitationsPage() {
                     Pages from <strong className="font-semibold text-[#777773]">{ownDomain}</strong> cited by AI
                   </p>
                 </div>
-                {ownPages.length > 0 && (
-                  <Link
-                    href={`/dashboard/direct-agent?q=${encodeURIComponent(
-                      "How can I get more of my pages cited by AI? Which pages should I optimise first?",
-                    )}`}
-                    className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-[#777773] hover:text-[#171717] transition-colors"
-                  >
-                    <BotIcon size={13} aria-hidden="true" />
-                    How to improve
-                  </Link>
-                )}
               </div>
 
               {ownPages.length === 0 ? (

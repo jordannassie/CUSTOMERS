@@ -29,7 +29,7 @@ export default async function OpportunitiesPage() {
       ) : (
         <div className="flex flex-col gap-4">
           {open.map((o) => (
-            <OpportunityCard key={o.id} opportunity={o} businessId={business.id} />
+            <OpportunityCard key={o.id} opportunity={o} />
           ))}
         </div>
       )}
@@ -41,7 +41,7 @@ export default async function OpportunitiesPage() {
           </h2>
           <div className="flex flex-col gap-4 opacity-70">
             {closed.map((o) => (
-              <OpportunityCard key={o.id} opportunity={o} businessId={business.id} />
+              <OpportunityCard key={o.id} opportunity={o} />
             ))}
           </div>
         </div>

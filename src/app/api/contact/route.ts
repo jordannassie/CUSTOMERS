@@ -6,16 +6,16 @@ import crypto from "crypto";
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 // New canonical interest values (also used as topic in the DB)
-const NEW_INTERESTS = ["ai_visibility", "chatgpt_ads", "agency", "book_demo", "other"] as const;
+const NEW_INTERESTS = ["ai_visibility", "agency", "book_demo", "other"] as const;
 
 // Legacy topic values preserved for backward compatibility with old records
-const LEGACY_TOPICS = ["product", "support", "sales", "enterprise"] as const;
+const LEGACY_TOPICS = ["product", "support", "sales", "enterprise", "chatgpt_ads"] as const;
 
 const ALL_VALID_TOPICS = [...NEW_INTERESTS, ...LEGACY_TOPICS] as const;
 type ValidTopic = (typeof ALL_VALID_TOPICS)[number];
 
 // Valid source identifiers
-const VALID_SOURCES = ["contact_page", "ads_page", "chat", "agency", "other"] as const;
+const VALID_SOURCES = ["contact_page", "chat", "agency", "other"] as const;
 type Source = (typeof VALID_SOURCES)[number];
 
 function hashIp(ip: string | null): string | null {

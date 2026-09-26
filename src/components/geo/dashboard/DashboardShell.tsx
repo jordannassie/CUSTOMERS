@@ -27,7 +27,6 @@ import {
 } from "lucide-react";
 import TrialBanner from "@/components/geo/dashboard/TrialBanner";
 import SuggestFeatureModal from "@/components/geo/dashboard/SuggestFeatureModal";
-import BotIcon from "@/components/BotIcon";
 
 const LOGO = "/images/logos/logo-black.png";
 
@@ -38,9 +37,7 @@ const NAV = [
   { label: "Prompts",             href: "/dashboard/prompts",          icon: MessagesSquare  },
   { label: "Search Intelligence", href: "/dashboard/seo",              icon: BarChart2       },
   { label: "Sources",             href: "/dashboard/citations",        icon: Link2           },
-  { label: "Agent Readiness",     href: "/dashboard/agent-readiness",  icon: ShieldCheck,    badge: "New" },
   { label: "Opportunities",       href: "/dashboard/opportunities",    icon: Lightbulb       },
-  { label: "Direct Agent",        href: "/dashboard/direct-agent",     icon: BotIcon         },
   { label: "Reports",             href: "/dashboard/reports",          icon: FileBarChart    },
   { label: "Billing",             href: "/dashboard/billing",          icon: CreditCard      },
   { label: "Settings",            href: "/dashboard/settings",         icon: Settings        },
@@ -204,7 +201,7 @@ function SidebarContent({
         <p className="text-[9px] font-bold uppercase tracking-widest text-[#A3A3A0] mb-1.5 px-2">
           Pages
         </p>
-        {NAV.map(({ label, href, icon: Icon, badge }) => {
+        {NAV.map(({ label, href, icon: Icon }) => {
           const active = href === "/dashboard" ? pathname === href : pathname.startsWith(href);
           return (
             <Link
@@ -224,11 +221,6 @@ function SidebarContent({
                 className={active ? "text-[#555552]" : "text-[#A3A3A0]"}
               />
               <span className="flex-1">{label}</span>
-              {badge && (
-                <span className="text-[9px] font-bold bg-[#0066FF] text-white px-1.5 py-0.5 rounded-full uppercase tracking-wide leading-none">
-                  {badge}
-                </span>
-              )}
             </Link>
           );
         })}

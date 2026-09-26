@@ -23,11 +23,11 @@ const siteUrl = "https://customers.direct";
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: "Customers.Direct — AI sends customers directly to your business",
+    default: "Customers.Direct: AI sends customers directly to your business",
     template: "%s | Customers.Direct",
   },
   description:
-    "Customers.Direct helps AI recommend your business to buyers — measuring AI search visibility, answering every call, starting DM conversations, and converting website visitors into customers.",
+    "Customers.Direct checks whether ChatGPT, Claude and Perplexity recommend your business, shows why competitors win, and gives you steps to fix it.",
   icons: {
     icon: BRAND_ICON,
     shortcut: BRAND_ICON,
@@ -37,23 +37,23 @@ export const metadata: Metadata = {
     type: "website",
     siteName: "Customers.Direct",
     url: siteUrl,
-    title: "Customers.Direct — AI sends customers directly to your business",
+    title: "Customers.Direct: AI sends customers directly to your business",
     description:
-      "Customers.Direct helps AI recommend your business to buyers — measuring AI search visibility, answering every call, starting DM conversations, and converting website visitors.",
+      "Customers.Direct checks whether ChatGPT, Claude and Perplexity recommend your business, shows why competitors win, and gives you steps to fix it.",
     images: [
       {
         url: LOGO_URL,
         width: 1200,
         height: 630,
-        alt: "Customers.Direct — AI sends customers directly to your business",
+        alt: "Customers.Direct: AI sends customers directly to your business",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Customers.Direct — AI sends customers directly to your business",
+    title: "Customers.Direct: AI sends customers directly to your business",
     description:
-      "Customers.Direct helps AI recommend your business to buyers — measuring AI visibility, answering every call, starting conversations, and converting visitors.",
+      "Customers.Direct checks whether ChatGPT, Claude and Perplexity recommend your business, shows why competitors win, and gives you steps to fix it.",
     images: [LOGO_URL],
   },
 };
@@ -65,7 +65,7 @@ const organizationJsonLd = {
   url: siteUrl,
   logo: LOGO_URL,
   description:
-    "Customers.Direct helps AI send customers directly to your business — AI Search Visibility, AI Employee, DM Ads, and Call Bar.",
+    "Customers.Direct checks whether ChatGPT, Claude and Perplexity recommend your business, shows why competitors win, and gives you steps to fix it.",
   sameAs: [
     "https://www.instagram.com/customersdirect",
     "https://www.facebook.com/profile.php?id=61592851422075",

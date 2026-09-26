@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, Bot } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { CompetitorAvatar } from "@/components/CompetitorAvatar";
 import type { CompetitorMetric } from "@/lib/geo/dashboard-aggregator";
 
@@ -115,21 +115,6 @@ export default function CompetitorLeaderboard({
           );
         })}
       </div>
-
-      {/* Ask Direct Agent CTA */}
-      {hasData && competitors.length > 0 && (
-        <div className="px-4 py-2.5 border-t border-[#EEEEEA] bg-[#FAFAF8]">
-          <Link
-            href={`/dashboard/direct-agent?q=${encodeURIComponent(
-              `Why are my competitors outranking me in AI search? What should I do?`,
-            )}`}
-            className="flex items-center gap-1.5 text-[11px] font-semibold text-[#777773] hover:text-[#171717] transition-colors"
-          >
-            <Bot size={11} aria-hidden="true" />
-            Ask why competitors beat me
-          </Link>
-        </div>
-      )}
 
       <div className="px-4 py-2.5 border-t border-[#EEEEEA]">
         <Link

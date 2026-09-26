@@ -55,25 +55,21 @@ const FOOTER_COLUMNS = [
       { label: "Competitive Intelligence", href: "/#competitors" },
       { label: "Citations & Sources", href: "/#citations" },
       { label: "Opportunities", href: "/#opportunities" },
-      { label: "Direct Agent", href: "/#direct-agent" },
-      { label: "Pricing", href: "/ai-search#pricing" },
+      { label: "Pricing", href: "/pricing" },
     ],
   },
   {
     heading: "Solutions",
     links: [
-      { label: "Local Businesses", href: "/ai-search" },
+      { label: "Local Businesses", href: "/" },
       { label: "Agencies & Resellers", href: "/agency" },
-      { label: "Multi-Location", href: "/ai-search" },
-      { label: "Marketing Teams", href: "/ai-search" },
     ],
   },
   {
     heading: "Resources",
     links: [
-      { label: "How It Works", href: "/how-it-works" },
-      { label: "AI Search Guide", href: "/ai-search" },
-      { label: "FAQ", href: "/ai-search#faq" },
+      { label: "How It Works", href: "/#how-it-works" },
+      { label: "FAQ", href: "/#faq" },
     ],
   },
   {
@@ -92,7 +88,7 @@ export default function SiteFooter() {
     <footer className="bg-[#171717] text-white">
       <div className="max-w-[1200px] mx-auto px-4 sm:px-6 pt-16 pb-10">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-10 mb-12">
-          {/* Brand — 2 cols */}
+          {/* Brand: 2 cols */}
           <div className="lg:col-span-2">
             <Link href="/" aria-label="Customers.Direct" className="inline-block mb-5">
               <Image

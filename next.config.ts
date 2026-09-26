@@ -1,35 +1,27 @@
 import type { NextConfig } from "next";
 
+// Products cut from the MVP (D-04); old links and search results land on the homepage.
+const CUT_PAGES = [
+  "/ai-employee",
+  "/ai-phone",
+  "/dm-ads",
+  "/customer-acquisition",
+  "/ads",
+  "/call-bar",
+  "/sales",
+  "/home-2",
+  "/ai-search",
+];
+
 const nextConfig: NextConfig = {
-  async headers() {
-    return [
-      {
-        source: "/embed/call-bar.v1.js",
-        headers: [
-          {
-            key: "Cache-Control",
-            value: "public, max-age=86400, stale-while-revalidate=604800",
-          },
-          {
-            key: "X-Content-Type-Options",
-            value: "nosniff",
-          },
-        ],
-      },
-    ];
-  },
   async redirects() {
     return [
-      {
-        source: "/ai-phone",
-        destination: "/ai-employee",
-        permanent: true,
-      },
-      {
-        source: "/customer-acquisition",
-        destination: "/dm-ads",
-        permanent: true,
-      },
+      ...CUT_PAGES.map((source) => ({ source, destination: "/", permanent: true })),
+      { source: "/sales/:path*", destination: "/", permanent: true },
+      { source: "/how-it-works", destination: "/#how-it-works", permanent: true },
+      { source: "/admin/:path*", destination: "/internal/admin", permanent: true },
+      { source: "/dashboard/direct-agent", destination: "/dashboard", permanent: true },
+      { source: "/dashboard/agent-readiness", destination: "/dashboard", permanent: true },
       {
         source: "/book",
         destination: "https://calendar.app.google/muM2Kqc8oYnWBPXXA",

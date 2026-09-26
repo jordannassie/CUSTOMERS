@@ -693,6 +693,7 @@ Delete after the backup tag exists. Check each path for remaining imports first.
 - `src/components/PromoBar.tsx`, `MobileCallBar.tsx`, `Header.tsx`, `MainHeader.tsx`, old homepage section components used only by removed pages, `src/components/site/AIOrbitAnimation.tsx`
 - Dead homepage code in `HomepagePlatform.tsx` (old pricing table and superseded sections)
 - Dashboard: `/dashboard/direct-agent`, `/dashboard/agent-readiness`, `/dashboard/seo`, `/dashboard/visibility` and `/dashboard/reports` (merged into Overview), unused components `PromptPerformanceTable`, `ModelVisibilityGrid`, `VisibilityMultiSeriesChart`, `YourCitedPages`, `AgentCTA`
+  - B-03 removes Direct Agent, Agent Readiness and the unused components. `/dashboard/visibility` and `/dashboard/reports` stay live until the new Overview exists and B-58 redirects them. `/dashboard/seo` and `src/lib/seo/*` wait for D-06 to be decided.
 
 **API routes and libraries**
 - `src/app/api/admin/*` and `src/lib/admin-session.ts` (move `feature-requests/[id]` to `/api/internal/admin/` first)

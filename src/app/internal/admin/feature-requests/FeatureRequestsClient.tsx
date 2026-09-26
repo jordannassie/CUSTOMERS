@@ -60,7 +60,7 @@ export default function FeatureRequestsClient({ requests: initial }: { requests:
   async function updateStatus(id: string, status: Status) {
     setUpdating(id);
     try {
-      const res = await fetch(`/api/admin/feature-requests/${id}`, {
+      const res = await fetch(`/api/internal/admin/feature-requests/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status }),

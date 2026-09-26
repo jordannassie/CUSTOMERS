@@ -9,8 +9,8 @@ import {
 } from "lucide-react";
 import SiteHeader from "@/components/site/SiteHeader";
 import SiteFooter from "@/components/site/SiteFooter";
-import { ORDERED_PRICING_PLANS, COMPARISON_TABLE } from "@/config/pricing";
-import type { PricingPlan } from "@/config/pricing";
+import { ORDERED_PLANS, COMPARISON_TABLE } from "@/config/pricing";
+import type { CanonicalPlan } from "@/config/pricing";
 
 // ─── Shared design tokens ─────────────────────────────────────────────────────
 
@@ -53,7 +53,7 @@ function Cell({ value }: { value: string | boolean }) {
 
 // ─── Plan card ────────────────────────────────────────────────────────────────
 
-function PlanCard({ plan }: { plan: PricingPlan }) {
+function PlanCard({ plan }: { plan: CanonicalPlan }) {
   const colors = PLAN_COLORS[plan.id];
   const isEnterprise = plan.id === "enterprise";
 
@@ -147,7 +147,7 @@ function ComparisonTable() {
         {/* Header */}
         <div className="grid grid-cols-5 gap-0 mb-2 sticky top-0 bg-white z-10 border-b border-[#EEEEEA]">
           <div className="py-3 pr-4" />
-          {ORDERED_PRICING_PLANS.map((plan) => (
+          {ORDERED_PLANS.map((plan) => (
             <div key={plan.id} className="py-3 px-3 text-center">
               <p
                 className={`text-[13px] font-bold ${
@@ -211,7 +211,7 @@ const FAQ_ITEMS = [
   },
   {
     q: "Is pricing per business?",
-    a: "Yes. Each business workspace has its own plan — Starter, Growth, or Pro. One login can manage multiple businesses, each with its own dashboard, competitors, scans, and data.",
+    a: "Yes. Each business workspace has its own plan (Starter, Growth, or Pro). One login can manage multiple businesses, each with its own dashboard, competitors, scans, and data.",
   },
   {
     q: "What counts as a tracked AI search?",
@@ -219,11 +219,11 @@ const FAQ_ITEMS = [
   },
   {
     q: "What happens to my data when billing starts?",
-    a: "All your business data, scans, competitors, and history will remain. You'll be able to choose a paid plan that fits your needs — or we'll work something out.",
+    a: "All your business data, scans, competitors, and history will remain. You'll be able to choose a paid plan that fits your needs, or we'll work something out.",
   },
   {
     q: "Can agencies use Customers.Direct?",
-    a: "Yes. Agencies can manage multiple client businesses from one login. Each business gets its own dashboard, competitors, scans, and data. There is no separate agency plan — the multi-business architecture is built in.",
+    a: "Yes. Agencies can manage multiple client businesses from one login. Each business gets its own dashboard, competitors, scans, and data. There is no separate agency plan, the multi-business architecture is built in.",
   },
   {
     q: "Can I change plans later?",
@@ -231,7 +231,7 @@ const FAQ_ITEMS = [
   },
   {
     q: "Does Customers.Direct actually fix my website?",
-    a: "Customers.Direct identifies what needs to be fixed and provides Direct Agent guidance and Claude implementation prompts. Autonomous website changes are not part of the current product.",
+    a: "Customers.Direct identifies what needs to be fixed and provides step-by-step fixes and Claude implementation prompts. Autonomous website changes are not part of the current product.",
   },
 ];
 
@@ -296,7 +296,7 @@ export default function PricingPage() {
       {/* ── Plan positioning row ── */}
       <section className="px-4 pb-4">
         <div className="max-w-[1100px] mx-auto grid grid-cols-2 sm:grid-cols-4 gap-3">
-          {ORDERED_PRICING_PLANS.map((plan) => (
+          {ORDERED_PLANS.map((plan) => (
             <div key={plan.id} className="text-center">
               <p
                 className={`text-[11px] font-bold uppercase tracking-widest mb-0.5 ${
@@ -314,7 +314,7 @@ export default function PricingPage() {
       {/* ── Plan cards ── */}
       <section className="px-4 pb-16">
         <div className="max-w-[1100px] mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mt-4">
-          {ORDERED_PRICING_PLANS.map((plan) => (
+          {ORDERED_PLANS.map((plan) => (
             <PlanCard key={plan.id} plan={plan} />
           ))}
         </div>
@@ -335,7 +335,7 @@ export default function PricingPage() {
 
           {/* Bottom CTAs */}
           <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mt-8">
-            {ORDERED_PRICING_PLANS.map((plan) => (
+            {ORDERED_PLANS.map((plan) => (
               <Link
                 key={plan.id}
                 href={plan.ctaHref}
@@ -382,7 +382,7 @@ export default function PricingPage() {
                 href="/signup"
                 className="inline-flex items-center gap-2 bg-[#171717] text-white font-semibold px-5 py-3 rounded-full text-[14px] hover:bg-[#2A2A2A] transition-all active:scale-[0.97]"
               >
-                Start free — add clients later
+                Start free, add clients later
                 <ArrowRight size={14} />
               </Link>
             </div>
@@ -566,7 +566,7 @@ export default function PricingPage() {
               </h2>
               <p className="text-[16px] text-white/75 max-w-[480px] mx-auto mb-10 leading-relaxed">
                 Track your visibility across AI search and Google, compare competitors, uncover
-                opportunities, and improve with Direct Agent and Claude prompts.
+                opportunities, and improve with step-by-step fixes and Claude prompts.
               </p>
               <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
                 <Link

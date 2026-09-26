@@ -9,7 +9,7 @@ import { BarChart3, ArrowRight } from "lucide-react";
 export const metadata: Metadata = {
   title: "Contact | Customers.Direct",
   description:
-    "Get in touch with the Customers.Direct team. Questions about AI Visibility, ChatGPT Ads, or anything else — we're here to help.",
+    "Get in touch with the Customers.Direct team. Questions about AI Visibility or anything else? We're here to help.",
 };
 
 export default function ContactPage() {
@@ -43,13 +43,13 @@ export default function ContactPage() {
               Talk to Customers.Direct
             </h1>
             <p className="text-[16px] text-[#777773] leading-relaxed">
-              Have a question about AI Visibility, ChatGPT Ads, or anything else?
+              Have a question about AI Visibility or anything else?
               Send us a message and we&apos;ll get back to you.
             </p>
           </div>
 
           <div className="grid md:grid-cols-[1fr_320px] gap-10 items-start">
-            {/* Form — Suspense required for useSearchParams in ContactForm */}
+            {/* Form: Suspense required for useSearchParams in ContactForm */}
             <Suspense
               fallback={
                 <div className="bg-white border border-[#E5E5E1] rounded-2xl p-8 animate-pulse h-[500px]" />
@@ -64,7 +64,7 @@ export default function ContactPage() {
               {/* Products */}
               <div className="bg-white border border-[#E5E5E1] rounded-2xl p-6">
                 <h2 className="text-[12.5px] font-bold text-[#171717] mb-4 uppercase tracking-wider">
-                  Our products
+                  Our product
                 </h2>
                 <div className="flex flex-col gap-4">
                   <div className="flex items-start gap-3">
@@ -82,26 +82,6 @@ export default function ContactPage() {
                         className="inline-flex items-center gap-1 text-[11.5px] font-semibold text-[#0866F5] hover:underline mt-1"
                       >
                         See plans <ArrowRight size={10} />
-                      </Link>
-                    </div>
-                  </div>
-
-                  <div className="border-t border-[#F0F0EC] pt-4 flex items-start gap-3">
-                    <div className="w-8 h-8 rounded-xl bg-[#EFF6FF] flex items-center justify-center shrink-0 mt-0.5">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src="/icons/ai-platforms/chatgpt.svg" alt="" aria-hidden="true" width={14} height={14} className="opacity-80" />
-                    </div>
-                    <div>
-                      <p className="text-[13px] font-bold text-[#171717]">ChatGPT Ads</p>
-                      <p className="text-[12px] text-[#0866F5] font-semibold mb-0.5">$1,000/month + ad spend</p>
-                      <p className="text-[11.5px] text-[#A3A3A0] leading-snug">
-                        Ad creation and campaign management for paid placements in ChatGPT.
-                      </p>
-                      <Link
-                        href="/ads"
-                        className="inline-flex items-center gap-1 text-[11.5px] font-semibold text-[#0866F5] hover:underline mt-1"
-                      >
-                        Learn more <ArrowRight size={10} />
                       </Link>
                     </div>
                   </div>
