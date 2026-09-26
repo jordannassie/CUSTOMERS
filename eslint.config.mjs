@@ -49,6 +49,41 @@ const LEGACY_SUPABASE_IN_COMPONENTS = [
   "src/components/geo/ResetPasswordForm.tsx",
 ];
 
+const LEGACY_SERVICE_CLIENT = [
+  "src/app/api/contact/route.ts",
+  "src/app/api/geo/businesses/logo/route.ts",
+  "src/app/api/geo/cron/run-monitoring/route.ts",
+  "src/app/api/geo/feature-requests/route.ts",
+  "src/app/api/internal/admin/feature-requests/[[]id]/route.ts",
+  "src/app/api/internal/admin/leads/route.ts",
+  "src/app/api/stripe/add-business/route.ts",
+  "src/app/api/stripe/cancel-business/route.ts",
+  "src/app/api/stripe/change-plan/route.ts",
+  "src/app/api/stripe/invoices/route.ts",
+  "src/app/api/stripe/portal/route.ts",
+  "src/app/api/stripe/webhook/route.ts",
+  "src/app/dashboard/billing/page.tsx",
+  "src/app/internal/admin/accounts/page.tsx",
+  "src/app/internal/admin/billing/page.tsx",
+  "src/app/internal/admin/businesses/[[]id]/page.tsx",
+  "src/app/internal/admin/businesses/page.tsx",
+  "src/app/internal/admin/errors/page.tsx",
+  "src/app/internal/admin/feature-requests/page.tsx",
+  "src/app/internal/admin/page.tsx",
+  "src/app/internal/admin/scans/page.tsx",
+  "src/app/internal/admin/usage/page.tsx",
+  "src/app/internal/admin/users/page.tsx",
+  "src/lib/admin/require.ts",
+  "src/lib/billing/accounts.ts",
+  "src/lib/billing/entitlements.ts",
+  "src/lib/billing/usage.ts",
+];
+
+// The service role key skips RLS, so only a module's dal.ts may create that client (B-15).
+const NO_SERVICE_CLIENT = {
+  paths: [{ name: "@/lib/supabase/service", message: "The service role client is only for dal.ts files." }],
+};
+
 const CLIENT_LIBRARIES = ["@supabase/*", "stripe", "@stripe/*", "openai", "@anthropic-ai/sdk"];
 const CLIENT_WRAPPERS = ["src/lib/supabase/**", "src/lib/stripe.ts", "src/lib/geo/providers/**"];
 
@@ -109,6 +144,7 @@ const eslintConfig = defineConfig([
       "boundaries/dependencies": ["error", dependencyOptions],
       "no-restricted-syntax": ["error", NO_PROCESS_ENV, NO_GET_SESSION],
       "local/no-select-star": ["error", NO_SELECT_STAR],
+      "no-restricted-imports": ["error", NO_SERVICE_CLIENT],
     },
   },
   {
@@ -117,7 +153,15 @@ const eslintConfig = defineConfig([
   },
   {
     files: ["src/**/dal.ts"],
-    rules: { "local/no-select-star": "off" },
+    rules: { "local/no-select-star": "off", "no-restricted-imports": "off" },
+  },
+  {
+    files: ["src/**/*.test.ts"],
+    rules: { "no-restricted-imports": "off" },
+  },
+  {
+    files: LEGACY_SERVICE_CLIENT,
+    rules: { "no-restricted-imports": ["warn", NO_SERVICE_CLIENT] },
   },
   {
     files: LEGACY_SELECT_STAR,

@@ -5,8 +5,9 @@ import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Loader2, ArrowRight } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
+import { createClient } from "@/lib/supabase/browser";
 import { env } from "@/lib/env";
+import { safeNextPath } from "@/lib/safe-next";
 
 const LOGO = "/images/logos/logo-black.png";
 
@@ -24,6 +25,11 @@ const GoogleIcon = () => (
     <path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.3-2.2 4.2-4.1 5.5l6.6 5.4C41.5 35.9 44 30.4 44 24c0-1.3-.1-2.7-.4-3.5z" />
   </svg>
 );
+
+// The page the visitor asked for before being sent to log in (BUG-009).
+function nextFromUrl() {
+  return safeNextPath(new URLSearchParams(window.location.search).get("next"));
+}
 
 export default function AuthForm({ defaultMode = "login", errorParam = "" }: AuthFormProps) {
   const router = useRouter();
@@ -55,8 +61,7 @@ export default function AuthForm({ defaultMode = "login", errorParam = "" }: Aut
     setError(null);
     setLoading("google");
     const supabase = createClient();
-    const params = new URLSearchParams(window.location.search);
-    const next = params.get("next") ?? "/dashboard";
+    const next = nextFromUrl();
     // Always use the canonical production URL so the OAuth redirect URI
     // matches what is registered in Google Cloud Console / Supabase,
     // and so the PKCE code-verifier cookie is on the correct domain.
@@ -123,7 +128,7 @@ export default function AuthForm({ defaultMode = "login", errorParam = "" }: Aut
       }
       return;
     }
-    router.push("/dashboard");
+    router.push(nextFromUrl());
     router.refresh();
   }
 

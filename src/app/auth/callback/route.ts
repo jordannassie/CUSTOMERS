@@ -2,6 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { NextResponse, type NextRequest } from "next/server";
 import { env } from "@/lib/env";
+import { safeNextPath } from "@/lib/safe-next";
 
 /**
  * OAuth / magic-link callback.
@@ -37,8 +38,7 @@ export async function GET(request: NextRequest) {
   }
 
   // Determine where to redirect after a successful login
-  const next     = searchParams.get("next") ?? "/dashboard";
-  const safePath = next.startsWith("/") ? next : "/dashboard";
+  const safePath = safeNextPath(searchParams.get("next"));
 
   // Build both responses up-front so we can attach cookies to whichever we return
   const successResponse = NextResponse.redirect(`${baseUrl}${safePath}`);

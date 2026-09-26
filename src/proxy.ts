@@ -1,73 +1,62 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { env } from "@/lib/env";
+import { safeNextPath } from "@/lib/safe-next";
 
-/**
- * Middleware that refreshes the Supabase auth session on every request
- * and forwards updated cookies to both the server and the browser.
- *
- * Add any route-level auth guards below the session refresh block.
- */
+// Quick redirects only (MVP_SPEC 18.1 rule 4). Every page, action and route still checks access
+// itself through src/modules/auth.
+const PROTECTED = ["/dashboard", "/internal", "/design-preview"];
+const AUTH_PAGES = ["/login", "/signup"];
+
 export async function proxy(request: NextRequest) {
-  let supabaseResponse = NextResponse.next({ request });
+  let response = NextResponse.next({ request });
 
-  const supabase = createServerClient(
-    env.NEXT_PUBLIC_SUPABASE_URL,
-    env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll();
-        },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) =>
-            request.cookies.set(name, value)
-          );
-          supabaseResponse = NextResponse.next({ request });
-          cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options)
-          );
-        },
+  const supabase = createServerClient(env.NEXT_PUBLIC_SUPABASE_URL, env.NEXT_PUBLIC_SUPABASE_ANON_KEY, {
+    cookies: {
+      getAll() {
+        return request.cookies.getAll();
       },
-    }
-  );
+      setAll(cookiesToSet) {
+        cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
+        response = NextResponse.next({ request });
+        cookiesToSet.forEach(({ name, value, options }) => response.cookies.set(name, value, options));
+      },
+    },
+  });
 
-  // Refresh session: do NOT remove this line.
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // Also refreshes an expiring session and writes the new cookies; do not remove.
+  const { data } = await supabase.auth.getClaims();
+  const signedIn = !!data?.claims;
 
-  // --- Auth guard: /dashboard requires a signed-in Supabase Auth user ---
-  const { pathname } = request.nextUrl;
+  const { pathname, search } = request.nextUrl;
+  const isProtected = PROTECTED.some((path) => pathname === path || pathname.startsWith(`${path}/`));
 
-  if (!user && (pathname.startsWith("/dashboard") || pathname.startsWith("/internal") || pathname === "/design-preview")) {
+  if (!signedIn && isProtected) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
-    url.searchParams.set("next", pathname);
-    return NextResponse.redirect(url);
-  }
-
-  // Signed-in users hitting /login or /signup go straight to their dashboard.
-  if (user && (pathname === "/login" || pathname === "/signup")) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/dashboard";
     url.search = "";
-    return NextResponse.redirect(url);
+    url.searchParams.set("next", `${pathname}${search}`);
+    return redirectKeepingCookies(url, response);
   }
 
-  return supabaseResponse;
+  if (signedIn && AUTH_PAGES.includes(pathname)) {
+    const target = new URL(safeNextPath(request.nextUrl.searchParams.get("next")), request.url);
+    return redirectKeepingCookies(target, response);
+  }
+
+  return response;
+}
+
+// A refreshed session must reach the browser even when we redirect.
+function redirectKeepingCookies(url: URL, from: NextResponse) {
+  const redirect = NextResponse.redirect(url);
+  from.cookies.getAll().forEach((cookie) => redirect.cookies.set(cookie));
+  return redirect;
 }
 
 export const config = {
   matcher: [
-    /*
-     * Match every request except:
-     *  - _next/static  (static assets)
-     *  - _next/image   (image optimisation)
-     *  - favicon.ico
-     *  - public folder files
-     *  - auth/callback  (must not be intercepted, it exchanges the OAuth code and sets cookies)
-     */
+    // Skips static files, image optimisation and auth/callback (it exchanges the OAuth code and sets cookies).
     "/((?!_next/static|_next/image|favicon.ico|auth/callback|.*\\.(?:js|svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };
