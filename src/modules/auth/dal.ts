@@ -57,7 +57,7 @@ export async function requireAgency(
 
 export async function requireAdmin(options: GuardOptions = {}): Promise<SessionUser> {
   const user = await requireUser(options);
-  if (await isAdmin(user)) return user;
+  if (isAdmin(user)) return user;
   if (options.next !== undefined) redirect("/dashboard");
   throw new AuthError("forbidden");
 }
@@ -65,13 +65,10 @@ export async function requireAdmin(options: GuardOptions = {}): Promise<SessionU
 // For showing admin-only links; access checks still go through requireAdmin().
 export async function isCurrentUserAdmin(): Promise<boolean> {
   const user = await getCurrentUser();
-  return !!user && (await isAdmin(user));
+  return !!user && isAdmin(user);
 }
 
-async function isAdmin(user: SessionUser): Promise<boolean> {
-  if (isAdminEmail(user.email, parseAdminEmails(env.ADMIN_EMAILS))) return true;
-
-  const supabase = await createClient();
-  const { data } = await supabase.from("profiles").select("account_type").eq("id", user.id).maybeSingle();
-  return data?.account_type === "admin";
+// Only ADMIN_EMAILS is trusted; profile fields are not an admin source.
+function isAdmin(user: SessionUser): boolean {
+  return isAdminEmail(user.email, parseAdminEmails(env.ADMIN_EMAILS));
 }
