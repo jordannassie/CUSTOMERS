@@ -111,7 +111,7 @@ To change a decision, edit its row, add the new date, and keep the old choice in
 | D-42 | Background scans use a `scan_jobs` table in Supabase, scheduled by Supabase pg_cron, which calls the worker endpoint (a Netlify background function, or a Vercel route if we move, D-41) through pg_net. No Vercel Cron. | Decided | Free per-minute scheduling, jobs visible in the database, credits charged per job. | Vercel Cron (per-minute needs Pro); Upstash QStash; Inngest (overkill for now) |
 | D-43 | One Supabase database for now. Back up before each migration. Only add tables and columns until the MVP is live. | Decided | No need for a second project yet; the live site shares the database. | Separate dev and prod databases (later) |
 | D-44 | Error tracking and analytics come after the MVP. | Decided | Not needed to launch. | Sentry and PostHog now |
-| D-45 | Git: tag today's code as `original-backup`, then keep working on `main`. Pause Netlify auto-deploy if live changes are not wanted mid-build. | Proposed | Simplest way to keep a copy of the original. | New default branch |
+| D-45 | Git and branches (updated 2026-09-26): Netlify auto-publish from `main` stays on, so `main` always equals the live site. Two kinds of branches: (1) one long-lived `mvp` branch for the rebuild, deployed by Netlify as a staging site, collecting many tasks and merged into `main` once at go-live (B-80); (2) short-lived task branches `task/B-xx-name`, one task each, merged by pull request into `main` (safe for the live site) or into `mvp` (part of the rebuild). Every task in the build plan names its branch. `main` is merged into `mvp` at least weekly. Backup tag `original-backup` kept. | Decided | Live site stays safe without pausing deploys; safety fixes and invisible groundwork still reach production early; the rebuild is tested at its own URL. | Pausing Netlify auto-publish; committing directly to `main`; one branch per phase |
 
 ## 10. Design
 
@@ -153,7 +153,7 @@ Details in [MVP_SPEC.md](./MVP_SPEC.md) sections 4.2, 11.4, 11.5 and 13.
 | ID | Decision | Status | Why | Rejected |
 |---|---|---|---|---|
 | D-69 | Existing data moves through additive, idempotent SQL migrations with a backup, verification and a 30-day grace period before old tables are dropped. Stripe data is not carried over (it is WorkNex sandbox test data). Plan in MVP_SPEC section 19. | Proposed | Only 9 profiles and 5 businesses exist today, but a scripted move can be rehearsed and rolled back. | Editing tables in place |
-| D-70 | Go-live on the chosen host (D-41): Netlify path = new environment variables, worker as a background function, re-enable deploys; Vercel path = preview test, DNS switch, Netlify kept 7 days as fallback. Plan in MVP_SPEC section 20. | Proposed | Either path has no downtime and an easy rollback. | Switching hosts in one step |
+| D-70 | Go-live on the chosen host (D-41): Netlify path = new environment variables, worker as a background function, merge `mvp` into `main`; Vercel path = preview test, DNS switch, Netlify kept 7 days as fallback. Plan in MVP_SPEC section 20. | Proposed | Either path has no downtime and an easy rollback. | Switching hosts in one step |
 
 ## 14. Tools, quality and compliance
 
@@ -170,6 +170,7 @@ Details in [MVP_SPEC.md](./MVP_SPEC.md) sections 4.2, 11.4, 11.5 and 13.
 | D-79 | Engineering rules: Data Access Layer per feature, auth checked in every action and route, `proxy.ts` for redirects only, validated env, generated DB types, `getUser`/`getClaims` only, RLS everywhere, feature boundaries and file size enforced by lint in CI (MVP_SPEC 18.1). | Decided | From the Next.js 16 docs in this repo and Supabase/Stripe guidance; enforced by tooling so it holds when people change. | Rules by convention only |
 | D-80 | Turn on Next.js 16 Cache Components (`cacheComponents: true`) at the start of the rebuild. | Decided | It is off today; switching later changes caching everywhere. | Staying on the old caching model |
 | D-81 | AI evals with `vitest-evals` (plus `autoevals` scorers) in an `evals/` folder: six suites, code graders first, calibrated AI graders, fast suite on every PR, AI-graded suite on prompt or model change (MVP_SPEC section 25). | Decided | Protects the AI parts that drive scores and advice; in-repo, no lock-in. vitest-evals is actively maintained (updated 2026-09-10). | Hosted eval platforms (LangSmith, Braintrust platform); evalite (last updated February 2026) |
+| D-82 | Malware and secret protection in the repo: payload and secret scanners (self-testing) run on commit, on push (full tree of each pushed commit), after checkout and merge (warning), before `dev` and `build` (blocks Netlify builds of infected code), and in GitHub Actions (Security and CI). Never bypass with `--no-verify`. Done in PR #4 (2026-09-26). | Decided | The same malware family hit this repo (from 2026-08-12) and the GCS repo; it arrived in harmless-looking commits and a VS Code auto-run task. | Relying on manual review |
 
 ---
 

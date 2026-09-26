@@ -668,7 +668,7 @@ Prices checked 2026-09-25 on vendor pricing pages. Recheck before launch.
 
 ## 16. Build rules
 
-- Git: tag `original-backup` before the first change; work on `main` (D-45).
+- Git (D-45): `main` equals the live site (Netlify auto-publish on). Each task is built on its own `task/B-xx-name` branch and merged by pull request into `main` or into the long-lived `mvp` branch, as named in the build plan. `mvp` is merged into `main` once at go-live. Never push directly to `main`; never use `--no-verify` (D-82).
 - Back up Supabase before each migration. Additive migrations only.
 - Every task references its ID (`D-xx`, roadmap `SEC-01` etc.) in the PR title.
 - Checks before merging: `npx tsc --noEmit`, `npx eslint src`, `npm run build`, and a manual run of the flow touched.
@@ -770,7 +770,7 @@ Old code moves into this layout when it is touched. Files over 400 lines are spl
 
 ## 19. Moving existing data
 
-D-69 (Proposed). Counted read-only on 2026-09-26: 9 profiles, 5 businesses, 20 competitors, 94 tracked prompts, 4 visibility runs, 48 visibility results, 9 `billing_accounts`, 5 `business_billing_items`, 0 `subscriptions`, 4 `usage_events`, 3 contact submissions. This includes the audit test account (`ek181773+cdaudit0923@gmail.com`) and its Brandastic business, which are deleted first.
+D-69 (Proposed). Counted read-only on 2026-09-26: 9 profiles, 5 businesses, 20 competitors, 94 tracked prompts, 4 visibility runs, 48 visibility results, 9 `billing_accounts`, 5 `business_billing_items`, 0 `subscriptions`, 4 `usage_events`, 3 contact submissions. This includes the audit test account (`ek181773+cdaudit0923@gmail.com`) and its Brandastic business, which are kept and marked `is_test` (used for testing).
 
 The data is small, but the move is still scripted and repeatable so it can be tested on a copy first.
 
@@ -793,7 +793,7 @@ The data is small, but the move is still scripted and repeatable so it can be te
 
 ## 20. Going live (Netlify or Vercel)
 
-D-41, D-70 (Proposed). The rebuilt app is tested on a Netlify preview first (build plan B-08 and B-28). If it works, it goes live on Netlify: rotated environment variables in Netlify, the worker as a background function, Stripe webhooks and the pg_net worker URL pointed at the production domain, then deploys re-enabled. The steps below apply only if the Netlify test fails and we move to Vercel. The live site stays on Netlify until the new one is tested.
+D-41, D-70 (Proposed). The rebuilt app is tested on a Netlify preview first (build plan B-08 and B-28). If it works, it goes live on Netlify: rotated environment variables in Netlify, the worker as a background function, Stripe webhooks and the pg_net worker URL pointed at the production domain, then `mvp` merged into `main`. The steps below apply only if the Netlify test fails and we move to Vercel. The live site stays on Netlify until the new one is tested.
 
 **Before starting**
 - All API keys replaced (malware incident, roadmap SEC-01).

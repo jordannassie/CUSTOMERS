@@ -9,7 +9,7 @@ All admin pages use `requireAdmin()` (B-17). Leads, Feature Requests and LinkedI
 ### B-64 Admin shell
 - [ ] Done
 
-Phase 8 · S · Depends on: B-17, B-09 · Blocked by Jordan: no · MVP_SPEC 9.1, D-35
+Phase 8 · S · Depends on: B-17, B-09 · Blocked by Jordan: no · MVP_SPEC 9.1, D-35 · Branch: `task/B-64-admin-shell` → `mvp`
 
 **Build**
 1. `src/app/(admin)/admin/layout.tsx` with six items: Overview, Agencies, Businesses, Scans, Usage & Cost, Settings; small links to Leads, Feature Requests and LinkedIn Studio.
@@ -27,7 +27,7 @@ Phase 8 · S · Depends on: B-17, B-09 · Blocked by Jordan: no · MVP_SPEC 9.1,
 ### B-65 Overview and Agencies
 - [ ] Done
 
-Phase 8 · L · Depends on: B-64, B-13, B-42 · Blocked by Jordan: no · MVP_SPEC 9.1
+Phase 8 · L · Depends on: B-64, B-13, B-42 · Blocked by Jordan: no · MVP_SPEC 9.1 · Branch: `task/B-65-overview-and-agencies` → `mvp`
 
 **Build**
 1. Overview: agencies, active trials, paying businesses, revenue this month (from Stripe), credits used, real AI cost vs revenue, recent signups, recent failed scans, open alerts (B-69).
@@ -47,7 +47,7 @@ Phase 8 · L · Depends on: B-64, B-13, B-42 · Blocked by Jordan: no · MVP_SPE
 ### B-66 Businesses
 - [ ] Done
 
-Phase 8 · M · Depends on: B-64 · Blocked by Jordan: no · MVP_SPEC 9.1
+Phase 8 · M · Depends on: B-64 · Blocked by Jordan: no · MVP_SPEC 9.1 · Branch: `task/B-66-businesses` → `mvp`
 
 **Build**
 1. List with agency, plan, frequency, models, last scan status, credits used this month.
@@ -65,7 +65,7 @@ Phase 8 · M · Depends on: B-64 · Blocked by Jordan: no · MVP_SPEC 9.1
 ### B-67 Scans and Usage & Cost
 - [ ] Done
 
-Phase 8 · M · Depends on: B-64, B-27 · Blocked by Jordan: no · MVP_SPEC 9.1
+Phase 8 · M · Depends on: B-64, B-27 · Blocked by Jordan: no · MVP_SPEC 9.1 · Branch: `task/B-67-scans-and-usage-cost` → `mvp`
 
 **Build**
 1. Scans: every job with status, business, models, credits charged, real cost, duration, error; filter by status; "Retry" on failed jobs (logged). Merges the old Scans and Errors pages.
@@ -83,7 +83,7 @@ Phase 8 · M · Depends on: B-64, B-27 · Blocked by Jordan: no · MVP_SPEC 9.1
 ### B-68 Settings (system status)
 - [ ] Done
 
-Phase 8 · S · Depends on: B-64 · Blocked by Jordan: no · MVP_SPEC 9.1
+Phase 8 · S · Depends on: B-64 · Blocked by Jordan: no · MVP_SPEC 9.1 · Branch: `task/B-68-settings-system-status` → `mvp`
 
 **Build**
 1. Status of each service key and connection: OpenAI, Anthropic, Perplexity, Google Places, Firecrawl, Browserless, Stripe (sandbox or live), Resend, worker last run, pg_cron jobs last run.
@@ -100,7 +100,7 @@ Phase 8 · S · Depends on: B-64 · Blocked by Jordan: no · MVP_SPEC 9.1
 ### B-69 Alerts
 - [ ] Done
 
-Phase 8 · M · Depends on: B-27, B-42, B-61 · Blocked by Jordan: no · MVP_SPEC 22, D-76
+Phase 8 · M · Depends on: B-27, B-42, B-61 · Blocked by Jordan: no · MVP_SPEC 22, D-76 · Branch: `task/B-69-alerts` → `mvp`
 
 **Build**
 1. pg_cron every 15 minutes runs `check_system_alerts()`: failed scans over 20% in the last hour, stuck jobs, failed Stripe webhooks, a provider error spike, negative balances, daily AI cost above `ALERT_DAILY_COST_USD`.

@@ -7,7 +7,7 @@ Goal: agencies can send clients a report (link or PDF), and every important mome
 ### B-59 Share page
 - [ ] Done
 
-Phase 7 · M · Depends on: B-49, B-50, B-52 · Blocked by Jordan: no · MVP_SPEC 8.3, D-11, D-12
+Phase 7 · M · Depends on: B-49, B-50, B-52 · Blocked by Jordan: no · MVP_SPEC 8.3, D-11, D-12 · Branch: `task/B-59-share-page` → `mvp`
 
 **Build**
 1. Server Action `createShareLink(businessId)`: `report_shares` row with a long random token (at least 32 bytes, URL-safe); `revokeShareLink(id)`.
@@ -28,7 +28,7 @@ Phase 7 · M · Depends on: B-49, B-50, B-52 · Blocked by Jordan: no · MVP_SPE
 ### B-60 PDF export
 - [ ] Done
 
-Phase 7 · M · Depends on: B-59 · Blocked by Jordan: no · MVP_SPEC 8.3, D-71
+Phase 7 · M · Depends on: B-59 · Blocked by Jordan: no · MVP_SPEC 8.3, D-71 · Branch: `task/B-60-pdf-export` → `mvp`
 
 **Build**
 1. `src/modules/reports/pdf.ts`: `renderPdf(url)` calls Browserless's PDF endpoint with the share page URL, waits for `[data-report-ready]`, A4 or Letter with margins, header and footer with page numbers.
@@ -47,7 +47,7 @@ Phase 7 · M · Depends on: B-59 · Blocked by Jordan: no · MVP_SPEC 8.3, D-71
 ### B-61 Email foundation
 - [ ] Done
 
-Phase 7 · M · Depends on: B-09 · Blocked by Jordan: sending domain verification (DNS) · MVP_SPEC 10, D-37, D-72
+Phase 7 · M · Depends on: B-09 · Blocked by Jordan: sending domain verification (DNS) · MVP_SPEC 10, D-37, D-72 · Branch: `task/B-61-email-foundation` → `mvp`
 
 **Build**
 1. Install React Email; `src/modules/email/templates/` with a shared layout (logo, plain footer, unsubscribe link where needed) in the DESIGN.md look.
@@ -66,7 +66,7 @@ Phase 7 · M · Depends on: B-09 · Blocked by Jordan: sending domain verificati
 ### B-62 The five emails
 - [ ] Done
 
-Phase 7 · M · Depends on: B-61, B-42, B-13, B-30 · Blocked by Jordan: no · MVP_SPEC 10, D-37
+Phase 7 · M · Depends on: B-61, B-42, B-13, B-30 · Blocked by Jordan: no · MVP_SPEC 10, D-37 · Branch: `task/B-62-the-five-emails` → `mvp`
 
 **Build**
 1. Welcome: on account creation.

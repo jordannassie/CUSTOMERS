@@ -9,7 +9,7 @@ All pages: server components reading through each module's `dal.ts`; mutations t
 ### B-48 App shell
 - [ ] Done
 
-Phase 6 · M · Depends on: B-09, B-15, B-13 · Blocked by Jordan: no · MVP_SPEC 8.1, 8.2, D-31, D-33
+Phase 6 · M · Depends on: B-09, B-15, B-13 · Blocked by Jordan: no · MVP_SPEC 8.1, 8.2, D-31, D-33 · Branch: `task/B-48-app-shell` → `mvp`
 
 **Build**
 1. `src/app/(app)/layout.tsx`: sidebar with Overview, Competitors, Opportunities, Questions, Sources, Settings; business switcher; usage widget; "Suggest a feature"; sign out.
@@ -31,7 +31,7 @@ Phase 6 · M · Depends on: B-09, B-15, B-13 · Blocked by Jordan: no · MVP_SPE
 ### B-49 Overview page
 - [ ] Done
 
-Phase 6 · L · Depends on: B-48, B-30, B-29 · Blocked by Jordan: no · MVP_SPEC 5.6, 8.1, D-63 to D-65
+Phase 6 · L · Depends on: B-48, B-30, B-29 · Blocked by Jordan: no · MVP_SPEC 5.6, 8.1, D-63 to D-65 · Branch: `task/B-49-overview-page` → `mvp`
 
 **Build**
 1. `src/app/(app)/dashboard/page.tsx`:
@@ -57,7 +57,7 @@ Phase 6 · L · Depends on: B-48, B-30, B-29 · Blocked by Jordan: no · MVP_SPE
 ### B-50 Competitors page
 - [ ] Done
 
-Phase 6 · L · Depends on: B-49, B-35, B-25 · Blocked by Jordan: no · MVP_SPEC 7.1, 8.1, D-64, D-73
+Phase 6 · L · Depends on: B-49, B-35, B-25 · Blocked by Jordan: no · MVP_SPEC 7.1, 8.1, D-64, D-73 · Branch: `task/B-50-competitors-page` → `mvp`
 
 **Build**
 1. `src/app/(app)/competitors/page.tsx`:
@@ -80,7 +80,7 @@ Phase 6 · L · Depends on: B-49, B-35, B-25 · Blocked by Jordan: no · MVP_SPE
 ### B-51 "Why competitors win" explanations and their eval
 - [ ] Done
 
-Phase 6 · L · Depends on: B-50, B-26 · Blocked by Jordan: no · MVP_SPEC 7.2, 25, D-30, D-73
+Phase 6 · L · Depends on: B-50, B-26 · Blocked by Jordan: no · MVP_SPEC 7.2, 25, D-30, D-73 · Branch: `task/B-51-why-competitors-win-explanations-and` → `mvp`
 
 **Build**
 1. `src/modules/insights/explain.ts`: after each scan, Claude Sonnet 5 (`claude-sonnet-5`, structured output) receives the business's and top competitors' signals: scan results, AI citations, the business's own site facts, and Places values as placeholders only.
@@ -99,7 +99,7 @@ Phase 6 · L · Depends on: B-50, B-26 · Blocked by Jordan: no · MVP_SPEC 7.2,
 ### B-52 Opportunities page
 - [ ] Done
 
-Phase 6 · M · Depends on: B-51 · Blocked by Jordan: no · MVP_SPEC 7.2, 7.3, 8.1, D-09
+Phase 6 · M · Depends on: B-51 · Blocked by Jordan: no · MVP_SPEC 7.2, 7.3, 8.1, D-09 · Branch: `task/B-52-opportunities-page` → `mvp`
 
 **Build**
 1. `src/app/(app)/opportunities/page.tsx`: all fix steps sorted by impact; status open, done, dismissed; "Copy for Claude" button copying the prompt.
@@ -120,7 +120,7 @@ Phase 6 · M · Depends on: B-51 · Blocked by Jordan: no · MVP_SPEC 7.2, 7.3, 
 ### B-53 Questions page
 - [ ] Done
 
-Phase 6 · M · Depends on: B-49, B-33 · Blocked by Jordan: no · MVP_SPEC 5.3, 5.6, 8.1
+Phase 6 · M · Depends on: B-49, B-33 · Blocked by Jordan: no · MVP_SPEC 5.3, 5.6, 8.1 · Branch: `task/B-53-questions-page` → `mvp`
 
 **Build**
 1. `src/app/(app)/questions/page.tsx`: the business's questions (library and custom), each with per-model results "Appeared in 3 of the last 4 checks".
@@ -139,7 +139,7 @@ Phase 6 · M · Depends on: B-49, B-33 · Blocked by Jordan: no · MVP_SPEC 5.3,
 ### B-54 Sources page
 - [ ] Done
 
-Phase 6 · M · Depends on: B-49 · Blocked by Jordan: no · MVP_SPEC 8.1
+Phase 6 · M · Depends on: B-49 · Blocked by Jordan: no · MVP_SPEC 8.1 · Branch: `task/B-54-sources-page` → `mvp`
 
 **Build**
 1. `src/app/(app)/sources/page.tsx`: websites AI cited when answering this business's questions, how often, type (reviews and forums, directories, news, business sites), and whether the business's own site was cited.
@@ -156,7 +156,7 @@ Phase 6 · M · Depends on: B-49 · Blocked by Jordan: no · MVP_SPEC 8.1
 ### B-55 Settings
 - [ ] Done
 
-Phase 6 · M · Depends on: B-48 · Blocked by Jordan: no · MVP_SPEC 8.1
+Phase 6 · M · Depends on: B-48 · Blocked by Jordan: no · MVP_SPEC 8.1 · Branch: `task/B-55-settings` → `mvp`
 
 **Build**
 1. `src/app/(app)/settings/`: business profile (name, industry, services, city, phone, address, website change warning); AI models and scan frequency with the live credit estimate and model explanations; agency name and logo; links to Billing (B-46) and Usage (B-56); danger zone links for deleting a business or the account (B-77).
@@ -173,7 +173,7 @@ Phase 6 · M · Depends on: B-48 · Blocked by Jordan: no · MVP_SPEC 8.1
 ### B-56 Usage page
 - [ ] Done
 
-Phase 6 · M · Depends on: B-48, B-13 · Blocked by Jordan: no · MVP_SPEC 8.2, D-33
+Phase 6 · M · Depends on: B-48, B-13 · Blocked by Jordan: no · MVP_SPEC 8.2, D-33 · Branch: `task/B-56-usage-page` → `mvp`
 
 **Build**
 1. `src/app/(app)/settings/usage/page.tsx`: balance split into plan and top-up credits, used this month, by business, by model, forecast to renewal from the scan schedules, scan history with credits per scan, "Buy credits".
@@ -190,7 +190,7 @@ Phase 6 · M · Depends on: B-48, B-13 · Blocked by Jordan: no · MVP_SPEC 8.2,
 ### B-57 "How we measure" panel
 - [ ] Done
 
-Phase 6 · S · Depends on: B-49 · Blocked by Jordan: no · MVP_SPEC 5.6, D-64, D-66
+Phase 6 · S · Depends on: B-49 · Blocked by Jordan: no · MVP_SPEC 5.6, D-64, D-66 · Branch: `task/B-57-how-we-measure-panel` → `mvp`
 
 **Build**
 1. Sheet opened from "How is this calculated?": margin, number of unique answers, per-model scores, 30-day window, the method in plain words (API with web search and the business's location), and the calibration result once B-76 is done.
@@ -206,7 +206,7 @@ Phase 6 · S · Depends on: B-49 · Blocked by Jordan: no · MVP_SPEC 5.6, D-64,
 ### B-58 Remove the old dashboard
 - [ ] Done
 
-Phase 6 · S · Depends on: B-49 to B-56 · Blocked by Jordan: no · MVP_SPEC 17
+Phase 6 · S · Depends on: B-49 to B-56 · Blocked by Jordan: no · MVP_SPEC 17 · Branch: `task/B-58-remove-the-old-dashboard` → `mvp`
 
 **Build**
 1. Delete the old dashboard pages (visibility, reports, seo, agent-readiness, direct-agent) and the old `src/components/geo/dashboard/*` components replaced by the new ones.

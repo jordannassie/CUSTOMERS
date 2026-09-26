@@ -7,7 +7,7 @@ Goal: accurate, affordable checks on ChatGPT, Claude and Perplexity, run as back
 ### B-20 Provider interface and OpenAI adapter
 - [ ] Done
 
-Phase 3 · M · Depends on: B-15 · Blocked by Jordan: no · MVP_SPEC 5.1, 5.2, D-67, D-68, MVP_ROADMAP REL-01
+Phase 3 · M · Depends on: B-15 · Blocked by Jordan: no · MVP_SPEC 5.1, 5.2, D-67, D-68, MVP_ROADMAP REL-01 · Branch: `task/B-20-provider-interface-and-openai-adapter` → `main`
 
 **Build**
 1. `src/modules/scanning/providers/types.ts`: `runCheck({ question, location: { city, region, country }, model }) => { answerText, citations[], model, usage: { inputTokens, outputTokens, searchCalls }, costUsd, latencyMs }`.
@@ -27,7 +27,7 @@ Phase 3 · M · Depends on: B-15 · Blocked by Jordan: no · MVP_SPEC 5.1, 5.2, 
 ### B-21 Claude adapter
 - [ ] Done
 
-Phase 3 · M · Depends on: B-20 · Blocked by Jordan: no · MVP_SPEC 5.1, D-67
+Phase 3 · M · Depends on: B-20 · Blocked by Jordan: no · MVP_SPEC 5.1, D-67 · Branch: `task/B-21-claude-adapter` → `main`
 
 **Build**
 1. `providers/anthropic.ts` using the official `@anthropic-ai/sdk`: model `claude-haiku-4-5`, tool `{ type: "web_search_20250305", name: "web_search", max_uses: 3, user_location: { type: "approximate", city, region, country } }`.
@@ -47,7 +47,7 @@ Phase 3 · M · Depends on: B-20 · Blocked by Jordan: no · MVP_SPEC 5.1, D-67
 ### B-22 Perplexity adapter
 - [ ] Done
 
-Phase 3 · S · Depends on: B-20 · Blocked by Jordan: no · MVP_SPEC 5.1, D-67
+Phase 3 · S · Depends on: B-20 · Blocked by Jordan: no · MVP_SPEC 5.1, D-67 · Branch: `task/B-22-perplexity-adapter` → `main`
 
 **Build**
 1. `providers/perplexity.ts`: model `sonar`, `web_search_options: { user_location: { country, region, city } }`, citations from the response.
@@ -64,7 +64,7 @@ Phase 3 · S · Depends on: B-20 · Blocked by Jordan: no · MVP_SPEC 5.1, D-67
 ### B-23 Answer cache
 - [ ] Done
 
-Phase 3 · S · Depends on: B-20, B-11 · Blocked by Jordan: no · MVP_SPEC 5.4, D-24
+Phase 3 · S · Depends on: B-20, B-11 · Blocked by Jordan: no · MVP_SPEC 5.4, D-24 · Branch: `task/B-23-answer-cache` → `main`
 
 **Build**
 1. `src/modules/scanning/cache.ts`: key = sha256 of `model + normalised question + city/region/country`; normalisation lowercases and trims spaces and punctuation.
@@ -82,7 +82,7 @@ Phase 3 · S · Depends on: B-20, B-11 · Blocked by Jordan: no · MVP_SPEC 5.4,
 ### B-24 Mention detection v2 and its eval
 - [ ] Done
 
-Phase 3 · L · Depends on: B-06 · Blocked by Jordan: no · MVP_SPEC 5.5, 25, D-66
+Phase 3 · L · Depends on: B-06 · Blocked by Jordan: no · MVP_SPEC 5.5, 25, D-66 · Branch: `task/B-24-mention-detection-v2-and-its` → `main`
 
 **Build**
 1. `src/modules/scanning/mentions.ts`: word-boundary match on name, domain and aliases; strips suffixes (LLC, Inc, Co); for short or generic names requires a second signal (city, domain or phone near the name); records list position.
@@ -102,7 +102,7 @@ Phase 3 · L · Depends on: B-06 · Blocked by Jordan: no · MVP_SPEC 5.5, 25, D
 ### B-25 "Also recommended by AI" extraction and its eval
 - [ ] Done
 
-Phase 3 · M · Depends on: B-21 · Blocked by Jordan: no · MVP_SPEC 5.2, D-74
+Phase 3 · M · Depends on: B-21 · Blocked by Jordan: no · MVP_SPEC 5.2, D-74 · Branch: `task/B-25-also-recommended-by-ai-extraction` → `main`
 
 **Build**
 1. `src/modules/scanning/extract.ts`: Claude Haiku with structured output returns every business name in an answer (name, position, whether it matches the business or a tracked competitor).
@@ -121,7 +121,7 @@ Phase 3 · M · Depends on: B-21 · Blocked by Jordan: no · MVP_SPEC 5.2, D-74
 ### B-26 Run a check and run a scan
 - [ ] Done
 
-Phase 3 · M · Depends on: B-13, B-20 to B-25 · Blocked by Jordan: no · MVP_SPEC 5.2, 4.2, D-53, D-54
+Phase 3 · M · Depends on: B-13, B-20 to B-25 · Blocked by Jordan: no · MVP_SPEC 5.2, 4.2, D-53, D-54 · Branch: `task/B-26-run-a-check-and-run` → `mvp`
 
 **Build**
 1. `src/modules/scanning/service.ts`:
@@ -141,7 +141,7 @@ Phase 3 · M · Depends on: B-13, B-20 to B-25 · Blocked by Jordan: no · MVP_S
 ### B-27 Job worker
 - [ ] Done
 
-Phase 3 · M · Depends on: B-26 · Blocked by Jordan: no · MVP_SPEC 6.3, D-42
+Phase 3 · M · Depends on: B-26 · Blocked by Jordan: no · MVP_SPEC 6.3, D-42 · Branch: `task/B-27-job-worker` → `mvp`
 
 **Build**
 1. SQL function `claim_scan_jobs(limit)` using `for update skip locked` (MVP_SPEC 6.3).
@@ -162,12 +162,12 @@ Phase 3 · M · Depends on: B-26 · Blocked by Jordan: no · MVP_SPEC 6.3, D-42
 ### B-28 Schedules (pg_cron and pg_net)
 - [ ] Done
 
-Phase 3 · S · Depends on: B-27 · Blocked by Jordan: no · MVP_SPEC 6.2
+Phase 3 · S · Depends on: B-27 · Blocked by Jordan: no · MVP_SPEC 6.2 · Branch: `task/B-28-schedules-pg-cron-and-pg` → `mvp`
 
 **Build**
 1. Enable `pg_cron` and `pg_net`. Store the worker URL and secret in Supabase Vault.
 2. Schedules: daily 02:00 UTC enqueue due businesses (balance above 0, status allowed); every minute call the worker; every 10 minutes `reset_stuck_jobs()`; daily `expire_grants()`.
-3. Until go-live (B-80) the worker URL points at a Netlify preview deployment; document how to switch it.
+3. Until go-live (B-80) the worker URL points at the `mvp` staging deploy, and the daily enqueue only picks `is_test` agencies, so real customers are not scanned or charged by unreleased code. Document how to switch both at go-live.
 4. Delete `netlify/functions/geo-scheduled-monitoring.mts` and the old cron route.
 
 **What the user sees**
@@ -181,7 +181,7 @@ Phase 3 · S · Depends on: B-27 · Blocked by Jordan: no · MVP_SPEC 6.2
 ### B-29 Manual "Run scan"
 - [ ] Done
 
-Phase 3 · S · Depends on: B-27, B-16 · Blocked by Jordan: no · MVP_SPEC 6.4
+Phase 3 · S · Depends on: B-27, B-16 · Blocked by Jordan: no · MVP_SPEC 6.4 · Branch: `task/B-29-manual-run-scan` → `mvp`
 
 **Build**
 1. Server Action `startScan(businessId)` in `src/modules/jobs/actions.ts`: `requireAgency`, `canStartScan`, insert a high-priority job, then call the worker immediately.
@@ -200,7 +200,7 @@ Phase 3 · S · Depends on: B-27, B-16 · Blocked by Jordan: no · MVP_SPEC 6.4
 ### B-30 Scoring and confidence
 - [ ] Done
 
-Phase 3 · M · Depends on: B-26 · Blocked by Jordan: no · MVP_SPEC 5.6, D-63 to D-65
+Phase 3 · M · Depends on: B-26 · Blocked by Jordan: no · MVP_SPEC 5.6, D-63 to D-65 · Branch: `task/B-30-scoring-and-confidence` → `main`
 
 **Build**
 1. `src/modules/scanning/scoring.ts`:
@@ -223,7 +223,7 @@ Phase 3 · M · Depends on: B-26 · Blocked by Jordan: no · MVP_SPEC 5.6, D-63 
 ### B-31 Test mode with recorded answers
 - [ ] Done
 
-Phase 3 · S · Depends on: B-26 · Blocked by Jordan: no · D-61
+Phase 3 · S · Depends on: B-26 · Blocked by Jordan: no · D-61 · Branch: `task/B-31-test-mode-with-recorded-answers` → `main`
 
 **Build**
 1. Record about 50 real answers per model for 3 industries in 2 cities into `tests/fixtures/ai-answers/`.

@@ -56,6 +56,12 @@ Use the design tokens and shadcn/ui; no raw hex colours in components. Blue `#25
 
 Run `npx tsc --noEmit`, `npx eslint src`, the tests, and `npm run build`, and report the actual output. For UI changes, check screenshots at 1440px and 390px. Reference the decision or roadmap ID (`D-xx`, `SEC-01`) in commit and PR titles.
 
+## Branches and protection (D-45, D-82)
+
+- `main` is the live site (Netlify auto-publishes). Never commit or push to it directly; work on the task branch named in the build plan (`task/B-xx-name`) and merge by pull request into `main` or the long-lived `mvp` branch as the task says.
+- Git hooks scan every commit and push for malware and secrets; never use `--no-verify`. If a scan fails, stop and report it.
+- Never open or run code from branches the scanner flags.
+
 ## Safety
 
 - The database is shared with the live site (D-43): back up before migrations, and test with an `is_test` agency so no real AI credits or payments are spent (D-61).

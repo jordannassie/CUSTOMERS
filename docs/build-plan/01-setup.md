@@ -2,12 +2,14 @@
 
 Goal: a clean, safe repo with all the tooling and rules in place before feature work starts. [Back to index](./README.md)
 
+Already done before this phase: malware and secret scanners, git hooks, `predev` and `prebuild` scans, and the Security and CI workflows (PR #4, 2026-09-26, D-82).
+
 ---
 
 ### B-01 Replace all keys and secure machines
 - [ ] Done
 
-Phase 1 · S · Depends on: nothing · Blocked by Jordan: partly (keys in accounts only he controls) · MVP_ROADMAP SEC-01
+Phase 1 · S · Depends on: nothing · Blocked by Jordan: partly (keys in accounts only he controls) · MVP_ROADMAP SEC-01 · Branch: no branch (account and key work, no code)
 
 **Build**
 1. Make a list of every secret in `.env.local` and in the Netlify environment: Supabase anon and service role keys, Stripe keys and webhook secret, OpenAI, Google Places, DataForSEO, Resend, `ADMIN_PIN`, `ADMIN_SESSION_SECRET`, `GEO_CRON_SECRET`, plus GitHub tokens and SSH keys on any machine that ran the app since 2026-08-31.
@@ -25,30 +27,31 @@ Phase 1 · S · Depends on: nothing · Blocked by Jordan: partly (keys in accoun
 
 ---
 
-### B-02 Backup tag, database backup, pause Netlify
+### B-02 Backup tag, database backup, staging branch
 - [ ] Done
 
-Phase 1 · S · Depends on: nothing · Blocked by Jordan: Netlify access if not shared · D-45
+Phase 1 · S · Depends on: nothing · Blocked by Jordan: no · D-45 · Branch: `task/B-02-backup-and-staging` → `main`
 
 **Build**
 1. `git tag original-backup` on the current `main` and push the tag.
 2. Take a Supabase backup (dashboard backup or `pg_dump`) and store it outside the repo. Record row counts of every table.
-3. In Netlify, turn off automatic deploys from `main`, so work in progress never reaches the live site.
-4. Add a short note to the README: "Live site frozen at tag `original-backup` until go-live (B-80)."
+3. Create the long-lived `mvp` branch from `main` and push it.
+4. In Netlify, enable branch deploys for `mvp` so it gets its own staging URL. Auto-publish from `main` stays on (D-45).
+5. Add a short "Branches" note to the repo README: `main` is live, `mvp` is the rebuild (staging URL), tasks use `task/B-xx-name` branches.
 
 **What the user sees**
-- The live site stays exactly as it is while the new version is built.
+- The live site keeps working and updating from `main`; the rebuild has its own staging link to try.
 
 **Engineering checks**
-- `git ls-remote --tags origin` shows `original-backup`.
-- A test push to `main` does not start a Netlify deploy.
+- `git ls-remote --tags origin` shows `original-backup`; `git ls-remote --heads origin mvp` shows the branch.
+- A push to `mvp` produces a Netlify branch deploy, not a production deploy.
 
 ---
 
 ### B-03 Remove cut products and dead code
 - [ ] Done
 
-Phase 1 · M · Depends on: B-02 · Blocked by Jordan: no · MVP_SPEC 17, D-04, D-05, D-06
+Phase 1 · M · Depends on: B-02 · Blocked by Jordan: no · MVP_SPEC 17, D-04, D-05, D-06 · Branch: `task/B-03-remove-cut-products-and-dead` → `main`
 
 **Build**
 1. Delete every path in MVP_SPEC section 17, checking each for remaining imports first. Keep `/internal/admin/news` (LinkedIn Studio, D-07).
@@ -74,7 +77,7 @@ Phase 1 · M · Depends on: B-02 · Blocked by Jordan: no · MVP_SPEC 17, D-04, 
 ### B-04 Env validation, zod, server-only, generated types
 - [ ] Done
 
-Phase 1 · M · Depends on: B-03 · Blocked by Jordan: no · MVP_SPEC 18.1 rules 6 and 7, D-79
+Phase 1 · M · Depends on: B-03 · Blocked by Jordan: no · MVP_SPEC 18.1 rules 6 and 7, D-79 · Branch: `task/B-04-env-validation-zod-server-only` → `main`
 
 **Build**
 1. Install `zod`, `@t3-oss/env-nextjs`, `server-only`.
@@ -95,7 +98,7 @@ Phase 1 · M · Depends on: B-03 · Blocked by Jordan: no · MVP_SPEC 18.1 rules
 ### B-05 Lint rules that enforce the architecture
 - [ ] Done
 
-Phase 1 · S · Depends on: B-04 · Blocked by Jordan: no · MVP_SPEC 18.1 rules 1, 4, 5, 6, 8, 11, 12
+Phase 1 · S · Depends on: B-04 · Blocked by Jordan: no · MVP_SPEC 18.1 rules 1, 4, 5, 6, 8, 11, 12 · Branch: `task/B-05-lint-rules-that-enforce-the` → `main`
 
 **Build**
 1. Install `eslint-plugin-boundaries`. Define elements: `app`, `modules/*`, `components/ui`, `components/app`, `components/marketing`, `lib`, `proxy`.
@@ -116,7 +119,7 @@ Phase 1 · S · Depends on: B-04 · Blocked by Jordan: no · MVP_SPEC 18.1 rules
 ### B-06 Test and eval tooling
 - [ ] Done
 
-Phase 1 · M · Depends on: B-04 · Blocked by Jordan: no · MVP_SPEC 21, 25, D-75, D-81
+Phase 1 · M · Depends on: B-04 · Blocked by Jordan: no · MVP_SPEC 21, 25, D-75, D-81 · Branch: `task/B-06-test-and-eval-tooling` → `main`
 
 **Build**
 1. Install Vitest with `vite-tsconfig-paths`; `vitest.config.ts` for `src/**/*.test.ts`.
@@ -136,13 +139,15 @@ Phase 1 · M · Depends on: B-04 · Blocked by Jordan: no · MVP_SPEC 21, 25, D-
 ### B-07 CI on every pull request
 - [ ] Done
 
-Phase 1 · S · Depends on: B-05, B-06 · Blocked by Jordan: no · MVP_SPEC 21
+Phase 1 · S · Depends on: B-05, B-06 · Blocked by Jordan: no · MVP_SPEC 21 · Branch: `task/B-07-ci-on-every-pull-request` → `main`
 
 **Build**
-1. `.github/workflows/ci.yml`: install, typecheck, lint, auth-call check, unit tests with a local Supabase service container, build, Playwright smoke tests.
+Already in place from PR #4: `.github/workflows/security.yml` (scanners) and `ci.yml` (typecheck). Extend `ci.yml`:
+1. Add lint (including boundaries and the auth-call check), unit tests with a local Supabase service container, build, and Playwright smoke tests.
 2. `.github/workflows/eval-fast.yml`: code-graded eval suites on every pull request.
 3. `.github/workflows/eval-ai.yml`: AI-graded suites only when files under `src/modules/*/prompts/`, model settings, or `evals/` change; uses repository secrets for the AI keys.
-4. Protect `main`: pull requests only, CI must pass.
+4. Ask Jordan (repo admin) to protect `main` and `mvp`: pull request required, required checks "Supply-chain scan", "Typecheck" and the new CI jobs, no force push, no deletion.
+5. Add `husky` pre-push lint and build once lint is clean.
 
 **What the user sees**
 - Nothing visible. Broken code can no longer reach `main`.
@@ -155,7 +160,7 @@ Phase 1 · S · Depends on: B-05, B-06 · Blocked by Jordan: no · MVP_SPEC 21
 ### B-08 Turn on Next.js 16 Cache Components
 - [ ] Done
 
-Phase 1 · M · Depends on: B-03 · Blocked by Jordan: no · D-80, MVP_SPEC 18.1 rule 14
+Phase 1 · M · Depends on: B-03 · Blocked by Jordan: no · D-80, MVP_SPEC 18.1 rule 14 · Branch: `task/B-08-turn-on-next-js-16` → `mvp`
 
 **Build**
 1. Read `node_modules/next/dist/docs/01-app/01-getting-started/08-caching.md` and the Cache Components guide.
@@ -176,7 +181,7 @@ Phase 1 · M · Depends on: B-03 · Blocked by Jordan: no · D-80, MVP_SPEC 18.1
 ### B-09 Design system foundation
 - [ ] Done
 
-Phase 1 · M · Depends on: B-03 · Blocked by Jordan: no · design/DESIGN.md, D-46 to D-50
+Phase 1 · M · Depends on: B-03 · Blocked by Jordan: no · design/DESIGN.md, D-46 to D-50 · Branch: `task/B-09-design-system-foundation` → `mvp`
 
 **Build**
 1. Initialise shadcn/ui for Tailwind v4 (`npx shadcn@latest init`).

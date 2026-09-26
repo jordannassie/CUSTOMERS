@@ -21,6 +21,22 @@ Anyone should be able to pick up the next task from this plan without asking.
 
 **Total: 78 tasks, about 127 developer days.** One developer: about 6 months. Two developers working in parallel (see below): about 3 to 3.5 months. Estimates use S = half a day, M = 1 to 2 days, L = 3 to 5 days, and include tests. Gaps in the numbering (B-18, B-19, B-39, B-47, B-63) are spare IDs for tasks added later.
 
+## Branches (D-45)
+
+- **`main` is the live site.** Netlify publishes every merge to `main` straight away. Never push to it directly.
+- **`mvp` is the rebuild.** One long-lived branch that collects many tasks, with its own Netlify staging URL. Merged into `main` once, at go-live (B-80). Merge `main` into `mvp` at least weekly so it keeps the latest safety and groundwork changes.
+- **Task branches**: one per task, named `task/B-xx-name`, opened from the target branch and merged back by pull request after CI passes.
+  - Into **`main`**: safe for the live site now, or invisible to users (tooling, CI, new unused tables and modules, scan engine parts not wired to the UI).
+  - Into **`mvp`**: anything customers would see or that changes live behaviour (new pages, onboarding, billing, dashboard, admin, marketing, workers and schedules).
+- Every task below names its branch and target. Database migrations apply to the one shared database whichever branch they come from, so they stay additive (D-43).
+
+| Target | Tasks |
+|---|---|
+| `main` (short task branches) | B-02 to B-07, B-10 to B-13, B-16, B-20 to B-25, B-30, B-31, B-81, B-83 |
+| `mvp` (short task branches) | B-08, B-09, B-14, B-15, B-17, B-26 to B-29, B-32 to B-79 (except B-80), B-82 |
+| `mvp` into `main` | B-80 (go-live) |
+| No branch | B-01 (keys and accounts) |
+
 ## Milestones
 
 1. **First real scan works end to end** (end of phase 3): a test business is scanned on ChatGPT, Claude and Perplexity with location, credits are charged correctly, and a score with a confidence label is stored.
@@ -61,7 +77,6 @@ These tasks can be built and tested against sandboxes, but cannot go live withou
 | His Stripe account (LLC) | B-40 live keys, B-80 go-live |
 | Plan prices confirmed (D-21) | B-40 products, B-72 pricing page |
 | Domain DNS access (only if we move to Vercel) | B-80 go-live |
-| Netlify access (if not already shared) | B-02 pausing auto-deploy |
 | Existing beta users decision | B-81 |
 | Lawyer or Jordan review | B-78 terms and privacy, B-79 Places reading |
 | LinkedIn Studio decision | Nothing blocked; untouched until then (D-07) |
@@ -97,9 +112,10 @@ Every task must also pass these; tasks only list extra checks.
 
 ## Workflow
 
-- One branch and one pull request per task. PR title starts with the task ID: `B-13: credit SQL functions`.
+- One branch and one pull request per task, on the branch named in the task. PR title starts with the task ID: `B-13: credit SQL functions`.
+- The git hooks scan every commit and push for malware and secrets (D-82). Never bypass them with `--no-verify`.
 - "What the user sees" is checked in the running app (Playwright or by hand) and shown with screenshots or a recording in the PR.
 - Testing uses an `is_test` agency (no real AI credits or payments) and Stripe sandbox keys.
-- Back up Supabase before any migration (the database is shared with the live site until B-80).
+- Back up Supabase before any migration (the database is shared with the live site).
 - When a task is merged, tick it here and add the PR number.
 - If a task needs a new decision, add it to DECISIONS.md first.
