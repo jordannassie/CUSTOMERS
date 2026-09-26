@@ -75,7 +75,7 @@ export function Overlays() {
               <SheetTitle>Get more Google reviews</SheetTitle>
               <SheetDescription>Daily Grind has 320 reviews at 4.7. You have 12 at 4.2.</SheetDescription>
             </SheetHeader>
-            <ol className="flex list-decimal flex-col gap-2 px-4 pl-9 text-sm">
+            <ol className="flex list-inside list-decimal flex-col gap-2 px-4 text-sm">
               <li>Ask your last 20 customers for a review by text.</li>
               <li>Add a review link to your receipts.</li>
               <li>Reply to every review within two days.</li>

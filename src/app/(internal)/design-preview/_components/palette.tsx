@@ -57,9 +57,14 @@ const TOKENS = GROUPS.flatMap((g) => g.swatches.map((s) => s.token));
 const noSubscribe = () => () => {};
 
 // Values are read from the live CSS variables, so the page shows what globals.css really ships.
+// Browsers may shorten #FFFFFF to #FFF; DESIGN.md lists six-digit values.
+function toLongHex(value: string) {
+  return /^#[0-9A-F]{3}$/.test(value) ? `#${[...value.slice(1)].map((c) => c + c).join("")}` : value;
+}
+
 function readTokens() {
   const style = getComputedStyle(document.documentElement);
-  return TOKENS.map((t) => style.getPropertyValue(`--cd-${t}`).trim().toUpperCase()).join("|");
+  return TOKENS.map((t) => toLongHex(style.getPropertyValue(`--cd-${t}`).trim().toUpperCase())).join("|");
 }
 
 function useTokenValues(): Record<string, string> {
