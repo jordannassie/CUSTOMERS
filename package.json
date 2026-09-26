@@ -17,7 +17,8 @@
     "scan": "bash scripts/scan-payload.sh && bash scripts/scan-secrets.sh --rev HEAD",
     "test": "bash scripts/test-db-reset.sh && vitest run --project unit",
     "test:e2e": "playwright test",
-    "evals": "vitest run --project evals"
+    "evals": "vitest run --project evals",
+    "evals:ai": "vitest run --project evals-ai --passWithNoTests"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.4",

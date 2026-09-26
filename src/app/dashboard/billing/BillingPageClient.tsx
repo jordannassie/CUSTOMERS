@@ -338,6 +338,9 @@ export default function BillingPageClient({
     businessName: string;
   } | null>(null);
 
+  // Read the clock once per mount so re-renders stay pure.
+  const [now] = useState(() => Date.now());
+
   const acct = billingAccount;
   const isTrialing = acct?.status === "trialing";
   const isActive = acct?.status === "active";
@@ -345,7 +348,7 @@ export default function BillingPageClient({
   const hasStripe = !!acct?.stripe_customer_id;
   const trialEndsAt = acct?.trial_ends_at ? new Date(acct.trial_ends_at) : null;
   const trialDaysLeft = trialEndsAt
-    ? Math.max(0, Math.ceil((trialEndsAt.getTime() - Date.now()) / 86_400_000))
+    ? Math.max(0, Math.ceil((trialEndsAt.getTime() - now) / 86_400_000))
     : null;
 
   const activeBusinessCount = businesses.filter(

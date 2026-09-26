@@ -1,0 +1,31 @@
+name: Evals (AI-graded)
+
+# AI-graded suites spend real credits, so they run only when a prompt, model setting or eval changes (MVP_SPEC 25).
+on:
+  pull_request:
+    paths:
+      - "src/modules/*/prompts/**"
+      - "src/modules/*/models.ts"
+      - "src/lib/geo/providers/**"
+      - "evals/**"
+      - "vitest.config.mts"
+      - ".github/workflows/eval-ai.yml"
+  workflow_dispatch:
+
+jobs:
+  eval-ai:
+    name: AI evals
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: bash scripts/scan-payload.sh
+      - run: npm ci --ignore-scripts
+      - run: npm run evals:ai
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          PERPLEXITY_API_KEY: ${{ secrets.PERPLEXITY_API_KEY }}

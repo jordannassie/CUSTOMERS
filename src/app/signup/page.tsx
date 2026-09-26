@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import AuthForm from "@/components/geo/AuthForm";
 
 export const metadata = {
@@ -5,13 +6,23 @@ export const metadata = {
   robots: { index: false },
 };
 
-export default function SignupPage() {
+type SearchParams = Promise<{ error?: string }>;
+
+// Only the form waits for ?error=, so the rest of the page stays in the static shell (Cache Components).
+async function FormWithError({ searchParams }: { searchParams: SearchParams }) {
+  const { error } = await searchParams;
+  return <AuthForm defaultMode="signup" errorParam={error} />;
+}
+
+export default function SignupPage({ searchParams }: { searchParams: SearchParams }) {
   return (
     <div className="min-h-screen bg-[#FAFAF8] flex items-center justify-center px-4 py-16">
       <div className="w-full max-w-6xl flex flex-col md:flex-row items-center gap-8">
         {/* Left: Auth form defaulting to Sign Up tab */}
         <div className="w-full md:w-[420px] mx-auto md:mx-0">
-          <AuthForm defaultMode="signup" />
+          <Suspense fallback={<AuthForm defaultMode="signup" />}>
+            <FormWithError searchParams={searchParams} />
+          </Suspense>
         </div>
 
         {/* Right: Banner image (desktop only) */}

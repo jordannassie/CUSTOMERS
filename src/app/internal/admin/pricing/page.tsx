@@ -153,7 +153,7 @@ export default async function AdminPricingPage() {
               <div className="w-5 h-5 rounded-full bg-[#0866F5] flex items-center justify-center text-white text-[10px] font-bold shrink-0 mt-0.5">1</div>
               <div>
                 <p className="text-[13px] font-semibold text-[#111827]">One Customers.Direct Account = One Auth User</p>
-                <p className="text-[12px] text-[#6B7280] mt-0.5">There is no separate "Agency account." Any user may add multiple businesses.</p>
+                <p className="text-[12px] text-[#6B7280] mt-0.5">There is no separate &ldquo;Agency account.&rdquo; Any user may add multiple businesses.</p>
               </div>
             </div>
             <div className="flex items-start gap-3">

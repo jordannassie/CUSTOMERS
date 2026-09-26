@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useSearchParams, usePathname } from "next/navigation";
 import { ArrowRight, CheckCircle2, Loader2 } from "lucide-react";
 import Link from "next/link";
@@ -67,20 +67,21 @@ export default function ContactForm({
   const [company,  setCompany]  = useState("");
   const [website,  setWebsite]  = useState("");
   const [phone,    setPhone]    = useState("");
-  const [interest, setInterest] = useState<InterestValue>(
-    initialInterest ?? interestFromParam(searchParams?.get("interest") ?? searchParams?.get("topic"))
-  );
+  // The prop takes precedence over the URL param.
+  const urlInterest =
+    initialInterest ?? interestFromParam(searchParams?.get("interest") ?? searchParams?.get("topic"));
+  const [interest, setInterest] = useState<InterestValue>(urlInterest);
+  const [syncedInterest, setSyncedInterest] = useState(urlInterest);
   const [message,  setMessage]  = useState("");
   const [loading,  setLoading]  = useState(false);
   const [success,  setSuccess]  = useState(false);
   const [error,    setError]    = useState<string | null>(null);
 
-  // Sync interest from URL params (e.g., when navigating to /contact?interest=agency)
-  useEffect(() => {
-    if (initialInterest) return; // prop takes precedence
-    const param = searchParams?.get("interest") ?? searchParams?.get("topic");
-    setInterest(interestFromParam(param));
-  }, [searchParams, initialInterest]);
+  // Follow the URL when it changes while mounted (e.g., navigating to /contact?interest=agency).
+  if (syncedInterest !== urlInterest) {
+    setSyncedInterest(urlInterest);
+    setInterest(urlInterest);
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();

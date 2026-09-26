@@ -82,21 +82,13 @@ function IconRefresh() {
 
 export default function ChatWidget() {
   const [open,     setOpen]     = useState(false);
-  const [stage,    setStage]    = useState<Stage>("opening");
-  const [interest, setInterest] = useState<InterestValue>("other");
+  // Safe to read storage on first render: stage and interest only show once the panel is opened.
+  const [stage,    setStage]    = useState<Stage>(() => loadSession()?.stage ?? "opening");
+  const [interest, setInterest] = useState<InterestValue>(() => loadSession()?.interest ?? "other");
   const [unread,   setUnread]   = useState(false);
   const [showMsg,  setShowMsg]  = useState(false);
 
   const panelRef = useRef<HTMLDivElement>(null);
-
-  // ── Restore session ────────────────────────────────────────────────────────
-  useEffect(() => {
-    const saved = loadSession();
-    if (saved) {
-      setInterest(saved.interest);
-      setStage(saved.stage);
-    }
-  }, []);
 
   // ── Persist ────────────────────────────────────────────────────────────────
   useEffect(() => {
