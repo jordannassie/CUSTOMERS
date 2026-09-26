@@ -1,3 +1,4 @@
+/* eslint-disable max-lines, local/max-lines-hard -- TODO: Leads stays out of MVP scope (08-admin); split when it is next changed. */
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";

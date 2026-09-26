@@ -1,3 +1,4 @@
+/* eslint-disable max-lines, local/max-lines-hard -- TODO(B-46): replaced by the new billing page. */
 "use client";
 
 import { useState } from "react";
