@@ -67,6 +67,7 @@ export type Database = {
       agencies: {
         Row: {
           created_at: string
+          credit_overdraft: number
           current_period_end: string | null
           id: string
           is_test: boolean
@@ -80,6 +81,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          credit_overdraft?: number
           current_period_end?: string | null
           id?: string
           is_test?: boolean
@@ -93,6 +95,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          credit_overdraft?: number
           current_period_end?: string | null
           id?: string
           is_test?: boolean
@@ -500,6 +503,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "business_subscriptions_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agency_credit_balance"
+            referencedColumns: ["agency_id"]
+          },
+          {
             foreignKeyName: "business_subscriptions_business_id_fkey"
             columns: ["business_id"]
             isOneToOne: true
@@ -605,6 +615,13 @@ export type Database = {
             referencedRelation: "agencies"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "businesses_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agency_credit_balance"
+            referencedColumns: ["agency_id"]
+          },
         ]
       }
       contact_submissions: {
@@ -663,6 +680,193 @@ export type Database = {
           website?: string | null
         }
         Relationships: []
+      }
+      credit_grants: {
+        Row: {
+          agency_id: string
+          amount: number
+          business_id: string | null
+          created_at: string
+          expires_at: string | null
+          id: string
+          remaining: number
+          source: string
+          source_id: string
+        }
+        Insert: {
+          agency_id: string
+          amount: number
+          business_id?: string | null
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          remaining: number
+          source: string
+          source_id: string
+        }
+        Update: {
+          agency_id?: string
+          amount?: number
+          business_id?: string | null
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          remaining?: number
+          source?: string
+          source_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "credit_grants_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "credit_grants_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agency_credit_balance"
+            referencedColumns: ["agency_id"]
+          },
+          {
+            foreignKeyName: "credit_grants_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      credit_holds: {
+        Row: {
+          agency_id: string
+          amount: number
+          captured: number
+          closed_at: string | null
+          created_at: string
+          id: string
+          released: number
+          scan_job_id: string | null
+          status: string
+        }
+        Insert: {
+          agency_id: string
+          amount: number
+          captured?: number
+          closed_at?: string | null
+          created_at?: string
+          id?: string
+          released?: number
+          scan_job_id?: string | null
+          status?: string
+        }
+        Update: {
+          agency_id?: string
+          amount?: number
+          captured?: number
+          closed_at?: string | null
+          created_at?: string
+          id?: string
+          released?: number
+          scan_job_id?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "credit_holds_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "credit_holds_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agency_credit_balance"
+            referencedColumns: ["agency_id"]
+          },
+          {
+            foreignKeyName: "credit_holds_scan_job_id_fkey"
+            columns: ["scan_job_id"]
+            isOneToOne: true
+            referencedRelation: "scan_jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      credit_transactions: {
+        Row: {
+          admin_user_id: string | null
+          agency_id: string | null
+          created_at: string
+          delta: number
+          grant_id: string | null
+          hold_id: string | null
+          id: string
+          kind: string
+          note: string | null
+          source_id: string
+          source_type: string
+        }
+        Insert: {
+          admin_user_id?: string | null
+          agency_id?: string | null
+          created_at?: string
+          delta: number
+          grant_id?: string | null
+          hold_id?: string | null
+          id?: string
+          kind: string
+          note?: string | null
+          source_id: string
+          source_type: string
+        }
+        Update: {
+          admin_user_id?: string | null
+          agency_id?: string | null
+          created_at?: string
+          delta?: number
+          grant_id?: string | null
+          hold_id?: string | null
+          id?: string
+          kind?: string
+          note?: string | null
+          source_id?: string
+          source_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "credit_transactions_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "credit_transactions_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agency_credit_balance"
+            referencedColumns: ["agency_id"]
+          },
+          {
+            foreignKeyName: "credit_transactions_grant_id_fkey"
+            columns: ["grant_id"]
+            isOneToOne: false
+            referencedRelation: "credit_grants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "credit_transactions_hold_id_fkey"
+            columns: ["hold_id"]
+            isOneToOne: false
+            referencedRelation: "credit_holds"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       customers_direct_leads: {
         Row: {
@@ -1137,10 +1341,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "scan_jobs_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agency_credit_balance"
+            referencedColumns: ["agency_id"]
+          },
+          {
             foreignKeyName: "scan_jobs_business_id_fkey"
             columns: ["business_id"]
             isOneToOne: false
             referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scan_jobs_hold_id_fkey"
+            columns: ["hold_id"]
+            isOneToOne: false
+            referencedRelation: "credit_holds"
             referencedColumns: ["id"]
           },
         ]
@@ -1601,10 +1819,63 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      agency_credit_balance: {
+        Row: {
+          agency_id: string | null
+          balance: number | null
+          held: number | null
+          overdraft: number | null
+          plan_remaining: number | null
+          topup_remaining: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
-      [_ in never]: never
+      admin_adjust_credits: {
+        Args: {
+          p_admin_user_id: string
+          p_agency_id: string
+          p_delta: number
+          p_note: string
+          p_request_id: string
+        }
+        Returns: string
+      }
+      capture_credit: {
+        Args: { p_check_id: string; p_hold_id: string }
+        Returns: boolean
+      }
+      credit_add_grant: {
+        Args: {
+          p_admin_user_id: string
+          p_agency_id: string
+          p_amount: number
+          p_expires_at: string
+          p_kind: string
+          p_note: string
+          p_source: string
+          p_source_id: string
+        }
+        Returns: string
+      }
+      credit_lock_agency: { Args: { p_agency_id: string }; Returns: number }
+      expire_grants: { Args: never; Returns: number }
+      grant_credits: {
+        Args: {
+          p_agency_id: string
+          p_amount: number
+          p_expires_at?: string
+          p_source: string
+          p_source_id: string
+        }
+        Returns: string
+      }
+      hold_credits: {
+        Args: { p_agency_id: string; p_amount: number; p_scan_job_id: string }
+        Returns: string
+      }
+      release_hold: { Args: { p_hold_id: string }; Returns: number }
     }
     Enums: {
       [_ in never]: never
