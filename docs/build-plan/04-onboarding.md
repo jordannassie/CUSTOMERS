@@ -7,7 +7,7 @@ Goal: a new user goes from account to first scan with almost no typing, followin
 ### B-32 Industry question library
 - [ ] Done
 
-Phase 4 · L · Depends on: B-11 · Blocked by Jordan: no · MVP_SPEC 5.3, D-62
+Phase 4 · L · Depends on: B-11 · Blocked by Jordan: no · MVP_SPEC 5.3, D-62 · Branch: `task/B-32-industry-question-library` → `mvp`
 
 **Build**
 1. Industry list (the enum used everywhere): the first 10 from D-62 (dentist, lawyer, restaurant, coffee shop, plumber, HVAC, med spa, real estate, auto repair, salon) plus `other`.
@@ -27,7 +27,7 @@ Phase 4 · L · Depends on: B-11 · Blocked by Jordan: no · MVP_SPEC 5.3, D-62
 ### B-33 Question picking and its eval
 - [ ] Done
 
-Phase 4 · M · Depends on: B-32 · Blocked by Jordan: no · MVP_SPEC 5.3, 25
+Phase 4 · M · Depends on: B-32 · Blocked by Jordan: no · MVP_SPEC 5.3, 25 · Branch: `task/B-33-question-picking-and-its-eval` → `mvp`
 
 **Build**
 1. `src/modules/onboarding/questions.ts`: Claude Haiku picks 12 templates from the business's industry library that fit its services, with a mix of intents; fills `{city}`.
@@ -47,7 +47,7 @@ Phase 4 · M · Depends on: B-32 · Blocked by Jordan: no · MVP_SPEC 5.3, 25
 ### B-34 Business auto-fill and its eval
 - [ ] Done
 
-Phase 4 · L · Depends on: B-15 · Blocked by Jordan: no · MVP_SPEC 3.2, 26, D-18, D-73
+Phase 4 · L · Depends on: B-15 · Blocked by Jordan: no · MVP_SPEC 3.2, 26, D-18, D-73 · Branch: `task/B-34-business-auto-fill-and-its` → `mvp`
 
 **Build**
 1. `src/modules/onboarding/autofill.ts`, run in parallel:
@@ -72,7 +72,7 @@ Phase 4 · L · Depends on: B-15 · Blocked by Jordan: no · MVP_SPEC 3.2, 26, D
 ### B-35 Competitor discovery
 - [ ] Done
 
-Phase 4 · M · Depends on: B-34 · Blocked by Jordan: no · MVP_SPEC 3.1 step 5, 7.1, D-73
+Phase 4 · M · Depends on: B-34 · Blocked by Jordan: no · MVP_SPEC 3.1 step 5, 7.1, D-73 · Branch: `task/B-35-competitor-discovery` → `mvp`
 
 **Build**
 1. `src/modules/onboarding/competitors.ts`: Google Places search for the same category near the business; returns up to 10 candidates with live name, rating and review count for display.
@@ -92,7 +92,7 @@ Phase 4 · M · Depends on: B-34 · Blocked by Jordan: no · MVP_SPEC 3.1 step 5
 ### B-36 Onboarding wizard
 - [ ] Done
 
-Phase 4 · L · Depends on: B-09, B-33, B-34, B-35, B-16 · Blocked by Jordan: no · MVP_SPEC 3.1, D-14, design/DESIGN.md
+Phase 4 · L · Depends on: B-09, B-33, B-34, B-35, B-16 · Blocked by Jordan: no · MVP_SPEC 3.1, D-14, design/DESIGN.md · Branch: `task/B-36-onboarding-wizard` → `mvp`
 
 **Build**
 1. Route `src/app/(app)/onboarding/[step]/page.tsx` with steps: agency name and optional logo, website (or "I don't have a website"), details (auto-filled), competitors, questions (edit, remove, add up to 25), AI models and frequency.
@@ -115,7 +115,7 @@ Phase 4 · L · Depends on: B-09, B-33, B-34, B-35, B-16 · Blocked by Jordan: n
 ### B-37 Businesses without a website
 - [ ] Done
 
-Phase 4 · S · Depends on: B-36, B-24 · Blocked by Jordan: confirm the feature (D-08) · MVP_SPEC 3.3, 7.3
+Phase 4 · S · Depends on: B-36, B-24 · Blocked by Jordan: confirm the feature (D-08) · MVP_SPEC 3.3, 7.3 · Branch: `task/B-37-businesses-without-a-website` → `mvp`
 
 **Build**
 1. "I don't have a website" skips Firecrawl; Places searched by name plus city.
@@ -133,7 +133,7 @@ Phase 4 · S · Depends on: B-36, B-24 · Blocked by Jordan: confirm the feature
 ### B-38 First scan screen
 - [ ] Done
 
-Phase 4 · S · Depends on: B-36, B-29 · Blocked by Jordan: no · MVP_SPEC 3.1 step 9
+Phase 4 · S · Depends on: B-36, B-29 · Blocked by Jordan: no · MVP_SPEC 3.1 step 9 · Branch: `task/B-38-first-scan-screen` → `mvp`
 
 **Build**
 1. After the last step (and after the card step once B-41 exists), queue the first scan and show a progress screen that polls `getScanStatus`.

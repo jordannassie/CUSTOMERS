@@ -7,7 +7,7 @@ Goal: everything measured, safe, legal and rehearsed before real customers pay. 
 ### B-75 Evals complete with baselines
 - [ ] Done
 
-Phase 10 · M · Depends on: B-24, B-25, B-33, B-34, B-51, B-52 · Blocked by Jordan: no · MVP_SPEC 25, D-66, D-81
+Phase 10 · M · Depends on: B-24, B-25, B-33, B-34, B-51, B-52 · Blocked by Jordan: no · MVP_SPEC 25, D-66, D-81 · Branch: `task/B-75-evals-complete-with-baselines` → `mvp`
 
 **Build**
 1. Confirm all six suites exist with human-labelled datasets and READMEs (who labelled, when, source, PII notes).
@@ -27,7 +27,7 @@ Phase 10 · M · Depends on: B-24, B-25, B-33, B-34, B-51, B-52 · Blocked by Jo
 ### B-76 Calibration check against the real AI apps
 - [ ] Done
 
-Phase 10 · S (human, 1 to 2 hours) · Depends on: B-26 · Blocked by Jordan: no · MVP_SPEC 5.6, D-66
+Phase 10 · S (human, 1 to 2 hours) · Depends on: B-26 · Blocked by Jordan: no · MVP_SPEC 5.6, D-66 · Branch: `task/B-76-calibration-check` → `mvp` (results file only)
 
 **Build**
 1. Pick 20 real questions across 2 to 3 cities.
@@ -47,7 +47,7 @@ Phase 10 · S (human, 1 to 2 hours) · Depends on: B-26 · Blocked by Jordan: no
 ### B-77 Account management and deletion
 - [ ] Done
 
-Phase 10 · L · Depends on: B-44, B-55 · Blocked by Jordan: legal deadlines (D-77) · MVP_SPEC 23, MVP_ROADMAP ACC-01 to ACC-04
+Phase 10 · L · Depends on: B-44, B-55 · Blocked by Jordan: legal deadlines (D-77) · MVP_SPEC 23, MVP_ROADMAP ACC-01 to ACC-04 · Branch: `task/B-77-account-management-and-deletion` → `mvp`
 
 **Build**
 1. Change email and change password in Settings (`supabase.auth.updateUser`).
@@ -68,7 +68,7 @@ Phase 10 · L · Depends on: B-44, B-55 · Blocked by Jordan: legal deadlines (D
 ### B-78 Terms and privacy update
 - [ ] Done
 
-Phase 10 · S (plus legal review) · Depends on: B-45 · Blocked by Jordan: lawyer or Jordan review · MVP_SPEC 24, D-78
+Phase 10 · S (plus legal review) · Depends on: B-45 · Blocked by Jordan: lawyer or Jordan review · MVP_SPEC 24, D-78 · Branch: `task/B-78-terms-and-privacy-update` → `mvp`
 
 **Build**
 1. Draft the changes listed in MVP_SPEC 24 in plain language.
@@ -86,7 +86,7 @@ Phase 10 · S (plus legal review) · Depends on: B-45 · Blocked by Jordan: lawy
 ### B-79 Google Places compliance check
 - [ ] Done
 
-Phase 10 · S · Depends on: B-35, B-50 · Blocked by Jordan: legal reading (D-73) · MVP_SPEC 26, D-73
+Phase 10 · S · Depends on: B-35, B-50 · Blocked by Jordan: legal reading (D-73) · MVP_SPEC 26, D-73 · Branch: `task/B-79-google-places-compliance-check` → `mvp`
 
 **Build**
 1. Remove any Places data stored by old code (competitor names from `source: google_places` that the user never confirmed; any ratings or reviews), keeping `place_id`.
@@ -105,16 +105,16 @@ Phase 10 · S · Depends on: B-35, B-50 · Blocked by Jordan: legal reading (D-7
 ### B-80 Go live on the chosen host
 - [ ] Done
 
-Phase 10 · M · Depends on: all build tasks, B-01 · Blocked by Jordan: Stripe live account; DNS only if moving to Vercel · MVP_SPEC 20, D-41, D-70
+Phase 10 · M · Depends on: all build tasks, B-01 · Blocked by Jordan: Stripe live account; DNS only if moving to Vercel · MVP_SPEC 20, D-41, D-70 · Branch: `mvp` → `main` (the go-live merge itself; pull request from `mvp`)
 
 **Build**
 - **Netlify path** (if the Netlify tests in B-08 and B-27 passed):
   1. Put the rotated production keys in the Netlify environment (production context).
   2. Deploy the worker as a background function; point the pg_net worker URL and the Stripe live webhook at the production domain.
   3. Check Supabase Auth site URL and redirect URLs, Google OAuth redirect URIs.
-  4. Re-enable deploys from `main`.
+  4. Merge `mvp` into `main` through a pull request (all checks green); Netlify publishes it.
 - **Vercel path** (only if the Netlify tests failed): follow MVP_SPEC 20 steps 1 to 6.
-- Both: switch Stripe from sandbox to live keys and live price IDs.
+- Both: switch Stripe from sandbox to live keys and live price IDs; point the worker URL at production and let the daily enqueue include real agencies (B-28).
 
 **What the user sees**
 - The new product is live at the normal address with no downtime.
@@ -128,7 +128,7 @@ Phase 10 · M · Depends on: all build tasks, B-01 · Blocked by Jordan: Stripe 
 ### B-81 Existing users at launch
 - [ ] Done
 
-Phase 10 · S · Depends on: B-14, B-45 · Blocked by Jordan: decision on beta users · MVP_SPEC 19, D-69
+Phase 10 · S · Depends on: B-14, B-45 · Blocked by Jordan: decision on beta users · MVP_SPEC 19, D-69 · Branch: `task/B-81-existing-users-at-launch` → `main`
 
 **Build**
 1. Apply Jordan's decision (proposed: a fresh 7-day trial with 100 credits for existing beta users).
@@ -145,7 +145,7 @@ Phase 10 · S · Depends on: B-14, B-45 · Blocked by Jordan: decision on beta u
 ### B-82 Security and resilience hardening
 - [ ] Done
 
-Phase 10 · M · Depends on: B-59, B-71, B-73 · Blocked by Jordan: no · MVP_ROADMAP SEC-03 to SEC-07, REL-06, REL-08
+Phase 10 · M · Depends on: B-59, B-71, B-73 · Blocked by Jordan: no · MVP_ROADMAP SEC-03 to SEC-07, REL-06, REL-08 · Branch: `task/B-82-security-and-resilience-hardening` → `mvp`
 
 **Build**
 1. Security headers in `next.config.ts`: HSTS, `X-Content-Type-Options`, `Referrer-Policy`, `frame-ancestors 'none'`, a Content Security Policy (start in report-only, then enforce).
@@ -168,7 +168,7 @@ Phase 10 · M · Depends on: B-59, B-71, B-73 · Blocked by Jordan: no · MVP_RO
 ### B-83 Launch rehearsal
 - [ ] Done
 
-Phase 10 · M · Depends on: B-75 to B-82 · Blocked by Jordan: no · All
+Phase 10 · M · Depends on: B-75 to B-82 · Blocked by Jordan: no · All · Branch: `task/B-83-launch-rehearsal` → `main`
 
 **Build**
 1. Run the full Playwright suite against production with an internal test agency.

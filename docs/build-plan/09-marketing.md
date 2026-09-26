@@ -7,7 +7,7 @@ Goal: an honest, premium public site that explains the AEO tool and sends visito
 ### B-70 Header, footer and section building blocks
 - [ ] Done
 
-Phase 9 · M · Depends on: B-09 · Blocked by Jordan: no · MVP_SPEC 12, D-52, design/DESIGN.md
+Phase 9 · M · Depends on: B-09 · Blocked by Jordan: no · MVP_SPEC 12, D-52, design/DESIGN.md · Branch: `task/B-70-header-footer-and-section-building` → `mvp`
 
 **Build**
 1. `components/marketing/Header.tsx`: logo, Product, Pricing, Agencies, FAQ, Log in, blue "Start free trial"; plain (no gradient pill); phone menu.
@@ -26,7 +26,7 @@ Phase 9 · M · Depends on: B-09 · Blocked by Jordan: no · MVP_SPEC 12, D-52, 
 ### B-71 New homepage
 - [ ] Done
 
-Phase 9 · L · Depends on: B-70 · Blocked by Jordan: no · MVP_SPEC 12.2, D-34, D-52
+Phase 9 · L · Depends on: B-70 · Blocked by Jordan: no · MVP_SPEC 12.2, D-34, D-52 · Branch: `task/B-71-new-homepage` → `mvp`
 
 **Build**
 1. `src/app/(marketing)/page.tsx` with sections, one file each under `components/marketing/home/`: hero with the compare box, how it works (measure, compare, fix, track), product tabs (Visibility, Competitors, Fix steps) clearly labelled "Example", for agencies, pricing summary from the `plans` table, FAQ, final call to action.
@@ -48,7 +48,7 @@ Phase 9 · L · Depends on: B-70 · Blocked by Jordan: no · MVP_SPEC 12.2, D-34
 ### B-72 Pricing, agency and contact pages
 - [ ] Done
 
-Phase 9 · M · Depends on: B-70, B-40 · Blocked by Jordan: final prices (D-21) · MVP_SPEC 12.1, 4.1, 4.4
+Phase 9 · M · Depends on: B-70, B-40 · Blocked by Jordan: final prices (D-21) · MVP_SPEC 12.1, 4.1, 4.4 · Branch: `task/B-72-pricing-agency-and-contact-pages` → `mvp`
 
 **Build**
 1. Pricing: Starter and Pro from the `plans` table, per business per month, credits included, what a credit is, top-up packs, the 7-day trial with card and its charge date rule, FAQ. "Choose plan" goes to signup with `?plan=`.
@@ -67,7 +67,7 @@ Phase 9 · M · Depends on: B-70, B-40 · Blocked by Jordan: final prices (D-21)
 ### B-73 Free compare tool made honest
 - [ ] Done
 
-Phase 9 · M · Depends on: B-70, B-22 · Blocked by Jordan: no · MVP_SPEC 12.3
+Phase 9 · M · Depends on: B-70, B-22 · Blocked by Jordan: no · MVP_SPEC 12.3 · Branch: `task/B-73-free-compare-tool-made-honest` → `mvp`
 
 **Build**
 Choose one at build time (record in DECISIONS.md):
@@ -87,7 +87,7 @@ Either way: the headline must describe what the tool actually measures, and the 
 ### B-74 SEO basics
 - [ ] Done
 
-Phase 9 · S · Depends on: B-71, B-72 · Blocked by Jordan: no · MVP_ROADMAP GROW-02, GROW-03
+Phase 9 · S · Depends on: B-71, B-72 · Blocked by Jordan: no · MVP_ROADMAP GROW-02, GROW-03 · Branch: `task/B-74-seo-basics` → `mvp`
 
 **Build**
 1. `sitemap.ts`: only kept public pages (home, pricing, agency, compare, contact, privacy, terms).

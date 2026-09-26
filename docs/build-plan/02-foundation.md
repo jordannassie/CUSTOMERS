@@ -7,7 +7,7 @@ Goal: the new database, credit system, entitlements and moved data that every fe
 ### B-10 Migration workflow and baseline
 - [ ] Done
 
-Phase 2 · M · Depends on: B-06 · Blocked by Jordan: no · MVP_ROADMAP OPS-02, D-43
+Phase 2 · M · Depends on: B-06 · Blocked by Jordan: no · MVP_ROADMAP OPS-02, D-43 · Branch: `task/B-10-migration-workflow-and-baseline` → `main`
 
 **Build**
 1. Link the Supabase CLI to the project. Pull the current live schema as a baseline migration so local, CI and live match.
@@ -27,7 +27,7 @@ Phase 2 · M · Depends on: B-06 · Blocked by Jordan: no · MVP_ROADMAP OPS-02,
 ### B-11 Core tables
 - [ ] Done
 
-Phase 2 · M · Depends on: B-10 · Blocked by Jordan: no · MVP_SPEC 13, D-20, D-56, D-58, D-61, D-62
+Phase 2 · M · Depends on: B-10 · Blocked by Jordan: no · MVP_SPEC 13, D-20, D-56, D-58, D-61, D-62 · Branch: `task/B-11-core-tables` → `main`
 
 **Build**
 One migration adding (nothing existing changed or dropped):
@@ -51,7 +51,7 @@ One migration adding (nothing existing changed or dropped):
 ### B-12 Credit tables
 - [ ] Done
 
-Phase 2 · S · Depends on: B-11 · Blocked by Jordan: no · MVP_SPEC 4.2, 13, D-58
+Phase 2 · S · Depends on: B-11 · Blocked by Jordan: no · MVP_SPEC 4.2, 13, D-58 · Branch: `task/B-12-credit-tables` → `main`
 
 **Build**
 1. Migration: `credit_grants`, `credit_transactions` (unique `(source_type, source_id)`), `credit_holds` (unique `scan_job_id`).
@@ -70,7 +70,7 @@ Phase 2 · S · Depends on: B-11 · Blocked by Jordan: no · MVP_SPEC 4.2, 13, D
 ### B-13 Credit SQL functions
 - [ ] Done
 
-Phase 2 · M · Depends on: B-12 · Blocked by Jordan: no · MVP_SPEC 4.2, D-53, D-54, D-55
+Phase 2 · M · Depends on: B-12 · Blocked by Jordan: no · MVP_SPEC 4.2, D-53, D-54, D-55 · Branch: `task/B-13-credit-sql-functions` → `main`
 
 **Build**
 1. Migration with six `security definer` functions callable only by the service role:
@@ -97,10 +97,10 @@ Phase 2 · M · Depends on: B-12 · Blocked by Jordan: no · MVP_SPEC 4.2, D-53,
 ### B-14 Move existing data
 - [ ] Done
 
-Phase 2 · M · Depends on: B-13 · Blocked by Jordan: beta-user treatment (B-81) only affects the trial grant · MVP_SPEC 19, D-69
+Phase 2 · M · Depends on: B-13 · Blocked by Jordan: beta-user treatment (B-81) only affects the trial grant · MVP_SPEC 19, D-69 · Branch: `task/B-14-move-existing-data` → `mvp`
 
 **Build**
-1. Delete the audit test account `ek181773+cdaudit0923@gmail.com` and its Brandastic business (created 2026-09-23).
+1. Keep the audit test account `ek181773+cdaudit0923@gmail.com` and its Brandastic business (created 2026-09-23); mark its agency `is_test` after the backfill so it never spends real credits.
 2. Backup and row counts (B-02 procedure).
 3. Idempotent backfill migration (MVP_SPEC 19 step 2): an agency per profile that owns businesses or billing accounts; businesses linked with weekly frequency, all three models, `has_website`, `next_scan_at`; existing tracked prompts marked `source = legacy`; existing visibility results mapped to checks; Stripe data not carried over.
 4. Verification script `scripts/verify-migration.ts`: counts match, every business has an agency, RLS isolation holds.
@@ -118,7 +118,7 @@ Phase 2 · M · Depends on: B-13 · Blocked by Jordan: beta-user treatment (B-81
 ### B-15 Auth helpers and Data Access Layer scaffolding
 - [ ] Done
 
-Phase 2 · M · Depends on: B-11 · Blocked by Jordan: no · MVP_SPEC 18.1 rules 1, 2, 8, D-59, D-79
+Phase 2 · M · Depends on: B-11 · Blocked by Jordan: no · MVP_SPEC 18.1 rules 1, 2, 8, D-59, D-79 · Branch: `task/B-15-auth-helpers-and-data-access` → `mvp`
 
 **Build**
 1. `src/modules/auth/dal.ts`: `requireUser()` (uses `getUser()`, redirects or throws 401), `requireAgency()` (the user's agency, blocks `suspended` and `deleted`), `requireAdmin()` (`ADMIN_EMAILS` from env or `profiles.account_type = 'admin'`).
@@ -139,7 +139,7 @@ Phase 2 · M · Depends on: B-11 · Blocked by Jordan: no · MVP_SPEC 18.1 rules
 ### B-16 Entitlements module
 - [ ] Done
 
-Phase 2 · M · Depends on: B-13, B-15 · Blocked by Jordan: no · MVP_SPEC 4, D-16, D-25, D-60
+Phase 2 · M · Depends on: B-13, B-15 · Blocked by Jordan: no · MVP_SPEC 4, D-16, D-25, D-60 · Branch: `task/B-16-entitlements-module` → `main`
 
 **Build**
 1. `src/modules/entitlements/service.ts` with one function per question: `canAddBusiness(agency)` (trial: max 2), `canStartScan(agency, business)` (balance above 0, status `trialing` or `active`, no job already queued), `maxQuestions(business)`, `maxCompetitors(business)` (from the `plans` table), `canSpendTopUps(agency)` (active plan or trial).
@@ -159,7 +159,7 @@ Phase 2 · M · Depends on: B-13, B-15 · Blocked by Jordan: no · MVP_SPEC 4, D
 ### B-17 Admin access cleanup
 - [ ] Done
 
-Phase 2 · S · Depends on: B-15 · Blocked by Jordan: no · D-35, MVP_ROADMAP SEC-09
+Phase 2 · S · Depends on: B-15 · Blocked by Jordan: no · D-35, MVP_ROADMAP SEC-09 · Branch: `task/B-17-admin-access-cleanup` → `mvp`
 
 **Build**
 1. Every `/internal/admin` page and `/api/internal/admin` route uses `requireAdmin()`.

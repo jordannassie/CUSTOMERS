@@ -7,7 +7,7 @@ Goal: trial with card, subscriptions per business, top-ups and plan changes, all
 ### B-40 Stripe setup
 - [ ] Done
 
-Phase 5 · S · Depends on: B-11 · Blocked by Jordan: live account and prices (D-21, D-40) · MVP_SPEC 11.1, 11.4, D-39, D-56
+Phase 5 · S · Depends on: B-11 · Blocked by Jordan: live account and prices (D-21, D-40) · MVP_SPEC 11.1, 11.4, D-39, D-56 · Branch: `task/B-40-stripe-setup` → `mvp`
 
 **Build**
 1. Stripe sandbox for development (not the shared test mode). Restricted API key with only the permissions we use. Current API version (`2026-08-26.dahlia` at time of writing) and current `stripe` Node SDK, using a `StripeClient` instance (no global key).
@@ -27,7 +27,7 @@ Phase 5 · S · Depends on: B-11 · Blocked by Jordan: live account and prices (
 ### B-41 Checkout page and trial start
 - [ ] Done
 
-Phase 5 · L · Depends on: B-40, B-36 · Blocked by Jordan: live keys only · MVP_SPEC 3.1 step 8, 11.2, 4.4, D-15, D-16, D-38
+Phase 5 · L · Depends on: B-40, B-36 · Blocked by Jordan: live keys only · MVP_SPEC 3.1 step 8, 11.2, 4.4, D-15, D-16, D-38 · Branch: `task/B-41-checkout-page-and-trial-start` → `mvp`
 
 **Build**
 1. Our own checkout step inside onboarding using **Checkout Sessions with the Payment Element** (follow Stripe's current guide for this; confirm the exact session mode parameter in the Stripe docs at build time). Do not pass `payment_method_types`. Tag sessions with `integration_identifier`.
@@ -49,7 +49,7 @@ Phase 5 · L · Depends on: B-40, B-36 · Blocked by Jordan: live keys only · M
 ### B-42 Webhook handlers
 - [ ] Done
 
-Phase 5 · L · Depends on: B-40, B-13 · Blocked by Jordan: no · MVP_SPEC 11.3, 11.5, D-39, D-57
+Phase 5 · L · Depends on: B-40, B-13 · Blocked by Jordan: no · MVP_SPEC 11.3, 11.5, D-39, D-57 · Branch: `task/B-42-webhook-handlers` → `mvp`
 
 **Build**
 1. Rewrite `src/app/api/stripe/webhook/route.ts` as a thin route (raw body, signature check, Node runtime, return 200 quickly) calling `src/modules/billing/webhooks.ts`.
@@ -70,7 +70,7 @@ Phase 5 · L · Depends on: B-40, B-13 · Blocked by Jordan: no · MVP_SPEC 11.3
 ### B-43 Top-ups
 - [ ] Done
 
-Phase 5 · M · Depends on: B-42 · Blocked by Jordan: prices (D-22) · MVP_SPEC 4.2, 11.5, D-22
+Phase 5 · M · Depends on: B-42 · Blocked by Jordan: prices (D-22) · MVP_SPEC 4.2, 11.5, D-22 · Branch: `task/B-43-top-ups` → `mvp`
 
 **Build**
 1. Server Action `buyTopUp(pack)`: one-time Checkout Session with the Payment Element.
@@ -88,7 +88,7 @@ Phase 5 · M · Depends on: B-42 · Blocked by Jordan: prices (D-22) · MVP_SPEC
 ### B-44 Plan changes
 - [ ] Done
 
-Phase 5 · L · Depends on: B-42 · Blocked by Jordan: no · MVP_SPEC 11.5, D-57
+Phase 5 · L · Depends on: B-42 · Blocked by Jordan: no · MVP_SPEC 11.5, D-57 · Branch: `task/B-44-plan-changes` → `mvp`
 
 **Build**
 1. Server Actions in `src/modules/billing/actions.ts`:
@@ -110,7 +110,7 @@ Phase 5 · L · Depends on: B-42 · Blocked by Jordan: no · MVP_SPEC 11.5, D-57
 ### B-45 Trial rules
 - [ ] Done
 
-Phase 5 · M · Depends on: B-42, B-16 · Blocked by Jordan: trial credits confirmed (D-17) · MVP_SPEC 4.4, D-16, D-17
+Phase 5 · M · Depends on: B-42, B-16 · Blocked by Jordan: trial credits confirmed (D-17) · MVP_SPEC 4.4, D-16, D-17 · Branch: `task/B-45-trial-rules` → `mvp`
 
 **Build**
 1. Trial: 100 credits (one-time grant, expires at trial end), 2 businesses, charged on day 7.
@@ -129,7 +129,7 @@ Phase 5 · M · Depends on: B-42, B-16 · Blocked by Jordan: trial credits confi
 ### B-46 Billing page
 - [ ] Done
 
-Phase 5 · M · Depends on: B-43, B-44, B-09 · Blocked by Jordan: no · MVP_SPEC 8.1 (Settings), 11
+Phase 5 · M · Depends on: B-43, B-44, B-09 · Blocked by Jordan: no · MVP_SPEC 8.1 (Settings), 11 · Branch: `task/B-46-billing-page` → `mvp`
 
 **Build**
 1. `src/app/(app)/settings/billing/page.tsx`: plan per business with change or remove, add business, buy credits, next charge date and amount, status (trial, active, past due).
