@@ -16,6 +16,7 @@ const CUT_PAGES = [
 ];
 
 const nextConfig: NextConfig = {
+  cacheComponents: true,
   async redirects() {
     return [
       ...CUT_PAGES.map((source) => ({ source, destination: "/", permanent: true })),
