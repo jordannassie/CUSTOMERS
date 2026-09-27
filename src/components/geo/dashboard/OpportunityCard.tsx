@@ -89,14 +89,16 @@ export default function OpportunityCard({ opportunity }: { opportunity: Opportun
 
       {isOpen && (
         <div className="flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            onClick={copyForClaude}
-            className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-[#777773] bg-[#F5F5F2] border border-[#E5E5E1] px-3.5 py-2 rounded-lg hover:bg-[#EEEEEA] transition-colors"
-          >
-            {copied ? <Check size={12} aria-hidden="true" /> : <Copy size={12} aria-hidden="true" />}
-            {copied ? "Copied!" : "Copy for Claude"}
-          </button>
+          {opportunity.claude_prompt && (
+            <button
+              type="button"
+              onClick={copyForClaude}
+              className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-[#777773] bg-[#F5F5F2] border border-[#E5E5E1] px-3.5 py-2 rounded-lg hover:bg-[#EEEEEA] transition-colors"
+            >
+              {copied ? <Check size={12} aria-hidden="true" /> : <Copy size={12} aria-hidden="true" />}
+              {copied ? "Copied!" : "Copy for Claude"}
+            </button>
+          )}
           <button
             type="button"
             onClick={dismiss}
