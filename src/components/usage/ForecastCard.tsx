@@ -13,6 +13,8 @@ function until(f: UsageReport["forecast"]): string {
   return "the next 30 days";
 }
 
+const scheduled = (n: number) => `${count(n)} scheduled scan${n === 1 ? "" : "s"}`;
+
 // The page's one question: will the credits last to renewal at the current scan schedule?
 export function ForecastCard({ forecast: f, buyCreditsHref }: Props) {
   const short = f.runsOutAt !== null;
@@ -28,10 +30,10 @@ export function ForecastCard({ forecast: f, buyCreditsHref }: Props) {
     detail = `Nothing is scheduled to run before ${until(f)}, so no credits will be used.`;
   } else if (short) {
     headline = `You may run out on ${day(f.runsOutAt!)}`;
-    detail = `Your ${count(f.scans)} scheduled scans before ${until(f)} need about ${credits(f.needed)}. You have ${count(Math.max(0, f.available))}, about ${count(shortBy)} short.`;
+    detail = `Your ${scheduled(f.scans)} before ${until(f)} need${f.scans === 1 ? "s" : ""} about ${credits(f.needed)}. You have ${count(Math.max(0, f.available))}, about ${count(shortBy)} short.`;
   } else {
     headline = `Enough credits until ${until(f)}`;
-    detail = `Your ${count(f.scans)} scheduled scans need about ${credits(f.needed)} of the ${count(f.available)} you have.`;
+    detail = `Your ${scheduled(f.scans)} need${f.scans === 1 ? "s" : ""} about ${credits(f.needed)} of the ${count(f.available)} you have.`;
   }
 
   return (
