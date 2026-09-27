@@ -77,7 +77,7 @@ async function logIn(page: Page, seed: Seed) {
   await page.locator("#email").fill(email);
   await page.locator("#password").fill(password);
   await page.locator("button[type=submit]").click();
-  await page.waitForURL("**/dashboard/competitors");
+  await page.waitForURL((url) => url.pathname === "/dashboard/competitors");
 }
 
 // The sidebar on desktop, the sheet behind the menu button on a phone.
@@ -104,7 +104,7 @@ test("six menu items navigate, and switching business keeps the page", async ({ 
   await expect(page.getByText("Find anything")).toHaveCount(0);
 
   await links.filter({ hasText: "Opportunities" }).click();
-  await page.waitForURL("**/dashboard/opportunities");
+  await page.waitForURL((url) => url.pathname === "/dashboard/opportunities");
   await expect(page.getByRole("dialog", { name: "Menu" })).toHaveCount(0);
 
   nav = await openNav(page);
