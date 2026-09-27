@@ -39,10 +39,12 @@ async function createUser(email: string) {
   return data.user.id;
 }
 
-async function must<T>(query: PromiseLike<{ data: T | null; error: { message: string } | null }>): Promise<T> {
+async function must<R extends { data: unknown; error: { message: string } | null }>(
+  query: PromiseLike<R>,
+): Promise<NonNullable<R["data"]>> {
   const { data, error } = await query;
   if (error || data === null) throw new Error(error?.message ?? "no data");
-  return data;
+  return data as NonNullable<R["data"]>;
 }
 
 beforeAll(async () => {
