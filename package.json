@@ -23,7 +23,8 @@
     "evals": "vitest run --project evals",
     "evals:ai": "vitest run --project evals-ai --passWithNoTests",
     "dev:openai-check": "vitest run --project dev scripts/dev/openai-check.dev.ts",
-    "dev:anthropic-check": "vitest run --project dev scripts/dev/anthropic-check.dev.ts"
+    "dev:anthropic-check": "vitest run --project dev scripts/dev/anthropic-check.dev.ts",
+    "dev:perplexity-check": "vitest run --project dev scripts/dev/perplexity-check.dev.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.128.0",
