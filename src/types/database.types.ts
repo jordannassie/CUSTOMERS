@@ -1879,6 +1879,50 @@ export type Database = {
         }
         Relationships: []
       }
+      visibility_checks_30d: {
+        Row: {
+          answer_key: string | null
+          business_id: string | null
+          business_mentioned: boolean | null
+          cached: boolean | null
+          checked_at: string | null
+          competitors: string[] | null
+          id: string | null
+          provider: string | null
+          question_id: string | null
+        }
+        Insert: {
+          answer_key?: never
+          business_id?: string | null
+          business_mentioned?: boolean | null
+          cached?: boolean | null
+          checked_at?: string | null
+          competitors?: never
+          id?: string | null
+          provider?: string | null
+          question_id?: never
+        }
+        Update: {
+          answer_key?: never
+          business_id?: string | null
+          business_mentioned?: boolean | null
+          cached?: boolean | null
+          checked_at?: string | null
+          competitors?: never
+          id?: string | null
+          provider?: string | null
+          question_id?: never
+        }
+        Relationships: [
+          {
+            foreignKeyName: "visibility_results_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       admin_adjust_credits: {
@@ -1891,6 +1935,7 @@ export type Database = {
         }
         Returns: string
       }
+      call_scan_worker: { Args: never; Returns: number }
       capture_credit: {
         Args: { p_check_id: string; p_hold_id: string }
         Returns: boolean
@@ -1933,6 +1978,18 @@ export type Database = {
         Returns: string
       }
       credit_lock_agency: { Args: { p_agency_id: string }; Returns: number }
+      cron_job_status: {
+        Args: never
+        Returns: {
+          active: boolean
+          job_name: string
+          last_message: string
+          last_run_at: string
+          last_status: string
+          schedule: string
+        }[]
+      }
+      enqueue_due_scans: { Args: { p_include_real?: boolean }; Returns: number }
       expire_grants: { Args: never; Returns: number }
       grant_credits: {
         Args: {

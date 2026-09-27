@@ -51,7 +51,6 @@ const LEGACY_SUPABASE_IN_COMPONENTS = [
 const LEGACY_SERVICE_CLIENT = [
   "src/app/api/contact/route.ts",
   "src/app/api/geo/businesses/logo/route.ts",
-  "src/app/api/geo/cron/run-monitoring/route.ts",
   "src/app/api/geo/feature-requests/route.ts",
   "src/app/api/internal/admin/feature-requests/[[]id]/route.ts",
   "src/app/api/internal/admin/leads/route.ts",

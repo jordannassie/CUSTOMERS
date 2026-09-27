@@ -1,7 +1,6 @@
 [build]
   command   = "npm run build"
   publish   = ".next"
-  functions = "netlify/functions"
 
 # Scan worker (B-27), bundled by scripts/build-worker.mjs. Test agencies read recorded answers at run time (D-61).
 [functions."scan-worker-background"]

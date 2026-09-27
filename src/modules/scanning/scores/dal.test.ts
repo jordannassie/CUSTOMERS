@@ -46,6 +46,8 @@ describe("loadScoreReport", () => {
       business_mentioned: mentioned,
       competitors_mentioned: rival ? [{ name: "Rival Roasters", position: 2 }] : [],
       cached,
+      // A cached check saves the answer text of the check it reused, so the two count as one answer.
+      answer_text: `${provider} answer to ${promptId}`,
     });
     const [q1, q2] = prompts.map((p) => p.id);
     await service
