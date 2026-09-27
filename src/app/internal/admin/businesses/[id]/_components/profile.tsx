@@ -9,6 +9,8 @@ const STATUS: Record<string, string> = {
   paused: "Paused",
 };
 
+const words = (value: string) => value.charAt(0).toUpperCase() + value.slice(1).replace(/_/g, " ");
+
 export default function Profile({ detail }: { detail: NonNullable<AdminBusinessDetail> }) {
   const { business: b, plan, agency } = detail;
   const location = [b.primary_city, b.primary_region, b.primary_country].filter(Boolean).join(", ");
@@ -21,8 +23,8 @@ export default function Profile({ detail }: { detail: NonNullable<AdminBusinessD
     ["Services", b.services.length ? b.services.join(", ") : "None"],
     ["Other names", b.aliases.length ? b.aliases.join(", ") : "None"],
     ["Status", STATUS[b.status] ?? b.status],
-    ["Plan", plan ? `${plan.name ?? "Unknown plan"} (${plan.status})` : "No plan"],
-    ["Agency status", agency?.status ?? "No agency"],
+    ["Plan", plan ? `${plan.name ?? "Unknown plan"}, ${words(plan.status).toLowerCase()}` : "No plan"],
+    ["Agency status", agency ? words(agency.status) : "No agency"],
     ["Scan frequency", frequencyLabel(b.scan_frequency)],
     ["Models", <ModelList key="models" models={b.models} />],
     ["Next scan", b.next_scan_at ? formatDate(b.next_scan_at, true) : "Not scheduled"],
