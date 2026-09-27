@@ -58,7 +58,7 @@ export function requestBody({ question, location, model }: CheckInput): Anthropi
   };
 }
 
-function classify(err: unknown, attempt: number, timeoutMs: number): Attempt<never> {
+export function classify(err: unknown, attempt: number, timeoutMs: number): Attempt<never> {
   // The timeout error extends the connection error, so it is checked first.
   if (err instanceof Anthropic.APIConnectionTimeoutError) return transportFailure("anthropic", err, attempt, timeoutMs, true);
   if (err instanceof Anthropic.APIConnectionError) return transportFailure("anthropic", err, attempt, timeoutMs, false);
