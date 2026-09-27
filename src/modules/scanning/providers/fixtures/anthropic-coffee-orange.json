@@ -1,0 +1,106 @@
+{
+  "id": "msg_01HandBuiltFixture0000001",
+  "type": "message",
+  "role": "assistant",
+  "model": "claude-haiku-4-5-20251001",
+  "content": [
+    { "type": "text", "text": "I'll search for the best coffee shops in Orange, CA." },
+    {
+      "type": "server_tool_use",
+      "id": "srvtoolu_01HandBuiltFixture00001",
+      "name": "web_search",
+      "input": { "query": "best coffee shop Orange CA" },
+      "caller": { "type": "direct" }
+    },
+    {
+      "type": "web_search_tool_result",
+      "tool_use_id": "srvtoolu_01HandBuiltFixture00001",
+      "caller": { "type": "direct" },
+      "content": [
+        {
+          "type": "web_search_result",
+          "url": "https://www.yelp.com/biz/contra-coffee-and-tea-orange",
+          "title": "CONTRA COFFEE & TEA - Orange CA - Yelp",
+          "encrypted_content": "EqgfCioIARgBIiQ3YTAwMjY1Mi1mZjM5LTQ1NGUtODgxNC1kNjNjNTk1ZWI3Y",
+          "page_age": "August 12, 2026"
+        },
+        {
+          "type": "web_search_result",
+          "url": "https://www.portolacoffeeroasters.com/",
+          "title": "Portola Coffee Roasters",
+          "encrypted_content": "EpgfCioIARgBIiQ4YjExMzc2My1nZzRhLTU2NWYtOTkyNS1lNzRkNjY2ZmM4Z",
+          "page_age": null
+        },
+        {
+          "type": "web_search_result",
+          "url": "https://www.tripadvisor.com/Restaurants-g32837-c8-Orange_California.html",
+          "title": "THE 10 BEST Cafés in Orange - Tripadvisor",
+          "encrypted_content": "ErgfCioIARgBIiQ5YzIyNDg3NC1oaDViLTY3NmctMDAzNi1mODVlNzc3Z2Q5Y",
+          "page_age": "June 3, 2026"
+        }
+      ]
+    },
+    { "type": "text", "text": "Here are some of the best coffee shops in Orange, CA:\n\n1. **Contra Coffee & Tea** on Glassell Street, " },
+    {
+      "type": "text",
+      "text": "known for its nitro coffee and a big selection of teas",
+      "citations": [
+        {
+          "type": "web_search_result_location",
+          "url": "https://www.yelp.com/biz/contra-coffee-and-tea-orange",
+          "title": "CONTRA COFFEE & TEA - Orange CA - Yelp",
+          "encrypted_index": "Eo8BCioIAhgBIiQyYjQ0OWJmZi1lNm",
+          "cited_text": "Contra Coffee & Tea serves nitro coffee on tap and a wide range of loose leaf teas near the Orange Circle."
+        }
+      ]
+    },
+    { "type": "text", "text": ".\n2. **Portola Coffee Roasters** at The Market, " },
+    {
+      "type": "text",
+      "text": "a local roaster with pour-overs and seasonal drinks",
+      "citations": [
+        {
+          "type": "web_search_result_location",
+          "url": "https://www.portolacoffeeroasters.com/",
+          "title": "Portola Coffee Roasters",
+          "encrypted_index": "Eo8BCioIAhgBIiQzYzU1MGNnZy1mN2",
+          "cited_text": "Portola Coffee Roasters roasts in Orange County and serves pour-overs and seasonal specials."
+        },
+        {
+          "type": "web_search_result_location",
+          "url": "https://www.portolacoffeeroasters.com/",
+          "title": "Portola Coffee Roasters",
+          "encrypted_index": "Eo8BCioIAhgBIiQ0ZDY2MWRoaC1nOD",
+          "cited_text": "Visit our cafe at The Market in Orange."
+        }
+      ]
+    },
+    { "type": "text", "text": ".\n3. **Kelly's Coffee** in Old Towne Orange, " },
+    {
+      "type": "text",
+      "text": "a popular spot rated highly by local reviewers",
+      "citations": [
+        {
+          "type": "web_search_result_location",
+          "url": "https://www.tripadvisor.com/Restaurants-g32837-c8-Orange_California.html",
+          "title": "THE 10 BEST Cafés in Orange - Tripadvisor",
+          "encrypted_index": "Eo8BCioIAhgBIiQ1ZTc3MmVpaS1oOT",
+          "cited_text": "Kelly's Coffee: 4.5 of 5 bubbles, 212 reviews, Old Towne Orange."
+        }
+      ]
+    },
+    { "type": "text", "text": "." }
+  ],
+  "stop_reason": "end_turn",
+  "stop_sequence": null,
+  "stop_details": null,
+  "container": null,
+  "usage": {
+    "input_tokens": 9120,
+    "cache_creation_input_tokens": 0,
+    "cache_read_input_tokens": 0,
+    "output_tokens": 412,
+    "server_tool_use": { "web_search_requests": 1, "web_fetch_requests": 0 },
+    "service_tier": "standard"
+  }
+}

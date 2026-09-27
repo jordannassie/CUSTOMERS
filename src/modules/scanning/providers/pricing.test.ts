@@ -12,4 +12,10 @@ describe("checkCostUsd", () => {
     const usage = { inputTokens: 1_000_000, cachedInputTokens: 0, outputTokens: 0, searchCalls: 0 };
     expect(checkCostUsd("gpt-4.1-mini", usage)).toBe(0.4);
   });
+
+  it("prices Claude Haiku 4.5 with its web search fee", () => {
+    const usage = { inputTokens: 10_000, cachedInputTokens: 2_000, outputTokens: 500, searchCalls: 3 };
+    // 8000 * 1/1M + 2000 * 0.10/1M + 500 * 5/1M + 3 * $0.01
+    expect(checkCostUsd("claude-haiku-4-5", usage)).toBe(0.0407);
+  });
 });
