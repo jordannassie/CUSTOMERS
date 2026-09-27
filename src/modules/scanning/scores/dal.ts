@@ -7,6 +7,8 @@ import {
   competitorScores,
   trendSeries,
   visibilityScore,
+  weeklyChange,
+  type Change,
   type CompetitorScore,
   type ScoreCheck,
   type TrendPoint,
@@ -20,7 +22,11 @@ const LAST_CHECKS_PER_QUESTION = 10;
 const DAY_MS = 86_400_000;
 
 export type ScoreReport = VisibilityScore & {
+  /** The business's chosen models, in the order it saved them. */
+  models: ProviderId[];
   trend: TrendPoint[];
+  change: Change | null;
+  lastCheckedAt: Date | null;
   competitors: {
     name: string;
     score: number;
@@ -67,7 +73,10 @@ export async function loadScoreReport(agencyId: string, businessId: string, now:
   );
   return {
     ...visibilityScore(checks, opts),
+    models,
     trend: trendSeries(checks, opts),
+    change: weeklyChange(checks, opts),
+    lastCheckedAt: checks.at(-1)?.checkedAt ?? null,
     competitors: competitorScores(
       checks,
       competitors.data!.map((c) => c.name),

@@ -186,3 +186,18 @@ export function competitorScores(
     return { name, estimate: them, standing: compareWithCompetitor(you, them) };
   });
 }
+
+export type Change = { direction: "up" | "down"; points: number };
+
+/**
+ * The last 7 days against the 7 days before, so the two estimates share no checks.
+ * Null unless both weeks have checks and the gap is larger than the margin (D-64).
+ */
+export function weeklyChange(checks: ScoreCheck[], opts: { now: Date; models: readonly ProviderId[] }): Change | null {
+  const lastWeek = new Date(opts.now.getTime() - TREND_DAYS * DAY_MS);
+  const recent = estimateFor(checksInWindow(checks, opts.now, TREND_DAYS), opts.models, (c) => c.mentioned).overall;
+  const before = estimateFor(checksInWindow(checks, lastWeek, TREND_DAYS), opts.models, (c) => c.mentioned).overall;
+  if (!recent || !before || !isRealChange(recent, before)) return null;
+  const points = recent.score - before.score;
+  return { direction: points > 0 ? "up" : "down", points: Math.abs(points) };
+}

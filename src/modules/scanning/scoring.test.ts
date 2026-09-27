@@ -7,6 +7,7 @@ import {
   isRealChange,
   trendSeries,
   visibilityScore,
+  weeklyChange,
   type ScoreCheck,
 } from "./scoring";
 import { check, MODELS, NOW } from "./scoring.test-helpers";
@@ -194,5 +195,26 @@ describe("trendSeries", () => {
     expect(points[6]).toEqual({ date: "2026-09-27", score: 50, checks: 3 });
     expect(points[0]).toEqual({ date: "2026-09-21", score: 100, checks: 1 });
     expect(points[3]).toEqual({ date: "2026-09-24", score: null, checks: 0 });
+  });
+});
+
+describe("weeklyChange", () => {
+  const week = (mentions: number, total: number, hoursAgo: number) =>
+    MODELS.flatMap((model) =>
+      Array.from({ length: total }, (_, i) => check(model, `q${i}`, hoursAgo, i < mentions)),
+    );
+
+  it("shows up or down only when the gap between the two weeks is larger than the margin", () => {
+    const up = weeklyChange([...week(10, 40, 8 * 24), ...week(30, 40, 24)], { now: NOW, models: MODELS });
+    expect(up?.direction).toBe("up");
+    expect(up?.points).toBeCloseTo(50);
+    const down = weeklyChange([...week(30, 40, 8 * 24), ...week(10, 40, 24)], { now: NOW, models: MODELS });
+    expect(down?.direction).toBe("down");
+  });
+
+  it("is null for a small change, or without a week to compare with", () => {
+    expect(weeklyChange([...week(20, 40, 8 * 24), ...week(22, 40, 24)], { now: NOW, models: MODELS })).toBeNull();
+    expect(weeklyChange(week(30, 40, 24), { now: NOW, models: MODELS })).toBeNull();
+    expect(weeklyChange([], { now: NOW, models: MODELS })).toBeNull();
   });
 });

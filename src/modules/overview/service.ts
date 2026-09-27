@@ -1,0 +1,96 @@
+import type { Change, Confidence, ProviderId, ScoreReport } from "@/modules/scanning";
+
+// What the Overview shows (B-49, MVP_SPEC 5.6, 8.1). Pure, so every state is unit tested.
+
+export const MODEL_LABELS: Record<ProviderId, string> = {
+  openai: "ChatGPT",
+  anthropic: "Claude",
+  perplexity: "Perplexity",
+};
+
+const CONFIDENCE_LABELS: Record<Confidence, string> = {
+  early: "Early estimate",
+  good: "Good confidence",
+  high: "High confidence",
+};
+
+const IMPACT_ORDER = { high: 0, medium: 1, low: 2 } as const;
+
+export type Impact = keyof typeof IMPACT_ORDER;
+export type Tone = "good" | "mid" | "low";
+
+export type Opportunity = { id: string; title: string; impact: Impact; createdAt: string };
+
+export type OverviewView = {
+  score: {
+    value: number;
+    tone: Tone;
+    label: string;
+    sentence: string;
+    /** "First results. Accuracy improves with every scan." while there is one scan's worth of data. */
+    firstResults: boolean;
+    change: { direction: Change["direction"]; text: string } | null;
+    details: { margin: number; checks: number; uniqueAnswers: number };
+  } | null;
+  models: { id: ProviderId; label: string; score: number | null }[];
+  trend: { date: string; score: number | null }[];
+  opportunities: Pick<Opportunity, "id" | "title" | "impact">[];
+  lastCheckedAt: string | null;
+};
+
+/** DESIGN.md bands: 70 to 100 good, 40 to 69 mid, under 40 low. */
+export function scoreTone(score: number): Tone {
+  if (score >= 70) return "good";
+  return score >= 40 ? "mid" : "low";
+}
+
+export function scoreSentence(score: number): string {
+  const inTen = Math.round(score / 10);
+  if (inTen === 0) {
+    return score > 0
+      ? "AI recommended you in fewer than 1 of 10 customer questions this month."
+      : "AI did not recommend you in any customer questions this month.";
+  }
+  return `AI recommended you in about ${inTen} of 10 customer questions this month.`;
+}
+
+export function changeText(change: Change): string {
+  const points = Math.round(change.points);
+  return `${change.direction === "up" ? "Up" : "Down"} ${points} ${points === 1 ? "point" : "points"} on last week`;
+}
+
+/** Most important first, then newest; the Overview shows three. */
+export function topOpportunities(opportunities: Opportunity[], count = 3): OverviewView["opportunities"] {
+  return [...opportunities]
+    .sort((a, b) => IMPACT_ORDER[a.impact] - IMPACT_ORDER[b.impact] || b.createdAt.localeCompare(a.createdAt))
+    .slice(0, count)
+    .map(({ id, title, impact }) => ({ id, title, impact }));
+}
+
+export function overviewView(report: ScoreReport, opportunities: Opportunity[]): OverviewView {
+  const { overall } = report;
+  const scannedDays = report.trend.filter((p) => p.checks > 0).length;
+  const byModel = new Map(report.byModel.map((m) => [m.model, m.estimate.score]));
+  return {
+    score: overall && {
+      value: Math.round(overall.score),
+      tone: scoreTone(overall.score),
+      label: CONFIDENCE_LABELS[overall.confidence],
+      sentence: scoreSentence(overall.score),
+      firstResults: overall.confidence === "early" && scannedDays <= 1,
+      change: report.change && { direction: report.change.direction, text: changeText(report.change) },
+      details: {
+        margin: Math.round(overall.margin),
+        checks: overall.checks,
+        uniqueAnswers: overall.uniqueAnswers,
+      },
+    },
+    models: report.models.map((id) => {
+      const score = byModel.get(id);
+      return { id, label: MODEL_LABELS[id], score: score === undefined ? null : Math.round(score) };
+    }),
+    trend: report.trend.map((p) => ({ date: p.date, score: p.score === null ? null : Math.round(p.score) })),
+    opportunities: topOpportunities(opportunities),
+    lastCheckedAt: report.lastCheckedAt?.toISOString() ?? null,
+  };
+}
