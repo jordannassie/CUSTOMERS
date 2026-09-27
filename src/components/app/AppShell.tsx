@@ -41,7 +41,7 @@ export function AppShell({ banners, creditsShort, children, ...sidebar }: AppShe
             </SheetContent>
           </Sheet>
           <Link href="/dashboard" aria-label="Customers.Direct, go to Overview" className="flex-1">
-            <Image src="/images/logos/logo-black.png" alt="" width={120} height={30} className="h-7 w-auto" priority />
+            <Image src="/images/logos/logo-black.png" alt="" width={120} height={30} className="h-7 w-auto" />
           </Link>
           {creditsShort && (
             <span

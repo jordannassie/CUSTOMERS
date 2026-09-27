@@ -34,7 +34,7 @@ export function AppSidebar({
   return (
     <div className="flex h-full flex-col gap-4 p-3">
       <Link href="/dashboard" onClick={onNavigate} className="px-1.5 pt-2" aria-label="Customers.Direct, go to Overview">
-        <Image src="/images/logos/logo-black.png" alt="" width={130} height={32} className="h-8 w-auto" priority />
+        <Image src="/images/logos/logo-black.png" alt="" width={130} height={32} className="h-8 w-auto" />
       </Link>
 
       <BusinessSwitcher

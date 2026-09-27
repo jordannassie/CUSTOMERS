@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import { AppShell } from "@/components/app/AppShell";
-import { AppShellSkeleton } from "@/components/app/AppShellSkeleton";
+import { AppShellSkeleton, PageSkeleton } from "@/components/app/AppShellSkeleton";
 import {
   BILLING_HREF,
   getWorkspace,
@@ -38,7 +38,7 @@ async function AppFrame({ children }: { children: React.ReactNode }) {
       banners={usage && account ? pickBanners(usage, account, now) : []}
       creditsShort={usage ? shortBalance(usage.balance) : null}
     >
-      {children}
+      <Suspense fallback={<PageSkeleton />}>{children}</Suspense>
     </AppShell>
   );
 }
