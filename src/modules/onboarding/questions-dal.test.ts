@@ -14,9 +14,9 @@ afterAll(async () => {
 describe("loadQuestionLibrary", () => {
   it("returns only active templates of the newest version", async () => {
     const { error } = await service.from("question_library").insert([
-      { industry, template: "Old best in {city}?", tags: ["general"], intent: "best", version: 1 },
-      { industry, template: "Best in {city}?", tags: ["general"], intent: "best", version: 2 },
-      { industry, template: "Cheapest in {city}?", tags: ["general"], intent: "price", version: 2 },
+      { industry, template: "Old best in {city}?", tags: ["general"], intent: "best", version: 1, active: true },
+      { industry, template: "Best in {city}?", tags: ["general"], intent: "best", version: 2, active: true },
+      { industry, template: "Cheapest in {city}?", tags: ["general"], intent: "price", version: 2, active: true },
       { industry, template: "Retired in {city}?", tags: ["general"], intent: "urgent", version: 2, active: false },
     ]);
     if (error) throw error;
