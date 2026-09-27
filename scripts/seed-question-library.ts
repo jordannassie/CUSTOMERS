@@ -30,7 +30,7 @@ it(`load ${FILE}`, async () => {
 
   const version = rows[0]?.version ?? 1;
   const loaded = await db.from("question_library").select("id", { count: "exact", head: true }).eq("version", version);
-  if (loaded.error) throw new Error(`Could not read question_library: ${loaded.error.message}`);
+  if (loaded.error) throw new Error(`Could not read question_library (HTTP ${loaded.status}): ${loaded.error.message}`);
   if (loaded.count) {
     console.log(`Version ${version} is already loaded (${loaded.count} rows); nothing to do.`);
     return;
