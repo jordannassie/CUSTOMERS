@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
 import { Check, Loader2, RotateCw } from "lucide-react";
 import { cn } from "cn";
 import { Button } from "@/components/ui/button";
@@ -28,7 +27,6 @@ type Props = {
 // MVP_SPEC 3.1 step 9 (B-38): start the first scan, wait for it, then open the dashboard. A failed scan
 // offers a retry here instead of an empty dashboard (REL-05).
 export function FirstScan({ businessId, businessName, models, questions, initial, start, getStatus }: Props) {
-  const router = useRouter();
   const [phase, setPhase] = useState<FirstScanPhase>(initial ? firstScanPhase(initial) : "start");
   const [problem, setProblem] = useState<string | null>(initial && firstScanPhase(initial) === "failed" ? firstScanProblem(initial) : null);
   const [pending, startTransition] = useTransition();
@@ -73,11 +71,13 @@ export function FirstScan({ businessId, businessName, models, questions, initial
   }, [phase, pending, polls, businessId, getStatus]);
 
   useEffect(() => {
-    if (phase === "done") router.replace("/dashboard");
-  }, [phase, router]);
+    // A full load, not router.replace: the app layout was rendered without the app frame during setup, and a
+    // client navigation keeps that layout, leaving the dashboard blank.
+    if (phase === "done") window.location.replace("/dashboard");
+  }, [phase]);
 
   const failed = phase === "failed";
-  const asked = `${questions} ${questions === 1 ? "question" : "questions"}`;
+  const asked = questions > 0 ? `${questions} ${questions === 1 ? "question" : "questions"}` : "the questions";
   const names = listOf(models.map((m) => m.label));
 
   return (
@@ -107,7 +107,7 @@ export function FirstScan({ businessId, businessName, models, questions, initial
                 ) : failed ? (
                   "Not finished"
                 ) : (
-                  `Asking ${asked}…`
+                  questions > 0 ? `Asking ${asked}…` : "Asking…"
                 )}
               </span>
             </div>

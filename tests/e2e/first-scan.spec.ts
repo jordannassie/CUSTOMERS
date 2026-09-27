@@ -21,6 +21,8 @@ const QUESTIONS = [
 ];
 const userIds: string[] = [];
 const slow = expect.configure({ timeout: 60_000 });
+// Setup, a scan through the in-process worker and the dashboard's first compile add up to more than the default 90s.
+test.setTimeout(240_000);
 
 test.afterAll(async () => {
   for (const id of userIds.splice(0)) await db.auth.admin.deleteUser(id);
@@ -75,7 +77,7 @@ async function seedAtModelsStep(page: Page): Promise<string> {
   await page.locator("#email").fill(email);
   await page.locator("#password").fill(password);
   await page.locator("button[type=submit]").click();
-  await page.waitForURL("**/onboarding/models", { timeout: 60_000 });
+  await page.waitForURL("**/onboarding/models", { timeout: 120_000 });
   return business.id;
 }
 
@@ -91,8 +93,8 @@ test("finish setup: a short progress screen, then the dashboard with the first s
   await expect(page.getByText("We're asking ChatGPT, Claude and Perplexity 3 questions")).toBeVisible();
   await expect(page.getByTestId("first-scan-models").getByRole("listitem")).toHaveCount(3);
 
-  await page.waitForURL("**/dashboard", { timeout: 60_000 });
-  await slow(page.getByTestId("score-summary")).toBeVisible();
+  await page.waitForURL("**/dashboard", { timeout: 120_000 });
+  await expect(page.getByTestId("score-summary")).toBeVisible({ timeout: 120_000 });
   await expect(page.getByTestId("no-score")).toHaveCount(0);
 });
 
@@ -115,6 +117,6 @@ test("a failed first scan shows Try again, never an empty dashboard, and the ret
 
   await db.from("tracked_prompts").update({ active: true }).eq("business_id", businessId).throwOnError();
   await page.getByRole("button", { name: "Try again" }).click();
-  await page.waitForURL("**/dashboard", { timeout: 60_000 });
-  await slow(page.getByTestId("score-summary")).toBeVisible();
+  await page.waitForURL("**/dashboard", { timeout: 120_000 });
+  await expect(page.getByTestId("score-summary")).toBeVisible({ timeout: 120_000 });
 });
