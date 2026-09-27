@@ -1,20 +1,6 @@
-// The industry list used everywhere (D-62): the first 10 industries plus "other". B-32 builds the
-// question library on the same values.
-export const INDUSTRIES = [
-  "dentist",
-  "lawyer",
-  "restaurant",
-  "coffee_shop",
-  "plumber",
-  "hvac",
-  "med_spa",
-  "real_estate",
-  "auto_repair",
-  "salon",
-  "other",
-] as const;
+import { type Industry } from "@/lib/industries";
 
-export type Industry = (typeof INDUSTRIES)[number];
+export { INDUSTRIES, type Industry } from "@/lib/industries";
 
 // Google Places primary types (Places API "Table A") that map to one of our industries. Unlisted
 // types return null, so the website decides the industry instead of a wrong guess.

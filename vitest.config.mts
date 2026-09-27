@@ -59,6 +59,14 @@ export default defineConfig({
           include: ["scripts/record-ai-answers.ts"],
         },
       },
+      {
+        // Question library scripts (B-32); drafting also needs LIVE_AI_CALL=1.
+        extends: true,
+        test: {
+          name: "question-library",
+          include: ["scripts/*-question-library.ts"],
+        },
+      },
     ],
   },
 });

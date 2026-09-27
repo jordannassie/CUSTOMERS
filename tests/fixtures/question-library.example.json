@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "status": "example",
+  "note": "EXAMPLE FOR TESTS ONLY. Not the real library and never loaded into the database. The real file is supabase/seed/question-library.v1.json, drafted by Claude and approved by a person (B-32).",
+  "promptVersion": "question-library.v1",
+  "model": "example",
+  "generatedAt": "2026-09-27T00:00:00.000Z",
+  "review": null,
+  "templates": [
+    { "industry": "dentist", "template": "Who is the best dentist in {city}?", "tags": ["general"], "intent": "best" },
+    {
+      "industry": "dentist",
+      "template": "Which dentist in {city} offers emergency appointments?",
+      "tags": ["emergency dental care"],
+      "intent": "urgent"
+    },
+    { "industry": "plumber", "template": "Which plumber in {city} has the best reviews?", "tags": ["general"], "intent": "reviews" }
+  ]
+}
