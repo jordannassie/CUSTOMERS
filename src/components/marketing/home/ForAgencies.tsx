@@ -16,6 +16,33 @@ const CLIENTS = [
   { name: "Lotus Nail Spa", place: "Irvine, CA", score: 55, tone: "bg-mid" },
 ];
 
+/** A made-up agency client list, also used on /agency. */
+export function ClientListExample() {
+  return (
+    <div className="rounded-md border border-border bg-surface">
+      <div className="flex items-center justify-between gap-4 border-b border-border px-4 py-3 sm:px-5">
+        <p className="text-sm font-semibold">Your clients</p>
+        <ExampleTag />
+      </div>
+      <ul className="flex flex-col divide-y divide-border">
+        {CLIENTS.map(({ name, place, score, tone }) => (
+          <li key={name} className="flex items-center justify-between gap-4 px-4 py-3 sm:px-5">
+            <div className="min-w-0">
+              <p className="truncate text-sm font-medium">{name}</p>
+              <p className="text-[13px] text-text-hint">{place}</p>
+            </div>
+            <span className="flex items-center gap-2 text-sm">
+              <span className={`size-2 rounded-full ${tone}`} aria-hidden="true" />
+              <span className="tabular font-semibold">{score}</span>
+              <span className="sr-only">visibility score</span>
+            </span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 export function ForAgencies() {
   return (
     <Section id="agencies" tone="muted">
@@ -35,27 +62,7 @@ export function ForAgencies() {
           </Button>
         </div>
 
-        <div className="rounded-md border border-border bg-surface">
-          <div className="flex items-center justify-between gap-4 border-b border-border px-4 py-3 sm:px-5">
-            <p className="text-sm font-semibold">Your clients</p>
-            <ExampleTag />
-          </div>
-          <ul className="flex flex-col divide-y divide-border">
-            {CLIENTS.map(({ name, place, score, tone }) => (
-              <li key={name} className="flex items-center justify-between gap-4 px-4 py-3 sm:px-5">
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-medium">{name}</p>
-                  <p className="text-[13px] text-text-hint">{place}</p>
-                </div>
-                <span className="flex items-center gap-2 text-sm">
-                  <span className={`size-2 rounded-full ${tone}`} aria-hidden="true" />
-                  <span className="tabular font-semibold">{score}</span>
-                  <span className="sr-only">visibility score</span>
-                </span>
-              </li>
-            ))}
-          </ul>
-        </div>
+        <ClientListExample />
       </div>
     </Section>
   );

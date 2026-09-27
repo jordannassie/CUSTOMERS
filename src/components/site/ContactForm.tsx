@@ -2,82 +2,70 @@
 
 import { useState } from "react";
 import { useSearchParams, usePathname } from "next/navigation";
-import { ArrowRight, CheckCircle2, Loader2 } from "lucide-react";
+import { CheckCircle2, Loader2 } from "lucide-react";
 import Link from "next/link";
-
-// ─── Types ────────────────────────────────────────────────────────────────────
+import { cn } from "cn";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 export type InterestValue = "ai_visibility" | "agency" | "book_demo" | "other";
 
+// AEO topics only (MVP_SPEC 12.3); the values match what /api/contact stores.
 const INTERESTS: { value: InterestValue; label: string }[] = [
-  { value: "ai_visibility", label: "AI Visibility" },
-  { value: "agency",        label: "Join as Agency" },
-  { value: "book_demo",     label: "Book Demo Call" },
-  { value: "other",         label: "Other" },
+  { value: "ai_visibility", label: "Checking my business in AI answers" },
+  { value: "agency", label: "Using it for my agency's clients" },
+  { value: "book_demo", label: "Booking a demo call" },
+  { value: "other", label: "Something else" },
 ];
 
 const MESSAGE_PLACEHOLDERS: Record<InterestValue, string> = {
-  ai_visibility: "Tell us about your business and what you'd like to track.",
-  agency:        "Tell us about your agency, how many client brands you manage, and how we can help.",
-  book_demo:     "Tell us about your business and what you'd like to cover in the demo.",
-  other:         "How can we help?",
+  ai_visibility: "Tell us about your business and the questions you want to show up for.",
+  agency: "Tell us about your agency and how many client businesses you manage.",
+  book_demo: "Tell us about your business and what you would like to see in the demo.",
+  other: "How can we help?",
 };
 
 export type ContactSource = "contact_page" | "chat" | "agency" | "other";
 
 function interestFromParam(param: string | null): InterestValue {
   if (param === "ai_visibility" || param === "agency" || param === "book_demo" || param === "other") return param;
-  // Legacy topic → interest mapping for backward compat
+  // Older links used ?topic=sales or ?topic=enterprise.
   if (param === "sales" || param === "enterprise") return "ai_visibility";
   return "other";
 }
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
-
-const inputClass =
-  "w-full border border-[#E5E5E1] rounded-xl px-4 py-3 text-[13.5px] text-[#171717] bg-white placeholder:text-[#A3A3A0] focus:outline-none focus:ring-2 focus:ring-[#0866F5]/20 focus:border-[#0866F5] transition-colors";
-const labelClass = "block text-[12.5px] font-semibold text-[#171717] mb-1.5";
-
-// ─── Props ────────────────────────────────────────────────────────────────────
+const fieldClass =
+  "w-full rounded-lg border border-input bg-surface px-3 py-2 text-base outline-none placeholder:text-text-hint focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 md:text-sm";
 
 interface ContactFormProps {
-  /** Pre-selected interest — overrides URL param */
+  /** Overrides the ?interest= URL param. */
   initialInterest?: InterestValue;
-  /** Source identifier passed to the API */
   source?: ContactSource;
-  /** Compact mode for embedding (e.g., inside chat widget) */
+  /** Single column, for the chat widget. */
   compact?: boolean;
-  /** Callback fired after successful submission */
   onSuccess?: () => void;
 }
 
-// ─── Component ────────────────────────────────────────────────────────────────
-
-export default function ContactForm({
-  initialInterest,
-  source = "contact_page",
-  compact = false,
-  onSuccess,
-}: ContactFormProps) {
+export default function ContactForm({ initialInterest, source = "contact_page", compact = false, onSuccess }: ContactFormProps) {
   const searchParams = useSearchParams();
-  const pathname     = usePathname();
+  const pathname = usePathname();
 
-  const [name,     setName]     = useState("");
-  const [email,    setEmail]    = useState("");
-  const [company,  setCompany]  = useState("");
-  const [website,  setWebsite]  = useState("");
-  const [phone,    setPhone]    = useState("");
-  // The prop takes precedence over the URL param.
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [company, setCompany] = useState("");
+  const [website, setWebsite] = useState("");
+  const [phone, setPhone] = useState("");
   const urlInterest =
     initialInterest ?? interestFromParam(searchParams?.get("interest") ?? searchParams?.get("topic"));
   const [interest, setInterest] = useState<InterestValue>(urlInterest);
   const [syncedInterest, setSyncedInterest] = useState(urlInterest);
-  const [message,  setMessage]  = useState("");
-  const [loading,  setLoading]  = useState(false);
-  const [success,  setSuccess]  = useState(false);
-  const [error,    setError]    = useState<string | null>(null);
+  const [message, setMessage] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  // Follow the URL when it changes while mounted (e.g., navigating to /contact?interest=agency).
+  // Follow the URL when it changes while mounted (e.g. navigating to /contact?interest=agency).
   if (syncedInterest !== urlInterest) {
     setSyncedInterest(urlInterest);
     setInterest(urlInterest);
@@ -85,102 +73,59 @@ export default function ContactForm({
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (loading) return; // prevent duplicate clicks
+    if (loading) return;
     setError(null);
     setLoading(true);
 
     try {
       const res = await fetch("/api/contact", {
-        method:  "POST",
+        method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name,
-          email,
-          company,
-          website,
-          phone,
-          interest,
-          message,
-          source,
-          page_path: pathname ?? undefined,
-        }),
+        body: JSON.stringify({ name, email, company, website, phone, interest, message, source, page_path: pathname ?? undefined }),
       });
       const data = await res.json();
       if (!res.ok) {
-        setError(data.error ?? "Something went wrong. Please try again.");
+        setError(data.error ?? "We couldn't send your message. Please try again.");
       } else {
         setSuccess(true);
         onSuccess?.();
       }
     } catch {
-      setError("Network error. Please check your connection and try again.");
+      setError("We couldn't reach the server. Check your connection and try again.");
     } finally {
       setLoading(false);
     }
   }
 
-  // ── Success state ─────────────────────────────────────────────────────────
+  const box = cn("rounded-md border border-border bg-surface", compact ? "p-4 sm:p-5" : "p-6 sm:p-8");
 
   if (success) {
     return (
-      <div
-        className={`bg-white border border-[#E5E5E1] rounded-2xl flex flex-col items-center text-center gap-4 ${
-          compact ? "p-6" : "p-10"
-        }`}
-      >
-        <div className="w-12 h-12 rounded-full bg-[#DCFCE7] flex items-center justify-center">
-          <CheckCircle2 size={22} className="text-[#15803D]" />
-        </div>
+      <div className={cn(box, "flex flex-col items-center gap-4 text-center")} role="status">
+        <CheckCircle2 className="size-8 text-good" aria-hidden="true" />
         <div>
-          <h2 className="text-[18px] font-bold text-[#171717] mb-1">
-            Thanks! We&apos;ve received your message.
-          </h2>
-          <p className="text-[13.5px] text-[#777773]">
-            We&apos;ll be in touch soon.
-          </p>
+          <h2 className="text-lg font-semibold">Thanks, we have your message</h2>
+          <p className="mt-1 text-[15px] text-muted-foreground">We will reply to you by email.</p>
         </div>
       </div>
     );
   }
 
-  // ── Form ──────────────────────────────────────────────────────────────────
-
-  const messagePlaceholder = MESSAGE_PLACEHOLDERS[interest];
+  const isAgency = interest === "agency";
+  const pair = compact ? "flex flex-col gap-5" : "grid gap-5 sm:grid-cols-2";
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className={`bg-white border border-[#E5E5E1] rounded-2xl flex flex-col gap-5 ${
-        compact ? "p-4 sm:p-5" : "p-6 sm:p-8"
-      }`}
-      noValidate
-    >
-      {/* Honeypot */}
+    <form onSubmit={handleSubmit} className={cn(box, "flex flex-col gap-5")} noValidate>
       <input type="text" name="_honey" className="hidden" aria-hidden="true" tabIndex={-1} />
 
-      {/* Name + Email — single column in compact/chat mode */}
-      <div className={compact ? "flex flex-col gap-5" : "grid sm:grid-cols-2 gap-5"}>
-        <div>
-          <label htmlFor="cf-name" className={labelClass}>
-            Full Name <span className="text-[#DC2626]">*</span>
-          </label>
-          <input
-            id="cf-name"
-            type="text"
-            required
-            maxLength={200}
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="Your name"
-            className={inputClass}
-            autoComplete="name"
-          />
+      <div className={pair}>
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="cf-name">Name</Label>
+          <Input id="cf-name" required maxLength={200} value={name} onChange={(e) => setName(e.target.value)} autoComplete="name" />
         </div>
-        <div>
-          <label htmlFor="cf-email" className={labelClass}>
-            Email <span className="text-[#DC2626]">*</span>
-          </label>
-          <input
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="cf-email">Email</Label>
+          <Input
             id="cf-email"
             type="email"
             required
@@ -188,82 +133,53 @@ export default function ContactForm({
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="you@business.com"
-            className={inputClass}
             autoComplete="email"
           />
         </div>
       </div>
 
-      {/* Company + Website — single column in compact/chat mode */}
-      <div className={compact ? "flex flex-col gap-5" : "grid sm:grid-cols-2 gap-5"}>
-        <div>
-          <label htmlFor="cf-company" className={labelClass}>
-            {interest === "agency" ? "Agency name" : "Company / Business"}
-          </label>
-          <input
-            id="cf-company"
-            type="text"
-            maxLength={200}
-            value={company}
-            onChange={(e) => setCompany(e.target.value)}
-            placeholder={interest === "agency" ? "Your agency name" : "Your business name"}
-            className={inputClass}
-            autoComplete="organization"
-          />
+      <div className={pair}>
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="cf-company">{isAgency ? "Agency name" : "Business name"} (optional)</Label>
+          <Input id="cf-company" maxLength={200} value={company} onChange={(e) => setCompany(e.target.value)} autoComplete="organization" />
         </div>
-        <div>
-          <label htmlFor="cf-website" className={labelClass}>Website</label>
-          <input
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="cf-website">Website (optional)</Label>
+          <Input
             id="cf-website"
-            type="text"
             maxLength={500}
             value={website}
             onChange={(e) => setWebsite(e.target.value)}
-            placeholder={interest === "agency" ? "youragency.com" : "yourbusiness.com"}
-            className={inputClass}
+            placeholder={isAgency ? "youragency.com" : "yourbusiness.com"}
             autoComplete="url"
           />
         </div>
       </div>
 
-      {/* Phone */}
-      <div>
-        <label htmlFor="cf-phone" className={labelClass}>Phone</label>
-        <input
-          id="cf-phone"
-          type="tel"
-          maxLength={30}
-          value={phone}
-          onChange={(e) => setPhone(e.target.value)}
-          placeholder="(optional)"
-          className={inputClass}
-          autoComplete="tel"
-        />
+      <div className="flex flex-col gap-2">
+        <Label htmlFor="cf-phone">Phone (optional)</Label>
+        <Input id="cf-phone" type="tel" maxLength={30} value={phone} onChange={(e) => setPhone(e.target.value)} autoComplete="tel" />
       </div>
 
-      {/* Interested in */}
-      <div>
-        <label htmlFor="cf-interest" className={labelClass}>
-          Interested in <span className="text-[#DC2626]">*</span>
-        </label>
+      <div className="flex flex-col gap-2">
+        <Label htmlFor="cf-interest">What is it about?</Label>
         <select
           id="cf-interest"
           required
           value={interest}
           onChange={(e) => setInterest(e.target.value as InterestValue)}
-          className={inputClass}
+          className={cn(fieldClass, "h-9 py-1")}
         >
           {INTERESTS.map(({ value, label }) => (
-            <option key={value} value={value}>{label}</option>
+            <option key={value} value={value}>
+              {label}
+            </option>
           ))}
         </select>
       </div>
 
-      {/* Message */}
-      <div>
-        <label htmlFor="cf-message" className={labelClass}>
-          Message <span className="text-[#DC2626]">*</span>
-        </label>
+      <div className="flex flex-col gap-2">
+        <Label htmlFor="cf-message">Message</Label>
         <textarea
           id="cf-message"
           required
@@ -271,43 +187,25 @@ export default function ContactForm({
           rows={compact ? 4 : 6}
           value={message}
           onChange={(e) => setMessage(e.target.value)}
-          placeholder={messagePlaceholder}
-          className={`${inputClass} resize-none`}
+          placeholder={MESSAGE_PLACEHOLDERS[interest]}
+          className={cn(fieldClass, "resize-none")}
         />
-        <p className="text-[11px] text-[#A3A3A0] mt-1 text-right">{message.length}/5000</p>
       </div>
 
-      {/* Error */}
       {error && (
-        <div
-          className="text-[12.5px] text-[#991B1B] bg-[#FEF2F2] border border-[#FECACA] rounded-xl px-4 py-3"
-          role="alert"
-        >
+        <p className="rounded-md bg-low-bg px-4 py-3 text-sm text-low-text" role="alert">
           {error}
-        </div>
+        </p>
       )}
 
-      {/* Submit */}
-      <button
-        type="submit"
-        disabled={loading}
-        className="flex items-center justify-center gap-2 bg-[#0866F5] text-white font-semibold py-3 px-6 rounded-xl hover:bg-[#0755D4] transition-colors text-[14px] disabled:opacity-60 active:scale-[0.98]"
-      >
-        {loading ? (
-          <Loader2 size={16} className="animate-spin" />
-        ) : (
-          <>
-            Send Message
-            <ArrowRight size={14} />
-          </>
-        )}
-      </button>
+      <Button type="submit" size="lg" disabled={loading}>
+        {loading ? <Loader2 className="animate-spin" aria-label="Sending" /> : "Send message"}
+      </Button>
 
-      {/* Privacy note */}
-      <p className="text-[11px] text-[#A3A3A0] text-center">
-        We&apos;ll use your details to respond to your inquiry.{" "}
-        <Link href="/privacy" className="underline hover:text-[#777773] transition-colors">
-          Privacy Policy
+      <p className="text-center text-[13px] text-text-hint">
+        We only use your details to reply to you.{" "}
+        <Link href="/privacy" className="underline underline-offset-4 hover:text-foreground">
+          Privacy policy
         </Link>
       </p>
     </form>

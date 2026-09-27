@@ -1,98 +1,71 @@
 import { Suspense } from "react";
+import type { Metadata } from "next";
+import Link from "next/link";
 import ContactForm from "@/components/site/ContactForm";
 import Header from "@/components/marketing/Header";
 import Footer from "@/components/marketing/Footer";
-import type { Metadata } from "next";
-import Link from "next/link";
-import { BarChart3, ArrowRight } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
+
+const title = "Contact";
+const description =
+  "Questions about checking your business in ChatGPT, Claude and Perplexity, agency accounts or a demo? Send us a message and we will reply by email.";
 
 export const metadata: Metadata = {
-  title: "Contact | Customers.Direct",
-  description:
-    "Get in touch with the Customers.Direct team. Questions about AI Visibility or anything else? We're here to help.",
+  title,
+  description,
+  alternates: { canonical: "/contact" },
+  openGraph: { type: "website", url: "/contact", title: `${title} | Customers.Direct`, description },
+  twitter: { card: "summary_large_image", title: `${title} | Customers.Direct`, description },
 };
+
+const TOPICS = [
+  { title: "Your business in AI answers", body: "What we check, how the score works, and what you can fix." },
+  { title: "Agency accounts", body: "Tracking many client businesses, custom credits and reports with your logo." },
+  { title: "A demo call", body: "A short walk through a real report for a business like yours." },
+] as const;
 
 export default function ContactPage() {
   return (
     <>
       <Header />
-      <main className="bg-[#FAFAF8] min-h-screen">
-        <section className="max-w-5xl mx-auto px-4 pt-12 sm:pt-16 pb-16 sm:pb-24">
-
-          {/* Team photo */}
-          <div className="mb-10 rounded-2xl overflow-hidden border border-[#E5E5E1] shadow-sm">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="https://wsxusvapciexemfvtadm.supabase.co/storage/v1/object/public/STORAGE/images/people/66a95df7-6aa3-4550-a5cf-73026946a51f.png"
-              alt="The Customers.Direct team"
-              className="w-full object-cover"
-              style={{ maxHeight: "400px", objectPosition: "center top" }}
-            />
-          </div>
-
-          {/* Header */}
-          <div className="max-w-xl mb-12">
-            <div className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-[#777773] bg-[#F0F0EC] border border-[#E5E5E1] px-3 py-1 rounded-full mb-6 uppercase tracking-wider">
-              Get in touch
-            </div>
-            <h1 className="text-[36px] sm:text-[44px] font-bold text-[#171717] leading-[1.1] tracking-tight mb-4">
-              Talk to Customers.Direct
+      <main className="flex-1 bg-background">
+        <section className="mx-auto max-w-[1120px] px-4 pt-12 pb-16 sm:px-6 sm:pt-20 sm:pb-22">
+          <div className="flex max-w-[60ch] flex-col gap-4">
+            <h1 className="text-[40px] leading-[1.08] font-semibold tracking-[-0.035em] text-balance sm:text-5xl">
+              Talk to us
             </h1>
-            <p className="text-[16px] text-[#777773] leading-relaxed">
-              Have a question about AI Visibility or anything else?
-              Send us a message and we&apos;ll get back to you.
+            <p className="text-lg text-muted-foreground text-pretty">
+              Ask us anything about how AI assistants recommend local businesses and how we measure it. We reply by
+              email.
             </p>
           </div>
 
-          <div className="grid md:grid-cols-[1fr_320px] gap-10 items-start">
-            {/* Form: Suspense required for useSearchParams in ContactForm */}
-            <Suspense
-              fallback={
-                <div className="bg-white border border-[#E5E5E1] rounded-2xl p-8 animate-pulse h-[500px]" />
-              }
-            >
+          <div className="mt-12 grid items-start gap-10 md:grid-cols-[1fr_320px]">
+            {/* ContactForm reads ?interest= with useSearchParams, which needs a Suspense boundary. */}
+            <Suspense fallback={<Skeleton className="h-[520px] w-full rounded-md" />}>
               <ContactForm source="contact_page" />
             </Suspense>
 
-            {/* Sidebar */}
-            <div className="flex flex-col gap-5">
-
-              {/* Products */}
-              <div className="bg-white border border-[#E5E5E1] rounded-2xl p-6">
-                <h2 className="text-[12.5px] font-bold text-[#171717] mb-4 uppercase tracking-wider">
-                  Our product
-                </h2>
-                <div className="flex flex-col gap-4">
-                  <div className="flex items-start gap-3">
-                    <div className="w-8 h-8 rounded-xl bg-[#EFF6FF] flex items-center justify-center shrink-0 mt-0.5">
-                      <BarChart3 size={14} className="text-[#0866F5]" />
-                    </div>
-                    <div>
-                      <p className="text-[13px] font-bold text-[#171717]">AI Visibility</p>
-                      <p className="text-[12px] text-[#0866F5] font-semibold mb-0.5">From $149/month</p>
-                      <p className="text-[11.5px] text-[#A3A3A0] leading-snug">
-                        Track how your business appears in AI answers and compare competitors.
-                      </p>
-                      <Link
-                        href="/pricing"
-                        className="inline-flex items-center gap-1 text-[11.5px] font-semibold text-[#0866F5] hover:underline mt-1"
-                      >
-                        See plans <ArrowRight size={10} />
-                      </Link>
-                    </div>
-                  </div>
-                </div>
+            <aside className="flex flex-col gap-6">
+              <div>
+                <h2 className="text-sm font-semibold">We can help with</h2>
+                <ul className="mt-3 flex flex-col divide-y divide-border border-y border-border">
+                  {TOPICS.map(({ title, body }) => (
+                    <li key={title} className="py-4">
+                      <p className="text-[15px] font-medium">{title}</p>
+                      <p className="mt-1 text-sm text-muted-foreground">{body}</p>
+                    </li>
+                  ))}
+                </ul>
               </div>
-
-              {/* Other */}
-              <div className="bg-[#F5F5F2] border border-[#E5E5E1] rounded-2xl p-5">
-                <p className="text-[12.5px] font-semibold text-[#555550] mb-1">Something else?</p>
-                <p className="text-[12px] text-[#A3A3A0] leading-relaxed">
-                  Select &ldquo;Other&rdquo; in the form and tell us what you need.
-                </p>
-              </div>
-
-            </div>
+              <p className="text-sm text-muted-foreground">
+                Looking for prices?{" "}
+                <Link href="/pricing" className="text-primary underline-offset-4 hover:underline">
+                  See plans and the free trial
+                </Link>
+                .
+              </p>
+            </aside>
           </div>
         </section>
       </main>

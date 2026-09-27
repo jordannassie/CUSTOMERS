@@ -6,14 +6,22 @@ import type { CatalogItem, CatalogKind, CatalogStore } from "./catalog";
 
 type Db = SupabaseClient<Database>;
 
-export type PlanPrice = { id: string; name: string; priceCents: number; monthlyCredits: number; stripePriceId: string | null };
+export type PlanPrice = {
+  id: string;
+  name: string;
+  priceCents: number;
+  monthlyCredits: number;
+  maxCompetitors: number | null;
+  maxQuestions: number | null;
+  stripePriceId: string | null;
+};
 export type TopupPack = { id: string; name: string; credits: number; priceCents: number; stripePriceId: string | null };
 
 /** Active self-serve plans with their Stripe price, for pricing and checkout. Enterprise has no price, so it is left out. */
 export async function listPlanPrices(db: Db = createServiceClient()): Promise<PlanPrice[]> {
   const { data, error } = await db
     .from("plans")
-    .select("id, name, price_cents, monthly_credits, stripe_price_id")
+    .select("id, name, price_cents, monthly_credits, max_competitors, max_questions, stripe_price_id")
     .eq("active", true)
     .not("price_cents", "is", null)
     .order("price_cents");
@@ -23,6 +31,8 @@ export async function listPlanPrices(db: Db = createServiceClient()): Promise<Pl
     name: p.name,
     priceCents: p.price_cents ?? 0,
     monthlyCredits: p.monthly_credits ?? 0,
+    maxCompetitors: p.max_competitors,
+    maxQuestions: p.max_questions,
     stripePriceId: p.stripe_price_id,
   }));
 }

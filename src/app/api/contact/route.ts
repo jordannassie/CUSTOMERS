@@ -9,7 +9,7 @@ const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const NEW_INTERESTS = ["ai_visibility", "agency", "book_demo", "other"] as const;
 
 // Legacy topic values preserved for backward compatibility with old records
-const LEGACY_TOPICS = ["product", "support", "sales", "enterprise", "chatgpt_ads"] as const;
+const LEGACY_TOPICS = ["product", "support", "sales", "enterprise"] as const;
 
 const ALL_VALID_TOPICS = [...NEW_INTERESTS, ...LEGACY_TOPICS] as const;
 type ValidTopic = (typeof ALL_VALID_TOPICS)[number];
