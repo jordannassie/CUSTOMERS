@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { cn } from "cn";
 import type { ActionResult } from "@/modules/auth";
 import { estimateMonthlyCredits } from "@/modules/credits/estimate";
+import { FIRST_SCAN_PATH } from "@/modules/onboarding/wizard/steps";
 import { FREQUENCIES, type Frequency, type ModelId } from "@/modules/settings/schema";
 import { FREQUENCY_LABELS, MODELS, untickWarning } from "@/modules/settings/service";
 import { StepActions, StepError } from "./StepBits";
@@ -46,7 +47,7 @@ export function ModelsStep({ businessId, models, frequency, activeQuestions, pla
     startTransition(async () => {
       const result = await save({ businessId, models: chosen, frequency: often });
       if (!result.ok) return setError(result.error);
-      router.push("/dashboard");
+      router.push(FIRST_SCAN_PATH);
     });
   }
 

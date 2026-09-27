@@ -83,7 +83,9 @@ test("the whole wizard: plan carried through, auto-filled, resumable, live estim
   await expect(estimate).toContainText("36");
   if (!phone) await expect(estimate).toContainText("your Pro plan");
   await visible(page, "Finish setup").click();
-  await page.waitForURL("**/dashboard");
+  // The first scan screen (B-38). This agency has no credits until the card step (B-41), so no scan starts.
+  await page.waitForURL("**/onboarding/first-scan");
+  await slow(page.getByTestId("first-scan-problem")).toHaveText("You're out of credits. Buy a top-up or upgrade.");
 
   const { data: businesses } = await db
     .from("businesses")

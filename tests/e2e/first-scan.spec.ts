@@ -1,0 +1,120 @@
+import { randomUUID } from "node:crypto";
+import { existsSync, readFileSync } from "node:fs";
+import { parseEnv } from "node:util";
+import { createClient } from "@supabase/supabase-js";
+import { expect, test, type Page } from "@playwright/test";
+
+// B-38 against the local Supabase stack, with WORKER_IN_PROCESS=true like the overview spec. Each test seeds
+// its own is_test agency, so the scan uses recorded answers and never calls an AI (D-61).
+const local = existsSync(".env.test.local") ? parseEnv(readFileSync(".env.test.local", "utf8")) : {};
+const hasDb = !!(local.NEXT_PUBLIC_SUPABASE_URL && local.SUPABASE_SERVICE_ROLE_KEY);
+test.skip(!hasDb, "Skipped: no local test database. Run scripts/test-db-reset.sh to create .env.test.local.");
+
+const db = hasDb
+  ? createClient(local.NEXT_PUBLIC_SUPABASE_URL!, local.SUPABASE_SERVICE_ROLE_KEY!, { auth: { persistSession: false } })
+  : null!;
+// Worded like the recorded answers in tests/fixtures/ai-answers, so the scan finds a close match.
+const QUESTIONS = [
+  "What is the best coffee shop in Orange, CA?",
+  "Where can I find a quiet cafe to work from in Orange, CA?",
+  "Which coffee shop in Orange, CA has the best cold brew?",
+];
+const userIds: string[] = [];
+const slow = expect.configure({ timeout: 60_000 });
+
+test.afterAll(async () => {
+  for (const id of userIds.splice(0)) await db.auth.admin.deleteUser(id);
+});
+
+/** A user stopped at the last setup step (AI models), with credits on a test agency. */
+async function seedAtModelsStep(page: Page): Promise<string> {
+  const email = `e2e-first-scan-${randomUUID()}@example.test`;
+  const password = `pw-${randomUUID()}`;
+  const { data: user, error } = await db.auth.admin.createUser({ email, password, email_confirm: true });
+  if (error || !user.user) throw error ?? new Error("no user");
+  userIds.push(user.user.id);
+
+  const { data: agency } = await db
+    .from("agencies")
+    .insert({ owner_user_id: user.user.id, name: "First scan test agency", is_test: true, status: "active" })
+    .select("id")
+    .single()
+    .throwOnError();
+  const { data: business } = await db
+    .from("businesses")
+    .insert({
+      owner_user_id: user.user.id,
+      agency_id: agency.id,
+      name: "Bean There Coffee",
+      status: "onboarding",
+      onboarding_step: 7,
+      industry: "coffee shop",
+      domain: "beantherecoffee.example",
+      primary_city: "Orange",
+      primary_region: "CA",
+      primary_country: "United States",
+      models: ["openai", "anthropic", "perplexity"],
+    })
+    .select("id")
+    .single()
+    .throwOnError();
+  await db
+    .from("tracked_prompts")
+    .insert(QUESTIONS.map((prompt) => ({ business_id: business.id, prompt })))
+    .throwOnError();
+  const { error: grantError } = await db.rpc("grant_credits", {
+    p_agency_id: agency.id,
+    p_source: "admin",
+    p_source_id: `e2e-${randomUUID()}`,
+    p_amount: 200,
+    p_expires_at: null,
+  });
+  if (grantError) throw grantError;
+
+  await page.goto("/login?next=/onboarding");
+  await page.locator("#email").fill(email);
+  await page.locator("#password").fill(password);
+  await page.locator("button[type=submit]").click();
+  await page.waitForURL("**/onboarding/models", { timeout: 60_000 });
+  return business.id;
+}
+
+const finishSetup = (page: Page) =>
+  page.getByRole("button", { name: "Finish setup", exact: true }).filter({ visible: true }).last().click();
+
+test("finish setup: a short progress screen, then the dashboard with the first score", async ({ page }) => {
+  await seedAtModelsStep(page);
+  await finishSetup(page);
+
+  await page.waitForURL("**/onboarding/first-scan");
+  await slow(page.getByRole("heading", { level: 1, name: "Running your first scan" })).toBeVisible();
+  await expect(page.getByText("We're asking ChatGPT, Claude and Perplexity 3 questions")).toBeVisible();
+  await expect(page.getByTestId("first-scan-models").getByRole("listitem")).toHaveCount(3);
+
+  await page.waitForURL("**/dashboard", { timeout: 60_000 });
+  await slow(page.getByTestId("score-summary")).toBeVisible();
+  await expect(page.getByTestId("no-score")).toHaveCount(0);
+});
+
+test("a failed first scan shows Try again, never an empty dashboard, and the retry opens the score", async ({ page }) => {
+  const businessId = await seedAtModelsStep(page);
+  // Forced failure: with no active questions the worker fails the job at once, without holding credits.
+  await db.from("tracked_prompts").update({ active: false }).eq("business_id", businessId).throwOnError();
+  await finishSetup(page);
+
+  await page.waitForURL("**/onboarding/first-scan");
+  await slow(page.getByRole("heading", { level: 1, name: "Your first scan didn't finish" })).toBeVisible();
+  await expect(page.getByTestId("first-scan-problem")).toHaveText("No credits were used. Try again in a moment.");
+  expect(new URL(page.url()).pathname).toBe("/onboarding/first-scan");
+
+  // A reload keeps the retry in view instead of starting another scan by itself.
+  await page.reload();
+  await slow(page.getByRole("heading", { level: 1, name: "Your first scan didn't finish" })).toBeVisible();
+  const { count } = await db.from("scan_jobs").select("id", { count: "exact", head: true }).eq("business_id", businessId);
+  expect(count).toBe(1);
+
+  await db.from("tracked_prompts").update({ active: true }).eq("business_id", businessId).throwOnError();
+  await page.getByRole("button", { name: "Try again" }).click();
+  await page.waitForURL("**/dashboard", { timeout: 60_000 });
+  await slow(page.getByTestId("score-summary")).toBeVisible();
+});
