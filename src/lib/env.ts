@@ -7,6 +7,7 @@ const flag = z.enum(["true", "false"]).optional();
 // The only file that reads process.env (MVP_SPEC 18.1). Required values fail the build when missing.
 export const env = createEnv({
   server: {
+    NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
     SUPABASE_SERVICE_ROLE_KEY: z.string().min(1),
 
     OPENAI_API_KEY: optional,
@@ -14,6 +15,8 @@ export const env = createEnv({
     ANTHROPIC_API_KEY: optional,
     PERPLEXITY_API_KEY: optional,
     GOOGLE_PLACES_API_KEY: optional,
+    // Dev and Playwright only: the competitor step answers from hand-built fixtures, never Google.
+    PLACES_FIXTURES: flag,
     FIRECRAWL_API_KEY: optional,
     BROWSERLESS_API_KEY: optional,
     // Search Intelligence stays on hold until D-06 is decided.
@@ -52,12 +55,14 @@ export const env = createEnv({
     NEXT_PUBLIC_APP_URL: z.url().optional(),
   },
   runtimeEnv: {
+    NODE_ENV: process.env.NODE_ENV,
     SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
     OPENAI_API_KEY: process.env.OPENAI_API_KEY,
     OPENAI_NEWS_MODEL: process.env.OPENAI_NEWS_MODEL,
     ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY,
     PERPLEXITY_API_KEY: process.env.PERPLEXITY_API_KEY,
     GOOGLE_PLACES_API_KEY: process.env.GOOGLE_PLACES_API_KEY,
+    PLACES_FIXTURES: process.env.PLACES_FIXTURES,
     FIRECRAWL_API_KEY: process.env.FIRECRAWL_API_KEY,
     BROWSERLESS_API_KEY: process.env.BROWSERLESS_API_KEY,
     DATAFORSEO_USERNAME: process.env.DATAFORSEO_USERNAME,
