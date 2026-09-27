@@ -22,7 +22,8 @@ describe("admin menu (B-64)", () => {
     ["/internal/admin/accounts", "Agencies"],
     ["/internal/admin/billing", "Agencies"],
     ["/internal/admin/businesses/abc", "Businesses"],
-    ["/internal/admin/errors", "Scans"],
+    ["/internal/admin/scans", "Scans"],
+    ["/internal/admin/usage", "Usage & Cost"],
     ["/internal/admin/settings", "Settings"],
     ["/internal/admin/news", "LinkedIn Studio"],
   ])("highlights exactly one item on %s", (pathname, label) => {

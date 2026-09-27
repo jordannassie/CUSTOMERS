@@ -213,7 +213,7 @@ export default async function AdminOverviewPage() {
         <div className="bg-white border border-[#FEE2E2] rounded-2xl overflow-hidden" style={{ boxShadow: "0 1px 4px rgba(0,0,0,0.04)" }}>
           <div className="flex items-center justify-between px-5 py-4 border-b border-[#FEF2F2]">
             <h2 className="text-[13px] font-bold text-[#DC2626]">Recent Failures</h2>
-            <Link href="/internal/admin/errors" className="text-[11px] text-[#0866F5] hover:underline font-medium">View all</Link>
+            <Link href="/internal/admin/scans?status=failed" className="text-[11px] text-[#0866F5] hover:underline font-medium">View all</Link>
           </div>
           <div className="divide-y divide-[#FEF9F9]">
             {(failures ?? []).map((f) => (
