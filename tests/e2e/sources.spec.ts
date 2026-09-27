@@ -90,7 +90,7 @@ test.afterAll(async () => {
 test("no scans yet: points to the first scan", async ({ page }) => {
   await seedBusiness(page);
   await expect(page.getByTestId("no-scans")).toContainText("Run your first scan from the Overview");
-  await expect(page.getByRole("link", { name: "Go to Overview" })).toHaveAttribute("href", "/dashboard");
+  await expect(page.getByRole("link", { name: "Go to Overview", exact: true })).toHaveAttribute("href", "/dashboard");
 });
 
 test("first scan with no citations: says so and what happens next", async ({ page }) => {
@@ -129,7 +129,10 @@ test("cited sites: most cited first, with type, how often, which AI and the own 
   await expect(page.getByTestId("source-types")).toContainText(/Reviews and forums\s*3 of 5 answers/);
   // Plain wording (MVP_SPEC 8.4).
   await expect(page.getByText(/UGC|citation rate/i)).toHaveCount(0);
-  await expect(page.getByRole("link", { name: "Sources", exact: true }).first()).toHaveAttribute("aria-current", "page");
+  // On a phone the menu is closed in a sheet (B-48), so the active item is checked on desktop.
+  if (test.info().project.name === "desktop") {
+    await expect(page.getByRole("link", { name: "Sources", exact: true })).toHaveAttribute("aria-current", "page");
+  }
 });
 
 test("own site not cited, and the old address still works", async ({ page }) => {
