@@ -24,7 +24,9 @@
     "evals:ai": "vitest run --project evals-ai --passWithNoTests",
     "dev:openai-check": "vitest run --project dev scripts/dev/openai-check.dev.ts",
     "dev:anthropic-check": "vitest run --project dev scripts/dev/anthropic-check.dev.ts",
-    "dev:perplexity-check": "vitest run --project dev scripts/dev/perplexity-check.dev.ts"
+    "dev:perplexity-check": "vitest run --project dev scripts/dev/perplexity-check.dev.ts",
+    "record:ai-answers": "vitest run --project record",
+    "seed:test-agency": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/seed-test-agency.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.128.0",

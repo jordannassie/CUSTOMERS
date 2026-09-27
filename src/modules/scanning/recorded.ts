@@ -1,6 +1,5 @@
 import "server-only";
 // Recorded answers for is_test agencies (D-61): full scans with no AI calls and no AI cost.
-// B-31 fills tests/fixtures/ai-answers/; until then a test scan finds no answers and charges nothing.
 import { createHash } from "node:crypto";
 import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
@@ -15,6 +14,8 @@ import type { ProviderId, RunCheck } from "./providers/types";
 export const RECORDED_ANSWERS_DIR = path.join(process.cwd(), "tests", "fixtures", "ai-answers");
 
 const recordedAnswer = z.object({
+  /** Hand-written placeholder until real answers are recorded (tests/fixtures/ai-answers/README.md). */
+  synthetic: z.boolean().default(false),
   provider: z.enum(["openai", "anthropic", "perplexity"]),
   question: z.string().min(1),
   answerText: z.string().min(1),
@@ -39,7 +40,7 @@ export async function loadRecordedAnswers(dir = RECORDED_ANSWERS_DIR): Promise<R
   return answers;
 }
 
-/** Picks the answer recorded for this question and model, else a fixed one of that model's answers. */
+/** Picks this model's answer whose question matches best: exact first, then the most shared words. */
 export function recordedAnswers(answers: RecordedAnswer[]): RecordedAnswers {
   const byProvider = new Map<ProviderId, RecordedAnswer[]>();
   for (const a of answers) byProvider.set(a.provider, [...(byProvider.get(a.provider) ?? []), a]);
@@ -52,8 +53,7 @@ export function recordedAnswers(answers: RecordedAnswer[]): RecordedAnswers {
       if (pool.length === 0) {
         throw new ProviderError({ provider, kind: "client", attempts: 1, message: `No recorded ${provider} answers` });
       }
-      const wanted = normaliseText(input.question);
-      const answer = pool.find((a) => normaliseText(a.question) === wanted) ?? pool[stableIndex(wanted, pool.length)];
+      const answer = closestAnswer(pool, input.question);
       return {
         answerText: answer.answerText,
         citations: answer.citations,
@@ -77,6 +77,26 @@ export function recordedAnswers(answers: RecordedAnswer[]): RecordedAnswers {
   };
 
   return { runCheck, extractNames };
+}
+
+export function closestAnswer(pool: RecordedAnswer[], question: string): RecordedAnswer {
+  const wanted = normaliseText(question);
+  const exact = pool.find((a) => normaliseText(a.question) === wanted);
+  if (exact) return exact;
+  const words = new Set(wanted.split(" "));
+  let best = pool[stableIndex(wanted, pool.length)];
+  let bestScore = 0;
+  for (const a of pool) {
+    const score = similarity(words, new Set(normaliseText(a.question).split(" ")));
+    if (score > bestScore) [best, bestScore] = [a, score];
+  }
+  return best;
+}
+
+function similarity(a: Set<string>, b: Set<string>): number {
+  let shared = 0;
+  for (const w of a) if (b.has(w)) shared++;
+  return shared / (a.size + b.size - shared);
 }
 
 function stableIndex(text: string, size: number): number {

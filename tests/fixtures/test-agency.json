@@ -1,0 +1,41 @@
+{
+  "ownerEmail": "test-agency@customers.test",
+  "agencyName": "Demo Test Agency",
+  "credits": 500,
+  "businesses": [
+    {
+      "name": "Bean There Coffee",
+      "industry": "coffee shop",
+      "domain": "beantherecoffee.example",
+      "city": "Orange",
+      "region": "CA",
+      "country": "United States",
+      "competitors": [
+        { "name": "Rival Roasters", "domain": "rivalroasters.example" },
+        { "name": "Citrus Bean Co.", "domain": "citrusbeanco.example" }
+      ],
+      "questions": [
+        "What is the best coffee shop in Orange, CA?",
+        "Where can I find a quiet cafe to work from in Orange, CA?",
+        "Which coffee shop in Orange, CA has the best cold brew?"
+      ]
+    },
+    {
+      "name": "Maple Leaf Dental",
+      "industry": "dentist",
+      "domain": "mapleleafdental.example",
+      "city": "Austin",
+      "region": "TX",
+      "country": "United States",
+      "competitors": [
+        { "name": "Bright Smile Austin", "domain": "brightsmileaustin.example" },
+        { "name": "Capitol Family Dentistry", "domain": "capitolfamilydentistry.example" }
+      ],
+      "questions": [
+        "Who is the best dentist in Austin, TX?",
+        "Where can I find an emergency dentist open today in Austin, TX?",
+        "Which dentist in Austin, TX is good with nervous patients?"
+      ]
+    }
+  ]
+}

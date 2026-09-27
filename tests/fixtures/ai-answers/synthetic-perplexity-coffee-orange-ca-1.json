@@ -1,0 +1,25 @@
+{
+  "synthetic": true,
+  "provider": "perplexity",
+  "question": "What is the best coffee shop in Orange, CA?",
+  "answerText": "Top coffee picks in Orange, CA:\n- Bean There Coffee [1]\n- Citrus Bean Co. [2]\n- Plaza Pour House [3]\n\nThese are based on local directory listings and reviews.",
+  "citations": [
+    {
+      "url": "https://beantherecoffee.example/",
+      "title": "Bean There Coffee"
+    },
+    {
+      "url": "https://citrusbeanco.example/",
+      "title": "Citrus Bean Co."
+    },
+    {
+      "url": "https://www.yelp.com/search?find_desc=coffee&find_loc=Orange%2C%20CA",
+      "title": "Top coffee in Orange, CA"
+    }
+  ],
+  "names": [
+    "Bean There Coffee",
+    "Citrus Bean Co.",
+    "Plaza Pour House"
+  ]
+}

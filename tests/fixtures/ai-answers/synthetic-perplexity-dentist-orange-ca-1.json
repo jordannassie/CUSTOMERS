@@ -1,0 +1,25 @@
+{
+  "synthetic": true,
+  "provider": "perplexity",
+  "question": "Who is the best dentist in Orange, CA?",
+  "answerText": "Top dentist picks in Orange, CA:\n- Tustin Street Smiles [1]\n- Orange Circle Dental [2]\n- Old Towne Dentistry [3]\n\nThese are based on local directory listings and reviews.",
+  "citations": [
+    {
+      "url": "https://tustinstreetsmiles.example/",
+      "title": "Tustin Street Smiles"
+    },
+    {
+      "url": "https://orangecircledental.example/",
+      "title": "Orange Circle Dental"
+    },
+    {
+      "url": "https://www.yelp.com/search?find_desc=dentist&find_loc=Orange%2C%20CA",
+      "title": "Top dentist in Orange, CA"
+    }
+  ],
+  "names": [
+    "Tustin Street Smiles",
+    "Orange Circle Dental",
+    "Old Towne Dentistry"
+  ]
+}

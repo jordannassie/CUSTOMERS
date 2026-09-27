@@ -1,0 +1,12 @@
+{
+  "synthetic": true,
+  "provider": "anthropic",
+  "question": "Where can I find a quiet cafe to work from in Austin, TX?",
+  "answerText": "Based on recent reviews, Congress Cup is a popular choice in Austin, TX, known for strong local reviews and friendly staff. Locals also recommend Barton Bean and Lone Star Brew Bar. I would call ahead to confirm availability.",
+  "citations": [],
+  "names": [
+    "Congress Cup",
+    "Barton Bean",
+    "Lone Star Brew Bar"
+  ]
+}

@@ -1,0 +1,24 @@
+{
+  "synthetic": true,
+  "provider": "openai",
+  "question": "Which plumber in Orange, CA can fix a leak today?",
+  "answerText": "Here are some well reviewed options in Orange, CA:\n\n1. **Santiago Drain and Rooter**: strong local reviews and friendly staff.\n2. **Orange County Pipe Co.**: convenient hours and easy parking.\n\nCheck current hours before you go.",
+  "citations": [
+    {
+      "url": "https://santiagodrainandrooter.example/",
+      "title": "Santiago Drain and Rooter"
+    },
+    {
+      "url": "https://orangecountypipeco.example/",
+      "title": "Orange County Pipe Co."
+    },
+    {
+      "url": "https://www.yelp.com/search?find_desc=plumber&find_loc=Orange%2C%20CA",
+      "title": "Top plumber in Orange, CA"
+    }
+  ],
+  "names": [
+    "Santiago Drain and Rooter",
+    "Orange County Pipe Co."
+  ]
+}

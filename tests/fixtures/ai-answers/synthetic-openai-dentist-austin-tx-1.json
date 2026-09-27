@@ -1,0 +1,25 @@
+{
+  "synthetic": true,
+  "provider": "openai",
+  "question": "Who is the best dentist in Austin, TX?",
+  "answerText": "Here are some well reviewed options in Austin, TX:\n\n1. **Bright Smile Austin**: strong local reviews and friendly staff.\n2. **Maple Leaf Dental**: convenient hours and easy parking.\n3. **Capitol Family Dentistry**: consistent quality mentioned in many reviews.\n\nCheck current hours before you go.",
+  "citations": [
+    {
+      "url": "https://brightsmileaustin.example/",
+      "title": "Bright Smile Austin"
+    },
+    {
+      "url": "https://mapleleafdental.example/",
+      "title": "Maple Leaf Dental"
+    },
+    {
+      "url": "https://www.yelp.com/search?find_desc=dentist&find_loc=Austin%2C%20TX",
+      "title": "Top dentist in Austin, TX"
+    }
+  ],
+  "names": [
+    "Bright Smile Austin",
+    "Maple Leaf Dental",
+    "Capitol Family Dentistry"
+  ]
+}

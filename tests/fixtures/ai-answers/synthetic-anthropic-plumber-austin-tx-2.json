@@ -1,0 +1,12 @@
+{
+  "synthetic": true,
+  "provider": "anthropic",
+  "question": "Which plumber in Austin, TX can fix a leak today?",
+  "answerText": "Based on recent reviews, Hill Country Plumbing is a popular choice in Austin, TX, known for strong local reviews and friendly staff. Locals also recommend Longhorn Leak Repair and Zilker Pipe Works. I would call ahead to confirm availability.",
+  "citations": [],
+  "names": [
+    "Hill Country Plumbing",
+    "Longhorn Leak Repair",
+    "Zilker Pipe Works"
+  ]
+}
