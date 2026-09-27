@@ -125,3 +125,32 @@ export async function readPeriodGrants(agencyId: string): Promise<{ amount: numb
     remaining: 0,
   });
 }
+
+export type CreditCapture = { holdId: string | null; checkId: string; credits: number; createdAt: string };
+
+const PAGE = 1000;
+
+/** Credits spent on checks, from the ledger. Filter by time, by hold, or both. */
+export async function readCaptures(
+  agencyId: string,
+  filter: { since?: Date; holdIds?: string[] },
+): Promise<CreditCapture[]> {
+  if (filter.holdIds?.length === 0) return [];
+  const rows: CreditCapture[] = [];
+  // PostgREST caps a response at 1,000 rows, and a busy month has more checks than that.
+  for (let from = 0; ; from += PAGE) {
+    let query = createServiceClient()
+      .from("credit_transactions")
+      .select("id, hold_id, source_id, delta, created_at")
+      .eq("agency_id", agencyId)
+      .eq("kind", "capture");
+    if (filter.since) query = query.gte("created_at", filter.since.toISOString());
+    if (filter.holdIds) query = query.in("hold_id", filter.holdIds);
+    const { data, error } = await query.order("created_at").order("id").range(from, from + PAGE - 1);
+    if (error) fail("credit_transactions", error);
+    for (const row of data) {
+      rows.push({ holdId: row.hold_id, checkId: row.source_id, credits: -row.delta, createdAt: row.created_at });
+    }
+    if (data.length < PAGE) return rows;
+  }
+}
