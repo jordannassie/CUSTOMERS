@@ -165,10 +165,30 @@ Phase 10 · M · Depends on: B-59, B-71, B-73 · Blocked by Jordan: no · MVP_RO
 
 ---
 
+### B-84 Whole-product wording pass
+- [ ] Done
+
+Phase 10 · M · Depends on: B-36, B-46, B-49 to B-57, B-59, B-60, B-62, B-65 to B-69, B-71 to B-74, B-77 · Blocked by Jordan: no · MVP_SPEC 8.4, D-32, design/WRITING.md · Branch: `task/B-84-whole-product-wording-pass` → `mvp`
+
+**Build**
+1. Collect every user-facing string: marketing pages, the app, onboarding, settings, billing, admin, emails, error and empty states, share page, PDF, page titles and meta descriptions.
+2. Rewrite anything that breaks design/WRITING.md: long dashes, title case, vague or salesy lines, banned AI-sounding words, promises we cannot keep, jargon from MVP_SPEC 8.4.
+3. Add a lint check (`scripts/check-copy.ts`, run in CI) that fails on long dashes and the banned word list in `src/`, emails and marketing content.
+4. Keep meaning and layout unchanged; wording only. List every changed string in the PR, grouped by page.
+
+**What the user sees**
+- Every page, email and message reads like one careful person wrote it: plain, specific, consistent, with no dashes, hype or robotic phrasing.
+
+**Engineering checks**
+- `scripts/check-copy.ts` passes in CI.
+- A person reads the PR's list of changed strings and approves it.
+
+---
+
 ### B-83 Launch rehearsal
 - [ ] Done
 
-Phase 10 · M · Depends on: B-75 to B-82 · Blocked by Jordan: no · All · Branch: `task/B-83-launch-rehearsal` → `main`
+Phase 10 · M · Depends on: B-75 to B-82, B-84 · Blocked by Jordan: no · All · Branch: `task/B-83-launch-rehearsal` → `main`
 
 **Build**
 1. Run the full Playwright suite against production with an internal test agency.
