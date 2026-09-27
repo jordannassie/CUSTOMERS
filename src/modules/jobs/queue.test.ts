@@ -1,5 +1,5 @@
 import { afterAll, describe, expect, it, vi } from "vitest";
-import { runScan } from "@/modules/scanning";
+import { runScan, type ScanOutcome } from "@/modules/scanning";
 import { getBalance } from "@/modules/credits";
 import { claimScanJobs, finishJob, resetStuckJobs } from "./dal";
 import {
@@ -22,20 +22,26 @@ vi.mock("@/lib/env", async (importOriginal) => {
 
 afterAll(deleteTestUsers);
 
-/** The real worker, limited to our jobs so it never claims another test's or a developer's queued job. */
-function workerDeps(jobs: TestJob[], dir: string): WorkerDeps & { ran: string[] } {
+/** The real worker, limited to our jobs so it never runs another test's or a developer's queued job. */
+function workerDeps(jobs: TestJob[], scan: (jobId: string) => Promise<ScanOutcome>): WorkerDeps & { ran: string[] } {
   const ours = new Set(jobs.map((j) => j.jobId));
   const ran: string[] = [];
   return {
     ran,
     claim: async (limit) => {
       const { count } = await service.from("scan_jobs").select("id", { count: "exact", head: true })
-        .in("id", [...ours]).eq("status", "queued").lte("run_after", new Date().toISOString());
-      return count ? claimScanJobs(Math.min(limit, count)) : [];
+        .in("id", [...ours]).eq("status", "queued");
+      if (!count) return [];
+      const claimed = await claimScanJobs(Math.min(limit, count));
+      // Two workers can race for our last job; the loser's claim may pick up another file's job, so hand it back.
+      for (const job of claimed.filter((j) => !ours.has(j.id))) {
+        await service.from("scan_jobs").update({ status: "queued", attempts: job.attempts - 1, locked_at: null }).eq("id", job.id);
+      }
+      return claimed.filter((j) => ours.has(j.id));
     },
     run: (jobId) => {
       ran.push(jobId);
-      return runScan(jobId, { recordedDir: dir });
+      return scan(jobId);
     },
     finish: finishJob,
     now: () => new Date(),
@@ -53,11 +59,15 @@ describe("claim_scan_jobs", () => {
     expect(claims.flat().every((j) => j.attempts === 1)).toBe(true);
   });
 
-  it("two workers running at once scan every job exactly once", async () => {
-    const agency = await createTestAgency(1000);
+  it("two workers running at once run every job exactly once", async () => {
+    const agency = await createTestAgency();
     const jobs = await Promise.all(Array.from({ length: 6 }, () => queueTestJob(agency)));
-    const dir = recordedDir();
-    const [a, b] = [workerDeps(jobs, dir), workerDeps(jobs, dir)];
+    // A stand-in scan: this test is about claiming, and 6 real scans at once overload the local API.
+    const scan = async (): Promise<ScanOutcome> => {
+      await new Promise((r) => setTimeout(r, 20));
+      return { status: "done", runId: "stand-in", checks: 36, failed: 0, charged: 36, released: 0, errors: [] };
+    };
+    const [a, b] = [workerDeps(jobs, scan), workerDeps(jobs, scan)];
     await Promise.all([runWorker(60_000, a), runWorker(60_000, b)]);
     const ran = [...a.ran, ...b.ran];
     expect(new Set(ran).size).toBe(ran.length);
@@ -70,7 +80,8 @@ describe("worker", () => {
   it("turns a queued test job into done through the secret-checked entry point", async () => {
     const agency = await createTestAgency();
     const job = await queueTestJob(agency);
-    const deps = workerDeps([job], recordedDir());
+    const dir = recordedDir();
+    const deps = workerDeps([job], (id) => runScan(id, { recordedDir: dir }));
     const started = Date.now();
     const res = await handleWorkerRequest(
       new Request("http://localhost/worker", { method: "POST", headers: { "x-worker-secret": "test-worker-secret" } }),
@@ -88,7 +99,7 @@ describe("worker", () => {
   it("a job failing 3 times ends failed with the error saved, and is never charged", async () => {
     const agency = await createTestAgency();
     const job = await queueTestJob(agency);
-    const deps = workerDeps([job], emptyRecordedDir());
+    const deps = workerDeps([job], (id) => runScan(id, { recordedDir: emptyRecordedDir() }));
 
     for (const attempt of [1, 2]) {
       const before = Date.now();
@@ -99,7 +110,8 @@ describe("worker", () => {
       const wait = new Date(row.run_after).getTime() - before;
       expect(wait).toBeGreaterThanOrEqual(attempt * 5 * 60_000);
       expect(wait).toBeLessThan(attempt * 5 * 60_000 + 30_000);
-      await service.from("scan_jobs").update({ run_after: new Date().toISOString() }).eq("id", job.jobId);
+      // Skip the backoff wait; an hour back stays due whatever the gap between this clock and the database's.
+      await service.from("scan_jobs").update({ run_after: new Date(Date.now() - 3_600_000).toISOString() }).eq("id", job.jobId);
     }
     await runWorker(60_000, deps);
 

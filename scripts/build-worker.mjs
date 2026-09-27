@@ -1,5 +1,5 @@
 // Bundles the scan worker into Netlify's Frameworks API folder, which Netlify deploys as a background
-// function (the -background suffix). Runs after next build (postbuild).
+// function (the -background suffix). Runs after next build, as part of npm run build.
 import { build } from "esbuild";
 
 await build({
