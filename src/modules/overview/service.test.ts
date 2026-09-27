@@ -77,8 +77,9 @@ describe("overviewView", () => {
       sentence: "AI recommended you in about 6 of 10 customer questions this month.",
       firstResults: true,
       change: null,
-      details: { margin: 10, checks: 36, uniqueAnswers: 36 },
     });
+    expect(view.score?.details.numbers).toContainEqual({ label: "Margin of error", value: "Plus or minus 10 points" });
+    expect(view.score?.details.calibration).toBeNull();
   });
 
   it("lists every chosen model, with no score for one that has no checks yet", () => {

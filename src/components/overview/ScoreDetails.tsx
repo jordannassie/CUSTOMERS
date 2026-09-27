@@ -1,13 +1,18 @@
 "use client";
 
+import { cn } from "cn";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import type { OverviewView } from "@/modules/overview";
+import type { MethodPanel } from "@/modules/overview";
 
-type Details = NonNullable<OverviewView["score"]>["details"];
+const DOT: Record<MethodPanel["models"][number]["id"], string> = {
+  openai: "bg-chatgpt",
+  anthropic: "bg-claude",
+  perplexity: "bg-perplexity",
+};
 
-// The first version of the details panel; B-57 adds the full method and the calibration result.
-export function ScoreDetails({ details, models }: { details: Details; models: OverviewView["models"] }) {
+/** The details behind the score (B-57, D-64): numbers, per-AI scores and the method in plain words. */
+export function ScoreDetails({ panel }: { panel: MethodPanel }) {
   return (
     <Sheet>
       <SheetTrigger asChild>
@@ -15,35 +20,79 @@ export function ScoreDetails({ details, models }: { details: Details; models: Ov
           How is this calculated?
         </Button>
       </SheetTrigger>
-      <SheetContent className="w-full sm:max-w-md">
+      <SheetContent className="w-full gap-0 overflow-y-auto sm:max-w-md" data-testid="score-details">
         <SheetHeader>
-          <SheetTitle>How your score is calculated</SheetTitle>
-          <SheetDescription>
-            We ask AI the questions your customers ask, with web search on and your city as the location, and count how
-            often it recommends you.
-          </SheetDescription>
+          <SheetTitle>{panel.title}</SheetTitle>
+          <SheetDescription>{panel.intro}</SheetDescription>
         </SheetHeader>
-        <dl className="grid grid-cols-[1fr_auto] gap-x-6 gap-y-3 px-4 text-sm">
-          <dt className="text-muted-foreground">Time covered</dt>
-          <dd className="tabular-nums">Last 30 days</dd>
-          <dt className="text-muted-foreground">Answers checked</dt>
-          <dd className="tabular-nums">{details.checks}</dd>
-          <dt className="text-muted-foreground">Different answers</dt>
-          <dd className="tabular-nums">{details.uniqueAnswers}</dd>
-          <dt className="text-muted-foreground">Margin of error</dt>
-          <dd className="tabular-nums">plus or minus {details.margin} points</dd>
-          {models.map((m) => (
-            <div key={m.id} className="contents">
-              <dt className="text-muted-foreground">{m.label}</dt>
-              <dd className="tabular-nums">{m.score ?? "No checks yet"}</dd>
-            </div>
+        <div className="flex flex-col gap-7 px-4 pb-8 text-sm">
+          <Section heading="Your numbers">
+            <dl className="grid grid-cols-[1fr_auto] gap-x-6 gap-y-3">
+              {panel.numbers.map((n) => (
+                <div key={n.label} className="contents">
+                  <dt className="text-muted-foreground">
+                    {n.label}
+                    {n.hint && <span className="mt-0.5 block text-xs text-text-hint">{n.hint}</span>}
+                  </dt>
+                  <dd className="text-right tabular-nums">{n.value}</dd>
+                </div>
+              ))}
+            </dl>
+          </Section>
+
+          <Section heading="Score by AI">
+            <dl className="grid grid-cols-[1fr_auto] gap-x-6 gap-y-3">
+              {panel.models.map((m) => (
+                <div key={m.id} className="contents">
+                  <dt className="flex items-center gap-2 text-muted-foreground">
+                    <span className={cn("size-2 rounded-full", DOT[m.id])} aria-hidden="true" />
+                    {m.label}
+                  </dt>
+                  <dd className="text-right tabular-nums">{m.value}</dd>
+                </div>
+              ))}
+            </dl>
+            <p className="text-muted-foreground">{panel.modelsNote}</p>
+          </Section>
+
+          {panel.sections.map((s) => (
+            <Section key={s.heading} heading={s.heading}>
+              {s.paragraphs.map((p) => (
+                <p key={p} className="text-muted-foreground">
+                  {p}
+                </p>
+              ))}
+            </Section>
           ))}
-        </dl>
-        <p className="px-4 text-sm text-muted-foreground">
-          The score is the average of the AI models you chose, each counted equally. An arrow appears only when a change
-          is bigger than the margin of error, so small day-to-day swings do not look like progress.
-        </p>
+
+          {panel.calibration && (
+            <Section heading={panel.calibration.heading}>
+              {panel.calibration.paragraphs.map((p) => (
+                <p key={p} className="text-muted-foreground">
+                  {p}
+                </p>
+              ))}
+              <dl className="grid grid-cols-[1fr_auto] gap-x-6 gap-y-3">
+                {panel.calibration.agreement.map((a) => (
+                  <div key={a.label} className="contents">
+                    <dt className="text-muted-foreground">{a.label}</dt>
+                    <dd className="text-right tabular-nums">{a.value}</dd>
+                  </div>
+                ))}
+              </dl>
+            </Section>
+          )}
+        </div>
       </SheetContent>
     </Sheet>
+  );
+}
+
+function Section({ heading, children }: { heading: string; children: React.ReactNode }) {
+  return (
+    <section className="flex flex-col gap-3">
+      <h3 className="font-medium text-foreground">{heading}</h3>
+      {children}
+    </section>
   );
 }

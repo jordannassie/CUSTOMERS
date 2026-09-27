@@ -1,4 +1,5 @@
-import type { Change, Confidence, ProviderId, ScoreReport } from "@/modules/scanning";
+import { SCORE_WINDOW_DAYS, type Change, type Confidence, type ProviderId, type ScoreReport } from "@/modules/scanning";
+import { CALIBRATION, methodPanel, type Calibration, type MethodPanel } from "./method";
 
 // What the Overview shows (B-49, MVP_SPEC 5.6, 8.1). Pure, so every state is unit tested.
 
@@ -30,7 +31,7 @@ export type OverviewView = {
     /** "First results. Accuracy improves with every scan." while there is one scan's worth of data. */
     firstResults: boolean;
     change: { direction: Change["direction"]; text: string } | null;
-    details: { margin: number; checks: number; uniqueAnswers: number };
+    details: MethodPanel;
   } | null;
   models: { id: ProviderId; label: string; score: number | null }[];
   trend: { date: string; score: number | null }[];
@@ -67,10 +68,23 @@ export function topOpportunities(opportunities: Opportunity[], count = 3): Overv
     .map(({ id, title, impact }) => ({ id, title, impact }));
 }
 
-export function overviewView(report: ScoreReport, opportunities: Opportunity[]): OverviewView {
+export function overviewView(
+  report: ScoreReport,
+  opportunities: Opportunity[],
+  calibration: Calibration | null = CALIBRATION,
+): OverviewView {
   const { overall } = report;
   const scannedDays = report.trend.filter((p) => p.checks > 0).length;
-  const byModel = new Map(report.byModel.map((m) => [m.model, m.estimate.score]));
+  const byModel = new Map(report.byModel.map((m) => [m.model, m.estimate]));
+  const models = report.models.map((id) => {
+    const estimate = byModel.get(id);
+    return {
+      id,
+      label: MODEL_LABELS[id],
+      score: estimate ? Math.round(estimate.score) : null,
+      margin: estimate ? Math.round(estimate.margin) : null,
+    };
+  });
   return {
     score: overall && {
       value: Math.round(overall.score),
@@ -79,16 +93,19 @@ export function overviewView(report: ScoreReport, opportunities: Opportunity[]):
       sentence: scoreSentence(overall.score),
       firstResults: overall.confidence === "early" && scannedDays <= 1,
       change: report.change && { direction: report.change.direction, text: changeText(report.change) },
-      details: {
-        margin: Math.round(overall.margin),
-        checks: overall.checks,
-        uniqueAnswers: overall.uniqueAnswers,
-      },
+      details: methodPanel(
+        {
+          windowDays: SCORE_WINDOW_DAYS,
+          label: CONFIDENCE_LABELS[overall.confidence],
+          margin: Math.round(overall.margin),
+          checks: overall.checks,
+          uniqueAnswers: overall.uniqueAnswers,
+          models,
+        },
+        calibration,
+      ),
     },
-    models: report.models.map((id) => {
-      const score = byModel.get(id);
-      return { id, label: MODEL_LABELS[id], score: score === undefined ? null : Math.round(score) };
-    }),
+    models: models.map(({ id, label, score }) => ({ id, label, score })),
     trend: report.trend.map((p) => ({ date: p.date, score: p.score === null ? null : Math.round(p.score) })),
     opportunities: topOpportunities(opportunities),
     lastCheckedAt: report.lastCheckedAt?.toISOString() ?? null,

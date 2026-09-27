@@ -8,6 +8,7 @@ export { getScoreReport, loadScoreReport, type ScoreReport } from "./scores/dal"
 export {
   compareWithCompetitor,
   isRealChange,
+  SCORE_WINDOW_DAYS,
   type Change,
   type Confidence,
   type Estimate,

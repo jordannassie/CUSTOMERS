@@ -151,6 +151,9 @@ test("first scan: score, early label, first results note, no arrow", async ({ pa
   const panel = page.getByRole("dialog", { name: "How your score is calculated" });
   await expect(panel).toContainText("Last 30 days");
   await expect(panel).toContainText("36");
+  await expect(panel).toContainText(/ChatGPT\s*75, plus or minus \d+ points/);
+  await expect(panel.getByRole("heading", { name: "How we check" })).toBeVisible();
+  await expect(panel.getByRole("heading", { name: "Tested against the real apps" })).toHaveCount(0);
 });
 
 test("30 days of history: high confidence, a real rise and the top 3 fixes", async ({ page }) => {

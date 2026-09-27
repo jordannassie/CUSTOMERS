@@ -70,7 +70,7 @@ export default async function OverviewPage({ searchParams }: { searchParams: Pro
           <CardContent className="flex flex-col gap-8">
             {score ? (
               <>
-                <ScoreSummary score={score} models={overview.models} />
+                <ScoreSummary score={score} />
                 <div className="flex flex-col gap-2">
                   <h2 className="text-sm font-medium">Last 7 days</h2>
                   <TrendChart trend={overview.trend} />
