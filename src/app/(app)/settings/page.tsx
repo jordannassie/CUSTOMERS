@@ -14,7 +14,7 @@ export const metadata = { title: "Settings", robots: { index: false } };
 // Billing (B-46), Usage (B-56) and self-serve deletion (B-77) are not built yet; these are the
 // working places for each until they land.
 const USAGE_HREF = BILLING_HREF;
-const QUESTIONS_HREF = "/dashboard/prompts";
+const QUESTIONS_HREF = "/questions";
 const SUPPORT_HREF = "/contact?topic=support";
 
 export default async function SettingsPage() {

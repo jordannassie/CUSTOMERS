@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { check, MODELS, NOW } from "../scoring.test-helpers";
-import { questionAppearances } from "./questions";
+import { questionAppearances, questionAppearancesByModel } from "./questions";
 
 describe("questionAppearances", () => {
   it("says appeared in X of the last Y checks per question", () => {
@@ -22,5 +22,24 @@ describe("questionAppearances", () => {
       { questionId: "q1", appeared: 3, checks: 4 },
       { questionId: "q2", appeared: 0, checks: 1 },
     ]);
+  });
+});
+
+describe("questionAppearancesByModel", () => {
+  it("counts the last Y checks for each model separately, in the chosen model order", () => {
+    const checks = [
+      check("openai", "q1", 1, true),
+      check("openai", "q1", 2, false),
+      check("openai", "q1", 3, true),
+      check("perplexity", "q1", 1, false),
+      check("anthropic", "q2", 1, true),
+      check("anthropic", "q2", 40 * 24, true),
+    ];
+    const byQuestion = questionAppearancesByModel(checks, { now: NOW, models: MODELS, last: 2 });
+    expect(byQuestion.get("q1")).toEqual([
+      { model: "openai", appeared: 1, checks: 2 },
+      { model: "perplexity", appeared: 0, checks: 1 },
+    ]);
+    expect(byQuestion.get("q2")).toEqual([{ model: "anthropic", appeared: 1, checks: 1 }]);
   });
 });

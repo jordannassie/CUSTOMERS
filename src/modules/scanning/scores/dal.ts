@@ -14,7 +14,7 @@ import {
   type TrendPoint,
   type VisibilityScore,
 } from "../scoring";
-import { questionAppearances } from "./questions";
+import { questionAppearances, questionAppearancesByModel, type ModelAppearance } from "./questions";
 
 // 30-day score aggregates (B-30 step 2) from the visibility_checks_30d view (migration 032).
 const PAGE = 1000;
@@ -93,6 +93,16 @@ export async function loadScoreReport(agencyId: string, businessId: string, now:
       checks: appearances.get(q.id)?.checks ?? 0,
     })),
   };
+}
+
+/** Per question and model: appeared in X of the last Y checks. Callers check the user may see this business first. */
+export async function loadQuestionResults(
+  businessId: string,
+  models: readonly ProviderId[],
+  now: Date,
+): Promise<Map<string, ModelAppearance[]>> {
+  const checks = await readChecks(businessId, new Date(now.getTime() - SCORE_WINDOW_DAYS * DAY_MS));
+  return questionAppearancesByModel(checks, { now, models, last: LAST_CHECKS_PER_QUESTION });
 }
 
 async function readChecks(businessId: string, since: Date): Promise<ScoreCheck[]> {

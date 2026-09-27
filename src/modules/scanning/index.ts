@@ -4,7 +4,8 @@ export { detectMentions, type MentionTarget } from "./mentions";
 export { liveCheckRunner } from "./runs/dal";
 export { CHECK_MODELS } from "./providers/models";
 export type { CheckResult, ProviderId } from "./providers/types";
-export { getScoreReport, loadScoreReport, type ScoreReport } from "./scores/dal";
+export { getScoreReport, loadQuestionResults, loadScoreReport, type ScoreReport } from "./scores/dal";
+export type { ModelAppearance } from "./scores/questions";
 export { loadAlsoRecommended } from "./also-recommended/dal";
 export type { AlsoRecommended, AlsoRecommendedList } from "./also-recommended/names";
 export {
