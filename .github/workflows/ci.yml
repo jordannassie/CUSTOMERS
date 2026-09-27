@@ -93,6 +93,8 @@ jobs:
       - env:
           # The admin access spec signs in as these, one per project (tests/e2e/admin-access.spec.ts).
           ADMIN_EMAILS: e2e-admin-desktop@example.test,e2e-admin-mobile@example.test
+          # Run scan starts the worker inside the dev server; CI has no WORKER_URL (tests/e2e/overview.spec.ts).
+          WORKER_IN_PROCESS: "true"
         run: set -a && source .env.test.local && set +a && npm run test:e2e
       - if: failure()
         uses: actions/upload-artifact@v4

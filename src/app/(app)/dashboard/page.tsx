@@ -4,7 +4,6 @@ import OnboardingWizard from "@/components/geo/OnboardingWizard";
 import { RunScanButton } from "@/components/app/RunScanButton";
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ModelScores } from "@/components/overview/ModelScores";
-import { ReportActions } from "@/components/overview/ReportActions";
 import { ScoreSummary } from "@/components/overview/ScoreSummary";
 import { OPPORTUNITIES_HREF, TopOpportunities } from "@/components/overview/TopOpportunities";
 import { TrendChart } from "@/components/overview/TrendChart";
@@ -44,18 +43,16 @@ export default async function OverviewPage({ searchParams }: { searchParams: Pro
             {overview.lastCheckedAt ? `Last scan ${timeAgo(new Date(overview.lastCheckedAt))}` : "No scans yet"}
           </p>
         </div>
-        <div className="flex flex-col-reverse items-start gap-3 sm:flex-row sm:items-start">
-          <ReportActions />
-          {scanStatus.ok && (
-            <RunScanButton
-              businessId={business.id}
-              initial={scanStatus.data}
-              start={startScan}
-              getStatus={getScanStatus}
-              className="items-start sm:items-end"
-            />
-          )}
-        </div>
+        {/* Share (B-59) and Export PDF (B-60) join Run scan here once they work. */}
+        {scanStatus.ok && (
+          <RunScanButton
+            businessId={business.id}
+            initial={scanStatus.data}
+            start={startScan}
+            getStatus={getScanStatus}
+            className="items-start sm:items-end"
+          />
+        )}
       </header>
 
       {scanStatus.ok && scanStatus.data.lastResult === "failed" && !scanStatus.data.scanning && (
