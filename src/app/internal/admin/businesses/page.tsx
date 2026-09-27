@@ -1,105 +1,38 @@
+import { Suspense } from "react";
+import { Skeleton } from "@/components/ui/skeleton";
+import { listBusinesses } from "@/modules/admin";
 import { requireAdmin } from "@/modules/auth";
-import { createServiceClient } from "@/lib/supabase/service";
-import Link from "next/link";
+import BusinessesTable from "./_components/businesses-table";
 
-function fmt(iso: string) {
-  return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
-}
+export const metadata = { title: "Businesses" };
 
 export default async function AdminBusinessesPage() {
   await requireAdmin({ next: "/internal/admin/businesses" });
-  const svc = createServiceClient();
-
-  const { data: businesses } = await svc
-    .from("businesses")
-    .select("id, name, domain, primary_city, primary_region, primary_country, status, created_at, owner_user_id")
-    .order("created_at", { ascending: false });
-
-  const { data: authData } = await svc.auth.admin.listUsers({ perPage: 200, page: 1 });
-  const emailMap = Object.fromEntries((authData?.users ?? []).map((u) => [u.id, u.email ?? u.id]));
-
-  const { data: compCounts } = await svc.from("business_competitors").select("business_id");
-  const compByBiz: Record<string, number> = {};
-  for (const c of compCounts ?? []) compByBiz[c.business_id] = (compByBiz[c.business_id] ?? 0) + 1;
-
-  const { data: promptCounts } = await svc.from("tracked_prompts").select("business_id");
-  const promptByBiz: Record<string, number> = {};
-  for (const p of promptCounts ?? []) promptByBiz[p.business_id] = (promptByBiz[p.business_id] ?? 0) + 1;
-
-  const { data: latestScans } = await svc
-    .from("visibility_runs")
-    .select("business_id, status, created_at")
-    .order("created_at", { ascending: false });
-  const latestScanByBiz: Record<string, { status: string; created_at: string }> = {};
-  for (const s of latestScans ?? []) {
-    if (!latestScanByBiz[s.business_id]) latestScanByBiz[s.business_id] = s;
-  }
 
   return (
-    <div className="max-w-6xl mx-auto px-6 py-8">
-      <div className="mb-6">
-        <h1 className="text-[22px] font-bold text-[#111827]">Businesses</h1>
-        <p className="text-[12px] text-[#9CA3AF] mt-1">{businesses?.length ?? 0} total</p>
-      </div>
+    <div className="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-8 sm:px-6">
+      <header>
+        <h1 className="text-[24px] font-semibold tracking-[-0.02em]">Businesses</h1>
+        <p className="mt-1 text-[14px] text-muted-foreground">
+          Every business across all agencies. Open one to see its setup, answers and scans, or to rescan it.
+        </p>
+      </header>
+      <Suspense fallback={<ListSkeleton />}>
+        <BusinessList />
+      </Suspense>
+    </div>
+  );
+}
 
-      <div className="bg-white border border-[#E2E8F0] rounded-2xl overflow-hidden" style={{ boxShadow: "0 1px 4px rgba(0,0,0,0.04)" }}>
-        <div className="overflow-x-auto">
-          <table className="w-full text-[12.5px]">
-            <thead>
-              <tr className="border-b border-[#F1F5F9] bg-[#F8FAFD]">
-                {["Business", "Owner", "Domain", "Location", "Competitors", "Prompts", "Last Scan", "Created"].map((h) => (
-                  <th key={h} className="text-left px-4 py-3 text-[10.5px] font-semibold text-[#9CA3AF] uppercase tracking-wider whitespace-nowrap">
-                    {h}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[#F8FAFD]">
-              {(businesses ?? []).map((b) => {
-                const scan = latestScanByBiz[b.id];
-                return (
-                  <tr key={b.id} className="hover:bg-[#F8FAFD] transition-colors">
-                    <td className="px-4 py-3">
-                      <Link
-                        href={`/internal/admin/businesses/${b.id}`}
-                        className="text-[#0866F5] hover:underline font-medium truncate max-w-[160px] block"
-                      >
-                        {b.name}
-                      </Link>
-                      {b.status === "onboarding" && (
-                        <span className="text-[9px] font-semibold text-[#D97706] bg-[#FFFBEB] px-1.5 py-0.5 rounded">onboarding</span>
-                      )}
-                    </td>
-                    <td className="px-4 py-3 text-[#9CA3AF] truncate max-w-[180px]">
-                      {emailMap[b.owner_user_id] ?? b.owner_user_id}
-                    </td>
-                    <td className="px-4 py-3 text-[#6B7280] truncate max-w-[140px]">
-                      {b.domain ?? "—"}
-                    </td>
-                    <td className="px-4 py-3 text-[#9CA3AF] whitespace-nowrap">
-                      {[b.primary_city, b.primary_region, b.primary_country].filter(Boolean).join(", ") || "—"}
-                    </td>
-                    <td className="px-4 py-3 text-[#6B7280] text-center">{compByBiz[b.id] ?? 0}</td>
-                    <td className="px-4 py-3 text-[#6B7280] text-center">{promptByBiz[b.id] ?? 0}</td>
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      {scan ? (
-                        <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${
-                          scan.status === "failed"
-                            ? "text-[#DC2626] bg-[#FEF2F2]"
-                            : "text-[#15803D] bg-[#F0FDF4]"
-                        }`}>
-                          {fmt(scan.created_at)}
-                        </span>
-                      ) : <span className="text-[#D1D5DB]">—</span>}
-                    </td>
-                    <td className="px-4 py-3 text-[#9CA3AF] whitespace-nowrap">{fmt(b.created_at)}</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      </div>
+async function BusinessList() {
+  return <BusinessesTable rows={await listBusinesses()} />;
+}
+
+function ListSkeleton() {
+  return (
+    <div className="flex flex-col gap-2" aria-busy aria-label="Loading businesses">
+      <Skeleton className="h-5 w-48" />
+      <Skeleton className="h-[420px] rounded-md" />
     </div>
   );
 }
