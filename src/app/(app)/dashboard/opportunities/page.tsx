@@ -2,15 +2,18 @@ import { redirect } from "next/navigation";
 import { PageContainer } from "@/components/app/PageContainer";
 import OpportunityCard from "@/components/geo/dashboard/OpportunityCard";
 import { EmptyState } from "@/components/geo/dashboard/ui";
-import { getPrimaryBusiness, getOpportunities } from "@/lib/geo/dashboard-data";
+import { getLiveOpportunities } from "@/modules/insights";
+import { getWorkspace } from "@/modules/workspace";
 
 export const metadata = { title: "Opportunities", robots: { index: false } };
 
 export default async function OpportunitiesPage() {
-  const business = await getPrimaryBusiness();
+  const workspace = await getWorkspace({ next: "/dashboard/opportunities" });
+  const business = workspace.businesses.find((b) => b.id === workspace.activeBusinessId);
   if (!business || business.status === "onboarding") redirect("/dashboard");
 
-  const opportunities = await getOpportunities(business.id);
+  // Google values in the text are filled in live on each view, never stored (D-73).
+  const opportunities = (await getLiveOpportunities(business.id)) ?? [];
   const open = opportunities.filter((o) => o.status !== "dismissed" && o.status !== "resolved");
   const closed = opportunities.filter((o) => o.status === "dismissed" || o.status === "resolved");
 

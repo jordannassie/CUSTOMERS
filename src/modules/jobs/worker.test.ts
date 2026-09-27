@@ -103,3 +103,26 @@ describe("handleWorkerRequest", () => {
     expect(deps.claim).not.toHaveBeenCalled();
   });
 });
+
+describe("why competitors win after a scan (B-51)", () => {
+  it("explains each finished scan, and a failed explanation leaves the job done", async () => {
+    const { deps, finished } = fakeDeps(["a", "b"]);
+    const explained: string[] = [];
+    deps.explain = vi.fn(async (runId: string) => {
+      explained.push(runId);
+      if (explained.length === 2) throw new Error("Claude returned 529");
+    });
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    const summary = await runWorker(60_000, deps);
+    expect(summary).toMatchObject({ done: 2, failed: 0 });
+    expect(explained).toEqual(["r", "r"]);
+    expect(finished.every((f) => f.update.status === "done")).toBe(true);
+  });
+
+  it("does not explain a scan that did not finish", async () => {
+    const { deps } = fakeDeps(["bad-1"]);
+    deps.explain = vi.fn(async () => {});
+    await runWorker(60_000, deps);
+    expect(deps.explain).not.toHaveBeenCalled();
+  });
+});

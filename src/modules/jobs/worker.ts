@@ -1,6 +1,7 @@
 import "server-only";
 // Scan job worker (B-27, MVP_SPEC 6.3, D-42): claims queued jobs, runs them in parallel, and marks each
 // done, queued again with backoff, or failed. The host entry point only checks the secret and calls this.
+import { explainAfterScan } from "@/modules/insights";
 import { ALREADY_FINISHED, runScan, type ScanOutcome } from "@/modules/scanning";
 import { claimScanJobs, finishJob, isWorkerSecret, workerTimeBudgetMs, type ClaimedJob, type JobUpdate } from "./dal";
 
@@ -15,6 +16,8 @@ export type WorkerDeps = {
   run: (jobId: string) => Promise<ScanOutcome>;
   finish: (job: ClaimedJob, update: JobUpdate, now: Date) => Promise<boolean>;
   now: () => Date;
+  /** "Why competitors win" after a finished scan (B-51). Its failure never changes the job. */
+  explain?: (runId: string) => Promise<unknown>;
 };
 
 export type WorkerSummary = {
@@ -32,6 +35,7 @@ const liveDeps: WorkerDeps = {
   run: (jobId) => runScan(jobId),
   finish: finishJob,
   now: () => new Date(),
+  explain: explainAfterScan,
 };
 
 /** How a job ends after one attempt. A thrown error is treated like a scan where every check failed. */
@@ -82,6 +86,13 @@ async function runJob(job: ClaimedJob, deps: WorkerDeps): Promise<"done" | "retr
     // The job stays running; reset_stuck_jobs puts it back in the queue and the open hold resumes it.
     console.error(`scan worker: could not save job ${job.id}: ${errorText(err)}`);
     return "lost";
+  }
+  if (outcome.status === "done" && deps.explain) {
+    try {
+      await deps.explain(outcome.runId);
+    } catch (err) {
+      console.error(`scan worker: could not explain run ${outcome.runId}: ${errorText(err)}`);
+    }
   }
   return update.status === "queued" ? "retrying" : update.status;
 }

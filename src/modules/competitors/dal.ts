@@ -23,6 +23,9 @@ function liveSignals(): FetchSignals {
 // React's cache lives for one server request only, which is all Google allows us to keep (D-73).
 const signalsForRequest = cache((placeId: string) => liveSignals()(placeId));
 
+/** Live Google signals for one place id; kept in memory for the request only (D-73). */
+export const fetchPlaceSignals: FetchSignals = (placeId) => signalsForRequest(placeId);
+
 /** The Competitors page for one of the signed-in agency's businesses; null when it is not theirs. */
 export async function getCompetitorsPage(businessId: string, next: string): Promise<CompetitorsView | null> {
   const { agency } = await requireAgency({ next });
