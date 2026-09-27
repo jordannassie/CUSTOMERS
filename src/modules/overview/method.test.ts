@@ -30,7 +30,7 @@ describe("methodPanel", () => {
 
   it("has no long dashes anywhere in the text", () => {
     const text = JSON.stringify(methodPanel(input, { checkedOn: "2026-11-03", agreement: { openai: 80 } }));
-    expect(text).not.toMatch(/[–—]/);
+    expect(text).not.toMatch(/[\u2013\u2014]/);
   });
 });
 
