@@ -13,6 +13,7 @@ const PUBLIC: Record<string, string> = {
   "src/app/auth/callback/route.ts": "OAuth and email-link callback",
   "src/app/auth/signout/route.ts": "signs out the current session",
   "src/app/api/stripe/webhook/route.ts": "Stripe signature check",
+  "src/app/api/email/unsubscribe/route.ts": "signed unsubscribe token (B-61)",
 };
 
 function walk(dir: string): string[] {

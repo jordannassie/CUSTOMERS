@@ -28,6 +28,8 @@ export const env = createEnv({
 
     RESEND_API_KEY: optional,
     EMAIL_FROM: optional,
+    // Signs unsubscribe links (B-61). Changing it breaks the links in emails already sent.
+    EMAIL_UNSUBSCRIBE_SECRET: z.string().min(32).optional(),
 
     WORKER_SECRET: optional,
     // 600 on a Netlify background function (15-minute limit), 240 on Vercel (D-41, MVP_SPEC 6.3).
@@ -63,6 +65,7 @@ export const env = createEnv({
     STRIPE_PRICE_PRO_MONTHLY: process.env.STRIPE_PRICE_PRO_MONTHLY,
     RESEND_API_KEY: process.env.RESEND_API_KEY,
     EMAIL_FROM: process.env.EMAIL_FROM,
+    EMAIL_UNSUBSCRIBE_SECRET: process.env.EMAIL_UNSUBSCRIBE_SECRET,
     WORKER_SECRET: process.env.WORKER_SECRET,
     WORKER_TIME_BUDGET_SECONDS: process.env.WORKER_TIME_BUDGET_SECONDS,
     ADMIN_EMAILS: process.env.ADMIN_EMAILS,

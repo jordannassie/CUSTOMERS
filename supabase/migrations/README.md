@@ -87,3 +87,4 @@ Applied to the local stack only (customers-dev is unreachable, F-24; live is unt
 - `032_visibility_checks_30d.sql`
 - `033_retry_scan_job.sql`
 - `034_topup_packs.sql` (B-40; then run the Stripe catalog sync for that project, see `src/modules/billing/README.md`)
+- `035_email_log.sql` (B-61; then run `npm run db:types` against that project and check the diff is empty)
