@@ -65,7 +65,7 @@ export function AgencyForm({
         <Label htmlFor="agency-name">Agency name</Label>
         <div className="flex flex-col gap-3 sm:flex-row">
           <Input id="agency-name" value={value} onChange={(e) => setValue(e.target.value)} required maxLength={120} />
-          <Button type="submit" variant="outline" disabled={saving || value.trim() === name}>
+          <Button type="submit" variant="outline" className="w-fit" disabled={saving || value.trim() === name}>
             {saving && <Loader2 className="animate-spin" aria-hidden="true" />}
             Save name
           </Button>
@@ -96,7 +96,7 @@ export function AgencyForm({
               className="sr-only"
               tabIndex={-1}
             />
-            <Button type="button" variant="outline" size="sm" disabled={uploading} onClick={() => fileRef.current?.click()}>
+            <Button type="button" variant="outline" size="sm" className="w-fit" disabled={uploading} onClick={() => fileRef.current?.click()}>
               {uploading ? <Loader2 className="animate-spin" aria-hidden="true" /> : <ImageUp aria-hidden="true" />}
               {logo ? "Replace logo" : "Upload logo"}
             </Button>

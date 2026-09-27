@@ -107,17 +107,18 @@ export function ScanSettingsForm({ businessId, models, frequency, activeQuestion
               ))}
             </div>
           </fieldset>
-
-          <FormError message={error} />
-          <div>
-            <Button type="submit" disabled={pending || !dirty}>
-              {pending && <Loader2 className="animate-spin" aria-hidden="true" />}
-              Save AI checks
-            </Button>
-          </div>
         </div>
 
         <Estimate before={before} after={after} dirty={dirty} activeQuestions={activeQuestions} models={chosen.length} plan={plan} questionsHref={questionsHref} />
+
+        {/* Below the estimate, so on a phone the credit effect is seen before the button. */}
+        <div className="flex flex-col gap-3 border-t border-border p-5 md:col-span-2">
+          <FormError message={error} />
+          <Button type="submit" className="w-fit" disabled={pending || !dirty}>
+            {pending && <Loader2 className="animate-spin" aria-hidden="true" />}
+            Save AI checks
+          </Button>
+        </div>
       </form>
     </Panel>
   );
