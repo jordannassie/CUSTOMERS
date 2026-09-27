@@ -92,7 +92,7 @@ export function RunScanButton({
         id={`run-scan-note-${businessId}`}
         role="status"
         className={cn(
-          "max-w-60 text-right text-xs",
+          "max-w-36 text-right text-xs sm:max-w-60",
           note?.tone === "error" ? "text-low-text" : "text-muted-foreground",
         )}
       >
