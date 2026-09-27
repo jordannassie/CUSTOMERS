@@ -27,7 +27,7 @@
 import "server-only";
 import { NextResponse, type NextRequest } from "next/server";
 import Stripe from "stripe";
-import { requireStripe } from "@/lib/stripe";
+import { getStripe } from "@/modules/billing";
 import { createServiceClient } from "@/lib/supabase/service";
 import { getPlanIdFromStripePrice, type CanonicalPlanId } from "@/config/pricing";
 import { env } from "@/lib/env";
@@ -237,7 +237,7 @@ export async function POST(request: NextRequest) {
 
   let stripe: Stripe;
   try {
-    stripe = requireStripe();
+    stripe = getStripe();
   } catch {
     return NextResponse.json({ error: "Billing not configured." }, { status: 503 });
   }

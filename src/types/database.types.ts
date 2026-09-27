@@ -1044,6 +1044,7 @@ export type Database = {
           name: string
           price_cents: number | null
           stripe_price_id: string | null
+          stripe_product_id: string | null
         }
         Insert: {
           active?: boolean
@@ -1054,6 +1055,7 @@ export type Database = {
           name: string
           price_cents?: number | null
           stripe_price_id?: string | null
+          stripe_product_id?: string | null
         }
         Update: {
           active?: boolean
@@ -1064,6 +1066,7 @@ export type Database = {
           name?: string
           price_cents?: number | null
           stripe_price_id?: string | null
+          stripe_product_id?: string | null
         }
         Relationships: []
       }
@@ -1565,6 +1568,39 @@ export type Database = {
           message?: string
           resolved_at?: string | null
           severity?: string
+        }
+        Relationships: []
+      }
+      topup_packs: {
+        Row: {
+          active: boolean
+          credits: number
+          id: string
+          name: string
+          price_cents: number
+          sort_order: number
+          stripe_price_id: string | null
+          stripe_product_id: string | null
+        }
+        Insert: {
+          active?: boolean
+          credits: number
+          id: string
+          name: string
+          price_cents: number
+          sort_order?: number
+          stripe_price_id?: string | null
+          stripe_product_id?: string | null
+        }
+        Update: {
+          active?: boolean
+          credits?: number
+          id?: string
+          name?: string
+          price_cents?: number
+          sort_order?: number
+          stripe_price_id?: string | null
+          stripe_product_id?: string | null
         }
         Relationships: []
       }
