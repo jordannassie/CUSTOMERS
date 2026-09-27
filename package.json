@@ -19,7 +19,7 @@
     "db:drift": "bash scripts/db-drift.sh",
     "prepare": "husky",
     "scan": "bash scripts/scan-payload.sh && bash scripts/scan-secrets.sh --rev HEAD",
-    "test": "bash scripts/test-db-reset.sh && vitest run --project unit",
+    "test": "bash scripts/test-db-reset.sh && vitest run --project unit --project unit-queue",
     "test:e2e": "playwright test",
     "evals": "vitest run --project evals",
     "evals:ai": "vitest run --project evals-ai --passWithNoTests",

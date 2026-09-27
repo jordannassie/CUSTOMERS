@@ -9,6 +9,7 @@ import { autofill, type AutofillClients, type AutofillRequest } from "./autofill
 import { createBusinessExtractor, ExtractError } from "./extract";
 import { createFirecrawlScraper } from "./firecrawl";
 import { fixturePlaces } from "./competitor-fixtures";
+import { fixtureAutofillClients, fixtureQuestionModel } from "./dev-fixtures";
 import { createCompetitorPlaces, type CompetitorCandidate, type CompetitorPlaces } from "./competitor-places";
 import {
   CLEARED_PLACES_COLUMNS,
@@ -28,8 +29,13 @@ import type { LibraryEntry } from "./question-rules";
 import type { QuestionClients } from "./questions";
 import type { AutofillResult } from "./schema";
 
+// Fixture modes are refused in production so a stray flag can never show made-up data to users.
+// PLACES_FIXTURES covers the competitor step, ONBOARDING_FIXTURES auto-fill and question picking.
+const onboardingFixtures = () => env.ONBOARDING_FIXTURES === "true" && env.NODE_ENV !== "production";
+
 // A missing key turns that source off; auto-fill then works with whatever is left.
 export function liveAutofillClients(): AutofillClients {
+  if (onboardingFixtures()) return fixtureAutofillClients;
   return {
     scrape: env.FIRECRAWL_API_KEY ? createFirecrawlScraper(env.FIRECRAWL_API_KEY) : async () => [],
     searchPlaces: env.GOOGLE_PLACES_API_KEY ? createPlacesSearch(env.GOOGLE_PLACES_API_KEY) : async () => [],
@@ -61,10 +67,8 @@ export function liveQuestionClients(): QuestionClients {
   const missing = async (): Promise<never> => {
     throw new Error("ANTHROPIC_API_KEY is not set");
   };
-  return {
-    loadLibrary: loadQuestionLibrary,
-    model: env.ANTHROPIC_API_KEY ? createQuestionModel(env.ANTHROPIC_API_KEY) : { pick: missing, write: missing },
-  };
+  const model = env.ANTHROPIC_API_KEY ? createQuestionModel(env.ANTHROPIC_API_KEY) : { pick: missing, write: missing };
+  return { loadLibrary: loadQuestionLibrary, model: onboardingFixtures() ? fixtureQuestionModel : model };
 }
 
 /**
@@ -106,7 +110,6 @@ export async function runBusinessAutofill(
   return run.result;
 }
 
-// Fixture mode is refused in production so a stray flag can never show made-up competitors to users.
 export function liveCompetitorPlaces(): CompetitorPlaces {
   if (env.PLACES_FIXTURES === "true" && env.NODE_ENV !== "production") return fixturePlaces;
   if (env.GOOGLE_PLACES_API_KEY) return createCompetitorPlaces(env.GOOGLE_PLACES_API_KEY);

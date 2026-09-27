@@ -174,7 +174,7 @@ export const CANONICAL_PLANS: Record<CanonicalPlanId, CanonicalPlan> = {
       "3 months history",
     ],
     cta: "Start 14-day trial",
-    ctaHref: "/signup",
+    ctaHref: "/signup?plan=starter",
   },
 
   growth: {
@@ -274,7 +274,7 @@ export const CANONICAL_PLANS: Record<CanonicalPlanId, CanonicalPlan> = {
       "Priority support",
     ],
     cta: "Start 14-day trial",
-    ctaHref: "/signup",
+    ctaHref: "/signup?plan=pro",
   },
 
   enterprise: {

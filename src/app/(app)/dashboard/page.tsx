@@ -1,6 +1,5 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
-import OnboardingWizard from "@/components/geo/OnboardingWizard";
+import { notFound, redirect } from "next/navigation";
 import { RunScanButton } from "@/components/app/RunScanButton";
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ModelScores } from "@/components/overview/ModelScores";
@@ -13,19 +12,12 @@ import { getWorkspace } from "@/modules/workspace";
 
 export const metadata = { title: "Overview", robots: { index: false } };
 
-type Params = { my?: string | string[]; them?: string | string[] };
-
-const text = (v: string | string[] | undefined) => (typeof v === "string" ? v.trim() : "");
-
 // B-49, MVP_SPEC 8.1: score, trend, per-model scores, what to fix first, and Run scan.
-export default async function OverviewPage({ searchParams }: { searchParams: Promise<Params> }) {
+export default async function OverviewPage() {
   const workspace = await getWorkspace({ next: "/dashboard" });
   const business = workspace.businesses.find((b) => b.id === workspace.activeBusinessId);
-  if (!business || business.status === "onboarding") {
-    // Comparison state carried over from /compare through signup.
-    const params = await searchParams;
-    return <OnboardingWizard initialUrl={text(params.my)} initialCompetitor={text(params.them)} />;
-  }
+  // Setup is the onboarding wizard's job (B-36); it resumes where the user stopped.
+  if (!business || business.status === "onboarding") redirect("/onboarding");
 
   const [overview, scanStatus] = await Promise.all([
     getOverview(business.id),

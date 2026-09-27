@@ -22,6 +22,8 @@ export default defineConfig({
     command: `npm run dev -- -p ${port}`,
     url: baseURL,
     reuseExistingServer: !process.env.CI,
+    // Onboarding answers from fixtures, never Firecrawl, Google or Claude (B-36).
+    env: { ONBOARDING_FIXTURES: "true", PLACES_FIXTURES: "true" },
     timeout: 180_000,
   },
 });
