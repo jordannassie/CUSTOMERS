@@ -27,6 +27,9 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 const FREQUENCY_DAYS: Record<string, number> = { daily: 1, weekly: 7, monthly: 30 };
 const PROVIDERS: ProviderId[] = ["openai", "anthropic", "perplexity"];
 
+/** The skip reason when a job's hold is already closed: an earlier run finished it. */
+export const ALREADY_FINISHED = "This scan already finished.";
+
 export type ScanDeps = {
   /** Live adapters by default; tests pass mocks. Null means the provider has no API key. */
   checkRunner: (provider: ProviderId) => RunCheck | null;
@@ -72,7 +75,7 @@ export async function runScan(jobId: string, overrides: Partial<ScanDeps> = {}):
     if (err instanceof InsufficientCreditsError) return { status: "skipped", reason: REASONS.outOfCredits };
     throw err;
   }
-  if (!(await isHoldOpen(holdId))) return { status: "skipped", reason: "This scan already finished." };
+  if (!(await isHoldOpen(holdId))) return { status: "skipped", reason: ALREADY_FINISHED };
 
   const models = target.business.models.filter(isProvider);
   const run = await findOrCreateRun({ jobId, businessId: job.businessId, provider: models.join(",") });

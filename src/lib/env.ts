@@ -31,6 +31,8 @@ export const env = createEnv({
 
     GEO_CRON_SECRET: optional,
     WORKER_SECRET: optional,
+    // 600 on a Netlify background function (15-minute limit), 240 on Vercel (D-41, MVP_SPEC 6.3).
+    WORKER_TIME_BUDGET_SECONDS: z.coerce.number().int().positive().default(600),
 
     ADMIN_EMAILS: optional,
 
@@ -64,6 +66,7 @@ export const env = createEnv({
     EMAIL_FROM: process.env.EMAIL_FROM,
     GEO_CRON_SECRET: process.env.GEO_CRON_SECRET,
     WORKER_SECRET: process.env.WORKER_SECRET,
+    WORKER_TIME_BUDGET_SECONDS: process.env.WORKER_TIME_BUDGET_SECONDS,
     ADMIN_EMAILS: process.env.ADMIN_EMAILS,
     BILLING_ENABLED: process.env.BILLING_ENABLED,
     BETA_FREE_ACCESS: process.env.BETA_FREE_ACCESS,

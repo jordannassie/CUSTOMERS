@@ -3,8 +3,12 @@
   publish   = ".next"
   functions = "netlify/functions"
 
+# Scan worker (B-27), bundled by scripts/build-worker.mjs. Test agencies read recorded answers at run time (D-61).
+[functions."scan-worker-background"]
+  included_files = ["tests/fixtures/ai-answers/**"]
+
 [build.environment]
-  # Node version — bump to 22+ when your host supports it
+  # Node version: bump to 22+ when your host supports it
   NODE_VERSION = "20"
 
 [[plugins]]
