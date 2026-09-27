@@ -81,3 +81,60 @@ export async function retryFailedJob(jobId: string): Promise<RetryResult> {
   if (error) throw new Error(`Could not queue the scan job again: ${error.message}`);
   return data as RetryResult;
 }
+
+// Above the scheduled scans (priority 0), so a manual scan is claimed first (MVP_SPEC 6.4).
+export const MANUAL_PRIORITY = 100;
+
+export type LatestJob = { status: "queued" | "running" | "done" | "failed"; finishedAt: string | null };
+
+/** The business's agency, or null when the business does not exist. */
+export async function businessAgencyId(businessId: string): Promise<string | null> {
+  const { data, error } = await createServiceClient()
+    .from("businesses")
+    .select("agency_id")
+    .eq("id", businessId)
+    .maybeSingle();
+  if (error) throw new Error(`Could not load the business: ${error.message}`);
+  return data?.agency_id ?? null;
+}
+
+/** Returns false when the business already has a queued or running job (the D-55 unique index). */
+export async function insertManualJob(agencyId: string, businessId: string): Promise<boolean> {
+  const { error } = await createServiceClient()
+    .from("scan_jobs")
+    .insert({ agency_id: agencyId, business_id: businessId, priority: MANUAL_PRIORITY });
+  if (error?.code === "23505") return false;
+  if (error) throw new Error(`Could not queue the scan: ${error.message}`);
+  return true;
+}
+
+export async function latestJob(businessId: string): Promise<LatestJob | null> {
+  const { data, error } = await createServiceClient()
+    .from("scan_jobs")
+    .select("status, finished_at")
+    .eq("business_id", businessId)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error) throw new Error(`Could not load the scan status: ${error.message}`);
+  return data && { status: data.status as LatestJob["status"], finishedAt: data.finished_at };
+}
+
+/**
+ * Starts the hosted worker now instead of at the next scheduled minute. Returns false when no WORKER_URL
+ * is set. A Netlify background function answers 202 at once, so this does not wait for the scan.
+ */
+export async function postToWorker(): Promise<boolean> {
+  if (!env.WORKER_URL || !env.WORKER_SECRET) return false;
+  const res = await fetch(env.WORKER_URL, {
+    method: "POST",
+    headers: { "x-worker-secret": env.WORKER_SECRET },
+    signal: AbortSignal.timeout(10_000),
+  });
+  if (!res.ok) throw new Error(`Worker answered ${res.status}`);
+  return true;
+}
+
+export function runWorkerInProcess(): boolean {
+  return env.WORKER_IN_PROCESS === "true";
+}

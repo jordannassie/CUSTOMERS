@@ -32,6 +32,10 @@ export const env = createEnv({
     WORKER_SECRET: optional,
     // 600 on a Netlify background function (15-minute limit), 240 on Vercel (D-41, MVP_SPEC 6.3).
     WORKER_TIME_BUDGET_SECONDS: z.coerce.number().int().positive().default(600),
+    // Run scan (B-29) posts here to start the worker at once; unset leaves the job to the every-minute schedule.
+    WORKER_URL: z.url().optional(),
+    // Local dev only: with no WORKER_URL, run the worker inside the dev server after Run scan.
+    WORKER_IN_PROCESS: flag,
 
     ADMIN_EMAILS: optional,
 
@@ -65,6 +69,8 @@ export const env = createEnv({
     EMAIL_FROM: process.env.EMAIL_FROM,
     WORKER_SECRET: process.env.WORKER_SECRET,
     WORKER_TIME_BUDGET_SECONDS: process.env.WORKER_TIME_BUDGET_SECONDS,
+    WORKER_URL: process.env.WORKER_URL,
+    WORKER_IN_PROCESS: process.env.WORKER_IN_PROCESS,
     ADMIN_EMAILS: process.env.ADMIN_EMAILS,
     BILLING_ENABLED: process.env.BILLING_ENABLED,
     BETA_FREE_ACCESS: process.env.BETA_FREE_ACCESS,
