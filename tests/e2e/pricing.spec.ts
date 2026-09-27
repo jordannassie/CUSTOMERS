@@ -58,7 +58,7 @@ test("marketing pages make no removed claims", async ({ page }) => {
   for (const path of ["/pricing", "/agency", "/contact"]) {
     await page.goto(path);
     const text = await page.locator("main").innerText();
-    expect(text).not.toMatch(/Gemini|Google AI|ChatGPT Ads|14-day|[–—]/);
+    expect(text).not.toMatch(/Gemini|Google AI|ChatGPT Ads|14-day|[\u2013\u2014]/);
   }
   await expect(page.getByLabel("What is it about?").locator("option")).toHaveText([
     "Checking my business in AI answers",

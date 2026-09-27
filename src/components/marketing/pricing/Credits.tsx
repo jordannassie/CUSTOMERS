@@ -29,7 +29,7 @@ export function Credits({ plans, packs }: { plans: PublicPlan[]; packs: PublicPa
           </p>
         </div>
 
-        <figure className="rounded-md border border-border bg-surface">
+        <figure className="self-start rounded-md border border-border bg-surface">
           <figcaption className="border-b border-border px-5 py-4">
             <p className="text-sm font-semibold">What a business uses in a month</p>
             <p className="mt-1 text-[13px] text-muted-foreground">

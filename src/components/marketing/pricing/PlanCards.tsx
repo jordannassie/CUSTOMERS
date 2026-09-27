@@ -5,7 +5,6 @@ import { formatCount, formatUsd, type PublicPlan } from "@/modules/billing/forma
 
 function limits(plan: PublicPlan): string[] {
   return [
-    `${formatCount(plan.monthlyCredits)} credits a month for each business`,
     plan.maxQuestions ? `Up to ${plan.maxQuestions} customer questions per business` : null,
     plan.maxCompetitors ? `Up to ${plan.maxCompetitors} competitors per business` : null,
     "ChatGPT, Claude and Perplexity, all with web search",
