@@ -19,12 +19,19 @@ export async function postJson(
     body: JSON.stringify(body),
     signal: AbortSignal.timeout(deps.timeoutMs ?? SOURCE_TIMEOUT_MS),
   });
-  const text = await res.text();
-  let parsed: unknown = null;
+  return { status: res.status, body: parseBody(await res.text()) };
+}
+
+function parseBody(text: string): unknown {
   try {
-    parsed = text ? JSON.parse(text) : null;
+    return text ? JSON.parse(text) : null;
   } catch {
-    parsed = null;
+    return null;
   }
-  return { status: res.status, body: parsed };
+}
+
+export async function getJson(url: string, headers: Record<string, string>, deps: HttpDeps = {}): Promise<JsonResponse> {
+  const doFetch = deps.fetch ?? fetch;
+  const res = await doFetch(url, { headers, signal: AbortSignal.timeout(deps.timeoutMs ?? SOURCE_TIMEOUT_MS) });
+  return { status: res.status, body: parseBody(await res.text()) };
 }

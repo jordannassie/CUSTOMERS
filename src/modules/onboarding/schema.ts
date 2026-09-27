@@ -52,3 +52,21 @@ export type AutofillResult = {
   /** A friendly line shown above the form, or null when everything went normally. */
   note: string | null;
 };
+
+// Place ids are opaque but URL-safe; anything else would change the Places request path.
+export const placeIdPattern = /^[A-Za-z0-9_-]{10,300}$/;
+
+const competitorName = z.string().trim().min(1).max(120);
+
+export const competitorLookupInput = z.object({
+  businessId: z.uuid(),
+  name: competitorName.min(2),
+});
+
+export const saveCompetitorsInput = z.object({
+  businessId: z.uuid(),
+  // The plan limit is checked in the action; this only stops absurd payloads.
+  competitors: z
+    .array(z.object({ name: competitorName, placesId: z.string().regex(placeIdPattern).nullable() }))
+    .max(50),
+});
