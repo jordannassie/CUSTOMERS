@@ -15,9 +15,13 @@ type Price = {
 // Source: https://platform.claude.com/docs/en/about-claude/pricing, read 2026-09-27.
 // claude-haiku-4-5: $1 input, $0.10 cache hits, $5 output per 1M tokens.
 // Web search: $10 / 1k searches, results billed as input tokens; failed searches are not billed.
+// Source: https://docs.perplexity.ai/docs/agent-api/models and .../agent-api/tools/web-search, read 2026-09-27.
+// perplexity/sonar: $0.25 input, $0.0625 cache read, $2.50 output per 1M tokens.
+// web_search (search_type "web"): $2.50 / 1k invocations, separate from model tokens.
 export const PRICES: Record<CheckModel, Price> = {
   "gpt-4.1-mini": { inputPerMTok: 0.4, cachedInputPerMTok: 0.1, outputPerMTok: 1.6, searchCallUsd: 0.01 },
   "claude-haiku-4-5": { inputPerMTok: 1, cachedInputPerMTok: 0.1, outputPerMTok: 5, searchCallUsd: 0.01 },
+  "perplexity/sonar": { inputPerMTok: 0.25, cachedInputPerMTok: 0.0625, outputPerMTok: 2.5, searchCallUsd: 0.0025 },
 };
 
 export function checkCostUsd(model: CheckModel, usage: CheckUsage): number {
