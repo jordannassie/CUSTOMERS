@@ -12,10 +12,9 @@ import {
   type TrendPoint,
   type VisibilityScore,
 } from "../scoring";
-import { answerKeys } from "./answer-keys";
 import { questionAppearances } from "./questions";
 
-// 30-day score aggregates (B-30 step 2), read with a plain query until a SQL view lands after B-27.
+// 30-day score aggregates (B-30 step 2) from the visibility_checks_30d view (migration 032).
 const PAGE = 1000;
 const LAST_CHECKS_PER_QUESTION = 10;
 const DAY_MS = 86_400_000;
@@ -88,41 +87,29 @@ export async function loadScoreReport(agencyId: string, businessId: string, now:
 }
 
 async function readChecks(businessId: string, since: Date): Promise<ScoreCheck[]> {
-  const rows = [];
+  const checks: ScoreCheck[] = [];
   for (let from = 0; ; from += PAGE) {
     const { data, error } = await createServiceClient()
-      .from("visibility_results")
-      .select("id, provider, tracked_prompt_id, created_at, business_mentioned, competitors_mentioned, cached")
+      .from("visibility_checks_30d")
+      .select("id, provider, question_id, checked_at, business_mentioned, competitors, answer_key")
       .eq("business_id", businessId)
-      .gt("created_at", since.toISOString())
-      .order("created_at")
+      .gt("checked_at", since.toISOString())
+      .order("checked_at")
       .order("id")
       .range(from, from + PAGE - 1);
     if (error) throw new Error(`Scores: could not read checks: ${error.message}`);
-    rows.push(...data);
+    // View columns are typed nullable, but the underlying columns are not null.
+    for (const r of data) {
+      checks.push({
+        provider: r.provider as ProviderId,
+        questionId: r.question_id!,
+        checkedAt: new Date(r.checked_at!),
+        mentioned: r.business_mentioned!,
+        competitorsMentioned: r.competitors ?? [],
+        answerKey: r.answer_key!,
+      });
+    }
     if (data.length < PAGE) break;
   }
-  const saved = rows.map((r) => ({
-    id: r.id,
-    provider: r.provider,
-    // Old results may have no question; they still count toward the score as one cluster.
-    questionId: r.tracked_prompt_id ?? "none",
-    checkedAt: new Date(r.created_at),
-    cached: r.cached,
-  }));
-  const keys = answerKeys(saved);
-  return rows.map((r, i) => ({
-    provider: r.provider as ProviderId,
-    questionId: saved[i].questionId,
-    checkedAt: saved[i].checkedAt,
-    mentioned: r.business_mentioned,
-    competitorsMentioned: competitorNames(r.competitors_mentioned),
-    answerKey: keys.get(r.id)!,
-  }));
-}
-
-// Stored by check.ts as [{ name, position }]; anything else counts as no competitor named.
-function competitorNames(value: unknown): string[] {
-  if (!Array.isArray(value)) return [];
-  return value.flatMap((c) => (c && typeof c === "object" && typeof c.name === "string" ? [c.name] : []));
+  return checks;
 }

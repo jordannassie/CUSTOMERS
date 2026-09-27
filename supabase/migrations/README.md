@@ -40,3 +40,48 @@ supabase migration repair --linked --status applied 001 002 003 004 005 006 007 
 ```
 
 `015` is marked applied even though live never ran it; `020` puts live's own trigger functions back, so the result is the same.
+
+## Scan schedules (B-28, MVP_SPEC 6.2)
+
+Migration `029` enables `pg_cron` and `pg_net` and adds these jobs (UTC). Check them with `select jobname, schedule, command from cron.job;` or, from the app, `rpc('cron_job_status')` (service role only, `030`).
+
+| Job | When | Runs |
+|---|---|---|
+| `enqueue-due-scans` | 02:00 daily | `enqueue_due_scans(false)`: a queued job for each business due today whose agency has credits and is not past due, canceled, suspended or deleted |
+| `call-scan-worker` | every minute | `call_scan_worker()`: pg_net POST to the worker with `x-worker-secret`, only when a job is waiting |
+| `reset-stuck-jobs` | every 10 minutes | `reset_stuck_jobs()` (B-27) |
+| `expire-grants` | 01:00 daily | `expire_grants()` (B-13) |
+| `purge-cron-history` | 03:30 daily | deletes pg_cron run history older than 14 days |
+
+### Worker URL and secret (Vault, set by hand per project)
+
+The URL and secret are never in a migration. Until they are set, `call_scan_worker()` sends nothing. Run once in the SQL editor of each project, with the same secret as that host's `WORKER_SECRET` env var:
+
+```sql
+select vault.create_secret('https://<host>/.netlify/functions/scan-worker-background', 'scan_worker_url');
+select vault.create_secret('<WORKER_SECRET value>', 'scan_worker_secret');
+```
+
+To change one later: `select vault.update_secret((select id from vault.secrets where name = 'scan_worker_url'), '<new value>');`
+
+Check the calls: `select id, status_code, left(content, 200), created from net._http_response order by created desc limit 5;`
+
+### Before go-live
+
+- The worker URL points at the `mvp` staging deploy (`https://mvp--<netlify-site>.netlify.app/.netlify/functions/scan-worker-background`).
+- The daily enqueue passes `false`, so only `is_test` agencies are scanned. Real customers are never scanned or charged by unreleased code.
+
+### Go-live switch (B-80)
+
+1. Point the URL at production: `select vault.update_secret((select id from vault.secrets where name = 'scan_worker_url'), 'https://<production domain>/.netlify/functions/scan-worker-background');`
+2. Let the daily enqueue include real agencies: `select cron.schedule('enqueue-due-scans', '0 2 * * *', 'select public.enqueue_due_scans(true)');`
+3. Check: `select command from cron.job where jobname = 'enqueue-due-scans';` shows `(true)`.
+
+## Pending for customers-dev and live
+
+Applied to the local stack only (customers-dev is unreachable, F-24; live is untouched until go-live). Apply in order, after a backup, then set the Vault secrets above:
+
+- `029_scan_schedules.sql`
+- `030_cron_job_status.sql`
+- `031_scan_frequency_next_scan.sql`
+- `032_visibility_checks_30d.sql`
