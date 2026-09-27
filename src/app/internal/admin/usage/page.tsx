@@ -15,9 +15,8 @@ type Props = { searchParams: Promise<{ days?: string | string[]; test?: string |
 
 const BASE = "/internal/admin/usage";
 
-export default async function AdminUsagePage({ searchParams }: Props) {
-  await requireAdmin({ next: BASE });
-
+// The admin check runs inside Suspense too: awaiting it at the top would block every period change.
+export default function AdminUsagePage({ searchParams }: Props) {
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-8 sm:px-6">
       <header>
@@ -34,6 +33,7 @@ export default async function AdminUsagePage({ searchParams }: Props) {
 }
 
 async function LiveUsage({ searchParams }: Props) {
+  await requireAdmin({ next: BASE });
   const params = await searchParams;
   const days = periodFilter.parse(params.days);
   const includeTest = includeTestFilter.parse(params.test);

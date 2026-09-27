@@ -8,9 +8,8 @@ export const metadata = { title: "Scans" };
 
 type Props = { searchParams: Promise<{ status?: string | string[] }> };
 
-export default async function AdminScansPage({ searchParams }: Props) {
-  await requireAdmin({ next: "/internal/admin/scans" });
-
+// The admin check runs inside Suspense too: awaiting it at the top would block every filter change.
+export default function AdminScansPage({ searchParams }: Props) {
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-8 sm:px-6">
       <header>
@@ -27,6 +26,7 @@ export default async function AdminScansPage({ searchParams }: Props) {
 }
 
 async function LiveScans({ searchParams }: Props) {
+  await requireAdmin({ next: "/internal/admin/scans" });
   const status = scanFilter.parse((await searchParams).status);
   return <ScansList list={await listScanJobs(status)} status={status} />;
 }

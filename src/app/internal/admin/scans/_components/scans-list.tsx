@@ -80,13 +80,13 @@ export default function ScansList({ list, status }: { list: AdminScanList; statu
                       <StatusBadge status={row.status} />
                     </TableCell>
                     <TableCell>
-                      <ModelList models={row.models} />
+                      <ModelList models={row.models} className="flex-nowrap" />
                     </TableCell>
                     <TableCell className="tabular text-right">{row.creditsCharged}</TableCell>
                     <TableCell className="tabular text-right">{usd(row.costUsd) || <Dash />}</TableCell>
                     <TableCell className="tabular text-right">{formatDuration(row.durationMs) || <Dash />}</TableCell>
                     <TableCell className="tabular whitespace-nowrap text-muted-foreground">{when(row.createdAt)}</TableCell>
-                    <TableCell className="max-w-[260px]">
+                    <TableCell className="max-w-[240px]">
                       {row.error ? (
                         <p title={row.error} className="line-clamp-2 whitespace-normal text-low-text">
                           {row.error}

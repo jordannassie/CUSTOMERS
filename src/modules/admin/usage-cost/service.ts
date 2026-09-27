@@ -129,9 +129,10 @@ export function buildReport(input: {
       const agencyCredits = creditsByAgency.get(id) ?? 0;
       const agencyCost = costByAgency.get(id) ?? 0;
       const info = id ? input.agencies.get(id) : undefined;
+      // A deleted account's ledger rows lose their agency (MVP_SPEC 23).
       return {
         id,
-        name: info?.name ?? (id ? "Deleted agency" : "No agency"),
+        name: info?.name ?? "Deleted accounts",
         isTest: info?.isTest ?? false,
         credits: agencyCredits,
         costUsd: agencyCost,

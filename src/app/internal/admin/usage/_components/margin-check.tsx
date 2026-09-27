@@ -77,7 +77,7 @@ function ModelRow({ m, creditPrice }: { m: ModelMargin; creditPrice: number | nu
         >
           <div className={cn("h-full rounded-xs", verdict.bar)} style={{ width: `${share * 100}%` }} />
         </div>
-        <dl className="grid grid-cols-2 gap-x-4 gap-y-1 text-[13px] sm:grid-cols-4">
+        <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-[13px] sm:grid-cols-4">
           <Fact label="Cost per check" value={money(m.costPerCheck)} />
           <Fact label="Cost per API call" value={money(m.costPerCall)} />
           <Fact label="Checks" value={count(m.checks)} />
@@ -97,7 +97,7 @@ function ModelRow({ m, creditPrice }: { m: ModelMargin; creditPrice: number | nu
 
 function Fact({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex justify-between gap-2 sm:block">
+    <div>
       <dt className="text-muted-foreground">{label}</dt>
       <dd className="tabular font-medium">{value || "-"}</dd>
     </div>
