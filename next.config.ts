@@ -30,6 +30,7 @@ const nextConfig: NextConfig = {
       { source: "/dashboard/direct-agent", destination: "/dashboard", permanent: true },
       { source: "/dashboard/agent-readiness", destination: "/dashboard", permanent: true },
       { source: "/dashboard/settings", destination: "/settings", permanent: true },
+      { source: "/dashboard/competitors", destination: "/competitors", permanent: true },
       {
         source: "/book",
         destination: "https://calendar.app.google/muM2Kqc8oYnWBPXXA",

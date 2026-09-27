@@ -3,10 +3,10 @@ import { cn } from "cn";
 
 // Google's rule for Places data shown without a map: the words "Google Maps", unchanged, untranslated
 // and on one line, in the same container as the data (MVP_SPEC 26).
-export function GoogleAttribution({ className }: { className?: string }) {
+export function GoogleAttribution({ className, what = "Ratings and addresses" }: { className?: string; what?: string }) {
   return (
     <p className={cn("text-xs text-muted-foreground", className)}>
-      Ratings and addresses from{" "}
+      {what} from{" "}
       <span translate="no" className="notranslate whitespace-nowrap font-[Roboto,sans-serif] font-normal">
         Google Maps
       </span>
