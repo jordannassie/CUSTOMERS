@@ -6,16 +6,20 @@ Rules set by the user on 2026-09-26: 3 worker sessions at once; the leader revie
 
 ## In progress
 
-| Task | Worker pane | Worktree | Dev port | PR |
-|---|---|---|---|---|
-| B-71 New homepage | 184 | CUSTOMERS-B71 | 3006 | #28 (draft) |
-| B-11 Core tables (only session changing migrations) | 186 | CUSTOMERS-B11 | 3008 | not yet |
+Five worker sessions at once (raised from 3 on 2026-09-27).
 
-Next when a slot frees: B-12 after B-11; B-61 after B-11. B-24 waits for eval labelling (F-04).
+| Task | Worker pane | Worktree | PR |
+|---|---|---|---|
+| B-29 Manual Run scan | 212 | CUSTOMERS-B29 | #57 (rebasing) |
+| B-31 Test mode | 211 | CUSTOMERS-B31 | #58 (fixing CI flake) |
+| Admin layout fix | 215 | CUSTOMERS-FIXADMIN | not yet |
+| B-40 Stripe setup (mocked, no Stripe calls) | 216 | CUSTOMERS-B40 | not yet |
+| B-34 Business auto-fill (mocked) | 217 | CUSTOMERS-B34 | not yet |
 
 ## Done
 
-B-06 (#22, main), B-07 (#25, main), B-08 (#23, mvp), B-09 (#21, mvp), B-10 (#27, main), B-70 (#26, mvp). Main synced into mvp in #29.
+Into main: B-06, B-07, B-10, B-11, B-12, B-13. B-24 code (#32), open for labelling.
+Into mvp: B-08, B-09, B-14 to B-17, B-20 to B-23, B-26 to B-28, B-30, B-48, B-55, B-56, B-64, B-66 to B-68, B-70, B-71, B-73. B-25 code (#49), open for labelling.
 
 Open questions for people are in [FLAGS.md](./FLAGS.md).
 
@@ -33,4 +37,6 @@ Open questions for people are in [FLAGS.md](./FLAGS.md).
 
 ## Migrations applied to customers-dev but not yet to live
 
-None yet.
+021_core_tables, 022_credit_tables, 023_credit_functions (applied by B-13 after a backup).
+
+Not yet on customers-dev either (F-24): 024_legacy_data_columns, 025_backfill_existing_data (on mvp).

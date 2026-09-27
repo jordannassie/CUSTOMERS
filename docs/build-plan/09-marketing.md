@@ -24,7 +24,7 @@ Phase 9 · M · Depends on: B-09 · Blocked by Jordan: no · MVP_SPEC 12, D-52, 
 ---
 
 ### B-71 New homepage
-- [ ] Done
+- [x] Done (PR #28, merged into mvp)
 
 Phase 9 · L · Depends on: B-70 · Blocked by Jordan: no · MVP_SPEC 12.2, D-34, D-52 · Branch: `task/B-71-new-homepage` → `mvp`
 
@@ -65,7 +65,7 @@ Phase 9 · M · Depends on: B-70, B-40 · Blocked by Jordan: final prices (D-21)
 ---
 
 ### B-73 Free compare tool made honest
-- [ ] Done
+- [x] Done (PR #53, merged into mvp)
 
 Phase 9 · M · Depends on: B-70, B-22 · Blocked by Jordan: no · MVP_SPEC 12.3 · Branch: `task/B-73-free-compare-tool-made-honest` → `mvp`
 

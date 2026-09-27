@@ -7,7 +7,7 @@ All pages: server components reading through each module's `dal.ts`; mutations t
 ---
 
 ### B-48 App shell
-- [ ] Done
+- [x] Done (PR #43, merged into mvp)
 
 Phase 6 · M · Depends on: B-09, B-15, B-13 · Blocked by Jordan: no · MVP_SPEC 8.1, 8.2, D-31, D-33 · Branch: `task/B-48-app-shell` → `mvp`
 
@@ -154,7 +154,7 @@ Phase 6 · M · Depends on: B-49 · Blocked by Jordan: no · MVP_SPEC 8.1 · Bra
 ---
 
 ### B-55 Settings
-- [ ] Done
+- [x] Done (PR #50, merged into mvp)
 
 Phase 6 · M · Depends on: B-48 · Blocked by Jordan: no · MVP_SPEC 8.1 · Branch: `task/B-55-settings` → `mvp`
 
@@ -171,7 +171,7 @@ Phase 6 · M · Depends on: B-48 · Blocked by Jordan: no · MVP_SPEC 8.1 · Bra
 ---
 
 ### B-56 Usage page
-- [ ] Done
+- [x] Done (PR #51, merged into mvp)
 
 Phase 6 · M · Depends on: B-48, B-13 · Blocked by Jordan: no · MVP_SPEC 8.2, D-33 · Branch: `task/B-56-usage-page` → `mvp`
 
