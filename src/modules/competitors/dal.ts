@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { requireAgency } from "@/modules/auth";
 import { maxCompetitors } from "@/modules/entitlements";
-import { limitMessage } from "@/modules/onboarding";
+import { limitMessage } from "@/modules/onboarding/server";
 import { loadAlsoRecommended, loadScoreReport } from "@/modules/scanning";
 import { fixtureSignals } from "./place-fixtures";
 import { createPlaceSignals, PlacesUnavailable, type FetchSignals } from "./places";

@@ -4,7 +4,7 @@ import "server-only";
 import { env } from "@/lib/env";
 import { createServiceClient } from "@/lib/supabase/service";
 import { requireAgency } from "@/modules/auth";
-import { fetchPlaceSignals } from "@/modules/competitors";
+import { fetchPlaceSignals } from "@/modules/competitors/server";
 import { loadAlsoRecommended } from "@/modules/scanning";
 import type { Opportunity } from "@/types/geo";
 import { explain, type Explanation, type WriteExplanation } from "./explain";

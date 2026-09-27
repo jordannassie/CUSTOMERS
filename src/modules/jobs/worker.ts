@@ -1,7 +1,7 @@
 import "server-only";
 // Scan job worker (B-27, MVP_SPEC 6.3, D-42): claims queued jobs, runs them in parallel, and marks each
 // done, queued again with backoff, or failed. The host entry point only checks the secret and calls this.
-import { explainAfterScan } from "@/modules/insights";
+import { explainAfterScan } from "@/modules/insights/server";
 import { ALREADY_FINISHED, runScan, type ScanOutcome } from "@/modules/scanning";
 import { claimScanJobs, finishJob, isWorkerSecret, workerTimeBudgetMs, type ClaimedJob, type JobUpdate } from "./dal";
 
