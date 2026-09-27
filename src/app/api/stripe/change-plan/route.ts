@@ -83,12 +83,5 @@ export async function POST(request: NextRequest) {
     },
   });
 
-  // Optimistic DB update (webhook will confirm)
-  await svc.from("business_billing_items").update({
-    plan_id: planId,
-    price_monthly_cents: plan.priceMonthly,
-    updated_at: new Date().toISOString(),
-  }).eq("business_id", businessId);
-
   return NextResponse.json({ success: true });
 }

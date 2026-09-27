@@ -50,12 +50,7 @@ export async function POST(request: NextRequest) {
     .maybeSingle();
 
   if (!item?.stripe_subscription_item_id) {
-    // No paid subscription — just mark as inactive
-    await svc.from("business_billing_items").update({
-      status: "canceled",
-      updated_at: new Date().toISOString(),
-    }).eq("business_id", businessId);
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ error: "No subscription found for this business." }, { status: 404 });
   }
 
   let stripeClient: ReturnType<typeof getStripe>;
@@ -69,13 +64,6 @@ export async function POST(request: NextRequest) {
   await stripeClient.subscriptionItems.del(item.stripe_subscription_item_id, {
     proration_behavior: "create_prorations",
   });
-
-  // Optimistic update — webhook will confirm
-  await svc.from("business_billing_items").update({
-    status: "canceled",
-    stripe_subscription_item_id: null,
-    updated_at: new Date().toISOString(),
-  }).eq("business_id", businessId);
 
   return NextResponse.json({ success: true });
 }

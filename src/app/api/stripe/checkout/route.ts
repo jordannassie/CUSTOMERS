@@ -10,7 +10,6 @@
  *
  * New user:
  *   Creates Stripe Checkout with 14-day trial, card required.
- *   Webhook creates billing_account + business_billing_item on success.
  *
  * Existing paid account adding first paid business:
  *   Creates a new Checkout session (Stripe will add to the subscription via webhook).
@@ -27,7 +26,7 @@ import {
   type CanonicalPlanId,
   SELF_SERVE_PLAN_IDS,
 } from "@/config/pricing";
-import { getOrCreateBillingAccount } from "@/lib/billing/accounts";
+import { getBillingAccount } from "@/lib/billing/accounts";
 import { env } from "@/lib/env";
 
 export async function POST(request: NextRequest) {
@@ -98,8 +97,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Billing is not configured." }, { status: 503 });
   }
 
-  // Get or create the billing account for this user
-  const billingAccount = await getOrCreateBillingAccount(user!.id);
+  const billingAccount = await getBillingAccount(user!.id);
 
   const baseUrl =
     env.NEXT_PUBLIC_APP_URL ??
@@ -123,13 +121,12 @@ export async function POST(request: NextRequest) {
         business_id: businessId,
         plan_id: planId,
         user_id: user!.id,
-        billing_account_id: billingAccount.id,
       },
     },
   };
 
   // Reuse existing Stripe customer if this account already has one
-  if (billingAccount.stripe_customer_id) {
+  if (billingAccount?.stripe_customer_id) {
     sessionParams.customer = billingAccount.stripe_customer_id;
     // Existing paying customers do NOT get a trial
     if (

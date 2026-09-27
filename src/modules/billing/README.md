@@ -7,6 +7,11 @@ Stripe setup (B-40, MVP_SPEC 11, D-39, D-56).
 | `stripe.ts` | The app's single Stripe client, `getStripe()`, API version pinned to `2026-08-26.dahlia`. Key only from `STRIPE_SECRET_KEY` via `src/lib/env.ts`. |
 | `dal.ts` | Plan prices (`plans`) and top-up packs (`topup_packs`) with their Stripe price IDs. Prices are read from the database, never from code. |
 | `catalog.ts` | Mirrors those rows into Stripe (one product and one current USD price each) and checks the match. |
+| `webhooks.ts` | `processStripeWebhook(rawBody, signature)`: signature check, replay guard (`stripe_webhook_events`), dispatch. Called by `src/app/api/stripe/webhook/route.ts`. |
+| `webhooks/handlers.ts` | One handler per event. Stripe reads, the store and email sending come in as deps, so tests need no Stripe calls. |
+| `webhooks/credits.ts` | Pure: which grants a paid invoice earns (trial, period, proration). |
+| `webhooks/dal.ts` | Agency, `business_subscriptions`, plan and pack reads and writes. Credits only through `grant_credits`. |
+| `webhooks/emails.tsx` | Payment failed and trial ending emails (plain notices until B-62). |
 
 ## Products and prices
 
@@ -33,3 +38,47 @@ STRIPE_CATALOG=1 STRIPE_CATALOG_KEY=rk_test_... npm run stripe:catalog-check    
 The scripts read the database from `.env.local`, refuse a full secret key (`sk_`), and refuse a sandbox key with the live database or a live key with any other database.
 
 **Live (B-40 step 5, Jordan's account, D-40):** repeat steps 2 to 5 in live mode with `rk_live_...` keys against the live database, adding `STRIPE_LIVE=1`.
+
+## Webhook (B-42, MVP_SPEC 11.3)
+
+Endpoint: `POST /api/stripe/webhook`, secret `STRIPE_WEBHOOK_SECRET`. Subscribe the endpoint to these events:
+`checkout.session.completed`, `checkout.session.async_payment_succeeded`, `invoice.paid`, `invoice.payment_failed`,
+`customer.subscription.created`, `customer.subscription.updated`, `customer.subscription.deleted`, `customer.subscription.trial_will_end`.
+
+| Event | What happens |
+|---|---|
+| `checkout.session.completed` | Links the Stripe customer and subscription to the agency. A paid top-up grants its pack's credits (never expire, `source_id` = session ID). |
+| `checkout.session.async_payment_succeeded` | Same as above, for payment methods that finish later. |
+| `invoice.paid` | Grants credits per invoice line (`source_id` = line ID): 100 trial credits on the $0 first invoice (expire at trial end), plan credits per business on each paid period, prorated extra credits for upgrades and added businesses. |
+| `invoice.payment_failed` | Agency and its businesses `past_due` (scheduled scans stop, the banner shows), one email per invoice. |
+| `customer.subscription.created` / `updated` | Reads the current subscription from Stripe (events can arrive out of order), then saves status, trial end, period end and one `business_subscriptions` row per item. A business whose item is gone is canceled and taken off the scan schedule. |
+| `customer.subscription.deleted` | Agency and all its businesses `canceled`. |
+| `customer.subscription.trial_will_end` | Trial ending email. |
+
+Rules:
+- A handler that throws returns 500 and is recorded with its error; Stripe's retry runs it again. A processed event returns 200 with `duplicate: true`.
+- Credits change only through `grant_credits`, keyed by the Stripe line or session ID, so a replay (or two copies at once) grants once.
+- `suspended` and `deleted` agencies (set by an admin) are never changed by Stripe events.
+- An event for a customer no agency is linked to returns 500 until `checkout.session.completed` links it.
+
+What checkout (B-41, B-43, B-44) must send:
+- Checkout Session `metadata.agency_id` (or `client_reference_id`), and `subscription_data.metadata.agency_id`.
+- Each subscription item `metadata.business_id`. Items without it only update the row already linked to that item.
+- Top-ups: `mode: "payment"`, `metadata.kind = "topup"`, `metadata.topup_pack_id` (a `topup_packs.id`).
+- Plans are matched by product (`cd_plan_<id>` or `plans.stripe_product_id`), so older prices of the same plan still grant.
+- The app key also needs Subscriptions Read and Invoices Read (webhook reads the current subscription and, for invoices with more than one page of lines, the lines).
+
+Stripe CLI check (after the sandbox exists, B-01 and B-40 first-time setup):
+
+```
+stripe listen --forward-to https://<preview>.netlify.app/api/stripe/webhook   # prints the whsec_ secret for the preview
+stripe trigger checkout.session.completed
+stripe trigger customer.subscription.created
+stripe trigger invoice.paid
+stripe trigger invoice.payment_failed
+stripe trigger customer.subscription.trial_will_end
+stripe trigger customer.subscription.deleted
+stripe events resend <evt_id>   # a replay must answer {"received":true,"duplicate":true}
+```
+
+`stripe trigger` makes its own customer with no `agency_id`, so those events answer 500 (no agency) by design. To see them handled, add the metadata of an `is_test` agency, for example `stripe trigger invoice.paid --add subscription:metadata.agency_id=<agency uuid>`.
