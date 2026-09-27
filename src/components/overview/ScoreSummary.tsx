@@ -8,7 +8,7 @@ import { ScoreRing } from "./ScoreRing";
 type Score = NonNullable<OverviewView["score"]>;
 
 /** One number, one label, one sentence (MVP_SPEC 5.6), with an arrow only for a real change. */
-export function ScoreSummary({ score, models }: { score: Score; models: OverviewView["models"] }) {
+export function ScoreSummary({ score }: { score: Score }) {
   return (
     <div className="flex flex-col items-start gap-5 sm:flex-row sm:items-center sm:gap-7" data-testid="score-summary">
       <ScoreRing score={score.value} tone={score.tone} />
@@ -40,7 +40,7 @@ export function ScoreSummary({ score, models }: { score: Score; models: Overview
         {score.firstResults && (
           <p className="text-sm text-muted-foreground">First results. Accuracy improves with every scan.</p>
         )}
-        <ScoreDetails details={score.details} models={models} />
+        <ScoreDetails panel={score.details} />
       </div>
     </div>
   );

@@ -10,6 +10,7 @@ export type { AlsoRecommended, AlsoRecommendedList } from "./also-recommended/na
 export {
   compareWithCompetitor,
   isRealChange,
+  SCORE_WINDOW_DAYS,
   type Change,
   type Confidence,
   type Estimate,
