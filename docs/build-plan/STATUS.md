@@ -6,19 +6,20 @@ Rules set by the user on 2026-09-26: 3 worker sessions at once; the leader revie
 
 ## In progress
 
-| Task | Worker pane | Worktree | Dev port | PR |
-|---|---|---|---|---|
-| B-64 Admin shell | 196 | CUSTOMERS-B64 | 3016 | not yet |
-| B-48 App shell | 197 | CUSTOMERS-B48 | 3017 | not yet |
-| B-20 Provider interface and OpenAI adapter | 198 | CUSTOMERS-B20 | 3018 | not yet |
+Five worker sessions at once (raised from 3 on 2026-09-27).
 
-Waiting for keys, people or Jordan: B-24 dataset (F-04), B-32 (F-16), B-34 (F-28), B-40 (F-17), B-61 (F-12).
+| Task | Worker pane | Worktree | PR |
+|---|---|---|---|
+| B-29 Manual Run scan | 212 | CUSTOMERS-B29 | #57 (rebasing) |
+| B-31 Test mode | 211 | CUSTOMERS-B31 | #58 (fixing CI flake) |
+| Admin layout fix | 215 | CUSTOMERS-FIXADMIN | not yet |
+| B-40 Stripe setup (mocked, no Stripe calls) | 216 | CUSTOMERS-B40 | not yet |
+| B-34 Business auto-fill (mocked) | 217 | CUSTOMERS-B34 | not yet |
 
 ## Done
 
-Into main: B-06 (#22), B-07 (#25), B-10 (#27), B-11 (#31), B-12 (#34), B-13 (#36). B-24 code (#32), task open for labelling.
-Into mvp: B-08 (#23), B-09 (#21), B-70 (#26), B-71 (#28), B-15 (#35), B-17 (#37), B-16 (#39), B-14 (#40, live run waits for go-live).
-Main synced into mvp: #29, #33, #38.
+Into main: B-06, B-07, B-10, B-11, B-12, B-13. B-24 code (#32), open for labelling.
+Into mvp: B-08, B-09, B-14 to B-17, B-20 to B-23, B-26 to B-28, B-30, B-48, B-55, B-56, B-64, B-66 to B-68, B-70, B-71, B-73. B-25 code (#49), open for labelling.
 
 Open questions for people are in [FLAGS.md](./FLAGS.md).
 
