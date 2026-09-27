@@ -17,6 +17,8 @@ export const env = createEnv({
     GOOGLE_PLACES_API_KEY: optional,
     // Dev and Playwright only: the competitor step answers from hand-built fixtures, never Google.
     PLACES_FIXTURES: flag,
+    // Dev and Playwright only: auto-fill and question picking answer from fixtures, never Firecrawl, Google or Claude.
+    ONBOARDING_FIXTURES: flag,
     FIRECRAWL_API_KEY: optional,
     BROWSERLESS_API_KEY: optional,
     // Search Intelligence stays on hold until D-06 is decided.
@@ -63,6 +65,7 @@ export const env = createEnv({
     PERPLEXITY_API_KEY: process.env.PERPLEXITY_API_KEY,
     GOOGLE_PLACES_API_KEY: process.env.GOOGLE_PLACES_API_KEY,
     PLACES_FIXTURES: process.env.PLACES_FIXTURES,
+    ONBOARDING_FIXTURES: process.env.ONBOARDING_FIXTURES,
     FIRECRAWL_API_KEY: process.env.FIRECRAWL_API_KEY,
     BROWSERLESS_API_KEY: process.env.BROWSERLESS_API_KEY,
     DATAFORSEO_USERNAME: process.env.DATAFORSEO_USERNAME,

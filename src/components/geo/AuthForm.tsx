@@ -26,9 +26,13 @@ const GoogleIcon = () => (
   </svg>
 );
 
-// The page the visitor asked for before being sent to log in (BUG-009).
+// The page the visitor asked for before being sent to log in (BUG-009). A plan picked on the pricing
+// page (?plan=) is carried into onboarding, which keeps it for the card step (MVP_SPEC 3.1 step 0).
 function nextFromUrl() {
-  return safeNextPath(new URLSearchParams(window.location.search).get("next"));
+  const params = new URLSearchParams(window.location.search);
+  const plan = params.get("plan");
+  const fallback = plan === "starter" || plan === "pro" ? `/onboarding?plan=${plan}` : undefined;
+  return safeNextPath(params.get("next"), fallback);
 }
 
 export default function AuthForm({ defaultMode = "login", errorParam = "" }: AuthFormProps) {
@@ -94,7 +98,7 @@ export default function AuthForm({ defaultMode = "login", errorParam = "" }: Aut
         email,
         password,
         options: {
-          emailRedirectTo: `${siteBase}/auth/callback`,
+          emailRedirectTo: `${siteBase}/auth/callback?next=${encodeURIComponent(nextFromUrl())}`,
         },
       });
       setLoading(null);
