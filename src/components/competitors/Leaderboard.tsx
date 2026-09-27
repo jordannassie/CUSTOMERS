@@ -35,6 +35,7 @@ export function Leaderboard({ view }: { view: CompetitorsView }) {
 }
 
 function Row({ row, band }: { row: LeaderRow; band: { left: number; right: number } | null }) {
+  const pending = !row.isYou && row.score === null;
   return (
     <li
       className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1.5 sm:grid-cols-[minmax(0,200px)_minmax(0,1fr)_2.5rem_7.5rem]"
@@ -44,38 +45,40 @@ function Row({ row, band }: { row: LeaderRow; band: { left: number; right: numbe
         {row.isYou ? `${row.name} (you)` : row.name}
       </span>
 
-      <span className="col-start-2 row-start-1 text-right text-sm font-semibold tabular-nums sm:col-start-3">
-        {row.score ?? <span className="sr-only">No score yet</span>}
-      </span>
+      {pending ? (
+        // Added after the last scan, so there is nothing honest to draw yet.
+        <span className="col-span-2 text-xs text-text-hint sm:col-span-3 sm:col-start-2 sm:row-start-1">
+          Checked from your next scan
+        </span>
+      ) : (
+        <>
+          <span className="col-start-2 row-start-1 text-right text-sm font-semibold tabular-nums sm:col-start-3">
+            {row.score}
+          </span>
 
-      <div className="relative col-span-2 h-2 sm:col-span-1 sm:col-start-2 sm:row-start-1" aria-hidden>
-        <div className="absolute inset-0 rounded-xs bg-muted" />
-        {band ? (
-          <div
-            className="absolute -inset-y-1 bg-primary/10 ring-1 ring-inset ring-primary/25"
-            style={{ left: `${band.left}%`, width: `${band.right - band.left}%` }}
-          />
-        ) : null}
-        {row.score !== null ? (
-          <div
-            className={cn(
-              "absolute inset-y-0 left-0 rounded-xs",
-              row.isYou ? "bg-primary" : SHADE[row.shade ?? 3],
-            )}
-            style={{ width: `${Math.max(row.score, 1)}%` }}
-          />
-        ) : null}
-      </div>
+          <div className="relative col-span-2 h-2 sm:col-span-1 sm:col-start-2 sm:row-start-1" aria-hidden>
+            <div className="absolute inset-0 rounded-xs bg-muted" />
+            {band ? (
+              <div
+                className="absolute -inset-y-1 bg-primary/10 ring-1 ring-inset ring-primary/25"
+                style={{ left: `${band.left}%`, width: `${band.right - band.left}%` }}
+              />
+            ) : null}
+            <div
+              className={cn("absolute inset-y-0 left-0 rounded-xs", row.isYou ? "bg-primary" : SHADE[row.shade ?? 3])}
+              style={{ width: `${Math.max(row.score ?? 0, 1)}%` }}
+            />
+          </div>
 
-      <span className="col-span-2 sm:col-span-1 sm:col-start-4 sm:row-start-1 sm:text-right">
-        {row.standing ? (
-          <Badge variant={STANDING_BADGE[row.standing]} data-testid="standing">
-            {STANDING_TEXT[row.standing]}
-          </Badge>
-        ) : !row.isYou && row.score === null ? (
-          <span className="text-xs text-text-hint">Checked from your next scan</span>
-        ) : null}
-      </span>
+          {row.standing ? (
+            <span className="col-span-2 sm:col-span-1 sm:col-start-4 sm:row-start-1 sm:text-right">
+              <Badge variant={STANDING_BADGE[row.standing]} data-testid="standing">
+                {STANDING_TEXT[row.standing]}
+              </Badge>
+            </span>
+          ) : null}
+        </>
+      )}
     </li>
   );
 }

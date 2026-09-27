@@ -15,6 +15,8 @@ const db = hasDb
   : null!;
 const MODELS = ["openai", "anthropic", "perplexity"] as const;
 const userIds: string[] = [];
+// Server Actions and the refresh after them can take several seconds on a busy dev server.
+const ACTION = { timeout: 30_000 };
 
 type Seed = { competitors: { name: string; places_id: string | null }[]; answers: string[][] };
 
@@ -135,8 +137,8 @@ test("leaderboard, Google side by side, and tracking a business AI keeps naming"
   const also = page.getByTestId("also-recommended");
   await expect(also.getByRole("listitem")).toHaveText([/Blue Door Coffee\s*Named in 9 of 15 answers/, /Kiln Coffee Co\s*Named in 3 of 15 answers/]);
   await page.getByRole("button", { name: "Track Blue Door Coffee" }).click();
-  await expect(page.getByText("Blue Door Coffee added to your competitors")).toBeVisible();
-  await expect(board.getByRole("listitem").last()).toHaveText(/Blue Door Coffee\s*Checked from your next scan/);
+  await expect(page.getByText("Blue Door Coffee added to your competitors")).toBeVisible(ACTION);
+  await expect(board.getByRole("listitem").last()).toHaveText(/Blue Door Coffee\s*Checked from your next scan/, ACTION);
   await expect(also.getByRole("listitem")).toHaveText([/Kiln Coffee Co/]);
   await expect(page.getByTestId("tracked-count")).toHaveText("3 of 5 tracked");
 
@@ -164,9 +166,9 @@ test("no competitors and no scans: each section says what to do next", async ({ 
   await expect(page.getByRole("heading", { level: 1, name: "Manage competitors" })).toBeVisible({ timeout: 60_000 });
   await page.getByRole("checkbox").first().check();
   await page.getByRole("button", { name: "Save competitors" }).filter({ visible: true }).click();
-  await expect(page.getByText("1 competitor saved")).toBeVisible();
+  await expect(page.getByText("1 competitor saved")).toBeVisible(ACTION);
   await page.getByRole("link", { name: "Back to competitors" }).click();
-  await expect(page.getByTestId("tracked-count")).toHaveText("1 of 5 tracked");
+  await expect(page.getByTestId("tracked-count")).toHaveText("1 of 5 tracked", ACTION);
   await expect(page.getByText("Scores appear after your first scan.", { exact: false })).toBeVisible();
 });
 

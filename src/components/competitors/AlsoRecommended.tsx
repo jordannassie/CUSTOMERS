@@ -24,7 +24,7 @@ type Props = {
 export function AlsoRecommended({ businessId, names, answers, track, manageHref }: Props) {
   const router = useRouter();
   const [busy, setBusy] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<{ text: string; limit: boolean } | null>(null);
   const [pending, startTransition] = useTransition();
 
   if (names.length === 0) {
@@ -43,7 +43,7 @@ export function AlsoRecommended({ businessId, names, answers, track, manageHref 
     startTransition(async () => {
       const result = await track({ businessId, name });
       setBusy(null);
-      if (!result.ok) return setError(result.error);
+      if (!result.ok) return setError({ text: result.error, limit: result.status === 403 });
       toast.success(`${result.data.name} added to your competitors`);
       router.refresh();
     });
@@ -78,10 +78,15 @@ export function AlsoRecommended({ businessId, names, answers, track, manageHref 
       </ul>
       {error ? (
         <p role="alert" className="rounded-md bg-mid-bg px-3 py-2 text-[13px] text-mid-text">
-          {error}{" "}
-          <Link href={manageHref} className="font-medium underline">
-            Manage list
-          </Link>
+          {error.text}
+          {error.limit ? (
+            <>
+              {" "}
+              <Link href={manageHref} className="font-medium underline">
+                Manage list
+              </Link>
+            </>
+          ) : null}
         </p>
       ) : null}
     </div>
