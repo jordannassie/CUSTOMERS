@@ -19,6 +19,8 @@ type Props = {
 export function WizardFrame({ steps, title, lead, embedded = false, wide = false, children }: Props) {
   const index = steps.findIndex((s) => s.state === "current");
   const current = steps[index];
+  // The app frame already has the page's <main>.
+  const Main = embedded ? "div" : "main";
 
   return (
     <div className={cn("bg-background", embedded ? "" : "min-h-dvh lg:grid lg:grid-cols-[260px_minmax(0,1fr)]")}>
@@ -39,7 +41,7 @@ export function WizardFrame({ steps, title, lead, embedded = false, wide = false
         </aside>
       ) : null}
 
-      <main className="min-w-0">
+      <Main className="min-w-0">
         <div className={cn("border-b border-border bg-surface px-4 py-3 sm:px-8", embedded ? "" : "lg:hidden")}>
           <div className="mx-auto flex max-w-3xl items-baseline justify-between gap-3">
             <p className="text-[13px] font-medium">
@@ -61,7 +63,7 @@ export function WizardFrame({ steps, title, lead, embedded = false, wide = false
           </header>
           {children}
         </div>
-      </main>
+      </Main>
     </div>
   );
 }

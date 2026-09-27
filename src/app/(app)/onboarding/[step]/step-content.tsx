@@ -34,7 +34,7 @@ export const TITLES: Record<StepSlug, { title: string; lead: string }> = {
   details: { title: "Check your business details", lead: "AI matches answers to these details, so keep them the same as your website and Google listing." },
   competitors: { title: "Who do you compete with?", lead: "Each scan checks whether AI recommends these businesses instead of yours." },
   questions: { title: "What do your customers ask AI?", lead: "We ask ChatGPT, Claude and Perplexity these questions and look for your business in the answers." },
-  models: { title: "Choose the AI to check, and how often", lead: "You can change these any time. Nothing is charged until your first scan." },
+  models: { title: "Choose the AI to check, and how often", lead: "You can change these any time. Credits are only used when a scan runs." },
 };
 
 type Props = { step: StepSlug; state: WizardContext; plan: string | null };

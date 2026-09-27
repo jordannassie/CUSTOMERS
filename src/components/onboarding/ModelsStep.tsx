@@ -126,7 +126,18 @@ export function ModelsStep({ businessId, models, frequency, activeQuestions, pla
       </div>
 
       <StepError message={error} />
-      <StepActions backHref="/onboarding/questions" pending={pending} label="Finish setup" disabled={chosen.length === 0} />
+      <StepActions
+        backHref="/onboarding/questions"
+        pending={pending}
+        label="Finish setup"
+        disabled={chosen.length === 0}
+        phoneSummary={
+          <p data-testid="credit-estimate-phone" className="text-[13px] leading-tight text-muted-foreground">
+            <span className="block text-base font-semibold tabular-nums text-foreground">{count(credits)}</span>
+            credits a month
+          </p>
+        }
+      />
     </form>
   );
 }
