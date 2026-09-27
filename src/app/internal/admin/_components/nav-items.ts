@@ -15,7 +15,7 @@ export type AdminNavItem = {
   label: string;
   href: string;
   icon: LucideIcon;
-  // Old pages that stay until B-65 to B-68 merge them; they highlight the item that replaces them.
+  // Old pages that stay until B-65 to B-67 merge them; they highlight the item that replaces them.
   also?: string[];
 };
 
@@ -28,7 +28,7 @@ export const MAIN_ITEMS: AdminNavItem[] = [
   { label: "Businesses", href: `${BASE}/businesses`, icon: Store },
   { label: "Scans", href: `${BASE}/scans`, icon: ScanSearch, also: [`${BASE}/errors`] },
   { label: "Usage & Cost", href: `${BASE}/usage`, icon: Coins },
-  { label: "Settings", href: `${BASE}/settings`, icon: Settings, also: [`${BASE}/pricing`] },
+  { label: "Settings", href: `${BASE}/settings`, icon: Settings },
 ];
 
 // Kept outside the main menu (D-07, D-35).
