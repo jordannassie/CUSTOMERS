@@ -39,7 +39,9 @@ export async function proxy(request: NextRequest) {
     return redirectKeepingCookies(url, response);
   }
 
-  if (signedIn && AUTH_PAGES.includes(pathname)) {
+  // getClaims() only checks the token; a deleted user still has a valid one, and pages send them to
+  // /login, so bouncing them back from here looped (BUG-020). Only these pages pay for the extra call.
+  if (signedIn && AUTH_PAGES.includes(pathname) && (await supabase.auth.getUser()).data.user) {
     const target = new URL(safeNextPath(request.nextUrl.searchParams.get("next")), request.url);
     return redirectKeepingCookies(target, response);
   }

@@ -4,7 +4,7 @@ import { parseEnv } from "node:util";
 import { createClient } from "@supabase/supabase-js";
 import { expect, test, type Page } from "@playwright/test";
 
-// BUG-020 against the local Supabase stack, like app-shell.spec.ts. The dev server and this run share
+// BUG-020 and BUG-021 against the local Supabase stack, like app-shell.spec.ts. The dev server and this run share
 // ADMIN_EMAILS (set in CI) with one admin per project, since projects run in parallel.
 const local = existsSync(".env.test.local") ? parseEnv(readFileSync(".env.test.local", "utf8")) : {};
 const hasDb = !!(local.NEXT_PUBLIC_SUPABASE_URL && local.SUPABASE_SERVICE_ROLE_KEY);
@@ -56,10 +56,24 @@ test("a signed-in non-admin lands on the dashboard", async ({ page }) => {
   await logIn(page, email, await createUser(email));
 
   for (const path of ["/internal/admin", "/internal/admin/settings", "/internal/admin/businesses"]) {
-    const response = await page.goto(path);
-    expect(new URL(response!.url()).pathname, path).toBe("/dashboard");
-    await expect(page).toHaveURL((url) => url.pathname === "/dashboard");
+    await page.goto(path);
+    await expect(page, path).toHaveURL((url) => url.pathname === "/dashboard");
   }
+});
+
+test("a signed-in user whose account is gone lands on login once, not in a loop", async ({ page }) => {
+  const email = `e2e-deleted-${randomUUID()}@example.test`;
+  await logIn(page, email, await createUser(email));
+  await db.auth.admin.deleteUser(userIds.pop()!);
+
+  const visits: string[] = [];
+  page.on("request", (r) => {
+    if (r.isNavigationRequest()) visits.push(new URL(r.url()).pathname);
+  });
+  await page.goto("/internal/admin/settings");
+  await expect(page).toHaveURL((url) => url.pathname === "/login");
+  await page.waitForTimeout(3000);
+  expect(visits).toEqual(["/internal/admin/settings", "/login"]);
 });
 
 test("an admin sees the admin overview", async ({ page }, testInfo) => {
