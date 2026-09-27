@@ -9,4 +9,4 @@ export {
   type CreditBalance,
   type GrantSource,
 } from "./dal";
-export { estimateMonthlyCredits, getBalance, type ScanFrequency } from "./service";
+export { estimateMonthlyCredits, getBalance, getUsage, type CreditUsage, type ScanFrequency } from "./service";

@@ -110,3 +110,18 @@ export async function readBalance(agencyId: string): Promise<CreditBalance> {
   if (error) fail("agency_credit_balance", error);
   return data ?? { plan_remaining: 0, topup_remaining: 0, held: 0, balance: 0, overdraft: 0 };
 }
+
+/** This period's plan and trial grants, for "620 of 1,200 credits used". Top-ups and promos are not counted. */
+export async function readPeriodGrants(agencyId: string): Promise<{ amount: number; remaining: number }> {
+  const { data, error } = await createServiceClient()
+    .from("credit_grants")
+    .select("amount, remaining")
+    .eq("agency_id", agencyId)
+    .in("source", ["plan", "trial"])
+    .gt("expires_at", new Date().toISOString());
+  if (error) fail("credit_grants", error);
+  return data.reduce((sum, row) => ({ amount: sum.amount + row.amount, remaining: sum.remaining + row.remaining }), {
+    amount: 0,
+    remaining: 0,
+  });
+}

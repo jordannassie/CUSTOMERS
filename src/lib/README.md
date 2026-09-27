@@ -5,7 +5,7 @@
 ## Rule of thumb
 
 - **Marketing pages are cached.** Home, pricing, agency, compare, contact, legal pages, `sitemap.xml` and `robots.txt` are prerendered as static HTML. If a marketing page needs server data that is the same for every visitor, fetch it in a function with `"use cache"` and a `cacheLife` profile.
-- **Dashboard and admin are dynamic.** Anything behind login reads the session (`cookies()`), so it renders per request and streams in behind a `<Suspense>` boundary (`src/app/dashboard/loading.tsx`, the admin layout).
+- **Dashboard and admin are dynamic.** Anything behind login reads the session (`cookies()`), so it renders per request and streams in behind a `<Suspense>` boundary (`src/app/(app)/layout.tsx`, the admin layout).
 - **Never put `"use cache"` on logged-in data.** A cached result is shared by every visitor, so one user could see another user's data. This includes any function that takes a user, agency or business id.
 
 ## When the build complains
