@@ -168,7 +168,7 @@ export default function SeoDashboard({
             Add your website URL in Settings to enable SEO intelligence.
           </p>
           <a
-            href="/dashboard/settings"
+            href="/settings"
             className="inline-flex items-center gap-1.5 text-[12px] font-semibold bg-[#171717] text-white px-4 py-2 rounded-lg hover:bg-[#2A2A2A] transition-colors"
           >
             Go to Settings

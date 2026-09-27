@@ -86,7 +86,7 @@ export default async function DashboardPage({
       */}
       <div className="flex items-center gap-4 px-5 sm:px-7 py-4 bg-white border-b border-[#E5E5E1]">
         <Link
-          href="/dashboard/settings"
+          href="/settings"
           className="group flex items-center gap-4 flex-1 min-w-0 hover:bg-[#F5F5F2] -mx-2 px-2 py-1 rounded-xl transition-colors"
           aria-label={`${business.name} — click to edit business settings`}
         >
