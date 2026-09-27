@@ -77,7 +77,7 @@ const NO_SERVICE_CLIENT = {
   paths: [{ name: "@/lib/supabase/service", message: "The service role client is only for dal.ts files." }],
 };
 
-const CLIENT_LIBRARIES = ["@supabase/*", "stripe", "@stripe/*", "openai", "@anthropic-ai/sdk"];
+const CLIENT_LIBRARIES = ["@supabase/*", "stripe", "@stripe/*", "openai", "@anthropic-ai/sdk", "resend"];
 const CLIENT_WRAPPERS = [
   "src/lib/supabase/**",
   "src/lib/stripe.ts",

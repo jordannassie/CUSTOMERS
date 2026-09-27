@@ -78,6 +78,7 @@ export type Database = {
           stripe_customer_id: string | null
           stripe_subscription_id: string | null
           trial_ends_at: string | null
+          weekly_report_emails: boolean
         }
         Insert: {
           created_at?: string
@@ -92,6 +93,7 @@ export type Database = {
           stripe_customer_id?: string | null
           stripe_subscription_id?: string | null
           trial_ends_at?: string | null
+          weekly_report_emails?: boolean
         }
         Update: {
           created_at?: string
@@ -106,6 +108,7 @@ export type Database = {
           stripe_customer_id?: string | null
           stripe_subscription_id?: string | null
           trial_ends_at?: string | null
+          weekly_report_emails?: boolean
         }
         Relationships: []
       }
@@ -936,6 +939,57 @@ export type Database = {
           website?: string
         }
         Relationships: []
+      }
+      email_log: {
+        Row: {
+          agency_id: string | null
+          error: string | null
+          id: string
+          idempotency_key: string | null
+          provider_id: string | null
+          sent_at: string
+          status: string
+          to_email: string
+          type: string
+        }
+        Insert: {
+          agency_id?: string | null
+          error?: string | null
+          id?: string
+          idempotency_key?: string | null
+          provider_id?: string | null
+          sent_at?: string
+          status: string
+          to_email: string
+          type: string
+        }
+        Update: {
+          agency_id?: string | null
+          error?: string | null
+          id?: string
+          idempotency_key?: string | null
+          provider_id?: string | null
+          sent_at?: string
+          status?: string
+          to_email?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_log_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_log_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agency_credit_balance"
+            referencedColumns: ["agency_id"]
+          },
+        ]
       }
       feature_requests: {
         Row: {
