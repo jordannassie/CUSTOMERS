@@ -1,9 +1,12 @@
 import { z } from "zod";
 
-export const readinessCheckInput = z.object({
-  myUrl: z.string().trim().min(1, "Enter your website.").max(300),
-  competitorUrl: z.string().trim().min(1, "Enter a competitor's website.").max(300),
-});
+const url = (missing: string) =>
+  z.string(missing).trim().min(1, missing).max(300, "That web address is too long.");
+
+export const readinessCheckInput = z.object(
+  { myUrl: url("Enter your website."), competitorUrl: url("Enter a competitor's website.") },
+  "Enter both websites.",
+);
 
 export type ReadinessCheckInput = z.infer<typeof readinessCheckInput>;
 

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { allowCheck, MAX_CHECKS_PER_HOUR } from "./rate-limit";
+import { readinessCheckInput } from "./schema";
 import { compareSites } from "./service";
 import { extractSignals, readinessScore } from "./signals";
 import { extractDomain, isSafePublicUrl } from "./url";
@@ -42,6 +43,16 @@ describe("compareSites", () => {
       compareSites({ domain: "a.com", signals: extractSignals(STRONG) }, { domain: "b.com", signals: null }),
     );
     expect(text).not.toMatch(/Gemini|Google AI/i);
+  });
+});
+
+describe("input", () => {
+  it("gives plain messages for bad input", () => {
+    const first = (v: unknown) => readinessCheckInput.safeParse(v).error?.issues[0]?.message;
+    expect(first(null)).toBe("Enter both websites.");
+    expect(first({ myUrl: " ", competitorUrl: "b.com" })).toBe("Enter your website.");
+    expect(first({ myUrl: "a.com" })).toBe("Enter a competitor's website.");
+    expect(first({ myUrl: `${"a".repeat(300)}.com`, competitorUrl: "b.com" })).toBe("That web address is too long.");
   });
 });
 
