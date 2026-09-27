@@ -1,103 +1,68 @@
-import { requireAdmin } from "@/modules/auth";
+import { Suspense } from "react";
+import { Skeleton } from "@/components/ui/skeleton";
 import { PRODUCT_ACCESS } from "@/config/product-access";
-import { env } from "@/lib/env";
+import { requireAdmin } from "@/modules/auth";
+import { getSystemStatus } from "@/modules/system-status";
+import StatusView from "./_components/status-view";
 
-function ConfigRow({ label, configured, note }: { label: string; configured: boolean; note?: string }) {
-  return (
-    <div className="flex items-center justify-between py-3 border-b border-[#F8FAFD] last:border-0">
-      <div>
-        <p className="text-[13px] text-[#374151] font-medium">{label}</p>
-        {note && <p className="text-[11px] text-[#9CA3AF] mt-0.5">{note}</p>}
-      </div>
-      <span className={`text-[10.5px] font-bold px-2.5 py-1 rounded-full ${
-        configured
-          ? "bg-[#F0FDF4] text-[#15803D] border border-[#BBF7D0]"
-          : "bg-[#FEF2F2] text-[#DC2626] border border-[#FECACA]"
-      }`}>
-        {configured ? "✓ Configured" : "Missing"}
-      </span>
-    </div>
-  );
-}
-
-function FlagRow({ label, value, note }: { label: string; value: boolean; note?: string }) {
-  return (
-    <div className="flex items-center justify-between py-3 border-b border-[#F8FAFD] last:border-0">
-      <div>
-        <p className="text-[13px] text-[#374151] font-medium">{label}</p>
-        {note && <p className="text-[11px] text-[#9CA3AF] mt-0.5">{note}</p>}
-      </div>
-      <span className={`text-[10.5px] font-bold px-2.5 py-1 rounded-full ${
-        value
-          ? "bg-[#EFF6FF] text-[#0866F5] border border-[#BFDBFE]"
-          : "bg-[#F8FAFD] text-[#9CA3AF] border border-[#E2E8F0]"
-      }`}>
-        {value ? "ON" : "OFF"}
-      </span>
-    </div>
-  );
-}
+export const metadata = { title: "Settings" };
 
 export default async function AdminSettingsPage() {
   await requireAdmin({ next: "/internal/admin/settings" });
 
-  const configured = {
-    supabaseUrl:         !!env.NEXT_PUBLIC_SUPABASE_URL,
-    supabaseAnon:        !!env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-    supabaseServiceRole: !!env.SUPABASE_SERVICE_ROLE_KEY,
-    openai:              !!env.OPENAI_API_KEY,
-    anthropic:           !!env.ANTHROPIC_API_KEY,
-    perplexity:          !!env.PERPLEXITY_API_KEY,
-    dataForSeo:          !!(env.DATAFORSEO_USERNAME && env.DATAFORSEO_PASSWORD),
-    googlePlaces:        !!env.GOOGLE_PLACES_API_KEY,
-    siteUrl:             !!env.NEXT_PUBLIC_SITE_URL,
-    googleOAuthInSupa:   true,
-  };
-
   return (
-    <div className="max-w-2xl mx-auto px-6 py-8">
-      <div className="mb-6">
-        <h1 className="text-[22px] font-bold text-[#111827]">Settings</h1>
-        <p className="text-[12px] text-[#9CA3AF] mt-1">Read-only configuration snapshot. Manage values in Netlify/Supabase dashboard.</p>
+    <div className="mx-auto flex max-w-3xl flex-col gap-8 px-4 py-8 sm:px-6">
+      <header>
+        <h1 className="text-[24px] font-semibold tracking-[-0.02em]">Settings</h1>
+        <p className="mt-1 text-[14px] text-muted-foreground">
+          Whether every service the app depends on is connected and working. Keys are changed in Netlify and Supabase.
+        </p>
+      </header>
+
+      <Suspense fallback={<StatusSkeleton />}>
+        <LiveStatus />
+      </Suspense>
+
+      <section aria-labelledby="product-access">
+        <h2 id="product-access" className="mb-2 text-[14px] font-semibold">
+          Product access
+        </h2>
+        <ul className="divide-y divide-border rounded-md border border-border bg-surface">
+          <FlagRow label="Free beta access" on={PRODUCT_ACCESS.betaFreeAccess} note="Every signed-in user gets full access." />
+          <FlagRow label="Billing" on={PRODUCT_ACCESS.billingEnabled} note="Stripe checkout and plan limits." />
+          <FlagRow label="Trials" on={PRODUCT_ACCESS.trialEnabled} note="Trial countdown and end of trial." />
+        </ul>
+      </section>
+    </div>
+  );
+}
+
+async function LiveStatus() {
+  return <StatusView status={await getSystemStatus()} />;
+}
+
+function FlagRow({ label, on, note }: { label: string; on: boolean; note: string }) {
+  return (
+    <li className="flex items-start justify-between gap-3 px-4 py-3">
+      <div>
+        <p className="text-[14px] font-medium">{label}</p>
+        <p className="mt-0.5 text-[13px] text-muted-foreground">{note}</p>
       </div>
+      <span className="text-[13px] font-medium text-muted-foreground">{on ? "On" : "Off"}</span>
+    </li>
+  );
+}
 
-      <div className="flex flex-col gap-5">
-        {/* Product access flags */}
-        <div className="bg-white border border-[#E2E8F0] rounded-2xl p-5" style={{ boxShadow: "0 1px 4px rgba(0,0,0,0.04)" }}>
-          <h2 className="text-[13px] font-bold text-[#111827] mb-0.5">Product Access</h2>
-          <p className="text-[11px] text-[#9CA3AF] mb-4">
-            From <code className="bg-[#F8FAFD] border border-[#E2E8F0] px-1.5 py-0.5 rounded text-[10px]">src/config/product-access.ts</code>
-          </p>
-          <FlagRow label="Beta Free Access" value={PRODUCT_ACCESS.betaFreeAccess} note="All authenticated users have full access (no trial/payment gates)" />
-          <FlagRow label="Billing Enabled"  value={PRODUCT_ACCESS.billingEnabled} note="Stripe checkout / subscription enforcement" />
-          <FlagRow label="Trial Enabled"    value={PRODUCT_ACCESS.trialEnabled}   note="Trial countdown and expiration gating" />
+function StatusSkeleton() {
+  return (
+    <div className="flex flex-col gap-6" aria-busy aria-label="Checking services">
+      <Skeleton className="h-[116px] rounded-md" />
+      {[3, 4, 1, 2].map((rows, i) => (
+        <div key={i} className="flex flex-col gap-2">
+          <Skeleton className="h-4 w-32" />
+          <Skeleton className="rounded-md" style={{ height: rows * 64 }} />
         </div>
-
-        {/* Infrastructure */}
-        <div className="bg-white border border-[#E2E8F0] rounded-2xl p-5" style={{ boxShadow: "0 1px 4px rgba(0,0,0,0.04)" }}>
-          <h2 className="text-[13px] font-bold text-[#111827] mb-4">Infrastructure</h2>
-          <ConfigRow label="Supabase URL"          configured={configured.supabaseUrl}         note="NEXT_PUBLIC_SUPABASE_URL" />
-          <ConfigRow label="Supabase Anon Key"     configured={configured.supabaseAnon}        note="NEXT_PUBLIC_SUPABASE_ANON_KEY" />
-          <ConfigRow label="Supabase Service Role" configured={configured.supabaseServiceRole} note="SUPABASE_SERVICE_ROLE_KEY" />
-          <ConfigRow label="Site URL"              configured={configured.siteUrl}             note="NEXT_PUBLIC_SITE_URL" />
-        </div>
-
-        {/* AI Providers */}
-        <div className="bg-white border border-[#E2E8F0] rounded-2xl p-5" style={{ boxShadow: "0 1px 4px rgba(0,0,0,0.04)" }}>
-          <h2 className="text-[13px] font-bold text-[#111827] mb-4">AI Providers</h2>
-          <ConfigRow label="OpenAI / ChatGPT"    configured={configured.openai}           note="OPENAI_API_KEY" />
-          <ConfigRow label="Anthropic / Claude"  configured={configured.anthropic}        note="ANTHROPIC_API_KEY" />
-          <ConfigRow label="Perplexity"          configured={configured.perplexity}       note="PERPLEXITY_API_KEY" />
-          <ConfigRow label="Google OAuth"        configured={configured.googleOAuthInSupa} note="Configured in Supabase dashboard" />
-        </div>
-
-        {/* Data providers */}
-        <div className="bg-white border border-[#E2E8F0] rounded-2xl p-5" style={{ boxShadow: "0 1px 4px rgba(0,0,0,0.04)" }}>
-          <h2 className="text-[13px] font-bold text-[#111827] mb-4">Data Providers</h2>
-          <ConfigRow label="DataForSEO"    configured={configured.dataForSeo}    note="DATAFORSEO_USERNAME + DATAFORSEO_PASSWORD" />
-          <ConfigRow label="Google Places" configured={configured.googlePlaces}  note="GOOGLE_PLACES_API_KEY" />
-        </div>
-      </div>
+      ))}
     </div>
   );
 }
