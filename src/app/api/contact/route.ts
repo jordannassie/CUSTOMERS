@@ -9,7 +9,7 @@ const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const NEW_INTERESTS = ["ai_visibility", "agency", "book_demo", "other"] as const;
 
 // Legacy topic values preserved for backward compatibility with old records
-const LEGACY_TOPICS = ["product", "support", "sales", "enterprise", "chatgpt_ads"] as const;
+const LEGACY_TOPICS = ["product", "support", "sales", "enterprise"] as const;
 
 const ALL_VALID_TOPICS = [...NEW_INTERESTS, ...LEGACY_TOPICS] as const;
 type ValidTopic = (typeof ALL_VALID_TOPICS)[number];
@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Invalid request body." }, { status: 400 });
   }
 
-  // Honeypot — silently discard bot submissions
+  // Honeypot: silently discard bot submissions
   if (body._honey && String(body._honey).trim() !== "") {
     return NextResponse.json({ success: true });
   }
@@ -74,7 +74,7 @@ export async function POST(request: NextRequest) {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (user) userId = user.id;
-  } catch { /* public endpoint — unauthenticated is fine */ }
+  } catch { /* public endpoint: unauthenticated is fine */ }
 
   const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? null;
 

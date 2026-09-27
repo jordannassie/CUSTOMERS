@@ -9,6 +9,7 @@ import { ForAgencies } from "@/components/marketing/home/ForAgencies";
 import { PricingSummary } from "@/components/marketing/home/PricingSummary";
 import { Faq } from "@/components/marketing/home/Faq";
 import { FinalCta } from "@/components/marketing/home/FinalCta";
+import { getPublicPricing } from "@/modules/billing";
 
 const title = "Customers.Direct: see if AI recommends your business";
 const description =
@@ -32,7 +33,9 @@ export const metadata: Metadata = {
   },
 };
 
-export default function Home() {
+export default async function Home() {
+  const { plans } = await getPublicPricing();
+
   return (
     <>
       <Header />
@@ -41,7 +44,7 @@ export default function Home() {
         <HowItWorks />
         <ProductTabs />
         <ForAgencies />
-        <PricingSummary />
+        <PricingSummary plans={plans} />
         <Faq />
         <FinalCta />
       </main>
