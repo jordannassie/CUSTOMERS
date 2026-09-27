@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import PageLoading from "@/components/PageLoading";
 import AdminFrame from "./_components/admin-frame";
 
-export const metadata = { title: "Admin | Customers.Direct", robots: { index: false } };
+export const metadata = { title: "Admin", robots: { index: false } };
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   return (
