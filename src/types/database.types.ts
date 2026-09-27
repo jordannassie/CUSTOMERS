@@ -245,7 +245,9 @@ export type Database = {
           answer: string
           cache_key: string
           citations: Json
+          cost_usd: number
           created_at: string
+          extracted_names: Json | null
           location: string
           model: string
           question: string
@@ -254,7 +256,9 @@ export type Database = {
           answer: string
           cache_key: string
           citations?: Json
+          cost_usd?: number
           created_at?: string
+          extracted_names?: Json | null
           location: string
           model: string
           question: string
@@ -263,7 +267,9 @@ export type Database = {
           answer?: string
           cache_key?: string
           citations?: Json
+          cost_usd?: number
           created_at?: string
+          extracted_names?: Json | null
           location?: string
           model?: string
           question?: string
@@ -1610,6 +1616,7 @@ export type Database = {
         Row: {
           account_user_id: string
           business_id: string | null
+          cached: boolean
           created_at: string
           estimated_cost_usd: number
           id: string
@@ -1626,6 +1633,7 @@ export type Database = {
         Insert: {
           account_user_id: string
           business_id?: string | null
+          cached?: boolean
           created_at?: string
           estimated_cost_usd?: number
           id?: string
@@ -1642,6 +1650,7 @@ export type Database = {
         Update: {
           account_user_id?: string
           business_id?: string | null
+          cached?: boolean
           created_at?: string
           estimated_cost_usd?: number
           id?: string
