@@ -3,10 +3,8 @@ export { addQuestion, editQuestion, removeQuestion, setQuestionActive } from "./
 export { getQuestionsPage } from "./dal";
 export {
   atLimit,
-  creditChangeText,
   FREQUENCY_WORDS,
   limitText,
-  monthlyCredits,
   resultText,
   tidyQuestion,
   type QuestionResult,

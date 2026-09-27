@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { existsSync, readFileSync } from "node:fs";
 import { parseEnv } from "node:util";
 import { createClient } from "@supabase/supabase-js";
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Locator, type Page } from "@playwright/test";
 
 // B-53 against the local Supabase stack only. Each test seeds its own is_test agency, questions and saved
 // checks, so no AI is called (D-61).
@@ -103,6 +103,12 @@ async function seedChecks(businessId: string, questionId: string, mentions: Part
 
 const questionRow = (page: Page, text: string) => page.getByTestId("question-row").filter({ hasText: text });
 
+/** Opens a question's menu once any toast has closed; on a phone a toast covers the rows above it. */
+async function openMenu(page: Page, row: Locator) {
+  await expect(page.locator("[data-sonner-toast]")).toHaveCount(0, { timeout: 15_000 });
+  await row.getByRole("button", { name: /^Options for/ }).click();
+}
+
 test.afterAll(async () => {
   for (const id of userIds.splice(0)) await db.auth.admin.deleteUser(id);
 });
@@ -136,10 +142,11 @@ test("add, pause, resume and remove a question", async ({ page }) => {
 
   await page.getByLabel("Add your own question").fill("  which cafe in orange has the best cold brew ");
   await page.getByRole("button", { name: "Add question" }).click();
+  // The toast closes after a few seconds, so it is checked first.
+  await expect(page.getByText("Question added. About 13 more credits a month.")).toBeVisible(ACTION);
   const added = questionRow(page, "Which cafe in orange has the best cold brew?");
   await expect(added).toBeVisible(ACTION);
   await expect(added).toContainText("Added by you");
-  await expect(page.getByText("Question added. About 13 more credits a month.")).toBeVisible();
   await expect(page.getByTestId("active-count")).toHaveText("2 of 25");
   await expect(page.getByLabel("Add your own question")).toHaveValue("");
 
@@ -149,7 +156,7 @@ test("add, pause, resume and remove a question", async ({ page }) => {
   await expect(page.getByRole("alert").filter({ hasText: "You already track this question." })).toBeVisible(ACTION);
   await page.getByLabel("Add your own question").fill("");
 
-  await added.getByRole("button", { name: /^Options for/ }).click();
+  await openMenu(page, added);
   await page.getByRole("menuitem", { name: "Pause" }).click();
   await expect(page.getByTestId("paused-questions").getByTestId("question-row")).toContainText("cold brew", ACTION);
   await expect(page.getByTestId("active-questions")).not.toContainText("cold brew");
@@ -157,12 +164,12 @@ test("add, pause, resume and remove a question", async ({ page }) => {
   await expect(page.getByTestId("credit-estimate")).toContainText("About 13 credits a month");
 
   const paused = page.getByTestId("paused-questions").getByTestId("question-row");
-  await paused.getByRole("button", { name: /^Options for/ }).click();
+  await openMenu(page, paused);
   await page.getByRole("menuitem", { name: "Resume" }).click();
   await expect(page.getByTestId("active-questions")).toContainText("cold brew", ACTION);
   await expect(page.getByTestId("paused-questions")).toHaveCount(0);
 
-  await questionRow(page, "cold brew").getByRole("button", { name: /^Options for/ }).click();
+  await openMenu(page, questionRow(page, "cold brew"));
   await page.getByRole("menuitem", { name: "Remove" }).click();
   const dialog = page.getByRole("dialog", { name: "Remove this question?" });
   await expect(dialog).toContainText("About 13 fewer credits a month.");
@@ -173,7 +180,7 @@ test("add, pause, resume and remove a question", async ({ page }) => {
 
 test("edit a question's wording", async ({ page }) => {
   await seed(page, [{ prompt: "What is the best coffee shop in Orange?" }]);
-  await questionRow(page, "best coffee shop").getByRole("button", { name: /^Options for/ }).click();
+  await openMenu(page, questionRow(page, "best coffee shop"));
   await page.getByRole("menuitem", { name: "Edit" }).click();
   await page.getByRole("textbox", { name: "Question", exact: true }).fill("What is the best coffee shop near Orange Circle?");
   await page.getByRole("button", { name: "Save", exact: true }).click();
@@ -195,12 +202,12 @@ test("at 25 active questions: the limit message, and no way to add or resume", a
   await expect(page.getByRole("button", { name: "Add question" })).toBeDisabled();
 
   const paused = page.getByTestId("paused-questions").getByTestId("question-row");
-  await paused.getByRole("button", { name: /^Options for/ }).click();
+  await openMenu(page, paused);
   await expect(page.getByRole("menuitem", { name: "Resume" })).toBeDisabled();
   await page.keyboard.press("Escape");
 
   // Pausing one makes room again.
-  await questionRow(page, "Question number 25 about").getByRole("button", { name: /^Options for/ }).click();
+  await openMenu(page, questionRow(page, "Question number 25 about"));
   await page.getByRole("menuitem", { name: "Pause" }).click();
   await expect(page.getByTestId("active-count")).toHaveText("24 of 25", ACTION);
   await expect(page.getByTestId("question-limit")).toHaveCount(0);

@@ -49,15 +49,15 @@ export type ChangeResult = { ok: true } | { ok: false; status: 400 | 403 | 404; 
 const notFound: ChangeResult = { ok: false, status: 404, error: "We could not find that question. Refresh the page and try again." };
 const duplicate: ChangeResult = { ok: false, status: 400, error: "You already track this question." };
 
-// Writes go through the signed-in user's client, so RLS (tracked_prompts_owner_all) also guards them.
-async function ownedQuestions(businessId: string) {
-  const { agency } = await requireAgency();
+// The writes below take the agency from the action's auth guard. They go through the signed-in user's
+// client, so RLS (tracked_prompts_owner_all) also guards them.
+async function ownedQuestions(agencyId: string, businessId: string) {
   const supabase = await createClient();
   const { data: business, error } = await supabase
     .from("businesses")
     .select("id")
     .eq("id", businessId)
-    .eq("agency_id", agency.id)
+    .eq("agency_id", agencyId)
     .maybeSingle();
   if (error) throw new Error(`Questions: could not load the business: ${error.message}`);
   if (!business) return null;
@@ -74,8 +74,8 @@ async function roomForOneMore(businessId: string): Promise<ChangeResult | null> 
   return limit.allowed ? null : { ok: false, status: 403, error: limit.reason };
 }
 
-export async function insertQuestion(businessId: string, text: string): Promise<ChangeResult> {
-  const owned = await ownedQuestions(businessId);
+export async function insertQuestion(agencyId: string, businessId: string, text: string): Promise<ChangeResult> {
+  const owned = await ownedQuestions(agencyId, businessId);
   if (!owned) return notFound;
   const prompt = tidyQuestion(text);
   if (owned.questions.some((q) => sameQuestion(q.prompt, prompt))) return duplicate;
@@ -87,8 +87,8 @@ export async function insertQuestion(businessId: string, text: string): Promise<
 }
 
 /** An edited question is the user's own wording from then on, so it counts as custom. */
-export async function updateQuestionText(businessId: string, questionId: string, text: string): Promise<ChangeResult> {
-  const owned = await ownedQuestions(businessId);
+export async function updateQuestionText(agencyId: string, businessId: string, questionId: string, text: string): Promise<ChangeResult> {
+  const owned = await ownedQuestions(agencyId, businessId);
   if (!owned || !owned.questions.some((q) => q.id === questionId)) return notFound;
   const prompt = tidyQuestion(text);
   if (owned.questions.some((q) => q.id !== questionId && sameQuestion(q.prompt, prompt))) return duplicate;
@@ -97,8 +97,8 @@ export async function updateQuestionText(businessId: string, questionId: string,
   return { ok: true };
 }
 
-export async function updateQuestionActive(businessId: string, questionId: string, active: boolean): Promise<ChangeResult> {
-  const owned = await ownedQuestions(businessId);
+export async function updateQuestionActive(agencyId: string, businessId: string, questionId: string, active: boolean): Promise<ChangeResult> {
+  const owned = await ownedQuestions(agencyId, businessId);
   const question = owned?.questions.find((q) => q.id === questionId);
   if (!owned || !question) return notFound;
   if (question.active === active) return { ok: true };
@@ -112,8 +112,8 @@ export async function updateQuestionActive(businessId: string, questionId: strin
 }
 
 /** Deletes the question and, through the foreign key, its saved checks. */
-export async function deleteQuestion(businessId: string, questionId: string): Promise<ChangeResult> {
-  const owned = await ownedQuestions(businessId);
+export async function deleteQuestion(agencyId: string, businessId: string, questionId: string): Promise<ChangeResult> {
+  const owned = await ownedQuestions(agencyId, businessId);
   if (!owned || !owned.questions.some((q) => q.id === questionId)) return notFound;
   const { error } = await owned.supabase.from("tracked_prompts").delete().eq("id", questionId);
   if (error) throw new Error(`Questions: could not remove the question: ${error.message}`);

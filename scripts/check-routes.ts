@@ -26,6 +26,7 @@ const REMOVED: Record<string, string> = {
   "/dashboard/direct-agent": "/dashboard",
   "/dashboard/agent-readiness": "/dashboard",
   "/dashboard/settings": "/settings",
+  "/dashboard/prompts": "/questions",
 };
 
 async function head(path: string) {

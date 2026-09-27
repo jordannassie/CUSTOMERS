@@ -5,7 +5,7 @@ import { Loader2, Plus } from "lucide-react";
 import { toast } from "sonner";
 import type { ActionResult } from "@/modules/auth";
 import { QUESTION_MAX_LENGTH, QUESTION_MIN_LENGTH } from "@/modules/questions/schema";
-import { creditChangeText, monthlyCredits } from "@/modules/questions/service";
+import { creditChangeText, monthlyCredits } from "./credits";
 import type { ScanFrequency } from "@/modules/credits/estimate";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

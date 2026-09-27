@@ -1,4 +1,4 @@
-import { estimateMonthlyCredits, type ScanFrequency } from "@/modules/credits/estimate";
+import type { ScanFrequency } from "@/modules/credits";
 import type { ModelAppearance, ProviderId } from "@/modules/scanning";
 
 // What the Questions page shows (B-53, MVP_SPEC 5.3, 8.1). Pure, so every state is unit tested.
@@ -77,16 +77,4 @@ export function atLimit(activeCount: number, limit: number | null): boolean {
 
 export function limitText(limit: number): string {
   return `You have ${limit} active questions, the most your plan allows. Pause or remove one to add another.`;
-}
-
-/** Credits a month with this many active questions; the same sum as onboarding and Settings. */
-export function monthlyCredits(activeCount: number, models: number, frequency: ScanFrequency): number {
-  return estimateMonthlyCredits(activeCount, models, frequency);
-}
-
-/** "About 13 more credits a month" for one question more (+1) or less (-1). */
-export function creditChangeText(activeCount: number, change: 1 | -1, models: number, frequency: ScanFrequency): string {
-  const diff = monthlyCredits(activeCount + change, models, frequency) - monthlyCredits(activeCount, models, frequency);
-  const n = Math.abs(diff);
-  return `About ${n} ${change > 0 ? "more" : "fewer"} ${n === 1 ? "credit" : "credits"} a month`;
 }

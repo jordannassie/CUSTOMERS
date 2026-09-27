@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { FREQUENCY_WORDS, monthlyCredits, type QuestionsView } from "@/modules/questions/service";
+import { FREQUENCY_WORDS, type QuestionsView } from "@/modules/questions/service";
+import { monthlyCredits } from "./credits";
 
 const count = (n: number) => n.toLocaleString("en-US");
 

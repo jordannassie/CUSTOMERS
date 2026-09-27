@@ -6,7 +6,8 @@ import { toast } from "sonner";
 import { cn } from "cn";
 import type { ScanFrequency } from "@/modules/credits/estimate";
 import { QUESTION_MAX_LENGTH } from "@/modules/questions/schema";
-import { creditChangeText, type QuestionRow } from "@/modules/questions/service";
+import type { QuestionRow } from "@/modules/questions/service";
+import { creditChangeText } from "./credits";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -62,6 +63,12 @@ export function QuestionItem({ businessId, question, activeCount, models, freque
     run(actions.edit, { text: draft }, "Question saved.", () => setEditing(false));
   }
 
+  function cancelEdit() {
+    setEditing(false);
+    setDraft(question.text);
+    setError(null);
+  }
+
   return (
     <li data-testid="question-row" className={cn("relative grid gap-3 px-5 py-4", gridClass, !question.active && "text-muted-foreground")}>
       <div className="flex min-w-0 flex-col gap-1.5 pr-10 lg:pr-0">
@@ -73,7 +80,7 @@ export function QuestionItem({ businessId, question, activeCount, models, freque
                 {pending && <Loader2 className="animate-spin" aria-hidden="true" />}
                 Save
               </Button>
-              <Button type="button" size="sm" variant="ghost" onClick={() => (setEditing(false), setDraft(question.text), setError(null))}>
+              <Button type="button" size="sm" variant="ghost" onClick={cancelEdit}>
                 Cancel
               </Button>
             </div>
