@@ -1,15 +1,20 @@
-import { Suspense } from "react";
-import PageLoading from "@/components/PageLoading";
-import AdminFrame from "./_components/admin-frame";
+import AdminNav from "./_components/admin-nav";
+import { requireAdmin } from "@/modules/auth";
 
 export const metadata = { title: "Admin", robots: { index: false } };
 
-export default function AdminLayout({ children }: { children: React.ReactNode }) {
+// Blocking on purpose (D-80, BUG-020): the admin check runs before anything streams, so a
+// non-admin gets a real redirect. Behind Suspense the redirect arrived mid-stream and looped.
+export const instant = false;
+
+// Pages still call requireAdmin() themselves: layouts do not re-render on navigation.
+export default async function AdminLayout({ children }: { children: React.ReactNode }) {
+  const admin = await requireAdmin({ next: "/internal/admin" });
+
   return (
     <div className="flex min-h-screen flex-col bg-background lg:flex-row">
-      <Suspense fallback={<PageLoading />}>
-        <AdminFrame>{children}</AdminFrame>
-      </Suspense>
+      <AdminNav adminEmail={admin.email ?? ""} />
+      <main className="min-w-0 flex-1">{children}</main>
     </div>
   );
 }
