@@ -84,7 +84,13 @@ jobs:
       - run: bash scripts/scan-payload.sh
       - run: npm ci --ignore-scripts
       - run: npx playwright install --with-deps chromium
-      - run: npm run test:e2e
+      # DB-backed specs seed their own rows in a local Supabase, like the Unit tests job.
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 2.108.0
+      - run: bash scripts/test-db-reset.sh
+      # The dev server Playwright starts must use the local stack, not the placeholder env above.
+      - run: set -a && source .env.test.local && set +a && npm run test:e2e
       - if: failure()
         uses: actions/upload-artifact@v4
         with:

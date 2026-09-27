@@ -7,11 +7,12 @@ import { expect, test, type Page } from "@playwright/test";
 // B-48 against the local Supabase stack only: the dev server must run with .env.test.local
 // (see the PR), and every test seeds its own agency so a reset by another session cannot break it.
 const local = existsSync(".env.test.local") ? parseEnv(readFileSync(".env.test.local", "utf8")) : {};
-test.skip(!local.SUPABASE_SERVICE_ROLE_KEY, "needs the local Supabase stack (.env.test.local)");
+const hasDb = !!(local.NEXT_PUBLIC_SUPABASE_URL && local.SUPABASE_SERVICE_ROLE_KEY);
+test.skip(!hasDb, "Skipped: no local test database. Run scripts/test-db-reset.sh to create .env.test.local.");
 
-const db = createClient(local.NEXT_PUBLIC_SUPABASE_URL!, local.SUPABASE_SERVICE_ROLE_KEY!, {
-  auth: { persistSession: false },
-});
+const db = hasDb
+  ? createClient(local.NEXT_PUBLIC_SUPABASE_URL!, local.SUPABASE_SERVICE_ROLE_KEY!, { auth: { persistSession: false } })
+  : null!;
 const DAY = 24 * 60 * 60 * 1000;
 const userIds: string[] = [];
 
