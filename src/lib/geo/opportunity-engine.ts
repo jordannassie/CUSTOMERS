@@ -54,19 +54,19 @@ function claudePromptFor(
   return [
     `I'm working on AI search visibility (GEO/AEO) for ${businessName}${domain ? ` (${domain})` : ""}.`,
     "",
-    `Context / evidence (from Customers.Direct's real AI visibility monitoring — do not assume any facts beyond what's stated here):`,
+    `Context / evidence (from Customers.Direct's real AI visibility monitoring. Do not assume any facts beyond what's stated here):`,
     evidence,
     "",
     header,
     ask,
     "",
-    "Important: only use real information about this business that I provide or that you find by reading the actual website — never invent addresses, phone numbers, services, credentials, awards, or testimonials that weren't given to you.",
+    "Important: only use real information about this business that I provide or that you find by reading the actual website. Never invent addresses, phone numbers, services, credentials, awards, or testimonials that weren't given to you.",
   ].join("\n");
 }
 
 /**
  * Deterministic, evidence-grounded opportunity generator. Every opportunity
- * it produces cites a specific number pulled from real stored results —
+ * it produces cites a specific number pulled from real stored results;
  * it never invents a reason for a ranking change or a fact about the
  * business it wasn't given.
  */
@@ -94,7 +94,7 @@ export function generateOpportunities(input: OpportunityEngineInput): Opportunit
       impact,
       category: "content",
       recommended_action:
-        "Publish or expand content on your website that directly answers the buyer-intent prompts we tested — clear service descriptions, service-area pages, and FAQ content AI models can quote and cite.",
+        "Publish or expand content on your website that directly answers the buyer-intent prompts we tested: clear service descriptions, service-area pages, and FAQ content AI models can quote and cite.",
       claude_prompt: claudePromptFor(
         "Ask:",
         businessName,
@@ -117,13 +117,13 @@ export function generateOpportunities(input: OpportunityEngineInput): Opportunit
         impact: "medium",
         category: "citations",
         recommended_action:
-          "Add or strengthen pages AI models can cite by name — a dedicated services page, a detailed About page, and schema.org structured data (Organization / LocalBusiness / Service).",
+          "Add or strengthen pages AI models can cite by name: a dedicated services page, a detailed About page, and schema.org structured data (Organization / LocalBusiness / Service).",
         claude_prompt: claudePromptFor(
           "Ask:",
           businessName,
           domain,
           evidence,
-          "Write schema.org JSON-LD structured data (Organization and LocalBusiness types) for this website. Only include fields I can confirm — leave a clear placeholder comment for anything I need to provide (address, phone, hours, etc.).",
+          "Write schema.org JSON-LD structured data (Organization and LocalBusiness types) for this website. Only include fields I can confirm. Leave a clear placeholder comment for anything I need to provide (address, phone, hours, etc.).",
         ),
       });
     }
@@ -156,7 +156,7 @@ export function generateOpportunities(input: OpportunityEngineInput): Opportunit
         businessName,
         domain,
         evidence,
-        `Suggest 3-5 concrete, specific website or content improvements ${businessName} could make to close this visibility gap. Base suggestions only on general AI-search best practices (structured data, clear service pages, citable facts) — do not assume what ${competitorName} does differently since I haven't provided that.`,
+        `Suggest 3-5 concrete, specific website or content improvements ${businessName} could make to close this visibility gap. Base suggestions only on general AI-search best practices (structured data, clear service pages, citable facts). Do not assume what ${competitorName} does differently since I haven't provided that.`,
       ),
     });
   }
@@ -198,7 +198,7 @@ export function generateOpportunities(input: OpportunityEngineInput): Opportunit
         businessName,
         domain,
         "No primary service city is on file for this business.",
-        "Not applicable — this is a data-entry task in the Customers.Direct dashboard, not a content task.",
+        "Not applicable. This is a data-entry task in the Customers.Direct dashboard, not a content task.",
       ),
     });
   }
@@ -223,13 +223,13 @@ export function generateOpportunities(input: OpportunityEngineInput): Opportunit
           businessName,
           domain,
           evidence,
-          `Write a page outline for a new or updated page targeting "${topGap.keyword}". Include: target keyword in title and H1, service description (3–4 paragraphs), local relevance signals, FAQ section (5 questions buyers ask), and JSON-LD schema suggestions. Do not invent specific facts — use placeholders for details I need to fill in.`,
+          `Write a page outline for a new or updated page targeting "${topGap.keyword}". Include: target keyword in title and H1, service description (3 to 4 paragraphs), local relevance signals, FAQ section (5 questions buyers ask), and JSON-LD schema suggestions. Do not invent specific facts. Use placeholders for details I need to fill in.`,
         ),
       });
     }
   }
 
-  // G) SEO ranking opportunities (pages ranking #11–20)
+  // G) SEO ranking opportunities (pages ranking #11 to 20)
   if (seo?.topKeywords && seo.topKeywords.length > 0) {
     const nearMissKeywords = seo.topKeywords.filter(
       (kw) => kw.position >= 11 && kw.position <= 20 && kw.searchVolume > 100,
