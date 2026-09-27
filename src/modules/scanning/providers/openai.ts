@@ -5,6 +5,7 @@ import { z } from "zod";
 import { CHECK_MODELS } from "./models";
 import { checkCostUsd } from "./pricing";
 import { ProviderError, postJson, type RequestDeps } from "./request";
+import { cleanUrl } from "./urls";
 import type { CheckInput, CheckResult, Citation, RunCheck } from "./types";
 
 const RESPONSES_URL = "https://api.openai.com/v1/responses";
@@ -111,16 +112,4 @@ function citationsOf(data: OpenAIResponse): Citation[] {
     }
   }
   return [...byUrl.values()];
-}
-
-// OpenAI tags every cited link with utm_source=openai; dropping it lets the same page match across models.
-export function cleanUrl(raw: string): string | null {
-  try {
-    const url = new URL(raw);
-    if (url.protocol !== "http:" && url.protocol !== "https:") return null;
-    if (url.searchParams.get("utm_source") === "openai") url.searchParams.delete("utm_source");
-    return url.toString();
-  } catch {
-    return null;
-  }
 }

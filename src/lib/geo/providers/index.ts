@@ -6,12 +6,12 @@ import type {
 } from "@/types/geo";
 import type { VisibilityProviderAdapter } from "./types";
 import { openAIAdapter } from "./openai";
-import { anthropicAdapter } from "./anthropic";
 import { perplexityAdapter } from "./perplexity";
 
 const REGISTRY: Record<VisibilityProviderId, VisibilityProviderAdapter | null> = {
   openai: openAIAdapter,
-  anthropic: anthropicAdapter,
+  // Claude runs through src/modules/scanning/providers/anthropic.ts from B-26 on.
+  anthropic: null,
   perplexity: perplexityAdapter,
   // Google AI Overviews has no public API for this kind of query yet.
   // The slot is reserved so it can be added without touching call sites.

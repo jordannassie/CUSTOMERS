@@ -1,8 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
 import recorded from "./fixtures/openai-coffee-orange.json";
-import { cleanUrl, createOpenAICheck } from "./openai";
+import { createOpenAICheck } from "./openai";
 import { ProviderError } from "./request";
 import type { CheckInput } from "./types";
+import { cleanUrl } from "./urls";
 
 const input: CheckInput = {
   question: "What is the best coffee shop near me in Orange, CA?",

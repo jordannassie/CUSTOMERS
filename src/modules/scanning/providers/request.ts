@@ -7,7 +7,8 @@ export const MAX_RETRIES = 2;
 const BASE_DELAY_MS = 1_000;
 const MAX_DELAY_MS = 10_000;
 
-export type ProviderErrorKind = "rate_limit" | "server" | "timeout" | "network" | "client" | "bad_response";
+/** "search": the answer came back but every web search inside it failed (Claude reports this in a 200). */
+export type ProviderErrorKind = "rate_limit" | "server" | "timeout" | "network" | "search" | "client" | "bad_response";
 
 export class ProviderError extends Error {
   readonly provider: ProviderId;
@@ -43,6 +44,54 @@ export type RequestDeps = {
 
 const defaultSleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
+export type Attempt<T> = { ok: true; value: T } | { ok: false; error: ProviderError; retryAfterMs?: number | null };
+
+/** Runs one provider call with the shared retry policy; adapters only classify each attempt. */
+export async function withRetries<T>(
+  run: (attempt: number) => Promise<Attempt<T>>,
+  deps: Pick<RequestDeps, "sleep"> = {},
+): Promise<T> {
+  const sleep = deps.sleep ?? defaultSleep;
+  for (let attempt = 1; ; attempt++) {
+    const result = await run(attempt);
+    if (result.ok) return result.value;
+    const { error } = result;
+    // A timed-out attempt already used the full 30 seconds; retrying here would stall the scan,
+    // so it goes back to the job layer as retryable instead.
+    const retryHere = error.kind === "rate_limit" || error.kind === "server" || error.kind === "network";
+    if (!retryHere || attempt > MAX_RETRIES) throw error;
+    await sleep(result.retryAfterMs ?? backoffMs(attempt));
+  }
+}
+
+export function httpFailure(
+  provider: ProviderId,
+  status: number,
+  detail: string,
+  attempts: number,
+  retryAfter: string | null,
+): Attempt<never> {
+  const kind = status === 429 ? "rate_limit" : status >= 500 ? "server" : "client";
+  const message = `${provider} returned ${status}: ${detail.slice(0, 300)}`;
+  return {
+    ok: false,
+    error: new ProviderError({ provider, kind, status, attempts, message }),
+    retryAfterMs: parseRetryAfter(retryAfter),
+  };
+}
+
+export function transportFailure(
+  provider: ProviderId,
+  err: unknown,
+  attempts: number,
+  timeoutMs: number,
+  timedOut: boolean,
+): Attempt<never> {
+  const message = timedOut ? `${provider} did not answer within ${timeoutMs} ms` : `${provider} request failed`;
+  const kind = timedOut ? "timeout" : "network";
+  return { ok: false, error: new ProviderError({ provider, kind, attempts, cause: err, message }) };
+}
+
 export async function postJson(
   provider: ProviderId,
   url: string,
@@ -51,12 +100,9 @@ export async function postJson(
   deps: RequestDeps = {},
 ): Promise<unknown> {
   const doFetch = deps.fetch ?? fetch;
-  const sleep = deps.sleep ?? defaultSleep;
   const timeoutMs = deps.timeoutMs ?? TIMEOUT_MS;
 
-  for (let attempt = 1; ; attempt++) {
-    let failure: ProviderError;
-    let retryAfterMs: number | null = null;
+  return withRetries(async (attempt): Promise<Attempt<unknown>> => {
     try {
       const res = await doFetch(url, {
         method: "POST",
@@ -64,36 +110,15 @@ export async function postJson(
         body: JSON.stringify(body),
         signal: AbortSignal.timeout(timeoutMs),
       });
-      if (res.ok) return await readJson(res, provider, attempt);
-
-      const detail = (await res.text().catch(() => "")).slice(0, 300);
-      const kind = res.status === 429 ? "rate_limit" : res.status >= 500 ? "server" : "client";
-      failure = new ProviderError({
-        provider,
-        kind,
-        status: res.status,
-        attempts: attempt,
-        message: `${provider} returned ${res.status}: ${detail}`,
-      });
-      retryAfterMs = parseRetryAfter(res.headers.get("retry-after"));
+      if (res.ok) return { ok: true, value: await readJson(res, provider, attempt) };
+      const detail = await res.text().catch(() => "");
+      return httpFailure(provider, res.status, detail, attempt, res.headers.get("retry-after"));
     } catch (err) {
       if (err instanceof ProviderError) throw err;
       const timedOut = err instanceof DOMException && err.name === "TimeoutError";
-      failure = new ProviderError({
-        provider,
-        kind: timedOut ? "timeout" : "network",
-        attempts: attempt,
-        cause: err,
-        message: timedOut ? `${provider} did not answer within ${timeoutMs} ms` : `${provider} request failed`,
-      });
-      // A timed-out attempt already used the full 30 seconds; retrying here would stall the scan,
-      // so it goes back to the job layer as retryable instead.
-      if (timedOut) throw failure;
+      return transportFailure(provider, err, attempt, timeoutMs, timedOut);
     }
-
-    if (failure.kind === "client" || attempt > MAX_RETRIES) throw failure;
-    await sleep(retryAfterMs ?? backoffMs(attempt));
-  }
+  }, deps);
 }
 
 async function readJson(res: Response, provider: ProviderId, attempts: number): Promise<unknown> {
