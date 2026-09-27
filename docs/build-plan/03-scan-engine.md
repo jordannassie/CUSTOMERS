@@ -5,7 +5,7 @@ Goal: accurate, affordable checks on ChatGPT, Claude and Perplexity, run as back
 ---
 
 ### B-20 Provider interface and OpenAI adapter
-- [ ] Done
+- [x] Done (PR #42, merged into mvp)
 
 Phase 3 · M · Depends on: B-15 · Blocked by Jordan: no · MVP_SPEC 5.1, 5.2, D-67, D-68, MVP_ROADMAP REL-01 · Branch: `task/B-20-provider-interface-and-openai-adapter` → `mvp`
 
@@ -25,7 +25,7 @@ Phase 3 · M · Depends on: B-15 · Blocked by Jordan: no · MVP_SPEC 5.1, 5.2, 
 ---
 
 ### B-21 Claude adapter
-- [ ] Done
+- [x] Done (PR #44, merged into mvp)
 
 Phase 3 · M · Depends on: B-20 · Blocked by Jordan: no · MVP_SPEC 5.1, D-67 · Branch: `task/B-21-claude-adapter` → `mvp`
 
@@ -45,7 +45,7 @@ Phase 3 · M · Depends on: B-20 · Blocked by Jordan: no · MVP_SPEC 5.1, D-67 
 ---
 
 ### B-22 Perplexity adapter
-- [ ] Done
+- [x] Done (PR #46, merged into mvp)
 
 Phase 3 · S · Depends on: B-20 · Blocked by Jordan: no · MVP_SPEC 5.1, D-67 · Branch: `task/B-22-perplexity-adapter` → `mvp`
 
@@ -62,7 +62,7 @@ Phase 3 · S · Depends on: B-20 · Blocked by Jordan: no · MVP_SPEC 5.1, D-67 
 ---
 
 ### B-23 Answer cache
-- [ ] Done
+- [x] Done (PR #47, merged into mvp)
 
 Phase 3 · S · Depends on: B-20, B-11 · Blocked by Jordan: no · MVP_SPEC 5.4, D-24 · Branch: `task/B-23-answer-cache` → `mvp`
 
@@ -100,7 +100,7 @@ Phase 3 · L · Depends on: B-06 · Blocked by Jordan: no · MVP_SPEC 5.5, 25, D
 ---
 
 ### B-25 "Also recommended by AI" extraction and its eval
-- [ ] Done
+- [ ] Done (code in PR #49; waits for labelled dataset)
 
 Phase 3 · M · Depends on: B-21 · Blocked by Jordan: no · MVP_SPEC 5.2, D-74 · Branch: `task/B-25-also-recommended-by-ai-extraction` → `mvp`
 
@@ -119,7 +119,7 @@ Phase 3 · M · Depends on: B-21 · Blocked by Jordan: no · MVP_SPEC 5.2, D-74 
 ---
 
 ### B-26 Run a check and run a scan
-- [ ] Done
+- [x] Done (PR #52, merged into mvp)
 
 Phase 3 · M · Depends on: B-13, B-20 to B-25 · Blocked by Jordan: no · MVP_SPEC 5.2, 4.2, D-53, D-54 · Branch: `task/B-26-run-a-check-and-run` → `mvp`
 
@@ -139,7 +139,7 @@ Phase 3 · M · Depends on: B-13, B-20 to B-25 · Blocked by Jordan: no · MVP_S
 ---
 
 ### B-27 Job worker
-- [ ] Done
+- [x] Done (PR #54, merged into mvp; real hosting test waits for new keys)
 
 Phase 3 · M · Depends on: B-26 · Blocked by Jordan: no · MVP_SPEC 6.3, D-42 · Branch: `task/B-27-job-worker` → `mvp`
 
@@ -160,7 +160,7 @@ Phase 3 · M · Depends on: B-26 · Blocked by Jordan: no · MVP_SPEC 6.3, D-42 
 ---
 
 ### B-28 Schedules (pg_cron and pg_net)
-- [ ] Done
+- [x] Done (PR #59 and #61, merged into mvp)
 
 Phase 3 · S · Depends on: B-27 · Blocked by Jordan: no · MVP_SPEC 6.2 · Branch: `task/B-28-schedules-pg-cron-and-pg` → `mvp`
 
@@ -198,7 +198,7 @@ Phase 3 · S · Depends on: B-27, B-16 · Blocked by Jordan: no · MVP_SPEC 6.4 
 ---
 
 ### B-30 Scoring and confidence
-- [ ] Done
+- [x] Done (PR #55, merged into mvp)
 
 Phase 3 · M · Depends on: B-26 · Blocked by Jordan: no · MVP_SPEC 5.6, D-63 to D-65 · Branch: `task/B-30-scoring-and-confidence` → `mvp`
 

@@ -65,7 +65,7 @@ Phase 9 · M · Depends on: B-70, B-40 · Blocked by Jordan: final prices (D-21)
 ---
 
 ### B-73 Free compare tool made honest
-- [ ] Done
+- [x] Done (PR #53, merged into mvp)
 
 Phase 9 · M · Depends on: B-70, B-22 · Blocked by Jordan: no · MVP_SPEC 12.3 · Branch: `task/B-73-free-compare-tool-made-honest` → `mvp`
 

@@ -7,7 +7,7 @@ All admin pages use `requireAdmin()` (B-17). Leads, Feature Requests and LinkedI
 ---
 
 ### B-64 Admin shell
-- [ ] Done
+- [x] Done (PR #45, merged into mvp)
 
 Phase 8 · S · Depends on: B-17, B-09 · Blocked by Jordan: no · MVP_SPEC 9.1, D-35 · Branch: `task/B-64-admin-shell` → `mvp`
 
@@ -45,7 +45,7 @@ Phase 8 · L · Depends on: B-64, B-13, B-42 · Blocked by Jordan: no · MVP_SPE
 ---
 
 ### B-66 Businesses
-- [ ] Done
+- [x] Done (PR #56, merged into mvp)
 
 Phase 8 · M · Depends on: B-64 · Blocked by Jordan: no · MVP_SPEC 9.1 · Branch: `task/B-66-businesses` → `mvp`
 
@@ -63,7 +63,7 @@ Phase 8 · M · Depends on: B-64 · Blocked by Jordan: no · MVP_SPEC 9.1 · Bra
 ---
 
 ### B-67 Scans and Usage & Cost
-- [ ] Done
+- [x] Done (PR #60, merged into mvp)
 
 Phase 8 · M · Depends on: B-64, B-27 · Blocked by Jordan: no · MVP_SPEC 9.1 · Branch: `task/B-67-scans-and-usage-cost` → `mvp`
 
@@ -81,7 +81,7 @@ Phase 8 · M · Depends on: B-64, B-27 · Blocked by Jordan: no · MVP_SPEC 9.1 
 ---
 
 ### B-68 Settings (system status)
-- [ ] Done
+- [x] Done (PR #48, merged into mvp)
 
 Phase 8 · S · Depends on: B-64 · Blocked by Jordan: no · MVP_SPEC 9.1 · Branch: `task/B-68-settings-system-status` → `mvp`
 
