@@ -8,18 +8,13 @@ import { TrialTerms } from "@/components/marketing/pricing/TrialTerms";
 import { Credits } from "@/components/marketing/pricing/Credits";
 import { PricingFaq } from "@/components/marketing/pricing/PricingFaq";
 import { getPublicPricing } from "@/modules/billing";
+import { pageMetadata } from "@/lib/site-metadata";
 
 const title = "Pricing";
 const description =
   "Starter and Pro plans, priced per business each month with credits included. Try it free for 7 days with a card, and cancel before day 7 to pay nothing.";
 
-export const metadata: Metadata = {
-  title,
-  description,
-  alternates: { canonical: "/pricing" },
-  openGraph: { type: "website", url: "/pricing", title: `${title} | Customers.Direct`, description },
-  twitter: { card: "summary_large_image", title: `${title} | Customers.Direct`, description },
-};
+export const metadata: Metadata = pageMetadata({ title, description, path: "/pricing" });
 
 export default async function PricingPage() {
   const { plans, packs } = await getPublicPricing();

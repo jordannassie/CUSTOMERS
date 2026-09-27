@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import AuthForm from "@/components/geo/AuthForm";
 
 export const metadata = {
-  title: "Log In",
+  title: "Log in",
   robots: { index: false },
 };
 

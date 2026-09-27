@@ -1,14 +1,12 @@
 import Header from "@/components/marketing/Header";
 import Footer from "@/components/marketing/Footer";
+import { pageMetadata } from "@/lib/site-metadata";
 
-const title = "Terms of Service";
-const description = "The terms that govern your use of Customers.Direct.";
-
-export const metadata = {
-  title,
-  description,
-  alternates: { canonical: "/terms" },
-};
+export const metadata = pageMetadata({
+  title: "Terms of service",
+  description: "The terms for using Customers.Direct: your account, subscriptions and billing, and what we can and cannot promise.",
+  path: "/terms",
+});
 
 const UPDATED = "August 25, 2026";
 
@@ -18,7 +16,7 @@ export default function TermsPage() {
       <Header />
       <main className="bg-background px-4 py-12 sm:py-16">
         <div className="max-w-3xl mx-auto">
-          <h1 className="text-[32px] sm:text-5xl font-semibold tracking-[-0.02em] sm:tracking-[-0.035em] mb-2">Terms of Service</h1>
+          <h1 className="text-[32px] sm:text-5xl font-semibold tracking-[-0.02em] sm:tracking-[-0.035em] mb-2">Terms of service</h1>
           <p className="text-sm text-text-hint mb-10">Last updated: {UPDATED}</p>
 
           <div className="flex flex-col gap-6 text-foreground text-sm leading-relaxed">

@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import type { Metadata } from "next";
 import { AppShell } from "@/components/app/AppShell";
 import { AppShellSkeleton, PageSkeleton } from "@/components/app/AppShellSkeleton";
 import {
@@ -9,6 +10,8 @@ import {
   switchBusiness,
   usageWidget,
 } from "@/modules/workspace";
+
+export const metadata: Metadata = { robots: { index: false, follow: false } };
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (

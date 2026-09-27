@@ -2,7 +2,7 @@ import ResetPasswordForm from "@/components/geo/ResetPasswordForm";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Set New Password — Customers.Direct",
+  title: "Set a new password",
   robots: { index: false },
 };
 

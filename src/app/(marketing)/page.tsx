@@ -11,27 +11,8 @@ import { Faq } from "@/components/marketing/home/Faq";
 import { FinalCta } from "@/components/marketing/home/FinalCta";
 import { getPublicPricing } from "@/modules/billing";
 
-const title = "Customers.Direct: see if AI recommends your business";
-const description =
-  "Check whether ChatGPT, Claude and Perplexity recommend your business for the questions local customers ask, see why competitors win, and get steps to fix it.";
-
-export const metadata: Metadata = {
-  title: { absolute: title },
-  description,
-  alternates: { canonical: "/" },
-  openGraph: {
-    type: "website",
-    siteName: "Customers.Direct",
-    url: "/",
-    title,
-    description,
-  },
-  twitter: {
-    card: "summary_large_image",
-    title,
-    description,
-  },
-};
+// Title, description and link preview come from the root layout.
+export const metadata: Metadata = { alternates: { canonical: "/" } };
 
 export default async function Home() {
   const { plans } = await getPublicPricing();

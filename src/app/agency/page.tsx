@@ -9,18 +9,13 @@ import { AgencyWorkflow } from "@/components/marketing/agency/AgencyWorkflow";
 import { AgencyBilling } from "@/components/marketing/agency/AgencyBilling";
 import { RevenueExample } from "@/components/marketing/agency/RevenueExample";
 import { getPublicPricing } from "@/modules/billing";
+import { pageMetadata } from "@/lib/site-metadata";
 
 const title = "For agencies";
 const description =
   "Check whether ChatGPT, Claude and Perplexity recommend each of your clients, see which competitors win, and send reports with your logo. All clients in one login.";
 
-export const metadata: Metadata = {
-  title,
-  description,
-  alternates: { canonical: "/agency" },
-  openGraph: { type: "website", url: "/agency", title: `${title} | Customers.Direct`, description },
-  twitter: { card: "summary_large_image", title: `${title} | Customers.Direct`, description },
-};
+export const metadata: Metadata = pageMetadata({ title, description, path: "/agency" });
 
 export default async function AgencyPage() {
   const { plans } = await getPublicPricing();
