@@ -3,8 +3,6 @@ import {
   createNameExtractor,
   orderedNames,
   readStoredExtraction,
-  storeExtraction,
-  toStoredExtraction,
 } from "./extract";
 import { alsoRecommended, isSameBusiness, matchNames } from "./extract-match";
 import recorded from "./fixtures/extract-names-message.json";
@@ -103,18 +101,6 @@ describe("orderedNames", () => {
 });
 
 describe("stored extraction", () => {
-  it("round-trips through the cache field and is written by the injected writer", async () => {
-    const { extract } = setup(json(recorded));
-    const extraction = await extract(ANSWER);
-    const save = vi.fn(async () => {});
-    await storeExtraction("key-1", extraction, save);
-
-    const stored = toStoredExtraction(extraction);
-    expect(save).toHaveBeenCalledWith("key-1", stored);
-    expect(stored).not.toHaveProperty("costUsd");
-    expect(readStoredExtraction(JSON.parse(JSON.stringify(stored)))).toEqual(stored);
-  });
-
   it("ignores empty fields and older prompt versions so they are extracted again", () => {
     expect(readStoredExtraction(null)).toBeNull();
     expect(readStoredExtraction({ promptVersion: "extract-names.v0", model: "m", names: [] })).toBeNull();

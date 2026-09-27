@@ -82,3 +82,12 @@ export async function insertCheckUsage(row: {
   });
   if (error) throw new Error(`Could not record check usage: ${error.message}`);
 }
+
+/** Stores the names extracted from a cached answer (B-25), so later cache hits reuse them. */
+export async function saveExtractedNames(cacheKey: string, extractedNames: Json): Promise<void> {
+  const { error } = await createServiceClient()
+    .from("ai_answer_cache")
+    .update({ extracted_names: extractedNames })
+    .eq("cache_key", cacheKey);
+  if (error) throw new Error(`Could not save extracted names: ${error.message}`);
+}

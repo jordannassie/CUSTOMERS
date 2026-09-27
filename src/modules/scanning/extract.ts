@@ -122,7 +122,7 @@ export function orderedNames(raw: string[]): ExtractedName[] {
   return names;
 }
 
-// What goes in ai_answer_cache.extracted_names (added by B-23).
+// What goes in ai_answer_cache.extracted_names.
 const storedExtraction = z.object({
   promptVersion: z.string(),
   model: z.string(),
@@ -140,11 +140,4 @@ export function readStoredExtraction(value: unknown): StoredExtraction | null {
   const parsed = storedExtraction.safeParse(value);
   if (!parsed.success || parsed.data.promptVersion !== EXTRACT_NAMES_VERSION) return null;
   return parsed.data;
-}
-
-/** Writes an extraction onto its cached answer. The writer is the scanning dal once B-23 lands. */
-export type SaveExtractedNames = (cacheKey: string, extraction: StoredExtraction) => Promise<void>;
-
-export async function storeExtraction(cacheKey: string, extraction: Extraction, save: SaveExtractedNames) {
-  await save(cacheKey, toStoredExtraction(extraction));
 }
