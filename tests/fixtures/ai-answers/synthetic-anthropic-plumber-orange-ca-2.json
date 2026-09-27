@@ -1,0 +1,12 @@
+{
+  "synthetic": true,
+  "provider": "anthropic",
+  "question": "Which plumber in Orange, CA can fix a leak today?",
+  "answerText": "Based on recent reviews, Plaza Plumbing Pros is a popular choice in Orange, CA, known for strong local reviews and friendly staff. Locals also recommend Orange County Pipe Co. and Santiago Drain and Rooter. I would call ahead to confirm availability.",
+  "citations": [],
+  "names": [
+    "Plaza Plumbing Pros",
+    "Orange County Pipe Co.",
+    "Santiago Drain and Rooter"
+  ]
+}

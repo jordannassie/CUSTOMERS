@@ -21,6 +21,7 @@ export default defineConfig({
         test: {
           name: "unit",
           include: ["src/**/*.test.ts"],
+          setupFiles: ["tests/setup/retry-gateway-502.ts"],
           env: testEnv as Record<string, string>,
         },
       },
@@ -48,6 +49,14 @@ export default defineConfig({
         test: {
           name: "dev",
           include: ["scripts/dev/**/*.dev.ts"],
+        },
+      },
+      {
+        // Records real answers for test mode (B-31); needs LIVE_AI_CALL=1 like the dev checks.
+        extends: true,
+        test: {
+          name: "record",
+          include: ["scripts/record-ai-answers.ts"],
         },
       },
     ],

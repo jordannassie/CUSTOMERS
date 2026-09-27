@@ -1,0 +1,25 @@
+{
+  "synthetic": true,
+  "provider": "openai",
+  "question": "What is the best coffee shop in Austin, TX?",
+  "answerText": "Here are some well reviewed options in Austin, TX:\n\n1. **Lone Star Brew Bar**: strong local reviews and friendly staff.\n2. **Barton Bean**: convenient hours and easy parking.\n3. **Congress Cup**: consistent quality mentioned in many reviews.\n\nCheck current hours before you go.",
+  "citations": [
+    {
+      "url": "https://lonestarbrewbar.example/",
+      "title": "Lone Star Brew Bar"
+    },
+    {
+      "url": "https://bartonbean.example/",
+      "title": "Barton Bean"
+    },
+    {
+      "url": "https://www.yelp.com/search?find_desc=coffee&find_loc=Austin%2C%20TX",
+      "title": "Top coffee in Austin, TX"
+    }
+  ],
+  "names": [
+    "Lone Star Brew Bar",
+    "Barton Bean",
+    "Congress Cup"
+  ]
+}
