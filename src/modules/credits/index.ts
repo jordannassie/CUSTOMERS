@@ -5,6 +5,7 @@ export {
   grantCredits,
   holdCredits,
   InsufficientCreditsError,
+  isHoldOpen,
   readCaptures,
   releaseHold,
   type CreditBalance,

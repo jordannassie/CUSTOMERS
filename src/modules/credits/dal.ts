@@ -56,6 +56,13 @@ export async function releaseHold(holdId: string): Promise<number> {
   return data;
 }
 
+/** Whether a hold is still open; a closed hold takes no more captures. */
+export async function isHoldOpen(holdId: string): Promise<boolean> {
+  const { data, error } = await createServiceClient().from("credit_holds").select("status").eq("id", holdId).single();
+  if (error) fail("credit_holds", error);
+  return data.status === "open";
+}
+
 /** Adds a grant, paying off any negative balance first. A replayed source returns the first grant's ID. */
 export async function grantCredits(input: {
   agencyId: string;

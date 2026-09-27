@@ -67,7 +67,7 @@ export async function POST(request: NextRequest) {
 
   const { data: businesses, error } = await supabase
     .from("businesses")
-    .select("id, name, domain, primary_city, primary_region")
+    .select("id, name, domain, primary_city, primary_region, primary_country")
     .eq("status", "active")
     .limit(200);
 

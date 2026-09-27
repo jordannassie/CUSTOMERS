@@ -16,6 +16,12 @@ export async function canStartScan(agencyId: string, businessId: string): Promis
   return rules.canStartScan(agency, business);
 }
 
+/** The worker's check right before holdCredits (B-26): the claimed job is itself the open scan, so it is not counted. */
+export async function canRunScanJob(agencyId: string, businessId: string): Promise<Entitlement> {
+  const [agency, business] = await Promise.all([loadAgencyFacts(agencyId), loadBusinessFacts(businessId)]);
+  return rules.canStartScan(agency, { ...business, hasOpenScan: false });
+}
+
 export async function canSpendTopUps(agencyId: string): Promise<Entitlement> {
   return rules.canSpendTopUps(await loadAgencyFacts(agencyId));
 }

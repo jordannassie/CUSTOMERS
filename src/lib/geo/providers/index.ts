@@ -5,13 +5,13 @@ import type {
   VisibilityProviderResult,
 } from "@/types/geo";
 import type { VisibilityProviderAdapter } from "./types";
+import { anthropicAdapter } from "./anthropic";
 import { openAIAdapter } from "./openai";
 import { perplexityAdapter } from "./perplexity";
 
 const REGISTRY: Record<VisibilityProviderId, VisibilityProviderAdapter | null> = {
   openai: openAIAdapter,
-  // Claude runs through src/modules/scanning/providers/anthropic.ts from B-26 on.
-  anthropic: null,
+  anthropic: anthropicAdapter,
   perplexity: perplexityAdapter,
   // Google AI Overviews has no public API for this kind of query yet.
   // The slot is reserved so it can be added without touching call sites.
@@ -31,7 +31,7 @@ export function getProvider(id: VisibilityProviderId): VisibilityProviderAdapter
 /**
  * The single entry point every caller in the app should use to query an AI
  * visibility provider. Never fabricates a result: if the provider isn't
- * configured or the call fails, it throws — callers are responsible for
+ * configured or the call fails, it throws; callers are responsible for
  * recording that as a failed run rather than inventing data.
  */
 export async function runVisibilityPrompt(

@@ -1,5 +1,5 @@
-// Mention detection v2 (MVP_SPEC 5.5, D-08, D-66). Replaces the substring match in
-// src/lib/geo/providers/types.ts, so "Ace" is no longer found inside "space".
+// Mention detection v2 (MVP_SPEC 5.5, D-08, D-66). Replaces the old substring match
+// (removed in B-26), so "Ace" is no longer found inside "space".
 import {
   containsPhone,
   coreName,

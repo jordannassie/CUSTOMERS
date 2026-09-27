@@ -1676,45 +1676,66 @@ export type Database = {
       }
       visibility_results: {
         Row: {
+          answer_text: string | null
           business_id: string
           business_mentioned: boolean
+          cached: boolean
           cited_sources: Json
           competitors_mentioned: Json
+          cost_usd: number | null
           created_at: string
+          extracted_names: Json | null
           id: string
+          latency_ms: number | null
           mention_position: number | null
           methodology: string | null
+          model: string | null
           provider: string
+          question: string | null
           raw_response: Json | null
           run_id: string
           sentiment: string | null
           tracked_prompt_id: string | null
         }
         Insert: {
+          answer_text?: string | null
           business_id: string
           business_mentioned?: boolean
+          cached?: boolean
           cited_sources?: Json
           competitors_mentioned?: Json
+          cost_usd?: number | null
           created_at?: string
+          extracted_names?: Json | null
           id?: string
+          latency_ms?: number | null
           mention_position?: number | null
           methodology?: string | null
+          model?: string | null
           provider: string
+          question?: string | null
           raw_response?: Json | null
           run_id: string
           sentiment?: string | null
           tracked_prompt_id?: string | null
         }
         Update: {
+          answer_text?: string | null
           business_id?: string
           business_mentioned?: boolean
+          cached?: boolean
           cited_sources?: Json
           competitors_mentioned?: Json
+          cost_usd?: number | null
           created_at?: string
+          extracted_names?: Json | null
           id?: string
+          latency_ms?: number | null
           mention_position?: number | null
           methodology?: string | null
+          model?: string | null
           provider?: string
+          question?: string | null
           raw_response?: Json | null
           run_id?: string
           sentiment?: string | null
@@ -1747,31 +1768,40 @@ export type Database = {
       visibility_runs: {
         Row: {
           business_id: string
+          checks_failed: number | null
+          checks_total: number | null
           completed_at: string | null
           created_at: string
           error: string | null
           id: string
           provider: string
+          scan_job_id: string | null
           started_at: string
           status: string
         }
         Insert: {
           business_id: string
+          checks_failed?: number | null
+          checks_total?: number | null
           completed_at?: string | null
           created_at?: string
           error?: string | null
           id?: string
           provider: string
+          scan_job_id?: string | null
           started_at?: string
           status?: string
         }
         Update: {
           business_id?: string
+          checks_failed?: number | null
+          checks_total?: number | null
           completed_at?: string | null
           created_at?: string
           error?: string | null
           id?: string
           provider?: string
+          scan_job_id?: string | null
           started_at?: string
           status?: string
         }
@@ -1781,6 +1811,13 @@ export type Database = {
             columns: ["business_id"]
             isOneToOne: false
             referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "visibility_runs_scan_job_id_fkey"
+            columns: ["scan_job_id"]
+            isOneToOne: false
+            referencedRelation: "scan_jobs"
             referencedColumns: ["id"]
           },
         ]

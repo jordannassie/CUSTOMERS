@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
 
   const { data: business, error } = await supabase
     .from("businesses")
-    .select("id, name, domain, primary_city, primary_region")
+    .select("id, name, domain, primary_city, primary_region, primary_country")
     .eq("id", businessId)
     .eq("owner_user_id", user!.id)
     .single();

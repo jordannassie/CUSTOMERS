@@ -52,7 +52,14 @@ async function mapWithConcurrency<T, R>(
  */
 export async function runVisibilityForBusiness(
   supabase: SupabaseClient,
-  business: { id: string; name: string; domain: string | null; primary_city: string | null; primary_region: string | null },
+  business: {
+    id: string;
+    name: string;
+    domain: string | null;
+    primary_city: string | null;
+    primary_region: string | null;
+    primary_country?: string | null;
+  },
   options: RunOptions = {},
 ): Promise<RunVisibilityResult> {
   const configured = listConfiguredProviders();
@@ -124,6 +131,7 @@ export async function runVisibilityForBusiness(
         domain: business.domain,
         city: business.primary_city,
         region: business.primary_region,
+        country: business.primary_country,
         competitorNames,
       });
       return { trackedPrompt, result, error: null as string | null };
