@@ -58,33 +58,44 @@ export async function loadQuestionsStep(
   // tracked_prompts.source allows library, custom or legacy; written and fallback questions count as custom.
   const source = set.source === "library" ? "library" : "custom";
   const location = cityLabel(b.primary_city, b.primary_region);
-  const { error: insertError } = await supabase.from("tracked_prompts").insert(
-    set.questions.map((q, i) => ({
-      business_id: businessId,
-      prompt: q.text,
-      buyer_intent: q.intent,
-      location,
-      source,
-      active: true,
-      created_at: inOrder(i),
-    })),
-  );
+  const now = Date.now();
+  const { data: mine, error: insertError } = await supabase
+    .from("tracked_prompts")
+    .insert(
+      set.questions.map((q, i) => ({
+        business_id: businessId,
+        prompt: q.text,
+        buyer_intent: q.intent,
+        location,
+        source,
+        active: true,
+        created_at: inOrder(i, now),
+      })),
+    )
+    .select("id");
   if (insertError) throw new Error(`Could not save questions: ${insertError.message}`);
-  return { businessName: b.name, questions: set.questions.map((q) => q.text), limit };
+
+  // Two loads at once (a refresh, a second tab) each prepare a set. The set holding the oldest row wins
+  // and any other set removes itself, so the business keeps exactly one.
+  const all = await activeQuestions(businessId, true);
+  const ours = new Set(mine.map((r) => r.id));
+  if (all.length > 0 && !ours.has(all[0].id)) {
+    const { error } = await supabase.from("tracked_prompts").delete().in("id", [...ours]);
+    if (error) throw new Error(`Could not remove duplicate questions: ${error.message}`);
+    return { businessName: b.name, questions: all.filter((r) => !ours.has(r.id)).map((r) => r.prompt), limit };
+  }
+  return { businessName: b.name, questions: all.filter((r) => ours.has(r.id)).map((r) => r.prompt), limit };
 }
 
 // Rows saved in one insert share a timestamp, so each gets its own to keep the list in order.
 const inOrder = (i: number, from = Date.now()) => new Date(from + i).toISOString();
 
-async function activeQuestions(businessId: string) {
+async function activeQuestions(businessId: string, uncached = false) {
   const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("tracked_prompts")
-    .select("id, prompt")
-    .eq("business_id", businessId)
-    .eq("active", true)
-    .order("created_at")
-    .order("id");
+  let query = supabase.from("tracked_prompts").select("id, prompt").eq("business_id", businessId).eq("active", true);
+  // An always-true filter gives the request its own URL, so Next's per-render fetch memo cannot serve it.
+  if (uncached) query = query.not("id", "is", null);
+  const { data, error } = await query.order("created_at").order("id");
   if (error) throw new Error(`Could not load questions: ${error.message}`);
   return data;
 }

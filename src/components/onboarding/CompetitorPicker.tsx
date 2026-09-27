@@ -79,8 +79,9 @@ export function CompetitorPicker(props: CompetitorPickerProps) {
       const result = await save({ businessId, competitors: picked.map(({ name, placesId }) => ({ name, placesId })) });
       if (!result.ok) return setError(result.error);
       setLastSaved(picked);
+      // In the wizard the next step is the confirmation; a toast there would cover its Continue bar on a phone.
+      if (onSaved) return onSaved(result.data.count);
       toast.success(result.data.count === 1 ? "1 competitor saved" : `${result.data.count} competitors saved`);
-      onSaved?.(result.data.count);
     });
   }
 

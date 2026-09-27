@@ -160,6 +160,22 @@ describe("details, questions and models steps", () => {
     expect(await loadWizardState(userId)).toMatchObject({ draft: null, hasFinishedBusiness: true });
   });
 
+  it("keeps one set of questions when two loads prepare them at once", async () => {
+    const userId = await signUp();
+    const started = await startBusiness(userId, { domain: COFFEE_DOMAIN }, coffee());
+    if (!started.ok) throw new Error("website step failed");
+    await service.from("businesses").update({ primary_city: "Springfield", industry: "Florist" }).eq("id", started.businessId);
+
+    const { clients } = fakeQuestionClients({ write: [...FLORIST_WRITTEN] });
+    const [one, two] = await Promise.all([
+      loadQuestionsStep(userId, started.businessId, clients),
+      loadQuestionsStep(userId, started.businessId, clients),
+    ]);
+    const rows = await service.from("tracked_prompts").select("prompt").eq("business_id", started.businessId);
+    expect(rows.data).toHaveLength(12);
+    expect(one).toMatchObject({ questions: two && two !== "no-city" ? two.questions : [] });
+  });
+
   it("refuses another user's business", async () => {
     const owner = await signUp();
     const started = await startBusiness(owner, { domain: COFFEE_DOMAIN }, coffee());
