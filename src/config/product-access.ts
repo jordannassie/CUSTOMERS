@@ -12,7 +12,7 @@
  *   1. Set env vars:  BETA_FREE_ACCESS=false  BILLING_ENABLED=true
  *   2. Re-enable Stripe checkout routes.
  *   3. Add plan enforcement to mutation API routes using getTrialStatus().
- *   4. Update TrialBanner and settings page copy.
+ *   4. Update the app banners and settings page copy.
  *
  *   All access decisions in the codebase derive from this single config object,
  *   so re-enabling billing requires changing these env vars and the Stripe
