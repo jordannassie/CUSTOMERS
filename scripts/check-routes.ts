@@ -7,7 +7,7 @@ const base = (process.argv[2] ?? "http://localhost:3000").replace(/\/$/, "");
 
 // Public pages must return 200; signed-in areas may redirect to /login instead.
 const KEPT_PUBLIC = ["/", "/pricing", "/agency", "/compare", "/contact", "/login", "/signup", "/privacy", "/terms", "/forgot-password", "/sitemap.xml", "/robots.txt"];
-const KEPT_PRIVATE = ["/dashboard", "/dashboard/visibility", "/dashboard/reports", "/dashboard/seo", "/internal/admin", "/internal/admin/news"];
+const KEPT_PRIVATE = ["/dashboard", "/dashboard/visibility", "/dashboard/reports", "/dashboard/seo", "/settings", "/internal/admin", "/internal/admin/news"];
 
 const REMOVED: Record<string, string> = {
   "/ai-employee": "/",
@@ -25,6 +25,7 @@ const REMOVED: Record<string, string> = {
   "/admin/prospecting": "/internal/admin",
   "/dashboard/direct-agent": "/dashboard",
   "/dashboard/agent-readiness": "/dashboard",
+  "/dashboard/settings": "/settings",
 };
 
 async function head(path: string) {

@@ -17,6 +17,10 @@ const CUT_PAGES = [
 
 const nextConfig: NextConfig = {
   cacheComponents: true,
+  experimental: {
+    // Agency logos are up to 2 MB (B-55); the default 1 MB limit would reject them before the action runs.
+    serverActions: { bodySizeLimit: "3mb" },
+  },
   async redirects() {
     return [
       ...CUT_PAGES.map((source) => ({ source, destination: "/", permanent: true })),
@@ -25,6 +29,7 @@ const nextConfig: NextConfig = {
       { source: "/admin/:path*", destination: "/internal/admin", permanent: true },
       { source: "/dashboard/direct-agent", destination: "/dashboard", permanent: true },
       { source: "/dashboard/agent-readiness", destination: "/dashboard", permanent: true },
+      { source: "/dashboard/settings", destination: "/settings", permanent: true },
       {
         source: "/book",
         destination: "https://calendar.app.google/muM2Kqc8oYnWBPXXA",
