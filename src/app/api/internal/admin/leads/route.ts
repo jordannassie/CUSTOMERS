@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { logAdminAction } from "@/modules/admin";
 import { authErrorResponse, requireAdmin } from "@/modules/auth";
 import { createServiceClient } from "@/lib/supabase/service";
 import type { TablesUpdate } from "@/types/database.types";
@@ -118,5 +119,6 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: "Update failed." }, { status: 500 });
   }
 
+  await logAdminAction("lead.update", { type: "lead", id }, updates);
   return NextResponse.json({ success: true });
 }

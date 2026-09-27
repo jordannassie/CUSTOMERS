@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { logAdminAction } from "@/modules/admin";
 import { authErrorResponse, requireAdmin } from "@/modules/auth";
 import { createServiceClient } from "@/lib/supabase/service";
 
@@ -38,5 +39,6 @@ export async function PATCH(
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
+  await logAdminAction("feature_request.update", { type: "feature_request", id }, { status });
   return NextResponse.json({ ok: true });
 }
