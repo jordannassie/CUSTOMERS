@@ -5,7 +5,7 @@ import { safeNextPath } from "@/lib/safe-next";
 
 // Quick redirects only (MVP_SPEC 18.1 rule 4). Every page, action and route still checks access
 // itself through src/modules/auth.
-const PROTECTED = ["/dashboard", "/settings", "/internal", "/design-preview"];
+const PROTECTED = ["/dashboard", "/settings", "/sources", "/internal", "/design-preview"];
 const AUTH_PAGES = ["/login", "/signup"];
 
 export async function proxy(request: NextRequest) {

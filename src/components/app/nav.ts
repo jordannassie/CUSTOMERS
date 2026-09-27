@@ -8,7 +8,7 @@ export const APP_NAV: NavItem[] = [
   { label: "Competitors", href: "/competitors", icon: Users },
   { label: "Opportunities", href: "/dashboard/opportunities", icon: Lightbulb },
   { label: "Questions", href: "/dashboard/prompts", icon: MessageCircleQuestion },
-  { label: "Sources", href: "/dashboard/citations", icon: Link2 },
+  { label: "Sources", href: "/sources", icon: Link2 },
   { label: "Settings", href: "/settings", icon: Settings, alsoActiveOn: ["/dashboard/billing"] },
 ];
 
