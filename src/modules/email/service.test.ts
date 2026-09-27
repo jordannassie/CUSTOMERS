@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
+import { testSecret } from "./email.test-helpers";
 import { signUnsubscribeToken, unsubscribeUrl, verifyUnsubscribeToken } from "./service";
 
-const SECRET = "test-secret-that-is-at-least-32-characters";
+const SECRET = testSecret();
 const AGENCY = "7f3c2a9e-2d4b-4c1a-9a6e-1b2c3d4e5f60";
 
 describe("unsubscribe tokens", () => {

@@ -1,13 +1,14 @@
 import { createElement } from "react";
 import { describe, expect, it, vi } from "vitest";
 import type { EmailLogRow, EmailStore } from "./dal";
+import { testSecret } from "./email.test-helpers";
 import type { EmailClient } from "./resend";
 import { sendEmail, type SendEmailDeps, type SendEmailInput } from "./send";
 import { verifyUnsubscribeToken } from "./service";
 import NoticeEmail from "./templates/notice";
 
 // Every test passes a fake client, so nothing here reaches Resend (B-61: no real email before B-01 and F-12).
-const SECRET = "test-secret-that-is-at-least-32-characters";
+const SECRET = testSecret();
 const AGENCY = "7f3c2a9e-2d4b-4c1a-9a6e-1b2c3d4e5f60";
 
 function setup({ fail, optedOut }: { fail?: string; optedOut?: boolean } = {}) {

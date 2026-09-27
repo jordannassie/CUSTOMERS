@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { createServiceClient } from "@/lib/supabase/service";
 
-const SECRET = "route-test-secret-at-least-32-characters";
+const SECRET = await vi.hoisted(async () => (await import("@/modules/email/email.test-helpers")).testSecret());
 vi.mock("@/lib/env", async (importOriginal) => {
   const { env } = await importOriginal<typeof import("@/lib/env")>();
   return { env: new Proxy(env, { get: (t, k) => (k === "EMAIL_UNSUBSCRIBE_SECRET" ? SECRET : Reflect.get(t, k)) }) };
@@ -10,6 +10,7 @@ vi.mock("@/lib/env", async (importOriginal) => {
 
 const { POST } = await import("./route");
 const { signUnsubscribeToken } = await import("@/modules/email/service");
+const { testSecret } = await import("@/modules/email/email.test-helpers");
 
 // B-61: the public unsubscribe route, against the local database `npm test` rebuilds.
 const service = createServiceClient();
@@ -69,7 +70,7 @@ describe("POST /api/email/unsubscribe", () => {
   });
 
   it.each([
-    ["a forged token", () => signUnsubscribeToken(agencyId, "weekly_report", "some-other-secret-of-32-characters!")],
+    ["a forged token", () => signUnsubscribeToken(agencyId, "weekly_report", testSecret())],
     ["garbage", () => "<script>"],
     ["no token", () => ""],
   ])("rejects %s and changes nothing", async (_, makeToken) => {
