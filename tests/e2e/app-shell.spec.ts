@@ -74,11 +74,11 @@ async function seedAgency({ status, grant, spend, days }: Seed) {
 
 async function logIn(page: Page, seed: Seed) {
   const { email, password } = await seedAgency(seed);
-  await page.goto("/login?next=/dashboard/competitors");
+  await page.goto("/login?next=/competitors");
   await page.locator("#email").fill(email);
   await page.locator("#password").fill(password);
   await page.locator("button[type=submit]").click();
-  await page.waitForURL((url) => url.pathname === "/dashboard/competitors");
+  await page.waitForURL((url) => url.pathname === "/competitors");
 }
 
 // The sidebar on desktop, the sheet behind the menu button on a phone.

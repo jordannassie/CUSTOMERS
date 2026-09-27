@@ -5,6 +5,8 @@ export { liveCheckRunner } from "./runs/dal";
 export { CHECK_MODELS } from "./providers/models";
 export type { CheckResult, ProviderId } from "./providers/types";
 export { getScoreReport, loadScoreReport, type ScoreReport } from "./scores/dal";
+export { loadAlsoRecommended } from "./also-recommended/dal";
+export type { AlsoRecommended, AlsoRecommendedList } from "./also-recommended/names";
 export {
   compareWithCompetitor,
   isRealChange,

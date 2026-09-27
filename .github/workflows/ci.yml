@@ -95,6 +95,8 @@ jobs:
           ADMIN_EMAILS: e2e-admin-desktop@example.test,e2e-admin-mobile@example.test
           # Run scan starts the worker inside the dev server; CI has no WORKER_URL (tests/e2e/overview.spec.ts).
           WORKER_IN_PROCESS: "true"
+          # Made-up Google Places answers for the competitor pages; never a real Places call (tests/e2e/competitors.spec.ts).
+          PLACES_FIXTURES: "true"
         run: set -a && source .env.test.local && set +a && npm run test:e2e
       - if: failure()
         uses: actions/upload-artifact@v4
