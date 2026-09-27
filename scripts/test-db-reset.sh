@@ -4,8 +4,8 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-# Services the tests do not use; skipping them keeps start-up fast and light.
-EXCLUDE="studio,imgproxy,vector,logflare,edge-runtime,realtime,storage-api,postgres-meta,supavisor"
+# Services the tests do not use; skipping them keeps start-up fast and light. Storage stays on for the logo upload spec (B-55).
+EXCLUDE="studio,imgproxy,vector,logflare,edge-runtime,realtime,postgres-meta,supavisor"
 
 if ! supabase status >/dev/null 2>&1; then
   supabase start -x "$EXCLUDE"

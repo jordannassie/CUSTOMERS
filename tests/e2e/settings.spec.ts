@@ -5,7 +5,7 @@ import { createClient } from "@supabase/supabase-js";
 import { expect, test, type Page } from "@playwright/test";
 
 // B-55 against the local Supabase stack, like app-shell.spec.ts: each test seeds its own agency.
-// The logo test also needs the local storage service (supabase start without -x storage-api).
+// The logo test also needs the local storage service, which scripts/test-db-reset.sh starts.
 const local = existsSync(".env.test.local") ? parseEnv(readFileSync(".env.test.local", "utf8")) : {};
 const hasDb = !!(local.NEXT_PUBLIC_SUPABASE_URL && local.SUPABASE_SERVICE_ROLE_KEY);
 test.skip(!hasDb, "Skipped: no local test database. Run scripts/test-db-reset.sh to create .env.test.local.");
