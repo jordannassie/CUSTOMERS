@@ -85,7 +85,7 @@ export async function POST(request: NextRequest) {
   }
 
   // Add a new subscription item to the existing subscription (prorated)
-  const newItem = await stripeClient.subscriptionItems.create({
+  await stripeClient.subscriptionItems.create({
     subscription: ba.stripe_subscription_id,
     price: plan.stripePriceMonthly,
     quantity: 1,
@@ -97,19 +97,6 @@ export async function POST(request: NextRequest) {
     proration_behavior: "create_prorations",
   });
 
-  // Persist immediately (webhook will also sync, but we update optimistically)
-  await svc.from("business_billing_items").upsert(
-    {
-      billing_account_id:          ba.id,
-      business_id:                 businessId,
-      plan_id:                     planId,
-      stripe_subscription_item_id: newItem.id,
-      status:                      ba.status === "active" ? "active" : "trialing",
-      price_monthly_cents:         plan.priceMonthly,
-      updated_at:                  new Date().toISOString(),
-    },
-    { onConflict: "business_id" }
-  );
-
+  // The webhook (B-42) records the new item when Stripe sends customer.subscription.updated.
   return NextResponse.json({ success: true });
 }

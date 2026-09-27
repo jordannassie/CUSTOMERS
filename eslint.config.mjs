@@ -99,7 +99,7 @@ const dependencyPolicies = [
     from: { element: { type: "component" } },
     disallow: { to: { element: { type: "module", fileInternalPath: "**/dal.ts" } } },
   },
-  // Modules use each other only through their index.ts.
+  // Modules use each other only through index.ts, or server.ts for server-only code such as the scan worker.
   {
     from: { element: { type: "module" } },
     disallow: {
@@ -107,7 +107,7 @@ const dependencyPolicies = [
         element: {
           type: "module",
           captured: { moduleName: "!{{ from.element.captured.moduleName }}" },
-          fileInternalPath: "!index.ts",
+          fileInternalPath: "!{index,server}.ts",
         },
       },
     },

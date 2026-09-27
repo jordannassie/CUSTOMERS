@@ -6,7 +6,7 @@
  */
 import "server-only";
 import { createServiceClient } from "@/lib/supabase/service";
-import { getPlanConfig, type CanonicalPlanId } from "@/config/pricing";
+import { getPlanConfig } from "@/config/pricing";
 
 export interface BillingAccount {
   id: string;
@@ -43,29 +43,15 @@ export interface AccountSummary {
   activeBusinessCount: number;
 }
 
-/** Get or create a billing account for the given user. */
-export async function getOrCreateBillingAccount(userId: string): Promise<BillingAccount> {
+/** The user's legacy billing account, if any. Read only: the webhook (B-42) no longer writes these tables. */
+export async function getBillingAccount(userId: string): Promise<BillingAccount | null> {
   const svc = createServiceClient();
-
-  const { data: existing } = await svc
+  const { data } = await svc
     .from("billing_accounts")
     .select("*")
     .eq("user_id", userId)
     .maybeSingle();
-
-  if (existing) return existing as BillingAccount;
-
-  const { data: created, error } = await svc
-    .from("billing_accounts")
-    .insert({ user_id: userId, status: "none" })
-    .select("*")
-    .single();
-
-  if (error || !created) {
-    throw new Error(`Failed to create billing account: ${error?.message}`);
-  }
-
-  return created as BillingAccount;
+  return (data as BillingAccount | null) ?? null;
 }
 
 /** Get billing account by Stripe customer ID. */
@@ -137,45 +123,6 @@ export async function getBusinessItemsForAccount(
     .select("*")
     .eq("billing_account_id", billingAccountId);
   return (data ?? []) as BusinessBillingItem[];
-}
-
-/** Update billing account from Stripe subscription data. */
-export async function syncBillingAccount(
-  userId: string,
-  updates: Partial<{
-    stripe_customer_id: string;
-    stripe_subscription_id: string;
-    status: string;
-    trial_started_at: string | null;
-    trial_ends_at: string | null;
-    current_period_start: string | null;
-    current_period_end: string | null;
-    billing_interval: string;
-  }>
-): Promise<void> {
-  const svc = createServiceClient();
-  await svc
-    .from("billing_accounts")
-    .update({ ...updates, updated_at: new Date().toISOString() })
-    .eq("user_id", userId);
-}
-
-/** Update a business billing item. */
-export async function syncBusinessBillingItem(
-  businessId: string,
-  updates: Partial<{
-    plan_id: string;
-    stripe_subscription_item_id: string | null;
-    status: string;
-    price_monthly_cents: number | null;
-    current_period_end: string | null;
-  }>
-): Promise<void> {
-  const svc = createServiceClient();
-  await svc
-    .from("business_billing_items")
-    .update({ ...updates, updated_at: new Date().toISOString() })
-    .eq("business_id", businessId);
 }
 
 /**
