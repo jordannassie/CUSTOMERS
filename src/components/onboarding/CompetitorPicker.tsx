@@ -155,7 +155,7 @@ export function CompetitorPicker(props: CompetitorPickerProps) {
               {Array.from({ length: limit }, (_, i) => (
                 <span
                   key={i}
-                  className={cn("h-1.5 flex-1 rounded-[2px] transition-colors duration-200 ease-out", i < picked.length ? "bg-primary" : "bg-muted")}
+                  className={cn("h-1.5 flex-1 rounded-[2px] transition-colors duration-200 ease-out", i < picked.length ? "bg-primary" : "bg-border")}
                 />
               ))}
             </div>
@@ -201,12 +201,20 @@ export function CompetitorPicker(props: CompetitorPickerProps) {
         </div>
       </aside>
 
-      <div className="fixed inset-x-0 bottom-0 z-10 flex items-center justify-between gap-3 border-t border-border bg-surface px-5 py-3 lg:hidden">
-        <span className="text-[13px] tabular-nums text-muted-foreground">{count}</span>
-        <Button type="button" disabled={!canSave} onClick={submit}>
-          {pending ? <Loader2 aria-hidden className="animate-spin" /> : null}
-          {saveLabel}
-        </Button>
+      {/* On a phone the list sits below the fold, so the limit note and Save stay in reach here. */}
+      <div className="fixed inset-x-0 bottom-0 z-10 border-t border-border bg-surface px-5 py-3 lg:hidden">
+        {limitHit && limitText ? (
+          <p aria-hidden className="mb-2 rounded-md bg-mid-bg px-3 py-2 text-[13px] text-mid-text">
+            {limitText}
+          </p>
+        ) : null}
+        <div className="flex items-center justify-between gap-3">
+          <span className="text-[13px] tabular-nums text-muted-foreground">{count}</span>
+          <Button type="button" disabled={!canSave} onClick={submit}>
+            {pending ? <Loader2 aria-hidden className="animate-spin" /> : null}
+            {saveLabel}
+          </Button>
+        </div>
       </div>
     </div>
   );
