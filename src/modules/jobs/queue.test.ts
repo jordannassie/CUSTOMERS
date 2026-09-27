@@ -22,22 +22,45 @@ vi.mock("@/lib/env", async (importOriginal) => {
 
 afterAll(deleteTestUsers);
 
-/** The real worker, limited to our jobs so it never runs another test's or a developer's queued job. */
-function workerDeps(jobs: TestJob[], scan: (jobId: string) => Promise<ScanOutcome>): WorkerDeps & { ran: string[] } {
+/**
+ * The real worker, limited to our jobs so it never touches another test file's queued job. claim_scan_jobs
+ * takes the highest-priority claimable jobs in the whole database, and ours outrank every other file's
+ * (TEST_PRIORITY), so a claim is ours alone when it asks for no more than our jobs claimable right now.
+ * Workers that share a lock claim one at a time, so they cannot both count the same last job.
+ */
+function workerDeps(
+  jobs: TestJob[],
+  scan: (jobId: string) => Promise<ScanOutcome>,
+  lock: { chain: Promise<unknown> } = { chain: Promise.resolve() },
+): WorkerDeps & { ran: string[] } {
   const ours = new Set(jobs.map((j) => j.jobId));
   const ran: string[] = [];
-  return {
-    ran,
-    claim: async (limit) => {
-      const { count } = await service.from("scan_jobs").select("id", { count: "exact", head: true })
-        .in("id", [...ours]).eq("status", "queued");
-      if (!count) return [];
-      const claimed = await claimScanJobs(Math.min(limit, count));
-      // Two workers can race for our last job; the loser's claim may pick up another file's job, so hand it back.
-      for (const job of claimed.filter((j) => !ours.has(j.id))) {
+  const claimOurs = async (limit: number) => {
+    // A retried job waits for run_after; counting it would make the claim take someone else's job instead.
+    // The minute of slack covers a gap between this clock and the database's; retries wait at least 5.
+    const { count } = await service
+      .from("scan_jobs")
+      .select("id", { count: "exact", head: true })
+      .in("id", [...ours])
+      .eq("status", "queued")
+      .lte("run_after", new Date(Date.now() + 60_000).toISOString());
+    if (!count) return [];
+    const claimed = await claimScanJobs(Math.min(limit, count));
+    const foreign = claimed.filter((j) => !ours.has(j.id));
+    if (foreign.length) {
+      for (const job of foreign) {
         await service.from("scan_jobs").update({ status: "queued", attempts: job.attempts - 1, locked_at: null }).eq("id", job.id);
       }
-      return claimed.filter((j) => ours.has(j.id));
+      throw new Error(`The test worker claimed ${foreign.length} job(s) from another test`);
+    }
+    return claimed;
+  };
+  return {
+    ran,
+    claim: (limit) => {
+      const next = lock.chain.then(() => claimOurs(limit));
+      lock.chain = next.catch(() => undefined);
+      return next;
     },
     run: (jobId) => {
       ran.push(jobId);
@@ -67,7 +90,8 @@ describe("claim_scan_jobs", () => {
       await new Promise((r) => setTimeout(r, 20));
       return { status: "done", runId: "stand-in", checks: 36, failed: 0, charged: 36, released: 0, errors: [] };
     };
-    const [a, b] = [workerDeps(jobs, scan), workerDeps(jobs, scan)];
+    const lock = { chain: Promise.resolve() as Promise<unknown> };
+    const [a, b] = [workerDeps(jobs, scan, lock), workerDeps(jobs, scan, lock)];
     await Promise.all([runWorker(60_000, a), runWorker(60_000, b)]);
     const ran = [...a.ran, ...b.ran];
     expect(new Set(ran).size).toBe(ran.length);

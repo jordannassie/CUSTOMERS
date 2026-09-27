@@ -6,6 +6,7 @@ import { defineConfig } from "vitest/config";
 // Only the local database written by scripts/test-db-reset.sh; .env.local is never loaded,
 // so tests cannot reach the shared database or spend real AI credits.
 const TEST_ENV_FILE = ".env.test.local";
+const QUEUE_CLAIM_TESTS = "src/modules/jobs/queue.test.ts";
 const testEnv = existsSync(TEST_ENV_FILE) ? parseEnv(readFileSync(TEST_ENV_FILE, "utf8")) : {};
 
 export default defineConfig({
@@ -21,8 +22,21 @@ export default defineConfig({
         test: {
           name: "unit",
           include: ["src/**/*.test.ts"],
+          exclude: [QUEUE_CLAIM_TESTS],
           setupFiles: ["tests/setup/retry-gateway-502.ts"],
           env: testEnv as Record<string, string>,
+        },
+      },
+      {
+        // claim_scan_jobs takes jobs from the whole queue, so these run alone after every other unit file;
+        // alongside them they took other files' queued jobs (the schedules.test.ts flake).
+        extends: true,
+        test: {
+          name: "unit-queue",
+          include: [QUEUE_CLAIM_TESTS],
+          setupFiles: ["tests/setup/retry-gateway-502.ts"],
+          env: testEnv as Record<string, string>,
+          sequence: { groupOrder: 1 },
         },
       },
       {
