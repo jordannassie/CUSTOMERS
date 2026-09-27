@@ -31,7 +31,7 @@ export const REASONS = {
   ok: "",
   trialBusinessLimit: `Your trial includes ${TRIAL_MAX_BUSINESSES} businesses. Upgrade to add more.`,
   outOfCredits: "You're out of credits. Buy a top-up or upgrade.",
-  scanAlreadyQueued: "A scan for this business is already running. You can start another when it finishes.",
+  scanAlreadyQueued: "A scan is already running. You can start another when it finishes.",
   notYourBusiness: "This business is not in your account.",
   pastDue: "Your last payment didn't go through. Update your card to continue.",
   canceled: "Your plan has ended. Choose a plan to continue.",

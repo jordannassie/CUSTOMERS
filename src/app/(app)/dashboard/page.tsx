@@ -6,12 +6,13 @@ import {
 } from "lucide-react";
 import OnboardingWizard from "@/components/geo/OnboardingWizard";
 import CompetitorTrendChart from "@/components/geo/dashboard/CompetitorTrendChart";
-import RunScanButton from "@/components/geo/dashboard/RunScanButton";
 import CompetitorLeaderboard from "@/components/geo/dashboard/CompetitorLeaderboard";
 import { EmptyState, ImpactBadge } from "@/components/geo/dashboard/ui";
 import { CompetitorAvatar } from "@/components/CompetitorAvatar";
 import { getPrimaryBusiness } from "@/lib/geo/dashboard-data";
 import { getDashboardAggregates, PROVIDER_LABELS } from "@/lib/geo/dashboard-aggregator";
+import { RunScanButton } from "@/components/app/RunScanButton";
+import { getScanStatus, startScan } from "@/modules/jobs";
 
 export const metadata = { title: "Dashboard", robots: { index: false } };
 
@@ -31,7 +32,7 @@ export default async function DashboardPage({
     return <OnboardingWizard initialUrl={initialUrl} initialCompetitor={initialCompetitor} />;
   }
 
-  const agg = await getDashboardAggregates(business.id);
+  const [agg, scanStatus] = await Promise.all([getDashboardAggregates(business.id), getScanStatus({ businessId: business.id })]);
   const { overview, trendSeries, models, competitors, citations, results, hasAnyRun } = agg;
 
   // Opportunities: fetched separately
@@ -124,7 +125,9 @@ export default async function DashboardPage({
           </div>
         </Link>
         {/* RunScanButton is sibling to the Link, never inside it */}
-        <RunScanButton businessId={business.id} />
+        {scanStatus.ok && (
+          <RunScanButton businessId={business.id} initial={scanStatus.data} start={startScan} getStatus={getScanStatus} />
+        )}
       </div>
 
       {/* ── Error banner ─────────────────────────────────────────────────────── */}

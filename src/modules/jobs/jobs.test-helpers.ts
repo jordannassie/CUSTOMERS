@@ -26,7 +26,7 @@ export async function createTestAgency(credits = 100) {
     .select("id")
     .single();
   if (agencyError) throw agencyError;
-  await grantCredits({ agencyId: agency.id, source: "topup", sourceId: `cs-${randomUUID()}`, amount: credits, expiresAt: null });
+  if (credits > 0) await grantCredits({ agencyId: agency.id, source: "topup", sourceId: `cs-${randomUUID()}`, amount: credits, expiresAt: null });
   return { agencyId: agency.id, ownerUserId: user.user.id };
 }
 

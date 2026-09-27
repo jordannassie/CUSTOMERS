@@ -1,0 +1,103 @@
+"use client";
+
+import { useEffect, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import { Loader2, RefreshCw } from "lucide-react";
+import { cn } from "cn";
+import { Button } from "@/components/ui/button";
+import type { ActionResult } from "@/modules/auth";
+import type { ScanStatus } from "@/modules/jobs";
+
+type ScanAction = (input: unknown) => Promise<ActionResult<ScanStatus>>;
+
+const POLL_MS = 3000;
+const ALREADY_RUNNING = "A scan is already running.";
+const FAILED = "The last scan could not finish. Try again in a few minutes.";
+
+type Note = { text: string; tone: "muted" | "error" } | null;
+
+/** Run scan (B-29, MVP_SPEC 6.4). The page passes the actions so this stays free of server imports. */
+export function RunScanButton({
+  businessId,
+  initial,
+  start,
+  getStatus,
+  className,
+}: {
+  businessId: string;
+  initial: ScanStatus;
+  start: ScanAction;
+  getStatus: ScanAction;
+  className?: string;
+}) {
+  const router = useRouter();
+  const [status, setStatus] = useState(initial);
+  const [note, setNote] = useState<Note>(initial.blockedReason ? { text: initial.blockedReason, tone: "muted" } : null);
+  const [pending, startTransition] = useTransition();
+
+  useEffect(() => {
+    if (!status.scanning) return;
+    const timer = setTimeout(async () => {
+      const result = await getStatus({ businessId }).catch(() => null);
+      // A dropped poll just tries again; the scan itself carries on.
+      if (!result?.ok) return setStatus((s) => ({ ...s }));
+      setStatus(result.data);
+      if (!result.data.scanning) {
+        setNote(
+          result.data.lastResult === "failed"
+            ? { text: FAILED, tone: "error" }
+            : result.data.blockedReason
+              ? { text: result.data.blockedReason, tone: "muted" }
+              : { text: "Scan finished.", tone: "muted" },
+        );
+        router.refresh();
+      }
+    }, POLL_MS);
+    return () => clearTimeout(timer);
+  }, [status, businessId, getStatus, router]);
+
+  const scanning = status.scanning || pending;
+  const blocked = !scanning && status.blockedReason !== null;
+  const text = note?.text ?? (scanning ? "Results appear in about a minute." : "");
+
+  function run() {
+    if (scanning) return setNote({ text: ALREADY_RUNNING, tone: "muted" });
+    setNote(null);
+    startTransition(async () => {
+      const result = await start({ businessId }).catch(() => null);
+      if (!result) return setNote({ text: "Could not start the scan. Check your connection and try again.", tone: "error" });
+      if (result.ok) return setStatus(result.data);
+      if (result.status === 409) {
+        setStatus((s) => ({ ...s, scanning: true }));
+        return setNote({ text: ALREADY_RUNNING, tone: "muted" });
+      }
+      setNote({ text: result.error, tone: "error" });
+    });
+  }
+
+  return (
+    <div className={cn("flex shrink-0 flex-col items-end gap-1.5", className)}>
+      <Button
+        type="button"
+        onClick={run}
+        disabled={blocked}
+        aria-disabled={scanning || undefined}
+        aria-describedby={text ? `run-scan-note-${businessId}` : undefined}
+        className={cn(scanning && "cursor-progress")}
+      >
+        {scanning ? <Loader2 className="animate-spin" aria-hidden="true" /> : <RefreshCw aria-hidden="true" />}
+        {scanning ? "Scanning…" : "Run scan"}
+      </Button>
+      <p
+        id={`run-scan-note-${businessId}`}
+        role="status"
+        className={cn(
+          "max-w-60 text-right text-xs",
+          note?.tone === "error" ? "text-low-text" : "text-muted-foreground",
+        )}
+      >
+        {text}
+      </p>
+    </div>
+  );
+}
