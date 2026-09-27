@@ -21,6 +21,7 @@ export default defineConfig({
         test: {
           name: "unit",
           include: ["src/**/*.test.ts"],
+          setupFiles: ["tests/setup/retry-gateway-502.ts"],
           env: testEnv as Record<string, string>,
         },
       },
