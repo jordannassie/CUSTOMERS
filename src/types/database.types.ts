@@ -2016,6 +2016,7 @@ export type Database = {
         Returns: boolean
       }
       reset_stuck_jobs: { Args: never; Returns: number }
+      retry_scan_job: { Args: { p_job_id: string }; Returns: string }
     }
     Enums: {
       [_ in never]: never
