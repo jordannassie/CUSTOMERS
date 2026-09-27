@@ -1895,6 +1895,30 @@ export type Database = {
         Args: { p_check_id: string; p_hold_id: string }
         Returns: boolean
       }
+      claim_scan_jobs: {
+        Args: { p_limit: number }
+        Returns: {
+          agency_id: string
+          attempts: number
+          business_id: string
+          created_at: string
+          credits_charged: number
+          error: string | null
+          finished_at: string | null
+          hold_id: string | null
+          id: string
+          locked_at: string | null
+          priority: number
+          run_after: string
+          status: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "scan_jobs"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       credit_add_grant: {
         Args: {
           p_admin_user_id: string
@@ -1925,6 +1949,16 @@ export type Database = {
         Returns: string
       }
       release_hold: { Args: { p_hold_id: string }; Returns: number }
+      requeue_scan_job: {
+        Args: {
+          p_attempts: number
+          p_error: string
+          p_job_id: string
+          p_run_after: string
+        }
+        Returns: boolean
+      }
+      reset_stuck_jobs: { Args: never; Returns: number }
     }
     Enums: {
       [_ in never]: never
