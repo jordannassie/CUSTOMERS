@@ -1,166 +1,126 @@
-import { requireAdmin } from "@/modules/auth";
-import { createServiceClient } from "@/lib/supabase/service";
+import { Suspense } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { ChevronLeft } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import { loadBusinessDetail, runScanNow } from "@/modules/admin";
+import { requireAdmin } from "@/modules/auth";
+import { ScanBadge, formatDate } from "../_components/scan-parts";
+import AnswersGrid from "./_components/answers-grid";
+import { Competitors, Opportunities, Questions } from "./_components/lists";
+import Profile from "./_components/profile";
+import RunScanButton from "./_components/run-scan-button";
+import ScanHistory from "./_components/scan-history";
 
-function fmt(iso: string) {
-  return new Date(iso).toLocaleString("en-US", {
-    month: "short", day: "numeric", year: "numeric",
-    hour: "2-digit", minute: "2-digit",
-  });
-}
+export const metadata = { title: "Business" };
 
-function Row({ label, value }: { label: string; value: React.ReactNode }) {
+export default async function AdminBusinessPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  await requireAdmin({ next: `/internal/admin/businesses/${id}` });
+
   return (
-    <div className="flex items-start gap-4 py-2.5 border-b border-white/5">
-      <span className="text-[11.5px] text-white/30 w-36 shrink-0">{label}</span>
-      <span className="text-[12.5px] text-white/80 min-w-0 break-all">{value ?? "—"}</span>
+    <div className="mx-auto flex max-w-5xl flex-col gap-8 px-4 py-8 sm:px-6">
+      <Link
+        href="/internal/admin/businesses"
+        className="inline-flex w-fit items-center gap-1 text-[13px] text-muted-foreground hover:text-foreground"
+      >
+        <ChevronLeft aria-hidden className="size-4" />
+        Businesses
+      </Link>
+      <Suspense fallback={<DetailSkeleton />}>
+        <Detail id={id} />
+      </Suspense>
     </div>
   );
 }
 
-export default async function AdminBusinessDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
-  await requireAdmin({ next: `/internal/admin/businesses/${id}` });
-  const svc = createServiceClient();
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-  const { data: biz } = await svc
-    .from("businesses")
-    .select("*")
-    .eq("id", id)
-    .maybeSingle();
-
-  if (!biz) notFound();
-
-  const { data: authUser } = await svc.auth.admin.getUserById(biz.owner_user_id);
-
-  const [
-    { data: competitors },
-    { data: prompts },
-    { data: scans },
-    { data: opps },
-  ] = await Promise.all([
-    svc.from("business_competitors").select("id, name, domain, source, enrichment_status, created_at").eq("business_id", id).order("created_at", { ascending: false }),
-    svc.from("tracked_prompts").select("id, prompt, active, created_at").eq("business_id", id).order("created_at", { ascending: false }),
-    svc.from("visibility_runs").select("id, provider, status, error, started_at, completed_at, created_at").eq("business_id", id).order("created_at", { ascending: false }).limit(20),
-    svc.from("opportunities").select("id, title, status, impact, created_at").eq("business_id", id).order("created_at", { ascending: false }).limit(10),
-  ]);
+async function Detail({ id }: { id: string }) {
+  const detail = UUID.test(id) ? await loadBusinessDetail(id) : null;
+  if (!detail) notFound();
+  const { business, agency, scans, credits, balance } = detail;
+  const last = scans[0];
 
   return (
-    <div className="max-w-4xl mx-auto px-6 py-8">
-      <div className="mb-6">
-        <Link href="/internal/admin/businesses" className="text-[11px] text-white/30 hover:text-white/60 transition-colors">
-          ← Businesses
-        </Link>
-        <h1 className="text-[22px] font-bold text-white mt-2">{biz.name}</h1>
-        <p className="text-[12px] text-white/30 mt-1">{authUser?.user?.email ?? biz.owner_user_id}</p>
-      </div>
-
-      {/* Profile */}
-      <div className="bg-[#1E293B] border border-white/8 rounded-xl p-5 mb-6">
-        <h2 className="text-[13px] font-bold text-white mb-3">Business Profile</h2>
-        <Row label="ID"         value={biz.id} />
-        <Row label="Domain"     value={biz.domain} />
-        <Row label="Status"     value={biz.status} />
-        <Row label="City"       value={biz.primary_city} />
-        <Row label="Region"     value={biz.primary_region} />
-        <Row label="Country"    value={biz.primary_country} />
-        <Row label="Industry"   value={biz.industry} />
-        <Row label="Created"    value={fmt(biz.created_at)} />
-      </div>
-
-      <div className="grid md:grid-cols-2 gap-6 mb-6">
-        {/* Competitors */}
-        <div className="bg-[#1E293B] border border-white/8 rounded-xl overflow-hidden">
-          <h2 className="text-[13px] font-bold text-white px-5 py-4 border-b border-white/8">
-            Competitors ({competitors?.length ?? 0})
-          </h2>
-          <div className="divide-y divide-white/5 max-h-60 overflow-y-auto">
-            {(competitors ?? []).map((c) => (
-              <div key={c.id} className="px-5 py-2.5 flex items-center justify-between">
-                <div>
-                  <p className="text-[12px] text-white">{c.name}</p>
-                  <p className="text-[10.5px] text-white/30">{c.domain ?? "no domain"}</p>
-                </div>
-                <span className="text-[10px] text-white/30">{c.source}</span>
-              </div>
-            ))}
-            {!competitors?.length && <p className="px-5 py-3 text-[12px] text-white/30">None</p>}
-          </div>
+    <>
+      <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
+          <h1 className="flex flex-wrap items-center gap-2 text-[24px] font-semibold tracking-[-0.02em]">
+            <span className="break-words">{business.name}</span>
+            {agency?.isTest && <Badge variant="secondary">Test</Badge>}
+          </h1>
+          <p className="mt-1 text-[14px] break-words text-muted-foreground">
+            {agency ? agency.name : "No agency"}
+            {detail.ownerEmail && `, ${detail.ownerEmail}`}
+          </p>
         </div>
+        <RunScanButton
+          businessId={business.id}
+          active={detail.activeScan}
+          canScan={agency !== null}
+          runScanNow={runScanNow}
+        />
+      </header>
 
-        {/* Prompts */}
-        <div className="bg-[#1E293B] border border-white/8 rounded-xl overflow-hidden">
-          <h2 className="text-[13px] font-bold text-white px-5 py-4 border-b border-white/8">
-            Prompts ({prompts?.length ?? 0})
-          </h2>
-          <div className="divide-y divide-white/5 max-h-60 overflow-y-auto">
-            {(prompts ?? []).map((p) => (
-              <div key={p.id} className="px-5 py-2.5">
-                <p className="text-[12px] text-white truncate">{p.prompt}</p>
-                <p className="text-[10.5px] text-white/30">{p.active ? "active" : "inactive"}</p>
-              </div>
-            ))}
-            {!prompts?.length && <p className="px-5 py-3 text-[12px] text-white/30">None</p>}
-          </div>
-        </div>
-      </div>
-
-      {/* Scans */}
-      <div className="bg-[#1E293B] border border-white/8 rounded-xl overflow-hidden mb-6">
-        <h2 className="text-[13px] font-bold text-white px-5 py-4 border-b border-white/8">
-          Recent Scans
-        </h2>
-        <div className="overflow-x-auto">
-          <table className="w-full text-[12px]">
-            <thead>
-              <tr className="border-b border-white/5 bg-[#0F172A]/40">
-                {["Provider", "Status", "Started", "Error"].map((h) => (
-                  <th key={h} className="text-left px-4 py-2.5 text-[10px] font-semibold text-white/30 uppercase tracking-wider">{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-white/5">
-              {(scans ?? []).map((s) => (
-                <tr key={s.id} className={s.status === "failed" ? "bg-red-900/10" : ""}>
-                  <td className="px-4 py-2.5 text-white/70">{s.provider}</td>
-                  <td className="px-4 py-2.5">
-                    <span className={`text-[10px] font-bold uppercase ${
-                      s.status === "failed" ? "text-red-400" :
-                      s.status === "completed" ? "text-emerald-400" :
-                      "text-yellow-400"
-                    }`}>{s.status}</span>
-                  </td>
-                  <td className="px-4 py-2.5 text-white/30 whitespace-nowrap">{fmt(s.created_at)}</td>
-                  <td className="px-4 py-2.5 text-red-400 truncate max-w-[200px]">{s.error ?? "—"}</td>
-                </tr>
-              ))}
-              {!scans?.length && (
-                <tr><td colSpan={4} className="px-4 py-4 text-[12px] text-white/30">No scans yet.</td></tr>
+      <dl className="grid grid-cols-2 gap-px overflow-hidden rounded-md border border-border bg-border lg:grid-cols-4">
+        <Stat label="Last scan">
+          {last ? (
+            <span className="flex flex-col items-start gap-1">
+              <ScanBadge state={last.state} />
+              <span className="text-[13px] font-normal text-muted-foreground">{formatDate(last.startedAt, true)}</span>
+            </span>
+          ) : (
+            "Never"
+          )}
+        </Stat>
+        <Stat label="Credits used this month">{credits.thisMonth.toLocaleString("en-US")}</Stat>
+        <Stat label="Credits used in total">{credits.allTime.toLocaleString("en-US")}</Stat>
+        <Stat label="Agency balance">
+          {balance ? (
+            <span className="flex flex-col">
+              {balance.total.toLocaleString("en-US")}
+              {balance.held > 0 && (
+                <span className="text-[13px] font-normal text-muted-foreground">
+                  {balance.held.toLocaleString("en-US")} held for a scan
+                </span>
               )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+            </span>
+          ) : (
+            "No agency"
+          )}
+        </Stat>
+      </dl>
 
-      {/* Opportunities */}
-      <div className="bg-[#1E293B] border border-white/8 rounded-xl overflow-hidden">
-        <h2 className="text-[13px] font-bold text-white px-5 py-4 border-b border-white/8">
-          Opportunities ({opps?.length ?? 0})
-        </h2>
-        <div className="divide-y divide-white/5">
-          {(opps ?? []).map((o) => (
-            <div key={o.id} className="px-5 py-2.5 flex items-center justify-between">
-              <p className="text-[12px] text-white truncate">{o.title}</p>
-              <div className="flex items-center gap-2 shrink-0 ml-3">
-                <span className="text-[10px] text-white/30">{o.impact}</span>
-                <span className="text-[10px] font-semibold text-white/50">{o.status}</span>
-              </div>
-            </div>
-          ))}
-          {!opps?.length && <p className="px-5 py-3 text-[12px] text-white/30">None</p>}
-        </div>
+      <Profile detail={detail} />
+      <AnswersGrid results={detail.results} models={business.models} />
+      <ScanHistory scans={scans} />
+      <div className="grid gap-8 lg:grid-cols-2">
+        <Questions questions={detail.questions} />
+        <Competitors competitors={detail.competitors} />
       </div>
+      <Opportunities opportunities={detail.opportunities} />
+    </>
+  );
+}
+
+function Stat({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="flex flex-col gap-1 bg-surface px-4 py-3">
+      <dt className="text-[13px] text-muted-foreground">{label}</dt>
+      <dd className="text-[20px] font-semibold tabular-nums">{children}</dd>
+    </div>
+  );
+}
+
+function DetailSkeleton() {
+  return (
+    <div className="flex flex-col gap-8" aria-busy aria-label="Loading business">
+      <Skeleton className="h-14 w-72" />
+      <Skeleton className="h-[84px] rounded-md" />
+      <Skeleton className="h-[220px] rounded-md" />
+      <Skeleton className="h-[260px] rounded-md" />
     </div>
   );
 }
