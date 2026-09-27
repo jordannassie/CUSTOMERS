@@ -7,7 +7,7 @@
 import "server-only";
 import { NextResponse, type NextRequest } from "next/server";
 import { requireUser } from "@/lib/geo/api-auth";
-import { requireStripe } from "@/lib/stripe";
+import { getStripe } from "@/modules/billing";
 import { createServiceClient } from "@/lib/supabase/service";
 import { CANONICAL_PLANS, SELF_SERVE_PLAN_IDS, type CanonicalPlanId } from "@/config/pricing";
 
@@ -65,9 +65,9 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  let stripeClient: ReturnType<typeof requireStripe>;
+  let stripeClient: ReturnType<typeof getStripe>;
   try {
-    stripeClient = requireStripe();
+    stripeClient = getStripe();
   } catch {
     return NextResponse.json({ error: "Billing not configured." }, { status: 503 });
   }

@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { PageContainer } from "@/components/app/PageContainer";
 import { getPrimaryBusiness } from "@/lib/geo/dashboard-data";
-import { requireStripe } from "@/lib/stripe";
+import { getStripe } from "@/modules/billing";
 import {
   CANONICAL_PLANS,
   ORDERED_SELF_SERVE_PLANS,
@@ -99,7 +99,7 @@ export default async function BillingPage({
 
   if (ba?.stripe_customer_id) {
     try {
-      const stripe = requireStripe();
+      const stripe = getStripe();
       const list = await stripe.invoices.list({
         customer: ba.stripe_customer_id,
         limit: 12,

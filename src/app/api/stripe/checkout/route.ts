@@ -20,7 +20,7 @@
 import "server-only";
 import { NextResponse, type NextRequest } from "next/server";
 import { requireUser } from "@/lib/geo/api-auth";
-import { requireStripe } from "@/lib/stripe";
+import { getStripe } from "@/modules/billing";
 import {
   CANONICAL_PLANS,
   TRIAL_CONFIG,
@@ -91,9 +91,9 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  let stripeClient: ReturnType<typeof requireStripe>;
+  let stripeClient: ReturnType<typeof getStripe>;
   try {
-    stripeClient = requireStripe();
+    stripeClient = getStripe();
   } catch {
     return NextResponse.json({ error: "Billing is not configured." }, { status: 503 });
   }
