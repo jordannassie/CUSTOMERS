@@ -32,6 +32,7 @@ export type MethodPanel = {
   calibration: { heading: string; paragraphs: string[]; agreement: { label: string; value: string }[] } | null;
 };
 
+const count = (n: number) => n.toLocaleString("en-US");
 const points = (n: number) => `${n} ${n === 1 ? "point" : "points"}`;
 
 /** "ChatGPT, Claude and Perplexity". */
@@ -46,10 +47,10 @@ export function methodPanel(input: MethodInput, calibration: Calibration | null)
     intro: `Your score is how often AI recommended you when we asked the questions your customers ask, over the last ${input.windowDays} days.`,
     numbers: [
       { label: "Time covered", value: `Last ${input.windowDays} days` },
-      { label: "Answers checked", value: String(input.checks) },
+      { label: "Answers checked", value: count(input.checks) },
       {
         label: "Different answers",
-        value: String(input.uniqueAnswers),
+        value: count(input.uniqueAnswers),
         hint: "An answer we reused for more than one business counts once here.",
       },
       { label: "Margin of error", value: `Plus or minus ${points(input.margin)}` },

@@ -29,7 +29,7 @@ exports[`methodPanel > reads the same as the approved wording 1`] = `
     },
     {
       "label": "Answers checked",
-      "value": "108",
+      "value": "1,080",
     },
     {
       "hint": "An answer we reused for more than one business counts once here.",

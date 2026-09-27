@@ -5,7 +5,7 @@ const input: MethodInput = {
   windowDays: 30,
   label: "Good confidence",
   margin: 8,
-  checks: 108,
+  checks: 1080,
   uniqueAnswers: 84,
   models: [
     { id: "openai", label: "ChatGPT", score: 75, margin: 11 },

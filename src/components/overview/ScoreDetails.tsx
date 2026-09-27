@@ -20,7 +20,10 @@ export function ScoreDetails({ panel }: { panel: MethodPanel }) {
           How is this calculated?
         </Button>
       </SheetTrigger>
-      <SheetContent className="w-full gap-0 overflow-y-auto sm:max-w-md" data-testid="score-details">
+      <SheetContent
+        className="gap-0 overflow-y-auto data-[side=right]:w-full data-[side=right]:sm:max-w-md"
+        data-testid="score-details"
+      >
         <SheetHeader>
           <SheetTitle>{panel.title}</SheetTitle>
           <SheetDescription>{panel.intro}</SheetDescription>
