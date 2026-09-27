@@ -16,7 +16,7 @@ const COLUMNS = [
     links: [
       { label: "How it works", href: "/#product" },
       { label: "Pricing", href: "/pricing" },
-      { label: "Free AI check", href: "/compare" },
+      { label: "Free AI readiness check", href: "/compare" },
       { label: "For agencies", href: "/agency" },
     ],
   },
