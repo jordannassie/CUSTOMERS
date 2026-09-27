@@ -85,3 +85,4 @@ Applied to the local stack only (customers-dev is unreachable, F-24; live is unt
 - `030_cron_job_status.sql`
 - `031_scan_frequency_next_scan.sql`
 - `032_visibility_checks_30d.sql`
+- `033_retry_scan_job.sql`
