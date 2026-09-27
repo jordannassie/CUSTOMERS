@@ -5,7 +5,7 @@ import { AlertTriangle, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import type { ActionResult } from "@/modules/auth";
 import type { SettingsBusiness } from "@/modules/settings";
-import { parseServices } from "@/modules/settings/service";
+import { normalizeWebsite, parseServices } from "@/modules/settings/service";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -28,7 +28,9 @@ export function BusinessProfileForm({ business, save }: { business: SettingsBusi
   const [form, setForm] = useState(initial);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
-  const websiteChanged = form.website.trim().toLowerCase() !== business.website.toLowerCase();
+  const typed = normalizeWebsite(form.website);
+  const newWebsite = typed.ok ? typed.domain : form.website.trim();
+  const websiteChanged = newWebsite !== (business.website || null);
 
   const field = (key: keyof Fields) => ({
     id: `profile-${key}`,
@@ -70,8 +72,7 @@ export function BusinessProfileForm({ business, save }: { business: SettingsBusi
           >
             <AlertTriangle className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
             <p>
-              Your next scan will look for {form.website.trim() || "no website"} in AI answers instead of{" "}
-              {business.website}. Past results stay as they are, so your score may move after the change.
+              Your next scan will look for {newWebsite ?? "no website"} in AI answers instead of {business.website}. Past results stay as they are, so your score may move after the change.
             </p>
           </div>
         )}

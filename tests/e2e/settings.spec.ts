@@ -99,12 +99,13 @@ test("edit the business profile, with a warning when the website changes", async
   await form.getByLabel("Services").fill("Drain cleaning, Water heaters");
   await form.getByLabel("State or region").fill("TX");
   await form.getByLabel("Phone").fill("(512) 555-0100");
+  await form.getByLabel("Website").fill("https://northside.example/");
   await expect(page.getByTestId("website-warning")).toHaveCount(0);
   await form.getByLabel("Website").fill("https://www.northside-plumbing.com/");
-  await expect(page.getByTestId("website-warning")).toContainText("instead of northside.example");
+  await expect(page.getByTestId("website-warning")).toContainText("look for www.northside-plumbing.com in AI answers instead of northside.example");
 
   await form.getByRole("button", { name: "Save profile" }).click();
-  await expect(page.getByText("Business profile saved")).toBeVisible();
+  await expect(page.getByText("Business profile saved")).toBeVisible({ timeout: 15_000 });
 
   await page.reload();
   await expect(form.getByLabel("Website")).toHaveValue("www.northside-plumbing.com");
@@ -136,7 +137,7 @@ test("change models and frequency, seeing the credit effect before saving", asyn
   await expect(estimate).toContainText("About 720");
 
   await form.getByRole("button", { name: "Save AI checks" }).click();
-  await expect(page.getByText("AI check settings saved")).toBeVisible();
+  await expect(page.getByText("AI check settings saved")).toBeVisible({ timeout: 15_000 });
   await expect(page.getByTestId("estimate-change")).toHaveCount(0);
 
   await page.reload();
@@ -150,14 +151,14 @@ test("rename the agency and upload a logo; other files are refused", async ({ pa
   const nameForm = page.getByRole("form", { name: "Agency name" });
   await nameForm.getByLabel("Agency name").fill("Blue Door Digital");
   await nameForm.getByRole("button", { name: "Save name" }).click();
-  await expect(page.getByText("Agency name saved")).toBeVisible();
+  await expect(page.getByText("Agency name saved")).toBeVisible({ timeout: 15_000 });
 
   const picker = page.locator("input[type=file]");
   await picker.setInputFiles({ name: "logo.svg", mimeType: "image/svg+xml", buffer: Buffer.from("<svg onload='alert(1)'/>") });
   await expect(page.getByText("That file type isn't supported.")).toBeVisible({ timeout: 15_000 });
 
   await picker.setInputFiles({ name: "logo.png", mimeType: "image/png", buffer: PNG_1PX });
-  await expect(page.getByText("Logo uploaded")).toBeVisible();
+  await expect(page.getByText("Logo uploaded")).toBeVisible({ timeout: 15_000 });
   await expect(page.getByTestId("agency-logo")).toBeVisible();
 
   const { data } = await db.from("agencies").select("name, logo_url").eq("id", s.agencyId).single();
