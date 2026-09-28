@@ -171,13 +171,31 @@ export async function loadModelsStep(userId: string, businessId: string, plan: P
   };
 }
 
-/** Step 7 saved: the business is set up. It becomes the one the dashboard shows. */
-export async function finishWizard(userId: string, businessId: string, models: string[], frequency: string): Promise<boolean> {
+/** Step 7 saved when the card step still follows: the business stays a draft, now at step 8. */
+export async function saveModels(userId: string, businessId: string, models: string[], frequency: string): Promise<boolean> {
+  const current = await ownStep(userId, businessId);
+  if (current === undefined) return false;
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("businesses")
+    .update({ models, scan_frequency: frequency, onboarding_step: nextStepNumber(current, "models") })
+    .eq("id", businessId)
+    .eq("owner_user_id", userId);
+  if (error) throw new Error(`Could not save AI checks: ${error.message}`);
+  return true;
+}
+
+/** The last step saved: the business is set up. It becomes the one the dashboard shows. */
+export async function finishWizard(userId: string, businessId: string, checks?: { models: string[]; frequency: string }): Promise<boolean> {
   if ((await ownStep(userId, businessId)) === undefined) return false;
   const supabase = await createClient();
   const { error } = await supabase
     .from("businesses")
-    .update({ models, scan_frequency: frequency, onboarding_step: FINISHED_STEP, status: "active" })
+    .update({
+      ...(checks ? { models: checks.models, scan_frequency: checks.frequency } : {}),
+      onboarding_step: FINISHED_STEP,
+      status: "active",
+    })
     .eq("id", businessId)
     .eq("owner_user_id", userId);
   if (error) throw new Error(`Could not save AI checks: ${error.message}`);

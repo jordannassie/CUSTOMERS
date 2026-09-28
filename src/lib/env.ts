@@ -27,7 +27,7 @@ export const env = createEnv({
 
     STRIPE_SECRET_KEY: optional,
     STRIPE_WEBHOOK_SECRET: optional,
-    // Dev and Playwright only: the card step makes a fake Checkout Session and a fake card form, never Stripe.
+    // Dev and Playwright only: the card step and top-ups make a fake Checkout Session and card form, never Stripe.
     STRIPE_CHECKOUT_FIXTURES: flag,
     STRIPE_PRICE_STARTER_MONTHLY: optional,
     STRIPE_PRICE_GROWTH_MONTHLY: optional,

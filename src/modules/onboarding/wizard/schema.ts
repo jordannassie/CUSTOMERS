@@ -35,6 +35,8 @@ export const questionsStepInput = z.object({
   questions: z.array(text(300).min(8)).min(1).max(100),
 });
 
+export const businessOnly = z.object({ businessId: z.uuid() });
+
 export const modelsStepInput = z.object({
   businessId: z.uuid(),
   models: z

@@ -8,6 +8,9 @@ Stripe setup (B-40, MVP_SPEC 11, D-39, D-56).
 | `dal.ts` | Plan prices (`plans`) and top-up packs (`topup_packs`) with their Stripe price IDs. Prices are read from the database, never from code. |
 | `catalog.ts` | Mirrors those rows into Stripe (one product and one current USD price each) and checks the match. |
 | `topup/` | Buy credits (B-43): `params.ts` (pure session parameters and purchase rules), `client.ts` (injectable Checkout client, real or fixture), `service.ts`, `dal.ts`, `actions.ts` (`buyTopUp`, `getTopUpStatus`, `completeFixtureTopUp`). |
+| `checkout.ts` | Pure: the signup trial's Checkout Session parameters and trial end date (B-41). |
+| `checkout-client.ts` | The injectable `CheckoutClient` (real Stripe or the `STRIPE_CHECKOUT_FIXTURES` fake). |
+| `trial.ts` | `getTrialOffer` (price and trial end for the card step) and `createTrialCheckout`. |
 | `webhooks.ts` | `processStripeWebhook(rawBody, signature)`: signature check, replay guard (`stripe_webhook_events`), dispatch. Called by `src/app/api/stripe/webhook/route.ts`. |
 | `webhooks/handlers.ts` | One handler per event. Stripe reads, the store and email sending come in as deps, so tests need no Stripe calls. |
 | `webhooks/credits.ts` | Pure: which grants a paid invoice earns (trial, period, proration). |
@@ -51,6 +54,22 @@ The scripts read the database from `.env.local`, refuse a full secret key (`sk_`
 - Needs `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` next to `STRIPE_SECRET_KEY`; without both the page says buying credits is unavailable.
 
 Test card run in the sandbox (after B-01 and the first-time setup above): `stripe listen --forward-to localhost:<port>/api/stripe/webhook`, open `/settings/credits` as an active or trialing test agency, buy 500 credits with `4242 4242 4242 4242`. The page shows "500 credits added" and the new balance; the grant has `source_id` = the session ID and no expiry.
+
+## Card step (B-41, MVP_SPEC 3.1 step 8, 11.2)
+
+- Onboarding step 8 (`/onboarding/card`) uses a Checkout Session with `ui_mode: "elements"` and the Payment Element (`CheckoutElementsProvider` from `@stripe/react-stripe-js/checkout`). Needs `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` next to `STRIPE_SECRET_KEY`; without both the step says card sign up is unavailable.
+- One `subscription` session per visit: one item for the business at the plan in `app_metadata.selected_plan` (else Starter), `trial_period_days: 7`, card and billing address required, `adaptive_pricing` off, no `payment_method_types`, tagged `integration_identifier`.
+- The form's success only shows "Setting up your account". The step finishes (business `active`, step 9) once the webhook has linked `stripe_subscription_id` to the agency. Nothing is granted or marked paid by the page.
+- Skipped for `is_test` agencies, agencies already linked to a subscription, and a second business (that adds an item, B-44).
+- `STRIPE_CHECKOUT_FIXTURES=true` (refused in production): a fake session and a fake card form that answers Stripe's test numbers (`4242...` accepted, `4000 0000 0000 0002` declined, `4000 0025 0000 3155` bank check). Playwright runs with it; no Stripe call is made.
+
+Test card run in the sandbox (after B-01 and the first-time setup above):
+1. Set `STRIPE_SECRET_KEY` (app key, also Checkout Sessions Write), `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` (sandbox `pk_test_`), `STRIPE_WEBHOOK_SECRET`, and leave `STRIPE_CHECKOUT_FIXTURES` unset.
+2. `stripe listen --forward-to localhost:<port>/api/stripe/webhook`.
+3. Sign up with a new (non test) account and go through onboarding to the card step. Check the price and the date.
+4. `4000 0000 0000 0002`: a clear decline message, the form stays, nothing in Stripe's subscriptions.
+5. `4000 0025 0000 3155`: fail the bank check once (message, try again), then complete it: "Setting up your account", then the dashboard.
+6. New account, `4242 4242 4242 4242`: the dashboard opens after the webhook; in Stripe the subscription is `trialing` with `agency_id` metadata and the item has `business_id`; the agency row has the customer, subscription and `trial_ends_at`, and 100 trial credits arrive with `invoice.paid`.
 
 ## Webhook (B-42, MVP_SPEC 11.3)
 
