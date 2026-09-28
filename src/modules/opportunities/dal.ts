@@ -16,18 +16,21 @@ export type OpportunitiesPage = {
 /** The page for one of the signed-in agency's businesses; null when it is not theirs. */
 export async function getOpportunitiesPage(businessId: string): Promise<OpportunitiesPage | null> {
   const { agency } = await requireAgency({ next: "/opportunities" });
-  const { data: b, error } = await createServiceClient()
-    .from("businesses")
-    .select("name, primary_city, primary_region, industry, services, phone, domain, has_website, places_id")
-    .eq("id", businessId)
-    .eq("agency_id", agency.id)
-    .maybeSingle();
+  const [{ data: b, error }, live] = await Promise.all([
+    createServiceClient()
+      .from("businesses")
+      .select("name, primary_city, primary_region, industry, services, phone, domain, has_website, places_id")
+      .eq("id", businessId)
+      .eq("agency_id", agency.id)
+      .maybeSingle(),
+    // Checks the agency itself, so it can run alongside the business read.
+    getLiveOpportunities(businessId),
+  ]);
   if (error) throw new Error(`Opportunities: could not read the business: ${error.message}`);
-  if (!b) return null;
+  if (!b || !live) return null;
 
-  const rows = (await getLiveOpportunities(businessId)) ?? [];
   const ticked = new Set<string>();
-  const fixes = rows.filter((row) => {
+  const fixes = live.filter((row) => {
     const key = checklistKeyOf(row.affected_url);
     if (key && row.status === "resolved") ticked.add(key);
     return key === null;
