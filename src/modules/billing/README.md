@@ -68,8 +68,8 @@ Test card run in the sandbox (after B-01 and the first-time setup above):
 2. `stripe listen --forward-to localhost:<port>/api/stripe/webhook`.
 3. Sign up with a new (non test) account and go through onboarding to the card step. Check the price and the date.
 4. `4000 0000 0000 0002`: a clear decline message, the form stays, nothing in Stripe's subscriptions.
-5. `4000 0025 0000 3155`: fail the bank check once (message, try again), then complete it: "Setting up your account", then the dashboard.
-6. New account, `4242 4242 4242 4242`: the dashboard opens after the webhook; in Stripe the subscription is `trialing` with `agency_id` metadata and the item has `business_id`; the agency row has the customer, subscription and `trial_ends_at`, and 100 trial credits arrive with `invoice.paid`.
+5. `4000 0025 0000 3155`: fail the bank check once (message, try again), then complete it: "Setting up your account", then the first scan screen.
+6. New account, `4242 4242 4242 4242`: the first scan screen opens after the webhook and the scan starts once the trial credits arrive; in Stripe the subscription is `trialing` with `agency_id` metadata and the item has `business_id`; the agency row has the customer, subscription and `trial_ends_at`, and 100 trial credits arrive with `invoice.paid`.
 
 ## Webhook (B-42, MVP_SPEC 11.3)
 
