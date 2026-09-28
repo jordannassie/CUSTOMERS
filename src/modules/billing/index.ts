@@ -5,3 +5,12 @@ export * from "./format";
 export { processStripeWebhook, type WebhookResult } from "./webhooks";
 export { buyTopUp, completeFixtureTopUp, getTopUpStatus, type TopUpStatus } from "./topup/actions";
 export { getTopupOffer, type TopupFormMode, type TopupOffer } from "./topup/service";
+export {
+  addBusiness,
+  cancelSubscription,
+  downgradeBusiness,
+  keepSubscription,
+  removeBusiness,
+  upgradeBusiness,
+  type PlanChangeResult,
+} from "./plan-change/actions";
