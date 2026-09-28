@@ -53,6 +53,8 @@ Migration `029` enables `pg_cron` and `pg_net` and adds these jobs (UTC). Check 
 | `expire-grants` | 01:00 daily | `expire_grants()` (B-13) |
 | `purge-cron-history` | 03:30 daily | deletes pg_cron run history older than 14 days |
 | `check-system-alerts` | every 15 minutes | `run_system_alerts()` (B-69, `037`): runs `check_system_alerts()`, then POSTs to the app's alerts URL, which adds the daily AI cost check and emails the admins |
+| `email-low-credits` | every 30 minutes | `run_email_job('low_credits')` (B-62, `038`): POSTs to the app's email jobs URL, which emails agencies whose credits are 80% used, at 0 or below 0 (`low_credit_agencies()`), once per level per period |
+| `email-weekly-report` | Mondays, every 15 minutes from 13:00 to 17:45 UTC | `run_email_job('weekly_report')` (B-62, `038`): each call sends for a few seconds; later calls pick up agencies not emailed yet |
 
 ### Worker URL and secret (Vault, set by hand per project)
 
@@ -67,6 +69,12 @@ Alert emails (B-69) need the app's alerts endpoint; it uses the same secret. Wit
 
 ```sql
 select vault.create_secret('https://<host>/api/alerts/check', 'system_alerts_url');
+```
+
+Scheduled emails (B-62) need the app's email jobs endpoint, with the same secret. Without it no low credit or weekly report email goes out:
+
+```sql
+select vault.create_secret('https://<host>/api/email/jobs', 'email_jobs_url');
 ```
 
 To change one later: `select vault.update_secret((select id from vault.secrets where name = 'scan_worker_url'), '<new value>');`
@@ -96,3 +104,4 @@ Applied to the local stack only (customers-dev is unreachable, F-24; live is unt
 - `034_topup_packs.sql` (B-40; then run the Stripe catalog sync for that project, see `src/modules/billing/README.md`)
 - `035_email_log.sql` (B-61; then run `npm run db:types` against that project and check the diff is empty)
 - `037_system_alerts.sql` (B-69; then set the `system_alerts_url` Vault secret above and `ALERT_DAILY_COST_USD` on the host)
+- `038_email_jobs.sql` (B-62; then set the `email_jobs_url` Vault secret above)

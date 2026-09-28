@@ -1,8 +1,10 @@
 "use server";
 
 import { headers } from "next/headers";
+import { after } from "next/server";
 import { env } from "@/lib/env";
 import { authFailure, requireUser, type ActionResult } from "@/modules/auth";
+import { sendWelcomeEmail } from "@/modules/notifications";
 import { dedupeConfirmed } from "../competitors";
 import { saveCompetitors } from "../dal";
 import { saveCompetitorsInput, toDomain, type AutofillResult } from "../schema";
@@ -31,11 +33,14 @@ async function userId(): Promise<string | ActionResult<never>> {
 const notFound = { ok: false, status: 404, error: "Business not found." } as const;
 
 export async function saveAgencyStep(input: unknown): Promise<ActionResult<null>> {
-  const user = await userId();
-  if (typeof user !== "string") return user;
+  const user = await signedIn();
+  if (!("id" in user)) return user;
   const parsed = agencyStepInput.safeParse(input);
   if (!parsed.success) return { ok: false, status: 400, error: "Enter your agency name, up to 120 characters." };
-  await saveAgency(user, parsed.data.name, parsed.data.plan);
+  const { agencyId } = await saveAgency(user.id, parsed.data.name, parsed.data.plan);
+  // Renaming the agency later saves through here too; the welcome email's key keeps it to one.
+  const to = user.email;
+  if (to) after(() => sendWelcomeEmail({ to, agencyId }));
   return { ok: true, data: null };
 }
 

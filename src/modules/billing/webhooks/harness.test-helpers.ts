@@ -5,6 +5,7 @@ import { grantCredits } from "@/modules/credits";
 import type { SendEmailInput } from "@/modules/email";
 import { processStripeWebhook } from "../webhooks";
 import { createWebhookStore } from "./dal";
+import type { SendBillingEmail } from "./emails";
 import type { WebhookDeps } from "./handlers";
 import * as fx from "./fixtures.test-helpers";
 
@@ -41,7 +42,8 @@ export async function setup(status = "trialing") {
   return { agencyId: agency.id, email, businesses, customer: fx.id("cus") };
 }
 
-export function harness() {
+/** Webhook deps on the local database. Emails are collected, and also passed to `send` when a test gives one. */
+export function harness(send?: SendBillingEmail) {
   const emails: SendEmailInput[] = [];
   const subscriptions = new Map<string, Stripe.Subscription>();
   const deps: WebhookDeps = {
@@ -57,7 +59,7 @@ export function harness() {
     },
     sendEmail: async (input) => {
       emails.push(input);
-      return { status: "sent", providerId: "fake" };
+      return send ? send(input) : { status: "sent", providerId: "fake" };
     },
     now: () => new Date(),
   };

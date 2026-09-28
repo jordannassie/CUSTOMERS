@@ -40,9 +40,13 @@ export function createLogEmailClient(): EmailClient {
 
 let client: EmailClient | null = null;
 
-/** The app's only Resend client, created lazily so builds without a key still pass. */
+/**
+ * The app's only Resend client, created lazily so builds without a key still pass.
+ * Outside production it logs instead: .env.local may hold a real key, and dev and e2e runs must never send.
+ */
 export function getEmailClient(): EmailClient {
   if (client) return client;
+  if (env.NODE_ENV !== "production") return (client = createLogEmailClient());
   if (!env.RESEND_API_KEY) throw new Error("Email is not configured. Set RESEND_API_KEY.");
   client = createResendClient(env.RESEND_API_KEY);
   return client;

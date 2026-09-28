@@ -8,6 +8,9 @@ export const colors = {
   textHint: "#737370",
   primary: "#2563EB",
   primaryTint: "#EFF6FF",
+  goodText: "#15803D",
+  midText: "#B45309",
+  lowText: "#B91C1C",
 } as const;
 
 // Geist is not installed in mail apps, so the stack falls back to each system's sans serif.

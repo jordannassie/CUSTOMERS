@@ -2131,6 +2131,17 @@ export type Database = {
         Args: { p_agency_id: string; p_amount: number; p_scan_job_id: string }
         Returns: string
       }
+      low_credit_agencies: {
+        Args: never
+        Returns: {
+          agency_id: string
+          balance: number
+          level: string
+          period_end: string
+          total: number
+          used: number
+        }[]
+      }
       raise_system_alert: {
         Args: {
           p_details: Json
@@ -2152,6 +2163,7 @@ export type Database = {
       }
       reset_stuck_jobs: { Args: never; Returns: number }
       retry_scan_job: { Args: { p_job_id: string }; Returns: string }
+      run_email_job: { Args: { p_job: string }; Returns: number }
       run_system_alerts: { Args: never; Returns: number }
     }
     Enums: {

@@ -96,6 +96,23 @@ export async function withSharePage<T>(
   }
 }
 
+/**
+ * The share link for the weekly report email (B-62): the live one, or a new one through createShare. Null when
+ * any link for the business was turned off before, so an email never switches a report back on without them.
+ * That includes the short-lived PDF links (withSharePage), which cannot be told apart from the agency's own.
+ */
+export async function shareForEmail(agencyId: string, businessId: string): Promise<ShareLink | null> {
+  const existing = await activeShare(businessId);
+  if (existing) return (await ownsBusiness(agencyId, businessId)) ? existing : null;
+  const { count, error } = await createServiceClient()
+    .from("report_shares")
+    .select("id", { count: "exact", head: true })
+    .eq("business_id", businessId)
+    .not("revoked_at", "is", null);
+  if (error) throw new Error(`Reports: could not read share links: ${error.message}`);
+  return count ? null : createShare(agencyId, businessId);
+}
+
 /** False when the link is not one of this agency's. Turning off a link that is already off is fine. */
 export async function revokeShare(agencyId: string, id: string): Promise<boolean> {
   const db = createServiceClient();
