@@ -5,18 +5,13 @@ import ContactForm from "@/components/site/ContactForm";
 import Header from "@/components/marketing/Header";
 import Footer from "@/components/marketing/Footer";
 import { Skeleton } from "@/components/ui/skeleton";
+import { pageMetadata } from "@/lib/site-metadata";
 
 const title = "Contact";
 const description =
   "Questions about checking your business in ChatGPT, Claude and Perplexity, agency accounts or a demo? Send us a message and we will reply by email.";
 
-export const metadata: Metadata = {
-  title,
-  description,
-  alternates: { canonical: "/contact" },
-  openGraph: { type: "website", url: "/contact", title: `${title} | Customers.Direct`, description },
-  twitter: { card: "summary_large_image", title: `${title} | Customers.Direct`, description },
-};
+export const metadata: Metadata = pageMetadata({ title, description, path: "/contact" });
 
 const TOPICS = [
   { title: "Your business in AI answers", body: "What we check, how the score works, and what you can fix." },

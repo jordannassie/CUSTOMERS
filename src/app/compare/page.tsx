@@ -5,16 +5,12 @@ import Footer from "@/components/marketing/Footer";
 import { Lead } from "@/components/marketing/section";
 import { ReadinessCheck } from "./ReadinessCheck";
 import { CheckForm } from "./CheckForm";
+import { pageMetadata } from "@/lib/site-metadata";
 
 const description =
   "Free check: see how easy your website is for AI tools to understand, next to a competitor's. Reads both home pages; no account needed.";
 
-export const metadata: Metadata = {
-  title: "AI readiness check",
-  description,
-  alternates: { canonical: "/compare" },
-  openGraph: { url: "/compare", title: "AI readiness check | Customers.Direct", description },
-};
+export const metadata: Metadata = pageMetadata({ title: "AI readiness check", description, path: "/compare" });
 
 export default function ComparePage() {
   return (

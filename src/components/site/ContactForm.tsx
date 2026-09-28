@@ -61,6 +61,8 @@ export default function ContactForm({ initialInterest, source = "contact_page", 
   const [interest, setInterest] = useState<InterestValue>(urlInterest);
   const [syncedInterest, setSyncedInterest] = useState(urlInterest);
   const [message, setMessage] = useState("");
+  // Hidden from people; bots that fill it get a quiet success from /api/contact and nothing is saved.
+  const [honey, setHoney] = useState("");
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -81,7 +83,7 @@ export default function ContactForm({ initialInterest, source = "contact_page", 
       const res = await fetch("/api/contact", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, company, website, phone, interest, message, source, page_path: pathname ?? undefined }),
+        body: JSON.stringify({ name, email, company, website, phone, interest, message, source, page_path: pathname ?? undefined, _honey: honey }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -116,7 +118,16 @@ export default function ContactForm({ initialInterest, source = "contact_page", 
 
   return (
     <form onSubmit={handleSubmit} className={cn(box, "flex flex-col gap-5")} noValidate>
-      <input type="text" name="_honey" className="hidden" aria-hidden="true" tabIndex={-1} />
+      <input
+        type="text"
+        name="_honey"
+        value={honey}
+        onChange={(e) => setHoney(e.target.value)}
+        className="hidden"
+        aria-hidden="true"
+        tabIndex={-1}
+        autoComplete="off"
+      />
 
       <div className={pair}>
         <div className="flex flex-col gap-2">

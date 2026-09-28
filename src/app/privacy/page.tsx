@@ -1,14 +1,12 @@
 import Header from "@/components/marketing/Header";
 import Footer from "@/components/marketing/Footer";
+import { pageMetadata } from "@/lib/site-metadata";
 
-const title = "Privacy Policy";
-const description = "How Customers.Direct collects, uses, and protects your information.";
-
-export const metadata = {
-  title,
-  description,
-  alternates: { canonical: "/privacy" },
-};
+export const metadata = pageMetadata({
+  title: "Privacy policy",
+  description: "How Customers.Direct collects, uses and protects your information.",
+  path: "/privacy",
+});
 
 const UPDATED = "August 25, 2026";
 
@@ -18,7 +16,7 @@ export default function PrivacyPage() {
       <Header />
       <main className="bg-background px-4 py-12 sm:py-16">
         <div className="max-w-3xl mx-auto">
-          <h1 className="text-[32px] sm:text-5xl font-semibold tracking-[-0.02em] sm:tracking-[-0.035em] mb-2">Privacy Policy</h1>
+          <h1 className="text-[32px] sm:text-5xl font-semibold tracking-[-0.02em] sm:tracking-[-0.035em] mb-2">Privacy policy</h1>
           <p className="text-sm text-text-hint mb-10">Last updated: {UPDATED}</p>
 
           <div className="prose-sm flex flex-col gap-6 text-foreground text-sm leading-relaxed">
