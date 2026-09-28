@@ -109,7 +109,22 @@ npx vitest run evals      # AI evals, see evals/README.md
 
 - Unit tests sit next to the code as `src/**/*.test.ts`.
 - Tests read only `.env.test.local`, which `scripts/test-db-reset.sh` writes with the local database keys. They never touch the shared database.
-- The local stack uses ports 54620 to 54629 so it can run beside other Supabase projects.
+- Every worktree gets its own local stack, so parallel sessions never reset each other's database (BUG-010). See below.
+
+### One local test stack per worktree
+
+- `npm test` claims a slot from 0 to 9 for the worktree and runs the stack as project `customers-direct-<slot>` on ports `55<slot>00` to `55<slot>99` (API on `55<slot>21`, database on `55<slot>22`). The slot stays with the worktree until it is stopped.
+- Claims live in the shared git folder (`.git/test-db-slots/`), so all worktrees of the clone see them. Set `TEST_DB_SLOT` (or `LEADER_SLOT`) to pick a slot yourself.
+- The Supabase CLI reads the project id and ports from `SUPABASE_*` variables set by `scripts/test-db-env.sh`; `supabase/config.toml` is unchanged, and CI (with `CI` set) keeps the default stack on ports 54620 to 54629.
+- To run a CLI command against your own stack: `source scripts/test-db-env.sh && supabase status`.
+
+```bash
+npm run test:db:list           # slots, worktrees, API port and memory of each running stack
+npm run test:db:stop           # stop this worktree's stack, delete its data and free the slot
+bash scripts/test-db.sh stop 3 # the same for slot 3, after its worktree was removed
+```
+
+Each stack uses about 550 MiB of Docker memory (storage about 240, rest about 100, kong about 100, db about 90, the rest small). Studio, realtime, analytics and the other unused services stay off. With 8 GiB given to Docker, five stacks fit beside a few other projects; stop stacks of finished worktrees to get the memory back.
 
 ## Branches
 

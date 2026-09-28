@@ -3,6 +3,7 @@
 # Writes the local URL and keys to .env.test.local, which vitest.config.mts reads.
 set -euo pipefail
 cd "$(dirname "$0")/.."
+source scripts/test-db-env.sh
 
 # Services the tests do not use; skipping them keeps start-up fast and light. Storage stays on for the logo upload spec (B-55).
 EXCLUDE="studio,imgproxy,vector,logflare,edge-runtime,realtime,postgres-meta,supavisor"
@@ -13,7 +14,18 @@ fi
 
 supabase db reset --local --no-seed
 
-eval "$(supabase status -o env)"
+# Right after a start, status can print before the stack reports its URLs.
+status=""
+for _ in $(seq 1 60); do
+  status="$(supabase status -o env 2>/dev/null || true)"
+  grep -q '^API_URL=' <<<"$status" && break
+  sleep 1
+done
+if ! grep -q '^API_URL=' <<<"$status"; then
+  echo "Local Supabase status has no API_URL" >&2
+  exit 1
+fi
+eval "$status"
 
 # The reset recreates the db and auth containers while PostgREST and Kong keep running and reconnect, so the
 # gateway can answer 502 for a moment. Start the tests only once REST (with the schema) and auth answer 200

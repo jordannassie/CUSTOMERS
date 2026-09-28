@@ -21,6 +21,8 @@
     "scan": "bash scripts/scan-payload.sh && bash scripts/scan-secrets.sh --rev HEAD",
     "test": "bash scripts/test-db-reset.sh && vitest run --project unit --project unit-queue",
     "test:e2e": "playwright test",
+    "test:db:list": "bash scripts/test-db.sh list",
+    "test:db:stop": "bash scripts/test-db.sh stop",
     "evals": "vitest run --project evals",
     "evals:ai": "vitest run --project evals-ai --passWithNoTests",
     "dev:openai-check": "vitest run --project dev scripts/dev/openai-check.dev.ts",
