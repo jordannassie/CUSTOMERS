@@ -1,8 +1,9 @@
 import "server-only";
+import { safeFetch } from "@/lib/net/safe-fetch";
 import type { ScanResult } from "@/types/geo";
 
 /**
- * Server-side website scanner. Deliberately deterministic — it extracts
+ * Server-side website scanner. Deliberately deterministic: it extracts
  * only what's literally present in the page's HTML (title, meta tags,
  * Open Graph tags, JSON-LD Organization/LocalBusiness data). It never
  * invents a business name, industry, or location: any field it can't find
@@ -13,54 +14,6 @@ function normalizeUrl(input: string): string {
   let url = input.trim();
   if (!/^https?:\/\//i.test(url)) url = `https://${url}`;
   return url;
-}
-
-/**
- * Basic SSRF guard: rejects URLs that point at private networks, loopback
- * addresses, cloud metadata endpoints, or non-http(s) schemes.
- *
- * This is a best-effort client-supplied URL check. It does NOT resolve DNS
- * (which would require an async call and still wouldn't fully prevent TOCTOU
- * attacks), but it blocks the most common attack vectors.
- */
-function assertSafeUrl(raw: string): void {
-  let parsed: URL;
-  try {
-    parsed = new URL(raw);
-  } catch {
-    throw new Error("Invalid URL");
-  }
-
-  if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
-    throw new Error("Only http and https URLs are allowed");
-  }
-
-  const host = parsed.hostname.toLowerCase();
-
-  // Loopback / localhost
-  if (
-    host === "localhost" ||
-    host === "127.0.0.1" ||
-    host === "[::1]" ||
-    host.endsWith(".localhost")
-  ) {
-    throw new Error("Private URL not allowed");
-  }
-
-  // AWS/GCP/Azure metadata
-  if (host === "169.254.169.254" || host === "metadata.google.internal") {
-    throw new Error("Private URL not allowed");
-  }
-
-  // RFC 1918 private ranges (simple string-prefix checks)
-  if (
-    /^10\./.test(host) ||
-    /^192\.168\./.test(host) ||
-    /^172\.(1[6-9]|2\d|3[01])\./.test(host) ||
-    host === "0.0.0.0"
-  ) {
-    throw new Error("Private URL not allowed");
-  }
 }
 
 function extractMeta(html: string, patterns: RegExp[]): string | null {
@@ -108,7 +61,7 @@ function extractJsonLd(html: string): JsonLdOrg | null {
         }
       }
     } catch {
-      // Malformed JSON-LD — skip rather than guess.
+      // Malformed JSON-LD: skip rather than guess.
       continue;
     }
   }
@@ -118,41 +71,15 @@ function extractJsonLd(html: string): JsonLdOrg | null {
 export async function scanWebsite(rawUrl: string): Promise<ScanResult> {
   const url = normalizeUrl(rawUrl);
 
-  // SSRF guard — reject private/loopback targets before making any network call
-  try {
-    assertSafeUrl(url);
-  } catch {
-    // Return a blank scan result; the onboarding wizard handles missing fields gracefully
-    return {
-      name: null,
-      domain: new URL(url).hostname.replace(/^www\./, ""),
-      description: null,
-      industry: null,
-      city: null,
-      region: null,
-      country: null,
-      logoUrl: null,
-      confidence: "deterministic",
-    };
-  }
-
   const domain = new URL(url).hostname.replace(/^www\./, "");
 
   let html = "";
   try {
-    const response = await fetch(url, {
-      redirect: "follow",
-      signal: AbortSignal.timeout(10_000),
-      headers: {
-        "User-Agent":
-          "Mozilla/5.0 (compatible; CustomersDirectScanner/1.0; +https://customers.direct)",
-      },
-    });
-    if (response.ok) {
-      html = await response.text();
-    }
+    // safeFetch refuses private addresses and re-checks every redirect (SEC-03).
+    const response = await safeFetch(url, { timeoutMs: 10_000 });
+    if (response.ok) html = response.text;
   } catch {
-    // Fetch failed (blocked, timed out, DNS, etc.) — fall through with an
+    // Fetch failed (blocked, timed out, DNS, etc.), fall through with an
     // empty scan rather than throwing, so onboarding never dead-ends.
     html = "";
   }
@@ -164,7 +91,7 @@ export async function scanWebsite(rawUrl: string): Promise<ScanResult> {
     : null;
   const titleTag = html ? extractMeta(html, [/<title[^>]*>([^<]+)<\/title>/i]) : null;
 
-  const name = jsonLd?.name?.trim() || ogTitle || titleTag?.split(/[\|\-–]/)[0]?.trim() || null;
+  const name = jsonLd?.name?.trim() || ogTitle || titleTag?.split(/[|\-\u2013]/)[0]?.trim() || null;
 
   const description = html
     ? jsonLd?.description ||
@@ -183,7 +110,7 @@ export async function scanWebsite(rawUrl: string): Promise<ScanResult> {
     name,
     domain,
     description: description ? description.slice(0, 500) : null,
-    industry: null, // never guessed — user selects this during onboarding
+    industry: null, // never guessed; the user selects this during onboarding
     city: jsonLd?.address?.addressLocality?.trim() || null,
     region: jsonLd?.address?.addressRegion?.trim() || null,
     country: jsonLd?.address?.addressCountry?.trim() || null,

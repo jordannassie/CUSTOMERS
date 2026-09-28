@@ -12,11 +12,11 @@ vi.mock("@/lib/supabase/server", () => ({
 
 const { POST } = await import("./route");
 
-function submit(fields: Record<string, unknown>) {
+function submit(fields: Record<string, unknown>, ip = "198.51.100.7") {
   return POST(
     new NextRequest("http://localhost/api/contact", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", "x-nf-client-connection-ip": ip },
       body: JSON.stringify({ name: "Sam", email: "sam@example.com", message: "Hello", ...fields }),
     }),
   );
@@ -36,5 +36,14 @@ describe("POST /api/contact honeypot", () => {
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({ success: true });
     expect(insert).not.toHaveBeenCalled();
+  });
+});
+
+describe("POST /api/contact rate limit", () => {
+  it("refuses a sixth message from the same IP within the hour", async () => {
+    for (let i = 0; i < 5; i++) expect((await submit({}, "203.0.113.50")).status).toBe(200);
+    const res = await submit({}, "203.0.113.50");
+    expect(res.status).toBe(429);
+    expect((await submit({}, "203.0.113.51")).status).toBe(200);
   });
 });

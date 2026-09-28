@@ -4,6 +4,7 @@
 import { useState, useRef, useCallback } from "react";
 import type { NewsStory } from "@/app/api/internal/admin/news/search/route";
 import type { GeneratedArticle } from "@/app/api/internal/admin/news/article/route";
+import { appFetch } from "@/lib/session-expired";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -151,7 +152,7 @@ function CopyButton({
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      alert("Copy failed — please select and copy the text manually.");
+      alert("Copy failed. Please select and copy the text manually.");
     }
   }
   return (
@@ -170,7 +171,7 @@ function CopyButton({
   );
 }
 
-// ─── CopyButtonFn (copies from a function — for edited text) ─────────────────
+// ─── CopyButtonFn (copies from a function, for edited text) ─────────────────
 
 function CopyButtonFn({
   label, getText, className = "",
@@ -182,7 +183,7 @@ function CopyButtonFn({
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      alert("Copy failed — please select and copy the text manually.");
+      alert("Copy failed. Please select and copy the text manually.");
     }
   }
   return (
@@ -269,7 +270,7 @@ function LinkedInPostEditor({ initialPost }: { initialPost: string }) {
           </span>
           {isOver && (
             <span className="text-[10px] font-bold text-[#DC2626] bg-[#FEF2F2] border border-[#FECACA] px-2 py-0.5 rounded-full">
-              Over LinkedIn limit — trim before posting
+              Over LinkedIn limit, trim before posting
             </span>
           )}
         </div>
@@ -361,7 +362,7 @@ function OutputPanel({
 
       <div className="p-6 flex flex-col gap-6">
 
-        {/* A — LinkedIn Post */}
+        {/* A: LinkedIn Post */}
         <section>
           <div className="flex items-center gap-2 mb-3">
             <span className="w-5 h-5 rounded-full bg-[#0866F5] text-white text-[9px] font-bold flex items-center justify-center shrink-0">A</span>
@@ -371,7 +372,7 @@ function OutputPanel({
           <LinkedInPostEditor key={article.linkedinPost} initialPost={article.linkedinPost} />
         </section>
 
-        {/* B — Image Prompt */}
+        {/* B: Image Prompt */}
         {article.imagePrompt && (
           <section className="bg-[#FFFBEB] border border-[#FDE68A] rounded-xl p-5">
             <div className="flex items-center justify-between mb-3">
@@ -390,7 +391,7 @@ function OutputPanel({
           </section>
         )}
 
-        {/* C — Sources */}
+        {/* C: Sources */}
         {article.sources && (
           <section className="bg-[#F8FAFD] border border-[#E2E8F0] rounded-xl p-5">
             <div className="flex items-center justify-between mb-3">
@@ -409,7 +410,7 @@ function OutputPanel({
           </section>
         )}
 
-        {/* D — Reply to AEO Comments */}
+        {/* D: Reply to AEO Comments */}
         <section className="bg-[#F0FDF4] border border-[#BBF7D0] rounded-xl p-5">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
@@ -426,7 +427,7 @@ function OutputPanel({
           </p>
         </section>
 
-        {/* E — Newsletter Briefing (collapsed) */}
+        {/* E: Newsletter Briefing (collapsed) */}
         <details
           open={newsletterOpen}
           onToggle={(e) => setNewsletterOpen((e.target as HTMLDetailsElement).open)}
@@ -726,7 +727,7 @@ export default function NewsClient() {
     setWriteError(null);
 
     try {
-      const res  = await fetch("/api/internal/admin/news/search", {
+      const res  = await appFetch("/api/internal/admin/news/search", {
         method:  "POST",
         headers: { "Content-Type": "application/json" },
         body:    JSON.stringify({ period, weekday }),
@@ -749,7 +750,7 @@ export default function NewsClient() {
     setArticleWeekday(weekday);
 
     try {
-      const res  = await fetch("/api/internal/admin/news/article", {
+      const res  = await appFetch("/api/internal/admin/news/article", {
         method:  "POST",
         headers: { "Content-Type": "application/json" },
         body:    JSON.stringify({
@@ -872,7 +873,7 @@ export default function NewsClient() {
             Finding {WEEKDAYS.find((w) => w.key === weekday)?.theme} news…
           </p>
           <p className="text-[12px] text-[#9CA3AF]">
-            Searching for agency-relevant AI stories from the {PERIOD_OPTIONS.find((p) => p.value === period)?.label.toLowerCase()}. Usually takes 15–30 seconds.
+            Searching for agency-relevant AI stories from the {PERIOD_OPTIONS.find((p) => p.value === period)?.label.toLowerCase()}. Usually takes 15 to 30 seconds.
           </p>
         </div>
       )}
@@ -887,7 +888,7 @@ export default function NewsClient() {
         </div>
       )}
 
-      {/* Empty state — no stories found */}
+      {/* Empty state: no stories found */}
       {!searching && !searchError && stories.length === 0 && (
         <div className="bg-white border border-[#E2E8F0] rounded-2xl p-12 text-center" style={{ boxShadow: "0 1px 4px rgba(0,0,0,0.04)" }}>
           <div className="w-12 h-12 rounded-2xl bg-[#F8FAFD] border border-[#E2E8F0] flex items-center justify-center mx-auto mb-4">
@@ -908,7 +909,7 @@ export default function NewsClient() {
         <div className="flex flex-col gap-4">
           <div className="flex items-center justify-between mb-1">
             <p className="text-[12px] font-semibold text-[#9CA3AF] uppercase tracking-wider">
-              {stories.length} {stories.length === 1 ? "Story" : "Stories"} — {WEEKDAYS.find((w) => w.key === weekday)?.theme}
+              {stories.length} {stories.length === 1 ? "Story" : "Stories"}: {WEEKDAYS.find((w) => w.key === weekday)?.theme}
             </p>
             {writingId && (
               <p className="text-[12px] text-[#0866F5] font-medium animate-pulse">

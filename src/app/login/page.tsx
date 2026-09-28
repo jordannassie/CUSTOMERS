@@ -6,12 +6,13 @@ export const metadata = {
   robots: { index: false },
 };
 
-type SearchParams = Promise<{ error?: string }>;
+type SearchParams = Promise<{ error?: string; reason?: string }>;
 
-// Only the form waits for ?error=, so the rest of the page stays in the static shell (Cache Components).
+// Only the form waits for ?error= and ?reason=, so the rest of the page stays in the static shell (Cache Components).
 async function FormWithError({ searchParams }: { searchParams: SearchParams }) {
-  const { error } = await searchParams;
-  return <AuthForm defaultMode="login" errorParam={error} />;
+  const { error, reason } = await searchParams;
+  const notice = reason === "expired" ? "You were logged out. Log in again to go back to your page." : undefined;
+  return <AuthForm defaultMode="login" errorParam={error} notice={notice} />;
 }
 
 export default function LoginPage({ searchParams }: { searchParams: SearchParams }) {

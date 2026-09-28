@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest";
-import { allowCheck, MAX_CHECKS_PER_HOUR } from "./rate-limit";
 import { readinessCheckInput } from "./schema";
 import { compareSites } from "./service";
 import { extractSignals, readinessScore } from "./signals";
@@ -66,15 +65,5 @@ describe("urls", () => {
       expect(isSafePublicUrl(bad), bad).toBe(false);
     }
     expect(isSafePublicUrl("example.com")).toBe(true);
-  });
-});
-
-describe("per-IP rate limit", () => {
-  it(`allows ${MAX_CHECKS_PER_HOUR} checks an hour, then resets`, () => {
-    const now = 1_000_000;
-    for (let i = 0; i < MAX_CHECKS_PER_HOUR; i++) expect(allowCheck("1.2.3.4", now)).toBe(true);
-    expect(allowCheck("1.2.3.4", now)).toBe(false);
-    expect(allowCheck("5.6.7.8", now)).toBe(true);
-    expect(allowCheck("1.2.3.4", now + 60 * 60 * 1000 + 1)).toBe(true);
   });
 });

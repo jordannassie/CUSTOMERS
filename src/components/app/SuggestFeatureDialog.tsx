@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { appFetch } from "@/lib/session-expired";
 
 export function SuggestFeatureDialog({ businessId, triggerClassName }: { businessId: string; triggerClassName: string }) {
   const [open, setOpen] = useState(false);
@@ -34,7 +35,7 @@ export function SuggestFeatureDialog({ businessId, triggerClassName }: { busines
     setSending(true);
     setError(null);
     try {
-      const res = await fetch("/api/geo/feature-requests", {
+      const res = await appFetch("/api/geo/feature-requests", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ title, description, businessId, pageContext: window.location.pathname }),

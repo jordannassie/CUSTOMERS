@@ -13,6 +13,7 @@ const LOGO = "/images/logos/logo-black.png";
 
 interface AuthFormProps {
   defaultMode?: "login" | "signup";
+  notice?: string;
   // The page's ?error= value; read on the server so the notice is in the first render.
   errorParam?: string;
 }
@@ -35,7 +36,7 @@ function nextFromUrl() {
   return safeNextPath(params.get("next"), fallback);
 }
 
-export default function AuthForm({ defaultMode = "login", errorParam = "" }: AuthFormProps) {
+export default function AuthForm({ defaultMode = "login", errorParam = "", notice }: AuthFormProps) {
   const router = useRouter();
   const oauthFailed = errorParam.includes("oauth") || errorParam.includes("callback");
   const [mode, setMode] = useState<"login" | "signup">(defaultMode);
@@ -44,7 +45,7 @@ export default function AuthForm({ defaultMode = "login", errorParam = "" }: Aut
   const [loading, setLoading] = useState<"google" | "email" | null>(null);
   const [googleFailed, setGoogleFailed] = useState(oauthFailed);
   const [error, setError] = useState<string | null>(oauthFailed ? "google_failed" : null);
-  const [message, setMessage] = useState<string | null>(null);
+  const [message, setMessage] = useState<string | null>(notice ?? null);
 
   const isSignup = mode === "signup";
 
@@ -140,7 +141,7 @@ export default function AuthForm({ defaultMode = "login", errorParam = "" }: Aut
     <div className="w-full max-w-[420px]">
       {/* Logo */}
       <div className="text-center mb-8">
-        <Link href="/" aria-label="Customers.Direct — Home">
+        <Link href="/" aria-label="Customers.Direct home">
           <Image
             src={LOGO}
             alt="Customers.Direct"
@@ -194,7 +195,7 @@ export default function AuthForm({ defaultMode = "login", errorParam = "" }: Aut
               className="text-[12px] text-[#92400E] bg-[#FFFBEB] border border-[#FDE68A] rounded-lg px-3.5 py-3 mb-4 flex flex-col gap-1.5"
               role="alert"
             >
-              <p className="font-semibold">Sign-in couldn&apos;t complete — please try again.</p>
+              <p className="font-semibold">Sign-in couldn&apos;t complete. Please try again.</p>
               <p>
                 Google authentication succeeded, but the session couldn&apos;t be saved.
                 This is usually temporary.{" "}

@@ -15,6 +15,7 @@ import {
   ExternalLink,
 } from "lucide-react";
 import type { SeoSnapshot, SeoKeyword } from "@/lib/seo/types";
+import { appFetch } from "@/lib/session-expired";
 
 interface SeoDashboardProps {
   businessId: string;
@@ -129,7 +130,7 @@ export default function SeoDashboard({
 
       try {
         const url = `/api/geo/seo?businessId=${businessId}${refresh ? "&refresh=1" : ""}`;
-        const res = await fetch(url);
+        const res = await appFetch(url);
         const data = await res.json();
 
         if (!res.ok) {
@@ -293,8 +294,8 @@ export default function SeoDashboard({
         />
         <MetricCard
           label="Domain Rank"
-          value={overview.rank ?? "—"}
-          sub="DataForSEO rank 0–100"
+          value={overview.rank ?? "-"}
+          sub="DataForSEO rank 0 to 100"
           icon={Globe}
         />
       </div>
@@ -358,7 +359,7 @@ export default function SeoDashboard({
                         {gap.keyword}
                       </p>
                       <p className="text-[11px] text-[#A3A3A0] truncate">
-                        {gap.competitorDomain} — #{gap.competitorPosition}
+                        {gap.competitorDomain} #{gap.competitorPosition}
                       </p>
                     </div>
                     <div className="text-right shrink-0">
@@ -476,7 +477,7 @@ export default function SeoDashboard({
               { label: "Total backlinks", value: fmt(backlinks.backlinks) },
               {
                 label: "Domain rank",
-                value: backlinks.rank !== undefined ? backlinks.rank : "—",
+                value: backlinks.rank !== undefined ? backlinks.rank : "-",
               },
             ].map(({ label, value }) => (
               <div key={label} className="bg-[#FAFAF8] rounded-lg border border-[#E5E5E1] p-4">
@@ -565,7 +566,7 @@ function KeywordsTable({
                 {kw.difficulty !== undefined ? (
                   <DifficultyBar score={kw.difficulty} />
                 ) : (
-                  <span className="text-[#A3A3A0]">—</span>
+                  <span className="text-[#A3A3A0]">-</span>
                 )}
               </td>
               <td className="px-5 py-3">
