@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
+import { appFetch } from "@/lib/session-expired";
 
 type Status = "new" | "reviewing" | "planned" | "shipped" | "declined";
 
@@ -60,7 +61,7 @@ export default function FeatureRequestsClient({ requests: initial }: { requests:
   async function updateStatus(id: string, status: Status) {
     setUpdating(id);
     try {
-      const res = await fetch(`/api/internal/admin/feature-requests/${id}`, {
+      const res = await appFetch(`/api/internal/admin/feature-requests/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status }),

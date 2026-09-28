@@ -15,6 +15,7 @@ import {
   ExternalLink,
 } from "lucide-react";
 import type { SeoSnapshot, SeoKeyword } from "@/lib/seo/types";
+import { appFetch } from "@/lib/session-expired";
 
 interface SeoDashboardProps {
   businessId: string;
@@ -129,7 +130,7 @@ export default function SeoDashboard({
 
       try {
         const url = `/api/geo/seo?businessId=${businessId}${refresh ? "&refresh=1" : ""}`;
-        const res = await fetch(url);
+        const res = await appFetch(url);
         const data = await res.json();
 
         if (!res.ok) {

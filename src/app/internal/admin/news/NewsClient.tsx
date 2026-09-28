@@ -4,6 +4,7 @@
 import { useState, useRef, useCallback } from "react";
 import type { NewsStory } from "@/app/api/internal/admin/news/search/route";
 import type { GeneratedArticle } from "@/app/api/internal/admin/news/article/route";
+import { appFetch } from "@/lib/session-expired";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -726,7 +727,7 @@ export default function NewsClient() {
     setWriteError(null);
 
     try {
-      const res  = await fetch("/api/internal/admin/news/search", {
+      const res  = await appFetch("/api/internal/admin/news/search", {
         method:  "POST",
         headers: { "Content-Type": "application/json" },
         body:    JSON.stringify({ period, weekday }),
@@ -749,7 +750,7 @@ export default function NewsClient() {
     setArticleWeekday(weekday);
 
     try {
-      const res  = await fetch("/api/internal/admin/news/article", {
+      const res  = await appFetch("/api/internal/admin/news/article", {
         method:  "POST",
         headers: { "Content-Type": "application/json" },
         body:    JSON.stringify({

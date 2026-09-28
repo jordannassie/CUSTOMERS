@@ -2,6 +2,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { appFetch } from "@/lib/session-expired";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -164,7 +165,7 @@ function LeadDetail({
   async function patch(payload: Record<string, unknown>) {
     setSaving(true);
     try {
-      const res = await fetch("/api/internal/admin/leads", {
+      const res = await appFetch("/api/internal/admin/leads", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id: lead.id, ...payload }),
@@ -306,7 +307,7 @@ async function requestLeads(q: LeadsQuery): Promise<LeadsResponse> {
     status: q.status,
     unread: q.unread ? "1" : "0",
   });
-  const res = await fetch(`/api/internal/admin/leads?${params}`);
+  const res = await appFetch(`/api/internal/admin/leads?${params}`);
   if (!res.ok) {
     const data = await res.json().catch(() => ({}));
     throw new Error(data.error ?? `HTTP ${res.status}`);
@@ -396,7 +397,7 @@ export default function LeadsClient() {
     setSelected(lead);
     if (!lead.read_at) {
       try {
-        const res = await fetch("/api/internal/admin/leads", {
+        const res = await appFetch("/api/internal/admin/leads", {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ id: lead.id, mark_read: true }),

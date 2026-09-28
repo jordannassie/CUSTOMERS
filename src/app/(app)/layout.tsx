@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
+import { SessionWatcher } from "@/app/_components/session-watcher";
 import { AppShell } from "@/components/app/AppShell";
 import { AppShellSkeleton, PageSkeleton } from "@/components/app/AppShellSkeleton";
 import {
@@ -15,9 +16,12 @@ export const metadata: Metadata = { robots: { index: false, follow: false } };
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
-    <Suspense fallback={<AppShellSkeleton />}>
-      <AppFrame>{children}</AppFrame>
-    </Suspense>
+    <>
+      <SessionWatcher />
+      <Suspense fallback={<AppShellSkeleton />}>
+        <AppFrame>{children}</AppFrame>
+      </Suspense>
+    </>
   );
 }
 

@@ -13,6 +13,7 @@ const LOGO = "/images/logos/logo-black.png";
 
 interface AuthFormProps {
   defaultMode?: "login" | "signup";
+  notice?: string;
   // The page's ?error= value; read on the server so the notice is in the first render.
   errorParam?: string;
 }
@@ -35,7 +36,7 @@ function nextFromUrl() {
   return safeNextPath(params.get("next"), fallback);
 }
 
-export default function AuthForm({ defaultMode = "login", errorParam = "" }: AuthFormProps) {
+export default function AuthForm({ defaultMode = "login", errorParam = "", notice }: AuthFormProps) {
   const router = useRouter();
   const oauthFailed = errorParam.includes("oauth") || errorParam.includes("callback");
   const [mode, setMode] = useState<"login" | "signup">(defaultMode);
@@ -44,7 +45,7 @@ export default function AuthForm({ defaultMode = "login", errorParam = "" }: Aut
   const [loading, setLoading] = useState<"google" | "email" | null>(null);
   const [googleFailed, setGoogleFailed] = useState(oauthFailed);
   const [error, setError] = useState<string | null>(oauthFailed ? "google_failed" : null);
-  const [message, setMessage] = useState<string | null>(null);
+  const [message, setMessage] = useState<string | null>(notice ?? null);
 
   const isSignup = mode === "signup";
 

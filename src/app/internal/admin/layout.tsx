@@ -1,3 +1,4 @@
+import { SessionWatcher } from "@/app/_components/session-watcher";
 import AdminNav from "./_components/admin-nav";
 import { requireAdmin } from "@/modules/auth";
 
@@ -13,6 +14,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   return (
     <div className="flex min-h-screen flex-col bg-background lg:flex-row">
+      <SessionWatcher />
       <AdminNav adminEmail={admin.email ?? ""} />
       <main className="min-w-0 flex-1">{children}</main>
     </div>

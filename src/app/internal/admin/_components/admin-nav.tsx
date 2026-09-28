@@ -9,13 +9,14 @@ import { cn } from "cn";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { EXTRA_ITEMS, MAIN_ITEMS, isActiveItem, type AdminNavItem } from "./nav-items";
+import { appFetch } from "@/lib/session-expired";
 
 const LOGO = "/images/logos/logo-black.png";
 
 function useUnreadLeads(pathname: string): number {
   const [count, setCount] = useState(0);
   useEffect(() => {
-    fetch("/api/internal/admin/leads?count=1")
+    appFetch("/api/internal/admin/leads?count=1")
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => {
         if (typeof d?.count === "number") setCount(d.count);
