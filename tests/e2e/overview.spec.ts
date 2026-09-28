@@ -124,8 +124,9 @@ test("no scans yet: an invitation to run the first scan", async ({ page }) => {
   await expect(page.getByTestId("model-scores")).toContainText("ChatGPT");
   await expect(page.getByTestId("model-scores").getByText("No checks yet")).toHaveCount(3);
   await expect(page.getByRole("button", { name: "Run scan" })).toBeEnabled();
-  // Hidden until B-59 and B-60 wire them (DESIGN.md: no placeholder buttons).
-  await expect(page.getByRole("button", { name: /^(Share|Export PDF)$/ })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Share" })).toBeVisible();
+  // Hidden until B-60 wires it (DESIGN.md: no placeholder buttons).
+  await expect(page.getByRole("button", { name: "Export PDF" })).toHaveCount(0);
   for (const card of REMOVED_CARDS) await expect(page.getByText(card)).toHaveCount(0);
 });
 

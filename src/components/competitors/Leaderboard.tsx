@@ -9,7 +9,7 @@ const STANDING_BADGE = { ahead: "good", behind: "mid", about_same: "secondary" }
  * The competitor leaderboard (DESIGN.md signature piece): you in blue, competitors in greys. The shaded
  * band is your score plus or minus the margin, so a bar ending inside it reads as "about the same" (D-64).
  */
-export function Leaderboard({ view }: { view: CompetitorsView }) {
+export function Leaderboard({ view }: { view: Pick<CompetitorsView, "leaderboard" | "margin"> }) {
   const you = view.leaderboard.find((r) => r.isYou)!;
   const band =
     view.margin !== null && you.score !== null

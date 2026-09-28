@@ -10,7 +10,12 @@ const OPEN_STATUSES = ["open", "in_progress"];
 /** The Overview for one of the signed-in agency's businesses; null when it is not theirs. */
 export async function getOverview(businessId: string): Promise<OverviewView | null> {
   const { agency } = await requireAgency({ next: "/dashboard" });
-  const report = await loadScoreReport(agency.id, businessId, new Date());
+  return loadOverview(agency.id, businessId, new Date());
+}
+
+// Callers check the viewer may see this agency first (the signed-in owner, or a live share link).
+export async function loadOverview(agencyId: string, businessId: string, now: Date): Promise<OverviewView | null> {
+  const report = await loadScoreReport(agencyId, businessId, now);
   if (!report) return null;
 
   // Ownership is settled by the report above.
