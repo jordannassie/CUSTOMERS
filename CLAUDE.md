@@ -12,6 +12,7 @@ AEO SaaS for local businesses and the agencies that manage them: checks whether 
 | What to build next, task by task (`B-xx`) | `docs/build-plan/README.md` |
 | Why each choice was made (IDs `D-xx`) | `docs/DECISIONS.md` |
 | Look and feel | `docs/design/DESIGN.md` |
+| How every word should read (tone, punctuation, banned words) | `docs/design/WRITING.md` |
 | What the client asked for | `docs/CLIENT_REQUIREMENTS.md` |
 | Known bugs and security fixes | `docs/MVP_ROADMAP.md` |
 | Bugs found during the build (log new ones here) | `docs/BUGS.md` |
@@ -51,7 +52,7 @@ Store only `place_id`. Never save business names, addresses, ratings or reviews 
 
 ## Design (docs/design/DESIGN.md)
 
-Use the design tokens and shadcn/ui; no raw hex colours in components. Blue `#2563EB`, 4px corners, light mode only, Lucide icons, plain-language wording (MVP_SPEC 8.4). Design empty, loading and error states. Use the `frontend-design` skill for UI work.
+Use the design tokens and shadcn/ui; no raw hex colours in components. Blue `#2563EB`, 4px corners, light mode only, Lucide icons, plain-language wording (MVP_SPEC 8.4) written to `docs/design/WRITING.md`: no em or en dashes, sentence case, no AI-sounding words. Design empty, loading and error states. Use the `frontend-design` skill for UI work.
 
 ## Before calling a task done (MVP_SPEC 21)
 
