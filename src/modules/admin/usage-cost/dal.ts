@@ -27,7 +27,11 @@ export async function getUsageCost(options: UsageCostOptions): Promise<UsageCost
 
 // Callers check admin access first.
 export async function loadUsageCost({ days, includeTest }: UsageCostOptions, now: Date): Promise<UsageCostReport> {
-  const from = periodStart(now, days);
+  return loadUsageCostSince(periodStart(now, days), includeTest, now);
+}
+
+/** Same report from any start date; the admin Overview uses the start of the month. Callers check admin access. */
+export async function loadUsageCostSince(from: Date, includeTest: boolean, now: Date): Promise<UsageCostReport> {
   const db = createServiceClient();
   const [fromIso, toIso] = [from.toISOString(), now.toISOString()];
   const [agencyRows, businessRows, planRows, captureRows, usageRows] = await Promise.all([

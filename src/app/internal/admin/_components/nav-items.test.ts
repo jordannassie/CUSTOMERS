@@ -19,8 +19,8 @@ describe("admin menu (B-64)", () => {
 
   it.each([
     ["/internal/admin", "Overview"],
-    ["/internal/admin/accounts", "Agencies"],
-    ["/internal/admin/billing", "Agencies"],
+    ["/internal/admin/agencies", "Agencies"],
+    ["/internal/admin/agencies/abc", "Agencies"],
     ["/internal/admin/businesses/abc", "Businesses"],
     ["/internal/admin/scans", "Scans"],
     ["/internal/admin/usage", "Usage & Cost"],
