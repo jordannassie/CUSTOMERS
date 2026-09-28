@@ -174,7 +174,7 @@ test("card step: a failed bank check lets the user try again, a passed one start
   await payWith(page, "4000 0025 0000 3155");
   await slow(page.getByRole("dialog", { name: "Confirm with your bank" })).toBeVisible();
   await page.getByRole("button", { name: "Fail" }).click();
-  await expect(page.getByRole("alert")).toContainText("We couldn't confirm this card with your bank.");
+  await expect(page.getByRole("alert").filter({ hasText: "We couldn't confirm this card with your bank." })).toBeVisible();
 
   await payWith(page, "4000 0025 0000 3155");
   await page.getByRole("button", { name: "Complete" }).click();

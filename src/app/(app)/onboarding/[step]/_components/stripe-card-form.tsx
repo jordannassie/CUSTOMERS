@@ -35,7 +35,7 @@ function appearance(): Appearance {
       colorDanger: token("--cd-low-text"),
       colorBackground: token("--cd-surface"),
       borderRadius: "4px",
-      fontFamily: css.fontFamily,
+      fontFamily: getComputedStyle(document.body).fontFamily,
       fontSizeBase: "14px",
     },
     rules: { ".Input": { borderColor: token("--cd-input-border"), boxShadow: "none" } },
