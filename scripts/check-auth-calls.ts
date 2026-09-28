@@ -14,6 +14,7 @@ const PUBLIC: Record<string, string> = {
   "src/app/auth/signout/route.ts": "signs out the current session",
   "src/app/api/stripe/webhook/route.ts": "Stripe signature check",
   "src/app/api/email/unsubscribe/route.ts": "signed unsubscribe token (B-61)",
+  "src/app/r/[token]/logo/route.ts": "share link logo; the token is the access check (B-59)",
 };
 
 function walk(dir: string): string[] {
