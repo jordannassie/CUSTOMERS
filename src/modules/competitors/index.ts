@@ -1,6 +1,6 @@
 // The only file other modules may import from (eslint-plugin-boundaries).
 export { trackCompetitor } from "./actions";
-export { fetchPlaceSignals, getCompetitorsPage } from "./dal";
+export { fetchPlaceSignals, getCompetitorsPage, loadCompetitorsPage } from "./dal";
 export type { FetchSignals, PlaceSignals } from "./places";
 export {
   STANDING_TEXT,

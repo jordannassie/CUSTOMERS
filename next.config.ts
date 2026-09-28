@@ -21,6 +21,18 @@ const nextConfig: NextConfig = {
     // Agency logos are up to 2 MB (B-55); the default 1 MB limit would reject them before the action runs.
     serverActions: { bodySizeLimit: "3mb" },
   },
+  // Share pages (B-59): never indexed, and the token never leaves in a Referer header.
+  async headers() {
+    return [
+      {
+        source: "/r/:path*",
+        headers: [
+          { key: "X-Robots-Tag", value: "noindex, nofollow" },
+          { key: "Referrer-Policy", value: "no-referrer" },
+        ],
+      },
+    ];
+  },
   async redirects() {
     return [
       ...CUT_PAGES.map((source) => ({ source, destination: "/", permanent: true })),

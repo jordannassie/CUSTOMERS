@@ -9,22 +9,27 @@ const C = 2 * Math.PI * R;
 
 const STROKE: Record<Tone, string> = { good: "stroke-good", mid: "stroke-mid", low: "stroke-low" };
 
-/** The 30-day visibility score. Fills once on load; shows the final value at once when motion is reduced. */
-export function ScoreRing({ score, tone }: { score: number; tone: Tone }) {
-  const [shown, setShown] = useState(0);
+/**
+ * The 30-day visibility score. Fills once on load; shows the final value at once when motion is reduced
+ * or `animate` is off (the share page, which is also printed to PDF).
+ */
+export function ScoreRing({ score, tone, animate = true }: { score: number; tone: Tone; animate?: boolean }) {
+  const [counted, setCounted] = useState(0);
+  const shown = animate ? counted : score;
 
   useEffect(() => {
+    if (!animate) return;
     const duration = window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 900;
     let raf = 0;
     const start = performance.now();
     const tick = (now: number) => {
       const p = duration ? Math.min((now - start) / duration, 1) : 1;
-      setShown(Math.round(score * (1 - Math.pow(1 - p, 3))));
+      setCounted(Math.round(score * (1 - Math.pow(1 - p, 3))));
       if (p < 1) raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, [score]);
+  }, [score, animate]);
 
   return (
     <div className="relative size-32 shrink-0 sm:size-36" role="img" aria-label={`Visibility score ${score} of 100`}>

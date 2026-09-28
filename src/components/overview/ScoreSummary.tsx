@@ -1,17 +1,18 @@
 import { ArrowDown, ArrowUp } from "lucide-react";
 import { cn } from "cn";
 import { Badge } from "@/components/ui/badge";
-import type { OverviewView } from "@/modules/overview";
+import type { MethodPanel, OverviewView } from "@/modules/overview";
 import { ScoreDetails } from "./ScoreDetails";
 import { ScoreRing } from "./ScoreRing";
 
-type Score = NonNullable<OverviewView["score"]>;
+// The share page has no details panel, so details are optional.
+type Score = Omit<NonNullable<OverviewView["score"]>, "details"> & { details?: MethodPanel };
 
 /** One number, one label, one sentence (MVP_SPEC 5.6), with an arrow only for a real change. */
-export function ScoreSummary({ score }: { score: Score }) {
+export function ScoreSummary({ score, animate = true }: { score: Score; animate?: boolean }) {
   return (
     <div className="flex flex-col items-start gap-5 sm:flex-row sm:items-center sm:gap-7" data-testid="score-summary">
-      <ScoreRing score={score.value} tone={score.tone} />
+      <ScoreRing score={score.value} tone={score.tone} animate={animate} />
       <div className="flex min-w-0 flex-col items-start gap-2.5">
         <div className="flex flex-wrap items-center gap-2">
           <Badge variant="tint" data-testid="confidence-label">
@@ -40,7 +41,7 @@ export function ScoreSummary({ score }: { score: Score }) {
         {score.firstResults && (
           <p className="text-sm text-muted-foreground">First results. Accuracy improves with every scan.</p>
         )}
-        <ScoreDetails panel={score.details} />
+        {score.details && <ScoreDetails panel={score.details} />}
       </div>
     </div>
   );
