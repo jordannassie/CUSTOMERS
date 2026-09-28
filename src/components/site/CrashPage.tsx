@@ -30,7 +30,7 @@ export function CrashPage({ error, retry }: { error: Error & { digest?: string }
     >
       <p>
         Something went wrong on our side, not yours. Your scans, credits and settings are safe. Try again, and if it
-        keeps happening, contact us with the reference below.
+        keeps happening, contact us{error.digest ? " with the reference below" : ""}.
       </p>
     </StatusPage>
   );

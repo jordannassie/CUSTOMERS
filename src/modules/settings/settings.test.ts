@@ -154,6 +154,8 @@ describe("settings actions", () => {
       return uploadAgencyLogo(form);
     };
     expect(await upload(new TextEncoder().encode("<svg onload=alert(1)>"), "image/png")).toMatchObject({ status: 400 });
+    expect(await upload(new TextEncoder().encode("<svg onload=alert(1)>"), "image/svg+xml")).toMatchObject({ status: 400 });
+    expect(await upload(new Uint8Array(64).fill(7), "image/png")).toMatchObject({ status: 400 });
     const big = new Uint8Array(2 * 1024 * 1024 + 1);
     big.set([0x89, 0x50, 0x4e, 0x47]);
     expect(await upload(big, "image/png")).toMatchObject({ status: 400, error: expect.stringContaining("too big") });

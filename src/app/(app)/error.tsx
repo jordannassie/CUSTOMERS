@@ -26,7 +26,7 @@ export default function AppError({ error, retry }: { error: Error & { digest?: s
           </Button>
         </div>
         {error.digest ? (
-          <p className="mt-6 text-[13px] text-hint">
+          <p className="mt-6 text-[13px] text-text-hint">
             Reference for support: <span className="font-mono text-foreground">{error.digest}</span>
           </p>
         ) : null}

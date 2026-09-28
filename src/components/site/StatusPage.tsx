@@ -27,7 +27,7 @@ export function StatusPage({ icon: Icon, title, children, actions, detail }: Pro
           <div className="mt-8 flex flex-wrap gap-3">{actions}</div>
           {detail ? (
             <dl className="mt-10 border-t border-border pt-4 text-[13px]">
-              <dt className="text-hint">{detail.label}</dt>
+              <dt className="text-text-hint">{detail.label}</dt>
               <dd className="mt-1 font-mono break-all text-foreground">{detail.value}</dd>
             </dl>
           ) : null}
