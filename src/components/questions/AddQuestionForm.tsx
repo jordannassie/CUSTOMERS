@@ -29,7 +29,7 @@ export function AddQuestionForm({ businessId, city, activeCount, models, frequen
   const full = limitMessage !== null;
   const now = monthlyCredits(activeCount, models, frequency);
   const after = monthlyCredits(activeCount + 1, models, frequency);
-  const example = city ? `Who does the best emergency repairs in ${city}?` : "Who does the best emergency repairs near me?";
+  const example = `Which places in ${city ?? "my city"} are open late on weekends?`;
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
