@@ -110,6 +110,7 @@ npx vitest run evals      # AI evals, see evals/README.md
 - Unit tests sit next to the code as `src/**/*.test.ts`.
 - Tests read only `.env.test.local`, which `scripts/test-db-reset.sh` writes with the local database keys. They never touch the shared database.
 - Every worktree gets its own local stack, so parallel sessions never reset each other's database (BUG-010). See below.
+- End-to-end tests: run `npm test` once to create `.env.test.local`, then `npx playwright test`. The dev server Playwright starts uses those values (not `.env.local`), with `WORKER_IN_PROCESS=true` and the test admins in `ADMIN_EMAILS` (BUG-031). If a dev server already runs on `E2E_PORT`, Playwright reuses it, so start that one the same way or stop it first.
 
 ### One local test stack per worktree
 
