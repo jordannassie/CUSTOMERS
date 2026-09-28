@@ -1,5 +1,5 @@
 import { planInvoiceGrants, type PlanCredits } from "../webhooks/credits";
-import { at, FakeStripe } from "./fake-stripe.test-helpers";
+import { at, FakeStripe } from "./fake-stripe";
 import type { PlanChange, PlanChangeContext } from "./planner";
 import { applyPlanChange, previewPlanChange, type PlanChangeDeps } from "./service";
 

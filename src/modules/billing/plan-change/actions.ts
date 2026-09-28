@@ -2,8 +2,7 @@
 
 import { authFailure, requireAgency, type ActionResult } from "@/modules/auth";
 import { canAddBusiness } from "@/modules/entitlements";
-import { getStripe } from "../stripe";
-import { stripePlanChangeClient } from "./client";
+import { billingAccess } from "../account/access";
 import { loadPlanChangeData } from "./dal";
 import { PlanChangeError, type PlanChange } from "./planner";
 import { businessPlanInput, removeBusinessInput, subscriptionInput } from "./schema";
@@ -17,6 +16,11 @@ export type PlanChangeResult = ActionResult<
 >;
 
 const badInput = { ok: false, status: 400, error: "Check your choice and try again." } as const;
+const unavailable = {
+  ok: false,
+  status: 503,
+  error: "Plan changes aren't available right now. Contact us and we'll make the change for you.",
+} as const;
 
 function stripeFailure(error: unknown): PlanChangeResult | null {
   const e = error as { type?: string; statusCode?: number };
@@ -36,8 +40,11 @@ async function run(
   previewedAt: number | undefined,
 ): Promise<PlanChangeResult> {
   try {
-    const { context, plansByProduct } = await loadPlanChangeData(agencyId);
-    const deps = { stripe: stripePlanChangeClient(getStripe()), plansByProduct, now: () => new Date() };
+    const data = await loadPlanChangeData(agencyId);
+    const access = await billingAccess(data);
+    if (!access) return unavailable;
+    const { context, stripe } = access;
+    const deps = { stripe, plansByProduct: data.plansByProduct, now: () => new Date() };
     if (previewedAt === undefined) {
       return { ok: true, data: { step: "preview", ...(await previewPlanChange(context, change, deps)) } };
     }

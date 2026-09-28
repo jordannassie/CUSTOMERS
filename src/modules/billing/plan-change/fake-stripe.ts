@@ -1,25 +1,25 @@
 import type Stripe from "stripe";
-import { invoice, line } from "../webhooks/fixtures.test-helpers";
+import { invoice, line } from "../stripe-objects";
 import type { PlanChangeStripe } from "./client";
 import type { ItemSpec } from "./planner";
-import { scheduleObject, subscriptionObject, type FakeSchedule, type Item, type Phase } from "./fake-stripe-objects.test-helpers";
+import {
+  monthAfter,
+  PRICES,
+  prorationLines,
+  scheduleObject,
+  subscriptionObject,
+  type FakeSchedule,
+  type Item,
+  type Phase,
+  type PriceTable,
+} from "./fake-stripe-objects";
 
-// An in-memory Stripe for plan change tests, standing in for a Stripe test clock: one subscription, its schedule,
-// prorations, renewals and invoices, with a clock the test moves. It follows Stripe's documented behavior; the
-// real test-clock run is still to do once the sandbox exists (B-01, B-40).
+export { at, PRICES, type PriceTable } from "./fake-stripe-objects";
 
-export const PRICES: Record<string, { product: string; unitAmount: number }> = {
-  price_starter: { product: "cd_plan_starter", unitAmount: 14900 },
-  price_pro: { product: "cd_plan_pro", unitAmount: 24900 },
-};
-
-
-export const at = (iso: string) => Math.floor(Date.parse(iso) / 1000);
-
-function monthAfter(seconds: number): number {
-  const d = new Date(seconds * 1000);
-  return Math.floor(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, d.getUTCDate()) / 1000);
-}
+// An in-memory Stripe standing in for a Stripe test clock: one subscription, its schedule, prorations, renewals
+// and invoices, with a clock the caller moves. Plan change tests use it, and so do the billing fixtures
+// (STRIPE_CHECKOUT_FIXTURES, B-46). It follows Stripe's documented behavior; the real test-clock run is still to
+// do once the sandbox exists (B-01, B-40).
 
 export class FakeStripe implements PlanChangeStripe {
   clock: number;
@@ -34,13 +34,31 @@ export class FakeStripe implements PlanChangeStripe {
   private seen = new Map<string, unknown>();
   private nextId = 1;
 
-  constructor(opts: { now: number; status?: Stripe.Subscription.Status; periodStart: number; items: { businessId: string; price: string }[] }) {
+  readonly subscriptionId: string;
+  readonly customerId: string;
+  readonly agencyId: string | null;
+  readonly prices: PriceTable;
+
+  constructor(opts: {
+    now: number;
+    status?: Stripe.Subscription.Status;
+    periodStart: number;
+    /** Defaults to one month after periodStart. */
+    periodEnd?: number;
+    items: { businessId: string; price: string; itemId?: string }[];
+    prices?: PriceTable;
+    ids?: { subscription: string; customer: string; agency: string };
+  }) {
     this.clock = opts.now;
+    this.prices = opts.prices ?? PRICES;
+    this.subscriptionId = opts.ids?.subscription ?? "sub_fake";
+    this.customerId = opts.ids?.customer ?? "cus_fake";
+    this.agencyId = opts.ids?.agency ?? null;
     this.status = opts.status ?? "active";
-    const end = monthAfter(opts.periodStart);
+    const end = opts.periodEnd ?? monthAfter(opts.periodStart);
     if (this.status === "trialing") this.trialEnd = end;
     this.items = opts.items.map((i) => ({
-      id: `si_${i.businessId}`,
+      id: i.itemId ?? `si_${i.businessId}`,
       price: i.price,
       quantity: 1,
       metadata: { business_id: i.businessId },
@@ -49,7 +67,6 @@ export class FakeStripe implements PlanChangeStripe {
     }));
   }
 
-  readonly subscriptionId = "sub_fake";
   private id = (prefix: string) => `${prefix}_fake${this.nextId++}`;
 
   subscription(): Stripe.Subscription {
@@ -70,53 +87,24 @@ export class FakeStripe implements PlanChangeStripe {
   private periodEnd = () => Math.min(...this.items.map((i) => i.end));
   private periodStart = () => Math.min(...this.items.map((i) => i.start));
 
-  /** Proration lines for moving from `from` to `to` at `date`: credit for unused time, charge for the rest. */
-  private prorationLines(from: ItemSpec[], to: ItemSpec[], date: number): Stripe.InvoiceLineItem[] {
-    const start = this.periodStart();
-    const end = this.periodEnd();
-    const fraction = (end - date) / (end - start);
-    const lines: Stripe.InvoiceLineItem[] = [];
-    const key = (i: ItemSpec) => i.metadata.business_id;
-    const push = (spec: ItemSpec, sign: 1 | -1, itemId: string) =>
-      lines.push(
-        line({
-          product: PRICES[spec.price].product,
-          amount: sign * Math.round(PRICES[spec.price].unitAmount * fraction),
-          proration: true,
-          itemId,
-          subscriptionId: this.subscriptionId,
-          start: date,
-          end,
-        }),
-      );
-    for (const next of to) {
-      const before = from.find((f) => key(f) === key(next));
-      const itemId = this.items.find((i) => i.metadata.business_id === key(next))?.id ?? `si_${key(next)}`;
-      if (before && before.price === next.price) continue;
-      if (before) push(before, -1, itemId);
-      push(next, 1, itemId);
-    }
-    return lines;
-  }
-
   private specs = (): ItemSpec[] => this.items.map((i) => ({ price: i.price, quantity: i.quantity, metadata: { ...i.metadata } }));
 
   private renewalInvoice(items: ItemSpec[], start: number): Stripe.Invoice {
     const end = monthAfter(start);
     return invoice({
-      customer: "cus_fake",
+      customer: this.customerId,
       subscriptionId: this.subscriptionId,
       billingReason: "subscription_cycle",
       lines: items.map((i) =>
-        line({ product: PRICES[i.price].product, amount: PRICES[i.price].unitAmount, subscriptionId: this.subscriptionId, start, end }),
+        line({ product: this.prices[i.price].product, amount: this.prices[i.price].unitAmount, subscriptionId: this.subscriptionId, start, end }),
       ),
       status: "open",
     });
   }
 
   private prorationInvoice(to: ItemSpec[], date: number): Stripe.Invoice {
-    const lines = this.status === "trialing" ? [] : this.prorationLines(this.specs(), to, date);
-    return invoice({ customer: "cus_fake", subscriptionId: this.subscriptionId, billingReason: "subscription_update", lines, status: "open" });
+    const lines = this.status === "trialing" ? [] : prorationLines(this, this.specs(), to, date);
+    return invoice({ customer: this.customerId, subscriptionId: this.subscriptionId, billingReason: "subscription_update", lines, status: "open" });
   }
 
   /** Moves the subscription to `to` now, charging the proration like payment_behavior error_if_incomplete. */
@@ -205,6 +193,11 @@ export class FakeStripe implements PlanChangeStripe {
 
   async previewInvoice(params: Stripe.InvoiceCreatePreviewParams) {
     this.calls.push({ method: "previewInvoice", params });
+    if (!params.schedule_details && !params.subscription_details) {
+      // The upcoming renewal: the next phase's items when a change is pending.
+      const next = this.schedule?.status === "active" ? this.schedule.phases.find((p) => p.start >= this.periodEnd()) : undefined;
+      return this.renewalInvoice(next?.items ?? this.specs(), this.periodEnd());
+    }
     if (params.schedule_details) {
       const [first, second] = params.schedule_details.phases!;
       if (params.schedule_details.proration_behavior === "always_invoice") {

@@ -1,14 +1,13 @@
 "use server";
 
-import { headers } from "next/headers";
 import type Stripe from "stripe";
 import { z } from "zod";
-import { env } from "@/lib/env";
 import { authFailure, requireAgency, type ActionResult } from "@/modules/auth";
 import { getBalance } from "@/modules/credits";
 import { canSpendTopUps } from "@/modules/entitlements";
 import { BUY_CREDITS_HREF } from "@/modules/workspace";
 import { listTopupPacks } from "../dal";
+import { appOrigin } from "../origin";
 import { liveTopupClient, topupFixtures } from "./client";
 import { agencyCustomerId, topupGrantFor } from "./dal";
 import { buyTopUp as buyTopUpWith, completeFixtureTopUp as completeFixture } from "./service";
@@ -21,14 +20,6 @@ import { dispatchEvent } from "../webhooks/handlers";
 const packInput = z.object({ packId: z.string().regex(/^[a-z0-9_]{1,64}$/) });
 const sessionInput = z.object({ sessionId: z.string().regex(/^cs_[A-Za-z0-9_-]{1,200}$/) });
 const badInput = { ok: false, status: 400, error: "Something was wrong with that request. Refresh the page and try again." } as const;
-
-async function appOrigin(): Promise<string> {
-  if (env.NEXT_PUBLIC_APP_URL) return env.NEXT_PUBLIC_APP_URL.replace(/\/$/, "");
-  const h = await headers();
-  const host = h.get("x-forwarded-host") ?? h.get("host");
-  const proto = h.get("x-forwarded-proto") ?? (host?.startsWith("localhost") ? "http" : "https");
-  return `${proto}://${host}`;
-}
 
 /** Starts a one-time Checkout Session for one pack; the card form confirms it in the browser. */
 export async function buyTopUp(input: unknown): Promise<ActionResult<{ sessionId: string; clientSecret: string }>> {

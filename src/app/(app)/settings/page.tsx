@@ -11,9 +11,8 @@ import { getSettings, saveAgencyName, saveBusinessProfile, saveScanSettings, upl
 
 export const metadata = { title: "Settings", robots: { index: false } };
 
-// Billing (B-46), Usage (B-56) and self-serve deletion (B-77) are not built yet; these are the
-// working places for each until they land.
-const USAGE_HREF = BILLING_HREF;
+// Self-serve deletion (B-77) is not built yet; support does it until then.
+const USAGE_HREF = "/settings/usage";
 const QUESTIONS_HREF = "/questions";
 const SUPPORT_HREF = "/contact?topic=support";
 

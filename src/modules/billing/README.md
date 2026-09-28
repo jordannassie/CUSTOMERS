@@ -17,6 +17,7 @@ Stripe setup (B-40, MVP_SPEC 11, D-39, D-56).
 | `webhooks/dal.ts` | Agency, `business_subscriptions`, plan and pack reads and writes. Credits only through `grant_credits`. |
 | `webhooks/emails.tsx` | Payment failed and trial ending emails (plain notices until B-62). |
 | `plan-change/` | Upgrade, add, downgrade and remove a business, cancel and keep the plan (B-44). See below. |
+| `account/` | The billing page (B-46): `loadBillingPage`, `openBillingPortal`, and the Stripe or fixture access both it and plan changes use. See below. |
 
 ## Products and prices
 
@@ -129,4 +130,13 @@ Server Actions in `plan-change/actions.ts`, exported from `index.ts`: `upgradeBu
 - Every item and phase item carries `metadata.business_id`, so the webhook can match items after a phase starts.
 - Stripe calls carry an idempotency key per change and preview, so a double click changes Stripe once.
 - The key also needs Subscription Schedules Write and Invoices Read (invoice previews).
-- Tests use an in-memory Stripe (`plan-change/fake-stripe.test-helpers.ts`) with a clock for the upgrade mid-month, downgrade at renewal and cancel scenarios. The same three still need a run with real Stripe test clocks once the sandbox exists (B-01, B-40).
+- Tests use an in-memory Stripe (`plan-change/fake-stripe.ts`) with a clock for the upgrade mid-month, downgrade at renewal and cancel scenarios. The same three still need a run with real Stripe test clocks once the sandbox exists (B-01, B-40).
+
+## Billing page (B-46, MVP_SPEC 8.1, 11)
+
+Page: `/settings/billing` (old `/dashboard/billing` links redirect there). It shows each business on its plan with change and remove buttons, saved businesses not on the plan with add buttons (`addBusiness`), the next charge, the status (trial, active, past due), a pending cancel with "Keep my plan", links to buy credits and see usage, and "Manage card and invoices".
+
+- Plans per business come from `business_subscriptions` (kept by the webhook). Pending changes, a pending cancel and the next charge come from Stripe: the subscription, its schedule and an invoice preview of the next bill (`account/service.ts`). If Stripe fails, the page still lists the plans and says the next charge could not load.
+- Every change is previewed first, then confirmed with that preview's `previewedAt` (`_components/change-dialog.tsx`).
+- `openBillingPortal` (Server Action, `requireAgency`) opens a Stripe customer portal session for the agency's own `stripe_customer_id` and redirects. The portal uses the account's default portal settings: set its branding, invoice history and card updates in the Stripe dashboard (Settings, Billing, Customer portal). The app key needs Customer Portal Write.
+- `STRIPE_CHECKOUT_FIXTURES=true` (refused in production): `account/fixtures.ts` keeps one in-memory Stripe (`plan-change/fake-stripe.ts`) per agency, seeded from the database. After each change it runs the real `customer.subscription.updated` and `invoice.paid` handlers, so plans and credits still reach the database only through them. The portal button returns to `/settings/billing?portal=fixture`. Playwright (`tests/e2e/billing.spec.ts`) runs the trial, active and past due states this way; no Stripe call is made.

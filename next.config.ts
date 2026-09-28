@@ -51,6 +51,7 @@ const nextConfig: NextConfig = {
       { source: "/dashboard/visibility", destination: "/dashboard", permanent: true },
       { source: "/dashboard/reports", destination: "/dashboard", permanent: true },
       { source: "/dashboard/settings", destination: "/settings", permanent: true },
+      { source: "/dashboard/billing/:path*", destination: "/settings/billing", permanent: true },
       { source: "/dashboard/competitors", destination: "/competitors", permanent: true },
       { source: "/dashboard/prompts", destination: "/questions", permanent: true },
       {

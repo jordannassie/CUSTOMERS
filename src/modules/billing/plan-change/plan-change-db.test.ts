@@ -3,7 +3,7 @@ import { createClient as createSupabaseClient, type SupabaseClient } from "@supa
 import { afterAll, describe, expect, it, vi } from "vitest";
 import { env } from "@/lib/env";
 import { createServiceClient } from "@/lib/supabase/service";
-import { FakeStripe } from "./fake-stripe.test-helpers";
+import { FakeStripe } from "./fake-stripe";
 
 // B-44 actions against the local database, signed in as a real user, with the in-memory Stripe in place of
 // the real client: auth, input checks, agency scoping and the trial business limit (canAddBusiness).
@@ -19,8 +19,9 @@ vi.mock("@/lib/supabase/server", () => ({
     session ??
     createSupabaseClient(env.NEXT_PUBLIC_SUPABASE_URL, env.NEXT_PUBLIC_SUPABASE_ANON_KEY, { auth: { persistSession: false } }),
 }));
-vi.mock("../stripe", () => ({ getStripe: () => ({}) }));
-vi.mock("./client", () => ({ stripePlanChangeClient: () => fake }));
+vi.mock("../account/access", () => ({
+  billingAccess: async (data: { context: unknown }) => ({ mode: "stripe", context: data.context, stripe: fake }),
+}));
 // Real reads; only the plans' Stripe price IDs are swapped for the ones the in-memory Stripe knows.
 vi.mock("./dal", async (importOriginal) => {
   const real = await importOriginal<typeof import("./dal")>();

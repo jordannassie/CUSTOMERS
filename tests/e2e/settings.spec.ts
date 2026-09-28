@@ -82,7 +82,7 @@ test("settings is in the menu, the old address redirects, and the account shows 
   await expect(page.getByTestId("account-email")).toHaveText(s.email);
   await expect(page.getByText("Signed in with email or Google")).toBeVisible();
   await expect(page.getByText(/Supabase/)).toHaveCount(0);
-  await expect(page.getByRole("link", { name: /^Billing/ })).toHaveAttribute("href", "/dashboard/billing");
+  await expect(page.getByRole("link", { name: /^Billing/ })).toHaveAttribute("href", "/settings/billing");
   await expect(page.getByRole("link", { name: "Contact support to delete" })).toBeVisible();
 
   if (page.viewportSize()!.width >= 1024) {

@@ -9,7 +9,7 @@ export const APP_NAV: NavItem[] = [
   { label: "Opportunities", href: "/opportunities", icon: Lightbulb },
   { label: "Questions", href: "/questions", icon: MessageCircleQuestion },
   { label: "Sources", href: "/sources", icon: Link2 },
-  { label: "Settings", href: "/settings", icon: Settings, alsoActiveOn: ["/dashboard/billing"] },
+  { label: "Settings", href: "/settings", icon: Settings },
 ];
 
 export function isNavActive(item: NavItem, pathname: string): boolean {
