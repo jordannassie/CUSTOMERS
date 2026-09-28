@@ -27,6 +27,12 @@ const nextConfig: NextConfig = {
       { source: "/sales/:path*", destination: "/", permanent: true },
       { source: "/how-it-works", destination: "/#how-it-works", permanent: true },
       { source: "/admin/:path*", destination: "/internal/admin", permanent: true },
+      // Old admin pages merged into Agencies (B-65).
+      ...["accounts", "users", "billing"].map((page) => ({
+        source: `/internal/admin/${page}`,
+        destination: "/internal/admin/agencies",
+        permanent: true,
+      })),
       { source: "/dashboard/direct-agent", destination: "/dashboard", permanent: true },
       { source: "/dashboard/agent-readiness", destination: "/dashboard", permanent: true },
       // Visibility and Reports were merged into the Overview (B-58).

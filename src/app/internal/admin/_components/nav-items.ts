@@ -15,8 +15,6 @@ export type AdminNavItem = {
   label: string;
   href: string;
   icon: LucideIcon;
-  // Old pages that stay until B-65 and B-66 merge them; they highlight the item that replaces them.
-  also?: string[];
 };
 
 const BASE = "/internal/admin";
@@ -24,7 +22,7 @@ const BASE = "/internal/admin";
 // The six-item menu (MVP_SPEC 9.1, D-35).
 export const MAIN_ITEMS: AdminNavItem[] = [
   { label: "Overview", href: BASE, icon: LayoutDashboard },
-  { label: "Agencies", href: `${BASE}/accounts`, icon: Building2, also: [`${BASE}/users`, `${BASE}/billing`] },
+  { label: "Agencies", href: `${BASE}/agencies`, icon: Building2 },
   { label: "Businesses", href: `${BASE}/businesses`, icon: Store },
   { label: "Scans", href: `${BASE}/scans`, icon: ScanSearch },
   { label: "Usage & Cost", href: `${BASE}/usage`, icon: Coins },
@@ -44,5 +42,5 @@ function matches(pathname: string, href: string): boolean {
 
 export function isActiveItem(item: AdminNavItem, pathname: string): boolean {
   if (item.href === BASE) return pathname === BASE;
-  return [item.href, ...(item.also ?? [])].some((href) => matches(pathname, href));
+  return matches(pathname, item.href);
 }

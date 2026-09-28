@@ -69,6 +69,7 @@ export type Database = {
           created_at: string
           credit_overdraft: number
           current_period_end: string | null
+          deleted_at: string | null
           id: string
           is_test: boolean
           logo_url: string | null
@@ -84,6 +85,7 @@ export type Database = {
           created_at?: string
           credit_overdraft?: number
           current_period_end?: string | null
+          deleted_at?: string | null
           id?: string
           is_test?: boolean
           logo_url?: string | null
@@ -99,6 +101,7 @@ export type Database = {
           created_at?: string
           credit_overdraft?: number
           current_period_end?: string | null
+          deleted_at?: string | null
           id?: string
           is_test?: boolean
           logo_url?: string | null
