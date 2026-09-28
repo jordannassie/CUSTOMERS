@@ -68,7 +68,7 @@ describe("models step hands over to the card step", () => {
     const { userId, businessId } = await draftAtModels({ isTest: true });
     expect((await loadWizardState(userId)).needsCard).toBe(false);
     const saved = await actions.saveModelsStep({ businessId, models: ["openai"], frequency: "daily" });
-    expect(saved).toEqual({ ok: true, data: { next: "/dashboard" } });
+    expect(saved).toEqual({ ok: true, data: { next: "/onboarding/first-scan" } });
     expect(await businessRow(businessId)).toMatchObject({ status: "active", onboarding_step: 9 });
   });
 });
@@ -101,7 +101,7 @@ describe("card step", () => {
     expect(grants.data).toEqual([]);
 
     await webhookLinks(agencyId);
-    expect(await actions.checkCardStep({ businessId })).toEqual({ ok: true, data: { done: true, next: "/dashboard" } });
+    expect(await actions.checkCardStep({ businessId })).toEqual({ ok: true, data: { done: true, next: "/onboarding/first-scan" } });
     expect(await businessRow(businessId)).toMatchObject({ status: "active", onboarding_step: 9 });
 
     // A second checkout would start a second subscription.
