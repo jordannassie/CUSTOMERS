@@ -12,15 +12,18 @@ test.describe("desktop only", () => {
     expect(urls).toEqual(PUBLIC_PAGES);
 
     const robots = await (await request.get("/robots.txt")).text();
-    for (const path of ["/dashboard", "/sources", "/competitors", "/onboarding", "/internal", "/r/", "/api/"]) {
+    for (const path of ["/dashboard", "/sources", "/competitors", "/questions", "/opportunities", "/onboarding", "/internal", "/r/", "/api/"]) {
       expect(robots).toContain(`Disallow: ${path}\n`);
     }
     expect(robots).toContain("Sitemap: https://customers.direct/sitemap.xml");
   });
 
-  test("each public page has its own title, description and preview image", async ({ page, request }) => {
+  // The image itself is rendered and size-checked in src/app/metadata-images.test.ts; next dev cannot
+  // serve it reliably (the image optimizer blocks sharp's SVG loader), while the build prerenders it.
+  test("each public page has its own title, description and preview image", async ({ page }) => {
     const titles = new Set<string>();
     const descriptions = new Set<string>();
+    const images = new Set<string>();
     for (const path of PUBLIC_PAGES) {
       await page.goto(path);
       const meta = (selector: string) => page.locator(selector).first().getAttribute("content", { timeout: 5_000 });
@@ -30,12 +33,15 @@ test.describe("desktop only", () => {
       expect(new URL((await meta('meta[property="og:url"]'))!).pathname, path).toBe(path);
 
       const image = new URL((await meta('meta[property="og:image"]'))!);
-      const response = await request.get(image.pathname + image.search);
-      expect(response.headers()["content-type"], path).toBe("image/png");
-      expect(await meta('meta[name="twitter:image"]'), path).toBeTruthy();
+      expect(image.pathname, path).toBe("/opengraph-image");
+      expect(await meta('meta[property="og:image:width"]'), path).toBe("1200");
+      expect(await meta('meta[property="og:image:height"]'), path).toBe("630");
+      expect(new URL((await meta('meta[name="twitter:image"]'))!).pathname, path).toBe("/opengraph-image");
+      images.add(image.pathname);
     }
     expect(titles.size).toBe(PUBLIC_PAGES.length);
     expect(descriptions.size).toBe(PUBLIC_PAGES.length);
+    expect(images.size).toBe(1);
   });
 });
 

@@ -19,7 +19,7 @@ describe("robots", () => {
     expect(robots().sitemap).toBe(`${SITE_URL}/sitemap.xml`);
   });
 
-  it.each(["/dashboard", "/sources/abc", "/competitors", "/settings/billing", "/onboarding", "/internal/admin", "/r/abc123", "/api/contact"])(
+  it.each(["/dashboard", "/sources/abc", "/competitors", "/questions", "/opportunities/abc", "/settings/billing", "/onboarding", "/internal/admin", "/r/abc123", "/api/contact"])(
     "blocks %s",
     (path) => {
       expect(blocked(path)).toBe(true);

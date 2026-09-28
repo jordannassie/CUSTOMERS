@@ -19,6 +19,8 @@ export const PRIVATE_PATHS = [
   "/dashboard",
   "/sources",
   "/competitors",
+  "/questions",
+  "/opportunities",
   "/settings",
   "/onboarding",
   "/internal",
