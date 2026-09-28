@@ -115,7 +115,9 @@ describe("explainAfterScan", () => {
     const text = JSON.stringify(rows);
     const beanHouse = competitors.find((c) => c.name === "Bean House")!;
     expect(text).toContain(`{competitor.${beanHouse.id}.review_count}`);
-    for (const n of COFFEE_PLACES_NUMBERS) expect(text).not.toContain(n);
+    // Placeholder ids are random UUIDs, which can contain a run like 320 by chance.
+    const values = text.replace(/\{(?:business|competitor)\.[^{}]*\}/g, "");
+    for (const n of COFFEE_PLACES_NUMBERS) expect(values).not.toContain(n);
   });
 
   it("uses the template for a test agency even when a live writer is passed (D-61)", async () => {

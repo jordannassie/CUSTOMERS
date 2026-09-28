@@ -2,10 +2,14 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createAgencyWithBusiness, deleteTestUsers, service } from "../admin.test-helpers";
 import { loadUsageCost } from "./dal";
 
-// Seeds a week in 2020 that no other test writes to, so the page's totals can be compared with the raw
-// tables exactly while other test files run at the same time.
-const FROM = "2020-03-01T00:00:00.000Z";
-const NOW = new Date("2020-03-07T12:00:00.000Z");
+// Seeds a random past week that no other test writes to, so the page's totals can be compared with the raw
+// tables exactly while other test files run at the same time. A fresh week per run keeps rows left by an
+// interrupted run out of this run's report.
+const DAY = 86_400_000;
+const START = Date.UTC(2020, 2, 1) - Math.floor(Math.random() * 2000) * 7 * DAY;
+const at = (days: number, time: string) => `${new Date(START + days * DAY).toISOString().slice(0, 10)}T${time}Z`;
+const FROM = new Date(START).toISOString();
+const NOW = new Date(at(6, "12:00:00"));
 const ledgerIds: string[] = [];
 let seeded: Awaited<ReturnType<typeof createAgencyWithBusiness>>;
 
@@ -19,10 +23,10 @@ beforeAll(async () => {
   if (error) throw error;
 
   const checks = [
-    { provider: "openai", cost: 0.03, cached: false, at: "2020-03-02T10:00:00Z" },
-    { provider: "openai", cost: 0, cached: true, at: "2020-03-02T10:05:00Z" },
-    { provider: "anthropic", cost: 0.05, cached: false, at: "2020-03-05T09:00:00Z" },
-    { provider: "perplexity", cost: 0.008, cached: false, at: "2020-03-07T08:00:00Z" },
+    { provider: "openai", cost: 0.03, cached: false, at: at(1, "10:00:00") },
+    { provider: "openai", cost: 0, cached: true, at: at(1, "10:05:00") },
+    { provider: "anthropic", cost: 0.05, cached: false, at: at(4, "09:00:00") },
+    { provider: "perplexity", cost: 0.008, cached: false, at: at(6, "08:00:00") },
   ];
   for (const c of checks) {
     const { data: result, error: resultError } = await service
@@ -57,7 +61,7 @@ beforeAll(async () => {
     usage_type: "other",
     provider: "anthropic",
     estimated_cost_usd: 0.0014,
-    created_at: "2020-03-05T09:00:01Z",
+    created_at: at(4, "09:00:01"),
   });
   if (extraction.error) throw extraction.error;
 });
@@ -98,8 +102,8 @@ describe("admin Usage & Cost numbers (B-67)", () => {
     expect(report.byModel.reduce((s, m) => s + m.credits, 0)).toBe(raw.credits);
 
     // And the seeded figures themselves.
-    expect(raw).toEqual({ credits: 4, costUsd: expect.closeTo(0.0894, 6), checks: 4, cached: 1 });
-    expect(report.byDay.find((d) => d.day === "2020-03-02")).toMatchObject({ credits: 2, costUsd: 0.03 });
+    expect(await rawTotals(seeded.agencyId)).toEqual({ credits: 4, costUsd: expect.closeTo(0.0894, 6), checks: 4, cached: 1 });
+    expect(report.byDay.find((d) => d.day === at(1, "00:00:00").slice(0, 10))).toMatchObject({ credits: 2, costUsd: 0.03 });
     expect(report.byModel.map((m) => [m.model, m.credits, m.checks, m.cached])).toEqual([
       ["openai", 2, 2, 1],
       ["anthropic", 1, 1, 0],

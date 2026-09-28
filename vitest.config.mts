@@ -8,6 +8,8 @@ import { defineConfig } from "vitest/config";
 const TEST_ENV_FILE = ".env.test.local";
 const QUEUE_CLAIM_TESTS = "src/modules/jobs/queue.test.ts";
 const testEnv = existsSync(TEST_ENV_FILE) ? parseEnv(readFileSync(TEST_ENV_FILE, "utf8")) : {};
+// Database tests share the machine with other workers' stacks (BUG-010); 5s and 20s timed out under that load.
+const DB_TEST_TIMEOUT = 60_000;
 
 export default defineConfig({
   resolve: {
@@ -25,6 +27,7 @@ export default defineConfig({
           exclude: [QUEUE_CLAIM_TESTS],
           setupFiles: ["tests/setup/retry-gateway-502.ts"],
           env: testEnv as Record<string, string>,
+          testTimeout: DB_TEST_TIMEOUT,
         },
       },
       {
@@ -36,6 +39,7 @@ export default defineConfig({
           include: [QUEUE_CLAIM_TESTS],
           setupFiles: ["tests/setup/retry-gateway-502.ts"],
           env: testEnv as Record<string, string>,
+          testTimeout: DB_TEST_TIMEOUT,
           sequence: { groupOrder: 1 },
         },
       },
