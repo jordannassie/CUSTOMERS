@@ -19,13 +19,13 @@ export function Report({ report, logoSrc }: { report: ReportView; logoSrc: strin
   return (
     <article className="report mx-auto flex w-full max-w-[880px] flex-col gap-10 px-4 py-8 sm:px-8 sm:py-12">
       <header className="flex flex-col gap-8">
-        <div className="flex items-center justify-between gap-4 border-b border-border pb-5">
+        <div className="flex flex-col items-start gap-2 border-b border-border pb-5 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
           <div className="flex min-w-0 items-center gap-3">
             {logoSrc && (
               // eslint-disable-next-line @next/next/no-img-element -- served from our own route, sized by the agency's upload
               <img src={logoSrc} alt="" className="h-10 w-auto max-w-40 object-contain" data-testid="agency-logo" />
             )}
-            <span className="truncate text-sm font-semibold" data-testid="agency-name">
+            <span className="min-w-0 text-sm font-semibold break-words" data-testid="agency-name">
               {report.agency.name}
             </span>
           </div>
