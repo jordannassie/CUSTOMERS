@@ -8,7 +8,7 @@ import { ForecastCard } from "@/components/usage/ForecastCard";
 import { count, day, monthName } from "@/components/usage/format";
 import { ScanHistory } from "@/components/usage/ScanHistory";
 import { getUsageReport, type ModelKey } from "@/modules/usage";
-import { BILLING_HREF } from "@/modules/workspace";
+import { BUY_CREDITS_HREF } from "@/modules/workspace";
 
 export const metadata: Metadata = { title: "Usage" };
 
@@ -32,13 +32,13 @@ export default async function UsagePage() {
           <p className="mt-1 text-[15px] text-muted-foreground">Where your credits went, what is left, and how long it will last.</p>
         </div>
         <Button asChild>
-          <Link href={BILLING_HREF}>Buy credits</Link>
+          <Link href={BUY_CREDITS_HREF}>Buy credits</Link>
         </Button>
       </header>
 
       <div className="mt-6 grid gap-4 lg:grid-cols-2">
         <BalanceSummary balance={report.balance} />
-        <ForecastCard forecast={report.forecast} buyCreditsHref={BILLING_HREF} />
+        <ForecastCard forecast={report.forecast} buyCreditsHref={BUY_CREDITS_HREF} />
       </div>
 
       <section aria-labelledby="month-heading" className="mt-10">

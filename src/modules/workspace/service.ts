@@ -3,8 +3,9 @@
 const DAY = 24 * 60 * 60 * 1000;
 const WARN_AT_PERCENT = 80;
 
-// Billing (B-46) and top-ups (B-43) replace this page; until then it is where plans and cards live.
+// Billing (B-46) replaces this page; until then it is where plans and cards live.
 export const BILLING_HREF = "/dashboard/billing";
+export const BUY_CREDITS_HREF = "/settings/credits";
 
 export type AccountState = {
   status: string;
@@ -116,7 +117,7 @@ export function pickBanners(usage: UsageNumbers, account: AccountState, now: Dat
         usage.balance < 0
           ? `You used ${plural(-usage.balance, "credit")} more than you had. New scans are paused, and your next top-up or renewal pays this back first.`
           : "You're out of credits. New scans are paused until you add more.",
-      action: { label: "Buy credits", href: BILLING_HREF },
+      action: { label: "Buy credits", href: BUY_CREDITS_HREF },
     });
   }
 

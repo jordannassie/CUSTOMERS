@@ -3,3 +3,5 @@ export { listPlanPrices, listTopupPacks, type PlanPrice, type TopupPack } from "
 export { getPublicPricing } from "./pricing";
 export * from "./format";
 export { processStripeWebhook, type WebhookResult } from "./webhooks";
+export { buyTopUp, completeFixtureTopUp, getTopUpStatus, type TopUpStatus } from "./topup/actions";
+export { getTopupOffer, type TopupFormMode, type TopupOffer } from "./topup/service";

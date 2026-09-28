@@ -27,6 +27,8 @@ export const env = createEnv({
 
     STRIPE_SECRET_KEY: optional,
     STRIPE_WEBHOOK_SECRET: optional,
+    // Dev and Playwright only: the card step makes a fake Checkout Session and a fake card form, never Stripe.
+    STRIPE_CHECKOUT_FIXTURES: flag,
     STRIPE_PRICE_STARTER_MONTHLY: optional,
     STRIPE_PRICE_GROWTH_MONTHLY: optional,
     STRIPE_PRICE_PRO_MONTHLY: optional,
@@ -55,6 +57,7 @@ export const env = createEnv({
     NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().min(1),
     NEXT_PUBLIC_SITE_URL: z.url().optional(),
     NEXT_PUBLIC_APP_URL: z.url().optional(),
+    NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: z.string().min(1).optional(),
   },
   runtimeEnv: {
     NODE_ENV: process.env.NODE_ENV,
@@ -72,6 +75,7 @@ export const env = createEnv({
     DATAFORSEO_PASSWORD: process.env.DATAFORSEO_PASSWORD,
     STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY,
     STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET,
+    STRIPE_CHECKOUT_FIXTURES: process.env.STRIPE_CHECKOUT_FIXTURES,
     STRIPE_PRICE_STARTER_MONTHLY: process.env.STRIPE_PRICE_STARTER_MONTHLY,
     STRIPE_PRICE_GROWTH_MONTHLY: process.env.STRIPE_PRICE_GROWTH_MONTHLY,
     STRIPE_PRICE_PRO_MONTHLY: process.env.STRIPE_PRICE_PRO_MONTHLY,
@@ -90,6 +94,7 @@ export const env = createEnv({
     NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
     NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL,
     NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
+    NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY,
   },
   emptyStringAsUndefined: true,
 });

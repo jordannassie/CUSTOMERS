@@ -7,6 +7,7 @@ Stripe setup (B-40, MVP_SPEC 11, D-39, D-56).
 | `stripe.ts` | The app's single Stripe client, `getStripe()`, API version pinned to `2026-08-26.dahlia`. Key only from `STRIPE_SECRET_KEY` via `src/lib/env.ts`. |
 | `dal.ts` | Plan prices (`plans`) and top-up packs (`topup_packs`) with their Stripe price IDs. Prices are read from the database, never from code. |
 | `catalog.ts` | Mirrors those rows into Stripe (one product and one current USD price each) and checks the match. |
+| `topup/` | Buy credits (B-43): `params.ts` (pure session parameters and purchase rules), `client.ts` (injectable Checkout client, real or fixture), `service.ts`, `dal.ts`, `actions.ts` (`buyTopUp`, `getTopUpStatus`, `completeFixtureTopUp`). |
 | `webhooks.ts` | `processStripeWebhook(rawBody, signature)`: signature check, replay guard (`stripe_webhook_events`), dispatch. Called by `src/app/api/stripe/webhook/route.ts`. |
 | `webhooks/handlers.ts` | One handler per event. Stripe reads, the store and email sending come in as deps, so tests need no Stripe calls. |
 | `webhooks/credits.ts` | Pure: which grants a paid invoice earns (trial, period, proration). |
@@ -38,6 +39,17 @@ STRIPE_CATALOG=1 STRIPE_CATALOG_KEY=rk_test_... npm run stripe:catalog-check    
 The scripts read the database from `.env.local`, refuse a full secret key (`sk_`), and refuse a sandbox key with the live database or a live key with any other database.
 
 **Live (B-40 step 5, Jordan's account, D-40):** repeat steps 2 to 5 in live mode with `rk_live_...` keys against the live database, adding `STRIPE_LIVE=1`.
+
+## Top-ups (B-43, MVP_SPEC 4.2, D-22)
+
+- Page: `/settings/credits` (the "Buy credits" buttons in the usage widget, the out of credits banner and the usage page). Packs and prices come from `topup_packs`.
+- `buyTopUp` makes a `mode: "payment"` Checkout Session with `ui_mode: "elements"` and the Payment Element: `metadata.kind = "topup"`, `metadata.topup_pack_id`, `agency_id` (also on the payment intent), the agency's Stripe customer when it has one, `adaptive_pricing` off, no `payment_method_types`.
+- Refused while `canSpendTopUps` says no (cancelled, past due or paused): top-ups are only spendable with an active plan or trial, so they are not sold without one.
+- The page never grants credits. After paying it polls `getTopUpStatus` until the webhook's grant for that session ID exists, then shows the new balance. The grant settles any negative balance first (`grant_credits`, D-54).
+- `STRIPE_CHECKOUT_FIXTURES=true` (refused in production): a fake session and card form (`4242...` pays, `4000 0000 0000 0002` declines). A fake payment runs the real `checkout.session.completed` handler, so credits still come only from `grant_credits`. Playwright runs with it; no Stripe call is made.
+- Needs `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` next to `STRIPE_SECRET_KEY`; without both the page says buying credits is unavailable.
+
+Test card run in the sandbox (after B-01 and the first-time setup above): `stripe listen --forward-to localhost:<port>/api/stripe/webhook`, open `/settings/credits` as an active or trialing test agency, buy 500 credits with `4242 4242 4242 4242`. The page shows "500 credits added" and the new balance; the grant has `source_id` = the session ID and no expiry.
 
 ## Webhook (B-42, MVP_SPEC 11.3)
 
