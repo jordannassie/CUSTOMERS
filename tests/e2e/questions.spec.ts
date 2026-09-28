@@ -105,6 +105,8 @@ const questionRow = (page: Page, text: string) => page.getByTestId("question-row
 
 /** Opens a question's menu once any toast has closed; on a phone a toast covers the rows above it. */
 async function openMenu(page: Page, row: Locator) {
+  // A toast stays open while the pointer rests on it.
+  await page.mouse.move(0, 0);
   await expect(page.locator("[data-sonner-toast]")).toHaveCount(0, { timeout: 15_000 });
   await row.getByRole("button", { name: /^Options for/ }).click();
 }
