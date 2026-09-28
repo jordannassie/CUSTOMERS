@@ -52,6 +52,7 @@ Migration `029` enables `pg_cron` and `pg_net` and adds these jobs (UTC). Check 
 | `reset-stuck-jobs` | every 10 minutes | `reset_stuck_jobs()` (B-27) |
 | `expire-grants` | 01:00 daily | `expire_grants()` (B-13) |
 | `purge-cron-history` | 03:30 daily | deletes pg_cron run history older than 14 days |
+| `check-system-alerts` | every 15 minutes | `run_system_alerts()` (B-69, `037`): runs `check_system_alerts()`, then POSTs to the app's alerts URL, which adds the daily AI cost check and emails the admins |
 
 ### Worker URL and secret (Vault, set by hand per project)
 
@@ -60,6 +61,12 @@ The URL and secret are never in a migration. Until they are set, `call_scan_work
 ```sql
 select vault.create_secret('https://<host>/.netlify/functions/scan-worker-background', 'scan_worker_url');
 select vault.create_secret('<WORKER_SECRET value>', 'scan_worker_secret');
+```
+
+Alert emails (B-69) need the app's alerts endpoint; it uses the same secret. Without it alerts are still stored and shown on the admin Overview, but no email goes out and the daily AI cost check does not run:
+
+```sql
+select vault.create_secret('https://<host>/api/alerts/check', 'system_alerts_url');
 ```
 
 To change one later: `select vault.update_secret((select id from vault.secrets where name = 'scan_worker_url'), '<new value>');`
@@ -88,3 +95,4 @@ Applied to the local stack only (customers-dev is unreachable, F-24; live is unt
 - `033_retry_scan_job.sql`
 - `034_topup_packs.sql` (B-40; then run the Stripe catalog sync for that project, see `src/modules/billing/README.md`)
 - `035_email_log.sql` (B-61; then run `npm run db:types` against that project and check the diff is empty)
+- `037_system_alerts.sql` (B-69; then set the `system_alerts_url` Vault secret above and `ALERT_DAILY_COST_USD` on the host)

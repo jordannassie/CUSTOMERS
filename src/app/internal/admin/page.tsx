@@ -24,6 +24,7 @@ export default async function AdminOverviewPage() {
 
 async function Overview() {
   const o = await loadOverview();
+  const alerts = o.openAlerts.map((a) => ({ ...a, started: formatDate(a.createdAt, true), lastSeen: formatDate(a.lastSeenAt, true) }));
   return (
     <>
       <header>
@@ -34,7 +35,7 @@ async function Overview() {
       </header>
 
       {/* Problems come first while there are any; an empty list sits at the bottom. */}
-      {o.openAlerts.length > 0 && <OpenAlerts rows={o.openAlerts} resolve={resolveAlert} />}
+      {alerts.length > 0 && <OpenAlerts rows={alerts} resolve={resolveAlert} />}
 
       <dl className="grid grid-cols-2 gap-px overflow-hidden rounded-md border border-border bg-border lg:grid-cols-4">
         <Stat label="Agencies" value={o.agencies} />
@@ -50,7 +51,7 @@ async function Overview() {
         <FailedScans rows={o.recentFailedScans} />
       </div>
 
-      {o.openAlerts.length === 0 && <OpenAlerts rows={o.openAlerts} resolve={resolveAlert} />}
+      {alerts.length === 0 && <OpenAlerts rows={alerts} resolve={resolveAlert} />}
     </>
   );
 }

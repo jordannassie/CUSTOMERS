@@ -8,8 +8,9 @@ import type { ActionResult } from "@/modules/auth";
 import type { OpenAlert } from "@/modules/admin";
 import { cn } from "cn";
 import Section, { Empty } from "../businesses/[id]/_components/section";
-import { formatDate } from "../businesses/_components/scan-parts";
 
+// Dates arrive formatted: the shared date helper lives beside server-only code.
+export type AlertRowData = OpenAlert & { started: string; lastSeen: string };
 type Resolve = (input: { alertId: string; reason: string }) => Promise<ActionResult<unknown>>;
 
 const KIND_LABEL: Record<string, string> = {
@@ -26,7 +27,7 @@ const SEVERITY = {
   info: { label: "Info", badge: "tint", rail: "border-l-primary" },
 } as const;
 
-export default function OpenAlerts({ rows, resolve }: { rows: OpenAlert[]; resolve: Resolve }) {
+export default function OpenAlerts({ rows, resolve }: { rows: AlertRowData[]; resolve: Resolve }) {
   const [done, setDone] = useState<string | null>(null);
   const note = rows.length > 0 ? `${rows.length} open. Checked every 15 minutes.` : undefined;
 
@@ -48,7 +49,7 @@ export default function OpenAlerts({ rows, resolve }: { rows: OpenAlert[]; resol
   );
 }
 
-function AlertRow({ alert, resolve, onResolved }: { alert: OpenAlert; resolve: Resolve; onResolved: () => void }) {
+function AlertRow({ alert, resolve, onResolved }: { alert: AlertRowData; resolve: Resolve; onResolved: () => void }) {
   const [open, setOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -76,7 +77,7 @@ function AlertRow({ alert, resolve, onResolved }: { alert: OpenAlert; resolve: R
           </span>
           <p className="text-[14px] break-words text-foreground">{alert.message}</p>
           <p className="text-text-hint">
-            Started {formatDate(alert.createdAt, true)}. Last seen {formatDate(alert.lastSeenAt, true)}.
+            Started {alert.started}. Last seen {alert.lastSeen}.
           </p>
         </div>
         {!open && (
