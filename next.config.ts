@@ -29,6 +29,9 @@ const nextConfig: NextConfig = {
       { source: "/admin/:path*", destination: "/internal/admin", permanent: true },
       { source: "/dashboard/direct-agent", destination: "/dashboard", permanent: true },
       { source: "/dashboard/agent-readiness", destination: "/dashboard", permanent: true },
+      // Visibility and Reports were merged into the Overview (B-58).
+      { source: "/dashboard/visibility", destination: "/dashboard", permanent: true },
+      { source: "/dashboard/reports", destination: "/dashboard", permanent: true },
       { source: "/dashboard/settings", destination: "/settings", permanent: true },
       { source: "/dashboard/competitors", destination: "/competitors", permanent: true },
       { source: "/dashboard/prompts", destination: "/questions", permanent: true },
