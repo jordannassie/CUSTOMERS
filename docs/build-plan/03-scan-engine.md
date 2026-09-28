@@ -179,7 +179,7 @@ Phase 3 · S · Depends on: B-27 · Blocked by Jordan: no · MVP_SPEC 6.2 · Bra
 ---
 
 ### B-29 Manual "Run scan"
-- [ ] Done
+- [x] Done (PR #57, merged into mvp)
 
 Phase 3 · S · Depends on: B-27, B-16 · Blocked by Jordan: no · MVP_SPEC 6.4 · Branch: `task/B-29-manual-run-scan` → `mvp`
 
@@ -221,7 +221,7 @@ Phase 3 · M · Depends on: B-26 · Blocked by Jordan: no · MVP_SPEC 5.6, D-63 
 ---
 
 ### B-31 Test mode with recorded answers
-- [ ] Done
+- [x] Done (PR #58, merged into mvp)
 
 Phase 3 · S · Depends on: B-26 · Blocked by Jordan: no · D-61 · Branch: `task/B-31-test-mode-with-recorded-answers` → `mvp`
 
