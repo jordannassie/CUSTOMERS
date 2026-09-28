@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { RunScanButton } from "@/components/app/RunScanButton";
+import { ExportPdfButton } from "@/components/report/ExportPdfButton";
 import { ShareButton } from "@/components/report/ShareButton";
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ModelScores } from "@/components/overview/ModelScores";
@@ -9,7 +10,7 @@ import { OPPORTUNITIES_HREF, TopOpportunities } from "@/components/overview/TopO
 import { TrendChart } from "@/components/overview/TrendChart";
 import { getScanStatus, startScan } from "@/modules/jobs";
 import { getOverview } from "@/modules/overview";
-import { createShareLink, getShareLink, revokeShareLink } from "@/modules/reports";
+import { createShareLink, exportPdf, getShareLink, revokeShareLink } from "@/modules/reports";
 import { getWorkspace } from "@/modules/workspace";
 
 export const metadata = { title: "Overview", robots: { index: false } };
@@ -38,7 +39,6 @@ export default async function OverviewPage() {
             {overview.lastCheckedAt ? `Last scan ${timeAgo(new Date(overview.lastCheckedAt))}` : "No scans yet"}
           </p>
         </div>
-        {/* Export PDF (B-60) joins Share here once it works. */}
         <div className="flex flex-wrap items-start gap-3 sm:flex-row-reverse">
           {scanStatus.ok && (
             <RunScanButton
@@ -50,6 +50,7 @@ export default async function OverviewPage() {
             />
           )}
           <ShareButton businessId={business.id} initial={shareLink} create={createShareLink} revoke={revokeShareLink} />
+          <ExportPdfButton businessId={business.id} exportPdf={exportPdf} />
         </div>
       </header>
 

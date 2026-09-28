@@ -21,6 +21,11 @@ export const env = createEnv({
     ONBOARDING_FIXTURES: flag,
     FIRECRAWL_API_KEY: optional,
     BROWSERLESS_API_KEY: optional,
+    // PDF export (B-60, D-71): hosted Chrome, or our own Chromium when Browserless is down or for local checks.
+    PDF_RENDERER: z.enum(["browserless", "chromium"]).default("browserless"),
+    BROWSERLESS_URL: z.url().default("https://production-sfo.browserless.io"),
+    // Local Chrome for the chromium renderer on a laptop; unset uses the @sparticuz/chromium build (Linux only).
+    CHROMIUM_PATH: optional,
     // Search Intelligence stays on hold until D-06 is decided.
     DATAFORSEO_USERNAME: optional,
     DATAFORSEO_PASSWORD: optional,
@@ -73,6 +78,9 @@ export const env = createEnv({
     ONBOARDING_FIXTURES: process.env.ONBOARDING_FIXTURES,
     FIRECRAWL_API_KEY: process.env.FIRECRAWL_API_KEY,
     BROWSERLESS_API_KEY: process.env.BROWSERLESS_API_KEY,
+    PDF_RENDERER: process.env.PDF_RENDERER,
+    BROWSERLESS_URL: process.env.BROWSERLESS_URL,
+    CHROMIUM_PATH: process.env.CHROMIUM_PATH,
     DATAFORSEO_USERNAME: process.env.DATAFORSEO_USERNAME,
     DATAFORSEO_PASSWORD: process.env.DATAFORSEO_PASSWORD,
     STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY,

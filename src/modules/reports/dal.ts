@@ -60,6 +60,42 @@ export async function createShare(agencyId: string, businessId: string): Promise
   return { id: data.id, path: sharePath(token) };
 }
 
+/**
+ * Runs `print` with a live share page for one of the agency's businesses (B-60). Reuses the live link; a link
+ * made only for the PDF is turned off again afterwards, so exporting never leaves a public link the agency did
+ * not choose to share. Null when not the agency's business.
+ */
+export async function withSharePage<T>(
+  agencyId: string,
+  businessId: string,
+  print: (page: { path: string; businessName: string }) => Promise<T>,
+): Promise<T | null> {
+  const { data: business, error } = await createServiceClient()
+    .from("businesses")
+    .select("name")
+    .eq("id", businessId)
+    .eq("agency_id", agencyId)
+    .maybeSingle();
+  if (error) throw new Error(`Reports: could not read the business: ${error.message}`);
+  if (!business) return null;
+
+  const existing = await activeShare(businessId);
+  const link = existing ?? (await createShare(agencyId, businessId));
+  if (!link) return null;
+  try {
+    return await print({ path: link.path, businessName: business.name });
+  } finally {
+    // Only this one row: a link the agency makes meanwhile from Share must stay on.
+    if (!existing) {
+      const { error: revokeError } = await createServiceClient()
+        .from("report_shares")
+        .update({ revoked_at: new Date().toISOString() })
+        .eq("id", link.id);
+      if (revokeError) throw new Error(`Reports: could not turn off the PDF link: ${revokeError.message}`);
+    }
+  }
+}
+
 /** False when the link is not one of this agency's. Turning off a link that is already off is fine. */
 export async function revokeShare(agencyId: string, id: string): Promise<boolean> {
   const db = createServiceClient();

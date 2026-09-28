@@ -114,3 +114,15 @@ export function storagePath(logoUrl: string, supabaseUrl: string, bucket: string
   const path = decodeURIComponent(url.pathname.slice(prefix.length));
   return path && !path.split("/").includes("..") ? path : null;
 }
+
+/** "sunrise-coffee-bar-ai-visibility-2026-09-29.pdf" (B-60). */
+export function pdfFileName(businessName: string, now: Date): string {
+  const slug = businessName
+    .normalize("NFKD")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 60)
+    .replace(/-+$/, "");
+  return `${slug || "report"}-ai-visibility-${now.toISOString().slice(0, 10)}.pdf`;
+}
