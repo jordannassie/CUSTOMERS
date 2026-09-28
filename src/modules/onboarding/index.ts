@@ -19,7 +19,9 @@ export {
 export { getAddBusinessBlock, getDetailsStep, getModelsStep, getQuestionsStep, getWizardState } from "./wizard/queries";
 export type { DetailsStep, WizardContext } from "./wizard/dal";
 export type { ModelsStep, QuestionsStep } from "./wizard/questions/dal";
+export { FIRST_SCAN_FAILED, firstScanPhase, firstScanProblem, type FirstScanPhase } from "./first-scan";
 export {
+  FIRST_SCAN_PATH,
   WIZARD_STEPS,
   canOpen,
   isStepSlug,

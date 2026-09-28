@@ -144,6 +144,13 @@
 
   /* Shadows only on floating layers (menus, popovers, dialogs, toasts). */
   --shadow-float: 0 4px 16px -4px rgb(23 23 23 / 0.12), 0 1px 3px rgb(23 23 23 / 0.08);
+
+  /* First scan screen (B-38): a bar that sweeps while an AI is being asked. */
+  --animate-scan-sweep: scan-sweep 1.8s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+  @keyframes scan-sweep {
+    from { transform: translateX(-100%); }
+    to { transform: translateX(250%); }
+  }
 }
 
 @utility tabular {

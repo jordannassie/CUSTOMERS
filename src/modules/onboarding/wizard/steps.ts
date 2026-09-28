@@ -12,8 +12,11 @@ export const WIZARD_STEPS = [
 
 export type StepSlug = (typeof WIZARD_STEPS)[number]["slug"];
 
-/** Step 8 is the card (B-41) and 9 the first scan (B-38); until they exist the wizard ends after models. */
+/** Step 8 is the card (B-41) and 9 the first scan (B-38); until the card exists models leads to the first scan. */
 export const FINISHED_STEP = 9;
+
+/** Where setup hands over once the business is saved. The card step (B-41) goes before it. */
+export const FIRST_SCAN_PATH = "/onboarding/first-scan";
 
 export const PLAN_IDS = ["starter", "pro"] as const;
 export type PlanId = (typeof PLAN_IDS)[number];
