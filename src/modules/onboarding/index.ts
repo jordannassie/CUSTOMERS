@@ -9,14 +9,16 @@ export type { AutofillResult, BusinessDetails } from "./schema";
 export { prepareQuestions, type QuestionBusiness, type QuestionSet } from "./questions";
 export type { PreparedQuestion } from "./question-rules";
 export {
+  checkCardStep,
   saveAgencyStep,
   saveCompetitorsStep,
   saveDetailsStep,
   saveModelsStep,
   saveQuestionsStep,
   saveWebsiteStep,
+  startCardStep,
 } from "./wizard/actions";
-export { getAddBusinessBlock, getDetailsStep, getModelsStep, getQuestionsStep, getWizardState } from "./wizard/queries";
+export { getAddBusinessBlock, getCardStep, getDetailsStep, getModelsStep, getQuestionsStep, getWizardState } from "./wizard/queries";
 export type { DetailsStep, WizardContext } from "./wizard/dal";
 export type { ModelsStep, QuestionsStep } from "./wizard/questions/dal";
 export { FIRST_SCAN_FAILED, firstScanPhase, firstScanProblem, type FirstScanPhase } from "./first-scan";

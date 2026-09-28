@@ -37,6 +37,11 @@ export async function listPlanPrices(db: Db = createServiceClient()): Promise<Pl
   }));
 }
 
+/** One active self-serve plan, or null when it is unknown, inactive or has no price (Enterprise). */
+export async function getPlanPrice(planId: string, db: Db = createServiceClient()): Promise<PlanPrice | null> {
+  return (await listPlanPrices(db)).find((p) => p.id === planId) ?? null;
+}
+
 /** Active top-up packs in display order (D-22). */
 export async function listTopupPacks(db: Db = createServiceClient()): Promise<TopupPack[]> {
   const { data, error } = await db

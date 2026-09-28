@@ -1,21 +1,31 @@
 "use server";
 
+import { headers } from "next/headers";
+import { env } from "@/lib/env";
 import { authFailure, requireUser, type ActionResult } from "@/modules/auth";
 import { dedupeConfirmed } from "../competitors";
 import { saveCompetitors } from "../dal";
 import { saveCompetitorsInput, toDomain, type AutofillResult } from "../schema";
 import { advanceStep, saveAgency, saveDetails, startBusiness } from "./dal";
-import { finishWizard, saveQuestions } from "./questions/dal";
-import { agencyStepInput, detailsStepInput, modelsStepInput, questionsStepInput, websiteStepInput } from "./schema";
+import { finishCardStep, startCardCheckout } from "./card/dal";
+import { finishWizard, saveModels, saveQuestions } from "./questions/dal";
+import { agencyStepInput, businessOnly, detailsStepInput, modelsStepInput, questionsStepInput, websiteStepInput } from "./schema";
+import { FIRST_SCAN_PATH, stepPath } from "./steps";
+import { loadWizardState } from "./dal";
 
 // Every onboarding step saves through one of these (MVP_SPEC 3.1). Each checks the session itself.
 
-async function userId(): Promise<string | ActionResult<never>> {
+async function signedIn(): Promise<{ id: string; email: string | null } | ActionResult<never>> {
   try {
-    return (await requireUser()).id;
+    return await requireUser();
   } catch (error) {
     return authFailure(error);
   }
+}
+
+async function userId(): Promise<string | ActionResult<never>> {
+  const user = await signedIn();
+  return "id" in user ? user.id : user;
 }
 
 const notFound = { ok: false, status: 404, error: "Business not found." } as const;
@@ -80,12 +90,47 @@ export async function saveQuestionsStep(input: unknown): Promise<ActionResult<{ 
   return { ok: true, data: { count: result.count } };
 }
 
-export async function saveModelsStep(input: unknown): Promise<ActionResult<null>> {
+/** Goes on to the card step when the agency still needs one, else the business is set up now. */
+export async function saveModelsStep(input: unknown): Promise<ActionResult<{ next: string }>> {
   const user = await userId();
   if (typeof user !== "string") return user;
   const parsed = modelsStepInput.safeParse(input);
   if (!parsed.success) return { ok: false, status: 400, error: "Pick at least one AI model and how often to check." };
   const { businessId, models, frequency } = parsed.data;
-  if (!(await finishWizard(user, businessId, models, frequency))) return notFound;
-  return { ok: true, data: null };
+  if ((await loadWizardState(user)).needsCard) {
+    if (!(await saveModels(user, businessId, models, frequency))) return notFound;
+    return { ok: true, data: { next: stepPath("card") } };
+  }
+  if (!(await finishWizard(user, businessId, { models, frequency }))) return notFound;
+  return { ok: true, data: { next: FIRST_SCAN_PATH } };
+}
+
+/** Step 8: the Checkout Session the card form runs on (B-41). */
+export async function startCardStep(input: unknown): Promise<ActionResult<{ clientSecret: string }>> {
+  const user = await signedIn();
+  if (!("id" in user)) return user;
+  const parsed = businessOnly.safeParse(input);
+  if (!parsed.success) return notFound;
+  const returnUrl = `${await appOrigin()}${stepPath("card")}?session_id={CHECKOUT_SESSION_ID}`;
+  const result = await startCardCheckout(user, parsed.data.businessId, returnUrl);
+  return result.ok ? { ok: true, data: { clientSecret: result.clientSecret } } : result;
+}
+
+/** Polled while "Setting up your account" shows: done once the webhook has linked the subscription. */
+export async function checkCardStep(input: unknown): Promise<ActionResult<{ done: boolean; next: string }>> {
+  const user = await userId();
+  if (typeof user !== "string") return user;
+  const parsed = businessOnly.safeParse(input);
+  if (!parsed.success) return notFound;
+  const done = await finishCardStep(user, parsed.data.businessId);
+  if (done === null) return notFound;
+  return { ok: true, data: { done, next: FIRST_SCAN_PATH } };
+}
+
+async function appOrigin(): Promise<string> {
+  if (env.NEXT_PUBLIC_APP_URL) return env.NEXT_PUBLIC_APP_URL.replace(/\/$/, "");
+  const h = await headers();
+  const host = h.get("x-forwarded-host") ?? h.get("host");
+  const proto = h.get("x-forwarded-proto") ?? (host?.startsWith("localhost") ? "http" : "https");
+  return `${proto}://${host}`;
 }

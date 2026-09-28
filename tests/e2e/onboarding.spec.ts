@@ -31,6 +31,20 @@ async function newUser() {
   return { id: data.user.id, email, password };
 }
 
+// What the Stripe webhook's checkout.session.completed does (B-42): link the subscription to the agency.
+async function webhookLinks(userId: string) {
+  const { error } = await db
+    .from("agencies")
+    .update({ stripe_customer_id: `cus_e2e_${randomUUID()}`, stripe_subscription_id: `sub_e2e_${randomUUID()}` })
+    .eq("owner_user_id", userId);
+  if (error) throw error;
+}
+
+async function payWith(page: Page, card: string) {
+  await page.locator("#card-number").fill(card);
+  await visible(page, "Start free trial").click();
+}
+
 const visible = (page: Page, name: string) => page.getByRole("button", { name, exact: true }).filter({ visible: true }).last();
 
 test("the whole wizard: plan carried through, auto-filled, resumable, live estimate", async ({ page }, testInfo) => {
@@ -82,9 +96,21 @@ test("the whole wizard: plan carried through, auto-filled, resumable, live estim
   await page.getByText("Monthly", { exact: true }).filter({ visible: true }).click();
   await expect(estimate).toContainText("36");
   if (!phone) await expect(estimate).toContainText("your Pro plan");
-  await visible(page, "Finish setup").click();
-  // The first scan screen (B-38). This agency has no credits until the card step (B-41), so no scan starts.
-  await page.waitForURL("**/onboarding/first-scan");
+  await visible(page, "Continue").click();
+
+  // Step 8, the card (B-41): the Pro price from the plans table, then a declined card, then a good one.
+  await slow(page.getByRole("heading", { name: "Start your 7-day free trial" })).toBeVisible();
+  await expect(page.getByTestId("trial-terms")).toContainText(/7 days free, then \$249 per business per month\. Cancel anytime before \w+ \d{1,2}, \d{4} and you won't be charged\./);
+  await payWith(page, "4000 0000 0000 0002");
+  await expect(page.getByRole("alert").filter({ hasText: "Your card was declined. Nothing was charged. Try another card." })).toBeVisible();
+  await payWith(page, "4242 4242 4242 4242");
+  await slow(page.getByText("Setting up your account…")).toBeVisible();
+  // Nothing is finished until the webhook links the subscription.
+  await page.waitForTimeout(3000);
+  expect(page.url()).toContain("/onboarding/card");
+  await webhookLinks(user.id);
+  // The first scan screen (B-38). Credits arrive with invoice.paid (B-42), which this test does not send.
+  await page.waitForURL("**/onboarding/first-scan", { timeout: 30_000 });
   await slow(page.getByTestId("first-scan-problem")).toHaveText("You're out of credits. Buy a top-up or upgrade.");
 
   const { data: businesses } = await db
@@ -115,4 +141,52 @@ test("no website: the business is found on Google by name and city", async ({ pa
   await visible(page, "Find my business").click();
   await slow(page.locator("#name")).toHaveValue("Sunrise Coffee Bar & Roastery");
   await expect(page.locator("#city")).toHaveValue("Springfield");
+});
+
+// A user whose first business is saved up to the AI models step, signed in on the card step.
+async function atCardStep(page: Page, isTest = false) {
+  const user = await newUser();
+  const { data: agency, error } = await db
+    .from("agencies")
+    .insert({ owner_user_id: user.id, name: "Card Test Agency", is_test: isTest })
+    .select("id")
+    .single();
+  if (error) throw error;
+  const { data: biz, error: bizError } = await db
+    .from("businesses")
+    .insert({ owner_user_id: user.id, agency_id: agency.id, name: "Sunrise Coffee", status: "onboarding", onboarding_step: 8 })
+    .select("id")
+    .single();
+  if (bizError) throw bizError;
+  await page.goto("/login?next=/onboarding");
+  await page.locator("#email").fill(user.email);
+  await page.locator("#password").fill(user.password);
+  await page.locator("button[type=submit]").click();
+  return { user, businessId: biz.id };
+}
+
+test("card step: a failed bank check lets the user try again, a passed one starts the trial", async ({ page }) => {
+  const { user } = await atCardStep(page);
+  await page.waitForURL("**/onboarding/card");
+  // No plan picked on the pricing page: Starter.
+  await expect(page.getByTestId("trial-terms")).toContainText("7 days free, then $149 per business per month.");
+
+  await payWith(page, "4000 0025 0000 3155");
+  await slow(page.getByRole("dialog", { name: "Confirm with your bank" })).toBeVisible();
+  await page.getByRole("button", { name: "Fail" }).click();
+  await expect(page.getByRole("alert").filter({ hasText: "We couldn't confirm this card with your bank." })).toBeVisible();
+
+  await payWith(page, "4000 0025 0000 3155");
+  await page.getByRole("button", { name: "Complete" }).click();
+  await slow(page.getByText("Setting up your account…")).toBeVisible();
+  await webhookLinks(user.id);
+  await page.waitForURL("**/onboarding/first-scan", { timeout: 30_000 });
+});
+
+test("card step: a test agency never sees it", async ({ page }) => {
+  const { businessId } = await atCardStep(page, true);
+  // Already at step 8 (the flag was set after models): the step finishes by itself.
+  await page.waitForURL("**/onboarding/first-scan", { timeout: 30_000 });
+  const { data } = await db.from("businesses").select("status, onboarding_step").eq("id", businessId).single();
+  expect(data).toEqual({ status: "active", onboarding_step: 9 });
 });

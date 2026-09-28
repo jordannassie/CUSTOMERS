@@ -6,7 +6,7 @@ import type { AutofillClients, AutofillRequest } from "../autofill";
 import { liveAutofillClients, runBusinessAutofill } from "../dal";
 import { isIndustry } from "@/lib/industries";
 import type { AutofillResult, BusinessDetails } from "../schema";
-import { nextStepNumber, type PlanId, type StepSlug, type WizardState } from "./steps";
+import { needsCard, nextStepNumber, type PlanId, type StepSlug, type WizardState } from "./steps";
 import type { DetailsStepInput } from "./schema";
 
 export type WizardContext = WizardState & { agencyName: string | null; agencyLogoUrl: string | null };
@@ -15,7 +15,7 @@ export type WizardContext = WizardState & { agencyName: string | null; agencyLog
 export async function loadWizardState(userId: string): Promise<WizardContext> {
   const supabase = await createClient();
   const [agency, drafts, finished] = await Promise.all([
-    supabase.from("agencies").select("name, logo_url").eq("owner_user_id", userId).maybeSingle(),
+    supabase.from("agencies").select("name, logo_url, is_test, stripe_subscription_id").eq("owner_user_id", userId).maybeSingle(),
     supabase
       .from("businesses")
       .select("id, onboarding_step")
@@ -29,12 +29,15 @@ export async function loadWizardState(userId: string): Promise<WizardContext> {
   if (drafts.error) throw new Error(`Could not load businesses: ${drafts.error.message}`);
   if (finished.error) throw new Error(`Could not load businesses: ${finished.error.message}`);
   const draft = drafts.data[0];
+  const hasFinishedBusiness = (finished.count ?? 0) > 0;
+  const a = agency.data;
   return {
     hasAgency: agency.data !== null,
     agencyName: agency.data?.name ?? null,
     agencyLogoUrl: agency.data?.logo_url ?? null,
     draft: draft ? { id: draft.id, step: draft.onboarding_step } : null,
-    hasFinishedBusiness: (finished.count ?? 0) > 0,
+    hasFinishedBusiness,
+    needsCard: needsCard({ isTest: a?.is_test ?? false, hasSubscription: Boolean(a?.stripe_subscription_id) }, hasFinishedBusiness),
   };
 }
 

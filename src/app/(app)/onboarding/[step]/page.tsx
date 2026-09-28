@@ -9,7 +9,7 @@ export const metadata = { title: "Set up", robots: { index: false } };
 // Blocking on purpose, like the admin layout (BUG-020): the resume redirect must happen before anything streams.
 export const instant = false;
 
-type Props = { params: Promise<{ step: string }>; searchParams: Promise<{ plan?: string }> };
+type Props = { params: Promise<{ step: string }>; searchParams: Promise<{ plan?: string; session_id?: string }> };
 
 // Onboarding (MVP_SPEC 3.1, D-14). Every step saves through a Server Action, so a return resumes here.
 export default async function OnboardingStepPage({ params, searchParams }: Props) {
@@ -18,12 +18,12 @@ export default async function OnboardingStepPage({ params, searchParams }: Props
   const state = await getWizardState(stepPath(step));
   if (!canOpen(step, state)) redirect(stepPath(resumeStep(state) ?? "website"));
 
-  const { plan } = await searchParams;
+  const { plan, session_id: sessionId } = await searchParams;
   const { title, lead } = TITLES[step];
   return (
     <WizardFrame steps={frameSteps(step, state)} title={title} lead={lead} embedded={state.hasFinishedBusiness} wide={step === "competitors" || step === "models"}>
       <Suspense fallback={<StepSkeleton step={step} />}>
-        <StepContent step={step} state={state} plan={plan ?? null} />
+        <StepContent step={step} state={state} plan={plan ?? null} returned={step === "card" && Boolean(sessionId)} />
       </Suspense>
     </WizardFrame>
   );

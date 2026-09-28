@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { SettingUp } from "@/components/onboarding/CardBits";
 import { AgencyStep } from "@/components/onboarding/AgencyStep";
 import { CompetitorsStep } from "@/components/onboarding/CompetitorsStep";
 import { DetailsStep } from "@/components/onboarding/DetailsStep";
@@ -7,7 +8,9 @@ import { QuestionsStep } from "@/components/onboarding/QuestionsStep";
 import { WebsiteStep } from "@/components/onboarding/WebsiteStep";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
+  checkCardStep,
   getAddBusinessBlock,
+  getCardStep,
   getCompetitorStep,
   getDetailsStep,
   getModelsStep,
@@ -20,12 +23,14 @@ import {
   saveModelsStep,
   saveQuestionsStep,
   saveWebsiteStep,
+  startCardStep,
   stepPath,
   type StepSlug,
   type WizardContext,
 } from "@/modules/onboarding";
 import type { Frequency, ModelId } from "@/modules/settings";
 import { uploadAgencyLogo } from "@/modules/settings";
+import { CardCheckout } from "./_components/card-checkout";
 import { UpgradeNote } from "./upgrade-note";
 
 export const TITLES: Record<StepSlug, { title: string; lead: string }> = {
@@ -35,11 +40,12 @@ export const TITLES: Record<StepSlug, { title: string; lead: string }> = {
   competitors: { title: "Who do you compete with?", lead: "Each scan checks whether AI recommends these businesses instead of yours." },
   questions: { title: "What do your customers ask AI?", lead: "We ask ChatGPT, Claude and Perplexity these questions and look for your business in the answers." },
   models: { title: "Choose the AI to check, and how often", lead: "You can change these any time. Credits are only used when a scan runs." },
+  card: { title: "Start your 7-day free trial", lead: "Add a card to start. You won't be charged today." },
 };
 
-type Props = { step: StepSlug; state: WizardContext; plan: string | null };
+type Props = { step: StepSlug; state: WizardContext; plan: string | null; returned: boolean };
 
-export async function StepContent({ step, state, plan }: Props) {
+export async function StepContent({ step, state, plan, returned }: Props) {
   const next = stepPath(step);
   const draftId = state.draft?.id;
 
@@ -90,6 +96,31 @@ export async function StepContent({ step, state, plan }: Props) {
     if (q === "no-city" || !q) redirect(stepPath("details"));
     return <QuestionsStep businessId={draftId} questions={q.questions} limit={q.limit} save={saveQuestionsStep} />;
   }
+  if (step === "card") {
+    const c = await getCardStep(draftId, next);
+    if (!c) redirect(stepPath("models"));
+    // A trial already started (or a test agency): the step only waits for the webhook, then finishes.
+    if (!state.needsCard) return <SettingUp businessId={draftId} check={checkCardStep} />;
+    if (!c.offer) {
+      return (
+        <p role="alert" className="rounded-md bg-low-bg px-3 py-2 text-[13px] text-low-text">
+          Your plan isn&apos;t available to start right now. Please contact us and we&apos;ll set it up.
+        </p>
+      );
+    }
+    const { mode, publishableKey, ...offer } = c.offer;
+    return (
+      <CardCheckout
+        businessId={draftId}
+        offer={offer}
+        mode={mode}
+        publishableKey={publishableKey}
+        returned={returned}
+        start={startCardStep}
+        check={checkCardStep}
+      />
+    );
+  }
   const m = await getModelsStep(draftId, next);
   if (!m) redirect(stepPath("website"));
   return (
@@ -99,6 +130,7 @@ export async function StepContent({ step, state, plan }: Props) {
       frequency={m.frequency as Frequency}
       activeQuestions={m.activeQuestions}
       plan={m.plan}
+      finishLabel={state.needsCard ? "Continue" : "Finish setup"}
       save={saveModelsStep}
     />
   );

@@ -153,7 +153,7 @@ describe("details, questions and models steps", () => {
     expect(kept.data).toHaveLength(12);
     expect(kept.data).toContainEqual({ prompt: "Which florist in Orange delivers on Sundays?", source: "custom" });
 
-    expect(await finishWizard(userId, id, ["openai", "perplexity"], "monthly")).toBe(true);
+    expect(await finishWizard(userId, id, { models: ["openai", "perplexity"], frequency: "monthly" })).toBe(true);
     expect(await business(id)).toMatchObject({ status: "active", onboarding_step: 9, models: ["openai", "perplexity"], scan_frequency: "monthly" });
     const profile = await service.from("profiles").select("active_business_id").eq("id", userId).single();
     expect(profile.data?.active_business_id).toBe(id);

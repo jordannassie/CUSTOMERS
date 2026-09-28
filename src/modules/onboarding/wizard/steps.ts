@@ -8,14 +8,15 @@ export const WIZARD_STEPS = [
   { slug: "competitors", number: 5, label: "Competitors" },
   { slug: "questions", number: 6, label: "Questions" },
   { slug: "models", number: 7, label: "AI models" },
+  { slug: "card", number: 8, label: "Start trial" },
 ] as const;
 
 export type StepSlug = (typeof WIZARD_STEPS)[number]["slug"];
 
-/** Step 8 is the card (B-41) and 9 the first scan (B-38); until the card exists models leads to the first scan. */
+/** Step 8 is the card (B-41) and 9 the first scan (B-38): a business at 9 is set up and leaves the wizard. */
 export const FINISHED_STEP = 9;
 
-/** Where setup hands over once the business is saved. The card step (B-41) goes before it. */
+/** Where setup hands over once the business is set up (after the card step, or after models when no card is needed). */
 export const FIRST_SCAN_PATH = "/onboarding/first-scan";
 
 export const PLAN_IDS = ["starter", "pro"] as const;
@@ -39,7 +40,17 @@ export type WizardState = {
   draft: { id: string; step: number | null } | null;
   /** The user already has a set-up business, so this run adds another and skips the agency step. */
   hasFinishedBusiness: boolean;
+  /** The agency still has to add a card: see needsCard(). */
+  needsCard: boolean;
 };
+
+/**
+ * The card step (MVP_SPEC 3.1 step 8) runs once per agency, on its first business. Test agencies skip it
+ * (D-61), and so does an agency already linked to a Stripe subscription.
+ */
+export function needsCard(agency: { isTest: boolean; hasSubscription: boolean }, hasFinishedBusiness: boolean): boolean {
+  return !agency.isTest && !agency.hasSubscription && !hasFinishedBusiness;
+}
 
 /** Where a returning user continues, or null when there is nothing left to set up. */
 export function resumeStep(state: WizardState): StepSlug | null {
@@ -60,7 +71,8 @@ export function canOpen(slug: StepSlug, state: WizardState): boolean {
 
 /** The steps shown in the progress bar: a second business runs the business steps only (MVP_SPEC 3.1). */
 export function visibleSteps(state: WizardState) {
-  return state.hasFinishedBusiness ? WIZARD_STEPS.filter((s) => s.slug !== "agency") : WIZARD_STEPS;
+  const card = state.needsCard || (state.draft?.step ?? 0) >= stepNumber("card");
+  return WIZARD_STEPS.filter((s) => !(s.slug === "agency" && state.hasFinishedBusiness) && !(s.slug === "card" && !card));
 }
 
 /** Saving a step never moves the user backwards when they return to edit an earlier one. */
