@@ -43,3 +43,22 @@ Things the build could not settle on its own: checks that could not be run, deci
 | F-37 | 2026-09-27 | B-27 (PR #54) | Real hosting test (3 models, 12 questions on a Netlify preview) waits for new keys (B-01). Set `WORKER_SECRET`, `WORKER_TIME_BUDGET_SECONDS` and `WORKER_URL` on the mvp staging deploy, and the two Vault secrets on customers-dev, by hand. | Open |
 | F-38 | 2026-09-27 | B-67 (PR #60) | The margin check uses the cheapest plan price per credit (Pro, about $0.0996) and warns under 50%, while D-23 plans about 70%. Confirm thresholds; top-up prices are not in the database yet (D-22). | Open |
 | F-39 | 2026-09-27 | B-28 | Batch name extraction for scheduled scans (D-74, half price) is not built; it needs its own task (batch-id table, scheduled scans skip live extraction, collector job). | Open |
+| F-40 | 2026-09-28 | B-37 | The no-website businesses feature waits for Jordan to confirm it (D-08). | Open |
+| F-41 | 2026-09-28 | B-72 (PR #78) | The pricing page says unused top-ups can be refunded within 14 days. Jordan or a lawyer must confirm this. | Open |
+| F-42 | 2026-09-28 | B-72 (PR #78) | Apply migration 034 to staging and live before launch. | Open |
+| F-43 | 2026-09-28 | B-45 | D-17 (100 trial credits) is still Proposed. B-45 must also decide whether a returning customer gets a second trial. | Open |
+| F-44 | 2026-09-29 | B-44 (PR #90) | With a subscription schedule attached, a declined card leaves the subscription past due instead of rolling it back. Confirm this is fine. | Open |
+| F-45 | 2026-09-29 | B-44 (PR #90) | `keepSubscription` (undo a cancel) was added beyond the task. Keep it or drop it. | Open |
+| F-46 | 2026-09-29 | B-65 (PR #92) | Restoring an agency sets its status to canceled, so the owner picks a plan again. "Mark as real" is also allowed. Confirm both. | Open |
+| F-47 | 2026-09-29 | B-65 (PR #92) | Apply migration 036 to customers-dev, staging and live before launch. B-77 must set `agencies.deleted_at`. | Open |
+| F-48 | 2026-09-28 | B-41 (PR #84) | With real Stripe, the first scan may show "out of credits" for a moment if `invoice.paid` arrives after `checkout.session.completed`. Check this in the sandbox. | Open |
+| F-49 | 2026-09-28 | B-41 (PR #84), B-43 (PR #85) | Real Stripe test-card and webhook runs wait for the sandbox (B-01). Set `NEXT_PUBLIC_APP_URL` on Netlify so Stripe return URLs never come from request headers. | Open |
+| F-50 | 2026-09-29 | B-58 (PR #89) | Delete `/dashboard/seo` once D-06 is decided. `react-markdown` and `remark-gfm` are now unused. `/api/geo/visibility/run` has no caller. Decide what to remove. | Open |
+| F-51 | 2026-09-28 | B-42 (PR #80) | The Stripe CLI check waits for the sandbox. The app key needs Subscriptions Read and Invoices Read. `credit_grants.business_id` is empty for plan grants. | Open |
+| F-52 | 2026-09-28 | B-49 (PR #71) | The trend arrow compares the last 7 days with the 7 days before. Confirm. | Open |
+| F-53 | 2026-09-28 | B-50 (PR #76) | A competitor added partway through the 30 days scores low until the window rolls over. Decide how to handle it. | Open |
+| F-54 | 2026-09-28 | B-61 (PR #68) | Set `EMAIL_UNSUBSCRIBE_SECRET` and `EMAIL_FROM` on the Netlify mvp deploy. The domain DNS is F-12. | Open |
+| F-55 | 2026-09-28 | B-33 (PR #69) | The question mix allows at most 4 of 12 questions per intent. Confirm. | Open |
+| F-56 | 2026-09-28 | B-40 (PR #65) | Sandbox steps: a fresh sandbox, 2 restricted keys and Adaptive Pricing off. Then run the catalog scripts. | Open |
+| F-57 | 2026-09-28 | B-36 (PR #72), B-41 (PR #84) | The onboarding wizard stores `?plan=` in `app_metadata.selected_plan`, and checkout reads it from there. Confirm. | Open |
+| F-58 | 2026-09-28 | B-54 (PR #75) | The source type lists in `src/modules/sources/classify.ts` need a person to review them. | Open |

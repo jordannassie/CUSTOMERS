@@ -45,7 +45,7 @@ Phase 7 · M · Depends on: B-59 · Blocked by Jordan: no · MVP_SPEC 8.3, D-71 
 ---
 
 ### B-61 Email foundation
-- [ ] Done
+- [x] Done (PR #68, merged into mvp)
 
 Phase 7 · M · Depends on: B-09, B-11 · Blocked by Jordan: sending domain verification (DNS) · MVP_SPEC 10, D-37, D-72 · Branch: `task/B-61-email-foundation` → `mvp`
 

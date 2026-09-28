@@ -29,7 +29,7 @@ Phase 6 · M · Depends on: B-09, B-15, B-13 · Blocked by Jordan: no · MVP_SPE
 ---
 
 ### B-49 Overview page
-- [ ] Done
+- [x] Done (PR #71, merged into mvp)
 
 Phase 6 · L · Depends on: B-48, B-30, B-29 · Blocked by Jordan: no · MVP_SPEC 5.6, 8.1, D-63 to D-65 · Branch: `task/B-49-overview-page` → `mvp`
 
@@ -55,7 +55,7 @@ Phase 6 · L · Depends on: B-48, B-30, B-29 · Blocked by Jordan: no · MVP_SPE
 ---
 
 ### B-50 Competitors page
-- [ ] Done
+- [x] Done (PR #76, merged into mvp)
 
 Phase 6 · L · Depends on: B-49, B-35, B-25 · Blocked by Jordan: no · MVP_SPEC 7.1, 8.1, D-64, D-73 · Branch: `task/B-50-competitors-page` → `mvp`
 
@@ -78,7 +78,7 @@ Phase 6 · L · Depends on: B-49, B-35, B-25 · Blocked by Jordan: no · MVP_SPE
 ---
 
 ### B-51 "Why competitors win" explanations and their eval
-- [ ] Done
+- [ ] Done (code in PR #77, merged into mvp; stays open until people label the eval data)
 
 Phase 6 · L · Depends on: B-50, B-26 · Blocked by Jordan: no · MVP_SPEC 7.2, 25, D-30, D-73 · Branch: `task/B-51-why-competitors-win-explanations-and` → `mvp`
 
@@ -97,7 +97,7 @@ Phase 6 · L · Depends on: B-50, B-26 · Blocked by Jordan: no · MVP_SPEC 7.2,
 ---
 
 ### B-52 Opportunities page
-- [ ] Done
+- [x] Done (PR #83, merged into mvp)
 
 Phase 6 · M · Depends on: B-51 · Blocked by Jordan: no · MVP_SPEC 7.2, 7.3, 8.1, D-09 · Branch: `task/B-52-opportunities-page` → `mvp`
 
@@ -118,7 +118,7 @@ Phase 6 · M · Depends on: B-51 · Blocked by Jordan: no · MVP_SPEC 7.2, 7.3, 
 ---
 
 ### B-53 Questions page
-- [ ] Done
+- [x] Done (PR #79, merged into mvp)
 
 Phase 6 · M · Depends on: B-49, B-33 · Blocked by Jordan: no · MVP_SPEC 5.3, 5.6, 8.1 · Branch: `task/B-53-questions-page` → `mvp`
 
@@ -137,7 +137,7 @@ Phase 6 · M · Depends on: B-49, B-33 · Blocked by Jordan: no · MVP_SPEC 5.3,
 ---
 
 ### B-54 Sources page
-- [ ] Done
+- [x] Done (PR #75, merged into mvp)
 
 Phase 6 · M · Depends on: B-49 · Blocked by Jordan: no · MVP_SPEC 8.1 · Branch: `task/B-54-sources-page` → `mvp`
 
@@ -188,7 +188,7 @@ Phase 6 · M · Depends on: B-48, B-13 · Blocked by Jordan: no · MVP_SPEC 8.2,
 ---
 
 ### B-57 "How we measure" panel
-- [ ] Done
+- [x] Done (PR #74, merged into mvp)
 
 Phase 6 · S · Depends on: B-49 · Blocked by Jordan: no · MVP_SPEC 5.6, D-64, D-66 · Branch: `task/B-57-how-we-measure-panel` → `mvp`
 
@@ -204,7 +204,7 @@ Phase 6 · S · Depends on: B-49 · Blocked by Jordan: no · MVP_SPEC 5.6, D-64,
 ---
 
 ### B-58 Remove the old dashboard
-- [ ] Done
+- [x] Done (PR #89, merged into mvp)
 
 Phase 6 · S · Depends on: B-49 to B-56 · Blocked by Jordan: no · MVP_SPEC 17 · Branch: `task/B-58-remove-the-old-dashboard` → `mvp`
 

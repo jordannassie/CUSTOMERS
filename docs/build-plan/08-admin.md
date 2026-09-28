@@ -25,7 +25,7 @@ Phase 8 · S · Depends on: B-17, B-09 · Blocked by Jordan: no · MVP_SPEC 9.1,
 ---
 
 ### B-65 Overview and Agencies
-- [ ] Done
+- [x] Done (PR #92, merged into mvp)
 
 Phase 8 · L · Depends on: B-64, B-13, B-42 · Blocked by Jordan: no · MVP_SPEC 9.1 · Branch: `task/B-65-overview-and-agencies` → `mvp`
 

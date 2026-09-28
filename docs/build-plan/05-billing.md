@@ -5,7 +5,7 @@ Goal: trial with card, subscriptions per business, top-ups and plan changes, all
 ---
 
 ### B-40 Stripe setup
-- [ ] Done
+- [x] Done (PR #65, merged into mvp)
 
 Phase 5 · S · Depends on: B-11 · Blocked by Jordan: live account and prices (D-21, D-40) · MVP_SPEC 11.1, 11.4, D-39, D-56 · Branch: `task/B-40-stripe-setup` → `mvp`
 
@@ -25,7 +25,7 @@ Phase 5 · S · Depends on: B-11 · Blocked by Jordan: live account and prices (
 ---
 
 ### B-41 Checkout page and trial start
-- [ ] Done
+- [x] Done (PR #84, merged into mvp)
 
 Phase 5 · L · Depends on: B-40, B-36 · Blocked by Jordan: live keys only · MVP_SPEC 3.1 step 8, 11.2, 4.4, D-15, D-16, D-38 · Branch: `task/B-41-checkout-page-and-trial-start` → `mvp`
 
@@ -47,7 +47,7 @@ Phase 5 · L · Depends on: B-40, B-36 · Blocked by Jordan: live keys only · M
 ---
 
 ### B-42 Webhook handlers
-- [ ] Done
+- [x] Done (PR #80, merged into mvp)
 
 Phase 5 · L · Depends on: B-40, B-13 · Blocked by Jordan: no · MVP_SPEC 11.3, 11.5, D-39, D-57 · Branch: `task/B-42-webhook-handlers` → `mvp`
 
@@ -68,7 +68,7 @@ Phase 5 · L · Depends on: B-40, B-13 · Blocked by Jordan: no · MVP_SPEC 11.3
 ---
 
 ### B-43 Top-ups
-- [ ] Done
+- [x] Done (PR #85, merged into mvp)
 
 Phase 5 · M · Depends on: B-42 · Blocked by Jordan: prices (D-22) · MVP_SPEC 4.2, 11.5, D-22 · Branch: `task/B-43-top-ups` → `mvp`
 
@@ -86,7 +86,7 @@ Phase 5 · M · Depends on: B-42 · Blocked by Jordan: prices (D-22) · MVP_SPEC
 ---
 
 ### B-44 Plan changes
-- [ ] Done
+- [x] Done (PR #90, merged into mvp)
 
 Phase 5 · L · Depends on: B-42 · Blocked by Jordan: no · MVP_SPEC 11.5, D-57 · Branch: `task/B-44-plan-changes` → `mvp`
 
