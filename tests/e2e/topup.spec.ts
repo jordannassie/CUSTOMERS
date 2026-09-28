@@ -69,7 +69,7 @@ test("buying a pack pays back a negative balance first, then shows the new balan
   await expect(page.getByTestId("chosen-pack")).toHaveText("500 credits for $50");
   await page.getByLabel("Card number").fill("4000 0000 0000 0002");
   await page.getByRole("button", { name: "Pay $50" }).click();
-  await expect(page.getByRole("alert")).toContainText("Your card was declined. Nothing was charged.");
+  await expect(page.locator("form").getByRole("alert")).toContainText("Your card was declined. Nothing was charged.");
 
   await page.getByLabel("Card number").fill("4242 4242 4242 4242");
   await page.getByRole("button", { name: "Pay $50" }).click();
