@@ -178,10 +178,7 @@ test("30 days of history: high confidence, a real rise and the top 3 fixes", asy
   const fixes = page.getByTestId("top-opportunities").getByRole("link");
   await expect(fixes).toHaveCount(3);
   await expect(fixes.nth(2)).toHaveText("Answer common questions on your site");
-  await expect(page.getByRole("link", { name: "See all opportunities" })).toHaveAttribute(
-    "href",
-    "/dashboard/opportunities",
-  );
+  await expect(page.getByRole("link", { name: "See all opportunities" })).toHaveAttribute("href", "/opportunities");
   for (const card of REMOVED_CARDS) await expect(page.getByText(card)).toHaveCount(0);
 });
 

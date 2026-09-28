@@ -8,7 +8,7 @@ const IMPACT = {
   low: { label: "Low impact", variant: "secondary" },
 } as const;
 
-export const OPPORTUNITIES_HREF = "/dashboard/opportunities";
+export const OPPORTUNITIES_HREF = "/opportunities";
 
 export function TopOpportunities({
   opportunities,

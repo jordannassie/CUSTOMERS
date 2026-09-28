@@ -9,9 +9,12 @@ import { loadAlsoRecommended } from "@/modules/scanning";
 import type { Opportunity } from "@/types/geo";
 import { explain, type Explanation, type WriteExplanation } from "./explain";
 import type { ExplainSources, Signals } from "./facts";
-import { fillOpportunity, liveLookup, planSave, referencedCompetitors, usageCostUsd, usesBusinessValues } from "./service";
+import { fillOpportunity, hasPlaceValues, liveLookup, planSave, referencedCompetitors, usageCostUsd, usesBusinessValues } from "./service";
 import { templateWriter } from "./template-writer";
 import { createExplanationWriter } from "./writer";
+
+/** An opportunity with Google values filled in; usesGoogle means the text shows some, so attribution is due. */
+export type LiveOpportunity = Opportunity & { usesGoogle: boolean };
 
 /** Live Google signals for a place id; null when Google has no such place. */
 type FetchSignals = (placeId: string) => Promise<Signals | null>;
@@ -138,8 +141,11 @@ async function saveDrafts(businessId: string, explanation: Explanation): Promise
 }
 
 /** Opportunities for one of the signed-in agency's businesses, with Google values filled in live. */
-export async function getLiveOpportunities(businessId: string, fetchSignals: FetchSignals = fetchPlaceSignals): Promise<Opportunity[] | null> {
-  const { agency } = await requireAgency({ next: "/dashboard/opportunities" });
+export async function getLiveOpportunities(
+  businessId: string,
+  fetchSignals: FetchSignals = fetchPlaceSignals,
+): Promise<LiveOpportunity[] | null> {
+  const { agency } = await requireAgency({ next: "/opportunities" });
   const db = createServiceClient();
   const business = await db.from("businesses").select("places_id").eq("id", businessId).eq("agency_id", agency.id).maybeSingle();
   if (business.error) throw new Error(`Insights: could not load the business: ${business.error.message}`);
@@ -165,5 +171,5 @@ export async function getLiveOpportunities(businessId: string, fetchSignals: Fet
   const businessPlace = usesBusinessValues(rows) ? business.data.places_id : null;
   const signals = await signalsFor([businessPlace, ...placeOf.values()], fetchSignals);
   const lookup = liveLookup(businessPlace, placeOf, signals);
-  return rows.map((row) => fillOpportunity(row, lookup));
+  return rows.map((row) => ({ ...fillOpportunity(row, lookup), usesGoogle: hasPlaceValues(row) }));
 }
