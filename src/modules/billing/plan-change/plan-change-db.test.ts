@@ -43,7 +43,7 @@ async function seedAgency(status: "active" | "trialing", businessNames: string[]
   userIds.push(data.user.id);
   const { data: agency } = await service
     .from("agencies")
-    .insert({ owner_user_id: data.user.id, name: "Plan change test", is_test: true, status, stripe_subscription_id: "sub_fake" })
+    .insert({ owner_user_id: data.user.id, name: "Plan change test", is_test: true, status, stripe_subscription_id: `sub_test_${randomUUID()}` })
     .select("id")
     .single()
     .throwOnError();

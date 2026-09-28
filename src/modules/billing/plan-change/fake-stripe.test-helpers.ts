@@ -2,6 +2,7 @@ import type Stripe from "stripe";
 import { invoice, line } from "../webhooks/fixtures.test-helpers";
 import type { PlanChangeStripe } from "./client";
 import type { ItemSpec } from "./planner";
+import { scheduleObject, subscriptionObject, type FakeSchedule, type Item, type Phase } from "./fake-stripe-objects.test-helpers";
 
 // An in-memory Stripe for plan change tests, standing in for a Stripe test clock: one subscription, its schedule,
 // prorations, renewals and invoices, with a clock the test moves. It follows Stripe's documented behavior; the
@@ -12,8 +13,6 @@ export const PRICES: Record<string, { product: string; unitAmount: number }> = {
   price_pro: { product: "cd_plan_pro", unitAmount: 24900 },
 };
 
-type Item = { id: string; price: string; quantity: number; metadata: Record<string, string>; start: number; end: number };
-type Phase = { start: number; end: number; items: ItemSpec[] };
 
 export const at = (iso: string) => Math.floor(Date.parse(iso) / 1000);
 
@@ -28,7 +27,7 @@ export class FakeStripe implements PlanChangeStripe {
   trialEnd: number | null = null;
   cancelAtPeriodEnd = false;
   items: Item[] = [];
-  schedule: { id: string; status: Stripe.SubscriptionSchedule.Status; phases: Phase[]; endBehavior: string } | null = null;
+  schedule: FakeSchedule | null = null;
   invoices: Stripe.Invoice[] = [];
   calls: { method: string; params?: unknown; key?: string }[] = [];
   declineNextCharge = false;
@@ -54,47 +53,11 @@ export class FakeStripe implements PlanChangeStripe {
   private id = (prefix: string) => `${prefix}_fake${this.nextId++}`;
 
   subscription(): Stripe.Subscription {
-    return {
-      id: this.subscriptionId,
-      object: "subscription",
-      customer: "cus_fake",
-      status: this.status,
-      trial_end: this.trialEnd,
-      cancel_at_period_end: this.cancelAtPeriodEnd,
-      schedule: this.schedule && this.schedule.status === "active" ? this.schedule.id : null,
-      metadata: {},
-      items: {
-        object: "list",
-        has_more: false,
-        url: "",
-        data: this.items.map((i) => ({
-          id: i.id,
-          object: "subscription_item",
-          price: { id: i.price, product: PRICES[i.price].product, unit_amount: PRICES[i.price].unitAmount },
-          quantity: i.quantity,
-          metadata: { ...i.metadata },
-          current_period_start: i.start,
-          current_period_end: i.end,
-        })),
-      },
-    } as unknown as Stripe.Subscription;
+    return subscriptionObject(this);
   }
 
   scheduleObject(): Stripe.SubscriptionSchedule {
-    const s = this.schedule!;
-    const current = s.phases.find((p) => p.start <= this.clock && this.clock < p.end) ?? s.phases[0];
-    return {
-      id: s.id,
-      object: "subscription_schedule",
-      status: s.status,
-      end_behavior: s.endBehavior,
-      current_phase: { start_date: current.start, end_date: current.end },
-      phases: s.phases.map((p) => ({
-        start_date: p.start,
-        end_date: p.end,
-        items: p.items.map((i) => ({ price: i.price, quantity: i.quantity, metadata: { ...i.metadata } })),
-      })),
-    } as unknown as Stripe.SubscriptionSchedule;
+    return scheduleObject(this.schedule!, this.clock);
   }
 
   private once<T>(key: string, run: () => T): T {
