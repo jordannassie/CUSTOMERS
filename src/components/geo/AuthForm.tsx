@@ -141,7 +141,7 @@ export default function AuthForm({ defaultMode = "login", errorParam = "", notic
     <div className="w-full max-w-[420px]">
       {/* Logo */}
       <div className="text-center mb-8">
-        <Link href="/" aria-label="Customers.Direct — Home">
+        <Link href="/" aria-label="Customers.Direct home">
           <Image
             src={LOGO}
             alt="Customers.Direct"
@@ -195,7 +195,7 @@ export default function AuthForm({ defaultMode = "login", errorParam = "", notic
               className="text-[12px] text-[#92400E] bg-[#FFFBEB] border border-[#FDE68A] rounded-lg px-3.5 py-3 mb-4 flex flex-col gap-1.5"
               role="alert"
             >
-              <p className="font-semibold">Sign-in couldn&apos;t complete — please try again.</p>
+              <p className="font-semibold">Sign-in couldn&apos;t complete. Please try again.</p>
               <p>
                 Google authentication succeeded, but the session couldn&apos;t be saved.
                 This is usually temporary.{" "}

@@ -125,7 +125,7 @@ export default function FeatureRequestsClient({ requests: initial }: { requests:
                   </p>
                 </div>
                 <p className="text-[11px] text-[#9CA3AF] truncate hidden sm:block">
-                  {req.pageContext ?? "—"}
+                  {req.pageContext ?? "-"}
                 </p>
                 <p className="text-[11px] text-[#9CA3AF] hidden sm:block">{fmt(req.createdAt)}</p>
                 <div>

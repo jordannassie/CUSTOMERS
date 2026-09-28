@@ -234,7 +234,7 @@ function LeadDetail({
           </div>
           <div>
             <p className="font-bold text-[#9CA3AF] uppercase tracking-wider text-[10px] mb-0.5">Source</p>
-            <p className="text-[#374151]">{SOURCE_LABELS[lead.source ?? ""] ?? lead.source ?? "—"}</p>
+            <p className="text-[#374151]">{SOURCE_LABELS[lead.source ?? ""] ?? lead.source ?? "-"}</p>
           </div>
           {lead.page_path && (
             <div className="col-span-2">
