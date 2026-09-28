@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { at, FakeStripe } from "./fake-stripe.test-helpers";
+import { at, FakeStripe } from "./fake-stripe";
 import { copyFor } from "./copy.test-helpers";
 import { buildPhases, checkChange, idempotencyKey, phasesOf, type PlanChangeContext } from "./planner";
 

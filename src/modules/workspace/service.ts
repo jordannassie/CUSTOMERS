@@ -3,8 +3,7 @@
 const DAY = 24 * 60 * 60 * 1000;
 const WARN_AT_PERCENT = 80;
 
-// Billing (B-46) replaces this page; until then it is where plans and cards live.
-export const BILLING_HREF = "/dashboard/billing";
+export const BILLING_HREF = "/settings/billing";
 export const BUY_CREDITS_HREF = "/settings/credits";
 
 export type AccountState = {

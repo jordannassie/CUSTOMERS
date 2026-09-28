@@ -24,7 +24,7 @@ export function paymentFailedEmail(input: { to: string; agencyId: string; invoic
           "We couldn't charge your card for Customers.Direct. Your automatic scans are paused until the payment goes through.",
           "Your dashboard and past results are still there. Update your card and we'll try the payment again.",
         ]}
-        action={{ label: "Update payment details", href: `${baseUrl}/dashboard/billing` }}
+        action={{ label: "Update payment details", href: `${baseUrl}/settings/billing` }}
         baseUrl={baseUrl}
       />
     ),
@@ -52,7 +52,7 @@ export function trialEndingEmail(input: {
           `On ${date} we'll charge your card for your plan and add your monthly credits.`,
           "Nothing to do if you want to keep going. To change your plan or cancel before then, go to Billing.",
         ]}
-        action={{ label: "Go to billing", href: `${baseUrl}/dashboard/billing` }}
+        action={{ label: "Go to billing", href: `${baseUrl}/settings/billing` }}
         baseUrl={baseUrl}
       />
     ),
