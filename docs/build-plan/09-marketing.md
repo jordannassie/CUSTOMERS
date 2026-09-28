@@ -46,7 +46,7 @@ Phase 9 · L · Depends on: B-70 · Blocked by Jordan: no · MVP_SPEC 12.2, D-34
 ---
 
 ### B-72 Pricing, agency and contact pages
-- [ ] Done
+- [x] Done (PR #78, merged into mvp)
 
 Phase 9 · M · Depends on: B-70, B-40 · Blocked by Jordan: final prices (D-21) · MVP_SPEC 12.1, 4.1, 4.4 · Branch: `task/B-72-pricing-agency-and-contact-pages` → `mvp`
 
@@ -85,7 +85,7 @@ Either way: the headline must describe what the tool actually measures, and the 
 ---
 
 ### B-74 SEO basics
-- [ ] Done
+- [x] Done (PR #82, merged into mvp)
 
 Phase 9 · S · Depends on: B-71, B-72 · Blocked by Jordan: no · MVP_ROADMAP GROW-02, GROW-03 · Branch: `task/B-74-seo-basics` → `mvp`
 

@@ -6,20 +6,19 @@ Rules set by the user on 2026-09-26: 3 worker sessions at once; the leader revie
 
 ## In progress
 
-Five worker sessions at once (raised from 3 on 2026-09-27).
+Three worker sessions at once (up to five allowed since 2026-09-27).
 
 | Task | Worker pane | Worktree | PR |
 |---|---|---|---|
-| B-29 Manual Run scan | 212 | CUSTOMERS-B29 | #57 (rebasing) |
-| B-31 Test mode | 211 | CUSTOMERS-B31 | #58 (fixing CI flake) |
-| Admin layout fix | 215 | CUSTOMERS-FIXADMIN | not yet |
-| B-40 Stripe setup (mocked, no Stripe calls) | 216 | CUSTOMERS-B40 | not yet |
-| B-34 Business auto-fill (mocked) | 217 | CUSTOMERS-B34 | not yet |
+| B-46 Billing page | b46 | CUSTOMERS-B46 | #93 |
+| B-59 Share page | b59 | CUSTOMERS-B59 | #91 |
+| B-69 Alerts | b69 | CUSTOMERS-B69 | not yet |
 
 ## Done
 
 Into main: B-06, B-07, B-10, B-11, B-12, B-13. B-24 code (#32), open for labelling.
-Into mvp: B-08, B-09, B-14 to B-17, B-20 to B-23, B-26 to B-28, B-30, B-48, B-55, B-56, B-64, B-66 to B-68, B-70, B-71, B-73. B-25 code (#49), open for labelling.
+Into mvp: B-08, B-09, B-14 to B-17, B-20 to B-23, B-26 to B-31, B-36, B-38, B-40 to B-44, B-48 to B-50, B-52 to B-58, B-61, B-64 to B-68, B-70 to B-74. Code merged, open for labelling: B-25 (#49), B-32 (#67), B-33 (#69), B-34 (#64), B-51 (#77).
+Fixes into mvp: admin layout fix (#62), atomic `retry_scan_job` for admin Retry (#61), INFRA-01 isolated local test database per worktree (#88, fixes BUG-010).
 
 Open questions for people are in [FLAGS.md](./FLAGS.md).
 

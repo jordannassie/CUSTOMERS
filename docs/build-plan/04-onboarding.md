@@ -5,7 +5,7 @@ Goal: a new user goes from account to first scan with almost no typing, followin
 ---
 
 ### B-32 Industry question library
-- [ ] Done
+- [ ] Done (code in PR #67, merged into mvp; stays open until people label the eval data)
 
 Phase 4 · L · Depends on: B-11 · Blocked by Jordan: no · MVP_SPEC 5.3, D-62 · Branch: `task/B-32-industry-question-library` → `mvp`
 
@@ -25,7 +25,7 @@ Phase 4 · L · Depends on: B-11 · Blocked by Jordan: no · MVP_SPEC 5.3, D-62 
 ---
 
 ### B-33 Question picking and its eval
-- [ ] Done
+- [ ] Done (code in PR #69, merged into mvp; stays open until people label the eval data)
 
 Phase 4 · M · Depends on: B-32 · Blocked by Jordan: no · MVP_SPEC 5.3, 25 · Branch: `task/B-33-question-picking-and-its-eval` → `mvp`
 
@@ -45,7 +45,7 @@ Phase 4 · M · Depends on: B-32 · Blocked by Jordan: no · MVP_SPEC 5.3, 25 ·
 ---
 
 ### B-34 Business auto-fill and its eval
-- [ ] Done
+- [ ] Done (code in PR #64, merged into mvp; stays open until people label the eval data)
 
 Phase 4 · L · Depends on: B-15 · Blocked by Jordan: no · MVP_SPEC 3.2, 26, D-18, D-73 · Branch: `task/B-34-business-auto-fill-and-its` → `mvp`
 
@@ -90,7 +90,7 @@ Phase 4 · M · Depends on: B-34 · Blocked by Jordan: no · MVP_SPEC 3.1 step 5
 ---
 
 ### B-36 Onboarding wizard
-- [ ] Done
+- [x] Done (PR #72, merged into mvp)
 
 Phase 4 · L · Depends on: B-09, B-33, B-34, B-35, B-16 · Blocked by Jordan: no · MVP_SPEC 3.1, D-14, design/DESIGN.md · Branch: `task/B-36-onboarding-wizard` → `mvp`
 
@@ -131,7 +131,7 @@ Phase 4 · S · Depends on: B-36, B-24 · Blocked by Jordan: confirm the feature
 ---
 
 ### B-38 First scan screen
-- [ ] Done
+- [x] Done (PR #81, merged into mvp)
 
 Phase 4 · S · Depends on: B-36, B-29 · Blocked by Jordan: no · MVP_SPEC 3.1 step 9 · Branch: `task/B-38-first-scan-screen` → `mvp`
 
