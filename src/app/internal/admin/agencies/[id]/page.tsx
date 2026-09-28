@@ -91,7 +91,7 @@ async function Detail({ id }: { id: string }) {
           <AuditLog rows={detail.audit} />
           <CreditHistory rows={detail.ledger} />
         </div>
-        <aside aria-label="Actions" className="flex flex-col gap-2 lg:sticky lg:top-6">
+        <aside aria-label="Actions" className="order-first flex flex-col gap-2 lg:sticky lg:top-6 lg:order-none">
           <h2 className="text-[16px] font-semibold">Actions</h2>
           <AgencyActions
             agency={agency}

@@ -88,8 +88,10 @@ export default function AgencyActions({ agency, stripeConnected, maxCredits, max
         </div>
       </ActionCard>
 
+      {/* Keyed: the status change swaps the card, and the old card's message must not carry over. */}
       {deleted ? (
         <ActionCard
+          key="restore"
           title="Restore account"
           note="Brings back a deleted account and its data. The owner picks a plan again, because deleting canceled their subscription."
           openLabel="Restore account"
@@ -101,6 +103,7 @@ export default function AgencyActions({ agency, stripeConnected, maxCredits, max
         />
       ) : suspended ? (
         <ActionCard
+          key="unsuspend"
           title="Suspension"
           note="Lets the owner log in again and restarts scheduled scans."
           openLabel="Unsuspend"
@@ -111,6 +114,7 @@ export default function AgencyActions({ agency, stripeConnected, maxCredits, max
         />
       ) : (
         <ActionCard
+          key="suspend"
           title="Suspension"
           note="Blocks the owner from logging in and stops scheduled scans. Stripe billing carries on."
           openLabel="Suspend"

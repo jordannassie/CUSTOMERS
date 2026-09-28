@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { grantCredits } from "@/modules/credits";
 import { createAgencyWithBusiness, deleteTestUsers, service, signInAs, type TestSession } from "../admin.test-helpers";
+import type { Database } from "@/types/database.types";
 import type { AdminStripeClient } from "./stripe";
 
 // Runs against the local database `npm test` rebuilds, signed in as a real test user. Stripe is always a fake.
@@ -27,7 +28,7 @@ function fakeStripe(overrides: Partial<AdminStripeClient> = {}): AdminStripeClie
   return { mode: "stripe", extendTrial: vi.fn(async () => {}), revenueSince: vi.fn(async () => 0), ...overrides } as never;
 }
 
-async function setAgency(fields: Record<string, unknown>) {
+async function setAgency(fields: Database["public"]["Tables"]["agencies"]["Update"]) {
   const { error } = await service.from("agencies").update(fields).eq("id", agency.agencyId);
   if (error) throw error;
 }

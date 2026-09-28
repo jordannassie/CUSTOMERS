@@ -32,9 +32,8 @@ export function RecentSignups({ rows }: { rows: AdminOverview["recentSignups"] }
                     </Link>
                     {a.isTest && <TestBadge />}
                   </span>
-                  <span className="block truncate text-text-hint">
-                    {a.ownerEmail ?? "Owner email unknown"}, {formatDate(a.createdAt)}
-                  </span>
+                  <span className="block truncate text-text-hint">{a.ownerEmail ?? "Owner email unknown"}</span>
+                  <span className="block text-text-hint">Signed up {formatDate(a.createdAt)}</span>
                 </span>
                 <StatusBadge status={a.status} />
               </li>
