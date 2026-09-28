@@ -105,7 +105,7 @@ test("six menu items navigate, and switching business keeps the page", async ({ 
   await expect(page.getByText("Find anything")).toHaveCount(0);
 
   await links.filter({ hasText: "Opportunities" }).click();
-  await page.waitForURL((url) => url.pathname === "/dashboard/opportunities");
+  await page.waitForURL((url) => url.pathname === "/opportunities");
   await expect(page.getByRole("dialog", { name: "Menu" })).toHaveCount(0);
 
   nav = await openNav(page);
@@ -114,7 +114,7 @@ test("six menu items navigate, and switching business keeps the page", async ({ 
   await switcher.click();
   await page.getByRole("menuitem", { name: "Northside Plumbing" }).click();
   await expect(page.getByTestId("business-switcher").first()).toContainText("Northside Plumbing");
-  expect(new URL(page.url()).pathname).toBe("/dashboard/opportunities");
+  expect(new URL(page.url()).pathname).toBe("/opportunities");
 });
 
 test("usage widget: normal plan", async ({ page }) => {

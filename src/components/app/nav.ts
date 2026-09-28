@@ -6,7 +6,7 @@ export type NavItem = { label: string; href: string; icon: LucideIcon; alsoActiv
 export const APP_NAV: NavItem[] = [
   { label: "Overview", href: "/dashboard", icon: LayoutDashboard },
   { label: "Competitors", href: "/competitors", icon: Users },
-  { label: "Opportunities", href: "/dashboard/opportunities", icon: Lightbulb },
+  { label: "Opportunities", href: "/opportunities", icon: Lightbulb },
   { label: "Questions", href: "/questions", icon: MessageCircleQuestion },
   { label: "Sources", href: "/sources", icon: Link2 },
   { label: "Settings", href: "/settings", icon: Settings, alsoActiveOn: ["/dashboard/billing"] },

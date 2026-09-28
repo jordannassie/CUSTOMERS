@@ -52,9 +52,9 @@ function claudePromptFor(
   ask: string,
 ): string {
   return [
-    `I'm working on AI search visibility (GEO/AEO) for ${businessName}${domain ? ` (${domain})` : ""}.`,
+    `I want AI assistants like ChatGPT, Claude and Perplexity to recommend ${businessName}${domain ? ` (${domain})` : ""} more often.`,
     "",
-    `Context / evidence (from Customers.Direct's real AI visibility monitoring. Do not assume any facts beyond what's stated here):`,
+    `What Customers.Direct found when it asked AI assistants about us. Do not assume any facts beyond what is stated here:`,
     evidence,
     "",
     header,

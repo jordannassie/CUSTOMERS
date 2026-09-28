@@ -48,6 +48,10 @@ export function referencedCompetitors(rows: TextFields[]): Set<string> {
   return ids;
 }
 
+export function hasPlaceValues(row: TextFields): boolean {
+  return [row.description, row.evidence, row.recommended_action].some((t) => /\{(business|competitor\.[0-9a-f-]{36})\.[a-z_]+\}/.test(t ?? ""));
+}
+
 export function usesBusinessValues(rows: TextFields[]): boolean {
   return rows.some((r) => [r.description, r.evidence, r.recommended_action].some((t) => t?.includes("{business.")));
 }
