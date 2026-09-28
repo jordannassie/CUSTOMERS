@@ -1,7 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { allowRequest, clientIp } from "@/modules/rate-limit";
 import {
-  allowCheck,
-  clientIp,
   compareSites,
   extractDomain,
   isSafePublicUrl,
@@ -14,7 +13,7 @@ import {
  * No AI calls. Public by design, so it is rate limited per IP instead of checking auth.
  */
 export async function POST(request: NextRequest) {
-  if (!allowCheck(clientIp(request.headers))) {
+  if (!(await allowRequest("compare", clientIp(request.headers)))) {
     return NextResponse.json({ error: "Too many checks. Try again in an hour." }, { status: 429 });
   }
 

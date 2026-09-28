@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { createClient } from "@/lib/supabase/server";
 import crypto from "crypto";
+import { allowRequest, clientIp } from "@/modules/rate-limit";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -24,6 +25,14 @@ function hashIp(ip: string | null): string | null {
 }
 
 export async function POST(request: NextRequest) {
+  const ip = clientIp(request.headers);
+  if (!(await allowRequest("contact", ip))) {
+    return NextResponse.json(
+      { error: "You've sent a few messages already. Try again in an hour, or email us directly." },
+      { status: 429 },
+    );
+  }
+
   let body: Record<string, unknown>;
   try {
     body = await request.json();
@@ -76,8 +85,6 @@ export async function POST(request: NextRequest) {
     if (user) userId = user.id;
   } catch { /* public endpoint: unauthenticated is fine */ }
 
-  const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? null;
-
   const service = createServiceClient();
   const { error } = await service
     .from("contact_submissions")
@@ -91,7 +98,7 @@ export async function POST(request: NextRequest) {
       message,
       source,
       page_path: pagePath || null,
-      ip_hash:   hashIp(ip),
+      ip_hash:   hashIp(ip === "unknown" ? null : ip),
       user_id:   userId,
     });
 

@@ -1,6 +1,9 @@
 import type { NextConfig } from "next";
 // Validates environment variables at build time; a missing required one stops the build.
-import "./src/lib/env";
+import { env } from "./src/lib/env";
+import { securityHeaders } from "./src/lib/security-headers";
+
+const supabaseUrl = new URL(env.NEXT_PUBLIC_SUPABASE_URL);
 
 // Products cut from the MVP (D-04); old links and search results land on the homepage.
 const CUT_PAGES = [
@@ -21,9 +24,14 @@ const nextConfig: NextConfig = {
     // Agency logos are up to 2 MB (B-55); the default 1 MB limit would reject them before the action runs.
     serverActions: { bodySizeLimit: "3mb" },
   },
-  // Share pages (B-59): never indexed, and the token never leaves in a Referer header.
   async headers() {
     return [
+      {
+        source: "/:path*",
+        headers: securityHeaders({ supabaseUrl: supabaseUrl.href, isDev: env.NODE_ENV === "development" }),
+      },
+      // Share pages (B-59): never indexed, and the token never leaves in a Referer header.
+      // Listed after the global rule so its Referrer-Policy wins.
       {
         source: "/r/:path*",
         headers: [
@@ -62,25 +70,13 @@ const nextConfig: NextConfig = {
     ];
   },
   images: {
+    // Only our own storage (SEC-06); an open pattern lets anyone use our image optimizer as a proxy.
     remotePatterns: [
       {
-        protocol: "https",
-        hostname: "phhczohqidgrvcmszets.supabase.co",
+        protocol: supabaseUrl.protocol === "http:" ? "http" : "https",
+        hostname: supabaseUrl.hostname,
+        port: supabaseUrl.port,
         pathname: "/storage/v1/object/public/**",
-      },
-      {
-        protocol: "https",
-        hostname: "wsxusvapciexemfvtadm.supabase.co",
-        pathname: "/storage/v1/object/public/**",
-      },
-      {
-        protocol: "https",
-        hostname: "images.unsplash.com",
-      },
-      // Allow any https domain for business logo_url (user-supplied URLs)
-      {
-        protocol: "https",
-        hostname: "**",
       },
     ],
   },

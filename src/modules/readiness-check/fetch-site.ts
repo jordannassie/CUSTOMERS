@@ -1,4 +1,5 @@
 import "server-only";
+import { safeFetch } from "@/lib/net/safe-fetch";
 import { extractSignals, type Signals } from "./signals";
 import { isSafePublicUrl, normalizeUrl } from "./url";
 
@@ -7,14 +8,9 @@ export async function readSite(rawUrl: string): Promise<Signals | null> {
   const url = normalizeUrl(rawUrl);
   if (!isSafePublicUrl(url)) return null;
   try {
-    const res = await fetch(url, {
-      redirect: "follow",
-      signal: AbortSignal.timeout(9_000),
-      headers: { "User-Agent": "Mozilla/5.0 (compatible; CustomersDirectScanner/1.0; +https://customers.direct)" },
-    });
-    if (!res.ok || (res.url && !isSafePublicUrl(res.url))) return null;
-    const html = await res.text();
-    return html ? extractSignals(html) : null;
+    const res = await safeFetch(url, { timeoutMs: 9_000 });
+    if (!res.ok || !res.text) return null;
+    return extractSignals(res.text);
   } catch {
     return null;
   }
