@@ -13,6 +13,7 @@ Stripe setup (B-40, MVP_SPEC 11, D-39, D-56).
 | `webhooks/credits.ts` | Pure: which grants a paid invoice earns (trial, period, proration). |
 | `webhooks/dal.ts` | Agency, `business_subscriptions`, plan and pack reads and writes. Credits only through `grant_credits`. |
 | `webhooks/emails.tsx` | Payment failed and trial ending emails (plain notices until B-62). |
+| `plan-change/` | Upgrade, add, downgrade and remove a business, cancel and keep the plan (B-44). See below. |
 
 ## Products and prices
 
@@ -94,3 +95,19 @@ stripe events resend <evt_id>   # a replay must answer {"received":true,"duplica
 ```
 
 `stripe trigger` makes its own customer with no `agency_id`, so those events answer 500 (no agency) by design. To see them handled, add the metadata of an `is_test` agency, for example `stripe trigger invoice.paid --add subscription:metadata.agency_id=<agency uuid>`.
+
+## Plan changes (B-44, MVP_SPEC 11.5, D-57)
+
+Server Actions in `plan-change/actions.ts`, exported from `index.ts`: `upgradeBusiness`, `addBusiness`, `downgradeBusiness`, `removeBusiness`, `cancelSubscription`, `keepSubscription`. Each checks `requireAgency()` and its zod input. Called without `previewedAt`, an action returns the price effect (`headline`, `details`, `amountCents`, `extraCredits`, `previewedAt`) from a Stripe invoice preview. Called again with that `previewedAt` (at most 15 minutes old), it applies the change and returns `message`.
+
+| Change | When | How |
+|---|---|---|
+| Upgrade, add a business | Now | `proration_behavior: "always_invoice"`, `proration_date` = the preview's, `payment_behavior: "error_if_incomplete"` (a declined card changes nothing). With a schedule attached, the schedule's current and next phase are edited instead. `addBusiness` checks `canAddBusiness` first. |
+| Downgrade, remove a business | Period end | A subscription schedule: the current phase as it is, then a one-month phase with the new items, then release. A second change edits that next phase. |
+| Cancel | Period end | Releases any schedule (pending changes are dropped), then `cancel_at_period_end: true`. `keepSubscription` undoes it. |
+
+- Nothing here writes to the database or grants credits. The webhook saves the new plans and grants the prorated credits when the invoice is paid, keyed by the invoice line ID.
+- Every item and phase item carries `metadata.business_id`, so the webhook can match items after a phase starts.
+- Stripe calls carry an idempotency key per change and preview, so a double click changes Stripe once.
+- The key also needs Subscription Schedules Write and Invoices Read (invoice previews).
+- Tests use an in-memory Stripe (`plan-change/fake-stripe.test-helpers.ts`) with a clock for the upgrade mid-month, downgrade at renewal and cancel scenarios. The same three still need a run with real Stripe test clocks once the sandbox exists (B-01, B-40).

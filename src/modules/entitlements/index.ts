@@ -6,8 +6,14 @@ import type { Entitlement, LimitEntitlement } from "./service";
 // The one place that answers "can this agency do X?" (D-60). Every action that spends credits or adds
 // data calls one of these after its auth guard, and shows `reason` when `allowed` is false.
 
-export async function canAddBusiness(agencyId: string): Promise<Entitlement> {
-  return rules.canAddBusiness(await loadAgencyFacts(agencyId));
+/**
+ * `alreadySaved`: the business already has a row (a finished onboarding draft being put on the plan, B-44),
+ * so it is in the count and must not be counted twice.
+ */
+export async function canAddBusiness(agencyId: string, options: { alreadySaved?: boolean } = {}): Promise<Entitlement> {
+  const facts = await loadAgencyFacts(agencyId);
+  const businessCount = options.alreadySaved ? Math.max(0, facts.businessCount - 1) : facts.businessCount;
+  return rules.canAddBusiness({ ...facts, businessCount });
 }
 
 /** Call before queueing a scan (B-29) and again in the worker right before holdCredits (B-26, F-20). */
