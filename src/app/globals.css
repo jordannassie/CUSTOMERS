@@ -111,7 +111,7 @@
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
 
-  /* Our own tokens, used as bg-surface, text-hint, bg-good-bg, bg-chatgpt, ... */
+  /* Our own tokens, used as bg-surface, text-text-hint, bg-good-bg, bg-chatgpt, ... */
   --color-surface: var(--cd-surface);
   --color-text-hint: var(--cd-text-hint);
   --color-primary-hover: var(--cd-primary-hover);

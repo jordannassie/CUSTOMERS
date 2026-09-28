@@ -40,7 +40,7 @@ export default function ScansList({ list, status }: { list: AdminScanList; statu
                   <span
                     className={cn(
                       "tabular text-[12px]",
-                      f.status === "failed" && count > 0 ? "font-semibold text-low-text" : "text-hint",
+                      f.status === "failed" && count > 0 ? "font-semibold text-low-text" : "text-text-hint",
                     )}
                   >
                     {count}
@@ -119,7 +119,7 @@ export default function ScansList({ list, status }: { list: AdminScanList; statu
                 </dl>
                 {row.error && <p className="text-[13px] text-low-text">{row.error}</p>}
                 <div className="flex items-center justify-between gap-3">
-                  <span className="tabular text-[12px] text-hint">{when(row.createdAt)} UTC</span>
+                  <span className="tabular text-[12px] text-text-hint">{when(row.createdAt)} UTC</span>
                   {row.status === "failed" && <RetryButton jobId={row.id} businessName={row.businessName} retry={retryScan} />}
                 </div>
               </li>
@@ -166,7 +166,7 @@ function Stat({ label, value }: { label: string; value: string }) {
 
 function Dash() {
   return (
-    <span aria-label="None" className="text-hint">
+    <span aria-label="None" className="text-text-hint">
       -
     </span>
   );
