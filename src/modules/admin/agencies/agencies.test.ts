@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { grantCredits } from "@/modules/credits";
 import { createAgencyWithBusiness, deleteTestUsers, service, signInAs, type TestSession } from "../admin.test-helpers";
 import type { Database } from "@/types/database.types";
@@ -56,9 +56,12 @@ async function auditRows(action: string) {
 
 let adminId: string;
 
+beforeAll(async () => {
+  adminId = (await signInAs(session, "admin-agency", { admin: true })).id;
+});
+
 beforeEach(async () => {
   stripe.client = null;
-  adminId = (await signInAs(session, "admin-agency", { admin: true })).id;
   agency = await createAgencyWithBusiness("Agency Actions");
 });
 
@@ -70,6 +73,7 @@ describe("agency actions (B-65)", () => {
     const result = await actions.suspendAgency({ agencyId: agency.agencyId, reason: REASON });
     expect(result).toMatchObject({ ok: false, status: 403 });
     expect((await readAgency()).status).toBe("active");
+    adminId = (await signInAs(session, "admin-agency", { admin: true })).id;
   });
 
   it("needs a reason", async () => {
