@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import AuthForm from "@/components/geo/AuthForm";
+import AuthFormSkeleton from "@/components/geo/AuthFormSkeleton";
 
 export const metadata = {
   title: "Sign up",
@@ -20,7 +21,7 @@ export default function SignupPage({ searchParams }: { searchParams: SearchParam
       <div className="w-full max-w-6xl flex flex-col md:flex-row items-center gap-8">
         {/* Left: Auth form defaulting to Sign Up tab */}
         <div className="w-full md:w-[420px] mx-auto md:mx-0">
-          <Suspense fallback={<AuthForm defaultMode="signup" />}>
+          <Suspense fallback={<AuthFormSkeleton />}>
             <FormWithError searchParams={searchParams} />
           </Suspense>
         </div>
