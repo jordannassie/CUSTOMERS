@@ -33,11 +33,15 @@ type Props = {
 
 // Every plan change is two steps (D-57): the action first returns the price effect, then applies it with that
 // preview's previewedAt, so the amount charged is the amount shown here.
+// A refusal (trial limit, plan already chosen) won't change on a retry; a stale price, a declined card or an
+// outage can.
+const failure = (r: { status: number; error: string }) => ({ message: r.error, retry: r.status === 402 || r.status === 409 || r.status >= 500 });
+
 export function ChangeDialog({ label, title, confirmLabel, action, input = {}, variant = "outline", tone, className }: Props) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [preview, setPreview] = useState<Preview | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<{ message: string; retry: boolean } | null>(null);
   const [loading, startLoading] = useTransition();
   const [saving, startSaving] = useTransition();
 
@@ -46,7 +50,7 @@ export function ChangeDialog({ label, title, confirmLabel, action, input = {}, v
     setError(null);
     startLoading(async () => {
       const result = await action(input);
-      if (!result.ok) return setError(result.error);
+      if (!result.ok) return setError(failure(result));
       if (result.data.step === "preview") setPreview(result.data);
     });
   }
@@ -59,7 +63,7 @@ export function ChangeDialog({ label, title, confirmLabel, action, input = {}, v
       if (!result.ok) {
         // Nothing changed; "Try again" fetches a fresh price before another confirm.
         setPreview(null);
-        return setError(result.error);
+        return setError(failure(result));
       }
       if (result.data.step === "done") {
         toast.success(result.data.message);
@@ -110,7 +114,7 @@ export function ChangeDialog({ label, title, confirmLabel, action, input = {}, v
           )}
           {error && (
             <p role="alert" className="rounded-md border border-low/30 bg-low-bg px-3 py-2 text-sm text-low-text">
-              {error}
+              {error.message}
             </p>
           )}
 
@@ -121,9 +125,11 @@ export function ChangeDialog({ label, title, confirmLabel, action, input = {}, v
               </Button>
             </DialogClose>
             {error && !preview && !loading ? (
-              <Button type="button" onClick={loadPreview}>
-                Try again
-              </Button>
+              error.retry && (
+                <Button type="button" onClick={loadPreview}>
+                  Try again
+                </Button>
+              )
             ) : (
               <Button
                 type="button"

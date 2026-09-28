@@ -14,6 +14,8 @@ type Props = { view: BillingView; actions: PlanActions; addBusinessHref: string 
 export function PlanBill({ view, actions, addBusinessHref }: Props) {
   const locked = !view.canChange || view.cancelAt !== null;
   const pastDue = view.status === "past_due";
+  // Removing the last business that stays would leave an empty plan; cancelling is the way to stop paying.
+  const staying = view.onPlan.filter((b) => b.pending?.kind !== "remove").length;
 
   return (
     <section aria-labelledby="plan-heading" className="rounded-md border border-border bg-surface">
@@ -38,7 +40,7 @@ export function PlanBill({ view, actions, addBusinessHref }: Props) {
               actions={actions}
               locked={locked}
               pastDue={pastDue}
-              canRemove={view.onPlan.length > 1}
+              canRemove={staying > 1}
             />
           ))}
         </ul>
@@ -51,6 +53,9 @@ export function PlanBill({ view, actions, addBusinessHref }: Props) {
             {view.notOnPlan.map((b) => (
               <li key={b.id} className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                 <span className="text-sm">{b.name}</span>
+                {pastDue && !locked && (
+                  <span className="text-[13px] text-muted-foreground">Update your card first, then you can add it.</span>
+                )}
                 {!locked && !pastDue && (
                   <span className="flex flex-wrap gap-2">
                     {view.plans.map((p) => (
@@ -104,37 +109,45 @@ function BusinessLine({
   const { plan, pending } = business;
   const others = view.plans.filter((p) => p.id !== plan.id);
   return (
-    <li className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-start sm:justify-between" data-testid={`plan-line-${business.id}`}>
-      <div className="min-w-0">
-        <p className="flex flex-wrap items-center gap-2">
-          <span className="text-[15px] font-medium">{business.name}</span>
-          <Badge variant="tint">{plan.name}</Badge>
-        </p>
-        <p className="mt-1 text-[13px] text-muted-foreground">
-          {plan.monthlyCredits.toLocaleString("en-US")} credits a month
-        </p>
-        {pending && (
-          <p className="mt-1.5 text-[13px] font-medium text-mid-text" data-testid="pending-change">
-            {pending.kind === "remove"
-              ? `Comes off your plan on ${longDate(pending.at)}`
-              : `Moves to ${pending.planName} on ${longDate(pending.at)}`}
+    <li className="px-5 py-4" data-testid={`plan-line-${business.id}`}>
+      <div className="flex items-start justify-between gap-4">
+        <div className="min-w-0">
+          <p className="flex flex-wrap items-center gap-2">
+            <span className="text-[15px] font-medium">{business.name}</span>
+            <Badge variant="tint">{plan.name}</Badge>
           </p>
-        )}
-        {!locked && (
-          <div className="mt-3 flex flex-wrap gap-2">
-            {others.map((p) =>
-              p.priceCents > plan.priceCents ? (
-                !pastDue && (
-                  <ChangeDialog
-                    key={p.id}
-                    label={`Upgrade to ${p.name}`}
-                    title={`Upgrade ${business.name} to ${p.name}?`}
-                    confirmLabel="Upgrade now"
-                    action={actions.upgrade}
-                    input={{ businessId: business.id, planId: p.id }}
-                  />
-                )
-              ) : (
+          <p className="mt-1 text-[13px] text-muted-foreground">
+            {plan.monthlyCredits.toLocaleString("en-US")} credits a month
+          </p>
+          {pending && (
+            <p className="mt-1.5 text-[13px] font-medium text-mid-text" data-testid="pending-change">
+              {pending.kind === "remove"
+                ? `Comes off your plan on ${longDate(pending.at)}`
+                : `Moves to ${pending.planName} on ${longDate(pending.at)}`}
+            </p>
+          )}
+        </div>
+        <p className="shrink-0 text-right text-[15px] font-medium tabular-nums">
+          {formatUsd(plan.priceCents)}
+          <span className="block text-[13px] font-normal text-muted-foreground sm:inline"> a month</span>
+        </p>
+      </div>
+      {!locked && (
+        <div className="mt-3 flex flex-wrap gap-2">
+          {others.map((p) =>
+            p.priceCents > plan.priceCents ? (
+              !pastDue && (
+                <ChangeDialog
+                  key={p.id}
+                  label={`Upgrade to ${p.name}`}
+                  title={`Upgrade ${business.name} to ${p.name}?`}
+                  confirmLabel="Upgrade now"
+                  action={actions.upgrade}
+                  input={{ businessId: business.id, planId: p.id }}
+                />
+              )
+            ) : (
+              !(pending?.kind === "plan" && pending.planName === p.name) && (
                 <ChangeDialog
                   key={p.id}
                   label={`Change to ${p.name}`}
@@ -143,27 +156,23 @@ function BusinessLine({
                   action={actions.downgrade}
                   input={{ businessId: business.id, planId: p.id }}
                 />
-              ),
-            )}
-            {canRemove && pending?.kind !== "remove" && (
-              <ChangeDialog
-                label="Remove"
-                title={`Remove ${business.name} from your plan?`}
-                confirmLabel="Remove from plan"
-                action={actions.remove}
-                input={{ businessId: business.id }}
-                variant="ghost"
-                tone="danger"
-                className="text-low-text hover:bg-low-bg hover:text-low-text"
-              />
-            )}
-          </div>
-        )}
-      </div>
-      <p className="shrink-0 text-[15px] font-medium tabular-nums sm:text-right">
-        {formatUsd(plan.priceCents)}
-        <span className="text-[13px] font-normal text-muted-foreground"> a month</span>
-      </p>
+              )
+            ),
+          )}
+          {canRemove && pending?.kind !== "remove" && (
+            <ChangeDialog
+              label="Remove"
+              title={`Remove ${business.name} from your plan?`}
+              confirmLabel="Remove from plan"
+              action={actions.remove}
+              input={{ businessId: business.id }}
+              variant="ghost"
+              tone="danger"
+              className="text-low-text hover:bg-low-bg hover:text-low-text"
+            />
+          )}
+        </div>
+      )}
     </li>
   );
 }

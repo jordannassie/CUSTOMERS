@@ -108,6 +108,7 @@ export async function fixturePlanChangeStripe(context: PlanChangeContext): Promi
 export const fixturePortal: PortalClient = {
   mode: "fixture",
   async createSession(_customer, returnUrl) {
-    return `${returnUrl}?portal=fixture`;
+    // Relative, so a dev server on another port than NEXT_PUBLIC_APP_URL comes back to itself.
+    return `${new URL(returnUrl).pathname}?portal=fixture`;
   },
 };

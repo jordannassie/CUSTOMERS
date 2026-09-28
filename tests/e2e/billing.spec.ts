@@ -98,11 +98,31 @@ test("trial: shows the first charge, adds a saved business at no cost today", as
   await expect(page.getByTestId("next-charge")).toHaveText("$149");
   await expect(page.getByText("Beta")).toHaveCount(0);
 
-  await change(page, "Add on Pro, $249 a month", "You pay nothing today. You're still on your free trial.", "Add to plan");
+  const harbor = page.getByTestId("not-on-plan").locator("li").filter({ hasText: "Harbor Dental" });
+  await harbor.getByRole("button", { name: "Add on Pro, $249 a month" }).click();
+  const dialog = page.getByTestId("change-dialog");
+  await expect(dialog.getByTestId("change-preview")).toContainText("You pay nothing today. You're still on your free trial.");
+  await dialog.getByRole("button", { name: "Add to plan" }).click();
   await expect(page.getByText("Harbor Dental is on your plan.")).toBeVisible();
   await expect(line(page, "Harbor Dental")).toContainText("Pro");
   await expect(page.getByTestId("not-on-plan")).toHaveCount(0);
   await expect(page.getByTestId("next-charge")).toHaveText("$398");
+});
+
+test("trial: a third saved business shows the trial limit instead of a price", async ({ page }) => {
+  await logIn(page, {
+    status: "trialing",
+    businesses: [
+      { name: "Northside Plumbing", planId: "starter" },
+      { name: "Harbor Dental", planId: "starter" },
+      { name: "Corner Bakery", planId: null },
+    ],
+  });
+  await page.getByRole("button", { name: "Add on Starter, $149 a month" }).click();
+  const dialog = page.getByTestId("change-dialog");
+  await expect(dialog.getByRole("alert")).toContainText("Your trial includes 2 businesses.");
+  await expect(dialog.getByRole("button", { name: "Add to plan" })).toHaveCount(0);
+  await expect(dialog.getByRole("button", { name: "Try again" })).toHaveCount(0);
 });
 
 test("active: upgrade, remove at renewal, cancel and keep, and the portal", async ({ page }) => {
