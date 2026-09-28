@@ -2,12 +2,12 @@ import { LayoutDashboard, Lightbulb, Link2, MessageCircleQuestion, Settings, Use
 
 export type NavItem = { label: string; href: string; icon: LucideIcon; alsoActiveOn?: string[] };
 
-// D-31. Hrefs point at the current pages; B-51 to B-54 move the rest to /questions and so on.
+// D-31. Hrefs point at the current pages; B-51 moves Opportunities.
 export const APP_NAV: NavItem[] = [
   { label: "Overview", href: "/dashboard", icon: LayoutDashboard },
   { label: "Competitors", href: "/competitors", icon: Users },
   { label: "Opportunities", href: "/dashboard/opportunities", icon: Lightbulb },
-  { label: "Questions", href: "/dashboard/prompts", icon: MessageCircleQuestion },
+  { label: "Questions", href: "/questions", icon: MessageCircleQuestion },
   { label: "Sources", href: "/sources", icon: Link2 },
   { label: "Settings", href: "/settings", icon: Settings, alsoActiveOn: ["/dashboard/billing"] },
 ];
