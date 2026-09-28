@@ -191,3 +191,12 @@ test("Run scan: the score appears when the scan finishes, without a reload", asy
   await expect(page.getByTestId("no-score")).toHaveCount(0);
   await expect(page.getByTestId("last-scan")).toHaveText(/^Last scan /);
 });
+
+test("old Visibility and Reports bookmarks land on the Overview (B-58)", async ({ page }) => {
+  await seedBusiness(page);
+  for (const path of ["/dashboard/visibility", "/dashboard/reports"]) {
+    await page.goto(path);
+    await expect(page, path).toHaveURL((url) => url.pathname === "/dashboard");
+    await expect(page.getByRole("heading", { level: 1, name: "Bean There Coffee" })).toBeVisible();
+  }
+});
