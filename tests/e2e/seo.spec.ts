@@ -43,6 +43,19 @@ test.describe("desktop only", () => {
     expect(descriptions.size).toBe(PUBLIC_PAGES.length);
     expect(images.size).toBe(1);
   });
+
+  // Once the image optimizer has run, a generated icon used to 500 in dev (BUG-028).
+  test("the favicon and home screen icon load after an optimized image", async ({ page, request }) => {
+    const optimized = await request.get("/_next/image?url=%2Fimages%2Flogos%2Flogo-black.png&w=256&q=75");
+    expect(optimized.status()).toBe(200);
+    await page.goto("/");
+    for (const rel of ["icon", "apple-touch-icon"]) {
+      const href = await page.locator(`link[rel="${rel}"]`).getAttribute("href");
+      const response = await request.get(href!);
+      expect(response.status(), rel).toBe(200);
+      expect(response.headers()["content-type"], rel).toBe("image/png");
+    }
+  });
 });
 
 test("contact form sends the hidden spam field to the server", async ({ page }) => {
