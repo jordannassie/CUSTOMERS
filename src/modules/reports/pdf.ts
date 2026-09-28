@@ -54,7 +54,8 @@ export async function renderPdf(url: string, title: string): Promise<Uint8Array>
     return env.PDF_RENDERER === "chromium" ? await withChromium(url, title, signal) : await withBrowserless(url, title, signal);
   } catch (error) {
     if (error instanceof PdfError) throw error;
-    throw new PdfError(`PDF render failed: ${error instanceof Error ? error.name : "unknown"}`, { cause: error });
+    const reason = error instanceof Error ? error.message.split("\n")[0].replace(/\/r\/[\w-]+/g, "/r/<token>") : "unknown";
+    throw new PdfError(`PDF render failed: ${reason}`, { cause: error });
   }
 }
 
