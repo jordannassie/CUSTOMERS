@@ -66,10 +66,11 @@ export async function revokeShare(agencyId: string, id: string): Promise<boolean
   const { data: share, error } = await db.from("report_shares").select("business_id").eq("id", id).maybeSingle();
   if (error) throw new Error(`Reports: could not read the share link: ${error.message}`);
   if (!share || !(await ownsBusiness(agencyId, share.business_id))) return false;
+  // Every live link for the business, so a second link from a double click can never stay on unseen.
   const { error: updateError } = await db
     .from("report_shares")
     .update({ revoked_at: new Date().toISOString() })
-    .eq("id", id)
+    .eq("business_id", share.business_id)
     .is("revoked_at", null);
   if (updateError) throw new Error(`Reports: could not turn off the share link: ${updateError.message}`);
   return true;

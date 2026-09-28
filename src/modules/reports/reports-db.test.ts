@@ -147,6 +147,18 @@ describe("share links", () => {
     expect(await createShareLink({ businessId: "not-a-uuid" })).toMatchObject({ ok: false, status: 400 });
   });
 
+  it("turns off every live link for the business, even one made by a racing double click", async () => {
+    const owner = await createOwner();
+    session = owner.client;
+    const stray = "s".repeat(43);
+    await service.from("report_shares").insert({ business_id: owner.businessId, token: stray }).throwOnError();
+    const link = await createShareLink({ businessId: owner.businessId });
+    if (!link.ok) throw new Error("create failed");
+    expect(await revokeShareLink({ id: link.data.id })).toMatchObject({ ok: true });
+    expect(await getSharedReport(stray)).toBeNull();
+    expect(await getSharedReport(tokenOf(link.data.path))).toBeNull();
+  });
+
   it("shows nothing for unknown or malformed tokens", async () => {
     expect(await getSharedReport("A".repeat(43))).toBeNull();
     expect(await getSharedReport("' or 1=1 --")).toBeNull();
