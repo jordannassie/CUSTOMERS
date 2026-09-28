@@ -8,8 +8,8 @@ import { defineConfig } from "vitest/config";
 const TEST_ENV_FILE = ".env.test.local";
 const QUEUE_CLAIM_TESTS = "src/modules/jobs/queue.test.ts";
 const testEnv = existsSync(TEST_ENV_FILE) ? parseEnv(readFileSync(TEST_ENV_FILE, "utf8")) : {};
-// Database tests share the machine with other workers' stacks (BUG-010); 5s timed out under that load.
-const DB_TEST_TIMEOUT = 20_000;
+// Database tests share the machine with other workers' stacks (BUG-010); 5s and 20s timed out under that load.
+const DB_TEST_TIMEOUT = 60_000;
 
 export default defineConfig({
   resolve: {

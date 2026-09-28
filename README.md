@@ -124,7 +124,7 @@ npm run test:db:stop           # stop this worktree's stack, delete its data and
 bash scripts/test-db.sh stop 3 # the same for slot 3, after its worktree was removed
 ```
 
-Each stack uses about 550 MiB of Docker memory (storage about 240, rest about 100, kong about 100, db about 90, the rest small). Studio, realtime, analytics and the other unused services stay off. With 8 GiB given to Docker, five stacks fit beside a few other projects; stop stacks of finished worktrees to get the memory back.
+Each stack uses about 550 MiB of Docker memory when idle and about 800 MiB during a test run (storage about 240, rest about 190, kong about 150, db about 150, auth and inbucket small). Studio, realtime, analytics and the other unused services stay off. Five stacks need about 4 GiB, so give Docker at least 8 GiB and stop stacks of finished worktrees (and other projects' stacks) to get the memory back.
 
 ## Branches
 
