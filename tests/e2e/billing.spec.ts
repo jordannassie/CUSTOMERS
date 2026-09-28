@@ -169,10 +169,14 @@ test("past due: explains the failed payment and offers no upgrades", async ({ pa
   });
   await expect(page.getByTestId("plan-status")).toContainText("Payment failed");
   await expect(page.getByTestId("past-due-notice")).toContainText("Your last payment didn't go through");
+  // Said once on this page: the app banner steps aside for the page's own notice.
+  await expect(page.locator('[data-kind="past_due"]')).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Manage card and invoices" })).toBeVisible();
   await expect(page.getByRole("button", { name: /^Upgrade to/ })).toHaveCount(0);
   await expect(page.getByRole("button", { name: /^Add on/ })).toHaveCount(0);
   await expect(page.getByRole("link", { name: "Buy credits" }).first()).toHaveAttribute("href", "/settings/credits");
+  await page.goto("/settings/credits");
+  await expect(page.locator('[data-kind="past_due"]')).toContainText("Your last payment didn't go through");
 });
 
 test("no plan yet, and old billing links land here", async ({ page }) => {

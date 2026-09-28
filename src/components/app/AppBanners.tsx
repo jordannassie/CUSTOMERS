@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { AlertTriangle, Info, PauseCircle, type LucideIcon } from "lucide-react";
 import { cn } from "cn";
 
@@ -16,7 +19,10 @@ const TONE: Record<AppBanner["tone"], { box: string; icon: LucideIcon }> = {
 };
 
 // Global slot above every app page: trial, past due, out of credits, suspended.
-export function AppBanners({ banners }: { banners: AppBanner[] }) {
+export function AppBanners({ banners: all }: { banners: AppBanner[] }) {
+  const pathname = usePathname();
+  // The billing page explains a failed payment itself, so the banner would say it twice.
+  const banners = all.filter((b) => !(b.kind === "past_due" && b.action?.href === pathname));
   if (banners.length === 0) return null;
   return (
     <div className="flex flex-col gap-2 px-4 pt-4 sm:px-8 sm:pt-6" data-testid="app-banners">
