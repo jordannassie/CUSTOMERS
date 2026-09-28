@@ -1,7 +1,7 @@
 import { z } from "zod";
 
-// The five MVP emails (D-37). Matches the check on email_log.type (migration 035).
-export const EMAIL_TYPES = ["welcome", "trial_ending", "payment_failed", "low_credits", "weekly_report"] as const;
+// The five MVP emails (D-37) plus the admin alert (B-69). Matches the check on email_log.type (migration 037).
+export const EMAIL_TYPES = ["welcome", "trial_ending", "payment_failed", "low_credits", "weekly_report", "system_alert"] as const;
 export type EmailType = (typeof EMAIL_TYPES)[number];
 
 // Emails a user can turn off. Only the weekly report needs an unsubscribe link by law (MVP_SPEC 10).

@@ -40,7 +40,7 @@ describe("admin overview (B-65)", () => {
     expect(overview.revenue).toEqual({ state: "ok", cents: 123_400, mode: "stripe" });
   });
 
-  it("counts a real trial, lists recent signups and failed scans newest first, and has no alerts yet", async () => {
+  it("counts a real trial, lists recent signups and failed scans newest first, and open alerts", async () => {
     const before = await loadOverview(new Date(), null);
     const owner = await createUser("overview-real");
     const { data: real, error } = await service
@@ -68,7 +68,8 @@ describe("admin overview (B-65)", () => {
     expect(signedUp.length).toBeGreaterThan(0);
     expect(after.recentFailedScans.length).toBeGreaterThan(0);
     expect(after.recentFailedScans.length).toBeLessThanOrEqual(6);
-    expect(after.openAlerts).toEqual([]);
+    // Alert tests run at the same time, so only the shape is checked here (B-69 covers the content).
+    for (const a of after.openAlerts) expect(["info", "warning", "critical"]).toContain(a.severity);
 
     await service.from("agencies").delete().eq("id", real.id);
   });

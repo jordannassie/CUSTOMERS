@@ -68,6 +68,11 @@ export async function isCurrentUserAdmin(): Promise<boolean> {
   return !!user && isAdmin(user);
 }
 
+/** Where admin-only emails go, such as system alerts (B-69). */
+export function adminEmails(): string[] {
+  return parseAdminEmails(env.ADMIN_EMAILS);
+}
+
 // Only ADMIN_EMAILS is trusted; profile fields are not an admin source.
 function isAdmin(user: SessionUser): boolean {
   return isAdminEmail(user.email, parseAdminEmails(env.ADMIN_EMAILS));

@@ -47,6 +47,8 @@ export const env = createEnv({
     WORKER_IN_PROCESS: flag,
 
     ADMIN_EMAILS: optional,
+    // Admins get an alert when real AI cost for the UTC day passes this (B-69). Unset turns that check off.
+    ALERT_DAILY_COST_USD: z.coerce.number().positive().optional(),
 
     BILLING_ENABLED: flag,
     BETA_FREE_ACCESS: flag,
@@ -87,6 +89,7 @@ export const env = createEnv({
     WORKER_URL: process.env.WORKER_URL,
     WORKER_IN_PROCESS: process.env.WORKER_IN_PROCESS,
     ADMIN_EMAILS: process.env.ADMIN_EMAILS,
+    ALERT_DAILY_COST_USD: process.env.ALERT_DAILY_COST_USD,
     BILLING_ENABLED: process.env.BILLING_ENABLED,
     BETA_FREE_ACCESS: process.env.BETA_FREE_ACCESS,
     TRIAL_ENABLED: process.env.TRIAL_ENABLED,

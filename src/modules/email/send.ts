@@ -35,8 +35,10 @@ function isUnsubscribeTopic(type: EmailType): type is UnsubscribeTopic {
  * Provider failures come back as { status: "failed" } so a webhook or cron job can carry on;
  * missing configuration throws, since no email of that kind could ever go out.
  */
-export async function sendEmail(input: SendEmailInput, deps?: SendEmailDeps): Promise<SendEmailResult> {
-  const { client, store, settings } = deps ?? { client: getEmailClient(), store: createEmailStore(), settings: getEmailSettings() };
+export async function sendEmail(input: SendEmailInput, deps: Partial<SendEmailDeps> = {}): Promise<SendEmailResult> {
+  const client = deps.client ?? getEmailClient();
+  const store = deps.store ?? createEmailStore();
+  const settings = deps.settings ?? getEmailSettings();
   const log = { type: input.type, agencyId: input.agencyId, to: input.to, idempotencyKey: input.idempotencyKey };
 
   if (input.idempotencyKey && (await store.hasSent(input.idempotencyKey))) return { status: "skipped", reason: "duplicate" };

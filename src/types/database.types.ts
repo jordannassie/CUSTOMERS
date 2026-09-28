@@ -1287,6 +1287,27 @@ export type Database = {
           },
         ]
       }
+      provider_errors: {
+        Row: {
+          created_at: string
+          id: string
+          message: string | null
+          provider: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message?: string | null
+          provider: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message?: string | null
+          provider?: string
+        }
+        Relationships: []
+      }
       question_library: {
         Row: {
           active: boolean
@@ -1602,6 +1623,7 @@ export type Database = {
           emailed_at: string | null
           id: string
           kind: string
+          last_seen_at: string
           message: string
           resolved_at: string | null
           severity: string
@@ -1612,6 +1634,7 @@ export type Database = {
           emailed_at?: string | null
           id?: string
           kind: string
+          last_seen_at?: string
           message: string
           resolved_at?: string | null
           severity?: string
@@ -1622,6 +1645,7 @@ export type Database = {
           emailed_at?: string | null
           id?: string
           kind?: string
+          last_seen_at?: string
           message?: string
           resolved_at?: string | null
           severity?: string
@@ -2033,6 +2057,15 @@ export type Database = {
         Args: { p_check_id: string; p_hold_id: string }
         Returns: boolean
       }
+      check_system_alerts: {
+        Args: {
+          p_daily_cost_limit_usd?: number
+          p_failed_scan_share?: number
+          p_provider_error_count?: number
+          p_stuck_minutes?: number
+        }
+        Returns: string[]
+      }
       claim_scan_jobs: {
         Args: { p_limit: number }
         Returns: {
@@ -2098,6 +2131,15 @@ export type Database = {
         Args: { p_agency_id: string; p_amount: number; p_scan_job_id: string }
         Returns: string
       }
+      raise_system_alert: {
+        Args: {
+          p_details: Json
+          p_kind: string
+          p_message: string
+          p_severity: string
+        }
+        Returns: string
+      }
       release_hold: { Args: { p_hold_id: string }; Returns: number }
       requeue_scan_job: {
         Args: {
@@ -2110,6 +2152,7 @@ export type Database = {
       }
       reset_stuck_jobs: { Args: never; Returns: number }
       retry_scan_job: { Args: { p_job_id: string }; Returns: string }
+      run_system_alerts: { Args: never; Returns: number }
     }
     Enums: {
       [_ in never]: never

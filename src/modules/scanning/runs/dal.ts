@@ -229,3 +229,11 @@ export function liveNameExtractor(): ExtractNames | null {
   const key = env.ANTHROPIC_API_KEY;
   return key ? createNameExtractor(key) : null;
 }
+
+/** Feeds the provider error spike alert (B-69, MVP_SPEC 22). Never throws: a lost row must not fail the check. */
+export async function recordProviderError(provider: ProviderId, message: string): Promise<void> {
+  const { error } = await createServiceClient()
+    .from("provider_errors")
+    .insert({ provider, message: message.slice(0, 500) });
+  if (error) console.error(`Could not record the ${provider} error: ${error.message}`);
+}
