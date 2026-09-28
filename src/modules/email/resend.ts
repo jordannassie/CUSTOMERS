@@ -27,6 +27,17 @@ export function createResendClient(apiKey: string): EmailClient {
   };
 }
 
+/** Logs instead of sending, for dev servers whose .env.local holds a real key. */
+export function createLogEmailClient(): EmailClient {
+  let sent = 0;
+  return {
+    async send(email) {
+      console.log(`email (not sent): ${email.subject} to ${email.to}`);
+      return { id: `log_${++sent}` };
+    },
+  };
+}
+
 let client: EmailClient | null = null;
 
 /** The app's only Resend client, created lazily so builds without a key still pass. */

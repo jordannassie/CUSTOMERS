@@ -26,4 +26,8 @@ export { agencyFilter, AGENCY_FILTERS, MAX_CREDIT_CHANGE, MAX_TRIAL_DAYS, type A
 export { RESTORE_DAYS } from "./agencies/service";
 export { adminStripeConnected } from "./agencies/stripe";
 export { loadOverview, type AdminOverview } from "./overview/dal";
-export { aiCostShare, type OpenAlert, type Revenue } from "./overview/service";
+export { aiCostShare, type Revenue } from "./overview/service";
+export { resolveAlert } from "./alerts/actions";
+export { handleAlertsRequest } from "./alerts/cron";
+export { ALERT_KINDS, type AlertKind } from "./alerts/schema";
+export type { OpenAlert } from "./alerts/service";

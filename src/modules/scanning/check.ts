@@ -10,7 +10,7 @@ import { storeExtraction } from "./extract-store";
 import { detectMentions, type MentionTarget } from "./mentions";
 import { CHECK_MODELS } from "./providers/models";
 import type { CheckInput, CheckLocation, ProviderId, RunCheck } from "./providers/types";
-import { insertExtractionUsage, saveCheckResult } from "./runs/dal";
+import { insertExtractionUsage, recordProviderError, saveCheckResult } from "./runs/dal";
 
 export type CheckTask = { checkId: string; promptId: string; provider: ProviderId; question: string };
 
@@ -47,8 +47,11 @@ export async function runOneCheck(task: CheckTask, ctx: CheckContext): Promise<C
       await recordCheckUsage({ accountUserId: ctx.ownerUserId, businessId: ctx.businessId, input, answer });
     }
   } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    // Recorded answers are not provider calls, so test agencies never count toward the error spike alert (B-69).
+    if (!ctx.isTest) await recordProviderError(task.provider, message);
     // A failed check is never charged (D-53), whatever the reason.
-    return { ok: false, error: `${task.provider}: ${err instanceof Error ? err.message : String(err)}` };
+    return { ok: false, error: `${task.provider}: ${message}` };
   }
 
   const mentions = detectMentions(answer.answerText, ctx.business, ctx.competitors);

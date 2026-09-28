@@ -5,7 +5,9 @@ import { emailsOf } from "../businesses/dal";
 import { startOfMonthUtc } from "../businesses/service";
 import { adminStripeClient, type AdminStripeClient } from "../agencies/stripe";
 import { loadUsageCostSince } from "../usage-cost/dal";
-import { openAlertsPlaceholder, type OpenAlert, type Revenue } from "./service";
+import { listOpenAlerts } from "../alerts/dal";
+import type { OpenAlert } from "../alerts/service";
+import type { Revenue } from "./service";
 
 const RECENT = 6;
 
@@ -32,7 +34,7 @@ export async function loadOverview(now = new Date(), stripe: AdminStripeClient |
   const db = createServiceClient();
   const monthStart = startOfMonthUtc(now);
 
-  const [agencies, trials, paying, usage, revenue, signups, failed] = await Promise.all([
+  const [agencies, trials, paying, usage, revenue, signups, failed, openAlerts] = await Promise.all([
     db.from("agencies").select("id", { count: "exact", head: true }).eq("is_test", false).neq("status", "deleted"),
     db.from("agencies").select("id", { count: "exact", head: true }).eq("is_test", false).eq("status", "trialing"),
     db
@@ -53,6 +55,7 @@ export async function loadOverview(now = new Date(), stripe: AdminStripeClient |
       .eq("status", "failed")
       .order("created_at", { ascending: false })
       .limit(RECENT),
+    listOpenAlerts(db),
   ]);
   for (const [what, r] of [["agencies", agencies], ["trials", trials], ["paying businesses", paying]] as const) {
     if (r.error) fail(what, r.error);
@@ -85,7 +88,7 @@ export async function loadOverview(now = new Date(), stripe: AdminStripeClient |
       error: j.error,
       at: j.finished_at ?? j.created_at,
     })),
-    openAlerts: openAlertsPlaceholder(),
+    openAlerts,
   };
 }
 

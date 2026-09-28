@@ -1,11 +1,12 @@
 import { Suspense } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { loadOverview } from "@/modules/admin";
+import { loadOverview, resolveAlert } from "@/modules/admin";
 import { requireAdmin } from "@/modules/auth";
 import { formatDate } from "./businesses/_components/scan-parts";
 import { credits } from "./agencies/_components/agency-parts";
 import MoneyPanel from "./_overview/money-panel";
-import { FailedScans, OpenAlerts, RecentSignups } from "./_overview/lists";
+import { FailedScans, RecentSignups } from "./_overview/lists";
+import OpenAlerts from "./_overview/open-alerts";
 
 export const metadata = { title: "Overview" };
 
@@ -32,6 +33,9 @@ async function Overview() {
         </p>
       </header>
 
+      {/* Problems come first while there are any; an empty list sits at the bottom. */}
+      {o.openAlerts.length > 0 && <OpenAlerts rows={o.openAlerts} resolve={resolveAlert} />}
+
       <dl className="grid grid-cols-2 gap-px overflow-hidden rounded-md border border-border bg-border lg:grid-cols-4">
         <Stat label="Agencies" value={o.agencies} />
         <Stat label="Active trials" value={o.activeTrials} />
@@ -46,7 +50,7 @@ async function Overview() {
         <FailedScans rows={o.recentFailedScans} />
       </div>
 
-      <OpenAlerts rows={o.openAlerts} />
+      {o.openAlerts.length === 0 && <OpenAlerts rows={o.openAlerts} resolve={resolveAlert} />}
     </>
   );
 }
