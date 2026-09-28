@@ -89,7 +89,9 @@ export function FirstScan({ businessId, businessName, models, questions, initial
         <p className="text-[15px] leading-relaxed text-muted-foreground">
           {failed
             ? `We couldn't finish checking ${businessName}.`
-            : `We're asking ${names} ${asked} your customers ask, and looking for ${businessName} in every answer.`}
+            : phase === "done"
+              ? `We asked ${names} ${asked} your customers ask and looked for ${businessName} in every answer.`
+              : `We're asking ${names} ${asked} your customers ask, and looking for ${businessName} in every answer.`}
         </p>
       </header>
 
