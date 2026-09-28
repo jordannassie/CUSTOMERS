@@ -4,6 +4,7 @@ export { getWorkspace, type Workspace, type WorkspaceBusiness } from "./dal";
 export { switchBusinessInput, type SwitchBusinessInput } from "./schema";
 export {
   BILLING_HREF,
+  BUY_CREDITS_HREF,
   pickBanners,
   shortBalance,
   usageWidget,

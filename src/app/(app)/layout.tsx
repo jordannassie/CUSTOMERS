@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { AppShell } from "@/components/app/AppShell";
 import { AppShellSkeleton, PageSkeleton } from "@/components/app/AppShellSkeleton";
 import {
-  BILLING_HREF,
+  BUY_CREDITS_HREF,
   getWorkspace,
   pickBanners,
   shortBalance,
@@ -29,7 +29,7 @@ async function AppFrame({ children }: { children: React.ReactNode }) {
 
   const now = new Date();
   const { usage, account } = workspace;
-  const widget = usage && account ? { ...usageWidget(usage, account, now), buyCreditsHref: BILLING_HREF } : null;
+  const widget = usage && account ? { ...usageWidget(usage, account, now), buyCreditsHref: BUY_CREDITS_HREF } : null;
 
   return (
     <AppShell

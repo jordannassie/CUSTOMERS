@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { pickBanners, shortBalance, usageWidget, type AccountState, type UsageNumbers } from "./service";
+import { BUY_CREDITS_HREF, pickBanners, shortBalance, usageWidget, type AccountState, type UsageNumbers } from "./service";
 
 const now = new Date("2026-09-27T12:00:00Z");
 const inDays = (days: number) => new Date(now.getTime() + days * 24 * 60 * 60 * 1000);
@@ -83,6 +83,11 @@ describe("pickBanners", () => {
 
   it("orders past due before out of credits", () => {
     expect(kinds(usage({ balance: -3 }), { ...active, status: "past_due" })).toEqual(["past_due", "out_of_credits"]);
+  });
+
+  it("links the out of credits banner to buying credits", () => {
+    const [banner] = pickBanners(usage({ balance: 0 }), active, now);
+    expect(banner.action).toEqual({ label: "Buy credits", href: BUY_CREDITS_HREF });
   });
 
   it("shows only the suspended banner for a paused account", () => {
