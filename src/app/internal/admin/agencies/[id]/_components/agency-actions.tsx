@@ -6,8 +6,24 @@ import { Label } from "@/components/ui/label";
 import ActionCard, { type Outcome } from "./action-card";
 
 type Base = { agencyId: string; reason: string };
+
+const DAY = 24 * 60 * 60 * 1000;
+
+// Same rule as the server's extendedTrialEnd: days are added to the later of the trial end and now.
+function newTrialEnd(current: string | null, days: number): string | null {
+  if (!Number.isInteger(days) || days < 1) return null;
+  const from = Math.max(current ? new Date(current).getTime() : 0, Date.now());
+  return new Date(from + days * DAY).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" });
+}
 type Props = {
-  agency: { id: string; status: string; isTest: boolean; hasSubscription: boolean; canRestore: boolean };
+  agency: {
+    id: string;
+    status: string;
+    isTest: boolean;
+    hasSubscription: boolean;
+    canRestore: boolean;
+    trialEndsAt: string | null;
+  };
   stripeConnected: boolean;
   maxCredits: number;
   maxTrialDays: number;
@@ -27,7 +43,9 @@ export default function AgencyActions({ agency, stripeConnected, maxCredits, max
   const suspended = agency.status === "suspended";
   // A new ID per submitted change, so a double click is applied once (D-55).
   const [requestId, setRequestId] = useState(() => crypto.randomUUID());
-  const ids = { amount: useId(), days: useId() };
+  const ids = { amount: useId(), days: useId(), preview: useId() };
+  const [trialDays, setTrialDays] = useState("7");
+  const trialPreview = newTrialEnd(agency.trialEndsAt, Number(trialDays));
 
   return (
     <div className="flex flex-col divide-y divide-border rounded-md border border-border bg-surface">
@@ -84,7 +102,23 @@ export default function AgencyActions({ agency, stripeConnected, maxCredits, max
       >
         <div className="flex flex-col gap-1.5">
           <Label htmlFor={ids.days}>Extra days (1 to {maxTrialDays})</Label>
-          <Input id={ids.days} name="days" type="number" inputMode="numeric" min={1} max={maxTrialDays} step={1} defaultValue={7} required className="max-w-40" />
+          <Input
+            id={ids.days}
+            name="days"
+            type="number"
+            inputMode="numeric"
+            min={1}
+            max={maxTrialDays}
+            step={1}
+            value={trialDays}
+            onChange={(e) => setTrialDays(e.target.value)}
+            aria-describedby={ids.preview}
+            required
+            className="max-w-40"
+          />
+          <p id={ids.preview} className="text-[13px] text-muted-foreground" data-testid="trial-preview">
+            {trialPreview ? `The trial will end on ${trialPreview}.` : "Enter a whole number of days."}
+          </p>
         </div>
       </ActionCard>
 
