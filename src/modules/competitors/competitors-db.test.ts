@@ -8,8 +8,6 @@ import type { FetchSignals } from "./places";
 
 // B-50 against the local database: what the page reads, that loading it stores no Places data (D-73),
 // and the one-click Track action.
-// Each test creates users and signs in; the shared local stack can be slow.
-vi.setConfig({ testTimeout: 30_000 });
 
 const service = createServiceClient();
 const userIds: string[] = [];
@@ -157,7 +155,9 @@ describe("loadCompetitorsPage", () => {
     ]);
     expect(view!.answers).toBe(3);
     expect(await snapshot(owner.businessId)).toEqual(before);
-    expect(JSON.stringify(before)).not.toMatch(/4\.7|320|beanhouse|Coffee shop/);
+    // Random ids and timestamps can contain a run like 320 or 4.7 by chance, so only stored values are checked.
+    const values = JSON.stringify(before, (key, value) => (["id", "created_at", "updated_at"].includes(key) ? undefined : value));
+    expect(values).not.toMatch(/4\.7|320|beanhouse|Coffee shop/);
   });
 
   it("returns null for another agency's business", async () => {

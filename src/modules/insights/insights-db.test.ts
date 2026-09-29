@@ -9,7 +9,6 @@ import { templateWriter } from "./template-writer";
 
 // B-51 against the local database: after a scan the reasons are stored as opportunities with
 // placeholders only (D-73), a new scan replaces the open ones, and the page fills values in live.
-vi.setConfig({ testTimeout: 30_000 });
 
 const service = createServiceClient();
 const userIds: string[] = [];

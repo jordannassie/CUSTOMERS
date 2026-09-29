@@ -5,7 +5,6 @@ import { env } from "@/lib/env";
 import { createServiceClient } from "@/lib/supabase/service";
 
 // B-59 against the local database: creating and turning off share links, and what the public report holds.
-vi.setConfig({ testTimeout: 30_000 });
 // Google values from the made-up fixtures, never a real Places call (D-73).
 vi.hoisted(() => vi.stubEnv("PLACES_FIXTURES", "true"));
 

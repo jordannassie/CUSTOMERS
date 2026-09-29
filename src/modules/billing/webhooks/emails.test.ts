@@ -1,5 +1,5 @@
 import type Stripe from "stripe";
-import { afterAll, describe, expect, it, vi } from "vitest";
+import { afterAll, describe, expect, it } from "vitest";
 import { sendEmail, type EmailClient } from "@/modules/email";
 import { trialChargeCents } from "./emails";
 import * as fx from "./fixtures.test-helpers";
@@ -7,7 +7,6 @@ import { cleanUp, harness, service, setup } from "./harness.test-helpers";
 
 // B-62: trial ending and payment failed, from a Stripe event to email_log, sent once however often Stripe repeats
 // the event. A fake mail client stands in for Resend, so nothing is ever sent.
-vi.setConfig({ testTimeout: 30_000 });
 afterAll(cleanUp);
 
 const DAY = fx.DAY;
