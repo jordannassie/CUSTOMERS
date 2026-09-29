@@ -1,8 +1,9 @@
 import "server-only";
 // Run a scan (B-26, MVP_SPEC 5.2, 4.2, D-53, D-54): hold the credits, run every question on every
 // chosen model, charge 1 credit per successful check, then return the rest of the hold.
-import { captureCredit, holdCredits, InsufficientCreditsError, isHoldOpen, releaseHold } from "@/modules/credits";
+import { captureCredits, holdCredits, InsufficientCreditsError, isHoldOpen, releaseHold } from "@/modules/credits";
 import { canRunScanJob, REASONS } from "@/modules/entitlements";
+import { captureBatcher } from "./capture-batch";
 import { checkIdFor, runOneCheck, type CheckContext, type CheckTask } from "./check";
 import type { ExtractNames } from "./extract";
 import type { MentionTarget } from "./mentions";
@@ -82,7 +83,7 @@ export async function runScan(jobId: string, overrides: Partial<ScanDeps> = {}):
   const saved = await listSavedCheckIds(run.id);
   const ctx = await checkContext(target, run.id, overrides);
 
-  let charged = 0;
+  const capture = captureBatcher((checkIds) => captureCredits(holdId, checkIds));
   const errors: string[] = [];
   await forEachLimited(tasks, CHECKS_AT_ONCE, async (task) => {
     const outcome = saved.has(task.checkId) ? { ok: true as const } : await runOneCheck(task, ctx.forProvider(task.provider));
@@ -91,8 +92,9 @@ export async function runScan(jobId: string, overrides: Partial<ScanDeps> = {}):
       return;
     }
     // Capture right after each check, so a scan cut off halfway has charged exactly what it saved.
-    if (await captureCredit(holdId, task.checkId)) charged++;
+    await capture.add(task.checkId);
   });
+  const charged = capture.charged();
 
   const released = await releaseHold(holdId);
   const allFailed = errors.length === tasks.length;
@@ -222,10 +224,20 @@ function summarise(errors: string[]): string {
     .slice(0, 1000);
 }
 
+// After a failure no new item starts, and the error is thrown only once the running ones end: the worker must
+// not requeue a job whose checks are still running.
 async function forEachLimited<T>(items: T[], limit: number, fn: (item: T) => Promise<void>): Promise<void> {
   let next = 0;
+  const failures: unknown[] = [];
   const worker = async () => {
-    while (next < items.length) await fn(items[next++]);
+    while (failures.length === 0 && next < items.length) {
+      try {
+        await fn(items[next++]);
+      } catch (error) {
+        failures.push(error);
+      }
+    }
   };
   await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker));
+  if (failures.length > 0) throw failures[0];
 }

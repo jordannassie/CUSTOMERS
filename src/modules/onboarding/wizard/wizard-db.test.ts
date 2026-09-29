@@ -167,13 +167,20 @@ describe("details, questions and models steps", () => {
     await service.from("businesses").update({ primary_city: "Springfield", industry: "Florist" }).eq("id", started.businessId);
 
     const { clients } = fakeQuestionClients({ write: [...FLORIST_WRITTEN] });
-    const [one, two] = await Promise.all([
-      loadQuestionsStep(userId, started.businessId, clients),
-      loadQuestionsStep(userId, started.businessId, clients),
-    ]);
+    // Loads that finish preparing in a different order than they save are what kept two sets before.
+    const slow = (ms: number) => ({
+      ...clients,
+      model: { ...clients.model, write: async (...args: Parameters<typeof clients.model.write>) => {
+        await new Promise((r) => setTimeout(r, ms));
+        return clients.model.write(...args);
+      } },
+    });
+    const loads = await Promise.all([0, 15, 5, 30, 10, 0].map((ms) => loadQuestionsStep(userId, started.businessId, slow(ms))));
     const rows = await service.from("tracked_prompts").select("prompt").eq("business_id", started.businessId);
     expect(rows.data).toHaveLength(12);
-    expect(one).toMatchObject({ questions: two && two !== "no-city" ? two.questions : [] });
+    const sets = loads.map((l) => (l && l !== "no-city" ? l.questions : []));
+    expect(new Set(sets.map((s) => JSON.stringify(s))).size).toBe(1);
+    expect(sets[0]).toHaveLength(12);
   });
 
   it("refuses another user's business", async () => {
