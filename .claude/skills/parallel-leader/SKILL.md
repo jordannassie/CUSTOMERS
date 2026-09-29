@@ -54,6 +54,8 @@ Claude Code, git, `gh` (logged in), `tmux`, `zsh`. macOS or Linux. Fast `node_mo
 - Parallel PRs touching the same file will conflict; expect rebase requests and keep shared docs out of worker PRs.
 - A shared local test database makes parallel test runs flaky; rerun or serialize DB-heavy tests.
 - Permission or classifier denials are not flags: report them to the user and stop that action.
+- `supabase start` can hang on a macOS keychain lookup (`security find-generic-password`); killing that lookup lets it continue.
+- Before reading a local diff, check the PR's changed files (`gh pr view N --json files`): a branch that went stale against a moving base shows the base's new work as deletions.
 - Answer the user in short status bullets; they check in often.
 
 ## Handoff (when your context passes about 75%)
@@ -63,3 +65,5 @@ Make sure `~/.leader/<repo>/state.md` is current (it already holds open PRs, ses
 ## Test isolation
 
 Parallel workers must not share one test database: resets and seed data collide and every test run becomes flaky. Give each worktree its own local stack or database (unique project id and port block per worktree), and stop a worktree's stack when its worktree is removed.
+
+After merging a worker's PR, stop that worktree's stack before removing the worktree (for a Supabase CLI stack: list stacks with the project's script, for example `npm run test:db:list`, then `supabase stop --project-id <project>-<slot> --no-backup`, and free the slot). In shell cleanup, guard every variable with `${VAR:?}` so an empty value fails instead of hitting the wrong path, for example `rm -rf "${WT:?}/node_modules"`.
