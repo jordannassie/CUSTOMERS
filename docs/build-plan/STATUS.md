@@ -13,6 +13,8 @@ Nothing in progress. Up to five worker sessions at once are allowed since 2026-0
 Into main: B-06, B-07, B-10, B-11, B-12, B-13. B-24 code (#32), open for labelling.
 Into mvp: B-08, B-09, B-14 to B-17, B-20 to B-23, B-26 to B-31, B-36, B-38, B-40 to B-44, B-46, B-48 to B-50, B-52 to B-62, B-64 to B-74, B-82. Code merged, open for labelling: B-25 (#49), B-32 (#67), B-33 (#69), B-34 (#64), B-51 (#77).
 Fixes into mvp: admin layout fix (#62), atomic `retry_scan_job` for admin Retry (#61), INFRA-01 isolated local test database per worktree (#88, fixes BUG-010), bug batch (#100, fixes BUG-023, BUG-028 to BUG-031, BUG-034, BUG-039, BUG-040), shared store for public rate limits (#101, SEC-07 follow-up to B-82, migration 039).
+Fixes into mvp on 2026-09-29: old wording, header and contact title, unused packages (#104, fixes BUG-002, BUG-003, BUG-027), first scan waits for trial credits (#106, F-48), flaky tests (#107, fixes BUG-022, BUG-035, BUG-037, BUG-038), whole-product check (E2E-0929) wording and UI (#108, fixes BUG-043, BUG-046 to BUG-051), slow backend handling, credit capture under load and question race (#109, fixes BUG-044, BUG-045, BUG-052, BUG-053, migrations 040 and 041).
+Tooling into main: leader fixes (#105, fixes BUG-033, BUG-041, BUG-042).
 
 Open questions for people are in [FLAGS.md](./FLAGS.md).
 
@@ -33,3 +35,5 @@ Open questions for people are in [FLAGS.md](./FLAGS.md).
 021_core_tables, 022_credit_tables, 023_credit_functions (applied by B-13 after a backup).
 
 Not yet on customers-dev either (F-24): 024_legacy_data_columns, 025_backfill_existing_data (on mvp).
+
+Waiting for customers-dev, staging and live before launch: 036 to 041 (F-47, F-60, F-68).
