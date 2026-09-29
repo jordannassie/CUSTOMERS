@@ -95,7 +95,7 @@ export default function AuthForm({ defaultMode = "login", errorParam = "", notic
       const siteBase =
         env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ??
         window.location.origin;
-      const { error: signupError } = await supabase.auth.signUp({
+      const { data, error: signupError } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -114,9 +114,13 @@ export default function AuthForm({ defaultMode = "login", errorParam = "", notic
         }
         return;
       }
-      setMessage(
-        "Check your email to confirm your account. If email confirmation is disabled, you can log in immediately.",
-      );
+      // With email confirmation off, signUp already returns a session.
+      if (data.session) {
+        router.push(nextFromUrl());
+        router.refresh();
+        return;
+      }
+      setMessage("Check your email to confirm your account.");
       return;
     }
 
