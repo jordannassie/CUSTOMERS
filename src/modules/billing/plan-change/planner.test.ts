@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { at, FakeStripe } from "./fake-stripe";
+import { previewCopy } from "./copy";
 import { copyFor } from "./copy.test-helpers";
 import { buildPhases, checkChange, idempotencyKey, phasesOf, type PlanChangeContext } from "./planner";
 
@@ -97,5 +98,16 @@ describe("idempotencyKey", () => {
 describe("copy", () => {
   it("has no long dashes in any message", () => {
     for (const text of copyFor()) expect(text).not.toMatch(/[–—]/);
+  });
+
+  it("never tells a trial user about charges again or refunds when they cancel (BUG-8)", () => {
+    const input = { change: { kind: "cancel" } as const, businessName: null, planName: null, planPriceCents: null };
+    const cancel = (trialing: boolean) =>
+      previewCopy({ ...input, trialing, amountCents: 0, extraCredits: 0, effectiveAt: 1_790_000_000 });
+    const trial = cancel(true);
+    expect(trial.headline).toBe("Your free trial ends on September 21, 2026. Your trial credits work until then.");
+    expect(trial.details[0]).toBe("Your card won't be charged.");
+    expect([trial.headline, ...trial.details].join(" ")).not.toMatch(/again|refund/);
+    expect(cancel(false).details[0]).toBe("You won't be charged again, and there's no refund for this month.");
   });
 });

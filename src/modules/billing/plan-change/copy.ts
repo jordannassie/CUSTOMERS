@@ -64,14 +64,19 @@ export function previewCopy(input: CopyInput): Copy {
           creditsStay,
         ],
       };
-    case "cancel":
+    case "cancel": {
+      const topups = "Top-up credits stay on your account, but you can only use them with an active plan.";
+      if (input.trialing) {
+        return {
+          headline: `Your free trial ends on ${date}. Your trial credits work until then.`,
+          details: ["Your card won't be charged.", topups],
+        };
+      }
       return {
         headline: `Your plan ends on ${date}. Your plan credits work until then.`,
-        details: [
-          "You won't be charged again, and there's no refund for this month.",
-          "Top-up credits stay on your account, but you can only use them with an active plan.",
-        ],
+        details: ["You won't be charged again, and there's no refund for this month.", topups],
       };
+    }
     case "keep":
       return { headline: `Your plan will keep going after ${date}.`, details: [] };
   }
