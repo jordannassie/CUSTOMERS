@@ -61,6 +61,44 @@ describe("usageWidget", () => {
     expect(view.details).toEqual(["Includes 500 top-up credits"]);
   });
 
+  it("keeps top-up credits out of the trial's plan number (BUG-6)", () => {
+    const view = usageWidget(usage({ balance: 1664, topupRemaining: 500, periodCredits: 1200, periodUsed: 36 }), trial, now);
+    expect(view.headline).toBe("Trial: 5 days left, 1,164 of 1,200 credits left");
+    expect(view.details).toEqual(["Plus 500 top-up credits"]);
+  });
+
+  it("takes credits held for a running scan from the plan before the top-up", () => {
+    // 1,164 plan and 500 top-up remaining, 36 held.
+    const view = usageWidget(usage({ balance: 1628, topupRemaining: 500, periodCredits: 1200, periodUsed: 36 }), trial, now);
+    expect(view.headline).toBe("Trial: 5 days left, 1,128 of 1,200 credits left");
+    expect(view.details).toEqual(["Plus 500 top-up credits"]);
+  });
+
+  it("does not count a held top-up credit as left", () => {
+    // Plan used up, 1 top-up credit left but held for a scan.
+    const view = usageWidget(usage({ balance: 0, topupRemaining: 1, periodCredits: 1200, periodUsed: 1200 }), trial, now);
+    expect(view.headline).toBe("Trial: 5 days left, 0 of 1,200 credits left");
+    expect(view.details).toEqual(["No credits left"]);
+  });
+
+  it("shows only the overdraft when over, even with top-up grants on record", () => {
+    const view = usageWidget(usage({ balance: -12, topupRemaining: 5, periodCredits: 1200, periodUsed: 1200 }), active, now);
+    expect(view.tone).toBe("empty");
+    expect(view.details).toEqual(["12 credits over", "Renews in 12 days"]);
+  });
+
+  it("lists top-up credits separately on a paid plan", () => {
+    const view = usageWidget(usage({ balance: 780, topupRemaining: 200, periodUsed: 620 }), active, now);
+    expect(view.headline).toBe("620 of 1,200 credits used");
+    expect(view.details).toEqual(["Renews in 12 days", "Plus 200 top-up credits"]);
+  });
+
+  it("lists admin or promo credits beyond the plan as extra", () => {
+    const view = usageWidget(usage({ balance: 150, periodCredits: 100, periodUsed: 0 }), trial, now);
+    expect(view.headline).toBe("Trial: 5 days left, 100 of 100 credits left");
+    expect(view.details).toEqual(["Plus 50 extra credits"]);
+  });
+
   it("says renews tomorrow and trial ends today at the edges", () => {
     expect(usageWidget(usage({}), { ...active, periodEndsAt: inDays(0.5) }, now).details).toEqual(["Renews tomorrow"]);
     expect(
