@@ -86,7 +86,7 @@ To change a decision, edit its row, add the new date, and keep the old choice in
 | D-32 | Plain-language wording everywhere (see the wording table in MVP_SPEC). | Decided | Users are local business owners and agency staff. | |
 | D-33 | Customer usage: sidebar widget always visible, plus a Usage page (balance, per business, per model, forecast, history, Buy credits). | Decided | Jordan liked the Voxtell usage screen (07:52). | |
 | D-34 | Redesign the homepage. Remove false claims (Gemini, fake testimonials, stock "team" photos, "AI recommends" on the compare tool) and repeated visual sections. | Decided | The current homepage is messy and makes claims the product does not meet. | Small fixes only |
-| D-35 | Admin menu: Overview, Agencies, Businesses, Scans, Usage & Cost, Settings. Actions: add or remove credits, extend trial, suspend, retry failed scans, admin action log. | Proposed | Current admin has 12 items and no credit tools. | Keeping current admin |
+| D-35 | Admin menu: Overview, Agencies, Businesses, Scans, Usage & Cost, Settings. Actions: add or remove credits, extend trial, suspend, retry failed scans, admin action log. | Decided | Current admin has 12 items and no credit tools. | Keeping current admin |
 | D-36 | Design reference: clean and simple, in the style of Voxtell AI. | Ask Jordan | Jordan liked Ehtisham's Voxtell work (07:50 to 07:52). | |
 
 ## 7. Emails
