@@ -1,7 +1,8 @@
 // Pure rules for the admin Businesses pages (B-66, MVP_SPEC 9.1).
 
 // Above the default 0 the schedule uses, so a support rescan is claimed before routine jobs (MVP_SPEC 6.4).
-export const ADMIN_SCAN_PRIORITY = 100;
+// One above the app's Run scan (100): the job row has no source column, so the value is what marks an admin scan.
+export const ADMIN_SCAN_PRIORITY = 101;
 
 export type ScanState = "queued" | "running" | "done" | "failed";
 

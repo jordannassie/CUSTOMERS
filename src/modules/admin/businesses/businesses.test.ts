@@ -192,7 +192,7 @@ describe("admin businesses (B-66)", () => {
     expect(first.ok).toBe(true);
     const jobId = first.ok ? first.data.jobId : "";
     const job = await must(service.from("scan_jobs").select("status, priority, agency_id").eq("id", jobId).single());
-    expect(job).toEqual({ status: "queued", priority: 100, agency_id: agencyId });
+    expect(job).toEqual({ status: "queued", priority: 101, agency_id: agencyId });
 
     const log = await must(
       service.from("admin_audit_log").select("action, target_type, details").eq("target_id", businessId),

@@ -45,7 +45,9 @@ export default function ScanHistory({ scans }: { scans: AdminScan[] }) {
 function details(s: AdminScan): string {
   const parts: string[] = [];
   if (s.priority === null) parts.push("Older scan, before the job queue");
-  else if (s.priority >= ADMIN_SCAN_PRIORITY) parts.push("Run by an admin");
+  else if (s.priority === ADMIN_SCAN_PRIORITY) parts.push("Run by an admin");
+  else if (s.priority === 0) parts.push("Scheduled");
+  else parts.push("Run from the app");
   if (s.attempts && s.attempts > 1) parts.push(`${s.attempts} attempts`);
   if (s.error) parts.push(s.error);
   return parts.join(". ");
