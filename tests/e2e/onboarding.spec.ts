@@ -40,6 +40,17 @@ async function webhookLinks(userId: string) {
   if (error) throw error;
 }
 
+async function trialPaid(userId: string) {
+  const { data: agency } = await db.from("agencies").select("id").eq("owner_user_id", userId).single().throwOnError();
+  const { error } = await db.rpc("grant_credits", {
+    p_agency_id: agency.id,
+    p_source: "trial",
+    p_source_id: `il_e2e_${randomUUID()}`,
+    p_amount: 200,
+  });
+  if (error) throw error;
+}
+
 async function payWith(page: Page, card: string) {
   await page.locator("#card-number").fill(card);
   await visible(page, "Start free trial").click();
@@ -109,9 +120,14 @@ test("the whole wizard: plan carried through, auto-filled, resumable, live estim
   await page.waitForTimeout(3000);
   expect(page.url()).toContain("/onboarding/card");
   await webhookLinks(user.id);
-  // The first scan screen (B-38). Credits arrive with invoice.paid (B-42), which this test does not send.
+  // The first scan screen (B-38) waits for the trial credits that invoice.paid brings (F-48).
   await page.waitForURL("**/onboarding/first-scan", { timeout: 30_000 });
-  await slow(page.getByTestId("first-scan-problem")).toHaveText("You're out of credits. Buy a top-up or upgrade.");
+  await slow(page.getByTestId("first-scan-credits")).toHaveText("Adding your trial credits…");
+  await expect(page.getByText("You're out of credits", { exact: false })).toHaveCount(0);
+  // What invoice.paid does (B-42). is_test first, so the scan uses recorded answers and never calls an AI (D-61).
+  await db.from("agencies").update({ is_test: true }).eq("owner_user_id", user.id).throwOnError();
+  await trialPaid(user.id);
+  await slow(page.getByRole("heading", { level: 1, name: "Running your first scan" })).toBeVisible();
 
   const { data: businesses } = await db
     .from("businesses")
