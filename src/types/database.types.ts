@@ -1341,6 +1341,24 @@ export type Database = {
         }
         Relationships: []
       }
+      rate_limit_hits: {
+        Row: {
+          count: number
+          key: string
+          window_start: string
+        }
+        Insert: {
+          count?: number
+          key: string
+          window_start: string
+        }
+        Update: {
+          count?: number
+          key?: string
+          window_start?: string
+        }
+        Relationships: []
+      }
       report_shares: {
         Row: {
           business_id: string
@@ -2150,6 +2168,10 @@ export type Database = {
           p_severity: string
         }
         Returns: string
+      }
+      rate_limit_hit: {
+        Args: { p_key: string; p_window_start: string }
+        Returns: number
       }
       release_hold: { Args: { p_hold_id: string }; Returns: number }
       requeue_scan_job: {
