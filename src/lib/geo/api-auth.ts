@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 /**
  * Resolves the authenticated Supabase user for a route handler, or returns
  * a 401 response. Every GEO API route that touches user data should call
- * this first — actual data access is still protected by RLS as a second
+ * this first. Actual data access is still protected by RLS as a second
  * layer, but this gives callers a clean early exit.
  */
 export async function requireUser() {
