@@ -5,7 +5,7 @@ Goal: agencies can send clients a report (link or PDF), and every important mome
 ---
 
 ### B-59 Share page
-- [ ] Done
+- [x] Done (PR #91, merged into mvp)
 
 Phase 7 · M · Depends on: B-49, B-50, B-52 · Blocked by Jordan: no · MVP_SPEC 8.3, D-11, D-12 · Branch: `task/B-59-share-page` → `mvp`
 
@@ -26,7 +26,7 @@ Phase 7 · M · Depends on: B-49, B-50, B-52 · Blocked by Jordan: no · MVP_SPE
 ---
 
 ### B-60 PDF export
-- [ ] Done
+- [x] Done (PR #98, merged into mvp)
 
 Phase 7 · M · Depends on: B-59 · Blocked by Jordan: no · MVP_SPEC 8.3, D-71 · Branch: `task/B-60-pdf-export` → `mvp`
 
@@ -64,7 +64,7 @@ Phase 7 · M · Depends on: B-09, B-11 · Blocked by Jordan: sending domain veri
 ---
 
 ### B-62 The five emails
-- [ ] Done
+- [x] Done (PR #99, merged into mvp)
 
 Phase 7 · M · Depends on: B-61, B-42, B-13, B-30 · Blocked by Jordan: no · MVP_SPEC 10, D-37 · Branch: `task/B-62-the-five-emails` → `mvp`
 
