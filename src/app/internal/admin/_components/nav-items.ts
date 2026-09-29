@@ -33,7 +33,7 @@ export const MAIN_ITEMS: AdminNavItem[] = [
 export const EXTRA_ITEMS: AdminNavItem[] = [
   { label: "Leads", href: `${BASE}/leads`, icon: Inbox },
   { label: "Feature requests", href: `${BASE}/feature-requests`, icon: Lightbulb },
-  { label: "LinkedIn Studio", href: `${BASE}/news`, icon: Newspaper },
+  { label: "LinkedIn studio", href: `${BASE}/news`, icon: Newspaper },
 ];
 
 function matches(pathname: string, href: string): boolean {
