@@ -85,7 +85,13 @@ export async function retryFailedJob(jobId: string): Promise<RetryResult> {
 // Above the scheduled scans (priority 0), so a manual scan is claimed first (MVP_SPEC 6.4).
 export const MANUAL_PRIORITY = 100;
 
-export type LatestJob = { status: "queued" | "running" | "done" | "failed"; finishedAt: string | null };
+export type LatestJob = {
+  status: "queued" | "running" | "done" | "failed";
+  finishedAt: string | null;
+  /** The last attempt's error; set on a queued job when a failed attempt waits to run again. */
+  error: string | null;
+  runAfter: string;
+};
 
 /** The business's agency, or null when the business does not exist. */
 export async function businessAgencyId(businessId: string): Promise<string | null> {
@@ -111,13 +117,20 @@ export async function insertManualJob(agencyId: string, businessId: string): Pro
 export async function latestJob(businessId: string): Promise<LatestJob | null> {
   const { data, error } = await createServiceClient()
     .from("scan_jobs")
-    .select("status, finished_at")
+    .select("status, finished_at, error, run_after")
     .eq("business_id", businessId)
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();
   if (error) throw new Error(`Could not load the scan status: ${error.message}`);
-  return data && { status: data.status as LatestJob["status"], finishedAt: data.finished_at };
+  return (
+    data && {
+      status: data.status as LatestJob["status"],
+      finishedAt: data.finished_at,
+      error: data.error,
+      runAfter: data.run_after,
+    }
+  );
 }
 
 /**

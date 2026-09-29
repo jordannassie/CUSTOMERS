@@ -57,7 +57,7 @@ describe("startScan", () => {
     const { businessId } = await signedInBusiness(100);
     expect(await getScanStatus({ businessId })).toEqual({
       ok: true,
-      data: { scanning: false, lastResult: null, lastFinishedAt: null, blockedReason: null },
+      data: { scanning: false, retrying: false, lastResult: null, lastFinishedAt: null, blockedReason: null },
     });
 
     const results = await Promise.all([startScan({ businessId }), startScan({ businessId })]);

@@ -4,6 +4,8 @@ import type { LatestJob } from "./dal";
 
 export type ScanStatus = {
   scanning: boolean;
+  /** An attempt failed and the scan waits a few minutes to try again (MVP_SPEC 6.3). */
+  retrying: boolean;
   /** How the latest finished scan ended; null before the first scan. */
   lastResult: "done" | "failed" | null;
   lastFinishedAt: string | null;
@@ -11,11 +13,15 @@ export type ScanStatus = {
   blockedReason: string | null;
 };
 
-export function scanStatusView(job: LatestJob | null, canStart: { allowed: boolean; reason: string }): ScanStatus {
+export function scanStatusView(
+  job: (Pick<LatestJob, "status" | "finishedAt"> & { error?: string | null }) | null,
+  canStart: { allowed: boolean; reason: string },
+): ScanStatus {
   const scanning = job?.status === "queued" || job?.status === "running";
   const finished = job?.status === "done" || job?.status === "failed" ? job.status : null;
   return {
     scanning,
+    retrying: job?.status === "queued" && !!job.error,
     lastResult: finished,
     lastFinishedAt: finished ? job!.finishedAt : null,
     blockedReason: scanning || canStart.allowed ? null : canStart.reason,

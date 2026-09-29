@@ -13,6 +13,7 @@ type ScanAction = (input: unknown) => Promise<ActionResult<ScanStatus>>;
 const POLL_MS = 3000;
 const ALREADY_RUNNING = "A scan is already running.";
 const FAILED = "The last scan could not finish. Try again in a few minutes.";
+const RETRYING = "The scan hit a problem. We'll try again in a few minutes.";
 
 type Note = { text: string; tone: "muted" | "error" } | null;
 
@@ -58,7 +59,7 @@ export function RunScanButton({
 
   const scanning = status.scanning || pending;
   const blocked = !scanning && status.blockedReason !== null;
-  const text = note?.text ?? (scanning ? "Results appear in about a minute." : "");
+  const text = note?.text ?? (scanning ? (status.retrying ? RETRYING : "Results appear in about a minute.") : "");
 
   function run() {
     if (scanning) return setNote({ text: ALREADY_RUNNING, tone: "muted" });

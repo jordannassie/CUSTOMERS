@@ -4,6 +4,7 @@ import { CREDITS_WAIT_MS, FIRST_SCAN_FAILED, creditsWaitNext, firstScanPhase, fi
 
 const status = (s: Partial<ScanStatus>): ScanStatus => ({
   scanning: false,
+  retrying: false,
   lastResult: null,
   lastFinishedAt: null,
   blockedReason: null,
