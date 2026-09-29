@@ -2075,6 +2075,10 @@ export type Database = {
         Args: { p_check_id: string; p_hold_id: string }
         Returns: boolean
       }
+      capture_credits: {
+        Args: { p_check_ids: string[]; p_hold_id: string }
+        Returns: number
+      }
       check_system_alerts: {
         Args: {
           p_daily_cost_limit_usd?: number
@@ -2187,6 +2191,17 @@ export type Database = {
       retry_scan_job: { Args: { p_job_id: string }; Returns: string }
       run_email_job: { Args: { p_job: string }; Returns: number }
       run_system_alerts: { Args: never; Returns: number }
+      save_first_questions: {
+        Args: {
+          p_business_id: string
+          p_owner_user_id: string
+          p_questions: Json
+        }
+        Returns: {
+          id: string
+          prompt: string
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never

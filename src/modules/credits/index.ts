@@ -1,6 +1,7 @@
 export {
   adminAdjustCredits,
   captureCredit,
+  captureCredits,
   expireGrants,
   grantCredits,
   holdCredits,

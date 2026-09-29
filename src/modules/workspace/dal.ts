@@ -51,6 +51,7 @@ export async function getWorkspace(options: GuardOptions = {}): Promise<Workspac
   ]);
   if (businesses.error) throw new Error(`Could not load businesses: ${businesses.error.message}`);
   if (agencyDates?.error) throw new Error(`Could not load agency: ${agencyDates.error.message}`);
+  if (profile.error) throw new Error(`Could not load profile: ${profile.error.message}`);
 
   const list = businesses.data.map((b) => ({
     id: b.id,

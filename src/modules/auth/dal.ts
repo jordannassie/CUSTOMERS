@@ -5,18 +5,21 @@ import { env } from "@/lib/env";
 import { loginPathFor } from "@/lib/safe-next";
 import { createClient } from "@/lib/supabase/server";
 import { AuthError } from "./errors";
+import { isAuthUnavailable } from "@/lib/supabase/auth-errors";
 import { PAUSED_PATH, isAdminEmail, isAgencyPaused, parseAdminEmails } from "./service";
 
 export type SessionUser = { id: string; email: string | null };
 export type CurrentAgency = { id: string; name: string; status: string; isTest: boolean };
 
 // Pages pass `next` (the path to come back to) and get redirects; actions and routes omit it
-// and get an AuthError to turn into a 401 or 403.
+// and get an AuthError to turn into a 401 or 403. When the check itself fails (a slow or down backend),
+// every caller gets AuthError "unavailable" (503): pages show their error boundary, never the login page.
 export type GuardOptions = { next?: string };
 
 export const getCurrentUser = cache(async (): Promise<SessionUser | null> => {
   const supabase = await createClient();
   const { data, error } = await supabase.auth.getUser();
+  if (error && isAuthUnavailable(error)) throw new AuthError("unavailable", { cause: error });
   if (error || !data.user) return null;
   return { id: data.user.id, email: data.user.email ?? null };
 });
@@ -31,7 +34,7 @@ export const getCurrentAgency = cache(async (): Promise<CurrentAgency | null> =>
     .select("id, name, status, is_test")
     .eq("owner_user_id", user.id)
     .maybeSingle();
-  if (error) throw new Error(`Could not load agency: ${error.message}`);
+  if (error) throw new AuthError("unavailable", { cause: new Error(`Could not load agency: ${error.message}`) });
   return data && { id: data.id, name: data.name, status: data.status, isTest: data.is_test };
 });
 

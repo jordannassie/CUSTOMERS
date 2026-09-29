@@ -23,6 +23,7 @@ vi.mock("next/navigation", () => ({
 }));
 
 const { isCurrentUserAdmin, requireAdmin, requireAgency, requireUser } = await import("./dal");
+const { authFailure } = await import("./errors");
 
 const service = createServiceClient();
 const password = `pw-${randomUUID()}`;
@@ -138,5 +139,53 @@ describe("signed in", () => {
     } finally {
       adminEnv.emails = "";
     }
+  });
+});
+
+// E2E-0929 BUG-4 and BUG-5: a slow or failing auth server is not a sign-out.
+describe("auth server unavailable", () => {
+  let outage: "none" | "network" | "gateway" = "none";
+  const flaky: typeof fetch = async (input, init) => {
+    if (outage === "network") throw new TypeError("fetch failed");
+    if (outage === "gateway") return new Response("upstream timed out", { status: 504 });
+    return fetch(input, init);
+  };
+
+  beforeAll(async () => {
+    outage = "none";
+    const client = createClient<Database>(env.NEXT_PUBLIC_SUPABASE_URL, env.NEXT_PUBLIC_SUPABASE_ANON_KEY, {
+      auth: { persistSession: false },
+      global: { fetch: flaky },
+    });
+    const { error } = await client.auth.signInWithPassword({ email, password });
+    if (error) throw error;
+    current = client;
+  });
+  afterAll(() => {
+    outage = "none";
+  });
+
+  it.each(["network", "gateway"] as const)("gives a 503, never a 401 or a login redirect, on a %s failure", async (kind) => {
+    outage = kind;
+    const unavailable = { name: "AuthError", reason: "unavailable", status: 503 };
+    await expect(requireUser()).rejects.toMatchObject(unavailable);
+    await expect(requireUser({ next: "/questions" })).rejects.toMatchObject(unavailable);
+    await expect(requireAgency({ next: "/dashboard" })).rejects.toMatchObject(unavailable);
+    await expect(requireAdmin()).rejects.toMatchObject(unavailable);
+    await expect(requireUser()).rejects.toThrow("We couldn't check your account just now. Try again in a moment.");
+  });
+
+  it("an action turns it into a retryable message", async () => {
+    outage = "network";
+    const result = await requireUser().then(
+      () => null,
+      (error: unknown) => authFailure(error),
+    );
+    expect(result).toEqual({ ok: false, status: 503, error: "We couldn't check your account just now. Try again in a moment." });
+  });
+
+  it("works again once the server answers", async () => {
+    outage = "none";
+    expect(await requireUser()).toEqual({ id: userId, email });
   });
 });

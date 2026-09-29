@@ -52,6 +52,10 @@ export async function getScanStatus(input: unknown): Promise<ActionResult<ScanSt
   const { agencyId, businessId } = owned.data;
 
   const job = await latestJob(businessId);
+  // Local dev has no every-minute schedule, so a retry that falls due is started from here instead.
+  if (job?.status === "queued" && new Date(job.runAfter) <= new Date() && runWorkerInProcess()) {
+    after(() => runWorker(workerTimeBudgetMs()).then(() => undefined));
+  }
   const scanning = job?.status === "queued" || job?.status === "running";
   const allowed = scanning ? { allowed: true, reason: "" } : await canStartScan(agencyId, businessId);
   return { ok: true, data: scanStatusView(job, allowed) };

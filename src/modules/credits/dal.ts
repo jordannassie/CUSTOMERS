@@ -49,6 +49,16 @@ export async function captureCredit(holdId: string, checkId: string): Promise<bo
   return data;
 }
 
+/** captureCredit for several checks of one hold, under one agency lock. Returns how many were newly charged. */
+export async function captureCredits(holdId: string, checkIds: string[]): Promise<number> {
+  const { data, error } = await createServiceClient().rpc("capture_credits", {
+    p_hold_id: holdId,
+    p_check_ids: checkIds,
+  });
+  if (error) fail("capture_credits", error);
+  return data;
+}
+
 /** Returns every uncaptured credit and closes the hold. Returns how many credits came back. */
 export async function releaseHold(holdId: string): Promise<number> {
   const { data, error } = await createServiceClient().rpc("release_hold", { p_hold_id: holdId });

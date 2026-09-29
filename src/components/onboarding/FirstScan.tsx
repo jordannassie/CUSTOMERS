@@ -49,6 +49,7 @@ export function FirstScan(props: Props) {
   const [pending, startTransition] = useTransition();
   // Bumped after each poll that changes nothing, so the next one is scheduled.
   const [polls, setPolls] = useState(0);
+  const [retrying, setRetrying] = useState(initial?.retrying ?? false);
   const started = useRef(false);
   const creditsSince = useRef<number | null>(null);
 
@@ -103,6 +104,7 @@ export function FirstScan(props: Props) {
       const result = await getStatus({ businessId }).catch(() => null);
       // A dropped poll just tries again; the scan itself carries on.
       const next = result?.ok ? firstScanPhase(result.data) : "scanning";
+      if (result?.ok) setRetrying(result.data.retrying);
       if (next === "scanning") return setPolls((n) => n + 1);
       if (next === "done") return setPhase("done");
       fail(next === "failed" && result?.ok ? firstScanProblem(result.data) : FIRST_SCAN_FAILED);
@@ -203,8 +205,9 @@ export function FirstScan(props: Props) {
           <p className="text-sm text-muted-foreground">Opening your dashboard…</p>
         ) : (
           <p className="text-sm text-muted-foreground">
-            This usually takes about a minute. You can leave this page. The scan keeps going and your score shows on
-            the dashboard.
+            {retrying
+              ? "The scan hit a problem, so we'll try again in a few minutes. You can leave this page. Your score shows on the dashboard when it's done."
+              : "This usually takes about a minute. You can leave this page. The scan keeps going and your score shows on the dashboard."}
           </p>
         )}
       </div>

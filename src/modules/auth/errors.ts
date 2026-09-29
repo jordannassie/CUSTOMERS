@@ -1,19 +1,28 @@
-export type AuthFailure = "not_signed_in" | "forbidden" | "no_agency" | "agency_paused";
+export type AuthFailure = "not_signed_in" | "forbidden" | "no_agency" | "agency_paused" | "unavailable";
 
 const MESSAGES: Record<AuthFailure, string> = {
   not_signed_in: "Please log in to continue.",
   forbidden: "You do not have access to this.",
   no_agency: "Finish setting up your account first.",
   agency_paused: "Your account is paused. Contact support to turn it back on.",
+  unavailable: "We couldn't check your account just now. Try again in a moment.",
+};
+
+const STATUS: Record<AuthFailure, 401 | 403 | 503> = {
+  not_signed_in: 401,
+  forbidden: 403,
+  no_agency: 403,
+  agency_paused: 403,
+  unavailable: 503,
 };
 
 export class AuthError extends Error {
-  readonly status: 401 | 403;
+  readonly status: 401 | 403 | 503;
 
-  constructor(readonly reason: AuthFailure) {
-    super(MESSAGES[reason]);
+  constructor(readonly reason: AuthFailure, options?: { cause?: unknown }) {
+    super(MESSAGES[reason], options);
     this.name = "AuthError";
-    this.status = reason === "not_signed_in" ? 401 : 403;
+    this.status = STATUS[reason];
   }
 }
 

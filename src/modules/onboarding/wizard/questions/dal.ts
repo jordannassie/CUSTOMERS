@@ -59,43 +59,35 @@ export async function loadQuestionsStep(
   const source = set.source === "library" ? "library" : "custom";
   const location = cityLabel(b.primary_city, b.primary_region);
   const now = Date.now();
-  const { data: mine, error: insertError } = await supabase
-    .from("tracked_prompts")
-    .insert(
-      set.questions.map((q, i) => ({
-        business_id: businessId,
-        prompt: q.text,
-        buyer_intent: q.intent,
-        location,
-        source,
-        active: true,
-        created_at: inOrder(i, now),
-      })),
-    )
-    .select("id");
-  if (insertError) throw new Error(`Could not save questions: ${insertError.message}`);
-
-  // Two loads at once (a refresh, a second tab) each prepare a set. The set holding the oldest row wins
-  // and any other set removes itself, so the business keeps exactly one.
-  const all = await activeQuestions(businessId, true);
-  const ours = new Set(mine.map((r) => r.id));
-  if (all.length > 0 && !ours.has(all[0].id)) {
-    const { error } = await supabase.from("tracked_prompts").delete().in("id", [...ours]);
-    if (error) throw new Error(`Could not remove duplicate questions: ${error.message}`);
-    return { businessName: b.name, questions: all.filter((r) => !ours.has(r.id)).map((r) => r.prompt), limit };
-  }
-  return { businessName: b.name, questions: all.filter((r) => ours.has(r.id)).map((r) => r.prompt), limit };
+  // Two loads at once (a refresh, a second tab) each prepare a set; the business row lock in
+  // save_first_questions keeps the first saved one and hands it to the other load too.
+  const { data: saved, error: saveError } = await createServiceClient().rpc("save_first_questions", {
+    p_business_id: businessId,
+    p_owner_user_id: userId,
+    p_questions: set.questions.map((q, i) => ({
+      prompt: q.text,
+      buyer_intent: q.intent,
+      location,
+      source,
+      created_at: inOrder(i, now),
+    })),
+  });
+  if (saveError) throw new Error(`Could not save questions: ${saveError.message}`);
+  return { businessName: b.name, questions: saved.map((r) => r.prompt), limit };
 }
 
 // Rows saved in one insert share a timestamp, so each gets its own to keep the list in order.
 const inOrder = (i: number, from = Date.now()) => new Date(from + i).toISOString();
 
-async function activeQuestions(businessId: string, uncached = false) {
+async function activeQuestions(businessId: string) {
   const supabase = await createClient();
-  let query = supabase.from("tracked_prompts").select("id, prompt").eq("business_id", businessId).eq("active", true);
-  // An always-true filter gives the request its own URL, so Next's per-render fetch memo cannot serve it.
-  if (uncached) query = query.not("id", "is", null);
-  const { data, error } = await query.order("created_at").order("id");
+  const { data, error } = await supabase
+    .from("tracked_prompts")
+    .select("id, prompt")
+    .eq("business_id", businessId)
+    .eq("active", true)
+    .order("created_at")
+    .order("id");
   if (error) throw new Error(`Could not load questions: ${error.message}`);
   return data;
 }
