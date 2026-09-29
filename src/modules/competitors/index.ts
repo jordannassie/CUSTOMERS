@@ -3,6 +3,7 @@ export { trackCompetitor } from "./actions";
 export { fetchPlaceSignals, getCompetitorsPage, loadCompetitorsPage } from "./dal";
 export type { FetchSignals, PlaceSignals } from "./places";
 export {
+  COLLECTING_TEXT,
   STANDING_TEXT,
   answersText,
   headToHead,

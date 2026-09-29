@@ -26,7 +26,9 @@ describe("usage and cost rules (B-67)", () => {
   });
 
   it.each([
+    [0.85, "profitable"],
     [0.7, "profitable"],
+    [0.69, "thin"],
     [0.3, "thin"],
     [-0.1, "losing"],
     [null, "no_data"],

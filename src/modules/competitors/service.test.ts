@@ -4,8 +4,9 @@ import { FIXTURE_SIGNALS } from "./place-fixtures";
 import { toSignals } from "./places";
 import { competitorsView, headToHead, hoursText, reviewsText, websiteLabel, type CompetitorRow, type SignalResult } from "./service";
 
+const FIRST_SCAN = new Date("2026-08-25T12:00:00Z");
 const LAST_SCAN = new Date("2026-09-20T12:00:00Z");
-const BEFORE = new Date("2026-09-01T12:00:00Z");
+const BEFORE = new Date("2026-08-20T12:00:00Z");
 
 function report(overall: { score: number; margin: number } | null, competitors: ScoreReport["competitors"] = []): ScoreReport {
   return {
@@ -14,6 +15,7 @@ function report(overall: { score: number; margin: number } | null, competitors: 
     models: ["openai", "anthropic", "perplexity"],
     trend: [],
     change: null,
+    firstCheckedAt: overall ? FIRST_SCAN : null,
     lastCheckedAt: overall ? LAST_SCAN : null,
     competitors,
     questions: [],
@@ -66,11 +68,35 @@ describe("leaderboard", () => {
     ]);
   });
 
+  it("marks a competitor added after the window's first check as still collecting, with no standing (F-53)", () => {
+    const v = view(
+      report({ score: 50, margin: 5 }, [
+        { name: "Bean House", score: 30, standing: "ahead" },
+        { name: "Blue Door Coffee", score: 10, standing: "ahead" },
+        { name: "Copper Kettle Cafe", score: 70, standing: "behind" },
+      ]),
+      [row("Bean House"), row("Blue Door Coffee", null, new Date("2026-09-10T12:00:00Z")), row("Copper Kettle Cafe", null, FIRST_SCAN)],
+    );
+    expect(v.leaderboard.map((r) => [r.name, r.score, r.standing, r.collecting, r.shade])).toEqual([
+      ["Copper Kettle Cafe", 70, "behind", false, 1],
+      ["Sunrise Coffee Bar", 50, null, false, null],
+      ["Bean House", 30, "ahead", false, 2],
+      ["Blue Door Coffee", 10, null, true, null],
+    ]);
+  });
+
+  it("counts a competitor as complete once the window starts after it was added", () => {
+    const added = new Date("2026-09-10T12:00:00Z");
+    const r = { ...report({ score: 50, margin: 5 }, [{ name: "Blue Door Coffee", score: 10, standing: "ahead" as const }]) };
+    const v = view({ ...r, firstCheckedAt: new Date(added.getTime() + 60_000) }, [row("Blue Door Coffee", null, added)]);
+    expect(v.leaderboard.find((x) => !x.isYou)).toMatchObject({ collecting: false, standing: "ahead" });
+  });
+
   it("before any scan: no score, no standings", () => {
     const v = view(report(null), [row("Bean House")]);
     expect(v.hasScore).toBe(false);
     expect(v.margin).toBeNull();
-    expect(v.leaderboard.every((r) => r.score === null && r.standing === null)).toBe(true);
+    expect(v.leaderboard.every((r) => r.score === null && r.standing === null && !r.collecting)).toBe(true);
     expect(v.count).toBe(1);
   });
 });

@@ -17,6 +17,7 @@ function report(overrides: Partial<ScoreReport> = {}): ScoreReport {
       { date: "2026-09-27", score: 61.7, checks: 36 },
     ],
     change: null,
+    firstCheckedAt: new Date("2026-09-20T10:00:00Z"),
     lastCheckedAt: new Date("2026-09-27T10:00:00Z"),
     competitors: [],
     questions: [],

@@ -18,9 +18,16 @@ const userIds: string[] = [];
 // Server Actions and the refresh after them can take several seconds on a busy dev server.
 const ACTION = { timeout: 30_000 };
 
-type Seed = { competitors: { name: string; places_id: string | null }[]; answers: string[][] };
+const DAY = 86_400_000;
 
-async function seed(page: Page, { competitors, answers }: Seed): Promise<string> {
+type Seed = {
+  competitors: { name: string; places_id: string | null; addedDaysAgo?: number }[];
+  answers: string[][];
+  /** One scan of the same answers per entry, in days before now. */
+  scanDaysAgo?: number[];
+};
+
+async function seed(page: Page, { competitors, answers, scanDaysAgo = [1 / 24] }: Seed): Promise<string> {
   const email = `e2e-competitors-${randomUUID()}@example.test`;
   const password = `pw-${randomUUID()}`;
   const { data: user, error } = await db.auth.admin.createUser({ email, password, email_confirm: true });
@@ -53,25 +60,26 @@ async function seed(page: Page, { competitors, answers }: Seed): Promise<string>
     await db
       .from("business_competitors")
       .insert(
-        competitors.map((c) => ({
+        competitors.map(({ addedDaysAgo = 2, ...c }) => ({
           business_id: business.id,
           ...c,
           source: c.places_id ? "confirmed_place" : "manual",
           confirmed: true,
           // Tracked before the seeded scan, as in real use.
-          created_at: new Date(Date.now() - 2 * 86_400_000).toISOString(),
+          created_at: new Date(Date.now() - addedDaysAgo * DAY).toISOString(),
         })),
       )
       .throwOnError();
   }
-  if (answers.length) {
+  for (const daysAgo of answers.length ? scanDaysAgo : []) {
     const { data: run } = await db
       .from("visibility_runs")
       .insert({ business_id: business.id, provider: "scan", status: "completed" })
       .select("id")
       .single()
       .throwOnError();
-    const tracked = competitors.map((c) => c.name);
+    // A scan only looks for the competitors tracked when it ran.
+    const tracked = competitors.filter((c) => (c.addedDaysAgo ?? 2) > daysAgo).map((c) => c.name);
     await db
       .from("visibility_results")
       .insert(
@@ -80,7 +88,7 @@ async function seed(page: Page, { competitors, answers }: Seed): Promise<string>
             run_id: run.id,
             business_id: business.id,
             provider,
-            created_at: new Date(Date.now() - 3_600_000).toISOString(),
+            created_at: new Date(Date.now() - daysAgo * DAY).toISOString(),
             business_mentioned: names.includes("Sunrise Coffee Bar"),
             competitors_mentioned: names.filter((n) => tracked.includes(n)).map((name) => ({ name, position: 1 })),
             extracted_names: {
@@ -154,6 +162,34 @@ test("leaderboard, Google side by side, and tracking a business AI keeps naming"
     { name: "Blue Door Coffee", places_id: null, source: "manual", formatted_address: null, category: null, phone: null, domain: null, city: null },
     { name: "The Daily Grind", places_id: "ChIJ-fixture-daily-grind", source: "confirmed_place", formatted_address: null, category: null, phone: null, domain: null, city: null },
   ]);
+});
+
+test("a competitor added partway through the 30 days is still collecting, with no ahead or behind (F-53)", async ({ page }) => {
+  await seed(page, {
+    competitors: [
+      { name: "Bean House", places_id: "ChIJ-fixture-bean-house", addedDaysAgo: 20 },
+      { name: "Blue Door Coffee", places_id: null, addedDaysAgo: 5 },
+    ],
+    // Per scan and model: Bean House in 4 of 5 answers, you in 1, Blue Door Coffee in 3.
+    answers: [
+      ["Bean House", "Blue Door Coffee"],
+      ["Bean House", "Blue Door Coffee"],
+      ["Bean House", "Blue Door Coffee"],
+      ["Bean House", "Sunrise Coffee Bar"],
+      ["Kiln Coffee Co"],
+    ],
+    scanDaysAgo: [10, 1 / 24],
+  });
+
+  // Blue Door was only looked for in the second scan, so 3 of 10 answers, not 3 of 5.
+  const board = page.getByTestId("leaderboard");
+  await expect(board.getByRole("listitem")).toHaveText([
+    /Bean House\s*80\s*You're behind/,
+    /Sunrise Coffee Bar \(you\)\s*20/,
+    /Blue Door Coffee\s*30\s*New, still collecting/,
+  ]);
+  await expect(board.getByTestId("standing")).toHaveCount(1);
+  await expect(page.getByTestId("collecting-note")).toBeVisible();
 });
 
 test("no competitors and no scans: each section says what to do next", async ({ page }) => {

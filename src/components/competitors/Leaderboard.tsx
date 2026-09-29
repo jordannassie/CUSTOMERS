@@ -1,6 +1,6 @@
 import { cn } from "cn";
 import { Badge } from "@/components/ui/badge";
-import { STANDING_TEXT, type CompetitorsView, type LeaderRow } from "@/modules/competitors";
+import { COLLECTING_TEXT, STANDING_TEXT, type CompetitorsView, type LeaderRow } from "@/modules/competitors";
 
 const SHADE = { 1: "bg-competitor-1", 2: "bg-competitor-2", 3: "bg-competitor-3" } as const;
 const STANDING_BADGE = { ahead: "good", behind: "mid", about_same: "secondary" } as const;
@@ -30,6 +30,12 @@ export function Leaderboard({ view }: { view: Pick<CompetitorsView, "leaderboard
           the same as you.
         </p>
       ) : null}
+      {view.leaderboard.some((r) => r.collecting) ? (
+        <p className="text-xs text-text-hint" data-testid="collecting-note">
+          We only look for a competitor from the day you add it, so a new one scores low at first. We compare you once
+          it has 30 days of checks.
+        </p>
+      ) : null}
     </div>
   );
 }
@@ -38,7 +44,7 @@ function Row({ row, band }: { row: LeaderRow; band: { left: number; right: numbe
   const pending = !row.isYou && row.score === null;
   return (
     <li
-      className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1.5 sm:grid-cols-[minmax(0,200px)_minmax(0,1fr)_2.5rem_7.5rem]"
+      className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1.5 sm:grid-cols-[minmax(0,200px)_minmax(0,1fr)_2.5rem_9.5rem]"
       data-you={row.isYou || undefined}
     >
       <span className={cn("truncate text-sm", row.isYou ? "font-semibold text-primary" : "text-foreground")}>
@@ -74,6 +80,12 @@ function Row({ row, band }: { row: LeaderRow; band: { left: number; right: numbe
             <span className="col-span-2 sm:col-span-1 sm:col-start-4 sm:row-start-1 sm:text-right">
               <Badge variant={STANDING_BADGE[row.standing]} data-testid="standing">
                 {STANDING_TEXT[row.standing]}
+              </Badge>
+            </span>
+          ) : row.collecting ? (
+            <span className="col-span-2 sm:col-span-1 sm:col-start-4 sm:row-start-1 sm:text-right">
+              <Badge variant="outline" data-testid="collecting">
+                {COLLECTING_TEXT}
               </Badge>
             </span>
           ) : null}
