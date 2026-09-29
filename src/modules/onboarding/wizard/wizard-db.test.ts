@@ -143,7 +143,8 @@ describe("details, questions and models steps", () => {
     expect(again).toMatchObject({ questions: step.questions });
     expect(calls.write).toBe(1);
     const sources = await service.from("tracked_prompts").select("source").eq("business_id", id);
-    expect(new Set(sources.data?.map((r) => r.source))).toEqual(new Set(["custom"]));
+    // Suggested, not written by the user, so the Questions page does not say "Added by you" (BUG-9).
+    expect(new Set(sources.data?.map((r) => r.source))).toEqual(new Set(["library"]));
 
     const tooMany = Array.from({ length: 26 }, (_, i) => `Question number ${i} in Orange`);
     expect(await saveQuestions(userId, id, tooMany)).toMatchObject({ ok: false, status: 403 });
@@ -152,6 +153,7 @@ describe("details, questions and models steps", () => {
     const kept = await service.from("tracked_prompts").select("prompt, source").eq("business_id", id);
     expect(kept.data).toHaveLength(12);
     expect(kept.data).toContainEqual({ prompt: "Which florist in Orange delivers on Sundays?", source: "custom" });
+    expect(kept.data).toContainEqual({ prompt: step.questions[1], source: "library" });
 
     expect(await finishWizard(userId, id, { models: ["openai", "perplexity"], frequency: "monthly" })).toBe(true);
     expect(await business(id)).toMatchObject({ status: "active", onboarding_step: 9, models: ["openai", "perplexity"], scan_frequency: "monthly" });
