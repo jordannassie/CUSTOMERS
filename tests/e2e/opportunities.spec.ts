@@ -79,10 +79,10 @@ async function seed(page: Page, { hasWebsite, opportunities }: Seed): Promise<st
         },
         {
           business_id: business.id,
-          title: "Your website does not spell out what you offer",
+          title: "Your website does not show your phone number",
           impact: "medium",
           category: "service_page",
-          evidence: "We read your website and did not find a phone number.",
+          evidence: "We read your website and did not find your phone number.",
           recommended_action: "1. Give each service its own section.\n2. Put your phone number in the footer.",
           claude_prompt: "Help me improve the services page for Sunrise Coffee Bar (sunrise-coffee.example) in Springfield. Leave a clear gap marked [fill in] for every fact I have not given you, and do not invent any details.",
         },
@@ -110,7 +110,7 @@ test("fixes are sorted by impact, with live Google values and a copy button", as
   const todo = page.getByTestId("list-open").getByTestId("opportunity");
   await expect(todo.getByRole("heading", { level: 3 })).toHaveText([
     "Bean House has more Google reviews than you",
-    "Your website does not spell out what you offer",
+    "Your website does not show your phone number",
     "Answer common questions on your site",
   ]);
   await expect(todo.first()).toContainText("Bean House has 320 reviews and you have 12.");

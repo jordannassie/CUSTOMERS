@@ -1,8 +1,17 @@
+import { existsSync, readFileSync } from "node:fs";
+import { parseEnv } from "node:util";
 import { defineConfig, devices } from "@playwright/test";
 
 // Parallel sessions each run their own dev server (B-18), so the port is set per session.
 const port = Number(process.env.E2E_PORT ?? 3106);
 const baseURL = `http://localhost:${port}`;
+
+// The dev server must use this worktree's local stack (written by npm test), not .env.local and the remote dev
+// database (BUG-034). Env passed to next dev wins over its .env files.
+const testDb = existsSync(".env.test.local") ? parseEnv(readFileSync(".env.test.local", "utf8")) : {};
+// One admin per project for tests/e2e/admin-access.spec.ts, which reads the same list.
+const adminEmails = process.env.ADMIN_EMAILS ?? "e2e-admin-desktop@example.test,e2e-admin-mobile@example.test";
+process.env.ADMIN_EMAILS = adminEmails;
 
 export default defineConfig({
   testDir: "tests/e2e",
@@ -23,7 +32,15 @@ export default defineConfig({
     url: baseURL,
     reuseExistingServer: !process.env.CI,
     // Onboarding answers from fixtures, never Firecrawl, Google or Claude (B-36), and the card step never calls Stripe (B-41).
-    env: { ONBOARDING_FIXTURES: "true", PLACES_FIXTURES: "true", STRIPE_CHECKOUT_FIXTURES: "true" },
+    // Run scan starts the worker inside the dev server, since there is no separate worker locally or in CI.
+    env: {
+      ...testDb,
+      ADMIN_EMAILS: adminEmails,
+      WORKER_IN_PROCESS: "true",
+      ONBOARDING_FIXTURES: "true",
+      PLACES_FIXTURES: "true",
+      STRIPE_CHECKOUT_FIXTURES: "true",
+    },
     timeout: 180_000,
   },
 });

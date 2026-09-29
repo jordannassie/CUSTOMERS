@@ -24,7 +24,7 @@ export default function ByDay({ days }: { days: UsageCostReport["byDay"] }) {
           </div>
         ))}
       </div>
-      <div aria-hidden className="mt-2 flex gap-px text-[12px] text-hint sm:gap-0.5">
+      <div aria-hidden className="mt-2 flex gap-px text-[12px] text-text-hint sm:gap-0.5">
         {days.map((d, i) => (
           // Phones show every other label so they do not run into each other.
           <span key={d.day} className={cn("tabular flex-1 overflow-visible whitespace-nowrap", i % (labelEvery * 2) !== 0 && "invisible sm:visible")}>

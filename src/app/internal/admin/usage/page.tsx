@@ -113,7 +113,7 @@ function Summary({ report }: { report: UsageCostReport }) {
         <div key={f.label} data-figure={f.label} className="flex flex-col gap-1 px-5 py-4">
           <dt className="text-[13px] text-muted-foreground">{f.label}</dt>
           <dd className={cn("tabular text-[24px] font-semibold tracking-[-0.02em]", f.bad && "text-low-text")}>{f.value || "-"}</dd>
-          {f.note && <dd className="tabular text-[12px] text-hint">{f.note}</dd>}
+          {f.note && <dd className="tabular text-[12px] text-text-hint">{f.note}</dd>}
         </div>
       ))}
     </dl>

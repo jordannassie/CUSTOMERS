@@ -20,7 +20,7 @@ export function StatusBadge({ status }: { status: ScanStatus }) {
 }
 
 export function ModelList({ models, className }: { models: string[]; className?: string }) {
-  if (models.length === 0) return <span className="text-hint">None</span>;
+  if (models.length === 0) return <span className="text-text-hint">None</span>;
   return (
     <ul className={cn("flex flex-wrap gap-x-3 gap-y-1", className)}>
       {models.map((m) => (

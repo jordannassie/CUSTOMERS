@@ -33,6 +33,9 @@ describe("explain", () => {
     for (const d of result.drafts) for (const n of COFFEE_PLACES_NUMBERS) expect(storedText(d)).not.toContain(n);
     const website = result.drafts.find((d) => d.category === "service_page");
     expect(website?.claude_prompt).toContain("Sunrise Coffee Bar (sunrise-coffee.example)");
+    // The fixture site has no phone number, so the title says that too (BUG-030).
+    expect(website?.title).toBe("Your website does not show your phone number");
+    expect(website?.evidence).toBe("We read your website and did not find your phone number.");
   });
 
   it("drops reasons with invented facts, and uses the rules when fewer than 3 are left", async () => {

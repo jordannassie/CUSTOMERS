@@ -70,12 +70,13 @@ function websiteReason(input: ExplainInput): ExplainReason {
       copy_for_claude: `Write a simple one-page website for ${where} in ${city}. Include a short description, our services, address, phone and opening hours. Leave a clear gap marked [fill in] for every fact I have not given you, and do not invent any details.`,
     };
   }
-  const missing = [!yourWebsite.hasPhone && "a phone number", !yourWebsite.hasAddress && "an address"].filter(Boolean);
+  const missing = [!yourWebsite.hasPhone && "phone number", !yourWebsite.hasAddress && "address"].filter(Boolean);
   return {
-    title: "Your website does not spell out what you offer",
+    // The title names what was not found, so it matches the evidence (BUG-030).
+    title: missing.length > 0 ? `Your website does not show your ${missing.join(" or ")}` : "Your website does not spell out what you offer",
     evidence:
       missing.length > 0
-        ? `We read your website and did not find ${missing.join(" or ")}.`
+        ? `We read your website and did not find your ${missing.join(" or ")}.`
         : `We read your website and found ${services.length} services listed.`,
     why_it_matters: "AI assistants answer from pages that state plainly what a business does and where it is.",
     steps: [
