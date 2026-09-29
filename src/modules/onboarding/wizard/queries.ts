@@ -2,7 +2,7 @@ import "server-only";
 import { getCurrentAgency, requireUser } from "@/modules/auth";
 import { canAddBusiness } from "@/modules/entitlements";
 import type { TrialOffer } from "@/modules/billing";
-import { loadCardStep } from "./card/dal";
+import { awaitingTrialCredits, loadCardStep } from "./card/dal";
 import { loadDetailsStep, loadWizardState, type DetailsStep, type WizardContext } from "./dal";
 import { loadModelsStep, loadQuestionsStep, selectedPlan, type ModelsStep, type QuestionsStep } from "./questions/dal";
 
@@ -40,4 +40,10 @@ export async function getModelsStep(businessId: string, next: string): Promise<M
 export async function getCardStep(businessId: string, next: string): Promise<{ offer: TrialOffer | null } | null> {
   const user = await requireUser({ next });
   return loadCardStep(user.id, businessId);
+}
+
+/** Whether the first scan must wait for the trial credits to land (F-48). */
+export async function getAwaitingTrialCredits(next: string): Promise<boolean> {
+  const user = await requireUser({ next });
+  return awaitingTrialCredits(user.id);
 }

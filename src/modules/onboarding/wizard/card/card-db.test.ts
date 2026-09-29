@@ -117,3 +117,27 @@ describe("card step", () => {
     expect(await actions.startCardStep({ businessId: owner.businessId })).toMatchObject({ ok: false, status: 401 });
   });
 });
+
+describe("trial credits after the card (F-48)", () => {
+  const grant = (agencyId: string, source: string) =>
+    service.rpc("grant_credits", { p_agency_id: agencyId, p_source: source, p_source_id: `il_${randomUUID()}`, p_amount: 50, p_expires_at: null });
+
+  it("waits only between the subscription link and the trial grant", async () => {
+    const { agencyId } = await draftAtModels();
+    expect(await actions.checkTrialCredits()).toEqual({ ok: true, data: { waiting: false } });
+
+    await webhookLinks(agencyId);
+    expect(await actions.checkTrialCredits()).toEqual({ ok: true, data: { waiting: true } });
+    // A top-up is not the trial grant that invoice.paid brings.
+    await grant(agencyId, "topup");
+    expect(await actions.checkTrialCredits()).toEqual({ ok: true, data: { waiting: true } });
+
+    await grant(agencyId, "trial");
+    expect(await actions.checkTrialCredits()).toEqual({ ok: true, data: { waiting: false } });
+  });
+
+  it("refuses a signed-out caller", async () => {
+    session = null;
+    expect(await actions.checkTrialCredits()).toMatchObject({ ok: false, status: 401 });
+  });
+});

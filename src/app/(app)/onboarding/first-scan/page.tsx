@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { FirstScan } from "@/components/onboarding/FirstScan";
 import { getScanStatus, startScan } from "@/modules/jobs";
-import { FIRST_SCAN_PATH, firstScanPhase, getModelsStep } from "@/modules/onboarding";
+import { FIRST_SCAN_PATH, checkTrialCredits, firstScanPhase, getAwaitingTrialCredits, getModelsStep } from "@/modules/onboarding";
 import { MODELS } from "@/modules/settings/service";
 import { getWorkspace } from "@/modules/workspace";
 
@@ -16,9 +16,10 @@ export default async function FirstScanPage() {
   const business = workspace.businesses.find((b) => b.id === workspace.activeBusinessId);
   if (!business || business.status === "onboarding") redirect("/onboarding");
 
-  const [status, setup] = await Promise.all([
+  const [status, setup, awaitingCredits] = await Promise.all([
     getScanStatus({ businessId: business.id }),
     getModelsStep(business.id, FIRST_SCAN_PATH),
+    getAwaitingTrialCredits(FIRST_SCAN_PATH),
   ]);
   if (status.ok && firstScanPhase(status.data) === "done") redirect("/dashboard");
 
@@ -30,8 +31,10 @@ export default async function FirstScanPage() {
       models={models}
       questions={setup?.activeQuestions ?? 0}
       initial={status.ok ? status.data : null}
+      awaitingCredits={awaitingCredits}
       start={startScan}
       getStatus={getScanStatus}
+      checkCredits={checkTrialCredits}
     />
   );
 }

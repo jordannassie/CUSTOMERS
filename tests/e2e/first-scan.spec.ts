@@ -28,8 +28,12 @@ test.afterAll(async () => {
   for (const id of userIds.splice(0)) await db.auth.admin.deleteUser(id);
 });
 
-/** A user stopped at the last setup step (AI models), with credits on a test agency. */
-async function seedAtModelsStep(page: Page): Promise<string> {
+/**
+ * A user stopped at the last setup step (AI models), with credits on a test agency. `subscription` links a
+ * Stripe subscription as checkout.session.completed does; `credits: false` leaves out the grant that
+ * invoice.paid brings (F-48).
+ */
+async function seedAtModelsStep(page: Page, opts: { subscription?: boolean; credits?: boolean } = {}) {
   const email = `e2e-first-scan-${randomUUID()}@example.test`;
   const password = `pw-${randomUUID()}`;
   const { data: user, error } = await db.auth.admin.createUser({ email, password, email_confirm: true });
@@ -38,7 +42,13 @@ async function seedAtModelsStep(page: Page): Promise<string> {
 
   const { data: agency } = await db
     .from("agencies")
-    .insert({ owner_user_id: user.user.id, name: "First scan test agency", is_test: true, status: "active" })
+    .insert({
+      owner_user_id: user.user.id,
+      name: "First scan test agency",
+      is_test: true,
+      status: "active",
+      stripe_subscription_id: opts.subscription ? `sub_${randomUUID()}` : null,
+    })
     .select("id")
     .single()
     .throwOnError();
@@ -64,21 +74,25 @@ async function seedAtModelsStep(page: Page): Promise<string> {
     .from("tracked_prompts")
     .insert(QUESTIONS.map((prompt) => ({ business_id: business.id, prompt })))
     .throwOnError();
-  const { error: grantError } = await db.rpc("grant_credits", {
-    p_agency_id: agency.id,
-    p_source: "admin",
-    p_source_id: `e2e-${randomUUID()}`,
-    p_amount: 200,
-    p_expires_at: null,
-  });
-  if (grantError) throw grantError;
+  if (opts.credits !== false) await grant(agency.id, opts.subscription ? "trial" : "admin");
 
   await page.goto("/login?next=/onboarding");
   await page.locator("#email").fill(email);
   await page.locator("#password").fill(password);
   await page.locator("button[type=submit]").click();
   await page.waitForURL("**/onboarding/models", { timeout: 120_000 });
-  return business.id;
+  return { businessId: business.id, agencyId: agency.id };
+}
+
+async function grant(agencyId: string, source: string) {
+  const { error } = await db.rpc("grant_credits", {
+    p_agency_id: agencyId,
+    p_source: source,
+    p_source_id: `e2e-${randomUUID()}`,
+    p_amount: 200,
+    p_expires_at: null,
+  });
+  if (error) throw error;
 }
 
 const finishSetup = (page: Page) =>
@@ -99,7 +113,7 @@ test("finish setup: a short progress screen, then the dashboard with the first s
 });
 
 test("a failed first scan shows Try again, never an empty dashboard, and the retry opens the score", async ({ page }) => {
-  const businessId = await seedAtModelsStep(page);
+  const { businessId } = await seedAtModelsStep(page);
   // Forced failure: with no active questions the worker fails the job at once, without holding credits.
   await db.from("tracked_prompts").update({ active: false }).eq("business_id", businessId).throwOnError();
   await finishSetup(page);
@@ -119,4 +133,54 @@ test("a failed first scan shows Try again, never an empty dashboard, and the ret
   await page.getByRole("button", { name: "Try again" }).click();
   await page.waitForURL("**/dashboard", { timeout: 120_000 });
   await expect(page.getByTestId("score-summary")).toBeVisible({ timeout: 120_000 });
+});
+
+test.describe("trial credits after the card (F-48)", () => {
+  const waiting = (page: Page) => page.getByTestId("first-scan-credits");
+
+  test("credits already there: the scan starts at once", async ({ page }) => {
+    await seedAtModelsStep(page, { subscription: true });
+    await finishSetup(page);
+
+    await page.waitForURL("**/onboarding/first-scan");
+    await slow(page.getByRole("heading", { level: 1, name: "Running your first scan" })).toBeVisible();
+    await expect(waiting(page)).toHaveCount(0);
+    await page.waitForURL("**/dashboard", { timeout: 120_000 });
+  });
+
+  test("credits arrive late: the screen waits, then scans, never out of credits", async ({ page }) => {
+    const { agencyId } = await seedAtModelsStep(page, { subscription: true, credits: false });
+    await finishSetup(page);
+
+    await page.waitForURL("**/onboarding/first-scan");
+    await slow(page.getByRole("heading", { level: 1, name: "Getting your first scan ready" })).toBeVisible();
+    await expect(waiting(page)).toHaveText("Adding your trial credits…");
+    await expect(page.getByText("You're out of credits", { exact: false })).toHaveCount(0);
+
+    await page.waitForTimeout(5_000);
+    await expect(waiting(page)).toBeVisible();
+    await grant(agencyId, "trial");
+
+    await slow(page.getByRole("heading", { level: 1, name: "Running your first scan" })).toBeVisible();
+    await page.waitForURL("**/dashboard", { timeout: 120_000 });
+    await expect(page.getByTestId("score-summary")).toBeVisible({ timeout: 120_000 });
+  });
+
+  test("credits never arrive: a clear message, and Try again waits again", async ({ page }) => {
+    const { agencyId, businessId } = await seedAtModelsStep(page, { subscription: true, credits: false });
+    await finishSetup(page);
+
+    await page.waitForURL("**/onboarding/first-scan");
+    await expect(waiting(page)).toBeVisible({ timeout: 60_000 });
+    await expect(page.getByRole("heading", { level: 1, name: "Your trial credits aren't in yet" })).toBeVisible({ timeout: 60_000 });
+    await expect(page.getByTestId("first-scan-problem")).toHaveText(
+      "Your trial credits are taking longer than usual. Try again in a minute.",
+    );
+    const { count } = await db.from("scan_jobs").select("id", { count: "exact", head: true }).eq("business_id", businessId);
+    expect(count).toBe(0);
+
+    await grant(agencyId, "trial");
+    await page.getByRole("button", { name: "Try again" }).click();
+    await page.waitForURL("**/dashboard", { timeout: 120_000 });
+  });
 });
