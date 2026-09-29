@@ -1,13 +1,11 @@
 import type Stripe from "stripe";
-import { afterAll, describe, expect, it, vi } from "vitest";
+import { afterAll, describe, expect, it } from "vitest";
 import { processStripeWebhook } from "./webhooks";
 import { monthBefore } from "./webhooks/credits";
 import * as fx from "./webhooks/fixtures.test-helpers";
 import { agencyRow, businessRows, cleanUp, grantCreditsForTest, grants, harness, ledgerTotal, secret, service, setup } from "./webhooks/harness.test-helpers";
 
 // B-42 fixture tests against the local database: every event is delivered twice and must apply once.
-// Each delivery makes several database round trips, so tests get more than the 5 second default.
-vi.setConfig({ testTimeout: 30_000 });
 const DAY = fx.DAY;
 
 afterAll(cleanUp);

@@ -2,9 +2,34 @@ import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { createAgencyWithBusiness, createUser, deleteTestUsers, service, signInAs, type TestSession } from "../admin.test-helpers";
 import type { AdminStripeClient } from "../agencies/stripe";
 
-// Runs against the local database `npm test` rebuilds. Other test files write at the same time, so counts are compared loosely.
+// Runs against the local database `npm test` rebuilds. Other test files add and delete agencies at the same time,
+// so while `scope` is set the overview's queries only see this file's agencies (BUG-038).
 const session = vi.hoisted((): TestSession => ({ client: null, adminEmails: "" }));
+const scope = vi.hoisted(() => ({ agencyIds: null as string[] | null }));
 vi.mock("@/lib/supabase/server", () => ({ createClient: async () => session.client }));
+vi.mock("@/lib/supabase/service", async (importOriginal) => {
+  const { createServiceClient } = await importOriginal<typeof import("@/lib/supabase/service")>();
+  const agencyColumn: Record<string, string> = { agencies: "id", business_subscriptions: "agency_id", scan_jobs: "agency_id" };
+  return {
+    createServiceClient: () => {
+      const db = createServiceClient();
+      const ids = scope.agencyIds;
+      if (!ids) return db;
+      const from = db.from.bind(db);
+      return Object.assign(db, {
+        from: (table: string) => {
+          const query = from(table as never);
+          const column = agencyColumn[table];
+          if (!column) return query;
+          return new Proxy(query, {
+            get: (target, key) =>
+              key === "select" ? (...args: Parameters<typeof target.select>) => target.select(...args).in(column, ids) : Reflect.get(target, key),
+          });
+        },
+      });
+    },
+  };
+});
 vi.mock("@/lib/env", async (importOriginal) => {
   const { env } = await importOriginal<typeof import("@/lib/env")>();
   return { env: new Proxy(env, { get: (t, key) => (key === "ADMIN_EMAILS" ? session.adminEmails : Reflect.get(t, key)) }) };
@@ -40,8 +65,7 @@ describe("admin overview (B-65)", () => {
     expect(overview.revenue).toEqual({ state: "ok", cents: 123_400, mode: "stripe" });
   });
 
-  it("counts a real trial, lists recent signups and failed scans newest first, and open alerts", async () => {
-    const before = await loadOverview(new Date(), null);
+  it("counts a real trial but no test agency, lists recent signups and failed scans newest first, and open alerts", async () => {
     const owner = await createUser("overview-real");
     const { data: real, error } = await service
       .from("agencies")
@@ -50,26 +74,31 @@ describe("admin overview (B-65)", () => {
       .single();
     if (error) throw error;
     const test = await createAgencyWithBusiness("Overview Test");
-    const { error: jobError } = await service.from("scan_jobs").insert({
-      agency_id: test.agencyId,
-      business_id: test.businessId,
-      priority: -1_000_000,
-      status: "failed",
-      error: "Every check failed: timeout",
-      finished_at: new Date().toISOString(),
-    });
+    const { data: failed, error: jobError } = await service
+      .from("scan_jobs")
+      .insert({
+        agency_id: test.agencyId,
+        business_id: test.businessId,
+        priority: -1_000_000,
+        status: "failed",
+        error: "Every check failed: timeout",
+        finished_at: new Date().toISOString(),
+      })
+      .select("id")
+      .single();
     if (jobError) throw jobError;
 
-    const after = await loadOverview(new Date(), null);
-    expect(after.activeTrials).toBeGreaterThanOrEqual(before.activeTrials + 1);
-    // Newest first and capped; parallel test files may have added newer rows than ours.
-    const signedUp = after.recentSignups.map((a) => a.createdAt);
-    expect(signedUp).toEqual([...signedUp].sort().reverse());
-    expect(signedUp.length).toBeGreaterThan(0);
-    expect(after.recentFailedScans.length).toBeGreaterThan(0);
-    expect(after.recentFailedScans.length).toBeLessThanOrEqual(6);
+    scope.agencyIds = [real.id, test.agencyId];
+    const overview = await loadOverview(new Date(), null).finally(() => {
+      scope.agencyIds = null;
+    });
+    expect(overview).toMatchObject({ agencies: 1, activeTrials: 1, payingBusinesses: 0 });
+    expect(overview.recentSignups.map((a) => a.id)).toEqual([test.agencyId, real.id]);
+    expect(overview.recentFailedScans).toEqual([
+      expect.objectContaining({ id: failed.id, businessId: test.businessId, error: "Every check failed: timeout" }),
+    ]);
     // Alert tests run at the same time, so only the shape is checked here (B-69 covers the content).
-    for (const a of after.openAlerts) expect(["info", "warning", "critical"]).toContain(a.severity);
+    for (const a of overview.openAlerts) expect(["info", "warning", "critical"]).toContain(a.severity);
 
     await service.from("agencies").delete().eq("id", real.id);
   });

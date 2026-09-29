@@ -7,7 +7,6 @@ import { FakeStripe } from "./fake-stripe";
 
 // B-44 actions against the local database, signed in as a real user, with the in-memory Stripe in place of
 // the real client: auth, input checks, agency scoping and the trial business limit (canAddBusiness).
-vi.setConfig({ testTimeout: 30_000 });
 
 const service = createServiceClient();
 const userIds: string[] = [];

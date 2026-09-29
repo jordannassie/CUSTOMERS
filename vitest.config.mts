@@ -6,9 +6,11 @@ import { defineConfig } from "vitest/config";
 // Only the local database written by scripts/test-db-reset.sh; .env.local is never loaded,
 // so tests cannot reach the shared database or spend real AI credits.
 const TEST_ENV_FILE = ".env.test.local";
-const QUEUE_CLAIM_TESTS = "src/modules/jobs/queue.test.ts";
+// These read or write the whole scan queue, so they run one at a time after every other unit file.
+const SERIAL_TESTS = ["src/modules/jobs/queue.test.ts", "src/modules/jobs/schedules.test.ts"];
 const testEnv = existsSync(TEST_ENV_FILE) ? parseEnv(readFileSync(TEST_ENV_FILE, "utf8")) : {};
 // Database tests share the machine with other workers' stacks (BUG-010); 5s and 20s timed out under that load.
+// Hooks get the same limit: their set-up and clean-up (creating and deleting users) hit the 10s default.
 const DB_TEST_TIMEOUT = 60_000;
 
 export default defineConfig({
@@ -24,22 +26,26 @@ export default defineConfig({
         test: {
           name: "unit",
           include: ["src/**/*.test.ts"],
-          exclude: [QUEUE_CLAIM_TESTS],
+          exclude: SERIAL_TESTS,
           setupFiles: ["tests/setup/retry-gateway-502.ts"],
           env: testEnv as Record<string, string>,
           testTimeout: DB_TEST_TIMEOUT,
+          hookTimeout: DB_TEST_TIMEOUT,
         },
       },
       {
-        // claim_scan_jobs takes jobs from the whole queue, so these run alone after every other unit file;
-        // alongside them they took other files' queued jobs (the schedules.test.ts flake).
+        // claim_scan_jobs takes jobs from the whole queue: alongside other files it took their queued jobs.
+        // enqueue_due_scans queues every due business: alongside other files it failed on a business they
+        // deleted mid-insert (BUG-035), so it must not run next to queue.test.ts's clean-up either.
         extends: true,
         test: {
           name: "unit-queue",
-          include: [QUEUE_CLAIM_TESTS],
+          include: SERIAL_TESTS,
+          fileParallelism: false,
           setupFiles: ["tests/setup/retry-gateway-502.ts"],
           env: testEnv as Record<string, string>,
           testTimeout: DB_TEST_TIMEOUT,
+          hookTimeout: DB_TEST_TIMEOUT,
           sequence: { groupOrder: 1 },
         },
       },

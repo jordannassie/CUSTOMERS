@@ -98,9 +98,11 @@ jobs:
           # Made-up Google Places answers for the competitor pages; never a real Places call (tests/e2e/competitors.spec.ts).
           PLACES_FIXTURES: "true"
         run: set -a && source .env.test.local && set +a && npm run test:e2e
-      - if: failure()
+      # Also after a green run: a test that passed only on retry keeps its first trace here (BUG-036).
+      - if: always()
         uses: actions/upload-artifact@v4
         with:
           name: playwright-traces
           path: test-results/
+          if-no-files-found: ignore
           retention-days: 7

@@ -47,7 +47,7 @@ async function jobsFor(businessId: string) {
   return data;
 }
 
-describe("startScan", { timeout: 30_000 }, () => {
+describe("startScan", () => {
   it("refuses signed-out callers", async () => {
     expect(await startScan({ businessId: randomUUID() })).toMatchObject({ ok: false, status: 401 });
     expect(await getScanStatus({ businessId: randomUUID() })).toMatchObject({ ok: false, status: 401 });

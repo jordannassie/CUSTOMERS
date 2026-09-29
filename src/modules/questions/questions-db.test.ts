@@ -5,7 +5,6 @@ import { env } from "@/lib/env";
 import { createServiceClient } from "@/lib/supabase/service";
 
 // B-53 against the local database: the Server Actions check auth, input, ownership and the plan limit themselves.
-vi.setConfig({ testTimeout: 30_000 });
 
 const service = createServiceClient();
 const userIds: string[] = [];

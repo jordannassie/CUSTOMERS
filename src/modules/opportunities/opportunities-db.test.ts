@@ -6,7 +6,6 @@ import { createServiceClient } from "@/lib/supabase/service";
 
 // B-52 against the local database: status changes and checklist ticks only reach the agency's own
 // business, and a ticked item survives the next scan's replacement of open opportunities.
-vi.setConfig({ testTimeout: 30_000 });
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 
 const service = createServiceClient();

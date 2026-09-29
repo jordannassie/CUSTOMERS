@@ -6,7 +6,6 @@ import { addBusiness, createAgency, deleteTestUsers, fakeMail, grantPlan, servic
 // B-62 against the local database `npm test` rebuilds: low credits, the weekly report and the welcome email,
 // each sent once however often its trigger runs. Other test files create agencies at the same time, so every
 // job here only looks at this file's agencies.
-vi.setConfig({ testTimeout: 30_000 });
 const workerSecret = vi.hoisted(() => ({ value: "" }));
 vi.mock("@/lib/env", async (importOriginal) => {
   const { env } = await importOriginal<typeof import("@/lib/env")>();
