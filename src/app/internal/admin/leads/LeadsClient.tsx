@@ -33,24 +33,24 @@ interface LeadsResponse {
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const INTEREST_LABELS: Record<string, string> = {
-  ai_visibility: "AI Visibility",
-  agency:        "Join as Agency",
-  book_demo:     "Book Demo Call",
+  ai_visibility: "AI visibility",
+  agency:        "Join as agency",
+  book_demo:     "Book demo call",
   other:         "Other",
   // Legacy values, kept so old records still show a label
   product:       "Product",
   support:       "Support",
   sales:         "Sales",
   enterprise:    "Enterprise",
-  chatgpt_ads:   "ChatGPT Ads",
+  chatgpt_ads:   "ChatGPT ads",
 };
 
 const SOURCE_LABELS: Record<string, string> = {
-  contact_page: "Contact Page",
-  chat:         "Chat Widget",
-  agency:       "Agency Page",
+  contact_page: "Contact page",
+  chat:         "Chat widget",
+  agency:       "Agency page",
   other:        "Other",
-  ads_page:     "Ads Page (legacy)",
+  ads_page:     "Ads page (legacy)",
 };
 
 const STATUS_OPTIONS = [
@@ -58,7 +58,7 @@ const STATUS_OPTIONS = [
   { value: "contacted", label: "Contacted", color: "bg-yellow-50 text-yellow-700 border-yellow-200" },
   { value: "qualified", label: "Qualified", color: "bg-purple-50 text-purple-700 border-purple-200" },
   { value: "closed",    label: "Closed",    color: "bg-green-50 text-green-700 border-green-200" },
-  { value: "in_progress", label: "In Progress", color: "bg-orange-50 text-orange-700 border-orange-200" },
+  { value: "in_progress", label: "In progress", color: "bg-orange-50 text-orange-700 border-orange-200" },
   { value: "resolved",  label: "Resolved",  color: "bg-gray-50 text-gray-600 border-gray-200" },
 ];
 
