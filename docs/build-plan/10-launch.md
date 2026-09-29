@@ -143,7 +143,7 @@ Phase 10 · S · Depends on: B-14, B-45 · Blocked by Jordan: decision on beta u
 ---
 
 ### B-82 Security and resilience hardening
-- [ ] Done
+- [x] Done (PR #97, merged into mvp)
 
 Phase 10 · M · Depends on: B-59, B-71, B-73 · Blocked by Jordan: no · MVP_ROADMAP SEC-03 to SEC-07, REL-06, REL-08 · Branch: `task/B-82-security-and-resilience-hardening` → `mvp`
 

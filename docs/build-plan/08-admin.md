@@ -98,7 +98,7 @@ Phase 8 · S · Depends on: B-64 · Blocked by Jordan: no · MVP_SPEC 9.1 · Bra
 ---
 
 ### B-69 Alerts
-- [ ] Done
+- [x] Done (PR #96, merged into mvp)
 
 Phase 8 · M · Depends on: B-27, B-42, B-61 · Blocked by Jordan: no · MVP_SPEC 22, D-76 · Branch: `task/B-69-alerts` → `mvp`
 

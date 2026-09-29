@@ -6,19 +6,13 @@ Rules set by the user on 2026-09-26: 3 worker sessions at once; the leader revie
 
 ## In progress
 
-Three worker sessions at once (up to five allowed since 2026-09-27).
-
-| Task | Worker pane | Worktree | PR |
-|---|---|---|---|
-| B-46 Billing page | b46 | CUSTOMERS-B46 | #93 |
-| B-59 Share page | b59 | CUSTOMERS-B59 | #91 |
-| B-69 Alerts | b69 | CUSTOMERS-B69 | not yet |
+Nothing in progress. Up to five worker sessions at once are allowed since 2026-09-27.
 
 ## Done
 
 Into main: B-06, B-07, B-10, B-11, B-12, B-13. B-24 code (#32), open for labelling.
-Into mvp: B-08, B-09, B-14 to B-17, B-20 to B-23, B-26 to B-31, B-36, B-38, B-40 to B-44, B-48 to B-50, B-52 to B-58, B-61, B-64 to B-68, B-70 to B-74. Code merged, open for labelling: B-25 (#49), B-32 (#67), B-33 (#69), B-34 (#64), B-51 (#77).
-Fixes into mvp: admin layout fix (#62), atomic `retry_scan_job` for admin Retry (#61), INFRA-01 isolated local test database per worktree (#88, fixes BUG-010).
+Into mvp: B-08, B-09, B-14 to B-17, B-20 to B-23, B-26 to B-31, B-36, B-38, B-40 to B-44, B-46, B-48 to B-50, B-52 to B-62, B-64 to B-74, B-82. Code merged, open for labelling: B-25 (#49), B-32 (#67), B-33 (#69), B-34 (#64), B-51 (#77).
+Fixes into mvp: admin layout fix (#62), atomic `retry_scan_job` for admin Retry (#61), INFRA-01 isolated local test database per worktree (#88, fixes BUG-010), bug batch (#100, fixes BUG-023, BUG-028 to BUG-031, BUG-034, BUG-039, BUG-040), shared store for public rate limits (#101, SEC-07 follow-up to B-82, migration 039).
 
 Open questions for people are in [FLAGS.md](./FLAGS.md).
 
