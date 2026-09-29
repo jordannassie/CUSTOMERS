@@ -9,6 +9,8 @@ export type LeaderRow = {
   /** Rounded 0 to 100; null until a scan has checked this business. */
   score: number | null;
   standing: Standing | null;
+  /** Added partway through the 30-day window, so older checks never looked for it (F-53): no standing yet. */
+  collecting: boolean;
   /** Grey shade for a competitor's bar: 1 is the strongest (DESIGN.md competitor-1 to 3). */
   shade: 1 | 2 | 3 | null;
 };
@@ -46,6 +48,8 @@ export const STANDING_TEXT: Record<Standing, string> = {
   about_same: "About the same",
 };
 
+export const COLLECTING_TEXT = "New, still collecting";
+
 const key = (name: string) => name.trim().toLowerCase();
 
 export function competitorsView(input: {
@@ -59,27 +63,40 @@ export function competitorsView(input: {
   const { business, report, competitors, signals, also, limit } = input;
   const { overall } = report;
   const scored = new Map(report.competitors.map((c) => [key(c.name), c]));
+  const firstCheck = report.firstCheckedAt?.getTime() ?? null;
   const lastCheck = report.lastCheckedAt?.getTime() ?? null;
 
   const rows: LeaderRow[] = competitors.map((c) => {
     const score = scored.get(key(c.name));
     // A competitor added after the last scan has no checks of its own yet, so a 0 would be wrong.
     const checked = score && lastCheck !== null && c.createdAt.getTime() <= lastCheck;
+    const collecting = !!checked && firstCheck !== null && c.createdAt.getTime() > firstCheck;
     return {
       name: c.name,
       isYou: false,
       score: checked ? Math.round(score.score) : null,
-      standing: checked ? score.standing : null,
+      standing: checked && !collecting ? score.standing : null,
+      collecting,
       shade: null,
     };
   });
-  const ranked = rows.filter((r) => r.score !== null).sort((a, b) => b.score! - a.score! || a.name.localeCompare(b.name));
+  const byScore = (a: LeaderRow, b: LeaderRow) => b.score! - a.score! || a.name.localeCompare(b.name);
+  const ranked = rows.filter((r) => r.score !== null && !r.collecting).sort(byScore);
   ranked.forEach((r, i) => (r.shade = i === 0 ? 1 : i === 1 ? 2 : 3));
-  const you: LeaderRow = { name: business.name, isYou: true, score: overall ? Math.round(overall.score) : null, standing: null, shade: null };
+  // A partial score is not placed above or below you until it covers the whole window.
+  const collecting = rows.filter((r) => r.collecting).sort(byScore);
+  const you: LeaderRow = {
+    name: business.name,
+    isYou: true,
+    score: overall ? Math.round(overall.score) : null,
+    standing: null,
+    collecting: false,
+    shade: null,
+  };
   const pending = rows.filter((r) => r.score === null);
   // Ties list you first, so an equal score never reads as losing.
   const leaderboard = overall
-    ? [...ranked.filter((r) => r.score! > you.score!), you, ...ranked.filter((r) => r.score! <= you.score!), ...pending]
+    ? [...ranked.filter((r) => r.score! > you.score!), you, ...ranked.filter((r) => r.score! <= you.score!), ...collecting, ...pending]
     : [you, ...rows];
 
   return {

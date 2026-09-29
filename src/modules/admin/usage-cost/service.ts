@@ -5,8 +5,8 @@ const DAY = 24 * 60 * 60 * 1000;
 export const PERIODS = [7, 30, 90] as const;
 export type PeriodDays = (typeof PERIODS)[number];
 
-// Below this margin a model is flagged; D-23 plans for about 70%.
-export const THIN_MARGIN = 0.5;
+// Below this margin a model is flagged, matching the about 70% D-23 plans for (F-38).
+export const THIN_MARGIN = 0.7;
 
 export const MODEL_KEYS = ["openai", "anthropic", "perplexity"] as const;
 export type ModelKey = (typeof MODEL_KEYS)[number];
