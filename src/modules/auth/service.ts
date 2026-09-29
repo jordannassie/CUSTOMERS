@@ -16,3 +16,4 @@ export function parseAdminEmails(raw: string | undefined): string[] {
 export function isAdminEmail(email: string | null, adminEmails: string[]): boolean {
   return !!email && adminEmails.includes(email.toLowerCase());
 }
+

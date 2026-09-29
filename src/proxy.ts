@@ -2,6 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { env } from "@/lib/env";
 import { safeNextPath } from "@/lib/safe-next";
+import { isAuthUnavailable } from "@/lib/supabase/auth-errors";
 
 // Quick redirects only (MVP_SPEC 18.1 rule 4). Every page, action and route still checks access
 // itself through src/modules/auth.
@@ -25,13 +26,15 @@ export async function proxy(request: NextRequest) {
   });
 
   // Also refreshes an expiring session and writes the new cookies; do not remove.
-  const { data } = await supabase.auth.getClaims();
+  const { data, error } = await supabase.auth.getClaims();
   const signedIn = !!data?.claims;
+  // A check that failed is not a sign-out: let the page run its own check and show its error (BUG-4).
+  const unknown = !signedIn && isAuthUnavailable(error);
 
   const { pathname, search } = request.nextUrl;
   const isProtected = PROTECTED.some((path) => pathname === path || pathname.startsWith(`${path}/`));
 
-  if (!signedIn && isProtected) {
+  if (!signedIn && !unknown && isProtected) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     url.search = "";

@@ -1,5 +1,6 @@
 import "server-only";
 import { NextResponse } from "next/server";
+import { isAuthUnavailable } from "@/lib/supabase/auth-errors";
 import { createClient } from "@/lib/supabase/server";
 
 /**
@@ -14,6 +15,14 @@ export async function requireUser() {
     data: { user },
     error,
   } = await supabase.auth.getUser();
+
+  if (isAuthUnavailable(error)) {
+    return {
+      user: null,
+      supabase,
+      unauthorized: NextResponse.json({ error: "We couldn't check your account just now. Try again in a moment." }, { status: 503 }),
+    } as const;
+  }
 
   if (error || !user) {
     return {
