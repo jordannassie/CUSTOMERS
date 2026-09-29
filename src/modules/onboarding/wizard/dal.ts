@@ -45,15 +45,20 @@ export async function loadWizardState(userId: string): Promise<WizardContext> {
  * Step 2: creates the agency, or renames it when the user comes back. Agencies have no write policy
  * for signed-in users, so this uses the service role for the caller's own row only.
  */
-export async function saveAgency(userId: string, name: string, plan: PlanId | null): Promise<void> {
+export async function saveAgency(userId: string, name: string, plan: PlanId | null): Promise<{ agencyId: string }> {
   const service = createServiceClient();
-  const { error } = await service.from("agencies").upsert({ owner_user_id: userId, name }, { onConflict: "owner_user_id" });
+  const { data, error } = await service
+    .from("agencies")
+    .upsert({ owner_user_id: userId, name }, { onConflict: "owner_user_id" })
+    .select("id")
+    .single();
   if (error) throw new Error(`Could not save agency: ${error.message}`);
   // agencies has no plan column yet, so the pricing page choice waits in app_metadata for the card step (B-41).
   if (plan) {
     const { error: planError } = await service.auth.admin.updateUserById(userId, { app_metadata: { selected_plan: plan } });
     if (planError) throw new Error(`Could not save the chosen plan: ${planError.message}`);
   }
+  return { agencyId: data.id };
 }
 
 export type StartBusinessResult =

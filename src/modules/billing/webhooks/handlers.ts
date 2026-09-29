@@ -122,18 +122,14 @@ async function invoicePaymentFailed(deps: WebhookDeps, invoice: Stripe.Invoice) 
   await deps.store.setBusinessStatus(agency.id, "past_due");
 
   const to = await deps.store.ownerEmail(agency.ownerUserId);
-  if (to) await deps.sendEmail(paymentFailedEmail({ to, agencyId: agency.id, invoiceId: invoice.id! }));
+  if (to) await deps.sendEmail(paymentFailedEmail({ to, agencyId: agency.id, invoice }));
 }
 
 async function trialWillEnd(deps: WebhookDeps, sub: Stripe.Subscription) {
   if (sub.status !== "trialing" || !sub.trial_end) return;
   const agency = await requireAgency(deps, { agencyId: sub.metadata?.agency_id, customerId: idOf(sub.customer) });
   const to = await deps.store.ownerEmail(agency.ownerUserId);
-  if (to) {
-    await deps.sendEmail(
-      trialEndingEmail({ to, agencyId: agency.id, subscriptionId: sub.id, trialEnd: new Date(sub.trial_end * 1000) }),
-    );
-  }
+  if (to) await deps.sendEmail(trialEndingEmail({ to, agencyId: agency.id, subscription: sub }));
 }
 
 /** Events can arrive out of order, so the subscription's current state is read from Stripe before it is saved. */

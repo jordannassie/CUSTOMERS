@@ -1,6 +1,18 @@
 # Email
 
-Email foundation (B-61, MVP_SPEC 10, D-37, D-72): React Email templates sent through Resend. The five emails themselves are B-62.
+Email foundation (B-61, MVP_SPEC 10, D-37, D-72): React Email templates sent through Resend, and the five MVP emails (B-62).
+
+## The five emails
+
+| Email | Template | Sent by | Key (one email per key, ever) |
+|---|---|---|---|
+| Welcome | `welcome.tsx` | Onboarding step 2, when the agency is created (`notifications/welcome.ts`) | `welcome:<agency>` |
+| Trial ending | `trial-ending.tsx` | Stripe `customer.subscription.trial_will_end` (`billing/webhooks/emails.tsx`) | `trial_ending:<subscription>:<trial end>` |
+| Payment failed | `payment-failed.tsx` | Stripe `invoice.payment_failed` (`billing/webhooks/emails.tsx`) | `payment_failed:<invoice>` |
+| Low credits | `low-credits.tsx` | pg_cron every 30 minutes (`notifications/jobs.ts`, `low_credit_agencies()` in migration 038) | `low_credits:<agency>:<period end>:<low, empty or negative>` |
+| Weekly report | `weekly-report.tsx` | pg_cron on Mondays (`notifications/jobs.ts`) | `weekly_report:<agency>:<Monday>` |
+
+Outside production `getEmailClient()` logs each email instead of sending it, since `.env.local` may hold a real key.
 
 | File | Holds |
 |---|---|

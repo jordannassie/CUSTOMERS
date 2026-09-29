@@ -16,6 +16,7 @@ const PUBLIC: Record<string, string> = {
   "src/app/api/email/unsubscribe/route.ts": "signed unsubscribe token (B-61)",
   "src/app/r/[token]/logo/route.ts": "share link logo; the token is the access check (B-59)",
   "src/app/api/alerts/check/route.ts": "pg_cron call, worker secret header (B-69)",
+  "src/app/api/email/jobs/route.ts": "pg_cron call, worker secret header (B-62)",
 };
 
 function walk(dir: string): string[] {

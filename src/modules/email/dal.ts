@@ -76,6 +76,18 @@ export function createEmailStore(db: Db = createServiceClient()): EmailStore {
   };
 }
 
+/** Which of these idempotency keys already have a sent or skipped email, so a cron job can pass over them before doing any work. */
+export async function findHandledEmailKeys(keys: string[], db: Db = createServiceClient()): Promise<Set<string>> {
+  if (keys.length === 0) return new Set();
+  const { data, error } = await db
+    .from("email_log")
+    .select("idempotency_key")
+    .in("idempotency_key", keys)
+    .in("status", ["sent", "skipped"]);
+  if (error) throw new Error(`email_log lookup failed: ${error.message}`);
+  return new Set(data.map((row) => row.idempotency_key).filter((key): key is string => key !== null));
+}
+
 /** Called by the public unsubscribe route after the signed token is checked. False when the agency is gone. */
 export async function unsubscribeAgency(agencyId: string, topic: UnsubscribeTopic, db: Db = createServiceClient()): Promise<boolean> {
   const column = { weekly_report: "weekly_report_emails" } as const;
