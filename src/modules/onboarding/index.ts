@@ -10,6 +10,7 @@ export { prepareQuestions, type QuestionBusiness, type QuestionSet } from "./que
 export type { PreparedQuestion } from "./question-rules";
 export {
   checkCardStep,
+  checkTrialCredits,
   saveAgencyStep,
   saveCompetitorsStep,
   saveDetailsStep,
@@ -18,10 +19,26 @@ export {
   saveWebsiteStep,
   startCardStep,
 } from "./wizard/actions";
-export { getAddBusinessBlock, getCardStep, getDetailsStep, getModelsStep, getQuestionsStep, getWizardState } from "./wizard/queries";
+export {
+  getAddBusinessBlock,
+  getAwaitingTrialCredits,
+  getCardStep,
+  getDetailsStep,
+  getModelsStep,
+  getQuestionsStep,
+  getWizardState,
+} from "./wizard/queries";
 export type { DetailsStep, WizardContext } from "./wizard/dal";
 export type { ModelsStep, QuestionsStep } from "./wizard/questions/dal";
-export { FIRST_SCAN_FAILED, firstScanPhase, firstScanProblem, type FirstScanPhase } from "./first-scan";
+export {
+  CREDITS_LATE,
+  CREDITS_WAIT_MS,
+  FIRST_SCAN_FAILED,
+  creditsWaitNext,
+  firstScanPhase,
+  firstScanProblem,
+  type FirstScanPhase,
+} from "./first-scan";
 export {
   FIRST_SCAN_PATH,
   WIZARD_STEPS,

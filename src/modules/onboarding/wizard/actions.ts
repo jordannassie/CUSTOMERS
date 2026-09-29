@@ -8,7 +8,7 @@ import { dedupeConfirmed } from "../competitors";
 import { saveCompetitors } from "../dal";
 import { saveCompetitorsInput, toDomain, type AutofillResult } from "../schema";
 import { advanceStep, saveAgency, saveDetails, startBusiness } from "./dal";
-import { finishCardStep, startCardCheckout } from "./card/dal";
+import { awaitingTrialCredits, finishCardStep, startCardCheckout } from "./card/dal";
 import { finishWizard, saveModels, saveQuestions } from "./questions/dal";
 import { agencyStepInput, businessOnly, detailsStepInput, modelsStepInput, questionsStepInput, websiteStepInput } from "./schema";
 import { FIRST_SCAN_PATH, stepPath } from "./steps";
@@ -128,6 +128,13 @@ export async function checkCardStep(input: unknown): Promise<ActionResult<{ done
   const done = await finishCardStep(user, parsed.data.businessId);
   if (done === null) return notFound;
   return { ok: true, data: { done, next: FIRST_SCAN_PATH } };
+}
+
+/** Polled by the first scan screen while the trial credits are on their way (F-48). */
+export async function checkTrialCredits(): Promise<ActionResult<{ waiting: boolean }>> {
+  const user = await userId();
+  if (typeof user !== "string") return user;
+  return { ok: true, data: { waiting: await awaitingTrialCredits(user) } };
 }
 
 async function appOrigin(): Promise<string> {

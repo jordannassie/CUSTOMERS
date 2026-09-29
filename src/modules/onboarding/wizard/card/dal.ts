@@ -56,3 +56,20 @@ export async function finishCardStep(userId: string, businessId: string): Promis
   if ((step ?? 0) < stepNumber("card")) return false;
   return finishWizard(userId, businessId);
 }
+
+/**
+ * F-48: checkout.session.completed has linked the subscription, but invoice.paid has not granted the trial
+ * (or plan) credits yet. The first scan screen waits instead of showing "out of credits". Read only.
+ */
+export async function awaitingTrialCredits(userId: string): Promise<boolean> {
+  const agency = await loadAgency(userId);
+  if (!agency?.hasSubscription) return false;
+  const supabase = await createClient();
+  const { count, error } = await supabase
+    .from("credit_grants")
+    .select("id", { count: "exact", head: true })
+    .eq("agency_id", agency.id)
+    .in("source", ["trial", "plan"]);
+  if (error) throw new Error(`Could not load credit grants: ${error.message}`);
+  return count === 0;
+}
