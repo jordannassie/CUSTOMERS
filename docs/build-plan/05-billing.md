@@ -127,7 +127,7 @@ Phase 5 · M · Depends on: B-42, B-16 · Blocked by Jordan: trial credits confi
 ---
 
 ### B-46 Billing page
-- [ ] Done
+- [x] Done (PR #93, merged into mvp)
 
 Phase 5 · M · Depends on: B-43, B-44, B-09 · Blocked by Jordan: no · MVP_SPEC 8.1 (Settings), 11 · Branch: `task/B-46-billing-page` → `mvp`
 
