@@ -56,18 +56,31 @@ export function isTrial(account: AccountState): boolean {
   return account.status === "trialing" && account.trialEndsAt !== null;
 }
 
+/**
+ * Splits what can still be spent into this period's plan credits and the rest (top-ups, or admin and
+ * promo grants). Plan credits expire first so they are spent first, and credits held for a running scan
+ * or overdrawn come out of them before any top-up credit (MVP_SPEC 4.2).
+ */
+export function splitCredits(usage: UsageNumbers): { plan: number; topup: number; other: number } {
+  const spendable = Math.max(0, usage.balance);
+  const topup = Math.min(usage.topupRemaining, spendable);
+  const plan = Math.min(spendable - topup, usage.periodCredits);
+  return { plan, topup, other: spendable - topup - plan };
+}
+
 export function usageWidget(usage: UsageNumbers, account: AccountState, now: Date): UsageWidgetView {
-  const { balance, topupRemaining, periodCredits, periodUsed } = usage;
+  const { balance, periodCredits, periodUsed } = usage;
   const percentUsed = periodCredits > 0 ? Math.min(100, Math.round((periodUsed / periodCredits) * 100)) : null;
   const empty = balance <= 0;
   const tone = empty ? "empty" : percentUsed !== null && percentUsed >= WARN_AT_PERCENT ? "warning" : "normal";
   const details: string[] = [];
+  const { plan, topup, other } = splitCredits(usage);
+  const hasPlan = periodCredits > 0;
 
   let headline: string;
   if (isTrial(account)) {
-    const left = Math.max(0, Math.min(balance, periodCredits));
-    headline = `${trialText(daysUntil(account.trialEndsAt!, now))}, ${count(left)} of ${count(periodCredits)} credits left`;
-  } else if (periodCredits > 0) {
+    headline = `${trialText(daysUntil(account.trialEndsAt!, now))}, ${count(plan)} of ${count(periodCredits)} credits left`;
+  } else if (hasPlan) {
     headline = `${count(periodUsed)} of ${count(periodCredits)} credits used`;
     if (account.periodEndsAt) details.push(renewsText(daysUntil(account.periodEndsAt, now)));
   } else {
@@ -76,7 +89,9 @@ export function usageWidget(usage: UsageNumbers, account: AccountState, now: Dat
 
   if (balance < 0) details.unshift(`${plural(-balance, "credit")} over`);
   else if (balance === 0) details.unshift("No credits left");
-  if (topupRemaining > 0) details.push(`Includes ${plural(topupRemaining, "top-up credit")}`);
+  // The headline counts plan credits only, so anything else is listed on its own line.
+  if (topup > 0) details.push(`${hasPlan ? "Plus" : "Includes"} ${plural(topup, "top-up credit")}`);
+  if (other > 0 && hasPlan) details.push(`Plus ${plural(other, "extra credit")}`);
 
   return { tone, headline, percentUsed, details, showBuyCredits: empty };
 }

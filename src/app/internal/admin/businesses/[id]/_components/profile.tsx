@@ -1,4 +1,6 @@
+import { INDUSTRY_LABELS, isIndustry } from "@/lib/industries";
 import type { AdminBusinessDetail } from "@/modules/admin";
+import { agencyStatusLabel, planStatusLabel } from "../../../agencies/_components/agency-parts";
 import { ModelList, formatDate, frequencyLabel } from "../../_components/scan-parts";
 import Section from "./section";
 
@@ -9,7 +11,8 @@ const STATUS: Record<string, string> = {
   paused: "Paused",
 };
 
-const words = (value: string) => value.charAt(0).toUpperCase() + value.slice(1).replace(/_/g, " ");
+// Older businesses kept free-text industries; only the listed ones have a label.
+const industryLabel = (value: string) => (isIndustry(value) ? INDUSTRY_LABELS[value] : value);
 
 export default function Profile({ detail }: { detail: NonNullable<AdminBusinessDetail> }) {
   const { business: b, plan, agency } = detail;
@@ -19,12 +22,12 @@ export default function Profile({ detail }: { detail: NonNullable<AdminBusinessD
     ["Website", b.domain ?? "No website"],
     ["Location", location || "Not set"],
     ["Phone", b.phone ?? "Not set"],
-    ["Industry", b.industry ?? "Not set"],
+    ["Industry", b.industry ? industryLabel(b.industry) : "Not set"],
     ["Services", b.services.length ? b.services.join(", ") : "None"],
     ["Other names", b.aliases.length ? b.aliases.join(", ") : "None"],
     ["Status", STATUS[b.status] ?? b.status],
-    ["Plan", plan ? `${plan.name ?? "Unknown plan"}, ${words(plan.status).toLowerCase()}` : "No plan"],
-    ["Agency status", agency ? words(agency.status) : "No agency"],
+    ["Plan", plan ? `${plan.name ?? "Unknown plan"}, ${planStatusLabel(plan.status).toLowerCase()}` : "No plan"],
+    ["Agency status", agency ? agencyStatusLabel(agency.status) : "No agency"],
     ["Scan frequency", frequencyLabel(b.scan_frequency)],
     ["Models", <ModelList key="models" models={b.models} />],
     ["Next scan", b.next_scan_at ? formatDate(b.next_scan_at, true) : "Not scheduled"],

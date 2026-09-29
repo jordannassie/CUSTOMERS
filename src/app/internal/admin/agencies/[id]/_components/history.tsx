@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { AdminAgencyDetail } from "@/modules/admin";
 import { formatDate } from "../../../businesses/_components/scan-parts";
 import Section, { Empty } from "../../../businesses/[id]/_components/section";
-import { credits } from "../../_components/agency-parts";
+import { credits, planStatusLabel } from "../../_components/agency-parts";
 
 const ACTIONS: Record<string, string> = {
   "agency.adjust_credits": "Changed credits",
@@ -37,7 +37,7 @@ export function Businesses({ rows }: { rows: AdminAgencyDetail["businesses"] }) 
               </span>
               <span className="shrink-0 text-right text-muted-foreground">
                 {b.plan ?? "No plan"}
-                {b.planStatus && b.planStatus !== "active" && <span className="block text-text-hint">{b.planStatus.replace("_", " ")}</span>}
+                {b.planStatus && b.planStatus !== "active" && <span className="block text-text-hint">{planStatusLabel(b.planStatus)}</span>}
               </span>
             </li>
           ))}

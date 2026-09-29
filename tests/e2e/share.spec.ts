@@ -125,13 +125,14 @@ test("Share gives a link the client opens without a login, and turning it off st
 
   await page.getByTestId("revoke-link").click();
   await expect(page.getByTestId("create-link")).toBeVisible(ACTION);
-  await reader.reload();
+  expect((await reader.reload())?.status()).toBe(404);
   await expect(reader.getByText("This report link is no longer active.")).toBeVisible();
   await client.close();
 });
 
 test("an unknown link shows the inactive page", async ({ page }) => {
-  await page.goto(`/r/${"A".repeat(43)}`);
+  expect((await page.goto(`/r/${"A".repeat(43)}`))?.status()).toBe(404);
   await expect(page.getByText("This report link is no longer active.")).toBeVisible({ timeout: 60_000 });
-  await expect(page.locator('meta[name="robots"]')).toHaveAttribute("content", /noindex/);
+  // The page's own tag and the one Next adds to every 404.
+  for (const meta of await page.locator('meta[name="robots"]').all()) await expect(meta).toHaveAttribute("content", /noindex/);
 });

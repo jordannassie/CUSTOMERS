@@ -24,27 +24,27 @@ interface WeekdayDef {
 const WEEKDAYS: WeekdayDef[] = [
   {
     key: "monday", short: "Mon", label: "Monday",
-    theme: "AI Search News",
+    theme: "AI search news",
     desc:  "Explain a verified AI search development and what it means for agency clients.",
   },
   {
     key: "tuesday", short: "Tue", label: "Tuesday",
-    theme: "Client vs. Competitors",
+    theme: "Client vs. competitors",
     desc:  "Explain how agencies can compare client visibility against competitors.",
   },
   {
     key: "wednesday", short: "Wed", label: "Wednesday",
-    theme: "Package AEO Services",
+    theme: "Package AEO services",
     desc:  "Help agencies explain, scope, and offer AEO services to clients.",
   },
   {
     key: "thursday", short: "Thu", label: "Thursday",
-    theme: "Reporting Checklist",
+    theme: "Reporting checklist",
     desc:  "Share practical AI visibility audit steps and client-reporting advice.",
   },
   {
     key: "friday", short: "Fri", label: "Friday",
-    theme: "Agency Workflow",
+    theme: "Agency workflow",
     desc:  "Show how agencies can use Customers.Direct features for client comparisons and next steps.",
   },
 ];
@@ -274,7 +274,7 @@ function LinkedInPostEditor({ initialPost }: { initialPost: string }) {
             </span>
           )}
         </div>
-        <CopyButtonFn label="Copy LinkedIn Post" getText={() => text} />
+        <CopyButtonFn label="Copy LinkedIn post" getText={() => text} />
       </div>
 
       {/* Editable textarea */}
@@ -321,10 +321,10 @@ function OutputPanel({
       "",
       article.articleBody,
       "",
-      "## Why This Matters",
+      "## Why this matters",
       article.whyItMatters,
       "",
-      "## Key Takeaways",
+      "## Key takeaways",
       ...article.keyTakeaways.map((t, i) => `${i + 1}. ${t}`),
       "",
       "## Sources",
@@ -344,7 +344,7 @@ function OutputPanel({
             <IconPencil size={13} />
           </div>
           <div>
-            <h2 className="text-[14px] font-bold text-[#111827]">LinkedIn Post Ready</h2>
+            <h2 className="text-[14px] font-bold text-[#111827]">LinkedIn post ready</h2>
             {weekdayDef && (
               <p className="text-[11px] text-[#9CA3AF]">{weekdayDef.label} · {weekdayDef.theme}</p>
             )}
@@ -378,9 +378,9 @@ function OutputPanel({
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <span className="w-5 h-5 rounded-full bg-[#D97706] text-white text-[9px] font-bold flex items-center justify-center shrink-0">B</span>
-                <h3 className="text-[13px] font-bold text-[#92400E] uppercase tracking-wider">Image Prompt for GPT</h3>
+                <h3 className="text-[13px] font-bold text-[#92400E] uppercase tracking-wider">Image prompt for GPT</h3>
               </div>
-              <CopyButton label="Copy Image Prompt" text={article.imagePrompt} />
+              <CopyButton label="Copy image prompt" text={article.imagePrompt} />
             </div>
             <p className="text-[11px] text-[#92400E] mb-2.5">
               Paste this into ChatGPT or Midjourney to generate a 1080×1080 LinkedIn image.
@@ -399,7 +399,7 @@ function OutputPanel({
                 <span className="w-5 h-5 rounded-full bg-[#374151] text-white text-[9px] font-bold flex items-center justify-center shrink-0">C</span>
                 <h3 className="text-[13px] font-bold text-[#374151] uppercase tracking-wider">Sources</h3>
               </div>
-              <CopyButton label="Copy Sources" text={article.sources} />
+              <CopyButton label="Copy sources" text={article.sources} />
             </div>
             <p className="text-[11px] text-[#9CA3AF] mb-2.5">
               Keep sources separate from the post. Review to confirm verified facts vs. interpretation.
@@ -417,7 +417,7 @@ function OutputPanel({
               <span className="w-5 h-5 rounded-full bg-[#15803D] text-white text-[9px] font-bold flex items-center justify-center shrink-0">D</span>
               <h3 className="text-[13px] font-bold text-[#166534] uppercase tracking-wider">Reply to AEO Comments</h3>
             </div>
-            <CopyButton label="Copy Reply + Link" text={AEO_REPLY} />
+            <CopyButton label="Copy reply + link" text={AEO_REPLY} />
           </div>
           <p className="text-[11px] text-[#166534] mb-2.5">
             Send this manually to anyone who comments &ldquo;AEO&rdquo; on your post.
@@ -436,7 +436,7 @@ function OutputPanel({
           <summary className="flex items-center justify-between px-5 py-3.5 cursor-pointer bg-[#F8FAFD] hover:bg-[#F1F5F9] transition-colors select-none list-none">
             <div className="flex items-center gap-2">
               <span className="w-5 h-5 rounded-full bg-[#9CA3AF] text-white text-[9px] font-bold flex items-center justify-center shrink-0">E</span>
-              <span className="text-[12.5px] font-bold text-[#374151]">Optional Newsletter Briefing</span>
+              <span className="text-[12.5px] font-bold text-[#374151]">Optional newsletter briefing</span>
               <span className="text-[10px] text-[#9CA3AF] font-medium">(email subject, article body, key takeaways)</span>
             </div>
             <svg
@@ -453,7 +453,7 @@ function OutputPanel({
             <div className="border-b border-[#F1F5F9] pb-4">
               <div className="flex items-start justify-between gap-3 mb-1">
                 <h3 className="text-[16px] font-bold text-[#111827] leading-tight flex-1">{article.headline}</h3>
-                <CopyButton label="Copy Headline" text={article.headline} />
+                <CopyButton label="Copy headline" text={article.headline} />
               </div>
               {article.subheadline && (
                 <p className="text-[13px] text-[#6B7280] mt-1">{article.subheadline}</p>
@@ -465,7 +465,7 @@ function OutputPanel({
               {article.emailSubject && (
                 <div className="bg-[#F8FAFD] border border-[#E2E8F0] rounded-xl p-3.5">
                   <div className="flex items-center justify-between mb-1">
-                    <p className="text-[9.5px] font-bold text-[#9CA3AF] uppercase tracking-wider">Email Subject</p>
+                    <p className="text-[9.5px] font-bold text-[#9CA3AF] uppercase tracking-wider">Email subject</p>
                     <CopyButton label="Copy" text={article.emailSubject} />
                   </div>
                   <p className="text-[12.5px] font-semibold text-[#111827]">{article.emailSubject}</p>
@@ -474,7 +474,7 @@ function OutputPanel({
               {article.previewText && (
                 <div className="bg-[#F8FAFD] border border-[#E2E8F0] rounded-xl p-3.5">
                   <div className="flex items-center justify-between mb-1">
-                    <p className="text-[9.5px] font-bold text-[#9CA3AF] uppercase tracking-wider">Preview Text</p>
+                    <p className="text-[9.5px] font-bold text-[#9CA3AF] uppercase tracking-wider">Preview text</p>
                     <CopyButton label="Copy" text={article.previewText} />
                   </div>
                   <p className="text-[12.5px] text-[#374151]">{article.previewText}</p>
@@ -486,8 +486,8 @@ function OutputPanel({
             {article.articleBody && (
               <div className="bg-[#F8FAFD] border border-[#E2E8F0] rounded-xl p-4">
                 <div className="flex items-center justify-between mb-2.5">
-                  <p className="text-[9.5px] font-bold text-[#9CA3AF] uppercase tracking-wider">Article Body</p>
-                  <CopyButton label="Copy Article" text={buildNewsletter()} />
+                  <p className="text-[9.5px] font-bold text-[#9CA3AF] uppercase tracking-wider">Article body</p>
+                  <CopyButton label="Copy article" text={buildNewsletter()} />
                 </div>
                 <div className="prose prose-sm max-w-none text-[12.5px] text-[#374151] leading-relaxed whitespace-pre-wrap font-[inherit]">
                   {article.articleBody}
@@ -498,7 +498,7 @@ function OutputPanel({
             {/* Why it matters */}
             {article.whyItMatters && (
               <div className="bg-[#EFF6FF] border border-[#BFDBFE] rounded-xl p-3.5">
-                <p className="text-[9.5px] font-bold text-[#0866F5] uppercase tracking-wider mb-1.5">Why This Matters</p>
+                <p className="text-[9.5px] font-bold text-[#0866F5] uppercase tracking-wider mb-1.5">Why this matters</p>
                 <p className="text-[12.5px] text-[#374151] leading-relaxed">{article.whyItMatters}</p>
               </div>
             )}
@@ -506,7 +506,7 @@ function OutputPanel({
             {/* Key takeaways */}
             {article.keyTakeaways.length > 0 && (
               <div className="bg-[#F8FAFD] border border-[#E2E8F0] rounded-xl p-4">
-                <p className="text-[9.5px] font-bold text-[#9CA3AF] uppercase tracking-wider mb-3">Key Takeaways</p>
+                <p className="text-[9.5px] font-bold text-[#9CA3AF] uppercase tracking-wider mb-3">Key takeaways</p>
                 <ol className="flex flex-col gap-2">
                   {article.keyTakeaways.map((t, i) => (
                     <li key={i} className="flex items-start gap-2.5">
@@ -524,7 +524,7 @@ function OutputPanel({
             {article.instagramCaption && (
               <div className="bg-[#F8FAFD] border border-[#E2E8F0] rounded-xl p-4">
                 <div className="flex items-center justify-between mb-2">
-                  <p className="text-[9.5px] font-bold text-[#9CA3AF] uppercase tracking-wider">Instagram Caption</p>
+                  <p className="text-[9.5px] font-bold text-[#9CA3AF] uppercase tracking-wider">Instagram caption</p>
                   <CopyButton label="Copy Instagram" text={article.instagramCaption} />
                 </div>
                 <p className="text-[12px] text-[#374151] whitespace-pre-wrap leading-relaxed">{article.instagramCaption}</p>
@@ -588,7 +588,7 @@ function StoryCard({
         {/* What changed */}
         {story.whatIsNew && (
           <div>
-            <p className="text-[9.5px] font-bold text-[#9CA3AF] uppercase tracking-wider mb-1">What Changed</p>
+            <p className="text-[9.5px] font-bold text-[#9CA3AF] uppercase tracking-wider mb-1">What changed</p>
             <p className="text-[12.5px] text-[#374151] leading-relaxed">{story.whatIsNew}</p>
           </div>
         )}
@@ -600,7 +600,7 @@ function StoryCard({
               <path d="M13 4l-7 7-3-3 1-1 2 2 6-6 1 1z"/>
             </svg>
             <div>
-              <p className="text-[9.5px] font-bold text-[#0866F5] uppercase tracking-wider mb-0.5">Why Agencies Should Care</p>
+              <p className="text-[9.5px] font-bold text-[#0866F5] uppercase tracking-wider mb-0.5">Why agencies should care</p>
               <p className="text-[12.5px] font-semibold text-[#1D4ED8] leading-snug">{story.whatItHelpsDo}</p>
             </div>
           </div>
@@ -610,14 +610,14 @@ function StoryCard({
         <div className="grid sm:grid-cols-2 gap-2.5">
           {story.bestFor && (
             <div className="bg-[#F8FAFD] border border-[#F1F5F9] rounded-xl px-3.5 py-2.5">
-              <p className="text-[9.5px] font-bold text-[#9CA3AF] uppercase tracking-wider mb-1">What It Means for Clients</p>
+              <p className="text-[9.5px] font-bold text-[#9CA3AF] uppercase tracking-wider mb-1">What it means for clients</p>
               <p className="text-[12px] text-[#374151] leading-relaxed">{story.bestFor}</p>
             </div>
           )}
           {story.businessOpportunity && (
             <div className="bg-[#F8FAFD] border border-[#F1F5F9] rounded-xl px-3.5 py-2.5">
               <p className="text-[9.5px] font-bold text-[#9CA3AF] uppercase tracking-wider mb-1">
-                {weekdayDef ? `${weekdayDef.theme} Angle` : "Suggested Post Angle"}
+                {weekdayDef ? `${weekdayDef.theme} angle` : "Suggested post angle"}
               </p>
               <p className="text-[12px] text-[#374151] leading-relaxed">{story.businessOpportunity}</p>
             </div>
@@ -631,7 +631,7 @@ function StoryCard({
               <path d="M8 1a7 7 0 100 14A7 7 0 008 1zm1 10H7V7h2v4zm0-5H7V4h2v2z"/>
             </svg>
             <div>
-              <p className="text-[9.5px] font-bold text-[#9CA3AF] uppercase tracking-wider mb-0.5">Practical First Step</p>
+              <p className="text-[9.5px] font-bold text-[#9CA3AF] uppercase tracking-wider mb-0.5">Practical first step</p>
               <p className="text-[12px] text-[#374151] leading-relaxed">{story.howToTryIt}</p>
             </div>
           </div>
@@ -653,7 +653,7 @@ function StoryCard({
               rel="noreferrer"
               className="flex items-center gap-1 text-[11.5px] font-semibold text-[#6B7280] hover:text-[#0866F5] border border-[#E2E8F0] hover:border-[#0866F5]/40 px-2.5 py-1.5 rounded-lg transition-colors"
             >
-              View Source
+              View source
               <IconExternalLink />
             </a>
           )}
@@ -671,7 +671,7 @@ function StoryCard({
             ) : (
               <>
                 <IconPencil />
-                Write LinkedIn Post
+                Write LinkedIn post
               </>
             )}
           </button>
@@ -778,9 +778,9 @@ export default function NewsClient() {
   }
 
   const PERIOD_OPTIONS: { value: Period; label: string }[] = [
-    { value: "24h", label: "Last 24 Hours" },
-    { value: "48h", label: "Last 48 Hours" },
-    { value: "7d",  label: "Last 7 Days" },
+    { value: "24h", label: "Last 24 hours" },
+    { value: "48h", label: "Last 48 hours" },
+    { value: "7d",  label: "Last 7 days" },
   ];
 
   const isBusy = searching || !!writingId;
@@ -797,7 +797,7 @@ export default function NewsClient() {
               <circle cx="4" cy="4" r="2" fill="#0866F5"/>
             </svg>
           </div>
-          <h1 className="text-[22px] font-bold text-[#111827]">Agency LinkedIn Studio</h1>
+          <h1 className="text-[22px] font-bold text-[#111827]">Agency LinkedIn studio</h1>
         </div>
         <p className="text-[13px] text-[#6B7280]">
           Turn AI search news into LinkedIn posts that help agencies win and serve clients.
@@ -833,7 +833,7 @@ export default function NewsClient() {
           ))}
         </div>
 
-        {/* Find Agency News button */}
+        {/* Find agency news button */}
         <button
           type="button"
           onClick={handleSearch}
@@ -850,7 +850,7 @@ export default function NewsClient() {
               <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
                 <path d="M11.7 10.3l2.9 2.9-1.4 1.4-2.9-2.9A6 6 0 112 7a6 6 0 019.7 3.3zm-1.4.4A4 4 0 107 3a4 4 0 003.3 7.7z"/>
               </svg>
-              Find Agency News
+              Find agency news
             </>
           )}
         </button>
@@ -870,7 +870,7 @@ export default function NewsClient() {
             <IconSpin size={20} />
           </div>
           <p className="text-[15px] font-semibold text-[#111827] mb-1">
-            Finding {WEEKDAYS.find((w) => w.key === weekday)?.theme} news…
+            Finding stories for {WEEKDAYS.find((w) => w.key === weekday)?.theme}…
           </p>
           <p className="text-[12px] text-[#9CA3AF]">
             Searching for agency-relevant AI stories from the {PERIOD_OPTIONS.find((p) => p.value === period)?.label.toLowerCase()}. Usually takes 15 to 30 seconds.
@@ -899,7 +899,7 @@ export default function NewsClient() {
           </div>
           <p className="text-[14px] font-semibold text-[#374151] mb-1">No stories yet</p>
           <p className="text-[12px] text-[#9CA3AF] max-w-xs mx-auto">
-            Select a weekday angle above, then click &ldquo;Find Agency News&rdquo; to surface relevant stories for your LinkedIn post.
+            Select a weekday angle above, then click &ldquo;Find agency news&rdquo; to surface relevant stories for your LinkedIn post.
           </p>
         </div>
       )}
@@ -909,7 +909,7 @@ export default function NewsClient() {
         <div className="flex flex-col gap-4">
           <div className="flex items-center justify-between mb-1">
             <p className="text-[12px] font-semibold text-[#9CA3AF] uppercase tracking-wider">
-              {stories.length} {stories.length === 1 ? "Story" : "Stories"}: {WEEKDAYS.find((w) => w.key === weekday)?.theme}
+              {stories.length} {stories.length === 1 ? "story" : "stories"}: {WEEKDAYS.find((w) => w.key === weekday)?.theme}
             </p>
             {writingId && (
               <p className="text-[12px] text-[#0866F5] font-medium animate-pulse">

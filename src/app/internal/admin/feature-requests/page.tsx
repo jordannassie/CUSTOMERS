@@ -2,7 +2,7 @@ import { requireAdmin } from "@/modules/auth";
 import { createServiceClient } from "@/lib/supabase/service";
 import FeatureRequestsClient from "./FeatureRequestsClient";
 
-export const metadata = { title: "Feature Requests | Admin", robots: { index: false } };
+export const metadata = { title: "Feature requests | Admin", robots: { index: false } };
 
 export default async function AdminFeatureRequestsPage() {
   await requireAdmin({ next: "/internal/admin/feature-requests" });
@@ -30,7 +30,7 @@ export default async function AdminFeatureRequestsPage() {
   if (fetchError) {
     return (
       <div className="max-w-2xl mx-auto px-6 py-12">
-        <h1 className="text-[20px] font-bold text-[#111827] mb-2">Feature Requests</h1>
+        <h1 className="text-[20px] font-bold text-[#111827] mb-2">Feature requests</h1>
         <div className="bg-[#FFFBEB] border border-[#FDE68A] rounded-2xl p-6">
           <p className="text-[13px] font-semibold text-[#92400E] mb-2">Table not yet created on production</p>
           <p className="text-[12px] text-[#B45309] mb-4">
@@ -97,7 +97,7 @@ create policy "feature_requests_select_own" on public.feature_requests
     <div className="px-6 py-8 max-w-6xl mx-auto">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-[20px] font-bold text-[#111827]">Feature Requests</h1>
+          <h1 className="text-[20px] font-bold text-[#111827]">Feature requests</h1>
           <p className="text-[12px] text-[#9CA3AF] mt-0.5">Beta user suggestions</p>
         </div>
         <span className="text-[12px] text-[#9CA3AF]">

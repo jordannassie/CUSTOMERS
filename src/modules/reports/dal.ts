@@ -160,6 +160,11 @@ async function sharedBusiness(token: string): Promise<Shared | null> {
   };
 }
 
+/** Whether a share link still opens a report, checked before the page starts streaming so it can answer 404. */
+export async function isShareLinkActive(token: string): Promise<boolean> {
+  return (await sharedBusiness(token)) !== null;
+}
+
 /** The public report behind a share link; null when the link is unknown or turned off. */
 export async function getSharedReport(token: string): Promise<ReportView | null> {
   const shared = await sharedBusiness(token);

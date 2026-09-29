@@ -95,7 +95,7 @@ export default function AuthForm({ defaultMode = "login", errorParam = "", notic
       const siteBase =
         env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ??
         window.location.origin;
-      const { error: signupError } = await supabase.auth.signUp({
+      const { data, error: signupError } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -114,9 +114,13 @@ export default function AuthForm({ defaultMode = "login", errorParam = "", notic
         }
         return;
       }
-      setMessage(
-        "Check your email to confirm your account. If email confirmation is disabled, you can log in immediately.",
-      );
+      // With email confirmation off, signUp already returns a session.
+      if (data.session) {
+        router.push(nextFromUrl());
+        router.refresh();
+        return;
+      }
+      setMessage("Check your email to confirm your account.");
       return;
     }
 
@@ -173,7 +177,7 @@ export default function AuthForm({ defaultMode = "login", errorParam = "", notic
               }`}
               aria-pressed={mode === tab}
             >
-              {tab === "login" ? "Log In" : "Sign Up"}
+              {tab === "login" ? "Log in" : "Sign up"}
             </button>
           ))}
         </div>
@@ -294,7 +298,7 @@ export default function AuthForm({ defaultMode = "login", errorParam = "", notic
               className="w-full flex items-center justify-center gap-2 bg-[#171717] text-white font-semibold py-2.5 rounded-lg hover:bg-[#2A2A2A] transition-colors text-[13px] disabled:opacity-60 active:scale-[0.98]"
             >
               {loading === "email" && <Loader2 size={15} className="animate-spin" aria-hidden="true" />}
-              {isSignup ? "Create Account" : "Log In"}
+              {isSignup ? "Create account" : "Log in"}
               {loading !== "email" && <ArrowRight size={13} aria-hidden="true" />}
             </button>
           </form>

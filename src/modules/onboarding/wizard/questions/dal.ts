@@ -55,8 +55,9 @@ export async function loadQuestionsStep(
     clients,
   );
   if (set.error) console.warn(`Question picking fell back (${set.source}): ${set.error}`);
-  // tracked_prompts.source allows library, custom or legacy; written and fallback questions count as custom.
-  const source = set.source === "library" ? "library" : "custom";
+  // tracked_prompts.source allows library, custom or legacy, and custom means the user wrote it. Questions
+  // Claude wrote or the fallback made are our suggestions too, so they are stored as library (BUG-9).
+  const source = "library";
   const location = cityLabel(b.primary_city, b.primary_region);
   const now = Date.now();
   // Two loads at once (a refresh, a second tab) each prepare a set; the business row lock in

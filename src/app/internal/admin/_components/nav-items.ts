@@ -32,8 +32,8 @@ export const MAIN_ITEMS: AdminNavItem[] = [
 // Kept outside the main menu (D-07, D-35).
 export const EXTRA_ITEMS: AdminNavItem[] = [
   { label: "Leads", href: `${BASE}/leads`, icon: Inbox },
-  { label: "Feature Requests", href: `${BASE}/feature-requests`, icon: Lightbulb },
-  { label: "LinkedIn Studio", href: `${BASE}/news`, icon: Newspaper },
+  { label: "Feature requests", href: `${BASE}/feature-requests`, icon: Lightbulb },
+  { label: "LinkedIn studio", href: `${BASE}/news`, icon: Newspaper },
 ];
 
 function matches(pathname: string, href: string): boolean {

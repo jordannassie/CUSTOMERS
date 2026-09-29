@@ -1,10 +1,11 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
+import { notFound } from "next/navigation";
 import { connection } from "next/server";
-import { LinkIcon } from "lucide-react";
 import { Report } from "@/components/report/Report";
 import { Skeleton } from "@/components/ui/skeleton";
-import { getSharedReport } from "@/modules/reports";
+import { getSharedReport, isShareLinkActive } from "@/modules/reports";
+import { InactiveReport } from "./not-found";
 
 // No links into the app and nothing indexed. no-referrer keeps the token out of Referer headers when a
 // reader opens a competitor's website from the report.
@@ -16,10 +17,17 @@ export const metadata: Metadata = {
   twitter: null,
 };
 
+// Blocks on the share lookup so a turned-off link can answer 404 before anything streams.
+export const instant = false;
+
 type Props = { params: Promise<{ token: string }> };
 
 // B-59, MVP_SPEC 8.3: the read-only report behind a share link, no login needed.
-export default function SharedReportPage({ params }: Props) {
+export default async function SharedReportPage({ params }: Props) {
+  // A turned-off link must stop working at once, so this page is never cached.
+  await connection();
+  // Checked before anything streams, so a turned-off or unknown link answers 404 and is not indexed.
+  if (!(await isShareLinkActive((await params).token))) notFound();
   return (
     <main className="flex-1 bg-background print:bg-white">
       <Suspense fallback={<ReportSkeleton />}>
@@ -30,22 +38,10 @@ export default function SharedReportPage({ params }: Props) {
 }
 
 async function SharedReport({ params }: Props) {
-  // A turned-off link must stop working at once, so this page is never cached.
-  await connection();
   const { token } = await params;
   const report = await getSharedReport(token);
-  if (!report) return <Inactive />;
+  if (!report) return <InactiveReport />;
   return <Report report={report} logoSrc={report.agency.hasLogo ? `/r/${token}/logo` : null} />;
-}
-
-function Inactive() {
-  return (
-    <div className="mx-auto flex max-w-md flex-col items-center gap-3 px-4 py-24 text-center" data-testid="report-inactive">
-      <LinkIcon className="size-8 text-muted-foreground" aria-hidden="true" />
-      <h1 className="text-xl font-semibold tracking-[-0.02em]">This report link is no longer active.</h1>
-      <p className="text-sm text-muted-foreground">Ask the person who sent it to you for a new link.</p>
-    </div>
-  );
 }
 
 function ReportSkeleton() {
