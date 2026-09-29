@@ -120,7 +120,7 @@ describe("card step", () => {
 
 describe("trial credits after the card (F-48)", () => {
   const grant = (agencyId: string, source: string) =>
-    service.rpc("grant_credits", { p_agency_id: agencyId, p_source: source, p_source_id: `il_${randomUUID()}`, p_amount: 50, p_expires_at: null });
+    service.rpc("grant_credits", { p_agency_id: agencyId, p_source: source, p_source_id: `il_${randomUUID()}`, p_amount: 50 });
 
   it("waits only between the subscription link and the trial grant", async () => {
     const { agencyId } = await draftAtModels();
