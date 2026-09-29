@@ -173,7 +173,7 @@ export const CANONICAL_PLANS: Record<CanonicalPlanId, CanonicalPlan> = {
       "Claude fix prompts (10/mo)",
       "3 months history",
     ],
-    cta: "Start 14-day trial",
+    cta: "Start 7-day trial",
     ctaHref: "/signup?plan=starter",
   },
 
@@ -223,7 +223,7 @@ export const CANONICAL_PLANS: Record<CanonicalPlanId, CanonicalPlan> = {
       "Advanced opportunity detection",
       "12 months history",
     ],
-    cta: "Start 14-day trial",
+    cta: "Start 7-day trial",
     ctaHref: "/signup",
   },
 
@@ -273,7 +273,7 @@ export const CANONICAL_PLANS: Record<CanonicalPlanId, CanonicalPlan> = {
       "Full historical reporting",
       "Priority support",
     ],
-    cta: "Start 14-day trial",
+    cta: "Start 7-day trial",
     ctaHref: "/signup?plan=pro",
   },
 
@@ -488,10 +488,6 @@ export const PROVIDER_COST_CONFIG = {
   perplexity: {
     inputPer1kTokens: 0.002,
     outputPer1kTokens: 0.008,
-  },
-  gemini: {
-    inputPer1kTokens: 0.001,
-    outputPer1kTokens: 0.004,
   },
   deepseek: {
     inputPer1kTokens: 0.00014,
