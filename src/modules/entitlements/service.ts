@@ -35,7 +35,7 @@ export const REASONS = {
   notYourBusiness: "This business is not in your account.",
   pastDue: "Your last payment didn't go through. Update your card to continue.",
   canceled: "Your plan has ended. Choose a plan to continue.",
-  paused: "Your account is paused, contact support.",
+  paused: "Your account is paused. Contact support to turn it back on.",
 } as const;
 
 const allow: Entitlement = { allowed: true, reason: REASONS.ok };
