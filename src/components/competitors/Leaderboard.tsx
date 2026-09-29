@@ -44,7 +44,7 @@ function Row({ row, band }: { row: LeaderRow; band: { left: number; right: numbe
   const pending = !row.isYou && row.score === null;
   return (
     <li
-      className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1.5 sm:grid-cols-[minmax(0,200px)_minmax(0,1fr)_2.5rem_7.5rem]"
+      className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1.5 sm:grid-cols-[minmax(0,200px)_minmax(0,1fr)_2.5rem_9.5rem]"
       data-you={row.isYou || undefined}
     >
       <span className={cn("truncate text-sm", row.isYou ? "font-semibold text-primary" : "text-foreground")}>
