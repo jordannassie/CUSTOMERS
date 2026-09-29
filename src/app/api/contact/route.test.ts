@@ -6,6 +6,11 @@ const insert = vi.fn(async () => ({ error: null }));
 vi.mock("@/lib/supabase/service", () => ({
   createServiceClient: () => ({ from: () => ({ insert }) }),
 }));
+// The shared rate limit table is tested in the rate-limit module; here each run counts in memory.
+vi.mock("@/modules/rate-limit/dal", async () => {
+  const { memoryStore } = await import("@/modules/rate-limit/service");
+  return { databaseStore: memoryStore };
+});
 vi.mock("@/lib/supabase/server", () => ({
   createClient: async () => ({ auth: { getUser: async () => ({ data: { user: null } }) } }),
 }));

@@ -54,6 +54,7 @@ Migration `029` enables `pg_cron` and `pg_net` and adds these jobs (UTC). Check 
 | `purge-cron-history` | 03:30 daily | deletes pg_cron run history older than 14 days |
 | `check-system-alerts` | every 15 minutes | `run_system_alerts()` (B-69, `037`): runs `check_system_alerts()`, then POSTs to the app's alerts URL, which adds the daily AI cost check and emails the admins |
 | `email-low-credits` | every 30 minutes | `run_email_job('low_credits')` (B-62, `038`): POSTs to the app's email jobs URL, which emails agencies whose credits are 80% used, at 0 or below 0 (`low_credit_agencies()`), once per level per period |
+| `purge-rate-limit-hits` | hourly at :15 | deletes `rate_limit_hits` rows older than a day (SEC-07, `039`) |
 | `email-weekly-report` | Mondays, every 15 minutes from 13:00 to 17:45 UTC | `run_email_job('weekly_report')` (B-62, `038`): each call sends for a few seconds; later calls pick up agencies not emailed yet |
 
 ### Worker URL and secret (Vault, set by hand per project)
@@ -105,3 +106,4 @@ Applied to the local stack only (customers-dev is unreachable, F-24; live is unt
 - `035_email_log.sql` (B-61; then run `npm run db:types` against that project and check the diff is empty)
 - `037_system_alerts.sql` (B-69; then set the `system_alerts_url` Vault secret above and `ALERT_DAILY_COST_USD` on the host)
 - `038_email_jobs.sql` (B-62; then set the `email_jobs_url` Vault secret above)
+- `039_rate_limit_hits.sql` (SEC-07; shared per-IP counts for the contact form and the public compare check)

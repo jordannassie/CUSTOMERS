@@ -17,6 +17,12 @@ export const LIMITS = {
 
 export type Bucket = keyof typeof LIMITS;
 
+/** Start of the fixed window that `now` falls in, so every server instance agrees on it. */
+export function windowStart(now: number, windowMs: number): number {
+  return Math.floor(now / windowMs) * windowMs;
+}
+
+// For unit tests; production uses the shared table in dal.ts.
 export function memoryStore(): RateLimitStore {
   const windows = new Map<string, { count: number; resetAt: number }>();
   return {
@@ -39,7 +45,13 @@ export function rateLimitKey(bucket: Bucket, ip: string): string {
 export function createLimiter(store: RateLimitStore) {
   return async function allowRequest(bucket: Bucket, ip: string, now = Date.now()): Promise<boolean> {
     const { max, windowMs } = LIMITS[bucket];
-    return (await store.hit(rateLimitKey(bucket, ip), windowMs, now)) <= max;
+    try {
+      return (await store.hit(rateLimitKey(bucket, ip), windowMs, now)) <= max;
+    } catch (error) {
+      // Fail open: a database hiccup should not block the contact form or the compare check.
+      console.error(`[rate-limit] ${bucket} store failed, allowing the request`, error);
+      return true;
+    }
   };
 }
 
