@@ -62,3 +62,9 @@ Things the build could not settle on its own: checks that could not be run, deci
 | F-56 | 2026-09-28 | B-40 (PR #65) | Sandbox steps: a fresh sandbox, 2 restricted keys and Adaptive Pricing off. Then run the catalog scripts. | Open |
 | F-57 | 2026-09-28 | B-36 (PR #72), B-41 (PR #84) | The onboarding wizard stores `?plan=` in `app_metadata.selected_plan`, and checkout reads it from there. Confirm. | Open |
 | F-58 | 2026-09-28 | B-54 (PR #75) | The source type lists in `src/modules/sources/classify.ts` need a person to review them. | Open |
+| F-59 | 2026-09-29 | B-62 (PR #99) | The weekly report email creates a public share link for every scored business that never turned one off (the plan asks for a share page link). Businesses exported to PDF fall back to a dashboard link. Confirm that creating public links automatically is OK. | Open |
+| F-60 | 2026-09-29 | B-62 (PR #99) | Apply migration 038 and set the `email_jobs_url` Vault secret. Low credit emails can lag by up to 30 minutes. The trial ending amount leaves out discounts and tax. Confirm both. | Open |
+| F-61 | 2026-09-28 | B-82 (PR #97) | Three security follow-ups from B-82 need a decision. Details stay in the private notes while the repo is public. | Open |
+| F-62 | 2026-09-28 | B-46 (PR #93) | The billing portal uses Stripe's default portal setup (branding is set in the Stripe dashboard). The real portal and plan changes are untested until the sandbox exists. | Open |
+| F-63 | 2026-09-28 | B-69 (PR #96) | Migration 037 drops and re-adds the `email_log.type` check to allow `system_alert` (wider, no data change). Hosts need the Vault secret `system_alerts_url` and `ALERT_DAILY_COST_USD`. Only AI check failures write `provider_errors` for now. | Open |
+| F-64 | 2026-09-28 | B-69 (PR #96) | Test agencies count toward alerts. Keep them in or leave them out? | Open |
