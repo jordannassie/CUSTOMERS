@@ -71,7 +71,7 @@ export function DeleteDialog({ name, openLabel, title, steps, confirmLabel, pend
         {openLabel}
       </Button>
       <Dialog open={open} onOpenChange={change}>
-        <DialogContent className="sm:max-w-md" data-testid="delete-dialog">
+        <DialogContent className="sm:max-w-md" data-testid="delete-dialog" role="alertdialog">
           <form onSubmit={submit} className="flex flex-col gap-5">
             <DialogHeader>
               <DialogTitle>{title}</DialogTitle>

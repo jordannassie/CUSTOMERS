@@ -146,7 +146,7 @@ export function QuestionItem({ businessId, question, activeCount, models, freque
       </div>
 
       <Dialog open={confirmRemove} onOpenChange={setConfirmRemove}>
-        <DialogContent>
+        <DialogContent role="alertdialog">
           <DialogHeader>
             <DialogTitle>Remove this question?</DialogTitle>
             <DialogDescription>

@@ -173,7 +173,7 @@ test("add, pause, resume and remove a question", async ({ page }) => {
 
   await openMenu(page, questionRow(page, "cold brew"));
   await page.getByRole("menuitem", { name: "Remove" }).click();
-  const dialog = page.getByRole("dialog", { name: "Remove this question?" });
+  const dialog = page.getByRole("alertdialog", { name: "Remove this question?" });
   await expect(dialog).toContainText("About 13 fewer credits a month.");
   await dialog.getByRole("button", { name: "Remove question" }).click();
   await expect(questionRow(page, "cold brew")).toHaveCount(0, ACTION);
