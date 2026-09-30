@@ -16,7 +16,7 @@ Every schema change is a new SQL file in this folder, applied by the Supabase CL
 
 | Task | Command |
 |---|---|
-| Rebuild the local database from these files | `npm test`, which does it first (or `source scripts/test-db-env.sh && supabase db reset --local` for this worktree's own stack) |
+| Rebuild the local database from these files | `npm test`, which does it when they changed. A branch that changes migrations gets its own stack, so `source scripts/test-db-env.sh && supabase db reset --local` there resets only that one; never reset the shared stack by hand |
 | Link the CLI to a project | `supabase link --project-ref <ref>` (dev `whjdcjoojylajtyjywhx`, live `wsxusvapciexemfvtadm`) |
 | Check local matches the linked project | `npm run db:drift` |
 | Apply new files to the linked project | back up, then `supabase db push` |

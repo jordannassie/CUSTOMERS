@@ -102,30 +102,32 @@ How to write and apply migrations: [supabase/migrations/README.md](supabase/migr
 Needs Docker and the Supabase CLI (MVP_SPEC 21, D-75, D-81).
 
 ```bash
-npm test                  # rebuilds the local Supabase database from supabase/migrations, then runs Vitest
-npx playwright test       # end-to-end at 1440px and 390px; starts the dev server on E2E_PORT (default 3106)
+npm test                  # gets the local Supabase database ready (see below), then runs Vitest
+npm run test:e2e          # end-to-end at 1440px and 390px; starts the dev server on E2E_PORT (default 3106)
 npx vitest run evals      # AI evals, see evals/README.md
 ```
 
 - Unit tests sit next to the code as `src/**/*.test.ts`.
 - Tests read only `.env.test.local`, which `scripts/test-db-reset.sh` writes with the local database keys. They never touch the shared database.
-- Every worktree gets its own local stack, so parallel sessions never reset each other's database (BUG-010). See below.
-- End-to-end tests: run `npm test` once to create `.env.test.local`, then `npx playwright test`. The dev server Playwright starts uses those values (not `.env.local`), with `WORKER_IN_PROCESS=true` and the test admins in `ADMIN_EMAILS` (BUG-031). If a dev server already runs on `E2E_PORT`, Playwright reuses it, so start that one the same way or stop it first.
+- End-to-end tests: `npm run test:e2e` gets the database ready the same way. The dev server Playwright starts uses `.env.test.local` (not `.env.local`), with `WORKER_IN_PROCESS=true` and the test admins in `ADMIN_EMAILS` (BUG-031). If a dev server already runs on `E2E_PORT`, Playwright reuses it, so start that one the same way or stop it first.
 
-### One local test stack per worktree
+### One shared local test stack (INFRA-02)
 
-- `npm test` claims a slot from 0 to 9 for the worktree and runs the stack as project `customers-direct-<slot>` on ports `55<slot>00` to `55<slot>99` (API on `55<slot>21`, database on `55<slot>22`). The slot stays with the worktree until it is stopped.
-- Claims live in the shared git folder (`.git/test-db-slots/`), so all worktrees of the clone see them. Set `TEST_DB_SLOT` (or `LEADER_SLOT`) to pick a slot yourself.
-- The Supabase CLI reads the project id and ports from `SUPABASE_*` variables set by `scripts/test-db-env.sh`; `supabase/config.toml` is unchanged, and CI (with `CI` set) keeps the default stack on ports 54620 to 54629.
-- To run a CLI command against your own stack: `source scripts/test-db-env.sh && supabase status`.
+- Every worktree tests against one local stack, project `customers-direct` on the committed ports (API 54621, database 54622). Tests create their own agencies and businesses, so sessions can share it.
+- `npm test` rebuilds it from `supabase/migrations` only when the migrations changed since the last rebuild (their hash is kept in the database), and never while another session's tests run on it: it waits, with a message, and rebuilds after. Rebase often, so sessions do not rebuild it back and forth.
+- A worktree whose branch adds or changes a migration gets its own stack automatically: a slot from 0 to 9, project `customers-direct-<slot>` on ports `55<slot>00` to `55<slot>99`. `TEST_DB_ISOLATED=1` forces its own stack, `TEST_DB_ISOLATED=0` the shared one. Slots live in `.git/test-db-slots/`; `TEST_DB_SLOT` picks one.
+- Heavy commands take turns across all sessions on the machine: `npm test`, `npm run build`, and `npm run test:e2e` when it names no spec. A waiting session prints what is running. A single file (`npx vitest run <file>`) is not queued. Taking turns also keeps the shared database right: the scan queue, alert and low credit tests read whole tables, so two full runs at once fail each other.
+- CI (with `CI` set) is unchanged: it always rebuilds and never queues.
+- Locks are files in `/tmp/customers-direct-test`, held with `flock` for as long as the command runs; a crashed run frees them.
+- To run a CLI command against your stack: `source scripts/test-db-env.sh && supabase status`.
 
 ```bash
-npm run test:db:list           # slots, worktrees, API port and memory of each running stack
-npm run test:db:stop           # stop this worktree's stack, delete its data and free the slot
-bash scripts/test-db.sh stop 3 # the same for slot 3, after its worktree was removed
+npm run test:db:list           # the shared stack and every slot: worktree, API port, memory
+npm run test:db:stop           # stop this worktree's own stack, delete its data and free the slot
+npm run test:db:clean          # stop every slot stack no worktree needs now (add --dry to only list them)
 ```
 
-Each stack uses about 550 MiB of Docker memory when idle and about 800 MiB during a test run (storage about 240, rest about 190, kong about 150, db about 150, auth and inbucket small). Studio, realtime, analytics and the other unused services stay off. Five stacks need about 4 GiB, so give Docker at least 8 GiB and stop stacks of finished worktrees (and other projects' stacks) to get the memory back.
+A stack uses about 550 MiB of Docker memory when idle and about 900 MiB during a test run. Branches from before INFRA-02 still use their own slot and do not take the locks, so run `test:db:clean` once they are merged.
 
 ## Branches
 
