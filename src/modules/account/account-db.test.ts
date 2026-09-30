@@ -58,9 +58,9 @@ async function signIn(user: Owner, { admin = false } = {}) {
   return client;
 }
 
-const one = <T>(r: { data: T | null; error: { message: string } | null }): T => {
+const one = <T>(r: { data: T; error: { message: string } | null }): NonNullable<T> => {
   if (r.error) throw new Error(r.error.message);
-  return r.data as T;
+  return r.data as NonNullable<T>;
 };
 
 /** An is_test agency with one business that has questions, a result, a share link, credits and a queued scan. */
