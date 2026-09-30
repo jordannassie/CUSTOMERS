@@ -4,7 +4,8 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Globe, Loader2, MapPin } from "lucide-react";
 import type { ActionResult } from "@/modules/auth";
-import type { AutofillResult } from "@/modules/onboarding/schema";
+import { toDomain, type AutofillResult } from "@/modules/onboarding/schema";
+import { FieldMessage, useFieldErrors } from "@/components/ui/field-errors";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { saveAutofill } from "./autofill-store";
@@ -28,10 +29,17 @@ export function WebsiteStep({ defaultDomain, defaultNoWebsite, backHref, save }:
   const [city, setCity] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  const fields = useFieldErrors<"website" | "name" | "city">("onb");
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    const bad = fields.show(
+      noWebsite
+        ? { name: name.trim() ? undefined : "Enter your business name.", city: city.trim() ? undefined : "Enter the city your business is in." }
+        : { website: !domain.trim() ? "Enter your website, or choose I don't have a website." : toDomain(domain) ? undefined : "Enter a website address like yourbusiness.com." },
+    );
+    if (bad) return;
     startTransition(async () => {
       const result = await save(noWebsite ? { name, city } : { domain });
       if (!result.ok) return setError(result.error);
@@ -43,17 +51,43 @@ export function WebsiteStep({ defaultDomain, defaultNoWebsite, backHref, save }:
   if (pending) return <Reading what={noWebsite ? `${name} in ${city}` : domain} noWebsite={noWebsite} />;
 
   return (
-    <form onSubmit={submit} className="flex flex-col gap-6">
+    <form ref={fields.formRef} onSubmit={submit} className="flex flex-col gap-6" noValidate>
       {noWebsite ? (
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="flex flex-col gap-2 sm:col-span-2">
             <Label htmlFor="business-name">Business name</Label>
-            <Input id="business-name" value={name} onChange={(e) => setName(e.target.value)} required maxLength={200} autoFocus className="h-11 text-base" />
+            <Input
+              id="business-name"
+              value={name}
+              onChange={(e) => {
+                setName(e.target.value);
+                fields.clear("name");
+              }}
+              required
+              maxLength={200}
+              autoFocus
+              className="h-11 text-base"
+              {...fields.fieldProps("name")}
+            />
+            <FieldMessage id={fields.idOf("name")} message={fields.errors.name} />
           </div>
           <div className="flex flex-col gap-2 sm:col-span-2">
             <Label htmlFor="business-city">City</Label>
-            <Input id="business-city" value={city} onChange={(e) => setCity(e.target.value)} required maxLength={100} autoComplete="address-level2" className="h-11 text-base" />
-            <FieldHint>We look the business up on Google to fill in the rest.</FieldHint>
+            <Input
+              id="business-city"
+              value={city}
+              onChange={(e) => {
+                setCity(e.target.value);
+                fields.clear("city");
+              }}
+              required
+              maxLength={100}
+              autoComplete="address-level2"
+              className="h-11 text-base"
+              {...fields.fieldProps("city", "business-city-hint")}
+            />
+            <FieldMessage id={fields.idOf("city")} message={fields.errors.city} />
+            <FieldHint id="business-city-hint">We look the business up on Google to fill in the rest.</FieldHint>
           </div>
         </div>
       ) : (
@@ -64,7 +98,10 @@ export function WebsiteStep({ defaultDomain, defaultNoWebsite, backHref, save }:
             <Input
               id="website"
               value={domain}
-              onChange={(e) => setDomain(e.target.value)}
+              onChange={(e) => {
+                setDomain(e.target.value);
+                fields.clear("website");
+              }}
               required
               maxLength={300}
               autoFocus
@@ -73,10 +110,11 @@ export function WebsiteStep({ defaultDomain, defaultNoWebsite, backHref, save }:
               autoCorrect="off"
               spellCheck={false}
               placeholder="yourbusiness.com"
-              aria-describedby="website-hint"
               className="h-11 pl-9 text-base"
+              {...fields.fieldProps("website", "website-hint")}
             />
           </div>
+          <FieldMessage id={fields.idOf("website")} message={fields.errors.website} />
           <FieldHint id="website-hint">We read your site and Google to fill in the details for you. You check everything next.</FieldHint>
         </div>
       )}
@@ -86,6 +124,7 @@ export function WebsiteStep({ defaultDomain, defaultNoWebsite, backHref, save }:
         onClick={() => {
           setNoWebsite(!noWebsite);
           setError(null);
+          fields.show({});
         }}
         className="-my-2.5 w-fit py-2.5 text-sm text-primary underline-offset-4 hover:underline"
       >
