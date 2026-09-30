@@ -79,7 +79,8 @@ test("the whole wizard: plan carried through, auto-filled, resumable, live estim
   await slow(page.locator("#name")).toHaveValue("Sunrise Coffee Bar & Roastery");
   await expect(page.locator("#phone")).toHaveValue("(217) 555-0142");
   await expect(page.locator("#services")).toHaveValue(/oat milk lattes/);
-  await expect(page.getByText("Ratings and addresses from Google Maps").first()).toBeVisible();
+  await expect(page.getByTestId("google-attribution").first()).toHaveText("Business details from");
+  await expect(page.getByRole("img", { name: "Google Maps" }).first()).toBeVisible();
   await visible(page, "Continue").click();
 
   await slow(page.getByRole("heading", { name: "Who do you compete with?" })).toBeVisible();

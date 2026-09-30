@@ -148,7 +148,7 @@ function AutofillNote({ autofill }: { autofill: AutofillResult | null }) {
       <div className="text-sm">
         <p>{found ? `We filled this in from ${found}. Check it and fix anything that's off.` : autofill.note ?? "We couldn't find your details, so fill them in below."}</p>
         {found && autofill.note ? <p className="mt-1 text-muted-foreground">{autofill.note}</p> : null}
-        {google ? <GoogleAttribution className="mt-2" /> : null}
+        {google ? <GoogleAttribution what="Business details" className="mt-2" /> : null}
       </div>
     </div>
   );

@@ -6,15 +6,6 @@ interface CompetitorInput {
   domain?: unknown;
   source?: unknown;
   place_id?: unknown;
-  formatted_address?: unknown;
-  city?: unknown;
-  region?: unknown;
-  country?: unknown;
-  latitude?: unknown;
-  longitude?: unknown;
-  category?: unknown;
-  phone?: unknown;
-  enrichment_status?: unknown;
   confirmed?: unknown;
 }
 
@@ -24,10 +15,6 @@ const PG_UNDEFINED_COLUMN = "42703";
 function cleanStr(v: unknown, max = 300): string | null {
   if (typeof v !== "string" || !v.trim()) return null;
   return v.trim().slice(0, max);
-}
-function cleanNum(v: unknown): number | null {
-  if (typeof v !== "number" || !isFinite(v)) return null;
-  return v;
 }
 
 export async function POST(request: NextRequest) {
@@ -44,7 +31,7 @@ export async function POST(request: NextRequest) {
   const businessId = typeof body.business_id === "string" ? body.business_id : "";
   if (!businessId) return NextResponse.json({ error: "business_id is required." }, { status: 400 });
 
-  // Ownership check — RLS also enforces this, but we want a clean 404.
+  // Ownership check: RLS also enforces this, but we want a clean 404.
   const { data: business } = await supabase
     .from("businesses")
     .select("id")
@@ -60,17 +47,8 @@ export async function POST(request: NextRequest) {
       domain: cleanStr(c.domain),
       source: cleanStr(c.source) ?? "manual",
       confirmed: true,
-      // Google Places enrichment fields (requires migration 010)
+      // Google's terms allow storing only the place id (D-73, MVP_SPEC 26); column from migration 010.
       place_id: cleanStr(c.place_id),
-      formatted_address: cleanStr(c.formatted_address),
-      city: cleanStr(c.city, 100),
-      region: cleanStr(c.region, 100),
-      country: cleanStr(c.country, 100),
-      latitude: cleanNum(c.latitude),
-      longitude: cleanNum(c.longitude),
-      category: cleanStr(c.category, 150),
-      phone: cleanStr(c.phone, 50),
-      enrichment_status: cleanStr(c.enrichment_status, 50) ?? "none",
     }))
     .filter((c) => c.name);
 
@@ -92,7 +70,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ competitors: [] });
   }
 
-  // Attempt full insert with enrichment fields
+  // Attempt full insert with the place id
   const { data, error } = await supabase
     .from("business_competitors")
     .insert(newRows)
@@ -102,10 +80,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ competitors: data });
   }
 
-  // If insert failed because enrichment columns don't exist yet (migration 010 not applied),
+  // If insert failed because place_id doesn't exist yet (migration 010 not applied),
   // fall back to inserting only the columns that definitely exist.
   if (error.code === PG_UNDEFINED_COLUMN) {
-    console.warn("[competitors] Enrichment columns missing (migration 010 not applied) — using basic insert");
+    console.warn("[competitors] place_id column missing (migration 010 not applied), using basic insert");
     const basicRows = newRows.map(({ business_id, name, domain, source, confirmed }) => ({
       business_id,
       name,

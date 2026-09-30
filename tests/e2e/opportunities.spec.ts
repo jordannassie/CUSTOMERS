@@ -114,7 +114,7 @@ test("fixes are sorted by impact, with live Google values and a copy button", as
     "Answer common questions on your site",
   ]);
   await expect(todo.first()).toContainText("Bean House has 320 reviews and you have 12.");
-  await expect(todo.first()).toContainText("from Google Maps");
+  await expect(todo.first().getByRole("img", { name: "Google Maps" })).toBeVisible();
   await expect(page.getByTestId("get-found-checklist")).toHaveCount(0);
   await expect(page.getByText("Request Fix")).toHaveCount(0);
 
