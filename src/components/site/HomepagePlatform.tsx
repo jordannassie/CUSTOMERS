@@ -4,6 +4,7 @@ import React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import AgencyWorkspaceDemo from "@/components/site/AgencyWorkspaceDemo";
+import StartAiBusinessHomeSection from "@/components/site/StartAiBusinessHomeSection";
 import { PlatformIcon } from "@/components/PlatformIcon";
 import {
   ArrowRight,
@@ -1754,6 +1755,7 @@ export default function HomepagePlatform() {
       <PromptTrackingSection />
       <ProductTabsSection />
       <AgencySection />
+      <StartAiBusinessHomeSection />
       <HowItWorksSection />
       <TestimonialsSection />
       <FAQSection />
