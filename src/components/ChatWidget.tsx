@@ -1,50 +1,23 @@
 "use client";
 
-import React, { useState, useEffect, useRef, useCallback, Suspense } from "react";
+import React, { useState, useEffect, useCallback, Suspense } from "react";
+import Image from "next/image";
+import { BarChart3, Building2, Calendar, Check, ChevronLeft, MessageCircle, MessageSquare, RotateCcw, X } from "lucide-react";
 import ContactForm, { type InterestValue } from "@/components/site/ContactForm";
-
-// ─── Types ────────────────────────────────────────────────────────────────────
 
 type Stage = "opening" | "form" | "done";
 
-function IconBarChart() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>
-    </svg>
-  );
-}
-function IconBuilding() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <rect x="3" y="3" width="18" height="18" rx="1"/><path d="M9 22V12h6v10"/><path d="M9 7h1"/><path d="M9 11h1"/><path d="M14 7h1"/><path d="M14 11h1"/>
-    </svg>
-  );
-}
-function IconChat() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-    </svg>
-  );
-}
-function IconCalendar() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
-    </svg>
-  );
-}
-
 const CHAT_CHOICES: { value: InterestValue; label: string; icon: React.ReactNode }[] = [
-  { value: "ai_visibility", label: "AI Visibility",   icon: <IconBarChart /> },
-  { value: "agency",        label: "Join as Agency",  icon: <IconBuilding /> },
-  { value: "book_demo",     label: "Book Demo Call",  icon: <IconCalendar /> },
-  { value: "other",         label: "Other",            icon: <IconChat /> },
+  { value: "ai_visibility", label: "AI Visibility",  icon: <BarChart3 className="size-[18px]" aria-hidden="true" /> },
+  { value: "agency",        label: "Join as Agency", icon: <Building2 className="size-[18px]" aria-hidden="true" /> },
+  { value: "book_demo",     label: "Book Demo Call", icon: <Calendar className="size-[18px]" aria-hidden="true" /> },
+  { value: "other",         label: "Other",          icon: <MessageSquare className="size-[18px]" aria-hidden="true" /> },
 ];
 
-const JORDAN_PHOTO =
-  "https://phhczohqidgrvcmszets.supabase.co/storage/v1/object/public/CUSTOMER.direct/images/People/Jordan%20Profile.PNG";
+const JORDAN_PHOTO = "/images/people/jordan.jpg";
+
+// Below this width the page content reaches the launcher's corner (UI-002).
+const WIDE_QUERY = "(min-width: 1400px)";
 
 // Session key: bump version to reset saved sessions when logic changes
 const SK = "cd_chat_v4";
@@ -59,26 +32,13 @@ function saveSession(state: SavedState) {
   try { sessionStorage.setItem(SK, JSON.stringify(state)); } catch { /* noop */ }
 }
 
-// ─── Icons ────────────────────────────────────────────────────────────────────
+const iconButton =
+  "flex size-8 items-center justify-center rounded-md text-muted-foreground transition-colors duration-150 ease-out hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50";
 
-function IconX() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true">
-      <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-    </svg>
-  );
-}
+const textButton =
+  "rounded-sm text-[13px] text-muted-foreground transition-colors duration-150 ease-out hover:text-foreground focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50";
 
-function IconRefresh() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
-      <path d="M3 3v5h5" />
-    </svg>
-  );
-}
-
-// ─── Main Widget ─────────────────────────────────────────────────────────────
+const enter = "motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-2 duration-200 ease-out";
 
 export default function ChatWidget() {
   const [open,     setOpen]     = useState(false);
@@ -87,15 +47,13 @@ export default function ChatWidget() {
   const [interest, setInterest] = useState<InterestValue>(() => loadSession()?.interest ?? "other");
   const [unread,   setUnread]   = useState(false);
   const [showMsg,  setShowMsg]  = useState(false);
+  const [inView,   setInView]   = useState(false);
 
-  const panelRef = useRef<HTMLDivElement>(null);
-
-  // ── Persist ────────────────────────────────────────────────────────────────
   useEffect(() => {
     saveSession({ interest, stage });
   }, [interest, stage]);
 
-  // ── Show greeting bubble after 4 s on first load ──────────────────────────
+  // Show greeting bubble after 4 s on first load
   useEffect(() => {
     const t = setTimeout(() => {
       if (!open) { setUnread(true); setShowMsg(true); }
@@ -103,158 +61,130 @@ export default function ChatWidget() {
     return () => clearTimeout(t);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── Open / close ──────────────────────────────────────────────────────────
+  // On narrower screens the launcher waits until the first screen has scrolled away, so it never sits on the hero.
+  useEffect(() => {
+    const wide = window.matchMedia(WIDE_QUERY);
+    const update = () => setInView(wide.matches || window.scrollY > window.innerHeight);
+    update();
+    window.addEventListener("scroll", update, { passive: true });
+    window.addEventListener("resize", update);
+    return () => {
+      window.removeEventListener("scroll", update);
+      window.removeEventListener("resize", update);
+    };
+  }, []);
+
   const handleToggle = useCallback(() => {
     setOpen((v) => !v);
     setUnread(false);
     setShowMsg(false);
   }, []);
 
-  // ── Select a topic ────────────────────────────────────────────────────────
   const handleChoice = useCallback((value: InterestValue) => {
     setInterest(value);
     setStage("form");
   }, []);
 
-  // ── Form success ──────────────────────────────────────────────────────────
   const handleFormSuccess = useCallback(() => {
     setStage("done");
   }, []);
 
-  // ── Reset ─────────────────────────────────────────────────────────────────
   const reset = useCallback(() => {
     setStage("opening");
     setInterest("other");
     try { sessionStorage.removeItem(SK); } catch { /* noop */ }
   }, []);
 
+  const showLauncher = open || inView;
+
   return (
     <>
-      <style>{`
-        @keyframes chatSlideUp {
-          from { opacity: 0; transform: translateY(16px); }
-          to   { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes chatBubblePop {
-          from { opacity: 0; transform: translateY(8px) scale(0.95); }
-          to   { opacity: 1; transform: translateY(0) scale(1); }
-        }
-      `}</style>
+      {/* Keeps the end of the page clear of the launcher where it overlaps content. */}
+      <div aria-hidden="true" className="h-20 bg-surface min-[1400px]:hidden" />
 
-      {/* Hidden on phones, where it covers the homepage compare button (B-71). */}
-      {showMsg && !open && (
+      {/* Only on wide screens, where it sits in the empty margin beside the content. */}
+      {showMsg && !open && showLauncher && (
         <div
-          className="fixed bottom-[90px] right-6 z-50 hidden sm:block bg-white border border-[#E5E5E1] rounded-2xl rounded-br-sm px-4 py-3 shadow-lg text-[13px] text-[#171717] max-w-[220px] cursor-pointer"
-          style={{ animation: "chatBubblePop 0.25s ease forwards" }}
+          className={`fixed bottom-20 right-6 z-50 hidden max-w-[160px] cursor-pointer rounded-md border border-border bg-surface px-4 py-3 text-[13px] text-foreground shadow-float min-[1400px]:block ${enter}`}
           onClick={handleToggle}
           role="button"
           aria-label="Open chat"
         >
           Hi! What can we help you with?
-          <div className="absolute -bottom-2 right-3 w-3 h-3 bg-white border-r border-b border-[#E5E5E1] rotate-45" />
+          <div className="absolute -bottom-[5px] right-6 size-2.5 rotate-45 border-r border-b border-border bg-surface" />
         </div>
       )}
 
-      {/* ── Launcher ─────────────────────────────────────────────────────── */}
-      <button
-        onClick={handleToggle}
-        aria-label={open ? "Close chat" : "Chat with us"}
-        className="fixed bottom-6 right-6 z-50 flex flex-col items-center gap-1.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#171717] focus-visible:ring-offset-2 rounded-full group"
-      >
-        <div
-          className="relative w-14 h-14 rounded-full bg-[#171717] flex items-center justify-center text-white ring-2 ring-white transition-all duration-200 group-hover:scale-[1.05] group-hover:bg-[#2A2A2A] group-hover:shadow-2xl"
-          style={{ boxShadow: "0 8px 28px rgba(0,0,0,0.22)" }}
+      {showLauncher && (
+        <button
+          onClick={handleToggle}
+          aria-label={open ? "Close chat" : "Chat with us"}
+          className={`fixed right-4 bottom-4 z-50 inline-flex h-11 items-center gap-2 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground shadow-float transition-colors duration-150 ease-out hover:bg-primary-hover focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:ring-offset-2 sm:right-6 sm:bottom-6 ${enter}`}
         >
-          {open ? (
-            <IconX />
-          ) : (
-            <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-            </svg>
-          )}
-          {unread && (
-            <span className="absolute -top-1 -left-1 w-4 h-4 rounded-full bg-[#0866F5] border-2 border-white text-[8px] text-white font-black flex items-center justify-center">!</span>
-          )}
-        </div>
-        <span className="text-[11px] font-semibold text-[#171717] leading-none select-none tracking-tight">Chat</span>
-      </button>
+          {open ? <X className="size-5" aria-hidden="true" /> : <MessageCircle className="size-5" aria-hidden="true" />}
+          Chat
+          {unread && <span className="size-2 rounded-full bg-primary-foreground" aria-hidden="true" />}
+        </button>
+      )}
 
-      {/* ── Panel ────────────────────────────────────────────────────────── */}
       {open && (
         <div
-          ref={panelRef}
           role="dialog"
           aria-label="Chat with Customers.Direct"
           className={[
-            "fixed z-50 bg-white border border-gray-200 flex flex-col shadow-2xl overflow-hidden",
-            "sm:bottom-[88px] sm:right-6 sm:left-auto sm:w-[380px] sm:max-h-[80vh] sm:rounded-2xl",
-            "bottom-0 left-0 right-0 rounded-t-2xl",
+            "fixed z-50 flex flex-col overflow-hidden border border-border bg-surface shadow-float",
+            "inset-x-0 bottom-0 max-h-[min(90dvh,90vh)] rounded-t-md",
+            "sm:bottom-20 sm:right-6 sm:left-auto sm:w-[380px] sm:max-h-[80vh] sm:rounded-md",
+            enter,
           ].join(" ")}
-          style={{
-            animation: "chatSlideUp 0.25s ease forwards",
-            maxHeight: "min(90dvh, 90vh)",
-          }}
         >
-          {/* Header */}
-          <div className="flex items-center gap-3 px-4 py-3 border-b border-gray-100 shrink-0">
-            <div className="relative shrink-0">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={JORDAN_PHOTO}
-                alt="Jordan at Customers.Direct"
-                className="w-10 h-10 rounded-full object-cover object-center border border-gray-100"
-              />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="font-bold text-[#171717] text-sm leading-tight">Customers.Direct</p>
-              <p className="text-xs text-[#777773]">We typically respond within 24 hours</p>
+          <div className="flex shrink-0 items-center gap-3 border-b border-border px-4 py-3">
+            <Image
+              src={JORDAN_PHOTO}
+              alt="Jordan at Customers.Direct"
+              width={40}
+              height={40}
+              className="size-10 shrink-0 rounded-full border border-border bg-muted object-cover"
+            />
+            <div className="min-w-0 flex-1">
+              <p className="text-sm leading-tight font-semibold text-foreground">Customers.Direct</p>
+              <p className="text-xs text-muted-foreground">We typically respond within 24 hours</p>
             </div>
             {stage !== "opening" && (
-              <button
-                onClick={reset}
-                aria-label="Start over"
-                title="Start over"
-                className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 text-[#64748B] transition-colors"
-              >
-                <IconRefresh />
+              <button onClick={reset} aria-label="Start over" title="Start over" className={iconButton}>
+                <RotateCcw className="size-4" aria-hidden="true" />
               </button>
             )}
-            <button
-              onClick={() => setOpen(false)}
-              aria-label="Close chat"
-              className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 text-[#64748B] transition-colors"
-            >
-              <IconX />
+            <button onClick={() => setOpen(false)} aria-label="Close chat" className={iconButton}>
+              <X className="size-[18px]" aria-hidden="true" />
             </button>
           </div>
 
-          {/* Body */}
-          <div className="flex-1 overflow-y-auto min-h-0">
-
-            {/* ── Opening: topic selection ────────────────────────────────── */}
+          <div className="min-h-0 flex-1 overflow-y-auto">
             {stage === "opening" && (
-              <div className="px-4 py-6 flex flex-col gap-4">
-                {/* Jordan greeting */}
+              <div className="flex flex-col gap-4 px-4 py-6">
                 <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-full bg-[#F0F0EC] flex items-center justify-center shrink-0 overflow-hidden">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={JORDAN_PHOTO} alt="" aria-hidden="true" className="w-full h-full object-cover" />
-                  </div>
-                  <div className="bg-[#F0F0EC] text-[#171717] text-[13.5px] px-4 py-2.5 rounded-2xl rounded-tl-sm leading-relaxed max-w-[85%]"
-                    style={{ animation: "chatSlideUp 0.2s ease forwards" }}>
+                  <Image
+                    src={JORDAN_PHOTO}
+                    alt=""
+                    aria-hidden="true"
+                    width={32}
+                    height={32}
+                    className="size-8 shrink-0 rounded-full bg-muted object-cover"
+                  />
+                  <div className="max-w-[85%] rounded-md bg-muted px-4 py-2.5 text-sm leading-relaxed text-foreground">
                     Hi! What can we help you with?
                   </div>
                 </div>
 
-                {/* Choices */}
-                <div className="flex flex-col gap-2.5 mt-2" style={{ animation: "chatSlideUp 0.3s ease forwards" }}>
+                <div className="mt-2 flex flex-col gap-2">
                   {CHAT_CHOICES.map((choice) => (
                     <button
                       key={choice.value}
                       onClick={() => handleChoice(choice.value)}
-                      className="flex items-center gap-3 w-full text-left bg-white border border-[#E5E5E1] hover:border-[#0866F5]/40 hover:bg-[#EFF6FF]/30 text-[#171717] px-4 py-3 rounded-xl transition-colors text-[13.5px] font-medium active:scale-[0.98]"
+                      className="flex w-full items-center gap-3 rounded-md border border-border bg-surface px-4 py-3 text-left text-sm font-medium text-foreground transition-colors duration-150 ease-out hover:border-primary/40 hover:bg-primary-tint focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
                     >
-                      <span className="text-[#6B7280] shrink-0">{choice.icon}</span>
+                      <span className="shrink-0 text-muted-foreground">{choice.icon}</span>
                       {choice.label}
                     </button>
                   ))}
@@ -262,23 +192,19 @@ export default function ChatWidget() {
               </div>
             )}
 
-            {/* ── Form stage ──────────────────────────────────────────────── */}
             {stage === "form" && (
-              <div className="px-4 py-4" style={{ animation: "chatSlideUp 0.2s ease forwards" }}>
-                <div className="flex items-center gap-2 mb-4">
-                  <button
-                    onClick={reset}
-                    className="text-[11px] text-[#A3A3A0] hover:text-[#777773] transition-colors"
-                    aria-label="Go back"
-                  >
-                    ← Back
+              <div className="px-4 py-4">
+                <div className="mb-4 flex items-center gap-3">
+                  <button onClick={reset} className={`inline-flex items-center gap-1 ${textButton}`} aria-label="Go back">
+                    <ChevronLeft className="size-4" aria-hidden="true" />
+                    Back
                   </button>
-                  <span className="text-[11px] text-[#A3A3A0]">·</span>
-                  <span className="text-[11px] text-[#171717] font-medium">
+                  <span className="h-3.5 w-px bg-border" aria-hidden="true" />
+                  <span className="text-[13px] font-medium text-foreground">
                     {CHAT_CHOICES.find((c) => c.value === interest)?.label}
                   </span>
                 </div>
-                <Suspense fallback={<div className="h-64 animate-pulse bg-[#F5F5F2] rounded-xl" />}>
+                <Suspense fallback={<div className="h-64 rounded-md bg-muted motion-safe:animate-pulse" />}>
                   <ContactForm
                     initialInterest={interest}
                     source="chat"
@@ -289,27 +215,20 @@ export default function ChatWidget() {
               </div>
             )}
 
-            {/* ── Done ────────────────────────────────────────────────────── */}
             {stage === "done" && (
-              <div className="px-4 py-10 flex flex-col items-center text-center gap-4" style={{ animation: "chatSlideUp 0.2s ease forwards" }}>
-                <div className="w-12 h-12 rounded-full bg-[#DCFCE7] flex items-center justify-center">
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#15803D" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                    <polyline points="20 6 9 17 4 12" />
-                  </svg>
+              <div className="flex flex-col items-center gap-4 px-4 py-10 text-center">
+                <div className="flex size-12 items-center justify-center rounded-md bg-good-bg text-good-text">
+                  <Check className="size-6" aria-hidden="true" />
                 </div>
                 <div>
-                  <p className="font-bold text-[#171717] text-[15px] mb-1">Thanks! Message received.</p>
-                  <p className="text-[13px] text-[#777773]">We&apos;ll be in touch within 24 hours.</p>
+                  <p className="mb-1 text-[15px] font-semibold text-foreground">Thanks! Message received.</p>
+                  <p className="text-[13px] text-muted-foreground">We&apos;ll be in touch within 24 hours.</p>
                 </div>
-                <button
-                  onClick={reset}
-                  className="text-[12px] text-[#A3A3A0] hover:text-[#777773] underline mt-2 transition-colors"
-                >
+                <button onClick={reset} className={`mt-2 underline ${textButton}`}>
                   Send another message
                 </button>
               </div>
             )}
-
           </div>
         </div>
       )}
