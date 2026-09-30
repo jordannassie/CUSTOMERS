@@ -129,7 +129,7 @@ test("usage widget: normal plan", async ({ page }) => {
 
 test("usage widget: trial", async ({ page }) => {
   await logIn(page, { status: "trialing", grant: 100, spend: 36, days: 5 });
-  await expect(page.locator("[data-kind=trial]")).toContainText("Your free trial ends in 5 days");
+  await expect(page.locator("[data-kind=trial]")).toContainText("Your free trial has 5 days and 64 trial credits left. Your card will be charged on");
   const widget = (await openNav(page)).getByTestId("usage-widget");
   await expect(widget).toContainText("Trial: 5 days left, 64 of 100 credits left");
 });
