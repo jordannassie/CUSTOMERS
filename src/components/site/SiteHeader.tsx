@@ -62,6 +62,7 @@ const RESOURCES = [
   { label: "How It Works",         href: "/#how-it-works", icon: BookOpen  },
   { label: "FAQ",                  href: "/#faq",           icon: HelpCircle },
   { label: "Agencies & Resellers", href: "/agency",          icon: Building2  },
+  { label: "Build an AI business", href: "/start-ai-business", icon: Lightbulb },
   { label: "Contact",              href: "/contact",         icon: Mail      },
 ] as const;
 
