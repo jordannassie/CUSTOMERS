@@ -61,7 +61,7 @@ export default async function OverviewPage() {
         </p>
       )}
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start">
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Visibility score, last 30 days</CardTitle>
