@@ -34,7 +34,7 @@ export const REASONS = {
   scanAlreadyQueued: "A scan is already running. You can start another when it finishes.",
   notYourBusiness: "This business is not in your account.",
   pastDue: "Your last payment didn't go through. Update your card to continue.",
-  canceled: "Your plan has ended. Choose a plan to continue.",
+  canceled: "Your plan has ended. Contact us to start it again.",
   paused: "Your account is paused. Contact support to turn it back on.",
 } as const;
 

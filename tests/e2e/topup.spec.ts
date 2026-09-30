@@ -82,6 +82,6 @@ test("the usage page's button opens the packs, and a cancelled plan cannot buy",
   await logIn(page, "canceled", 30);
   await page.locator("header").getByRole("link", { name: "Buy credits" }).click();
   await page.waitForURL((url) => url.pathname === "/settings/credits");
-  await expect(page.getByTestId("topup-blocked")).toContainText("Your plan has ended. Choose a plan to continue.");
+  await expect(page.getByTestId("topup-blocked")).toContainText("Your plan has ended. Contact us to start it again.");
   await expect(page.getByRole("button", { name: "Continue to payment" })).toHaveCount(0);
 });
