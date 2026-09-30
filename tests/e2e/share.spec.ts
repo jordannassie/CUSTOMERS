@@ -112,7 +112,7 @@ test("Share gives a link the client opens without a login, and turning it off st
   await expect(reader.getByTestId("score-sentence")).toBeVisible();
   await expect(reader.getByTestId("leaderboard")).toContainText("Bean House");
   await expect(reader.getByText("Bean House: 320 Google reviews, 4.7 stars")).toBeVisible();
-  await expect(reader.getByText("Google Maps")).toBeVisible();
+  await expect(reader.getByRole("img", { name: "Google Maps" })).toBeVisible();
   await expect(reader.getByTestId("report-opportunities")).toContainText("Add your opening hours to your website");
   await expect(reader.locator("[data-report-ready]")).toBeAttached({ timeout: 10_000 });
   await expect(reader.locator('meta[name="robots"]')).toHaveAttribute("content", /noindex/);

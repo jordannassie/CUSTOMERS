@@ -1,15 +1,20 @@
+import Image from "next/image";
 import { Star } from "lucide-react";
 import { cn } from "cn";
 
-// Google's rule for Places data shown without a map: the words "Google Maps", unchanged, untranslated
-// and on one line, in the same container as the data (MVP_SPEC 26).
+// Google requires its unmodified Google Maps logo for Places data shown without a map: 16 to 19px tall,
+// 10px clear space left, right and top, 5px below, in the same container as the data (docs/launch/places-compliance.md).
 export function GoogleAttribution({ className, what = "Ratings and addresses" }: { className?: string; what?: string }) {
   return (
-    <p className={cn("text-xs text-muted-foreground", className)}>
-      {what} from{" "}
-      <span translate="no" className="notranslate whitespace-nowrap font-[Roboto,sans-serif] font-normal">
-        Google Maps
-      </span>
+    <p className={cn("flex flex-wrap items-center text-xs text-muted-foreground", className)} data-testid="google-attribution">
+      <span>{what} from</span>
+      <Image
+        src="/images/google-maps-logo.svg"
+        alt="Google Maps"
+        width={87}
+        height={16}
+        className="box-content h-4 w-auto shrink-0 px-2.5 pt-2.5 pb-1.25"
+      />
     </p>
   );
 }

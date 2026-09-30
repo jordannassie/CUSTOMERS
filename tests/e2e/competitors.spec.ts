@@ -140,7 +140,7 @@ test("leaderboard, Google side by side, and tracking a business AI keeps naming"
   await expect(page.getByTestId("signals-highlight")).toHaveText(
     "Bean House: 320 Google reviews, 4.7 stars. You: 12 reviews, 4.2 stars",
   );
-  await expect(page.getByText("Google Maps", { exact: true })).toBeVisible();
+  await expect(page.getByRole("img", { name: "Google Maps" })).toBeVisible();
 
   const also = page.getByTestId("also-recommended");
   await expect(also.getByRole("listitem")).toHaveText([/Blue Door Coffee\s*Named in 9 of 15 answers/, /Kiln Coffee Co\s*Named in 3 of 15 answers/]);
