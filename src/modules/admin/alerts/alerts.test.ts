@@ -31,6 +31,13 @@ async function resolveOpen(kind: string) {
   await service.from("system_alerts").update({ resolved_at: new Date().toISOString() }).eq("kind", kind).is("resolved_at", null).throwOnError();
 }
 
+// The local database is reused between runs (INFRA-02): an alert an earlier run left today holds back a new one of
+// its kind (one daily cost alert a day, one email an hour), so the tests that count on a fresh one delete them first.
+async function clearKind(kind: string) {
+  await service.from("email_log").delete().like("idempotency_key", `system_alert:${kind}:%`).throwOnError();
+  await service.from("system_alerts").delete().eq("kind", kind).throwOnError();
+}
+
 async function check(args: Record<string, number> = {}): Promise<string[]> {
   const { data, error } = await service.rpc("check_system_alerts", args);
   if (error) throw error;
@@ -124,7 +131,7 @@ describe("check_system_alerts (B-69, MVP_SPEC 22)", () => {
   });
 
   it("daily AI cost over the limit: fires once, and not again the same day after it is resolved", async () => {
-    await resolveOpen("daily_ai_cost");
+    await clearKind("daily_ai_cost");
     await service
       .from("usage_events")
       .insert({ account_user_id: fixture.ownerId, usage_type: "ai_visibility_check", provider: "openai", estimated_cost_usd: 2.5 })
@@ -171,7 +178,7 @@ describe("alert emails (B-69)", () => {
     (await service.from("system_alerts").select("emailed_at").eq("id", id).single().throwOnError()).data.emailed_at;
 
   it("emails every admin once per alert, and at most once per hour per alert kind", async () => {
-    await resolveOpen("stuck_jobs");
+    await clearKind("stuck_jobs");
     const first = await raise(`Test stuck alert ${randomUUID()}`);
     const mail = transport();
     const deps = (now = new Date()) => createNotifyDeps(undefined, { send: mail.send, recipients, now: () => now });
