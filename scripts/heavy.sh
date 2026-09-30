@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 # Runs a heavy command (the full test run, the build, a full e2e run) one at a time across every session on this
 # machine, so parallel sessions take turns instead of overloading it (INFRA-02). Usage: bash scripts/heavy.sh <command>
-# CI and Netlify run the command directly. HEAVY_JOBS=2 lets two run at once; HEAVY_WAIT_MINUTES sets the wait limit.
+# CI and Netlify run the command directly. HEAVY_WAIT_MINUTES sets the wait limit.
+# One at a time is also what keeps the shared test database right: the scan queue, alert and low credit tests read
+# whole tables, so two full runs at once fail each other. HEAVY_JOBS=2 is only for testing these scripts.
 set -euo pipefail
 
 # A heavy command started by another one (HEAVY_QUEUE_HELD) already has its turn.
@@ -10,7 +12,11 @@ if [ -n "${CI:-}${NETLIFY:-}${HEAVY_QUEUE_HELD:-}" ] || ! command -v perl >/dev/
 fi
 source "$(dirname "$0")/test-lock.sh"
 
-label="npm run ${npm_lifecycle_event:-$1}"
+case "${npm_lifecycle_event:-}" in
+  "") label="$*" ;;
+  test) label="npm test" ;;
+  *) label="npm run $npm_lifecycle_event" ;;
+esac
 jobs="${HEAVY_JOBS:-1}"
 limit=$((${HEAVY_WAIT_MINUTES:-60} * 60))
 
@@ -30,6 +36,8 @@ take_turn() {
 waited=0
 if ! take_turn; then
   echo "Waiting for another session's test run or build to finish before $label. Running now:" >&2
+  # The session that just took its turn writes its owner line a moment later.
+  sleep 1
   for i in $(seq 1 "$jobs"); do echo "  $(cat "$TEST_LOCK_DIR/heavy.$i.owner" 2>/dev/null)" >&2; done
   until take_turn; do
     if [ "$waited" -ge "$limit" ]; then
