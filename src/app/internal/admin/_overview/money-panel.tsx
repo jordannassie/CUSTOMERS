@@ -16,7 +16,7 @@ export default function MoneyPanel({ revenue, aiCostUsd }: { revenue: Revenue; a
         <div className="flex flex-col gap-1 bg-surface px-5 py-5">
           <p className="text-[13px] text-muted-foreground">Revenue this month, from Stripe</p>
           {revenueUsd !== null ? (
-            <p className="text-[36px] leading-none font-semibold tracking-[-0.03em] tabular-nums">{usd(revenueUsd)}</p>
+            <p className="text-[32px] leading-none font-semibold tracking-[-0.03em] tabular-nums">{usd(revenueUsd)}</p>
           ) : (
             <p className="text-[20px] font-semibold text-muted-foreground">
               {revenue.state === "error" ? "Could not reach Stripe" : "Stripe not connected"}
@@ -34,7 +34,7 @@ export default function MoneyPanel({ revenue, aiCostUsd }: { revenue: Revenue; a
         </div>
         <div className="flex flex-col gap-1 bg-surface px-5 py-5">
           <p className="text-[13px] text-muted-foreground">Real AI cost this month</p>
-          <p className="text-[36px] leading-none font-semibold tracking-[-0.03em] tabular-nums">{usd(aiCostUsd)}</p>
+          <p className="text-[32px] leading-none font-semibold tracking-[-0.03em] tabular-nums">{usd(aiCostUsd)}</p>
           <p className="text-[13px] text-text-hint">
             What OpenAI, Anthropic and Perplexity charged us.{" "}
             <Link href="/internal/admin/usage" className="text-primary hover:underline">

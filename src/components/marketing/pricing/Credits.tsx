@@ -70,7 +70,7 @@ export function Credits({ plans, packs }: { plans: PublicPlan[]; packs: PublicPa
                 <p className="text-[15px] font-medium">
                   <span data-testid="pack-credits" className="tabular">{formatCount(pack.credits)}</span> credits
                 </p>
-                <p data-testid="pack-price" className="tabular mt-2 text-3xl font-semibold tracking-[-0.03em]">
+                <p data-testid="pack-price" className="tabular mt-2 text-[32px] leading-10 font-semibold tracking-[-0.03em]">
                   {formatUsd(pack.priceCents)}
                 </p>
                 <p className="mt-1 text-[13px] text-text-hint">One-time payment</p>

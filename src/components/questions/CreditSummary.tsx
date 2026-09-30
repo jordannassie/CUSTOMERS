@@ -14,7 +14,7 @@ export function CreditSummary({ view }: { view: QuestionsView }) {
     <section aria-label="Questions and credits" className="grid overflow-hidden rounded-md border border-border bg-surface sm:grid-cols-2">
       <div className="flex flex-col gap-2 p-5">
         <p className="text-[13px] text-muted-foreground">Active questions</p>
-        <p data-testid="active-count" className="text-[28px] leading-none font-semibold tracking-[-0.02em] tabular-nums">
+        <p data-testid="active-count" className="text-[32px] leading-none font-semibold tracking-[-0.02em] tabular-nums">
           {active}
           {view.limit !== null && <span className="text-base font-normal text-muted-foreground"> of {view.limit}</span>}
         </p>
@@ -29,7 +29,7 @@ export function CreditSummary({ view }: { view: QuestionsView }) {
       </div>
       <div data-testid="credit-estimate" aria-live="polite" className="flex flex-col gap-2 border-t border-border bg-muted p-5 sm:border-t-0 sm:border-l">
         <p className="text-[13px] text-muted-foreground">Estimated use</p>
-        <p className="text-[28px] leading-none font-semibold tracking-[-0.02em] tabular-nums">
+        <p className="text-[32px] leading-none font-semibold tracking-[-0.02em] tabular-nums">
           About {count(credits)} <span className="text-base font-normal text-muted-foreground">credits a month</span>
         </p>
         <p className="text-xs text-muted-foreground">

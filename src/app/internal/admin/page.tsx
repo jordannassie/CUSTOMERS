@@ -60,7 +60,7 @@ function Stat({ label, value }: { label: string; value: number }) {
   return (
     <div className="flex flex-col gap-1 bg-surface px-4 py-4">
       <dt className="text-[13px] text-muted-foreground">{label}</dt>
-      <dd className="text-[28px] leading-none font-semibold tracking-[-0.02em] tabular-nums">{credits(value)}</dd>
+      <dd className="text-[32px] leading-none font-semibold tracking-[-0.02em] tabular-nums">{credits(value)}</dd>
     </div>
   );
 }
