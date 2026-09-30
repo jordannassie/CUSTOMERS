@@ -130,7 +130,8 @@ function DialogTitle({
     <DialogPrimitive.Title
       data-slot="dialog-title"
       className={cn(
-        "font-heading text-base leading-none font-medium",
+        // Right padding keeps long titles clear of the close button.
+        "pr-8 font-heading text-base leading-snug font-semibold tracking-[-0.02em] wrap-break-word",
         className
       )}
       {...props}
