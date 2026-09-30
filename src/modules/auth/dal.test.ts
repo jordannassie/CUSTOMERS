@@ -110,10 +110,13 @@ describe("signed in", () => {
     expect(agency).toEqual({ id: agencyId, name: "Auth test agency", status: "active", isTest: true });
   });
 
-  it.each(["suspended", "deleted"])("requireAgency blocks a %s agency", async (status) => {
+  it.each([
+    ["suspended", "agency_paused", "/account-paused"],
+    ["deleted", "agency_deleted", "/account-deleted"],
+  ])("requireAgency blocks a %s agency", async (status, reason, path) => {
     await setAgencyStatus(status);
-    await expect(requireAgency()).rejects.toMatchObject({ reason: "agency_paused", status: 403 });
-    await expect(requireAgency({ next: "/dashboard" })).rejects.toThrow("REDIRECT /account-paused");
+    await expect(requireAgency()).rejects.toMatchObject({ reason, status: 403 });
+    await expect(requireAgency({ next: "/dashboard" })).rejects.toThrow(`REDIRECT ${path}`);
     await setAgencyStatus("active");
   });
 

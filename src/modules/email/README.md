@@ -12,6 +12,8 @@ Email foundation (B-61, MVP_SPEC 10, D-37, D-72): React Email templates sent thr
 | Low credits | `low-credits.tsx` | pg_cron every 30 minutes (`notifications/jobs.ts`, `low_credit_agencies()` in migration 038) | `low_credits:<agency>:<period end>:<low, empty or negative>` |
 | Weekly report | `weekly-report.tsx` | pg_cron on Mondays (`notifications/jobs.ts`) | `weekly_report:<agency>:<Monday>` |
 
+Deletion emails (B-77, MVP_SPEC 23), all `notice.tsx` built in `account/emails.tsx`: `business_deleted:<business>`, `account_deleted:<agency>`, `account_restored:<agency>:<time>` (admin restore), `account_purged:<agency>` (after the purge job, `account/purge.ts`).
+
 Outside production `getEmailClient()` logs each email instead of sending it, since `.env.local` may hold a real key.
 
 | File | Holds |

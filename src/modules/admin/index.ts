@@ -23,7 +23,6 @@ export {
   unsuspendAgency,
 } from "./agencies/actions";
 export { agencyFilter, AGENCY_FILTERS, MAX_CREDIT_CHANGE, MAX_TRIAL_DAYS, type AgencyFilter } from "./agencies/schema";
-export { RESTORE_DAYS } from "./agencies/service";
 export { adminStripeConnected } from "./agencies/stripe";
 export { loadOverview, type AdminOverview } from "./overview/dal";
 export { aiCostShare, type Revenue } from "./overview/service";

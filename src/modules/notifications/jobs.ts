@@ -1,4 +1,5 @@
 import "server-only";
+import { runPurgeFollowUp } from "@/modules/account";
 import { findHandledEmailKeys, sendEmail, type SendEmailInput, type SendEmailResult, type WeeklyBusiness } from "@/modules/email";
 import {
   isEmailJobSecret,
@@ -101,6 +102,7 @@ export function liveJobDeps(overrides: Partial<JobDeps> = {}): JobDeps {
 const JOBS: Record<EmailJob, (deps: JobDeps) => Promise<JobSummary>> = {
   low_credits: runLowCredits,
   weekly_report: runWeeklyReport,
+  account_purged: () => runPurgeFollowUp(),
 };
 
 /** The route behind run_email_job. The worker secret header is the auth; there is no signed-in user. */

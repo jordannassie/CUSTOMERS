@@ -1,6 +1,12 @@
 const PAUSED_STATUSES = new Set(["suspended", "deleted"]);
 
 export const PAUSED_PATH = "/account-paused";
+export const DELETED_PATH = "/account-deleted";
+
+/** Where a blocked account is sent: a deleted one sees that it was deleted, not that it is paused (B-77). */
+export function blockedPathFor(status: string): string {
+  return status === "deleted" ? DELETED_PATH : PAUSED_PATH;
+}
 
 export function isAgencyPaused(status: string): boolean {
   return PAUSED_STATUSES.has(status);

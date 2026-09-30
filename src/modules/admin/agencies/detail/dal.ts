@@ -37,7 +37,7 @@ export async function loadAgencyDetail(agencyId: string, now = new Date()): Prom
   const { data: a, error } = await db
     .from("agencies")
     .select(
-      "id, name, owner_user_id, status, is_test, trial_ends_at, current_period_end, stripe_customer_id, stripe_subscription_id, created_at, deleted_at",
+      "id, name, owner_user_id, status, is_test, trial_ends_at, current_period_end, stripe_customer_id, stripe_subscription_id, created_at, purge_after",
     )
     .eq("id", agencyId)
     .maybeSingle();
@@ -92,8 +92,8 @@ export async function loadAgencyDetail(agencyId: string, now = new Date()): Prom
       stripeLinked: a.stripe_customer_id !== null,
       hasSubscription: a.stripe_subscription_id !== null,
       createdAt: a.created_at,
-      restoreUntil: restoreDeadline(a.status, a.deleted_at)?.toISOString() ?? null,
-      canRestore: canRestore(a.status, a.deleted_at, now),
+      restoreUntil: restoreDeadline(a.status, a.purge_after)?.toISOString() ?? null,
+      canRestore: canRestore(a.status, a.purge_after, now),
     },
     ownerEmail: emails.get(a.owner_user_id) ?? null,
     balance: {

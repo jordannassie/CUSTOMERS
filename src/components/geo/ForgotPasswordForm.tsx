@@ -21,7 +21,8 @@ export default function ForgotPasswordForm() {
 
     const supabase = createClient();
     const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/reset-password`,
+      // Through the callback, so the code is swapped for a session on the server (ACC-04).
+      redirectTo: `${window.location.origin}/auth/callback?next=/reset-password`,
     });
 
     setLoading(false);
@@ -38,7 +39,7 @@ export default function ForgotPasswordForm() {
     <div className="w-full max-w-[420px]">
       {/* Logo */}
       <div className="text-center mb-8">
-        <Link href="/" aria-label="Customers.Direct — Home">
+        <Link href="/" aria-label="Customers.Direct home">
           <Image
             src={LOGO}
             alt="Customers.Direct"

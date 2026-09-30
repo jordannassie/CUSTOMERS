@@ -36,7 +36,7 @@ async function setAgency(fields: Database["public"]["Tables"]["agencies"]["Updat
 async function readAgency() {
   const { data, error } = await service
     .from("agencies")
-    .select("status, is_test, trial_ends_at, deleted_at")
+    .select("status, is_test, trial_ends_at, deleted_at, purge_after")
     .eq("id", agency.agencyId)
     .single();
   if (error) throw error;
@@ -147,14 +147,18 @@ describe("agency actions (B-65)", () => {
     expect(await auditRows("agency.unsuspend")).toMatchObject([{ details: { reason: "Paid by phone", new_status: "past_due" } }]);
   });
 
-  it("restores a deleted account within 30 days, and not after", async () => {
-    await setAgency({ status: "deleted", deleted_at: new Date(Date.now() - 31 * DAY).toISOString() });
+  it("restores a deleted account before its purge date, and not after", async () => {
+    await setAgency({
+      status: "deleted",
+      deleted_at: new Date(Date.now() - 31 * DAY).toISOString(),
+      purge_after: new Date(Date.now() - DAY).toISOString(),
+    });
     expect(await actions.restoreAgency({ agencyId: agency.agencyId, reason: REASON })).toMatchObject({ ok: false, status: 409 });
     expect((await readAgency()).status).toBe("deleted");
 
-    await setAgency({ deleted_at: new Date(Date.now() - 10 * DAY).toISOString() });
+    await setAgency({ deleted_at: new Date(Date.now() - 10 * DAY).toISOString(), purge_after: new Date(Date.now() + 20 * DAY).toISOString() });
     expect((await actions.restoreAgency({ agencyId: agency.agencyId, reason: REASON })).ok).toBe(true);
-    expect(await readAgency()).toMatchObject({ status: "canceled", deleted_at: null });
+    expect(await readAgency()).toMatchObject({ status: "canceled", deleted_at: null, purge_after: null });
     expect(await auditRows("agency.restore")).toMatchObject([{ admin_user_id: adminId, details: { reason: REASON } }]);
   });
 

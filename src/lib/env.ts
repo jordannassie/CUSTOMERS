@@ -54,6 +54,9 @@ export const env = createEnv({
     ADMIN_EMAILS: optional,
     // Admins get an alert when real AI cost for the UTC day passes this (B-69). Unset turns that check off.
     ALERT_DAILY_COST_USD: z.coerce.number().positive().optional(),
+    // Days between deleting an account or business and removing its data for good; admins can restore an account
+    // until then (MVP_SPEC 23). 30 until a lawyer confirms the legal deadlines (D-77).
+    DELETION_WAIT_DAYS: z.coerce.number().int().min(1).max(365).default(30),
 
     BILLING_ENABLED: flag,
     BETA_FREE_ACCESS: flag,
@@ -98,6 +101,7 @@ export const env = createEnv({
     WORKER_IN_PROCESS: process.env.WORKER_IN_PROCESS,
     ADMIN_EMAILS: process.env.ADMIN_EMAILS,
     ALERT_DAILY_COST_USD: process.env.ALERT_DAILY_COST_USD,
+    DELETION_WAIT_DAYS: process.env.DELETION_WAIT_DAYS,
     BILLING_ENABLED: process.env.BILLING_ENABLED,
     BETA_FREE_ACCESS: process.env.BETA_FREE_ACCESS,
     TRIAL_ENABLED: process.env.TRIAL_ENABLED,

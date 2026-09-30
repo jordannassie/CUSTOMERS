@@ -34,6 +34,27 @@ export type Database = {
   }
   public: {
     Tables: {
+      account_purges: {
+        Row: {
+          agency_id: string
+          agency_name: string
+          owner_email: string | null
+          purged_at: string
+        }
+        Insert: {
+          agency_id: string
+          agency_name: string
+          owner_email?: string | null
+          purged_at?: string
+        }
+        Update: {
+          agency_id?: string
+          agency_name?: string
+          owner_email?: string | null
+          purged_at?: string
+        }
+        Relationships: []
+      }
       admin_audit_log: {
         Row: {
           action: string
@@ -75,6 +96,7 @@ export type Database = {
           logo_url: string | null
           name: string
           owner_user_id: string
+          purge_after: string | null
           status: string
           stripe_customer_id: string | null
           stripe_subscription_id: string | null
@@ -91,6 +113,7 @@ export type Database = {
           logo_url?: string | null
           name: string
           owner_user_id: string
+          purge_after?: string | null
           status?: string
           stripe_customer_id?: string | null
           stripe_subscription_id?: string | null
@@ -107,6 +130,7 @@ export type Database = {
           logo_url?: string | null
           name?: string
           owner_user_id?: string
+          purge_after?: string | null
           status?: string
           stripe_customer_id?: string | null
           stripe_subscription_id?: string | null
@@ -542,6 +566,7 @@ export type Database = {
           agency_id: string | null
           aliases: string[]
           created_at: string
+          deleted_at: string | null
           description: string | null
           domain: string | null
           has_website: boolean | null
@@ -559,6 +584,7 @@ export type Database = {
           primary_city: string | null
           primary_country: string | null
           primary_region: string | null
+          purge_after: string | null
           reach_type: string | null
           scan_frequency: string
           services: string[]
@@ -569,6 +595,7 @@ export type Database = {
           agency_id?: string | null
           aliases?: string[]
           created_at?: string
+          deleted_at?: string | null
           description?: string | null
           domain?: string | null
           has_website?: boolean | null
@@ -586,6 +613,7 @@ export type Database = {
           primary_city?: string | null
           primary_country?: string | null
           primary_region?: string | null
+          purge_after?: string | null
           reach_type?: string | null
           scan_frequency?: string
           services?: string[]
@@ -596,6 +624,7 @@ export type Database = {
           agency_id?: string | null
           aliases?: string[]
           created_at?: string
+          deleted_at?: string | null
           description?: string | null
           domain?: string | null
           has_website?: boolean | null
@@ -613,6 +642,7 @@ export type Database = {
           primary_city?: string | null
           primary_country?: string | null
           primary_region?: string | null
+          purge_after?: string | null
           reach_type?: string | null
           scan_frequency?: string
           services?: string[]
@@ -2164,6 +2194,13 @@ export type Database = {
           used: number
         }[]
       }
+      purge_deleted_accounts: {
+        Args: never
+        Returns: {
+          accounts: number
+          businesses: number
+        }[]
+      }
       raise_system_alert: {
         Args: {
           p_details: Json
@@ -2189,6 +2226,7 @@ export type Database = {
       }
       reset_stuck_jobs: { Args: never; Returns: number }
       retry_scan_job: { Args: { p_job_id: string }; Returns: string }
+      run_account_purge: { Args: never; Returns: number }
       run_email_job: { Args: { p_job: string }; Returns: number }
       run_system_alerts: { Args: never; Returns: number }
       save_first_questions: {
@@ -2201,6 +2239,22 @@ export type Database = {
           id: string
           prompt: string
         }[]
+      }
+      soft_delete_agency: {
+        Args: { p_agency_id: string; p_purge_after: string }
+        Returns: boolean
+      }
+      soft_delete_business: {
+        Args: {
+          p_agency_id: string
+          p_business_id: string
+          p_purge_after: string
+        }
+        Returns: boolean
+      }
+      stop_scans: {
+        Args: { p_agency_id: string; p_business_id?: string }
+        Returns: number
       }
     }
     Enums: {

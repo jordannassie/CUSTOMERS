@@ -132,7 +132,7 @@ export default function AgencyActions({ agency, stripeConnected, maxCredits, max
           submitLabel="Restore account"
           pendingLabel="Restoring…"
           successText="Account restored."
-          blocked={agency.canRestore ? null : "More than 30 days have passed, so this account can no longer be restored."}
+          blocked={agency.canRestore ? null : "The waiting period has passed, so this account can no longer be restored."}
           run={(_form, reason) => actions.restoreAgency({ agencyId, reason })}
         />
       ) : suspended ? (
