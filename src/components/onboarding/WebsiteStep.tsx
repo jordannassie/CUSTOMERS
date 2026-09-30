@@ -87,7 +87,7 @@ export function WebsiteStep({ defaultDomain, defaultNoWebsite, backHref, save }:
           setNoWebsite(!noWebsite);
           setError(null);
         }}
-        className="w-fit text-sm text-primary underline-offset-4 hover:underline"
+        className="-my-2.5 w-fit py-2.5 text-sm text-primary underline-offset-4 hover:underline"
       >
         {noWebsite ? "I have a website" : "I don't have a website"}
       </button>

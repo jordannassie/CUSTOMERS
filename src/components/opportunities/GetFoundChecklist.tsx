@@ -68,14 +68,17 @@ export function GetFoundChecklist({
       <ul className="flex flex-col divide-y divide-border border-t border-border">
         {items.map((item) => (
           <li key={item.key} className="flex gap-3 py-4 last:pb-0" data-testid={`checklist-${item.key}`}>
-            <input
-              id={`check-${item.key}`}
-              type="checkbox"
-              checked={item.done}
-              disabled={busy === item.key}
-              onChange={() => toggle(item)}
-              className="mt-0.5 size-4 shrink-0 cursor-pointer rounded-sm accent-primary disabled:cursor-wait"
-            />
+            {/* The padding gives the 16px box a 40px tap area without moving it. */}
+            <label className="-m-3 flex shrink-0 cursor-pointer self-start p-3">
+              <input
+                id={`check-${item.key}`}
+                type="checkbox"
+                checked={item.done}
+                disabled={busy === item.key}
+                onChange={() => toggle(item)}
+                className="mt-0.5 size-4 cursor-pointer rounded-sm accent-primary disabled:cursor-wait"
+              />
+            </label>
             <div className="flex min-w-0 flex-col gap-1">
               <label
                 htmlFor={`check-${item.key}`}

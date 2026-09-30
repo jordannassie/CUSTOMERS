@@ -23,7 +23,7 @@ export default async function ManageCompetitorsPage() {
     <PageContainer>
       <Link
         href="/competitors"
-        className="mb-4 inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors duration-150 ease-out hover:text-foreground"
+        className="-mt-2.5 mb-1.5 inline-flex items-center gap-1.5 py-2.5 text-sm text-muted-foreground transition-colors duration-150 ease-out hover:text-foreground"
       >
         <ArrowLeft aria-hidden className="size-4" />
         Back to competitors
