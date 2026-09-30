@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetDescription, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { AppBanners, type AppBanner } from "./AppBanners";
 import { AppSidebar, type AppSidebarProps } from "./AppSidebar";
+import { SkipLink } from "./SkipLink";
 
 type AppShellProps = AppSidebarProps & {
   banners: AppBanner[];
@@ -22,6 +23,7 @@ export function AppShell({ banners, creditsShort, children, ...sidebar }: AppShe
 
   return (
     <div className="flex min-h-dvh bg-background">
+      <SkipLink />
       <aside className="sticky top-0 hidden h-dvh w-60 shrink-0 overflow-y-auto border-r border-border bg-muted lg:block">
         <AppSidebar {...sidebar} />
       </aside>
@@ -41,7 +43,7 @@ export function AppShell({ banners, creditsShort, children, ...sidebar }: AppShe
             </SheetContent>
           </Sheet>
           <Link href="/dashboard" aria-label="Customers.Direct, go to Overview" className="flex-1">
-            <Image src="/images/logos/logo-black.png" alt="" width={120} height={30} className="h-7 w-auto" />
+            <Image src="/images/logos/logo-black.png" alt="" width={84} height={28} loading="eager" className="h-7 w-auto" />
           </Link>
           {creditsShort && (
             <span
@@ -57,7 +59,9 @@ export function AppShell({ banners, creditsShort, children, ...sidebar }: AppShe
         </header>
 
         <AppBanners banners={banners} />
-        <main className="min-w-0 flex-1">{children}</main>
+        <main id="main" tabIndex={-1} className="min-w-0 flex-1 outline-none">
+          {children}
+        </main>
       </div>
     </div>
   );

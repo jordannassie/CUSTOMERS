@@ -1,4 +1,5 @@
 import { SessionWatcher } from "@/app/_components/session-watcher";
+import { SkipLink } from "@/components/app/SkipLink";
 import AdminNav from "./_components/admin-nav";
 import { requireAdmin } from "@/modules/auth";
 
@@ -14,9 +15,12 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   return (
     <div className="flex min-h-screen flex-col bg-background lg:flex-row">
+      <SkipLink />
       <SessionWatcher />
       <AdminNav adminEmail={admin.email ?? ""} />
-      <main className="min-w-0 flex-1">{children}</main>
+      <main id="main" tabIndex={-1} className="min-w-0 flex-1 outline-none">
+        {children}
+      </main>
     </div>
   );
 }
