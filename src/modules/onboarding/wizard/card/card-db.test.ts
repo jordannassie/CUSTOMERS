@@ -108,6 +108,17 @@ describe("card step", () => {
     expect(await startCardCheckout({ id: userId, email }, businessId, "http://localhost/onboarding/card")).toMatchObject({ ok: false, status: 409 });
   });
 
+  it("never starts a second trial for an agency Stripe already knows (F-43)", async () => {
+    const { userId, email, agencyId, businessId } = await draftAtModels();
+    await service.from("businesses").update({ onboarding_step: 8 }).eq("id", businessId);
+    await service.from("agencies").update({ stripe_customer_id: `cus_${randomUUID()}` }).eq("id", agencyId);
+    expect(await startCardCheckout({ id: userId, email }, businessId, "http://localhost/onboarding/card")).toEqual({
+      ok: false,
+      status: 409,
+      error: "You've already had your free trial. Contact us to start your plan.",
+    });
+  });
+
   it("refuses another user's business and a signed-out caller", async () => {
     const owner = await draftAtModels();
     await draftAtModels();

@@ -82,11 +82,11 @@ Endpoint: `POST /api/stripe/webhook`, secret `STRIPE_WEBHOOK_SECRET`. Subscribe 
 |---|---|
 | `checkout.session.completed` | Links the Stripe customer and subscription to the agency. A paid top-up grants its pack's credits (never expire, `source_id` = session ID). |
 | `checkout.session.async_payment_succeeded` | Same as above, for payment methods that finish later. |
-| `invoice.paid` | Grants credits per invoice line (`source_id` = line ID): 100 trial credits on the $0 first invoice (expire at trial end), plan credits per business on each paid period, prorated extra credits for upgrades and added businesses. |
+| `invoice.paid` | Grants credits per invoice line (`source_id` = line ID): `TRIAL_CREDITS` (100) on the $0 first invoice through `grant_trial_credits` (expire at trial end, once per agency), plan credits per business on each paid period, prorated extra credits for upgrades and added businesses. |
 | `invoice.payment_failed` | Agency and its businesses `past_due` (scheduled scans stop, the banner shows), one email per invoice. |
-| `customer.subscription.created` / `updated` | Reads the current subscription from Stripe (events can arrive out of order), then saves status, trial end, period end and one `business_subscriptions` row per item. A business whose item is gone is canceled and taken off the scan schedule. |
+| `customer.subscription.created` / `updated` | Reads the current subscription from Stripe (events can arrive out of order), then saves status, trial end, period end, a pending cancel's date (`agencies.cancel_at`) and one `business_subscriptions` row per item. A business whose item is gone is canceled and taken off the scan schedule. |
 | `customer.subscription.deleted` | Agency and all its businesses `canceled`. |
-| `customer.subscription.trial_will_end` | Trial ending email. |
+| `customer.subscription.trial_will_end` | Trial ending email, unless the trial is cancelled (it will not be charged). |
 
 Rules:
 - A handler that throws returns 500 and is recorded with its error; Stripe's retry runs it again. A processed event returns 200 with `duplicate: true`.
@@ -131,6 +131,14 @@ Server Actions in `plan-change/actions.ts`, exported from `index.ts`: `upgradeBu
 - Stripe calls carry an idempotency key per change and preview, so a double click changes Stripe once.
 - The key also needs Subscription Schedules Write and Invoices Read (invoice previews).
 - Tests use an in-memory Stripe (`plan-change/fake-stripe.ts`) with a clock for the upgrade mid-month, downgrade at renewal and cancel scenarios. The same three still need a run with real Stripe test clocks once the sandbox exists (B-01, B-40).
+
+## Trial rules (B-45, MVP_SPEC 4.4, D-16, D-17)
+
+- 7 days, 2 businesses (`TRIAL_MAX_BUSINESSES` in entitlements), charged on day 7 unless cancelled.
+- Trial credits: one setting, `TRIAL_CREDITS` in `webhooks/credits.ts`, 100 while D-17 is Proposed. One grant from the first $0 invoice, expiring at the trial end, never again at the first renewal.
+- One trial per agency and per Stripe customer (F-43): `trialAllowed` in `checkout.ts` refuses the card step for an agency Stripe already knows, and `grant_trial_credits` (migration `043`) grants nothing to an agency that had a trial.
+- Cancel during the trial (`cancelSubscription`): Stripe ends the subscription at the trial end with no invoice. Until then the app banner says "Your trial ends on [date]. You won't be charged."; after it, the agency is `canceled` and entitlements refuse scans, new businesses and top-ups, while results stay readable.
+- `trial-rules.test.ts` runs the day 7 conversion and the cancelled trial on the in-memory Stripe and its clock. The same two still need a run with real Stripe test clocks once the sandbox exists (B-01, B-40).
 
 ## Billing page (B-46, MVP_SPEC 8.1, 11)
 

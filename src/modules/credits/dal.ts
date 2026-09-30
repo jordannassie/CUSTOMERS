@@ -92,6 +92,21 @@ export async function grantCredits(input: {
   return data;
 }
 
+/**
+ * The trial grant (MVP_SPEC 4.4). One per agency (F-43): returns null, granting nothing, when the agency already
+ * had a trial. A replayed source returns the first grant's ID.
+ */
+export async function grantTrialCredits(input: { agencyId: string; sourceId: string; amount: number; expiresAt: Date }): Promise<string | null> {
+  const { data, error } = await createServiceClient().rpc("grant_trial_credits", {
+    p_agency_id: input.agencyId,
+    p_source_id: input.sourceId,
+    p_amount: input.amount,
+    p_expires_at: input.expiresAt.toISOString(),
+  });
+  if (error) fail("grant_trial_credits", error);
+  return data;
+}
+
 /** Zeroes every expired grant. Returns how many grants expired. */
 export async function expireGrants(): Promise<number> {
   const { data, error } = await createServiceClient().rpc("expire_grants");

@@ -1,6 +1,6 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
-import { createTrialCheckout, getTrialOffer, type StartTrialResult, type TrialOffer } from "@/modules/billing";
+import { createTrialCheckout, getTrialOffer, trialAllowed, type StartTrialResult, type TrialOffer } from "@/modules/billing";
 import { ownStep } from "../dal";
 import { finishWizard, selectedPlan } from "../questions/dal";
 import { needsCard, stepNumber } from "../steps";
@@ -12,11 +12,18 @@ async function loadAgency(userId: string) {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("agencies")
-    .select("id, is_test, stripe_subscription_id")
+    .select("id, is_test, stripe_customer_id, stripe_subscription_id")
     .eq("owner_user_id", userId)
     .maybeSingle();
   if (error) throw new Error(`Could not load agency: ${error.message}`);
-  return data && { id: data.id, isTest: data.is_test, hasSubscription: data.stripe_subscription_id !== null };
+  return (
+    data && {
+      id: data.id,
+      isTest: data.is_test,
+      hasSubscription: data.stripe_subscription_id !== null,
+      trialAllowed: trialAllowed({ stripeCustomerId: data.stripe_customer_id, stripeSubscriptionId: data.stripe_subscription_id }),
+    }
+  );
 }
 
 // The plan picked on the pricing page, else Starter, as the models step and entitlements assume.
@@ -40,6 +47,7 @@ export async function startCardCheckout(
   if (!agency) return { ok: false, status: 409, error: "Add your agency name first." };
   // A second session would start a second subscription for the same agency.
   if (!needsCard(agency, false)) return { ok: false, status: 409, error: "Your free trial has already started." };
+  if (!agency.trialAllowed) return { ok: false, status: 409, error: "You've already had your free trial. Contact us to start your plan." };
   return createTrialCheckout({ agencyId: agency.id, businessId, email: user.email, returnUrl, planId: await chosenPlan(user.id) });
 }
 

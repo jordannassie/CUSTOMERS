@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { BUY_CREDITS_HREF, pickBanners, shortBalance, usageWidget, type AccountState, type UsageNumbers } from "./service";
+import { BILLING_HREF, BUY_CREDITS_HREF, pickBanners, SUPPORT_HREF, shortBalance, usageWidget, type AccountState, type UsageNumbers } from "./service";
 
 const now = new Date("2026-09-27T12:00:00Z");
 const inDays = (days: number) => new Date(now.getTime() + days * 24 * 60 * 60 * 1000);
 
-const active: AccountState = { status: "active", trialEndsAt: null, periodEndsAt: inDays(12) };
-const trial: AccountState = { status: "trialing", trialEndsAt: inDays(5), periodEndsAt: null };
+const active: AccountState = { status: "active", trialEndsAt: null, periodEndsAt: inDays(12), cancelAt: null };
+const trial: AccountState = { status: "trialing", trialEndsAt: inDays(5), periodEndsAt: null, cancelAt: null };
 const usage = (u: Partial<UsageNumbers>): UsageNumbers => ({
   balance: 580,
   topupRemaining: 0,
@@ -114,9 +114,47 @@ describe("pickBanners", () => {
     expect(kinds(usage({}), active)).toEqual([]);
   });
 
-  it("shows the trial banner with the charge date", () => {
-    const [banner] = pickBanners(usage({}), trial, now);
-    expect(banner.message).toBe("Your free trial ends in 5 days. Your card will be charged on October 2.");
+  const trialUsage = usage({ balance: 564, topupRemaining: 500, periodCredits: 100, periodUsed: 36 });
+
+  it("shows days and trial credits left and the charge date during the trial", () => {
+    expect(pickBanners(trialUsage, trial, now)).toEqual([
+      {
+        kind: "trial",
+        tone: "info",
+        message: "Your free trial has 5 days and 64 trial credits left. Your card will be charged on October 2.",
+        action: null,
+      },
+    ]);
+    const lastDay = pickBanners(usage({ balance: 1, periodCredits: 100 }), { ...trial, trialEndsAt: inDays(0) }, now)[0];
+    expect(lastDay.message).toBe("Your free trial ends today, with 1 trial credit left. Your card will be charged on September 27.");
+  });
+
+  it("says nothing will be charged once the trial is cancelled", () => {
+    const cancelled = { ...trial, cancelAt: trial.trialEndsAt };
+    expect(pickBanners(trialUsage, cancelled, now)[0]).toEqual({
+      kind: "trial",
+      tone: "info",
+      message: "Your free trial has 5 days and 64 trial credits left. Your trial ends on October 2. You won't be charged.",
+      action: { label: "Keep my plan", href: BILLING_HREF },
+    });
+    const lastDay = pickBanners(trialUsage, { ...cancelled, trialEndsAt: inDays(0) }, now)[0];
+    expect(lastDay.message).toBe("Your free trial ends today, with 64 trial credits left. You won't be charged.");
+  });
+
+  it("shows only the read only notice once a cancelled trial or plan has ended", () => {
+    const endedTrial: AccountState = { status: "canceled", trialEndsAt: inDays(-2), periodEndsAt: inDays(-2), cancelAt: null };
+    expect(pickBanners(usage({ balance: 0 }), endedTrial, now)).toEqual([
+      {
+        kind: "ended",
+        tone: "warning",
+        message: "Your free trial has ended and you weren't charged. Your results are still here to read, but new scans are off.",
+        action: { label: "Contact us", href: SUPPORT_HREF },
+      },
+    ]);
+    const endedPlan: AccountState = { ...endedTrial, trialEndsAt: inDays(-40), periodEndsAt: inDays(-2) };
+    expect(pickBanners(usage({ balance: 500 }), endedPlan, now)[0].message).toBe(
+      "Your plan has ended. Your results are still here to read, but new scans are off.",
+    );
   });
 
   it("orders past due before out of credits", () => {

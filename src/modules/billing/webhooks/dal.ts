@@ -1,7 +1,7 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createServiceClient } from "@/lib/supabase/service";
-import { grantCredits } from "@/modules/credits";
+import { grantCredits, grantTrialCredits } from "@/modules/credits";
 import type { Database } from "@/types/database.types";
 import { productIdFor } from "../catalog";
 import type { PlanCredits } from "./credits";
@@ -70,11 +70,12 @@ export function createWebhookStore(db: Db = createServiceClient()) {
 
     async updateAgency(
       agencyId: string,
-      fields: { status?: AgencyStatus; trialEndsAt?: string | null; currentPeriodEnd?: string | null },
+      fields: { status?: AgencyStatus; trialEndsAt?: string | null; currentPeriodEnd?: string | null; cancelAt?: string | null },
     ): Promise<void> {
       const update: Database["public"]["Tables"]["agencies"]["Update"] = {};
       if (fields.trialEndsAt !== undefined) update.trial_ends_at = fields.trialEndsAt;
       if (fields.currentPeriodEnd !== undefined) update.current_period_end = fields.currentPeriodEnd;
+      if (fields.cancelAt !== undefined) update.cancel_at = fields.cancelAt;
       if (Object.keys(update).length > 0) {
         const { error } = await db.from("agencies").update(update).eq("id", agencyId);
         if (error) throw new Error(`update agency failed: ${error.message}`);
@@ -112,6 +113,7 @@ export function createWebhookStore(db: Db = createServiceClient()) {
     },
 
     grant: grantCredits,
+    grantTrial: grantTrialCredits,
 
     /**
      * Makes business_subscriptions match the subscription's items. Items name their business in metadata;

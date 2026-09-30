@@ -43,6 +43,14 @@ export function trialSessionParams(input: TrialCheckoutInput): Stripe.Checkout.S
   };
 }
 
+/**
+ * F-43: one free trial per agency and per Stripe customer. An agency Stripe already knows has had its trial, so
+ * it never starts another. grant_trial_credits holds the same line for the trial credits.
+ */
+export function trialAllowed(agency: { stripeCustomerId: string | null; stripeSubscriptionId: string | null }): boolean {
+  return agency.stripeCustomerId === null && agency.stripeSubscriptionId === null;
+}
+
 /** When the trial ends if the card is added now; Stripe counts the same 7 days from the subscription start. */
 export function trialEndDate(now: Date = new Date()): Date {
   return new Date(now.getTime() + TRIAL_DAYS * 24 * 60 * 60 * 1000);
