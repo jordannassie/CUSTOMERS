@@ -69,13 +69,13 @@ test_db_use_slot() {
   export SUPABASE_EDGE_RUNTIME_INSPECTOR_PORT=$((base + 83))
 }
 
-# True when this branch adds or changes a migration, compared with where it branched off TEST_DB_BASE.
+# True when this branch adds, changes or removes a migration (.sql), compared with where it branched off TEST_DB_BASE.
 # Against the merge base, a branch that is only behind origin/mvp still counts as unchanged.
 test_db_changes_migrations() {
   local base
   base="$(git merge-base HEAD "${TEST_DB_BASE:-origin/mvp}" 2>/dev/null)" || return 1
-  ! git diff --quiet "$base" -- supabase/migrations ||
-    [ -n "$(git ls-files --others --exclude-standard -- supabase/migrations)" ]
+  ! git diff --quiet "$base" -- 'supabase/migrations/*.sql' ||
+    [ -n "$(git ls-files --others --exclude-standard -- 'supabase/migrations/*.sql')" ]
 }
 
 if [ -z "${CI:-}" ]; then
