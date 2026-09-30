@@ -20,14 +20,15 @@ export function SignalsTable({ rows }: { rows: SignalRow[] }) {
   const highlight = leader ? headToHead(leader, you) : null;
 
   return (
-    <div className="flex flex-col gap-4">
+    // The table needs about 720px; below that its own box, not the screen, switches to the stacked list.
+    <div className="@container flex flex-col gap-4">
       {highlight ? (
         <p className="text-sm font-medium" data-testid="signals-highlight">
           {highlight}
         </p>
       ) : null}
 
-      <div className="hidden md:block">
+      <div className="hidden @min-[760px]:block">
         <Table>
           <TableHeader>
             <TableRow>
@@ -66,7 +67,7 @@ export function SignalsTable({ rows }: { rows: SignalRow[] }) {
         </Table>
       </div>
 
-      <ul className="flex flex-col divide-y divide-border md:hidden">
+      <ul className="flex flex-col divide-y divide-border @min-[760px]:hidden">
         {rows.map((row) => (
           <li key={`${row.isYou}-${row.name}`} className="flex flex-col gap-1 py-3 first:pt-0 last:pb-0">
             <span className={cn("truncate text-sm font-medium", row.isYou && "text-primary")}>
