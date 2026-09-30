@@ -26,6 +26,8 @@ export function BusinessProfileForm({ business, save }: { business: SettingsBusi
     phone: business.phone,
   };
   const [form, setForm] = useState(initial);
+  const [saved, setSaved] = useState(initial);
+  const dirty = (Object.keys(form) as (keyof Fields)[]).some((key) => form[key] !== saved[key]);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const typed = normalizeWebsite(form.website);
@@ -45,8 +47,9 @@ export function BusinessProfileForm({ business, save }: { business: SettingsBusi
     setError(null);
     startTransition(async () => {
       const result = await save({ businessId: business.id, ...form, services: parseServices(form.services) });
-      if (result.ok) toast.success("Business profile saved");
-      else setError(result.error);
+      if (!result.ok) return setError(result.error);
+      setSaved(form);
+      toast.success("Business profile saved");
     });
   }
 
@@ -95,7 +98,7 @@ export function BusinessProfileForm({ business, save }: { business: SettingsBusi
 
         <FormError message={error} />
         <div>
-          <Button type="submit" disabled={pending}>
+          <Button type="submit" disabled={pending || !dirty}>
             {pending && <Loader2 className="animate-spin" aria-hidden="true" />}
             Save profile
           </Button>
