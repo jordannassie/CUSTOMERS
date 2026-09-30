@@ -1,6 +1,7 @@
 import { Check, Lock, Shield } from "lucide-react";
 import Image from "next/image";
 import LaunchKitBuyButton from "@/components/site/LaunchKitBuyButton";
+import { LAUNCH_KIT_AD_IMAGE } from "@/config/launch-kit-assets";
 
 const INCLUDED = [
   "Step-by-step video training",
@@ -28,7 +29,7 @@ export default function LaunchKitOfferCard() {
         <div className="flex items-start gap-3">
           <div className="w-14 h-16 rounded-lg overflow-hidden border border-[#E5E5E1] shrink-0 bg-[#F5F5F2]">
             <Image
-              src="/images/start-ai-business/hero.jpg"
+              src={LAUNCH_KIT_AD_IMAGE}
               alt=""
               width={112}
               height={128}

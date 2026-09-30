@@ -5,6 +5,7 @@ import LaunchKitHero from "@/components/site/launch-kit/LaunchKitHero";
 import LaunchKitWhatYouGet from "@/components/site/launch-kit/LaunchKitWhatYouGet";
 import LaunchKitBottom from "@/components/site/launch-kit/LaunchKitBottom";
 import { launchKitIntroVideoExists } from "@/components/site/launch-kit/LaunchKitVideo";
+import { LAUNCH_KIT_AD_IMAGE } from "@/config/launch-kit-assets";
 
 const title = "Get the AI Business Launch Kit for $97 | Customers.Direct";
 const description =
@@ -19,7 +20,7 @@ export const metadata: Metadata = {
     title,
     description,
     url: "https://customers.direct/start-ai-business",
-    images: [{ url: "/images/start-ai-business/hero.jpg" }],
+    images: [{ url: LAUNCH_KIT_AD_IMAGE }],
   },
 };
 
