@@ -1,15 +1,16 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { Loader2, ArrowRight } from "lucide-react";
+import { Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/browser";
 import { env } from "@/lib/env";
 import { safeNextPath } from "@/lib/safe-next";
+import { AuthAlert, AuthCard, AuthField, AuthLogo, authLinkClass } from "./auth-bits";
 
-const LOGO = "/images/logos/logo-black.png";
+const MIN_PASSWORD = 8;
 
 interface AuthFormProps {
   defaultMode?: "login" | "signup";
@@ -46,6 +47,10 @@ export default function AuthForm({ defaultMode = "login", errorParam = "", notic
   const [googleFailed, setGoogleFailed] = useState(oauthFailed);
   const [error, setError] = useState<string | null>(oauthFailed ? "google_failed" : null);
   const [message, setMessage] = useState<string | null>(notice ?? null);
+  const [passwordError, setPasswordError] = useState<string | null>(null);
+  // Which fields the form alert is about, so they are marked invalid and point at it.
+  const [invalid, setInvalid] = useState<"email" | "password" | "both" | null>(null);
+  const passwordRef = useRef<HTMLInputElement>(null);
 
   const isSignup = mode === "signup";
 
@@ -60,6 +65,8 @@ export default function AuthForm({ defaultMode = "login", errorParam = "", notic
     setPassword("");
     setError(null);
     setMessage(null);
+    setPasswordError(null);
+    setInvalid(null);
   }
 
   async function handleGoogle() {
@@ -88,6 +95,13 @@ export default function AuthForm({ defaultMode = "login", errorParam = "", notic
     e.preventDefault();
     setError(null);
     setMessage(null);
+    setPasswordError(null);
+    setInvalid(null);
+    if (password.length < MIN_PASSWORD) {
+      setPasswordError("Password must be at least 8 characters.");
+      passwordRef.current?.focus();
+      return;
+    }
     setLoading("email");
     const supabase = createClient();
 
@@ -107,8 +121,10 @@ export default function AuthForm({ defaultMode = "login", errorParam = "", notic
         const msg = signupError.message.toLowerCase();
         if (msg.includes("already registered") || msg.includes("already been registered") || msg.includes("user already")) {
           setError("An account with this email already exists. Try logging in instead.");
+          setInvalid("email");
         } else if (msg.includes("password")) {
-          setError("Password must be at least 8 characters.");
+          setPasswordError("Password must be at least 8 characters.");
+          passwordRef.current?.focus();
         } else {
           setError("Unable to create account. Please try again.");
         }
@@ -130,8 +146,10 @@ export default function AuthForm({ defaultMode = "login", errorParam = "", notic
       const msg = loginError.message.toLowerCase();
       if (msg.includes("invalid") || msg.includes("credentials") || msg.includes("password") || msg.includes("email")) {
         setError("Email or password is incorrect.");
+        setInvalid("both");
       } else if (msg.includes("not found") || msg.includes("no user")) {
         setError("No account found with that email.");
+        setInvalid("email");
       } else {
         setError("Unable to log in. Please try again.");
       }
@@ -141,39 +159,25 @@ export default function AuthForm({ defaultMode = "login", errorParam = "", notic
     router.refresh();
   }
 
+  const alertId = "auth-alert";
+  const emailInvalid = invalid === "email" || invalid === "both";
+  const passwordInvalid = invalid === "password" || invalid === "both";
+
   return (
     <div className="w-full max-w-[420px]">
-      {/* Logo */}
-      <div className="text-center mb-8">
-        <Link href="/" aria-label="Customers.Direct home">
-          <Image
-            src={LOGO}
-            alt="Customers.Direct"
-            width={148}
-            height={36}
-            priority
-            unoptimized
-            className="h-14 w-auto mx-auto"
-          />
-        </Link>
-      </div>
+      <AuthLogo />
 
-      {/* Card */}
-      <div
-        className="bg-white rounded-2xl border border-[#E5E5E1] overflow-hidden"
-        style={{ boxShadow: "0 4px 24px rgba(0,0,0,0.06), 0 1px 4px rgba(0,0,0,0.04)" }}
-      >
-        {/* ── Tab switcher ──────────────────────────────────────────────── */}
-        <div className="flex border-b border-[#E5E5E1]">
+      <AuthCard>
+        <div className="flex border-b border-border">
           {(["login", "signup"] as const).map((tab) => (
             <button
               key={tab}
               type="button"
               onClick={() => switchMode(tab)}
-              className={`flex-1 py-3.5 text-[13px] font-semibold transition-colors ${
+              className={`-mb-px flex-1 border-b-2 py-3.5 text-sm font-medium transition-colors duration-150 ease-out focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none focus-visible:ring-inset ${
                 mode === tab
-                  ? "text-[#171717] bg-white border-b-2 border-[#171717] -mb-px"
-                  : "text-[#A3A3A0] bg-[#FAFAF8] hover:text-[#777773]"
+                  ? "border-primary bg-surface text-foreground"
+                  : "border-transparent bg-muted text-muted-foreground hover:text-foreground"
               }`}
               aria-pressed={mode === tab}
             >
@@ -182,139 +186,105 @@ export default function AuthForm({ defaultMode = "login", errorParam = "", notic
           ))}
         </div>
 
-        <div className="p-8">
-          {/* Headline */}
-          <h1 className="text-[20px] font-bold text-[#171717] mb-1">
+        <div className="p-6 sm:p-8">
+          <h1 className="mb-1 text-xl font-semibold tracking-[-0.02em]">
             {isSignup ? "Check your AI visibility" : "Welcome back"}
           </h1>
-          <p className="text-[13px] text-[#777773] mb-7">
+          <p className="mb-6 text-sm text-muted-foreground">
             {isSignup
               ? "Create your Customers.Direct account to get started."
               : "Log in to your Customers.Direct dashboard."}
           </p>
 
-          {/* OAuth callback failure notice */}
           {googleFailed && (
-            <div
-              className="text-[12px] text-[#92400E] bg-[#FFFBEB] border border-[#FDE68A] rounded-lg px-3.5 py-3 mb-4 flex flex-col gap-1.5"
-              role="alert"
-            >
-              <p className="font-semibold">Sign-in couldn&apos;t complete. Please try again.</p>
-              <p>
-                Google authentication succeeded, but the session couldn&apos;t be saved.
-                This is usually temporary.{" "}
-                <button
-                  type="button"
-                  onClick={handleGoogle}
-                  className="underline font-semibold hover:no-underline"
-                >
-                  Retry with Google
-                </button>{" "}
-                or{" "}
-                <Link href="/contact?topic=support" className="underline font-semibold hover:no-underline">
-                  contact support
-                </Link>.
-              </p>
+            <div className="mb-4">
+              <AuthAlert tone="warning">
+                <p className="font-semibold">Sign-in couldn&apos;t complete. Please try again.</p>
+                <p className="mt-1">
+                  Google authentication succeeded, but the session couldn&apos;t be saved.
+                  This is usually temporary.{" "}
+                  <button type="button" onClick={handleGoogle} className="font-semibold underline hover:no-underline">
+                    Retry with Google
+                  </button>{" "}
+                  or{" "}
+                  <Link href="/contact?topic=support" className="font-semibold underline hover:no-underline">
+                    contact support
+                  </Link>.
+                </p>
+              </AuthAlert>
             </div>
           )}
 
-          {/* Google button */}
-          <button
-            type="button"
-            onClick={handleGoogle}
-            disabled={loading !== null}
-            className="w-full flex items-center justify-center gap-2.5 bg-white border border-[#E5E5E1] rounded-lg py-2.5 text-[13px] font-medium text-[#171717] hover:bg-[#F5F5F2] hover:border-[#D4D4CF] transition-colors disabled:opacity-60 mb-5 active:scale-[0.98]"
-          >
-            {loading === "google" ? (
-              <Loader2 size={16} className="animate-spin text-[#777773]" aria-hidden="true" />
-            ) : (
-              <GoogleIcon />
-            )}
+          <Button type="button" variant="outline" size="lg" onClick={handleGoogle} disabled={loading !== null} className="w-full bg-surface">
+            {loading === "google" ? <Loader2 className="animate-spin text-muted-foreground" aria-hidden="true" /> : <GoogleIcon />}
             Continue with Google
-          </button>
+          </Button>
 
-          {/* Divider */}
-          <div className="flex items-center gap-3 mb-5">
-            <div className="h-px bg-[#EEEEEA] flex-1" />
-            <span className="text-[11px] text-[#A3A3A0] font-medium">or continue with email</span>
-            <div className="h-px bg-[#EEEEEA] flex-1" />
+          <div className="my-5 flex items-center gap-3">
+            <div className="h-px flex-1 bg-border" />
+            <span className="text-[13px] text-muted-foreground">or continue with email</span>
+            <div className="h-px flex-1 bg-border" />
           </div>
 
-          {/* Email form */}
           <form onSubmit={handleEmailAuth} className="flex flex-col gap-4">
-            <div>
-              <label htmlFor="email" className="block text-[11px] font-semibold text-[#777773] uppercase tracking-wide mb-1.5">
-                Email
-              </label>
-              <input
-                id="email"
-                type="email"
-                required
-                autoComplete="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full border border-[#E5E5E1] rounded-lg px-3.5 py-2.5 text-[13px] text-[#171717] bg-white placeholder:text-[#A3A3A0] focus:outline-none focus:ring-2 focus:ring-[#171717]/10 focus:border-[#171717] transition-colors"
-                placeholder="you@business.com"
-              />
-            </div>
-            <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <label htmlFor="password" className="block text-[11px] font-semibold text-[#777773] uppercase tracking-wide">
-                  Password
-                </label>
-                {!isSignup && (
-                  <Link href="/forgot-password" className="text-[11px] text-[#A3A3A0] hover:text-[#777773] transition-colors">
+            <AuthField
+              id="email"
+              label="Email"
+              type="email"
+              required
+              autoComplete="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="you@business.com"
+              invalid={emailInvalid}
+              aria-describedby={emailInvalid ? alertId : undefined}
+            />
+            <AuthField
+              ref={passwordRef}
+              id="password"
+              label="Password"
+              type="password"
+              required
+              autoComplete={isSignup ? "new-password" : "current-password"}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              hint={isSignup ? "At least 8 characters" : undefined}
+              error={passwordError}
+              invalid={passwordInvalid}
+              aria-describedby={passwordInvalid ? alertId : undefined}
+              aside={
+                !isSignup && (
+                  <Link href="/forgot-password" className={authLinkClass}>
                     Forgot password?
                   </Link>
-                )}
-              </div>
-              <input
-                id="password"
-                type="password"
-                required
-                minLength={8}
-                autoComplete={isSignup ? "new-password" : "current-password"}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full border border-[#E5E5E1] rounded-lg px-3.5 py-2.5 text-[13px] text-[#171717] bg-white placeholder:text-[#A3A3A0] focus:outline-none focus:ring-2 focus:ring-[#171717]/10 focus:border-[#171717] transition-colors"
-                placeholder="••••••••"
-              />
-            </div>
+                )
+              }
+            />
 
             {error && error !== "google_failed" && (
-              <div className="text-[12px] text-[#991B1B] bg-[#FEF2F2] border border-[#FECACA] rounded-lg px-3.5 py-2.5" role="alert">
+              <AuthAlert id={alertId} tone="error">
                 {error}
-              </div>
+              </AuthAlert>
             )}
-            {message && (
-              <div className="text-[12px] text-[#166534] bg-[#F0FDF4] border border-[#BBF7D0] rounded-lg px-3.5 py-2.5" role="status">
-                {message}
-              </div>
-            )}
+            {message && <AuthAlert tone="success">{message}</AuthAlert>}
 
-            <button
-              type="submit"
-              disabled={loading !== null}
-              className="w-full flex items-center justify-center gap-2 bg-[#171717] text-white font-semibold py-2.5 rounded-lg hover:bg-[#2A2A2A] transition-colors text-[13px] disabled:opacity-60 active:scale-[0.98]"
-            >
-              {loading === "email" && <Loader2 size={15} className="animate-spin" aria-hidden="true" />}
+            <Button type="submit" size="lg" disabled={loading !== null} className="w-full">
+              {loading === "email" && <Loader2 className="animate-spin" aria-hidden="true" />}
               {isSignup ? "Create account" : "Log in"}
-              {loading !== "email" && <ArrowRight size={13} aria-hidden="true" />}
-            </button>
+            </Button>
           </form>
 
-          {/* Support link */}
-          <p className="text-center text-[11.5px] text-[#A3A3A0] mt-5">
+          <p className="mt-5 text-center text-[13px] text-muted-foreground">
             Having trouble signing in?{" "}
-            <Link href="/contact?topic=support" className="text-[#777773] underline hover:text-[#171717] transition-colors font-medium">
+            <Link href="/contact?topic=support" className="font-medium text-foreground underline underline-offset-4 hover:text-primary">
               Contact support
             </Link>
           </p>
         </div>
-      </div>
+      </AuthCard>
 
-      <p className="text-center text-[11.5px] text-[#A3A3A0] mt-4">
-        7-day free trial · Credit card required
+      <p className="mt-4 text-center text-[13px] text-muted-foreground">
+        7-day free trial. Credit card required.
       </p>
     </div>
   );
