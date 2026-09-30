@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Loader2, MapPin, X } from "lucide-react";
+import Link from "next/link";
+import { ArrowLeft, Loader2, MapPin, X } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "cn";
 import type { ActionResult } from "@/modules/auth";
@@ -31,6 +32,8 @@ export type CompetitorPickerProps = {
   /** The onboarding wizard (B-36) moves to the next step here. */
   onSaved?: (count: number) => void;
   saveLabel?: string;
+  /** The wizard's previous step. On desktop, Back and Save then sit in a row under the list like every other step. */
+  backHref?: string;
 };
 
 const key = (name: string) => name.trim().toLowerCase();
@@ -40,7 +43,7 @@ const sameList = (a: Picked[], b: Picked[]) => a.length === b.length && a.every(
 
 // Onboarding step 5 (MVP_SPEC 3.1): tick nearby businesses from Google, add any it missed, and save.
 export function CompetitorPicker(props: CompetitorPickerProps) {
-  const { businessId, limit, limitText, suggestions, note, lookup, save, onSaved, saveLabel = "Save competitors" } = props;
+  const { businessId, limit, limitText, suggestions, note, lookup, save, onSaved, saveLabel = "Save competitors", backHref } = props;
   const [picked, setPicked] = useState<Picked[]>(() => props.saved.map((s) => ({ ...s })));
   const [lastSaved, setLastSaved] = useState<Picked[]>(picked);
   const [limitHit, setLimitHit] = useState(false);
@@ -195,12 +198,29 @@ export function CompetitorPicker(props: CompetitorPickerProps) {
             </p>
           ) : null}
 
-          <Button type="button" className="mt-5 hidden w-full lg:inline-flex" disabled={!canSave} onClick={submit}>
+          {backHref ? null : (
+            <Button type="button" className="mt-5 hidden w-full lg:inline-flex" disabled={!canSave} onClick={submit}>
+              {pending ? <Loader2 aria-hidden className="animate-spin" /> : null}
+              {saveLabel}
+            </Button>
+          )}
+        </div>
+      </aside>
+
+      {backHref ? (
+        <div className="hidden items-center justify-between gap-3 lg:col-span-2 lg:flex">
+          <Button asChild variant="ghost">
+            <Link href={backHref}>
+              <ArrowLeft aria-hidden />
+              Back
+            </Link>
+          </Button>
+          <Button type="button" disabled={!canSave} onClick={submit} className="min-w-32">
             {pending ? <Loader2 aria-hidden className="animate-spin" /> : null}
             {saveLabel}
           </Button>
         </div>
-      </aside>
+      ) : null}
 
       {/* On a phone the list sits below the fold, so the limit note and Save stay in reach here. */}
       <div className="fixed inset-x-0 bottom-0 z-10 border-t border-border bg-surface px-5 py-3 lg:hidden">
