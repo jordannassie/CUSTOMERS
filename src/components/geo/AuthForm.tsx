@@ -123,10 +123,7 @@ export default function AuthForm({ defaultMode = "login", errorParam = "" }: Aut
       }
       return;
     }
-    const params = new URLSearchParams(window.location.search);
-    const next = params.get("next");
-    const safe = next && next.startsWith("/") && !next.startsWith("//") ? next : "/dashboard";
-    router.push(safe);
+    router.push("/dashboard");
     router.refresh();
   }
 

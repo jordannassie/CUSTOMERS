@@ -40,32 +40,18 @@ export async function proxy(request: NextRequest) {
   // --- Auth guard: /dashboard requires a signed-in Supabase Auth user ---
   const { pathname } = request.nextUrl;
 
-  const needsAuth =
-    pathname.startsWith("/dashboard") ||
-    pathname.startsWith("/internal") ||
-    pathname.startsWith("/academy") ||
-    pathname.startsWith("/agency/activate") ||
-    pathname.startsWith("/agency/success");
-
-  if (!user && needsAuth) {
+  if (!user && (pathname.startsWith("/dashboard") || pathname.startsWith("/internal"))) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
-    url.searchParams.set("next", pathname + request.nextUrl.search);
+    url.searchParams.set("next", pathname);
     return NextResponse.redirect(url);
   }
 
-  // Signed-in users hitting /login or /signup continue to next, or the dashboard.
+  // Signed-in users hitting /login or /signup go straight to their dashboard.
   if (user && (pathname === "/login" || pathname === "/signup")) {
-    const next = request.nextUrl.searchParams.get("next");
-    const safe =
-      next && next.startsWith("/") && !next.startsWith("//") ? next : "/dashboard";
     const url = request.nextUrl.clone();
+    url.pathname = "/dashboard";
     url.search = "";
-    const [path, query] = safe.split("?");
-    url.pathname = path || "/dashboard";
-    if (query) {
-      url.search = `?${query}`;
-    }
     return NextResponse.redirect(url);
   }
 

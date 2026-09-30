@@ -156,31 +156,6 @@ netlify deploy --build --prod
 
 ---
 
-## Build Your AI Business funnel
-
-Public sales page: `/start-ai-business`. Protected Academy: `/academy`. Agency software activation (separate from `/agency` marketing): `/agency/activate`.
-
-### Stripe products to create (Dashboard → Products)
-
-1. **AI Business Launch Kit** — one-time **$97** (USD). Copy the Price ID into `STRIPE_PRICE_LAUNCH_KIT` (`price_...`).
-2. **Customers.Direct Agency** — recurring **$199 / month** (USD). Copy the Price ID into `STRIPE_PRICE_AGENCY_MONTHLY`.
-
-The existing webhook at `/api/stripe/webhook` already handles these events. Do not reuse Starter/Growth/Pro price IDs.
-
-### Database
-
-Apply `supabase/migrations/024_launch_kit_funnel.sql` before taking a live payment.
-
-### Academy videos
-
-Upload later as:
-
-`public/academy/videos/<lesson-id>.mp4`
-
-Then set `videoFile` on that lesson in `src/modules/launch-kit/curriculum.ts` to the same file name. Lesson ids are listed in that file (for example `what-ai-visibility.mp4`). Until a file is set, the lesson shows a "Video coming soon" placeholder.
-
----
-
 ## License
 
 MIT

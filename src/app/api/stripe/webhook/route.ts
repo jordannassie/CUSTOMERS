@@ -31,7 +31,6 @@ import { requireStripe } from "@/lib/stripe";
 import { createServiceClient } from "@/lib/supabase/service";
 import { getPlanIdFromStripePrice, type CanonicalPlanId } from "@/config/pricing";
 import { env } from "@/lib/env";
-import { handleLaunchFunnelEvent } from "@/modules/launch-kit/webhook";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Stripe field helpers (API version compatibility)
@@ -101,6 +100,7 @@ async function isEventAlreadyProcessed(stripeEventId: string): Promise<boolean> 
  */
 async function syncSubscriptionToAccount(
   subscription: Stripe.Subscription,
+  stripeClient: Stripe
 ): Promise<void> {
   const svc = createServiceClient();
   const meta = subscription.metadata as Record<string, string>;
@@ -261,11 +261,6 @@ export async function POST(request: NextRequest) {
   const svc = createServiceClient();
 
   try {
-    if (await handleLaunchFunnelEvent(event, stripe)) {
-      await markEventProcessed(event.id, event.type);
-      return NextResponse.json({ received: true, funnel: true });
-    }
-
     switch (event.type) {
 
       // ── Checkout completed ────────────────────────────────────────────────
@@ -281,7 +276,7 @@ export async function POST(request: NextRequest) {
 
         // Merge session metadata into subscription metadata for full context
         subscription.metadata = { ...session.metadata, ...subscription.metadata };
-        await syncSubscriptionToAccount(subscription);
+        await syncSubscriptionToAccount(subscription, stripe);
         break;
       }
 
@@ -289,7 +284,7 @@ export async function POST(request: NextRequest) {
       case "customer.subscription.created":
       case "customer.subscription.updated": {
         const subscription = event.data.object as Stripe.Subscription;
-        await syncSubscriptionToAccount(subscription);
+        await syncSubscriptionToAccount(subscription, stripe);
         break;
       }
 
