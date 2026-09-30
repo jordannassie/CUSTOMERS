@@ -19,7 +19,7 @@ const Toaster = ({ ...props }: ToasterProps) => {
           <TriangleAlertIcon className="size-4" />
         ),
         error: (
-          <OctagonXIcon className="size-4" />
+          <OctagonXIcon className="size-4 text-low" />
         ),
         loading: (
           <Loader2Icon className="size-4 animate-spin" />
@@ -36,6 +36,8 @@ const Toaster = ({ ...props }: ToasterProps) => {
       toastOptions={{
         classNames: {
           toast: "cn-toast",
+          // Sonner colours the title from this variable, so an error reads as an error at a glance.
+          error: "[--normal-text:var(--cd-low-text)]",
         },
       }}
       {...props}
