@@ -86,7 +86,7 @@ export function QuestionItem({ businessId, question, activeCount, models, freque
             </div>
           </form>
         ) : (
-          <p data-testid="question-text" className={cn("text-sm", question.active && "font-medium text-foreground")}>
+          <p data-testid="question-text" className={cn("text-sm wrap-break-word", question.active && "font-medium text-foreground")}>
             {question.text}
           </p>
         )}

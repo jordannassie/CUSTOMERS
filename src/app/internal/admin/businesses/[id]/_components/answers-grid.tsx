@@ -38,7 +38,7 @@ export default function AnswersGrid({ results, models }: { results: Results; mod
           <TableBody>
             {results.rows.map((r) => (
               <TableRow key={r.question}>
-                <TableCell className="min-w-[200px] whitespace-normal">{r.question}</TableCell>
+                <TableCell className="min-w-[200px] whitespace-normal wrap-anywhere">{r.question}</TableCell>
                 {columns.map((m) => (
                   <TableCell key={m} className="text-center">
                     <Mark value={r.mentioned[m]} />
