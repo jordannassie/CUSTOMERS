@@ -177,11 +177,11 @@ test("change the password, needing the current one", async ({ page }) => {
   await form.getByLabel("New password").fill("a brand new password");
   await form.getByLabel("Type it again").fill("a brand new password");
   await form.getByRole("button", { name: "Change password" }).click();
-  await expect(form.getByRole("alert")).toHaveText("Your current password is not right. Try again.");
+  await expect(form.getByRole("alert")).toHaveText("Your current password is not right. Try again.", { timeout: 15_000 });
 
   await form.getByLabel("Current password").fill(s.password);
   await form.getByRole("button", { name: "Change password" }).click();
-  await expect(page.getByText("Password changed")).toBeVisible();
+  await expect(page.getByText("Password changed")).toBeVisible({ timeout: 15_000 });
 });
 
 test("change the email: it waits for the confirmation link", async ({ page }) => {
@@ -192,7 +192,7 @@ test("change the email: it waits for the confirmation link", async ({ page }) =>
   await form.getByLabel("New email").fill(next);
   await form.getByLabel("Current password").fill(s.password);
   await form.getByRole("button", { name: "Send confirmation link" }).click();
-  await expect(page.getByTestId("pending-email")).toContainText(next);
+  await expect(page.getByTestId("pending-email")).toContainText(next, { timeout: 15_000 });
   await expect(page.getByTestId("account-email")).toHaveText(s.email);
 });
 

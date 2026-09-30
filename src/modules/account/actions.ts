@@ -16,7 +16,7 @@ import { endBusinessPlan, PlanChangeError, type BusinessPlanEnd } from "@/module
 import {
   deletionWaitDays,
   hasPasswordSignIn,
-  passwordMatches,
+  checkPassword,
   readAgencyForDelete,
   readBusinessName,
   sendReauthenticationCode,
@@ -34,7 +34,10 @@ import { accountStripeClient } from "./stripe";
 
 // Account management (B-77, MVP_SPEC 23, ACC-01 to ACC-04). Each action checks auth and input itself.
 
-const WRONG_PASSWORD = { ok: false, status: 400, error: "Your current password is not right. Try again." } as const;
+const PASSWORD_REFUSED = {
+  wrong: { ok: false, status: 400, error: "Your current password is not right. Try again." },
+  limited: { ok: false, status: 429, error: "Too many tries. Wait a few minutes and try again." },
+} as const;
 const STRIPE_DOWN = {
   ok: false,
   status: 502,
@@ -49,10 +52,12 @@ async function activeUser(): Promise<SessionUser> {
   return user;
 }
 
-/** Accounts with a password must give it again before a sign-in detail changes. */
-async function recheckPassword(user: SessionUser, current: string | undefined): Promise<boolean> {
-  if (!(await hasPasswordSignIn())) return true;
-  return !!current && !!user.email && (await passwordMatches(user.email, current));
+/** Accounts with a password must give it again before a sign-in detail changes. Null when it checks out. */
+async function recheckPassword(user: SessionUser, current: string | undefined) {
+  if (!(await hasPasswordSignIn())) return null;
+  if (!current || !user.email) return PASSWORD_REFUSED.wrong;
+  const result = await checkPassword(user.email, current);
+  return result === "ok" ? null : PASSWORD_REFUSED[result];
 }
 
 export async function changeEmail(input: unknown): Promise<ActionResult<{ pendingEmail: string }>> {
@@ -62,7 +67,8 @@ export async function changeEmail(input: unknown): Promise<ActionResult<{ pendin
     if (!parsed.success) return { ok: false, status: 400, error: "Enter a valid email address." };
     const { email, currentPassword } = parsed.data;
     if (email === user.email?.toLowerCase()) return { ok: false, status: 400, error: "That is already your email." };
-    if (!(await recheckPassword(user, currentPassword))) return WRONG_PASSWORD;
+    const refused = await recheckPassword(user, currentPassword);
+    if (refused) return refused;
 
     const result = await updateEmail(email);
     if (!result.ok) {
@@ -87,7 +93,8 @@ export async function changePassword(input: unknown): Promise<ActionResult<Passw
     if (!(await hasPasswordSignIn())) {
       return { ok: false, status: 400, error: "You sign in with Google, so there is no password to change here." };
     }
-    if (!(await recheckPassword(user, currentPassword))) return WRONG_PASSWORD;
+    const refused = await recheckPassword(user, currentPassword);
+    if (refused) return refused;
 
     const result = await updatePassword(password, nonce);
     if (result.ok) return { ok: true, data: { step: "done" } };

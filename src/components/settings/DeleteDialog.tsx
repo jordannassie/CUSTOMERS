@@ -99,7 +99,9 @@ export function DeleteDialog({ name, openLabel, title, steps, confirmLabel, pend
 
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="confirm-name">
-                Type <span className="font-semibold text-foreground">{name}</span> to confirm
+                <span>
+                  Type <span className="font-semibold text-foreground">{name}</span> to confirm
+                </span>
               </Label>
               <Input
                 id="confirm-name"

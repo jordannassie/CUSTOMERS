@@ -54,14 +54,14 @@ export async function hasPasswordSignIn(): Promise<boolean> {
  * Checks a password without touching the browser session: a throwaway client signs in, then ends only that
  * session. Supabase rate limits sign-in attempts.
  */
-export async function passwordMatches(email: string, password: string): Promise<boolean> {
+export async function checkPassword(email: string, password: string): Promise<"ok" | "wrong" | "limited"> {
   const client = createPlainClient<Database>(env.NEXT_PUBLIC_SUPABASE_URL, env.NEXT_PUBLIC_SUPABASE_ANON_KEY, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
   const { error } = await client.auth.signInWithPassword({ email, password });
-  if (error) return false;
+  if (error) return error.status === 429 ? "limited" : "wrong";
   await client.auth.signOut({ scope: "local" });
-  return true;
+  return "ok";
 }
 
 async function origin(): Promise<string> {
