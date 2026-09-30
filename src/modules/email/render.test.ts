@@ -16,7 +16,7 @@ describe("email templates", () => {
     const { html, text } = await renderEmail(createElement(NoticeEmail, props));
 
     expect(html).toMatch(/^<!DOCTYPE html/i);
-    expect(html).toContain('src="https://app.example/images/logos/logo-black.png"');
+    expect(html).toContain('src="https://app.example/images/logos/logo-email.png"');
     expect(html).toContain("Your first check is ready");
     expect(html).toContain('href="https://app.example/dashboard"');
     expect(html).toContain('href="https://app.example/settings"');
