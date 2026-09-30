@@ -1,5 +1,5 @@
-import { PageSkeleton } from "@/components/app/AppShellSkeleton";
+import { QuestionsSkeleton } from "@/components/app/PageSkeletons";
 
 export default function QuestionsLoading() {
-  return <PageSkeleton />;
+  return <QuestionsSkeleton />;
 }

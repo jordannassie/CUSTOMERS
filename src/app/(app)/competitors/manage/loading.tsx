@@ -1,5 +1,5 @@
-import { PageSkeleton } from "@/components/app/AppShellSkeleton";
+import { ManageCompetitorsSkeleton } from "@/components/app/PageSkeletons";
 
 export default function ManageCompetitorsLoading() {
-  return <PageSkeleton />;
+  return <ManageCompetitorsSkeleton />;
 }

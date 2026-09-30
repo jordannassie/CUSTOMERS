@@ -1,5 +1,5 @@
-import { PageSkeleton } from "@/components/app/AppShellSkeleton";
+import { BuyCreditsSkeleton } from "@/components/app/PageSkeletons";
 
 export default function BuyCreditsLoading() {
-  return <PageSkeleton />;
+  return <BuyCreditsSkeleton />;
 }
