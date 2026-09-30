@@ -26,6 +26,7 @@ export const PRIVATE_PATHS = [
   "/internal",
   "/design-preview",
   "/account-paused",
+  "/account-deleted",
   "/r/",
   "/api/",
   "/auth/",

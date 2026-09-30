@@ -2,9 +2,10 @@
 
 import { refresh } from "next/cache";
 import { authFailure, requireAdmin, type ActionResult, type SessionUser } from "@/modules/auth";
+import { accountRestoredEmail, sendSafely } from "@/modules/account";
 import { adminAdjustCredits } from "@/modules/credits";
 import { logAdminAction } from "../dal";
-import { changeStatus, readAgencyState, setTestFlag, setTrialEnd, statusBeforeSuspend, type AgencyState } from "./dal";
+import { changeStatus, ownerEmail, readAgencyState, setTestFlag, setTrialEnd, statusBeforeSuspend, type AgencyState } from "./dal";
 import { adjustCreditsInput, extendTrialInput, markTestInput, reasonInput } from "./schema";
 import { canRestore, extendedTrialEnd, isBillingStatus, statusAfterUnsuspend } from "./service";
 import { adminStripeClient } from "./stripe";
@@ -125,13 +126,15 @@ export async function restoreAgency(input: unknown): Promise<Done> {
     const { agencyId, reason } = parsed.data;
     const r = await ready(agencyId);
     if (!r.ok) return r;
-    if (!canRestore(r.state.status, r.state.deletedAt)) {
-      return { ok: false, status: 409, error: "Only an account deleted in the last 30 days can be restored." };
+    if (!canRestore(r.state.status, r.state.purgeAfter)) {
+      return { ok: false, status: 409, error: "Only a deleted account still in its waiting period can be restored." };
     }
 
     // Deleting cancels the Stripe subscription (MVP_SPEC 23), so a restored agency starts as canceled and picks a plan again.
     if (!(await changeStatus(agencyId, "deleted", "canceled", true))) return CHANGED;
     await finish("agency.restore", agencyId, { reason, deleted_at: r.state.deletedAt, new_status: "canceled" });
+    const to = await ownerEmail(r.state.ownerUserId);
+    if (to) await sendSafely(accountRestoredEmail({ to, agencyId, at: new Date() }));
     return DONE;
   } catch (error) {
     return authFailure(error);

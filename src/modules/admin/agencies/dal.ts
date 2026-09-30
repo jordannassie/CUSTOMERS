@@ -35,7 +35,7 @@ export async function listAgencies(filter: AgencyFilter | undefined): Promise<Ad
     allRows("agencies", (from, to) =>
       db
         .from("agencies")
-        .select("id, name, owner_user_id, status, is_test, trial_ends_at, stripe_customer_id, created_at, deleted_at")
+        .select("id, name, owner_user_id, status, is_test, trial_ends_at, stripe_customer_id, created_at, purge_after")
         .order("created_at", { ascending: false })
         .order("id")
         .range(from, to),
@@ -83,7 +83,7 @@ export async function listAgencies(filter: AgencyFilter | undefined): Promise<Ad
       trialEndsAt: a.trial_ends_at,
       stripeLinked: a.stripe_customer_id !== null,
       createdAt: a.created_at,
-      restoreUntil: restoreDeadline(a.status, a.deleted_at)?.toISOString() ?? null,
+      restoreUntil: restoreDeadline(a.status, a.purge_after)?.toISOString() ?? null,
     };
   });
 
@@ -103,12 +103,14 @@ export type AgencyState = {
   trialEndsAt: string | null;
   subscriptionId: string | null;
   deletedAt: string | null;
+  purgeAfter: string | null;
+  ownerUserId: string;
 };
 
 export async function readAgencyState(agencyId: string): Promise<AgencyState | null> {
   const { data, error } = await createServiceClient()
     .from("agencies")
-    .select("status, is_test, trial_ends_at, stripe_subscription_id, deleted_at")
+    .select("status, is_test, trial_ends_at, stripe_subscription_id, deleted_at, purge_after, owner_user_id")
     .eq("id", agencyId)
     .maybeSingle();
   if (error) fail("load the agency", error);
@@ -119,6 +121,8 @@ export async function readAgencyState(agencyId: string): Promise<AgencyState | n
     trialEndsAt: data.trial_ends_at,
     subscriptionId: data.stripe_subscription_id,
     deletedAt: data.deleted_at,
+    purgeAfter: data.purge_after,
+    ownerUserId: data.owner_user_id,
   };
 }
 
@@ -131,7 +135,7 @@ export async function changeStatus(
 ): Promise<boolean> {
   const { data, error } = await createServiceClient()
     .from("agencies")
-    .update(clearDeletedAt ? { status: to, deleted_at: null } : { status: to })
+    .update(clearDeletedAt ? { status: to, deleted_at: null, purge_after: null } : { status: to })
     .eq("id", agencyId)
     .eq("status", from)
     .select("id");
@@ -151,6 +155,13 @@ export async function setTrialEnd(agencyId: string, trialEnd: Date): Promise<voi
     .update({ trial_ends_at: trialEnd.toISOString() })
     .eq("id", agencyId);
   if (error) fail("save the trial end", error);
+}
+
+/** The owner's sign-in email, for the email an admin action sends them. */
+export async function ownerEmail(ownerUserId: string): Promise<string | null> {
+  const { data, error } = await createServiceClient().auth.admin.getUserById(ownerUserId);
+  if (error) fail("load the owner", error);
+  return data.user?.email ?? null;
 }
 
 /** The status recorded by the latest suspend, so unsuspend can put it back. */

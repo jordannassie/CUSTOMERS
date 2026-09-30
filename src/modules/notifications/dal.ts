@@ -86,6 +86,7 @@ export async function weeklyBusinesses(agencyId: string, now: Date, db: Db = cre
     .select("id, name")
     .eq("agency_id", agencyId)
     .neq("status", "onboarding")
+    .is("deleted_at", null)
     .order("created_at");
   if (error) throw new Error(`Could not load businesses: ${error.message}`);
 

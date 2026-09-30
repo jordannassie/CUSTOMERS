@@ -5,16 +5,18 @@ import { canRestore, extendedTrialEnd, planMix, restoreDeadline, statusAfterUnsu
 
 const NOW = new Date("2026-09-29T12:00:00Z");
 const daysAgo = (n: number) => new Date(NOW.getTime() - n * 86_400_000).toISOString();
+const daysAhead = (n: number) => daysAgo(-n);
 const ID = "00000000-0000-4000-8000-000000000001";
 
 describe("restore window (MVP_SPEC 23)", () => {
-  it("allows a restore up to 30 days after deletion", () => {
-    expect(canRestore("deleted", daysAgo(29), NOW)).toBe(true);
-    expect(canRestore("deleted", daysAgo(31), NOW)).toBe(false);
+  it("allows a restore until the purge date the delete saved", () => {
+    expect(canRestore("deleted", daysAhead(1), NOW)).toBe(true);
+    expect(canRestore("deleted", daysAgo(1), NOW)).toBe(false);
+    expect(restoreDeadline("deleted", daysAhead(1))?.toISOString()).toBe(daysAhead(1));
   });
 
-  it("never restores an agency that is not deleted or has no deletion time", () => {
-    expect(canRestore("suspended", daysAgo(1), NOW)).toBe(false);
+  it("never restores an agency that is not deleted or has no purge date", () => {
+    expect(canRestore("suspended", daysAhead(1), NOW)).toBe(false);
     expect(canRestore("deleted", null, NOW)).toBe(false);
     expect(restoreDeadline("active", daysAgo(1))).toBeNull();
   });

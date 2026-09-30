@@ -80,10 +80,11 @@ test("settings is in the menu, the old address redirects, and the account shows 
   const s = await logIn(page);
   await expect(page.getByRole("heading", { level: 1, name: "Settings" })).toBeVisible();
   await expect(page.getByTestId("account-email")).toHaveText(s.email);
-  await expect(page.getByText("Signed in with email or Google")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Change password" })).toBeVisible();
   await expect(page.getByText(/Supabase/)).toHaveCount(0);
   await expect(page.getByRole("link", { name: /^Billing/ })).toHaveAttribute("href", "/settings/billing");
-  await expect(page.getByRole("link", { name: "Contact support to delete" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Delete business" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Delete account" })).toBeVisible();
 
   if (page.viewportSize()!.width >= 1024) {
     await expect(page.locator("aside").getByRole("link", { name: "Settings" })).toHaveAttribute("aria-current", "page");
@@ -166,4 +167,68 @@ test("rename the agency and upload a logo; other files are refused", async ({ pa
   expect(data?.logo_url).toContain(`/business-logos/agencies/${s.agencyId}/logo?v=`);
   const image = await fetch(data!.logo_url!);
   expect(image.headers.get("content-type")).toBe("image/png");
+});
+
+test("change the password, needing the current one", async ({ page }) => {
+  const s = await logIn(page);
+  await page.getByRole("button", { name: "Change password" }).click();
+  const form = page.getByRole("form", { name: "Change password" });
+  await form.getByLabel("Current password").fill("not it");
+  await form.getByLabel("New password").fill("a brand new password");
+  await form.getByLabel("Type it again").fill("a brand new password");
+  await form.getByRole("button", { name: "Change password" }).click();
+  await expect(form.getByRole("alert")).toHaveText("Your current password is not right. Try again.", { timeout: 15_000 });
+
+  await form.getByLabel("Current password").fill(s.password);
+  await form.getByRole("button", { name: "Change password" }).click();
+  await expect(page.getByText("Password changed")).toBeVisible({ timeout: 15_000 });
+});
+
+test("change the email: it waits for the confirmation link", async ({ page }) => {
+  const s = await logIn(page);
+  const next = `e2e-new-${randomUUID()}@example.test`;
+  await page.getByRole("button", { name: "Change email" }).click();
+  const form = page.getByRole("form", { name: "Change email" });
+  await form.getByLabel("New email").fill(next);
+  await form.getByLabel("Current password").fill(s.password);
+  await form.getByRole("button", { name: "Send confirmation link" }).click();
+  await expect(page.getByTestId("pending-email")).toContainText(next, { timeout: 15_000 });
+  await expect(page.getByTestId("account-email")).toHaveText(s.email);
+});
+
+test("delete a business after typing its name", async ({ page }) => {
+  const s = await logIn(page);
+  await page.getByRole("button", { name: "Delete business" }).click();
+  const dialog = page.getByTestId("delete-dialog");
+  const confirm = dialog.getByRole("button", { name: "Delete business" });
+  await expect(dialog.getByText("End of this billing period")).toBeVisible();
+  await expect(confirm).toBeDisabled();
+  await dialog.getByLabel(/to confirm/).fill("Northside");
+  await expect(confirm).toBeDisabled();
+  await dialog.getByLabel(/to confirm/).fill("Northside Plumbing");
+  await confirm.click();
+  await page.waitForURL((url) => url.pathname !== "/settings");
+
+  const { data } = await db.from("businesses").select("deleted_at").eq("id", s.businessId).single();
+  expect(data?.deleted_at).not.toBeNull();
+});
+
+test("delete the account: logged out, and logging in again is blocked", async ({ page }) => {
+  const s = await logIn(page);
+  await page.getByRole("button", { name: "Delete account" }).click();
+  const dialog = page.getByTestId("delete-dialog");
+  await dialog.getByLabel(/to confirm/).fill("Blue Door Marketing");
+  await dialog.getByRole("button", { name: "Delete account" }).click();
+  await page.waitForURL((url) => url.pathname === "/account-deleted");
+  await expect(page.getByRole("heading", { name: "This account was deleted" })).toBeVisible();
+
+  const { data } = await db.from("agencies").select("status, purge_after").eq("id", s.agencyId).single();
+  expect(data?.status).toBe("deleted");
+  expect(data?.purge_after).not.toBeNull();
+
+  await page.goto("/login?next=/dashboard");
+  await page.locator("#email").fill(s.email);
+  await page.locator("#password").fill(s.password);
+  await page.locator("button[type=submit]").click();
+  await page.waitForURL((url) => url.pathname === "/account-deleted");
 });

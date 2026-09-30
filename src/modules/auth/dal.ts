@@ -6,7 +6,7 @@ import { loginPathFor } from "@/lib/safe-next";
 import { createClient } from "@/lib/supabase/server";
 import { AuthError } from "./errors";
 import { isAuthUnavailable } from "@/lib/supabase/auth-errors";
-import { PAUSED_PATH, isAdminEmail, isAgencyPaused, parseAdminEmails } from "./service";
+import { blockedPathFor, isAdminEmail, isAgencyPaused, parseAdminEmails } from "./service";
 
 export type SessionUser = { id: string; email: string | null };
 export type CurrentAgency = { id: string; name: string; status: string; isTest: boolean };
@@ -52,8 +52,8 @@ export async function requireAgency(
   const agency = await getCurrentAgency();
   if (!agency) throw new AuthError("no_agency");
   if (isAgencyPaused(agency.status)) {
-    if (options.next !== undefined) redirect(PAUSED_PATH);
-    throw new AuthError("agency_paused");
+    if (options.next !== undefined) redirect(blockedPathFor(agency.status));
+    throw new AuthError(agency.status === "deleted" ? "agency_deleted" : "agency_paused");
   }
   return { user, agency };
 }

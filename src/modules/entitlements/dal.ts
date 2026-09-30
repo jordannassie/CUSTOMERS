@@ -30,7 +30,7 @@ export async function loadAgencyFacts(agencyId: string): Promise<AgencyFacts> {
   const db = createServiceClient();
   const [agency, businesses, balance] = await Promise.all([
     db.from("agencies").select("id, status").eq("id", agencyId).single(),
-    db.from("businesses").select("id", { count: "exact", head: true }).eq("agency_id", agencyId),
+    db.from("businesses").select("id", { count: "exact", head: true }).eq("agency_id", agencyId).is("deleted_at", null),
     getBalance(agencyId),
   ]);
   const row = found("agency", agency);

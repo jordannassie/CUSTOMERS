@@ -20,6 +20,7 @@ async function ownsBusiness(agencyId: string, businessId: string): Promise<boole
     .select("id")
     .eq("id", businessId)
     .eq("agency_id", agencyId)
+    .is("deleted_at", null)
     .maybeSingle();
   if (error) throw new Error(`Reports: could not read the business: ${error.message}`);
   return data !== null;
@@ -75,6 +76,7 @@ export async function withSharePage<T>(
     .select("name")
     .eq("id", businessId)
     .eq("agency_id", agencyId)
+    .is("deleted_at", null)
     .maybeSingle();
   if (error) throw new Error(`Reports: could not read the business: ${error.message}`);
   if (!business) return null;
@@ -148,6 +150,7 @@ async function sharedBusiness(token: string): Promise<Shared | null> {
     .from("businesses")
     .select("name, agency_id, agencies!inner(name, logo_url)")
     .eq("id", share.business_id)
+    .is("deleted_at", null)
     .maybeSingle();
   if (businessError) throw new Error(`Reports: could not read the business: ${businessError.message}`);
   if (!business?.agency_id) return null;

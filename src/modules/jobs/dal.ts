@@ -99,6 +99,7 @@ export async function businessAgencyId(businessId: string): Promise<string | nul
     .from("businesses")
     .select("agency_id")
     .eq("id", businessId)
+    .is("deleted_at", null)
     .maybeSingle();
   if (error) throw new Error(`Could not load the business: ${error.message}`);
   return data?.agency_id ?? null;

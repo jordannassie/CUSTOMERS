@@ -11,4 +11,4 @@ export {
   type SessionUser,
 } from "./dal";
 export { AuthError, authErrorResponse, authFailure, type ActionResult, type AuthFailure } from "./errors";
-export { PAUSED_PATH, isAgencyPaused } from "./service";
+export { DELETED_PATH, PAUSED_PATH, blockedPathFor, isAgencyPaused } from "./service";

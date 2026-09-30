@@ -2,7 +2,7 @@ import "server-only";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import {
-  PAUSED_PATH,
+  blockedPathFor,
   getCurrentAgency,
   isAgencyPaused,
   isCurrentUserAdmin,
@@ -33,7 +33,7 @@ export type Workspace = {
 export async function getWorkspace(options: GuardOptions = {}): Promise<Workspace> {
   const user = await requireUser(options);
   const agency = await getCurrentAgency();
-  if (agency && isAgencyPaused(agency.status) && options.next !== undefined) redirect(PAUSED_PATH);
+  if (agency && isAgencyPaused(agency.status) && options.next !== undefined) redirect(blockedPathFor(agency.status));
 
   const supabase = await createClient();
   const [businesses, profile, agencyDates, isAdmin, usage] = await Promise.all([

@@ -1,23 +1,27 @@
 import Link from "next/link";
 import { ArrowUpRight, Building2 } from "lucide-react";
 import { PageContainer } from "@/components/app/PageContainer";
+import { AccountForm } from "@/components/settings/AccountForm";
 import { AgencyForm } from "@/components/settings/AgencyForm";
 import { BusinessProfileForm } from "@/components/settings/BusinessProfileForm";
+import { DangerZone } from "@/components/settings/DangerZone";
 import { ScanSettingsForm } from "@/components/settings/ScanSettingsForm";
 import { Panel, SettingsSection } from "@/components/settings/SettingsSection";
 import { Button } from "@/components/ui/button";
+import { changeEmail, changePassword, deleteAccount, deleteBusiness, getAccountView } from "@/modules/account";
 import { BILLING_HREF } from "@/modules/workspace";
 import { getSettings, saveAgencyName, saveBusinessProfile, saveScanSettings, uploadAgencyLogo } from "@/modules/settings";
 
 export const metadata = { title: "Settings", robots: { index: false } };
 
-// Self-serve deletion (B-77) is not built yet; support does it until then.
 const USAGE_HREF = "/settings/usage";
 const QUESTIONS_HREF = "/questions";
-const SUPPORT_HREF = "/contact?topic=support";
 
 export default async function SettingsPage() {
-  const { email, agency, business, activeQuestions, plan } = await getSettings({ next: "/settings" });
+  const [{ agency, business, activeQuestions, plan }, account] = await Promise.all([
+    getSettings({ next: "/settings" }),
+    getAccountView({ next: "/settings" }),
+  ]);
 
   return (
     <PageContainer>
@@ -80,34 +84,32 @@ export default async function SettingsPage() {
         </Panel>
       </SettingsSection>
 
-      <SettingsSection id="account" title="Account" description="How you sign in.">
-        <Panel className="flex flex-col gap-1">
-          <p className="text-sm font-medium" data-testid="account-email">
-            {email}
-          </p>
-          <p className="text-[13px] text-muted-foreground">Signed in with email or Google</p>
-          <Link href="/forgot-password" className="mt-2 w-fit text-[13px] text-primary underline-offset-2 hover:underline">
-            Change password
-          </Link>
-        </Panel>
+      <SettingsSection id="account" title="Account" description="How you log in. Changes to your email need a click on the link we send.">
+        <AccountForm
+          email={account.email}
+          pendingEmail={account.pendingEmail}
+          hasPassword={account.hasPassword}
+          changeEmail={changeEmail}
+          changePassword={changePassword}
+        />
       </SettingsSection>
 
-      <SettingsSection
-        id="danger"
-        title="Danger zone"
-        tone="danger"
-        description="Deleting cannot be undone."
-      >
-        <Panel className="flex flex-col gap-3 border-low/40">
-          <p className="text-sm">
-            To delete {business ? business.name : "a business"} or your whole account, contact support and we will do it
-            for you.
-          </p>
-          <Button asChild variant="outline" size="sm" className="w-fit border-low/50 text-low-text hover:bg-low-bg">
-            <Link href={SUPPORT_HREF}>Contact support to delete</Link>
-          </Button>
-        </Panel>
-      </SettingsSection>
+      {(business || account.agencyName) && (
+        <SettingsSection
+          id="danger"
+          title="Delete"
+          tone="danger"
+          description={`Deleted data is kept for ${account.waitDays} days in case you change your mind, then removed for good.`}
+        >
+          <DangerZone
+            business={business && { id: business.id, name: business.name }}
+            agencyName={account.agencyName}
+            waitDays={account.waitDays}
+            deleteBusiness={deleteBusiness}
+            deleteAccount={deleteAccount}
+          />
+        </SettingsSection>
+      )}
     </PageContainer>
   );
 }

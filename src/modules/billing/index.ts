@@ -14,6 +14,8 @@ export {
   upgradeBusiness,
   type PlanChangeResult,
 } from "./plan-change/actions";
+export { endBusinessPlan, type BusinessPlanEnd } from "./plan-change/end-business";
+export { PlanChangeError } from "./plan-change/planner";
 export { TRIAL_DAYS } from "./checkout";
 export { createTrialCheckout, getTrialOffer, type CardFormMode, type StartTrialResult, type TrialOffer } from "./trial";
 export { openBillingPortal } from "./account/actions";

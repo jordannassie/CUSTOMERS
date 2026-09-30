@@ -1,8 +1,5 @@
 const DAY = 24 * 60 * 60 * 1000;
 
-// MVP_SPEC 23: a deleted account can be restored by an admin for 30 days, then pg_cron removes it.
-export const RESTORE_DAYS = 30;
-
 // Statuses Stripe events manage; suspend and delete sit on top of them (billing/README).
 export const BILLING_STATUSES = ["trialing", "active", "past_due", "canceled"] as const;
 export type BillingStatus = (typeof BILLING_STATUSES)[number];
@@ -10,14 +7,17 @@ export type BillingStatus = (typeof BILLING_STATUSES)[number];
 export const isBillingStatus = (status: unknown): status is BillingStatus =>
   typeof status === "string" && (BILLING_STATUSES as readonly string[]).includes(status);
 
-/** Last moment a deleted agency can be restored, or null when it is not deleted. */
-export function restoreDeadline(status: string, deletedAt: string | null): Date | null {
-  if (status !== "deleted" || !deletedAt) return null;
-  return new Date(new Date(deletedAt).getTime() + RESTORE_DAYS * DAY);
+/**
+ * Last moment a deleted agency can be restored, or null when it is not deleted. It is the purge date the delete
+ * saved (MVP_SPEC 23): after it, pg_cron removes the account.
+ */
+export function restoreDeadline(status: string, purgeAfter: string | null): Date | null {
+  if (status !== "deleted" || !purgeAfter) return null;
+  return new Date(purgeAfter);
 }
 
-export function canRestore(status: string, deletedAt: string | null, now = new Date()): boolean {
-  const deadline = restoreDeadline(status, deletedAt);
+export function canRestore(status: string, purgeAfter: string | null, now = new Date()): boolean {
+  const deadline = restoreDeadline(status, purgeAfter);
   return deadline !== null && deadline > now;
 }
 
