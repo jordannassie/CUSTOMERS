@@ -41,8 +41,9 @@ const LEGAL = [
   { label: "Terms of service", href: "/terms" },
 ] as const;
 
+// Phones get 44px tall tap areas (UI-003); the list gap shrinks to keep the rhythm.
 const linkClass =
-  "rounded-sm text-sm text-muted-foreground transition-colors hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none";
+  "inline-flex min-h-11 items-center rounded-sm text-sm sm:inline sm:min-h-0 text-muted-foreground transition-colors hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none";
 
 /** Set showGoogleAttribution on any page that shows Google Places data (MVP_SPEC 26). */
 export default function Footer({ showGoogleAttribution = false }: { showGoogleAttribution?: boolean }) {
@@ -72,7 +73,7 @@ export default function Footer({ showGoogleAttribution = false }: { showGoogleAt
             {COLUMNS.map(({ heading, links }) => (
               <nav key={heading} aria-label={heading}>
                 <h2 className="text-[13px] font-semibold">{heading}</h2>
-                <ul className="mt-3 flex flex-col gap-2.5">
+                <ul className="mt-1 flex flex-col sm:mt-3 sm:gap-2.5">
                   {links.map(({ label, href }) => (
                     <li key={href}>
                       <Link href={href} className={linkClass}>

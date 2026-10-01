@@ -21,7 +21,7 @@ export function StepActions({ backHref, pending, label = "Continue", disabled = 
   phoneSummary?: React.ReactNode;
 }) {
   return (
-    <div className="sticky bottom-0 -mx-4 mt-8 flex items-center justify-between gap-3 border-t border-border bg-background/95 px-4 py-3 sm:static sm:mx-0 sm:border-0 sm:bg-transparent sm:px-0 sm:py-0">
+    <div className="sticky bottom-0 -mx-4 mt-8 flex items-center justify-between gap-3 border-t border-border bg-background px-4 py-3 sm:static sm:mx-0 sm:border-0 sm:bg-transparent sm:px-0 sm:py-0">
       {phoneSummary ? <div className="min-w-0 sm:hidden">{phoneSummary}</div> : null}
       {backHref ? (
         <Button asChild variant="ghost" className={phoneSummary ? "max-sm:hidden" : undefined}>

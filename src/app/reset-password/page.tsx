@@ -8,7 +8,7 @@ export const metadata: Metadata = {
 
 export default function ResetPasswordPage() {
   return (
-    <div className="min-h-screen bg-[#FAFAF8] flex items-center justify-center px-4 py-16">
+    <div className="flex min-h-screen items-center justify-center bg-background px-4 py-16">
       <ResetPasswordForm />
     </div>
   );

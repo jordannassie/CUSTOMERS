@@ -121,6 +121,8 @@ export function FirstScan(props: Props) {
   const creditsLate = phase === "credits-late";
   const failed = phase === "failed" || creditsLate;
   const waiting = phase === "credits" || creditsLate;
+  // The worker holds the scan for a later try, so nothing is being asked right now (UI-012).
+  const paused = phase === "scanning" && retrying;
   const asked = questions > 0 ? `${questions} ${questions === 1 ? "question" : "questions"}` : "the questions";
   const names = listOf(models.map((m) => m.label));
 
@@ -162,7 +164,7 @@ export function FirstScan(props: Props) {
                   <Check aria-label="Done" className="size-4 text-good" />
                 ) : waiting ? (
                   "Not started"
-                ) : failed ? (
+                ) : failed || paused ? (
                   "Not finished"
                 ) : (
                   questions > 0 ? `Asking ${asked}…` : "Asking…"
@@ -172,7 +174,7 @@ export function FirstScan(props: Props) {
             <div className="h-1 overflow-hidden rounded-xs bg-border" aria-hidden>
               {phase === "done" ? (
                 <div className="h-full w-full bg-primary" />
-              ) : failed || waiting ? null : (
+              ) : failed || waiting || paused ? null : (
                 <div
                   className="h-full w-2/5 animate-scan-sweep bg-primary motion-reduce:w-full motion-reduce:animate-none motion-reduce:opacity-40"
                   style={{ animationDelay: `${i * 220}ms` }}
@@ -203,11 +205,21 @@ export function FirstScan(props: Props) {
           </p>
         ) : phase === "done" ? (
           <p className="text-sm text-muted-foreground">Opening your dashboard…</p>
+        ) : paused ? (
+          <>
+            <p className="rounded-md bg-mid-bg px-3 py-2 text-[13px] text-mid-text" data-testid="first-scan-retrying">
+              The scan hit a problem, so we&apos;ll try again in a few minutes. You can leave this page. Your score shows on the dashboard when it&apos;s done.
+            </p>
+            <div>
+              {/* A full load, for the same reason as the redirect above. */}
+              <Button asChild className="min-w-32">
+                <a href="/dashboard">Go to dashboard</a>
+              </Button>
+            </div>
+          </>
         ) : (
           <p className="text-sm text-muted-foreground">
-            {retrying
-              ? "The scan hit a problem, so we'll try again in a few minutes. You can leave this page. Your score shows on the dashboard when it's done."
-              : "This usually takes about a minute. You can leave this page. The scan keeps going and your score shows on the dashboard."}
+            This usually takes about a minute. You can leave this page. The scan keeps going and your score shows on the dashboard.
           </p>
         )}
       </div>

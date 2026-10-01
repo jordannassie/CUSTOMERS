@@ -21,7 +21,8 @@ export function EmailLayout({ preview, baseUrl, unsubscribeUrl, children }: Emai
       <Body style={{ backgroundColor: colors.background, fontFamily, margin: 0, padding: "32px 12px" }}>
         <Container style={{ maxWidth: "560px", margin: "0 auto" }}>
           <Section style={{ padding: "0 4px 20px" }}>
-            <Img src={`${base}/images/logos/logo-black.png`} width="144" height="48" alt="Customers.Direct" />
+            {/* Exported at 2x its display size (UI-034); the full-size logo is 2172px wide. */}
+            <Img src={`${base}/images/logos/logo-email.png`} width="144" height="48" alt="Customers.Direct" />
           </Section>
           <Section
             style={{

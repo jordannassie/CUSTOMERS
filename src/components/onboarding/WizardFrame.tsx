@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { Check } from "lucide-react";
 import { cn } from "cn";
@@ -27,7 +28,7 @@ export function WizardFrame({ steps, title, lead, embedded = false, wide = false
       {!embedded ? (
         <aside className="hidden border-r border-border bg-muted lg:block">
           <div className="sticky top-0 flex min-h-dvh flex-col px-6 py-8">
-            <p className="text-[15px] font-semibold tracking-[-0.02em]">Customers.Direct</p>
+            <Image src="/images/logos/logo-black.png" alt="Customers.Direct" width={96} height={32} className="h-8 w-auto self-start" />
             <p className="mt-8 text-[13px] text-muted-foreground">Setting up</p>
             <ol className="mt-3 flex flex-col gap-1" aria-label="Setup steps">
               {steps.map((s, i) => (
@@ -56,12 +57,13 @@ export function WizardFrame({ steps, title, lead, embedded = false, wide = false
           </div>
         </div>
 
-        <div className={cn("mx-auto px-4 py-8 sm:px-8 lg:py-12", wide ? "max-w-5xl" : "max-w-2xl")}>
+        {/* Every step shares one left edge; narrow steps just stop sooner on the right (UI-008). */}
+        <div className="mx-auto max-w-5xl px-4 py-8 sm:px-8 lg:py-12">
           <header className="mb-8">
             <h1 className="text-2xl font-semibold tracking-[-0.02em] sm:text-[32px] sm:leading-tight">{title}</h1>
             {lead ? <p className="mt-2 max-w-xl text-[15px] leading-relaxed text-muted-foreground">{lead}</p> : null}
           </header>
-          {children}
+          <div className={wide ? undefined : "max-w-2xl"}>{children}</div>
         </div>
       </Main>
     </div>
