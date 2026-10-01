@@ -22,7 +22,7 @@ export function PlanStatus({ view, keep }: { view: BillingView; keep: ChangeActi
     <div className="flex flex-col gap-3">
       <p className="flex flex-wrap items-center gap-2 text-sm" data-testid="plan-status">
         <Badge variant={status.variant}>{status.label}</Badge>
-        {view.status === "trialing" && view.trialEndsAt && (
+        {view.status === "trialing" && view.trialEndsAt && !view.cancelAt && (
           <span className="text-muted-foreground">
             Your free trial ends on {longDate(view.trialEndsAt)}. Cancel before then and you won&apos;t be charged.
           </span>
@@ -42,8 +42,11 @@ export function PlanStatus({ view, keep }: { view: BillingView; keep: ChangeActi
       )}
       {view.cancelAt && (
         <Notice tone="warning" testId="cancel-notice">
+          {/* Matches the Overview banner (BUG-B): a cancelled trial is never charged and holds trial credits. */}
           <span>
-            Your plan ends on {longDate(view.cancelAt)}. Your plan credits work until then, and you won&apos;t be charged again.
+            {view.status === "trialing"
+              ? `Your free trial ends on ${longDate(view.cancelAt)}. Your trial credits work until then, and you won't be charged.`
+              : `Your plan ends on ${longDate(view.cancelAt)}. Your plan credits work until then, and you won't be charged again.`}
           </span>
           <ChangeDialog
             label="Keep my plan"
