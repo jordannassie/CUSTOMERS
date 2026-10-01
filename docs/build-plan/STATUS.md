@@ -10,7 +10,7 @@ Nothing in progress. Up to five worker sessions at once are allowed since 2026-0
 
 ## Done
 
-64 of 81 tasks ticked. 9 more have their code merged and wait on people: B-24, B-25, B-32, B-33, B-34, B-51, B-78, B-79, B-84.
+64 of 80 tasks ticked. 9 more have their code merged and wait on people: B-24, B-25, B-32, B-33, B-34, B-51, B-78, B-79, B-84.
 
 Into main: B-06, B-07, B-10, B-11, B-12, B-13. B-24 code (#32), open for labelling.
 Into mvp: B-08, B-09, B-14 to B-17, B-20 to B-23, B-26 to B-31, B-35, B-36, B-38, B-40 to B-46, B-48 to B-50, B-52 to B-62, B-64 to B-74, B-77, B-82. Code merged, open for labelling: B-25 (#49), B-32 (#67), B-33 (#69), B-34 (#64), B-51 (#77). Code merged, open for a person's sign-off: B-78 (#126, legal review), B-79 (#119, D-73 reading), B-84 (#127, changed strings list).
