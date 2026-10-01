@@ -1,6 +1,6 @@
 import { Section, Eyebrow, H2, Lead } from "../section";
 
-// MVP_SPEC 4.4 (D-15, D-16): 7 days, card required, 2 businesses, charged on day 7 unless cancelled.
+// MVP_SPEC 4.4 (D-15, D-16): 7 days, card required, 2 businesses, charged on day 7 unless canceled.
 const STEPS = [
   {
     when: "Day 1",
@@ -15,7 +15,7 @@ const STEPS = [
   {
     when: "Day 7",
     title: "Your plan starts",
-    body: "We charge the plan you picked for each business, then again every month on that date. If you cancelled, you pay nothing and your results stay readable.",
+    body: "We charge the plan you picked for each business, then again every month on that date. If you canceled, you pay nothing and your results stay readable.",
   },
 ] as const;
 

@@ -56,9 +56,9 @@ export function BillingTerms({ trialDays, trialCredits, trialBusinesses }: Props
           to contact us.
         </p>
         <Bullets>
-          <li>Cancelling during the trial means you are never charged.</li>
+          <li>Canceling during the trial means you are never charged.</li>
           <li>
-            Cancelling a paid plan takes effect at the end of the month you have paid for. You keep access and your plan
+            Canceling a paid plan takes effect at the end of the month you have paid for. You keep access and your plan
             credits until then, and we do not charge you again.
           </li>
           <li>Until that date, you can change your mind on the same page with Keep my plan.</li>
@@ -94,13 +94,13 @@ export function BillingTerms({ trialDays, trialCredits, trialBusinesses }: Props
         <p>
           If a payment fails, our payment provider Stripe tries again for about 2 weeks. During that time scheduled checks
           pause, your results stay visible, and we email you and show a notice in the app so you can update your card. If
-          the payment still fails, your plan is cancelled.
+          the payment still fails, your plan is canceled.
         </p>
       </LegalSection>
 
       <LegalSection id="refunds" title="Refunds">
         <Bullets>
-          <li>Monthly plan charges are not refunded, including part months, downgrades, removed businesses and cancelled plans.</li>
+          <li>Monthly plan charges are not refunded, including part months, downgrades, removed businesses and canceled plans.</li>
           <li>Deleting your account cancels your plan right away, with no refund.</li>
           <li>
             If you think you were charged by mistake, or want to ask about unused top-up credits, email us. We look at

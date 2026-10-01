@@ -9,7 +9,7 @@ import { BillingTerms } from "./_sections/billing";
 export const metadata = pageMetadata({
   title: "Terms of service",
   description:
-    "The terms for using Customers.Direct: the free trial, monthly plans, credits, cancelling, refunds, share links and what we can and cannot promise.",
+    "The terms for using Customers.Direct: the free trial, monthly plans, credits, canceling, refunds, share links and what we can and cannot promise.",
   path: "/terms",
 });
 
@@ -97,7 +97,7 @@ export default function TermsPage() {
 
       <LegalSection id="deletion" title="Deleting your account">
         <p>
-          You can delete your account from Settings. Your plan is cancelled right away with no refund, you are logged out,
+          You can delete your account from Settings. Your plan is canceled right away with no refund, you are logged out,
           checks stop and share links stop working. We remove your data for good {deletionDays} days later. Until then,
           contact us if you want it back. Our <Link href="/privacy#deletion" className={link}>privacy policy</Link> lists
           what we delete and what we keep.

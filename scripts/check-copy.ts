@@ -1,5 +1,5 @@
 // Copy rules from docs/design/WRITING.md (B-84): no long dashes, none of the banned AI-sounding words,
-// and none of the product terms MVP_SPEC 8.4 says not to show.
+// none of the product terms MVP_SPEC 8.4 says not to show, and one spelling of "canceled".
 // Usage: node scripts/check-copy.ts          (exits 1 on any finding)
 //        node scripts/check-copy.ts --list   (prints every string and JSX text in src/, for a wording review)
 //
@@ -36,6 +36,8 @@ const WORD_ALLOW: Record<string, string> = {
   "src/modules/insights/prompts/explain.v1.ts": "tells the model which words to avoid",
   "src/modules/sources/classify.ts": "Seamless is a food delivery site name",
 };
+// One spelling in the product (BUG-J): US English, as in "canceled", which Stripe and the app already use.
+const SPELLING = /\b(cancell(?:ed|ing))\b/i;
 const TERM_ALLOW: Record<string, string> = {
   "src/app/api/internal/admin/news/article/route.ts": "LinkedIn studio AI prompt, kept untouched until Jordan answers (D-07)",
   "src/app/api/internal/admin/news/search/route.ts": "LinkedIn studio AI prompt, kept untouched until Jordan answers (D-07)",
@@ -107,6 +109,8 @@ for (const file of files) {
     if (match) failures.push(`${file}:${line}: banned word "${match[1]}" in "${text.slice(0, 80)}"`);
     const term = file in TERM_ALLOW ? null : SPEC_TERMS.map((re) => re.exec(text)).find(Boolean);
     if (term) failures.push(`${file}:${line}: "${term[1]}" is on the MVP_SPEC 8.4 do not show list, in "${text.slice(0, 80)}"`);
+    const spelling = SPELLING.exec(text);
+    if (spelling) failures.push(`${file}:${line}: "${spelling[1]}" is British spelling, use "${spelling[1].replace(/ll/i, "l")}"`);
   }
 }
 const allowed = [...Object.keys(DASH_ALLOW), ...Object.keys(WORD_ALLOW), ...Object.keys(TERM_ALLOW)];
