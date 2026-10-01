@@ -95,10 +95,17 @@ async function grant(agencyId: string, source: string) {
   if (error) throw error;
 }
 
+/** DB-010: the scan ends on one summary screen, and its button opens the dashboard. */
+async function openDashboard(page: Page) {
+  await expect(page.getByTestId("first-scan-result")).toBeVisible({ timeout: 120_000 });
+  await page.getByRole("link", { name: "Go to your dashboard" }).click();
+  await page.waitForURL("**/dashboard", { timeout: 120_000 });
+}
+
 const finishSetup = (page: Page) =>
   page.getByRole("button", { name: "Finish setup", exact: true }).filter({ visible: true }).last().click();
 
-test("finish setup: a short progress screen, then the dashboard with the first score", async ({ page }) => {
+test("finish setup: a short progress screen, a summary, then the dashboard with the first score", async ({ page }) => {
   await seedAtModelsStep(page);
   await finishSetup(page);
 
@@ -107,7 +114,9 @@ test("finish setup: a short progress screen, then the dashboard with the first s
   await expect(page.getByText("We're asking ChatGPT, Claude and Perplexity 3 questions")).toBeVisible();
   await expect(page.getByTestId("first-scan-models").getByRole("listitem")).toHaveCount(3);
 
-  await page.waitForURL("**/dashboard", { timeout: 120_000 });
+  await slow(page.getByRole("heading", { level: 1, name: "Your first scan is done" })).toBeVisible();
+  await expect(page.getByTestId("first-scan-result").getByTestId("score-value")).toBeVisible();
+  await openDashboard(page);
   await expect(page.getByTestId("score-summary")).toBeVisible({ timeout: 120_000 });
   await expect(page.getByTestId("no-score")).toHaveCount(0);
 });
@@ -131,7 +140,7 @@ test("a failed first scan shows Try again, never an empty dashboard, and the ret
 
   await db.from("tracked_prompts").update({ active: true }).eq("business_id", businessId).throwOnError();
   await page.getByRole("button", { name: "Try again" }).click();
-  await page.waitForURL("**/dashboard", { timeout: 120_000 });
+  await openDashboard(page);
   await expect(page.getByTestId("score-summary")).toBeVisible({ timeout: 120_000 });
 });
 
@@ -145,7 +154,7 @@ test.describe("trial credits after the card (F-48)", () => {
     await page.waitForURL("**/onboarding/first-scan");
     await slow(page.getByRole("heading", { level: 1, name: "Running your first scan" })).toBeVisible();
     await expect(waiting(page)).toHaveCount(0);
-    await page.waitForURL("**/dashboard", { timeout: 120_000 });
+    await openDashboard(page);
   });
 
   test("credits arrive late: the screen waits, then scans, never out of credits", async ({ page }) => {
@@ -162,7 +171,7 @@ test.describe("trial credits after the card (F-48)", () => {
     await grant(agencyId, "trial");
 
     await slow(page.getByRole("heading", { level: 1, name: "Running your first scan" })).toBeVisible();
-    await page.waitForURL("**/dashboard", { timeout: 120_000 });
+    await openDashboard(page);
     await expect(page.getByTestId("score-summary")).toBeVisible({ timeout: 120_000 });
   });
 
@@ -181,6 +190,6 @@ test.describe("trial credits after the card (F-48)", () => {
 
     await grant(agencyId, "trial");
     await page.getByRole("button", { name: "Try again" }).click();
-    await page.waitForURL("**/dashboard", { timeout: 120_000 });
+    await openDashboard(page);
   });
 });
