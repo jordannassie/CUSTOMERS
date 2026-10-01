@@ -38,6 +38,8 @@ export type OverviewView = {
   trend: TrendView;
   opportunities: Pick<Opportunity, "id" | "title" | "impact">[];
   lastCheckedAt: string | null;
+  /** One credit per answer: active questions times chosen models. */
+  scanCredits: number;
 };
 
 /** DESIGN.md bands: 70 to 100 good, 40 to 69 mid, under 40 low. */
@@ -111,5 +113,6 @@ export function overviewView(
     trend: trendView({ trend: report.trend, scans: report.scans, nextScanAt, now }),
     opportunities: topOpportunities(opportunities),
     lastCheckedAt: report.lastCheckedAt?.toISOString() ?? null,
+    scanCredits: report.questions.length * report.models.length,
   };
 }

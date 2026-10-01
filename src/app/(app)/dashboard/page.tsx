@@ -39,19 +39,22 @@ export default async function OverviewPage() {
             {overview.lastCheckedAt ? `Last scan ${timeAgo(new Date(overview.lastCheckedAt))}` : "No scans yet"}
           </p>
         </div>
-        <div className="grid grid-cols-2 gap-3 sm:flex sm:flex-row-reverse sm:flex-wrap sm:items-start">
-          {scanStatus.ok && (
-            <RunScanButton
-              businessId={business.id}
-              initial={scanStatus.data}
-              start={startScan}
-              getStatus={getScanStatus}
-              className="col-span-2"
-            />
-          )}
-          <ShareButton businessId={business.id} initial={shareLink} create={createShareLink} revoke={revokeShareLink} />
-          <ExportPdfButton businessId={business.id} exportPdf={exportPdf} />
-        </div>
+        {/* Before the first score Run scan sits in the empty card, and there is nothing to share or export yet. */}
+        {score && (
+          <div className="grid grid-cols-2 gap-3 sm:flex sm:flex-row-reverse sm:flex-wrap sm:items-start">
+            {scanStatus.ok && (
+              <RunScanButton
+                businessId={business.id}
+                initial={scanStatus.data}
+                start={startScan}
+                getStatus={getScanStatus}
+                className="col-span-2"
+              />
+            )}
+            <ShareButton businessId={business.id} initial={shareLink} create={createShareLink} revoke={revokeShareLink} />
+            <ExportPdfButton businessId={business.id} exportPdf={exportPdf} />
+          </div>
+        )}
       </header>
 
       {scanStatus.ok && scanStatus.data.lastResult === "failed" && !scanStatus.data.scanning && (
@@ -80,8 +83,25 @@ export default async function OverviewPage() {
                 <p className="text-xl font-semibold tracking-[-0.02em]">No score yet</p>
                 <p className="max-w-prose text-sm text-muted-foreground">
                   Run your first scan to see how often ChatGPT, Claude and Perplexity recommend {business.name} when
-                  customers ask for a business like yours. Results appear in about a minute.
+                  customers ask for a business like yours.
                 </p>
+                {scanStatus.ok && (
+                  <div className="mt-3 grid justify-items-start gap-2.5">
+                    <RunScanButton
+                      businessId={business.id}
+                      initial={scanStatus.data}
+                      start={startScan}
+                      getStatus={getScanStatus}
+                      label={scanStatus.data.lastResult === null ? "Run first scan" : "Run scan"}
+                    />
+                    {!scanStatus.data.scanning && (
+                      <p className="text-xs text-muted-foreground tabular-nums" data-testid="scan-cost">
+                        Takes about a minute and uses about {overview.scanCredits}{" "}
+                        {overview.scanCredits === 1 ? "credit" : "credits"}.
+                      </p>
+                    )}
+                  </div>
+                )}
               </div>
             )}
           </CardContent>

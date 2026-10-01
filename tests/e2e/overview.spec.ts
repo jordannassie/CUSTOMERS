@@ -123,11 +123,11 @@ test("no scans yet: an invitation to run the first scan", async ({ page }) => {
   await expect(page.getByTestId("last-scan")).toHaveText("No scans yet");
   await expect(page.getByTestId("model-scores")).toContainText("ChatGPT");
   await expect(page.getByTestId("model-scores").getByText("No checks yet")).toHaveCount(3);
-  await expect(page.getByRole("button", { name: "Run scan" })).toBeEnabled();
-  await expect(page.getByRole("button", { name: "Share" })).toBeVisible();
-  // Export PDF (B-60) sits with Share in the page header's actions.
-  const actions = page.getByRole("button", { name: "Share" }).locator("..");
-  await expect(actions.getByRole("button", { name: "Export PDF" })).toBeVisible();
+  // DB-009: the first scan starts from the empty card, with its cost; there is nothing to share or export yet.
+  await expect(page.getByTestId("no-score").getByRole("button", { name: "Run first scan" })).toBeEnabled();
+  await expect(page.getByTestId("scan-cost")).toHaveText(/^Takes about a minute and uses about \d+ credits?\.$/);
+  await expect(page.getByRole("button", { name: "Share" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Export PDF" })).toHaveCount(0);
   for (const card of REMOVED_CARDS) await expect(page.getByText(card)).toHaveCount(0);
 });
 
@@ -187,11 +187,15 @@ test("30 days of history: high confidence, a real rise and the top 3 fixes", asy
 test("Run scan: the score appears when the scan finishes, without a reload", async ({ page }) => {
   await seedBusiness(page);
   await expect(page.getByTestId("no-score")).toBeVisible();
-  await page.getByRole("button", { name: "Run scan" }).click();
+  await page.getByRole("button", { name: "Run first scan" }).click();
   await expect(page.getByRole("button", { name: /Scanning/ })).toBeVisible();
   await expect(page.getByTestId("score-summary")).toBeVisible({ timeout: 60_000 });
   await expect(page.getByTestId("no-score")).toHaveCount(0);
   await expect(page.getByTestId("last-scan")).toHaveText(/^Last scan /);
+  await expect(page.getByRole("button", { name: "Share" })).toBeVisible();
+  // Export PDF (B-60) sits with Share in the page header's actions.
+  const actions = page.getByRole("button", { name: "Share" }).locator("..");
+  await expect(actions.getByRole("button", { name: "Export PDF" })).toBeVisible();
 });
 
 test("old Visibility and Reports bookmarks land on the Overview (B-58)", async ({ page }) => {

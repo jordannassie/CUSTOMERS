@@ -24,6 +24,7 @@ export function RunScanButton({
   start,
   getStatus,
   className,
+  label = "Run scan",
 }: {
   businessId: string;
   initial: ScanStatus;
@@ -31,6 +32,7 @@ export function RunScanButton({
   getStatus: ScanAction;
   /** Placement classes for the button itself, since the wrapper is `contents`. */
   className?: string;
+  label?: string;
 }) {
   const router = useRouter();
   const [status, setStatus] = useState(initial);
@@ -90,7 +92,7 @@ export function RunScanButton({
         className={cn(scanning && "cursor-progress", className)}
       >
         {scanning ? <Loader2 className="animate-spin" aria-hidden="true" /> : <RefreshCw aria-hidden="true" />}
-        {scanning ? "Scanning…" : "Run scan"}
+        {scanning ? "Scanning…" : label}
       </Button>
       <p
         id={`run-scan-note-${businessId}`}
