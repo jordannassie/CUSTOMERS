@@ -1,49 +1,50 @@
-import { Badge } from "@/components/ui/badge";
-import { ExampleTag } from "./example";
-import { CopyPromptButton } from "./CopyPromptButton";
+"use client";
 
-const FIXES = [
+import { useState } from "react";
+import { OpportunityCard } from "@/components/opportunities/OpportunityCard";
+import type { OpportunityItem, Status } from "@/modules/opportunities";
+import { ProductFrame } from "./ProductFrame";
+
+const FIXES: OpportunityItem[] = [
   {
-    impact: "High impact",
-    tone: "low",
+    id: "reviews",
     title: "Get more Google reviews",
+    impact: "high",
+    status: "open",
     evidence: "Daily Grind has 320 Google reviews at 4.7. You have 12 at 4.2.",
-    step: "Ask your regulars for a review this month. We include a short message you can send.",
+    whyItMatters: "In this scan, the coffee shops with more reviews were named more often.",
+    steps: ["Ask your regulars for a review this month.", "Reply to every new review within a week."],
+    claudePrompt:
+      "Write a short, friendly message Bean House, a coffee shop in Orange, CA, can send to regulars asking for a Google review. Keep it under 60 words.",
+    usesGoogle: false,
   },
   {
-    impact: "Medium impact",
-    tone: "mid",
+    id: "oat-milk",
     title: "Add a page about your oat milk drinks",
+    impact: "medium",
+    status: "open",
     evidence: "AI named Brew Lab for oat milk questions and cited its menu page. Your site has no drinks menu.",
-    step: "Add a menu page that lists your oat milk and other plant milk drinks.",
-    prompt:
+    whyItMatters: "AI can only name you for a drink if it finds a page that says you sell it.",
+    steps: ["Add a menu page that lists your oat milk and other plant milk drinks.", "Link to it from your homepage."],
+    claudePrompt:
       "Write a short, friendly menu page for Bean House, a coffee shop in Orange, CA. List our oat milk and other plant milk drinks with one line each, and add opening hours and address at the end.",
+    usesGoogle: false,
   },
-] as const;
+];
 
+/** The Opportunities screen (B-51) with the real fix cards; status changes stay in the browser. */
 export function FixStepsExample() {
+  const [items, setItems] = useState(FIXES);
+  const setStatus = (id: string, status: Status) =>
+    setItems((all) => all.map((o) => (o.id === id ? { ...o, status } : o)));
+
   return (
-    <div className="flex flex-col rounded-md border border-border bg-surface">
-      <div className="flex items-center justify-between gap-4 border-b border-border px-4 py-3 sm:px-5">
-        <p className="text-sm font-semibold">Fix steps for Bean House</p>
-        <ExampleTag />
-      </div>
-      <ul className="flex flex-col divide-y divide-border">
-        {FIXES.map((fix) => (
-          <li key={fix.title} className="flex flex-col gap-3 p-4 sm:p-5">
-            <div className="flex flex-col gap-2">
-              <Badge variant={fix.tone}>{fix.impact}</Badge>
-              <h4 className="text-[15px] font-semibold">{fix.title}</h4>
-            </div>
-            <p className="rounded-md bg-muted px-3 py-2 text-[13px] text-muted-foreground">
-              <span className="font-medium text-foreground">Why: </span>
-              {fix.evidence}
-            </p>
-            <p className="text-sm">{fix.step}</p>
-            {"prompt" in fix && <CopyPromptButton prompt={fix.prompt} />}
-          </li>
+    <ProductFrame page="Opportunities">
+      <div className="grid items-start gap-3 sm:gap-6 lg:grid-cols-2">
+        {items.map((item) => (
+          <OpportunityCard key={item.id} item={item} busy={false} onStatus={(s) => setStatus(item.id, s)} />
         ))}
-      </ul>
-    </div>
+      </div>
+    </ProductFrame>
   );
 }

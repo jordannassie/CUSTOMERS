@@ -1,57 +1,60 @@
-import { ExampleTag } from "./example";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Leaderboard } from "@/components/competitors/Leaderboard";
+import type { LeaderRow } from "@/modules/competitors";
+import { ProductFrame } from "./ProductFrame";
 
-const ROWS = [
-  { name: "Daily Grind", score: 81, fill: "bg-competitor-1", verdict: "Ahead of you" },
-  { name: "Bean House (you)", score: 62, fill: "bg-primary", you: true },
-  { name: "Brew Lab", score: 57, fill: "bg-competitor-2", verdict: "About the same" },
-  { name: "Cup & Co", score: 22, fill: "bg-competitor-3", verdict: "Behind you" },
+const LEADERBOARD: LeaderRow[] = [
+  { name: "Daily Grind", isYou: false, score: 81, standing: "behind", collecting: false, shade: 1 },
+  { name: "Bean House", isYou: true, score: 62, standing: null, collecting: false, shade: null },
+  { name: "Brew Lab", isYou: false, score: 57, standing: "about_same", collecting: false, shade: 2 },
+  { name: "Cup & Co", isYou: false, score: 22, standing: "ahead", collecting: false, shade: 3 },
 ];
 
+const ANSWERS = 36;
 const ALSO_NAMED = [
-  { name: "Orange Roastery", checks: "5 of 36 checks" },
-  { name: "Plaza Coffee Bar", checks: "3 of 36 checks" },
+  { name: "Orange Roastery", answers: 5 },
+  { name: "Plaza Coffee Bar", answers: 3 },
 ];
 
+/** The Competitors screen (B-50): the real leaderboard, with the margin band that decides each verdict. */
 export function CompetitorsExample() {
   return (
-    <div className="flex flex-col rounded-md border border-border bg-surface">
-      <div className="flex items-center justify-between gap-4 border-b border-border px-4 py-3 sm:px-5">
-        <div>
-          <p className="text-sm font-semibold">You vs competitors</p>
-          <p className="text-[13px] text-muted-foreground">Share of AI answers naming each business, last 30 days</p>
-        </div>
-        <ExampleTag />
+    <ProductFrame page="Competitors">
+      <div className="grid gap-3 sm:gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Who AI recommends most</CardTitle>
+            <CardDescription>Share of customer questions where each business was recommended.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Leaderboard view={{ leaderboard: LEADERBOARD, margin: 8 }} />
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Also recommended by AI</CardTitle>
+            <CardDescription>Businesses AI named that you do not track yet.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ul className="flex flex-col divide-y divide-border">
+              {ALSO_NAMED.map((n) => (
+                <li key={n.name} className="flex flex-col gap-1.5 py-3 first:pt-0 last:pb-0">
+                  <span className="text-sm font-medium">{n.name}</span>
+                  <span className="text-xs tabular-nums text-muted-foreground">
+                    Named in {n.answers} of {ANSWERS} answers
+                  </span>
+                  <span className="h-1 overflow-hidden rounded-xs bg-muted" aria-hidden>
+                    <span
+                      className="block h-full rounded-xs bg-competitor-2"
+                      style={{ width: `${(100 * n.answers) / ALSO_NAMED[0].answers}%` }}
+                    />
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </CardContent>
+        </Card>
       </div>
-
-      <ul className="flex flex-col gap-3.5 p-4 sm:p-5">
-        {ROWS.map(({ name, score, fill, you, verdict }) => (
-          <li key={name} className="flex flex-col gap-1.5">
-            <div className="flex items-baseline justify-between gap-3 text-sm">
-              <span className={you ? "font-semibold text-primary" : "font-medium"}>{name}</span>
-              <span className="flex items-baseline gap-3">
-                {verdict && <span className="text-[13px] text-text-hint">{verdict}</span>}
-                <span className={`tabular w-8 text-right ${you ? "font-semibold text-primary" : ""}`}>{score}%</span>
-              </span>
-            </div>
-            <span className="h-2 overflow-hidden rounded-xs bg-muted" aria-hidden="true">
-              <span className={`block h-full rounded-xs ${fill}`} style={{ width: `${score}%` }} />
-            </span>
-          </li>
-        ))}
-      </ul>
-
-      <div className="border-t border-border p-4 sm:p-5">
-        <p className="text-sm font-semibold">Also named by AI</p>
-        <p className="text-[13px] text-muted-foreground">Businesses you do not track yet</p>
-        <ul className="mt-3 flex flex-col divide-y divide-border text-sm">
-          {ALSO_NAMED.map(({ name, checks }) => (
-            <li key={name} className="flex justify-between gap-3 py-2">
-              <span>{name}</span>
-              <span className="tabular text-muted-foreground">{checks}</span>
-            </li>
-          ))}
-        </ul>
-      </div>
-    </div>
+    </ProductFrame>
   );
 }

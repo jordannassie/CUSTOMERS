@@ -1,6 +1,6 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Section, Eyebrow, H2, Lead, FeatureRow } from "../section";
-import { VisibilityExample } from "./VisibilityExample";
+import { Section, H2, Lead } from "../section";
+import { OverviewExample } from "./OverviewExample";
 import { CompetitorsExample } from "./CompetitorsExample";
 import { FixStepsExample } from "./FixStepsExample";
 
@@ -13,7 +13,7 @@ const TABS = [
       "Your visibility score is how often AI named you across all checks in the last 30 days, shown for each AI and overall.",
       "A confidence label tells you how solid the number is, and the trend line shows the last 7 days.",
     ],
-    visual: <VisibilityExample />,
+    visual: <OverviewExample />,
   },
   {
     value: "competitors",
@@ -41,7 +41,6 @@ export function ProductTabs() {
   return (
     <Section id="product">
       <div className="flex flex-col gap-4">
-        <Eyebrow>Product</Eyebrow>
         <H2 className="max-w-[22ch]">What you see after each scan</H2>
         <Lead>These screens use a made-up coffee shop so you can see what a report looks like.</Lead>
       </div>
@@ -55,12 +54,16 @@ export function ProductTabs() {
           ))}
         </TabsList>
         {TABS.map(({ value, title, body, visual }) => (
-          <TabsContent key={value} value={value}>
-            <FeatureRow title={title} visual={visual}>
-              {body.map((p) => (
-                <p key={p}>{p}</p>
-              ))}
-            </FeatureRow>
+          <TabsContent key={value} value={value} className="flex flex-col gap-8">
+            <div className="grid gap-4 md:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] md:gap-16">
+              <h3 className="text-2xl leading-tight font-semibold tracking-[-0.02em] text-balance">{title}</h3>
+              <div className="flex flex-col gap-3 text-[15px] text-muted-foreground">
+                {body.map((p) => (
+                  <p key={p}>{p}</p>
+                ))}
+              </div>
+            </div>
+            {visual}
           </TabsContent>
         ))}
       </Tabs>

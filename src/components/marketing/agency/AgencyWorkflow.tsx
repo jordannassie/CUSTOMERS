@@ -1,4 +1,4 @@
-import { Section, Eyebrow, H2, Lead } from "../section";
+import { Section, H2, Lead } from "../section";
 
 const STEPS = [
   {
@@ -23,7 +23,6 @@ export function AgencyWorkflow() {
   return (
     <Section id="how-it-works" tone="surface">
       <div className="flex flex-col gap-4">
-        <Eyebrow>How agencies use it</Eyebrow>
         <H2 className="max-w-[22ch]">The same routine for every client</H2>
         <Lead>Set up a client in a few minutes, then each scan tells you what changed and what to work on next.</Lead>
       </div>

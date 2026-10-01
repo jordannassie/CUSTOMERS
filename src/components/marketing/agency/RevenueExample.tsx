@@ -1,5 +1,5 @@
 import { formatUsd } from "@/modules/billing/format";
-import { Section, Eyebrow, H2, Lead } from "../section";
+import { Section, H2, Lead } from "../section";
 import { ExampleTag } from "../home/example";
 
 // A made-up retainer to show the maths; agencies set their own prices.
@@ -11,7 +11,6 @@ export function RevenueExample() {
     <Section id="example-revenue">
       <div className="grid gap-10 md:grid-cols-2 md:gap-16">
         <div className="flex flex-col gap-4">
-          <Eyebrow>For your agency</Eyebrow>
           <H2 className="max-w-[18ch]">Turn AI visibility into a monthly service</H2>
           <Lead>
             Clients are starting to ask whether ChatGPT recommends them. You set your own price for the work. This

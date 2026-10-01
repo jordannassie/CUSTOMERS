@@ -1,4 +1,4 @@
-import { Section, Eyebrow, H2 } from "../section";
+import { Section, H2 } from "../section";
 import { FaqList } from "../home/Faq";
 
 // Billing rules from MVP_SPEC 4 and D-54, D-56, D-57.
@@ -38,7 +38,6 @@ export function PricingFaq() {
     <Section id="faq">
       <div className="grid gap-10 md:grid-cols-[1fr_2fr] md:gap-16">
         <div className="flex flex-col gap-4">
-          <Eyebrow>FAQ</Eyebrow>
           <H2>Billing questions</H2>
         </div>
         <FaqList items={FAQS} />

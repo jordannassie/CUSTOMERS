@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { formatCount, formatUsd, type PublicPlan } from "@/modules/billing/format";
-import { Section, Eyebrow, H2 } from "../section";
+import { Section, H2 } from "../section";
 
 const POINTS = [
   "Each client business has its own plan. Put some on Starter and others on Pro.",
@@ -15,7 +15,6 @@ export function AgencyBilling({ plans }: { plans: PublicPlan[] }) {
     <Section id="billing" tone="muted">
       <div className="grid gap-10 md:grid-cols-2 md:gap-16">
         <div className="flex flex-col gap-4">
-          <Eyebrow>Billing</Eyebrow>
           <H2 className="max-w-[18ch]">You pay per client business</H2>
           <ul className="mt-2 flex flex-col gap-3 text-[15px] text-muted-foreground">
             {POINTS.map((p) => (
