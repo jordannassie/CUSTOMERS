@@ -56,7 +56,7 @@ export default async function OpportunitiesPage() {
             </Button>
           </section>
         ) : (
-          <OpportunityList key={business.id} businessId={business.id} initialItems={view.items} setStatus={setOpportunityStatus} />
+          <OpportunityList key={`list-${business.id}`} businessId={business.id} initialItems={view.items} setStatus={setOpportunityStatus} />
         )}
       </div>
     </PageContainer>

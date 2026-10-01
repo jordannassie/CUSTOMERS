@@ -71,8 +71,14 @@ export function OpportunityList({
                 {tab.empty}
               </p>
             ) : (
-              shown.map((item) => (
-                <OpportunityCard key={item.id} item={item} busy={busyId === item.id} onStatus={(s) => change(item, s)} />
+              shown.map((item, i) => (
+                <OpportunityCard
+                  key={item.id}
+                  item={item}
+                  busy={busyId === item.id}
+                  onStatus={(s) => change(item, s)}
+                  defaultOpen={i === 0}
+                />
               ))
             )}
           </TabsContent>
