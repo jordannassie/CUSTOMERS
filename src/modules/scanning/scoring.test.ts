@@ -7,9 +7,9 @@ import {
   isRealChange,
   trendSeries,
   visibilityScore,
-  weeklyChange,
   type ScoreCheck,
 } from "./scoring";
+import { weeklyChange } from "./scoring-periods";
 import { check, MODELS, NOW } from "./scoring.test-helpers";
 
 function series(provider: ProviderId, mentions: number, total: number, extra: Partial<ScoreCheck> = {}): ScoreCheck[] {
@@ -204,10 +204,11 @@ describe("weeklyChange", () => {
       Array.from({ length: total }, (_, i) => check(model, `q${i}`, hoursAgo, i < mentions)),
     );
 
-  it("shows up or down only when the gap between the two weeks is larger than the margin", () => {
+  it("is the 30-day score now against the 30-day score a week ago, when the gap beats the margin", () => {
+    // A week ago the 30-day window held only the first scan (25); now it holds both (50).
     const up = weeklyChange([...week(10, 40, 8 * 24), ...week(30, 40, 24)], { now: NOW, models: MODELS });
     expect(up?.direction).toBe("up");
-    expect(up?.points).toBeCloseTo(50);
+    expect(up?.points).toBeCloseTo(25);
     const down = weeklyChange([...week(30, 40, 8 * 24), ...week(10, 40, 24)], { now: NOW, models: MODELS });
     expect(down?.direction).toBe("down");
   });

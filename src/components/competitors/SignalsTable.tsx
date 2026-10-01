@@ -2,7 +2,7 @@ import { ExternalLink } from "lucide-react";
 import { cn } from "cn";
 import { GoogleAttribution, PlaceRating } from "@/components/onboarding/PlaceBits";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { headToHead, hoursText, reviewsText, websiteLabel, type SignalRow } from "@/modules/competitors";
+import { headToHead, hoursText, matchedNone, reviewsText, websiteLabel, type SignalRow } from "@/modules/competitors";
 
 const STATUS_NOTE = {
   missing: "Not matched to a Google listing",
@@ -11,6 +11,13 @@ const STATUS_NOTE = {
 
 /** Google Places values side by side (MVP_SPEC 7.1). Shown live, never stored (D-73). */
 export function SignalsTable({ rows }: { rows: SignalRow[] }) {
+  if (matchedNone(rows)) {
+    return (
+      <p className="text-sm text-muted-foreground" data-testid="signals-none">
+        None of these businesses matched a Google listing yet.
+      </p>
+    );
+  }
   const you = rows.find((r) => r.isYou)!;
   const competitors = rows.filter((r) => !r.isYou);
   // The competitor with the most reviews makes the clearest comparison.

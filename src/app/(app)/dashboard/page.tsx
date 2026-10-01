@@ -1,13 +1,15 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { RunScanButton } from "@/components/app/RunScanButton";
+import { PickedInstead } from "@/components/competitors/PickedInstead";
 import { ExportPdfButton } from "@/components/report/ExportPdfButton";
 import { ShareButton } from "@/components/report/ShareButton";
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ModelScores } from "@/components/overview/ModelScores";
+import { ModelScores, ModelScoresRow } from "@/components/overview/ModelScores";
 import { ScoreSummary } from "@/components/overview/ScoreSummary";
 import { OPPORTUNITIES_HREF, TopOpportunities } from "@/components/overview/TopOpportunities";
 import { TrendChart } from "@/components/overview/TrendChart";
+import { getPickedInstead } from "@/modules/competitors";
 import { getScanStatus, startScan } from "@/modules/jobs";
 import { getOverview } from "@/modules/overview";
 import { createShareLink, exportPdf, getShareLink, revokeShareLink } from "@/modules/reports";
@@ -22,10 +24,11 @@ export default async function OverviewPage() {
   // Setup is the onboarding wizard's job (B-36); it resumes where the user stopped.
   if (!business || business.status === "onboarding") redirect("/onboarding");
 
-  const [overview, scanStatus, shareLink] = await Promise.all([
+  const [overview, scanStatus, shareLink, picked] = await Promise.all([
     getOverview(business.id),
     getScanStatus({ businessId: business.id }),
     getShareLink(business.id),
+    getPickedInstead(business.id),
   ]);
   if (!overview) notFound();
   const { score } = overview;
@@ -39,19 +42,22 @@ export default async function OverviewPage() {
             {overview.lastCheckedAt ? `Last scan ${timeAgo(new Date(overview.lastCheckedAt))}` : "No scans yet"}
           </p>
         </div>
-        <div className="grid grid-cols-2 gap-3 sm:flex sm:flex-row-reverse sm:flex-wrap sm:items-start">
-          {scanStatus.ok && (
-            <RunScanButton
-              businessId={business.id}
-              initial={scanStatus.data}
-              start={startScan}
-              getStatus={getScanStatus}
-              className="col-span-2"
-            />
-          )}
-          <ShareButton businessId={business.id} initial={shareLink} create={createShareLink} revoke={revokeShareLink} />
-          <ExportPdfButton businessId={business.id} exportPdf={exportPdf} />
-        </div>
+        {/* Before the first score Run scan sits in the empty card, and there is nothing to share or export yet. */}
+        {score && (
+          <div className="grid grid-cols-2 gap-3 sm:flex sm:flex-row-reverse sm:flex-wrap sm:items-start">
+            {scanStatus.ok && (
+              <RunScanButton
+                businessId={business.id}
+                initial={scanStatus.data}
+                start={startScan}
+                getStatus={getScanStatus}
+                className="col-span-2"
+              />
+            )}
+            <ShareButton businessId={business.id} initial={shareLink} create={createShareLink} revoke={revokeShareLink} />
+            <ExportPdfButton businessId={business.id} exportPdf={exportPdf} />
+          </div>
+        )}
       </header>
 
       {scanStatus.ok && scanStatus.data.lastResult === "failed" && !scanStatus.data.scanning && (
@@ -70,24 +76,40 @@ export default async function OverviewPage() {
             {score ? (
               <>
                 <ScoreSummary score={score} />
-                <div className="flex flex-col gap-2">
-                  <h2 className="text-sm font-medium">Last 7 days</h2>
-                  <TrendChart trend={overview.trend} />
-                </div>
+                <ModelScoresRow models={overview.models} className="sm:hidden" />
+                <TrendChart trend={overview.trend} />
               </>
             ) : (
               <div className="flex flex-col gap-2 py-6" data-testid="no-score">
                 <p className="text-xl font-semibold tracking-[-0.02em]">No score yet</p>
                 <p className="max-w-prose text-sm text-muted-foreground">
                   Run your first scan to see how often ChatGPT, Claude and Perplexity recommend {business.name} when
-                  customers ask for a business like yours. Results appear in about a minute.
+                  customers ask for a business like yours.
                 </p>
+                {scanStatus.ok && (
+                  <div className="mt-3 grid justify-items-start gap-2.5">
+                    <RunScanButton
+                      businessId={business.id}
+                      initial={scanStatus.data}
+                      start={startScan}
+                      getStatus={getScanStatus}
+                      label={scanStatus.data.lastResult === null ? "Run first scan" : "Run scan"}
+                    />
+                    {!scanStatus.data.scanning && (
+                      <p className="text-xs text-muted-foreground tabular-nums" data-testid="scan-cost">
+                        Takes about a minute and uses about {overview.scanCredits}{" "}
+                        {overview.scanCredits === 1 ? "credit" : "credits"}.
+                      </p>
+                    )}
+                  </div>
+                )}
               </div>
             )}
           </CardContent>
         </Card>
 
-        <Card>
+        {/* On phones the row under the score shows these instead, unless there is no score yet. */}
+        <Card className={score ? "max-sm:hidden" : undefined}>
           <CardHeader>
             <CardTitle className="text-base">Score by AI</CardTitle>
           </CardHeader>
@@ -96,6 +118,8 @@ export default async function OverviewPage() {
           </CardContent>
         </Card>
       </div>
+
+      {score && picked && <PickedInstead picked={picked} />}
 
       <Card>
         <CardHeader>

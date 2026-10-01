@@ -16,7 +16,10 @@ function report(overrides: Partial<ScoreReport> = {}): ScoreReport {
       { date: "2026-09-26", score: null, checks: 0 },
       { date: "2026-09-27", score: 61.7, checks: 36 },
     ],
+    history: [],
     change: null,
+    monthChange: null,
+    modelChanges: {},
     firstCheckedAt: new Date("2026-09-20T10:00:00Z"),
     lastCheckedAt: new Date("2026-09-27T10:00:00Z"),
     competitors: [],
@@ -85,10 +88,18 @@ describe("overviewView", () => {
 
   it("lists every chosen model, with no score for one that has no checks yet", () => {
     expect(overviewView(report(), []).models).toEqual([
-      { id: "openai", label: "ChatGPT", score: 75 },
-      { id: "anthropic", label: "Claude", score: null },
-      { id: "perplexity", label: "Perplexity", score: 48 },
+      { id: "openai", label: "ChatGPT", score: 75, change: null },
+      { id: "anthropic", label: "Claude", score: null, change: null },
+      { id: "perplexity", label: "Perplexity", score: 48, change: null },
     ]);
+  });
+
+  it("gives a model its weekly change rounded, and none under a point (DB-013)", () => {
+    const view = overviewView(
+      report({ modelChanges: { openai: { direction: "down", points: 6.4 }, perplexity: { direction: "up", points: 0.3 } } }),
+      [],
+    );
+    expect(view.models.map((m) => m.change)).toEqual([{ direction: "down", points: 6 }, null, null]);
   });
 
   it("stops calling it first results after a second day of scans", () => {

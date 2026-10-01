@@ -1,6 +1,7 @@
 // The only file other modules may import from (eslint-plugin-boundaries).
 export { trackCompetitor } from "./actions";
-export { fetchPlaceSignals, getCompetitorsPage, loadCompetitorsPage } from "./dal";
+export { fetchPlaceSignals, getCompetitorsPage, getPickedInstead, loadCompetitorsPage } from "./dal";
+export type { PickedInstead } from "./picked";
 export type { FetchSignals, PlaceSignals } from "./places";
 export {
   COLLECTING_TEXT,
@@ -8,6 +9,7 @@ export {
   answersText,
   headToHead,
   hoursText,
+  matchedNone,
   reviewsText,
   websiteLabel,
   type CompetitorsView,

@@ -1,5 +1,6 @@
 import { cn } from "cn";
 import { Badge } from "@/components/ui/badge";
+import { PointsChange } from "@/components/overview/PointsChange";
 import { COLLECTING_TEXT, STANDING_TEXT, type CompetitorsView, type LeaderRow } from "@/modules/competitors";
 
 const SHADE = { 1: "bg-competitor-1", 2: "bg-competitor-2", 3: "bg-competitor-3" } as const;
@@ -44,11 +45,14 @@ function Row({ row, band }: { row: LeaderRow; band: { left: number; right: numbe
   const pending = !row.isYou && row.score === null;
   return (
     <li
-      className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1.5 sm:grid-cols-[minmax(0,200px)_minmax(0,1fr)_2.5rem_9.5rem]"
+      className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1.5 sm:grid-cols-[minmax(0,260px)_minmax(0,1fr)_2.5rem_9.5rem]"
       data-you={row.isYou || undefined}
     >
-      <span className={cn("truncate text-sm", row.isYou ? "font-semibold text-primary" : "text-foreground")}>
-        {row.isYou ? `${row.name} (you)` : row.name}
+      <span className="flex min-w-0 items-baseline gap-2">
+        <span className={cn("truncate text-sm", row.isYou ? "font-semibold text-primary" : "text-foreground")}>
+          {row.isYou ? `${row.name} (you)` : row.name}
+        </span>
+        {row.change && <PointsChange change={row.change} neutral={!row.isYou} />}
       </span>
 
       {pending ? (

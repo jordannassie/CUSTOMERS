@@ -4,7 +4,7 @@ import type { ProviderId } from "./providers/types";
 
 export const SCORE_WINDOW_DAYS = 30;
 export const TREND_DAYS = 7;
-const DAY_MS = 86_400_000;
+export const DAY_MS = 86_400_000;
 // 95% interval.
 const Z = 1.96;
 
@@ -32,7 +32,7 @@ export type Confidence = "early" | "good" | "high";
 
 export type Standing = "ahead" | "behind" | "about_same";
 
-type Mentioned = (check: ScoreCheck) => boolean;
+export type Mentioned = (check: ScoreCheck) => boolean;
 
 type Stats = Estimate & { variance: number };
 
@@ -92,7 +92,7 @@ function strip(stats: Stats): Estimate {
 }
 
 /** Per model estimates and their equal-weight average (D-65). Null overall when no chosen model has a check. */
-function estimateFor(checks: ScoreCheck[], models: readonly ProviderId[], mentioned: Mentioned) {
+export function estimateFor(checks: ScoreCheck[], models: readonly ProviderId[], mentioned: Mentioned) {
   const byModel = new Map<ProviderId, Stats>();
   for (const model of models) {
     const stats = modelStats(
@@ -185,19 +185,4 @@ export function competitorScores(
     const them = estimateFor(inWindow, opts.models, mentioned).overall!;
     return { name, estimate: them, standing: compareWithCompetitor(you, them) };
   });
-}
-
-export type Change = { direction: "up" | "down"; points: number };
-
-/**
- * The last 7 days against the 7 days before, so the two estimates share no checks.
- * Null unless both weeks have checks and the gap is larger than the margin (D-64).
- */
-export function weeklyChange(checks: ScoreCheck[], opts: { now: Date; models: readonly ProviderId[] }): Change | null {
-  const lastWeek = new Date(opts.now.getTime() - TREND_DAYS * DAY_MS);
-  const recent = estimateFor(checksInWindow(checks, opts.now, TREND_DAYS), opts.models, (c) => c.mentioned).overall;
-  const before = estimateFor(checksInWindow(checks, lastWeek, TREND_DAYS), opts.models, (c) => c.mentioned).overall;
-  if (!recent || !before || !isRealChange(recent, before)) return null;
-  const points = recent.score - before.score;
-  return { direction: points > 0 ? "up" : "down", points: Math.abs(points) };
 }

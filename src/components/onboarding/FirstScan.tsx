@@ -1,8 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
-import { Check, Loader2, RotateCw } from "lucide-react";
-import { cn } from "cn";
+import { Loader2, RotateCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { ActionResult } from "@/modules/auth";
 import type { ScanStatus } from "@/modules/jobs";
@@ -14,12 +13,16 @@ import {
   firstScanProblem,
   type FirstScanPhase,
 } from "@/modules/onboarding/first-scan";
+import type { FirstScanSummary, ModelProgress } from "@/modules/onboarding";
+import { FirstScanResult } from "./FirstScanResult";
+import { ScanProgressList } from "./ScanProgressList";
 
 type ScanAction = (input: unknown) => Promise<ActionResult<ScanStatus>>;
 type CreditsCheck = () => Promise<ActionResult<{ waiting: boolean }>>;
+type ProgressAction = (input: unknown) => Promise<ActionResult<ModelProgress[]>>;
+type SummaryAction = (input: unknown) => Promise<ActionResult<FirstScanSummary>>;
 
 const POLL_MS = 2000;
-const DOT: Record<string, string> = { openai: "bg-chatgpt", anthropic: "bg-claude", perplexity: "bg-perplexity" };
 const NO_CONNECTION = "We couldn't start the scan. Check your connection and try again.";
 
 type Props = {
@@ -33,6 +36,8 @@ type Props = {
   start: ScanAction;
   getStatus: ScanAction;
   checkCredits: CreditsCheck;
+  getProgress: ProgressAction;
+  getSummary: SummaryAction;
 };
 
 function initialPhase(initial: ScanStatus | null, awaitingCredits: boolean): FirstScanPhase {
@@ -44,12 +49,15 @@ function initialPhase(initial: ScanStatus | null, awaitingCredits: boolean): Fir
 // offers a retry here instead of an empty dashboard (REL-05).
 export function FirstScan(props: Props) {
   const { businessId, businessName, models, questions, initial, awaitingCredits, start, getStatus, checkCredits } = props;
+  const { getProgress, getSummary } = props;
   const [phase, setPhase] = useState<FirstScanPhase>(() => initialPhase(initial, awaitingCredits));
   const [problem, setProblem] = useState<string | null>(initial && phase === "failed" ? firstScanProblem(initial) : null);
   const [pending, startTransition] = useTransition();
   // Bumped after each poll that changes nothing, so the next one is scheduled.
   const [polls, setPolls] = useState(0);
   const [retrying, setRetrying] = useState(initial?.retrying ?? false);
+  const [progress, setProgress] = useState<Map<string, ModelProgress> | null>(null);
+  const [summary, setSummary] = useState<FirstScanSummary | null>(null);
   const started = useRef(false);
   const creditsSince = useRef<number | null>(null);
 
@@ -101,7 +109,11 @@ export function FirstScan(props: Props) {
   useEffect(() => {
     if (phase !== "scanning" || pending) return;
     const timer = setTimeout(async () => {
-      const result = await getStatus({ businessId }).catch(() => null);
+      const [result, saved] = await Promise.all([
+        getStatus({ businessId }).catch(() => null),
+        getProgress({ businessId }).catch(() => null),
+      ]);
+      if (saved?.ok) setProgress(new Map(saved.data.map((m) => [m.id, m])));
       // A dropped poll just tries again; the scan itself carries on.
       const next = result?.ok ? firstScanPhase(result.data) : "scanning";
       if (result?.ok) setRetrying(result.data.retrying);
@@ -110,13 +122,25 @@ export function FirstScan(props: Props) {
       fail(next === "failed" && result?.ok ? firstScanProblem(result.data) : FIRST_SCAN_FAILED);
     }, POLL_MS);
     return () => clearTimeout(timer);
-  }, [phase, pending, polls, businessId, getStatus]);
+  }, [phase, pending, polls, businessId, getStatus, getProgress]);
 
+  // DB-010: one summary before the dashboard. If it cannot load, open the dashboard as before.
   useEffect(() => {
-    // A full load, not router.replace: the app layout was rendered without the app frame during setup, and a
-    // client navigation keeps that layout, leaving the dashboard blank.
-    if (phase === "done") window.location.replace("/dashboard");
-  }, [phase]);
+    if (phase !== "done") return;
+    let live = true;
+    getSummary({ businessId })
+      .catch(() => null)
+      .then((result) => {
+        if (!live) return;
+        // A full load, not router.replace: the app layout was rendered without the app frame during setup, and a
+        // client navigation keeps that layout, leaving the dashboard blank.
+        if (result?.ok) setSummary(result.data);
+        else window.location.replace("/dashboard");
+      });
+    return () => {
+      live = false;
+    };
+  }, [phase, businessId, getSummary]);
 
   const creditsLate = phase === "credits-late";
   const failed = phase === "failed" || creditsLate;
@@ -151,78 +175,57 @@ export function FirstScan(props: Props) {
         </p>
       </header>
 
-      <ul className="rounded-md border border-border bg-surface" data-testid="first-scan-models">
-        {models.map((model, i) => (
-          <li key={model.id} className="flex flex-col gap-2.5 border-b border-border px-4 py-3.5 last:border-b-0">
-            <div className="flex items-center justify-between gap-3">
-              <span className="flex items-center gap-2 text-sm font-medium">
-                <span aria-hidden className={cn("size-2 rounded-full", DOT[model.id] ?? "bg-primary")} />
-                {model.label}
-              </span>
-              <span className="text-[13px] text-muted-foreground">
-                {phase === "done" ? (
-                  <Check aria-label="Done" className="size-4 text-good" />
-                ) : waiting ? (
-                  "Not started"
-                ) : failed || paused ? (
-                  "Not finished"
-                ) : (
-                  questions > 0 ? `Asking ${asked}…` : "Asking…"
-                )}
-              </span>
-            </div>
-            <div className="h-1 overflow-hidden rounded-xs bg-border" aria-hidden>
-              {phase === "done" ? (
-                <div className="h-full w-full bg-primary" />
-              ) : failed || waiting || paused ? null : (
-                <div
-                  className="h-full w-2/5 animate-scan-sweep bg-primary motion-reduce:w-full motion-reduce:animate-none motion-reduce:opacity-40"
-                  style={{ animationDelay: `${i * 220}ms` }}
-                />
-              )}
-            </div>
-          </li>
-        ))}
-      </ul>
+      {summary ? (
+        <FirstScanResult summary={summary} />
+      ) : (
+        <>
+        <ScanProgressList
+          models={models}
+          progress={progress}
+          state={phase === "done" ? "done" : waiting ? "waiting" : failed || paused ? "stopped" : "running"}
+          asking={questions > 0 ? `Asking ${asked}…` : "Asking…"}
+        />
 
-      <div role="status" aria-live="polite" className="flex flex-col gap-4">
-        {failed ? (
-          <>
-            <p className="rounded-md bg-low-bg px-3 py-2 text-[13px] text-low-text" data-testid="first-scan-problem">
-              {problem}
+        <div role="status" aria-live="polite" className="flex flex-col gap-4">
+          {failed ? (
+            <>
+              <p className="rounded-md bg-low-bg px-3 py-2 text-[13px] text-low-text" data-testid="first-scan-problem">
+                {problem}
+              </p>
+              <div>
+                <Button onClick={creditsLate ? waitForCredits : run} disabled={pending} className="min-w-32">
+                  {pending ? <Loader2 aria-hidden className="animate-spin" /> : <RotateCw aria-hidden />}
+                  Try again
+                </Button>
+              </div>
+            </>
+          ) : waiting ? (
+            <p className="flex items-center gap-2 text-sm text-muted-foreground" data-testid="first-scan-credits">
+              <Loader2 aria-hidden className="size-4 animate-spin" />
+              Adding your trial credits…
             </p>
-            <div>
-              <Button onClick={creditsLate ? waitForCredits : run} disabled={pending} className="min-w-32">
-                {pending ? <Loader2 aria-hidden className="animate-spin" /> : <RotateCw aria-hidden />}
-                Try again
-              </Button>
-            </div>
-          </>
-        ) : waiting ? (
-          <p className="flex items-center gap-2 text-sm text-muted-foreground" data-testid="first-scan-credits">
-            <Loader2 aria-hidden className="size-4 animate-spin" />
-            Adding your trial credits…
-          </p>
-        ) : phase === "done" ? (
-          <p className="text-sm text-muted-foreground">Opening your dashboard…</p>
-        ) : paused ? (
-          <>
-            <p className="rounded-md bg-mid-bg px-3 py-2 text-[13px] text-mid-text" data-testid="first-scan-retrying">
-              The scan hit a problem, so we&apos;ll try again in a few minutes. You can leave this page. Your score shows on the dashboard when it&apos;s done.
+          ) : phase === "done" ? (
+            <p className="text-sm text-muted-foreground">Getting your results…</p>
+          ) : paused ? (
+            <>
+              <p className="rounded-md bg-mid-bg px-3 py-2 text-[13px] text-mid-text" data-testid="first-scan-retrying">
+                The scan hit a problem, so we&apos;ll try again in a few minutes. You can leave this page. Your score shows on the dashboard when it&apos;s done.
+              </p>
+              <div>
+                {/* A full load, for the same reason as the redirect in the summary effect. */}
+                <Button asChild className="min-w-32">
+                  <a href="/dashboard">Go to dashboard</a>
+                </Button>
+              </div>
+            </>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              This usually takes about a minute. You can leave this page. The scan keeps going and your score shows on the dashboard.
             </p>
-            <div>
-              {/* A full load, for the same reason as the redirect above. */}
-              <Button asChild className="min-w-32">
-                <a href="/dashboard">Go to dashboard</a>
-              </Button>
-            </div>
-          </>
-        ) : (
-          <p className="text-sm text-muted-foreground">
-            This usually takes about a minute. You can leave this page. The scan keeps going and your score shows on the dashboard.
-          </p>
-        )}
-      </div>
+          )}
+        </div>
+        </>
+      )}
     </div>
   );
 }

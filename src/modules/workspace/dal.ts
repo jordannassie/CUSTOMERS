@@ -1,5 +1,6 @@
 import "server-only";
 import { redirect } from "next/navigation";
+import { requestNow } from "@/lib/request-now";
 import { createClient } from "@/lib/supabase/server";
 import {
   blockedPathFor,
@@ -10,6 +11,9 @@ import {
   type GuardOptions,
 } from "@/modules/auth";
 import { getUsage } from "@/modules/credits";
+import { scoreTone } from "@/modules/overview";
+import { loadScoreReport } from "@/modules/scanning";
+import { dropFirst, switcherScore, type SwitcherScores } from "./scores";
 import type { AccountState, UsageNumbers } from "./service";
 
 export type WorkspaceBusiness = {
@@ -79,6 +83,19 @@ export async function getWorkspace(options: GuardOptions = {}): Promise<Workspac
         : null,
     usage,
   };
+}
+
+/** Score, weekly change and last scan per business for the switcher (DB-011). Null when the user has no agency. */
+export async function getSwitcherScores(businessIds: string[]): Promise<SwitcherScores | null> {
+  const agency = await getCurrentAgency();
+  if (!agency) return null;
+  const now = requestNow();
+  const reports = await Promise.all(businessIds.map((id) => loadScoreReport(agency.id, id, now)));
+  const byId: SwitcherScores["byId"] = {};
+  reports.forEach((report, i) => {
+    if (report) byId[businessIds[i]] = switcherScore(report, scoreTone);
+  });
+  return { order: dropFirst(businessIds, byId), byId };
 }
 
 /** False when the business is not the user's. */

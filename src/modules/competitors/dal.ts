@@ -1,6 +1,7 @@
 import "server-only";
 import { cache } from "react";
 import { env } from "@/lib/env";
+import { requestNow } from "@/lib/request-now";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { requireAgency } from "@/modules/auth";
@@ -9,6 +10,7 @@ import { limitMessage } from "@/modules/onboarding/server";
 import { loadAlsoRecommended, loadScoreReport } from "@/modules/scanning";
 import { fixtureSignals } from "./place-fixtures";
 import { createPlaceSignals, PlacesUnavailable, type FetchSignals } from "./places";
+import { pickedInstead, type PickedInstead } from "./picked";
 import { competitorsView, type CompetitorsView, type SignalResult } from "./service";
 
 // Fixture mode is refused in production so a stray flag can never show made-up businesses to users.
@@ -29,7 +31,7 @@ export const fetchPlaceSignals: FetchSignals = (placeId) => signalsForRequest(pl
 /** The Competitors page for one of the signed-in agency's businesses; null when it is not theirs. */
 export async function getCompetitorsPage(businessId: string, next: string): Promise<CompetitorsView | null> {
   const { agency } = await requireAgency({ next });
-  return loadCompetitorsPage(agency.id, businessId, new Date(), signalsForRequest);
+  return loadCompetitorsPage(agency.id, businessId, requestNow(), signalsForRequest);
 }
 
 // Callers check the user may see this agency first. Reads only; nothing from Places is written (D-73).
@@ -104,4 +106,31 @@ export async function trackCompetitorByName(userId: string, businessId: string, 
   // 23505: the same name was added a moment ago, in another tab or by a double click.
   if (insertError && insertError.code !== "23505") throw new Error(`Could not add the competitor: ${insertError.message}`);
   return { ok: true };
+}
+
+/**
+ * The Overview's "Who AI picked instead" (DB-004): the leaderboard only, with no Google calls (D-73) and no other
+ * names. Null when the business is not the agency's.
+ */
+export async function getPickedInstead(businessId: string): Promise<PickedInstead | null | "none-tracked"> {
+  const { agency } = await requireAgency({ next: "/dashboard" });
+  const db = createServiceClient();
+  const now = requestNow();
+  const [report, business, rows] = await Promise.all([
+    loadScoreReport(agency.id, businessId, now),
+    db.from("businesses").select("name, places_id").eq("id", businessId).eq("agency_id", agency.id).maybeSingle(),
+    db.from("business_competitors").select("name, places_id, place_id, created_at").eq("business_id", businessId).order("created_at"),
+  ]);
+  for (const r of [business, rows]) if (r.error) throw new Error(`Competitors: ${r.error.message}`);
+  if (!report || !business.data) return null;
+  if (rows.data!.length === 0) return "none-tracked";
+  const view = competitorsView({
+    business: { name: business.data.name, placesId: business.data.places_id },
+    report,
+    competitors: rows.data!.map((r) => ({ name: r.name, placesId: r.places_id ?? r.place_id, createdAt: new Date(r.created_at) })),
+    signals: new Map(),
+    also: { names: [], answers: 0 },
+    limit: null,
+  });
+  return pickedInstead(view);
 }

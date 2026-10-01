@@ -110,6 +110,8 @@ test("Share gives a link the client opens without a login, and turning it off st
   await expect(reader.getByRole("heading", { level: 1, name: "Sunrise Coffee Bar" })).toBeVisible({ timeout: 60_000 });
   await expect(reader.getByTestId("agency-name")).toHaveText("Northside Marketing");
   await expect(reader.getByTestId("score-sentence")).toBeVisible();
+  // DB-012: plain sentences built from the numbers lead the report.
+  await expect(reader.getByTestId("report-summary")).toContainText("Over the last 30 days, AI recommended Sunrise Coffee Bar");
   await expect(reader.getByTestId("leaderboard")).toContainText("Bean House");
   await expect(reader.getByText("Bean House: 320 Google reviews, 4.7 stars")).toBeVisible();
   await expect(reader.getByRole("img", { name: "Google Maps" })).toBeVisible();

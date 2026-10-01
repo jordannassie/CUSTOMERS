@@ -1,5 +1,6 @@
 import { SCORE_WINDOW_DAYS, type Change, type Confidence, type ProviderId, type ScoreReport } from "@/modules/scanning";
 import { CALIBRATION, methodPanel, type Calibration, type MethodPanel } from "./method";
+import { trendView, type TrendView } from "./trend";
 
 // What the Overview shows (B-49, MVP_SPEC 5.6, 8.1). Pure, so every state is unit tested.
 
@@ -22,6 +23,14 @@ export type Tone = "good" | "mid" | "low";
 
 export type Opportunity = { id: string; title: string; impact: Impact; createdAt: string };
 
+/** "Up 6": a change rounded to whole points, shown only when bigger than the margin (D-64). */
+export type PointsChange = { direction: Change["direction"]; points: number };
+
+export function pointsChange(change: Change | null | undefined): PointsChange | null {
+  const points = change ? Math.round(change.points) : 0;
+  return change && points > 0 ? { direction: change.direction, points } : null;
+}
+
 export type OverviewView = {
   score: {
     value: number;
@@ -33,10 +42,14 @@ export type OverviewView = {
     change: { direction: Change["direction"]; text: string } | null;
     details: MethodPanel;
   } | null;
-  models: { id: ProviderId; label: string; score: number | null }[];
-  trend: { date: string; score: number | null }[];
+  models: { id: ProviderId; label: string; score: number | null; change: PointsChange | null }[];
+  trend: TrendView;
   opportunities: Pick<Opportunity, "id" | "title" | "impact">[];
   lastCheckedAt: string | null;
+  /** The last 30 days against the 30 before, only when bigger than the margin (D-64). */
+  monthChange: PointsChange | null;
+  /** One credit per answer: active questions times chosen models. */
+  scanCredits: number;
 };
 
 /** DESIGN.md bands: 70 to 100 good, 40 to 69 mid, under 40 low. */
@@ -71,8 +84,9 @@ export function topOpportunities(opportunities: Opportunity[], count = 3): Overv
 export function overviewView(
   report: ScoreReport,
   opportunities: Opportunity[],
-  calibration: Calibration | null = CALIBRATION,
+  options: { nextScanAt?: Date | null; now?: Date; calibration?: Calibration | null } = {},
 ): OverviewView {
+  const { nextScanAt = null, now = new Date(), calibration = CALIBRATION } = options;
   const { overall } = report;
   const scannedDays = report.trend.filter((p) => p.checks > 0).length;
   const byModel = new Map(report.byModel.map((m) => [m.model, m.estimate]));
@@ -105,9 +119,11 @@ export function overviewView(
         calibration,
       ),
     },
-    models: models.map(({ id, label, score }) => ({ id, label, score })),
-    trend: report.trend.map((p) => ({ date: p.date, score: p.score === null ? null : Math.round(p.score) })),
+    models: models.map(({ id, label, score }) => ({ id, label, score, change: pointsChange(report.modelChanges[id]) })),
+    trend: trendView({ history: report.history, nextScanAt, now }),
     opportunities: topOpportunities(opportunities),
     lastCheckedAt: report.lastCheckedAt?.toISOString() ?? null,
+    scanCredits: report.questions.length * report.models.length,
+    monthChange: pointsChange(report.monthChange),
   };
 }

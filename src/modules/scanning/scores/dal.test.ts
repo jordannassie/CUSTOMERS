@@ -75,7 +75,7 @@ describe("loadScoreReport", () => {
       uniqueAnswers: 4,
       confidence: "early",
     });
-    expect(report?.competitors).toEqual([{ name: "Rival Roasters", score: 50, standing: "about_same" }]);
+    expect(report?.competitors).toEqual([{ name: "Rival Roasters", score: 50, standing: "about_same", change: null }]);
     expect(report?.questions.slice(0, 2).map((q) => [q.appeared, q.checks])).toEqual([
       [2, 3],
       [1, 3],

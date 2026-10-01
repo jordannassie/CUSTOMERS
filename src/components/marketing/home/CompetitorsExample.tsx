@@ -4,10 +4,10 @@ import type { LeaderRow } from "@/modules/competitors";
 import { ProductFrame } from "./ProductFrame";
 
 const LEADERBOARD: LeaderRow[] = [
-  { name: "Daily Grind", isYou: false, score: 81, standing: "behind", collecting: false, shade: 1 },
-  { name: "Bean House", isYou: true, score: 62, standing: null, collecting: false, shade: null },
-  { name: "Brew Lab", isYou: false, score: 57, standing: "about_same", collecting: false, shade: 2 },
-  { name: "Cup & Co", isYou: false, score: 22, standing: "ahead", collecting: false, shade: 3 },
+  { name: "Daily Grind", isYou: false, score: 81, standing: "behind", change: null, collecting: false, shade: 1 },
+  { name: "Bean House", isYou: true, score: 62, standing: null, change: null, collecting: false, shade: null },
+  { name: "Brew Lab", isYou: false, score: 57, standing: "about_same", change: null, collecting: false, shade: 2 },
+  { name: "Cup & Co", isYou: false, score: 22, standing: "ahead", change: null, collecting: false, shade: 3 },
 ];
 
 const ANSWERS = 36;

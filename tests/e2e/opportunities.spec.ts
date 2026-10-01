@@ -144,7 +144,11 @@ test("marking a fix done moves it to Done, and it stays there after a reload", a
   await expect(page.getByTestId("list-done").getByTestId("opportunity")).toHaveCount(0);
 
   await page.getByTestId("tab-open").click();
-  await page.getByTestId("list-open").getByTestId("opportunity").last().getByRole("button", { name: "Dismiss" }).click();
+  // DB-014: only the first fix starts open; the row opens the others.
+  const last = page.getByTestId("list-open").getByTestId("opportunity").last();
+  await expect(last.getByRole("button", { name: "Dismiss" })).toHaveCount(0);
+  await last.getByRole("heading", { level: 2 }).getByRole("button").click();
+  await last.getByRole("button", { name: "Dismiss" }).click();
   await expect(page.getByTestId("tab-dismissed")).toContainText("1");
 });
 

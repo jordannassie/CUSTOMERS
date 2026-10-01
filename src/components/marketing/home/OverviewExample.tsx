@@ -14,16 +14,21 @@ const SCORE: React.ComponentProps<typeof ScoreSummary>["score"] = {
   change: { direction: "up", text: "Up 4 points on last week" },
 };
 
-// Daily scans, so the real chart has a point for every day.
-const TREND: OverviewView["trend"] = [55, 57, 56, 58, 60, 61, 62].map((score, i) => ({
-  date: `2026-09-${String(24 + i).padStart(2, "0")}`,
-  score,
-}));
+// The 30-day score at each scan with its margin, as the app draws it (DB-002).
+const TREND: OverviewView["trend"] = {
+  points: [53, 54, 56, 55, 57, 58, 58, 60, 61, 62].map((score, i) => {
+    const day = 20 + i;
+    return { date: `2026-09-${String(day).padStart(2, "0")}`, label: `Sep ${day}`, score, margin: 6, band: [score - 6, score + 6] };
+  }),
+  change: { direction: "up", text: "Up 9 points since Sep 20" },
+  summary: null,
+  caption: "Each dot is one scan. The shaded band is how far the score could be off.",
+};
 
 const MODELS: OverviewView["models"] = [
-  { id: "openai", label: MODEL_LABELS.openai, score: 75 },
-  { id: "anthropic", label: MODEL_LABELS.anthropic, score: 58 },
-  { id: "perplexity", label: MODEL_LABELS.perplexity, score: 53 },
+  { id: "openai", label: MODEL_LABELS.openai, score: 75, change: null },
+  { id: "anthropic", label: MODEL_LABELS.anthropic, score: 58, change: null },
+  { id: "perplexity", label: MODEL_LABELS.perplexity, score: 53, change: null },
 ];
 
 /** The Overview screen (B-49) with the same layout and components as the app. */
@@ -37,10 +42,7 @@ export function OverviewExample() {
           </CardHeader>
           <CardContent className="flex flex-col gap-8">
             <ScoreSummary score={SCORE} />
-            <div className="flex flex-col gap-2">
-              <h4 className="text-sm font-medium">Last 7 days</h4>
-              <TrendChart trend={TREND} />
-            </div>
+            <TrendChart trend={TREND} heading="h4" />
           </CardContent>
         </Card>
         <Card>

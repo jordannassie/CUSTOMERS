@@ -4,6 +4,7 @@ import { ModelScores } from "@/components/overview/ModelScores";
 import { ScoreSummary } from "@/components/overview/ScoreSummary";
 import { TrendChart } from "@/components/overview/TrendChart";
 import { Badge } from "@/components/ui/badge";
+import { matchedNone } from "@/modules/competitors";
 import type { ReportView } from "@/modules/reports";
 import { ReportReady } from "./ReportReady";
 
@@ -39,15 +40,22 @@ export function Report({ report, logoSrc }: { report: ReportView; logoSrc: strin
         </div>
       </header>
 
+      {report.summary.length > 0 && (
+        <section aria-label="Summary" className="report-section rounded-md border border-border bg-surface px-5 py-4" data-testid="report-summary">
+          <ul className="flex flex-col gap-1.5 text-[15px] leading-relaxed">
+            {report.summary.map((line) => (
+              <li key={line}>{line}</li>
+            ))}
+          </ul>
+        </section>
+      )}
+
       <Section title="Visibility score, last 30 days">
         {score ? (
           <div className="flex flex-col gap-8">
             <ScoreSummary score={score} animate={false} />
             <div className="grid gap-8 md:grid-cols-[minmax(0,1fr)_260px] print:grid-cols-[minmax(0,1fr)_220px]">
-              <div className="flex flex-col gap-2">
-                <h3 className="text-sm font-medium">Last 7 days</h3>
-                <TrendChart trend={report.trend} />
-              </div>
+              <TrendChart trend={report.trend} heading="h3" />
               <div className="flex flex-col gap-3">
                 <h3 className="text-sm font-medium">Score by AI</h3>
                 <ModelScores models={report.models} />
@@ -70,9 +78,12 @@ export function Report({ report, logoSrc }: { report: ReportView; logoSrc: strin
               <p className="text-sm text-muted-foreground">Competitor scores appear after the first scan.</p>
             )}
           </Section>
-          <Section title="Side by side on Google" note="What customers and AI see about each business on Google.">
-            <SignalsTable rows={competitors.signals} />
-          </Section>
+          {/* A table of blanks tells a client nothing, so it is left out (DB-016). */}
+          {!matchedNone(competitors.signals) && (
+            <Section title="Side by side on Google" note="What customers and AI see about each business on Google.">
+              <SignalsTable rows={competitors.signals} />
+            </Section>
+          )}
         </>
       )}
 

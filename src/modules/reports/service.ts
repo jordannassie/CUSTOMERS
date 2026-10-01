@@ -27,6 +27,8 @@ export type ReportView = {
   trend: OverviewView["trend"];
   competitors: Pick<CompetitorsView, "leaderboard" | "margin" | "signals" | "count" | "hasScore">;
   opportunities: { title: string; impact: OverviewView["opportunities"][number]["impact"] }[];
+  /** 2 or 3 plain sentences from the numbers above, no AI (DB-012). */
+  summary: string[];
 };
 
 const DAY_MS = 86_400_000;
@@ -83,7 +85,50 @@ export function reportView(input: {
       hasScore: competitors.hasScore,
     },
     opportunities: overview.opportunities.map(({ title, impact }) => ({ title, impact })),
+    summary: reportSummary({
+      businessName: input.businessName,
+      score: overview.score?.value ?? null,
+      monthChange: overview.monthChange,
+      leaderboard: competitors.leaderboard,
+      firstFix: overview.opportunities[0]?.title ?? null,
+    }),
   };
+}
+
+const inTen = (score: number) => {
+  const n = Math.round(score / 10);
+  return n === 0 ? "fewer than 1 of 10" : `about ${n} of 10`;
+};
+
+/** The top of the client report: the score and its change, the competitor AI picked most, the first fix. */
+export function reportSummary(input: {
+  businessName: string;
+  score: number | null;
+  monthChange: OverviewView["monthChange"];
+  leaderboard: CompetitorsView["leaderboard"];
+  firstFix: string | null;
+}): string[] {
+  const { businessName: name, score, monthChange } = input;
+  if (score === null) return [];
+  const change = monthChange
+    ? `, ${monthChange.direction} ${monthChange.points} ${monthChange.points === 1 ? "point" : "points"} on the 30 days before`
+    : "";
+  const lines = [
+    score === 0
+      ? `Over the last 30 days, AI did not recommend ${name} in any customer questions${change}.`
+      : `Over the last 30 days, AI recommended ${name} in ${inTen(score)} customer questions${change}.`,
+  ];
+
+  // Only competitors compared over the whole window have a standing (F-53).
+  const top = input.leaderboard
+    .filter((r) => !r.isYou && r.score !== null && r.standing !== null)
+    .sort((a, b) => b.score! - a.score!)[0];
+  if (top?.standing === "behind") lines.push(`AI recommended ${top.name} more often, in ${inTen(top.score!)} questions.`);
+  else if (top?.standing === "about_same") lines.push(`${top.name}, the competitor AI recommended most, was about level with ${name}.`);
+  else if (top?.standing === "ahead") lines.push(`AI recommended ${name} more often than every competitor tracked here.`);
+
+  if (input.firstFix) lines.push(`First fix: ${input.firstFix.replace(/[.!?]$/, "")}.`);
+  return lines;
 }
 
 const IMAGE_TYPES: { type: string; matches: (b: Uint8Array) => boolean }[] = [

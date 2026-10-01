@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { isShareToken, logoType, newShareToken, reportPeriod, storagePath } from "./service";
+import { isShareToken, logoType, newShareToken, reportPeriod, storagePath, reportSummary } from "./service";
+import type { LeaderRow } from "@/modules/competitors";
 
 describe("newShareToken", () => {
   it("is 32 random bytes in URL-safe base64, different every time", () => {
@@ -53,5 +54,42 @@ describe("storagePath", () => {
     ]) {
       expect(storagePath(url, base, "business-logos")).toBeNull();
     }
+  });
+});
+
+describe("reportSummary", () => {
+  const row = (name: string, score: number | null, standing: LeaderRow["standing"], isYou = false): LeaderRow => ({
+    name,
+    isYou,
+    score,
+    standing,
+    change: null,
+    collecting: false,
+    shade: null,
+  });
+  const base = { businessName: "Harbor Dental", score: 62, monthChange: null, leaderboard: [], firstFix: null };
+
+  it("says the score, a real change, the competitor ahead and the first fix", () => {
+    const summary = reportSummary({
+      ...base,
+      monthChange: { direction: "up", points: 9 },
+      leaderboard: [row("Casco Bay", 81, "behind"), row("Harbor Dental", 62, null, true), row("Old Port", 40, "ahead")],
+      firstFix: "Get listed on Yelp with full details",
+    });
+    expect(summary).toEqual([
+      "Over the last 30 days, AI recommended Harbor Dental in about 6 of 10 customer questions, up 9 points on the 30 days before.",
+      "AI recommended Casco Bay more often, in about 8 of 10 questions.",
+      "First fix: Get listed on Yelp with full details.",
+    ]);
+  });
+
+  it("never claims a lead inside the margin", () => {
+    const summary = reportSummary({ ...base, leaderboard: [row("Casco Bay", 66, "about_same")] });
+    expect(summary[1]).toBe("Casco Bay, the competitor AI recommended most, was about level with Harbor Dental.");
+  });
+
+  it("skips competitors still collecting and says nothing before a score", () => {
+    expect(reportSummary({ ...base, leaderboard: [row("New Dental", 90, null)] })).toHaveLength(1);
+    expect(reportSummary({ ...base, score: null })).toEqual([]);
   });
 });

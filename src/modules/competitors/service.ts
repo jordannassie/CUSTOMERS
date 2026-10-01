@@ -1,3 +1,4 @@
+import { pointsChange, type PointsChange } from "@/modules/overview";
 import type { AlsoRecommendedList, ScoreReport, Standing } from "@/modules/scanning";
 import type { PlaceSignals } from "./places";
 
@@ -11,6 +12,8 @@ export type LeaderRow = {
   standing: Standing | null;
   /** Added partway through the 30-day window, so older checks never looked for it (F-53): no standing yet. */
   collecting: boolean;
+  /** Weekly change, only outside the margin and never for a competitor still collecting (DB-013). */
+  change: PointsChange | null;
   /** Grey shade for a competitor's bar: 1 is the strongest (DESIGN.md competitor-1 to 3). */
   shade: 1 | 2 | 3 | null;
 };
@@ -65,6 +68,7 @@ export function competitorsView(input: {
   const scored = new Map(report.competitors.map((c) => [key(c.name), c]));
   const firstCheck = report.firstCheckedAt?.getTime() ?? null;
   const lastCheck = report.lastCheckedAt?.getTime() ?? null;
+  const weekAgoStart = firstCheck === null ? null : firstCheck - 7 * 86_400_000;
 
   const rows: LeaderRow[] = competitors.map((c) => {
     const score = scored.get(key(c.name));
@@ -76,6 +80,9 @@ export function competitorsView(input: {
       isYou: false,
       score: checked ? Math.round(score.score) : null,
       standing: checked && !collecting ? score.standing : null,
+      // The change compares with the 30-day score a week ago, whose window starts 7 days before this one; checks
+      // from before a competitor was added never looked for it, so a newer one could show a false rise.
+      change: checked && !collecting && weekAgoStart !== null && c.createdAt.getTime() <= weekAgoStart ? pointsChange(score.change) : null,
       collecting,
       shade: null,
     };
@@ -90,6 +97,7 @@ export function competitorsView(input: {
     isYou: true,
     score: overall ? Math.round(overall.score) : null,
     standing: null,
+    change: pointsChange(report.change),
     collecting: false,
     shade: null,
   };
@@ -120,6 +128,11 @@ function signalRow(name: string, isYou: boolean, placesId: string | null, signal
   if (result === "error") return { name, isYou, status: "error", signals: null };
   if (!result) return { name, isYou, status: "missing", signals: null };
   return { name, isYou, status: "linked", signals: result };
+}
+
+/** True when Google had no listing for any row, so a table would be all blanks (DB-016). A load error is not this. */
+export function matchedNone(rows: SignalRow[]): boolean {
+  return rows.every((r) => r.status === "missing");
 }
 
 const plural = (n: number, one: string, many: string) => `${n.toLocaleString("en-US")} ${n === 1 ? one : many}`;

@@ -9,11 +9,27 @@ const C = 2 * Math.PI * R;
 
 const STROKE: Record<Tone, string> = { good: "stroke-good", mid: "stroke-mid", low: "stroke-low" };
 
+const SIZE = {
+  // 96px on phones so the sentence fits beside it (DB-015).
+  default: { ring: "size-24 sm:size-36", value: "text-3xl sm:text-5xl" },
+  small: { ring: "size-24", value: "text-3xl" },
+} as const;
+
 /**
  * The 30-day visibility score. Fills once on load; shows the final value at once when motion is reduced
  * or `animate` is off (the share page, which is also printed to PDF).
  */
-export function ScoreRing({ score, tone, animate = true }: { score: number; tone: Tone; animate?: boolean }) {
+export function ScoreRing({
+  score,
+  tone,
+  animate = true,
+  size = "default",
+}: {
+  score: number;
+  tone: Tone;
+  animate?: boolean;
+  size?: keyof typeof SIZE;
+}) {
   const [counted, setCounted] = useState(0);
   const shown = animate ? counted : score;
 
@@ -32,7 +48,7 @@ export function ScoreRing({ score, tone, animate = true }: { score: number; tone
   }, [score, animate]);
 
   return (
-    <div className="relative size-32 shrink-0 sm:size-36" role="img" aria-label={`Visibility score ${score} of 100`}>
+    <div className={cn("relative shrink-0", SIZE[size].ring)} role="img" aria-label={`Visibility score ${score} of 100`}>
       <svg viewBox="0 0 100 100" className="size-full -rotate-90" aria-hidden="true">
         <circle cx="50" cy="50" r={R} fill="none" strokeWidth="7" className="stroke-muted" />
         <circle
@@ -48,7 +64,7 @@ export function ScoreRing({ score, tone, animate = true }: { score: number; tone
         />
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center" aria-hidden="true">
-        <span className="text-5xl leading-none font-semibold tracking-[-0.02em] tabular-nums" data-testid="score-value">
+        <span className={cn("leading-none font-semibold tracking-[-0.02em] tabular-nums", SIZE[size].value)} data-testid="score-value">
           {shown}
         </span>
         <span className="mt-1 text-xs text-text-hint">of 100</span>

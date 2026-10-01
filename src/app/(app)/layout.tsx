@@ -5,6 +5,7 @@ import { AppShell } from "@/components/app/AppShell";
 import { AppShellSkeleton, PageSkeleton } from "@/components/app/AppShellSkeleton";
 import {
   BUY_CREDITS_HREF,
+  getSwitcherScores,
   getWorkspace,
   pickBanners,
   shortBalance,
@@ -33,6 +34,10 @@ async function AppFrame({ children }: { children: React.ReactNode }) {
 
   const now = new Date();
   const { usage, account } = workspace;
+  // Not awaited: the switcher fills in each client's score when it arrives (DB-011).
+  const switcherScores = getSwitcherScores(
+    workspace.businesses.filter((b) => b.status !== "onboarding").map((b) => b.id),
+  ).catch(() => null);
   const widget = usage && account ? { ...usageWidget(usage, account, now), buyCreditsHref: BUY_CREDITS_HREF } : null;
 
   return (
@@ -40,6 +45,7 @@ async function AppFrame({ children }: { children: React.ReactNode }) {
       businesses={workspace.businesses.map(({ id, name, domain, logoUrl }) => ({ id, name, domain, logoUrl }))}
       activeBusinessId={active.id}
       switchBusiness={switchBusiness}
+      switcherScores={switcherScores}
       usage={widget}
       isAdmin={workspace.isAdmin}
       banners={usage && account ? pickBanners(usage, account, now) : []}

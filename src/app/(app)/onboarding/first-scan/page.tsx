@@ -1,7 +1,15 @@
 import { redirect } from "next/navigation";
 import { FirstScan } from "@/components/onboarding/FirstScan";
 import { getScanStatus, startScan } from "@/modules/jobs";
-import { FIRST_SCAN_PATH, checkTrialCredits, firstScanPhase, getAwaitingTrialCredits, getModelsStep } from "@/modules/onboarding";
+import {
+  FIRST_SCAN_PATH,
+  checkTrialCredits,
+  firstScanPhase,
+  getAwaitingTrialCredits,
+  getFirstScanProgress,
+  getFirstScanSummary,
+  getModelsStep,
+} from "@/modules/onboarding";
 import { MODELS } from "@/modules/settings/service";
 import { getWorkspace } from "@/modules/workspace";
 
@@ -35,6 +43,8 @@ export default async function FirstScanPage() {
       start={startScan}
       getStatus={getScanStatus}
       checkCredits={checkTrialCredits}
+      getProgress={getFirstScanProgress}
+      getSummary={getFirstScanSummary}
     />
   );
 }

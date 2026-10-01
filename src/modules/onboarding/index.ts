@@ -39,6 +39,8 @@ export {
   firstScanProblem,
   type FirstScanPhase,
 } from "./first-scan";
+export { getFirstScanProgress, getFirstScanSummary } from "./scan-summary/actions";
+export type { FirstScanSummary, ModelProgress } from "./scan-summary/service";
 export {
   FIRST_SCAN_PATH,
   WIZARD_STEPS,

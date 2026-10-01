@@ -2,7 +2,8 @@ import { ExampleTag, MODEL_DOT, type ModelName } from "./example";
 import { MiniChart } from "./TrendChart";
 
 const SCORE = 62;
-const TREND = [48, 50, 49, 53, 55, 58, 62];
+// One point per weekly scan, as the app draws it (DB-002).
+const SCANS = [53, 55, 57, 58, 60, 62];
 const MODELS: { name: ModelName; score: number }[] = [
   { name: "ChatGPT", score: 75 },
   { name: "Claude", score: 58 },
@@ -38,10 +39,10 @@ export function VisibilityExample() {
 
       <div className="border-t border-border px-4 pt-4 sm:px-5">
         <div className="flex items-baseline justify-between text-[13px]">
-          <span className="font-medium">Last 7 days</span>
-          <span className="text-good-text">Up since your last scan</span>
+          <span className="font-medium">Score at each scan</span>
+          <span className="text-good-text">Up 9 points since Sep 2</span>
         </div>
-        <MiniChart values={TREND} label="Visibility score rising from 48 to 62 over the last 7 days" />
+        <MiniChart values={SCANS} label="Visibility score at each weekly scan, rising from 53 to 62" />
       </div>
 
       <ul className="flex flex-col gap-2.5 border-t border-border p-4 sm:p-5" aria-label="Score by AI">

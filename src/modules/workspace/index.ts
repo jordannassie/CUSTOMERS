@@ -1,6 +1,7 @@
 // The only file other modules may import from (eslint-plugin-boundaries).
 export { switchBusiness } from "./actions";
-export { getWorkspace, type Workspace, type WorkspaceBusiness } from "./dal";
+export { getSwitcherScores, getWorkspace, type Workspace, type WorkspaceBusiness } from "./dal";
+export type { SwitcherScore, SwitcherScores } from "./scores";
 export { switchBusinessInput, type SwitchBusinessInput } from "./schema";
 export {
   BILLING_HREF,
