@@ -50,32 +50,6 @@ export function Lead({ className, ...props }: React.ComponentProps<"p">) {
   return <p className={cn("max-w-[60ch] text-lg text-muted-foreground text-pretty", className)} {...props} />;
 }
 
-/** Text on one side, a visual on the other; stacks on phones with the text first. */
-export function FeatureRow({
-  eyebrow,
-  title,
-  children,
-  visual,
-  reverse = false,
-}: {
-  eyebrow?: string;
-  title: string;
-  children: React.ReactNode;
-  visual: React.ReactNode;
-  reverse?: boolean;
-}) {
-  return (
-    <div className="grid items-center gap-8 md:grid-cols-2 md:gap-16">
-      <div className={cn("flex flex-col gap-4", reverse && "md:order-2")}>
-        {eyebrow && <Eyebrow>{eyebrow}</Eyebrow>}
-        <h3 className="text-2xl leading-tight font-semibold tracking-[-0.02em]">{title}</h3>
-        <div className="flex flex-col gap-3 text-[15px] text-muted-foreground">{children}</div>
-      </div>
-      <div className={cn(reverse && "md:order-1")}>{visual}</div>
-    </div>
-  );
-}
-
 type CtaLink = { label: string; href: string };
 
 export function CTA({
