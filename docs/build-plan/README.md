@@ -19,9 +19,9 @@ Live progress: [STATUS.md](./STATUS.md)
 | 7 | Reports and emails | [07-reports-emails.md](./07-reports-emails.md) | B-59 to B-62 | 6 days |
 | 8 | Admin | [08-admin.md](./08-admin.md) | B-64 to B-69 | 9.5 days |
 | 9 | Marketing site | [09-marketing.md](./09-marketing.md) | B-70 to B-74 | 9 days |
-| 10 | Launch readiness | [10-launch.md](./10-launch.md) | B-75 to B-83 | 12 days |
+| 10 | Launch readiness | [10-launch.md](./10-launch.md) | B-75 to B-84 | 13.5 days |
 
-**Total: 79 tasks, about 127.5 developer days.** One developer: about 6 months. Two developers working in parallel (see below): about 3 to 3.5 months. Estimates use S = half a day, M = 1 to 2 days, L = 3 to 5 days, and include tests. Gaps in the numbering (B-19, B-39, B-47, B-63) are spare IDs for tasks added later.
+**Total: 80 tasks, about 129 developer days.** One developer: about 6 months. Two developers working in parallel (see below): about 3 to 3.5 months. Estimates use S = half a day, M = 1 to 2 days, L = 3 to 5 days, and include tests. Gaps in the numbering (B-19, B-39, B-47, B-63) are spare IDs for tasks added later.
 
 ## Branches (D-45)
 
@@ -35,7 +35,7 @@ Live progress: [STATUS.md](./STATUS.md)
 | Target | Tasks |
 |---|---|
 | `main` (short task branches) | B-02 to B-07, B-10 to B-13, B-18, B-24, B-81, B-83 |
-| `mvp` (short task branches) | B-08, B-09, B-14 to B-17, B-20 to B-23, B-25 to B-79 (except B-80), B-82 |
+| `mvp` (short task branches) | B-08, B-09, B-14 to B-17, B-20 to B-23, B-25 to B-79 (except B-80), B-82, B-84 |
 | `mvp` into `main` | B-80 (go-live) |
 | No branch | B-01 (keys and accounts) |
 
