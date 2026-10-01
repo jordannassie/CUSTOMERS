@@ -4,6 +4,7 @@ export {
   captureCredits,
   expireGrants,
   grantCredits,
+  grantTrialCredits,
   holdCredits,
   InsufficientCreditsError,
   isHoldOpen,

@@ -5,11 +5,14 @@ const WARN_AT_PERCENT = 80;
 
 export const BILLING_HREF = "/settings/billing";
 export const BUY_CREDITS_HREF = "/settings/credits";
+export const SUPPORT_HREF = "/contact?topic=support";
 
 export type AccountState = {
   status: string;
   trialEndsAt: Date | null;
   periodEndsAt: Date | null;
+  /** A pending cancel's date: the subscription ends then and nothing more is charged. */
+  cancelAt: Date | null;
 };
 
 export type UsageNumbers = {
@@ -29,7 +32,7 @@ export type UsageWidgetView = {
 };
 
 export type Banner = {
-  kind: "suspended" | "past_due" | "out_of_credits" | "trial";
+  kind: "suspended" | "past_due" | "out_of_credits" | "trial" | "ended";
   tone: "danger" | "warning" | "info";
   message: string;
   action: { label: string; href: string } | null;
@@ -100,6 +103,35 @@ function formatDate(date: Date): string {
   return date.toLocaleDateString("en-US", { month: "long", day: "numeric", timeZone: "UTC" });
 }
 
+/** Days and trial credits left, then the charge date, or that nothing is charged after a cancel (B-45, MVP_SPEC 4.4). */
+function trialBanner(usage: UsageNumbers, account: AccountState, now: Date): Banner {
+  const days = daysUntil(account.trialEndsAt!, now);
+  const credits = plural(splitCredits(usage).plan, "trial credit");
+  const left = days === 0 ? `Your free trial ends today, with ${credits} left.` : `Your free trial has ${plural(days, "day")} and ${credits} left.`;
+  const date = formatDate(account.trialEndsAt!);
+  if (account.cancelAt) {
+    return {
+      kind: "trial",
+      tone: "info",
+      message: `${left} ${days === 0 ? "" : `Your trial ends on ${date}. `}You won't be charged.`,
+      action: { label: "Keep my plan", href: BILLING_HREF },
+    };
+  }
+  return { kind: "trial", tone: "info", message: `${left} Your card will be charged on ${date}.`, action: null };
+}
+
+/** A plan that ended at or before its trial end was a cancelled trial: nothing was ever charged. */
+function endedBanner(account: AccountState): Banner {
+  const { trialEndsAt, periodEndsAt } = account;
+  const wasTrial = trialEndsAt !== null && (periodEndsAt === null || periodEndsAt <= trialEndsAt);
+  return {
+    kind: "ended",
+    tone: "warning",
+    message: `${wasTrial ? "Your free trial has ended and you weren't charged." : "Your plan has ended."} Your results are still here to read, but new scans are off.`,
+    action: { label: "Contact us", href: SUPPORT_HREF },
+  };
+}
+
 /** Most urgent first. */
 export function pickBanners(usage: UsageNumbers, account: AccountState, now: Date): Banner[] {
   const banners: Banner[] = [];
@@ -109,10 +141,13 @@ export function pickBanners(usage: UsageNumbers, account: AccountState, now: Dat
       kind: "suspended",
       tone: "danger",
       message: "Your account is paused. Scans and changes are on hold until support turns it back on.",
-      action: { label: "Contact support", href: "/contact?topic=support" },
+      action: { label: "Contact support", href: SUPPORT_HREF },
     });
     return banners;
   }
+
+  // Read only (entitlements refuse scans and top-ups), so "buy credits" would only lead to a refusal.
+  if (account.status === "canceled") return [endedBanner(account)];
 
   if (account.status === "past_due") {
     banners.push({
@@ -135,16 +170,7 @@ export function pickBanners(usage: UsageNumbers, account: AccountState, now: Dat
     });
   }
 
-  if (isTrial(account)) {
-    const days = daysUntil(account.trialEndsAt!, now);
-    const when = days === 0 ? "today" : `in ${plural(days, "day")}`;
-    banners.push({
-      kind: "trial",
-      tone: "info",
-      message: `Your free trial ends ${when}. Your card will be charged on ${formatDate(account.trialEndsAt!)}.`,
-      action: null,
-    });
-  }
+  if (isTrial(account)) banners.push(trialBanner(usage, account, now));
 
   return banners;
 }

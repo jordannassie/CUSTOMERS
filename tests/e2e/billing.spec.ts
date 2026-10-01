@@ -17,19 +17,23 @@ const userIds: string[] = [];
 const DAY = 86_400_000;
 
 type Seed = {
-  status: "trialing" | "active" | "past_due";
+  status: "trialing" | "active" | "past_due" | "canceled";
   subscription?: boolean;
   businesses: { name: string; planId: string | null }[];
+  /** When the trial or period ends, from now; negative for one that has ended. */
+  endsInDays?: number;
+  /** A trial grant, as the first invoice.paid gives it (B-42, B-45). */
+  trialCredits?: number;
 };
 
 /** An agency with a fixture subscription and these businesses, logged in on /settings/billing. */
-async function logIn(page: Page, seed: Seed) {
+async function logIn(page: Page, seed: Seed): Promise<{ ends: string }> {
   const email = `e2e-billing-${randomUUID()}@example.test`;
   const password = `pw-${randomUUID()}`;
   const { data: user, error } = await db.auth.admin.createUser({ email, password, email_confirm: true });
   if (error || !user.user) throw error ?? new Error("no user");
   userIds.push(user.user.id);
-  const ends = new Date(Date.now() + 12 * DAY).toISOString();
+  const ends = new Date(Date.now() + (seed.endsInDays ?? 12) * DAY).toISOString();
   const withSub = seed.subscription !== false;
   const { data: agency } = await db
     .from("agencies")
@@ -40,7 +44,7 @@ async function logIn(page: Page, seed: Seed) {
       status: seed.status,
       stripe_customer_id: withSub ? `cus_e2e_${randomUUID()}` : null,
       stripe_subscription_id: withSub ? `sub_e2e_${randomUUID()}` : null,
-      trial_ends_at: seed.status === "trialing" ? ends : null,
+      trial_ends_at: seed.status === "trialing" || seed.status === "canceled" ? ends : null,
       current_period_end: ends,
     })
     .select("id")
@@ -68,12 +72,20 @@ async function logIn(page: Page, seed: Seed) {
     }
   }
 
+  if (seed.trialCredits) {
+    const trial = { p_agency_id: agency.id, p_source_id: `il_e2e_${randomUUID()}`, p_amount: seed.trialCredits, p_expires_at: ends };
+    await db.rpc("grant_trial_credits", trial).throwOnError();
+  }
+
   await page.goto("/login?next=/settings/billing");
   await page.locator("#email").fill(email);
   await page.locator("#password").fill(password);
   await page.locator("button[type=submit]").click();
   await page.waitForURL((url) => url.pathname === "/settings/billing");
+  return { ends };
 }
+
+const dayOf = (iso: string) => new Date(iso).toLocaleDateString("en-US", { month: "long", day: "numeric", timeZone: "UTC" });
 
 async function change(page: Page, button: string, preview: RegExp | string, confirm: string) {
   await page.getByRole("button", { name: button, exact: true }).click();
@@ -160,6 +172,34 @@ test("active: upgrade, remove at renewal, cancel and keep, and the portal", asyn
   await page.getByRole("button", { name: "Manage card and invoices" }).click();
   await page.waitForURL((url) => url.searchParams.get("portal") === "fixture");
   await expect(page.getByTestId("portal-fixture")).toBeVisible();
+});
+
+test("trial banner: days, credits and the charge date, then no charge after cancelling (B-45)", async ({ page }) => {
+  const { ends } = await logIn(page, {
+    status: "trialing",
+    endsInDays: 5,
+    trialCredits: 100,
+    businesses: [{ name: "Northside Plumbing", planId: "starter" }],
+  });
+  const banner = page.locator('[data-kind="trial"]');
+  await expect(banner).toHaveText(`Your free trial has 5 days and 100 trial credits left. Your card will be charged on ${dayOf(ends)}.`);
+
+  await change(page, "Cancel plan", "Your card won't be charged.", "Cancel plan");
+  await expect(banner).toContainText(`Your free trial has 5 days and 100 trial credits left. Your trial ends on ${dayOf(ends)}. You won't be charged.`);
+  await expect(banner.getByRole("link", { name: "Keep my plan" })).toHaveAttribute("href", "/settings/billing");
+  await page.goto("/dashboard");
+  await expect(banner).toContainText("You won't be charged.");
+});
+
+test("ended trial: results stay readable and the banner says scans are off (B-45)", async ({ page }) => {
+  await logIn(page, { status: "canceled", endsInDays: -2, businesses: [{ name: "Northside Plumbing", planId: "starter" }] });
+  await expect(page.getByTestId("no-plan")).toContainText("Your plan has ended");
+  await page.goto("/dashboard");
+  const banner = page.locator('[data-kind="ended"]');
+  await expect(banner).toContainText("Your free trial has ended and you weren't charged. Your results are still here to read, but new scans are off.");
+  await expect(banner.getByRole("link", { name: "Contact us" })).toHaveAttribute("href", "/contact?topic=support");
+  // Top-ups can't be spent without a plan, so the out of credits banner would only lead to a refusal.
+  await expect(page.locator('[data-kind="out_of_credits"]')).toHaveCount(0);
 });
 
 test("past due: explains the failed payment and offers no upgrades", async ({ page }) => {

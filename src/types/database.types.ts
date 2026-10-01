@@ -87,6 +87,7 @@ export type Database = {
       }
       agencies: {
         Row: {
+          cancel_at: string | null
           created_at: string
           credit_overdraft: number
           current_period_end: string | null
@@ -104,6 +105,7 @@ export type Database = {
           weekly_report_emails: boolean
         }
         Insert: {
+          cancel_at?: string | null
           created_at?: string
           credit_overdraft?: number
           current_period_end?: string | null
@@ -121,6 +123,7 @@ export type Database = {
           weekly_report_emails?: boolean
         }
         Update: {
+          cancel_at?: string | null
           created_at?: string
           credit_overdraft?: number
           current_period_end?: string | null
@@ -2175,6 +2178,15 @@ export type Database = {
           p_amount: number
           p_expires_at?: string
           p_source: string
+          p_source_id: string
+        }
+        Returns: string
+      }
+      grant_trial_credits: {
+        Args: {
+          p_agency_id: string
+          p_amount: number
+          p_expires_at: string
           p_source_id: string
         }
         Returns: string

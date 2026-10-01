@@ -90,7 +90,7 @@ export type CheckedChange = {
 /** Refuses changes that can't happen, with the message the user sees. */
 export function checkChange(ctx: PlanChangeContext, sub: Stripe.Subscription, change: PlanChange): CheckedChange {
   if (sub.status === "canceled" || sub.status === "incomplete_expired") {
-    throw refused(409, "Your plan has ended. Choose a plan to continue.");
+    throw refused(409, "Your plan has ended. Contact us to start it again.");
   }
   if (change.kind === "keep") {
     if (!sub.cancel_at_period_end) throw refused(409, "Your plan is not set to end.");

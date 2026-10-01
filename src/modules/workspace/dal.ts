@@ -44,7 +44,7 @@ export async function getWorkspace(options: GuardOptions = {}): Promise<Workspac
       .order("created_at", { ascending: false }),
     supabase.from("profiles").select("active_business_id").eq("id", user.id).maybeSingle(),
     agency
-      ? supabase.from("agencies").select("trial_ends_at, current_period_end").eq("id", agency.id).single()
+      ? supabase.from("agencies").select("trial_ends_at, current_period_end, cancel_at").eq("id", agency.id).single()
       : null,
     isCurrentUserAdmin(),
     agency ? getUsage(agency.id) : null,
@@ -74,6 +74,7 @@ export async function getWorkspace(options: GuardOptions = {}): Promise<Workspac
             status: agency.status,
             trialEndsAt: dates.trial_ends_at ? new Date(dates.trial_ends_at) : null,
             periodEndsAt: dates.current_period_end ? new Date(dates.current_period_end) : null,
+            cancelAt: dates.cancel_at ? new Date(dates.cancel_at) : null,
           }
         : null,
     usage,

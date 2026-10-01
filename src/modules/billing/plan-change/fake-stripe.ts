@@ -228,7 +228,8 @@ export class FakeStripe implements PlanChangeStripe {
       }
       const next = monthAfter(boundary);
       this.items = this.items.map((i) => ({ ...i, start: boundary, end: next }));
-      this.invoices.push({ ...this.renewalInvoice(this.specs(), boundary), status: "paid" });
+      const renewal = this.renewalInvoice(this.specs(), boundary);
+      this.invoices.push({ ...renewal, status: "paid", amount_paid: renewal.amount_due });
     }
     this.clock = time;
   }

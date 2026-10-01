@@ -44,6 +44,12 @@ async function requireAgency(deps: WebhookDeps, ref: { agencyId?: string | null;
   return agency;
 }
 
+/** When a pending cancel ends the subscription; null when none is pending or it has already ended. */
+export function cancelAt(sub: Stripe.Subscription, currentPeriodEnd: number | null): string | null {
+  if (sub.status === "canceled") return null;
+  return iso(sub.cancel_at ?? (sub.cancel_at_period_end ? currentPeriodEnd : null));
+}
+
 async function syncSubscription(deps: WebhookDeps, sub: Stripe.Subscription, agency: WebhookAgency) {
   const items = sub.items.has_more ? await deps.stripe.listSubscriptionItems(sub.id) : sub.items.data;
   const plans = await deps.store.plansByProduct();
@@ -51,10 +57,12 @@ async function syncSubscription(deps: WebhookDeps, sub: Stripe.Subscription, age
   const periodEnds = items.map((i) => i.current_period_end).filter(Boolean);
 
   await deps.store.linkStripe(agency.id, { customerId: idOf(sub.customer), subscriptionId: sub.id });
+  const currentPeriodEnd = periodEnds.length ? Math.max(...periodEnds) : null;
   await deps.store.updateAgency(agency.id, {
     status: status ?? undefined,
     trialEndsAt: iso(sub.trial_end),
-    currentPeriodEnd: periodEnds.length ? iso(Math.max(...periodEnds)) : null,
+    currentPeriodEnd: iso(currentPeriodEnd),
+    cancelAt: cancelAt(sub, currentPeriodEnd),
   });
   if (!status) return;
   // A whole-account cancel keeps each business's schedule, so scans resume if the agency subscribes again.
@@ -107,7 +115,9 @@ async function invoicePaid(deps: WebhookDeps, invoice: Stripe.Invoice) {
   const plans = await deps.store.plansByProduct();
 
   for (const grant of planInvoiceGrants(invoice, lines, plans, deps.now())) {
-    await deps.store.grant({ agencyId: agency.id, source: grant.source, sourceId: grant.sourceId, amount: grant.amount, expiresAt: grant.expiresAt });
+    const { sourceId, amount, expiresAt } = grant;
+    if (grant.source === "trial") await deps.store.grantTrial({ agencyId: agency.id, sourceId, amount, expiresAt });
+    else await deps.store.grant({ agencyId: agency.id, source: grant.source, sourceId, amount, expiresAt });
   }
   const unknown = lines.filter((l) => l.parent?.type === "subscription_item_details" && !lineProductId(l));
   if (unknown.length) console.warn("[stripe/webhook] invoice lines without a product", invoice.id, unknown.map((l) => l.id));
@@ -127,6 +137,8 @@ async function invoicePaymentFailed(deps: WebhookDeps, invoice: Stripe.Invoice) 
 
 async function trialWillEnd(deps: WebhookDeps, sub: Stripe.Subscription) {
   if (sub.status !== "trialing" || !sub.trial_end) return;
+  // A cancelled trial is never charged, and the reminder says it will be.
+  if (sub.cancel_at_period_end || sub.cancel_at) return;
   const agency = await requireAgency(deps, { agencyId: sub.metadata?.agency_id, customerId: idOf(sub.customer) });
   const to = await deps.store.ownerEmail(agency.ownerUserId);
   if (to) await deps.sendEmail(trialEndingEmail({ to, agencyId: agency.id, subscription: sub }));

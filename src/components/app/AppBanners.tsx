@@ -6,7 +6,7 @@ import { AlertTriangle, Info, PauseCircle, type LucideIcon } from "lucide-react"
 import { cn } from "cn";
 
 export type AppBanner = {
-  kind: "suspended" | "past_due" | "out_of_credits" | "trial";
+  kind: "suspended" | "past_due" | "out_of_credits" | "trial" | "ended";
   tone: "danger" | "warning" | "info";
   message: string;
   action: { label: string; href: string } | null;
@@ -18,7 +18,7 @@ const TONE: Record<AppBanner["tone"], { box: string; icon: LucideIcon }> = {
   info: { box: "border-primary/20 bg-primary-tint text-primary-hover", icon: Info },
 };
 
-// Global slot above every app page: trial, past due, out of credits, suspended.
+// Global slot above every app page: trial, past due, out of credits, plan ended, suspended.
 export function AppBanners({ banners: all }: { banners: AppBanner[] }) {
   const pathname = usePathname();
   // The billing page explains a failed payment itself, so the banner would say it twice.
