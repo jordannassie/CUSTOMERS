@@ -21,7 +21,7 @@ const all = (mentioned: number, total: number) =>
   });
 
 // MVP_SPEC 8.4 "Do not show" terms, and the WRITING.md long dashes and hyphenated ranges.
-const NOT_SHOWN = /buyer[- ]intent|structured data|share of voice|citation rate|\b(GEO|AEO|LLMs?|UGC)\b|[–—]|\d-\d/i;
+const NOT_SHOWN = /buyer[- ]intent|structured data|share of voice|citation rate|\b(GEO|AEO|LLMs?|UGC)\b|[\u2013\u2014]|\d-\d/i;
 
 describe("rules fallback wording (BUG-A)", () => {
   it("shows no MVP_SPEC 8.4 terms on any opportunity a user can see", () => {
