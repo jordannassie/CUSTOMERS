@@ -45,7 +45,7 @@ Phase 10 · S (human, 1 to 2 hours) · Depends on: B-26 · Blocked by Jordan: no
 ---
 
 ### B-77 Account management and deletion
-- [ ] Done
+- [x] Done (PR #121, merged into mvp)
 
 Phase 10 · L · Depends on: B-44, B-55 · Blocked by Jordan: legal deadlines (D-77) · MVP_SPEC 23, MVP_ROADMAP ACC-01 to ACC-04 · Branch: `task/B-77-account-management-and-deletion` → `mvp`
 
@@ -66,7 +66,7 @@ Phase 10 · L · Depends on: B-44, B-55 · Blocked by Jordan: legal deadlines (D
 ---
 
 ### B-78 Terms and privacy update
-- [ ] Done
+- [ ] Done (draft pages in PR #126, merged into mvp and marked draft; waits for legal review of the 17 questions in the PR)
 
 Phase 10 · S (plus legal review) · Depends on: B-45 · Blocked by Jordan: lawyer or Jordan review · MVP_SPEC 24, D-78 · Branch: `task/B-78-terms-and-privacy-update` → `mvp`
 
@@ -84,7 +84,7 @@ Phase 10 · S (plus legal review) · Depends on: B-45 · Blocked by Jordan: lawy
 ---
 
 ### B-79 Google Places compliance check
-- [ ] Done
+- [ ] Done (code and docs/launch/places-compliance.md in PR #119, merged into mvp; waits for Jordan or a lawyer to confirm D-73; the cleanup script supabase/cleanup/places-cleanup.sql has not been run)
 
 Phase 10 · S · Depends on: B-35, B-50 · Blocked by Jordan: legal reading (D-73) · MVP_SPEC 26, D-73 · Branch: `task/B-79-google-places-compliance-check` → `mvp`
 
@@ -166,7 +166,7 @@ Phase 10 · M · Depends on: B-59, B-71, B-73 · Blocked by Jordan: no · MVP_RO
 ---
 
 ### B-84 Whole-product wording pass
-- [ ] Done
+- [ ] Done (code and the check:copy CI step in PR #127, merged into mvp; waits for a person to approve the changed strings list in the PR)
 
 Phase 10 · M · Depends on: B-36, B-46, B-49 to B-57, B-59, B-60, B-62, B-65 to B-69, B-71 to B-74, B-77 · Blocked by Jordan: no · MVP_SPEC 8.4, D-32, design/WRITING.md · Branch: `task/B-84-whole-product-wording-pass` → `mvp`
 

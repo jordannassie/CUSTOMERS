@@ -108,7 +108,7 @@ Phase 5 · L · Depends on: B-42 · Blocked by Jordan: no · MVP_SPEC 11.5, D-57
 ---
 
 ### B-45 Trial rules
-- [ ] Done
+- [x] Done (PR #122, merged into mvp)
 
 Phase 5 · M · Depends on: B-42, B-16 · Blocked by Jordan: trial credits confirmed (D-17) · MVP_SPEC 4.4, D-16, D-17 · Branch: `task/B-45-trial-rules` → `mvp`
 

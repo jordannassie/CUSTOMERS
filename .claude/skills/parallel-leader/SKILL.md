@@ -52,7 +52,7 @@ Claude Code, git, `gh` (logged in), `tmux`, `zsh`. macOS or Linux. Fast `node_mo
 - Only one worker at a time changes migrations or the database.
 - When keys are exposed or not yet issued, workers build against mocks and fixtures and make no real external calls; the real check becomes a flag.
 - Parallel PRs touching the same file will conflict; expect rebase requests and keep shared docs out of worker PRs.
-- A shared local test database makes parallel test runs flaky; rerun or serialize DB-heavy tests.
+- Unqueued heavy runs from parallel workers starve the machine and make tests flaky; queue them machine-wide.
 - Permission or classifier denials are not flags: report them to the user and stop that action.
 - `supabase start` can hang on a macOS keychain lookup (`security find-generic-password`); killing that lookup lets it continue.
 - Before reading a local diff, check the PR's changed files (`gh pr view N --json files`): a branch that went stale against a moving base shows the base's new work as deletions.
@@ -64,6 +64,6 @@ Make sure `~/.leader/<repo>/state.md` is current (it already holds open PRs, ses
 
 ## Test isolation
 
-Parallel workers must not share one test database: resets and seed data collide and every test run becomes flaky. Give each worktree its own local stack or database (unique project id and port block per worktree), and stop a worktree's stack when its worktree is removed.
+Workers share one local test stack. `npm test` resets it only when the migrations change, under a lock, so parallel runs do not wipe each other's data. A branch that changes migrations gets its own stack automatically. Heavy runs (the full test suite, the build, the full Playwright run) are queued machine-wide, one at a time.
 
-After merging a worker's PR, stop that worktree's stack before removing the worktree (for a Supabase CLI stack: list stacks with the project's script, for example `npm run test:db:list`, then `supabase stop --project-id <project>-<slot> --no-backup`, and free the slot). In shell cleanup, guard every variable with `${VAR:?}` so an empty value fails instead of hitting the wrong path, for example `rm -rf "${WT:?}/node_modules"`.
+After merging a worker's PR, run `npm run test:db:clean` to stop stacks nothing needs any more. In shell cleanup, guard every variable with `${VAR:?}` so an empty value fails instead of hitting the wrong path, for example `rm -rf "${WT:?}/node_modules"`.
