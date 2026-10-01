@@ -38,7 +38,7 @@ export function Businesses({ rows }: { rows: AdminAgencyDetail["businesses"] }) 
                   {b.deleted && <DeletedBadge />}
                 </span>
                 <span className="block truncate text-text-hint">
-                  {b.deleted ? deletedNote(b.deleted.at, b.deleted.purgeAfter) : b.location || "No location"}
+                  {b.deleted ? deletedNote(b.deleted.at, b.deleted.purgeAfter, true) : b.location || "No location"}
                 </span>
               </span>
               <span className="shrink-0 text-right text-muted-foreground">

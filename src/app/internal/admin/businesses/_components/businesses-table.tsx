@@ -55,7 +55,7 @@ export default function BusinessesTable({ rows }: { rows: AdminBusinessRow[] }) 
                     {r.deleted && <DeletedBadge />}
                   </span>
                   <span className="block truncate text-text-hint">
-                    {r.deleted ? deletedNote(r.deleted.at, r.deleted.purgeAfter) : r.location || "No location"}
+                    {r.deleted ? deletedNote(r.deleted.at, r.deleted.purgeAfter, true) : r.location || "No location"}
                   </span>
                 </TableCell>
                 <TableCell className="max-w-[220px]">
@@ -88,7 +88,7 @@ export default function BusinessesTable({ rows }: { rows: AdminBusinessRow[] }) 
                   </span>
                   <span className="block truncate text-text-hint">{r.agency?.name ?? "No agency"}</span>
                   {r.deleted && (
-                    <span className="block text-text-hint">{deletedNote(r.deleted.at, r.deleted.purgeAfter)}</span>
+                    <span className="block text-text-hint">{deletedNote(r.deleted.at, r.deleted.purgeAfter, true)}</span>
                   )}
                 </span>
                 <LastScan scan={r.lastScan} />
