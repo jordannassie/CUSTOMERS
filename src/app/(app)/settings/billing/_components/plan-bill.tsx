@@ -196,7 +196,11 @@ function NextCharge({ view }: { view: BillingView }) {
       </>
     );
   } else if (view.cancelAt) {
-    body = <p className="text-sm text-muted-foreground">No more charges. Your plan ends on {longDate(view.cancelAt)}.</p>;
+    body = (
+      <p className="text-sm text-muted-foreground">
+        No more charges. Your {view.status === "trialing" ? "free trial" : "plan"} ends on {longDate(view.cancelAt)}.
+      </p>
+    );
   } else if (view.stripe === "error") {
     body = <p className="text-sm text-muted-foreground">We couldn&apos;t load your next charge. Refresh the page to try again.</p>;
   } else if (view.stripe === "unavailable") {

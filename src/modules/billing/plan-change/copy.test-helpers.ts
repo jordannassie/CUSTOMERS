@@ -17,7 +17,7 @@ export function copyFor(): string[] {
     for (const trialing of [false, true]) {
       const base = { change, businessName: "Acme", planName: "Pro", effectiveAt: 1_790_000_000 };
       const copy = previewCopy({ ...base, trialing, planPriceCents: 24900, amountCents: 5000, extraCredits: 650 });
-      texts.push(copy.headline, ...copy.details, doneCopy(base));
+      texts.push(copy.headline, ...copy.details, doneCopy({ ...base, trialing }));
     }
   }
   return texts;

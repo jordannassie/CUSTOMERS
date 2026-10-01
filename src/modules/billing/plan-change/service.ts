@@ -191,6 +191,7 @@ export async function applyPlanChange(
       businessName: checked.business?.name ?? null,
       planName: checked.plan?.name ?? null,
       effectiveAt: effectiveAt(timing, sub, nowSeconds),
+      trialing: sub.status === "trialing",
     }),
   };
 }

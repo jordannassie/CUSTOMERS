@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { at, FakeStripe } from "./fake-stripe";
-import { previewCopy } from "./copy";
+import { doneCopy, previewCopy } from "./copy";
 import { copyFor } from "./copy.test-helpers";
 import { buildPhases, checkChange, idempotencyKey, phasesOf, type PlanChangeContext } from "./planner";
 
@@ -109,5 +109,12 @@ describe("copy", () => {
     expect(trial.details[0]).toBe("Your card won't be charged.");
     expect([trial.headline, ...trial.details].join(" ")).not.toMatch(/again|refund/);
     expect(cancel(false).details[0]).toBe("You won't be charged again, and there's no refund for this month.");
+  });
+
+  it("says the trial ends, not the plan, once a trial is canceled (BUG-B)", () => {
+    const done = (trialing: boolean) =>
+      doneCopy({ change: { kind: "cancel" }, businessName: null, planName: null, effectiveAt: 1_790_000_000, trialing });
+    expect(done(true)).toBe("Your free trial ends on September 21, 2026. You won't be charged.");
+    expect(done(false)).toBe("Your plan ends on September 21, 2026.");
   });
 });
