@@ -2,7 +2,16 @@ import { describe, expect, it } from "vitest";
 import type { ScoreReport } from "@/modules/scanning";
 import { FIXTURE_SIGNALS } from "./place-fixtures";
 import { toSignals } from "./places";
-import { competitorsView, headToHead, hoursText, reviewsText, websiteLabel, type CompetitorRow, type SignalResult } from "./service";
+import {
+  competitorsView,
+  headToHead,
+  hoursText,
+  matchedNone,
+  reviewsText,
+  websiteLabel,
+  type CompetitorRow,
+  type SignalResult,
+} from "./service";
 
 const FIRST_SCAN = new Date("2026-08-25T12:00:00Z");
 const LAST_SCAN = new Date("2026-09-20T12:00:00Z");
@@ -178,5 +187,14 @@ describe("toSignals", () => {
       hours: null,
       mapsUri: null,
     });
+  });
+});
+
+describe("matchedNone (DB-016)", () => {
+  const sig = (status: "linked" | "missing" | "error") => ({ name: status, isYou: false, status, signals: null });
+  it("is true only when Google had no listing for any business", () => {
+    expect(matchedNone([sig("missing"), sig("missing")])).toBe(true);
+    expect(matchedNone([sig("missing"), sig("error")])).toBe(false);
+    expect(matchedNone([sig("missing"), sig("linked")])).toBe(false);
   });
 });

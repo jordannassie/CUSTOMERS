@@ -8,6 +8,7 @@ export {
   answersText,
   headToHead,
   hoursText,
+  matchedNone,
   reviewsText,
   websiteLabel,
   type CompetitorsView,

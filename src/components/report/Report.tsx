@@ -4,6 +4,7 @@ import { ModelScores } from "@/components/overview/ModelScores";
 import { ScoreSummary } from "@/components/overview/ScoreSummary";
 import { TrendChart } from "@/components/overview/TrendChart";
 import { Badge } from "@/components/ui/badge";
+import { matchedNone } from "@/modules/competitors";
 import type { ReportView } from "@/modules/reports";
 import { ReportReady } from "./ReportReady";
 
@@ -80,9 +81,12 @@ export function Report({ report, logoSrc }: { report: ReportView; logoSrc: strin
               <p className="text-sm text-muted-foreground">Competitor scores appear after the first scan.</p>
             )}
           </Section>
-          <Section title="Side by side on Google" note="What customers and AI see about each business on Google.">
-            <SignalsTable rows={competitors.signals} />
-          </Section>
+          {/* A table of blanks tells a client nothing, so it is left out (DB-016). */}
+          {!matchedNone(competitors.signals) && (
+            <Section title="Side by side on Google" note="What customers and AI see about each business on Google.">
+              <SignalsTable rows={competitors.signals} />
+            </Section>
+          )}
         </>
       )}
 

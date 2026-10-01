@@ -128,6 +128,11 @@ function signalRow(name: string, isYou: boolean, placesId: string | null, signal
   return { name, isYou, status: "linked", signals: result };
 }
 
+/** True when Google had no listing for any row, so a table would be all blanks (DB-016). A load error is not this. */
+export function matchedNone(rows: SignalRow[]): boolean {
+  return rows.every((r) => r.status === "missing");
+}
+
 const plural = (n: number, one: string, many: string) => `${n.toLocaleString("en-US")} ${n === 1 ? one : many}`;
 
 /** "320 Google reviews, 4.7 stars", or "12 reviews, 4.2 stars" when Google was already named. */
