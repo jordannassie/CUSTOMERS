@@ -209,6 +209,51 @@ describe("admin businesses (B-66)", () => {
     expect((await loadBusinessDetail(businessId))!.activeScan).toBe(true);
   });
 
+  it("refuses a deleted business or account and queues nothing (BUG-H)", async () => {
+    adminEnv.emails = adminEmail;
+    const deletedId = (
+      await must(
+        service
+          .from("businesses")
+          .insert({ owner_user_id: userIds[1], agency_id: agencyId, name: "Deleted Plumbing", deleted_at: new Date().toISOString() })
+          .select("id")
+          .single(),
+      )
+    ).id;
+    expect(await runScanNow({ businessId: deletedId })).toEqual({
+      ok: false,
+      status: 409,
+      error: "This business was deleted, so it can't be scanned.",
+    });
+
+    const ownerId = await createUser(`vitest-owner-biz-${randomUUID()}@example.test`);
+    const goneAgency = (
+      await must(
+        service
+          .from("agencies")
+          .insert({ owner_user_id: ownerId, name: "Deleted agency", is_test: true, status: "deleted" })
+          .select("id")
+          .single(),
+      )
+    ).id;
+    const liveId = (
+      await must(
+        service
+          .from("businesses")
+          .insert({ owner_user_id: ownerId, agency_id: goneAgency, name: "Orphan Plumbing" })
+          .select("id")
+          .single(),
+      )
+    ).id;
+    expect(await runScanNow({ businessId: liveId })).toMatchObject({ ok: false, status: 409 });
+
+    const { count } = await service
+      .from("scan_jobs")
+      .select("id", { count: "exact", head: true })
+      .in("business_id", [deletedId, liveId]);
+    expect(count).toBe(0);
+  });
+
   it("says a missing business was not found", async () => {
     adminEnv.emails = adminEmail;
     expect(await runScanNow({ businessId: randomUUID() })).toMatchObject({ ok: false, status: 404 });
