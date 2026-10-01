@@ -3,7 +3,7 @@ import { SkipLink } from "@/components/app/SkipLink";
 import AdminNav from "./_components/admin-nav";
 import { requireAdmin } from "@/modules/auth";
 
-export const metadata = { title: "Admin", robots: { index: false } };
+export const metadata = { title: { default: "Admin", template: "%s | Admin" }, robots: { index: false } };
 
 // Blocking on purpose (D-80, BUG-020): the admin check runs before anything streams, so a
 // non-admin gets a real redirect. Behind Suspense the redirect arrived mid-stream and looped.
