@@ -6,13 +6,13 @@ export function day(iso: string): string {
   return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
 }
 
-export function dayAndTime(iso: string): string {
+export function dayAndTime(iso: string, timeZone = "UTC"): string {
   return new Date(iso).toLocaleString("en-US", {
     month: "short",
     day: "numeric",
     hour: "numeric",
     minute: "2-digit",
-    timeZone: "UTC",
+    timeZone,
     timeZoneName: "short",
   });
 }
