@@ -21,8 +21,9 @@ export default function ScansList({ list, status }: { list: AdminScanList; statu
 
   return (
     <div className="flex flex-col gap-4">
-      <nav aria-label="Filter by status" className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
-        <ul className="flex w-max gap-1 rounded-md border border-border bg-muted p-1">
+      {/* Wraps on phones instead of scrolling, so no filter is ever hidden off the edge. */}
+      <nav aria-label="Filter by status">
+        <ul className="flex w-fit max-w-full flex-wrap gap-1 rounded-md border border-border bg-muted p-1">
           {FILTERS.map((f) => {
             const active = f.status === status;
             const count = f.status ? counts[f.status] : counts.all;
