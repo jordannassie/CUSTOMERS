@@ -509,7 +509,7 @@ export default function SeoDashboard({
                 ))}
               </div>
               <p className="text-[11px] text-[#A3A3A0] mt-3">
-                We don't compare backlinks for each competitor yet.
+                We don&apos;t compare backlinks for each competitor yet.
                 Use the keyword gaps tab to find topics worth a page of their own.
               </p>
             </div>
