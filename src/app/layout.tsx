@@ -46,6 +46,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html
       lang="en"
+      // globals.css sets smooth scrolling; this keeps route changes jumping straight to the top (Next 16).
+      data-scroll-behavior="smooth"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <head>
