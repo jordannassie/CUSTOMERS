@@ -10,7 +10,8 @@ const C = 2 * Math.PI * R;
 const STROKE: Record<Tone, string> = { good: "stroke-good", mid: "stroke-mid", low: "stroke-low" };
 
 const SIZE = {
-  default: { ring: "size-32 sm:size-36", value: "text-5xl" },
+  // 96px on phones so the sentence fits beside it (DB-015).
+  default: { ring: "size-24 sm:size-36", value: "text-3xl sm:text-5xl" },
   small: { ring: "size-24", value: "text-3xl" },
 } as const;
 

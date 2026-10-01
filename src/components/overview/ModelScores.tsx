@@ -8,6 +8,26 @@ const BAR: Record<OverviewView["models"][number]["id"], string> = {
   perplexity: "bg-perplexity",
 };
 
+/** On phones, the per-model scores as one row under the score, so they show in the first screen (DB-015). */
+export function ModelScoresRow({ models, className }: { models: OverviewView["models"]; className?: string }) {
+  return (
+    <dl className={cn("grid grid-cols-3 gap-3 border-t border-border pt-4", className)} data-testid="model-scores-row">
+      {models.map((m) => (
+        <div key={m.id} className="flex min-w-0 flex-col gap-0.5">
+          <dt className="flex items-center gap-1.5 truncate text-xs text-muted-foreground">
+            <span className={cn("size-2 shrink-0 rounded-full", BAR[m.id])} aria-hidden="true" />
+            {m.label}
+          </dt>
+          <dd className="flex flex-wrap items-baseline gap-x-1.5 text-base font-semibold tabular-nums">
+            {m.score === null ? <span className="text-xs font-normal text-text-hint">No checks yet</span> : m.score}
+            {m.change && <PointsChange change={m.change} />}
+          </dd>
+        </div>
+      ))}
+    </dl>
+  );
+}
+
 /** Per-model scores, always next to the overall score (D-65). Model colours mark the dot and bar only. */
 export function ModelScores({ models }: { models: OverviewView["models"] }) {
   return (

@@ -11,7 +11,7 @@ type Score = Omit<NonNullable<OverviewView["score"]>, "details"> & { details?: M
 /** One number, one label, one sentence (MVP_SPEC 5.6), with an arrow only for a real change. */
 export function ScoreSummary({ score, animate = true }: { score: Score; animate?: boolean }) {
   return (
-    <div className="flex flex-col items-start gap-5 sm:flex-row sm:items-center sm:gap-7" data-testid="score-summary">
+    <div className="flex items-center gap-4 sm:gap-7" data-testid="score-summary">
       <ScoreRing score={score.value} tone={score.tone} animate={animate} />
       <div className="flex min-w-0 flex-col items-start gap-2.5">
         <div className="flex flex-wrap items-center gap-2">
@@ -35,7 +35,7 @@ export function ScoreSummary({ score, animate = true }: { score: Score; animate?
             </span>
           )}
         </div>
-        <p className="max-w-[34ch] text-xl leading-snug font-semibold tracking-[-0.02em]" data-testid="score-sentence">
+        <p className="max-w-[34ch] text-base leading-snug font-semibold tracking-[-0.02em] sm:text-xl" data-testid="score-sentence">
           {score.sentence}
         </p>
         {score.firstResults && (

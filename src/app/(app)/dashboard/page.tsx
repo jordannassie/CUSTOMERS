@@ -4,7 +4,7 @@ import { RunScanButton } from "@/components/app/RunScanButton";
 import { ExportPdfButton } from "@/components/report/ExportPdfButton";
 import { ShareButton } from "@/components/report/ShareButton";
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ModelScores } from "@/components/overview/ModelScores";
+import { ModelScores, ModelScoresRow } from "@/components/overview/ModelScores";
 import { ScoreSummary } from "@/components/overview/ScoreSummary";
 import { OPPORTUNITIES_HREF, TopOpportunities } from "@/components/overview/TopOpportunities";
 import { TrendChart } from "@/components/overview/TrendChart";
@@ -73,6 +73,7 @@ export default async function OverviewPage() {
             {score ? (
               <>
                 <ScoreSummary score={score} />
+                <ModelScoresRow models={overview.models} className="sm:hidden" />
                 <div className="flex flex-col gap-2">
                   <h2 className="text-sm font-medium">Last 7 days</h2>
                   <TrendChart trend={overview.trend} />
@@ -107,7 +108,8 @@ export default async function OverviewPage() {
           </CardContent>
         </Card>
 
-        <Card>
+        {/* On phones the row under the score shows these instead, unless there is no score yet. */}
+        <Card className={score ? "max-sm:hidden" : undefined}>
           <CardHeader>
             <CardTitle className="text-base">Score by AI</CardTitle>
           </CardHeader>
