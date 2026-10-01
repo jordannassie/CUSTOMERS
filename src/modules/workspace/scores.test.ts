@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { dropFirst, switcherScore, type SwitcherScore } from "./scores";
 
-const tone = (n: number) => (n >= 70 ? "good" : n >= 40 ? "mid" : "low") as const;
+const tone = (n: number): "good" | "mid" | "low" => (n >= 70 ? "good" : n >= 40 ? "mid" : "low");
 
 describe("switcherScore", () => {
   it("rounds the score and change and dates the last scan", () => {
