@@ -46,7 +46,7 @@ export default async function OverviewPage() {
               initial={scanStatus.data}
               start={startScan}
               getStatus={getScanStatus}
-              className="col-span-2 items-stretch sm:items-end"
+              className="col-span-2"
             />
           )}
           <ShareButton businessId={business.id} initial={shareLink} create={createShareLink} revoke={revokeShareLink} />
