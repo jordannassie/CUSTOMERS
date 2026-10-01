@@ -35,7 +35,7 @@ import { accountStripeClient } from "./stripe";
 // Account management (B-77, MVP_SPEC 23, ACC-01 to ACC-04). Each action checks auth and input itself.
 
 const PASSWORD_REFUSED = {
-  wrong: { ok: false, status: 400, error: "Your current password is not right. Try again." },
+  wrong: { ok: false, status: 400, error: "Your current password is not right. Try again.", field: "currentPassword" },
   limited: { ok: false, status: 429, error: "Too many tries. Wait a few minutes and try again." },
 } as const;
 const STRIPE_DOWN = {
@@ -64,9 +64,9 @@ export async function changeEmail(input: unknown): Promise<ActionResult<{ pendin
   try {
     const user = await activeUser();
     const parsed = changeEmailInput.safeParse(input);
-    if (!parsed.success) return { ok: false, status: 400, error: "Enter a valid email address." };
+    if (!parsed.success) return { ok: false, status: 400, error: "Enter a valid email address.", field: "email" };
     const { email, currentPassword } = parsed.data;
-    if (email === user.email?.toLowerCase()) return { ok: false, status: 400, error: "That is already your email." };
+    if (email === user.email?.toLowerCase()) return { ok: false, status: 400, error: "That is already your email.", field: "email" };
     const refused = await recheckPassword(user, currentPassword);
     if (refused) return refused;
 
@@ -88,7 +88,9 @@ export async function changePassword(input: unknown): Promise<ActionResult<Passw
   try {
     const user = await activeUser();
     const parsed = changePasswordInput.safeParse(input);
-    if (!parsed.success) return { ok: false, status: 400, error: "Use at least 8 characters for your new password." };
+    if (!parsed.success) {
+      return { ok: false, status: 400, error: "Use at least 8 characters for your new password.", field: "password" };
+    }
     const { password, currentPassword, nonce } = parsed.data;
     if (!(await hasPasswordSignIn())) {
       return { ok: false, status: 400, error: "You sign in with Google, so there is no password to change here." };

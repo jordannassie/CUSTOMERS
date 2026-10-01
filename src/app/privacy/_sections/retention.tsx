@@ -18,7 +18,7 @@ export function DataRetention({ deletionDays }: { deletionDays: number }) {
         type your account name to confirm. When you do:
       </p>
       <Bullets>
-        <li>Your plan is cancelled right away with no refund, you are logged out and the account can no longer be used.</li>
+        <li>Your plan is canceled right away with no refund, you are logged out and the account can no longer be used.</li>
         <li>Scans stop and every share link stops working.</li>
         <li>
           {deletionDays} days later we permanently delete your businesses, questions, results, logos and login. Until

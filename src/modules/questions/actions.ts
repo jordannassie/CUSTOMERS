@@ -2,6 +2,7 @@
 
 import { refresh } from "next/cache";
 import { authFailure, requireAgency, type ActionResult } from "@/modules/auth";
+import { canEditTracking } from "@/modules/entitlements";
 import { deleteQuestion, insertQuestion, updateQuestionActive, updateQuestionText, type ChangeResult } from "./dal";
 import { addQuestionInput, editQuestionInput, removeQuestionInput, setQuestionActiveInput } from "./schema";
 
@@ -12,7 +13,10 @@ const invalid: Result = { ok: false, status: 400, error: "Something was missing.
 
 async function guard(): Promise<{ agencyId: string } | { denied: Result }> {
   try {
-    return { agencyId: (await requireAgency()).agency.id };
+    const { agency } = await requireAgency();
+    const edit = canEditTracking(agency);
+    if (!edit.allowed) return { denied: { ok: false, status: 403, error: edit.reason } };
+    return { agencyId: agency.id };
   } catch (error) {
     return { denied: authFailure(error) };
   }

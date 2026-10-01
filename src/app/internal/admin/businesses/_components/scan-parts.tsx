@@ -10,6 +10,17 @@ const STATE: Record<ScanState, { label: string; variant: "good" | "mid" | "low" 
   failed: { label: "Failed", variant: "low" },
 };
 
+export function DeletedBadge() {
+  return <Badge variant="low">Deleted</Badge>;
+}
+
+/** When a deleted business's data is removed for good, from purge_after; `short` fits a list cell next to the badge. */
+export function deletedNote(deletedAt: string, purgeAfter: string | null, short = false): string {
+  if (!purgeAfter) return `Deleted ${formatDate(deletedAt)}`;
+  if (short) return `Removed for good ${formatDate(purgeAfter)}`;
+  return `Deleted ${formatDate(deletedAt)}, removed for good ${formatDate(purgeAfter)}`;
+}
+
 export function ScanBadge({ state }: { state: ScanState }) {
   return <Badge variant={STATE[state].variant}>{STATE[state].label}</Badge>;
 }

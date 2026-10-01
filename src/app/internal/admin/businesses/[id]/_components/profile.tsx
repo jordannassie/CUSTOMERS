@@ -1,7 +1,7 @@
 import { INDUSTRY_LABELS, isIndustry } from "@/lib/industries";
 import type { AdminBusinessDetail } from "@/modules/admin";
 import { agencyStatusLabel, planStatusLabel } from "../../../agencies/_components/agency-parts";
-import { ModelList, formatDate, frequencyLabel } from "../../_components/scan-parts";
+import { ModelList, deletedNote, formatDate, frequencyLabel } from "../../_components/scan-parts";
 import Section from "./section";
 
 const STATUS: Record<string, string> = {
@@ -25,7 +25,7 @@ export default function Profile({ detail }: { detail: NonNullable<AdminBusinessD
     ["Industry", b.industry ? industryLabel(b.industry) : "Not set"],
     ["Services", b.services.length ? b.services.join(", ") : "None"],
     ["Other names", b.aliases.length ? b.aliases.join(", ") : "None"],
-    ["Status", STATUS[b.status] ?? b.status],
+    ["Status", b.deleted_at ? deletedNote(b.deleted_at, b.purge_after) : (STATUS[b.status] ?? b.status)],
     ["Plan", plan ? `${plan.name ?? "Unknown plan"}, ${planStatusLabel(plan.status).toLowerCase()}` : "No plan"],
     ["Agency status", agency ? agencyStatusLabel(agency.status) : "No agency"],
     ["Scan frequency", frequencyLabel(b.scan_frequency)],

@@ -1,6 +1,7 @@
 "use server";
 
-import { authFailure, requireUser, type ActionResult } from "@/modules/auth";
+import { authFailure, getCurrentAgency, requireUser, type ActionResult } from "@/modules/auth";
+import { canEditTracking } from "@/modules/entitlements";
 import type { CompetitorCandidate } from "./competitor-places";
 import { dedupeConfirmed } from "./competitors";
 import { lookupCompetitor, runBusinessAutofill, saveCompetitors } from "./dal";
@@ -59,6 +60,10 @@ export async function saveCompetitorList(input: unknown): Promise<ActionResult<{
   } catch (error) {
     return authFailure(error);
   }
+  // Users still setting up have no agency yet; an ended plan is read-only (BUG-C).
+  const agency = await getCurrentAgency();
+  const edit = agency ? canEditTracking(agency) : null;
+  if (edit && !edit.allowed) return { ok: false, status: 403, error: edit.reason };
   const parsed = saveCompetitorsInput.safeParse(input);
   if (!parsed.success) return { ok: false, status: 400, error: "Check the competitor names and try again." };
 

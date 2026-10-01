@@ -177,7 +177,16 @@ test("change the password, needing the current one", async ({ page }) => {
   await form.getByLabel("New password").fill("a brand new password");
   await form.getByLabel("Type it again").fill("a brand new password");
   await form.getByRole("button", { name: "Change password" }).click();
-  await expect(form.getByRole("alert")).toHaveText("Your current password is not right. Try again.", { timeout: 15_000 });
+  // BUG-F: the error sits under the field it belongs to.
+  await expect(form.getByLabel("Current password")).toHaveAccessibleDescription("Your current password is not right. Try again.", {
+    timeout: 15_000,
+  });
+  await expect(form.getByLabel("Current password")).toHaveAttribute("aria-invalid", "true");
+
+  await form.getByLabel("Type it again").fill("a different password");
+  await form.getByRole("button", { name: "Change password" }).click();
+  await expect(form.getByLabel("Type it again")).toHaveAccessibleDescription("The new passwords don't match.");
+  await form.getByLabel("Type it again").fill("a brand new password");
 
   await form.getByLabel("Current password").fill(s.password);
   await form.getByRole("button", { name: "Change password" }).click();
@@ -211,6 +220,22 @@ test("delete a business after typing its name", async ({ page }) => {
 
   const { data } = await db.from("businesses").select("deleted_at").eq("id", s.businessId).single();
   expect(data?.deleted_at).not.toBeNull();
+});
+
+test("deleting the only business after the plan ended leads to settings, not a loop (BUG-D)", async ({ page }) => {
+  const s = await logIn(page);
+  await db.from("agencies").update({ status: "canceled" }).eq("id", s.agencyId).throwOnError();
+  await page.getByRole("button", { name: "Delete business" }).click();
+  const dialog = page.getByTestId("delete-dialog");
+  await dialog.getByLabel(/to confirm/).fill("Northside Plumbing");
+  await dialog.getByRole("button", { name: "Delete business" }).click();
+
+  const note = page.getByTestId("upgrade-note");
+  await expect(note).toContainText("There are no businesses in your account right now.", { timeout: 15_000 });
+  await expect(note.getByRole("link", { name: "Back to dashboard" })).toHaveCount(0);
+  await note.getByRole("link", { name: "Go to settings" }).click();
+  await page.waitForURL((url) => url.pathname === "/settings");
+  await expect(page.getByRole("heading", { level: 1, name: "Settings" })).toBeVisible();
 });
 
 test("delete the account: logged out, and logging in again is blocked", async ({ page }) => {

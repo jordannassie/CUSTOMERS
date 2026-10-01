@@ -81,7 +81,11 @@ async function Detail({ id }: { id: string }) {
         <Stat label={agency.status === "trialing" ? "Trial ends" : "Renews"}>
           {agency.status === "trialing"
             ? agency.trialEndsAt ? formatDate(agency.trialEndsAt) : "Not set"
-            : agency.currentPeriodEnd ? formatDate(agency.currentPeriodEnd) : "Not set"}
+            : agency.status === "deleted"
+              ? "No, account deleted"
+              : agency.status === "canceled"
+                ? "No, plan ended"
+                : agency.currentPeriodEnd ? formatDate(agency.currentPeriodEnd) : "Not set"}
         </Stat>
       </dl>
 

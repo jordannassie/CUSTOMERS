@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   canAddBusiness,
+  canEditTracking,
   canSpendTopUps,
   canStartScan,
   maxCompetitors,
@@ -36,6 +37,17 @@ const blockedStatuses = [
   ["suspended", REASONS.paused],
   ["deleted", REASONS.paused],
 ] as const;
+
+describe("canEditTracking (BUG-C)", () => {
+  it("is read-only once the plan has ended", () => {
+    expect(canEditTracking({ status: "canceled" })).toEqual({ allowed: false, reason: REASONS.readOnly });
+    expect(canEditTracking({ status: "suspended" })).toEqual({ allowed: false, reason: REASONS.paused });
+  });
+
+  it("allows edits on a trial, a live plan, or while a payment is retried", () => {
+    for (const status of ["trialing", "active", "past_due"]) expect(canEditTracking({ status }).allowed).toBe(true);
+  });
+});
 
 describe("canSpendTopUps", () => {
   it.each(["trialing", "active"])("allows a %s agency", (status) => {

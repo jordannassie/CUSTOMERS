@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { AdminAgencyDetail } from "@/modules/admin";
-import { formatDate } from "../../../businesses/_components/scan-parts";
+import { DeletedBadge, deletedNote, formatDate } from "../../../businesses/_components/scan-parts";
 import Section, { Empty } from "../../../businesses/[id]/_components/section";
 import { credits, planStatusLabel } from "../../_components/agency-parts";
 
@@ -21,8 +21,9 @@ const KINDS: Record<string, string> = {
 };
 
 export function Businesses({ rows }: { rows: AdminAgencyDetail["businesses"] }) {
+  const deleted = rows.filter((b) => b.deleted).length;
   return (
-    <Section title="Businesses" note={`${rows.length} in total`}>
+    <Section title="Businesses" note={`${rows.length} in total${deleted > 0 ? `, ${deleted} deleted` : ""}`}>
       {rows.length === 0 ? (
         <Empty>No businesses yet. They appear here once the owner adds one.</Empty>
       ) : (
@@ -30,10 +31,15 @@ export function Businesses({ rows }: { rows: AdminAgencyDetail["businesses"] }) 
           {rows.map((b) => (
             <li key={b.id} className="flex items-start justify-between gap-3 px-4 py-3">
               <span className="min-w-0">
-                <Link href={`/internal/admin/businesses/${b.id}`} className="block truncate font-medium text-primary hover:underline">
-                  {b.name}
-                </Link>
-                <span className="block truncate text-text-hint">{b.location || "No location"}</span>
+                <span className="flex items-center gap-2">
+                  <Link href={`/internal/admin/businesses/${b.id}`} className="truncate font-medium text-primary hover:underline">
+                    {b.name}
+                  </Link>
+                  {b.deleted && <DeletedBadge />}
+                </span>
+                <span className="block truncate text-text-hint">
+                  {b.deleted ? deletedNote(b.deleted.at, b.deleted.purgeAfter, true) : b.location || "No location"}
+                </span>
               </span>
               <span className="shrink-0 text-right text-muted-foreground">
                 {b.plan ?? "No plan"}

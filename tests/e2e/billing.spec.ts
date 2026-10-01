@@ -119,6 +119,14 @@ test("trial: shows the first charge, adds a saved business at no cost today", as
   await expect(line(page, "Harbor Dental")).toContainText("Pro");
   await expect(page.getByTestId("not-on-plan")).toHaveCount(0);
   await expect(page.getByTestId("next-charge")).toHaveText("$398");
+
+  // BUG-B: after cancelling, one message that agrees with the Overview banner.
+  await change(page, "Cancel plan", "Your card won't be charged.", "Cancel plan");
+  await expect(page.getByTestId("cancel-notice")).toContainText("Your free trial ends on");
+  await expect(page.getByTestId("cancel-notice")).toContainText("Your trial credits work until then, and you won't be charged.");
+  await expect(page.getByTestId("plan-status")).not.toContainText("Cancel before then");
+  await expect(page.getByTestId("charge-summary")).toContainText("No more charges. Your free trial ends on");
+  await expect(page.getByText("Your plan ends on")).toHaveCount(0);
 });
 
 test("trial: a third saved business shows the trial limit instead of a price", async ({ page }) => {

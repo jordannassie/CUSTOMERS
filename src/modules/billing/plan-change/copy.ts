@@ -82,7 +82,7 @@ export function previewCopy(input: CopyInput): Copy {
   }
 }
 
-export function doneCopy(input: Pick<CopyInput, "change" | "businessName" | "planName" | "effectiveAt">): string {
+export function doneCopy(input: Pick<CopyInput, "change" | "businessName" | "planName" | "effectiveAt" | "trialing">): string {
   const date = formatDate(input.effectiveAt);
   const business = input.businessName ?? "The business";
   switch (input.change.kind) {
@@ -95,7 +95,7 @@ export function doneCopy(input: Pick<CopyInput, "change" | "businessName" | "pla
     case "remove":
       return `${business} comes off your plan on ${date}.`;
     case "cancel":
-      return `Your plan ends on ${date}.`;
+      return input.trialing ? `Your free trial ends on ${date}. You won't be charged.` : `Your plan ends on ${date}.`;
     case "keep":
       return "Your plan will keep going.";
   }

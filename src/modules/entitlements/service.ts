@@ -35,6 +35,7 @@ export const REASONS = {
   notYourBusiness: "This business is not in your account.",
   pastDue: "Your last payment didn't go through. Update your card to continue.",
   canceled: "Your plan has ended. Contact us to start it again.",
+  readOnly: "Your plan has ended, so your account is read-only. Contact us to start it again.",
   paused: "Your account is paused. Contact support to turn it back on.",
 } as const;
 
@@ -50,6 +51,16 @@ function statusBlock(status: string): Entitlement | null {
 
 /** Top-up credits are spendable only with an active plan or trial (MVP_SPEC 4.2, D-57, F-20). */
 export function canSpendTopUps(agency: AgencyFacts): Entitlement {
+  return statusBlock(agency.status) ?? allow;
+}
+
+/**
+ * Changes to what the scans track (questions, competitors, models, business details). An ended plan is read-only
+ * (MVP_SPEC 4.4); past due stays editable while Stripe retries the card, since editing spends nothing.
+ */
+export function canEditTracking(agency: Pick<AgencyFacts, "status">): Entitlement {
+  if (agency.status === "canceled") return deny(REASONS.readOnly);
+  if (agency.status === "past_due") return allow;
   return statusBlock(agency.status) ?? allow;
 }
 

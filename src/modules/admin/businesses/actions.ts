@@ -12,6 +12,8 @@ const REFUSED = {
     status: 409,
     error: "This business has no agency, so there is no credit pool to scan from.",
   },
+  deleted: { status: 409, error: "This business was deleted, so it can't be scanned." },
+  agency_deleted: { status: 409, error: "This account was deleted. Restore it before running a scan." },
   already_active: {
     status: 409,
     error: "A scan is already queued or running for this business.",

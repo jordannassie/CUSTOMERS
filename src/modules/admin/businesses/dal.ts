@@ -88,6 +88,7 @@ export type AdminBusinessRow = {
   models: string[];
   lastScan: { state: ScanState; at: string } | null;
   creditsThisMonth: number;
+  deleted: { at: string; purgeAfter: string | null } | null;
 };
 
 export async function listBusinesses(now = new Date()): Promise<AdminBusinessRow[]> {
@@ -96,7 +97,7 @@ export async function listBusinesses(now = new Date()): Promise<AdminBusinessRow
     allRows("businesses", (from, to) =>
       db
         .from("businesses")
-        .select("id, name, primary_city, primary_region, agency_id, scan_frequency, models, created_at")
+        .select("id, name, primary_city, primary_region, agency_id, scan_frequency, models, created_at, deleted_at, purge_after")
         .order("created_at", { ascending: false })
         .order("id")
         .range(from, to),
@@ -186,20 +187,29 @@ export async function listBusinesses(now = new Date()): Promise<AdminBusinessRow
       models: b.models,
       lastScan,
       creditsThisMonth: credits.get(b.id) ?? 0,
+      deleted: b.deleted_at ? { at: b.deleted_at, purgeAfter: b.purge_after } : null,
     };
   });
 }
 
 export type EnqueueResult =
-  { ok: true; jobId: string } | { ok: false; reason: "not_found" | "no_agency" | "already_active" };
+  | { ok: true; jobId: string }
+  | { ok: false; reason: "not_found" | "no_agency" | "deleted" | "agency_deleted" | "already_active" };
 
 /** Queues a high-priority scan; the worker (B-27) holds credits and runs it. */
 export async function enqueueScan(businessId: string): Promise<EnqueueResult> {
   const db = createServiceClient();
-  const { data: business, error } = await db.from("businesses").select("agency_id").eq("id", businessId).maybeSingle();
+  const { data: business, error } = await db
+    .from("businesses")
+    .select("agency_id, deleted_at, agencies(status)")
+    .eq("id", businessId)
+    .maybeSingle();
   if (error) fail("the business", error);
   if (!business) return { ok: false, reason: "not_found" };
   if (!business.agency_id) return { ok: false, reason: "no_agency" };
+  // The worker's claim does not look at deleted_at, so a job queued here would spend credits on deleted data.
+  if (business.deleted_at) return { ok: false, reason: "deleted" };
+  if (business.agencies?.status === "deleted") return { ok: false, reason: "agency_deleted" };
 
   const insert = await db
     .from("scan_jobs")

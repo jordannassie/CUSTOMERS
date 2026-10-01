@@ -3,7 +3,7 @@ import { Store } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import type { AdminBusinessRow } from "@/modules/admin";
-import { ModelList, ScanBadge, formatDate, frequencyLabel } from "./scan-parts";
+import { DeletedBadge, ModelList, ScanBadge, deletedNote, formatDate, frequencyLabel } from "./scan-parts";
 
 const href = (id: string) => `/internal/admin/businesses/${id}`;
 
@@ -22,12 +22,13 @@ export default function BusinessesTable({ rows }: { rows: AdminBusinessRow[] }) 
 
   const scanning = rows.filter((r) => r.lastScan?.state === "queued" || r.lastScan?.state === "running").length;
   const failed = rows.filter((r) => r.lastScan?.state === "failed").length;
+  const deleted = rows.filter((r) => r.deleted).length;
 
   return (
     <section aria-label="Businesses" className="flex flex-col gap-2">
       <p className="text-[13px] text-muted-foreground">
         {rows.length} {rows.length === 1 ? "business" : "businesses"}, {scanning} scanning now, {failed} with a failed
-        last scan
+        last scan{deleted > 0 && `, ${deleted} deleted`}
       </p>
 
       <div className="hidden rounded-md border border-border bg-surface md:block">
@@ -47,10 +48,15 @@ export default function BusinessesTable({ rows }: { rows: AdminBusinessRow[] }) 
             {rows.map((r) => (
               <TableRow key={r.id}>
                 <TableCell className="max-w-[220px]">
-                  <Link href={href(r.id)} className="block truncate font-medium text-primary hover:underline">
-                    {r.name}
-                  </Link>
-                  <span className="block truncate text-text-hint">{r.location || "No location"}</span>
+                  <span className="flex items-center gap-2">
+                    <Link href={href(r.id)} className="truncate font-medium text-primary hover:underline">
+                      {r.name}
+                    </Link>
+                    {r.deleted && <DeletedBadge />}
+                  </span>
+                  <span className="block truncate text-text-hint">
+                    {r.deleted ? deletedNote(r.deleted.at, r.deleted.purgeAfter, true) : r.location || "No location"}
+                  </span>
                 </TableCell>
                 <TableCell className="max-w-[220px]">
                   <AgencyCell agency={r.agency} />
@@ -76,8 +82,14 @@ export default function BusinessesTable({ rows }: { rows: AdminBusinessRow[] }) 
             <Link href={href(r.id)} className="flex flex-col gap-2 px-4 py-3 text-[13px] hover:bg-muted">
               <span className="flex items-start justify-between gap-3">
                 <span className="min-w-0">
-                  <span className="block truncate text-[14px] font-medium text-primary">{r.name}</span>
+                  <span className="flex items-center gap-2">
+                    <span className="truncate text-[14px] font-medium text-primary">{r.name}</span>
+                    {r.deleted && <DeletedBadge />}
+                  </span>
                   <span className="block truncate text-text-hint">{r.agency?.name ?? "No agency"}</span>
+                  {r.deleted && (
+                    <span className="block text-text-hint">{deletedNote(r.deleted.at, r.deleted.purgeAfter, true)}</span>
+                  )}
                 </span>
                 <LastScan scan={r.lastScan} />
               </span>

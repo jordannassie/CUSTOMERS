@@ -2,7 +2,7 @@ import { readinessScore, type Signals } from "./signals";
 import type { CheckRow, Finding, ReadinessCheckResult } from "./schema";
 
 const CHECKS: { key: keyof Signals; label: string; detail: string }[] = [
-  { key: "hasStructuredData", label: "Website info for AI", detail: "Hidden business details (structured data) that AI tools can read" },
+  { key: "hasStructuredData", label: "Website info for AI", detail: "Hidden business details on the website that AI tools can read" },
   { key: "hasBusinessType", label: "Business type stated", detail: "The hidden business details say what kind of business this is" },
   { key: "hasDescription", label: "Page summary", detail: "A clear description of the page for search and AI tools" },
   { key: "hasPhone", label: "Phone number", detail: "A phone number on the home page" },

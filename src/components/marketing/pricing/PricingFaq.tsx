@@ -17,7 +17,7 @@ const FAQS = [
   },
   {
     q: "Can I change plans later?",
-    a: "Yes. Upgrading or adding a business starts right away, and you pay the difference for the rest of the month. Downgrading, removing a business or cancelling takes effect at the end of the month you have paid for.",
+    a: "Yes. Upgrading or adding a business starts right away, and you pay the difference for the rest of the month. Downgrading, removing a business or canceling takes effect at the end of the month you have paid for.",
   },
   {
     q: "Do you give refunds?",
