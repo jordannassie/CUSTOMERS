@@ -150,6 +150,17 @@ export function trendSeries(checks: ScoreCheck[], opts: { now: Date; models: rea
   });
 }
 
+export type ScanPoint = { date: string; score: number; margin: number };
+
+/** The estimate of each UTC day with checks, oldest first. A day's checks are one scan, so this is the score per scan. */
+export function scanSeries(checks: ScoreCheck[], opts: { now: Date; models: readonly ProviderId[] }): ScanPoint[] {
+  const byDay = groupBy(checksInWindow(checks, opts.now), (c) => c.checkedAt.toISOString().slice(0, 10));
+  return [...byDay.keys()].sort().flatMap((date) => {
+    const { overall } = estimateFor(byDay.get(date)!, opts.models, (c) => c.mentioned);
+    return overall ? [{ date, score: overall.score, margin: overall.margin }] : [];
+  });
+}
+
 /** True only when the gap is larger than the margin of the two estimates together. */
 export function isRealChange(a: Pick<Estimate, "score" | "margin">, b: Pick<Estimate, "score" | "margin">): boolean {
   return Math.abs(a.score - b.score) > Math.hypot(a.margin, b.margin);

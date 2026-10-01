@@ -5,11 +5,13 @@ import type { ProviderId } from "../providers/types";
 import {
   SCORE_WINDOW_DAYS,
   competitorScores,
+  scanSeries,
   trendSeries,
   visibilityScore,
   weeklyChange,
   type Change,
   type CompetitorScore,
+  type ScanPoint,
   type ScoreCheck,
   type TrendPoint,
   type VisibilityScore,
@@ -25,6 +27,8 @@ export type ScoreReport = VisibilityScore & {
   /** The business's chosen models, in the order it saved them. */
   models: ProviderId[];
   trend: TrendPoint[];
+  /** Every scan day in the 30-day window, oldest first. */
+  scans: ScanPoint[];
   change: Change | null;
   /** The oldest check in the window; a competitor added after it was not looked for on every check (F-53). */
   firstCheckedAt: Date | null;
@@ -77,6 +81,7 @@ export async function loadScoreReport(agencyId: string, businessId: string, now:
     ...visibilityScore(checks, opts),
     models,
     trend: trendSeries(checks, opts),
+    scans: scanSeries(checks, opts),
     change: weeklyChange(checks, opts),
     firstCheckedAt: checks[0]?.checkedAt ?? null,
     lastCheckedAt: checks.at(-1)?.checkedAt ?? null,

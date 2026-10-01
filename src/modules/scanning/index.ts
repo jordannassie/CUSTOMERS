@@ -15,6 +15,7 @@ export {
   type Change,
   type Confidence,
   type Estimate,
+  type ScanPoint,
   type Standing,
   type TrendPoint,
 } from "./scoring";

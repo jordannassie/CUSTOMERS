@@ -14,6 +14,7 @@ function report(overall: { score: number; margin: number } | null, competitors: 
     byModel: [],
     models: ["openai", "anthropic", "perplexity"],
     trend: [],
+    scans: [],
     change: null,
     firstCheckedAt: overall ? FIRST_SCAN : null,
     lastCheckedAt: overall ? LAST_SCAN : null,

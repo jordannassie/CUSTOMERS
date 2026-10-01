@@ -1,5 +1,6 @@
 import { SCORE_WINDOW_DAYS, type Change, type Confidence, type ProviderId, type ScoreReport } from "@/modules/scanning";
 import { CALIBRATION, methodPanel, type Calibration, type MethodPanel } from "./method";
+import { trendView, type TrendView } from "./trend";
 
 // What the Overview shows (B-49, MVP_SPEC 5.6, 8.1). Pure, so every state is unit tested.
 
@@ -34,7 +35,7 @@ export type OverviewView = {
     details: MethodPanel;
   } | null;
   models: { id: ProviderId; label: string; score: number | null }[];
-  trend: { date: string; score: number | null }[];
+  trend: TrendView;
   opportunities: Pick<Opportunity, "id" | "title" | "impact">[];
   lastCheckedAt: string | null;
 };
@@ -71,8 +72,9 @@ export function topOpportunities(opportunities: Opportunity[], count = 3): Overv
 export function overviewView(
   report: ScoreReport,
   opportunities: Opportunity[],
-  calibration: Calibration | null = CALIBRATION,
+  options: { nextScanAt?: Date | null; now?: Date; calibration?: Calibration | null } = {},
 ): OverviewView {
+  const { nextScanAt = null, now = new Date(), calibration = CALIBRATION } = options;
   const { overall } = report;
   const scannedDays = report.trend.filter((p) => p.checks > 0).length;
   const byModel = new Map(report.byModel.map((m) => [m.model, m.estimate]));
@@ -106,7 +108,7 @@ export function overviewView(
       ),
     },
     models: models.map(({ id, label, score }) => ({ id, label, score })),
-    trend: report.trend.map((p) => ({ date: p.date, score: p.score === null ? null : Math.round(p.score) })),
+    trend: trendView({ trend: report.trend, scans: report.scans, nextScanAt, now }),
     opportunities: topOpportunities(opportunities),
     lastCheckedAt: report.lastCheckedAt?.toISOString() ?? null,
   };

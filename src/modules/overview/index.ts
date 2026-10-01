@@ -2,3 +2,4 @@
 export { getOverview, loadOverview } from "./dal";
 export type { MethodPanel } from "./method";
 export { MODEL_LABELS, type OverviewView, type Tone } from "./service";
+export type { TrendView } from "./trend";
