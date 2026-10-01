@@ -177,7 +177,16 @@ test("change the password, needing the current one", async ({ page }) => {
   await form.getByLabel("New password").fill("a brand new password");
   await form.getByLabel("Type it again").fill("a brand new password");
   await form.getByRole("button", { name: "Change password" }).click();
-  await expect(form.getByRole("alert")).toHaveText("Your current password is not right. Try again.", { timeout: 15_000 });
+  // BUG-F: the error sits under the field it belongs to.
+  await expect(form.getByLabel("Current password")).toHaveAccessibleDescription("Your current password is not right. Try again.", {
+    timeout: 15_000,
+  });
+  await expect(form.getByLabel("Current password")).toHaveAttribute("aria-invalid", "true");
+
+  await form.getByLabel("Type it again").fill("a different password");
+  await form.getByRole("button", { name: "Change password" }).click();
+  await expect(form.getByLabel("Type it again")).toHaveAccessibleDescription("The new passwords don't match.");
+  await form.getByLabel("Type it again").fill("a brand new password");
 
   await form.getByLabel("Current password").fill(s.password);
   await form.getByRole("button", { name: "Change password" }).click();

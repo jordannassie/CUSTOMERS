@@ -28,7 +28,8 @@ export class AuthError extends Error {
   }
 }
 
-export type ActionResult<T> = { ok: true; data: T } | { ok: false; status: number; error: string };
+/** `field` names the input the error belongs to, so the form can show it under that field (UI-036). */
+export type ActionResult<T> = { ok: true; data: T } | { ok: false; status: number; error: string; field?: string };
 
 // Server Actions return auth failures as data; anything else (including redirect()) is rethrown.
 export function authFailure(error: unknown): ActionResult<never> {

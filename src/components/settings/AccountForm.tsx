@@ -9,6 +9,8 @@ import { PASSWORD_MIN } from "@/modules/account/schema";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { FieldMessage, useFieldErrors } from "@/components/ui/field-errors";
+import { PasswordInput, showFailure } from "./AccountFields";
 import { FormError, Panel } from "./SettingsSection";
 
 export type ChangeEmailAction = (input: unknown) => Promise<ActionResult<{ pendingEmail: string }>>;
@@ -88,27 +90,22 @@ function Toggle({ label, onClick }: { label: string; onClick: () => void }) {
   );
 }
 
-function CurrentPassword({ value, onChange }: { value: string; onChange: (v: string) => void }) {
-  return (
-    <div className="flex flex-col gap-1.5">
-      <Label htmlFor="current-password">Current password</Label>
-      <Input id="current-password" type="password" autoComplete="current-password" required value={value} onChange={(e) => onChange(e.target.value)} />
-    </div>
-  );
-}
+const EMAIL_FIELDS = ["email", "currentPassword"] as const;
 
 function EmailForm(props: { hasPassword: boolean; changeEmail: ChangeEmailAction; onCancel: () => void; onDone: (email: string) => void }) {
   const [email, setEmail] = useState("");
   const [current, setCurrent] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const fields = useFieldErrors<(typeof EMAIL_FIELDS)[number]>("change-email");
   const [saving, start] = useTransition();
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    fields.show({});
     start(async () => {
       const result = await props.changeEmail({ email, currentPassword: props.hasPassword ? current : undefined });
-      if (!result.ok) return setError(result.error);
+      if (!result.ok) return showFailure(result, fields, EMAIL_FIELDS, setError);
       toast.success(`We sent a link to ${result.data.pendingEmail}. Your email changes when you click it.`);
       props.onDone(result.data.pendingEmail);
     });
@@ -118,9 +115,31 @@ function EmailForm(props: { hasPassword: boolean; changeEmail: ChangeEmailAction
     <form onSubmit={submit} aria-label="Change email" className="flex max-w-sm flex-col gap-3">
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="new-email">New email</Label>
-        <Input id="new-email" type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
+        <Input
+          id="new-email"
+          type="email"
+          autoComplete="email"
+          required
+          value={email}
+          onChange={(e) => {
+            setEmail(e.target.value);
+            fields.clear("email");
+          }}
+          {...fields.fieldProps("email")}
+        />
+        <FieldMessage id={fields.idOf("email")} message={fields.errors.email} />
       </div>
-      {props.hasPassword && <CurrentPassword value={current} onChange={setCurrent} />}
+      {props.hasPassword && (
+        <PasswordInput
+          name="currentPassword"
+          id="current-password"
+          label="Current password"
+          autoComplete="current-password"
+          value={current}
+          onChange={setCurrent}
+          fields={fields}
+        />
+      )}
       <p className="text-[13px] text-muted-foreground">We email a link to confirm the change. Until you click it, you keep logging in with your current email.</p>
       <FormError message={error} />
       <Actions saving={saving} submitLabel="Send confirmation link" onCancel={props.onCancel} />
@@ -128,21 +147,24 @@ function EmailForm(props: { hasPassword: boolean; changeEmail: ChangeEmailAction
   );
 }
 
+const PASSWORD_FIELDS = ["currentPassword", "password", "confirm"] as const;
+
 function PasswordForm({ changePassword, onClose }: { changePassword: ChangePasswordAction; onClose: () => void }) {
   const [current, setCurrent] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [code, setCode] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const fields = useFieldErrors<(typeof PASSWORD_FIELDS)[number]>("change-password");
   const [saving, start] = useTransition();
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
-    if (password !== confirm) return setError("The new passwords don't match.");
+    if (fields.show(password !== confirm ? { confirm: "The new passwords don't match." } : {})) return;
     start(async () => {
       const result = await changePassword({ password, currentPassword: current, nonce: code ?? undefined });
-      if (!result.ok) return setError(result.error);
+      if (!result.ok) return showFailure(result, fields, PASSWORD_FIELDS, setError);
       if (result.data.step === "code_sent") {
         setCode("");
         return;
@@ -154,24 +176,35 @@ function PasswordForm({ changePassword, onClose }: { changePassword: ChangePassw
 
   return (
     <form onSubmit={submit} aria-label="Change password" className="flex max-w-sm flex-col gap-3">
-      <CurrentPassword value={current} onChange={setCurrent} />
-      <div className="flex flex-col gap-1.5">
-        <Label htmlFor="new-password">New password</Label>
-        <Input
-          id="new-password"
-          type="password"
-          autoComplete="new-password"
-          minLength={PASSWORD_MIN}
-          required
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-        />
-        <p className="text-xs text-text-hint">At least {PASSWORD_MIN} characters.</p>
-      </div>
-      <div className="flex flex-col gap-1.5">
-        <Label htmlFor="confirm-password">Type it again</Label>
-        <Input id="confirm-password" type="password" autoComplete="new-password" required value={confirm} onChange={(e) => setConfirm(e.target.value)} />
-      </div>
+      <PasswordInput
+        name="currentPassword"
+        id="current-password"
+        label="Current password"
+        autoComplete="current-password"
+        value={current}
+        onChange={setCurrent}
+        fields={fields}
+      />
+      <PasswordInput
+        name="password"
+        id="new-password"
+        label="New password"
+        autoComplete="new-password"
+        minLength={PASSWORD_MIN}
+        hint={`At least ${PASSWORD_MIN} characters.`}
+        value={password}
+        onChange={setPassword}
+        fields={fields}
+      />
+      <PasswordInput
+        name="confirm"
+        id="confirm-password"
+        label="Type it again"
+        autoComplete="new-password"
+        value={confirm}
+        onChange={setConfirm}
+        fields={fields}
+      />
       {code !== null && (
         <div className="flex flex-col gap-1.5 rounded-md bg-mid-bg p-3">
           <Label htmlFor="reauth-code">Code from your email</Label>
