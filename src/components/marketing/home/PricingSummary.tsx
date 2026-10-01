@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { formatCount, formatUsd, type PublicPlan } from "@/modules/billing/format";
-import { Section, Eyebrow, H2, Lead } from "../section";
+import { Section, H2, Lead } from "../section";
 
 const FACTS = [
   {
@@ -19,7 +19,6 @@ export function PricingSummary({ plans }: { plans: PublicPlan[] }) {
   return (
     <Section id="pricing" tone="surface">
       <div className="flex flex-col gap-4">
-        <Eyebrow>Pricing</Eyebrow>
         <H2 className="max-w-[20ch]">One price per business, with credits included</H2>
         <Lead>Pay for each business you track, and cancel anytime. Agencies can mix plans.</Lead>
       </div>

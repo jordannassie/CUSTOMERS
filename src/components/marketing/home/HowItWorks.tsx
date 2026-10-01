@@ -1,4 +1,4 @@
-import { Section, Eyebrow, H2, Lead } from "../section";
+import { Section, H2, Lead } from "../section";
 
 const STEPS = [
   {
@@ -23,7 +23,6 @@ export function HowItWorks() {
   return (
     <Section id="how-it-works" tone="surface">
       <div className="flex flex-col gap-4">
-        <Eyebrow>How it works</Eyebrow>
         <H2 className="max-w-[20ch]">Four steps, repeated every scan</H2>
         <Lead>Setup takes a few minutes. After that, each scan runs by itself and tells you what changed.</Lead>
       </div>

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Section, Eyebrow, H2 } from "../section";
+import { Section, H2 } from "../section";
 import { ExampleTag } from "./example";
 
 const POINTS = [
@@ -48,7 +48,6 @@ export function ForAgencies() {
     <Section id="agencies" tone="muted">
       <div className="grid items-center gap-10 md:grid-cols-2 md:gap-16">
         <div className="flex flex-col gap-4">
-          <Eyebrow>For agencies</Eyebrow>
           <H2>All your clients, one login</H2>
           <ul className="mt-2 flex flex-col gap-3 text-[15px] text-muted-foreground">
             {POINTS.map((p) => (

@@ -1,5 +1,5 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Section, Eyebrow, H2, Lead } from "../section";
+import { Section, H2, Lead } from "../section";
 import { OverviewExample } from "./OverviewExample";
 import { CompetitorsExample } from "./CompetitorsExample";
 import { FixStepsExample } from "./FixStepsExample";
@@ -41,7 +41,6 @@ export function ProductTabs() {
   return (
     <Section id="product">
       <div className="flex flex-col gap-4">
-        <Eyebrow>Product</Eyebrow>
         <H2 className="max-w-[22ch]">What you see after each scan</H2>
         <Lead>These screens use a made-up coffee shop so you can see what a report looks like.</Lead>
       </div>

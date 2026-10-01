@@ -22,18 +22,6 @@ export function Section({
   );
 }
 
-export function Eyebrow({ className, ...props }: React.ComponentProps<"p">) {
-  return (
-    <p
-      className={cn(
-        "inline-flex w-fit items-center rounded-sm bg-primary-tint px-2 py-1 text-[13px] font-medium text-primary-hover",
-        className,
-      )}
-      {...props}
-    />
-  );
-}
-
 export function H2({ className, ...props }: React.ComponentProps<"h2">) {
   return (
     <h2

@@ -1,4 +1,4 @@
-import { Section, Eyebrow, H2, Lead } from "../section";
+import { Section, H2, Lead } from "../section";
 import { estimateMonthlyCredits, formatCount, formatUsd, type PublicPack, type PublicPlan } from "@/modules/billing/format";
 
 // The MVP_SPEC 4.3 example business: 12 questions on all 3 AI assistants.
@@ -17,7 +17,6 @@ export function Credits({ plans, packs }: { plans: PublicPlan[]; packs: PublicPa
     <Section id="credits">
       <div className="grid gap-12 md:grid-cols-2 md:gap-16">
         <div className="flex flex-col gap-4">
-          <Eyebrow>Credits</Eyebrow>
           <H2 className="max-w-[18ch]">1 credit is 1 question asked to 1 AI</H2>
           <Lead>
             Each check asks ChatGPT, Claude or Perplexity one of your customer questions, with web search and your

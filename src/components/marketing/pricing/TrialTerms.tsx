@@ -1,4 +1,4 @@
-import { Section, Eyebrow, H2, Lead } from "../section";
+import { Section, H2, Lead } from "../section";
 
 // MVP_SPEC 4.4 (D-15, D-16): 7 days, card required, 2 businesses, charged on day 7 unless canceled.
 const STEPS = [
@@ -23,7 +23,6 @@ export function TrialTerms() {
   return (
     <Section id="trial" tone="surface">
       <div className="flex flex-col gap-4">
-        <Eyebrow>Free trial</Eyebrow>
         <H2 className="max-w-[22ch]">7 days free, then your plan starts</H2>
         <Lead>You need a card to start the trial. You are only charged if you keep going past day 7.</Lead>
       </div>

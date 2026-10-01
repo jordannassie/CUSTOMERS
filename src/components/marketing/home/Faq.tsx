@@ -1,5 +1,5 @@
 import { ChevronDown } from "lucide-react";
-import { Section, Eyebrow, H2 } from "../section";
+import { Section, H2 } from "../section";
 
 const FAQS = [
   {
@@ -60,8 +60,7 @@ export function Faq() {
     <Section id="faq">
       <div className="grid gap-10 md:grid-cols-[1fr_2fr] md:gap-16">
         <div className="flex flex-col gap-4">
-          <Eyebrow>FAQ</Eyebrow>
-          <H2>Straight answers</H2>
+          <H2>Common questions</H2>
         </div>
         <FaqList items={FAQS} />
       </div>
