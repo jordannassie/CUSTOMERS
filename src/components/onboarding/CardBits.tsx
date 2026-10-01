@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Loader2, Lock } from "lucide-react";
 import type { ActionResult } from "@/modules/auth";
@@ -33,6 +34,15 @@ export function TrialSummary({ offer }: { offer: CardOffer }) {
       <p data-testid="trial-terms" className="mt-3 text-[13px] leading-relaxed text-muted-foreground">
         7 days free, then {price} per business per month. Cancel anytime before <LocalDate iso={offer.trialEndsAt} /> and
         you won&apos;t be charged.
+      </p>
+      <ul data-testid="renewal-terms" className="mt-3 flex list-disc flex-col gap-1 pl-4 text-[13px] leading-relaxed text-muted-foreground">
+        <li>After the trial, your plan renews every month on the same date until you cancel.</li>
+        <li>Cancel online anytime in Settings, under Billing. Plans are not refunded once charged.</li>
+      </ul>
+      <p className="mt-3 text-[13px]">
+        <Link href="/terms#trial" target="_blank" rel="noopener" className="font-medium text-primary underline-offset-2 hover:underline">
+          Read the trial and billing terms<span className="sr-only"> (opens in a new tab)</span>
+        </Link>
       </p>
     </section>
   );
