@@ -32,35 +32,37 @@ export default async function BillingPage({ searchParams }: Props) {
 
   return (
     <PageContainer>
-      <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-[-0.02em]">Billing</h1>
-          <p className="mt-1 text-[15px] text-muted-foreground">What you pay, for which businesses, and when.</p>
-        </div>
-        {view.stripe !== "none" && <PortalButton open={openBillingPortal} variant={view.status === "past_due" ? "default" : "outline"} />}
-      </header>
+      <div className="max-w-[760px]">
+        <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <h1 className="text-2xl font-semibold tracking-[-0.02em]">Billing</h1>
+            <p className="mt-1 text-[15px] text-muted-foreground">What you pay, for which businesses, and when.</p>
+          </div>
+          {view.stripe !== "none" && <PortalButton open={openBillingPortal} variant={view.status === "past_due" ? "default" : "outline"} />}
+        </header>
 
-      {params.portal === "fixture" && (
-        <p role="status" data-testid="portal-fixture" className="mt-4 rounded-md border border-border bg-primary-tint px-4 py-3 text-sm">
-          Test mode: Stripe&apos;s card and invoice page opens here in a real run.
-        </p>
-      )}
-
-      <div className="mt-6 flex max-w-[760px] flex-col gap-6">
-        {hasPlan ? (
-          <>
-            <PlanStatus view={view} keep={keepSubscription} />
-            <PlanBill
-              view={view}
-              addBusinessHref={ADD_BUSINESS_HREF}
-              actions={{ upgrade: upgradeBusiness, downgrade: downgradeBusiness, remove: removeBusiness, add: addBusiness }}
-            />
-            <CreditsPanel buyHref={BUY_CREDITS_HREF} usageHref={USAGE_HREF} />
-            {view.canChange && !view.cancelAt && <CancelPanel cancel={cancelSubscription} />}
-          </>
-        ) : (
-          <NoPlan ended={view.status === "canceled"} setupHref="/onboarding" supportHref={SUPPORT_HREF} />
+        {params.portal === "fixture" && (
+          <p role="status" data-testid="portal-fixture" className="mt-4 rounded-md border border-border bg-primary-tint px-4 py-3 text-sm">
+            Test mode: Stripe&apos;s card and invoice page opens here in a real run.
+          </p>
         )}
+
+        <div className="mt-6 flex flex-col gap-6">
+          {hasPlan ? (
+            <>
+              <PlanStatus view={view} keep={keepSubscription} />
+              <PlanBill
+                view={view}
+                addBusinessHref={ADD_BUSINESS_HREF}
+                actions={{ upgrade: upgradeBusiness, downgrade: downgradeBusiness, remove: removeBusiness, add: addBusiness }}
+              />
+              <CreditsPanel buyHref={BUY_CREDITS_HREF} usageHref={USAGE_HREF} />
+              {view.canChange && !view.cancelAt && <CancelPanel cancel={cancelSubscription} />}
+            </>
+          ) : (
+            <NoPlan ended={view.status === "canceled"} setupHref="/onboarding" supportHref={SUPPORT_HREF} />
+          )}
+        </div>
       </div>
     </PageContainer>
   );
