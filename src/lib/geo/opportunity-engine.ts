@@ -153,7 +153,7 @@ export function generateOpportunities(input: OpportunityEngineInput): Opportunit
       evidence,
       impact: gap >= 3 ? "high" : "medium",
       category: "competitor_gap",
-      recommended_action: `Look at ${competitorName}'s website and Google Business Profile. Note what they show that you don't, such as service pages, reviews or business details, then add the same kind of information to your own site.`,
+      recommended_action: `Look at the website and Google Business Profile of ${competitorName}. Note what they show that you don't, such as service pages, reviews or business details, then add the same kind of information to your own site.`,
       claude_prompt: claudePromptFor(
         "Ask:",
         businessName,
