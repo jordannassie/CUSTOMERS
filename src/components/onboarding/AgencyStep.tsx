@@ -6,6 +6,7 @@ import { ImageUp, X } from "lucide-react";
 import type { ActionResult } from "@/modules/auth";
 import { LOGO_MAX_BYTES, LOGO_RULES } from "@/modules/settings/service";
 import { Button } from "@/components/ui/button";
+import { FieldMessage, useFieldErrors } from "@/components/ui/field-errors";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { FieldHint, StepActions, StepError } from "./StepBits";
@@ -25,6 +26,7 @@ export function AgencyStep({ defaultName, logoUrl, plan, save, uploadLogo }: Pro
   const [file, setFile] = useState<File | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  const fields = useFieldErrors<"name">("agency");
   const fileRef = useRef<HTMLInputElement>(null);
 
   function pickFile(e: React.ChangeEvent<HTMLInputElement>) {
@@ -39,6 +41,7 @@ export function AgencyStep({ defaultName, logoUrl, plan, save, uploadLogo }: Pro
   function submit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    if (fields.show({ name: name.trim() ? undefined : "Enter your agency name." })) return;
     startTransition(async () => {
       const saved = await save({ name, plan });
       if (!saved.ok) return setError(saved.error);
@@ -54,21 +57,25 @@ export function AgencyStep({ defaultName, logoUrl, plan, save, uploadLogo }: Pro
   }
 
   return (
-    <form onSubmit={submit} className="flex flex-col gap-6">
+    <form ref={fields.formRef} onSubmit={submit} className="flex flex-col gap-6" noValidate>
       <div className="flex flex-col gap-2">
         <Label htmlFor="agency-name">Agency name</Label>
         <Input
           id="agency-name"
           value={name}
-          onChange={(e) => setName(e.target.value)}
+          onChange={(e) => {
+            setName(e.target.value);
+            fields.clear("name");
+          }}
           maxLength={120}
           required
           autoFocus
           autoComplete="organization"
           placeholder="Blue Door Marketing"
-          aria-describedby="agency-name-hint"
           className="h-11 text-base"
+          {...fields.fieldProps("name", "agency-name-hint")}
         />
+        <FieldMessage id={fields.idOf("name")} message={fields.errors.name} />
         <FieldHint id="agency-name-hint">Shown on your reports. If you run your own business, use its name.</FieldHint>
       </div>
 
@@ -105,7 +112,7 @@ export function AgencyStep({ defaultName, logoUrl, plan, save, uploadLogo }: Pro
       </div>
 
       <StepError message={error} />
-      <StepActions pending={pending} disabled={!name.trim()} />
+      <StepActions pending={pending} />
     </form>
   );
 }
