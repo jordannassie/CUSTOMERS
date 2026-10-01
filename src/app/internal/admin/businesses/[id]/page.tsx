@@ -20,7 +20,7 @@ export default async function AdminBusinessPage({ params }: { params: Promise<{ 
   await requireAdmin({ next: `/internal/admin/businesses/${id}` });
 
   return (
-    <div className="mx-auto flex max-w-5xl flex-col gap-8 px-4 py-8 sm:px-6">
+    <div className="mx-auto flex max-w-6xl flex-col gap-8 px-4 py-8 sm:px-6">
       <Link
         href="/internal/admin/businesses"
         className="inline-flex w-fit items-center gap-1 text-[13px] text-muted-foreground hover:text-foreground"

@@ -11,28 +11,31 @@ export default async function AdminSettingsPage() {
   await requireAdmin({ next: "/internal/admin/settings" });
 
   return (
-    <div className="mx-auto flex max-w-3xl flex-col gap-8 px-4 py-8 sm:px-6">
-      <header>
-        <h1 className="text-[24px] font-semibold tracking-[-0.02em]">Settings</h1>
-        <p className="mt-1 text-[14px] text-muted-foreground">
-          Whether every service the app depends on is connected and working. Keys are changed in Netlify and Supabase.
-        </p>
-      </header>
+    <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
+      {/* Same outer width as every admin page; the status list itself reads best narrow, so it stays left aligned. */}
+      <div className="flex max-w-3xl flex-col gap-8">
+        <header>
+          <h1 className="text-[24px] font-semibold tracking-[-0.02em]">Settings</h1>
+          <p className="mt-1 text-[14px] text-muted-foreground">
+            Whether every service the app depends on is connected and working. Keys are changed in Netlify and Supabase.
+          </p>
+        </header>
 
-      <Suspense fallback={<StatusSkeleton />}>
-        <LiveStatus />
-      </Suspense>
+        <Suspense fallback={<StatusSkeleton />}>
+          <LiveStatus />
+        </Suspense>
 
-      <section aria-labelledby="product-access">
-        <h2 id="product-access" className="mb-2 text-[14px] font-semibold">
-          Product access
-        </h2>
-        <ul className="divide-y divide-border rounded-md border border-border bg-surface">
-          <FlagRow label="Free beta access" on={PRODUCT_ACCESS.betaFreeAccess} note="Every signed-in user gets full access." />
-          <FlagRow label="Billing" on={PRODUCT_ACCESS.billingEnabled} note="Stripe checkout and plan limits." />
-          <FlagRow label="Trials" on={PRODUCT_ACCESS.trialEnabled} note="Trial countdown and end of trial." />
-        </ul>
-      </section>
+        <section aria-labelledby="product-access">
+          <h2 id="product-access" className="mb-2 text-[14px] font-semibold">
+            Product access
+          </h2>
+          <ul className="divide-y divide-border rounded-md border border-border bg-surface">
+            <FlagRow label="Free beta access" on={PRODUCT_ACCESS.betaFreeAccess} note="Every signed-in user gets full access." />
+            <FlagRow label="Billing" on={PRODUCT_ACCESS.billingEnabled} note="Stripe checkout and plan limits." />
+            <FlagRow label="Trials" on={PRODUCT_ACCESS.trialEnabled} note="Trial countdown and end of trial." />
+          </ul>
+        </section>
+      </div>
     </div>
   );
 }
