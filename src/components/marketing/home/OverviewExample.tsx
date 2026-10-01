@@ -17,10 +17,10 @@ const SCORE: React.ComponentProps<typeof ScoreSummary>["score"] = {
 // The 30-day score at each scan with its margin, as the app draws it (DB-002).
 const TREND: OverviewView["trend"] = {
   points: [53, 54, 56, 55, 57, 58, 58, 60, 61, 62].map((score, i) => {
-    const day = 2 + i * 3;
+    const day = 20 + i;
     return { date: `2026-09-${String(day).padStart(2, "0")}`, label: `Sep ${day}`, score, margin: 6, band: [score - 6, score + 6] };
   }),
-  change: { direction: "up", text: "Up 9 points since Sep 2" },
+  change: { direction: "up", text: "Up 9 points since Sep 20" },
   summary: null,
   caption: "Each dot is one scan. The shaded band is how far the score could be off.",
 };
