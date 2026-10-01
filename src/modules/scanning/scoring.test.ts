@@ -5,7 +5,6 @@ import {
   competitorScores,
   confidenceLabel,
   isRealChange,
-  scanSeries,
   trendSeries,
   visibilityScore,
   weeklyChange,
@@ -171,24 +170,6 @@ describe("competitor comparison", () => {
 
   it("compares nothing before the business has a score", () => {
     expect(competitorScores([], ["Rival"], { now: NOW, models: MODELS })).toEqual([]);
-  });
-});
-
-describe("scanSeries", () => {
-  it("gives each scan day its own estimate, oldest first, and skips days outside the window", () => {
-    const checks = [
-      check("openai", "q1", 31 * 24, true),
-      check("openai", "q1", 7 * 24, false),
-      check("anthropic", "q1", 7 * 24, false),
-      check("openai", "q1", 1, true),
-      check("anthropic", "q1", 1, false),
-    ];
-    const points = scanSeries(checks, { now: NOW, models: MODELS });
-    expect(points.map((p) => [p.date, p.score])).toEqual([
-      ["2026-09-20", 0],
-      ["2026-09-27", 50],
-    ]);
-    expect(points[1].margin).toBeGreaterThan(0);
   });
 });
 

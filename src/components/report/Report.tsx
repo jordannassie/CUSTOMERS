@@ -39,6 +39,16 @@ export function Report({ report, logoSrc }: { report: ReportView; logoSrc: strin
         </div>
       </header>
 
+      {report.summary.length > 0 && (
+        <section aria-label="Summary" className="report-section rounded-md border border-border bg-surface px-5 py-4" data-testid="report-summary">
+          <ul className="flex flex-col gap-1.5 text-[15px] leading-relaxed">
+            {report.summary.map((line) => (
+              <li key={line}>{line}</li>
+            ))}
+          </ul>
+        </section>
+      )}
+
       <Section title="Visibility score, last 30 days">
         {score ? (
           <div className="flex flex-col gap-8">

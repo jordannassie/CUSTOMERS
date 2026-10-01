@@ -16,7 +16,8 @@ export async function getOverview(businessId: string): Promise<OverviewView | nu
 
 // Callers check the viewer may see this agency first (the signed-in owner, or a live share link).
 export async function loadOverview(agencyId: string, businessId: string, now: Date): Promise<OverviewView | null> {
-  const report = await loadScoreReport(agencyId, businessId, now);
+  // 30 days before the window give the report its month-on-month change (DB-012).
+  const report = await loadScoreReport(agencyId, businessId, now, { historyDays: 30 });
   if (!report) return null;
 
   // Ownership is settled by the report above.

@@ -205,10 +205,19 @@ export type Change = { direction: "up" | "down"; points: number };
  * Null unless both weeks have checks and the gap is larger than the margin (D-64).
  */
 export function weeklyChange(checks: ScoreCheck[], opts: { now: Date; models: readonly ProviderId[] }): Change | null {
-  const lastWeek = new Date(opts.now.getTime() - TREND_DAYS * DAY_MS);
-  const recent = estimateFor(checksInWindow(checks, opts.now, TREND_DAYS), opts.models, (c) => c.mentioned).overall;
-  const before = estimateFor(checksInWindow(checks, lastWeek, TREND_DAYS), opts.models, (c) => c.mentioned).overall;
-  if (!recent || !before || !isRealChange(recent, before)) return null;
-  const points = recent.score - before.score;
+  return periodChange(checks, opts, TREND_DAYS);
+}
+
+/** The last 30 days against the 30 before, for the client report (DB-012). Same rule as the weekly change. */
+export function monthlyChange(checks: ScoreCheck[], opts: { now: Date; models: readonly ProviderId[] }): Change | null {
+  return periodChange(checks, opts, SCORE_WINDOW_DAYS);
+}
+
+function periodChange(checks: ScoreCheck[], opts: { now: Date; models: readonly ProviderId[] }, days: number): Change | null {
+  const before = new Date(opts.now.getTime() - days * DAY_MS);
+  const recentEstimate = estimateFor(checksInWindow(checks, opts.now, days), opts.models, (c) => c.mentioned).overall;
+  const beforeEstimate = estimateFor(checksInWindow(checks, before, days), opts.models, (c) => c.mentioned).overall;
+  if (!recentEstimate || !beforeEstimate || !isRealChange(recentEstimate, beforeEstimate)) return null;
+  const points = recentEstimate.score - beforeEstimate.score;
   return { direction: points > 0 ? "up" : "down", points: Math.abs(points) };
 }

@@ -1,10 +1,12 @@
 import "server-only";
+import { createHash } from "node:crypto";
 import { requireAgency } from "@/modules/auth";
 import { createServiceClient } from "@/lib/supabase/service";
 import type { ProviderId } from "../providers/types";
 import {
   SCORE_WINDOW_DAYS,
   competitorScores,
+  monthlyChange,
   scanSeries,
   trendSeries,
   visibilityScore,
@@ -30,6 +32,8 @@ export type ScoreReport = VisibilityScore & {
   /** Every scan day in the 30-day window, oldest first. */
   scans: ScanPoint[];
   change: Change | null;
+  /** The 30 days against the 30 before; null unless asked for with `historyDays` (DB-012). */
+  monthChange: Change | null;
   /** The oldest check in the window; a competitor added after it was not looked for on every check (F-53). */
   firstCheckedAt: Date | null;
   lastCheckedAt: Date | null;
@@ -52,8 +56,18 @@ export async function getScoreReport(businessId: string, options: { next?: strin
   return loadScoreReport(agency.id, businessId, new Date());
 }
 
+export type ReportOptions = {
+  /** Days before the 30-day window to read as well, for comparisons with earlier periods. */
+  historyDays?: number;
+};
+
 // Callers check the user may see this agency first.
-export async function loadScoreReport(agencyId: string, businessId: string, now: Date): Promise<ScoreReport | null> {
+export async function loadScoreReport(
+  agencyId: string,
+  businessId: string,
+  now: Date,
+  options: ReportOptions = {},
+): Promise<ScoreReport | null> {
   const db = createServiceClient();
   const [business, competitors, questions] = await Promise.all([
     db.from("businesses").select("id, models").eq("id", businessId).eq("agency_id", agencyId).maybeSingle(),
@@ -69,7 +83,12 @@ export async function loadScoreReport(agencyId: string, businessId: string, now:
   if (!business.data) return null;
 
   const models = business.data.models as ProviderId[];
-  const checks = await readChecks(businessId, new Date(now.getTime() - SCORE_WINDOW_DAYS * DAY_MS));
+  const windowStart = new Date(now.getTime() - SCORE_WINDOW_DAYS * DAY_MS);
+  const historyDays = options.historyDays ?? 0;
+  const [checks, older] = await Promise.all([
+    readChecks(businessId, windowStart),
+    historyDays > 0 ? readOlderChecks(businessId, new Date(windowStart.getTime() - historyDays * DAY_MS), windowStart) : [],
+  ]);
   const opts = { now, models };
   const appearances = new Map(
     questionAppearances(checks, {
@@ -83,6 +102,7 @@ export async function loadScoreReport(agencyId: string, businessId: string, now:
     trend: trendSeries(checks, opts),
     scans: scanSeries(checks, opts),
     change: weeklyChange(checks, opts),
+    monthChange: historyDays > 0 ? monthlyChange([...older, ...checks], opts) : null,
     firstCheckedAt: checks[0]?.checkedAt ?? null,
     lastCheckedAt: checks.at(-1)?.checkedAt ?? null,
     competitors: competitorScores(
@@ -139,4 +159,41 @@ async function readChecks(businessId: string, since: Date): Promise<ScoreCheck[]
     if (data.length < PAGE) break;
   }
   return checks;
+}
+
+/**
+ * Checks older than the visibility_checks_30d view keeps, read from visibility_results and shaped the same way
+ * (migration 032): the same answer key, so an answer repeated across the 30-day line still counts once.
+ */
+export async function readOlderChecks(businessId: string, from: Date, to: Date): Promise<ScoreCheck[]> {
+  const checks: ScoreCheck[] = [];
+  for (let start = 0; ; start += PAGE) {
+    const { data, error } = await createServiceClient()
+      .from("visibility_results")
+      .select("id, provider, tracked_prompt_id, created_at, business_mentioned, competitors_mentioned, answer_text")
+      .eq("business_id", businessId)
+      .gt("created_at", from.toISOString())
+      .lte("created_at", to.toISOString())
+      .order("created_at")
+      .order("id")
+      .range(start, start + PAGE - 1);
+    if (error) throw new Error(`Scores: could not read older checks: ${error.message}`);
+    for (const r of data) {
+      checks.push({
+        provider: r.provider as ProviderId,
+        questionId: r.tracked_prompt_id ?? "none",
+        checkedAt: new Date(r.created_at),
+        mentioned: r.business_mentioned,
+        competitorsMentioned: competitorNames(r.competitors_mentioned),
+        answerKey: r.answer_text === null ? r.id : createHash("md5").update(r.provider + r.answer_text).digest("hex"),
+      });
+    }
+    if (data.length < PAGE) break;
+  }
+  return checks;
+}
+
+function competitorNames(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return value.flatMap((c) => (c && typeof c === "object" && typeof c.name === "string" ? [c.name] : []));
 }

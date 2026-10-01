@@ -38,6 +38,8 @@ export type OverviewView = {
   trend: TrendView;
   opportunities: Pick<Opportunity, "id" | "title" | "impact">[];
   lastCheckedAt: string | null;
+  /** The last 30 days against the 30 before, only when bigger than the margin (D-64). */
+  monthChange: { direction: Change["direction"]; points: number } | null;
   /** One credit per answer: active questions times chosen models. */
   scanCredits: number;
 };
@@ -114,5 +116,6 @@ export function overviewView(
     opportunities: topOpportunities(opportunities),
     lastCheckedAt: report.lastCheckedAt?.toISOString() ?? null,
     scanCredits: report.questions.length * report.models.length,
+    monthChange: report.monthChange && { direction: report.monthChange.direction, points: Math.round(report.monthChange.points) },
   };
 }
