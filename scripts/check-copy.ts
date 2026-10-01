@@ -1,4 +1,5 @@
-// Copy rules from docs/design/WRITING.md (B-84): no long dashes, none of the banned AI-sounding words.
+// Copy rules from docs/design/WRITING.md (B-84): no long dashes, none of the banned AI-sounding words,
+// and none of the product terms MVP_SPEC 8.4 says not to show.
 // Usage: node scripts/check-copy.ts          (exits 1 on any finding)
 //        node scripts/check-copy.ts --list   (prints every string and JSX text in src/, for a wording review)
 //
@@ -19,6 +20,11 @@ const BANNED = [
   "world-class",
 ];
 const BANNED_RE = new RegExp(`(?<![\\w-])(${BANNED.map((w) => w.replace(/-/g, "\\-")).join("|")})(?![\\w-])`, "i");
+// MVP_SPEC 8.4 "Do not show". Acronyms match case-sensitively so words like "geography" or "llm_cost" pass.
+const SPEC_TERMS = [
+  /\b(direct score|share of voice|buyer[- ]intent|entity consistency|structured data|citation rate|beta \(free\)|supabase auth)\b/i,
+  /\b(GEO|AEO|WebMCP|LLMs?|UGC)\b/,
+];
 
 // Files allowed to break a rule, with the reason. Keep these short.
 const DASH_ALLOW: Record<string, string> = {
@@ -29,6 +35,12 @@ const WORD_ALLOW: Record<string, string> = {
   "src/modules/insights/validate.ts": "the banned word list that rejects AI-written reasons",
   "src/modules/insights/prompts/explain.v1.ts": "tells the model which words to avoid",
   "src/modules/sources/classify.ts": "Seamless is a food delivery site name",
+};
+const TERM_ALLOW: Record<string, string> = {
+  "src/app/api/internal/admin/news/article/route.ts": "LinkedIn studio AI prompt, kept untouched until Jordan answers (D-07)",
+  "src/app/api/internal/admin/news/search/route.ts": "LinkedIn studio AI prompt, kept untouched until Jordan answers (D-07)",
+  "src/app/internal/admin/news/_components/news-config.ts": "LinkedIn studio, kept untouched until Jordan answers (D-07)",
+  "src/app/internal/admin/news/_components/output-panel.tsx": "LinkedIn studio, kept untouched until Jordan answers (D-07)",
 };
 
 function walk(dir: string): string[] {
@@ -89,16 +101,19 @@ for (const file of files) {
     });
   }
   // Tests hold bad examples on purpose, to prove the validators reject them.
-  if (file in WORD_ALLOW || /\.test\.tsx?$/.test(file)) continue;
+  if (/\.test\.tsx?$/.test(file)) continue;
   for (const { line, text } of textsIn(file, source)) {
-    const match = BANNED_RE.exec(text);
+    const match = file in WORD_ALLOW ? null : BANNED_RE.exec(text);
     if (match) failures.push(`${file}:${line}: banned word "${match[1]}" in "${text.slice(0, 80)}"`);
+    const term = file in TERM_ALLOW ? null : SPEC_TERMS.map((re) => re.exec(text)).find(Boolean);
+    if (term) failures.push(`${file}:${line}: "${term[1]}" is on the MVP_SPEC 8.4 do not show list, in "${text.slice(0, 80)}"`);
   }
 }
-const staleAllow = [...Object.keys(DASH_ALLOW), ...Object.keys(WORD_ALLOW)].filter((file) => !files.includes(file));
+const allowed = [...Object.keys(DASH_ALLOW), ...Object.keys(WORD_ALLOW), ...Object.keys(TERM_ALLOW)];
+const staleAllow = [...new Set(allowed)].filter((file) => !files.includes(file));
 
 for (const failure of failures) console.log(`FAIL ${failure}`);
 for (const file of staleAllow) console.log(`FAIL ${file}: in the allow list but the file no longer exists`);
 
-console.log(`\nChecked ${files.length} files in src/ against docs/design/WRITING.md, ${Object.keys(DASH_ALLOW).length + Object.keys(WORD_ALLOW).length} files on the allow list.`);
+console.log(`\nChecked ${files.length} files in src/ against docs/design/WRITING.md and MVP_SPEC 8.4, ${new Set(allowed).size} files on the allow list.`);
 process.exit(failures.length || staleAllow.length ? 1 : 0);

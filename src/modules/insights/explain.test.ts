@@ -78,7 +78,7 @@ describe("explain", () => {
 
   it("rules name only tracked competitors and follow the writing guide", async () => {
     const { drafts } = await explain(COFFEE_SOURCES, null);
-    expect(drafts.map((d) => d.title)).toContain("Bean House is outperforming you in AI answers");
+    expect(drafts.map((d) => d.title)).toContain("AI assistants pick Bean House more often than you");
     for (const d of drafts) expect(storedText(d)).not.toMatch(/[\u2013\u2014]/);
   });
 
