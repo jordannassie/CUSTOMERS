@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { monthlyChange, scanSeries } from "./scoring";
+import { competitorWeeklyChange, modelWeeklyChanges, monthlyChange, scanSeries } from "./scoring-periods";
 import { check, MODELS, NOW } from "./scoring.test-helpers";
 
 // Per-scan and month-on-month numbers (DB-001, DB-012). The scores themselves are tested in scoring.test.ts.
@@ -30,5 +30,29 @@ describe("scanSeries", () => {
       ["2026-09-27", 50],
     ]);
     expect(points[1].margin).toBeGreaterThan(0);
+  });
+});
+
+describe("weekly changes per model and competitor (DB-013)", () => {
+  // 12 questions on one model in each week; `hit` decides the mentions.
+  const week = (model: (typeof MODELS)[number], hoursAgo: number, hit: (q: number) => boolean, names: string[] = []) =>
+    Array.from({ length: 12 }, (_, q) => check(model, `q${q}`, hoursAgo, hit(q), { competitorsMentioned: hit(q) ? [] : names }));
+
+  it("gives a model its change only when it beats that model's margin", () => {
+    const checks = [
+      ...week("openai", 10 * 24, (q) => q < 2),
+      ...week("openai", 2 * 24, (q) => q < 11),
+      ...week("anthropic", 10 * 24, (q) => q < 6),
+      ...week("anthropic", 2 * 24, (q) => q < 7),
+    ];
+    const changes = modelWeeklyChanges(checks, { now: NOW, models: MODELS });
+    expect(changes.openai).toMatchObject({ direction: "up" });
+    expect(changes.anthropic).toBeUndefined();
+    expect(changes.perplexity).toBeUndefined();
+  });
+
+  it("follows how often AI named a competitor", () => {
+    const checks = [...week("openai", 10 * 24, () => true, ["Bean House"]), ...week("openai", 2 * 24, () => false, ["Bean House"])];
+    expect(competitorWeeklyChange(checks, "bean house", { now: NOW, models: ["openai"] })).toMatchObject({ direction: "up" });
   });
 });

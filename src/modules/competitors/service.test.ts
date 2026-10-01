@@ -16,6 +16,7 @@ function report(overall: { score: number; margin: number } | null, competitors: 
     trend: [],
     scans: [],
     monthChange: null,
+    modelChanges: {},
     change: null,
     firstCheckedAt: overall ? FIRST_SCAN : null,
     lastCheckedAt: overall ? LAST_SCAN : null,
@@ -40,9 +41,9 @@ describe("leaderboard", () => {
   it("orders by score with you in place, and shades the strongest competitor darkest", () => {
     const v = view(
       report({ score: 41.4, margin: 6.6 }, [
-        { name: "Bean House", score: 62.2, standing: "behind" },
-        { name: "The Daily Grind", score: 38, standing: "about_same" },
-        { name: "Copper Kettle Cafe", score: 12, standing: "ahead" },
+        { name: "Bean House", score: 62.2, standing: "behind", change: null },
+        { name: "The Daily Grind", score: 38, standing: "about_same", change: null },
+        { name: "Copper Kettle Cafe", score: 12, standing: "ahead", change: null },
       ]),
       [row("The Daily Grind"), row("Bean House"), row("Copper Kettle Cafe")],
     );
@@ -58,8 +59,8 @@ describe("leaderboard", () => {
   it("lists a competitor added after the last scan without a score, at the end", () => {
     const v = view(
       report({ score: 50, margin: 5 }, [
-        { name: "Bean House", score: 60, standing: "behind" },
-        { name: "Blue Door Coffee", score: 0, standing: "ahead" },
+        { name: "Bean House", score: 60, standing: "behind", change: null },
+        { name: "Blue Door Coffee", score: 0, standing: "ahead", change: null },
       ]),
       [row("Blue Door Coffee", null, new Date(LAST_SCAN.getTime() + 60_000)), row("Bean House")],
     );
@@ -73,9 +74,9 @@ describe("leaderboard", () => {
   it("marks a competitor added after the window's first check as still collecting, with no standing (F-53)", () => {
     const v = view(
       report({ score: 50, margin: 5 }, [
-        { name: "Bean House", score: 30, standing: "ahead" },
-        { name: "Blue Door Coffee", score: 10, standing: "ahead" },
-        { name: "Copper Kettle Cafe", score: 70, standing: "behind" },
+        { name: "Bean House", score: 30, standing: "ahead", change: null },
+        { name: "Blue Door Coffee", score: 10, standing: "ahead", change: null },
+        { name: "Copper Kettle Cafe", score: 70, standing: "behind", change: null },
       ]),
       [row("Bean House"), row("Blue Door Coffee", null, new Date("2026-09-10T12:00:00Z")), row("Copper Kettle Cafe", null, FIRST_SCAN)],
     );
@@ -87,11 +88,26 @@ describe("leaderboard", () => {
     ]);
   });
 
+  it("shows a weekly change for a compared competitor, never for one still collecting (DB-013)", () => {
+    const up = { direction: "up" as const, points: 8.6 };
+    const v = view(
+      report({ score: 50, margin: 5 }, [
+        { name: "Bean House", score: 30, standing: "ahead", change: up },
+        { name: "Blue Door Coffee", score: 10, standing: "ahead", change: up },
+      ]),
+      [row("Bean House"), row("Blue Door Coffee", null, new Date("2026-09-10T12:00:00Z"))],
+    );
+    expect(v.leaderboard.filter((r) => !r.isYou).map((r) => [r.name, r.change])).toEqual([
+      ["Bean House", { direction: "up", points: 9 }],
+      ["Blue Door Coffee", null],
+    ]);
+  });
+
   it("counts a competitor as complete once the window starts after it was added", () => {
     const added = new Date("2026-09-10T12:00:00Z");
-    const r = { ...report({ score: 50, margin: 5 }, [{ name: "Blue Door Coffee", score: 10, standing: "ahead" as const }]) };
+    const r = { ...report({ score: 50, margin: 5 }, [{ name: "Blue Door Coffee", score: 10, standing: "ahead" as const, change: null }]) };
     const v = view({ ...r, firstCheckedAt: new Date(added.getTime() + 60_000) }, [row("Blue Door Coffee", null, added)]);
-    expect(v.leaderboard.find((x) => !x.isYou)).toMatchObject({ collecting: false, standing: "ahead" });
+    expect(v.leaderboard.find((x) => !x.isYou)).toMatchObject({ collecting: false, standing: "ahead", change: null });
   });
 
   it("before any scan: no score, no standings", () => {

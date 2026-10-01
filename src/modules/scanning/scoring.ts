@@ -4,7 +4,7 @@ import type { ProviderId } from "./providers/types";
 
 export const SCORE_WINDOW_DAYS = 30;
 export const TREND_DAYS = 7;
-const DAY_MS = 86_400_000;
+export const DAY_MS = 86_400_000;
 // 95% interval.
 const Z = 1.96;
 
@@ -32,7 +32,7 @@ export type Confidence = "early" | "good" | "high";
 
 export type Standing = "ahead" | "behind" | "about_same";
 
-type Mentioned = (check: ScoreCheck) => boolean;
+export type Mentioned = (check: ScoreCheck) => boolean;
 
 type Stats = Estimate & { variance: number };
 
@@ -92,7 +92,7 @@ function strip(stats: Stats): Estimate {
 }
 
 /** Per model estimates and their equal-weight average (D-65). Null overall when no chosen model has a check. */
-function estimateFor(checks: ScoreCheck[], models: readonly ProviderId[], mentioned: Mentioned) {
+export function estimateFor(checks: ScoreCheck[], models: readonly ProviderId[], mentioned: Mentioned) {
   const byModel = new Map<ProviderId, Stats>();
   for (const model of models) {
     const stats = modelStats(
@@ -150,17 +150,6 @@ export function trendSeries(checks: ScoreCheck[], opts: { now: Date; models: rea
   });
 }
 
-export type ScanPoint = { date: string; score: number; margin: number };
-
-/** The estimate of each UTC day with checks, oldest first. A day's checks are one scan, so this is the score per scan. */
-export function scanSeries(checks: ScoreCheck[], opts: { now: Date; models: readonly ProviderId[] }): ScanPoint[] {
-  const byDay = groupBy(checksInWindow(checks, opts.now), (c) => c.checkedAt.toISOString().slice(0, 10));
-  return [...byDay.keys()].sort().flatMap((date) => {
-    const { overall } = estimateFor(byDay.get(date)!, opts.models, (c) => c.mentioned);
-    return overall ? [{ date, score: overall.score, margin: overall.margin }] : [];
-  });
-}
-
 /** True only when the gap is larger than the margin of the two estimates together. */
 export function isRealChange(a: Pick<Estimate, "score" | "margin">, b: Pick<Estimate, "score" | "margin">): boolean {
   return Math.abs(a.score - b.score) > Math.hypot(a.margin, b.margin);
@@ -196,28 +185,4 @@ export function competitorScores(
     const them = estimateFor(inWindow, opts.models, mentioned).overall!;
     return { name, estimate: them, standing: compareWithCompetitor(you, them) };
   });
-}
-
-export type Change = { direction: "up" | "down"; points: number };
-
-/**
- * The last 7 days against the 7 days before, so the two estimates share no checks.
- * Null unless both weeks have checks and the gap is larger than the margin (D-64).
- */
-export function weeklyChange(checks: ScoreCheck[], opts: { now: Date; models: readonly ProviderId[] }): Change | null {
-  return periodChange(checks, opts, TREND_DAYS);
-}
-
-/** The last 30 days against the 30 before, for the client report (DB-012). Same rule as the weekly change. */
-export function monthlyChange(checks: ScoreCheck[], opts: { now: Date; models: readonly ProviderId[] }): Change | null {
-  return periodChange(checks, opts, SCORE_WINDOW_DAYS);
-}
-
-function periodChange(checks: ScoreCheck[], opts: { now: Date; models: readonly ProviderId[] }, days: number): Change | null {
-  const before = new Date(opts.now.getTime() - days * DAY_MS);
-  const recentEstimate = estimateFor(checksInWindow(checks, opts.now, days), opts.models, (c) => c.mentioned).overall;
-  const beforeEstimate = estimateFor(checksInWindow(checks, before, days), opts.models, (c) => c.mentioned).overall;
-  if (!recentEstimate || !beforeEstimate || !isRealChange(recentEstimate, beforeEstimate)) return null;
-  const points = recentEstimate.score - beforeEstimate.score;
-  return { direction: points > 0 ? "up" : "down", points: Math.abs(points) };
 }

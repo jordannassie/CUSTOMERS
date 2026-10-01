@@ -63,6 +63,7 @@ describe("reportSummary", () => {
     isYou,
     score,
     standing,
+    change: null,
     collecting: false,
     shade: null,
   });

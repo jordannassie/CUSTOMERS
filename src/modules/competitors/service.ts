@@ -1,3 +1,4 @@
+import { pointsChange, type PointsChange } from "@/modules/overview";
 import type { AlsoRecommendedList, ScoreReport, Standing } from "@/modules/scanning";
 import type { PlaceSignals } from "./places";
 
@@ -11,6 +12,8 @@ export type LeaderRow = {
   standing: Standing | null;
   /** Added partway through the 30-day window, so older checks never looked for it (F-53): no standing yet. */
   collecting: boolean;
+  /** Weekly change, only outside the margin and never for a competitor still collecting (DB-013). */
+  change: PointsChange | null;
   /** Grey shade for a competitor's bar: 1 is the strongest (DESIGN.md competitor-1 to 3). */
   shade: 1 | 2 | 3 | null;
 };
@@ -76,6 +79,8 @@ export function competitorsView(input: {
       isYou: false,
       score: checked ? Math.round(score.score) : null,
       standing: checked && !collecting ? score.standing : null,
+      // Older checks never looked for a competitor still collecting, so its change could be a false rise.
+      change: checked && !collecting ? pointsChange(score.change) : null,
       collecting,
       shade: null,
     };
@@ -90,6 +95,7 @@ export function competitorsView(input: {
     isYou: true,
     score: overall ? Math.round(overall.score) : null,
     standing: null,
+    change: pointsChange(report.change),
     collecting: false,
     shade: null,
   };

@@ -12,10 +12,9 @@ export {
   compareWithCompetitor,
   isRealChange,
   SCORE_WINDOW_DAYS,
-  type Change,
   type Confidence,
   type Estimate,
-  type ScanPoint,
   type Standing,
   type TrendPoint,
 } from "./scoring";
+export type { Change, ScanPoint } from "./scoring-periods";

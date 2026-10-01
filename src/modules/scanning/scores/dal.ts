@@ -6,18 +6,22 @@ import type { ProviderId } from "../providers/types";
 import {
   SCORE_WINDOW_DAYS,
   competitorScores,
-  monthlyChange,
-  scanSeries,
   trendSeries,
   visibilityScore,
-  weeklyChange,
-  type Change,
   type CompetitorScore,
-  type ScanPoint,
   type ScoreCheck,
   type TrendPoint,
   type VisibilityScore,
 } from "../scoring";
+import {
+  competitorWeeklyChange,
+  modelWeeklyChanges,
+  monthlyChange,
+  scanSeries,
+  weeklyChange,
+  type Change,
+  type ScanPoint,
+} from "../scoring-periods";
 import { questionAppearances, questionAppearancesByModel, type ModelAppearance } from "./questions";
 
 // 30-day score aggregates (B-30 step 2) from the visibility_checks_30d view (migration 032).
@@ -32,6 +36,8 @@ export type ScoreReport = VisibilityScore & {
   /** Every scan day in the 30-day window, oldest first. */
   scans: ScanPoint[];
   change: Change | null;
+  /** Each model's weekly change, only where it is bigger than the margin (DB-013). */
+  modelChanges: Partial<Record<ProviderId, Change>>;
   /** The 30 days against the 30 before; null unless asked for with `historyDays` (DB-012). */
   monthChange: Change | null;
   /** The oldest check in the window; a competitor added after it was not looked for on every check (F-53). */
@@ -41,6 +47,8 @@ export type ScoreReport = VisibilityScore & {
     name: string;
     score: number;
     standing: CompetitorScore["standing"];
+    /** Weekly change in how often AI named it, only outside the margin (DB-013). */
+    change: Change | null;
   }[];
   questions: {
     id: string;
@@ -102,6 +110,7 @@ export async function loadScoreReport(
     trend: trendSeries(checks, opts),
     scans: scanSeries(checks, opts),
     change: weeklyChange(checks, opts),
+    modelChanges: modelWeeklyChanges(checks, opts),
     monthChange: historyDays > 0 ? monthlyChange([...older, ...checks], opts) : null,
     firstCheckedAt: checks[0]?.checkedAt ?? null,
     lastCheckedAt: checks.at(-1)?.checkedAt ?? null,
@@ -113,6 +122,7 @@ export async function loadScoreReport(
       name: c.name,
       score: c.estimate.score,
       standing: c.standing,
+      change: competitorWeeklyChange(checks, c.name, opts),
     })),
     questions: questions.data!.map((q) => ({
       id: q.id,

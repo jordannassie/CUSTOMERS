@@ -23,6 +23,14 @@ export type Tone = "good" | "mid" | "low";
 
 export type Opportunity = { id: string; title: string; impact: Impact; createdAt: string };
 
+/** "Up 6": a change rounded to whole points, shown only when bigger than the margin (D-64). */
+export type PointsChange = { direction: Change["direction"]; points: number };
+
+export function pointsChange(change: Change | null | undefined): PointsChange | null {
+  const points = change ? Math.round(change.points) : 0;
+  return change && points > 0 ? { direction: change.direction, points } : null;
+}
+
 export type OverviewView = {
   score: {
     value: number;
@@ -34,12 +42,12 @@ export type OverviewView = {
     change: { direction: Change["direction"]; text: string } | null;
     details: MethodPanel;
   } | null;
-  models: { id: ProviderId; label: string; score: number | null }[];
+  models: { id: ProviderId; label: string; score: number | null; change: PointsChange | null }[];
   trend: TrendView;
   opportunities: Pick<Opportunity, "id" | "title" | "impact">[];
   lastCheckedAt: string | null;
   /** The last 30 days against the 30 before, only when bigger than the margin (D-64). */
-  monthChange: { direction: Change["direction"]; points: number } | null;
+  monthChange: PointsChange | null;
   /** One credit per answer: active questions times chosen models. */
   scanCredits: number;
 };
@@ -111,11 +119,11 @@ export function overviewView(
         calibration,
       ),
     },
-    models: models.map(({ id, label, score }) => ({ id, label, score })),
+    models: models.map(({ id, label, score }) => ({ id, label, score, change: pointsChange(report.modelChanges[id]) })),
     trend: trendView({ trend: report.trend, scans: report.scans, nextScanAt, now }),
     opportunities: topOpportunities(opportunities),
     lastCheckedAt: report.lastCheckedAt?.toISOString() ?? null,
     scanCredits: report.questions.length * report.models.length,
-    monthChange: report.monthChange && { direction: report.monthChange.direction, points: Math.round(report.monthChange.points) },
+    monthChange: pointsChange(report.monthChange),
   };
 }

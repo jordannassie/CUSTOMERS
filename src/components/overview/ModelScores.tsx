@@ -1,5 +1,6 @@
 import { cn } from "cn";
 import type { OverviewView } from "@/modules/overview";
+import { PointsChange } from "./PointsChange";
 
 const BAR: Record<OverviewView["models"][number]["id"], string> = {
   openai: "bg-chatgpt",
@@ -18,8 +19,11 @@ export function ModelScores({ models }: { models: OverviewView["models"] }) {
               <span className={cn("size-2 rounded-full", BAR[m.id])} aria-hidden="true" />
               {m.label}
             </span>
-            <span className="font-semibold tabular-nums">
-              {m.score === null ? <span className="font-normal text-text-hint">No checks yet</span> : m.score}
+            <span className="flex items-baseline gap-2">
+              {m.change && <PointsChange change={m.change} />}
+              <span className="font-semibold tabular-nums">
+                {m.score === null ? <span className="font-normal text-text-hint">No checks yet</span> : m.score}
+              </span>
             </span>
           </div>
           <div className="h-1.5 overflow-hidden rounded-xs bg-muted" aria-hidden="true">

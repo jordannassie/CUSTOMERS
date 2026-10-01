@@ -7,9 +7,9 @@ import {
   isRealChange,
   trendSeries,
   visibilityScore,
-  weeklyChange,
   type ScoreCheck,
 } from "./scoring";
+import { weeklyChange } from "./scoring-periods";
 import { check, MODELS, NOW } from "./scoring.test-helpers";
 
 function series(provider: ProviderId, mentions: number, total: number, extra: Partial<ScoreCheck> = {}): ScoreCheck[] {
