@@ -94,17 +94,32 @@ Check the calls: `select id, status_code, left(content, 200), created from net._
 2. Let the daily enqueue include real agencies: `select cron.schedule('enqueue-due-scans', '0 2 * * *', 'select public.enqueue_due_scans(true)');`
 3. Check: `select command from cron.job where jobname = 'enqueue-due-scans';` shows `(true)`.
 
-## Pending for customers-dev and live
+## Pending for live
 
-Applied to the local stack only (customers-dev is unreachable, F-24; live is untouched until go-live). Apply in order, after a backup, then set the Vault secrets above:
+Live has 001 to 020 (Baseline above) and none of the files below. Go-live applies all of them in order with `supabase db push`, after a backup and the history repair (`docs/launch/RUNBOOK.md` steps 2 to 4). customers-dev was unreachable while most of these were written (F-24), so check it with `supabase migration list --linked` before applying there. Notes say what else each one needs.
 
-- `029_scan_schedules.sql`
+- `021_core_tables.sql` (B-11)
+- `022_credit_tables.sql` (B-12)
+- `023_credit_functions.sql` (B-13)
+- `024_legacy_data_columns.sql` (B-14)
+- `025_backfill_existing_data.sql` (B-14; moves existing users onto agencies. Save the counts before and compare after with `npm run verify:migration`)
+- `026_answer_cache_fields.sql` (B-23)
+- `027_scan_check_results.sql` (B-26)
+- `028_scan_job_worker.sql` (B-27)
+- `029_scan_schedules.sql` (B-28; then set the `scan_worker_url` and `scan_worker_secret` Vault secrets above)
 - `030_cron_job_status.sql`
 - `031_scan_frequency_next_scan.sql`
 - `032_visibility_checks_30d.sql`
 - `033_retry_scan_job.sql`
 - `034_topup_packs.sql` (B-40; then run the Stripe catalog sync for that project, see `src/modules/billing/README.md`)
 - `035_email_log.sql` (B-61; then run `npm run db:types` against that project and check the diff is empty)
+- `036_agency_deleted_at.sql` (B-65, B-77)
 - `037_system_alerts.sql` (B-69; then set the `system_alerts_url` Vault secret above and `ALERT_DAILY_COST_USD` on the host)
 - `038_email_jobs.sql` (B-62; then set the `email_jobs_url` Vault secret above)
 - `039_rate_limit_hits.sql` (SEC-07; shared per-IP counts for the contact form and the public compare check)
+- `040_save_first_questions.sql` (E2E-0929)
+- `041_capture_credits.sql` (E2E-0929)
+- `042_account_deletion.sql` (B-77; adds the `purge-deleted-accounts` cron job. `DELETION_WAIT_DAYS` on the host sets the wait, default 30)
+- `043_trial_rules.sql` (B-45)
+
+Any file added after 043 joins this list.
