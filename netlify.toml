@@ -7,8 +7,8 @@
   included_files = ["tests/fixtures/ai-answers/**"]
 
 [build.environment]
-  # Node version: bump to 22+ when your host supports it
-  NODE_VERSION = "20"
+  # Same major as CI and package.json engines. Supabase JS needs 22+; 24 is the active LTS.
+  NODE_VERSION = "24"
 
 [[plugins]]
   package = "@netlify/plugin-nextjs"

@@ -62,6 +62,7 @@ Optional:
 | `PDF_RENDERER` | `browserless` or `chromium` | `browserless` |
 | `BROWSERLESS_URL` | Browserless region address | Browserless San Francisco |
 | `OPENAI_NEWS_MODEL` | Model for admin news | `gpt-4o` |
+| `DELETION_WAIT_DAYS` | Days before a deleted account or business is removed for good (B-77). The Privacy page shows this number | 30 |
 | `DATAFORSEO_USERNAME`, `DATAFORSEO_PASSWORD` | Search data, on hold (D-06) | Unset |
 | `STRIPE_PRICE_STARTER_MONTHLY`, `STRIPE_PRICE_GROWTH_MONTHLY`, `STRIPE_PRICE_PRO_MONTHLY` | Old pricing config only; real price IDs live in the `plans` table | Unset |
 
@@ -74,6 +75,8 @@ Old names from the previous app (`ADMIN_PIN`, `ADMIN_SESSION_SECRET`, `GEO_CRON_
 
 ## 2. Back up live
 
+Backup plan and restore steps: `BACKUPS.md` (proposal, needs Jordan's approval).
+
 - [ ] **Dev**: with the user's approval, link the CLI to live and take both dumps (keep them out of git, store them with the password manager notes):
 
 ```
@@ -84,6 +87,7 @@ supabase db dump --linked --data-only -f backup-<date>-data.sql
 
 - [ ] **Dev**: note the row counts for the move check: `npm run verify:migration -- --linked --baseline --save before.json`.
 - [ ] **Jordan**: confirm a Supabase dashboard backup exists for today (Database, Backups).
+- [ ] **Dev**: copy the logo buckets (`BACKUPS.md`, "Weekly copy of logos"). Database backups do not include Storage files.
 
 ## 3. Repair migration history (F-11)
 
@@ -95,15 +99,15 @@ Live had migrations 001 to 020 applied by hand, so it has no migration history. 
 supabase migration repair --linked --status applied 001 002 003 004 005 006 007 008 009 010 011 012 013 014 015 016 017 018 019 020
 ```
 
-- [ ] **Dev**: `supabase migration list --linked` shows 001 to 020 applied on remote and 021 to 041 not applied. `npm run db:drift` shows no drift for 001 to 020 (see `supabase/migrations/README.md`, Baseline).
+- [ ] **Dev**: `supabase migration list --linked` shows 001 to 020 applied on remote and 021 to 043 not applied. `npm run db:drift` shows no drift for 001 to 020 (see `supabase/migrations/README.md`, Baseline).
 
 ## 4. Apply migrations 021 onward
 
 All are additive (D-43), so the current live site keeps working while they run. `supabase db push` applies them in order and stops at the first error.
 
-- [ ] **Dev**: `supabase db push` (applies 021 to 041).
+- [ ] **Dev**: `supabase db push` (applies 021 to 043).
 - [ ] **Dev**: checks after the push:
-  - `supabase migration list --linked` shows 021 to 041 applied.
+  - `supabase migration list --linked` shows 021 to 043 applied.
   - 025 moved existing users: `npm run verify:migration -- --linked --compare before.json --save after.json` passes (counts match, every business has an agency).
   - 029 made the pg_cron jobs: see step 6.
   - 034 made `topup_packs`: continue with step 7 (Stripe catalog sync).
@@ -128,7 +132,7 @@ The pg_cron jobs read these. Set once in the live SQL editor (the commands are i
 
 ## 6. pg_cron jobs that must be running
 
-All times UTC. Check with `select jobname, schedule, active from cron.job order by jobname;`. There must be 9 active jobs:
+All times UTC. Check with `select jobname, schedule, active from cron.job order by jobname;`. There must be 10 active jobs:
 
 | Job | When | Does |
 |---|---|---|
@@ -139,10 +143,11 @@ All times UTC. Check with `select jobname, schedule, active from cron.job order 
 | `enqueue-due-scans` | 02:00 daily | Queues scheduled scans (test agencies only until step 10) |
 | `expire-grants` | 01:00 daily | Expires old credit grants |
 | `purge-cron-history` | 03:30 daily | Deletes cron history older than 14 days |
+| `purge-deleted-accounts` | 03:45 daily | Removes deleted accounts and businesses once their wait has passed (042) |
 | `purge-rate-limit-hits` | hourly at :15 | Deletes old rate limit rows |
 | `reset-stuck-jobs` | every 10 minutes | Frees jobs stuck in "running" |
 
-- [ ] **Dev**: all 9 present and active.
+- [ ] **Dev**: all 10 present and active.
 
 ## 7. Stripe live switch
 
@@ -167,7 +172,7 @@ Details: `src/modules/billing/README.md`, "First-time setup" and "Live".
 - [ ] **Dev**: `main` merged into `mvp` first, all checks green on the pull request `mvp` into `main`.
 - [ ] **Dev**: Netlify auto publish from `main` is on (D-45).
 - [ ] **Dev**: merge the pull request. Netlify builds and publishes it. The build also bundles the worker as the background function `scan-worker-background` (`scripts/build-worker.mjs`, `netlify.toml`).
-- [ ] **Dev**: in the Netlify deploy log, the build passed and the Functions list shows `scan-worker-background`.
+- [ ] **Dev**: in the Netlify deploy log, the build passed on Node 24 (`netlify.toml`) and the Functions list shows `scan-worker-background`.
 - [ ] **Dev**: `curl -s -o /dev/null -w "%{http_code}" -X POST https://<domain>/.netlify/functions/scan-worker-background` returns 202 (Netlify answers background functions at once). Then check the function log shows 401 for the missing secret.
 - [ ] **Dev**: in the live SQL editor, `select id, status_code, left(content, 200), created from net._http_response order by created desc limit 5;` shows recent calls with no errors once a job is queued.
 
@@ -209,9 +214,9 @@ Same day, on production, as an internal account:
 - [ ] **Dev**: full Playwright suite against production with an internal `is_test` agency.
 - [ ] **Both**: walk every phase's demo checklist on desktop and phone (`docs/build-plan/`), including the Phase 10 list: welcome email, share link, PDF, password change, delete a test business, "How we measure", Terms and Privacy, admin view of the new customer.
 - [ ] **Dev**: admin settings page (`/internal/admin/settings`) shows every key set, Stripe live, Resend set, the worker's last run and pg_cron's last run.
-- [ ] **Dev**: the 9 pg_cron jobs ran without errors (`cron_job_status()`, or `cron.job_run_details`).
+- [ ] **Dev**: the 10 pg_cron jobs ran without errors (`cron_job_status()`, or `cron.job_run_details`).
 - [ ] **Dev**: alerts work: the admin Overview shows no unexpected alerts, and one alert email has arrived at some point (for example after a test failure).
-- [ ] **Jordan**: backups are on for the live project (Supabase plan and schedule). The repo does not record which backup plan is on; confirm it.
+- [ ] **Jordan**: backups are on for the live project as approved in `BACKUPS.md` (plan, option A or B), and the first restore drill is logged there.
 - [ ] **Dev**: every item in "Ask Jordan" in DECISIONS.md answered.
 - [ ] **Dev**: write the one page launch note: what is live, known limitations, who to contact.
 - [ ] **Dev**: after 7 clean days, delete the old env names from step 1 in Netlify.
@@ -219,7 +224,7 @@ Same day, on production, as an internal account:
 ## Open items found while writing this
 
 - Supabase Auth emails use the built in sender (step 8). Needs a decision.
-- `netlify.toml` pins Node 20, which MVP_SPEC 20 says is being retired. Check Netlify's supported versions before launch.
+- Done: Netlify, CI and `package.json` now use Node 24, the active LTS. Supabase JS needs 22 or later, so Node 20 no longer fit.
 - MVP_SPEC 14 plans to remove `BETA_FREE_ACCESS`, `TRIAL_ENABLED` and `DATAFORSEO_*`; they are still read by the code, so step 1 sets them.
-- `supabase/migrations/README.md` "Pending" list omits 026 to 028, 036, 040 and 041. Live needs all of 021 to 041.
-- Backups on production (B-83): no backup plan is recorded in the repo.
+- Done: `supabase/migrations/README.md` "Pending for live" lists every file live needs, 021 to 043.
+- Backups on production (B-83): proposal in `BACKUPS.md`, waiting for Jordan's approval.

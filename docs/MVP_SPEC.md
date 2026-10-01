@@ -803,7 +803,7 @@ D-41, D-70 (Proposed). The rebuilt app is tested on a Netlify preview first (bui
 - Netlify auto-deploy paused (D-45), so half-built MVP work on `main` never goes live.
 
 **Steps**
-1. Create the Vercel project from the GitHub repo. Add environment variables for Preview and Production (new keys only). Node 24 (Netlify currently pins Node 20, which is being retired).
+1. Create the Vercel project from the GitHub repo. Add environment variables for Preview and Production (new keys only). Node 24, the same version Netlify and CI use.
 2. Remove `netlify.toml`, `@netlify/plugin-nextjs` and `netlify/functions` (the daily job moves to pg_cron, 6.2).
 3. Test the full flow on a Vercel preview URL: signup with a test agency (`is_test`), Stripe sandbox checkout, webhooks pointed at the preview URL, the pg_net worker pointed at the preview URL with its secret.
 4. Go live:
