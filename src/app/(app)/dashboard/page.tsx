@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { RunScanButton } from "@/components/app/RunScanButton";
+import { PickedInstead } from "@/components/competitors/PickedInstead";
 import { ExportPdfButton } from "@/components/report/ExportPdfButton";
 import { ShareButton } from "@/components/report/ShareButton";
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,6 +9,7 @@ import { ModelScores, ModelScoresRow } from "@/components/overview/ModelScores";
 import { ScoreSummary } from "@/components/overview/ScoreSummary";
 import { OPPORTUNITIES_HREF, TopOpportunities } from "@/components/overview/TopOpportunities";
 import { TrendChart } from "@/components/overview/TrendChart";
+import { getPickedInstead } from "@/modules/competitors";
 import { getScanStatus, startScan } from "@/modules/jobs";
 import { getOverview } from "@/modules/overview";
 import { createShareLink, exportPdf, getShareLink, revokeShareLink } from "@/modules/reports";
@@ -22,10 +24,11 @@ export default async function OverviewPage() {
   // Setup is the onboarding wizard's job (B-36); it resumes where the user stopped.
   if (!business || business.status === "onboarding") redirect("/onboarding");
 
-  const [overview, scanStatus, shareLink] = await Promise.all([
+  const [overview, scanStatus, shareLink, picked] = await Promise.all([
     getOverview(business.id),
     getScanStatus({ businessId: business.id }),
     getShareLink(business.id),
+    getPickedInstead(business.id),
   ]);
   if (!overview) notFound();
   const { score } = overview;
@@ -115,6 +118,8 @@ export default async function OverviewPage() {
           </CardContent>
         </Card>
       </div>
+
+      {score && picked && <PickedInstead picked={picked} />}
 
       <Card>
         <CardHeader>
