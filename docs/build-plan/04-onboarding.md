@@ -70,7 +70,7 @@ Phase 4 · L · Depends on: B-15 · Blocked by Jordan: no · MVP_SPEC 3.2, 26, D
 ---
 
 ### B-35 Competitor discovery
-- [ ] Done
+- [x] Done (PR #70, merged into mvp)
 
 Phase 4 · M · Depends on: B-34 · Blocked by Jordan: no · MVP_SPEC 3.1 step 5, 7.1, D-73 · Branch: `task/B-35-competitor-discovery` → `mvp`
 
