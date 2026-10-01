@@ -57,7 +57,7 @@ export function AgencyStep({ defaultName, logoUrl, plan, save, uploadLogo }: Pro
   }
 
   return (
-    <form ref={fields.formRef} onSubmit={submit} className="flex flex-col gap-6" noValidate>
+    <form onSubmit={submit} className="flex flex-col gap-6" noValidate>
       <div className="flex flex-col gap-2">
         <Label htmlFor="agency-name">Agency name</Label>
         <Input

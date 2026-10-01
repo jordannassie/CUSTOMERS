@@ -51,7 +51,7 @@ export function WebsiteStep({ defaultDomain, defaultNoWebsite, backHref, save }:
   if (pending) return <Reading what={noWebsite ? `${name} in ${city}` : domain} noWebsite={noWebsite} />;
 
   return (
-    <form ref={fields.formRef} onSubmit={submit} className="flex flex-col gap-6" noValidate>
+    <form onSubmit={submit} className="flex flex-col gap-6" noValidate>
       {noWebsite ? (
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="flex flex-col gap-2 sm:col-span-2">

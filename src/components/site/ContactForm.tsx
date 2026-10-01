@@ -99,7 +99,7 @@ export default function ContactForm({ initialInterest, source = "contact_page", 
   const pair = compact ? "flex flex-col gap-5" : "grid gap-5 sm:grid-cols-2";
 
   return (
-    <form ref={fields.formRef} onSubmit={handleSubmit} className={cn(box, "flex flex-col gap-5")} noValidate>
+    <form onSubmit={handleSubmit} className={cn(box, "flex flex-col gap-5")} noValidate>
       <input
         type="text"
         name="_honey"

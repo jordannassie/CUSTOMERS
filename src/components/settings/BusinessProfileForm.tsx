@@ -65,7 +65,7 @@ export function BusinessProfileForm({ business, save }: { business: SettingsBusi
 
   return (
     <Panel>
-      <form ref={fields.formRef} onSubmit={submit} className="flex flex-col gap-5" aria-label="Business profile" noValidate>
+      <form onSubmit={submit} className="flex flex-col gap-5" aria-label="Business profile" noValidate>
         <div className="grid gap-5 sm:grid-cols-2">
           <Row label="Business name" htmlFor="profile-name" error={fields.errors.name}>
             <Input {...field("name")} required maxLength={120} autoComplete="organization" {...fields.fieldProps("name")} />

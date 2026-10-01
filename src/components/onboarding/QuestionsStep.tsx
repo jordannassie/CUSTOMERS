@@ -60,7 +60,7 @@ export function QuestionsStep({ businessId, questions, limit, save }: Props) {
   }
 
   return (
-    <form ref={fields.formRef} onSubmit={submit} className="flex flex-col gap-6" noValidate>
+    <form onSubmit={submit} className="flex flex-col gap-6" noValidate>
       <div className="rounded-md border border-border bg-surface">
         <div className="flex items-baseline justify-between gap-3 border-b border-border px-4 py-3">
           <h2 className="text-sm font-medium">Questions we ask AI</h2>

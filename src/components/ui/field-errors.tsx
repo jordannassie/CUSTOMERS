@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useState } from "react";
 
 export type FieldErrors<K extends string> = Partial<Record<K, string>>;
 
@@ -13,15 +13,19 @@ export const INVALID_CLASS = "aria-invalid:border-destructive aria-invalid:ring-
  */
 export function useFieldErrors<K extends string>(prefix: string) {
   const [errors, setErrorState] = useState<FieldErrors<K>>({});
-  const formRef = useRef<HTMLFormElement>(null);
   const idOf = (key: K) => `${prefix}-${key}-error`;
 
-  /** Shows the errors and focuses the first bad field. Returns true when there are any. */
+  /** Shows the errors and focuses the first bad field (list keys in form order). Returns true when there are any. */
   function show(next: FieldErrors<K>) {
     setErrorState(next);
-    const bad = Object.values(next).some(Boolean);
-    if (bad) requestAnimationFrame(() => formRef.current?.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus());
-    return bad;
+    const first = (Object.keys(next) as K[]).find((key) => next[key]);
+    if (first) {
+      // After the re-render, when the field carries aria-invalid and points at its message.
+      requestAnimationFrame(() =>
+        document.querySelector<HTMLElement>(`[aria-invalid="true"][aria-describedby~="${idOf(first)}"]`)?.focus(),
+      );
+    }
+    return first !== undefined;
   }
 
   /** Drops a field's message once the user edits it. */
@@ -35,7 +39,7 @@ export function useFieldErrors<K extends string>(prefix: string) {
     return { "aria-invalid": errors[key] ? true : undefined, "aria-describedby": described || undefined };
   }
 
-  return { errors, show, clear, fieldProps, idOf, formRef };
+  return { errors, show, clear, fieldProps, idOf };
 }
 
 export function FieldMessage({ id, message }: { id: string; message?: string | null }) {

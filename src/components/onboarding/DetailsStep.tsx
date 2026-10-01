@@ -96,7 +96,7 @@ function DetailsForm({ businessId, details, industryText, save, autofill }: Prop
   }
 
   return (
-    <form ref={fields.formRef} onSubmit={submit} className="flex flex-col gap-6" noValidate>
+    <form onSubmit={submit} className="flex flex-col gap-6" noValidate>
       <AutofillNote autofill={autofill} />
 
       <div className="grid gap-5 sm:grid-cols-2">
