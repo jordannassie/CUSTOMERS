@@ -15,7 +15,7 @@ import {
 
 const FIRST_SCAN = new Date("2026-08-25T12:00:00Z");
 const LAST_SCAN = new Date("2026-09-20T12:00:00Z");
-const BEFORE = new Date("2026-08-20T12:00:00Z");
+const BEFORE = new Date("2026-08-10T12:00:00Z");
 
 function report(overall: { score: number; margin: number } | null, competitors: ScoreReport["competitors"] = []): ScoreReport {
   return {
@@ -110,6 +110,15 @@ describe("leaderboard", () => {
       ["Bean House", { direction: "up", points: 9 }],
       ["Blue Door Coffee", null],
     ]);
+  });
+
+  it("shows no change for a competitor added in the week before the window, which the week-ago score missed", () => {
+    const up = { direction: "up" as const, points: 9 };
+    // Added 3 days before the window's first check: compared now, but not over the whole week-ago window.
+    const v = view(report({ score: 50, margin: 5 }, [{ name: "Bean House", score: 30, standing: "ahead", change: up }]), [
+      row("Bean House", null, new Date(FIRST_SCAN.getTime() - 3 * 86_400_000)),
+    ]);
+    expect(v.leaderboard.find((r) => !r.isYou)).toMatchObject({ standing: "ahead", change: null });
   });
 
   it("counts a competitor as complete once the window starts after it was added", () => {

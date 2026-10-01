@@ -36,14 +36,15 @@ export function scoreHistory(
 export type Change = { direction: "up" | "down"; points: number };
 
 /**
- * The last 7 days against the 7 days before, so the two estimates share no checks.
- * Null unless both weeks have checks and the gap is larger than the margin (D-64).
+ * How much the displayed 30-day score moved in a week: the score now against the score as it stood 7 days ago,
+ * the same two numbers the Overview and the score-at-each-scan chart show. `checks` must reach 37 days back.
+ * Null unless both have checks and the gap is larger than the margin (D-64).
  */
 export function weeklyChange(checks: ScoreCheck[], opts: { now: Date; models: readonly ProviderId[] }): Change | null {
   return periodChange(checks, opts, TREND_DAYS);
 }
 
-/** The last 30 days against the 30 before, for the client report (DB-012). Same rule as the weekly change. */
+/** The 30-day score now against the 30-day score 30 days ago, for the client report (DB-012). Same rule. */
 export function monthlyChange(checks: ScoreCheck[], opts: { now: Date; models: readonly ProviderId[] }): Change | null {
   return periodChange(checks, opts, SCORE_WINDOW_DAYS);
 }
@@ -61,7 +62,7 @@ export function modelWeeklyChanges(
   return changes;
 }
 
-/** A competitor's weekly change in how often AI named it (DB-013). */
+/** A competitor's weekly change in its 30-day score, how often AI named it (DB-013). */
 export function competitorWeeklyChange(
   checks: ScoreCheck[],
   name: string,
@@ -71,15 +72,16 @@ export function competitorWeeklyChange(
   return periodChange(checks, opts, TREND_DAYS, (c) => c.competitorsMentioned.some((n) => n.toLowerCase() === lower));
 }
 
+/** The 30-day score now against the 30-day score `daysBack` days ago, both read exactly as the screen reads them. */
 function periodChange(
   checks: ScoreCheck[],
   opts: { now: Date; models: readonly ProviderId[] },
-  days: number,
+  daysBack: number,
   mentioned: Mentioned = (c) => c.mentioned,
 ): Change | null {
-  const before = new Date(opts.now.getTime() - days * DAY_MS);
-  const recentEstimate = estimateFor(checksInWindow(checks, opts.now, days), opts.models, mentioned).overall;
-  const beforeEstimate = estimateFor(checksInWindow(checks, before, days), opts.models, mentioned).overall;
+  const before = new Date(opts.now.getTime() - daysBack * DAY_MS);
+  const recentEstimate = estimateFor(checksInWindow(checks, opts.now), opts.models, mentioned).overall;
+  const beforeEstimate = estimateFor(checksInWindow(checks, before), opts.models, mentioned).overall;
   if (!recentEstimate || !beforeEstimate || !isRealChange(recentEstimate, beforeEstimate)) return null;
   const points = recentEstimate.score - beforeEstimate.score;
   return { direction: points > 0 ? "up" : "down", points: Math.abs(points) };

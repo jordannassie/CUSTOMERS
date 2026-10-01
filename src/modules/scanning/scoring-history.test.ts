@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { competitorWeeklyChange, modelWeeklyChanges, monthlyChange, scoreHistory } from "./scoring-periods";
+import { visibilityScore } from "./scoring";
+import { competitorWeeklyChange, modelWeeklyChanges, monthlyChange, scoreHistory, weeklyChange } from "./scoring-periods";
 import { check, MODELS, NOW } from "./scoring.test-helpers";
 
 // Per-scan and month-on-month numbers (DB-001, DB-012). The scores themselves are tested in scoring.test.ts.
@@ -57,5 +58,53 @@ describe("weekly changes per model and competitor (DB-013)", () => {
   it("follows how often AI named a competitor", () => {
     const checks = [...week("openai", 10 * 24, () => true, ["Bean House"]), ...week("openai", 2 * 24, () => false, ["Bean House"])];
     expect(competitorWeeklyChange(checks, "bean house", { now: NOW, models: ["openai"] })).toMatchObject({ direction: "up" });
+  });
+});
+
+describe("changes match the 30-day scores on screen", () => {
+  const DAY = 24;
+  // Scans a week apart over 6 weeks on 12 questions and every model: low for weeks, then a jump in the last scan.
+  const rates = [0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 1];
+  const checks = rates.flatMap((rate, w) =>
+    MODELS.flatMap((m) => Array.from({ length: 12 }, (_, q) => check(m, `q${q}`, (6 - w) * 7 * DAY + 1, q < Math.round(rate * 12)))),
+  );
+  const opts = { now: NOW, models: MODELS };
+  const weekAgo = new Date(NOW.getTime() - 7 * 86_400_000);
+  const shown = (at: Date) => visibilityScore(checks, { now: at, models: MODELS }).overall!;
+
+  it("equals the 30-day score now minus the 30-day score a week ago, and never exceeds either", () => {
+    const [now, before] = [shown(NOW), shown(weekAgo)];
+    const change = weeklyChange(checks, opts)!;
+    expect(change).not.toBeNull();
+    expect(change.points).toBeCloseTo(Math.abs(now.score - before.score));
+    expect(change.direction).toBe(now.score > before.score ? "up" : "down");
+    expect(change.points).toBeLessThanOrEqual(Math.max(now.score, before.score));
+  });
+
+  it("matches the score-at-each-scan points a week apart", () => {
+    const history = scoreHistory(checks, { ...opts, days: 90 });
+    const [lastWeek, latest] = history.slice(-2);
+    const change = weeklyChange(checks, opts)!;
+    expect(change.points).toBeCloseTo(Math.abs(latest.score - lastWeek.score));
+  });
+
+  it("holds per model, per competitor and for the month", () => {
+    for (const model of MODELS) {
+      const own = (at: Date) => visibilityScore(checks, { now: at, models: [model] }).overall!.score;
+      const change = modelWeeklyChanges(checks, opts)[model];
+      if (change) expect(change.points).toBeCloseTo(Math.abs(own(NOW) - own(weekAgo)));
+    }
+    const named = checks.map((c) => ({ ...c, competitorsMentioned: c.mentioned ? [] : ["Bean House"] }));
+    const rival = (at: Date) => 100 - visibilityScore(named, { now: at, models: MODELS }).overall!.score;
+    const theirs = competitorWeeklyChange(named, "Bean House", opts)!;
+    expect(theirs.points).toBeCloseTo(Math.abs(rival(NOW) - rival(weekAgo)));
+    const month = monthlyChange(checks, opts);
+    const monthAgo = new Date(NOW.getTime() - 30 * 86_400_000);
+    if (month) expect(month.points).toBeCloseTo(Math.abs(shown(NOW).score - shown(monthAgo).score));
+  });
+
+  it("never shows a change inside the margin", () => {
+    const flat = rates.flatMap((_, w) => MODELS.flatMap((m) => Array.from({ length: 12 }, (_, q) => check(m, `q${q}`, (6 - w) * 7 * DAY + 1, q < 6))));
+    expect(weeklyChange(flat, opts)).toBeNull();
   });
 });

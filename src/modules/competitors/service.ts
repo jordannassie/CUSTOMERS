@@ -68,6 +68,7 @@ export function competitorsView(input: {
   const scored = new Map(report.competitors.map((c) => [key(c.name), c]));
   const firstCheck = report.firstCheckedAt?.getTime() ?? null;
   const lastCheck = report.lastCheckedAt?.getTime() ?? null;
+  const weekAgoStart = firstCheck === null ? null : firstCheck - 7 * 86_400_000;
 
   const rows: LeaderRow[] = competitors.map((c) => {
     const score = scored.get(key(c.name));
@@ -79,8 +80,9 @@ export function competitorsView(input: {
       isYou: false,
       score: checked ? Math.round(score.score) : null,
       standing: checked && !collecting ? score.standing : null,
-      // Older checks never looked for a competitor still collecting, so its change could be a false rise.
-      change: checked && !collecting ? pointsChange(score.change) : null,
+      // The change compares with the 30-day score a week ago, whose window starts 7 days before this one; checks
+      // from before a competitor was added never looked for it, so a newer one could show a false rise.
+      change: checked && !collecting && weekAgoStart !== null && c.createdAt.getTime() <= weekAgoStart ? pointsChange(score.change) : null,
       collecting,
       shade: null,
     };

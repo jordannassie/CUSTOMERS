@@ -7,6 +7,7 @@ import { createServiceClient } from "@/lib/supabase/service";
 import type { ProviderId } from "../providers/types";
 import {
   SCORE_WINDOW_DAYS,
+  TREND_DAYS,
   competitorScores,
   trendSeries,
   visibilityScore,
@@ -37,10 +38,11 @@ export type ScoreReport = VisibilityScore & {
   trend: TrendPoint[];
   /** The 30-day score at each scan over the `historyDays` asked for, oldest first (DB-002). */
   history: ScanPoint[];
+  /** The 30-day score now against the 30-day score a week ago, only outside the margin (D-64). */
   change: Change | null;
-  /** Each model's weekly change, only where it is bigger than the margin (DB-013). */
+  /** Each model's 30-day score against a week ago, only where it is bigger than the margin (DB-013). */
   modelChanges: Partial<Record<ProviderId, Change>>;
-  /** The 30 days against the 30 before; null unless asked for with `historyDays` (DB-012). */
+  /** The 30-day score against 30 days ago; null unless `historyDays` reaches 30 (DB-012). */
   monthChange: Change | null;
   /** The oldest check in the window; a competitor added after it was not looked for on every check (F-53). */
   firstCheckedAt: Date | null;
@@ -101,10 +103,15 @@ export async function loadScoreReport(
   const windowStart = new Date(now.getTime() - SCORE_WINDOW_DAYS * DAY_MS);
   const historyDays = options.historyDays ?? 0;
   const start = windowStart.getTime();
-  const [checks, older] = await Promise.all([
+  // Weekly changes compare with the 30-day score a week ago, so the week before the window is always read. Longer
+  // history is a separate read of the days before that, so each stretch is read once per request.
+  const weekBefore = start - TREND_DAYS * DAY_MS;
+  const [checks, lastWeek, earlier] = await Promise.all([
     windowChecks(businessId, start),
-    historyDays > 0 ? olderChecks(businessId, start - historyDays * DAY_MS, start) : [],
+    olderChecks(businessId, weekBefore, start),
+    historyDays > TREND_DAYS ? olderChecks(businessId, start - historyDays * DAY_MS, weekBefore) : [],
   ]);
+  const all = [...earlier, ...lastWeek, ...checks];
   const opts = { now, models };
   const appearances = new Map(
     questionAppearances(checks, {
@@ -116,10 +123,10 @@ export async function loadScoreReport(
     ...visibilityScore(checks, opts),
     models,
     trend: trendSeries(checks, opts),
-    history: historyDays > 0 ? scoreHistory([...older, ...checks], { ...opts, days: historyDays }) : [],
-    change: weeklyChange(checks, opts),
-    modelChanges: modelWeeklyChanges(checks, opts),
-    monthChange: historyDays > 0 ? monthlyChange([...older, ...checks], opts) : null,
+    history: historyDays > 0 ? scoreHistory(all, { ...opts, days: historyDays }) : [],
+    change: weeklyChange(all, opts),
+    modelChanges: modelWeeklyChanges(all, opts),
+    monthChange: historyDays >= SCORE_WINDOW_DAYS ? monthlyChange(all, opts) : null,
     firstCheckedAt: checks[0]?.checkedAt ?? null,
     lastCheckedAt: checks.at(-1)?.checkedAt ?? null,
     competitors: competitorScores(
@@ -130,7 +137,7 @@ export async function loadScoreReport(
       name: c.name,
       score: c.estimate.score,
       standing: c.standing,
-      change: competitorWeeklyChange(checks, c.name, opts),
+      change: competitorWeeklyChange(all, c.name, opts),
     })),
     questions: questions.data!.map((q) => ({
       id: q.id,
