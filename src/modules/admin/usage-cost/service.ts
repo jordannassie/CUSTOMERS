@@ -1,4 +1,4 @@
-// Pure rules for admin Usage & Cost (B-67, MVP_SPEC 9.1): credits from credit_transactions, real AI cost
+// Pure rules for admin Usage and cost (B-67, MVP_SPEC 9.1): credits from credit_transactions, real AI cost
 // from usage_events, and whether each model still earns more per check than it costs (D-23).
 
 const DAY = 24 * 60 * 60 * 1000;

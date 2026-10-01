@@ -87,7 +87,7 @@ async function rawTotals(agencyId?: string) {
   };
 }
 
-describe("admin Usage & Cost numbers (B-67)", () => {
+describe("admin Usage and cost numbers (B-67)", () => {
   it("match usage_events and credit_transactions for the period", async () => {
     const report = await loadUsageCost({ days: 7, includeTest: true }, NOW);
     const raw = await rawTotals();

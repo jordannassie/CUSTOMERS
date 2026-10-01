@@ -18,7 +18,7 @@ function toDomain(website: string | null): string | null {
 }
 
 /**
- * Suggests 3-5 real competitors via Google Places. Never fabricated — every
+ * Suggests 3-5 real competitors via Google Places. Never fabricated, every
  * suggestion is an actual business Google Places returned for the query.
  * The calling business is excluded by domain/name match. The user must
  * confirm each suggestion during onboarding before it's saved.

@@ -56,8 +56,8 @@ export default async function OverviewPage() {
 
       {scanStatus.ok && scanStatus.data.lastResult === "failed" && !scanStatus.data.scanning && (
         <p role="status" className="rounded-md border border-border bg-mid-bg px-4 py-3 text-sm text-mid-text">
-          The last scan could not finish.{score ? " Your score uses the results from earlier scans." : ""} Try Run scan
-          again in a few minutes.
+          The last scan could not finish.{score ? " Your score uses the results from earlier scans." : ""} Try again in a
+          few minutes.
         </p>
       )}
 

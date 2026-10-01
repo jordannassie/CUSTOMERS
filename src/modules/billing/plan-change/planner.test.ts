@@ -97,7 +97,7 @@ describe("idempotencyKey", () => {
 
 describe("copy", () => {
   it("has no long dashes in any message", () => {
-    for (const text of copyFor()) expect(text).not.toMatch(/[–—]/);
+    for (const text of copyFor()) expect(text).not.toMatch(/[\u2013\u2014]/);
   });
 
   it("never tells a trial user about charges again or refunds when they cancel (BUG-8)", () => {

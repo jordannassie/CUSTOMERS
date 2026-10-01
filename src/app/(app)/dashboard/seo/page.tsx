@@ -7,7 +7,7 @@ import type { Metadata } from "next";
 import type { SeoSnapshot } from "@/lib/seo/types";
 
 export const metadata: Metadata = {
-  title: "Search Intelligence",
+  title: "Search intelligence",
   robots: { index: false },
 };
 

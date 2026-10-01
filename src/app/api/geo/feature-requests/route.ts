@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
   try {
     body = await request.json();
   } catch {
-    return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
+    return NextResponse.json({ error: "Something was wrong with that request. Refresh the page and try again." }, { status: 400 });
   }
 
   const { title, description, businessId, pageContext } = body as {
@@ -29,16 +29,16 @@ export async function POST(request: NextRequest) {
   const trimmedDesc  = (description ?? "").trim();
 
   if (!trimmedTitle) {
-    return NextResponse.json({ error: "Feature title is required." }, { status: 400 });
+    return NextResponse.json({ error: "Add a short title for your idea." }, { status: 400 });
   }
   if (trimmedTitle.length > MAX_TITLE) {
-    return NextResponse.json({ error: `Title must be ${MAX_TITLE} characters or fewer.` }, { status: 400 });
+    return NextResponse.json({ error: `Keep the title to ${MAX_TITLE} characters or fewer.` }, { status: 400 });
   }
   if (!trimmedDesc) {
-    return NextResponse.json({ error: "Please describe the feature." }, { status: 400 });
+    return NextResponse.json({ error: "Add a sentence about what you need." }, { status: 400 });
   }
   if (trimmedDesc.length > MAX_DESC) {
-    return NextResponse.json({ error: `Description must be ${MAX_DESC} characters or fewer.` }, { status: 400 });
+    return NextResponse.json({ error: `Keep the description to ${MAX_DESC} characters or fewer.` }, { status: 400 });
   }
 
   // 3. Validate businessId belongs to this user (if provided)
@@ -69,7 +69,7 @@ export async function POST(request: NextRequest) {
   if (insertError) {
     console.error("[feature-requests] insert error:", insertError.message, insertError.code);
     return NextResponse.json(
-      { error: "Failed to save suggestion. Please try again." },
+      { error: "Your idea wasn't sent. Try again in a moment." },
       { status: 500 }
     );
   }

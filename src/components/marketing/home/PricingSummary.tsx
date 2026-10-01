@@ -20,7 +20,7 @@ export function PricingSummary({ plans }: { plans: PublicPlan[] }) {
     <Section id="pricing" tone="surface">
       <div className="flex flex-col gap-4">
         <Eyebrow>Pricing</Eyebrow>
-        <H2 className="max-w-[20ch]">Simple pricing that grows with you</H2>
+        <H2 className="max-w-[20ch]">One price per business, with credits included</H2>
         <Lead>Pay for each business you track, and cancel anytime. Agencies can mix plans.</Lead>
       </div>
 

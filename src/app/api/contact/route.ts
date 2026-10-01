@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
   try {
     body = await request.json();
   } catch {
-    return NextResponse.json({ error: "Invalid request body." }, { status: 400 });
+    return NextResponse.json({ error: "Something was wrong with that request. Refresh the page and try again." }, { status: 400 });
   }
 
   // Honeypot: silently discard bot submissions
@@ -70,12 +70,12 @@ export async function POST(request: NextRequest) {
   );
 
   // Validation
-  if (!name)    return NextResponse.json({ error: "Name is required." },    { status: 400 });
-  if (!email)   return NextResponse.json({ error: "Email is required." },   { status: 400 });
+  if (!name)    return NextResponse.json({ error: "Enter your name." },    { status: 400 });
+  if (!email)   return NextResponse.json({ error: "Enter your email address." },   { status: 400 });
   if (!EMAIL_REGEX.test(email))
-    return NextResponse.json({ error: "Invalid email address." }, { status: 400 });
+    return NextResponse.json({ error: "Enter an email address like you@business.com." }, { status: 400 });
   if (!message)
-    return NextResponse.json({ error: "Message is required." }, { status: 400 });
+    return NextResponse.json({ error: "Write a short message so we know how to help." }, { status: 400 });
 
   // Optionally link to the authenticated user
   let userId: string | null = null;
@@ -105,7 +105,7 @@ export async function POST(request: NextRequest) {
   if (error) {
     console.error("[contact] insert error:", error.message);
     return NextResponse.json(
-      { error: "Failed to send message. Please try again or email us directly." },
+      { error: "We couldn't send your message. Try again, or email us directly." },
       { status: 500 }
     );
   }

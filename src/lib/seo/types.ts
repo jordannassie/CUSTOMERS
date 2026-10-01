@@ -1,4 +1,4 @@
-/** Normalized SEO data types — independent of the DataForSEO response format. */
+/** Normalized SEO data types, independent of the DataForSEO response format. */
 
 export interface SeoKeyword {
   keyword: string;
@@ -23,7 +23,7 @@ export interface BacklinkSummary {
   referringDomains: number;
   backlinks: number;
   referringPages?: number;
-  /** Domain rank / authority score 0–100 */
+  /** Domain rank / authority score 0 to 100 */
   rank?: number;
 }
 
@@ -34,7 +34,7 @@ export interface DomainOverview {
   organicTraffic: number;
   /** Estimated traffic value in USD */
   trafficCost?: number;
-  /** DataForSEO domain rank 0–100 */
+  /** DataForSEO domain rank 0 to 100 */
   rank?: number;
 }
 

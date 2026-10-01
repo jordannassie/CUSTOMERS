@@ -53,7 +53,7 @@ export async function PATCH(
     return NextResponse.json({ error: "Invalid request body." }, { status: 400 });
   }
 
-  // Only allow updating specific fields — never trust arbitrary client data
+  // Only allow updating specific fields, never trust arbitrary client data
   const updates: TablesUpdate<"business_competitors"> = {};
 
   if (typeof body.domain === "string") {
@@ -87,7 +87,7 @@ export async function PATCH(
   // If enrichment_status column doesn't exist yet (migration 010 not applied),
   // retry without it so domain saves still work.
   if (error.code === PG_UNDEFINED_COLUMN) {
-    console.warn("[competitors/patch] Enrichment columns missing — retrying without enrichment_status");
+    console.warn("[competitors/patch] Enrichment columns missing, retrying without enrichment_status");
     const { enrichment_status: _dropped, ...basicUpdates } = updates;
     void _dropped;
     if (Object.keys(basicUpdates).length === 0) {

@@ -1,6 +1,6 @@
 /**
  * Direct Score: a 0-100 transparent measure of AI search visibility, built
- * only from real, stored signals — never an arbitrary or randomized number.
+ * only from real, stored signals, never an arbitrary or randomized number.
  *
  * Formula (documented here as the single source of truth):
  *   - 55% mention rate: % of tracked prompts where the business was mentioned

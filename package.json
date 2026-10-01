@@ -11,6 +11,7 @@
     "email:dev": "email dev --dir src/modules/email/templates --port 3038",
     "lint": "eslint",
     "check:auth": "node scripts/check-auth-calls.ts",
+    "check:copy": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/check-copy.ts",
     "check:routes": "node scripts/check-routes.ts",
     "check:rls": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/check-migration-rls.ts",
     "verify:migration": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/verify-migration.ts",

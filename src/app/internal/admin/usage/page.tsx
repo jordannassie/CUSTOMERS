@@ -9,7 +9,7 @@ import ByDay from "./_components/by-day";
 import { count, money, percent } from "./_components/format";
 import MarginCheck from "./_components/margin-check";
 
-export const metadata = { title: "Usage & Cost" };
+export const metadata = { title: "Usage and cost" };
 
 type Props = { searchParams: Promise<{ days?: string | string[]; test?: string | string[] }> };
 
@@ -20,7 +20,7 @@ export default function AdminUsagePage({ searchParams }: Props) {
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-8 sm:px-6">
       <header>
-        <h1 className="text-[24px] font-semibold tracking-[-0.02em]">Usage & Cost</h1>
+        <h1 className="text-[24px] font-semibold tracking-[-0.02em]">Usage and cost</h1>
         <p className="mt-1 text-[14px] text-muted-foreground">
           Credits customers used, from the credit ledger, against what the AI providers charged us, from the usage log.
         </p>

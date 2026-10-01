@@ -1,5 +1,5 @@
 /**
- * Competitor Places search — server-side only.
+ * Competitor Places search, server-side only.
  *
  * Used by the dashboard CompetitorsManager to provide real-business
  * autocomplete when the user types a competitor name.
@@ -15,7 +15,7 @@ import { searchGooglePlaces } from "@/lib/google-places";
 import { env } from "@/lib/env";
 
 export interface CompetitorPlaceResult {
-  /** Google Place ID — use to prevent duplicates */
+  /** Google Place ID, use to prevent duplicates */
   placeId: string;
   name: string;
   /** Formatted city name */

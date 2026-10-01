@@ -81,7 +81,7 @@ export async function POST(request: NextRequest) {
       };
     }
   } catch {
-    // SEO enrichment is best-effort — don't fail the whole opportunity generation
+    // SEO enrichment is best-effort, don't fail the whole opportunity generation
   }
 
   const drafts = generateOpportunities({
@@ -94,7 +94,7 @@ export async function POST(request: NextRequest) {
     seo: seoInput,
   });
 
-  // Replace previously-generated "open" opportunities with the fresh set —
+  // Replace previously-generated "open" opportunities with the fresh set:
   // anything the user already moved to in_progress/resolved/dismissed is left alone.
   await supabase.from("opportunities").delete().eq("business_id", businessId).eq("status", "open");
 

@@ -8,9 +8,9 @@ import ContactForm, { type InterestValue } from "@/components/site/ContactForm";
 type Stage = "opening" | "form" | "done";
 
 const CHAT_CHOICES: { value: InterestValue; label: string; icon: React.ReactNode }[] = [
-  { value: "ai_visibility", label: "AI Visibility",  icon: <BarChart3 className="size-[18px]" aria-hidden="true" /> },
-  { value: "agency",        label: "Join as Agency", icon: <Building2 className="size-[18px]" aria-hidden="true" /> },
-  { value: "book_demo",     label: "Book Demo Call", icon: <Calendar className="size-[18px]" aria-hidden="true" /> },
+  { value: "ai_visibility", label: "AI visibility",  icon: <BarChart3 className="size-[18px]" aria-hidden="true" /> },
+  { value: "agency",        label: "Join as an agency", icon: <Building2 className="size-[18px]" aria-hidden="true" /> },
+  { value: "book_demo",     label: "Book a demo call", icon: <Calendar className="size-[18px]" aria-hidden="true" /> },
   { value: "other",         label: "Other",          icon: <MessageSquare className="size-[18px]" aria-hidden="true" /> },
 ];
 
@@ -221,7 +221,7 @@ export default function ChatWidget() {
                   <Check className="size-6" aria-hidden="true" />
                 </div>
                 <div>
-                  <p className="mb-1 text-[15px] font-semibold text-foreground">Thanks! Message received.</p>
+                  <p className="mb-1 text-[15px] font-semibold text-foreground">Thanks, we got your message.</p>
                   <p className="text-[13px] text-muted-foreground">We&apos;ll be in touch within 24 hours.</p>
                 </div>
                 <button onClick={reset} className={`mt-2 underline ${textButton}`}>
