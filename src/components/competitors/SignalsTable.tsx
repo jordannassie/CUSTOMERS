@@ -28,7 +28,8 @@ export function SignalsTable({ rows }: { rows: SignalRow[] }) {
         </p>
       ) : null}
 
-      <div className="hidden @min-[760px]:block">
+      {/* The PDF page is about 720px wide, just under the switch, and the table still fits there, so print forces it. */}
+      <div className="hidden @min-[760px]:block print:block">
         <Table>
           <TableHeader>
             <TableRow>
@@ -67,7 +68,7 @@ export function SignalsTable({ rows }: { rows: SignalRow[] }) {
         </Table>
       </div>
 
-      <ul className="flex flex-col divide-y divide-border @min-[760px]:hidden">
+      <ul className="flex flex-col divide-y divide-border @min-[760px]:hidden print:hidden">
         {rows.map((row) => (
           <li key={`${row.isYou}-${row.name}`} className="flex flex-col gap-1 py-3 first:pt-0 last:pb-0">
             <span className={cn("truncate text-sm font-medium", row.isYou && "text-primary")}>

@@ -81,7 +81,10 @@ export function Report({ report, logoSrc }: { report: ReportView; logoSrc: strin
           <ol className="flex flex-col divide-y divide-border" data-testid="report-opportunities">
             {report.opportunities.map((o, i) => (
               <li key={`${i}-${o.title}`} className="flex flex-col items-start gap-1.5 py-3 first:pt-0 last:pb-0 sm:flex-row sm:items-center sm:gap-3">
-                <Badge variant={IMPACT[o.impact].variant}>{IMPACT[o.impact].label}</Badge>
+                {/* A fixed column so every title starts at the same x, whatever the badge says. */}
+                <div className="flex shrink-0 sm:w-28">
+                  <Badge variant={IMPACT[o.impact].variant}>{IMPACT[o.impact].label}</Badge>
+                </div>
                 <span className="text-sm font-medium">{o.title}</span>
               </li>
             ))}
