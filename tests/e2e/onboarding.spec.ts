@@ -113,6 +113,9 @@ test("the whole wizard: plan carried through, auto-filled, resumable, live estim
   // Step 8, the card (B-41): the Pro price from the plans table, then a declined card, then a good one.
   await slow(page.getByRole("heading", { name: "Start your 7-day free trial" })).toBeVisible();
   await expect(page.getByTestId("trial-terms")).toContainText(/7 days free, then \$249 per business per month\. Cancel anytime before \w+ \d{1,2}, \d{4} and you won't be charged\./);
+  // B-78: renewal and how to cancel sit next to the card form, with a link to the terms.
+  await expect(page.getByTestId("renewal-terms")).toContainText("renews every month on the same date until you cancel");
+  await expect(page.getByRole("link", { name: /Read the trial and billing terms/ })).toHaveAttribute("href", "/terms#trial");
   await payWith(page, "4000 0000 0000 0002");
   await expect(page.getByRole("alert").filter({ hasText: "Your card was declined. Nothing was charged. Try another card." })).toBeVisible();
   await payWith(page, "4242 4242 4242 4242");

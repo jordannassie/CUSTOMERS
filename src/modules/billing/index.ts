@@ -17,6 +17,7 @@ export {
 export { endBusinessPlan, type BusinessPlanEnd } from "./plan-change/end-business";
 export { PlanChangeError } from "./plan-change/planner";
 export { TRIAL_DAYS, trialAllowed } from "./checkout";
+export { TRIAL_CREDITS } from "./webhooks/credits";
 export { createTrialCheckout, getTrialOffer, type CardFormMode, type StartTrialResult, type TrialOffer } from "./trial";
 export { openBillingPortal } from "./account/actions";
 export { loadBillingPage } from "./account/load";
