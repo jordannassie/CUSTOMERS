@@ -209,13 +209,19 @@ describe("admin businesses (B-66)", () => {
     expect((await loadBusinessDetail(businessId))!.activeScan).toBe(true);
   });
 
-  it("refuses a deleted business or account and queues nothing (BUG-H)", async () => {
+  it("shows a deleted business as deleted and refuses to scan it or a deleted account's (BUG-G, BUG-H)", async () => {
     adminEnv.emails = adminEmail;
     const deletedId = (
       await must(
         service
           .from("businesses")
-          .insert({ owner_user_id: userIds[1], agency_id: agencyId, name: "Deleted Plumbing", deleted_at: new Date().toISOString() })
+          .insert({
+            owner_user_id: userIds[1],
+            agency_id: agencyId,
+            name: "Deleted Plumbing",
+            deleted_at: "2026-10-01T12:00:00Z",
+            purge_after: "2026-10-31T12:00:00Z",
+          })
           .select("id")
           .single(),
       )
@@ -225,6 +231,13 @@ describe("admin businesses (B-66)", () => {
       status: 409,
       error: "This business was deleted, so it can't be scanned.",
     });
+    const rows = await listBusinesses();
+    expect(rows.find((r) => r.id === deletedId)?.deleted).toEqual({
+      at: expect.stringMatching(/^2026-10-01T12:00:00/),
+      purgeAfter: expect.stringMatching(/^2026-10-31T12:00:00/),
+    });
+    expect(rows.find((r) => r.id === businessId)?.deleted).toBeNull();
+    expect((await loadBusinessDetail(deletedId))!.business.purge_after).toMatch(/^2026-10-31/);
 
     const ownerId = await createUser(`vitest-owner-biz-${randomUUID()}@example.test`);
     const goneAgency = (

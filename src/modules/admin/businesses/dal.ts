@@ -88,6 +88,7 @@ export type AdminBusinessRow = {
   models: string[];
   lastScan: { state: ScanState; at: string } | null;
   creditsThisMonth: number;
+  deleted: { at: string; purgeAfter: string | null } | null;
 };
 
 export async function listBusinesses(now = new Date()): Promise<AdminBusinessRow[]> {
@@ -96,7 +97,7 @@ export async function listBusinesses(now = new Date()): Promise<AdminBusinessRow
     allRows("businesses", (from, to) =>
       db
         .from("businesses")
-        .select("id, name, primary_city, primary_region, agency_id, scan_frequency, models, created_at")
+        .select("id, name, primary_city, primary_region, agency_id, scan_frequency, models, created_at, deleted_at, purge_after")
         .order("created_at", { ascending: false })
         .order("id")
         .range(from, to),
@@ -186,6 +187,7 @@ export async function listBusinesses(now = new Date()): Promise<AdminBusinessRow
       models: b.models,
       lastScan,
       creditsThisMonth: credits.get(b.id) ?? 0,
+      deleted: b.deleted_at ? { at: b.deleted_at, purgeAfter: b.purge_after } : null,
     };
   });
 }

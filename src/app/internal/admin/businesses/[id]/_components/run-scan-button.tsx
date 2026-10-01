@@ -9,11 +9,12 @@ import { cn } from "cn";
 type Props = {
   businessId: string;
   active: boolean;
-  canScan: boolean;
+  /** Why a scan can't run, or null when it can. */
+  blocked: string | null;
   runScanNow: (input: { businessId: string }) => Promise<ActionResult<{ jobId: string }>>;
 };
 
-export default function RunScanButton({ businessId, active, canScan, runScanNow }: Props) {
+export default function RunScanButton({ businessId, active, blocked, runScanNow }: Props) {
   const [pending, startTransition] = useTransition();
   const [message, setMessage] = useState<{ tone: "ok" | "error"; text: string } | null>(null);
 
@@ -31,7 +32,7 @@ export default function RunScanButton({ businessId, active, canScan, runScanNow 
 
   return (
     <div className="flex flex-col items-start gap-1.5 sm:items-end">
-      <Button onClick={run} disabled={pending || active || !canScan}>
+      <Button onClick={run} disabled={pending || active || blocked !== null}>
         <RefreshCw aria-hidden className={cn(pending && "motion-safe:animate-spin")} />
         {pending ? "Queuing scan" : active ? "Scan in progress" : "Run scan now"}
       </Button>
@@ -39,12 +40,7 @@ export default function RunScanButton({ businessId, active, canScan, runScanNow 
         aria-live="polite"
         className={cn("text-[13px]", message?.tone === "error" ? "text-low-text" : "text-muted-foreground")}
       >
-        {message?.text ??
-          (active
-            ? "A scan is already queued or running."
-            : !canScan
-              ? "No agency, so there are no credits to scan with."
-              : null)}
+        {message?.text ?? (active ? "A scan is already queued or running." : blocked)}
       </p>
     </div>
   );

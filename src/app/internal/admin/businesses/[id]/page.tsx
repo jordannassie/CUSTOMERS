@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { loadBusinessDetail, runScanNow } from "@/modules/admin";
 import { requireAdmin } from "@/modules/auth";
-import { ScanBadge, formatDate } from "../_components/scan-parts";
+import { DeletedBadge, ScanBadge, formatDate } from "../_components/scan-parts";
 import AnswersGrid from "./_components/answers-grid";
 import { Competitors, Opportunities, Questions } from "./_components/lists";
 import Profile from "./_components/profile";
@@ -49,6 +49,7 @@ async function Detail({ id }: { id: string }) {
         <div className="min-w-0">
           <h1 className="flex flex-wrap items-center gap-2 text-[24px] font-semibold tracking-[-0.02em]">
             <span className="break-words">{business.name}</span>
+            {business.deleted_at && <DeletedBadge />}
             {agency?.isTest && <Badge variant="secondary">Test</Badge>}
           </h1>
           <p className="mt-1 text-[14px] break-words text-muted-foreground">
@@ -59,7 +60,13 @@ async function Detail({ id }: { id: string }) {
         <RunScanButton
           businessId={business.id}
           active={detail.activeScan}
-          canScan={agency !== null}
+          blocked={
+            business.deleted_at
+              ? "This business was deleted, so it can't be scanned."
+              : agency === null
+                ? "No agency, so there are no credits to scan with."
+                : null
+          }
           runScanNow={runScanNow}
         />
       </header>

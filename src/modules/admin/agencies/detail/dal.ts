@@ -22,7 +22,14 @@ export type AdminAgencyDetail = {
   };
   ownerEmail: string | null;
   balance: { plan: number; topup: number; held: number; overdraft: number; total: number };
-  businesses: { id: string; name: string; location: string; plan: string | null; planStatus: string | null }[];
+  businesses: {
+    id: string;
+    name: string;
+    location: string;
+    plan: string | null;
+    planStatus: string | null;
+    deleted: { at: string; purgeAfter: string | null } | null;
+  }[];
   ledger: { id: string; delta: number; kind: string; note: string | null; by: string | null; createdAt: string }[];
   audit: { id: string; action: string; reason: string | null; by: string | null; createdAt: string }[];
 };
@@ -52,7 +59,7 @@ export async function loadAgencyDetail(agencyId: string, now = new Date()): Prom
       .maybeSingle(),
     db
       .from("businesses")
-      .select("id, name, primary_city, primary_region, business_subscriptions(status, plans(name))")
+      .select("id, name, primary_city, primary_region, deleted_at, purge_after, business_subscriptions(status, plans(name))")
       .eq("agency_id", agencyId)
       .order("created_at"),
     db
@@ -109,6 +116,7 @@ export async function loadAgencyDetail(agencyId: string, now = new Date()): Prom
       location: [x.primary_city, x.primary_region].filter(Boolean).join(", "),
       plan: x.business_subscriptions?.plans?.name ?? null,
       planStatus: x.business_subscriptions?.status ?? null,
+      deleted: x.deleted_at ? { at: x.deleted_at, purgeAfter: x.purge_after } : null,
     })),
     ledger: ledger.data.map((l) => ({
       id: l.id,

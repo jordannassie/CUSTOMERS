@@ -33,7 +33,7 @@ export async function loadBusinessDetail(id: string, now = new Date()) {
   const { data: business, error } = await db
     .from("businesses")
     .select(
-      "id, name, domain, phone, primary_city, primary_region, primary_country, industry, status, agency_id, owner_user_id, scan_frequency, models, next_scan_at, services, aliases, created_at",
+      "id, name, domain, phone, primary_city, primary_region, primary_country, industry, status, agency_id, owner_user_id, scan_frequency, models, next_scan_at, services, aliases, created_at, deleted_at, purge_after",
     )
     .eq("id", id)
     .maybeSingle();
