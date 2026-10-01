@@ -1,9 +1,22 @@
 import Link from "next/link";
 import { aiCostShare, type Revenue } from "@/modules/admin";
 import { usd } from "../agencies/_components/agency-parts";
+import Sparkline from "./sparkline";
 
 /** Revenue and real AI cost side by side, with the cost drawn as a share of what customers paid. */
-export default function MoneyPanel({ revenue, aiCostUsd }: { revenue: Revenue; aiCostUsd: number }) {
+export default function MoneyPanel({
+  revenue,
+  aiCostUsd,
+  revenueChange,
+  aiCostChange,
+  aiCostSpark,
+}: {
+  revenue: Revenue;
+  aiCostUsd: number;
+  revenueChange?: React.ReactNode;
+  aiCostChange?: React.ReactNode;
+  aiCostSpark?: { day: string; value: number }[];
+}) {
   const share = aiCostShare(aiCostUsd, revenue);
   const revenueUsd = revenue.state === "ok" ? revenue.cents / 100 : null;
 
@@ -16,7 +29,10 @@ export default function MoneyPanel({ revenue, aiCostUsd }: { revenue: Revenue; a
         <div className="flex flex-col gap-1 bg-surface px-5 py-5">
           <p className="text-[13px] text-muted-foreground">Revenue this month, from Stripe</p>
           {revenueUsd !== null ? (
-            <p className="text-[32px] leading-none font-semibold tracking-[-0.03em] tabular-nums">{usd(revenueUsd)}</p>
+            <>
+              <p className="text-[32px] leading-none font-semibold tracking-[-0.03em] tabular-nums">{usd(revenueUsd)}</p>
+              {revenueChange && <p className="text-[13px] text-text-hint">{revenueChange}</p>}
+            </>
           ) : (
             <p className="text-[20px] font-semibold text-muted-foreground">
               {revenue.state === "error" ? "Could not reach Stripe" : "Stripe not connected"}
@@ -35,6 +51,8 @@ export default function MoneyPanel({ revenue, aiCostUsd }: { revenue: Revenue; a
         <div className="flex flex-col gap-1 bg-surface px-5 py-5">
           <p className="text-[13px] text-muted-foreground">Real AI cost this month</p>
           <p className="text-[32px] leading-none font-semibold tracking-[-0.03em] tabular-nums">{usd(aiCostUsd)}</p>
+          {aiCostChange && <p className="text-[13px] text-text-hint">{aiCostChange}</p>}
+          {aiCostSpark && <Sparkline points={aiCostSpark} label="Real AI cost per day" format={usd} />}
           <p className="text-[13px] text-text-hint">
             What OpenAI, Anthropic and Perplexity charged us.{" "}
             <Link href="/internal/admin/usage" className="text-primary hover:underline">

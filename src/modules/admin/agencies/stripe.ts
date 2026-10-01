@@ -6,8 +6,8 @@ import { getStripe, isStripeConfigured } from "@/modules/billing";
 export type AdminStripeClient = {
   mode: "stripe" | "fixture";
   extendTrial(subscriptionId: string, trialEnd: Date): Promise<void>;
-  /** Money actually collected since `since`, in cents, after refunds. */
-  revenueSince(since: Date): Promise<number>;
+  /** Money actually collected since `since` (and before `until`, when given), in cents, after refunds. */
+  revenueSince(since: Date, until?: Date): Promise<number>;
 };
 
 // Same flag as checkout and top-ups (B-41, B-43); refused in production so it can never stand in for Stripe there.
@@ -29,10 +29,11 @@ const stripeClient: AdminStripeClient = {
       proration_behavior: "none",
     });
   },
-  async revenueSince(since) {
+  async revenueSince(since, until) {
     let cents = 0;
+    const created = { gte: Math.floor(since.getTime() / 1000), ...(until && { lt: Math.floor(until.getTime() / 1000) }) };
     // Charges cover both plan invoices and one-time top-ups.
-    for await (const charge of getStripe().charges.list({ created: { gte: Math.floor(since.getTime() / 1000) }, limit: 100 })) {
+    for await (const charge of getStripe().charges.list({ created, limit: 100 })) {
       if (charge.paid && charge.status === "succeeded" && charge.currency === "usd") {
         cents += charge.amount - charge.amount_refunded;
       }
