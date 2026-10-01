@@ -9,7 +9,7 @@ export function SourceTypes({ types, answers }: { types: SourcesView["types"]; a
         <li key={t.type} className="flex flex-col gap-1.5">
           <div className="flex items-baseline justify-between gap-3 text-sm">
             <span className="font-medium">{t.label}</span>
-            <span className="text-muted-foreground tabular-nums">{answersText(t.answers, answers)}</span>
+            <span className="whitespace-nowrap text-muted-foreground tabular-nums">{answersText(t.answers, answers)}</span>
           </div>
           <div className="h-1.5 overflow-hidden rounded-xs bg-muted" aria-hidden="true">
             <div

@@ -88,7 +88,7 @@ export function ChangeDialog({ label, title, confirmLabel, action, input = {}, v
         {label}
       </Button>
       <Dialog open={open} onOpenChange={(next) => !saving && setOpen(next)}>
-        <DialogContent className="sm:max-w-md" data-testid="change-dialog">
+        <DialogContent className="sm:max-w-md" data-testid="change-dialog" role={tone === "danger" ? "alertdialog" : "dialog"}>
           <DialogHeader>
             <DialogTitle>{title}</DialogTitle>
             <DialogDescription className="sr-only">What this change costs and when it happens.</DialogDescription>

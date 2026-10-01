@@ -26,7 +26,7 @@ export default function ContactPage() {
       <main className="flex-1 bg-background">
         <section className="mx-auto max-w-[1120px] px-4 pt-12 pb-16 sm:px-6 sm:pt-20 sm:pb-22">
           <div className="flex max-w-[60ch] flex-col gap-4">
-            <h1 className="text-[40px] leading-[1.08] font-semibold tracking-[-0.035em] text-balance sm:text-5xl">
+            <h1 className="text-[32px] leading-[1.08] font-semibold tracking-[-0.035em] text-balance sm:text-5xl">
               Talk to us
             </h1>
             <p className="text-lg text-muted-foreground text-pretty">

@@ -25,6 +25,7 @@ export function AgencyForm({
   uploadLogo: UploadLogoAction;
 }) {
   const [value, setValue] = useState(name);
+  const [savedName, setSavedName] = useState(name);
   const [logo, setLogo] = useState(logoUrl);
   const [nameError, setNameError] = useState<string | null>(null);
   const [logoError, setLogoError] = useState<string | null>(null);
@@ -37,8 +38,9 @@ export function AgencyForm({
     setNameError(null);
     startSave(async () => {
       const result = await saveName({ name: value });
-      if (result.ok) toast.success("Agency name saved");
-      else setNameError(result.error);
+      if (!result.ok) return setNameError(result.error);
+      setSavedName(value.trim());
+      toast.success("Agency name saved");
     });
   }
 
@@ -65,7 +67,7 @@ export function AgencyForm({
         <Label htmlFor="agency-name">Agency name</Label>
         <div className="flex flex-col gap-3 sm:flex-row">
           <Input id="agency-name" value={value} onChange={(e) => setValue(e.target.value)} required maxLength={120} />
-          <Button type="submit" variant="outline" className="w-fit" disabled={saving || value.trim() === name}>
+          <Button type="submit" className="w-fit" disabled={saving || value.trim() === savedName}>
             {saving && <Loader2 className="animate-spin" aria-hidden="true" />}
             Save name
           </Button>

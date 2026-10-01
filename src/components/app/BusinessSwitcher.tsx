@@ -34,7 +34,7 @@ function BusinessMark({ name, logoUrl }: { name: string; logoUrl: string | null 
   return (
     <span
       aria-hidden="true"
-      className="flex size-6 shrink-0 items-center justify-center rounded-sm bg-primary-tint text-[11px] font-semibold text-primary-hover"
+      className="flex size-6 shrink-0 items-center justify-center rounded-sm bg-primary-tint text-xs font-semibold text-primary-hover"
     >
       {name.trim().charAt(0).toUpperCase() || "?"}
     </span>

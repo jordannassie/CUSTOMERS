@@ -19,7 +19,7 @@ export default function ComparePage() {
       <main className="flex-1 bg-background">
         <div className="mx-auto flex max-w-[1120px] flex-col gap-10 px-4 pt-12 pb-16 sm:px-6 sm:pt-16 sm:pb-22">
           <div className="flex max-w-[720px] flex-col gap-4">
-            <h1 className="text-[40px] leading-[1.08] font-semibold tracking-[-0.035em] text-balance sm:text-5xl">
+            <h1 className="text-[32px] leading-[1.08] font-semibold tracking-[-0.035em] text-balance sm:text-5xl">
               AI readiness check
             </h1>
             <Lead>

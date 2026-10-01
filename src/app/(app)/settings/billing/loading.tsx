@@ -1,5 +1,5 @@
-import { PageSkeleton } from "@/components/app/AppShellSkeleton";
+import { BillingSkeleton } from "@/components/app/PageSkeletons";
 
 export default function BillingLoading() {
-  return <PageSkeleton />;
+  return <BillingSkeleton />;
 }

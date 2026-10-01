@@ -6,6 +6,7 @@ import { Plus, X } from "lucide-react";
 import { cn } from "cn";
 import type { ActionResult } from "@/modules/auth";
 import { Button } from "@/components/ui/button";
+import { FieldMessage, useFieldErrors } from "@/components/ui/field-errors";
 import { Input } from "@/components/ui/input";
 import { StepActions, StepError } from "./StepBits";
 
@@ -27,6 +28,8 @@ export function QuestionsStep({ businessId, questions, limit, save }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const addId = useId();
+  const fields = useFieldErrors<"add" | "rows">("questions");
+  const short = (text: string) => text.trim() !== "" && text.trim().length < MIN_LENGTH;
 
   const kept = rows.filter((r) => r.text.trim());
   const full = rows.length >= limit;
@@ -38,13 +41,17 @@ export function QuestionsStep({ businessId, questions, limit, save }: Props) {
     const id = nextId.current++;
     setRows((list) => [...list, { id, text }]);
     setDraft("");
+    fields.clear("add");
   }
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
-    if (kept.length === 0) return setError("Keep at least one question.");
-    if (kept.some((r) => r.text.trim().length < MIN_LENGTH)) return setError(`Each question needs at least ${MIN_LENGTH} characters.`);
+    const bad = fields.show({
+      add: kept.length === 0 ? "Add at least one question a customer might ask." : undefined,
+      rows: kept.some((r) => short(r.text)) ? `Each question needs at least ${MIN_LENGTH} characters.` : undefined,
+    });
+    if (bad) return;
     startTransition(async () => {
       const result = await save({ businessId, questions: kept.map((r) => r.text.trim()) });
       if (!result.ok) return setError(result.error);
@@ -53,7 +60,7 @@ export function QuestionsStep({ businessId, questions, limit, save }: Props) {
   }
 
   return (
-    <form onSubmit={submit} className="flex flex-col gap-6">
+    <form onSubmit={submit} className="flex flex-col gap-6" noValidate>
       <div className="rounded-md border border-border bg-surface">
         <div className="flex items-baseline justify-between gap-3 border-b border-border px-4 py-3">
           <h2 className="text-sm font-medium">Questions we ask AI</h2>
@@ -70,9 +77,13 @@ export function QuestionsStep({ businessId, questions, limit, save }: Props) {
                 </span>
                 <Input
                   value={r.text}
-                  onChange={(e) => setRows((list) => list.map((x) => (x.id === r.id ? { ...x, text: e.target.value } : x)))}
+                  onChange={(e) => {
+                    setRows((list) => list.map((x) => (x.id === r.id ? { ...x, text: e.target.value } : x)));
+                    fields.clear("rows");
+                  }}
                   maxLength={300}
                   aria-label={`Question ${i + 1}`}
+                  {...(short(r.text) ? fields.fieldProps("rows") : {})}
                   className="h-10 border-transparent bg-transparent shadow-none hover:border-border focus-visible:bg-surface"
                 />
                 <Button type="button" variant="ghost" size="icon-sm" onClick={() => setRows((list) => list.filter((x) => x.id !== r.id))} aria-label={`Remove question ${i + 1}`}>
@@ -91,7 +102,10 @@ export function QuestionsStep({ businessId, questions, limit, save }: Props) {
           <Input
             id={addId}
             value={draft}
-            onChange={(e) => setDraft(e.target.value)}
+            onChange={(e) => {
+              setDraft(e.target.value);
+              fields.clear("add");
+            }}
             onKeyDown={(e) => {
               if (e.key === "Enter") add(e);
             }}
@@ -99,12 +113,19 @@ export function QuestionsStep({ businessId, questions, limit, save }: Props) {
             disabled={full}
             placeholder={full ? `Your plan checks up to ${limit} questions.` : "Add a question a customer might ask"}
             className="h-10"
+            {...fields.fieldProps("add")}
           />
           <Button type="button" variant="outline" onClick={add} disabled={full || draft.trim().length < MIN_LENGTH} className="shrink-0">
             <Plus aria-hidden />
             Add
           </Button>
         </div>
+        {(fields.errors.rows || fields.errors.add) && (
+          <div className="border-t border-border px-4 py-2">
+            <FieldMessage id={fields.idOf("rows")} message={fields.errors.rows} />
+            <FieldMessage id={fields.idOf("add")} message={fields.errors.add} />
+          </div>
+        )}
       </div>
 
       <StepError message={error} />

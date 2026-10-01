@@ -1,5 +1,5 @@
-import { PageSkeleton } from "@/components/app/AppShellSkeleton";
+import { UsageSkeleton } from "@/components/app/PageSkeletons";
 
 export default function UsageLoading() {
-  return <PageSkeleton />;
+  return <UsageSkeleton />;
 }

@@ -7,6 +7,7 @@ import { INDUSTRIES, INDUSTRY_LABELS, isIndustry } from "@/lib/industries";
 import type { ActionResult } from "@/modules/auth";
 import type { AutofillResult, BusinessDetails } from "@/modules/onboarding/schema";
 import { parseServices } from "@/modules/settings/service";
+import { FieldMessage, INVALID_CLASS, useFieldErrors } from "@/components/ui/field-errors";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { clearAutofill, useStoredAutofill } from "./autofill-store";
@@ -41,8 +42,9 @@ export function DetailsStep(props: Props) {
   return <DetailsForm key={fresh ? "autofill" : "saved"} {...props} autofill={fresh} />;
 }
 
-const selectClass =
-  "h-11 w-full rounded-lg border border-input bg-surface px-3 text-base outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 md:text-sm";
+const selectClass = `h-11 w-full rounded-lg border border-input bg-surface px-3 text-base outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 md:text-sm ${INVALID_CLASS}`;
+
+type Checked = "name" | "industry" | "otherIndustry" | "city";
 const textareaClass =
   "w-full rounded-lg border border-input bg-surface px-3 py-2 text-base outline-none transition-colors placeholder:text-text-hint focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 md:text-sm";
 
@@ -57,12 +59,23 @@ function DetailsForm({ businessId, details, industryText, save, autofill }: Prop
   });
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
-  const set = (field: keyof typeof v) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
+  const fields = useFieldErrors<Checked>("details");
+  const set = (field: keyof typeof v) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     setV((s) => ({ ...s, [field]: e.target.value }));
+    if (field === "name" || field === "industry" || field === "otherIndustry" || field === "city") fields.clear(field);
+  };
+  const check = (key: Checked) => ({ error: fields.errors[key], errorId: fields.idOf(key) });
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    const bad = fields.show({
+      name: v.name.trim() ? undefined : "Enter your business name.",
+      industry: v.industry ? undefined : "Choose an industry.",
+      otherIndustry: v.industry === "other" && !v.otherIndustry.trim() ? "Say what kind of business it is." : undefined,
+      city: v.city.trim() ? undefined : "Enter the city your business is in.",
+    });
+    if (bad) return;
     const industry = v.industry === "other" ? v.otherIndustry.trim() || "other" : v.industry;
     startTransition(async () => {
       const result = await save({
@@ -83,16 +96,16 @@ function DetailsForm({ businessId, details, industryText, save, autofill }: Prop
   }
 
   return (
-    <form onSubmit={submit} className="flex flex-col gap-6">
+    <form onSubmit={submit} className="flex flex-col gap-6" noValidate>
       <AutofillNote autofill={autofill} />
 
       <div className="grid gap-5 sm:grid-cols-2">
-        <Field id="name" label="Business name" className="sm:col-span-2">
-          <Input id="name" value={v.name} onChange={set("name")} required maxLength={120} className="h-11 text-base" autoComplete="organization" />
+        <Field id="name" label="Business name" className="sm:col-span-2" {...check("name")}>
+          <Input id="name" value={v.name} onChange={set("name")} required maxLength={120} className="h-11 text-base" autoComplete="organization" {...fields.fieldProps("name")} />
         </Field>
 
-        <Field id="industry" label="Industry" className="sm:col-span-2">
-          <select id="industry" value={v.industry} onChange={set("industry")} required className={selectClass}>
+        <Field id="industry" label="Industry" className="sm:col-span-2" {...check("industry")}>
+          <select id="industry" value={v.industry} onChange={set("industry")} required className={selectClass} {...fields.fieldProps("industry")}>
             <option value="" disabled>
               Choose an industry
             </option>
@@ -104,8 +117,17 @@ function DetailsForm({ businessId, details, industryText, save, autofill }: Prop
           </select>
         </Field>
         {v.industry === "other" ? (
-          <Field id="other-industry" label="What kind of business is it?" className="sm:col-span-2">
-            <Input id="other-industry" value={v.otherIndustry} onChange={set("otherIndustry")} required maxLength={80} placeholder="Florist" className="h-11 text-base" />
+          <Field id="other-industry" label="What kind of business is it?" className="sm:col-span-2" {...check("otherIndustry")}>
+            <Input
+              id="other-industry"
+              value={v.otherIndustry}
+              onChange={set("otherIndustry")}
+              required
+              maxLength={80}
+              placeholder="Florist"
+              className="h-11 text-base"
+              {...fields.fieldProps("otherIndustry")}
+            />
           </Field>
         ) : null}
 
@@ -117,8 +139,8 @@ function DetailsForm({ businessId, details, industryText, save, autofill }: Prop
           <textarea id="services" value={v.services} onChange={set("services")} rows={2} placeholder="Emergency repairs, drain cleaning" className={textareaClass} />
         </Field>
 
-        <Field id="city" label="City">
-          <Input id="city" value={v.city} onChange={set("city")} required maxLength={80} className="h-11 text-base" autoComplete="address-level2" />
+        <Field id="city" label="City" {...check("city")}>
+          <Input id="city" value={v.city} onChange={set("city")} required maxLength={80} className="h-11 text-base" autoComplete="address-level2" {...fields.fieldProps("city")} />
         </Field>
         <Field id="state" label="State or region" optional>
           <Input id="state" value={v.state} onChange={set("state")} maxLength={80} className="h-11 text-base" autoComplete="address-level1" />
@@ -154,11 +176,13 @@ function AutofillNote({ autofill }: { autofill: AutofillResult | null }) {
   );
 }
 
-function Field({ id, label, optional, hint, className, children }: {
+function Field({ id, label, optional, hint, error, errorId, className, children }: {
   id: string;
   label: string;
   optional?: boolean;
   hint?: string;
+  error?: string;
+  errorId?: string;
   className?: string;
   children: React.ReactNode;
 }) {
@@ -169,6 +193,7 @@ function Field({ id, label, optional, hint, className, children }: {
         {optional ? <span className="font-normal text-muted-foreground">(optional)</span> : null}
       </Label>
       {children}
+      {errorId ? <FieldMessage id={errorId} message={error} /> : null}
       {hint ? <FieldHint>{hint}</FieldHint> : null}
     </div>
   );

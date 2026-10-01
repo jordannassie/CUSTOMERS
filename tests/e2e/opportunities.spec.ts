@@ -108,7 +108,7 @@ test("fixes are sorted by impact, with live Google values and a copy button", as
   await seed(page, { hasWebsite: true, opportunities: true });
 
   const todo = page.getByTestId("list-open").getByTestId("opportunity");
-  await expect(todo.getByRole("heading", { level: 3 })).toHaveText([
+  await expect(todo.getByRole("heading", { level: 2 })).toHaveText([
     "Bean House has more Google reviews than you",
     "Your website does not show your phone number",
     "Answer common questions on your site",

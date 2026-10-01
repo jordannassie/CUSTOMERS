@@ -39,14 +39,14 @@ export default async function OverviewPage() {
             {overview.lastCheckedAt ? `Last scan ${timeAgo(new Date(overview.lastCheckedAt))}` : "No scans yet"}
           </p>
         </div>
-        <div className="flex flex-wrap items-start gap-3 sm:flex-row-reverse">
+        <div className="grid grid-cols-2 gap-3 sm:flex sm:flex-row-reverse sm:flex-wrap sm:items-start">
           {scanStatus.ok && (
             <RunScanButton
               businessId={business.id}
               initial={scanStatus.data}
               start={startScan}
               getStatus={getScanStatus}
-              className="items-start sm:items-end"
+              className="col-span-2 items-stretch sm:items-end"
             />
           )}
           <ShareButton businessId={business.id} initial={shareLink} create={createShareLink} revoke={revokeShareLink} />
@@ -61,7 +61,7 @@ export default async function OverviewPage() {
         </p>
       )}
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start">
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Visibility score, last 30 days</CardTitle>

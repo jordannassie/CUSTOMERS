@@ -28,7 +28,7 @@ export default async function BuyCreditsPage({ searchParams }: Props) {
 
   return (
     <PageContainer>
-      <header className="max-w-[640px]">
+      <header>
         <h1 className="text-2xl font-semibold tracking-[-0.02em]">Buy credits</h1>
         <p className="mt-1 text-[15px] text-muted-foreground">
           Top-up credits never expire. We use them after your plan credits, while you have an active plan or trial.

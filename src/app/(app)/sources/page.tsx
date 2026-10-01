@@ -47,7 +47,7 @@ export default async function SourcesPage() {
         ) : (
           <>
             <OwnSiteStatus ownSite={sources.ownSite} answers={sources.answers} />
-            <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_300px] lg:items-start">
+            <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start">
               <Card className="lg:order-2">
                 <CardHeader>
                   <CardTitle className="text-base">Kinds of websites</CardTitle>

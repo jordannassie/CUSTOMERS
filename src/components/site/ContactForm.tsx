@@ -7,36 +7,16 @@ import Link from "next/link";
 import { cn } from "cn";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { FieldMessage, INVALID_CLASS, useFieldErrors } from "@/components/ui/field-errors";
 import { Label } from "@/components/ui/label";
+import { check, INTERESTS, interestFromParam, MESSAGE_PLACEHOLDERS, type ContactSource, type InterestValue, type Required } from "./contact-fields";
 
-export type InterestValue = "ai_visibility" | "agency" | "book_demo" | "other";
+export type { ContactSource, InterestValue } from "./contact-fields";
 
-// AEO topics only (MVP_SPEC 12.3); the values match what /api/contact stores.
-const INTERESTS: { value: InterestValue; label: string }[] = [
-  { value: "ai_visibility", label: "Checking my business in AI answers" },
-  { value: "agency", label: "Using it for my agency's clients" },
-  { value: "book_demo", label: "Booking a demo call" },
-  { value: "other", label: "Something else" },
-];
-
-const MESSAGE_PLACEHOLDERS: Record<InterestValue, string> = {
-  ai_visibility: "Tell us about your business and the questions you want to show up for.",
-  agency: "Tell us about your agency and how many client businesses you manage.",
-  book_demo: "Tell us about your business and what you would like to see in the demo.",
-  other: "How can we help?",
-};
-
-export type ContactSource = "contact_page" | "chat" | "agency" | "other";
-
-function interestFromParam(param: string | null): InterestValue {
-  if (param === "ai_visibility" || param === "agency" || param === "book_demo" || param === "other") return param;
-  // Older links used ?topic=sales or ?topic=enterprise.
-  if (param === "sales" || param === "enterprise") return "ai_visibility";
-  return "other";
-}
-
-const fieldClass =
-  "w-full rounded-lg border border-input bg-surface px-3 py-2 text-base outline-none placeholder:text-text-hint focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 md:text-sm";
+const fieldClass = cn(
+  "w-full rounded-lg border border-input bg-surface px-3 py-2 text-base outline-none placeholder:text-text-hint focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 md:text-sm",
+  INVALID_CLASS,
+);
 
 interface ContactFormProps {
   /** Overrides the ?interest= URL param. */
@@ -66,6 +46,7 @@ export default function ContactForm({ initialInterest, source = "contact_page", 
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const fields = useFieldErrors<Required>("cf");
 
   // Follow the URL when it changes while mounted (e.g. navigating to /contact?interest=agency).
   if (syncedInterest !== urlInterest) {
@@ -77,6 +58,7 @@ export default function ContactForm({ initialInterest, source = "contact_page", 
     e.preventDefault();
     if (loading) return;
     setError(null);
+    if (fields.show(check(name, email, message))) return;
     setLoading(true);
 
     try {
@@ -132,7 +114,19 @@ export default function ContactForm({ initialInterest, source = "contact_page", 
       <div className={pair}>
         <div className="flex flex-col gap-2">
           <Label htmlFor="cf-name">Name</Label>
-          <Input id="cf-name" required maxLength={200} value={name} onChange={(e) => setName(e.target.value)} autoComplete="name" />
+          <Input
+            id="cf-name"
+            required
+            maxLength={200}
+            value={name}
+            onChange={(e) => {
+              setName(e.target.value);
+              fields.clear("name");
+            }}
+            autoComplete="name"
+            {...fields.fieldProps("name")}
+          />
+          <FieldMessage id={fields.idOf("name")} message={fields.errors.name} />
         </div>
         <div className="flex flex-col gap-2">
           <Label htmlFor="cf-email">Email</Label>
@@ -142,10 +136,15 @@ export default function ContactForm({ initialInterest, source = "contact_page", 
             required
             maxLength={254}
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            onChange={(e) => {
+              setEmail(e.target.value);
+              fields.clear("email");
+            }}
             placeholder="you@business.com"
             autoComplete="email"
+            {...fields.fieldProps("email")}
           />
+          <FieldMessage id={fields.idOf("email")} message={fields.errors.email} />
         </div>
       </div>
 
@@ -197,10 +196,15 @@ export default function ContactForm({ initialInterest, source = "contact_page", 
           maxLength={5000}
           rows={compact ? 4 : 6}
           value={message}
-          onChange={(e) => setMessage(e.target.value)}
+          onChange={(e) => {
+            setMessage(e.target.value);
+            fields.clear("message");
+          }}
           placeholder={MESSAGE_PLACEHOLDERS[interest]}
           className={cn(fieldClass, "resize-none")}
+          {...fields.fieldProps("message")}
         />
+        <FieldMessage id={fields.idOf("message")} message={fields.errors.message} />
       </div>
 
       {error && (

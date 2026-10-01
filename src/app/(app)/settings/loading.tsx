@@ -1,1 +1,5 @@
-export { default } from "../dashboard/loading";
+import { SettingsSkeleton } from "@/components/app/PageSkeletons";
+
+export default function SettingsLoading() {
+  return <SettingsSkeleton />;
+}

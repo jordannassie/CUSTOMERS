@@ -1,5 +1,5 @@
-import { PageSkeleton } from "@/components/app/AppShellSkeleton";
+import { OpportunitiesSkeleton } from "@/components/app/PageSkeletons";
 
 export default function OpportunitiesLoading() {
-  return <PageSkeleton />;
+  return <OpportunitiesSkeleton />;
 }

@@ -7,6 +7,7 @@ import type { ActionResult } from "@/modules/auth";
 import type { SettingsBusiness } from "@/modules/settings";
 import { normalizeWebsite, parseServices } from "@/modules/settings/service";
 import { Button } from "@/components/ui/button";
+import { FieldMessage, useFieldErrors } from "@/components/ui/field-errors";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { FormError, Panel, TEXTAREA_CLASS } from "./SettingsSection";
@@ -14,6 +15,7 @@ import { FormError, Panel, TEXTAREA_CLASS } from "./SettingsSection";
 export type SaveAction = (input: unknown) => Promise<ActionResult<null>>;
 
 type Fields = Omit<SettingsBusiness, "id" | "services" | "models" | "frequency"> & { services: string };
+type Checked = "name" | "website";
 
 export function BusinessProfileForm({ business, save }: { business: SettingsBusiness; save: SaveAction }) {
   const initial: Fields = {
@@ -26,8 +28,11 @@ export function BusinessProfileForm({ business, save }: { business: SettingsBusi
     phone: business.phone,
   };
   const [form, setForm] = useState(initial);
+  const [saved, setSaved] = useState(initial);
+  const dirty = (Object.keys(form) as (keyof Fields)[]).some((key) => form[key] !== saved[key]);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  const fields = useFieldErrors<Checked>("profile");
   const typed = normalizeWebsite(form.website);
   const newWebsite = typed.ok ? typed.domain : form.website.trim();
   const websiteChanged = newWebsite !== (business.website || null);
@@ -36,34 +41,48 @@ export function BusinessProfileForm({ business, save }: { business: SettingsBusi
     id: `profile-${key}`,
     name: key,
     value: form[key],
-    onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
-      setForm((f) => ({ ...f, [key]: e.target.value })),
+    onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+      setForm((f) => ({ ...f, [key]: e.target.value }));
+      if (key === "name" || key === "website") fields.clear(key);
+    },
   });
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    const bad = fields.show({
+      name: form.name.trim() ? undefined : "Enter the business name.",
+      website: typed.ok ? undefined : "Enter a website like yourbusiness.com, or leave it empty.",
+    });
+    if (bad) return;
     startTransition(async () => {
       const result = await save({ businessId: business.id, ...form, services: parseServices(form.services) });
-      if (result.ok) toast.success("Business profile saved");
-      else setError(result.error);
+      if (!result.ok) return setError(result.error);
+      setSaved(form);
+      toast.success("Business profile saved");
     });
   }
 
   return (
     <Panel>
-      <form onSubmit={submit} className="flex flex-col gap-5" aria-label="Business profile">
+      <form onSubmit={submit} className="flex flex-col gap-5" aria-label="Business profile" noValidate>
         <div className="grid gap-5 sm:grid-cols-2">
-          <Row label="Business name" htmlFor="profile-name">
-            <Input {...field("name")} required maxLength={120} autoComplete="organization" />
+          <Row label="Business name" htmlFor="profile-name" error={fields.errors.name}>
+            <Input {...field("name")} required maxLength={120} autoComplete="organization" {...fields.fieldProps("name")} />
           </Row>
           <Row label="Industry" htmlFor="profile-industry" hint="For example: plumber, dentist, coffee shop.">
             <Input {...field("industry")} maxLength={80} />
           </Row>
         </div>
 
-        <Row label="Website" htmlFor="profile-website" hint="Leave empty if the business has no website.">
-          <Input {...field("website")} maxLength={253} inputMode="url" placeholder="yourbusiness.com" />
+        <Row label="Website" htmlFor="profile-website" hint="Leave empty if the business has no website." error={fields.errors.website}>
+          <Input
+            {...field("website")}
+            maxLength={253}
+            inputMode="url"
+            placeholder="yourbusiness.com"
+            {...fields.fieldProps("website", "profile-website-hint")}
+          />
         </Row>
         {websiteChanged && business.website && (
           <div
@@ -95,7 +114,7 @@ export function BusinessProfileForm({ business, save }: { business: SettingsBusi
 
         <FormError message={error} />
         <div>
-          <Button type="submit" disabled={pending}>
+          <Button type="submit" disabled={pending || !dirty}>
             {pending && <Loader2 className="animate-spin" aria-hidden="true" />}
             Save profile
           </Button>
@@ -109,18 +128,25 @@ function Row({
   label,
   htmlFor,
   hint,
+  error,
   children,
 }: {
   label: string;
   htmlFor: string;
   hint?: string;
+  error?: string;
   children: React.ReactNode;
 }) {
   return (
     <div className="flex flex-col gap-2">
       <Label htmlFor={htmlFor}>{label}</Label>
       {children}
-      {hint && <p className="text-xs text-text-hint">{hint}</p>}
+      <FieldMessage id={`${htmlFor}-error`} message={error} />
+      {hint && (
+        <p id={`${htmlFor}-hint`} className="text-xs text-text-hint">
+          {hint}
+        </p>
+      )}
     </div>
   );
 }

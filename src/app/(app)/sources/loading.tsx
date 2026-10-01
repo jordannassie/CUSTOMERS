@@ -1,5 +1,5 @@
-import { PageSkeleton } from "@/components/app/AppShellSkeleton";
+import { SourcesSkeleton } from "@/components/app/PageSkeletons";
 
 export default function SourcesLoading() {
-  return <PageSkeleton />;
+  return <SourcesSkeleton />;
 }

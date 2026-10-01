@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowUpRight, Building2 } from "lucide-react";
+import { Building2, ChevronRight } from "lucide-react";
 import { PageContainer } from "@/components/app/PageContainer";
 import { AccountForm } from "@/components/settings/AccountForm";
 import { AgencyForm } from "@/components/settings/AgencyForm";
@@ -121,7 +121,7 @@ function LinkRow({ href, title, text }: { href: string; title: string; text: str
         <span className="block text-sm font-medium">{title}</span>
         <span className="mt-0.5 block text-[13px] text-muted-foreground">{text}</span>
       </span>
-      <ArrowUpRight className="size-4 shrink-0 text-muted-foreground group-hover:text-primary" aria-hidden="true" />
+      <ChevronRight className="size-4 shrink-0 text-muted-foreground group-hover:text-primary" aria-hidden="true" />
     </Link>
   );
 }

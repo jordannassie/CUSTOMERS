@@ -29,13 +29,11 @@ function useUnreadLeads(pathname: string): number {
 function NavLink({
   item,
   pathname,
-  small,
   badge,
   onNavigate,
 }: {
   item: AdminNavItem;
   pathname: string;
-  small?: boolean;
   badge?: number;
   onNavigate?: () => void;
 }) {
@@ -47,17 +45,21 @@ function NavLink({
       onClick={onNavigate}
       aria-current={active ? "page" : undefined}
       className={cn(
-        "flex items-center gap-2.5 rounded-md px-3 transition-colors duration-150 ease-out focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
-        small ? "py-1.5 text-[13px]" : "py-2 text-[14px] font-medium",
+        "flex items-center gap-2.5 rounded-md px-3 py-2 text-[14px] font-medium transition-colors duration-150 ease-out focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
         active
           ? "bg-primary-tint text-primary"
           : "text-muted-foreground hover:bg-surface hover:text-foreground",
       )}
     >
-      <Icon className={cn("shrink-0", small ? "size-3.5" : "size-4")} aria-hidden="true" />
+      <Icon className="size-4 shrink-0" aria-hidden="true" />
       <span className="truncate">{item.label}</span>
       {badge ? (
-        <span className="tabular ml-auto rounded-sm bg-primary px-1.5 text-[12px] font-medium leading-5 text-primary-foreground">
+        <span
+          className={cn(
+            "tabular ml-auto rounded-sm px-1.5 text-[12px] font-medium leading-5",
+            active ? "bg-surface text-primary" : "bg-primary-tint text-primary-hover",
+          )}
+        >
           {badge > 99 ? "99+" : badge}
           <span className="sr-only"> unread</span>
         </span>
@@ -86,7 +88,6 @@ function NavBody({ adminEmail, onNavigate }: { adminEmail: string; onNavigate?: 
               <NavLink
                 item={item}
                 pathname={pathname}
-                small
                 badge={item.label === "Leads" ? unread : undefined}
                 onNavigate={onNavigate}
               />
@@ -113,7 +114,7 @@ function NavBody({ adminEmail, onNavigate }: { adminEmail: string; onNavigate?: 
 function Logo() {
   return (
     <Link href="/internal/admin" className="flex items-center gap-2">
-      <Image src={LOGO} alt="Customers.Direct" width={130} height={28} className="h-6 w-auto" priority />
+      <Image src={LOGO} alt="Customers.Direct" width={72} height={24} loading="eager" className="h-6 w-auto" />
       <span className="rounded-sm bg-foreground px-1.5 text-[12px] font-medium leading-5 text-background">Admin</span>
     </Link>
   );

@@ -31,7 +31,7 @@ export function OpportunityCard({
     >
       <header className="flex flex-col items-start gap-2">
         <Badge variant={impact.variant}>{impact.label}</Badge>
-        <h3 className="text-base font-semibold tracking-[-0.01em]">{item.title}</h3>
+        <h2 className="text-base font-semibold tracking-[-0.01em]">{item.title}</h2>
       </header>
 
       {(item.evidence || item.whyItMatters) && (
@@ -93,7 +93,7 @@ export function OpportunityCard({
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section className="flex flex-col gap-1">
-      <h4 className="text-[13px] font-medium text-muted-foreground">{title}</h4>
+      <h3 className="text-[13px] font-medium text-muted-foreground">{title}</h3>
       {children}
     </section>
   );
