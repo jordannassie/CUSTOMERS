@@ -55,7 +55,7 @@ export async function StepContent({ step, state, plan, returned }: Props) {
   if (step === "website") {
     if (!draftId) {
       const blocked = await getAddBusinessBlock(next);
-      if (blocked) return <UpgradeNote reason={blocked} />;
+      if (blocked) return <UpgradeNote reason={blocked} hasBusinesses={state.hasFinishedBusiness} />;
     }
     const details = draftId ? await getDetailsStep(draftId, next) : null;
     return (

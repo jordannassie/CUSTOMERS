@@ -222,6 +222,22 @@ test("delete a business after typing its name", async ({ page }) => {
   expect(data?.deleted_at).not.toBeNull();
 });
 
+test("deleting the only business after the plan ended leads to settings, not a loop (BUG-D)", async ({ page }) => {
+  const s = await logIn(page);
+  await db.from("agencies").update({ status: "canceled" }).eq("id", s.agencyId).throwOnError();
+  await page.getByRole("button", { name: "Delete business" }).click();
+  const dialog = page.getByTestId("delete-dialog");
+  await dialog.getByLabel(/to confirm/).fill("Northside Plumbing");
+  await dialog.getByRole("button", { name: "Delete business" }).click();
+
+  const note = page.getByTestId("upgrade-note");
+  await expect(note).toContainText("There are no businesses in your account right now.", { timeout: 15_000 });
+  await expect(note.getByRole("link", { name: "Back to dashboard" })).toHaveCount(0);
+  await note.getByRole("link", { name: "Go to settings" }).click();
+  await page.waitForURL((url) => url.pathname === "/settings");
+  await expect(page.getByRole("heading", { level: 1, name: "Settings" })).toBeVisible();
+});
+
 test("delete the account: logged out, and logging in again is blocked", async ({ page }) => {
   const s = await logIn(page);
   await page.getByRole("button", { name: "Delete account" }).click();
