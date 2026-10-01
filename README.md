@@ -131,7 +131,7 @@ npm run build               # production build plus the worker bundle
 ```
 
 - Tests read only `.env.test.local`, never `.env.local`, so they cannot reach a shared database or spend AI credits.
-- `npm run test:e2e` starts its dev server with `.env.test.local`, the fixture flags, `WORKER_IN_PROCESS=true` and 2 test admins in `ADMIN_EMAILS` (`playwright.config.ts`). If a server already runs on `E2E_PORT`, it reuses it, so start that one the same way or stop it first. Name a spec to run one file: `npm run test:e2e -- tests/e2e/overview.spec.ts`.
+- `npm run test:e2e` starts its dev server with `.env.test.local`, the fixture flags, `WORKER_IN_PROCESS=true` and 2 test admins in `ADMIN_EMAILS` (`playwright.config.ts`). Next runs one dev server per folder, so stop the one from "Run it locally" first; otherwise the run fails with "Another next dev server is already running". Name a spec to run one file: `npm run test:e2e -- tests/e2e/overview.spec.ts`.
 - `npm run dev`, `npm run build` and `npm run scan` run the malware scanner first. If it reports a payload, stop and tell the team; never run flagged code.
 
 ## Test database (INFRA-02)
