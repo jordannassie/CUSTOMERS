@@ -1,5 +1,7 @@
 import "server-only";
 import { createHash } from "node:crypto";
+import { cache } from "react";
+import { requestNow } from "@/lib/request-now";
 import { requireAgency } from "@/modules/auth";
 import { createServiceClient } from "@/lib/supabase/service";
 import type { ProviderId } from "../providers/types";
@@ -61,8 +63,23 @@ export type ScoreReport = VisibilityScore & {
 /** The signed-in agency's score for one of its businesses; null when it is not theirs. */
 export async function getScoreReport(businessId: string, options: { next?: string } = {}): Promise<ScoreReport | null> {
   const { agency } = await requireAgency(options);
-  return loadScoreReport(agency.id, businessId, new Date());
+  return loadScoreReport(agency.id, businessId, requestNow());
 }
+
+// React's cache lasts one server request: the Overview, its "Who AI picked instead" block and the business switcher
+// all score the active business, and the share page scores it twice, yet each read happens once.
+const scoreInputs = cache((agencyId: string, businessId: string) => {
+  const db = createServiceClient();
+  return Promise.all([
+    db.from("businesses").select("id, models").eq("id", businessId).eq("agency_id", agencyId).maybeSingle(),
+    db.from("business_competitors").select("name").eq("business_id", businessId).order("name"),
+    db.from("tracked_prompts").select("id, prompt").eq("business_id", businessId).eq("active", true).order("created_at"),
+  ]);
+});
+const windowChecks = cache((businessId: string, sinceMs: number) => readChecks(businessId, new Date(sinceMs)));
+const olderChecks = cache((businessId: string, fromMs: number, toMs: number) =>
+  readOlderChecks(businessId, new Date(fromMs), new Date(toMs)),
+);
 
 export type ReportOptions = {
   /** Days before the 30-day window to read as well, for comparisons with earlier periods. */
@@ -76,26 +93,17 @@ export async function loadScoreReport(
   now: Date,
   options: ReportOptions = {},
 ): Promise<ScoreReport | null> {
-  const db = createServiceClient();
-  const [business, competitors, questions] = await Promise.all([
-    db.from("businesses").select("id, models").eq("id", businessId).eq("agency_id", agencyId).maybeSingle(),
-    db.from("business_competitors").select("name").eq("business_id", businessId).order("name"),
-    db
-      .from("tracked_prompts")
-      .select("id, prompt")
-      .eq("business_id", businessId)
-      .eq("active", true)
-      .order("created_at"),
-  ]);
+  const [business, competitors, questions] = await scoreInputs(agencyId, businessId);
   for (const r of [business, competitors, questions]) if (r.error) throw new Error(`Scores: ${r.error.message}`);
   if (!business.data) return null;
 
   const models = business.data.models as ProviderId[];
   const windowStart = new Date(now.getTime() - SCORE_WINDOW_DAYS * DAY_MS);
   const historyDays = options.historyDays ?? 0;
+  const start = windowStart.getTime();
   const [checks, older] = await Promise.all([
-    readChecks(businessId, windowStart),
-    historyDays > 0 ? readOlderChecks(businessId, new Date(windowStart.getTime() - historyDays * DAY_MS), windowStart) : [],
+    windowChecks(businessId, start),
+    historyDays > 0 ? olderChecks(businessId, start - historyDays * DAY_MS, start) : [],
   ]);
   const opts = { now, models };
   const appearances = new Map(

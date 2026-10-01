@@ -1,4 +1,5 @@
 import "server-only";
+import { requestNow } from "@/lib/request-now";
 import { requireAgency } from "@/modules/auth";
 import { loadScoreReport } from "@/modules/scanning";
 import { createServiceClient } from "@/lib/supabase/service";
@@ -12,7 +13,7 @@ const STOPPED_AGENCIES = ["past_due", "canceled", "suspended", "deleted"];
 /** The Overview for one of the signed-in agency's businesses; null when it is not theirs. */
 export async function getOverview(businessId: string): Promise<OverviewView | null> {
   const { agency } = await requireAgency({ next: "/dashboard" });
-  return loadOverview(agency.id, businessId, new Date());
+  return loadOverview(agency.id, businessId, requestNow());
 }
 
 // Callers check the viewer may see this agency first (the signed-in owner, or a live share link).

@@ -1,5 +1,6 @@
 import "server-only";
 import { redirect } from "next/navigation";
+import { requestNow } from "@/lib/request-now";
 import { createClient } from "@/lib/supabase/server";
 import {
   blockedPathFor,
@@ -88,7 +89,7 @@ export async function getWorkspace(options: GuardOptions = {}): Promise<Workspac
 export async function getSwitcherScores(businessIds: string[]): Promise<SwitcherScores | null> {
   const agency = await getCurrentAgency();
   if (!agency) return null;
-  const now = new Date();
+  const now = requestNow();
   const reports = await Promise.all(businessIds.map((id) => loadScoreReport(agency.id, id, now)));
   const byId: SwitcherScores["byId"] = {};
   reports.forEach((report, i) => {

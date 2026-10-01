@@ -1,6 +1,7 @@
 import "server-only";
 import { cache } from "react";
 import { env } from "@/lib/env";
+import { requestNow } from "@/lib/request-now";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { requireAgency } from "@/modules/auth";
@@ -30,7 +31,7 @@ export const fetchPlaceSignals: FetchSignals = (placeId) => signalsForRequest(pl
 /** The Competitors page for one of the signed-in agency's businesses; null when it is not theirs. */
 export async function getCompetitorsPage(businessId: string, next: string): Promise<CompetitorsView | null> {
   const { agency } = await requireAgency({ next });
-  return loadCompetitorsPage(agency.id, businessId, new Date(), signalsForRequest);
+  return loadCompetitorsPage(agency.id, businessId, requestNow(), signalsForRequest);
 }
 
 // Callers check the user may see this agency first. Reads only; nothing from Places is written (D-73).
@@ -114,7 +115,7 @@ export async function trackCompetitorByName(userId: string, businessId: string, 
 export async function getPickedInstead(businessId: string): Promise<PickedInstead | null | "none-tracked"> {
   const { agency } = await requireAgency({ next: "/dashboard" });
   const db = createServiceClient();
-  const now = new Date();
+  const now = requestNow();
   const [report, business, rows] = await Promise.all([
     loadScoreReport(agency.id, businessId, now),
     db.from("businesses").select("name, places_id").eq("id", businessId).eq("agency_id", agency.id).maybeSingle(),
