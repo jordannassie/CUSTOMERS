@@ -134,7 +134,7 @@ export default function SeoDashboard({
         const data = await res.json();
 
         if (!res.ok) {
-          setError(data.error ?? "Failed to load SEO data.");
+          setError(data.error ?? "We couldn't load your SEO data. Try again.");
           return;
         }
 
@@ -142,14 +142,14 @@ export default function SeoDashboard({
           if (data.reason === "not_configured") {
             setNotConfigured(true);
           } else {
-            setError(data.message ?? "Failed to load SEO data.");
+            setError(data.message ?? "We couldn't load your SEO data. Try again.");
           }
           return;
         }
 
         setSnapshot(data.snapshot);
       } catch {
-        setError("Network error. Please try again.");
+        setError("We couldn't reach the server. Check your connection and try again.");
       } finally {
         setLoading(false);
       }
@@ -161,12 +161,12 @@ export default function SeoDashboard({
   if (!domain) {
     return (
       <div>
-        <h1 className="text-[18px] font-bold text-[#171717] mb-1">Search Intelligence</h1>
+        <h1 className="text-[18px] font-bold text-[#171717] mb-1">Search intelligence</h1>
         <div className="rounded-xl border border-[#E5E5E1] bg-white p-8 text-center mt-4">
           <Globe size={28} className="text-[#A3A3A0] mx-auto mb-3" aria-hidden="true" />
-          <p className="text-[14px] font-semibold text-[#171717] mb-1">No domain configured</p>
+          <p className="text-[14px] font-semibold text-[#171717] mb-1">No website added</p>
           <p className="text-[13px] text-[#777773] mb-4">
-            Add your website URL in Settings to enable SEO intelligence.
+            Add your website in Settings to see your SEO data.
           </p>
           <a
             href="/settings"
@@ -183,12 +183,12 @@ export default function SeoDashboard({
   if (notConfigured) {
     return (
       <div>
-        <h1 className="text-[18px] font-bold text-[#171717] mb-1">Search Intelligence</h1>
+        <h1 className="text-[18px] font-bold text-[#171717] mb-1">Search intelligence</h1>
         <div className="rounded-xl border border-[#E5E5E1] bg-[#FAFAF8] p-8 text-center mt-4">
           <AlertCircle size={28} className="text-[#A3A3A0] mx-auto mb-3" aria-hidden="true" />
-          <p className="text-[14px] font-semibold text-[#171717] mb-1">SEO integration not active</p>
+          <p className="text-[14px] font-semibold text-[#171717] mb-1">SEO data is not turned on</p>
           <p className="text-[13px] text-[#777773]">
-            DataForSEO credentials are not configured on this server. Contact support to enable SEO intelligence.
+            SEO data is not set up for your account yet. Contact support to turn it on.
           </p>
         </div>
       </div>
@@ -199,7 +199,7 @@ export default function SeoDashboard({
   if (!snapshot) {
     return (
       <div>
-        <h1 className="text-[18px] font-bold text-[#171717] mb-1">Search Intelligence</h1>
+        <h1 className="text-[18px] font-bold text-[#171717] mb-1">Search intelligence</h1>
         <p className="text-[13px] text-[#777773] mb-6">
           Keyword rankings, competitor gaps, and backlink analysis for{" "}
           <strong>{domain}</strong>.
@@ -222,7 +222,7 @@ export default function SeoDashboard({
             {loading ? (
               <><Loader2 size={14} className="animate-spin" /> Scanning…</>
             ) : (
-              <><Search size={14} /> Run SEO Scan</>
+              <><Search size={14} /> Run SEO scan</>
             )}
           </button>
         </div>
@@ -237,7 +237,7 @@ export default function SeoDashboard({
       {/* Header */}
       <div className="flex items-start justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-[18px] font-bold text-[#171717] mb-1">Search Intelligence</h1>
+          <h1 className="text-[18px] font-bold text-[#171717] mb-1">Search intelligence</h1>
           <p className="text-[13px] text-[#777773] flex items-center gap-1.5">
             <Globe size={12} aria-hidden="true" />
             {snapshot.domain}
@@ -275,25 +275,25 @@ export default function SeoDashboard({
       {/* KPI cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <MetricCard
-          label="Ranking Keywords"
+          label="Ranking keywords"
           value={fmt(overview.keywords)}
           sub="Google US"
           icon={Search}
         />
         <MetricCard
-          label="Est. Monthly Traffic"
+          label="Est. monthly traffic"
           value={fmt(overview.organicTraffic)}
           sub="organic visits"
           icon={TrendingUp}
         />
         <MetricCard
-          label="Referring Domains"
+          label="Referring domains"
           value={fmt(backlinks.referringDomains)}
           sub={`${fmt(backlinks.backlinks)} backlinks`}
           icon={Link2}
         />
         <MetricCard
-          label="Domain Rank"
+          label="Domain rank"
           value={overview.rank ?? "-"}
           sub="DataForSEO rank 0 to 100"
           icon={Globe}
@@ -415,7 +415,7 @@ export default function SeoDashboard({
               <table className="w-full text-[12.5px]" role="table">
                 <thead>
                   <tr className="border-b border-[#EEEEEA]">
-                    {["Domain", "Est. Keywords", "Est. Traffic"].map((h) => (
+                    {["Domain", "Est. keywords", "Est. traffic"].map((h) => (
                       <th
                         key={h}
                         className="px-5 py-3 text-left text-[11px] font-semibold text-[#A3A3A0] uppercase tracking-wide"
@@ -493,7 +493,7 @@ export default function SeoDashboard({
           {competitors.length > 0 && (
             <div>
               <p className="text-[11px] font-semibold text-[#A3A3A0] uppercase tracking-widest mb-3">
-                Vs. competitors
+                Compared with competitors
               </p>
               <div className="flex flex-col gap-2">
                 {competitors.slice(0, 5).map((comp) => (
@@ -509,8 +509,8 @@ export default function SeoDashboard({
                 ))}
               </div>
               <p className="text-[11px] text-[#A3A3A0] mt-3">
-                Detailed per-competitor backlink gap analysis requires manual domain comparison.
-                Use the keyword gaps tab to identify link-worthy content opportunities.
+                We don&apos;t compare backlinks for each competitor yet.
+                Use the keyword gaps tab to find topics worth a page of their own.
               </p>
             </div>
           )}

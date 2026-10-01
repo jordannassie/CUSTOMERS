@@ -61,7 +61,7 @@ export function LeadsFilters({
         <Input
           id="leads-search"
           type="search"
-          placeholder="Search name, email, company…"
+          placeholder="Search name, email or company"
           value={search}
           onChange={(e) => onSearch(e.target.value)}
         />

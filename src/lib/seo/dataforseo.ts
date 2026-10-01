@@ -1,11 +1,11 @@
 /**
- * DataForSEO API client — server-side only.
+ * DataForSEO API client, server-side only.
  *
  * Credentials: DATAFORSEO_USERNAME + DATAFORSEO_PASSWORD (Basic Auth)
  * Documentation: https://docs.dataforseo.com/v3/
  *
  * This module provides a normalized abstraction over DataForSEO responses.
- * Callers receive typed SeoSnapshot objects — not raw API payloads.
+ * Callers receive typed SeoSnapshot objects, not raw API payloads.
  *
  * Cost management:
  * - Results are cached in seo_snapshots for 7 days.
@@ -41,7 +41,7 @@ async function post<T = unknown>(endpoint: string, payload: unknown): Promise<T>
       "Content-Type": "application/json",
     },
     body: JSON.stringify(payload),
-    // Don't cache at the fetch level — caching is handled at the DB layer
+    // Don't cache at the fetch level, caching is handled at the DB layer
     cache: "no-store",
   });
 

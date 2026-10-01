@@ -4,7 +4,7 @@
  * Returns cached SEO snapshot for the business domain.
  * If refresh=1 (or cache is older than 7 days), re-fetches from DataForSEO.
  *
- * Cost: DataForSEO calls are ~$0.05–0.25 per full snapshot — results are
+ * Cost: DataForSEO calls are ~$0.05 to $0.25 per full snapshot, results are
  * cached in seo_snapshots for 7 days and only refreshed on explicit request
  * or when the cache has expired.
  */
@@ -42,14 +42,14 @@ export async function GET(request: NextRequest) {
 
   if (!business.domain) {
     return NextResponse.json(
-      { ok: false, reason: "no_domain", message: "No domain configured for this business. Add your website in Settings." },
+      { ok: false, reason: "no_domain", message: "This business has no website yet. Add one in Settings." },
       { status: 200 },
     );
   }
 
   if (!dataForSeoEnabled) {
     return NextResponse.json(
-      { ok: false, reason: "not_configured", message: "SEO intelligence is not configured on this server." },
+      { ok: false, reason: "not_configured", message: "SEO data is not set up for your account yet. Contact support to turn it on." },
       { status: 200 },
     );
   }
@@ -88,7 +88,7 @@ export async function GET(request: NextRequest) {
     const message = err instanceof Error ? err.message : "DataForSEO request failed.";
     console.error("[seo/route] DataForSEO error:", message);
     return NextResponse.json(
-      { ok: false, reason: "api_error", message },
+      { ok: false, reason: "api_error", message: "We couldn't load your SEO data right now. Try again in a minute." },
       { status: 200 },
     );
   }
@@ -110,7 +110,7 @@ export async function GET(request: NextRequest) {
 
   if (upsertError) {
     console.error("[seo/route] cache upsert failed:", upsertError.message);
-    // Non-fatal — still return the data
+    // Non-fatal, still return the data
   }
 
   return NextResponse.json({ ok: true, snapshot, cached: false });

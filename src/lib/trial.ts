@@ -1,5 +1,5 @@
 /**
- * Trial / access status utilities — server-authoritative.
+ * Trial / access status utilities, server-authoritative.
  *
  * Access is determined by PRODUCT_ACCESS.betaFreeAccess (in src/config/product-access.ts).
  *
@@ -32,17 +32,17 @@ export interface TrialStatus {
   isInTrial: boolean;
   /** Trial has ended (only ever true when betaFreeAccess = false) */
   isExpired: boolean;
-  /** Whole days remaining — 999 for beta/admin/paid */
+  /** Whole days remaining, 999 for beta/admin/paid */
   daysLeft: number;
   trialStartsAt: Date | null;
   trialEndsAt: Date | null;
   /** true for admin accounts */
   isAdmin: boolean;
-  /** true when betaFreeAccess mode is active — product is free for all users */
+  /** true when betaFreeAccess mode is active, product is free for all users */
   isBeta: boolean;
 }
 
-/** Safe default — full access, never expired. Used on any error or beta mode. */
+/** Safe default, full access, never expired. Used on any error or beta mode. */
 const FULL_ACCESS = Object.freeze({
   isInTrial: true,
   isExpired: false,
@@ -77,7 +77,7 @@ export async function getTrialStatus(): Promise<TrialStatus> {
     }
 
     if (!user) {
-      // Not authenticated — return a clearly "no access" state so callers can redirect
+      // Not authenticated, return a clearly "no access" state so callers can redirect
       return {
         isInTrial: false,
         isExpired: false,
@@ -98,7 +98,7 @@ export async function getTrialStatus(): Promise<TrialStatus> {
       return { ...FULL_ACCESS, isBeta: true };
     }
 
-    // ── NORMAL MODE (betaFreeAccess = false) — evaluate trial/subscription ──
+    // ── NORMAL MODE (betaFreeAccess = false), evaluate trial/subscription ──
 
     let profile: {
       trial_starts_at: string | null;
@@ -113,7 +113,7 @@ export async function getTrialStatus(): Promise<TrialStatus> {
         .maybeSingle();
       profile = p;
     } catch {
-      console.warn("[trial] Profile query failed — defaulting to safe access");
+      console.warn("[trial] Profile query failed, defaulting to safe access");
       return { ...FULL_ACCESS, isBeta: false };
     }
 
@@ -136,7 +136,7 @@ export async function getTrialStatus(): Promise<TrialStatus> {
         };
       }
     } catch {
-      // Subscription query failed — don't penalize user
+      // Subscription query failed, don't penalize user
     }
 
     if (!profile?.trial_ends_at) {

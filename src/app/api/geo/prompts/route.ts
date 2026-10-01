@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Could not save prompts." }, { status: 500 });
   }
 
-  // Onboarding is now complete — flip the business to active so it's picked
+  // Onboarding is now complete, flip the business to active so it's picked
   // up by monitoring and the dashboard stops showing the onboarding gate.
   await supabase.from("businesses").update({ status: "active" }).eq("id", businessId);
 

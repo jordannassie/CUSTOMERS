@@ -1,7 +1,7 @@
 /**
  * Deterministic buyer-intent prompt generator. Template-based rather than
  * LLM-generated so every prompt is predictable, reviewable, and free to
- * produce — the user sees and can edit the full list before anything is
+ * produce, the user sees and can edit the full list before anything is
  * saved, per the "nothing auto-confirmed" onboarding requirement.
  */
 
@@ -33,12 +33,12 @@ export function generateBuyerIntentPrompts(input: PromptEngineInput): GeneratedP
     prompts.push({ prompt, category, buyer_intent, location: locationTag });
   };
 
-  // Discovery — "who should I use"
+  // Discovery, "who should I use"
   push(`What is the best ${industry}${locSuffix}?`, "discovery", "high");
   push(`Who are the top-rated ${industry} companies${locSuffix}?`, "discovery", "high");
   push(`Can you recommend a good ${industry}${locSuffix}?`, "discovery", "high");
   push(`What are the most trusted ${industry} businesses${locSuffix}?`, "discovery", "high");
-  push(`I need a ${industry}${locSuffix} — who do you suggest?`, "discovery", "high");
+  push(`I need a ${industry}${locSuffix}. Who do you suggest?`, "discovery", "high");
 
   // Comparison
   push(`What's the difference between the top ${industry} options${locSuffix}?`, "comparison", "medium");
@@ -47,7 +47,7 @@ export function generateBuyerIntentPrompts(input: PromptEngineInput): GeneratedP
   push(`Which ${industry}${locSuffix} offers the best value for the price?`, "comparison", "medium");
 
   // Urgency / transactional
-  push(`I need a ${industry} right away${locSuffix} — who's available?`, "transactional", "high");
+  push(`I need a ${industry} right away${locSuffix}. Who's available?`, "transactional", "high");
   push(`What ${industry}${locSuffix} offers same-day or emergency service?`, "transactional", "high");
   push(`How do I book an appointment with a ${industry}${locSuffix}?`, "transactional", "high");
 
@@ -61,7 +61,7 @@ export function generateBuyerIntentPrompts(input: PromptEngineInput): GeneratedP
   push(`What questions should I ask a ${industry} before hiring them${locSuffix}?`, "research", "medium");
   push(`Are there any red flags to watch for when hiring a ${industry}${locSuffix}?`, "research", "low");
 
-  // Local specificity (only if we actually have a location — never invented)
+  // Local specificity (only if we actually have a location, never invented)
   if (location) {
     push(`What are the best-reviewed ${industry} businesses in ${location}?`, "local_presence", "high", location);
     push(`Who is the most popular ${industry} in ${location}?`, "local_presence", "high", location);

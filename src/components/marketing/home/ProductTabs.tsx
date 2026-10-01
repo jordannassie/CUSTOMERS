@@ -8,7 +8,7 @@ const TABS = [
   {
     value: "visibility",
     label: "Visibility",
-    title: "One score you can trust",
+    title: "One score from real AI answers",
     body: [
       "Your visibility score is how often AI named you across all checks in the last 30 days, shown for each AI and overall.",
       "A confidence label tells you how solid the number is, and the trend line shows the last 7 days.",
@@ -42,7 +42,7 @@ export function ProductTabs() {
     <Section id="product">
       <div className="flex flex-col gap-4">
         <Eyebrow>Product</Eyebrow>
-        <H2 className="max-w-[22ch]">Everything you need to get named by AI</H2>
+        <H2 className="max-w-[22ch]">What you see after each scan</H2>
         <Lead>These screens use a made-up coffee shop so you can see what a report looks like.</Lead>
       </div>
 

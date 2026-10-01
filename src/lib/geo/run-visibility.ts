@@ -5,7 +5,7 @@ import { calculateDirectScore } from "@/lib/geo/direct-score";
 import type { VisibilityProviderId } from "@/types/geo";
 
 interface RunOptions {
-  /** Cap on how many active prompts to run in this call — keeps a single
+  /** Cap on how many active prompts to run in this call, keeps a single
    * serverless invocation inside typical function time limits. The
    * scheduled monitoring job calls this repeatedly across all prompts. */
   maxPrompts?: number;
@@ -46,7 +46,7 @@ async function mapWithConcurrency<T, R>(
  * Runs up to `maxPrompts` active tracked prompts for a business through a
  * configured AI visibility provider, persists every result, and recomputes
  * the Direct Score from the results of this run. Uses the caller's Supabase
- * client (RLS-scoped) so it can only ever touch that business's own data —
+ * client (RLS-scoped) so it can only ever touch that business's own data,
  * except when explicitly given the service client by the cron job, which
  * still filters by business_id everywhere.
  */

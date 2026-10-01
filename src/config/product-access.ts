@@ -16,7 +16,7 @@
  *
  *   All access decisions in the codebase derive from this single config object,
  *   so re-enabling billing requires changing these env vars and the Stripe
- *   integration only — not rewriting every route.
+ *   integration only, not rewriting every route.
  */
 
 import { env } from "@/lib/env";
@@ -30,7 +30,7 @@ export const PRODUCT_ACCESS = {
    * a user can do. The product is free during this phase.
    *
    * When FALSE: access is gated by trial expiry / active subscription as
-   * determined by getTrialStatus() — activate after beta ends.
+   * determined by getTrialStatus(), activate after beta ends.
    *
    * Override: set environment variable BETA_FREE_ACCESS=false to disable.
    */
@@ -64,7 +64,7 @@ export const PRODUCT_ACCESS = {
   trialEnabled: env.TRIAL_ENABLED === "true",
 
   /**
-   * Beta usage safeguards — internal cost-protection limits.
+   * Beta usage safeguards, internal cost-protection limits.
    *
    * These are NOT exposed to users as "plan limits." They exist solely to
    * prevent runaway API costs during beta. Limits should be generous enough

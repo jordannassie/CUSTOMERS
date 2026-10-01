@@ -12,7 +12,7 @@ describe("admin menu (B-64)", () => {
       "Agencies",
       "Businesses",
       "Scans",
-      "Usage & Cost",
+      "Usage and cost",
       "Settings",
     ]);
   });
@@ -23,7 +23,7 @@ describe("admin menu (B-64)", () => {
     ["/internal/admin/agencies/abc", "Agencies"],
     ["/internal/admin/businesses/abc", "Businesses"],
     ["/internal/admin/scans", "Scans"],
-    ["/internal/admin/usage", "Usage & Cost"],
+    ["/internal/admin/usage", "Usage and cost"],
     ["/internal/admin/settings", "Settings"],
     ["/internal/admin/news", "LinkedIn studio"],
   ])("highlights exactly one item on %s", (pathname, label) => {

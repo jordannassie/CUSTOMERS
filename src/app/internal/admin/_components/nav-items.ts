@@ -25,7 +25,7 @@ export const MAIN_ITEMS: AdminNavItem[] = [
   { label: "Agencies", href: `${BASE}/agencies`, icon: Building2 },
   { label: "Businesses", href: `${BASE}/businesses`, icon: Store },
   { label: "Scans", href: `${BASE}/scans`, icon: ScanSearch },
-  { label: "Usage & Cost", href: `${BASE}/usage`, icon: Coins },
+  { label: "Usage and cost", href: `${BASE}/usage`, icon: Coins },
   { label: "Settings", href: `${BASE}/settings`, icon: Settings },
 ];
 

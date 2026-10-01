@@ -98,7 +98,7 @@ async function readAll<T>(
   const rows: T[] = [];
   for (let from = 0; ; from += PAGE) {
     const { data, error } = await page(from, from + PAGE - 1);
-    if (error) throw new Error(`Usage & Cost: ${error.message}`);
+    if (error) throw new Error(`Usage and cost: ${error.message}`);
     rows.push(...data!);
     if (data!.length < PAGE) return rows;
   }
@@ -112,7 +112,7 @@ async function providerOfChecks(checkIds: string[]): Promise<Map<string, string>
     await Promise.all(
       chunks.map(async (chunk) => {
         const { data, error } = await createServiceClient().from("visibility_results").select("id, provider").in("id", chunk);
-        if (error) throw new Error(`Usage & Cost: ${error.message}`);
+        if (error) throw new Error(`Usage and cost: ${error.message}`);
         return data;
       }),
     )

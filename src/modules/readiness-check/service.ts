@@ -3,7 +3,7 @@ import type { CheckRow, Finding, ReadinessCheckResult } from "./schema";
 
 const CHECKS: { key: keyof Signals; label: string; detail: string }[] = [
   { key: "hasStructuredData", label: "Website info for AI", detail: "Hidden business details (structured data) that AI tools can read" },
-  { key: "hasBusinessType", label: "Business type stated", detail: "The structured data says what kind of business this is" },
+  { key: "hasBusinessType", label: "Business type stated", detail: "The hidden business details say what kind of business this is" },
   { key: "hasDescription", label: "Page summary", detail: "A clear description of the page for search and AI tools" },
   { key: "hasPhone", label: "Phone number", detail: "A phone number on the home page" },
   { key: "hasAddress", label: "Address", detail: "A street address marked up on the page" },
@@ -29,14 +29,14 @@ export function buildFindings(mine: Signals | null, them: Signals | null): Findi
       level: "High impact",
       title: "Add business details for AI",
       detail: `${
-        theyHave("hasStructuredData") ? "Your competitor's site has structured data and yours does not." : "Your site has no structured data."
+        theyHave("hasStructuredData") ? "Your competitor's site has hidden business details for AI and yours does not." : "Your site has no hidden business details for AI."
       } It tells AI tools your business name, type, address and hours in a format they read reliably.`,
     });
   } else if (!mine.hasBusinessType) {
     findings.push({
       level: "High impact",
       title: "Say what kind of business you are",
-      detail: "Your structured data does not name a business type, such as Dentist or Plumber. Adding one helps AI tools place you in local answers.",
+      detail: "Your hidden business details do not name a business type, such as dentist or plumber. Adding one helps AI tools place you in local answers.",
     });
   }
   if (mine.wordCount <= 300) {

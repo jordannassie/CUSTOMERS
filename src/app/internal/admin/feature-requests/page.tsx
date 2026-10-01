@@ -102,7 +102,7 @@ create policy "feature_requests_select_own" on public.feature_requests
       <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h1 className="text-[24px] font-semibold tracking-[-0.02em]">Feature requests</h1>
-          <p className="mt-1 text-[14px] text-muted-foreground">Beta user suggestions</p>
+          <p className="mt-1 text-[14px] text-muted-foreground">Suggestions from users</p>
         </div>
         <p className="text-[13px] text-muted-foreground">
           {enriched.length} total, {newCount} new

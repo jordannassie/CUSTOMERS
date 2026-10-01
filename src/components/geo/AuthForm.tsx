@@ -126,7 +126,7 @@ export default function AuthForm({ defaultMode = "login", errorParam = "", notic
           setPasswordError("Password must be at least 8 characters.");
           passwordRef.current?.focus();
         } else {
-          setError("Unable to create account. Please try again.");
+          setError("We couldn't create your account. Try again.");
         }
         return;
       }
@@ -151,7 +151,7 @@ export default function AuthForm({ defaultMode = "login", errorParam = "", notic
         setError("No account found with that email.");
         setInvalid("email");
       } else {
-        setError("Unable to log in. Please try again.");
+        setError("We couldn't log you in. Try again.");
       }
       return;
     }
@@ -201,7 +201,7 @@ export default function AuthForm({ defaultMode = "login", errorParam = "", notic
               <AuthAlert tone="warning">
                 <p className="font-semibold">Sign-in couldn&apos;t complete. Please try again.</p>
                 <p className="mt-1">
-                  Google authentication succeeded, but the session couldn&apos;t be saved.
+                  Google signed you in, but we couldn&apos;t save your login.
                   This is usually temporary.{" "}
                   <button type="button" onClick={handleGoogle} className="font-semibold underline hover:no-underline">
                     Retry with Google
