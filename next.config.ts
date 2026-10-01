@@ -20,6 +20,13 @@ const CUT_PAGES = [
 
 const nextConfig: NextConfig = {
   cacheComponents: true,
+  // Dev logs are kept by every worker session, so nothing secret goes in them (BUG-I).
+  logging: {
+    // Server Function arguments include passwords (change email, change password).
+    serverFunctions: false,
+    // Share links, auth codes and unsubscribe links carry their secret in the URL.
+    incomingRequests: { ignore: [/^\/r\//, /^\/auth\/callback/, /[?&](token|token_hash|code)=/] },
+  },
   experimental: {
     // Agency logos are up to 2 MB (B-55); the default 1 MB limit would reject them before the action runs.
     serverActions: { bodySizeLimit: "3mb" },
