@@ -46,11 +46,14 @@ export default function AgencyActions({ agency, stripeConnected, maxCredits, max
   const ids = { amount: useId(), days: useId(), preview: useId() };
   const [trialDays, setTrialDays] = useState("7");
   const trialPreview = newTrialEnd(agency.trialEndsAt, Number(trialDays));
+  const [openCard, setOpenCard] = useState<string | null>(null);
+  const card = (name: string) => ({ open: openCard === name, onOpenChange: (open: boolean) => setOpenCard(open ? name : null) });
 
   return (
     <div className="flex flex-col divide-y divide-border rounded-md border border-border bg-surface">
       <ActionCard
         title="Credits"
+        {...card("credits")}
         note="Added credits never expire and count with plan credits. Removing more than the agency has leaves it overdrawn."
         openLabel="Add or remove credits"
         submitLabel="Save credit change"
@@ -84,6 +87,7 @@ export default function AgencyActions({ agency, stripeConnected, maxCredits, max
 
       <ActionCard
         title="Trial"
+        {...card("trial")}
         note="Moves the trial end in Stripe, so the first charge moves with it."
         openLabel="Extend trial"
         submitLabel="Extend trial"
@@ -126,6 +130,7 @@ export default function AgencyActions({ agency, stripeConnected, maxCredits, max
       {deleted ? (
         <ActionCard
           key="restore"
+          {...card("restore")}
           title="Restore account"
           note="Brings back a deleted account and its data. The owner picks a plan again, because deleting canceled their subscription."
           openLabel="Restore account"
@@ -138,6 +143,7 @@ export default function AgencyActions({ agency, stripeConnected, maxCredits, max
       ) : suspended ? (
         <ActionCard
           key="unsuspend"
+          {...card("unsuspend")}
           title="Suspension"
           note="Lets the owner log in again and restarts scheduled scans."
           openLabel="Unsuspend"
@@ -149,6 +155,7 @@ export default function AgencyActions({ agency, stripeConnected, maxCredits, max
       ) : (
         <ActionCard
           key="suspend"
+          {...card("suspend")}
           title="Suspension"
           note="Blocks the owner from logging in and stops scheduled scans. Stripe billing carries on."
           openLabel="Suspend"
@@ -162,6 +169,7 @@ export default function AgencyActions({ agency, stripeConnected, maxCredits, max
 
       <ActionCard
         title="Test account"
+        {...card("test")}
         note={
           agency.isTest
             ? "Test agencies make no real AI calls and are left out of the Overview numbers."

@@ -2,14 +2,14 @@ import { requireAdmin } from "@/modules/auth";
 import { createServiceClient } from "@/lib/supabase/service";
 import FeatureRequestsClient from "./FeatureRequestsClient";
 
-export const metadata = { title: "Feature requests | Admin", robots: { index: false } };
+export const metadata = { title: "Feature requests" };
 
 export default async function AdminFeatureRequestsPage() {
   await requireAdmin({ next: "/internal/admin/feature-requests" });
 
   const svc = createServiceClient();
 
-  // Try fetching — if the table doesn't exist this returns an error
+  // A fetch error means the table is missing
   const { data: requests, error: fetchError } = await svc
     .from("feature_requests")
     .select(`
@@ -26,21 +26,23 @@ export default async function AdminFeatureRequestsPage() {
     .order("created_at", { ascending: false })
     .limit(200);
 
-  // Table doesn't exist — show migration instructions
+  // Show migration instructions
   if (fetchError) {
     return (
-      <div className="max-w-2xl mx-auto px-6 py-12">
-        <h1 className="text-[20px] font-bold text-[#111827] mb-2">Feature requests</h1>
-        <div className="bg-[#FFFBEB] border border-[#FDE68A] rounded-2xl p-6">
-          <p className="text-[13px] font-semibold text-[#92400E] mb-2">Table not yet created on production</p>
-          <p className="text-[12px] text-[#B45309] mb-4">
+      <div className="mx-auto flex max-w-2xl flex-col gap-6 px-4 py-8 sm:px-6">
+        <header>
+          <h1 className="text-[24px] font-semibold tracking-[-0.02em]">Feature requests</h1>
+        </header>
+        <div className="rounded-md border border-border bg-mid-bg p-4 text-mid-text sm:p-6">
+          <p className="mb-2 text-[14px] font-semibold">Table not yet created on production</p>
+          <p className="mb-4 text-[13px]">
             Run the SQL below in your{" "}
             <a href="https://app.supabase.com" target="_blank" rel="noreferrer" className="underline">
               Supabase SQL Editor
             </a>{" "}
-            to create the <code className="bg-amber-100 px-1 rounded">feature_requests</code> table:
+            to create the <code className="rounded-sm bg-surface px-1">feature_requests</code> table:
           </p>
-          <pre className="bg-[#1E293B] text-green-300 text-[11px] rounded-xl p-4 overflow-x-auto leading-relaxed whitespace-pre-wrap">
+          <pre className="overflow-x-auto rounded-md border border-border bg-surface p-4 text-[12px] leading-relaxed whitespace-pre-wrap text-foreground">
 {`create table if not exists public.feature_requests (
   id          uuid        primary key default gen_random_uuid(),
   user_id     uuid        not null references auth.users(id) on delete cascade,
@@ -61,9 +63,9 @@ create policy "feature_requests_insert" on public.feature_requests
 create policy "feature_requests_select_own" on public.feature_requests
   for select to authenticated using (user_id = auth.uid());`}
           </pre>
-          <p className="text-[11px] text-[#B45309] mt-3">After running, refresh this page.</p>
+          <p className="mt-3 text-[13px]">After running, refresh this page.</p>
         </div>
-        <p className="text-[11px] text-[#9CA3AF] mt-3">Error: {fetchError.message}</p>
+        <p className="text-[13px] text-text-hint">Error: {fetchError.message}</p>
       </div>
     );
   }
@@ -93,17 +95,19 @@ create policy "feature_requests_select_own" on public.feature_requests
       : r.businesses as { name: string } | null)?.name ?? null,
   }));
 
+  const newCount = enriched.filter((r) => r.status === "new").length;
+
   return (
-    <div className="px-6 py-8 max-w-6xl mx-auto">
-      <div className="flex items-center justify-between mb-6">
+    <div className="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-8 sm:px-6">
+      <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h1 className="text-[20px] font-bold text-[#111827]">Feature requests</h1>
-          <p className="text-[12px] text-[#9CA3AF] mt-0.5">Beta user suggestions</p>
+          <h1 className="text-[24px] font-semibold tracking-[-0.02em]">Feature requests</h1>
+          <p className="mt-1 text-[14px] text-muted-foreground">Beta user suggestions</p>
         </div>
-        <span className="text-[12px] text-[#9CA3AF]">
-          {enriched.length} total · {enriched.filter((r) => r.status === "new").length} new
-        </span>
-      </div>
+        <p className="text-[13px] text-muted-foreground">
+          {enriched.length} total, {newCount} new
+        </p>
+      </header>
 
       <FeatureRequestsClient requests={enriched} />
     </div>

@@ -8,7 +8,8 @@ import MoneyPanel from "./_overview/money-panel";
 import { FailedScans, RecentSignups } from "./_overview/lists";
 import OpenAlerts from "./_overview/open-alerts";
 
-export const metadata = { title: "Overview" };
+// The admin layout's title template only reaches pages below it, so its own page names the pattern itself.
+export const metadata = { title: { absolute: "Overview | Admin" } };
 
 export default async function AdminOverviewPage() {
   await requireAdmin({ next: "/internal/admin" });

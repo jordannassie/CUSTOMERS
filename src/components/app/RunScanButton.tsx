@@ -29,6 +29,7 @@ export function RunScanButton({
   initial: ScanStatus;
   start: ScanAction;
   getStatus: ScanAction;
+  /** Placement classes for the button itself, since the wrapper is `contents`. */
   className?: string;
 }) {
   const router = useRouter();
@@ -76,15 +77,17 @@ export function RunScanButton({
     });
   }
 
+  // `contents` makes the button and its note items of the page's action row (a grid on phones, a flex row from sm), so
+  // the note takes a full line of its own: under Run scan on a phone, under the whole row (right aligned) from sm up.
   return (
-    <div className={cn("flex shrink-0 flex-col items-end gap-1.5", className)}>
+    <div className="contents">
       <Button
         type="button"
         onClick={run}
         disabled={blocked}
         aria-disabled={scanning || undefined}
         aria-describedby={text ? `run-scan-note-${businessId}` : undefined}
-        className={cn(scanning && "cursor-progress")}
+        className={cn(scanning && "cursor-progress", className)}
       >
         {scanning ? <Loader2 className="animate-spin" aria-hidden="true" /> : <RefreshCw aria-hidden="true" />}
         {scanning ? "Scanning…" : "Run scan"}
@@ -93,7 +96,8 @@ export function RunScanButton({
         id={`run-scan-note-${businessId}`}
         role="status"
         className={cn(
-          "max-w-36 text-right text-xs sm:max-w-60",
+          // Kept mounted (sr-only when empty) so the live region is in place before the first message.
+          text ? "col-span-full -mt-1.5 basis-full text-left text-xs sm:order-last sm:text-right" : "sr-only",
           note?.tone === "error" ? "text-low-text" : "text-muted-foreground",
         )}
       >

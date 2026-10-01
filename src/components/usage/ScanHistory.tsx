@@ -1,7 +1,8 @@
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import type { UsageReport } from "@/modules/usage";
-import { count, credits, dayAndTime } from "./format";
+import { count, credits } from "./format";
+import { LocalDayAndTime } from "./LocalTime";
 
 const STATUS = {
   done: { label: "Finished", variant: "good" },
@@ -37,7 +38,9 @@ export function ScanHistory({ scans }: { scans: UsageReport["scans"] }) {
                 <li key={scan.id} className="flex items-center justify-between gap-3 px-5 py-3">
                   <div className="min-w-0">
                     <p className="truncate text-sm">{scan.businessName}</p>
-                    <p className="mt-0.5 text-xs tabular-nums text-muted-foreground">{dayAndTime(scan.at)}</p>
+                    <p className="mt-0.5 text-xs tabular-nums text-muted-foreground">
+                      <LocalDayAndTime iso={scan.at} />
+                    </p>
                   </div>
                   <div className="flex shrink-0 flex-col items-end gap-1">
                     <span className="text-sm font-medium tabular-nums">{credits(scan.credits)}</span>
@@ -63,7 +66,7 @@ export function ScanHistory({ scans }: { scans: UsageReport["scans"] }) {
                   return (
                     <TableRow key={scan.id} data-scan={scan.id}>
                       <TableCell className="pl-5 whitespace-nowrap tabular-nums text-muted-foreground">
-                        {dayAndTime(scan.at)}
+                        <LocalDayAndTime iso={scan.at} />
                       </TableCell>
                       <TableCell className="max-w-[16rem] truncate">{scan.businessName}</TableCell>
                       <TableCell>
