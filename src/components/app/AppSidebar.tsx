@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { LogOut, ShieldCheck } from "lucide-react";
 import { cn } from "cn";
+import type { SwitcherScores } from "@/modules/workspace";
 import { BusinessSwitcher, type SwitchBusinessAction, type SwitcherBusiness } from "./BusinessSwitcher";
 import { APP_NAV, isNavActive } from "./nav";
 import { SuggestFeatureDialog } from "./SuggestFeatureDialog";
@@ -14,6 +15,7 @@ export type AppSidebarProps = {
   businesses: SwitcherBusiness[];
   activeBusinessId: string;
   switchBusiness: SwitchBusinessAction;
+  switcherScores?: Promise<SwitcherScores | null>;
   usage: UsageWidgetProps | null;
   isAdmin: boolean;
 };
@@ -25,6 +27,7 @@ export function AppSidebar({
   businesses,
   activeBusinessId,
   switchBusiness,
+  switcherScores,
   usage,
   isAdmin,
   onNavigate,
@@ -42,6 +45,7 @@ export function AppSidebar({
         activeBusinessId={activeBusinessId}
         switchBusiness={switchBusiness}
         onSwitched={onNavigate}
+        scores={switcherScores}
       />
 
       <nav aria-label="Main" className="flex flex-col gap-0.5">
