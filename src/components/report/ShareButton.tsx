@@ -30,6 +30,7 @@ export function ShareButton({
 }) {
   const [link, setLink] = useState(initial);
   const [error, setError] = useState<string | null>(null);
+  const [confirmOff, setConfirmOff] = useState(false);
   const [pending, startTransition] = useTransition();
 
   const origin = useSyncExternalStore(noSubscribe, () => window.location.origin, () => "");
@@ -46,7 +47,12 @@ export function ShareButton({
   }
 
   return (
-    <Dialog onOpenChange={() => setError(null)}>
+    <Dialog
+      onOpenChange={() => {
+        setError(null);
+        setConfirmOff(false);
+      }}
+    >
       <DialogTrigger asChild>
         <Button variant="outline" data-testid="share-button">
           <Share2 aria-hidden />
@@ -75,36 +81,62 @@ export function ShareButton({
               />
               <CopyButton text={url} label="Copy link" copiedNote="Link copied" />
             </div>
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <a
-                href={link.path}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
+            {confirmOff ? (
+              <div
+                role="group"
+                aria-labelledby="revoke-warning"
+                className="flex flex-col gap-3 rounded-md border border-low/30 p-3 sm:flex-row sm:items-center sm:justify-between"
               >
-                Open report
-                <ExternalLink aria-hidden className="size-3.5" />
-              </a>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-low-text hover:bg-low-bg hover:text-low-text"
-                disabled={pending}
-                onClick={() =>
-                  run(
-                    () => revoke({ id: link.id }),
-                    () => {
-                      setLink(null);
-                      toast.success("Link turned off. Anyone who opens it now sees that it is no longer active.");
-                    },
-                  )
-                }
-                data-testid="revoke-link"
-              >
-                {pending && <Loader2 aria-hidden className="animate-spin" />}
-                Turn off link
-              </Button>
-            </div>
+                <p id="revoke-warning" className="text-sm text-low-text">
+                  Clients with this link will lose access.
+                </p>
+                <div className="flex shrink-0 gap-2">
+                  <Button variant="outline" size="sm" disabled={pending} onClick={() => setConfirmOff(false)} autoFocus>
+                    Keep it
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    disabled={pending}
+                    onClick={() =>
+                      run(
+                        () => revoke({ id: link.id }),
+                        () => {
+                          setLink(null);
+                          setConfirmOff(false);
+                          toast.success("Link turned off. Anyone who opens it now sees that it is no longer active.");
+                        },
+                      )
+                    }
+                    data-testid="confirm-revoke"
+                  >
+                    {pending && <Loader2 aria-hidden className="animate-spin" />}
+                    Turn off link
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <a
+                  href={link.path}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
+                >
+                  Open report
+                  <ExternalLink aria-hidden className="size-3.5" />
+                </a>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-low-text hover:bg-low-bg hover:text-low-text"
+                  onClick={() => setConfirmOff(true)}
+                  data-testid="revoke-link"
+                >
+                  Turn off link
+                </Button>
+              </div>
+            )}
           </div>
         ) : (
           <div className="flex flex-col items-start gap-3">

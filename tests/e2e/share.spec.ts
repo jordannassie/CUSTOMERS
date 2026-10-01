@@ -124,6 +124,8 @@ test("Share gives a link the client opens without a login, and turning it off st
   expect(html).not.toMatch(UUID);
 
   await page.getByTestId("revoke-link").click();
+  await expect(page.getByText("Clients with this link will lose access.")).toBeVisible();
+  await page.getByTestId("confirm-revoke").click();
   await expect(page.getByTestId("create-link")).toBeVisible(ACTION);
   expect((await reader.reload())?.status()).toBe(404);
   await expect(reader.getByText("This report link is no longer active.")).toBeVisible();
