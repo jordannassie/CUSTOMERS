@@ -2,6 +2,7 @@
 
 import { refresh } from "next/cache";
 import { authFailure, requireAgency, type ActionResult } from "@/modules/auth";
+import { canEditTracking } from "@/modules/entitlements";
 import { saveAgencyLogo, updateAgencyName, updateBusinessProfile, updateScanSettings } from "./dal";
 import { agencyNameInput, businessProfileInput, scanSettingsInput } from "./schema";
 import { checkLogo, normalizeWebsite } from "./service";
@@ -17,10 +18,20 @@ async function guard(): Promise<ActionResult<never> | null> {
   }
 }
 
+/** For changes to what the scans track; the agency name and logo stay editable. */
+async function trackingGuard(): Promise<ActionResult<never> | null> {
+  try {
+    const edit = canEditTracking((await requireAgency()).agency);
+    return edit.allowed ? null : { ok: false, status: 403, error: edit.reason };
+  } catch (error) {
+    return authFailure(error);
+  }
+}
+
 const notFound: Result = { ok: false, status: 404, error: "Business not found." };
 
 export async function saveBusinessProfile(input: unknown): Promise<Result> {
-  const denied = await guard();
+  const denied = await trackingGuard();
   if (denied) return denied;
 
   const parsed = businessProfileInput.safeParse(input);
@@ -44,7 +55,7 @@ export async function saveBusinessProfile(input: unknown): Promise<Result> {
 }
 
 export async function saveScanSettings(input: unknown): Promise<Result> {
-  const denied = await guard();
+  const denied = await trackingGuard();
   if (denied) return denied;
 
   const parsed = scanSettingsInput.safeParse(input);

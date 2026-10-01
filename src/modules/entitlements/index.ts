@@ -40,4 +40,4 @@ export async function maxCompetitors(businessId: string): Promise<LimitEntitleme
   return rules.maxCompetitors(await loadBusinessFacts(businessId));
 }
 
-export { REASONS, TRIAL_MAX_BUSINESSES, type Entitlement, type LimitEntitlement } from "./service";
+export { canEditTracking, REASONS, TRIAL_MAX_BUSINESSES, type Entitlement, type LimitEntitlement } from "./service";

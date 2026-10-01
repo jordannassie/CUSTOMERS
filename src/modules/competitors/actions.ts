@@ -1,6 +1,7 @@
 "use server";
 
-import { authFailure, requireUser, type ActionResult } from "@/modules/auth";
+import { authFailure, requireAgency, type ActionResult } from "@/modules/auth";
+import { canEditTracking } from "@/modules/entitlements";
 import { trackCompetitorByName } from "./dal";
 import { trackCompetitorInput } from "./schema";
 
@@ -8,7 +9,10 @@ import { trackCompetitorInput } from "./schema";
 export async function trackCompetitor(input: unknown): Promise<ActionResult<{ name: string }>> {
   let userId: string;
   try {
-    userId = (await requireUser()).id;
+    const { user, agency } = await requireAgency();
+    const edit = canEditTracking(agency);
+    if (!edit.allowed) return { ok: false, status: 403, error: edit.reason };
+    userId = user.id;
   } catch (error) {
     return authFailure(error);
   }
