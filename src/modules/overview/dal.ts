@@ -3,6 +3,7 @@ import { requireAgency } from "@/modules/auth";
 import { loadScoreReport } from "@/modules/scanning";
 import { createServiceClient } from "@/lib/supabase/service";
 import { overviewView, type Impact, type OverviewView } from "./service";
+import { HISTORY_DAYS } from "./trend";
 
 // Legacy statuses: "in_progress" is still something to do, "resolved" and "dismissed" are not.
 const OPEN_STATUSES = ["open", "in_progress"];
@@ -16,8 +17,8 @@ export async function getOverview(businessId: string): Promise<OverviewView | nu
 
 // Callers check the viewer may see this agency first (the signed-in owner, or a live share link).
 export async function loadOverview(agencyId: string, businessId: string, now: Date): Promise<OverviewView | null> {
-  // 30 days before the window give the report its month-on-month change (DB-012).
-  const report = await loadScoreReport(agencyId, businessId, now, { historyDays: 30 });
+  // 90 days of history: the score at each scan (DB-002) and the month-on-month change (DB-012).
+  const report = await loadScoreReport(agencyId, businessId, now, { historyDays: HISTORY_DAYS });
   if (!report) return null;
 
   // Ownership is settled by the report above.

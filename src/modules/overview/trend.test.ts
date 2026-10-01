@@ -1,71 +1,44 @@
 import { describe, expect, it } from "vitest";
-import { scanChangeText, trendView } from "./trend";
+import { historyChange, trendView } from "./trend";
 
 const NOW = new Date("2026-10-01T12:00:00Z");
-const day = (date: string, score: number | null) => ({ date, score, checks: score === null ? 0 : 36 });
-const week = (scores: Record<string, number>) =>
-  ["2026-09-25", "2026-09-26", "2026-09-27", "2026-09-28", "2026-09-29", "2026-09-30", "2026-10-01"].map((d) =>
-    day(d, scores[d] ?? null),
-  );
+const scan = (date: string, score: number, margin = 6) => ({ date, score, margin });
 
 describe("trendView", () => {
-  it("says one scan in words, with the change and the next scan", () => {
+  it("draws one point per scan with its band, the change and the next scan (DB-002)", () => {
     const view = trendView({
-      trend: week({ "2026-10-01": 61.6 }),
-      scans: [
-        { date: "2026-09-24", score: 40, margin: 6 },
-        { date: "2026-10-01", score: 61.6, margin: 6 },
-      ],
+      history: [scan("2026-09-02", 52.6, 8), scan("2026-09-09", 55), scan("2026-10-01", 61.6, 4)],
       nextScanAt: new Date("2026-10-08T09:00:00Z"),
       now: NOW,
     });
-    expect(view.summary).toBe("1 scan this week: 62. Up 22 points on the Sep 24 scan. Next scan Oct 8.");
+    expect(view.summary).toBeNull();
+    expect(view.points[0]).toEqual({ date: "2026-09-02", label: "Sep 2", score: 53, margin: 8, band: [45, 61] });
+    expect(view.change).toEqual({ direction: "up", text: "Up 9 points since Sep 2" });
+    expect(view.caption).toBe("Each dot is one scan. The shaded band is how far the score could be off. Next scan Oct 8.");
   });
 
-  it("leaves out a change inside the margin and a next scan that is not coming", () => {
-    const view = trendView({
-      trend: week({ "2026-10-01": 0 }),
-      scans: [
-        { date: "2026-09-24", score: 8, margin: 10 },
-        { date: "2026-10-01", score: 0, margin: 10 },
-      ],
-      nextScanAt: null,
-      now: NOW,
-    });
-    expect(view.summary).toBe("1 scan this week: 0.");
+  it("keeps the band inside 0 to 100", () => {
+    const view = trendView({ history: [scan("2026-09-24", 3, 9), scan("2026-10-01", 96, 9)], nextScanAt: null, now: NOW });
+    expect(view.points.map((p) => p.band)).toEqual([
+      [0, 12],
+      [87, 100],
+    ]);
   });
 
-  it("says when the week had no scan", () => {
-    const view = trendView({ trend: week({}), scans: [], nextScanAt: new Date("2026-10-02T00:00:00Z"), now: NOW });
-    expect(view).toEqual({ points: [], summary: "No scans this week. Next scan Oct 2." });
-  });
-
-  it("draws the chart from 2 scans, labelled with their dates", () => {
-    const view = trendView({
-      trend: week({ "2026-09-28": 57.8, "2026-10-01": 62.2 }),
-      scans: [],
-      nextScanAt: null,
-      now: NOW,
-    });
-    expect(view).toEqual({
-      points: [
-        { date: "2026-09-28", label: "Sep 28", score: 58 },
-        { date: "2026-10-01", label: "Oct 1", score: 62 },
-      ],
-      summary: null,
-    });
+  it("says one scan in words, with the next scan, and leaves out a next scan that is not coming (DB-001)", () => {
+    expect(trendView({ history: [scan("2026-10-01", 66.7)], nextScanAt: new Date("2026-10-08T00:00:00Z"), now: NOW }).summary).toBe(
+      "1 scan in the last 90 days: 67. Next scan Oct 8.",
+    );
+    expect(trendView({ history: [scan("2026-10-01", 0)], nextScanAt: null, now: NOW }).summary).toBe("1 scan in the last 90 days: 0.");
   });
 });
 
-describe("scanChangeText", () => {
-  it("compares the last two scans", () => {
-    expect(
-      scanChangeText([
-        { date: "2026-09-17", score: 90, margin: 1 },
-        { date: "2026-09-24", score: 70, margin: 4 },
-        { date: "2026-10-01", score: 59, margin: 4 },
-      ]),
-    ).toBe("Down 11 points on the Sep 24 scan.");
-    expect(scanChangeText([{ date: "2026-10-01", score: 59, margin: 4 }])).toBeNull();
+describe("historyChange", () => {
+  it("is null when the first and last scan are within their margins", () => {
+    expect(historyChange([scan("2026-09-02", 55, 8), scan("2026-10-01", 60, 8)])).toBeNull();
+    expect(historyChange([scan("2026-09-02", 70, 3), scan("2026-10-01", 50, 3)])).toEqual({
+      direction: "down",
+      text: "Down 20 points since Sep 2",
+    });
   });
 });

@@ -120,7 +120,7 @@ export function overviewView(
       ),
     },
     models: models.map(({ id, label, score }) => ({ id, label, score, change: pointsChange(report.modelChanges[id]) })),
-    trend: trendView({ trend: report.trend, scans: report.scans, nextScanAt, now }),
+    trend: trendView({ history: report.history, nextScanAt, now }),
     opportunities: topOpportunities(opportunities),
     lastCheckedAt: report.lastCheckedAt?.toISOString() ?? null,
     scanCredits: report.questions.length * report.models.length,

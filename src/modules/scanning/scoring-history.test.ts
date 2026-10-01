@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { competitorWeeklyChange, modelWeeklyChanges, monthlyChange, scanSeries } from "./scoring-periods";
+import { competitorWeeklyChange, modelWeeklyChanges, monthlyChange, scoreHistory } from "./scoring-periods";
 import { check, MODELS, NOW } from "./scoring.test-helpers";
 
 // Per-scan and month-on-month numbers (DB-001, DB-012). The scores themselves are tested in scoring.test.ts.
@@ -15,21 +15,24 @@ describe("monthlyChange", () => {
   });
 });
 
-describe("scanSeries", () => {
-  it("gives each scan day its own estimate, oldest first, and skips days outside the window", () => {
-    const checks = [
-      check("openai", "q1", 31 * 24, true),
-      check("openai", "q1", 7 * 24, false),
-      check("anthropic", "q1", 7 * 24, false),
-      check("openai", "q1", 1, true),
-      check("anthropic", "q1", 1, false),
-    ];
-    const points = scanSeries(checks, { now: NOW, models: MODELS });
-    expect(points.map((p) => [p.date, p.score])).toEqual([
-      ["2026-09-20", 0],
-      ["2026-09-27", 50],
+describe("scoreHistory (DB-002)", () => {
+  it("gives the 30-day score as it stood at each scan, oldest first", () => {
+    const at = (daysAgo: number, hit: boolean) => MODELS.map((m) => check(m, "q1", daysAgo * 24, hit));
+    // Scans 50, 20 and 2 days ago: the first misses, the others hit.
+    const checks = [...at(50, false), ...at(20, true), ...at(2, true)];
+    const history = scoreHistory(checks, { now: NOW, models: MODELS, days: 90 });
+    expect(history.map((p) => [p.date, Math.round(p.score)])).toEqual([
+      ["2026-08-08", 0],
+      ["2026-09-07", 100],
+      ["2026-09-25", 100],
     ]);
-    expect(points[1].margin).toBeGreaterThan(0);
+    // The scan 50 days ago is out of the 30-day score at the scan 20 days ago.
+    expect(scoreHistory(checks, { now: NOW, models: MODELS, days: 30 })).toHaveLength(2);
+  });
+
+  it("matches today's score at the latest scan", () => {
+    const checks = [...MODELS.map((m) => check(m, "q1", 40 * 24, true)), ...MODELS.map((m) => check(m, "q1", 10, m === "openai"))];
+    expect(Math.round(scoreHistory(checks, { now: NOW, models: MODELS, days: 90 }).at(-1)!.score)).toBe(33);
   });
 });
 

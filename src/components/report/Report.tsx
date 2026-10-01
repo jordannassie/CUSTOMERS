@@ -55,10 +55,7 @@ export function Report({ report, logoSrc }: { report: ReportView; logoSrc: strin
           <div className="flex flex-col gap-8">
             <ScoreSummary score={score} animate={false} />
             <div className="grid gap-8 md:grid-cols-[minmax(0,1fr)_260px] print:grid-cols-[minmax(0,1fr)_220px]">
-              <div className="flex flex-col gap-2">
-                <h3 className="text-sm font-medium">Last 7 days</h3>
-                <TrendChart trend={report.trend} />
-              </div>
+              <TrendChart trend={report.trend} heading="h3" />
               <div className="flex flex-col gap-3">
                 <h3 className="text-sm font-medium">Score by AI</h3>
                 <ModelScores models={report.models} />

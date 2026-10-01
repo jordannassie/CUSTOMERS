@@ -7,6 +7,7 @@ import {
   estimateFor,
   groupBy,
   isRealChange,
+  visibilityScore,
   type Mentioned,
   type ScoreCheck,
 } from "./scoring";
@@ -15,11 +16,19 @@ import {
 
 export type ScanPoint = { date: string; score: number; margin: number };
 
-/** The estimate of each UTC day with checks, oldest first. A day's checks are one scan, so this is the score per scan. */
-export function scanSeries(checks: ScoreCheck[], opts: { now: Date; models: readonly ProviderId[] }): ScanPoint[] {
-  const byDay = groupBy(checksInWindow(checks, opts.now), (c) => c.checkedAt.toISOString().slice(0, 10));
+/**
+ * The 30-day score as it stood at each scan over the last `days` days, oldest first (DB-002). A UTC day's checks are
+ * one scan, scored at its last check. It is the same visibility score (D-63), only read at earlier moments, so
+ * `checks` must reach 30 days further back than `days`.
+ */
+export function scoreHistory(
+  checks: ScoreCheck[],
+  opts: { now: Date; models: readonly ProviderId[]; days: number },
+): ScanPoint[] {
+  const byDay = groupBy(checksInWindow(checks, opts.now, opts.days), (c) => c.checkedAt.toISOString().slice(0, 10));
   return [...byDay.keys()].sort().flatMap((date) => {
-    const { overall } = estimateFor(byDay.get(date)!, opts.models, (c) => c.mentioned);
+    const at = new Date(Math.max(...byDay.get(date)!.map((c) => c.checkedAt.getTime())));
+    const { overall } = visibilityScore(checks, { now: at, models: opts.models });
     return overall ? [{ date, score: overall.score, margin: overall.margin }] : [];
   });
 }

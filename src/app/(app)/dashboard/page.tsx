@@ -74,10 +74,7 @@ export default async function OverviewPage() {
               <>
                 <ScoreSummary score={score} />
                 <ModelScoresRow models={overview.models} className="sm:hidden" />
-                <div className="flex flex-col gap-2">
-                  <h2 className="text-sm font-medium">Last 7 days</h2>
-                  <TrendChart trend={overview.trend} />
-                </div>
+                <TrendChart trend={overview.trend} />
               </>
             ) : (
               <div className="flex flex-col gap-2 py-6" data-testid="no-score">

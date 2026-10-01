@@ -1,15 +1,20 @@
-import { isRealChange, type ScanPoint, type TrendPoint } from "@/modules/scanning";
+import { isRealChange, type ScanPoint } from "@/modules/scanning";
 
-// The "Last 7 days" block (DB-001). Weekly scans leave one point a week, which a chart shows as a loose dot, so
-// then a sentence says it instead; the score itself is unchanged (D-63).
+// "Score at each scan" (DB-002): the 30-day score as it stood at every scan in the last 90 days, joined, with its
+// margin as a band. Under 2 scans a sentence says it instead (DB-001). The score itself is unchanged (D-63).
 
+export const HISTORY_DAYS = 90;
 export const MIN_CHART_POINTS = 2;
 
 export type TrendView = {
-  /** Scan days in the last 7 days, oldest first; the chart joins them. `label` is the axis text, "Sep 28". */
-  points: { date: string; label: string; score: number }[];
-  /** Shown instead of the chart while there are fewer than 2 points. */
+  /** Oldest first. `label` is the axis text, "Sep 28"; `band` is the score plus and minus its margin. */
+  points: { date: string; label: string; score: number; margin: number; band: [number, number] }[];
+  /** "Up 9 points since Sep 2", only when the first and last scan differ by more than their margins (D-64). */
+  change: { direction: "up" | "down"; text: string } | null;
+  /** Shown instead of the chart while there are fewer than 2 scans. */
   summary: string | null;
+  /** Under the chart: how to read it, and the next scan. */
+  caption: string;
 };
 
 /** "Oct 8", in UTC like the scan days. */
@@ -20,28 +25,37 @@ export function shortDate(date: string | Date): string {
 
 const points = (n: number) => `${n} ${n === 1 ? "point" : "points"}`;
 
-/** "Up 9 points on the Sep 24 scan.", only when the gap is bigger than the margin of both scans (D-64). */
-export function scanChangeText(scans: ScanPoint[]): string | null {
-  if (scans.length < 2) return null;
-  const [before, last] = scans.slice(-2);
-  if (!isRealChange(last, before)) return null;
-  const gap = Math.round(last.score) - Math.round(before.score);
-  if (gap === 0) return null;
-  return `${gap > 0 ? "Up" : "Down"} ${points(Math.abs(gap))} on the ${shortDate(before.date)} scan.`;
+export function historyChange(history: ScanPoint[]): TrendView["change"] {
+  if (history.length < 2) return null;
+  const [first, last] = [history[0], history.at(-1)!];
+  const gap = Math.round(last.score) - Math.round(first.score);
+  if (!isRealChange(last, first) || gap === 0) return null;
+  return { direction: gap > 0 ? "up" : "down", text: `${gap > 0 ? "Up" : "Down"} ${points(Math.abs(gap))} since ${shortDate(first.date)}` };
 }
 
-export function trendView(input: {
-  trend: TrendPoint[];
-  scans: ScanPoint[];
-  nextScanAt: Date | null;
-  now: Date;
-}): TrendView {
-  const shown = input.trend.flatMap((p) => (p.score === null ? [] : [{ date: p.date, label: shortDate(p.date), score: Math.round(p.score) }]));
-  if (shown.length >= MIN_CHART_POINTS) return { points: shown, summary: null };
-
-  const week = shown.length === 0 ? "No scans this week." : `1 scan this week: ${shown[0].score}.`;
-  const change = shown.length > 0 ? scanChangeText(input.scans) : null;
+export function trendView(input: { history: ScanPoint[]; nextScanAt: Date | null; now: Date }): TrendView {
+  const shown = input.history.map((p) => {
+    const score = Math.round(p.score);
+    const margin = Math.round(p.margin);
+    return {
+      date: p.date,
+      label: shortDate(p.date),
+      score,
+      margin,
+      band: [Math.max(0, score - margin), Math.min(100, score + margin)] as [number, number],
+    };
+  });
   const next =
     input.nextScanAt && input.nextScanAt.getTime() > input.now.getTime() ? `Next scan ${shortDate(input.nextScanAt)}.` : null;
-  return { points: shown, summary: [week, change, next].filter(Boolean).join(" ") };
+
+  if (shown.length < MIN_CHART_POINTS) {
+    const so = shown.length === 0 ? "No scans in the last 90 days." : `1 scan in the last 90 days: ${shown[0].score}.`;
+    return { points: shown, change: null, summary: [so, next].filter(Boolean).join(" "), caption: "" };
+  }
+  return {
+    points: shown,
+    change: historyChange(input.history),
+    summary: null,
+    caption: ["Each dot is one scan. The shaded band is how far the score could be off.", next].filter(Boolean).join(" "),
+  };
 }

@@ -23,7 +23,7 @@ function report(overall: { score: number; margin: number } | null, competitors: 
     byModel: [],
     models: ["openai", "anthropic", "perplexity"],
     trend: [],
-    scans: [],
+    history: [],
     monthChange: null,
     modelChanges: {},
     change: null,

@@ -17,7 +17,7 @@ import {
   competitorWeeklyChange,
   modelWeeklyChanges,
   monthlyChange,
-  scanSeries,
+  scoreHistory,
   weeklyChange,
   type Change,
   type ScanPoint,
@@ -33,8 +33,8 @@ export type ScoreReport = VisibilityScore & {
   /** The business's chosen models, in the order it saved them. */
   models: ProviderId[];
   trend: TrendPoint[];
-  /** Every scan day in the 30-day window, oldest first. */
-  scans: ScanPoint[];
+  /** The 30-day score at each scan over the `historyDays` asked for, oldest first (DB-002). */
+  history: ScanPoint[];
   change: Change | null;
   /** Each model's weekly change, only where it is bigger than the margin (DB-013). */
   modelChanges: Partial<Record<ProviderId, Change>>;
@@ -108,7 +108,7 @@ export async function loadScoreReport(
     ...visibilityScore(checks, opts),
     models,
     trend: trendSeries(checks, opts),
-    scans: scanSeries(checks, opts),
+    history: historyDays > 0 ? scoreHistory([...older, ...checks], { ...opts, days: historyDays }) : [],
     change: weeklyChange(checks, opts),
     modelChanges: modelWeeklyChanges(checks, opts),
     monthChange: historyDays > 0 ? monthlyChange([...older, ...checks], opts) : null,
