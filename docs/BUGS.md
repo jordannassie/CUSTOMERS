@@ -80,5 +80,7 @@ Bugs found while building or verifying a task. Planned audit fixes (SEC-xx, CORE
 | BUG-065 | 2026-10-01, final check | Security item | Details stay in the private notes while the repo is public | Medium | Final check fixes | Fixed (PR #128) |
 | BUG-066 | 2026-10-01, final check | Canceled or restored accounts | There is no self-serve way to start a plan again | Medium | Needs Jordan's decision (F-70) | Open |
 | BUG-067 | 2026-10-01, final check | Unknown onboarding step, unknown admin ids | The page shows not found but answers HTTP 200, because Next 16 Cache Components starts streaming before `notFound()`. A real 404 needs `proxy.ts`, which the project rule keeps to redirects only (UI-011, UI-033). | Low | Needs a decision on `proxy.ts` | Open |
+| BUG-068 | 2026-10-06, pre-launch rehearsal (B-83) | Full e2e run on mvp (tests only) | 4 of 146 Playwright checks fail in the full run and pass when run alone: app-shell menu (switcher shows another test business), billing cancel notice, and settings BUG-D on desktop and phone. Shared test data under load, not the product. | Low | B-83 | Open |
+| BUG-069 | 2026-10-06, pre-launch rehearsal (B-83) | Unit tests on mvp (tests only) | `scan-load.test.ts` and `alerts/actions.test.ts` fail with "fetch failed" against the local database when other heavy jobs run, and pass alone. | Low | B-83 | Open |
 
 BUG-013 is not used: it was the same bug as BUG-010. BUG-018 to BUG-020 were BUG-010, BUG-015 and BUG-016 on `mvp` before the 2026-09-27 sync with `main`.
