@@ -68,8 +68,10 @@ function findMatches(answer: string, target: MentionTarget): Match[] {
     const core = coreName(text);
     if (!core) continue;
     const needsSecondSignal = noWebsite || isGenericName(core);
+    // A one-word name must still read as a name: "Sapphire" counts, "sapphire earrings" does not.
+    const needsProperNoun = needsSecondSignal || !core.includes(" ");
     for (const at of findPhrase(answer, core)) {
-      if (needsSecondSignal && !isProperNounUse(answer, at, text)) continue;
+      if (needsProperNoun && !isProperNounUse(answer, at, text)) continue;
       if (needsSecondSignal && !hasNearbySignal(answer, at, target, domain)) continue;
       matches.push({ at, by });
     }
@@ -77,7 +79,7 @@ function findMatches(answer: string, target: MentionTarget): Match[] {
   return matches.sort((a, b) => a.at - b.at);
 }
 
-// "the best plumbing in town" is prose; "Best Plumbing" is a name. Only applied to generic names.
+// "the best plumbing in town" is prose; "Best Plumbing" is a name. Only applied to generic and one-word names.
 function isProperNounUse(answer: string, at: number, name: string): boolean {
   if (name === name.toLowerCase()) return true;
   const firstLetter = answer.slice(at).match(/[A-Za-z0-9]/)?.[0] ?? "";

@@ -35,10 +35,13 @@ export function coreName(name: string): string {
   return core || normaliseText(name);
 }
 
-/** One word, very short, or made only of common words: needs a second signal. */
+/**
+ * Very short, or made only of common words: needs a second signal. One distinctive word ("Khaadi", "Starbucks")
+ * is not generic; it only has to be written as a name (BUG-076).
+ */
 export function isGenericName(core: string): boolean {
   const words = core.split(" ").filter(Boolean);
-  if (words.length <= 1 || core.replace(/ /g, "").length <= 4) return true;
+  if (core.replace(/ /g, "").length <= 3) return true;
   return words.every((w) => GENERIC_WORDS.has(w));
 }
 

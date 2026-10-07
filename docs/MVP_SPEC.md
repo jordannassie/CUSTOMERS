@@ -256,7 +256,7 @@ Every active question is scanned.
 Replace today's substring match (`src/lib/geo/providers/types.ts:33`):
 - Word-boundary match on the business name, ignoring case and suffixes like LLC, Inc, Co.
 - Also match the domain and known aliases (`businesses.aliases`).
-- For short or generic names (one word, or common words like "Best", "Prime"), require a second signal: city, domain, or phone near the name.
+- For short or generic names (3 letters or fewer, or only common words like "Best", "Prime"), require a second signal: city, domain, or phone near the name. A distinctive one-word name ("Khaadi", "Starbucks") needs no second signal but must be written as a name, not as an ordinary word (BUG-076).
 - Record position in lists (1st, 2nd…) when the answer is a list.
 - Same rules for competitors.
 - Unit tests with tricky names are required.
