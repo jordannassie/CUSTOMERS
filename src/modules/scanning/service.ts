@@ -8,6 +8,7 @@ import { checkIdFor, runOneCheck, type CheckContext, type CheckTask } from "./ch
 import type { ExtractNames } from "./extract";
 import type { MentionTarget } from "./mentions";
 import type { CheckLocation, ProviderId, RunCheck } from "./providers/types";
+import { countryCode } from "./country";
 import { loadRecordedAnswers, recordedAnswers, RECORDED_ANSWERS_DIR } from "./recorded";
 import {
   finishRun,
@@ -181,26 +182,6 @@ export function withCity(question: string, city: string, region: string | null):
   if (text.toLowerCase().includes(city.toLowerCase())) return text;
   const place = region ? `${city}, ${region}` : city;
   return `${text.replace(/[?.!\s]+$/, "")} in ${place}?`;
-}
-
-const COUNTRY_CODES: Record<string, string> = {
-  "united states": "US",
-  "united states of america": "US",
-  usa: "US",
-  "u s": "US",
-  "u s a": "US",
-  canada: "CA",
-  "united kingdom": "GB",
-  uk: "GB",
-  australia: "AU",
-};
-
-/** The providers want an ISO country code; businesses store whatever onboarding saved. */
-export function countryCode(country: string | null): string {
-  const text = (country ?? "").trim();
-  if (/^[a-z]{2}$/i.test(text)) return text.toUpperCase();
-  const key = text.toLowerCase().replace(/[^a-z ]+/g, " ").replace(/\s+/g, " ").trim();
-  return COUNTRY_CODES[key] ?? "US";
 }
 
 function locationOf(business: ScanTargetRow["business"]): CheckLocation {

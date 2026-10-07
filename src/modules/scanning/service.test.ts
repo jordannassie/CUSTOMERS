@@ -2,7 +2,8 @@ import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from "vites
 import { getBalance } from "@/modules/credits";
 import { REASONS } from "@/modules/entitlements";
 import type { ProviderId, RunCheck } from "./providers/types";
-import { countryCode, nextScanAt, runScan, withCity } from "./service";
+import { countryCode } from "./country";
+import { nextScanAt, runScan, withCity } from "./service";
 import {
   answeringRunner,
   blockAiHosts,
@@ -178,7 +179,15 @@ describe("scan helpers", () => {
   it("turns saved country names into ISO codes", () => {
     expect(countryCode("United States")).toBe("US");
     expect(countryCode("ca")).toBe("CA");
-    expect(countryCode(null)).toBe("US");
+    expect(countryCode("Pakistan")).toBe("PK");
+    expect(countryCode("United Kingdom")).toBe("GB");
+    expect(countryCode("pk")).toBe("PK");
+  });
+
+  it("leaves an unknown country out instead of guessing the US (BUG-073)", () => {
+    expect(countryCode(null)).toBe("");
+    expect(countryCode("")).toBe("");
+    expect(countryCode("Atlantis")).toBe("");
   });
 
   it("sets the next scan from the frequency", () => {
