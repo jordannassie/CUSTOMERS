@@ -2,7 +2,7 @@
 
 The verified list of issues found in the pre-launch walk on 2026-10-07 (Khaadi and Cheezious, two real businesses in Pakistan, real AI calls on the local stack), and the order they are fixed in. Each issue was checked in the code (`mvp` at 2cd2d6c), in the local database, and where it shows on a page, in the running app with Playwright at 1440px and 390px.
 
-Work goes straight onto `mvp`, one commit or more per fix group, with the BUG ID in the commit title. New bugs are also logged in [BUGS.md](../BUGS.md) (BUG-073 to BUG-095). Billing follows D-56 and D-57 as written.
+Work goes straight onto `mvp`, one commit or more per fix group, with the BUG ID in the commit title. New bugs are also logged in [BUGS.md](../BUGS.md) (BUG-073 to BUG-096). Billing follows D-56 and D-57 as written.
 
 Marks: **Confirmed** (seen in code and in the app or data), **Partial** (real, but not quite as reported), **To confirm** (not visible in the code, needs a screenshot).
 
@@ -33,6 +33,7 @@ Marks: **Confirmed** (seen in code and in the app or data), **Partial** (real, b
 | BUG-086 | No country field; an unknown country is scanned as the US | Partial | Medium | 4 | Open |
 | BUG-087 | A website that blocks our reader gets "create a one-page website" advice | Confirmed | Medium | 4 | Open |
 | BUG-088 | Google competitor search waits 25 seconds before failing | Confirmed | Low | 4 | Open |
+| BUG-096 | Website check (`/compare`) shows a competitor that blocks automated readers only as "Not reached" | Confirmed (not "always": only sites that block us) | Medium | 4 | Open |
 | BUG-089 | No page shows what the AI actually said | Confirmed | Medium | 7 | Open |
 | BUG-090 | Two "Continue" buttons on the competitors step | To confirm | Low | 7 | Open |
 | BUG-091 | Services placeholder says "Emergency repairs, drain cleaning" for every business | Confirmed | Low | 7 | Open |
@@ -170,6 +171,17 @@ Fix in this order, then run one real scan per business to confirm.
   - save the read result even when the site blocked us
   - advice says the site blocks AI readers and how to let them in
   - the checklist skips the website item when the business has a website
+
+### BUG-096 Website check: blocked sites
+
+- **Reported:** the competitor always shows "Not reached" (nike.com against adidas.com).
+- **Seen:** `readSite` on 2026-10-08:
+  - nike.com, starbucks.com, khaadi.com and sapphireonline.pk are all reached, in either order
+  - adidas.com answers 403 to our reader, to a browser user agent and to GPTBot alike, so we can't read it
+- **Cause:** `readiness-check/fetch-site.ts` turns every failure into `null`. The page can't tell "blocks automated readers" from "doesn't exist", so it says "We could not open adidas.com" with no reason. For your own site it says "Check the address", even when the address is right.
+- **Fix:** `readSite` returns why it failed (blocked: 401, 403, 429, 503 or a challenge page; unreachable: DNS, timeout or another error).
+  - For a blocked competitor, the headline says the site blocks automated readers like ours, and that many AI tools are blocked the same way. The ring says "Blocked us".
+  - For your own blocked site, it says AI tools may not be able to read it either. It doesn't say to check the address.
 
 ### BUG-088 Competitor search timeout
 

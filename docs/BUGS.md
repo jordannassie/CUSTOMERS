@@ -108,5 +108,6 @@ Bugs found while building or verifying a task. Planned audit fixes (SEC-xx, CORE
 | BUG-093 | 2026-10-07, launch walk | Onboarding competitor picker | Adding one Pizza Hut branch marks all 5 branches as "Added" (matched by name). | Low | [LAUNCH-FIXES](launch/LAUNCH-FIXES.md) phase 7 | Open |
 | BUG-094 | 2026-10-07, launch walk | Sidebar | No Billing link; Billing is only reachable through Settings. | Low | [LAUNCH-FIXES](launch/LAUNCH-FIXES.md) phase 7 | Open |
 | BUG-095 | 2026-10-07, launch walk | Usage, Settings AI models | "Enough credits until the next 30 days" reads oddly; "Most of your customers ask here" is an unproven claim. | Low | [LAUNCH-FIXES](launch/LAUNCH-FIXES.md) phase 7 | Open |
+| BUG-096 | 2026-10-08, launch walk | `/compare` website check | A competitor site that blocks automated readers (adidas.com answers 403) shows only "Not reached" and "We could not open adidas.com", with no reason; a blocked own site is told to check the address. Sites that allow readers are reached. | Medium | [LAUNCH-FIXES](launch/LAUNCH-FIXES.md) phase 4 | Open |
 
 BUG-013 is not used: it was the same bug as BUG-010. BUG-018 to BUG-020 were BUG-010, BUG-015 and BUG-016 on `mvp` before the 2026-09-27 sync with `main`.
