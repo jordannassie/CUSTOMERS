@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { matchPaidPackage, VIDEO_AD_PACKAGES } from "./packages";
+import { PORTFOLIO_VIDEOS } from "./portfolio";
 import { briefSchema, normalizeHttpUrl } from "./schema";
 
 const paid = {
@@ -27,6 +28,11 @@ describe("video ad packages", () => {
 
   it("accepts only the catalog amount for that package", () => {
     expect(matchPaidPackage({ ...paid, amountTotal: 29700, packageId: "growth" })?.id).toBe("growth");
+  });
+
+  it("fills a 4 by 4 reel wall with the one real sample", () => {
+    expect(PORTFOLIO_VIDEOS).toHaveLength(16);
+    expect(new Set(PORTFOLIO_VIDEOS.map((video) => video.src)).size).toBe(1);
   });
 });
 

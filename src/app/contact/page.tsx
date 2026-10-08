@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import ContactForm from "@/components/site/ContactForm";
 import SiteHeader from "@/components/site/SiteHeader";
 import SiteFooter from "@/components/site/SiteFooter";
+import { MrDirectAvatar } from "@/components/site/MrDirectAvatar";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { BarChart3, ArrowRight } from "lucide-react";
@@ -9,7 +10,7 @@ import { BarChart3, ArrowRight } from "lucide-react";
 export const metadata: Metadata = {
   title: "Contact | Customers.Direct",
   description:
-    "Get in touch with the Customers.Direct team. Questions about AI Visibility or anything else? We're here to help.",
+    "Talk to Mr. Direct and the Customers.Direct team about AI Visibility, AI video ads, or growing your business.",
 };
 
 export default function ContactPage() {
@@ -35,17 +36,22 @@ export default function ContactPage() {
           </div>
 
           {/* Header */}
-          <div className="max-w-xl mb-12">
-            <div className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-[#777773] bg-[#F0F0EC] border border-[#E5E5E1] px-3 py-1 rounded-full mb-6 uppercase tracking-wider">
-              Get in touch
+          <div className="mb-12 flex max-w-3xl flex-col items-start gap-5 sm:flex-row sm:items-center">
+            <MrDirectAvatar
+              priority
+              className="h-24 w-24 shrink-0 border-4 border-[#0866F5] shadow-sm sm:h-28 sm:w-28"
+            />
+            <div>
+              <div className="mb-4 inline-flex items-center gap-1.5 rounded-full border border-[#E5E5E1] bg-[#F0F0EC] px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-[#777773]">
+                Get in touch
+              </div>
+              <h1 className="mb-4 text-[36px] font-bold leading-[1.1] tracking-tight text-[#171717] sm:text-[44px]">
+                Talk to Mr. Direct
+              </h1>
+              <p className="text-[16px] leading-relaxed text-[#777773]">
+                Have questions about AI Visibility, AI Video Ads, or growing your business? Mr. Direct and the Customers.Direct team are here to help.
+              </p>
             </div>
-            <h1 className="text-[36px] sm:text-[44px] font-bold text-[#171717] leading-[1.1] tracking-tight mb-4">
-              Talk to Customers.Direct
-            </h1>
-            <p className="text-[16px] text-[#777773] leading-relaxed">
-              Have a question about AI Visibility or anything else?
-              Send us a message and we&apos;ll get back to you.
-            </p>
           </div>
 
           <div className="grid md:grid-cols-[1fr_320px] gap-10 items-start">
