@@ -1662,6 +1662,69 @@ export type Database = {
           },
         ]
       }
+      video_ad_orders: {
+        Row: {
+          amount_cents: number
+          asset_url: string | null
+          audience: string | null
+          brief_submitted_at: string | null
+          business_name: string | null
+          created_at: string
+          creative_instructions: string | null
+          currency: string
+          customer_name: string | null
+          email: string | null
+          id: string
+          package_id: string
+          product: string | null
+          status: string
+          stripe_checkout_session_id: string
+          stripe_payment_intent_id: string | null
+          updated_at: string
+          website_url: string | null
+        }
+        Insert: {
+          amount_cents: number
+          asset_url?: string | null
+          audience?: string | null
+          brief_submitted_at?: string | null
+          business_name?: string | null
+          created_at?: string
+          creative_instructions?: string | null
+          currency?: string
+          customer_name?: string | null
+          email?: string | null
+          id?: string
+          package_id: string
+          product?: string | null
+          status?: string
+          stripe_checkout_session_id: string
+          stripe_payment_intent_id?: string | null
+          updated_at?: string
+          website_url?: string | null
+        }
+        Update: {
+          amount_cents?: number
+          asset_url?: string | null
+          audience?: string | null
+          brief_submitted_at?: string | null
+          business_name?: string | null
+          created_at?: string
+          creative_instructions?: string | null
+          currency?: string
+          customer_name?: string | null
+          email?: string | null
+          id?: string
+          package_id?: string
+          product?: string | null
+          status?: string
+          stripe_checkout_session_id?: string
+          stripe_payment_intent_id?: string | null
+          updated_at?: string
+          website_url?: string | null
+        }
+        Relationships: []
+      }
       visibility_results: {
         Row: {
           business_id: string

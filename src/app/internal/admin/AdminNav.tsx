@@ -30,6 +30,15 @@ const NAV_ITEMS = [
     ),
   },
   {
+    label: "Video ads",
+    href: "/internal/admin/video-ads",
+    icon: (
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+        <path d="M2 3h8v10H2V3zm9 2.5l3-1.5v8l-3-1.5v-5z"/>
+      </svg>
+    ),
+  },
+  {
     label: "Accounts",
     href: "/internal/admin/accounts",
     icon: (

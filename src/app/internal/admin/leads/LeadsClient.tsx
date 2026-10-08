@@ -50,6 +50,7 @@ const SOURCE_LABELS: Record<string, string> = {
   agency:       "Agency Page",
   other:        "Other",
   ads_page:     "Ads Page (legacy)",
+  video_ad:     "AI Video Ads",
 };
 
 const STATUS_OPTIONS = [

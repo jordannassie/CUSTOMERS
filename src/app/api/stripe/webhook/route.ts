@@ -30,6 +30,7 @@ import Stripe from "stripe";
 import { requireStripe } from "@/lib/stripe";
 import { createServiceClient } from "@/lib/supabase/service";
 import { getPlanIdFromStripePrice, type CanonicalPlanId } from "@/config/pricing";
+import { recordVideoAdCheckout } from "@/modules/video-ads/record-payment";
 import { env } from "@/lib/env";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -266,6 +267,10 @@ export async function POST(request: NextRequest) {
       // ── Checkout completed ────────────────────────────────────────────────
       case "checkout.session.completed": {
         const session = event.data.object as Stripe.Checkout.Session;
+        if (session.metadata?.kind === "video_ad") {
+          await recordVideoAdCheckout(session);
+          break;
+        }
         if (session.mode !== "subscription" || !session.subscription) break;
 
         const subId = typeof session.subscription === "string"
@@ -415,6 +420,12 @@ export async function POST(request: NextRequest) {
           .from("billing_accounts")
           .update({ status: "past_due", updated_at: new Date().toISOString() })
           .eq("stripe_customer_id", stripeCustomerId);
+        break;
+      }
+
+      case "checkout.session.async_payment_succeeded": {
+        const session = event.data.object as Stripe.Checkout.Session;
+        if (session.metadata?.kind === "video_ad") await recordVideoAdCheckout(session);
         break;
       }
 
