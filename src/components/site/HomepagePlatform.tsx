@@ -805,17 +805,28 @@ const SAMPLE_PROMPTS = [
 ];
 
 
+function SeeWhereYouShowUp() {
+  return (
+    <a
+      href="/signup"
+      className="inline-flex items-center gap-2 rounded-full bg-[#0866F5] px-6 py-3 text-[14px] font-bold text-white shadow-lg transition-colors hover:bg-[#0757D4] active:scale-[0.97]"
+    >
+      See where you show up
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M2.5 7h9M8 3.5l3.5 3.5L8 10.5" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/></svg>
+    </a>
+  );
+}
+
 // ─── Full-width lifestyle image section ───────────────────────────────────────
 function ShopperImageSection() {
   return (
     <section className="relative overflow-hidden bg-[#0A0A0A]">
       {/* Image: full width, slight overlay at bottom for text legibility */}
-      <div className="relative w-full" style={{ maxHeight: "600px", overflow: "hidden" }}>
+      <div className="relative w-full overflow-hidden" style={{ aspectRatio: "1672 / 941" }}>
         <img
-          src="https://wsxusvapciexemfvtadm.supabase.co/storage/v1/object/public/STORAGE/images/people/linedss.png"
-          alt="Customer discovering a business through AI search"
-          className="w-full object-cover object-center"
-          style={{ maxHeight: "600px", display: "block" }}
+          src="https://wsxusvapciexemfvtadm.supabase.co/storage/v1/object/public/STORAGE/images/Mr.Direct/Smug%20Spokesperson%20Among%20AI%20Icons.png"
+          alt="Mr. Direct in front of Customers.Direct with AI assistant icons"
+          className="block h-full w-full object-cover object-center"
           loading="lazy"
         />
         {/* Bottom fade so text overlays cleanly */}
@@ -827,16 +838,13 @@ function ShopperImageSection() {
           }}
           aria-hidden="true"
         />
-        {/* CTA button only */}
-        <div className="absolute bottom-0 left-0 right-0 px-6 pb-10 sm:pb-14 text-center">
-          <a
-            href="/signup"
-            className="inline-flex items-center gap-2 bg-[#0866F5] hover:bg-[#0757D4] text-white text-[14px] font-bold px-6 py-3 rounded-full transition-colors active:scale-[0.97] shadow-lg"
-          >
-            See where you show up
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M2.5 7h9M8 3.5l3.5 3.5L8 10.5" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/></svg>
-          </a>
+        {/* CTA sits on the photo from the sm breakpoint up */}
+        <div className="absolute bottom-0 left-0 right-0 hidden px-6 pb-10 text-center sm:block sm:pb-14">
+          <SeeWhereYouShowUp />
         </div>
+      </div>
+      <div className="px-6 py-6 text-center sm:hidden">
+        <SeeWhereYouShowUp />
       </div>
     </section>
   );
