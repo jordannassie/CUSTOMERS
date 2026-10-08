@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef, useCallback, Suspense } from "react";
 import ContactForm, { type InterestValue } from "@/components/site/ContactForm";
+import { MrDirectAvatar } from "@/components/site/MrDirectAvatar";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -43,10 +44,6 @@ const CHAT_CHOICES: { value: InterestValue; label: string; icon: React.ReactNode
   { value: "other",         label: "Other",            icon: <IconChat /> },
 ];
 
-const JORDAN_PHOTO =
-  "https://phhczohqidgrvcmszets.supabase.co/storage/v1/object/public/CUSTOMER.direct/images/People/Jordan%20Profile.PNG";
-
-// Session key — bump version to reset saved sessions when logic changes
 const SK = "cd_chat_v4";
 
 interface SavedState { interest: InterestValue; stage: Stage; }
@@ -150,7 +147,7 @@ export default function ChatWidget() {
           role="button"
           aria-label="Open chat"
         >
-          Hi! What can we help you with?
+          Hi! I&apos;m Mr. Direct. How can I help you today?
           <div className="absolute -bottom-2 right-3 w-3 h-3 bg-white border-r border-b border-[#E5E5E1] rotate-45" />
         </div>
       )}
@@ -158,22 +155,19 @@ export default function ChatWidget() {
       {/* ── Launcher ─────────────────────────────────────────────────────── */}
       <button
         onClick={handleToggle}
-        aria-label={open ? "Close chat" : "Chat with us"}
-        className="fixed bottom-6 right-6 z-50 flex flex-col items-center gap-1.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#171717] focus-visible:ring-offset-2 rounded-full group"
+        aria-label={open ? "Close chat" : "Chat with Mr. Direct"}
+        className="fixed bottom-6 right-6 z-50 flex flex-col items-center gap-1.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0866F5] focus-visible:ring-offset-2 rounded-full group"
       >
-        <div
-          className="relative w-14 h-14 rounded-full bg-[#171717] flex items-center justify-center text-white ring-2 ring-white transition-all duration-200 group-hover:scale-[1.05] group-hover:bg-[#2A2A2A] group-hover:shadow-2xl"
-          style={{ boxShadow: "0 8px 28px rgba(0,0,0,0.22)" }}
-        >
+        <div className="relative">
           {open ? (
-            <IconX />
+            <span className="flex h-14 w-14 items-center justify-center rounded-full border-2 border-[#0866F5] bg-white text-[#171717] shadow-lg">
+              <IconX />
+            </span>
           ) : (
-            <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-            </svg>
+            <MrDirectAvatar alt="" className="h-14 w-14 border-2 border-[#0866F5] shadow-lg" />
           )}
-          {unread && (
-            <span className="absolute -top-1 -left-1 w-4 h-4 rounded-full bg-[#0866F5] border-2 border-white text-[8px] text-white font-black flex items-center justify-center">!</span>
+          {unread && !open && (
+            <span className="absolute -top-0.5 -right-0.5 h-3.5 w-3.5 rounded-full border-2 border-white bg-[#0866F5]" aria-hidden="true" />
           )}
         </div>
         <span className="text-[11px] font-semibold text-[#171717] leading-none select-none tracking-tight">Chat</span>
@@ -184,7 +178,7 @@ export default function ChatWidget() {
         <div
           ref={panelRef}
           role="dialog"
-          aria-label="Chat with Customers.Direct"
+          aria-label="Chat with Mr. Direct"
           className={[
             "fixed z-50 bg-white border border-gray-200 flex flex-col shadow-2xl overflow-hidden",
             "sm:bottom-[88px] sm:right-6 sm:left-auto sm:w-[380px] sm:max-h-[80vh] sm:rounded-2xl",
@@ -197,17 +191,10 @@ export default function ChatWidget() {
         >
           {/* Header */}
           <div className="flex items-center gap-3 px-4 py-3 border-b border-gray-100 shrink-0">
-            <div className="relative shrink-0">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={JORDAN_PHOTO}
-                alt="Jordan at Customers.Direct"
-                className="w-10 h-10 rounded-full object-cover object-center border border-gray-100"
-              />
-            </div>
+            <MrDirectAvatar alt="" className="h-10 w-10 border border-[#E5E5E1]" />
             <div className="flex-1 min-w-0">
-              <p className="font-bold text-[#171717] text-sm leading-tight">Customers.Direct</p>
-              <p className="text-xs text-[#777773]">We typically respond within 24 hours</p>
+              <p className="font-bold text-[#171717] text-sm leading-tight">Mr. Direct</p>
+              <p className="text-xs text-[#777773]">Customers.Direct Team</p>
             </div>
             {stage !== "opening" && (
               <button
@@ -236,13 +223,10 @@ export default function ChatWidget() {
               <div className="px-4 py-6 flex flex-col gap-4">
                 {/* Jordan greeting */}
                 <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-full bg-[#F0F0EC] flex items-center justify-center shrink-0 overflow-hidden">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={JORDAN_PHOTO} alt="" aria-hidden="true" className="w-full h-full object-cover" />
-                  </div>
+                  <MrDirectAvatar alt="" className="h-8 w-8 shrink-0 border border-[#E5E5E1]" />
                   <div className="bg-[#F0F0EC] text-[#171717] text-[13.5px] px-4 py-2.5 rounded-2xl rounded-tl-sm leading-relaxed max-w-[85%]"
                     style={{ animation: "chatSlideUp 0.2s ease forwards" }}>
-                    Hi! What can we help you with?
+                    Hi! I&apos;m Mr. Direct. How can I help you today?
                   </div>
                 </div>
 

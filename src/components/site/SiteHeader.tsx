@@ -18,6 +18,7 @@ import {
   Mail,
   Video,
 } from "lucide-react";
+import { MrDirectAvatar } from "@/components/site/MrDirectAvatar";
 
 const LOGO_WHITE = "/images/logos/logo-white.png";
 
@@ -215,6 +216,7 @@ export default function SiteHeader() {
               )}
             </div>
 
+            <Link href="/ads" className={navLink()}>Ads</Link>
             <Link href="/pricing" className={navLink()}>Pricing</Link>
 
             {/* Resources dropdown */}
@@ -263,6 +265,17 @@ export default function SiteHeader() {
 
           {/* Right side */}
           <div className="flex items-center gap-2 ml-auto">
+            <Link
+              href="/contact"
+              aria-label="Talk to Mr. Direct"
+              title="Talk to Mr. Direct"
+              className="group relative shrink-0 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
+            >
+              <MrDirectAvatar alt="" className="h-9 w-9 border-2 border-white shadow-sm sm:h-10 sm:w-10" />
+              <span className="pointer-events-none absolute left-1/2 top-full z-10 mt-2 hidden -translate-x-1/2 whitespace-nowrap rounded-md bg-[#171717] px-2 py-1 text-[11px] font-medium text-white group-hover:block">
+                Talk to Mr. Direct
+              </span>
+            </Link>
             {/* Log in (desktop) */}
             <Link
               href="/login"
@@ -334,6 +347,10 @@ export default function SiteHeader() {
             <Link href="/pricing" onClick={closeAll}
               className="px-3 py-2.5 text-[13px] font-medium text-white/85 hover:text-white rounded-xl hover:bg-white/10 transition-colors">
               Pricing
+            </Link>
+            <Link href="/ads" onClick={closeAll}
+              className="px-3 py-2.5 text-[13px] font-medium text-white/85 hover:text-white rounded-xl hover:bg-white/10 transition-colors">
+              Ads
             </Link>
             {RESOURCES.map(({ label, href }) => (
               <Link key={href} href={href} onClick={closeAll}
