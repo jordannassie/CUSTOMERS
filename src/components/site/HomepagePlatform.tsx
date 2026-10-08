@@ -2,8 +2,8 @@
 
 import React from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import AgencyWorkspaceDemo from "@/components/site/AgencyWorkspaceDemo";
+import HomeHero from "@/components/site/HomeHero";
 import StartAiBusinessHomeSection from "@/components/site/StartAiBusinessHomeSection";
 import { PlatformIcon } from "@/components/PlatformIcon";
 import {
@@ -141,14 +141,6 @@ function MiniChart({
 }
 
 // ─── 1. HERO ─────────────────────────────────────────────────────────────
-
-const AI_PLATFORMS = [
-  { name: "ChatGPT", color: "#10B981" },
-  { name: "Claude", color: "#8B5CF6" },
-  { name: "Perplexity", color: "#3B82F6" },
-  { name: "Gemini", color: "#EF4444" },
-  { name: "Google AI", color: "#EAB308" },
-];
 
 // Demo data for hero dashboard preview
 const DEMO_SERIES = [
@@ -452,245 +444,11 @@ function HeroDashboardPreview() {
   );
 }
 
-// ─── Inline cycling AI platform icon for the hero headline ──────────────────
-
-function InlineAIIcon() {
-  const [idx, setIdx] = React.useState(0);
-  const [visible, setVisible] = React.useState(true);
-
-  React.useEffect(() => {
-    const timer = setInterval(() => {
-      // Fade out
-      setVisible(false);
-      setTimeout(() => {
-        setIdx((i) => (i + 1) % AI_PLATFORMS.length);
-        setVisible(true);
-      }, 220);
-    }, 2600);
-    return () => clearInterval(timer);
-  }, []);
-
-  const platform = AI_PLATFORMS[idx];
-
-  return (
-    <span
-      className="inline-flex items-center justify-center bg-white border border-[#E5E5E1] rounded-2xl shadow-[0_2px_10px_rgba(0,0,0,0.07)] align-middle mx-1.5"
-      style={{
-        width: "clamp(52px,8vw,68px)",
-        height: "clamp(52px,8vw,68px)",
-        opacity: visible ? 1 : 0,
-        transform: visible ? "scale(1)" : "scale(0.82)",
-        transition: "opacity 0.2s ease, transform 0.2s ease",
-      }}
-      aria-label={platform.name}
-    >
-      <PlatformIcon platform={platform.name} size={42} />
-    </span>
-  );
-}
-
-// ─── Hero section ─────────────────────────────────────────────────────────────
-
-/** Premium compare bar with large VS badge and per-input validation checkmarks */
-function HeroCompareBar() {
-  const router = useRouter();
-  const [myUrl, setMyUrl] = React.useState("");
-  const [themUrl, setThemUrl] = React.useState("");
-
-  /** Real domain validation: strips protocol/path before testing */
-  function isValidDomain(value: string): boolean {
-    const v = value.trim().replace(/^https?:\/\//i, "").split("/")[0].split("?")[0];
-    if (!v) return false;
-    return /^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z]{2,})+$/.test(v);
-  }
-
-  const myValid   = isValidDomain(myUrl);
-  const themValid = isValidDomain(themUrl);
-
-  function handleCompare(e: React.FormEvent) {
-    e.preventDefault();
-    const my   = myUrl.trim();
-    const them = themUrl.trim();
-    if (!my || !them) return;
-    router.push(`/compare?my=${encodeURIComponent(my)}&them=${encodeURIComponent(them)}`);
-  }
-
-  return (
-    <div className="w-full max-w-[1060px] mx-auto">
-      <form onSubmit={handleCompare}>
-        <div
-          className="bg-white rounded-[26px] p-3 border border-[#BFDBFE]"
-          style={{
-            boxShadow:
-              "0 4px 32px rgba(8,102,245,0.08), 0 8px 48px rgba(8,102,245,0.04), 0 1px 6px rgba(0,0,0,0.05)",
-          }}
-        >
-          {/*
-           * Single flex container: column on mobile, row on desktop.
-           * order-* ensures VS badge stays between the two inputs in both layouts.
-           */}
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3">
-
-            {/* ── Your website input ─────────────────────────────────── */}
-            <div className="relative flex-1 order-1">
-              <input
-                type="text"
-                value={myUrl}
-                onChange={(e) => setMyUrl(e.target.value)}
-                placeholder="yourbusiness.com"
-                className="w-full h-[58px] sm:h-[70px] pl-4 sm:pl-5 pr-11 text-[15px] text-[#171717] placeholder:text-[#C0C0BB] bg-[#F9F9F8] border border-[#E8E8E4] rounded-[12px] sm:rounded-[14px] focus:outline-none focus:border-[#BFDBFE] focus:bg-white transition-all"
-                autoComplete="off"
-                autoCorrect="off"
-                autoCapitalize="off"
-                spellCheck={false}
-                aria-label="Your website"
-              />
-              {myValid && (
-                <span
-                  className="absolute right-3.5 top-1/2 -translate-y-1/2 w-5 h-5 sm:w-[22px] sm:h-[22px] rounded-full bg-emerald-500 flex items-center justify-center pointer-events-none"
-                  role="img"
-                  aria-label="Valid website"
-                >
-                  <Check size={11} className="text-white" strokeWidth={2.5} aria-hidden="true" />
-                </span>
-              )}
-            </div>
-
-            {/* ── VS Badge ──────────────────────────────────────────── */}
-            <div
-              className="order-2 shrink-0 flex items-center justify-center relative z-10"
-              aria-hidden="true"
-            >
-              <div
-                className="relative w-[56px] h-[56px] sm:w-[76px] sm:h-[76px] rounded-full bg-[#0866F5] flex items-center justify-center"
-                style={{
-                  boxShadow:
-                    "0 0 0 3px #ffffff, 0 0 0 5px rgba(8,102,245,0.22), 0 6px 20px rgba(8,102,245,0.32)",
-                }}
-              >
-                {/* Inner white ring */}
-                <div className="absolute inset-[4px] sm:inset-[5px] rounded-full border border-white/25 pointer-events-none" />
-                <span className="text-white font-black text-[21px] sm:text-[27px] leading-none tracking-tight relative">
-                  VS
-                </span>
-              </div>
-            </div>
-
-            {/* ── Competitor input ───────────────────────────────────── */}
-            <div className="relative flex-1 order-3">
-              <input
-                type="text"
-                value={themUrl}
-                onChange={(e) => setThemUrl(e.target.value)}
-                placeholder="competitor.com"
-                className="w-full h-[58px] sm:h-[70px] pl-4 sm:pl-5 pr-11 text-[15px] text-[#171717] placeholder:text-[#C0C0BB] bg-[#F9F9F8] border border-[#E8E8E4] rounded-[12px] sm:rounded-[14px] focus:outline-none focus:border-[#BFDBFE] focus:bg-white transition-all"
-                autoComplete="off"
-                autoCorrect="off"
-                autoCapitalize="off"
-                spellCheck={false}
-                aria-label="Competitor website"
-              />
-              {themValid && (
-                <span
-                  className="absolute right-3.5 top-1/2 -translate-y-1/2 w-5 h-5 sm:w-[22px] sm:h-[22px] rounded-full bg-emerald-500 flex items-center justify-center pointer-events-none"
-                  role="img"
-                  aria-label="Valid competitor website"
-                >
-                  <Check size={11} className="text-white" strokeWidth={2.5} aria-hidden="true" />
-                </span>
-              )}
-            </div>
-
-            {/* ── Compare Free button: always blue ─────────────────── */}
-            <button
-              type="submit"
-              className="order-4 shrink-0 flex items-center justify-center gap-2 bg-[#0866F5] hover:bg-[#0757D4] text-white text-[14px] sm:text-[14.5px] font-bold h-[58px] sm:h-[70px] w-full sm:w-[240px] rounded-[14px] sm:rounded-[16px] transition-colors active:scale-[0.97]"
-              style={{ boxShadow: "0 4px 16px rgba(8,102,245,0.28)" }}
-            >
-              Compare Free
-              <ArrowRight size={14} aria-hidden="true" />
-            </button>
-
-          </div>
-        </div>
-      </form>
-
-      <p className="text-[11.5px] text-[#A3A3A0] text-center mt-3">
-        Free · No account needed · Results in ~10 seconds
-      </p>
-    </div>
-  );
-}
-
 function HeroSection() {
   return (
-    <section className="bg-[#FAFAF8] px-4 pt-16 pb-10 sm:pt-20 sm:pb-12 overflow-hidden border-b border-[#EEEEEA]">
-
-      {/* Headline area: constrained to 780px */}
-      <div className="max-w-[780px] mx-auto text-center fade-up">
-
-        {/* Eyebrow */}
-        <div className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-[#777773] bg-[#F0F0EC] border border-[#E5E5E1] px-3 py-1 rounded-full mb-6 tracking-wide">
-          Get more Customers with AI Search
-        </div>
-
-        {/* Headline */}
-        <h1 className="text-[40px] sm:text-[54px] lg:text-[60px] font-bold text-[#171717] leading-[1.15] tracking-tight mb-4">
-          See who <InlineAIIcon /> AI recommends.
-          <br />
-          <span className="text-[#0866F5]">You or your competitor?</span>
-        </h1>
-
-        {/* Sub-description */}
-        <p className="text-[16px] sm:text-[17px] text-[#777773] leading-relaxed mb-8 max-w-[520px] mx-auto">
-          Compare your website against a competitor in AI search. Free, instant, no signup needed.
-        </p>
-      </div>
-
-      {/* Compare bar: wider than headline, up to 1060px */}
-      <div className="mt-2 mb-6 fade-up fade-up-delay-1">
-        <HeroCompareBar />
-      </div>
-
-      {/* Secondary CTA + platform pills */}
-      <div className="max-w-[780px] mx-auto text-center fade-up fade-up-delay-2">
-
-        {/* Secondary CTA */}
-        <div className="flex flex-wrap items-center justify-center gap-3 mb-7">
-          <a
-            href="/contact?topic=sales"
-            className="inline-flex items-center gap-2.5 bg-white border border-[#E5E5E1] text-[#171717] text-[13.5px] font-semibold px-4 py-2.5 rounded-full shadow-sm hover:bg-[#F5F5F2] hover:-translate-y-px hover:shadow-md transition-all duration-150 active:scale-[0.97]"
-          >
-            <span className="flex -space-x-2 shrink-0" aria-hidden="true">
-              {[
-                "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=48&h=48&fit=crop&crop=face&q=80",
-                "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=48&h=48&fit=crop&crop=face&q=80",
-                "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=48&h=48&fit=crop&crop=face&q=80",
-              ].map((src, i) => (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img key={i} src={src} alt="" className="w-6 h-6 rounded-full border-2 border-white object-cover shrink-0" />
-              ))}
-            </span>
-            Book a Demo
-          </a>
-        </div>
-
-        {/* Platform pills */}
-        <div className="flex flex-wrap justify-center gap-2">
-          {AI_PLATFORMS.map(({ name }) => (
-            <span
-              key={name}
-              className="inline-flex items-center gap-1.5 text-[11px] font-medium text-[#777773] bg-white border border-[#E5E5E1] px-2.5 py-1 rounded-full"
-            >
-              <PlatformIcon platform={name} size={12} />
-              {name}
-            </span>
-          ))}
-        </div>
-      </div>
-
-      {/* Dashboard preview */}
-      <div className="fade-up fade-up-delay-2 max-w-4xl mx-auto mt-14">
+    <section className="overflow-hidden border-b border-[#EEEEEA] bg-[#FAFAF8] px-4 pb-12 pt-16 sm:pt-20">
+      <HomeHero />
+      <div className="mx-auto mt-14 max-w-4xl">
         <HeroDashboardPreview />
       </div>
     </section>
