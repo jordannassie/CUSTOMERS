@@ -1585,7 +1585,7 @@ function TestimonialsSection() {
 // ─── Hero Video Section ───────────────────────────────────────────────────
 
 const HERO_VIDEO_URL =
-  "https://wsxusvapciexemfvtadm.supabase.co/storage/v1/object/public/STORAGE/images/video/Biz.mp4";
+  "https://wsxusvapciexemfvtadm.supabase.co/storage/v1/object/public/STORAGE/images/Mr.Direct/Customers.mov";
 
 function SpeakerOff() {
   return (
