@@ -30,14 +30,14 @@ export default function SignupPage({ searchParams }: { searchParams: SearchParam
           <div
             className="w-full overflow-hidden rounded-2xl border border-[#E5E5E1] bg-white"
             style={{
-              aspectRatio: "1 / 1",
+              aspectRatio: "1672 / 941",
               boxShadow: "0 4px 24px rgba(0,0,0,0.06), 0 1px 4px rgba(0,0,0,0.04)",
             }}
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src="https://wsxusvapciexemfvtadm.supabase.co/storage/v1/object/public/STORAGE/images/Mr.Direct/Offic.png"
-              alt="Mr. Direct at his desk with AI assistant icons"
+              src="https://wsxusvapciexemfvtadm.supabase.co/storage/v1/object/public/STORAGE/images/Mr.Direct/Smug%20Spokesperson%20Among%20AI%20Icons.png"
+              alt="Mr. Direct in front of Customers.Direct with AI assistant icons"
               className="h-full w-full object-cover object-center"
             />
           </div>
