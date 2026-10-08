@@ -16,6 +16,7 @@ import {
   HelpCircle,
   Building2,
   Mail,
+  Video,
 } from "lucide-react";
 
 const LOGO_WHITE = "/images/logos/logo-white.png";
@@ -194,6 +195,22 @@ export default function SiteHeader() {
                       </div>
                     </button>
                   ))}
+                  <Link
+                    href="/ads"
+                    role="menuitem"
+                    onClick={() => setProductOpen(false)}
+                    className="flex items-start gap-3 p-3 rounded-xl hover:bg-[#F5F5F2] transition-colors w-full text-left"
+                  >
+                    <div className="w-9 h-9 rounded-xl bg-[#0866F5] shadow-md shadow-blue-200 flex items-center justify-center shrink-0 mt-0.5">
+                      <Video size={15} className="text-white" aria-hidden="true" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-[13px] font-semibold text-[#171717] leading-snug mb-0.5">AI Video Ads</p>
+                      <p className="text-[11px] text-[#A3A3A0] leading-snug">
+                        15-second AI video ads for TikTok, Instagram, and Facebook, starting at $99.
+                      </p>
+                    </div>
+                  </Link>
                 </div>
               )}
             </div>
@@ -300,6 +317,16 @@ export default function SiteHeader() {
                 <span className="text-[13px] font-medium text-white/85">{label}</span>
               </button>
             ))}
+            <Link
+              href="/ads"
+              onClick={closeAll}
+              className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/10 transition-colors"
+            >
+              <div className="w-7 h-7 rounded-lg bg-[#0866F5] flex items-center justify-center shrink-0">
+                <Video size={13} className="text-white" aria-hidden="true" />
+              </div>
+              <span className="text-[13px] font-medium text-white/85">AI Video Ads</span>
+            </Link>
           </div>
 
           {/* Other links */}

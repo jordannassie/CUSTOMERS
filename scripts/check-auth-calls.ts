@@ -13,6 +13,8 @@ const PUBLIC: Record<string, string> = {
   "src/app/auth/callback/route.ts": "OAuth and email-link callback",
   "src/app/auth/signout/route.ts": "signs out the current session",
   "src/app/api/stripe/webhook/route.ts": "Stripe signature check",
+  "src/app/api/stripe/video-ads/checkout/route.ts": "public one-time checkout, server-side package price",
+  "src/app/api/stripe/video-ads/brief/route.ts": "public brief, Stripe session must be paid",
   "src/app/api/geo/cron/run-monitoring/route.ts": "cron secret header",
 };
 
