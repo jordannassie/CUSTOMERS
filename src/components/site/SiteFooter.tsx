@@ -55,7 +55,6 @@ const FOOTER_COLUMNS = [
       { label: "Competitive Intelligence", href: "/#competitors" },
       { label: "Citations & Sources", href: "/#citations" },
       { label: "Opportunities", href: "/#opportunities" },
-      { label: "AI Video Ads", href: "/ads" },
       { label: "Pricing", href: "/pricing" },
     ],
   },
