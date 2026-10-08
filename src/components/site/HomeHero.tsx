@@ -6,7 +6,7 @@ import { ArrowRight, Check } from "lucide-react";
 import { PlatformIcon } from "@/components/PlatformIcon";
 
 const HERO_IMAGE =
-  "https://wsxusvapciexemfvtadm.supabase.co/storage/v1/object/public/STORAGE/images/Mr.Direct/Smug%20Executive%20with%20Branded%20Mug.png";
+  "https://wsxusvapciexemfvtadm.supabase.co/storage/v1/object/public/STORAGE/images/Mr.Direct/Offic.png";
 
 const AI_PLATFORMS = [
   { name: "ChatGPT" },
@@ -184,8 +184,8 @@ export default function HomeHero() {
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={HERO_IMAGE}
-            alt="Mr. Direct at his desk with a Customers.Direct mug"
-            className="h-[340px] w-full object-cover object-[28%_center] sm:h-[440px] lg:h-[640px]"
+            alt="Mr. Direct at his desk with AI assistant icons"
+            className="aspect-square w-full object-cover object-center"
           />
         </div>
       </div>
