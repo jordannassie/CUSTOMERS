@@ -40,3 +40,6 @@ export type CheckResult = {
 export type RunCheck = (input: CheckInput) => Promise<CheckResult>;
 
 export type ProviderId = "openai" | "anthropic" | "perplexity";
+
+/** Failed checks per AI in one run, with the first reason (BUG-074). */
+export type ProviderFailures = Partial<Record<ProviderId, { failed: number; reason: string }>>;

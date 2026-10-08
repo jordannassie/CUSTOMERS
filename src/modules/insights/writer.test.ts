@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { buildExplainInput } from "./facts";
 import { COFFEE_SOURCES } from "./fixtures";
-import { EXPLAIN_MODEL } from "./prompts/explain.v1";
+import { EXPLAIN_MODEL } from "./prompts/explain.v2";
 import { createExplanationWriter, explainRequest, ExplainError } from "./writer";
 
 // No real call: a fake fetch plays the Messages API (keys are treated as exposed until B-01).

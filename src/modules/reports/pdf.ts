@@ -61,7 +61,8 @@ export async function renderPdf(url: string, title: string): Promise<Uint8Array>
 
 async function withBrowserless(url: string, title: string, signal: AbortSignal): Promise<Uint8Array> {
   if (!env.BROWSERLESS_API_KEY) throw new PdfError("BROWSERLESS_API_KEY is not set");
-  const endpoint = new URL("/pdf", env.BROWSERLESS_URL);
+  // Keeps any path in BROWSERLESS_URL; new URL("/pdf", base) would drop it and Browserless answers 404 (BUG-082).
+  const endpoint = new URL(`${env.BROWSERLESS_URL.replace(/\/+$/, "")}/pdf`);
   endpoint.searchParams.set("token", env.BROWSERLESS_API_KEY);
   const response = await fetch(endpoint, {
     method: "POST",

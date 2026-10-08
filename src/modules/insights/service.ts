@@ -2,7 +2,7 @@
 import type { OpportunityDraft, WriterUsage } from "./explain";
 import type { Signals } from "./facts";
 import { fillPlaceholders, formatSignal, type Lookup } from "./placeholders";
-import { EXPLAIN_PRICE } from "./prompts/explain.v1";
+import { EXPLAIN_PRICE } from "./prompts/explain.v2";
 
 // Legacy statuses: "open" is what a new scan replaces; anything the user touched stays.
 const REPLACEABLE = "open";

@@ -5,6 +5,8 @@ import { canEditTracking } from "@/modules/entitlements";
 import type { CompetitorCandidate } from "./competitor-places";
 import { dedupeConfirmed } from "./competitors";
 import { lookupCompetitor, runBusinessAutofill, saveCompetitors } from "./dal";
+import { websiteExists } from "./website/dal";
+import { websiteNotFoundText } from "./website/domain-check";
 import { autofillInput, competitorLookupInput, saveCompetitorsInput, toDomain, type AutofillResult } from "./schema";
 
 // Onboarding step 3 to 4 (MVP_SPEC 3.1, 3.2): fills the details form. Provider failures come back
@@ -24,6 +26,7 @@ export async function autofillBusiness(input: unknown): Promise<ActionResult<Aut
   if ("domain" in parsed.data) {
     const domain = toDomain(parsed.data.domain);
     if (!domain) return { ok: false, status: 400, error: "Enter a website address like yourbusiness.com." };
+    if (!(await websiteExists(domain))) return { ok: false, status: 422, error: websiteNotFoundText(domain), field: "website" };
     request = { domain };
   } else {
     request = { name: parsed.data.name, city: parsed.data.city };

@@ -2,7 +2,7 @@
 // Runs per business on the shared extraction, so a cache hit needs no new AI call.
 import type { ExtractedName } from "./extract";
 import type { MentionTarget } from "./mentions";
-import { coreName, domainOf, findDomain, findPhrase, isGenericName } from "./mention-text";
+import { brandForms, coreName, domainOf, findDomain, findPhrase, isGenericName } from "./mention-text";
 
 export type MatchedName = ExtractedName & {
   matches: "business" | "competitor" | null;
@@ -30,7 +30,7 @@ export function isSameBusiness(extractedName: string, target: MentionTarget): bo
   const domain = domainOf(target.website);
   if (domain && findDomain(extractedName, domain).length > 0) return true;
 
-  for (const known of [target.name, ...(target.aliases ?? [])]) {
+  for (const known of [target.name, ...brandForms(target), ...(target.aliases ?? [])]) {
     const want = coreName(known);
     if (!want) continue;
     if (got === want) return true;

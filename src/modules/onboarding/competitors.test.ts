@@ -43,6 +43,12 @@ describe("search queries", () => {
     expect(lookupQuery(" Blue Door ", COFFEE)).toBe("Blue Door in Springfield, IL");
     expect(lookupQuery("Blue Door", { ...COFFEE, city: null, region: null })).toBe("Blue Door");
   });
+
+  it("searches the user's own words for an industry we do not list, then the Google type (BUG-085)", () => {
+    expect(nearbyQuery({ ...COFFEE, industry: "Sportswear store", services: ["Athletic footwear"] })).toBe("Sportswear store in Springfield, IL");
+    const origin = { latitude: 33.6, longitude: 73.1, primaryType: "clothing_store" };
+    expect(nearbyQuery({ ...COFFEE, industry: "other", services: ["Lawn prints"] }, origin)).toBe("clothing store in Springfield, IL");
+  });
 });
 
 describe("discoverCompetitors", () => {

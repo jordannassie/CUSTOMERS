@@ -68,6 +68,7 @@ export function reportView(input: {
     sentence: overview.score.sentence,
     firstResults: overview.score.firstResults,
     change: overview.score.change,
+    coverage: overview.score.coverage ?? null,
   };
   return {
     agency: input.agency,

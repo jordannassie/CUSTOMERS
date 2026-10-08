@@ -193,3 +193,27 @@ test.describe("trial credits after the card (F-48)", () => {
     await openDashboard(page);
   });
 });
+
+test("a scan no worker picks up says so instead of spinning, and carries on once a worker runs it", async ({ page }) => {
+  const { businessId, agencyId } = await seedAtModelsStep(page);
+  // A worker that died 20 minutes ago (or was never set up): the job is still "running" and nobody resets it.
+  const lockedAt = new Date(Date.now() - 20 * 60_000).toISOString();
+  const { data: job } = await db
+    .from("scan_jobs")
+    .insert({ agency_id: agencyId, business_id: businessId, status: "running", attempts: 1, locked_at: lockedAt, run_after: lockedAt })
+    .select("id")
+    .single()
+    .throwOnError();
+  await finishSetup(page);
+
+  await page.waitForURL("**/onboarding/first-scan");
+  await slow(page.getByRole("heading", { level: 1, name: "Your first scan is taking longer than usual" })).toBeVisible();
+  await expect(page.getByTestId("first-scan-stalled")).toContainText("finishes on its own");
+  await expect(page.getByText("Bean There Coffee is in line to be checked by ChatGPT, Claude and Perplexity.")).toBeVisible();
+  await expect(page.getByTestId("first-scan-models").getByText("Not started")).toHaveCount(3);
+  await expect(page.getByRole("link", { name: "Go to dashboard" })).toBeVisible();
+
+  // The screen keeps polling: once a worker takes the job, it moves on to the result by itself.
+  await db.from("scan_jobs").update({ status: "queued", locked_at: null, run_after: new Date().toISOString() }).eq("id", job.id).throwOnError();
+  await slow(page.getByRole("heading", { level: 1, name: "Your first scan is done" })).toBeVisible();
+});

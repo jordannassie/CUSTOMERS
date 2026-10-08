@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, RefreshCw } from "lucide-react";
+import { Clock, Loader2, RefreshCw } from "lucide-react";
 import { cn } from "cn";
 import { Button } from "@/components/ui/button";
 import type { ActionResult } from "@/modules/auth";
@@ -14,6 +14,7 @@ const POLL_MS = 3000;
 const ALREADY_RUNNING = "A scan is already running.";
 const FAILED = "The last scan could not finish. Try again in a few minutes.";
 const RETRYING = "The scan hit a problem. We'll try again in a few minutes.";
+const STALLED = "This scan is waiting longer than usual to run. It finishes on its own. If it hasn't within an hour, contact us.";
 
 type Note = { text: string; tone: "muted" | "error" } | null;
 
@@ -61,8 +62,10 @@ export function RunScanButton({
   }, [status, businessId, getStatus, router]);
 
   const scanning = status.scanning || pending;
+  // No worker picked the job up: no spinner, since nothing is being asked right now.
+  const stalled = status.scanning && status.stalled && !status.retrying && !pending;
   const blocked = !scanning && status.blockedReason !== null;
-  const text = note?.text ?? (scanning ? (status.retrying ? RETRYING : "Results appear in about a minute.") : "");
+  const text = note?.text ?? (scanning ? (status.retrying ? RETRYING : stalled ? STALLED : "Results appear in about a minute.") : "");
 
   function run() {
     if (scanning) return setNote({ text: ALREADY_RUNNING, tone: "muted" });
@@ -91,8 +94,14 @@ export function RunScanButton({
         aria-describedby={text ? `run-scan-note-${businessId}` : undefined}
         className={cn(scanning && "cursor-progress", className)}
       >
-        {scanning ? <Loader2 className="animate-spin" aria-hidden="true" /> : <RefreshCw aria-hidden="true" />}
-        {scanning ? "Scanning…" : label}
+        {stalled ? (
+          <Clock aria-hidden="true" />
+        ) : scanning ? (
+          <Loader2 className="animate-spin" aria-hidden="true" />
+        ) : (
+          <RefreshCw aria-hidden="true" />
+        )}
+        {stalled ? "Waiting to run" : scanning ? "Scanning…" : label}
       </Button>
       <p
         id={`run-scan-note-${businessId}`}

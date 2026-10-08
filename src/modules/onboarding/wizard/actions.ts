@@ -2,10 +2,13 @@
 
 import { headers } from "next/headers";
 import { env } from "@/lib/env";
-import { authFailure, requireUser, type ActionResult } from "@/modules/auth";
+import { authFailure, getCurrentAgency, requireUser, type ActionResult } from "@/modules/auth";
+import { addBusinessAtSetup } from "@/modules/billing";
 import { sendWelcomeEmail } from "@/modules/notifications";
 import { dedupeConfirmed } from "../competitors";
 import { saveCompetitors } from "../dal";
+import { websiteExists } from "../website/dal";
+import { websiteNotFoundText } from "../website/domain-check";
 import { saveCompetitorsInput, toDomain, type AutofillResult } from "../schema";
 import { advanceStep, saveAgency, saveDetails, startBusiness } from "./dal";
 import { awaitingTrialCredits, finishCardStep, startCardCheckout } from "./card/dal";
@@ -52,6 +55,7 @@ export async function saveWebsiteStep(input: unknown): Promise<ActionResult<{ bu
   if ("domain" in parsed.data) {
     const domain = toDomain(parsed.data.domain);
     if (!domain) return { ok: false, status: 400, error: "Enter a website address like yourbusiness.com." };
+    if (!(await websiteExists(domain))) return { ok: false, status: 422, error: websiteNotFoundText(domain), field: "website" };
     request = { domain };
   } else {
     request = parsed.data;
@@ -99,10 +103,16 @@ export async function saveModelsStep(input: unknown): Promise<ActionResult<{ nex
   if (typeof user !== "string") return user;
   const parsed = modelsStepInput.safeParse(input);
   if (!parsed.success) return { ok: false, status: 400, error: "Pick at least one AI model and how often to check." };
-  const { businessId, models, frequency } = parsed.data;
+  const { businessId, models, frequency, addOn } = parsed.data;
   if ((await loadWizardState(user)).needsCard) {
     if (!(await saveModels(user, businessId, models, frequency))) return notFound;
     return { ok: true, data: { next: stepPath("card") } };
+  }
+  // BUG-071: a business added after the first joins the subscription before it starts scanning.
+  const agency = await getCurrentAgency();
+  if (agency) {
+    const added = await addBusinessAtSetup(agency.id, businessId, addOn ?? null);
+    if (!added.ok) return added;
   }
   if (!(await finishWizard(user, businessId, { models, frequency }))) return notFound;
   return { ok: true, data: { next: FIRST_SCAN_PATH } };

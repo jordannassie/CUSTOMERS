@@ -30,7 +30,8 @@ export async function loadAlsoRecommended(
   const extractions: unknown[] = [];
   for (let from = 0; ; from += PAGE) {
     const { data, error } = await db
-      .from("visibility_results")
+      // The rows that count: no sample answers once the agency is real (migration 044, BUG-075).
+      .from("visibility_results_counted")
       .select("extracted_names")
       .eq("business_id", businessId)
       .gt("created_at", since)

@@ -1,6 +1,7 @@
 import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { getBalance } from "@/modules/credits";
 import { REASONS } from "@/modules/entitlements";
+import { ProviderError } from "./providers/request";
 import type { ProviderId, RunCheck } from "./providers/types";
 import { countryCode } from "./country";
 import { nextScanAt, runScan, withCity } from "./service";
@@ -45,7 +46,7 @@ function runners(overrides: Partial<Record<ProviderId, RunCheck>> = {}) {
 async function results(runId: string) {
   const { data } = await service
     .from("visibility_results")
-    .select("provider, model, business_mentioned, mention_position, competitors_mentioned, cached, cost_usd, extracted_names")
+    .select("provider, model, business_mentioned, mention_position, competitors_mentioned, cached, cost_usd, extracted_names, is_sample")
     .eq("run_id", runId);
   return data!;
 }
@@ -65,6 +66,11 @@ describe("runScan (B-26)", () => {
     for (const run of Object.values(live.all)) expect(run).not.toHaveBeenCalled();
     const { data: scan } = await service.from("scan_jobs").select("credits_charged").eq("id", job).single();
     expect(scan!.credits_charged).toBe(36);
+    // Recorded answers are marked, so they stop counting once the agency is real (BUG-075).
+    if (outcome.status === "skipped") throw new Error("unexpected skip");
+    const saved = await results(outcome.runId);
+    expect(saved.length).toBe(36);
+    expect(saved.every((r) => r.is_sample)).toBe(true);
     // Recorded answers stay out of the shared cache.
     const { count } = await service.from("ai_answer_cache").select("cache_key", { count: "exact", head: true }).ilike("question", `%${business.city}%`);
     expect(count).toBe(0);
@@ -83,6 +89,7 @@ describe("runScan (B-26)", () => {
     const rows = await results(outcome.runId);
     expect(rows).toHaveLength(24);
     expect(rows.every((r) => r.provider !== "anthropic")).toBe(true);
+    expect(rows.every((r) => !r.is_sample)).toBe(true);
     expect(rows[0]).toMatchObject({ business_mentioned: true, mention_position: 1, cached: false });
     expect(rows[0].competitors_mentioned).toEqual([{ name: "Rival Roasters", position: 2 }]);
     expect(rows[0].extracted_names).toMatchObject({
@@ -93,14 +100,41 @@ describe("runScan (B-26)", () => {
       ],
     });
 
-    const { data: run } = await service.from("visibility_runs").select("status, checks_total, checks_failed, error").eq("id", outcome.runId).single();
+    const { data: run } = await service
+      .from("visibility_runs")
+      .select("status, checks_total, checks_failed, error, failed_by_provider")
+      .eq("id", outcome.runId)
+      .single();
     expect(run).toMatchObject({ status: "completed", checks_total: 36, checks_failed: 12 });
     expect(run!.error).toContain("anthropic returned 503 (12 checks)");
+    // Which AI failed, for "Claude couldn't be checked" on the Overview (BUG-074).
+    expect(run!.failed_by_provider).toEqual({ anthropic: { failed: 12, reason: expect.stringContaining("503") } });
 
     const { data: biz } = await service.from("businesses").select("next_scan_at").eq("id", business.businessId).single();
     const days = (new Date(biz!.next_scan_at!).getTime() - Date.now()) / 86_400_000;
     expect(days).toBeGreaterThan(6.9);
     expect(days).toBeLessThan(7.1);
+  });
+
+  it("tries a timed out check once more instead of failing it (BUG-083)", async () => {
+    const agency = await createScanAgency();
+    const business = await createScanBusiness(agency);
+    const job = await newJob(business);
+    // ChatGPT times out the first time it gets each question, then answers.
+    const answers = answeringRunner("openai");
+    const seen = new Set<string>();
+    const slowOnce = vi.fn<RunCheck>(async (input) => {
+      if (!seen.has(input.question)) {
+        seen.add(input.question);
+        throw new ProviderError({ provider: "openai", kind: "timeout", attempts: 1, message: "openai did not answer within 60000 ms" });
+      }
+      return answers(input);
+    });
+
+    const outcome = await runScan(job, { ...runners({ openai: slowOnce }), extractNames });
+
+    expect(outcome).toMatchObject({ status: "done", checks: 36, failed: 0, charged: 36 });
+    expect(slowOnce).toHaveBeenCalledTimes(24);
   });
 
   it("serves a second business in the same city from the cache and still charges 1 credit a check", async () => {
@@ -174,6 +208,7 @@ describe("scan helpers", () => {
   it("adds the city to a question that lacks it", () => {
     expect(withCity("What is the best dentist?", "Orange", "CA")).toBe("What is the best dentist in Orange, CA?");
     expect(withCity("Best dentist in Orange?", "Orange", "CA")).toBe("Best dentist in Orange?");
+    expect(withCity("Best pizza delivery?", "Rawalpindi", "Punjab")).toBe("Best pizza delivery in Rawalpindi?");
   });
 
   it("turns saved country names into ISO codes", () => {

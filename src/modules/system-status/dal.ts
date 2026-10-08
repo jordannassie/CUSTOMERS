@@ -25,7 +25,7 @@ export async function getSystemStatus(deps: ProbeDeps = {}): Promise<SystemStatu
     Promise.all(
       PROBES.map(async (probe): Promise<ServiceStatus> => {
         const key = KEYS[probe.id];
-        const result = await runProbe(probe, key, deps);
+        const result = await runProbe(probe, key, { browserlessUrl: env.BROWSERLESS_URL, ...deps });
         const mode = probe.id === "stripe" ? stripeMode(key) : undefined;
         return { id: probe.id, name: probe.name, group: probe.group, ...result, ...(mode && { mode }) };
       }),

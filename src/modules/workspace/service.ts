@@ -4,6 +4,8 @@ const DAY = 24 * 60 * 60 * 1000;
 const WARN_AT_PERCENT = 80;
 
 export const BILLING_HREF = "/settings/billing";
+/** Choose a plan when the agency has none or its plan ended (BUG-079, BUG-066). */
+export const CHOOSE_PLAN_HREF = "/settings/billing/plans";
 export const BUY_CREDITS_HREF = "/settings/credits";
 export const SUPPORT_HREF = "/contact?topic=support";
 
@@ -128,7 +130,8 @@ function endedBanner(account: AccountState): Banner {
     kind: "ended",
     tone: "warning",
     message: `${wasTrial ? "Your free trial has ended and you weren't charged." : "Your plan has ended."} Your results are still here to read, but new scans are off.`,
-    action: { label: "Contact us", href: SUPPORT_HREF },
+    // BUG-066: the way back is choosing a plan on this site, not contacting us.
+    action: { label: "Choose a plan", href: CHOOSE_PLAN_HREF },
   };
 }
 

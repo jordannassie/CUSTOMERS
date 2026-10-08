@@ -3,6 +3,9 @@
 import type { ProviderId } from "./types";
 
 export const TIMEOUT_MS = 30_000;
+
+/** ChatGPT's web search answers often take longer than 30 seconds, so it gets 60 (BUG-083). */
+export const PROVIDER_TIMEOUT_MS: Record<ProviderId, number> = { openai: 60_000, anthropic: TIMEOUT_MS, perplexity: TIMEOUT_MS };
 export const MAX_RETRIES = 2;
 const BASE_DELAY_MS = 1_000;
 const MAX_DELAY_MS = 10_000;

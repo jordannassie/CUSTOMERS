@@ -25,6 +25,7 @@ export {
   getCardStep,
   getDetailsStep,
   getModelsStep,
+  getSetupAddOn,
   getQuestionsStep,
   getWizardState,
 } from "./wizard/queries";

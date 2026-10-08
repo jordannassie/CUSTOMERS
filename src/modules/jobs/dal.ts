@@ -91,6 +91,8 @@ export type LatestJob = {
   /** The last attempt's error; set on a queued job when a failed attempt waits to run again. */
   error: string | null;
   runAfter: string;
+  /** When the worker claimed the job; null until then. */
+  lockedAt: string | null;
 };
 
 /** The business's agency, or null when the business does not exist. */
@@ -118,7 +120,7 @@ export async function insertManualJob(agencyId: string, businessId: string): Pro
 export async function latestJob(businessId: string): Promise<LatestJob | null> {
   const { data, error } = await createServiceClient()
     .from("scan_jobs")
-    .select("status, finished_at, error, run_after")
+    .select("status, finished_at, error, run_after, locked_at")
     .eq("business_id", businessId)
     .order("created_at", { ascending: false })
     .limit(1)
@@ -130,6 +132,7 @@ export async function latestJob(businessId: string): Promise<LatestJob | null> {
       finishedAt: data.finished_at,
       error: data.error,
       runAfter: data.run_after,
+      lockedAt: data.locked_at,
     }
   );
 }

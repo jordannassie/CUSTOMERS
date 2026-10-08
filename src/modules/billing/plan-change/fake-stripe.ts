@@ -67,7 +67,9 @@ export class FakeStripe implements PlanChangeStripe {
     }));
   }
 
-  private id = (prefix: string) => `${prefix}_fake${this.nextId++}`;
+  // IDs are unique across fakes: the database keeps item IDs unique, and parallel Playwright tests each run a fake.
+  private tag = crypto.randomUUID().slice(0, 8);
+  private id = (prefix: string) => `${prefix}_fake${this.tag}_${this.nextId++}`;
 
   subscription(): Stripe.Subscription {
     return subscriptionObject(this);

@@ -9,6 +9,7 @@ import { matchNames } from "./extract-match";
 import { storeExtraction } from "./extract-store";
 import { detectMentions, type MentionTarget } from "./mentions";
 import { CHECK_MODELS } from "./providers/models";
+import { ProviderError } from "./providers/request";
 import type { CheckInput, CheckLocation, ProviderId, RunCheck } from "./providers/types";
 import { insertExtractionUsage, recordProviderError, saveCheckResult } from "./runs/dal";
 
@@ -27,7 +28,7 @@ export type CheckContext = {
   extractNames: ExtractNames | null;
 };
 
-export type CheckOutcome = { ok: true } | { ok: false; error: string };
+export type CheckOutcome = { ok: true } | { ok: false; error: string; reason: string };
 
 /** Same job, question and model always give the same id, so a retried job can never charge a check twice. */
 export function checkIdFor(jobId: string, promptId: string, provider: ProviderId): string {
@@ -37,12 +38,14 @@ export function checkIdFor(jobId: string, promptId: string, provider: ProviderId
 }
 
 export async function runOneCheck(task: CheckTask, ctx: CheckContext): Promise<CheckOutcome> {
-  if (!ctx.runner) return { ok: false, error: `${task.provider} is not set up (no API key)` };
+  if (!ctx.runner) {
+    return { ok: false, error: `${task.provider} is not set up (no API key)`, reason: "not set up (no API key)" };
+  }
   const input: CheckInput = { question: task.question, location: ctx.location, model: CHECK_MODELS[task.provider] };
 
   let answer: CheckAnswer;
   try {
-    answer = ctx.isTest ? await recordedAnswer(input, ctx.runner) : await checkWithCache(input, ctx.runner);
+    answer = await answerWithOneRetry(input, ctx);
     if (!ctx.isTest) {
       await recordCheckUsage({ accountUserId: ctx.ownerUserId, businessId: ctx.businessId, input, answer });
     }
@@ -51,7 +54,7 @@ export async function runOneCheck(task: CheckTask, ctx: CheckContext): Promise<C
     // Recorded answers are not provider calls, so test agencies never count toward the error spike alert (B-69).
     if (!ctx.isTest) await recordProviderError(task.provider, message);
     // A failed check is never charged (D-53), whatever the reason.
-    return { ok: false, error: `${task.provider}: ${message}` };
+    return { ok: false, error: `${task.provider}: ${message}`, reason: message };
   }
 
   const mentions = detectMentions(answer.answerText, ctx.business, ctx.competitors);
@@ -81,8 +84,21 @@ export async function runOneCheck(task: CheckTask, ctx: CheckContext): Promise<C
     cached: answer.cached,
     costUsd: answer.costUsd,
     latencyMs: answer.latencyMs,
+    isSample: ctx.isTest,
   });
   return { ok: true };
+}
+
+// A timeout or a passing outage often clears in seconds; one more try beats failing the check (BUG-083). A check
+// that still fails is not charged (D-53).
+async function answerWithOneRetry(input: CheckInput, ctx: CheckContext): Promise<CheckAnswer> {
+  const ask = () => (ctx.isTest ? recordedAnswer(input, ctx.runner!) : checkWithCache(input, ctx.runner!));
+  try {
+    return await ask();
+  } catch (err) {
+    if (!(err instanceof ProviderError) || !err.retryable) throw err;
+    return ask();
+  }
 }
 
 async function recordedAnswer(input: CheckInput, runner: RunCheck): Promise<CheckAnswer> {

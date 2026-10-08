@@ -44,6 +44,8 @@ export const modelsStepInput = z.object({
     .min(1)
     .refine((m) => new Set(m).size === m.length),
   frequency: z.enum(FREQUENCIES),
+  /** The plan and price shown for adding this business to the subscription (BUG-071, D-57). */
+  addOn: z.object({ planId: z.string().regex(/^[a-z0-9_]{1,64}$/), previewedAt: z.number().int().positive() }).optional(),
 });
 
 export type DetailsStepInput = z.infer<typeof detailsStepInput>;

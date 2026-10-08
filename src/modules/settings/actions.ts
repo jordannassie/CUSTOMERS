@@ -1,5 +1,6 @@
 "use server";
 
+import { countryCode } from "@/lib/countries";
 import { refresh } from "next/cache";
 import { authFailure, requireAgency, type ActionResult } from "@/modules/auth";
 import { canEditTracking } from "@/modules/entitlements";
@@ -36,7 +37,7 @@ export async function saveBusinessProfile(input: unknown): Promise<Result> {
 
   const parsed = businessProfileInput.safeParse(input);
   if (!parsed.success) return { ok: false, status: 400, error: "Check the highlighted details and try again." };
-  const { businessId, name, industry, services, city, region, phone, website } = parsed.data;
+  const { businessId, name, industry, services, city, region, country, phone, website } = parsed.data;
   const site = normalizeWebsite(website);
   if (!site.ok) return { ok: false, status: 400, error: "Enter a website like yourbusiness.com, or leave it empty." };
 
@@ -46,6 +47,8 @@ export async function saveBusinessProfile(input: unknown): Promise<Result> {
     services,
     primary_city: city || null,
     primary_region: region || null,
+    // Left as it is when the form did not send one; an unknown value clears it (BUG-086).
+    ...(country === undefined ? {} : { primary_country: countryCode(country) || null }),
     phone: phone || null,
     domain: site.domain,
   });

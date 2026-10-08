@@ -67,6 +67,12 @@ export default async function OverviewPage() {
         </p>
       )}
 
+      {overview.scanNotice && !(scanStatus.ok && (scanStatus.data.scanning || scanStatus.data.lastResult === "failed")) && (
+        <p role="status" className="rounded-md border border-border bg-mid-bg px-4 py-3 text-sm text-mid-text" data-testid="scan-notice">
+          {overview.scanNotice}
+        </p>
+      )}
+
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
         <Card>
           <CardHeader>

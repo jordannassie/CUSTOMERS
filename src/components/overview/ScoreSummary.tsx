@@ -38,6 +38,11 @@ export function ScoreSummary({ score, animate = true }: { score: Score; animate?
         <p className="max-w-[34ch] text-base leading-snug font-semibold tracking-[-0.02em] sm:text-xl" data-testid="score-sentence">
           {score.sentence}
         </p>
+        {score.coverage && (
+          <p className="text-sm text-muted-foreground" data-testid="score-coverage">
+            {score.coverage}
+          </p>
+        )}
         {score.firstResults && (
           <p className="text-sm text-muted-foreground">First results. Accuracy improves with every scan.</p>
         )}

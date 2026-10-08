@@ -187,14 +187,15 @@ async function readChecks(businessId: string, since: Date): Promise<ScoreCheck[]
 }
 
 /**
- * Checks older than the visibility_checks_30d view keeps, read from visibility_results and shaped the same way
- * (migration 032): the same answer key, so an answer repeated across the 30-day line still counts once.
+ * Checks older than the visibility_checks_30d view keeps, read from the rows that count (migration 044, no
+ * sample answers for a real agency) and shaped the same way as migration 032: the same answer key, so an answer
+ * repeated across the 30-day line still counts once.
  */
 export async function readOlderChecks(businessId: string, from: Date, to: Date): Promise<ScoreCheck[]> {
   const checks: ScoreCheck[] = [];
   for (let start = 0; ; start += PAGE) {
     const { data, error } = await createServiceClient()
-      .from("visibility_results")
+      .from("visibility_results_counted")
       .select("id, provider, tracked_prompt_id, created_at, business_mentioned, competitors_mentioned, answer_text")
       .eq("business_id", businessId)
       .gt("created_at", from.toISOString())
@@ -203,14 +204,15 @@ export async function readOlderChecks(businessId: string, from: Date, to: Date):
       .order("id")
       .range(start, start + PAGE - 1);
     if (error) throw new Error(`Scores: could not read older checks: ${error.message}`);
+    // View columns are typed nullable, but the underlying columns are not null.
     for (const r of data) {
       checks.push({
         provider: r.provider as ProviderId,
         questionId: r.tracked_prompt_id ?? "none",
-        checkedAt: new Date(r.created_at),
-        mentioned: r.business_mentioned,
+        checkedAt: new Date(r.created_at!),
+        mentioned: r.business_mentioned!,
         competitorsMentioned: competitorNames(r.competitors_mentioned),
-        answerKey: r.answer_text === null ? r.id : createHash("md5").update(r.provider + r.answer_text).digest("hex"),
+        answerKey: r.answer_text === null ? r.id! : createHash("md5").update(r.provider! + r.answer_text).digest("hex"),
       });
     }
     if (data.length < PAGE) break;

@@ -1,4 +1,5 @@
 import "server-only";
+import { countryCode } from "@/lib/countries";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { canAddBusiness } from "@/modules/entitlements";
@@ -202,7 +203,7 @@ export async function saveDetails(userId: string, input: DetailsStepInput): Prom
       services: input.services,
       primary_city: input.city,
       primary_region: input.state || null,
-      primary_country: input.country || null,
+      primary_country: countryCode(input.country) || null,
       phone: input.phone || null,
       onboarding_step: nextStepNumber(current, "details"),
     })

@@ -10,7 +10,7 @@ import {
   FLORIST_BUSINESS,
   FLORIST_WRITTEN,
 } from "./question-fixtures";
-import { balancePicks, fallbackQuestions, isUsableTemplate } from "./question-rules";
+import { balancePicks, cityLabel, fallbackQuestions, isUsableTemplate } from "./question-rules";
 import { prepareQuestions } from "./questions";
 import { MAX_PER_INTENT, PICK_MODEL, QUESTION_COUNT } from "./prompts/pick-questions.v1";
 
@@ -144,6 +144,21 @@ describe("fallback to the old template engine", () => {
       expect(qs).toHaveLength(QUESTION_COUNT);
       expect(qs.every((q) => q.text.includes("Austin"))).toBe(true);
     }
+  });
+
+  it("reads right for a shop, with no trade-only questions (BUG-084)", () => {
+    const qs = fallbackQuestions("Clothing store", "Rawalpindi", "Punjab").map((q) => q.text);
+    expect(qs).toContain("What is the best clothing store in Rawalpindi?");
+    expect(qs.join(" ")).not.toMatch(/emergency|same-day|typically cost|DIY|hiring/i);
+    expect(fallbackQuestions("HVAC contractor", "Austin", "TX")[0].text).toBe("What is the best HVAC contractor in Austin, TX?");
+  });
+
+  it("names the city alone unless the region is a short code (BUG-085)", () => {
+    expect(cityLabel("Austin", "TX")).toBe("Austin, TX");
+    expect(cityLabel("Islamabad", "Islamabad Capital Territory")).toBe("Islamabad");
+    expect(cityLabel("Rawalpindi", "Punjab")).toBe("Rawalpindi");
+    expect(cityLabel("Sydney", "NSW")).toBe("Sydney, NSW");
+    expect(cityLabel("Orange", null)).toBe("Orange");
   });
 });
 

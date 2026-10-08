@@ -2,7 +2,7 @@
 // so no live model is ever called for them (D-61), and tests use it to run the whole flow.
 import type { WriteExplanation } from "./explain";
 import type { ExplainInput } from "./facts";
-import type { ExplainReason } from "./prompts/explain.v1";
+import type { ExplainReason } from "./prompts/explain.v2";
 
 export const TEMPLATE_MODEL = "template-writer";
 
@@ -13,7 +13,7 @@ function competitorReason(input: ExplainInput): ExplainReason | null {
   if (!top || top.answersNamingThem <= input.scan.answersNamingYou) return null;
   const scan = `${top.name} was named in ${top.answersNamingThem} of ${input.scan.answers} AI answers. You were named in ${input.scan.answersNamingYou}.`;
   const reviews =
-    top.google?.reviewCount === "more" && has(input, `{${top.key}.review_count}`) && has(input, "{you.review_count}")
+    top.google?.reviewCount === "they_are_ahead" && has(input, `{${top.key}.review_count}`) && has(input, "{you.review_count}")
       ? ` On Google, ${top.name} has {${top.key}.review_count} reviews and you have {you.review_count}.`
       : "";
   return {
@@ -35,7 +35,8 @@ function competitorReason(input: ExplainInput): ExplainReason | null {
 }
 
 function citationReason(input: ExplainInput): ExplainReason | null {
-  const site = input.citations.sites.find((s) => s.answersWithoutYou > 0);
+  // Only a listing or review site can hold the owner's listing, never another business's own website (BUG-100).
+  const site = input.citations.sites.find((s) => s.kind === "listing" && s.answersWithoutYou > 0);
   if (!site) return null;
   return {
     title: `AI reads ${site.domain} for these questions`,
@@ -58,10 +59,30 @@ function websiteReason(input: ExplainInput): ExplainReason {
   const services = yourWebsite?.servicesListed ?? [];
   const where = business.website ? `${business.name} (${business.website})` : business.name;
   const city = business.city ?? "our city";
+  if (business.hasWebsite && yourWebsite?.readStatus !== "read") {
+    // The site exists but we could not read it: never "build a website" (BUG-087).
+    const blocked = yourWebsite?.readStatus === "blocked";
+    return {
+      title: blocked ? "Your website blocks automated readers, which may include AI" : "AI may not be able to read your website",
+      evidence: blocked
+        ? "Your website turned our reader away when you signed up. Sites that block automated visitors often block AI tools too."
+        : "We could not read your website when you signed up.",
+      why_it_matters: "AI assistants quote the pages they can read. If they cannot open your site, they rely on what other sites say about you.",
+      steps: [
+        "Ask whoever runs your website whether a firewall or bot protection turns away automated visitors.",
+        "Allow the AI readers GPTBot, ClaudeBot and PerplexityBot in your site's robots.txt and bot protection settings.",
+        "Open your website on a phone using mobile data to check it loads for a first-time visitor.",
+      ],
+      impact: "high",
+      category: "technical",
+      fix_on_website: false,
+      copy_for_claude: "",
+    };
+  }
   if (!business.hasWebsite || !yourWebsite) {
     return {
       title: "AI has no website of yours to read",
-      evidence: business.hasWebsite ? "We could not read your website when you signed up." : "You told us you do not have a website yet.",
+      evidence: "You told us you do not have a website yet.",
       why_it_matters: "AI assistants quote business websites to answer questions. Without one, they have little to say about you.",
       steps: ["Create a simple one-page website with your services, address, phone and hours.", "Link it from your Google profile."],
       impact: "high",

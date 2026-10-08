@@ -14,6 +14,7 @@ describe("buildExplainInput", () => {
         { assistant: "Claude", answers: 2, answersNamingYou: 0 },
         { assistant: "Perplexity", answers: 2, answersNamingYou: 1 },
       ],
+      assistantsNotChecked: [],
     });
     expect(input.competitors.map((c) => [c.key, c.name, c.answersNamingThem])).toEqual([
       ["c1", "Bean House", 5],
@@ -22,9 +23,21 @@ describe("buildExplainInput", () => {
     expect(keys).toEqual({ c1: BEAN_HOUSE_ID, c2: DAILY_GRIND_ID });
   });
 
+  it("names an assistant that was asked but has no answers, instead of dropping it (BUG-077)", () => {
+    const withoutClaude = { ...COFFEE_SOURCES, models: ["openai", "anthropic", "perplexity"], checks: COFFEE_SOURCES.checks.filter((c) => c.provider !== "anthropic") };
+    const { input: scan } = buildExplainInput(withoutClaude);
+    expect(scan.scan.assistantsNotChecked).toEqual(["Claude"]);
+    expect(scan.scan.byAssistant.map((a) => a.assistant)).toEqual(["ChatGPT", "Perplexity"]);
+  });
+
   it("gives Google values only as comparisons and placeholder names, never as numbers (D-73)", () => {
-    expect(input.competitors[0].google).toEqual({ reviewCount: "more", rating: "higher", openDays: "more", sameCategory: true });
-    expect(input.competitors[1].google).toMatchObject({ reviewCount: "more", sameCategory: false });
+    expect(input.competitors[0].google).toEqual({
+      reviewCount: "they_are_ahead",
+      rating: "they_are_ahead",
+      openDays: "they_are_ahead",
+      sameCategory: true,
+    });
+    expect(input.competitors[1].google).toMatchObject({ reviewCount: "they_are_ahead", sameCategory: false });
     expect(input.placeholders).toContain("{c1.review_count}");
     expect(input.placeholders).toContain("{you.rating}");
     const text = JSON.stringify(input);
@@ -33,12 +46,36 @@ describe("buildExplainInput", () => {
 
   it("lists cited sites without the business's own site, and how often the business was missing", () => {
     expect(input.citations.yourSiteCitedIn).toBe(1);
-    expect(input.citations.sites[0]).toEqual({ domain: "yelp.com", answers: 4, answersWithoutYou: 3 });
+    expect(input.citations.sites[0]).toEqual({ domain: "yelp.com", kind: "listing", owner: null, answers: 4, answersWithoutYou: 3 });
     expect(input.citations.sites.map((s) => s.domain)).not.toContain("sunrise-coffee.example");
+  });
+
+  it("says from the owner's side when the business is ahead on Google (BUG-099)", () => {
+    const signals = new Map(COFFEE_SOURCES.signals);
+    signals.set("ChIJ-fixture-sunrise-coffee", { rating: 4.9, reviewCount: 900, categories: ["Coffee shop"], hours: null });
+    const { input: ahead } = buildExplainInput({ ...COFFEE_SOURCES, signals });
+    expect(ahead.competitors[0].google).toMatchObject({ reviewCount: "you_are_ahead", rating: "you_are_ahead", openDays: "unknown" });
+  });
+
+  it("marks which cited sites can hold a listing and whose own website the others are (BUG-100)", () => {
+    const sources = {
+      ...COFFEE_SOURCES,
+      checks: COFFEE_SOURCES.checks.map((c) => ({
+        ...c,
+        citations: [{ url: "https://www.yelp.com/x" }, { url: "https://beanhouse.example/menu" }, { url: "https://www.statesman.com/food" }],
+      })),
+    };
+    const sites = buildExplainInput(sources).input.citations.sites.map(({ domain, kind, owner }) => ({ domain, kind, owner }));
+    expect(sites).toEqual([
+      { domain: "beanhouse.example", kind: "business_site", owner: "Bean House" },
+      { domain: "statesman.com", kind: "news", owner: null },
+      { domain: "yelp.com", kind: "listing", owner: null },
+    ]);
   });
 
   it("reads the business's own site facts without copying the phone or address", () => {
     expect(input.yourWebsite).toEqual({
+      readStatus: "read",
       pagesRead: ["/", "/about"],
       pagesNotFound: ["/services"],
       hasPhone: false,

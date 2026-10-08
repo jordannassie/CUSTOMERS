@@ -1,7 +1,7 @@
 // Competitor step rules (MVP_SPEC 3.1 step 5, D-73): what to search for, which results to show, and
 // what gets saved. Places values are only shown; a saved competitor is the user's name plus a place id.
 import { isIndustry, type Industry } from "@/lib/industries";
-import type { CompetitorCandidate, CompetitorPlaces } from "./competitor-places";
+import type { CompetitorCandidate, CompetitorPlaces, Origin } from "./competitor-places";
 
 export const MAX_SUGGESTIONS = 10;
 export const MAX_LOOKUP_RESULTS = 5;
@@ -45,8 +45,22 @@ function area(b: BusinessForSearch): string {
   return [b.city, b.region].map((s) => s?.trim()).filter(Boolean).join(", ");
 }
 
-export function nearbyQuery(b: BusinessForSearch): string | null {
-  const term = (b.industry && isIndustry(b.industry) ? SEARCH_TERMS[b.industry] : null) ?? b.services[0]?.trim();
+/**
+ * What the business is, as typed into Google Maps: our term for a listed industry, the user's own words for any
+ * other ("Sportswear store", BUG-085), then its Google type ("clothing_store"), then its first service.
+ */
+function searchTerm(b: BusinessForSearch, origin: Origin | null): string | null {
+  if (b.industry && isIndustry(b.industry)) {
+    const term = SEARCH_TERMS[b.industry];
+    if (term) return term;
+  } else if (b.industry?.trim()) {
+    return b.industry.trim();
+  }
+  return origin?.primaryType?.replace(/_/g, " ") || b.services[0]?.trim() || null;
+}
+
+export function nearbyQuery(b: BusinessForSearch, origin: Origin | null = null): string | null {
+  const term = searchTerm(b, origin);
   if (!term || !b.city?.trim()) return null;
   return `${term} in ${area(b)}`;
 }
@@ -73,14 +87,21 @@ export function withoutOwnBusiness(candidates: CompetitorCandidate[], b: Busines
 
 export type DiscoverResult = { suggestions: CompetitorCandidate[]; note: string | null };
 
+/** The business's own place, read live; null when it has none or Google cannot say. */
+export async function originOf(b: BusinessForSearch, places: CompetitorPlaces): Promise<Origin | null> {
+  if (!b.placesId || !places.origin) return null;
+  return places.origin(b.placesId).catch(() => null);
+}
+
 export async function discoverCompetitors(b: BusinessForSearch, places: CompetitorPlaces): Promise<DiscoverResult> {
   if (!b.city?.trim()) return { suggestions: [], note: COMPETITOR_NOTES.noLocation };
-  const query = nearbyQuery(b);
+  const origin = await originOf(b, places);
+  const query = nearbyQuery(b, origin);
   if (!query) return { suggestions: [], note: COMPETITOR_NOTES.noCategory };
   let found: CompetitorCandidate[];
   try {
-    // One extra result covers the business itself showing up in its own search.
-    found = await places.search(query, MAX_SUGGESTIONS + 1);
+    // Near the business and of its own Google type (BUG-085). One extra result covers the business itself.
+    found = await places.search(query, MAX_SUGGESTIONS + 1, origin, true);
   } catch {
     return { suggestions: [], note: COMPETITOR_NOTES.unavailable };
   }

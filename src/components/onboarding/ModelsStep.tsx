@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { cn } from "cn";
 import type { ActionResult } from "@/modules/auth";
+import { setupAddOnText, type SetupAddOnCopy } from "@/modules/billing/plan-change/setup-add-on-copy";
 import { estimateMonthlyCredits } from "@/modules/credits/estimate";
 import { FREQUENCIES, type Frequency, type ModelId } from "@/modules/settings/schema";
 import { FREQUENCY_LABELS, MODELS, untickWarning } from "@/modules/settings/service";
@@ -21,11 +22,20 @@ type Props = {
   plan: { name: string; monthlyCredits: number | null } | null;
   /** "Continue" when the card step follows, else "Finish setup". */
   finishLabel: string;
-  save: (input: { businessId: string; models: ModelId[]; frequency: Frequency }) => Promise<ActionResult<{ next: string }>>;
+  /** Finishing adds this business to the agency's subscription at this price (BUG-071, D-57). */
+  addOn?: AddOn | null;
+  save: (input: {
+    businessId: string;
+    models: ModelId[];
+    frequency: Frequency;
+    addOn?: { planId: string; previewedAt: number };
+  }) => Promise<ActionResult<{ next: string }>>;
 };
 
+type AddOn = SetupAddOnCopy & { planId: string; previewedAt: number };
+
 // MVP_SPEC 3.1 step 7 and 4.3: the estimate follows every tick and switch at once, before anything is saved.
-export function ModelsStep({ businessId, models, frequency, activeQuestions, plan, finishLabel, save }: Props) {
+export function ModelsStep({ businessId, models, frequency, activeQuestions, plan, finishLabel, addOn = null, save }: Props) {
   const router = useRouter();
   const [chosen, setChosen] = useState<ModelId[]>(models);
   const [often, setOften] = useState<Frequency>(frequency);
@@ -46,7 +56,8 @@ export function ModelsStep({ businessId, models, frequency, activeQuestions, pla
     setError(null);
     if (chosen.length === 0) return setError("Pick at least one AI model.");
     startTransition(async () => {
-      const result = await save({ businessId, models: chosen, frequency: often });
+      const confirmed = addOn ? { planId: addOn.planId, previewedAt: addOn.previewedAt } : undefined;
+      const result = await save({ businessId, models: chosen, frequency: often, addOn: confirmed });
       if (!result.ok) return setError(result.error);
       router.push(result.data.next);
     });
@@ -127,6 +138,11 @@ export function ModelsStep({ businessId, models, frequency, activeQuestions, pla
         </aside>
       </div>
 
+      {addOn && (
+        <p data-testid="add-on-note" className="rounded-md border border-border bg-surface px-4 py-3 text-sm">
+          {setupAddOnText(addOn)}
+        </p>
+      )}
       <StepError message={error} />
       <StepActions
         backHref="/onboarding/questions"

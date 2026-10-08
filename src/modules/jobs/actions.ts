@@ -69,5 +69,7 @@ async function startWorker(): Promise<void> {
     console.error(`Run scan: could not start the worker: ${error instanceof Error ? error.message : error}`);
     return;
   }
-  if (runWorkerInProcess()) after(() => runWorker(workerTimeBudgetMs()).then(() => undefined));
+  if (runWorkerInProcess()) return after(() => runWorker(workerTimeBudgetMs()).then(() => undefined));
+  // Only the every-minute schedule can run the job now; without it the scan never starts (the screen says so).
+  console.warn("Run scan: no worker to start. Set WORKER_URL and WORKER_SECRET (or WORKER_IN_PROCESS in local dev).");
 }

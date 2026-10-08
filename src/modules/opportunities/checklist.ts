@@ -129,7 +129,9 @@ export function checklist(b: ChecklistBusiness, done: ReadonlySet<string>): Chec
       copy: null,
     },
   ];
-  return items.map((item) => ({ ...item, done: done.has(item.key) }));
+  // A business with a website is never told to build one (BUG-087).
+  const hasSite = b.hasWebsite !== false && !!b.domain?.trim();
+  return items.filter((item) => !(hasSite && item.key === "website")).map((item) => ({ ...item, done: done.has(item.key) }));
 }
 
 export function checklistKeyOf(affectedUrl: string | null): ChecklistKey | null {

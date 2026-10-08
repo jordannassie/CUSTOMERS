@@ -11,6 +11,12 @@ export const PLACES_DETAILS_URL = "https://places.googleapis.com/v1/places";
 const FIELDS = ["id", "displayName", "rating", "userRatingCount", "shortFormattedAddress", "googleMapsUri"];
 export const COMPETITOR_SEARCH_FIELD_MASK = FIELDS.map((f) => `places.${f}`).join(",");
 export const COMPETITOR_DETAILS_FIELD_MASK = FIELDS.join(",");
+// The business's own place, read live to search near it (never stored, MVP_SPEC 26).
+export const ORIGIN_FIELD_MASK = "location,primaryType";
+// The competitor step waits on these calls; a slow Google should show "add by name" quickly (BUG-088).
+export const COMPETITOR_TIMEOUT_MS = 8_000;
+// Results are biased to this circle around the business, not limited to it.
+export const NEARBY_RADIUS_M = 20_000;
 
 /** Live Places values for one business. Never written to the database. */
 export type CompetitorCandidate = {
@@ -22,9 +28,14 @@ export type CompetitorCandidate = {
   mapsUri: string | null;
 };
 
+/** Where the business is and its Google type, so suggestions are nearby businesses of the same kind (BUG-085). */
+export type Origin = { latitude: number; longitude: number; primaryType: string | null };
+
 export type CompetitorPlaces = {
   /** Throws PlacesError when Places cannot be reached; an empty list means no match. */
-  search: (textQuery: string, pageSize: number) => Promise<CompetitorCandidate[]>;
+  search: (textQuery: string, pageSize: number, near?: Origin | null, sameType?: boolean) => Promise<CompetitorCandidate[]>;
+  /** The business's own location and type, or null when Places has none. */
+  origin?: (placeId: string) => Promise<Origin | null>;
   /** Null when the place no longer exists. */
   details: (placeId: string) => Promise<CompetitorCandidate | null>;
 };
@@ -57,17 +68,45 @@ export function toCompetitorCandidates(body: unknown): CompetitorCandidate[] {
   return (parsed.data.places ?? []).flatMap((p) => toCandidate(p) ?? []);
 }
 
-export function createCompetitorPlaces(apiKey: string, deps: HttpDeps = {}): CompetitorPlaces {
+const origin = z.object({
+  location: z.object({ latitude: z.number(), longitude: z.number() }).nullish(),
+  primaryType: z.string().nullish(),
+});
+
+export function searchBody(textQuery: string, pageSize: number, near: Origin | null | undefined, sameType: boolean) {
   return {
-    async search(textQuery, pageSize) {
-      const { status, body } = await postJson(
-        PLACES_TEXT_SEARCH_URL,
-        { "X-Goog-Api-Key": apiKey, "X-Goog-FieldMask": COMPETITOR_SEARCH_FIELD_MASK },
-        { textQuery, pageSize },
-        deps,
-      );
+    textQuery,
+    pageSize,
+    ...(near
+      ? { locationBias: { circle: { center: { latitude: near.latitude, longitude: near.longitude }, radius: NEARBY_RADIUS_M } } }
+      : {}),
+    ...(sameType && near?.primaryType ? { includedType: near.primaryType } : {}),
+  };
+}
+
+export function createCompetitorPlaces(apiKey: string, deps: HttpDeps = {}): CompetitorPlaces {
+  deps = { timeoutMs: COMPETITOR_TIMEOUT_MS, ...deps };
+  const searchOnce = (body: unknown) =>
+    postJson(PLACES_TEXT_SEARCH_URL, { "X-Goog-Api-Key": apiKey, "X-Goog-FieldMask": COMPETITOR_SEARCH_FIELD_MASK }, body, deps);
+  return {
+    async search(textQuery, pageSize, near, sameType = false) {
+      let { status, body } = await searchOnce(searchBody(textQuery, pageSize, near, sameType));
+      // A place type Text Search does not accept as a filter: search again without it.
+      if (status === 400 && sameType && near?.primaryType) ({ status, body } = await searchOnce(searchBody(textQuery, pageSize, near, false)));
       if (status < 200 || status >= 300) throw new PlacesError(`Places returned ${status}`);
       return toCompetitorCandidates(body);
+    },
+    async origin(placeId) {
+      if (!placeIdPattern.test(placeId)) return null;
+      const { status, body } = await getJson(
+        `${PLACES_DETAILS_URL}/${placeId}`,
+        { "X-Goog-Api-Key": apiKey, "X-Goog-FieldMask": ORIGIN_FIELD_MASK },
+        deps,
+      );
+      if (status < 200 || status >= 300) return null;
+      const parsed = origin.safeParse(body);
+      if (!parsed.success || !parsed.data.location) return null;
+      return { ...parsed.data.location, primaryType: parsed.data.primaryType ?? null };
     },
     async details(placeId) {
       if (!placeIdPattern.test(placeId)) return null;

@@ -1,9 +1,13 @@
-// "Why competitors win", prompt v1 (MVP_SPEC 7.2, D-30, D-73). The eval in evals/why-competitors-win
+// "Why competitors win", prompt v2 (MVP_SPEC 7.2, D-30, D-73). The eval in evals/why-competitors-win
 // imports this file; changing it means rerunning that eval (MVP_SPEC 25).
+// v2: says when an assistant could not be checked instead of leaving it out (BUG-077), keeps brand names as
+// written in titles (BUG-078), reads Google comparisons from the owner's side (BUG-099), and asks for a listing
+// only on listing sites, never on another business's own website (BUG-100), and never tells a business with a
+// website to build one (BUG-087).
 import { z } from "zod";
 import type { ExplainInput } from "../facts";
 
-export const EXPLAIN_PROMPT_VERSION = "explain.v1";
+export const EXPLAIN_PROMPT_VERSION = "explain.v2";
 export const EXPLAIN_MODEL = "claude-sonnet-5";
 export const EXPLAIN_MAX_TOKENS = 16_000;
 // Sonnet 5 list price in USD per million tokens, for our own cost records.
@@ -32,12 +36,15 @@ You get a JSON object of facts from our latest scan. Write 3 to 5 reasons, most 
 Facts rules:
 - Use only the facts given. Never guess anything about a competitor's website, and never use outside knowledge about any business.
 - Every number you write must appear in the facts exactly as given. Do not calculate new numbers, percentages or differences.
-- Google values (review counts, ratings, categories, open days) are never given as numbers. Where you want one, write its placeholder from "placeholders" exactly, for example {c1.review_count} or {you.rating}. Use only placeholders from that list, and only in "evidence", "why_it_matters" and "steps". The "google" comparisons tell you which side is ahead ("more", "fewer", "about_same", "higher", "lower").
+- Google values (review counts, ratings, categories, open days) are never given as numbers. Where you want one, write its placeholder from "placeholders" exactly, for example {c1.review_count} or {you.rating}. Use only placeholders from that list, and only in "evidence", "why_it_matters" and "steps". Each competitor's "google" says who is ahead on each value, from the owner's side: "they_are_ahead" means that competitor has more reviews, a higher rating or more open days than the business; "you_are_ahead" means the business has more, or higher; "about_same" and "unknown" mean neither is ahead. Only say the business trails a competitor on a value where that competitor is "they_are_ahead". A value where the business is ahead or about the same is never a reason it loses, and never write that the business's value is lower when it is higher.
 - Name competitors exactly as written in the facts. Name websites only by the domains in "citations" or the business's own website.
-- A cited site where the business was not named does not prove the business is missing from that site. Say AI cites it and the business was not named, and ask them to check their listing.
+- Each cited site has a "kind". Only a "listing" site (a review site or directory) can hold the business's listing. A cited listing site where the business was not named does not prove the business is missing from it: say AI cites it and the business was not named, and ask them to check their listing there.
+- A "business_site" is another business's own website ("owner" names it when we know whose). Never ask the owner to search for, check, claim or update a listing on it. It shows AI quotes business websites for these questions, so the fix is on the owner's own website. A "news" site is never a listing either.
+- "yourWebsite.readStatus" says what happened when we read the business's own website. "blocked" means it turned our reader away, "unreachable" means it did not load: in both cases, and when "yourWebsite" is null but "business.hasWebsite" is true, the business has a website we could not read. Never tell them to create or build a website, and never say a page, phone number or address is missing from it. A blocked site may also block AI tools, so suggest letting AI readers in (GPTBot, ClaudeBot, PerplexityBot) through its robots.txt and bot protection settings.
+- "scan.assistantsNotChecked" lists assistants we tried but could not check in this scan. They gave no answers, so never say they did not name the business and never compare them with the others. When you quote numbers per assistant, add once that these could not be checked this time. It is never a reason of its own, since the owner cannot fix it.
 
 Each reason:
-- title: one short plain sentence in sentence case, with no placeholders and no numbers.
+- title: one short plain sentence in sentence case, with no placeholders and no numbers. Sentence case never changes a name: write AI, ChatGPT, Claude, Perplexity, Google and every business name exactly as written in the facts.
 - evidence: the specific facts behind it, with names and numbers from the facts.
 - why_it_matters: one or two sentences on why this makes AI pick the competitor.
 - steps: 2 to 4 concrete actions the owner can take this week, each one sentence.

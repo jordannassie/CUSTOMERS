@@ -121,5 +121,6 @@ Live has 001 to 020 (Baseline above) and none of the files below. Go-live applie
 - `041_capture_credits.sql` (E2E-0929)
 - `042_account_deletion.sql` (B-77; adds the `purge-deleted-accounts` cron job. `DELETION_WAIT_DAYS` on the host sets the wait, default 30)
 - `043_trial_rules.sql` (B-45)
+- `044_sample_checks_and_failures.sql` (BUG-074, BUG-075; marks old recorded test answers as samples and recreates `visibility_checks_30d`. Then run `npm run db:types` and check the diff only adds `is_sample`, `failed_by_provider` and `visibility_results_counted`)
 
 Any file added after 043 joins this list.

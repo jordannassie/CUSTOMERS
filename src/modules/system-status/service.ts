@@ -10,7 +10,7 @@ export type Probe = {
   name: string;
   group: ServiceStatus["group"];
   /** The cheapest read-only call that proves the key works; none of these spend credits. */
-  request: (key: string) => RequestSpec;
+  request: (key: string, deps: ProbeDeps) => RequestSpec;
   /** A non-2xx answer that still proves the key is valid. */
   acceptsError?: (status: number, body: string) => boolean;
 };
@@ -38,11 +38,9 @@ export const PROBES: Probe[] = [
     id: "perplexity",
     name: "Perplexity",
     group: "ai",
-    // Perplexity has no models list; listing async requests is read-only and free.
-    request: (key) => ({
-      url: "https://api.perplexity.ai/async/chat/completions",
-      headers: { authorization: `Bearer ${key}` },
-    }),
+    // The Agent API's models list: free and read-only, and the same API scans use. The old async Sonar endpoint
+    // was retired on 2026-09-27 and answers 403 even to a good key (BUG-081).
+    request: (key) => ({ url: "https://api.perplexity.ai/v1/models", headers: { authorization: `Bearer ${key}` } }),
   },
   {
     id: "google_places",
@@ -66,7 +64,8 @@ export const PROBES: Probe[] = [
     id: "browserless",
     name: "Browserless",
     group: "data",
-    request: (key) => ({ url: `https://production-sfo.browserless.io/pressure?token=${encodeURIComponent(key)}` }),
+    // The account's own host (BROWSERLESS_URL), as PDF export uses. /pressure was removed and answers 404 (BUG-082).
+    request: (key, deps) => ({ url: joinUrl(deps.browserlessUrl ?? BROWSERLESS_DEFAULT_URL, `/meta?token=${encodeURIComponent(key)}`) }),
   },
   {
     id: "resend",
@@ -84,7 +83,14 @@ export const PROBES: Probe[] = [
   },
 ];
 
-export type ProbeDeps = { fetch?: typeof fetch; timeoutMs?: number };
+export type ProbeDeps = { fetch?: typeof fetch; timeoutMs?: number; browserlessUrl?: string };
+
+export const BROWSERLESS_DEFAULT_URL = "https://production-sfo.browserless.io";
+
+/** Adds a path to a base URL without dropping a path the base already has ("https://host/v2" + "/pdf"). */
+export function joinUrl(base: string, path: string): string {
+  return `${base.replace(/\/+$/, "")}/${path.replace(/^\/+/, "")}`;
+}
 
 type ProbeResult = Pick<ServiceStatus, "state" | "detail">;
 
@@ -92,7 +98,7 @@ export async function runProbe(probe: Probe, key: string | undefined, deps: Prob
   if (!key) return { state: "not_configured", detail: "No key is set." };
 
   const doFetch = deps.fetch ?? fetch;
-  const { url, headers } = probe.request(key);
+  const { url, headers } = probe.request(key, deps);
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), deps.timeoutMs ?? PROBE_TIMEOUT_MS);
 

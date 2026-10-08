@@ -27,7 +27,8 @@ export async function getSources(businessId: string, now = new Date()): Promise<
   const checks: SourceCheck[] = [];
   for (let from = 0; ; from += PAGE) {
     const { data, error: readError } = await db
-      .from("visibility_results")
+      // The rows that count: no sample answers once the agency is real (migration 044, BUG-075).
+      .from("visibility_results_counted")
       .select("provider, cited_sources, created_at")
       .eq("business_id", businessId)
       .gt("created_at", since)
@@ -35,7 +36,7 @@ export async function getSources(businessId: string, now = new Date()): Promise<
       .order("id")
       .range(from, from + PAGE - 1);
     if (readError) throw new Error(`Sources: could not read checks: ${readError.message}`);
-    for (const r of data) checks.push({ provider: r.provider, citations: r.cited_sources, checkedAt: r.created_at });
+    for (const r of data) checks.push({ provider: r.provider!, citations: r.cited_sources, checkedAt: r.created_at! });
     if (data.length < PAGE) break;
   }
   const place = [business.primary_city, business.primary_region].filter(Boolean).join(", ") || null;

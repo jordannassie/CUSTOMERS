@@ -1854,6 +1854,7 @@ export type Database = {
           created_at: string
           extracted_names: Json | null
           id: string
+          is_sample: boolean
           latency_ms: number | null
           mention_position: number | null
           methodology: string | null
@@ -1876,6 +1877,7 @@ export type Database = {
           created_at?: string
           extracted_names?: Json | null
           id?: string
+          is_sample?: boolean
           latency_ms?: number | null
           mention_position?: number | null
           methodology?: string | null
@@ -1898,6 +1900,7 @@ export type Database = {
           created_at?: string
           extracted_names?: Json | null
           id?: string
+          is_sample?: boolean
           latency_ms?: number | null
           mention_position?: number | null
           methodology?: string | null
@@ -1941,6 +1944,7 @@ export type Database = {
           completed_at: string | null
           created_at: string
           error: string | null
+          failed_by_provider: Json | null
           id: string
           provider: string
           scan_job_id: string | null
@@ -1954,6 +1958,7 @@ export type Database = {
           completed_at?: string | null
           created_at?: string
           error?: string | null
+          failed_by_provider?: Json | null
           id?: string
           provider: string
           scan_job_id?: string | null
@@ -1967,6 +1972,7 @@ export type Database = {
           completed_at?: string | null
           created_at?: string
           error?: string | null
+          failed_by_provider?: Json | null
           id?: string
           provider?: string
           scan_job_id?: string | null
@@ -2087,6 +2093,100 @@ export type Database = {
             columns: ["business_id"]
             isOneToOne: false
             referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      visibility_results_counted: {
+        Row: {
+          answer_text: string | null
+          business_id: string | null
+          business_mentioned: boolean | null
+          cached: boolean | null
+          cited_sources: Json | null
+          competitors_mentioned: Json | null
+          cost_usd: number | null
+          created_at: string | null
+          extracted_names: Json | null
+          id: string | null
+          is_sample: boolean | null
+          latency_ms: number | null
+          mention_position: number | null
+          methodology: string | null
+          model: string | null
+          provider: string | null
+          question: string | null
+          raw_response: Json | null
+          run_id: string | null
+          sentiment: string | null
+          tracked_prompt_id: string | null
+        }
+        Insert: {
+          answer_text?: string | null
+          business_id?: string | null
+          business_mentioned?: boolean | null
+          cached?: boolean | null
+          cited_sources?: Json | null
+          competitors_mentioned?: Json | null
+          cost_usd?: number | null
+          created_at?: string | null
+          extracted_names?: Json | null
+          id?: string | null
+          is_sample?: boolean | null
+          latency_ms?: number | null
+          mention_position?: number | null
+          methodology?: string | null
+          model?: string | null
+          provider?: string | null
+          question?: string | null
+          raw_response?: Json | null
+          run_id?: string | null
+          sentiment?: string | null
+          tracked_prompt_id?: string | null
+        }
+        Update: {
+          answer_text?: string | null
+          business_id?: string | null
+          business_mentioned?: boolean | null
+          cached?: boolean | null
+          cited_sources?: Json | null
+          competitors_mentioned?: Json | null
+          cost_usd?: number | null
+          created_at?: string | null
+          extracted_names?: Json | null
+          id?: string | null
+          is_sample?: boolean | null
+          latency_ms?: number | null
+          mention_position?: number | null
+          methodology?: string | null
+          model?: string | null
+          provider?: string | null
+          question?: string | null
+          raw_response?: Json | null
+          run_id?: string | null
+          sentiment?: string | null
+          tracked_prompt_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "visibility_results_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "visibility_results_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "visibility_runs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "visibility_results_tracked_prompt_id_fkey"
+            columns: ["tracked_prompt_id"]
+            isOneToOne: false
+            referencedRelation: "tracked_prompts"
             referencedColumns: ["id"]
           },
         ]

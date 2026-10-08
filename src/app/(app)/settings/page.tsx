@@ -65,7 +65,7 @@ export default async function SettingsPage() {
             <Building2 className="size-5 text-muted-foreground" aria-hidden="true" />
             <p className="text-sm">Add a business to set its profile and AI checks here.</p>
             <Button asChild size="sm">
-              <Link href="/dashboard/add-business">Add a business</Link>
+              <Link href="/onboarding/website">Add a business</Link>
             </Button>
           </Panel>
         </SettingsSection>

@@ -19,6 +19,7 @@ import {
   discoverCompetitors,
   limitMessage,
   lookupQuery,
+  originOf,
   planSave,
   type BusinessForSearch,
   type ConfirmedCompetitor,
@@ -31,7 +32,7 @@ import type { AutofillResult } from "./schema";
 
 // Fixture modes are refused in production so a stray flag can never show made-up data to users.
 // PLACES_FIXTURES covers the competitor step, ONBOARDING_FIXTURES auto-fill and question picking.
-const onboardingFixtures = () => env.ONBOARDING_FIXTURES === "true" && env.NODE_ENV !== "production";
+export const onboardingFixtures = () => env.ONBOARDING_FIXTURES === "true" && env.NODE_ENV !== "production";
 
 // A missing key turns that source off; auto-fill then works with whatever is left.
 export function liveAutofillClients(): AutofillClients {
@@ -199,7 +200,7 @@ export async function lookupCompetitor(
   const business = await ownBusinessForSearch(userId, businessId);
   if (!business) return null;
   try {
-    const matches = await places.search(lookupQuery(name, business), MAX_LOOKUP_RESULTS);
+    const matches = await places.search(lookupQuery(name, business), MAX_LOOKUP_RESULTS, await originOf(business, places));
     return { matches, note: null };
   } catch {
     return { matches: [], note: COMPETITOR_NOTES.unavailable };

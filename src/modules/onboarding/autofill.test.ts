@@ -72,7 +72,9 @@ describe("autofill with a website", () => {
     });
     expect(run.result.note).toBe(NOTES.googleOnly);
     expect(run.placeId).toBe(BLOCKED_PLACE.placeId);
-    expect(run.siteFacts).toBeNull();
+    // Kept, so advice knows the site blocked us rather than that there is no site (BUG-087).
+    expect(run.siteFacts).toMatchObject({ model: null, facts: null });
+    expect(run.siteFacts?.pages.some((p) => p.status === "blocked")).toBe(true);
     expect(calls.extract).toEqual([]);
   });
 

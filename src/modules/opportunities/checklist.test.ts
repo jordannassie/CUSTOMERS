@@ -20,8 +20,12 @@ describe("get found by AI checklist", () => {
     expect(missingBasics({ ...full, placesId: null, phone: " " })).toEqual(["a Google Business Profile", "a phone number"]);
   });
 
+  it("never tells a business with a website to build one (BUG-087)", () => {
+    expect(checklist(full, new Set()).map((i) => i.key)).not.toContain("website");
+  });
+
   it("lists the 6 fixed items from MVP_SPEC 7.3 in order, with ticks from the saved set", () => {
-    const items = checklist(full, new Set(["reviews"]));
+    const items = checklist({ ...full, hasWebsite: false, domain: null }, new Set(["reviews"]));
     expect(items.map((i) => i.key)).toEqual([...CHECKLIST_KEYS]);
     expect(items.filter((i) => i.done).map((i) => i.key)).toEqual(["reviews"]);
     expect(items.find((i) => i.key === "website")?.copy?.kind).toBe("claude");

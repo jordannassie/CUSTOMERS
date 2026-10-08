@@ -95,12 +95,12 @@ test.afterAll(async () => {
   for (const id of userIds.splice(0)) await db.auth.admin.deleteUser(id);
 });
 
-test("six menu items navigate, and switching business keeps the page", async ({ page }) => {
+test("seven menu items navigate, and switching business keeps the page", async ({ page }) => {
   await logIn(page, { status: "active", grant: 1200, spend: 620, days: 12 });
 
   let nav = await openNav(page);
   const links = nav.getByRole("navigation", { name: "Main" }).getByRole("link");
-  await expect(links).toHaveText(["Overview", "Competitors", "Opportunities", "Questions", "Sources", "Settings"]);
+  await expect(links).toHaveText(["Overview", "Competitors", "Opportunities", "Questions", "Sources", "Billing", "Settings"]);
   await expect(links.filter({ hasText: "Competitors" })).toHaveAttribute("aria-current", "page");
   await expect(page.getByText("Find anything")).toHaveCount(0);
 

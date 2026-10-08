@@ -5,7 +5,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { explain } from "@/modules/insights/explain";
 import { COFFEE_SOURCES, PLUMBER_SOURCES } from "@/modules/insights/fixtures";
-import { EXPLAIN_MODEL } from "@/modules/insights/prompts/explain.v1";
+import { EXPLAIN_MODEL } from "@/modules/insights/prompts/explain.v2";
 import { templateWriter } from "@/modules/insights/template-writer";
 import { assertNotSelfGrading, JUDGE_MODEL, type Judge } from "../shared/judge";
 import {

@@ -15,6 +15,7 @@ import {
   getDetailsStep,
   getModelsStep,
   getQuestionsStep,
+  getSetupAddOn,
   limitMessage,
   lookupCompetitorByName,
   saveAgencyStep,
@@ -73,7 +74,16 @@ export async function StepContent({ step, state, plan, returned }: Props) {
   if (step === "details") {
     const d = await getDetailsStep(draftId, next);
     if (!d) redirect(stepPath("website"));
-    return <DetailsStep businessId={draftId} details={d.details} industryText={d.industryText} confirmed={d.confirmed} save={saveDetailsStep} />;
+    return (
+      <DetailsStep
+        businessId={draftId}
+        domain={d.domain}
+        details={d.details}
+        industryText={d.industryText}
+        confirmed={d.confirmed}
+        save={saveDetailsStep}
+      />
+    );
   }
   if (step === "competitors") {
     const c = await getCompetitorStep(draftId, { next });
@@ -121,7 +131,11 @@ export async function StepContent({ step, state, plan, returned }: Props) {
       />
     );
   }
-  const m = await getModelsStep(draftId, next);
+  const [m, addOn] = await Promise.all([
+    getModelsStep(draftId, next),
+    // Only when setup finishes here: on the card step the checkout bills the business.
+    state.needsCard ? null : getSetupAddOn(draftId, next),
+  ]);
   if (!m) redirect(stepPath("website"));
   return (
     <ModelsStep
@@ -131,6 +145,7 @@ export async function StepContent({ step, state, plan, returned }: Props) {
       activeQuestions={m.activeQuestions}
       plan={m.plan}
       finishLabel={state.needsCard ? "Continue" : "Finish setup"}
+      addOn={addOn}
       save={saveModelsStep}
     />
   );

@@ -1,6 +1,7 @@
 // Mention detection v2 (MVP_SPEC 5.5, D-08, D-66). Replaces the old substring match
 // (removed in B-26), so "Ace" is no longer found inside "space".
 import {
+  brandForms,
   containsPhone,
   coreName,
   domainOf,
@@ -62,6 +63,8 @@ function findMatches(answer: string, target: MentionTarget): Match[] {
 
   const names = [
     { text: target.name, by: "name" as const },
+    // "Radiant Plumbing" counts for "Radiant Plumbing, Air Conditioning, & Electrical" (BUG-097).
+    ...brandForms(target).map((text) => ({ text, by: "name" as const })),
     ...(target.aliases ?? []).map((text) => ({ text, by: "alias" as const })),
   ];
   for (const { text, by } of names) {

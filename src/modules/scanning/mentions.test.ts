@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { coreName, domainOf, isGenericName, normaliseWithOffsets } from "./mention-text";
+import { brandName, coreName, domainBrand, domainOf, isGenericName, normaliseWithOffsets } from "./mention-text";
 import { detectMention, detectMentions } from "./mentions";
 
 const austin = { city: "Austin", hasWebsite: true };
@@ -166,6 +166,47 @@ describe("detectMention: list position", () => {
     expect(detectMention(bullets, { name: "Radiant Plumbing" }).position).toBe(2);
     const headings = "### 1. Rapid Rooter\nGood.\n### 2. Radiant Plumbing\nAlso good.";
     expect(detectMention(headings, { name: "Radiant Plumbing" }).position).toBe(2);
+  });
+});
+
+describe("long Google titles (BUG-097)", () => {
+  it("finds the brand before the services or branch", () => {
+    expect(brandName("Radiant Plumbing, Air Conditioning, & Electrical")).toBe("Radiant Plumbing");
+    expect(brandName("Reliant Plumbing - Austin")).toBe("Reliant Plumbing");
+    expect(brandName("Abacus Plumbing, Air Conditioning & Electrical")).toBe("Abacus Plumbing");
+    expect(brandName("Mr. Rooter Plumbing of Austin", "Austin")).toBe("Mr. Rooter Plumbing");
+    expect(brandName("Khaadi | Dolmen Mall Clifton")).toBe("Khaadi");
+  });
+
+  it("keeps names with no shorter brand, and never cuts to a generic word", () => {
+    expect(brandName("Clarke Kent Plumbing", "Austin")).toBeNull();
+    expect(brandName("Roto-Rooter Plumbing & Water Cleanup")).toBeNull();
+    expect(brandName("Plumbing - Austin")).toBeNull();
+    expect(brandName("Best Plumbing, Heating & Air")).toBeNull();
+    expect(brandName("Mr. Rooter Plumbing of Austin")).toBeNull();
+  });
+
+  it("counts an answer that writes only the brand", () => {
+    const answer = "1. **Radiant Plumbing** - full service, fast response.\n2. **Reliant Plumbing** handles drains.";
+    expect(detectMention(answer, { name: "Radiant Plumbing, Air Conditioning, & Electrical", ...austin }).mentioned).toBe(true);
+    expect(detectMention(answer, { name: "Reliant Plumbing - Austin", ...austin })).toMatchObject({ mentioned: true, position: 2 });
+    expect(detectMention("Mr. Rooter Plumbing is open 24/7.", { name: "Mr. Rooter Plumbing of Austin", ...austin }).mentioned).toBe(true);
+  });
+
+  it("finds the brand the website spells, for a branch title with no separator", () => {
+    expect(domainBrand("Cheezious Golra Mor Branch", "cheezious.com")).toBe("Cheezious");
+    expect(domainBrand("Beyond Wow Plumbing & Drains", "https://www.beyondwow.com")).toBe("Beyond Wow");
+    expect(domainBrand("Clarke Kent Plumbing", "clarkekentplumbing.com")).toBeNull();
+    expect(domainBrand("Best Plumbing Austin", "best.com")).toBeNull();
+    expect(domainBrand("Cheezious", "cheezious.com")).toBeNull();
+    const cheezious = { name: "Cheezious Golra Mor Branch", website: "cheezious.com", city: "Islamabad", hasWebsite: true };
+    expect(detectMention("For pizza, Cheezious is the local favourite.", cheezious).mentioned).toBe(true);
+  });
+
+  it("still needs a one-word brand to read as a name", () => {
+    const khaadi = { name: "Khaadi - Dolmen Mall", city: "Karachi", hasWebsite: true };
+    expect(detectMention("Khaadi has new lawn prints.", khaadi).mentioned).toBe(true);
+    expect(detectMention("a khaadi fabric kurta", khaadi).mentioned).toBe(false);
   });
 });
 

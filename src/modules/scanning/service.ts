@@ -1,13 +1,14 @@
 import "server-only";
 // Run a scan (B-26, MVP_SPEC 5.2, 4.2, D-53, D-54): hold the credits, run every question on every
 // chosen model, charge 1 credit per successful check, then return the rest of the hold.
+import { placeLabel } from "@/lib/place-label";
 import { captureCredits, holdCredits, InsufficientCreditsError, isHoldOpen, releaseHold } from "@/modules/credits";
 import { canRunScanJob, REASONS } from "@/modules/entitlements";
 import { captureBatcher } from "./capture-batch";
 import { checkIdFor, runOneCheck, type CheckContext, type CheckTask } from "./check";
 import type { ExtractNames } from "./extract";
 import type { MentionTarget } from "./mentions";
-import type { CheckLocation, ProviderId, RunCheck } from "./providers/types";
+import type { CheckLocation, ProviderFailures, ProviderId, RunCheck } from "./providers/types";
 import { countryCode } from "./country";
 import { loadRecordedAnswers, recordedAnswers, RECORDED_ANSWERS_DIR } from "./recorded";
 import {
@@ -86,10 +87,13 @@ export async function runScan(jobId: string, overrides: Partial<ScanDeps> = {}):
 
   const capture = captureBatcher((checkIds) => captureCredits(holdId, checkIds));
   const errors: string[] = [];
+  const failures: ProviderFailures = {};
   await forEachLimited(tasks, CHECKS_AT_ONCE, async (task) => {
     const outcome = saved.has(task.checkId) ? { ok: true as const } : await runOneCheck(task, ctx.forProvider(task.provider));
     if (!outcome.ok) {
       errors.push(outcome.error);
+      const seen = failures[task.provider];
+      failures[task.provider] = { failed: (seen?.failed ?? 0) + 1, reason: seen?.reason ?? outcome.reason };
       return;
     }
     // Capture right after each check, so a scan cut off halfway has charged exactly what it saved.
@@ -104,6 +108,7 @@ export async function runScan(jobId: string, overrides: Partial<ScanDeps> = {}):
     checksTotal: tasks.length,
     checksFailed: errors.length,
     error: errors.length > 0 ? summarise(errors) : null,
+    failedByProvider: errors.length > 0 ? failures : null,
   });
   // A scan with no result keeps its due date, so the next scheduled run tries again.
   if (!allFailed) await setNextScanAt(job.businessId, nextScanAt(target.business.scanFrequency, ctx.now()));
@@ -180,7 +185,7 @@ async function checkContext(target: ScanTargetRow, runId: string, overrides: Par
 export function withCity(question: string, city: string, region: string | null): string {
   const text = question.trim();
   if (text.toLowerCase().includes(city.toLowerCase())) return text;
-  const place = region ? `${city}, ${region}` : city;
+  const place = placeLabel(city, region);
   return `${text.replace(/[?.!\s]+$/, "")} in ${place}?`;
 }
 

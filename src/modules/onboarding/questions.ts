@@ -2,6 +2,7 @@
 // injected, so tests and evals run the same flow with fixtures. A model failure never reaches the
 // user: the old template engine fills in.
 import { INDUSTRY_LABELS, isIndustry, type LibraryIndustry } from "@/lib/industries";
+import { SEARCH_TERMS } from "./competitors";
 import type { QuestionModel } from "./question-model";
 import { PICK_MODEL, PICK_PROMPT_VERSION, QUESTION_COUNT, type PickBusiness } from "./prompts/pick-questions.v1";
 import {
@@ -49,6 +50,12 @@ function industryLabel(b: QuestionBusiness): string {
   return known ? INDUSTRY_LABELS[known] : b.industryText?.trim() || "local business";
 }
 
+/** What the business is, as a customer would say it: "HVAC contractor", "sportswear store". */
+function industryNoun(b: QuestionBusiness): string {
+  const known = libraryIndustry(b.industry);
+  return (known ? SEARCH_TERMS[known] : null) ?? (b.industryText?.trim() || "local business");
+}
+
 export async function prepareQuestions(business: QuestionBusiness, clients: QuestionClients): Promise<QuestionSet> {
   if (!business.city.trim()) throw new Error("A city is required to prepare questions");
   const city = cityLabel(business.city, business.region);
@@ -64,7 +71,7 @@ export async function prepareQuestions(business: QuestionBusiness, clients: Ques
     return { ...base, questions: await written(input, business, clients.model), source: "written", libraryCandidate: true };
   } catch (err) {
     return {
-      questions: fallbackQuestions(input.industry, business.city, business.region),
+      questions: fallbackQuestions(industryNoun(business), business.city, business.region),
       source: "fallback",
       libraryCandidate: library.length === 0,
       promptVersion: PICK_PROMPT_VERSION,
@@ -95,7 +102,7 @@ async function written(input: PickBusiness, business: QuestionBusiness, model: Q
     .map((q) => ({ template: fillCity(q.template, city), tags: [] as string[], intent: q.intent }));
   const kept = balancePicks(drafts, drafts, input.services);
   if (kept.length < QUESTION_COUNT / 2) throw new Error(`Claude wrote ${kept.length} usable questions`);
-  // A few unusable drafts are topped up from the template engine rather than asking again.
-  const extra = fallbackQuestions(input.industry, business.city, business.region).map((q) => ({ template: q.text, tags: [], intent: q.intent }));
+  // A few unusable drafts are topped up with plain questions rather than asking again.
+  const extra = fallbackQuestions(industryNoun(business), business.city, business.region).map((q) => ({ template: q.text, tags: [], intent: q.intent }));
   return balancePicks(kept, extra, []).map((q) => ({ text: q.template, intent: q.intent, templateId: null }));
 }

@@ -3,11 +3,14 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Info } from "lucide-react";
+import { countryCode } from "@/lib/countries";
 import { INDUSTRIES, INDUSTRY_LABELS, isIndustry } from "@/lib/industries";
 import type { ActionResult } from "@/modules/auth";
 import type { AutofillResult, BusinessDetails } from "@/modules/onboarding/schema";
+import { domainBrand } from "@/modules/scanning/mention-text";
 import { parseServices } from "@/modules/settings/service";
-import { FieldMessage, INVALID_CLASS, useFieldErrors } from "@/components/ui/field-errors";
+import { CountrySelect, SELECT_CLASS } from "@/components/ui/country-select";
+import { FieldMessage, useFieldErrors } from "@/components/ui/field-errors";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { clearAutofill, useStoredAutofill } from "./autofill-store";
@@ -28,6 +31,8 @@ export type DetailsInput = {
 
 type Props = {
   businessId: string;
+  /** The website typed on the previous step, for the brand name suggestion (BUG-097). */
+  domain?: string | null;
   details: BusinessDetails;
   industryText: string;
   /** Already confirmed once: show saved values, not a stale auto-fill. */
@@ -42,13 +47,11 @@ export function DetailsStep(props: Props) {
   return <DetailsForm key={fresh ? "autofill" : "saved"} {...props} autofill={fresh} />;
 }
 
-const selectClass = `h-11 w-full rounded-lg border border-input bg-surface px-3 text-base outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 md:text-sm ${INVALID_CLASS}`;
-
-type Checked = "name" | "industry" | "otherIndustry" | "city";
+type Checked = "name" | "industry" | "otherIndustry" | "city" | "country";
 const textareaClass =
   "w-full rounded-lg border border-input bg-surface px-3 py-2 text-base outline-none transition-colors placeholder:text-text-hint focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 md:text-sm";
 
-function DetailsForm({ businessId, details, industryText, save, autofill }: Props & { autofill: AutofillResult | null }) {
+function DetailsForm({ businessId, domain, details, industryText, save, autofill }: Props & { autofill: AutofillResult | null }) {
   const router = useRouter();
   const start = autofill ? { ...details, ...nonEmpty(autofill.details) } : details;
   const [v, setV] = useState({
@@ -56,6 +59,8 @@ function DetailsForm({ businessId, details, industryText, save, autofill }: Prop
     industry: start.industry && isIndustry(start.industry) ? start.industry : industryText ? "other" : "",
     otherIndustry: industryText,
     services: start.services.join(", "),
+    // Auto-fill may give "US" or "United States"; the select holds the code. No default (BUG-086).
+    country: countryCode(start.country),
   });
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -65,6 +70,8 @@ function DetailsForm({ businessId, details, industryText, save, autofill }: Prop
     if (field === "name" || field === "industry" || field === "otherIndustry" || field === "city") fields.clear(field);
   };
   const check = (key: Checked) => ({ error: fields.errors[key], errorId: fields.idOf(key) });
+  // Google names one branch ("Cheezious Golra Mor Branch"); customers and AI use the brand (BUG-097).
+  const brand = domainBrand(v.name, domain);
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -74,6 +81,7 @@ function DetailsForm({ businessId, details, industryText, save, autofill }: Prop
       industry: v.industry ? undefined : "Choose an industry.",
       otherIndustry: v.industry === "other" && !v.otherIndustry.trim() ? "Say what kind of business it is." : undefined,
       city: v.city.trim() ? undefined : "Enter the city your business is in.",
+      country: v.country ? undefined : "Choose the country your business is in.",
     });
     if (bad) return;
     const industry = v.industry === "other" ? v.otherIndustry.trim() || "other" : v.industry;
@@ -100,12 +108,24 @@ function DetailsForm({ businessId, details, industryText, save, autofill }: Prop
       <AutofillNote autofill={autofill} />
 
       <div className="grid gap-5 sm:grid-cols-2">
-        <Field id="name" label="Business name" className="sm:col-span-2" {...check("name")}>
+        <Field id="name" label="Business name" className="sm:col-span-2" hint="The name customers know you by. AI answers use it too." {...check("name")}>
           <Input id="name" value={v.name} onChange={set("name")} required maxLength={120} className="h-11 text-base" autoComplete="organization" {...fields.fieldProps("name")} />
+          {brand ? (
+            <p className="flex flex-wrap items-center gap-x-2 text-sm text-muted-foreground" data-testid="brand-suggestion">
+              Is this one branch? Customers may know you as {brand}.
+              <button
+                type="button"
+                onClick={() => setV((s) => ({ ...s, name: brand }))}
+                className="py-1 text-primary underline-offset-4 hover:underline"
+              >
+                Use {brand}
+              </button>
+            </p>
+          ) : null}
         </Field>
 
         <Field id="industry" label="Industry" className="sm:col-span-2" {...check("industry")}>
-          <select id="industry" value={v.industry} onChange={set("industry")} required className={selectClass} {...fields.fieldProps("industry")}>
+          <select id="industry" value={v.industry} onChange={set("industry")} required className={SELECT_CLASS} {...fields.fieldProps("industry")}>
             <option value="" disabled>
               Choose an industry
             </option>
@@ -144,6 +164,18 @@ function DetailsForm({ businessId, details, industryText, save, autofill }: Prop
         </Field>
         <Field id="state" label="State or region" optional>
           <Input id="state" value={v.state} onChange={set("state")} maxLength={80} className="h-11 text-base" autoComplete="address-level1" />
+        </Field>
+        <Field id="country" label="Country" {...check("country")}>
+          <CountrySelect
+            id="country"
+            value={v.country}
+            onValueChange={(country) => {
+              setV((s) => ({ ...s, country }));
+              fields.clear("country");
+            }}
+            required
+            {...fields.fieldProps("country")}
+          />
         </Field>
         <Field id="phone" label="Phone" optional>
           <Input id="phone" type="tel" value={v.phone} onChange={set("phone")} maxLength={30} className="h-11 text-base" autoComplete="tel" />

@@ -259,6 +259,22 @@ export function BuyCreditsSkeleton() {
   );
 }
 
+export function ChoosePlanSkeleton() {
+  return (
+    <Frame>
+      <Header />
+      <div className="flex max-w-[760px] flex-col gap-4">
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Skeleton className="h-44" />
+          <Skeleton className="h-44" />
+        </div>
+        <Skeleton className="h-4 w-3/4" />
+        <Skeleton className="h-9 w-44" />
+      </div>
+    </Frame>
+  );
+}
+
 export function ManageCompetitorsSkeleton() {
   return (
     <Frame>

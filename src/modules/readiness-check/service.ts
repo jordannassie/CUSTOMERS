@@ -1,3 +1,4 @@
+import type { SiteFailure } from "./failure";
 import { readinessScore, type Signals } from "./signals";
 import type { CheckRow, Finding, ReadinessCheckResult } from "./schema";
 
@@ -77,13 +78,13 @@ export function buildFindings(mine: Signals | null, them: Signals | null): Findi
   return findings.slice(0, 4);
 }
 
-export function compareSites(
-  mine: { domain: string; signals: Signals | null },
-  them: { domain: string; signals: Signals | null },
-): ReadinessCheckResult {
-  const site = (s: typeof mine) => ({
+type ReadSite = { domain: string; signals: Signals | null; failure?: SiteFailure | null };
+
+export function compareSites(mine: ReadSite, them: ReadSite): ReadinessCheckResult {
+  const site = (s: ReadSite) => ({
     domain: s.domain,
     reached: s.signals !== null,
+    blocked: s.signals === null && s.failure === "blocked",
     score: s.signals ? readinessScore(s.signals) : 0,
   });
   return {

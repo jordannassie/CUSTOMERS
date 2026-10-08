@@ -1,7 +1,7 @@
 import "server-only";
 import { getCurrentAgency, requireUser } from "@/modules/auth";
 import { canAddBusiness } from "@/modules/entitlements";
-import type { TrialOffer } from "@/modules/billing";
+import { previewSetupAddOn, type SetupAddOn, type TrialOffer } from "@/modules/billing";
 import { awaitingTrialCredits, loadCardStep } from "./card/dal";
 import { loadDetailsStep, loadWizardState, type DetailsStep, type WizardContext } from "./dal";
 import { loadModelsStep, loadQuestionsStep, selectedPlan, type ModelsStep, type QuestionsStep } from "./questions/dal";
@@ -20,6 +20,13 @@ export async function getAddBusinessBlock(next: string): Promise<string | null> 
   if (!agency) return null;
   const allowed = await canAddBusiness(agency.id);
   return allowed.allowed ? null : allowed.reason;
+}
+
+/** What finishing setup adds to the agency's subscription (BUG-071), or null when nothing is added. */
+export async function getSetupAddOn(businessId: string, next: string): Promise<SetupAddOn | null> {
+  await requireUser({ next });
+  const agency = await getCurrentAgency();
+  return agency ? previewSetupAddOn(agency.id, businessId) : null;
 }
 
 export async function getDetailsStep(businessId: string, next: string): Promise<DetailsStep | null> {

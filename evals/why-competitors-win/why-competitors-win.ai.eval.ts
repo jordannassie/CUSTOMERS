@@ -4,7 +4,7 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { expect, it } from "vitest";
 import { createHarness, describeEval } from "vitest-evals";
-import { EXPLAIN_MODEL, EXPLAIN_PROMPT_VERSION } from "@/modules/insights/prompts/explain.v1";
+import { EXPLAIN_MODEL, EXPLAIN_PROMPT_VERSION } from "@/modules/insights/prompts/explain.v2";
 import { createExplanationWriter, ExplainError } from "@/modules/insights/writer";
 import { assertNotSelfGrading, createJudge, JUDGE_MODEL, JudgeApiError } from "../shared/judge";
 import {

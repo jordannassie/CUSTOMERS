@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { explain, type WriteExplanation } from "./explain";
 import { BEAN_HOUSE_ID, COFFEE_PLACES_NUMBERS, COFFEE_SOURCES, PLUMBER_SOURCES } from "./fixtures";
-import type { ExplainReason } from "./prompts/explain.v1";
+import type { ExplainReason } from "./prompts/explain.v2";
 import { templateWriter } from "./template-writer";
 
 const storedText = (d: { title: string; description: string; evidence: string; recommended_action: string; claude_prompt: string | null }) =>

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { scanStatusView } from "./service";
+import { STALLED_QUEUED_MINUTES, STALLED_RUNNING_MINUTES, scanStatusView } from "./service";
 
 const ok = { allowed: true, reason: "" };
 const broke = { allowed: false, reason: "You're out of credits. Buy a top-up or upgrade." };
@@ -22,6 +22,7 @@ describe("scanStatusView", () => {
     expect(scanStatusView({ status: "done", finishedAt: at }, ok)).toEqual({
       scanning: false,
       retrying: false,
+      stalled: false,
       lastResult: "done",
       lastFinishedAt: at,
       blockedReason: null,
@@ -33,9 +34,37 @@ describe("scanStatusView", () => {
     expect(scanStatusView(null, broke)).toEqual({
       scanning: false,
       retrying: false,
+      stalled: false,
       lastResult: null,
       lastFinishedAt: null,
       blockedReason: broke.reason,
+    });
+  });
+
+  describe("stalled", () => {
+    const now = new Date("2026-10-07T12:00:00Z");
+    const ago = (minutes: number) => new Date(now.getTime() - minutes * 60_000).toISOString();
+    const view = (job: Parameters<typeof scanStatusView>[0]) => scanStatusView(job, ok, now).stalled;
+
+    it("flags a queued job no worker picked up long after it was due", () => {
+      expect(view({ status: "queued", finishedAt: null, runAfter: ago(STALLED_QUEUED_MINUTES + 1), lockedAt: null })).toBe(true);
+      expect(view({ status: "queued", finishedAt: null, runAfter: ago(1), lockedAt: null })).toBe(false);
+    });
+
+    it("leaves a retry waiting for its turn alone", () => {
+      const later = new Date(now.getTime() + 10 * 60_000).toISOString();
+      expect(view({ status: "queued", finishedAt: null, runAfter: later, lockedAt: null, error: "timeout" })).toBe(false);
+    });
+
+    it("flags a running job that outlived the worker's time budget", () => {
+      expect(view({ status: "running", finishedAt: null, runAfter: ago(60), lockedAt: ago(STALLED_RUNNING_MINUTES + 1) })).toBe(true);
+      expect(view({ status: "running", finishedAt: null, runAfter: ago(60), lockedAt: ago(5) })).toBe(false);
+    });
+
+    it("never flags a finished scan, a fresh Run scan, or no scan", () => {
+      expect(view({ status: "done", finishedAt: ago(60), runAfter: ago(120), lockedAt: ago(119) })).toBe(false);
+      expect(view({ status: "queued", finishedAt: null })).toBe(false);
+      expect(scanStatusView(null, ok, now).stalled).toBe(false);
     });
   });
 });

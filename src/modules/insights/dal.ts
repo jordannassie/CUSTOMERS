@@ -40,8 +40,9 @@ async function signalsFor(placeIds: (string | null)[], fetchSignals: FetchSignal
 
 async function loadSources(runId: string, deps: ExplainDeps) {
   const db = createServiceClient();
-  const runResult = await db.from("visibility_runs").select("business_id").eq("id", runId).single();
-  const businessId = must("load the scan run", runResult).business_id;
+  const runResult = await db.from("visibility_runs").select("business_id, provider").eq("id", runId).single();
+  const run = must("load the scan run", runResult);
+  const businessId = run.business_id;
   const [business, competitors, checks, facts] = await Promise.all([
     db
       .from("businesses")
@@ -79,6 +80,7 @@ async function loadSources(runId: string, deps: ExplainDeps) {
       placesId: b.places_id,
     },
     competitors: rivals,
+    models: run.provider.split(",").map((m) => m.trim()).filter(Boolean),
     checks: must("load the checks", checks).map((c) => ({
       provider: c.provider,
       question: c.question ?? "",

@@ -35,6 +35,51 @@ export function coreName(name: string): string {
   return core || normaliseText(name);
 }
 
+// Google titles add services or a branch after the brand. AI answers usually write only the brand (BUG-097).
+const TITLE_BREAK = /\s[-–—|]\s|[,:(]|\s\/\s/;
+
+/**
+ * The brand inside a long Google title, as written: "Radiant Plumbing, Air Conditioning, & Electrical" and
+ * "Reliant Plumbing - Austin" give "Radiant Plumbing" and "Reliant Plumbing"; "Mr. Rooter Plumbing of Austin"
+ * gives "Mr. Rooter Plumbing" when the city is Austin. Null when the title has no shorter brand, or the shorter
+ * part is too generic to stand alone ("Plumbing - Austin").
+ */
+export function brandName(name: string, city?: string | null): string | null {
+  let short = (name.split(TITLE_BREAK)[0] ?? "").trim();
+  const place = city?.trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  if (place) short = short.replace(new RegExp(`\\s+(?:(?:of|in)\\s+)?${place}$`, "i"), "").trim();
+  const core = coreName(short);
+  if (!core || core === coreName(name) || isGenericName(core)) return null;
+  return short;
+}
+
+/**
+ * The leading words of the name that spell the website's name: "Cheezious Golra Mor Branch" on cheezious.com is
+ * "Cheezious", "Beyond Wow Plumbing & Drains" on beyondwow.com is "Beyond Wow". Null when they do not.
+ */
+export function domainBrand(name: string, website: string | null | undefined): string | null {
+  const domain = domainOf(website);
+  if (!domain) return null;
+  const label = domain.split(".")[0].replace(/[^a-z0-9]/g, "");
+  const words = name.trim().split(/\s+/);
+  let spelled = "";
+  for (let i = 0; i < words.length - 1; i++) {
+    spelled += normaliseText(words[i]).replace(/ /g, "");
+    if (spelled.length > label.length || !label.startsWith(spelled)) return null;
+    if (spelled === label) {
+      const short = words.slice(0, i + 1).join(" ");
+      return isGenericName(coreName(short)) ? null : short;
+    }
+  }
+  return null;
+}
+
+/** Shorter forms of the name that AI answers use on their own (BUG-097). */
+export function brandForms(target: { name: string; city?: string | null; website?: string | null }): string[] {
+  const forms = [brandName(target.name, target.city), domainBrand(target.name, target.website)];
+  return [...new Set(forms.filter((f): f is string => f !== null))];
+}
+
 /**
  * Very short, or made only of common words: needs a second signal. One distinctive word ("Khaadi", "Starbucks")
  * is not generic; it only has to be written as a name (BUG-076).

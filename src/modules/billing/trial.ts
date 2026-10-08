@@ -18,7 +18,7 @@ export type TrialOffer = {
   publishableKey: string | null;
 };
 
-function cardFormMode(): CardFormMode {
+export function cardFormMode(): CardFormMode {
   if (checkoutFixtures()) return "fixture";
   return liveCheckoutClient() ? "stripe" : "off";
 }

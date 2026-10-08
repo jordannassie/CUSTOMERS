@@ -1,7 +1,8 @@
 import { createEnv } from "@t3-oss/env-nextjs";
 import { z } from "zod";
 
-const optional = z.string().min(1).optional();
+// Trimmed, so a key pasted with a trailing space still works (BUG-082: a space broke the Browserless token).
+const optional = z.string().trim().min(1).optional();
 const flag = z.enum(["true", "false"]).optional();
 
 // The only file that reads process.env (MVP_SPEC 18.1). Required values fail the build when missing.

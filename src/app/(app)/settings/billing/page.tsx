@@ -11,7 +11,7 @@ import {
   removeBusiness,
   upgradeBusiness,
 } from "@/modules/billing";
-import { BILLING_HREF, BUY_CREDITS_HREF } from "@/modules/workspace";
+import { BILLING_HREF, BUY_CREDITS_HREF, CHOOSE_PLAN_HREF } from "@/modules/workspace";
 import { PlanBill } from "./_components/plan-bill";
 import { PortalButton } from "./_components/portal-button";
 import { CancelPanel, CreditsPanel, NoPlan, PlanStatus } from "./_components/sections";
@@ -19,8 +19,7 @@ import { CancelPanel, CreditsPanel, NoPlan, PlanStatus } from "./_components/sec
 export const metadata: Metadata = { title: "Billing", robots: { index: false } };
 
 const USAGE_HREF = "/settings/usage";
-const ADD_BUSINESS_HREF = "/dashboard/add-business";
-const SUPPORT_HREF = "/contact?topic=support";
+const ADD_BUSINESS_HREF = "/onboarding/website";
 
 type Props = { searchParams: Promise<{ portal?: string | string[] }> };
 
@@ -60,7 +59,7 @@ export default async function BillingPage({ searchParams }: Props) {
               {view.canChange && !view.cancelAt && <CancelPanel cancel={cancelSubscription} />}
             </>
           ) : (
-            <NoPlan ended={view.status === "canceled"} setupHref="/onboarding" supportHref={SUPPORT_HREF} />
+            <NoPlan ended={view.status === "canceled"} choosePlanHref={CHOOSE_PLAN_HREF} />
           )}
         </div>
       </div>

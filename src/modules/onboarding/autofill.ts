@@ -23,10 +23,12 @@ export type AutofillRequest = { domain: string } | { name: string; city: string 
 /** Facts read from the business's own site only, for business_site_facts. Never Places data (D-73). */
 export type SiteFacts = {
   promptVersion: string;
-  model: string;
+  /** Null when no page could be read, so no model was asked. */
+  model: string | null;
   domain: string;
   pages: { path: string; status: PageResult["status"] }[];
-  facts: AutofillOutput;
+  /** Null when no page could be read: the pages still say whether the site blocked us (BUG-087). */
+  facts: AutofillOutput | null;
 };
 
 export type AutofillRun = {
@@ -89,15 +91,17 @@ export async function autofill(request: AutofillRequest, clients: AutofillClient
   return {
     result: toResult({ details, fromWebsite: site !== null && hasAnyValue(mergeDetails(site, null)), fromGoogle: place !== null, hadWebsite: true }),
     placeId: place?.placeId ?? null,
-    siteFacts: site
-      ? {
-          promptVersion: AUTOFILL_PROMPT_VERSION,
-          model,
-          domain,
-          pages: pages.map((p) => ({ path: p.path, status: p.status })),
-          facts: site,
-        }
-      : null,
+    // Saved even when nothing was readable, so advice can tell "blocks AI readers" from "no website" (BUG-087).
+    siteFacts:
+      site || (pages.length > 0 && readable.length === 0)
+        ? {
+            promptVersion: AUTOFILL_PROMPT_VERSION,
+            model: site ? model : null,
+            domain,
+            pages: pages.map((p) => ({ path: p.path, status: p.status })),
+            facts: site,
+          }
+        : null,
   };
 }
 

@@ -16,6 +16,7 @@ export const businessProfileInput = z.object({
   services: z.array(text(60).min(1)).max(20),
   city: text(80),
   region: text(80),
+  country: text(80).optional(),
   phone: text(30).regex(/^[0-9+().\s-]*$/),
   website: text(253),
 });

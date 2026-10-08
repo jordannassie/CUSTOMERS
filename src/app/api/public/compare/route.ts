@@ -37,7 +37,5 @@ export async function POST(request: NextRequest) {
   }
 
   const [mine, them] = await Promise.all([readSite(myUrl), readSite(competitorUrl)]);
-  return NextResponse.json(
-    compareSites({ domain: myDomain, signals: mine }, { domain: themDomain, signals: them }),
-  );
+  return NextResponse.json(compareSites({ domain: myDomain, ...mine }, { domain: themDomain, ...them }));
 }

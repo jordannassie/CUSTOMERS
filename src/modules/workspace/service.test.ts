@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { BILLING_HREF, BUY_CREDITS_HREF, pickBanners, SUPPORT_HREF, shortBalance, usageWidget, type AccountState, type UsageNumbers } from "./service";
+import { BILLING_HREF, BUY_CREDITS_HREF, CHOOSE_PLAN_HREF, pickBanners, shortBalance, usageWidget, type AccountState, type UsageNumbers } from "./service";
 
 const now = new Date("2026-09-27T12:00:00Z");
 const inDays = (days: number) => new Date(now.getTime() + days * 24 * 60 * 60 * 1000);
@@ -148,7 +148,7 @@ describe("pickBanners", () => {
         kind: "ended",
         tone: "warning",
         message: "Your free trial has ended and you weren't charged. Your results are still here to read, but new scans are off.",
-        action: { label: "Contact us", href: SUPPORT_HREF },
+        action: { label: "Choose a plan", href: CHOOSE_PLAN_HREF },
       },
     ]);
     const endedPlan: AccountState = { ...endedTrial, trialEndsAt: inDays(-40), periodEndsAt: inDays(-2) };

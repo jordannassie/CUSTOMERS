@@ -6,7 +6,8 @@ import { createNameExtractor, type ExtractNames } from "../extract";
 import { createAnthropicCheck } from "../providers/anthropic";
 import { createOpenAICheck } from "../providers/openai";
 import { createPerplexityCheck } from "../providers/perplexity";
-import type { ProviderId, RunCheck } from "../providers/types";
+import { PROVIDER_TIMEOUT_MS } from "../providers/request";
+import type { ProviderFailures, ProviderId, RunCheck } from "../providers/types";
 
 // Database access and API keys for scan runs (B-26); the cache and usage part is in ../dal.ts.
 // Everything here uses the service role: the worker runs with no user session.
@@ -130,6 +131,8 @@ export type CheckResultRow = {
   cached: boolean;
   costUsd: number;
   latencyMs: number;
+  /** A recorded answer for a test agency (D-61); it stops counting once the agency is real (BUG-075). */
+  isSample: boolean;
 };
 
 export async function saveCheckResult(row: CheckResultRow): Promise<void> {
@@ -153,6 +156,7 @@ export async function saveCheckResult(row: CheckResultRow): Promise<void> {
         cached: row.cached,
         cost_usd: row.costUsd,
         latency_ms: row.latencyMs,
+        is_sample: row.isSample,
       },
       { onConflict: "id", ignoreDuplicates: true },
     );
@@ -161,7 +165,13 @@ export async function saveCheckResult(row: CheckResultRow): Promise<void> {
 
 export async function finishRun(
   runId: string,
-  outcome: { status: "completed" | "failed"; checksTotal: number; checksFailed: number; error: string | null },
+  outcome: {
+    status: "completed" | "failed";
+    checksTotal: number;
+    checksFailed: number;
+    error: string | null;
+    failedByProvider: ProviderFailures | null;
+  },
 ): Promise<void> {
   const { error } = await createServiceClient()
     .from("visibility_runs")
@@ -170,6 +180,7 @@ export async function finishRun(
       checks_total: outcome.checksTotal,
       checks_failed: outcome.checksFailed,
       error: outcome.error,
+      failed_by_provider: outcome.failedByProvider,
       completed_at: new Date().toISOString(),
     })
     .eq("id", runId);
@@ -214,9 +225,9 @@ const PROVIDER_KEYS: Record<ProviderId, () => string | undefined> = {
 };
 
 const ADAPTERS: Record<ProviderId, (apiKey: string) => RunCheck> = {
-  openai: createOpenAICheck,
-  anthropic: createAnthropicCheck,
-  perplexity: createPerplexityCheck,
+  openai: (key) => createOpenAICheck(key, { timeoutMs: PROVIDER_TIMEOUT_MS.openai }),
+  anthropic: (key) => createAnthropicCheck(key, { timeoutMs: PROVIDER_TIMEOUT_MS.anthropic }),
+  perplexity: (key) => createPerplexityCheck(key, { timeoutMs: PROVIDER_TIMEOUT_MS.perplexity }),
 };
 
 /** The live adapter for a provider, or null when its API key is not set. */

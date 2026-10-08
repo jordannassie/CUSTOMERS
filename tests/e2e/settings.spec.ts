@@ -82,7 +82,8 @@ test("settings is in the menu, the old address redirects, and the account shows 
   await expect(page.getByTestId("account-email")).toHaveText(s.email);
   await expect(page.getByRole("button", { name: "Change password" })).toBeVisible();
   await expect(page.getByText(/Supabase/)).toHaveCount(0);
-  await expect(page.getByRole("link", { name: /^Billing/ })).toHaveAttribute("href", "/settings/billing");
+  // The Settings card, not the sidebar's Billing item (BUG-094).
+  await expect(page.getByRole("link", { name: /^Billing Change plan/ })).toHaveAttribute("href", "/settings/billing");
   await expect(page.getByRole("button", { name: "Delete business" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Delete account" })).toBeVisible();
 

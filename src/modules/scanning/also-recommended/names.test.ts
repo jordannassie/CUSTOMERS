@@ -45,4 +45,25 @@ describe("alsoRecommendedNames", () => {
     const answers = [extraction(...Array.from({ length: 12 }, (_, i): [string] => [`Cafe Number ${i + 1}`]))];
     expect(alsoRecommendedNames(answers, business, [], 8).names).toHaveLength(8);
   });
+  it("lists one brand once when answers write it long and short (BUG-097)", () => {
+    const list = alsoRecommendedNames(
+      [
+        extraction(["Abacus Plumbing, Air Conditioning & Electrical"], ["Abacus Plumbing"]),
+        extraction(["Abacus Plumbing"]),
+        extraction(["Abacus Plumbing, Air Conditioning & Electrical"]),
+        extraction(["Abacus Plumbing"]),
+      ],
+      business,
+      [],
+    );
+    expect(list.names).toEqual([{ name: "Abacus Plumbing", answers: 4 }]);
+  });
+
+  it("leaves out the short brand of a tracked competitor", () => {
+    const list = alsoRecommendedNames([extraction(["Radiant Plumbing"], ["Reliant Plumbing"])], business, [
+      { name: "Radiant Plumbing, Air Conditioning, & Electrical" },
+      { name: "Reliant Plumbing - Austin" },
+    ]);
+    expect(list.names).toEqual([]);
+  });
 });

@@ -42,7 +42,11 @@ export function WebsiteStep({ defaultDomain, defaultNoWebsite, backHref, save }:
     if (bad) return;
     startTransition(async () => {
       const result = await save(noWebsite ? { name, city } : { domain });
-      if (!result.ok) return setError(result.error);
+      if (!result.ok) {
+        // A typo in the address goes on the website field itself (BUG-102).
+        if (result.field === "website") return void fields.show({ website: result.error });
+        return setError(result.error);
+      }
       saveAutofill(result.data.businessId, result.data.autofill);
       router.push("/onboarding/details");
     });

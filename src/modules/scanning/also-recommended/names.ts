@@ -2,7 +2,7 @@
 // neither the business nor one of its tracked competitors, and how often. Pure, over saved checks.
 import { z } from "zod";
 import { isSameBusiness } from "../extract-match";
-import { coreName } from "../mention-text";
+import { brandName, coreName } from "../mention-text";
 import type { MentionTarget } from "../mentions";
 
 export type AlsoRecommended = {
@@ -40,7 +40,8 @@ export function alsoRecommendedNames(
     answers += 1;
     const seen = new Set<string>();
     for (const { name, matches } of parsed.data.names) {
-      const key = coreName(name);
+      // "Abacus Plumbing, Air Conditioning & Electrical" and "Abacus Plumbing" are one business (BUG-097).
+      const key = coreName(brandName(name, business.city) ?? name);
       if (!key || seen.has(key) || matches === "business") continue;
       if (isSameBusiness(name, business) || competitors.some((c) => isSameBusiness(name, c))) continue;
       seen.add(key);

@@ -12,7 +12,7 @@ import {
   explainOutput,
   explainUserMessage,
   type ExplainOutput,
-} from "./prompts/explain.v1";
+} from "./prompts/explain.v2";
 
 const TIMEOUT_MS = 120_000;
 

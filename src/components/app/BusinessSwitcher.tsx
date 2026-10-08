@@ -177,7 +177,7 @@ export function BusinessSwitcher({
         )}
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild className="gap-2.5 py-2 text-muted-foreground">
-          <Link href="/dashboard/add-business" onClick={onSwitched}>
+          <Link href="/onboarding/website" onClick={onSwitched}>
             <Plus className="size-4" aria-hidden="true" />
             Add business
           </Link>

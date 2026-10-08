@@ -7,6 +7,7 @@ import type { ActionResult } from "@/modules/auth";
 import type { SettingsBusiness } from "@/modules/settings";
 import { normalizeWebsite, parseServices } from "@/modules/settings/service";
 import { Button } from "@/components/ui/button";
+import { CountrySelect } from "@/components/ui/country-select";
 import { FieldMessage, useFieldErrors } from "@/components/ui/field-errors";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -25,6 +26,7 @@ export function BusinessProfileForm({ business, save }: { business: SettingsBusi
     services: business.services.join(", "),
     city: business.city,
     region: business.region,
+    country: business.country,
     phone: business.phone,
   };
   const [form, setForm] = useState(initial);
@@ -100,12 +102,21 @@ export function BusinessProfileForm({ business, save }: { business: SettingsBusi
           <textarea {...field("services")} rows={2} className={TEXTAREA_CLASS} />
         </Row>
 
-        <div className="grid gap-5 sm:grid-cols-3">
+        <div className="grid gap-5 sm:grid-cols-2">
           <Row label="City" htmlFor="profile-city">
             <Input {...field("city")} maxLength={80} autoComplete="address-level2" />
           </Row>
           <Row label="State or region" htmlFor="profile-region">
             <Input {...field("region")} maxLength={80} autoComplete="address-level1" />
+          </Row>
+          <Row label="Country" htmlFor="profile-country">
+            <CountrySelect
+              id="profile-country"
+              name="country"
+              value={form.country}
+              onValueChange={(country) => setForm((f) => ({ ...f, country }))}
+              className="h-9 w-full rounded-lg border border-input bg-surface px-3 text-base outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 md:text-sm"
+            />
           </Row>
           <Row label="Phone" htmlFor="profile-phone">
             <Input {...field("phone")} maxLength={30} type="tel" autoComplete="tel" />

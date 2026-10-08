@@ -125,7 +125,7 @@ describe("runBusinessAutofill", () => {
     expect(everything).not.toContain(COFFEE_PLACE.address!);
   });
 
-  it("saves no site facts for a blocked site, and returns null for another user's business", async () => {
+  it("saves only which pages blocked us for a blocked site, and returns null for another user's business", async () => {
     const owner = await createOwner();
     const other = await createOwner();
     await signIn(owner.email, owner.password);
@@ -133,7 +133,10 @@ describe("runBusinessAutofill", () => {
 
     const result = await runBusinessAutofill(owner.userId, owner.businessId, { domain: BLOCKED_DOMAIN }, clients);
     expect(result?.details.name).toBe(BLOCKED_PLACE.name);
-    expect((await stored(owner.businessId)).facts).toBeNull();
+    // No facts and no model, only the page results, so advice knows the site blocked us (BUG-087).
+    const facts = (await stored(owner.businessId)).facts as { facts: unknown; model: unknown; pages: { status: string }[] };
+    expect(facts).toMatchObject({ facts: null, model: null });
+    expect(facts.pages.some((p) => p.status === "blocked")).toBe(true);
 
     expect(await runBusinessAutofill(owner.userId, other.businessId, { domain: BLOCKED_DOMAIN }, clients)).toBeNull();
     expect(calls.scrape).toEqual([BLOCKED_DOMAIN]);

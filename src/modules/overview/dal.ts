@@ -3,7 +3,7 @@ import { requestNow } from "@/lib/request-now";
 import { requireAgency } from "@/modules/auth";
 import { loadScoreReport } from "@/modules/scanning";
 import { createServiceClient } from "@/lib/supabase/service";
-import { overviewView, type Impact, type OverviewView } from "./service";
+import { overviewView, scanFailuresFrom, type Impact, type OverviewView } from "./service";
 import { HISTORY_DAYS } from "./trend";
 
 // Legacy statuses: "in_progress" is still something to do, "resolved" and "dismissed" are not.
@@ -24,12 +24,22 @@ export async function loadOverview(agencyId: string, businessId: string, now: Da
 
   // Ownership is settled by the report above.
   const db = createServiceClient();
-  const [opportunities, business] = await Promise.all([
+  const [opportunities, business, lastRun] = await Promise.all([
     db.from("opportunities").select("id, title, impact, created_at").eq("business_id", businessId).in("status", OPEN_STATUSES),
     db.from("businesses").select("status, next_scan_at, agencies!inner(status)").eq("id", businessId).single(),
+    // Which AIs failed in the latest finished scan (BUG-074).
+    db
+      .from("visibility_runs")
+      .select("failed_by_provider")
+      .eq("business_id", businessId)
+      .in("status", ["completed", "failed"])
+      .order("started_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
   ]);
   if (opportunities.error) throw new Error(`Overview: could not read opportunities: ${opportunities.error.message}`);
   if (business.error) throw new Error(`Overview: could not read the business: ${business.error.message}`);
+  if (lastRun.error) throw new Error(`Overview: could not read the last scan: ${lastRun.error.message}`);
   // The same rule as the daily enqueue (migration 029): no scan comes for a paused business or a stopped account.
   const scheduled =
     business.data.status !== "paused" && !STOPPED_AGENCIES.includes(business.data.agencies.status) && business.data.next_scan_at;
@@ -38,6 +48,6 @@ export async function loadOverview(agencyId: string, businessId: string, now: Da
   return overviewView(
     report,
     opportunities.data.map((o) => ({ id: o.id, title: o.title, impact: o.impact as Impact, createdAt: o.created_at })),
-    { nextScanAt, now },
+    { nextScanAt, now, lastScanFailures: scanFailuresFrom(lastRun.data?.failed_by_provider) },
   );
 }

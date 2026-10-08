@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { PROBES, runProbe, stripeMode, timeAgo, workerStatus, type Probe } from "./service";
+import { joinUrl, PROBES, runProbe, stripeMode, timeAgo, workerStatus, type Probe } from "./service";
 
 const probe = (id: string): Probe => PROBES.find((p) => p.id === id)!;
 
@@ -122,5 +122,21 @@ describe("workerStatus", () => {
   it("formats longer gaps", () => {
     expect(timeAgo(new Date("2026-09-27T09:00:00Z"), now)).toBe("3 h ago");
     expect(timeAgo(new Date("2026-09-20T12:00:00Z"), now)).toBe("7 days ago");
+  });
+});
+
+describe("probe addresses (BUG-081, BUG-082)", () => {
+  it("checks Perplexity on the Agent API scans use, not the retired Sonar endpoint", () => {
+    expect(probe("perplexity").request("pplx-key", {}).url).toBe("https://api.perplexity.ai/v1/models");
+  });
+
+  it("checks Browserless on the configured host, keeping its path", () => {
+    expect(probe("browserless").request("k", {}).url).toBe("https://production-sfo.browserless.io/meta?token=k");
+    expect(probe("browserless").request("k", { browserlessUrl: "https://chrome.example/v2/" }).url).toBe("https://chrome.example/v2/meta?token=k");
+  });
+
+  it("joins a path onto a base without dropping the base's own path", () => {
+    expect(joinUrl("https://host/v2", "/pdf")).toBe("https://host/v2/pdf");
+    expect(joinUrl("https://host/", "pdf")).toBe("https://host/pdf");
   });
 });

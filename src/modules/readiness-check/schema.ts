@@ -10,7 +10,13 @@ export const readinessCheckInput = z.object(
 
 export type ReadinessCheckInput = z.infer<typeof readinessCheckInput>;
 
-export type SiteResult = { domain: string; reached: boolean; score: number };
+export type SiteResult = {
+  domain: string;
+  reached: boolean;
+  /** It answered but turned our reader away, so AI tools may be turned away too (BUG-096). */
+  blocked: boolean;
+  score: number;
+};
 
 export type CheckRow = { label: string; detail: string; mine: boolean; them: boolean };
 

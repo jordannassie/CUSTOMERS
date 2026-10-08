@@ -12,8 +12,11 @@ function band(score: number) {
   return { label: "Hard for AI to read", className: "bg-low-bg text-low-text" };
 }
 
+// BUG-096: a site that turns automated readers away exists, so it is never "check the address".
 function headline({ mine, them }: ReadinessCheckResult): string {
+  if (mine.blocked) return `${mine.domain} turns away automated readers like ours, and may turn away AI tools too`;
   if (!mine.reached) return `We could not open ${mine.domain}. Check the address and try again.`;
+  if (them.blocked) return `${them.domain} turns away automated readers like ours, so only your site was checked`;
   if (!them.reached) return `We could not open ${them.domain}, so only your site was checked.`;
   const gap = mine.score - them.score;
   if (gap > 3) return `Your website is easier for AI to understand than ${them.domain}`;
@@ -29,13 +32,20 @@ function SiteScore({ site, you }: { site: SiteResult; you: boolean }) {
         <ScoreRing score={site.score} you={you} />
       ) : (
         <div className="flex size-28 shrink-0 items-center justify-center rounded-full border-7 border-muted text-center text-[13px] text-text-hint">
-          Not reached
+          {site.blocked ? "Blocked us" : "Not reached"}
         </div>
       )}
       <div className="flex min-w-0 flex-col gap-2">
         <p className="text-[13px] text-muted-foreground">{you ? "Your website" : "Competitor"}</p>
         <p className="truncate text-lg font-semibold">{site.domain}</p>
         {site.reached && <span className={cn("w-fit rounded-sm px-2 py-0.5 text-[13px] font-medium", b.className)}>{b.label}</span>}
+        {site.blocked && (
+          <p className="text-[13px] text-muted-foreground" data-testid="blocked-note">
+            {you
+              ? "Many AI tools read websites the same way we do. If your site turns us away, ask whoever runs it to let AI readers in."
+              : "Many AI tools are turned away the same way, so they may not be able to read this site either."}
+          </p>
+        )}
       </div>
     </div>
   );

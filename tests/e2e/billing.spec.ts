@@ -27,7 +27,7 @@ type Seed = {
 };
 
 /** An agency with a fixture subscription and these businesses, logged in on /settings/billing. */
-async function logIn(page: Page, seed: Seed): Promise<{ ends: string }> {
+async function logIn(page: Page, seed: Seed): Promise<{ ends: string; userId: string; agencyId: string }> {
   const email = `e2e-billing-${randomUUID()}@example.test`;
   const password = `pw-${randomUUID()}`;
   const { data: user, error } = await db.auth.admin.createUser({ email, password, email_confirm: true });
@@ -82,7 +82,7 @@ async function logIn(page: Page, seed: Seed): Promise<{ ends: string }> {
   await page.locator("#password").fill(password);
   await page.locator("button[type=submit]").click();
   await page.waitForURL((url) => url.pathname === "/settings/billing");
-  return { ends };
+  return { ends, userId: user.user.id, agencyId: agency.id };
 }
 
 const dayOf = (iso: string) => new Date(iso).toLocaleDateString("en-US", { month: "long", day: "numeric", timeZone: "UTC" });
@@ -127,6 +127,30 @@ test("trial: shows the first charge, adds a saved business at no cost today", as
   await expect(page.getByTestId("plan-status")).not.toContainText("Cancel before then");
   await expect(page.getByTestId("charge-summary")).toContainText("No more charges. Your free trial ends on");
   await expect(page.getByText("Your plan ends on")).toHaveCount(0);
+});
+
+test("trial: a business set up after the first joins the plan, free until the trial ends (BUG-071)", async ({ page }) => {
+  const { userId, agencyId } = await logIn(page, { status: "trialing", businesses: [{ name: "Northside Plumbing", planId: "starter" }] });
+  // The second business, saved up to the AI models step of setup.
+  const { data: draft } = await db
+    .from("businesses")
+    .insert({ owner_user_id: userId, agency_id: agencyId, name: "Harbor Dental", status: "onboarding", onboarding_step: 7, primary_city: "Austin" })
+    .select("id")
+    .single()
+    .throwOnError();
+
+  await page.goto("/onboarding/models");
+  await expect(page.getByTestId("add-on-note")).toHaveText("This business joins your Starter plan. It's free during your trial, then $149 a month.");
+  await page.getByRole("button", { name: "Finish setup", exact: true }).filter({ visible: true }).last().click();
+  await page.waitForURL((url) => url.pathname === "/onboarding/first-scan", { timeout: 30_000 });
+
+  // Saved by the webhook handlers, as Stripe's customer.subscription.updated does (B-42).
+  await expect
+    .poll(async () => (await db.from("business_subscriptions").select("plan_id").eq("business_id", draft.id).maybeSingle()).data?.plan_id ?? null)
+    .toBe("starter");
+  await page.goto("/settings/billing");
+  await expect(line(page, "Harbor Dental")).toContainText("Starter");
+  await expect(page.getByTestId("next-charge")).toHaveText("$298");
 });
 
 test("trial: a third saved business shows the trial limit instead of a price", async ({ page }) => {
@@ -202,10 +226,11 @@ test("trial banner: days, credits and the charge date, then no charge after canc
 test("ended trial: results stay readable and the banner says scans are off (B-45)", async ({ page }) => {
   await logIn(page, { status: "canceled", endsInDays: -2, businesses: [{ name: "Northside Plumbing", planId: "starter" }] });
   await expect(page.getByTestId("no-plan")).toContainText("Your plan has ended");
+  await expect(page.getByRole("link", { name: "Start your plan again" })).toHaveAttribute("href", "/settings/billing/plans");
   await page.goto("/dashboard");
   const banner = page.locator('[data-kind="ended"]');
   await expect(banner).toContainText("Your free trial has ended and you weren't charged. Your results are still here to read, but new scans are off.");
-  await expect(banner.getByRole("link", { name: "Contact us" })).toHaveAttribute("href", "/contact?topic=support");
+  await expect(banner.getByRole("link", { name: "Choose a plan" })).toHaveAttribute("href", "/settings/billing/plans");
   // Top-ups can't be spent without a plan, so the out of credits banner would only lead to a refusal.
   await expect(page.locator('[data-kind="out_of_credits"]')).toHaveCount(0);
 });
@@ -230,6 +255,7 @@ test("past due: explains the failed payment and offers no upgrades", async ({ pa
 test("no plan yet, and old billing links land here", async ({ page }) => {
   await logIn(page, { status: "trialing", subscription: false, businesses: [{ name: "Northside Plumbing", planId: null }] });
   await expect(page.getByTestId("no-plan")).toContainText("You don't have a plan yet");
+  await expect(page.getByRole("link", { name: "Choose a plan" })).toHaveAttribute("href", "/settings/billing/plans");
   await page.goto("/dashboard/billing");
   await page.waitForURL((url) => url.pathname === "/settings/billing");
 });

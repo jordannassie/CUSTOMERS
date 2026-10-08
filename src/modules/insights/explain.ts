@@ -5,8 +5,9 @@
 import { generateOpportunities } from "@/lib/geo/opportunity-engine";
 import type { OpportunityCategory, OpportunityImpact } from "@/types/geo";
 import { buildExplainInput, domainOf, type ExplainInput, type ExplainSources } from "./facts";
+import { capitalizeFirst, fixNameCase } from "./name-case";
 import { toStored } from "./placeholders";
-import { MAX_REASONS, MIN_REASONS, type ExplainOutput, type ExplainReason } from "./prompts/explain.v1";
+import { MAX_REASONS, MIN_REASONS, type ExplainOutput, type ExplainReason } from "./prompts/explain.v2";
 import { reasonIssues } from "./validate";
 
 export type WriterUsage = { inputTokens: number; outputTokens: number };
@@ -42,13 +43,14 @@ export function stepsText(steps: string[]): string {
     .join("\n");
 }
 
-function toDraft(reason: ExplainReason, keys: Record<string, string>): OpportunityDraft | null {
-  const evidence = toStored(reason.evidence.trim(), keys);
-  const description = toStored(reason.why_it_matters.trim(), keys);
-  const steps = toStored(stepsText(reason.steps), keys);
+function toDraft(reason: ExplainReason, keys: Record<string, string>, names: string[]): OpportunityDraft | null {
+  const fix = (text: string) => fixNameCase(text, names);
+  const evidence = toStored(fix(reason.evidence.trim()), keys);
+  const description = toStored(fix(reason.why_it_matters.trim()), keys);
+  const steps = toStored(fix(stepsText(reason.steps)), keys);
   if (evidence === null || description === null || steps === null) return null;
   return {
-    title: reason.title.trim(),
+    title: capitalizeFirst(fix(reason.title.trim())),
     description,
     evidence,
     impact: reason.impact,
@@ -106,9 +108,10 @@ export async function explain(src: ExplainSources, write: WriteExplanation | nul
 
   const drafts: OpportunityDraft[] = [];
   const dropped: Explanation["dropped"] = [];
+  const names = [src.business.name, ...src.competitors.map((c) => c.name)];
   for (const reason of written.output.reasons) {
     const issues = reasonIssues(reason, input);
-    const draft = issues.length === 0 ? toDraft(reason, keys) : null;
+    const draft = issues.length === 0 ? toDraft(reason, keys, names) : null;
     if (draft) drafts.push(draft);
     else dropped.push({ title: reason.title, issues: issues.length ? issues : ["unknown competitor key"] });
   }

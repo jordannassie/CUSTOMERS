@@ -124,17 +124,18 @@ export function CancelPanel({ cancel }: { cancel: ChangeAction }) {
   );
 }
 
-export function NoPlan({ ended, setupHref, supportHref }: { ended: boolean; setupHref: string; supportHref: string }) {
+// BUG-079, BUG-066: both states lead to the Choose plan page, which starts the plan on this site.
+export function NoPlan({ ended, choosePlanHref }: { ended: boolean; choosePlanHref: string }) {
   return (
     <section className="rounded-md border border-dashed border-border bg-surface px-6 py-10 text-center" data-testid="no-plan">
       <h2 className="text-base font-semibold tracking-[-0.02em]">{ended ? "Your plan has ended" : "You don't have a plan yet"}</h2>
       <p className="mx-auto mt-2 max-w-[440px] text-sm text-muted-foreground">
         {ended
-          ? "Your results are still here to read. Contact us to start your plan again."
-          : "Finish setup to start your 7-day free trial. You choose a plan for each business there."}
+          ? "Your results are still here to read. Choose a plan to start your scans again."
+          : "Choose a plan for your businesses to keep your scans running."}
       </p>
       <Button asChild className="mt-5">
-        <Link href={ended ? supportHref : setupHref}>{ended ? "Contact us" : "Finish setup"}</Link>
+        <Link href={choosePlanHref}>{ended ? "Start your plan again" : "Choose a plan"}</Link>
       </Button>
     </section>
   );

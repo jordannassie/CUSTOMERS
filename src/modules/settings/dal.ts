@@ -1,4 +1,5 @@
 import "server-only";
+import { countryCode } from "@/lib/countries";
 import { getCurrentAgency, requireAgency, requireUser, type GuardOptions } from "@/modules/auth";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
@@ -15,6 +16,8 @@ export type SettingsBusiness = {
   services: string[];
   city: string;
   region: string;
+  /** ISO code, or "" when not set (BUG-086). */
+  country: string;
   phone: string;
   website: string;
   models: ModelId[];
@@ -41,7 +44,7 @@ export async function getSettings(options: GuardOptions = {}): Promise<SettingsV
     supabase.from("agencies").select("name, logo_url").eq("id", agency.id).single(),
     supabase
       .from("businesses")
-      .select("id, name, industry, services, primary_city, primary_region, phone, domain, models, scan_frequency")
+      .select("id, name, industry, services, primary_city, primary_region, primary_country, phone, domain, models, scan_frequency")
       .eq("agency_id", agency.id)
       .order("created_at", { ascending: false }),
     supabase.from("profiles").select("active_business_id").eq("id", user.id).maybeSingle(),
@@ -76,6 +79,7 @@ export async function getSettings(options: GuardOptions = {}): Promise<SettingsV
       services: row.services,
       city: row.primary_city ?? "",
       region: row.primary_region ?? "",
+      country: countryCode(row.primary_country),
       phone: row.phone ?? "",
       website: row.domain ?? "",
       models: row.models.filter((m): m is ModelId => (MODEL_IDS as readonly string[]).includes(m)),
@@ -92,6 +96,7 @@ export type ProfileUpdate = {
   services: string[];
   primary_city: string | null;
   primary_region: string | null;
+  primary_country?: string | null;
   phone: string | null;
   domain: string | null;
 };
