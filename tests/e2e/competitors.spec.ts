@@ -71,6 +71,17 @@ async function seed(page: Page, { competitors, answers, scanDaysAgo = [1 / 24] }
       )
       .throwOnError();
   }
+  // One suggested question for every answer: only suggested questions count in the score (BUG-129).
+  const question = answers.length
+    ? (
+        await db
+          .from("tracked_prompts")
+          .insert({ business_id: business.id, prompt: "Best coffee shop in Springfield, IL?", source: "library" })
+          .select("id")
+          .single()
+          .throwOnError()
+      ).data
+    : null;
   for (const daysAgo of answers.length ? scanDaysAgo : []) {
     const { data: run } = await db
       .from("visibility_runs")
@@ -87,6 +98,7 @@ async function seed(page: Page, { competitors, answers, scanDaysAgo = [1 / 24] }
           MODELS.map((provider) => ({
             run_id: run.id,
             business_id: business.id,
+            tracked_prompt_id: question!.id,
             provider,
             created_at: new Date(Date.now() - daysAgo * DAY).toISOString(),
             business_mentioned: names.includes("Sunrise Coffee Bar"),
@@ -115,6 +127,17 @@ async function seed(page: Page, { competitors, answers, scanDaysAgo = [1 / 24] }
 
 test.afterAll(async () => {
   for (const id of userIds.splice(0)) await db.auth.admin.deleteUser(id);
+});
+
+test("a tracked branch that answers never name shows as its chain (BUG-132)", async ({ page }) => {
+  // The saved answers never say "Congress": AI named the chain, so the number belongs to the chain.
+  await seed(page, {
+    competitors: [{ name: "Bean House on Congress", places_id: null }],
+    answers: [["Bean House on Congress"], ["Bean House on Congress"], ["Sunrise Coffee Bar"]],
+  });
+  const board = page.getByTestId("leaderboard");
+  await expect(board.getByRole("listitem").first()).toContainText("Bean House (all locations)");
+  await expect(board.getByTestId("chain-note")).toHaveText("You track Bean House on Congress");
 });
 
 test("leaderboard, Google side by side, and tracking a business AI keeps naming", async ({ page }) => {
@@ -146,7 +169,8 @@ test("leaderboard, Google side by side, and tracking a business AI keeps naming"
   await expect(also.getByRole("listitem")).toHaveText([/Blue Door Coffee\s*Named in 9 of 15 answers/, /Kiln Coffee Co\s*Named in 3 of 15 answers/]);
   await page.getByRole("button", { name: "Track Blue Door Coffee" }).click();
   await expect(page.getByText("Blue Door Coffee added to your competitors")).toBeVisible(ACTION);
-  await expect(board.getByRole("listitem").last()).toHaveText(/Blue Door Coffee\s*Checked from your next scan/, ACTION);
+  // Saved answers are checked for it at once (BUG-122): 9 of the 15 answers named it.
+  await expect(board.getByRole("listitem").filter({ hasText: "Blue Door Coffee" })).toHaveText(/Blue Door Coffee\s*60/, ACTION);
   await expect(also.getByRole("listitem")).toHaveText([/Kiln Coffee Co/]);
   await expect(page.getByTestId("tracked-count")).toHaveText("3 of 5 tracked");
 

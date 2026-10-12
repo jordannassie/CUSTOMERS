@@ -3,10 +3,10 @@
 import type { Intent } from "@/modules/question-library";
 import type { AutofillClients } from "./autofill";
 import type { PageResult } from "./firecrawl";
-import { BLOCKED_DOMAIN, BLOCKED_PAGES, BLOCKED_PLACE, COFFEE_DOMAIN, COFFEE_PAGES, COFFEE_PLACE, COFFEE_SITE_OUTPUT } from "./fixtures";
+import { BLOCKED_DOMAIN, BLOCKED_PAGES, BLOCKED_PLACE, COFFEE_DOMAIN, COFFEE_PAGES, COFFEE_PLACE, COFFEE_SITE_OUTPUT, OTHER_PLACE } from "./fixtures";
 import { ExtractError } from "./extract";
 import type { QuestionModel } from "./question-model";
-import { QUESTION_COUNT } from "./prompts/pick-questions.v1";
+import { QUESTION_COUNT } from "./prompts/pick-questions.v3";
 
 const SITES: Record<string, PageResult[]> = { [COFFEE_DOMAIN]: COFFEE_PAGES, [BLOCKED_DOMAIN]: BLOCKED_PAGES };
 
@@ -15,7 +15,9 @@ export const fixtureAutofillClients: AutofillClients = {
   scrape: async (domain) => SITES[domain] ?? [],
   searchPlaces: async (query) => {
     const q = query.toLowerCase();
-    if (q.includes(COFFEE_DOMAIN) || q.includes("sunrise coffee")) return [COFFEE_PLACE];
+    if (q.includes(COFFEE_DOMAIN)) return [COFFEE_PLACE];
+    // By name, as with no website: two listings, so the user has to pick theirs (MVP_SPEC 3.3).
+    if (q.includes("sunrise coffee")) return [COFFEE_PLACE, OTHER_PLACE];
     if (q.includes(BLOCKED_DOMAIN)) return [BLOCKED_PLACE];
     return [];
   },
@@ -28,7 +30,7 @@ export const fixtureAutofillClients: AutofillClients = {
 const WRITTEN: { template: string; intent: Intent }[] = [
   ["Who is the best {trade} in {city}?", "best"],
   ["Which {trade} in {city} do locals recommend?", "reviews"],
-  ["Which {trade} in {city} can help me today?", "urgent"],
+  ["Which {trade} in {city} offers same-day service?", "urgent"],
   ["What is an affordable {trade} in {city}?", "price"],
   ["What is the best reviewed {trade} in {city}?", "reviews"],
   ["Which {trade} in {city} is open on weekends?", "urgent"],

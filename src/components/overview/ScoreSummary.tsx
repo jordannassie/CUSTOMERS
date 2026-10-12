@@ -8,8 +8,11 @@ import { ScoreRing } from "./ScoreRing";
 // The share page has no details panel, so details are optional.
 type Score = Omit<NonNullable<OverviewView["score"]>, "details"> & { details?: MethodPanel };
 
-/** One number, one label, one sentence (MVP_SPEC 5.6), with an arrow only for a real change. */
-export function ScoreSummary({ score, animate = true }: { score: Score; animate?: boolean }) {
+/**
+ * One number, one label, one sentence (MVP_SPEC 5.6), with an arrow only for a real change. `ownQuestions` is the
+ * line on the user's own questions, which the score leaves out (BUG-129).
+ */
+export function ScoreSummary({ score, animate = true, ownQuestions = null }: { score: Score; animate?: boolean; ownQuestions?: string | null }) {
   return (
     <div className="flex items-center gap-4 sm:gap-7" data-testid="score-summary">
       <ScoreRing score={score.value} tone={score.tone} animate={animate} />
@@ -45,6 +48,11 @@ export function ScoreSummary({ score, animate = true }: { score: Score; animate?
         )}
         {score.firstResults && (
           <p className="text-sm text-muted-foreground">First results. Accuracy improves with every scan.</p>
+        )}
+        {ownQuestions && (
+          <p className="text-sm text-muted-foreground tabular-nums" data-testid="own-questions">
+            {ownQuestions}
+          </p>
         )}
         {score.details && <ScoreDetails panel={score.details} />}
       </div>

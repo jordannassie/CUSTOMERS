@@ -46,6 +46,10 @@ export async function setup(status = "trialing") {
 export function harness(send?: SendBillingEmail) {
   const emails: SendEmailInput[] = [];
   const subscriptions = new Map<string, Stripe.Subscription>();
+  const invoices = new Map<string, Stripe.Invoice>();
+  /** Per subscription: price ID to business_id on its Checkout Session's line items. */
+  const checkoutLines = new Map<string, Map<string, string>>();
+  const tagged: [itemId: string, businessId: string][] = [];
   const deps: WebhookDeps = {
     store: createWebhookStore(service),
     stripe: {
@@ -56,6 +60,15 @@ export function harness(send?: SendBillingEmail) {
       },
       listSubscriptionItems: async () => [],
       listInvoiceLines: async () => [],
+      retrieveInvoice: async (invoiceId) => {
+        const invoice = invoices.get(invoiceId);
+        if (!invoice) throw new Error(`no fixture for ${invoiceId}`);
+        return invoice;
+      },
+      checkoutBusinessIds: async (subId) => checkoutLines.get(subId) ?? new Map(),
+      tagItem: async (itemId, businessId) => {
+        tagged.push([itemId, businessId]);
+      },
     },
     sendEmail: async (input) => {
       emails.push(input);
@@ -69,7 +82,7 @@ export function harness(send?: SendBillingEmail) {
   };
   /** Delivers the same event twice, as a Stripe retry would. */
   const deliverTwice = async (event: Stripe.Event) => [await deliver(event), await deliver(event)];
-  return { emails, subscriptions, deliver, deliverTwice };
+  return { emails, subscriptions, invoices, checkoutLines, tagged, deliver, deliverTwice, deps };
 }
 
 export async function grants(agencyId: string) {

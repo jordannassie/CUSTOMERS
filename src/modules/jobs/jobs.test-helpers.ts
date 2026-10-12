@@ -49,7 +49,7 @@ export async function queueTestJob(agency: { agencyId: string; ownerUserId: stri
     .select("id")
     .single();
   if (error) throw error;
-  const prompts = Array.from({ length: 12 }, (_, i) => ({ business_id: business.id, prompt: `Question ${i + 1}: best coffee shop in ${city}?` }));
+  const prompts = Array.from({ length: 12 }, (_, i) => ({ business_id: business.id, prompt: `Question ${i + 1}: best coffee shop in ${city}?`, source: "library" }));
   const inserted = await service.from("tracked_prompts").insert(prompts);
   if (inserted.error) throw inserted.error;
   const { data: job, error: jobError } = await service

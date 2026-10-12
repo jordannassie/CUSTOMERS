@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { A, B, C, creditsOf, MID_MONTH, PERIOD_START, priceOf, RENEWAL, setup } from "./scenario.test-helpers";
+import { A, B, C, creditsOf, MID_MONTH, PERIOD_START, planOf, RENEWAL, setup } from "./scenario.test-helpers";
 import type { PlanChange } from "./planner";
 import { applyPlanChange, previewPlanChange } from "./service";
 
@@ -15,7 +15,7 @@ describe("upgrade mid-month", () => {
     expect(preview.details).toContain("Acme Plumbing will cost $249 a month on Pro.");
     expect(done.message).toBe("Acme Plumbing is now on Pro. The extra credits appear once the payment goes through.");
 
-    expect(priceOf(stripe, A)).toBe("price_pro");
+    expect(planOf(stripe, A)).toBe("cd_plan_pro");
     expect(stripe.invoices).toHaveLength(1);
     expect(stripe.invoices[0].amount_due).toBe(5000);
     // The webhook grants what the preview promised when this invoice is paid (B-42).
@@ -23,7 +23,7 @@ describe("upgrade mid-month", () => {
 
     const update = stripe.calls.find((c) => c.method === "updateSubscription")!;
     expect(update.params).toMatchObject({
-      items: [{ id: `si_${A}`, price: "price_pro" }],
+      items: [{ id: `si_${A}`, price_data: { product: "cd_plan_pro", unit_amount: 24900, currency: "usd", recurring: { interval: "month" } } }],
       proration_behavior: "always_invoice",
       proration_date: preview.previewedAt,
       payment_behavior: "error_if_incomplete",
@@ -36,7 +36,7 @@ describe("upgrade mid-month", () => {
     const preview = await previewPlanChange(ctx, change, deps);
     stripe.declineNextCharge = true;
     await expect(applyPlanChange(ctx, change, preview.previewedAt, deps)).rejects.toMatchObject({ type: "StripeCardError" });
-    expect(priceOf(stripe, A)).toBe("price_starter");
+    expect(planOf(stripe, A)).toBe("cd_plan_starter");
     expect(stripe.invoices).toHaveLength(0);
   });
 
@@ -63,11 +63,13 @@ describe("upgrade mid-month", () => {
 
   it("charges nothing during the trial", async () => {
     const { stripe, change } = setup({ status: "trialing" });
-    const { preview } = await change({ kind: "upgrade", businessId: A, planId: "pro" });
+    const { preview, done } = await change({ kind: "upgrade", businessId: A, planId: "pro" });
     expect(preview.headline).toBe("You pay nothing today. You're still on your free trial.");
     expect(preview.details).toEqual(["From October 1, 2026, Acme Plumbing will cost $249 a month on Pro."]);
+    // B2: no payment to wait for during a trial.
+    expect(done.message).toBe("Acme Plumbing is now on Pro. You won't be charged until your trial ends on October 1, 2026.");
     expect(preview).toMatchObject({ amountCents: 0, extraCredits: 0 });
-    expect(priceOf(stripe, A)).toBe("price_pro");
+    expect(planOf(stripe, A)).toBe("cd_plan_pro");
     expect(stripe.invoices).toHaveLength(0);
   });
 });
@@ -79,8 +81,16 @@ describe("add a business mid-month", () => {
     expect(preview).toMatchObject({ amountCents: 7450, extraCredits: 600 });
     expect(preview.headline).toBe("You'll pay $74.50 today and get 600 extra credits now.");
     expect(done.message).toBe("Corner Bakery is on your plan. Its credits appear once the payment goes through.");
-    expect(priceOf(stripe, C)).toBe("price_starter");
+    expect(planOf(stripe, C)).toBe("cd_plan_starter");
     expect(creditsOf(stripe, 0).map((g) => g.amount)).toEqual([600]);
+  });
+
+  it("gives a business on a plan another business already has a price of its own (BUG-103)", async () => {
+    const { stripe, change } = setup();
+    await change({ kind: "add", businessId: C, planId: "starter" });
+    const prices = stripe.items.map((i) => i.price);
+    expect(new Set(prices).size).toBe(3);
+    expect([A, B, C].map((id) => planOf(stripe, id))).toEqual(["cd_plan_starter", "cd_plan_starter", "cd_plan_starter"]);
   });
 });
 
@@ -98,19 +108,20 @@ describe("downgrade at renewal", () => {
     expect(preview.amountCents).toBe(29800);
     expect(done.message).toBe("Acme Plumbing moves to Starter on October 1, 2026.");
 
-    expect(priceOf(stripe, A)).toBe("price_pro");
+    expect(planOf(stripe, A)).toBe("cd_plan_pro");
     expect(stripe.invoices).toHaveLength(0);
     const update = stripe.calls.find((c) => c.method === "updateSchedule")!;
     expect(update.params).toMatchObject({
       end_behavior: "release",
       phases: [
         { start_date: PERIOD_START, end_date: RENEWAL },
-        { items: [{ price: "price_starter", metadata: { business_id: A } }, { price: "price_starter", metadata: { business_id: B } }] },
+        // B keeps its price; A gets a Starter price of its own, since Stripe refuses one price twice (BUG-103).
+        { items: [{ price_data: { product: "cd_plan_starter", unit_amount: 14900 }, metadata: { business_id: A } }, { price: "price_starter", metadata: { business_id: B } }] },
       ],
     });
 
     stripe.advanceTo(RENEWAL + 60);
-    expect(priceOf(stripe, A)).toBe("price_starter");
+    expect(planOf(stripe, A)).toBe("cd_plan_starter");
     expect(stripe.invoices).toHaveLength(1);
     expect(stripe.invoices[0].amount_due).toBe(29800);
     expect(creditsOf(stripe, 0).map((g) => g.amount)).toEqual([1200, 1200]);
@@ -122,10 +133,10 @@ describe("downgrade at renewal", () => {
     const { preview } = await change({ kind: "upgrade", businessId: B, planId: "pro" });
 
     expect(preview).toMatchObject({ amountCents: 5000, extraCredits: 650 });
-    expect(priceOf(stripe, B)).toBe("price_pro");
+    expect(planOf(stripe, B)).toBe("cd_plan_pro");
     stripe.advanceTo(RENEWAL + 60);
-    expect(priceOf(stripe, A)).toBe("price_starter");
-    expect(priceOf(stripe, B)).toBe("price_pro");
+    expect(planOf(stripe, A)).toBe("cd_plan_starter");
+    expect(planOf(stripe, B)).toBe("cd_plan_pro");
   });
 
   it("refuses a downgrade to a dearer plan", async () => {
@@ -173,18 +184,19 @@ describe("cancel", () => {
     expect(stripe.invoices).toHaveLength(0);
   });
 
-  it("drops a pending downgrade first, and blocks other changes until the plan is kept", async () => {
+  it("ends a pending downgrade's schedule instead of dropping it, and blocks other changes until the plan is kept", async () => {
     const { stripe, ctx, deps, change } = setup({ a: "price_pro" });
     await change({ kind: "downgrade", businessId: A, planId: "starter" });
     await change({ kind: "cancel" });
-    expect(stripe.calls.map((c) => c.method)).toContain("releaseSchedule");
-    expect(stripe.schedule?.status).toBe("released");
+    // BUG-124: the schedule ends the plan and keeps the downgrade for "Keep my plan" (cancel-keep.test.ts).
+    expect(stripe.calls.map((c) => c.method)).not.toContain("releaseSchedule");
+    expect(stripe.schedule).toMatchObject({ status: "active", endBehavior: "cancel" });
 
     await expect(previewPlanChange(ctx, { kind: "upgrade", businessId: B, planId: "pro" }, deps)).rejects.toThrow(
       "Your plan is set to end. Keep your plan first, then make this change.",
     );
     const { done } = await change({ kind: "keep" });
-    expect(done.message).toBe("Your plan will keep going.");
-    expect(stripe.cancelAtPeriodEnd).toBe(false);
+    expect(done.message).toBe("Your plan will keep going. Acme Plumbing moves to Starter on October 1, 2026.");
+    expect(stripe.subscription().cancel_at).toBeNull();
   });
 });

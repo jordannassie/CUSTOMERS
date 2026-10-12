@@ -3,12 +3,14 @@ export { listPlanPrices, listTopupPacks, type PlanPrice, type TopupPack } from "
 export { getPublicPricing } from "./pricing";
 export * from "./format";
 export { processStripeWebhook, type WebhookResult } from "./webhooks";
+export { recoverInvoiceCredits, recoverPlanCheckout } from "./checkout-recovery";
 export { buyTopUp, completeFixtureTopUp, getTopUpStatus, type TopUpStatus } from "./topup/actions";
 export { getTopupOffer, type TopupFormMode, type TopupOffer } from "./topup/service";
 export {
   addBusiness,
   cancelSubscription,
   downgradeBusiness,
+  keepBusinessPlan,
   keepSubscription,
   removeBusiness,
   upgradeBusiness,
@@ -19,10 +21,13 @@ export { addBusinessAtSetup, previewSetupAddOn, type SetupAddOn, type SetupAddOn
 export { PlanChangeError } from "./plan-change/planner";
 export { TRIAL_DAYS, trialAllowed } from "./checkout";
 export { TRIAL_CREDITS } from "./webhooks/credits";
+export { extendSubscriptionTrial } from "./trial-extend";
 export { createTrialCheckout, getTrialOffer, type CardFormMode, type StartTrialResult, type TrialOffer } from "./trial";
 export { openBillingPortal } from "./account/actions";
 export { loadBillingPage } from "./account/load";
 export { getPlanStartStatus, startPlanCheckout } from "./choose-plan/actions";
 export { loadChoosePlanPage, type ChoosePlanPage } from "./choose-plan/load";
 export type { ChoosePlanState } from "./choose-plan/service";
+export { getPlanNowStatus, startPlanNow } from "./end-trial/actions";
+export { loadPlanNowOffer, type PlanNowView } from "./end-trial/load";
 export type { BillingBusiness, BillingPlan, BillingView, PendingChange } from "./account/summary";

@@ -17,11 +17,13 @@ Stripe setup (B-40, MVP_SPEC 11, D-39, D-56).
 | `webhooks/dal.ts` | Agency, `business_subscriptions`, plan and pack reads and writes. Credits only through `grant_credits`. |
 | `webhooks/emails.tsx` | Payment failed and trial ending emails (plain notices until B-62). |
 | `plan-change/` | Upgrade, add, downgrade and remove a business, cancel and keep the plan (B-44). See below. |
+| `end-trial/` | "Start my plan now": ends a trial today so a 3rd business can be added (`startPlanNow`, `getPlanNowStatus`, `loadPlanNowOffer`). See Trial rules. |
 | `account/` | The billing page (B-46): `loadBillingPage`, `openBillingPortal`, and the Stripe or fixture access both it and plan changes use. See below. |
 
 ## Products and prices
 
 - Plans: `cd_plan_starter`, `cd_plan_pro`, monthly, per business (licensed quantity), lookup key `cd_plan_<id>_monthly_usd`.
+- One item per business (D-56). Stripe refuses one price on two items of a subscription, so an item added or changed by the app uses `price_data` on the plan's product at the `plans` row's amount: each business gets a price of its own (BUG-103). The catalog price is used only for the signup trial's single item. A plan is always told apart by its product (`plan-price.ts`), never by its price ID.
 - Top-ups: `cd_topup_500`, `cd_topup_2000`, one-time, lookup key `cd_topup_<n>_usd`.
 - USD only, no `currency_options`. To change a price, change the row, then rerun the sync: it makes a new price, moves the lookup key and stores the new ID. Old prices stay active for existing subscriptions.
 
@@ -31,7 +33,7 @@ Stripe setup (B-40, MVP_SPEC 11, D-39, D-56).
 2. In that sandbox, turn Adaptive Pricing off: Settings, Adaptive Pricing (dashboard.stripe.com/settings/adaptive-pricing). B-41 also sends `adaptive_pricing: { enabled: false }` on every Checkout Session.
 3. Create two restricted keys:
    - **Catalog key** (used only by the scripts below, keep it out of `.env*` files): Products Write, Prices Write.
-   - **App key** (`STRIPE_SECRET_KEY`): Checkout Sessions Write, Customers Write, Subscriptions Write, Subscription Schedules Write, Invoices Read, Prices Read, Products Read, Customer Portal Write. Confirm against the key's request logs while building B-41 to B-46 and remove anything unused.
+   - **App key** (`STRIPE_SECRET_KEY`): Checkout Sessions Write, Customers Write, Subscriptions Write, Subscription Schedules Write, Invoices Read, Prices Read, Products Read, Customer Portal Write, Charges Read (admin revenue reads charges; without it the admin page says "Could not reach Stripe"). The admin status page checks the key with a prices read, so it needs nothing more. Plan items use `price_data` on the plan's product (BUG-103), which Checkout Sessions Write and Subscriptions Write already allow.
 4. Confirm the prices in `plans` and `topup_packs` with Jordan (D-21, D-22) and update the rows if needed.
 5. Apply `034_topup_packs.sql` to the project, then run:
 
@@ -96,7 +98,9 @@ Rules:
 
 What checkout (B-41, B-43, B-44) must send:
 - Checkout Session `metadata.agency_id` (or `client_reference_id`), and `subscription_data.metadata.agency_id`.
-- Each subscription item `metadata.business_id`. Items without it only update the row already linked to that item.
+- Each subscription item `metadata.business_id`. Checkout does not copy line item metadata to the subscription items (BUG-104), so for an item without it the webhook reads the Checkout Session's line items (matched by price), saves the business and writes `business_id` onto the item. `checkout.session.completed` also saves the businesses, since `customer.subscription.created` can arrive before the session is complete. Items with no match only update the row already linked to that item.
+- When the webhook is missed or late, the card step, its wait screen and the top-up wait look the completed session up in Stripe and apply it with the same handler (`checkout-recovery.ts`), so a retried card step never starts a second subscription.
+- An email that can't be sent (email not set up) is logged and the event still answers 200 (BUG-106).
 - Top-ups: `mode: "payment"`, `metadata.kind = "topup"`, `metadata.topup_pack_id` (a `topup_packs.id`).
 - Plans are matched by product (`cd_plan_<id>` or `plans.stripe_product_id`), so older prices of the same plan still grant.
 - The app key also needs Subscriptions Read and Invoices Read (webhook reads the current subscription and, for invoices with more than one page of lines, the lines).
@@ -124,7 +128,7 @@ Server Actions in `plan-change/actions.ts`, exported from `index.ts`: `upgradeBu
 |---|---|---|
 | Upgrade, add a business | Now | `proration_behavior: "always_invoice"`, `proration_date` = the preview's, `payment_behavior: "error_if_incomplete"` (a declined card changes nothing). With a schedule attached, the schedule's current and next phase are edited instead. `addBusiness` checks `canAddBusiness` first. |
 | Downgrade, remove a business | Period end | A subscription schedule: the current phase as it is, then a one-month phase with the new items, then release. A second change edits that next phase. |
-| Cancel | Period end | Releases any schedule (pending changes are dropped), then `cancel_at_period_end: true`. `keepSubscription` undoes it. |
+| Cancel | Period end | No schedule: `cancel_at_period_end: true`. With a schedule (a pending downgrade or removal), Stripe refuses that, so one schedule update keeps only the current phase with `end_behavior: "cancel"` (Stripe sets the subscription's `cancel_at`) and saves the dropped phase in the schedule's metadata (`cd_kept_phase_0`, `_1`, ...). `keepSubscription` undoes either in one write, putting the saved phase back with the same prices and `end_behavior: "release"` (BUG-124). "Set to end" means `cancel_at_period_end` or `cancel_at` (`isCancelling`). |
 
 - Nothing here writes to the database or grants credits. The webhook saves the new plans and grants the prorated credits when the invoice is paid, keyed by the invoice line ID.
 - Every item and phase item carries `metadata.business_id`, so the webhook can match items after a phase starts.
@@ -139,6 +143,7 @@ Server Actions in `plan-change/actions.ts`, exported from `index.ts`: `upgradeBu
 - One trial per agency and per Stripe customer (F-43): `trialAllowed` in `checkout.ts` refuses the card step for an agency Stripe already knows, and `grant_trial_credits` (migration `043`) grants nothing to an agency that had a trial.
 - Cancel during the trial (`cancelSubscription`): Stripe ends the subscription at the trial end with no invoice. Until then the app banner says "Your trial ends on [date]. You won't be charged."; after it, the agency is `canceled` and entitlements refuse scans, new businesses and top-ups, while results stay readable.
 - `trial-rules.test.ts` runs the day 7 conversion and the cancelled trial on the in-memory Stripe and its clock. The same two still need a run with real Stripe test clocks once the sandbox exists (B-01, B-40).
+- Start the plan early (`end-trial/`): at the trial's business limit, the new-business plan page (`/settings/billing/plans/new-business`) offers "Start my plan now" instead of Continue. `startPlanNow` (`requireAgency`, zod `attemptId`) checks Stripe says `trialing` and not set to end, then sends `trial_end: "now"` with `payment_behavior: "error_if_incomplete"`: Stripe restarts the period today and charges the full month, and a declined card changes nothing. A change scheduled for the trial end is put in place first (free during the trial) and the schedule released, since Stripe refuses a new trial end on a schedule-controlled subscription. The idempotency key is `end-trial:<agency>:<attemptId>`; the page makes a new `attemptId` per try. Nothing is written or granted here: `customer.subscription.updated` saves `active` (which lets the 3rd business in) and `invoice.paid` grants each business's monthly credits. The page polls `getPlanNowStatus`, then goes to setup with the chosen plan. The trial grant keeps its original expiry (the old trial end). Still needs a run with real Stripe test clocks, with and without a scheduled change.
 
 ## Billing page (B-46, MVP_SPEC 8.1, 11)
 

@@ -6,6 +6,8 @@ const WARN_AT_PERCENT = 80;
 export const BILLING_HREF = "/settings/billing";
 /** Choose a plan when the agency has none or its plan ended (BUG-079, BUG-066). */
 export const CHOOSE_PLAN_HREF = "/settings/billing/plans";
+/** Pick a plan before setting up a business after the first; carried into the wizard as ?plan=. */
+export const NEW_BUSINESS_PLAN_HREF = "/settings/billing/plans/new-business";
 export const BUY_CREDITS_HREF = "/settings/credits";
 export const SUPPORT_HREF = "/contact?topic=support";
 
@@ -101,16 +103,19 @@ export function usageWidget(usage: UsageNumbers, account: AccountState, now: Dat
   return { tone, headline, percentUsed, details, showBuyCredits: empty };
 }
 
-function formatDate(date: Date): string {
-  return date.toLocaleDateString("en-US", { month: "long", day: "numeric", timeZone: "UTC" });
+/** In the viewer's zone, like the dates the pages format themselves (BUG-111); UTC when unknown. */
+function formatDate(date: Date, timeZone: string): string {
+  return date.toLocaleDateString("en-US", { month: "long", day: "numeric", timeZone });
 }
 
 /** Days and trial credits left, then the charge date, or that nothing is charged after a cancel (B-45, MVP_SPEC 4.4). */
-function trialBanner(usage: UsageNumbers, account: AccountState, now: Date): Banner {
+function trialBanner(usage: UsageNumbers, account: AccountState, now: Date, timeZone: string): Banner {
   const days = daysUntil(account.trialEndsAt!, now);
   const credits = plural(splitCredits(usage).plan, "trial credit");
-  const left = days === 0 ? `Your free trial ends today, with ${credits} left.` : `Your free trial has ${plural(days, "day")} and ${credits} left.`;
-  const date = formatDate(account.trialEndsAt!);
+  const adding = usage.periodCredits === 0 && usage.balance === 0 && usage.periodUsed === 0;
+  const timeLeft = days === 0 ? `Your free trial ends today, with ${credits} left.` : `Your free trial has ${plural(days, "day")} and ${credits} left.`;
+  const left = adding ? `Your free trial has ${plural(days, "day")}. Your trial credits are being added.` : timeLeft;
+  const date = formatDate(account.trialEndsAt!, timeZone);
   if (account.cancelAt) {
     return {
       kind: "trial",
@@ -136,7 +141,7 @@ function endedBanner(account: AccountState): Banner {
 }
 
 /** Most urgent first. */
-export function pickBanners(usage: UsageNumbers, account: AccountState, now: Date): Banner[] {
+export function pickBanners(usage: UsageNumbers, account: AccountState, now: Date, timeZone = "UTC"): Banner[] {
   const banners: Banner[] = [];
 
   if (account.status === "suspended" || account.status === "deleted") {
@@ -161,7 +166,10 @@ export function pickBanners(usage: UsageNumbers, account: AccountState, now: Dat
     });
   }
 
-  if (usage.balance <= 0) {
+  // A trial that has never been granted a credit (its end date may not be saved yet) is waiting for the first
+  // invoice to be paid, not out of credits.
+  const creditsComing = account.status === "trialing" && usage.balance === 0 && usage.periodCredits === 0 && usage.periodUsed === 0;
+  if (usage.balance <= 0 && !creditsComing) {
     banners.push({
       kind: "out_of_credits",
       tone: "danger",
@@ -173,7 +181,7 @@ export function pickBanners(usage: UsageNumbers, account: AccountState, now: Dat
     });
   }
 
-  if (isTrial(account)) banners.push(trialBanner(usage, account, now));
+  if (isTrial(account)) banners.push(trialBanner(usage, account, now, timeZone));
 
   return banners;
 }

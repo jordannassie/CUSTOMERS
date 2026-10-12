@@ -3,6 +3,7 @@ import { at, FakeStripe } from "./fake-stripe";
 import { doneCopy, previewCopy } from "./copy";
 import { copyFor } from "./copy.test-helpers";
 import { buildPhases, checkChange, idempotencyKey, phasesOf, type PlanChangeContext } from "./planner";
+import { trialExtendedPhases } from "./trial-phases";
 
 const A = "00000000-0000-4000-8000-00000000000a";
 const B = "00000000-0000-4000-8000-00000000000b";
@@ -83,6 +84,38 @@ describe("buildPhases", () => {
       phases: [{ start_date: 1 }, { start_date: 2 }, { start_date: 3 }],
     } as never;
     expect(() => phasesOf(schedule)).toThrow("more than one future phase");
+  });
+});
+
+describe("trialExtendedPhases (A4)", () => {
+  const item = (price: string, business: string) => ({ price: { id: price }, quantity: 1, metadata: { business_id: business } });
+  const schedule = (next: boolean) =>
+    ({
+      id: "sub_sched_x",
+      current_phase: { start_date: 100, end_date: 700 },
+      phases: [
+        { start_date: 100, end_date: 700, trial_end: 700, items: [item("price_pro", A)] },
+        ...(next ? [{ start_date: 700, end_date: 3400, items: [item("price_starter_new", A)] }] : []),
+      ],
+    }) as never;
+
+  it("runs the current phase to the new trial end and starts the pending change then", () => {
+    const phases = trialExtendedPhases(schedule(true), 900);
+    expect(phases[0]).toEqual({
+      items: [{ price: "price_pro", quantity: 1, metadata: { business_id: A } }],
+      start_date: 100,
+      end_date: 900,
+      trial_end: 900,
+    });
+    expect(phases[1]).toEqual({
+      items: [{ price: "price_starter_new", quantity: 1, metadata: { business_id: A } }],
+      duration: { interval: "month", interval_count: 1 },
+      proration_behavior: "none",
+    });
+  });
+
+  it("writes only the current phase when nothing is pending", () => {
+    expect(trialExtendedPhases(schedule(false), 900)).toHaveLength(1);
   });
 });
 

@@ -18,9 +18,9 @@ describe("jobUpdateFor", () => {
     expect(update).toEqual({ status: "done", creditsCharged: 36, error: null });
   });
 
-  it("fails a skipped scan straight away with its reason", () => {
+  it("ends a skipped scan straight away as skipped, with its reason, not as a failure (B5)", () => {
     const update = jobUpdateFor({ status: "skipped", reason: "You're out of credits." }, job(1), NOW);
-    expect(update).toEqual({ status: "failed", error: "You're out of credits." });
+    expect(update).toEqual({ status: "skipped", error: "You're out of credits." });
   });
 
   it("retries after 5 minutes times the attempts, then fails on the third", () => {
@@ -67,7 +67,7 @@ describe("runWorker", () => {
     const queue = Array.from({ length: 23 }, (_, i) => (i === 4 ? "bad-4" : `job-${i}`));
     const { deps, finished, maxRunning } = fakeDeps(queue);
     const summary = await runWorker(600_000, deps);
-    expect(summary).toEqual({ claimed: 23, done: 22, retrying: 1, failed: 0, lost: 0, stoppedForTime: false });
+    expect(summary).toEqual({ claimed: 23, done: 22, retrying: 1, failed: 0, skipped: 0, lost: 0, stoppedForTime: false });
     expect(deps.claim).toHaveBeenCalledWith(10);
     expect(maxRunning()).toBe(10);
     expect(finished.find((f) => f.job.id === "bad-4")?.update).toMatchObject({ status: "queued", error: "database went away" });

@@ -7,10 +7,17 @@ import { count, credits, day } from "./format";
 
 type Props = { forecast: UsageReport["forecast"]; buyCreditsHref: string };
 
+// "until renewal on Oct 9" but "for the next 30 days" (BUG-095: "until the next 30 days").
 function until(f: UsageReport["forecast"]): string {
-  if (f.kind === "trial") return `your trial ends on ${day(f.endsAt)}`;
-  if (f.kind === "renewal") return `renewal on ${day(f.endsAt)}`;
-  return "the next 30 days";
+  if (f.kind === "trial") return `until your trial ends on ${day(f.endsAt)}`;
+  if (f.kind === "renewal") return `until renewal on ${day(f.endsAt)}`;
+  return "for the next 30 days";
+}
+
+function before(f: UsageReport["forecast"]): string {
+  if (f.kind === "trial") return `before your trial ends on ${day(f.endsAt)}`;
+  if (f.kind === "renewal") return `before renewal on ${day(f.endsAt)}`;
+  return "in the next 30 days";
 }
 
 const scheduled = (n: number) => `${count(n)} scheduled scan${n === 1 ? "" : "s"}`;
@@ -27,12 +34,12 @@ export function ForecastCard({ forecast: f, buyCreditsHref }: Props) {
   let detail: string;
   if (f.scans === 0) {
     headline = "No scans scheduled";
-    detail = `Nothing is scheduled to run before ${until(f)}, so no credits will be used.`;
+    detail = `Nothing is scheduled to run ${before(f)}, so no credits will be used.`;
   } else if (short) {
     headline = `You may run out on ${day(f.runsOutAt!)}`;
-    detail = `Your ${scheduled(f.scans)} before ${until(f)} need${f.scans === 1 ? "s" : ""} about ${credits(f.needed)}. You have ${count(Math.max(0, f.available))}, about ${count(shortBy)} short.`;
+    detail = `Your ${scheduled(f.scans)} ${before(f)} need${f.scans === 1 ? "s" : ""} about ${credits(f.needed)}. You have ${count(Math.max(0, f.available))}, about ${count(shortBy)} short.`;
   } else {
-    headline = `Enough credits until ${until(f)}`;
+    headline = `Enough credits ${until(f)}`;
     detail = `Your ${scheduled(f.scans)} need${f.scans === 1 ? "s" : ""} about ${credits(f.needed)} of the ${count(f.available)} you have.`;
   }
 

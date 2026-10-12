@@ -16,7 +16,8 @@ const industryLabel = (value: string) => (isIndustry(value) ? INDUSTRY_LABELS[va
 
 export default function Profile({ detail }: { detail: NonNullable<AdminBusinessDetail> }) {
   const { business: b, plan, agency } = detail;
-  const location = [b.primary_city, b.primary_region, b.primary_country].filter(Boolean).join(", ");
+  // The neighborhood or area leads when set: "East Austin, Austin, TX, US". A row of its own would leave the grid uneven.
+  const location = [b.primary_area, b.primary_city, b.primary_region, b.primary_country].filter(Boolean).join(", ");
 
   const rows: [string, React.ReactNode][] = [
     ["Website", b.domain ?? "No website"],

@@ -5,7 +5,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { expect, it } from "vitest";
 import { createHarness, describeEval } from "vitest-evals";
 import { createQuestionModel, type QuestionModel } from "@/modules/onboarding/question-model";
-import { PICK_MODEL, PICK_PROMPT_VERSION } from "@/modules/onboarding/prompts/pick-questions.v1";
+import { PICK_MODEL, PICK_PROMPT_VERSION } from "@/modules/onboarding/prompts/pick-questions.v3";
 import { prepareQuestions, type QuestionSet } from "@/modules/onboarding/questions";
 import { validateLibrary, type LibraryFile } from "@/modules/question-library";
 import { apiErrorCase, gradeCase, LIBRARY_PATH, loadDataset, PASS_OVERLAP, poolNotInLibrary, score, type GradedCase, type PickingCase } from "./grader";

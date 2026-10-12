@@ -18,9 +18,9 @@ function rows(status = "active", subscriptionId: string | null = "sub_fake"): Bi
       { id: "pro", name: "Pro", priceCents: 24900, monthlyCredits: 2500 },
     ],
     businesses: [
-      { id: A, name: "Acme Plumbing", planId: "pro", itemId: `si_${A}` },
-      { id: B, name: "Bay Dental", planId: "starter", itemId: `si_${B}` },
-      { id: C, name: "Corner Bakery", planId: null, itemId: null },
+      { id: A, name: "Acme Plumbing", planId: "pro", itemId: `si_${A}`, deleted: false },
+      { id: B, name: "Bay Dental", planId: "starter", itemId: `si_${B}`, deleted: false },
+      { id: C, name: "Corner Bakery", planId: null, itemId: null, deleted: false },
     ],
   };
 }
@@ -38,6 +38,18 @@ describe("billingView", () => {
     expect(view.nextCharge).toEqual({ at: iso(RENEWAL), amountCents: 24900 + 14900 });
     expect(view.canChange).toBe(true);
     expect(view.cancelAt).toBeNull();
+  });
+
+  it("never offers a deleted business, and marks one whose item runs to the period end (BUG-120)", async () => {
+    const { stripe, ctx } = setup({ a: "price_pro" });
+    const base = rows();
+    base.businesses = base.businesses.map((b) => (b.id === C || b.id === B ? { ...b, deleted: true } : b));
+    const view = await billingView({ rows: base, access: { context: ctx, stripe } });
+    expect(view.notOnPlan).toEqual([]);
+    expect(view.onPlan.map((b) => [b.name, b.deleted])).toEqual([
+      ["Acme Plumbing", false],
+      ["Bay Dental", true],
+    ]);
   });
 
   it("shows a pending downgrade and removal, and the smaller next charge", async () => {

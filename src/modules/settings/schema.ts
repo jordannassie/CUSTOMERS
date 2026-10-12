@@ -9,6 +9,10 @@ export type Frequency = (typeof FREQUENCIES)[number];
 
 const text = (max: number) => z.string().trim().max(max);
 
+/** A business's neighborhood or area, "East Austin". Same 80 limit as businesses_primary_area_length; empty is null. */
+export const AREA_MAX = 80;
+export const areaText = z.string().trim().max(AREA_MAX).nullable().transform((area) => area || null);
+
 export const businessProfileInput = z.object({
   businessId: z.uuid(),
   name: text(120).min(1),
@@ -17,6 +21,8 @@ export const businessProfileInput = z.object({
   city: text(80),
   region: text(80),
   country: text(80).optional(),
+  // Left as it is when the form did not send one.
+  area: areaText.optional(),
   phone: text(30).regex(/^[0-9+().\s-]*$/),
   website: text(253),
 });

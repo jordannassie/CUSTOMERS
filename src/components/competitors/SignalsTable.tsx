@@ -7,6 +7,7 @@ import { headToHead, hoursText, matchedNone, reviewsText, websiteLabel, type Sig
 const STATUS_NOTE = {
   missing: "Not matched to a Google listing",
   error: "Google details did not load. Refresh to try again.",
+  limited: "Google's limit for these details was reached. They come back later today.",
 } as const;
 
 /** Google Places values side by side (MVP_SPEC 7.1). Shown live, never stored (D-73). */

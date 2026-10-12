@@ -31,10 +31,11 @@ function report(overall: { score: number; margin: number } | null, competitors: 
     lastCheckedAt: overall ? LAST_SCAN : null,
     competitors,
     questions: [],
+    ownQuestions: null,
   };
 }
 
-const row = (name: string, placesId: string | null = null, createdAt = BEFORE): CompetitorRow => ({ name, placesId, createdAt });
+const row = (name: string, placesId: string | null = null, countedFrom = BEFORE): CompetitorRow => ({ name, placesId, countedFrom });
 const noAlso = { names: [], answers: 0 };
 const view = (r: ScoreReport, competitors: CompetitorRow[], signals = new Map<string, SignalResult>()) =>
   competitorsView({
@@ -134,6 +135,22 @@ describe("leaderboard", () => {
     expect(v.margin).toBeNull();
     expect(v.leaderboard.every((r) => r.score === null && r.standing === null && !r.collecting)).toBe(true);
     expect(v.count).toBe(1);
+  });
+
+  it("shows a branch whose answers named only its chain as the chain, once for two branches", () => {
+    const v = view(
+      report({ score: 20, margin: 5 }, [
+        { name: "Bennu Coffee on Congress", score: 25, standing: "behind", change: null, chain: "Bennu Coffee" },
+        { name: "Bennu Coffee East", score: 25, standing: "behind", change: null, chain: "Bennu Coffee" },
+        { name: "Desnudo Coffee: East Austin", score: 25, standing: "behind", change: null, chain: null },
+      ]),
+      [row("Bennu Coffee on Congress"), row("Bennu Coffee East"), row("Desnudo Coffee: East Austin")],
+    );
+    expect(v.leaderboard.filter((r) => !r.isYou).map((r) => [r.name, r.chain ?? null])).toEqual([
+      ["Bennu Coffee on Congress", { brand: "Bennu Coffee", tracked: ["Bennu Coffee on Congress", "Bennu Coffee East"] }],
+      ["Desnudo Coffee: East Austin", null],
+    ]);
+    expect(v.count).toBe(3);
   });
 });
 

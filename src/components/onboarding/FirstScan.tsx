@@ -4,7 +4,8 @@ import { useEffect, useRef, useState, useTransition } from "react";
 import { Loader2, RotateCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { ActionResult } from "@/modules/auth";
-import type { ScanStatus } from "@/modules/jobs";
+import type { ScanStatus, StartScanResult } from "@/modules/jobs";
+import { needsOverdraftConfirm } from "@/modules/jobs/overdraft";
 import {
   CREDITS_LATE,
   FIRST_SCAN_FAILED,
@@ -17,9 +18,11 @@ import {
 } from "@/modules/onboarding/first-scan";
 import type { FirstScanSummary, ModelProgress } from "@/modules/onboarding";
 import { FirstScanResult } from "./FirstScanResult";
+import { OverdraftNotice } from "./OverdraftNotice";
 import { ScanProgressList } from "./ScanProgressList";
 
 type ScanAction = (input: unknown) => Promise<ActionResult<ScanStatus>>;
+type StartAction = (input: unknown) => Promise<StartScanResult>;
 type CreditsCheck = () => Promise<ActionResult<{ waiting: boolean }>>;
 type ProgressAction = (input: unknown) => Promise<ActionResult<ModelProgress[]>>;
 type SummaryAction = (input: unknown) => Promise<ActionResult<FirstScanSummary>>;
@@ -35,7 +38,7 @@ type Props = {
   initial: ScanStatus | null;
   /** The subscription is linked but invoice.paid has not granted the trial credits yet (F-48). */
   awaitingCredits: boolean;
-  start: ScanAction;
+  start: StartAction;
   getStatus: ScanAction;
   checkCredits: CreditsCheck;
   getProgress: ProgressAction;
@@ -69,12 +72,17 @@ export function FirstScan(props: Props) {
     setPhase("failed");
   }
 
-  function run() {
+  // `confirmOverdraft` once the user has seen that the scan costs more than the balance (D-54).
+  function run(confirmOverdraft = false) {
     setProblem(null);
     setPhase("scanning");
     startTransition(async () => {
-      const result = await start({ businessId }).catch(() => null);
+      const result = await start(confirmOverdraft ? { businessId, confirmOverdraft } : { businessId }).catch(() => null);
       if (!result) return fail(NO_CONNECTION);
+      if (needsOverdraftConfirm(result)) {
+        setProblem(result.error);
+        return setPhase("confirm");
+      }
       // 409: a scan is already on its way (a second tab, or a double start), so just wait for it.
       if (!result.ok && result.status !== 409) return fail(result.error);
     });
@@ -177,7 +185,7 @@ export function FirstScan(props: Props) {
           state={
             phase === "done"
               ? "done"
-              : waiting || (stalled && !anyAnswers)
+              : waiting || phase === "confirm" || (stalled && !anyAnswers)
                 ? "waiting"
                 : failed || paused || stalled
                   ? "stopped"
@@ -193,12 +201,14 @@ export function FirstScan(props: Props) {
                 {problem}
               </p>
               <div>
-                <Button onClick={creditsLate ? waitForCredits : run} disabled={pending} className="min-w-32">
+                <Button onClick={creditsLate ? waitForCredits : () => run()} disabled={pending} className="min-w-32">
                   {pending ? <Loader2 aria-hidden className="animate-spin" /> : <RotateCw aria-hidden />}
                   Try again
                 </Button>
               </div>
             </>
+          ) : phase === "confirm" ? (
+            <OverdraftNotice message={problem ?? ""} pending={pending} onConfirm={() => run(true)} />
           ) : waiting ? (
             <p className="flex items-center gap-2 text-sm text-muted-foreground" data-testid="first-scan-credits">
               <Loader2 aria-hidden className="size-4 animate-spin" />

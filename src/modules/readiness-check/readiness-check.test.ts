@@ -64,6 +64,17 @@ describe("compareSites", () => {
   });
 });
 
+describe("contact finding (BUG-114)", () => {
+  it("asks only for the address when the phone number was found", () => {
+    const phoneOnly = "<html><head><title>Plumber</title></head><body><p>Call (702) 555-0100</p></body></html>";
+    const result = compareSites({ domain: "mine.com", signals: extractSignals(phoneOnly) }, { domain: "them.com", signals: null });
+    expect(result.checks.find((c) => c.label === "Phone number")?.mine).toBe(true);
+    const contact = result.findings.find((f) => f.title.startsWith("Show your"));
+    expect(contact?.title).toBe("Show your address");
+    expect(contact?.detail).not.toMatch(/add.*phone/i);
+  });
+});
+
 describe("input", () => {
   it("gives plain messages for bad input", () => {
     const first = (v: unknown) => readinessCheckInput.safeParse(v).error?.issues[0]?.message;

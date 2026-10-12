@@ -2,9 +2,10 @@ import "server-only";
 import { requireAgency } from "@/modules/auth";
 import type { ScanFrequency } from "@/modules/credits";
 import { maxQuestions } from "@/modules/entitlements";
-import { CHECK_MODELS, loadQuestionResults, type ProviderId } from "@/modules/scanning";
+import { CHECK_MODELS, isOwnQuestion, loadQuestionResults, type ProviderId } from "@/modules/scanning";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
+import { latestAnswers, type QuestionAnswer } from "./answers";
 import { questionsView, sameQuestion, tidyQuestion, type QuestionsView } from "./service";
 
 const FREQUENCIES: readonly string[] = ["daily", "weekly", "monthly"] satisfies ScanFrequency[];
@@ -38,10 +39,41 @@ export async function loadQuestionsPage(agencyId: string, businessId: string, no
     city: business.data.primary_city,
     models,
     frequency: FREQUENCIES.includes(business.data.scan_frequency) ? (business.data.scan_frequency as ScanFrequency) : "weekly",
-    questions: questions.data!,
+    questions: questions.data!.map(({ source, ...q }) => ({ ...q, own: isOwnQuestion(source) })),
     results,
     limit: limit.limit,
   });
+}
+
+// Enough rows to find the newest answer from every model, even after a few scans with one model failing.
+const ANSWER_ROWS = 30;
+
+/** The latest answer per model for one question (BUG-089); null when the question is not this agency's. */
+export async function loadQuestionAnswers(agencyId: string, businessId: string, questionId: string): Promise<QuestionAnswer[] | null> {
+  const db = createServiceClient();
+  const [business, question] = await Promise.all([
+    db.from("businesses").select("models").eq("id", businessId).eq("agency_id", agencyId).maybeSingle(),
+    db.from("tracked_prompts").select("id").eq("id", questionId).eq("business_id", businessId).maybeSingle(),
+  ]);
+  for (const r of [business, question]) if (r.error) throw new Error(`Questions: ${r.error.message}`);
+  if (!business.data || !question.data) return null;
+  // The rows that count: never sample answers once the agency is real (migration 044).
+  const { data, error } = await db
+    .from("visibility_results_counted")
+    .select("provider, created_at, business_mentioned, competitors_mentioned, answer_text")
+    .eq("business_id", businessId)
+    .eq("tracked_prompt_id", questionId)
+    .order("created_at", { ascending: false })
+    .limit(ANSWER_ROWS);
+  if (error) throw new Error(`Questions: could not load answers: ${error.message}`);
+  const rows = data.map((r) => ({
+    provider: r.provider ?? "",
+    created_at: r.created_at ?? "",
+    business_mentioned: r.business_mentioned ?? false,
+    competitors_mentioned: r.competitors_mentioned,
+    answer_text: r.answer_text,
+  }));
+  return latestAnswers(rows, business.data.models.filter(isModel));
 }
 
 export type ChangeResult = { ok: true } | { ok: false; status: 400 | 403 | 404; error: string };
@@ -49,8 +81,8 @@ export type ChangeResult = { ok: true } | { ok: false; status: 400 | 403 | 404; 
 const notFound: ChangeResult = { ok: false, status: 404, error: "We could not find that question. Refresh the page and try again." };
 const duplicate: ChangeResult = { ok: false, status: 400, error: "You already track this question." };
 
-// The writes below take the agency from the action's auth guard. They go through the signed-in user's
-// client, so RLS (tracked_prompts_owner_all) also guards them.
+// The writes below take the agency from the action's auth guard and check the business is the agency's. Users can't
+// write tracked_prompts themselves (migration 047, SEC-10), so the writes use the service role, scoped to the business.
 async function ownedQuestions(agencyId: string, businessId: string) {
   const supabase = await createClient();
   const { data: business, error } = await supabase
@@ -81,7 +113,7 @@ export async function insertQuestion(agencyId: string, businessId: string, text:
   if (owned.questions.some((q) => sameQuestion(q.prompt, prompt))) return duplicate;
   const full = await roomForOneMore(businessId);
   if (full) return full;
-  const { error } = await owned.supabase.from("tracked_prompts").insert({ business_id: businessId, prompt, source: "custom", active: true });
+  const { error } = await createServiceClient().from("tracked_prompts").insert({ business_id: businessId, prompt, source: "custom", active: true });
   if (error) throw new Error(`Questions: could not add the question: ${error.message}`);
   return { ok: true };
 }
@@ -92,7 +124,7 @@ export async function updateQuestionText(agencyId: string, businessId: string, q
   if (!owned || !owned.questions.some((q) => q.id === questionId)) return notFound;
   const prompt = tidyQuestion(text);
   if (owned.questions.some((q) => q.id !== questionId && sameQuestion(q.prompt, prompt))) return duplicate;
-  const { error } = await owned.supabase.from("tracked_prompts").update({ prompt, source: "custom" }).eq("id", questionId);
+  const { error } = await createServiceClient().from("tracked_prompts").update({ prompt, source: "custom" }).eq("id", questionId).eq("business_id", businessId);
   if (error) throw new Error(`Questions: could not save the question: ${error.message}`);
   return { ok: true };
 }
@@ -106,7 +138,7 @@ export async function updateQuestionActive(agencyId: string, businessId: string,
     const full = await roomForOneMore(businessId);
     if (full) return full;
   }
-  const { error } = await owned.supabase.from("tracked_prompts").update({ active }).eq("id", questionId);
+  const { error } = await createServiceClient().from("tracked_prompts").update({ active }).eq("id", questionId).eq("business_id", businessId);
   if (error) throw new Error(`Questions: could not ${active ? "resume" : "pause"} the question: ${error.message}`);
   return { ok: true };
 }
@@ -115,7 +147,7 @@ export async function updateQuestionActive(agencyId: string, businessId: string,
 export async function deleteQuestion(agencyId: string, businessId: string, questionId: string): Promise<ChangeResult> {
   const owned = await ownedQuestions(agencyId, businessId);
   if (!owned || !owned.questions.some((q) => q.id === questionId)) return notFound;
-  const { error } = await owned.supabase.from("tracked_prompts").delete().eq("id", questionId);
+  const { error } = await createServiceClient().from("tracked_prompts").delete().eq("id", questionId).eq("business_id", businessId);
   if (error) throw new Error(`Questions: could not remove the question: ${error.message}`);
   return { ok: true };
 }

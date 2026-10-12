@@ -7,6 +7,7 @@ import {
   addQuestion,
   atLimit,
   editQuestion,
+  getQuestionAnswers,
   getQuestionsPage,
   limitText,
   removeQuestion,
@@ -17,7 +18,7 @@ import { getWorkspace } from "@/modules/workspace";
 export const metadata = { title: "Questions", robots: { index: false } };
 
 const PATH = "/questions";
-const actions = { edit: editQuestion, setActive: setQuestionActive, remove: removeQuestion };
+const actions = { edit: editQuestion, setActive: setQuestionActive, remove: removeQuestion, answers: getQuestionAnswers };
 
 // B-53, MVP_SPEC 5.3 and 8.1: the questions we ask AI for this business, and how often each one recommended it.
 export default async function QuestionsPage() {
@@ -77,7 +78,7 @@ export default async function QuestionsPage() {
           <QuestionList
             testId="paused-questions"
             title="Paused"
-            description="Not checked and no credits used. Past results stay until they are 30 days old."
+            description="Not checked and no credits used. Paused questions stop counting in your score. Their past results stay here until they are 30 days old."
             questions={view.paused}
             view={view}
             limitMessage={limitMessage}

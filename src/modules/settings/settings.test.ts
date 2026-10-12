@@ -61,6 +61,7 @@ const profile = (businessId: string) => ({
   services: ["Drain cleaning", "Water heaters"],
   city: "Austin",
   region: "TX",
+  area: " East Austin ",
   phone: "(512) 555-0100",
   website: "https://www.Northside-Plumbing.com/contact",
 });
@@ -101,7 +102,7 @@ describe("settings actions", () => {
 
     const { data } = await service
       .from("businesses")
-      .select("name, industry, services, primary_city, primary_region, phone, domain, models, scan_frequency")
+      .select("name, industry, services, primary_city, primary_region, primary_area, phone, domain, models, scan_frequency")
       .eq("id", seed.businessId)
       .single();
     expect(data).toEqual({
@@ -110,6 +111,7 @@ describe("settings actions", () => {
       services: ["Drain cleaning", "Water heaters"],
       primary_city: "Austin",
       primary_region: "TX",
+      primary_area: "East Austin",
       phone: "(512) 555-0100",
       domain: "www.northside-plumbing.com",
       models: ["perplexity"],
@@ -125,6 +127,7 @@ describe("settings actions", () => {
     expect(await saveBusinessProfile({ ...profile(seed.businessId), name: " " })).toMatchObject({ status: 400 });
     expect(await saveBusinessProfile({ ...profile(seed.businessId), website: "not a site" })).toMatchObject({ status: 400 });
     expect(await saveBusinessProfile({ ...profile(seed.businessId), phone: "<script>" })).toMatchObject({ status: 400 });
+    expect(await saveBusinessProfile({ ...profile(seed.businessId), area: "x".repeat(81) })).toMatchObject({ status: 400 });
     expect(await saveScanSettings({ businessId: seed.businessId, models: [], frequency: "weekly" })).toMatchObject({ status: 400 });
     expect(await saveScanSettings({ businessId: seed.businessId, models: ["gemini"], frequency: "weekly" })).toMatchObject({
       status: 400,

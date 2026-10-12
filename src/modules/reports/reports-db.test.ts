@@ -19,7 +19,7 @@ vi.mock("@/lib/supabase/server", () => ({
 }));
 
 const { createShareLink, revokeShareLink } = await import("./actions");
-const { getSharedReport } = await import("./dal");
+const { getSharedReport, isShareLinkActive } = await import("./dal");
 
 const UUID = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
 
@@ -65,12 +65,20 @@ async function createOwner() {
     .select("id")
     .single()
     .throwOnError();
+  // Only answers to suggested questions count in the score (BUG-129).
+  const { data: question } = await service
+    .from("tracked_prompts")
+    .insert({ business_id: business.id, prompt: "Best coffee shop in Springfield, IL?", source: "library" })
+    .select("id")
+    .single()
+    .throwOnError();
   await service
     .from("visibility_results")
     .insert(
       [0, 1, 2].map((i) => ({
         run_id: run.id,
         business_id: business.id,
+        tracked_prompt_id: question.id,
         provider: ["openai", "anthropic", "perplexity"][i],
         created_at: new Date(Date.now() - 3_600_000).toISOString(),
         business_mentioned: i !== 1,
@@ -121,6 +129,24 @@ describe("share links", () => {
     const next = await createShareLink({ businessId: owner.businessId });
     if (!next.ok) throw new Error("create failed");
     expect(next.data.path).not.toBe(first.data.path);
+  });
+
+  it("stops opening while the agency is suspended or deleted, and opens again when it is reinstated (B9)", async () => {
+    const owner = await createOwner();
+    session = owner.client;
+    const link = await createShareLink({ businessId: owner.businessId });
+    if (!link.ok) throw new Error("create failed");
+    const token = tokenOf(link.data.path);
+    const setStatus = (status: string) => service.from("agencies").update({ status }).eq("id", owner.agencyId).throwOnError();
+
+    for (const status of ["suspended", "deleted"]) {
+      await setStatus(status);
+      expect(await getSharedReport(token), status).toBeNull();
+      expect(await isShareLinkActive(token), status).toBe(false);
+    }
+    await setStatus("active");
+    expect(await isShareLinkActive(token)).toBe(true);
+    expect(await getSharedReport(token)).not.toBeNull();
   });
 
   it("puts no database ids, emails or place ids in the report", async () => {

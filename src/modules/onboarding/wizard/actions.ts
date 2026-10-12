@@ -50,6 +50,7 @@ export async function saveWebsiteStep(input: unknown): Promise<ActionResult<{ bu
   if (typeof user !== "string") return user;
   const parsed = websiteStepInput.safeParse(input);
   if (!parsed.success) return { ok: false, status: 400, error: "Enter your website, or your business name and city." };
+  const { plan } = parsed.data;
 
   let request: { domain: string } | { name: string; city: string };
   if ("domain" in parsed.data) {
@@ -58,9 +59,10 @@ export async function saveWebsiteStep(input: unknown): Promise<ActionResult<{ bu
     if (!(await websiteExists(domain))) return { ok: false, status: 422, error: websiteNotFoundText(domain), field: "website" };
     request = { domain };
   } else {
-    request = parsed.data;
+    const { name, city } = parsed.data;
+    request = { name, city };
   }
-  const result = await startBusiness(user, request);
+  const result = await startBusiness(user, request, undefined, plan ?? null);
   if (!result.ok) return result;
   return { ok: true, data: { businessId: result.businessId, autofill: result.autofill } };
 }
@@ -131,8 +133,8 @@ export async function startCardStep(input: unknown): Promise<ActionResult<{ clie
 
 /** Polled while "Setting up your account" shows: done once the webhook has linked the subscription. */
 export async function checkCardStep(input: unknown): Promise<ActionResult<{ done: boolean; next: string }>> {
-  const user = await userId();
-  if (typeof user !== "string") return user;
+  const user = await signedIn();
+  if (!("id" in user)) return user;
   const parsed = businessOnly.safeParse(input);
   if (!parsed.success) return notFound;
   const done = await finishCardStep(user, parsed.data.businessId);

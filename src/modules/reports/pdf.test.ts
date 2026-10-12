@@ -8,7 +8,7 @@ vi.hoisted(() => {
   vi.stubEnv("NEXT_PUBLIC_APP_URL", "https://app.customers.test");
 });
 
-const { PdfError, isOwnReportUrl, renderPdf } = await import("./pdf");
+const { PdfError, isLocalOrigin, isOwnReportUrl, renderPdf } = await import("./pdf");
 const { pdfFileName } = await import("./service");
 
 const TOKEN = "a".repeat(43);
@@ -78,6 +78,21 @@ describe("renderPdf with Browserless", () => {
     }
     expect(fetchMock).not.toHaveBeenCalled();
     expect(isOwnReportUrl(URL_OK, "https://app.customers.test/")).toBe(true);
+  });
+});
+
+describe("isLocalOrigin", () => {
+  // BUG-109: hosted Chrome can't open a local dev server, so those are printed in local Chromium.
+  it("is true for this machine and private networks", () => {
+    for (const o of ["http://localhost:3000", "http://127.0.0.1:3000", "http://[::1]:3000", "http://app.localhost", "http://192.168.1.5:3000", "http://10.0.0.2", "http://172.20.0.1"]) {
+      expect(isLocalOrigin(o)).toBe(true);
+    }
+  });
+
+  it("is false for public sites", () => {
+    for (const o of ["https://app.customers.test", "https://customers.direct", "http://172.32.0.1", "https://mvp--site.netlify.app"]) {
+      expect(isLocalOrigin(o)).toBe(false);
+    }
   });
 });
 

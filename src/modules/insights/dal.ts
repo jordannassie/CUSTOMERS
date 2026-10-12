@@ -5,7 +5,7 @@ import { env } from "@/lib/env";
 import { createServiceClient } from "@/lib/supabase/service";
 import { requireAgency } from "@/modules/auth";
 import { fetchPlaceSignals } from "@/modules/competitors/server";
-import { loadAlsoRecommended } from "@/modules/scanning";
+import { loadAlsoRecommended, splitByQuestion } from "@/modules/scanning";
 import type { Opportunity } from "@/types/geo";
 import { explain, type Explanation, type WriteExplanation } from "./explain";
 import type { ExplainSources, Signals } from "./facts";
@@ -43,7 +43,7 @@ async function loadSources(runId: string, deps: ExplainDeps) {
   const runResult = await db.from("visibility_runs").select("business_id, provider").eq("id", runId).single();
   const run = must("load the scan run", runResult);
   const businessId = run.business_id;
-  const [business, competitors, checks, facts] = await Promise.all([
+  const [business, competitors, checks, questions, facts] = await Promise.all([
     db
       .from("businesses")
       .select(
@@ -54,9 +54,10 @@ async function loadSources(runId: string, deps: ExplainDeps) {
     db.from("business_competitors").select("id, name, places_id, place_id").eq("business_id", businessId).order("created_at"),
     db
       .from("visibility_results")
-      .select("provider, question, business_mentioned, competitors_mentioned, cited_sources")
+      .select("provider, question, business_mentioned, competitors_mentioned, cited_sources, tracked_prompt_id")
       .eq("run_id", runId)
       .order("id"),
+    db.from("tracked_prompts").select("id, source, active").eq("business_id", businessId),
     db.from("business_site_facts").select("data").eq("business_id", businessId).maybeSingle(),
   ]);
   const b = must("load the business", business);
@@ -81,7 +82,11 @@ async function loadSources(runId: string, deps: ExplainDeps) {
     },
     competitors: rivals,
     models: run.provider.split(",").map((m) => m.trim()).filter(Boolean),
-    checks: must("load the checks", checks).map((c) => ({
+    // The answers the score counts, so the reasons quote the same numbers as the score (BUG-129).
+    checks: splitByQuestion(
+      must("load the checks", checks).map((c) => ({ ...c, questionId: c.tracked_prompt_id ?? "none" })),
+      must("load the questions", questions),
+    ).scored.map((c) => ({
       provider: c.provider,
       question: c.question ?? "",
       businessMentioned: c.business_mentioned,

@@ -65,6 +65,8 @@ const nextConfig: NextConfig = {
       // Visibility and Reports were merged into the Overview (B-58).
       { source: "/dashboard/visibility", destination: "/dashboard", permanent: true },
       { source: "/dashboard/reports", destination: "/dashboard", permanent: true },
+      // Search intelligence (DataForSEO) is on hold; its page and API were removed.
+      { source: "/dashboard/seo", destination: "/dashboard", permanent: true },
       { source: "/dashboard/settings", destination: "/settings", permanent: true },
       { source: "/dashboard/billing/:path*", destination: "/settings/billing", permanent: true },
       { source: "/dashboard/competitors", destination: "/competitors", permanent: true },

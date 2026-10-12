@@ -5,8 +5,8 @@ import { z } from "zod";
 export type YourWebsite = {
   /** read: we read at least one page. blocked: it refused automated readers. unreachable: it did not load. */
   readStatus: "read" | "blocked" | "unreachable";
+  /** Pages we read. We only open a few common paths, so a path we did not find is never reported (BUG-115). */
   pagesRead: string[];
-  pagesNotFound: string[];
   /** Null when no page was read, so we cannot say. */
   hasPhone: boolean | null;
   hasAddress: boolean | null;
@@ -26,7 +26,6 @@ export function yourWebsite(saved: unknown): YourWebsite | null {
     return {
       readStatus: "read",
       pagesRead: list.filter((p) => p.status === "ok").map((p) => p.path),
-      pagesNotFound: list.filter((p) => p.status === "missing").map((p) => p.path),
       hasPhone: read.data.phone.trim() !== "",
       hasAddress: read.data.address.trim() !== "",
       servicesListed: read.data.services,
@@ -35,7 +34,6 @@ export function yourWebsite(saved: unknown): YourWebsite | null {
   return {
     readStatus: list.some((p) => p.status === "blocked") ? "blocked" : "unreachable",
     pagesRead: [],
-    pagesNotFound: [],
     hasPhone: null,
     hasAddress: null,
     servicesListed: [],

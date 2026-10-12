@@ -1,7 +1,7 @@
 import "server-only";
 import { billingAccess } from "../account/access";
 import { loadPlanChangeData } from "./dal";
-import { itemFor, periodEnd, PlanChangeError, type PlanChange } from "./planner";
+import { isCancelling, itemFor, periodEnd, PlanChangeError, type PlanChange } from "./planner";
 import { applyPlanChange } from "./service";
 
 // Deleting a business (B-77, MVP_SPEC 23): its plan item goes at the end of the billing period, with no refund
@@ -24,7 +24,7 @@ export async function endBusinessPlan(agencyId: string, businessId: string, now 
   if (!itemFor(sub, business)) return { endsAt: null };
 
   const endsAt = new Date(periodEnd(sub) * 1000).toISOString();
-  if (sub.cancel_at_period_end) return { endsAt };
+  if (isCancelling(sub)) return { endsAt };
 
   const change: PlanChange = sub.items.data.length <= 1 ? { kind: "cancel" } : { kind: "remove", businessId };
   const deps = { stripe: access.stripe, plansByProduct: data.plansByProduct, now: () => now };

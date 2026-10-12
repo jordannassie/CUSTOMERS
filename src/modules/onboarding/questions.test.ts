@@ -10,9 +10,9 @@ import {
   FLORIST_BUSINESS,
   FLORIST_WRITTEN,
 } from "./question-fixtures";
-import { balancePicks, cityLabel, fallbackQuestions, isUsableTemplate } from "./question-rules";
+import { asksForBusiness, balancePicks, cityLabel, fallbackQuestions, isUsableTemplate } from "./question-rules";
 import { prepareQuestions } from "./questions";
-import { MAX_PER_INTENT, PICK_MODEL, QUESTION_COUNT } from "./prompts/pick-questions.v1";
+import { MAX_PER_INTENT, PICK_MODEL, QUESTION_COUNT } from "./prompts/pick-questions.v3";
 
 const intents = (qs: { intent: string }[]) => new Set(qs.map((q) => q.intent));
 const maxPerIntent = (qs: { intent: string }[]) =>
@@ -136,6 +136,16 @@ describe("fallback to the old template engine", () => {
       throw new Error("db down");
     };
     await expect(prepareQuestions(COFFEE_BUSINESS, clients)).rejects.toThrow("db down");
+  });
+
+  it("drops advice questions that rarely name a business (BUG-116)", () => {
+    expect(asksForBusiness("How much does drain cleaning typically cost from plumbers in Las Vegas, NV?")).toBe(false);
+    expect(asksForBusiness("What's better for sewer issues in Las Vegas, NV - should I get a camera inspection or just start repairs?")).toBe(false);
+    expect(asksForBusiness("Which plumber in Las Vegas, NV has the best reviews for sewer line repair?")).toBe(true);
+    expect(asksForBusiness("Who offers the cheapest plumbing inspection in Las Vegas, NV?")).toBe(true);
+    expect(asksForBusiness("What's the difference between chain and independent bookstores in Austin, TX?")).toBe(false);
+    expect(asksForBusiness("Why are independent bookstores in Austin, TX better?")).toBe(false);
+    expect(asksForBusiness("Which bookstore in Austin, TX has the best author events?")).toBe(true);
   });
 
   it("gives 12 questions for every industry label", () => {

@@ -75,6 +75,7 @@ describe("payment failed", () => {
     const mail = fakeSender();
     const h = harness(mail.send);
     const subId = fx.id("sub");
+    h.subscriptions.set(subId, fx.subscription({ id: subId, customer: a.customer, agencyId: a.agencyId, status: "past_due", items: [{ product: "cd_plan_starter", periodEnd: fx.nowSeconds() + 30 * DAY }] }));
     const lines = [fx.line({ product: "cd_plan_starter", amount: 14900, subscriptionId: subId, start: fx.nowSeconds(), end: fx.nowSeconds() + 30 * DAY })];
     const invoice = fx.invoice({ customer: a.customer, subscriptionId: subId, agencyId: a.agencyId, billingReason: "subscription_cycle", lines, status: "open" });
 

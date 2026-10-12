@@ -3,6 +3,7 @@ export {
   captureCredit,
   captureCredits,
   expireGrants,
+  extendTrialGrant,
   grantCredits,
   grantTrialCredits,
   holdCredits,

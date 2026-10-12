@@ -2,29 +2,13 @@ import "server-only";
 import { env } from "@/lib/env";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
-import { maxCompetitors } from "@/modules/entitlements";
 import { INTENTS, type Intent } from "@/modules/question-library";
 import type { Json } from "@/types/database.types";
-import { autofill, type AutofillClients, type AutofillRequest } from "./autofill";
+import { autofill, type AutofillClients, type AutofillRequest, type AutofillRun } from "./autofill";
 import { createBusinessExtractor, ExtractError } from "./extract";
 import { createFirecrawlScraper } from "./firecrawl";
-import { fixturePlaces } from "./competitor-fixtures";
 import { fixtureAutofillClients, fixtureQuestionModel } from "./dev-fixtures";
-import { createCompetitorPlaces, type CompetitorCandidate, type CompetitorPlaces } from "./competitor-places";
-import {
-  CLEARED_PLACES_COLUMNS,
-  COMPETITOR_NOTES,
-  MAX_LOOKUP_RESULTS,
-  competitorFields,
-  discoverCompetitors,
-  limitMessage,
-  lookupQuery,
-  originOf,
-  planSave,
-  type BusinessForSearch,
-  type ConfirmedCompetitor,
-} from "./competitors";
-import { createPlacesSearch, PlacesError } from "./places";
+import { createPlacesSearch } from "./places";
 import { createQuestionModel } from "./question-model";
 import type { LibraryEntry } from "./question-rules";
 import type { QuestionClients } from "./questions";
@@ -63,19 +47,58 @@ export async function loadQuestionLibrary(industry: string): Promise<LibraryEntr
     .map((row) => ({ id: row.id, template: row.template, tags: row.tags, intent: row.intent as Intent }));
 }
 
+/**
+ * The set another business of this kind in this city already has (BUG-116): its suggested questions (not the
+ * owner's own), oldest business first. Questions never name a business, so sharing them is like the library.
+ */
+export async function loadSharedQuestions(industry: string, city: string, region: string | null): Promise<{ text: string; intent: Intent }[]> {
+  const db = createServiceClient();
+  // Exact matches ignoring case: % and _ in what the user typed are not wildcards.
+  const exact = (v: string) => v.trim().replace(/[%_\\]/g, "\\$&");
+  let peers = db.from("businesses").select("id").ilike("industry", exact(industry)).ilike("primary_city", exact(city)).is("deleted_at", null);
+  if (region) peers = peers.ilike("primary_region", exact(region));
+  const { data: businesses, error } = await peers.order("created_at").limit(5);
+  if (error) throw new Error(`Could not load businesses for shared questions: ${error.message}`);
+  for (const b of businesses) {
+    const { data, error: readError } = await db
+      .from("tracked_prompts")
+      .select("prompt, buyer_intent")
+      .eq("business_id", b.id)
+      .eq("source", "library")
+      .order("created_at");
+    if (readError) throw new Error(`Could not load shared questions: ${readError.message}`);
+    const set = data.filter((q) => INTENTS.includes(q.buyer_intent as Intent)).map((q) => ({ text: q.prompt, intent: q.buyer_intent as Intent }));
+    if (set.length >= 6) return set;
+  }
+  return [];
+}
+
 // Without a key every model call fails, so the template engine fallback runs (MVP_SPEC 5.3).
 export function liveQuestionClients(): QuestionClients {
   const missing = async (): Promise<never> => {
     throw new Error("ANTHROPIC_API_KEY is not set");
   };
   const model = env.ANTHROPIC_API_KEY ? createQuestionModel(env.ANTHROPIC_API_KEY) : { pick: missing, write: missing };
-  return { loadLibrary: loadQuestionLibrary, model: onboardingFixtures() ? fixtureQuestionModel : model };
+  return { loadLibrary: loadQuestionLibrary, loadShared: loadSharedQuestions, model: onboardingFixtures() ? fixtureQuestionModel : model };
+}
+
+/** Why a source gave nothing (B7): the server log, and provider_errors for the error spike alert. Never throws. */
+async function recordAutofillProblems(request: AutofillRequest, problems: AutofillRun["problems"]): Promise<void> {
+  if (problems.length === 0) return;
+  const what = "domain" in request ? request.domain : `${request.name}, ${request.city}`;
+  for (const p of problems) console.warn(`auto-fill for ${what}: ${p.provider}: ${p.message}`);
+  if (onboardingFixtures()) return;
+  const { error } = await createServiceClient()
+    .from("provider_errors")
+    .insert(problems.map((p) => ({ provider: p.provider, message: `Auto-fill: ${p.message}`.slice(0, 500) })));
+  if (error) console.error(`Could not record the auto-fill errors: ${error.message}`);
 }
 
 /**
  * Runs auto-fill for one of the user's businesses. Returns null when the business is not theirs.
  * Stores only place_id from Places and the site's own facts (D-73); the form values go back to
- * the screen and are saved only when the user confirms them (B-36).
+ * the screen and are saved only when the user confirms them (B-36). With no website, no place_id
+ * is saved here: the user picks their listing first (confirmBusinessPlace).
  */
 export async function runBusinessAutofill(
   userId: string,
@@ -94,6 +117,7 @@ export async function runBusinessAutofill(
   if (!business) return null;
 
   const run = await autofill(request, clients);
+  await recordAutofillProblems(request, run.problems);
 
   // business_site_facts has no write policy for signed-in users, so writes use the service role
   // after the ownership check above.
@@ -111,140 +135,36 @@ export async function runBusinessAutofill(
   return run.result;
 }
 
-export function liveCompetitorPlaces(): CompetitorPlaces {
-  if (env.PLACES_FIXTURES === "true" && env.NODE_ENV !== "production") return fixturePlaces;
-  if (env.GOOGLE_PLACES_API_KEY) return createCompetitorPlaces(env.GOOGLE_PLACES_API_KEY);
-  return {
-    search: async () => {
-      throw new PlacesError("GOOGLE_PLACES_API_KEY is not set");
-    },
-    details: async () => null,
-  };
-}
-
-async function ownBusinessForSearch(userId: string, businessId: string): Promise<BusinessForSearch | null> {
+/**
+ * "Is one of these your business?" (MVP_SPEC 3.3): saves the listing the user picked, or clears it for
+ * "None of these". Only place_id is kept (D-73). False when it is not the user's business without a website.
+ */
+export async function saveBusinessPlace(userId: string, businessId: string, placeId: string | null): Promise<boolean> {
   const supabase = await createClient();
-  const { data, error } = await supabase
+  const { data: business, error } = await supabase
     .from("businesses")
-    .select("name, industry, services, primary_city, primary_region, places_id")
+    .select("id")
     .eq("id", businessId)
     .eq("owner_user_id", userId)
+    .eq("has_website", false)
     .maybeSingle();
   if (error) throw new Error(`Could not load business: ${error.message}`);
-  if (!data) return null;
-  return {
-    name: data.name,
-    industry: data.industry,
-    services: data.services,
-    city: data.primary_city,
-    region: data.primary_region,
-    placesId: data.places_id,
-  };
+  if (!business) return false;
+  const { error: placeError } = await createServiceClient()
+    .from("businesses")
+    .update({ places_id: placeId })
+    .eq("id", businessId)
+    .eq("owner_user_id", userId);
+  if (placeError) throw new Error(`Could not save place_id: ${placeError.message}`);
+  return true;
 }
 
-async function competitorLimit(businessId: string): Promise<number | null> {
-  return (await maxCompetitors(businessId)).limit;
-}
-
-/** A saved competitor: the user's name and place id from the database, Places values fetched live. */
-export type SavedCompetitor = { name: string; placesId: string | null; live: CompetitorCandidate | null };
-
-export type CompetitorStep = {
-  businessName: string;
-  /** Null when the plan sets no limit. */
-  limit: number | null;
-  saved: SavedCompetitor[];
-  suggestions: CompetitorCandidate[];
-  note: string | null;
-};
-
-/** Everything the competitor step shows. Null when the business is not the user's. */
-export async function loadCompetitorStep(
-  userId: string,
-  businessId: string,
-  places: CompetitorPlaces = liveCompetitorPlaces(),
-): Promise<CompetitorStep | null> {
-  const business = await ownBusinessForSearch(userId, businessId);
-  if (!business) return null;
-
-  const supabase = await createClient();
-  const { data: rows, error } = await supabase
-    .from("business_competitors")
-    .select("name, places_id, place_id")
-    .eq("business_id", businessId)
-    .order("created_at");
-  if (error) throw new Error(`Could not load competitors: ${error.message}`);
-
-  const [found, saved, limit] = await Promise.all([
-    discoverCompetitors(business, places),
-    Promise.all(
-      rows.map(async (row): Promise<SavedCompetitor> => {
-        // place_id is where older code kept the id; it moves to places_id on the next save.
-        const placesId = row.places_id ?? row.place_id;
-        const live = placesId ? await places.details(placesId).catch(() => null) : null;
-        return { name: row.name, placesId, live };
-      }),
-    ),
-    competitorLimit(businessId),
-  ]);
-  return { businessName: business.name, limit, saved, ...found };
-}
-
-/** "Add by name" with a Places lookup near the business. Null when the business is not the user's. */
-export async function lookupCompetitor(
-  userId: string,
-  businessId: string,
-  name: string,
-  places: CompetitorPlaces = liveCompetitorPlaces(),
-): Promise<{ matches: CompetitorCandidate[]; note: string | null } | null> {
-  const business = await ownBusinessForSearch(userId, businessId);
-  if (!business) return null;
-  try {
-    const matches = await places.search(lookupQuery(name, business), MAX_LOOKUP_RESULTS, await originOf(business, places));
-    return { matches, note: null };
-  } catch {
-    return { matches: [], note: COMPETITOR_NOTES.unavailable };
-  }
-}
-
-export type SaveCompetitorsResult = { ok: true; count: number } | { ok: false; status: 403 | 404 | 409; error: string };
-
-/**
- * Replaces the business's competitor list with the user's confirmed one. Writes only the name the
- * user confirmed and the place id; Places ratings, reviews and addresses are never stored (D-73).
- */
-export async function saveCompetitors(
-  userId: string,
-  businessId: string,
-  list: ConfirmedCompetitor[],
-): Promise<SaveCompetitorsResult> {
-  if (!(await ownBusinessForSearch(userId, businessId))) return { ok: false, status: 404, error: "Business not found." };
-  const limit = await competitorLimit(businessId);
-  if (limit !== null && list.length > limit) return { ok: false, status: 403, error: limitMessage(limit) };
-
-  // RLS (business_competitors_owner_all) limits these writes to the owner's own business.
-  const supabase = await createClient();
-  const existing = await supabase.from("business_competitors").select("id, name").eq("business_id", businessId);
-  if (existing.error) throw new Error(`Could not load competitors: ${existing.error.message}`);
-  const plan = planSave(existing.data, list);
-
-  if (plan.remove.length) {
-    const { error } = await supabase.from("business_competitors").delete().in("id", plan.remove);
-    if (error) throw new Error(`Could not remove competitors: ${error.message}`);
-  }
-  for (const { id, competitor } of plan.keep) {
-    const { error } = await supabase
-      .from("business_competitors")
-      .update({ ...competitorFields(competitor), ...CLEARED_PLACES_COLUMNS })
-      .eq("id", id);
-    if (error) throw new Error(`Could not update a competitor: ${error.message}`);
-  }
-  if (plan.add.length) {
-    const { error } = await supabase.from("business_competitors").insert(plan.add.map((c) => ({ business_id: businessId, ...competitorFields(c) })));
-    if (error) {
-      if (error.code === "23505") return { ok: false, status: 409, error: "That list changed in another tab. Reload and try again." };
-      throw new Error(`Could not add competitors: ${error.message}`);
-    }
-  }
-  return { ok: true, count: list.length };
-}
+export {
+  liveCompetitorPlaces,
+  loadCompetitorStep,
+  lookupCompetitor,
+  saveCompetitors,
+  type CompetitorStep,
+  type SavedCompetitor,
+  type SaveCompetitorsResult,
+} from "./competitor-step/dal";

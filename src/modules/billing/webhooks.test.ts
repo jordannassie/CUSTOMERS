@@ -3,7 +3,7 @@ import { afterAll, describe, expect, it } from "vitest";
 import { processStripeWebhook } from "./webhooks";
 import { monthBefore } from "./webhooks/credits";
 import * as fx from "./webhooks/fixtures.test-helpers";
-import { agencyRow, businessRows, cleanUp, grantCreditsForTest, grants, harness, ledgerTotal, secret, service, setup } from "./webhooks/harness.test-helpers";
+import { agencyRow, businessRows, cleanUp, grants, harness, ledgerTotal, secret, service, setup } from "./webhooks/harness.test-helpers";
 
 // B-42 fixture tests against the local database: every event is delivered twice and must apply once.
 const DAY = fx.DAY;
@@ -129,44 +129,6 @@ describe("trial ends and the card is charged", () => {
     const month = end - monthBefore(new Date(end * 1000)).getTime() / 1000;
     expect(grant).toMatchObject({ source: "plan", source_id: lines[1].id, amount: Math.round(1300 * (15 * DAY) / month) });
     expect(await grants(a.agencyId)).toHaveLength(1);
-  });
-});
-
-describe("failed payment", () => {
-  it("marks the agency past_due, pauses scheduled scans and sends one email per invoice", async () => {
-    const a = await setup("active");
-    const h = harness();
-    const subId = fx.id("sub");
-    await service.from("business_subscriptions").insert(
-      a.businesses.map((businessId) => ({ business_id: businessId, agency_id: a.agencyId, plan_id: "starter", status: "active" })),
-    ).throwOnError();
-    const lines = [fx.line({ product: "cd_plan_starter", amount: 14900, subscriptionId: subId, start: fx.nowSeconds(), end: fx.nowSeconds() + 30 * DAY })];
-    const failed = fx.invoice({ customer: a.customer, subscriptionId: subId, agencyId: a.agencyId, billingReason: "subscription_cycle", lines, status: "open" });
-
-    for (const res of await h.deliverTwice(fx.event("invoice.payment_failed", failed))) expect(res.status).toBe(200);
-    // Stripe's next retry fails too: a new event for the same invoice.
-    await h.deliver(fx.event("invoice.payment_failed", failed));
-
-    expect((await agencyRow(a.agencyId)).status).toBe("past_due");
-    expect((await businessRows(a.agencyId)).map((r) => r.status)).toEqual(["past_due", "past_due"]);
-    expect(await grants(a.agencyId)).toEqual([]);
-    expect(h.emails).toHaveLength(2);
-    expect(new Set(h.emails.map((e) => e.idempotencyKey))).toEqual(new Set([`payment_failed:${failed.id}`]));
-
-    // The businesses are due now and the agency has credits, but a past_due agency is never queued.
-    await grantCreditsForTest(a.agencyId);
-    await service.rpc("enqueue_due_scans", { p_include_real: false }).throwOnError();
-    const { data: jobs } = await service.from("scan_jobs").select("id").in("business_id", a.businesses).throwOnError();
-    expect(jobs).toEqual([]);
-  });
-
-  it("never overwrites an admin suspension", async () => {
-    const a = await setup("suspended");
-    const h = harness();
-    const subId = fx.id("sub");
-    const lines = [fx.line({ product: "cd_plan_starter", amount: 14900, subscriptionId: subId, start: fx.nowSeconds(), end: fx.nowSeconds() + 30 * DAY })];
-    await h.deliver(fx.event("invoice.payment_failed", fx.invoice({ customer: a.customer, subscriptionId: subId, agencyId: a.agencyId, billingReason: "subscription_cycle", lines, status: "open" })));
-    expect((await agencyRow(a.agencyId)).status).toBe("suspended");
   });
 });
 

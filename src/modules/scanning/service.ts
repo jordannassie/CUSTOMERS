@@ -7,7 +7,7 @@ import { canRunScanJob, REASONS } from "@/modules/entitlements";
 import { captureBatcher } from "./capture-batch";
 import { checkIdFor, runOneCheck, type CheckContext, type CheckTask } from "./check";
 import type { ExtractNames } from "./extract";
-import type { MentionTarget } from "./mentions";
+import { mentionTargets } from "./recount/service";
 import type { CheckLocation, ProviderFailures, ProviderId, RunCheck } from "./providers/types";
 import { countryCode } from "./country";
 import { loadRecordedAnswers, recordedAnswers, RECORDED_ANSWERS_DIR } from "./recorded";
@@ -20,6 +20,7 @@ import {
   loadScanJob,
   loadScanTarget,
   setNextScanAt,
+  touchScanJob,
   type ScanTargetRow,
 } from "./runs/dal";
 
@@ -27,6 +28,8 @@ import {
 export const CHECKS_AT_ONCE = 5;
 
 const DAY_MS = 24 * 60 * 60 * 1000;
+// A running scan refreshes its job at most this often, as its checks finish (B4).
+const HEARTBEAT_MS = 60 * 1000;
 const FREQUENCY_DAYS: Record<string, number> = { daily: 1, weekly: 7, monthly: 30 };
 const PROVIDERS: ProviderId[] = ["openai", "anthropic", "perplexity"];
 
@@ -88,8 +91,14 @@ export async function runScan(jobId: string, overrides: Partial<ScanDeps> = {}):
   const capture = captureBatcher((checkIds) => captureCredits(holdId, checkIds));
   const errors: string[] = [];
   const failures: ProviderFailures = {};
+  let lastBeat = ctx.now().getTime();
   await forEachLimited(tasks, CHECKS_AT_ONCE, async (task) => {
     const outcome = saved.has(task.checkId) ? { ok: true as const } : await runOneCheck(task, ctx.forProvider(task.provider));
+    // Tell the reset job this scan is alive, so a long one is not taken for a dead worker and run twice (B4).
+    if (ctx.now().getTime() - lastBeat >= HEARTBEAT_MS) {
+      lastBeat = ctx.now().getTime();
+      await touchScanJob(jobId).catch((err) => console.error(`scan ${jobId}: could not refresh the job: ${err instanceof Error ? err.message : err}`));
+    }
     if (!outcome.ok) {
       errors.push(outcome.error);
       const seen = failures[task.provider];
@@ -125,6 +134,7 @@ export async function runScan(jobId: string, overrides: Partial<ScanDeps> = {}):
 }
 
 function scanBlocker({ business, questions }: ScanTargetRow): string | null {
+  if (business.deletedAt) return "This business was deleted.";
   if (business.status === "paused") return "This business is paused.";
   if (!business.city) return "Add the business city before scanning.";
   if (questions.length === 0) return "This business has no active questions.";
@@ -159,17 +169,7 @@ async function checkContext(target: ScanTargetRow, runId: string, overrides: Par
     runId,
     businessId: business.id,
     ownerUserId: business.ownerUserId,
-    business: {
-      name: business.name,
-      aliases: business.aliases,
-      website: business.domain,
-      city: business.city,
-      phone: business.phone,
-      hasWebsite: business.hasWebsite ?? Boolean(business.domain),
-    },
-    competitors: competitors.map(
-      (c): MentionTarget => ({ name: c.name, website: c.domain, phone: c.phone, city: c.city ?? business.city }),
-    ),
+    ...mentionTargets(business, competitors),
     location: locationOf(business),
     isTest,
     extractNames,
@@ -199,6 +199,11 @@ export function nextScanAt(frequency: string, from: Date): Date {
 
 function isProvider(model: string): model is ProviderId {
   return (PROVIDERS as string[]).includes(model);
+}
+
+/** Credits a scan holds, counted like checkTasks: each active question on each chosen AI model (D-54). */
+export function scanCheckCount(activeQuestions: number, models: string[]): number {
+  return activeQuestions * models.filter(isProvider).length;
 }
 
 function summarise(errors: string[]): string {

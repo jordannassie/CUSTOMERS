@@ -89,7 +89,7 @@ describe("fixture payment (dev and Playwright)", () => {
     const a = await setup("trialing");
     const deps = {
       store: createWebhookStore(service),
-      stripe: { retrieveSubscription: async () => ({}) as Stripe.Subscription, listSubscriptionItems: async () => [], listInvoiceLines: async () => [] },
+      stripe: { retrieveSubscription: async () => ({}) as Stripe.Subscription, listSubscriptionItems: async () => [], listInvoiceLines: async () => [], retrieveInvoice: async () => ({}) as Stripe.Invoice, checkoutBusinessIds: async () => new Map(), tagItem: async () => {} },
       sendEmail: async () => ({ status: "sent" as const, providerId: "fake" }),
       now: () => new Date(),
     };

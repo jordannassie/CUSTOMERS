@@ -68,11 +68,15 @@ describe("getSystemStatus", () => {
       "stripe",
       "worker",
       "schedules",
+      "job_settings",
     ]);
     expect(status.services.find((s) => s.id === "stripe")?.mode).toBe("sandbox");
     expect(status.services.find((s) => s.id === "browserless")?.state).toBe("not_configured");
     // Reads the local scan queue; its state depends on what other tests left there.
     expect(status.services.find((s) => s.id === "worker")?.detail).not.toMatch(/Could not read/);
+    // BUG-108: the real schedules and worker settings, read from the database.
+    expect(status.services.find((s) => s.id === "schedules")?.detail).toMatch(/jobs scheduled/);
+    expect(status.services.find((s) => s.id === "job_settings")?.detail).not.toMatch(/Could not read/);
   });
 
   it("refuses non-admins before calling any service", async () => {

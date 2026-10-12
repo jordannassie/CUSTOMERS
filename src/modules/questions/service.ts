@@ -6,10 +6,12 @@ import type { ModelAppearance, ProviderId } from "@/modules/scanning";
 export const MODEL_LABELS: Record<ProviderId, string> = { openai: "ChatGPT", anthropic: "Claude", perplexity: "Perplexity" };
 export const FREQUENCY_WORDS: Record<ScanFrequency, string> = { daily: "daily", weekly: "weekly", monthly: "monthly" };
 
-export type QuestionRecord = { id: string; prompt: string; active: boolean; source: string };
+/** `own`: the user wrote or edited it, so it is checked and charged but left out of the score (BUG-129). */
+export type QuestionRecord = { id: string; prompt: string; active: boolean; own: boolean };
 
 export type QuestionResult = { model: ProviderId; label: string; appeared: number; checks: number };
 
+/** `custom`: the user's own question, labelled as not counted in the score (BUG-129). */
 export type QuestionRow = { id: string; text: string; active: boolean; custom: boolean; results: QuestionResult[] };
 
 export type QuestionsView = {
@@ -38,7 +40,7 @@ export function questionsView(input: {
       id: q.id,
       text: q.prompt,
       active: q.active,
-      custom: q.source === "custom",
+      custom: q.own,
       results: input.models.map((model) => {
         const r = seen.find((a) => a.model === model);
         return { model, label: MODEL_LABELS[model], appeared: r?.appeared ?? 0, checks: r?.checks ?? 0 };

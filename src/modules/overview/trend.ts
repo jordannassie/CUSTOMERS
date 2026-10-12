@@ -49,13 +49,14 @@ export function trendView(input: { history: ScanPoint[]; nextScanAt: Date | null
     input.nextScanAt && input.nextScanAt.getTime() > input.now.getTime() ? `Next scan ${shortDate(input.nextScanAt)}.` : null;
 
   if (shown.length < MIN_CHART_POINTS) {
-    const so = shown.length === 0 ? "No scans in the last 90 days." : `1 scan in the last 90 days: ${shown[0].score}.`;
+    // Points are days: two scans on one day are one point, so this never says "1 scan" after two (BUG-111).
+    const so = shown.length === 0 ? "No scans in the last 90 days." : `Scanned on 1 day in the last 90 days, score ${shown[0].score}.`;
     return { points: shown, change: null, summary: [so, next].filter(Boolean).join(" "), caption: "" };
   }
   return {
     points: shown,
     change: historyChange(input.history),
     summary: null,
-    caption: ["Each dot is one scan. The shaded band is how far the score could be off.", next].filter(Boolean).join(" "),
+    caption: ["Each dot is a day with a scan. The shaded band is how far the score could be off.", next].filter(Boolean).join(" "),
   };
 }

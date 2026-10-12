@@ -98,4 +98,13 @@ describe("firstScanCopy", () => {
     expect(firstScanCopy("failed", facts).intro).toBe("We couldn't finish checking Bean House.");
     expect(firstScanCopy("done", { ...facts, models: ["ChatGPT"] }).intro).toMatch(/^We asked ChatGPT 12 questions/);
   });
+
+  it("asks before a scan that costs more than the balance, without claiming it runs (D-54)", () => {
+    const copy = firstScanCopy("confirm", facts);
+    expect(copy).toEqual({
+      heading: "Your first scan needs more credits than you have",
+      intro: "We're ready to check Bean House with ChatGPT, Claude and Perplexity.",
+    });
+    expect(copy.intro).not.toMatch(/asking/);
+  });
 });

@@ -42,6 +42,7 @@ export function subscription(input: {
   status: Stripe.Subscription.Status;
   trialEnd?: number | null;
   cancelAtPeriodEnd?: boolean;
+  latestInvoice?: string;
   items: ItemInput[];
 }): Stripe.Subscription {
   const subId = input.id ?? id("sub");
@@ -52,6 +53,7 @@ export function subscription(input: {
     status: input.status,
     cancel_at_period_end: input.cancelAtPeriodEnd ?? false,
     trial_end: input.trialEnd ?? null,
+    latest_invoice: input.latestInvoice ?? null,
     metadata: input.agencyId ? { agency_id: input.agencyId } : {},
     items: {
       object: "list",

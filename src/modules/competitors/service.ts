@@ -1,5 +1,6 @@
 import { pointsChange, type PointsChange } from "@/modules/overview";
 import type { AlsoRecommendedList, ScoreReport, Standing } from "@/modules/scanning";
+import { mergeChains, type ChainOf } from "./chain";
 import type { PlaceSignals } from "./places";
 
 // What the Competitors page shows (B-50, MVP_SPEC 7.1, 8.1, D-64). Pure, so every state is unit tested.
@@ -16,13 +17,18 @@ export type LeaderRow = {
   change: PointsChange | null;
   /** Grey shade for a competitor's bar: 1 is the strongest (DESIGN.md competitor-1 to 3). */
   shade: 1 | 2 | 3 | null;
+  /** Set when the score is a chain's, not the tracked branch's: show rowName() and trackedNote() (chain.ts). */
+  chain?: ChainOf | null;
 };
 
 export type SignalRow = {
   name: string;
   isYou: boolean;
-  /** "linked": has a place id and Google answered; "missing": no place id or Google has no such place. */
-  status: "linked" | "missing" | "error";
+  /**
+   * "linked": has a place id and Google answered; "missing": no place id or Google has no such place; "limited":
+   * Google's request limit for the day was reached.
+   */
+  status: "linked" | "missing" | "error" | "limited";
   signals: PlaceSignals | null;
 };
 
@@ -41,9 +47,13 @@ export type CompetitorsView = {
   limit: number | null;
 };
 
-export type CompetitorRow = { name: string; placesId: string | null; createdAt: Date };
+/**
+ * `countedFrom`: the first saved answer checked for this competitor. When it was added, unless saved answers were
+ * checked again for it since (BUG-122), which reaches back to the oldest answer still shown.
+ */
+export type CompetitorRow = { name: string; placesId: string | null; countedFrom: Date };
 
-export type SignalResult = PlaceSignals | null | "error";
+export type SignalResult = PlaceSignals | null | "error" | "limited";
 
 export const STANDING_TEXT: Record<Standing, string> = {
   ahead: "You're ahead",
@@ -70,11 +80,11 @@ export function competitorsView(input: {
   const lastCheck = report.lastCheckedAt?.getTime() ?? null;
   const weekAgoStart = firstCheck === null ? null : firstCheck - 7 * 86_400_000;
 
-  const rows: LeaderRow[] = competitors.map((c) => {
+  const tracked: LeaderRow[] = competitors.map((c) => {
     const score = scored.get(key(c.name));
     // A competitor added after the last scan has no checks of its own yet, so a 0 would be wrong.
-    const checked = score && lastCheck !== null && c.createdAt.getTime() <= lastCheck;
-    const collecting = !!checked && firstCheck !== null && c.createdAt.getTime() > firstCheck;
+    const checked = score && lastCheck !== null && c.countedFrom.getTime() <= lastCheck;
+    const collecting = !!checked && firstCheck !== null && c.countedFrom.getTime() > firstCheck;
     return {
       name: c.name,
       isYou: false,
@@ -82,11 +92,14 @@ export function competitorsView(input: {
       standing: checked && !collecting ? score.standing : null,
       // The change compares with the 30-day score a week ago, whose window starts 7 days before this one; checks
       // from before a competitor was added never looked for it, so a newer one could show a false rise.
-      change: checked && !collecting && weekAgoStart !== null && c.createdAt.getTime() <= weekAgoStart ? pointsChange(score.change) : null,
+      change: checked && !collecting && weekAgoStart !== null && c.countedFrom.getTime() <= weekAgoStart ? pointsChange(score.change) : null,
       collecting,
       shade: null,
+      chain: checked && score.chain ? { brand: score.chain, tracked: [c.name] } : null,
     };
   });
+  // Two tracked branches of one chain share the same answers, so the chain is shown once.
+  const rows = mergeChains(tracked);
   const byScore = (a: LeaderRow, b: LeaderRow) => b.score! - a.score! || a.name.localeCompare(b.name);
   const ranked = rows.filter((r) => r.score !== null && !r.collecting).sort(byScore);
   ranked.forEach((r, i) => (r.shade = i === 0 ? 1 : i === 1 ? 2 : 3));
@@ -125,7 +138,7 @@ export function competitorsView(input: {
 
 function signalRow(name: string, isYou: boolean, placesId: string | null, signals: Map<string, SignalResult>): SignalRow {
   const result = placesId ? signals.get(placesId) : null;
-  if (result === "error") return { name, isYou, status: "error", signals: null };
+  if (result === "error" || result === "limited") return { name, isYou, status: result, signals: null };
   if (!result) return { name, isYou, status: "missing", signals: null };
   return { name, isYou, status: "linked", signals: result };
 }

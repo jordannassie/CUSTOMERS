@@ -81,17 +81,25 @@ export default async function OverviewPage() {
           <CardContent className="flex flex-col gap-8">
             {score ? (
               <>
-                <ScoreSummary score={score} />
+                <ScoreSummary score={score} ownQuestions={overview.ownQuestions} />
                 <ModelScoresRow models={overview.models} className="sm:hidden" />
                 <TrendChart trend={overview.trend} />
               </>
             ) : (
               <div className="flex flex-col gap-2 py-6" data-testid="no-score">
                 <p className="text-xl font-semibold tracking-[-0.02em]">No score yet</p>
-                <p className="max-w-prose text-sm text-muted-foreground">
-                  Run your first scan to see how often ChatGPT, Claude and Perplexity recommend {business.name} when
-                  customers ask for a business like yours.
-                </p>
+                {overview.ownQuestions ? (
+                  // Scanned, but only the user's own questions have answers, and those are not part of the score (BUG-129).
+                  <p className="max-w-prose text-sm text-muted-foreground">
+                    Your score counts suggested questions only, and none have answers from the last 30 days yet.{" "}
+                    <span data-testid="own-questions">{overview.ownQuestions}</span>
+                  </p>
+                ) : (
+                  <p className="max-w-prose text-sm text-muted-foreground">
+                    Run your first scan to see how often ChatGPT, Claude and Perplexity recommend {business.name} when
+                    customers ask for a business like yours.
+                  </p>
+                )}
                 {scanStatus.ok && (
                   <div className="mt-3 grid justify-items-start gap-2.5">
                     <RunScanButton

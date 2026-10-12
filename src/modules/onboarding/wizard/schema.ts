@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { FREQUENCIES, MODEL_IDS } from "@/modules/settings";
+import { areaText, FREQUENCIES, MODEL_IDS } from "@/modules/settings";
 import { PLAN_IDS } from "./steps";
 
 const text = (max: number) => z.string().trim().max(max);
@@ -10,11 +10,18 @@ export const agencyStepInput = z.object({
   plan: z.enum(PLAN_IDS).nullable().catch(null),
 });
 
-export const websiteStepInput = z.union([
-  z.object({ domain: text(300).min(1) }),
-  // "I don't have a website" (MVP_SPEC 3.3).
-  z.object({ name: text(200).min(1), city: text(100).min(1) }),
-]);
+// A plan chosen on the new-business plan picker before starting the wizard (null otherwise, Set up another
+// business skips it and keeps auto-matching the agency's other businesses).
+const planField = z.enum(PLAN_IDS).nullable().catch(null).optional();
+
+export const websiteStepInput = z.intersection(
+  z.union([
+    z.object({ domain: text(300).min(1) }),
+    // "I don't have a website" (MVP_SPEC 3.3).
+    z.object({ name: text(200).min(1), city: text(100).min(1) }),
+  ]),
+  z.object({ plan: planField }),
+);
 
 export const detailsStepInput = z.object({
   businessId: z.uuid(),
@@ -26,6 +33,8 @@ export const detailsStepInput = z.object({
   city: text(80).min(1),
   state: text(80),
   country: text(80),
+  // Neighborhood or area, optional: empty saves null; left as it is when not sent.
+  area: areaText.optional(),
   phone: text(30).regex(/^[0-9+().\s-]*$/),
 });
 

@@ -20,7 +20,7 @@ vi.mock("@/lib/supabase/server", () => ({
     }),
 }));
 
-const { autofillBusiness } = await import("./actions");
+const { autofillBusiness, confirmBusinessPlace } = await import("./actions");
 const { runBusinessAutofill } = await import("./dal");
 
 async function createOwner() {
@@ -140,5 +140,68 @@ describe("runBusinessAutofill", () => {
 
     expect(await runBusinessAutofill(owner.userId, other.businessId, { domain: BLOCKED_DOMAIN }, clients)).toBeNull();
     expect(calls.scrape).toEqual([BLOCKED_DOMAIN]);
+  });
+
+  it("fills from the Google listing for the brand a domain spells when the site can't be read, and logs why (B7)", async () => {
+    const owner = await createOwner();
+    await signIn(owner.email, owner.password);
+    const domain = `ebookwoman${randomUUID().replace(/[^a-f]/g, "").slice(0, 8)}.com`;
+    const brand = domain.split(".")[0].slice(1);
+    const place = { ...BLOCKED_PLACE, placeId: `ChIJ-fixture-${brand}`, name: "BookWoman", websiteUri: `https://www.${domain}/` };
+    const { clients } = fakeClients({ pages: BLOCKED_PAGES, places: { [brand]: [place] } });
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+    const result = await runBusinessAutofill(owner.userId, owner.businessId, { domain }, clients);
+    expect(result?.details.name).toBe("BookWoman");
+    expect((await stored(owner.businessId)).business).toMatchObject({ places_id: place.placeId });
+
+    const { data } = await service.from("provider_errors").select("provider, message").like("message", `%${domain}%`);
+    expect(data).toEqual([{ provider: "firecrawl", message: expect.stringContaining(`Nothing readable on ${domain}`) }]);
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining(domain));
+    warn.mockRestore();
+    await service.from("provider_errors").delete().like("message", `%${domain}%`);
+  });
+});
+
+describe("no website: picking the Google listing (MVP_SPEC 3.3)", () => {
+  async function noWebsiteOwner() {
+    const owner = await createOwner();
+    await service.from("businesses").update({ has_website: false, name: "Sunrise Coffee", primary_city: "Springfield" }).eq("id", owner.businessId);
+    await signIn(owner.email, owner.password);
+    return owner;
+  }
+
+  it("saves no place_id while searching, then the picked listing's place_id and nothing else", async () => {
+    const owner = await noWebsiteOwner();
+    const { clients } = fakeClients({ places: { "Sunrise Coffee Springfield": [COFFEE_PLACE] } });
+
+    const result = await runBusinessAutofill(owner.userId, owner.businessId, { name: "Sunrise Coffee", city: "Springfield" }, clients);
+    expect(result?.choices?.map((c) => c.placeId)).toEqual([COFFEE_PLACE.placeId]);
+    expect((await stored(owner.businessId)).business).toMatchObject({ places_id: null, name: "Sunrise Coffee" });
+
+    expect(await confirmBusinessPlace({ businessId: owner.businessId, placeId: COFFEE_PLACE.placeId })).toEqual({ ok: true, data: null });
+    const { business } = await stored(owner.businessId);
+    expect(business).toMatchObject({ places_id: COFFEE_PLACE.placeId, name: "Sunrise Coffee", phone: null, primary_city: "Springfield" });
+    expect(JSON.stringify(business)).not.toContain(COFFEE_PLACE.address!);
+  });
+
+  it("None of these clears the place_id and keeps the typed name", async () => {
+    const owner = await noWebsiteOwner();
+    await service.from("businesses").update({ places_id: COFFEE_PLACE.placeId }).eq("id", owner.businessId);
+    expect(await confirmBusinessPlace({ businessId: owner.businessId, placeId: null })).toEqual({ ok: true, data: null });
+    expect((await stored(owner.businessId)).business).toMatchObject({ places_id: null, name: "Sunrise Coffee" });
+  });
+
+  it("checks the session, the input, and that the business is the user's own without a website", async () => {
+    const pick = { businessId: randomUUID(), placeId: COFFEE_PLACE.placeId };
+    expect(await confirmBusinessPlace(pick)).toMatchObject({ ok: false, status: 401 });
+
+    const owner = await noWebsiteOwner();
+    const other = await createOwner();
+    expect(await confirmBusinessPlace({ businessId: owner.businessId, placeId: "../bad" })).toMatchObject({ ok: false, status: 400 });
+    expect(await confirmBusinessPlace({ ...pick, businessId: other.businessId })).toMatchObject({ ok: false, status: 404 });
+    await service.from("businesses").update({ has_website: true }).eq("id", owner.businessId);
+    expect(await confirmBusinessPlace({ ...pick, businessId: owner.businessId })).toMatchObject({ ok: false, status: 404 });
+    expect((await stored(other.businessId)).business?.places_id).toBeNull();
   });
 });

@@ -89,6 +89,25 @@ describe("startScan", () => {
     expect(await jobsFor(businessId)).toEqual([]);
   });
 
+  it("asks before a scan that costs more than the balance, and queues it once confirmed (D-54)", async () => {
+    const { businessId } = await signedInBusiness(5);
+    // 3 questions on the default 3 models: 9 credits against 5.
+    const prompts = ["One?", "Two?", "Three?"].map((prompt) => ({ business_id: businessId, prompt }));
+    const inserted = await service.from("tracked_prompts").insert(prompts);
+    if (inserted.error) throw inserted.error;
+
+    expect(await startScan({ businessId })).toEqual({
+      ok: false,
+      status: 402,
+      error: "This scan uses 9 credits and you have 5. It will still finish, and the 4 extra credits come out of your next renewal or top-up.",
+      overdraft: { cost: 9, balance: 5 },
+    });
+    expect(await jobsFor(businessId)).toEqual([]);
+
+    expect(await startScan({ businessId, confirmOverdraft: true })).toMatchObject({ ok: true, data: { scanning: true } });
+    expect(await jobsFor(businessId)).toEqual([{ status: "queued", priority: 100 }]);
+  });
+
   it("treats another agency's business and bad input as not found", async () => {
     const other = await signedInBusiness(100);
     await signedInBusiness(100);

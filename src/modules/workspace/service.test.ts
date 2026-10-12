@@ -129,6 +129,12 @@ describe("pickBanners", () => {
     expect(lastDay.message).toBe("Your free trial ends today, with 1 trial credit left. Your card will be charged on September 27.");
   });
 
+  it("dates the charge in the viewer's time zone, like Billing (BUG-111)", () => {
+    const late = { ...trial, trialEndsAt: new Date("2026-10-17T02:00:00Z") };
+    expect(pickBanners(trialUsage, late, now)[0].message).toMatch(/charged on October 17\.$/);
+    expect(pickBanners(trialUsage, late, now, "America/Los_Angeles")[0].message).toMatch(/charged on October 16\.$/);
+  });
+
   it("says nothing will be charged once the trial is cancelled", () => {
     const cancelled = { ...trial, cancelAt: trial.trialEndsAt };
     expect(pickBanners(trialUsage, cancelled, now)[0]).toEqual({
@@ -164,6 +170,17 @@ describe("pickBanners", () => {
   it("links the out of credits banner to buying credits", () => {
     const [banner] = pickBanners(usage({ balance: 0 }), active, now);
     expect(banner.action).toEqual({ label: "Buy credits", href: BUY_CREDITS_HREF });
+  });
+
+  it("does not say out of credits for a trial whose first credits are still being added", () => {
+    const freshTrial: AccountState = { ...trial, trialEndsAt: inDays(7) };
+    const none = usage({ balance: 0, periodCredits: 0, periodUsed: 0 });
+    expect(kinds(none, freshTrial)).toEqual(["trial"]);
+    expect(pickBanners(none, freshTrial, now)[0].message).toContain("Your free trial has 7 days. Your trial credits are being added.");
+    // Right after the card is accepted, the trial end is not saved yet.
+    expect(kinds(none, { ...trial, trialEndsAt: null })).toEqual([]);
+    // A trial that did get credits and spent them all is out of credits.
+    expect(kinds(usage({ balance: 0, periodCredits: 100, periodUsed: 100 }), freshTrial)).toEqual(["out_of_credits", "trial"]);
   });
 
   it("shows only the suspended banner for a paused account", () => {

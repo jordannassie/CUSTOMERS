@@ -11,3 +11,4 @@ export const addQuestionInput = z.object({ businessId: z.uuid(), text });
 export const editQuestionInput = z.object({ ...ids, text });
 export const setQuestionActiveInput = z.object({ ...ids, active: z.boolean() });
 export const removeQuestionInput = z.object(ids);
+export const questionAnswersInput = z.object(ids);

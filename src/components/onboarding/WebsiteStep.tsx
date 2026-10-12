@@ -4,30 +4,38 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Globe, Loader2, MapPin } from "lucide-react";
 import type { ActionResult } from "@/modules/auth";
-import { toDomain, type AutofillResult } from "@/modules/onboarding/schema";
+import { toDomain, type AutofillResult, type PlaceChoice } from "@/modules/onboarding/schema";
 import { FieldMessage, useFieldErrors } from "@/components/ui/field-errors";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { saveAutofill } from "./autofill-store";
+import { PlaceChoices, type PickPlaceAction } from "./PlaceChoices";
 import { FieldHint, StepActions, StepError } from "./StepBits";
 
 type Props = {
   defaultDomain: string;
   defaultNoWebsite: boolean;
   backHref?: string;
+  /** Chosen on the new-business plan picker, carried through to the business this step creates. */
+  plan?: string | null;
   save: (
-    input: { domain: string } | { name: string; city: string },
+    input: { domain: string; plan?: string | null } | { name: string; city: string; plan?: string | null },
   ) => Promise<ActionResult<{ businessId: string; autofill: AutofillResult }>>;
+  /** Saves the Google listing picked with no website, or none (MVP_SPEC 3.3). */
+  pick: PickPlaceAction;
 };
 
+type Picking = { businessId: string; typed: AutofillResult; choices: PlaceChoice[] };
+
 // MVP_SPEC 3.1 step 3. Auto-fill runs here and takes a few seconds, so the wait gets its own screen.
-export function WebsiteStep({ defaultDomain, defaultNoWebsite, backHref, save }: Props) {
+export function WebsiteStep({ defaultDomain, defaultNoWebsite, backHref, plan = null, save, pick }: Props) {
   const router = useRouter();
   const [noWebsite, setNoWebsite] = useState(defaultNoWebsite);
   const [domain, setDomain] = useState(defaultDomain);
   const [name, setName] = useState("");
   const [city, setCity] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [picking, setPicking] = useState<Picking | null>(null);
   const [pending, startTransition] = useTransition();
   const fields = useFieldErrors<"website" | "name" | "city">("onb");
 
@@ -41,18 +49,24 @@ export function WebsiteStep({ defaultDomain, defaultNoWebsite, backHref, save }:
     );
     if (bad) return;
     startTransition(async () => {
-      const result = await save(noWebsite ? { name, city } : { domain });
+      const result = await save(noWebsite ? { name, city, plan } : { domain, plan });
       if (!result.ok) {
         // A typo in the address goes on the website field itself (BUG-102).
         if (result.field === "website") return void fields.show({ website: result.error });
         return setError(result.error);
       }
-      saveAutofill(result.data.businessId, result.data.autofill);
+      // No website: Google's listings are only offered; the user picks theirs before anything is filled in.
+      const { choices, ...typed } = result.data.autofill;
+      if (choices?.length) return setPicking({ businessId: result.data.businessId, typed, choices });
+      saveAutofill(result.data.businessId, typed);
       router.push("/onboarding/details");
     });
   }
 
   if (pending) return <Reading what={noWebsite ? `${name} in ${city}` : domain} noWebsite={noWebsite} />;
+  if (picking) {
+    return <PlaceChoices {...picking} searched={`${name.trim()} in ${city.trim()}`} pick={pick} onBack={() => setPicking(null)} />;
+  }
 
   return (
     <form onSubmit={submit} className="flex flex-col gap-6" noValidate>
@@ -91,7 +105,7 @@ export function WebsiteStep({ defaultDomain, defaultNoWebsite, backHref, save }:
               {...fields.fieldProps("city", "business-city-hint")}
             />
             <FieldMessage id={fields.idOf("city")} message={fields.errors.city} />
-            <FieldHint id="business-city-hint">We look the business up on Google to fill in the rest.</FieldHint>
+            <FieldHint id="business-city-hint">We look the business up on Google so you can pick yours.</FieldHint>
           </div>
         </div>
       ) : (

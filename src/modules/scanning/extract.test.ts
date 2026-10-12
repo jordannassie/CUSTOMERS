@@ -133,6 +133,15 @@ describe("matchNames", () => {
     expect(isSameBusiness("contracoffee.com", business)).toBe(true);
   });
 
+  it("ignores spacing and punctuation inside a name (B6)", () => {
+    expect(isSameBusiness("Book Woman", { name: "BookWoman" })).toBe(true);
+    expect(isSameBusiness("Book-Woman", { name: "BookWoman" })).toBe(true);
+    expect(isSameBusiness("BookWoman", { name: "Book Woman" })).toBe(true);
+    expect(isSameBusiness("Book Woman Austin", { name: "BookWoman" })).toBe(true);
+    expect(isSameBusiness("Book People", { name: "BookWoman" })).toBe(false);
+    expect(isSameBusiness("A Ce", { name: "Ace" })).toBe(false);
+  });
+
   it("does not let a generic name match inside a longer one", () => {
     expect(isSameBusiness("Ace Hardware", { name: "Ace" })).toBe(false);
     expect(isSameBusiness("Ace", { name: "Ace" })).toBe(true);

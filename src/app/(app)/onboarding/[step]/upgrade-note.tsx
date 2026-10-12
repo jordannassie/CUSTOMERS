@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { BILLING_HREF } from "@/modules/workspace";
+import { NEW_BUSINESS_PLAN_HREF } from "@/modules/workspace";
 
 // MVP_SPEC 3.1: a trial covers 2 businesses; a 3rd is an upgrade, not an error.
 // With no business left (BUG-D) the dashboard sends the user back here, so the way out is settings instead.
@@ -17,7 +17,7 @@ export function UpgradeNote({ reason, hasBusinesses }: { reason: string; hasBusi
       </p>
       <div className="mt-5 flex flex-wrap gap-3">
         <Button asChild>
-          <Link href={BILLING_HREF}>See plans</Link>
+          <Link href={NEW_BUSINESS_PLAN_HREF}>See plans</Link>
         </Button>
         <Button asChild variant="ghost">
           {hasBusinesses ? <Link href="/dashboard">Back to dashboard</Link> : <Link href="/settings">Go to settings</Link>}

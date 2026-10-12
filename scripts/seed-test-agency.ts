@@ -100,7 +100,8 @@ for (const b of seed.businesses) {
   );
   must(
     `add questions for ${b.name}`,
-    await db.from("tracked_prompts").insert(b.questions.map((prompt) => ({ business_id: business.id, prompt }))).select("id"),
+    // Suggested questions, the only ones the score counts (BUG-129).
+    await db.from("tracked_prompts").insert(b.questions.map((prompt) => ({ business_id: business.id, prompt, source: "library" }))).select("id"),
   );
   must(
     `add competitors for ${b.name}`,

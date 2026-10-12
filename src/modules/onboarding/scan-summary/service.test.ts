@@ -19,10 +19,17 @@ describe("namedMostText", () => {
   it("picks the business with the highest share of answers, tracked or not", () => {
     const also = { names: [{ name: "Starbucks", answers: 9 }], answers: 12 };
     expect(namedMostText([{ name: "Bean House", score: 58 }], also)).toBe(
-      "AI named Starbucks most often, in about 8 of 10 answers.",
+      "AI named Starbucks most often, in about 8 of 10 answers. It's a business you don't track yet.",
     );
     expect(namedMostText([{ name: "Bean House", score: 91 }], also)).toBe(
-      "AI named Bean House most often, in about 9 of 10 answers.",
+      "AI named Bean House most often, in about 9 of 10 answers. It's one of the competitors you track.",
+    );
+  });
+
+  it("names the chain when a tracked branch's answers named only the chain", () => {
+    const branch = { name: "Bennu Coffee on Congress", score: 25, chain: "Bennu Coffee" };
+    expect(namedMostText([branch], { names: [], answers: 12 })).toBe(
+      "AI named Bennu Coffee most often, in about 3 of 10 answers. You track one of its locations, Bennu Coffee on Congress.",
     );
   });
 

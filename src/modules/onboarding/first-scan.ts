@@ -2,8 +2,11 @@ import type { ScanStatus } from "@/modules/jobs";
 
 // The first scan screen (B-38, MVP_SPEC 3.1 step 9). Pure, so the screen's states are unit tested.
 
-/** "credits": waiting for the trial credits (F-48). "credits-late": they did not arrive in time. */
-export type FirstScanPhase = "credits" | "credits-late" | "start" | "scanning" | "done" | "failed";
+/**
+ * "credits": waiting for the trial credits (F-48). "credits-late": they did not arrive in time. "confirm": the scan
+ * costs more than the balance, so it waits for the user to confirm (D-54).
+ */
+export type FirstScanPhase = "credits" | "credits-late" | "confirm" | "start" | "scanning" | "done" | "failed";
 
 export const FIRST_SCAN_FAILED = "No credits were used. Try again in a moment.";
 export const FIRST_SCAN_STALLED =
@@ -51,6 +54,8 @@ export function firstScanCopy(
       return { heading: "Your trial credits aren't in yet", intro: `We start checking ${business} as soon as your trial credits are in your account.` };
     case "credits":
       return { heading: "Getting your first scan ready", intro: `We start checking ${business} as soon as your trial credits are in your account.` };
+    case "confirm":
+      return { heading: "Your first scan needs more credits than you have", intro: `We're ready to check ${business} with ${names}.` };
     case "failed":
       return { heading: "Your first scan didn't finish", intro: `We couldn't finish checking ${business}.` };
     case "stalled":

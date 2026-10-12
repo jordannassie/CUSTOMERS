@@ -36,11 +36,15 @@ export function toDomain(raw: string): string | null {
 export type BusinessDetails = {
   name: string;
   industry: (typeof INDUSTRIES)[number] | "";
+  /** With industry "other": what Google calls the business, "Bookstore" (BUG-123). */
+  industryText?: string;
   description: string;
   services: string[];
   city: string;
   state: string;
   country: string;
+  /** Neighborhood or area, "East Austin". From Google only as a pre-fill; saved once the user confirms. */
+  area: string;
   phone: string;
   address: string;
 };
@@ -51,10 +55,29 @@ export type AutofillResult = {
   filledFrom: { website: boolean; google: boolean };
   /** A friendly line shown above the form, or null when everything went normally. */
   note: string | null;
+  /**
+   * No website (MVP_SPEC 3.3): the Google listings the user picks theirs from. Until they pick one, the form
+   * keeps only what they typed and no place_id is saved. Shown live, never stored (D-73).
+   */
+  choices?: PlaceChoice[];
+};
+
+/** One Google listing offered as "is this your business?", with what the form gets if the user picks it. */
+export type PlaceChoice = {
+  placeId: string;
+  name: string;
+  address: string | null;
+  autofill: AutofillResult;
 };
 
 // Place ids are opaque but URL-safe; anything else would change the Places request path.
 export const placeIdPattern = /^[A-Za-z0-9_-]{10,300}$/;
+
+/** The user's answer to "Is one of these your business?": a listing's place_id, or null for none of them. */
+export const pickPlaceInput = z.object({
+  businessId: z.uuid(),
+  placeId: z.string().regex(placeIdPattern).nullable(),
+});
 
 const competitorName = z.string().trim().min(1).max(120);
 

@@ -412,6 +412,7 @@ export type Database = {
         Row: {
           business_id: string
           category: string | null
+          checked_from: string | null
           city: string | null
           confirmed: boolean
           country: string | null
@@ -432,6 +433,7 @@ export type Database = {
         Insert: {
           business_id: string
           category?: string | null
+          checked_from?: string | null
           city?: string | null
           confirmed?: boolean
           country?: string | null
@@ -452,6 +454,7 @@ export type Database = {
         Update: {
           business_id?: string
           category?: string | null
+          checked_from?: string | null
           city?: string | null
           confirmed?: boolean
           country?: string | null
@@ -584,11 +587,13 @@ export type Database = {
           owner_user_id: string
           phone: string | null
           places_id: string | null
+          primary_area: string | null
           primary_city: string | null
           primary_country: string | null
           primary_region: string | null
           purge_after: string | null
           reach_type: string | null
+          requested_plan_id: string | null
           scan_frequency: string
           services: string[]
           status: string
@@ -613,11 +618,13 @@ export type Database = {
           owner_user_id: string
           phone?: string | null
           places_id?: string | null
+          primary_area?: string | null
           primary_city?: string | null
           primary_country?: string | null
           primary_region?: string | null
           purge_after?: string | null
           reach_type?: string | null
+          requested_plan_id?: string | null
           scan_frequency?: string
           services?: string[]
           status?: string
@@ -642,11 +649,13 @@ export type Database = {
           owner_user_id?: string
           phone?: string | null
           places_id?: string | null
+          primary_area?: string | null
           primary_city?: string | null
           primary_country?: string | null
           primary_region?: string | null
           purge_after?: string | null
           reach_type?: string | null
+          requested_plan_id?: string | null
           scan_frequency?: string
           services?: string[]
           status?: string
@@ -666,6 +675,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "agency_credit_balance"
             referencedColumns: ["agency_id"]
+          },
+          {
+            foreignKeyName: "businesses_requested_plan_id_fkey"
+            columns: ["requested_plan_id"]
+            isOneToOne: false
+            referencedRelation: "plans"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -2272,6 +2288,14 @@ export type Database = {
       }
       enqueue_due_scans: { Args: { p_include_real?: boolean }; Returns: number }
       expire_grants: { Args: never; Returns: number }
+      extend_trial_grant: {
+        Args: { p_agency_id: string; p_expires_at: string }
+        Returns: string
+      }
+      fail_scan_job: {
+        Args: { p_attempts: number; p_error: string; p_job_id: string; p_skipped: boolean }
+        Returns: boolean
+      }
       grant_credits: {
         Args: {
           p_agency_id: string
@@ -2294,6 +2318,16 @@ export type Database = {
       hold_credits: {
         Args: { p_agency_id: string; p_amount: number; p_scan_job_id: string }
         Returns: string
+      }
+      job_settings_status: {
+        Args: never
+        Returns: {
+          alerts_url_set: boolean
+          email_jobs_url_set: boolean
+          scheduled_scans_include_real: boolean
+          worker_secret_set: boolean
+          worker_url_set: boolean
+        }[]
       }
       low_credit_agencies: {
         Args: never
@@ -2327,6 +2361,7 @@ export type Database = {
         Returns: number
       }
       release_hold: { Args: { p_hold_id: string }; Returns: number }
+      release_orphan_holds: { Args: never; Returns: number }
       requeue_scan_job: {
         Args: {
           p_attempts: number
@@ -2352,6 +2387,9 @@ export type Database = {
           prompt: string
         }[]
       }
+      scan_job_business_on_plan: { Args: { p_business_id: string }; Returns: boolean }
+      scan_job_settle_failure: { Args: { p_job_id: string; p_skipped: boolean }; Returns: undefined }
+      set_next_scan_at: { Args: { p_at: string; p_business_id: string }; Returns: boolean }
       soft_delete_agency: {
         Args: { p_agency_id: string; p_purge_after: string }
         Returns: boolean

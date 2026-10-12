@@ -55,6 +55,8 @@ export const COFFEE_PLACE: PlaceCandidate = {
   city: "Springfield",
   state: "IL",
   country: "US",
+  // Google's neighborhood for the listing: pre-fills "Neighborhood or area" on the details form.
+  area: "Downtown",
 };
 
 export const OTHER_PLACE: PlaceCandidate = {
@@ -83,6 +85,8 @@ export const BLOCKED_PLACE: PlaceCandidate = {
   city: "Costa Mesa",
   state: "CA",
   country: "US",
+  // No neighborhood on this listing: the field stays empty.
+  area: null,
 };
 
 type FakeOptions = {

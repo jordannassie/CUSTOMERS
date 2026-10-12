@@ -152,17 +152,21 @@ describe("worker", () => {
 });
 
 describe("reset_stuck_jobs", () => {
-  it("puts jobs running for over 10 minutes back in the queue, and fails one out of attempts", async () => {
+  it("puts jobs with no sign of life for 20 minutes back in the queue, and fails one out of attempts", async () => {
     const agency = await createTestAgency();
-    const [stuck, lastTry, recent] = await Promise.all([queueTestJob(agency), queueTestJob(agency), queueTestJob(agency)]);
+    const [stuck, lastTry, recent, busy] = await Promise.all([queueTestJob(agency), queueTestJob(agency), queueTestJob(agency), queueTestJob(agency)]);
+    const old = new Date(Date.now() - 21 * 60_000).toISOString();
+    // A long scan that last showed life 11 minutes ago is still running: the old 10-minute rule would have reset it (B4).
     const eleven = new Date(Date.now() - 11 * 60_000).toISOString();
-    await service.from("scan_jobs").update({ status: "running", attempts: 1, locked_at: eleven }).eq("id", stuck.jobId);
-    await service.from("scan_jobs").update({ status: "running", attempts: 3, locked_at: eleven }).eq("id", lastTry.jobId);
+    await service.from("scan_jobs").update({ status: "running", attempts: 1, locked_at: old }).eq("id", stuck.jobId);
+    await service.from("scan_jobs").update({ status: "running", attempts: 3, locked_at: old }).eq("id", lastTry.jobId);
     await service.from("scan_jobs").update({ status: "running", attempts: 1, locked_at: new Date().toISOString() }).eq("id", recent.jobId);
+    await service.from("scan_jobs").update({ status: "running", attempts: 1, locked_at: eleven }).eq("id", busy.jobId);
 
     expect(await resetStuckJobs()).toBeGreaterThanOrEqual(2);
     expect(await readJob(stuck.jobId)).toMatchObject({ status: "queued", attempts: 1 });
     expect(await readJob(lastTry.jobId)).toMatchObject({ status: "failed", error: "The scan stopped without finishing 3 times." });
     expect(await readJob(recent.jobId)).toMatchObject({ status: "running" });
+    expect(await readJob(busy.jobId)).toMatchObject({ status: "running" });
   });
 });

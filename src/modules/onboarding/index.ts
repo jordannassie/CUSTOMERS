@@ -1,11 +1,11 @@
 // The only file other modules may import from (eslint-plugin-boundaries).
-export { autofillBusiness, lookupCompetitorByName, saveCompetitorList } from "./actions";
+export { autofillBusiness, confirmBusinessPlace, lookupCompetitorByName, saveCompetitorList } from "./actions";
 export type { CompetitorCandidate } from "./competitor-places";
 export { limitMessage } from "./competitors";
 export type { CompetitorStep, SavedCompetitor } from "./dal";
 export { INDUSTRIES, industryFromPlacesType, type Industry } from "./industries";
 export { getCompetitorStep } from "./queries";
-export type { AutofillResult, BusinessDetails } from "./schema";
+export type { AutofillResult, BusinessDetails, PlaceChoice } from "./schema";
 export { prepareQuestions, type QuestionBusiness, type QuestionSet } from "./questions";
 export type { PreparedQuestion } from "./question-rules";
 export {
@@ -44,6 +44,7 @@ export { getFirstScanProgress, getFirstScanSummary } from "./scan-summary/action
 export type { FirstScanSummary, ModelProgress } from "./scan-summary/service";
 export {
   FIRST_SCAN_PATH,
+  PLAN_IDS,
   WIZARD_STEPS,
   canOpen,
   isStepSlug,

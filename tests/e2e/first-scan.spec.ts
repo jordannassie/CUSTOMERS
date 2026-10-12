@@ -33,7 +33,7 @@ test.afterAll(async () => {
  * Stripe subscription as checkout.session.completed does; `credits: false` leaves out the grant that
  * invoice.paid brings (F-48).
  */
-async function seedAtModelsStep(page: Page, opts: { subscription?: boolean; credits?: boolean } = {}) {
+async function seedAtModelsStep(page: Page, opts: { subscription?: boolean; credits?: boolean; amount?: number } = {}) {
   const email = `e2e-first-scan-${randomUUID()}@example.test`;
   const password = `pw-${randomUUID()}`;
   const { data: user, error } = await db.auth.admin.createUser({ email, password, email_confirm: true });
@@ -72,9 +72,10 @@ async function seedAtModelsStep(page: Page, opts: { subscription?: boolean; cred
     .throwOnError();
   await db
     .from("tracked_prompts")
-    .insert(QUESTIONS.map((prompt) => ({ business_id: business.id, prompt })))
+    // Suggested questions: only these count in the score (BUG-129).
+    .insert(QUESTIONS.map((prompt) => ({ business_id: business.id, prompt, source: "library" })))
     .throwOnError();
-  if (opts.credits !== false) await grant(agency.id, opts.subscription ? "trial" : "admin");
+  if (opts.credits !== false) await grant(agency.id, opts.subscription ? "trial" : "admin", opts.amount);
 
   await page.goto("/login?next=/onboarding");
   await page.locator("#email").fill(email);
@@ -84,12 +85,12 @@ async function seedAtModelsStep(page: Page, opts: { subscription?: boolean; cred
   return { businessId: business.id, agencyId: agency.id };
 }
 
-async function grant(agencyId: string, source: string) {
+async function grant(agencyId: string, source: string, amount = 200) {
   const { error } = await db.rpc("grant_credits", {
     p_agency_id: agencyId,
     p_source: source,
     p_source_id: `e2e-${randomUUID()}`,
-    p_amount: 200,
+    p_amount: amount,
     p_expires_at: null,
   });
   if (error) throw error;
@@ -119,6 +120,20 @@ test("finish setup: a short progress screen, a summary, then the dashboard with 
   await openDashboard(page);
   await expect(page.getByTestId("score-summary")).toBeVisible({ timeout: 120_000 });
   await expect(page.getByTestId("no-score")).toHaveCount(0);
+});
+
+test("short of credits: the first scan waits for Run scan anyway, then runs into the overdraft (D-54)", async ({ page }) => {
+  const { businessId } = await seedAtModelsStep(page, { amount: 5 });
+  await finishSetup(page);
+  await page.waitForURL("**/onboarding/first-scan");
+  await slow(page.getByTestId("first-scan-overdraft")).toHaveText(
+    "This scan uses 9 credits and you have 5. It will still finish, and the 4 extra credits come out of your next renewal or top-up.",
+  );
+  const jobs = async () => (await db.from("scan_jobs").select("id").eq("business_id", businessId)).data?.length ?? 0;
+  expect(await jobs()).toBe(0);
+  await page.getByRole("button", { name: "Run scan anyway" }).click();
+  await slow(page.getByRole("heading", { level: 1, name: "Your first scan is done" })).toBeVisible();
+  expect(await jobs()).toBe(1);
 });
 
 test("a failed first scan shows Try again, never an empty dashboard, and the retry opens the score", async ({ page }) => {

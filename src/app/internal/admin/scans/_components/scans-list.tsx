@@ -10,6 +10,7 @@ const BASE = "/internal/admin/scans";
 const FILTERS: { status: ScanStatus | undefined; label: string }[] = [
   { status: undefined, label: "All" },
   { status: "failed", label: STATUS.failed.label },
+  { status: "skipped", label: STATUS.skipped.label },
   { status: "running", label: STATUS.running.label },
   { status: "queued", label: STATUS.queued.label },
   { status: "done", label: STATUS.done.label },
@@ -97,7 +98,7 @@ export default function ScansList({ list, status }: { list: AdminScanList; statu
                       )}
                     </TableCell>
                     <TableCell className="text-right">
-                      {row.status === "failed" && <RetryButton jobId={row.id} businessName={row.businessName} retry={retryScan} />}
+                      {(row.status === "failed" || row.status === "skipped") && <RetryButton jobId={row.id} businessName={row.businessName} retry={retryScan} />}
                     </TableCell>
                   </TableRow>
                 ))}
@@ -121,7 +122,7 @@ export default function ScansList({ list, status }: { list: AdminScanList; statu
                 {row.error && <p className="text-[13px] text-low-text">{row.error}</p>}
                 <div className="flex items-center justify-between gap-3">
                   <span className="tabular text-[12px] text-text-hint">{when(row.createdAt)} UTC</span>
-                  {row.status === "failed" && <RetryButton jobId={row.id} businessName={row.businessName} retry={retryScan} />}
+                  {(row.status === "failed" || row.status === "skipped") && <RetryButton jobId={row.id} businessName={row.businessName} retry={retryScan} />}
                 </div>
               </li>
             ))}

@@ -8,6 +8,7 @@ const STATE: Record<ScanState, { label: string; variant: "good" | "mid" | "low" 
   running: { label: "Scanning", variant: "mid" },
   done: { label: "Done", variant: "good" },
   failed: { label: "Failed", variant: "low" },
+  skipped: { label: "Skipped", variant: "tint" },
 };
 
 export function DeletedBadge() {

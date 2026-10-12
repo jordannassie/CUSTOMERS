@@ -77,12 +77,13 @@ describe("buildExplainInput", () => {
     expect(input.yourWebsite).toEqual({
       readStatus: "read",
       pagesRead: ["/", "/about"],
-      pagesNotFound: ["/services"],
       hasPhone: false,
       hasAddress: true,
       servicesListed: ["espresso drinks", "pastries"],
     });
     expect(JSON.stringify(input)).not.toContain("120 Main St");
+    // We only open a few paths: /services not being one of them says nothing about the site (BUG-115).
+    expect(JSON.stringify(input.yourWebsite)).not.toContain("/services");
   });
 
   it("lists the questions the business missed most", () => {

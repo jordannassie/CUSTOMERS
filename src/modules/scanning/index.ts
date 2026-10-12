@@ -1,13 +1,15 @@
 // The only file other modules may import from (eslint-plugin-boundaries).
 export { countryCode } from "./country";
-export { ALREADY_FINISHED, runScan, type ScanDeps, type ScanOutcome } from "./service";
+export { ALREADY_FINISHED, runScan, scanCheckCount, type ScanDeps, type ScanOutcome } from "./service";
 export { detectMentions, type MentionTarget } from "./mentions";
 export { liveCheckRunner } from "./runs/dal";
 export { CHECK_MODELS } from "./providers/models";
 export type { CheckResult, ProviderId } from "./providers/types";
 export { getScoreReport, loadQuestionResults, loadScoreReport, type ScoreReport } from "./scores/dal";
 export type { ModelAppearance } from "./scores/questions";
+export { countsInScore, isOwnQuestion, splitByQuestion, type OwnQuestionsResult } from "./scores/counted";
 export { loadAlsoRecommended } from "./also-recommended/dal";
+export { recountAfterCompetitorChange, recountSavedAnswers, type RecountResult } from "./recount/dal";
 export type { AlsoRecommended, AlsoRecommendedList } from "./also-recommended/names";
 export {
   compareWithCompetitor,

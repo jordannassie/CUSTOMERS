@@ -33,7 +33,7 @@ Phase 4 · M · Depends on: B-32 · Blocked by Jordan: no · MVP_SPEC 5.3, 25 ·
 1. `src/modules/onboarding/questions.ts`: Claude Haiku picks 12 templates from the business's industry library that fit its services, with a mix of intents; fills `{city}`.
 2. Industry not in the library: Haiku writes 12 questions following the same rules; the industry is flagged in admin as a library candidate.
 3. Fallback to the old template engine only if the AI call fails.
-4. Prompt in `src/modules/onboarding/prompts/pick-questions.v1.ts`.
+4. Prompt in `src/modules/onboarding/prompts/pick-questions.v3.ts`.
 5. Eval `evals/question-picking/`: 20 to 30 sample businesses with an acceptable pool labelled by a person; overlap score.
 
 **What the user sees**

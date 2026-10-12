@@ -1,6 +1,6 @@
 import "server-only";
 import { env } from "@/lib/env";
-import { getStripe, isStripeConfigured } from "@/modules/billing";
+import { extendSubscriptionTrial, getStripe, isStripeConfigured } from "@/modules/billing";
 
 /** The Stripe calls the admin makes. Injected, so tests and Playwright never reach Stripe. */
 export type AdminStripeClient = {
@@ -23,12 +23,7 @@ const fixtureClient: AdminStripeClient = {
 
 const stripeClient: AdminStripeClient = {
   mode: "stripe",
-  async extendTrial(subscriptionId, trialEnd) {
-    await getStripe().subscriptions.update(subscriptionId, {
-      trial_end: Math.floor(trialEnd.getTime() / 1000),
-      proration_behavior: "none",
-    });
-  },
+  extendTrial: extendSubscriptionTrial,
   async revenueSince(since, until) {
     let cents = 0;
     const created = { gte: Math.floor(since.getTime() / 1000), ...(until && { lt: Math.floor(until.getTime() / 1000) }) };

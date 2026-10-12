@@ -2,12 +2,13 @@
 
 import { useState } from "react";
 import dynamic from "next/dynamic";
+import { StripeFormLoading } from "@/app/(app)/_stripe/form-loading";
 import { SecureNote, SettingUp, TrialSummary, type CardOffer } from "@/components/onboarding/CardBits";
 import { FixtureCardForm } from "@/components/onboarding/FixtureCardForm";
 import type { ActionResult } from "@/modules/auth";
 import type { CardFormMode } from "@/modules/billing";
 
-const StripeCardForm = dynamic(() => import("./stripe-card-form"), { ssr: false });
+const StripeCardForm = dynamic(() => import("./stripe-card-form"), { ssr: false, loading: StripeFormLoading });
 
 type Props = {
   businessId: string;

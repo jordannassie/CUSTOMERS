@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { setupAddOnText } from "./setup-add-on-copy";
 
 vi.mock("server-only", () => ({}));
-const { planForNewBusiness } = await import("./setup-add-on");
+const { chosenPlanFor, planForNewBusiness } = await import("./setup-add-on");
 
 const plans = [
   { id: "starter", name: "Starter", priceCents: 14900, stripePriceId: "price_s" },
@@ -37,5 +37,22 @@ describe("planForNewBusiness", () => {
 
   it("falls back to Starter when no business is on a plan yet", () => {
     expect(planForNewBusiness(context([{ id: "b2", planId: null }]) as never, "b2")).toBe("starter");
+  });
+});
+
+describe("chosenPlanFor", () => {
+  const ctx = context([{ id: "b1", planId: "starter" }, { id: "b2", planId: null }]) as never;
+
+  it("uses the plan picker's choice over the other businesses' plan", () => {
+    expect(chosenPlanFor(ctx, "b2", "pro")).toBe("pro");
+  });
+
+  it("falls back to auto-matching when nothing was chosen", () => {
+    expect(chosenPlanFor(ctx, "b2", null)).toBe("starter");
+    expect(chosenPlanFor(ctx, "b2", undefined)).toBe("starter");
+  });
+
+  it("falls back when the chosen plan is no longer on sale here", () => {
+    expect(chosenPlanFor(ctx, "b2", "enterprise")).toBe("starter");
   });
 });

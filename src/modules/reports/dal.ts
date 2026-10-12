@@ -148,12 +148,14 @@ async function sharedBusiness(token: string): Promise<Shared | null> {
 
   const { data: business, error: businessError } = await db
     .from("businesses")
-    .select("name, agency_id, agencies!inner(name, logo_url)")
+    .select("name, agency_id, agencies!inner(name, logo_url, status, deleted_at)")
     .eq("id", share.business_id)
     .is("deleted_at", null)
     .maybeSingle();
   if (businessError) throw new Error(`Reports: could not read the business: ${businessError.message}`);
   if (!business?.agency_id) return null;
+  // A suspended or deleted agency's links stop working at once (B9); they open again if it is reinstated.
+  if (business.agencies.status === "suspended" || business.agencies.status === "deleted" || business.agencies.deleted_at) return null;
   return {
     agencyId: business.agency_id,
     businessId: share.business_id,

@@ -99,6 +99,27 @@ describe("website step", () => {
     expect(await startBusiness(userId, { domain: COFFEE_DOMAIN }, coffee())).toMatchObject({ ok: false, status: 409 });
   });
 
+  it("saves a plan chosen on the new-business plan picker, only on the new business row", async () => {
+    const userId = await signUp();
+    const first = await startBusiness(userId, { domain: COFFEE_DOMAIN }, coffee());
+    if (!first.ok) throw new Error("website step failed");
+    let row = await service.from("businesses").select("requested_plan_id").eq("id", first.businessId).single();
+    expect(row.data?.requested_plan_id).toBeNull();
+
+    // Returning to the same draft never sets it, even when a plan is somehow passed.
+    await startBusiness(userId, { domain: COFFEE_DOMAIN }, coffee(), "pro");
+    row = await service.from("businesses").select("requested_plan_id").eq("id", first.businessId).single();
+    expect(row.data?.requested_plan_id).toBeNull();
+  });
+
+  it("sets requested_plan_id on a brand new business when a plan was chosen", async () => {
+    const userId = await signUp();
+    const started = await startBusiness(userId, { domain: "orange-florist.example" }, fakeClients().clients, "pro");
+    if (!started.ok) throw new Error("website step failed");
+    const row = await service.from("businesses").select("requested_plan_id").eq("id", started.businessId).single();
+    expect(row.data?.requested_plan_id).toBe("pro");
+  });
+
   it("stops a trial agency at 2 businesses", async () => {
     const userId = await signUp();
     const agency = await service.from("agencies").select("id").eq("owner_user_id", userId).single();

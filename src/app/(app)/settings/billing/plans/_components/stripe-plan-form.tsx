@@ -1,9 +1,11 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Loader2 } from "lucide-react";
-import { loadStripe, type Appearance, type Stripe } from "@stripe/stripe-js";
 import { BillingAddressElement, CheckoutElementsProvider, PaymentElement, useCheckoutElements } from "@stripe/react-stripe-js/checkout";
+import { appearance, confirmErrorMessage, getStripeJs, LOAD_FAILED } from "@/app/(app)/_stripe/stripe-elements";
+import { useCheckoutSession } from "@/app/(app)/_stripe/use-checkout-session";
+import { forgetCheckout } from "@/lib/checkout-once";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { StartAction } from "./choose-plan";
@@ -13,49 +15,33 @@ import type { StartAction } from "./choose-plan";
 
 type Props = { publishableKey: string; planId: string; label: string; start: StartAction; onAccepted: () => void };
 
-const LOAD_FAILED = "We couldn't load the card form. Refresh the page to try again.";
-
-let stripePromise: Promise<Stripe | null> | null = null;
-const getStripeJs = (key: string) => (stripePromise ??= loadStripe(key));
-
-// Stripe's frames cannot read our CSS variables, so the design tokens are passed in as values.
-function appearance(): Appearance {
-  const css = getComputedStyle(document.documentElement);
-  const token = (name: string) => css.getPropertyValue(name).trim();
-  return {
-    theme: "stripe",
-    variables: {
-      colorPrimary: token("--cd-primary"),
-      colorText: token("--cd-text"),
-      colorTextSecondary: token("--cd-text-secondary"),
-      colorDanger: token("--cd-low-text"),
-      colorBackground: token("--cd-surface"),
-      borderRadius: "4px",
-      fontFamily: css.fontFamily,
-      fontSizeBase: "14px",
-    },
-    rules: { ".Input": { borderColor: token("--cd-input-border"), boxShadow: "none" } },
-  };
-}
-
 export default function StripePlanForm({ publishableKey, planId, label, start, onAccepted }: Props) {
   const [ownError, setOwnError] = useState<string | null>(null);
-  // One Checkout Session per plan chosen, created by our server with the businesses and metadata.
+  // One Checkout Session per plan chosen, created by our server with the businesses and metadata (BUG-105).
+  const key = `plan:${planId}`;
+  const create = useCallback(() => start({ planId }), [start, planId]);
+  const session = useCheckoutSession(key, create);
   const clientSecret = useMemo(
     () =>
-      start({ planId }).then((r) => {
+      session.then((r) => {
         if (r.ok) return r.data.clientSecret;
         setOwnError(r.error);
         throw new Error(r.error);
       }),
-    [planId, start],
+    [session],
   );
   const options = useMemo(() => ({ clientSecret, elementsOptions: { appearance: appearance() } }), [clientSecret]);
 
   if (ownError) return <FormError message={ownError} />;
   return (
     <CheckoutElementsProvider stripe={getStripeJs(publishableKey)} options={options}>
-      <CardFields label={label} onAccepted={onAccepted} />
+      <CardFields
+        label={label}
+        onAccepted={() => {
+          forgetCheckout(key);
+          onAccepted();
+        }}
+      />
     </CheckoutElementsProvider>
   );
 }
@@ -86,8 +72,7 @@ function CardFields({ label, onAccepted }: { label: string; onAccepted: () => vo
     const result = await checkout.confirm({ redirect: "if_required" });
     setPending(false);
     if (result.type === "error") {
-      const declined = result.error.code === "paymentFailed";
-      return setError(declined ? `${result.error.message} Nothing was charged. Try another card.` : result.error.message);
+      return setError(confirmErrorMessage(result.error));
     }
     onAccepted();
   }

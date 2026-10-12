@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-import { grantCredits } from "@/modules/credits";
+import { grantCredits, grantTrialCredits } from "@/modules/credits";
 import { createAgencyWithBusiness, deleteTestUsers, service, signInAs, type TestSession } from "../admin.test-helpers";
 import type { Database } from "@/types/database.types";
 import type { AdminStripeClient } from "./stripe";
@@ -122,6 +122,22 @@ describe("agency actions (B-65)", () => {
     expect(stripe.client.extendTrial).toHaveBeenCalledWith(expect.stringMatching(/^sub_/), expected);
     expect(new Date((await readAgency()).trial_ends_at!).getTime()).toBe(expected.getTime());
     expect(await auditRows("agency.extend_trial")).toMatchObject([{ details: { reason: REASON, days: 7 } }]);
+  });
+
+  it("moves the trial credits' expiry with the trial (A3)", async () => {
+    const end = new Date(Date.now() + 2 * DAY);
+    await setAgency({ status: "trialing", trial_ends_at: end.toISOString(), stripe_subscription_id: `sub_${randomUUID()}` });
+    const grantId = await grantTrialCredits({ agencyId: agency.agencyId, sourceId: `il_${randomUUID()}`, amount: 100, expiresAt: end });
+    stripe.client = fakeStripe();
+
+    expect((await actions.extendTrial({ agencyId: agency.agencyId, days: 2, reason: REASON })).ok).toBe(true);
+    const expected = new Date(end.getTime() + 2 * DAY).toISOString();
+    const { data: grant } = await service.from("credit_grants").select("expires_at, remaining").eq("id", grantId!).single().throwOnError();
+    expect(new Date(grant.expires_at!).toISOString()).toBe(expected);
+    expect(grant.remaining).toBe(100);
+    expect(await auditRows("agency.extend_trial")).toMatchObject([
+      { details: { reason: REASON, days: 2, trial_grant_id: grantId, trial_grant_expires_at: expected } },
+    ]);
   });
 
   it("changes nothing when Stripe is not connected or refuses", async () => {

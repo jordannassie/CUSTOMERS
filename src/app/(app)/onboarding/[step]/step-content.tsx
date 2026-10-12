@@ -9,6 +9,7 @@ import { WebsiteStep } from "@/components/onboarding/WebsiteStep";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   checkCardStep,
+  confirmBusinessPlace,
   getAddBusinessBlock,
   getCardStep,
   getCompetitorStep,
@@ -64,7 +65,9 @@ export async function StepContent({ step, state, plan, returned }: Props) {
         defaultDomain={details?.domain ?? ""}
         defaultNoWebsite={details ? !details.hasWebsite : false}
         backHref={state.hasFinishedBusiness ? undefined : stepPath("agency")}
+        plan={plan}
         save={saveWebsiteStep}
+        pick={confirmBusinessPlace}
       />
     );
   }
@@ -110,7 +113,7 @@ export async function StepContent({ step, state, plan, returned }: Props) {
     const c = await getCardStep(draftId, next);
     if (!c) redirect(stepPath("models"));
     // A trial already started (or a test agency): the step only waits for the webhook, then finishes.
-    if (!state.needsCard) return <SettingUp businessId={draftId} check={checkCardStep} />;
+    if (!state.needsCard || c.started) return <SettingUp businessId={draftId} check={checkCardStep} />;
     if (!c.offer) {
       return (
         <p role="alert" className="rounded-md bg-low-bg px-3 py-2 text-[13px] text-low-text">

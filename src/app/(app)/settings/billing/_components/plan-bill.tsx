@@ -4,9 +4,9 @@ import { Badge } from "@/components/ui/badge";
 import { formatUsd } from "@/modules/billing/format";
 import type { BillingBusiness, BillingView } from "@/modules/billing";
 import { ChangeDialog, type ChangeAction } from "./change-dialog";
-import { longDate } from "./format";
+import { LocalDate } from "@/components/ui/local-date";
 
-export type PlanActions = { upgrade: ChangeAction; downgrade: ChangeAction; remove: ChangeAction; add: ChangeAction };
+export type PlanActions = { upgrade: ChangeAction; downgrade: ChangeAction; remove: ChangeAction; add: ChangeAction; keep: ChangeAction };
 
 type Props = { view: BillingView; actions: PlanActions; addBusinessHref: string };
 
@@ -15,7 +15,7 @@ export function PlanBill({ view, actions, addBusinessHref }: Props) {
   const locked = !view.canChange || view.cancelAt !== null;
   const pastDue = view.status === "past_due";
   // Removing the last business that stays would leave an empty plan; cancelling is the way to stop paying.
-  const staying = view.onPlan.filter((b) => b.pending?.kind !== "remove").length;
+  const staying = view.onPlan.filter((b) => b.pending?.kind !== "remove" && !b.deleted).length;
 
   return (
     <section aria-labelledby="plan-heading" className="rounded-md border border-border bg-surface">
@@ -38,7 +38,7 @@ export function PlanBill({ view, actions, addBusinessHref }: Props) {
               business={b}
               view={view}
               actions={actions}
-              locked={locked}
+              locked={locked || b.deleted}
               pastDue={pastDue}
               canRemove={staying > 1}
             />
@@ -115,15 +115,15 @@ function BusinessLine({
           <p className="flex flex-wrap items-center gap-2">
             <span className="text-[15px] font-medium">{business.name}</span>
             <Badge variant="tint">{plan.name}</Badge>
+            {business.deleted && <Badge variant="secondary">Deleted</Badge>}
           </p>
           <p className="mt-1 text-[13px] text-muted-foreground">
             {plan.monthlyCredits.toLocaleString("en-US")} credits a month
           </p>
           {pending && (
             <p className="mt-1.5 text-[13px] font-medium text-mid-text" data-testid="pending-change">
-              {pending.kind === "remove"
-                ? `Comes off your plan on ${longDate(pending.at)}`
-                : `Moves to ${pending.planName} on ${longDate(pending.at)}`}
+              {pending.kind === "remove" ? "Comes off your plan on " : `Moves to ${pending.planName} on `}
+              <LocalDate iso={pending.at} />
             </p>
           )}
         </div>
@@ -134,7 +134,18 @@ function BusinessLine({
       </div>
       {!locked && (
         <div className="mt-3 flex flex-wrap gap-2">
-          {others.map((p) =>
+          {pending && (
+            <ChangeDialog
+              label={pending.kind === "remove" ? "Keep on plan" : `Keep ${plan.name}`}
+              title={pending.kind === "remove" ? `Keep ${business.name} on your plan?` : `Keep ${business.name} on ${plan.name}?`}
+              confirmLabel={pending.kind === "remove" ? "Keep on plan" : `Keep ${plan.name}`}
+              action={actions.keep}
+              input={{ businessId: business.id }}
+              variant="default"
+            />
+          )}
+          {/* A business that is leaving can only stay: moving it to another plan would mean nothing. */}
+          {pending?.kind !== "remove" && others.map((p) =>
             p.priceCents > plan.priceCents ? (
               !pastDue && (
                 <ChangeDialog
@@ -186,7 +197,7 @@ function NextCharge({ view }: { view: BillingView }) {
         <div>
           <p className="text-sm font-medium">{first ? "First charge" : "Next charge"}</p>
           <p className="mt-0.5 text-[13px] text-muted-foreground">
-            {longDate(view.nextCharge.at)}
+            <LocalDate iso={view.nextCharge.at} />
             {first ? ", when your free trial ends" : ""}
           </p>
         </div>
@@ -198,7 +209,7 @@ function NextCharge({ view }: { view: BillingView }) {
   } else if (view.cancelAt) {
     body = (
       <p className="text-sm text-muted-foreground">
-        No more charges. Your {view.status === "trialing" ? "free trial" : "plan"} ends on {longDate(view.cancelAt)}.
+        No more charges. Your {view.status === "trialing" ? "free trial" : "plan"} ends on <LocalDate iso={view.cancelAt} />.
       </p>
     );
   } else if (view.stripe === "error") {

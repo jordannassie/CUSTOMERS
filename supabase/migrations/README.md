@@ -122,5 +122,13 @@ Live has 001 to 020 (Baseline above) and none of the files below. Go-live applie
 - `042_account_deletion.sql` (B-77; adds the `purge-deleted-accounts` cron job. `DELETION_WAIT_DAYS` on the host sets the wait, default 30)
 - `043_trial_rules.sql` (B-45)
 - `044_sample_checks_and_failures.sql` (BUG-074, BUG-075; marks old recorded test answers as samples and recreates `visibility_checks_30d`. Then run `npm run db:types` and check the diff only adds `is_sample`, `failed_by_provider` and `visibility_results_counted`)
+- `045_job_settings_status.sql` (BUG-108; `job_settings_status()` for the admin status page: whether the worker, alerts and email jobs Vault secrets are set and whether scheduled scans include real accounts. Yes/no only, never a value)
+- `046_competitor_checked_from.sql` (BUG-122; `business_competitors.checked_from`. Then run `RECOUNT=1 npm run scans:recount` once, so saved answers are checked with the current matching rules)
+- `047_owner_tables_read_only.sql` (SEC-10; owner tables read only to users, writes through server code. Apply together with the app version that writes them with the service role)
+- `048_extend_trial_grant.sql` (A3; `extend_trial_grant()`, so the admin "Extend trial" action moves the open trial grant's expiry with the trial. Then run `npm run db:types`)
+- `049_requested_plan_id.sql` (a plan chosen on `/settings/billing/plans/new-business` before setting up a later business; read once by the add-to-plan step, then ignored. Then run `npm run db:types`)
+- `050_scan_job_safety.sql` (fix list Step 2: failed jobs release their credit hold, `release_orphan_holds()` sweep and its cron job, deleted or off-plan businesses are never scheduled, a retry grows its hold, stuck means 20 minutes without a heartbeat, `skipped` scan status. Apply together with the app version that calls `fail_scan_job` and `set_next_scan_at`. Then run `npm run db:types`)
+- `051_revoke_truncate.sql` (fix list B8: `anon` and `authenticated` lose TRUNCATE on every public table and on tables made later; no app change)
+- `052_business_area.sql` (`businesses.primary_area`, the optional neighborhood or area set on the details step or in Settings, max 80 characters; area-level questions use it. Then run `npm run db:types`)
 
 Any file added after 043 joins this list.

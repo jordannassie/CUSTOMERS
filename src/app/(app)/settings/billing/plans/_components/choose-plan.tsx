@@ -1,7 +1,9 @@
 "use client";
 
+import { useTimeZone } from "@/components/ui/local-date";
 import { useState } from "react";
 import dynamic from "next/dynamic";
+import { StripeFormLoading } from "@/app/(app)/_stripe/form-loading";
 import { Check } from "lucide-react";
 import { cn } from "cn";
 import { Button } from "@/components/ui/button";
@@ -11,7 +13,7 @@ import type { CardFormMode, ChoosePlanState } from "@/modules/billing";
 import { FixturePlanForm } from "./fixture-plan-form";
 import { PlanProgress } from "./plan-progress";
 
-const StripePlanForm = dynamic(() => import("./stripe-plan-form"), { ssr: false });
+const StripePlanForm = dynamic(() => import("./stripe-plan-form"), { ssr: false, loading: StripeFormLoading });
 
 export type StartAction = (input: { planId: string }) => Promise<ActionResult<{ clientSecret: string }>>;
 export type StatusAction = () => Promise<ActionResult<{ started: boolean }>>;
@@ -36,13 +38,14 @@ export function ChoosePlan({ state, mode, publishableKey, initialPlanId, returne
   const [planId, setPlanId] = useState(first?.id ?? "");
   const [paying, setPaying] = useState(false);
   const [accepted, setAccepted] = useState(returned);
+  const timeZone = useTimeZone();
   const plan = state.plans.find((p) => p.id === planId) ?? first;
 
   if (accepted) return <PlanProgress status={status} />;
   if (!plan) return <Unavailable text="No plans are on sale right now. Please check back later." />;
 
   const monthly = plan.priceCents * state.businessCount;
-  const terms = termsText(state, monthly);
+  const terms = termsText(state, monthly, timeZone);
   const label = state.trial ? "Start free trial" : `Pay ${formatUsd(monthly)}`;
 
   if (!paying) {
@@ -127,10 +130,11 @@ function businesses(count: number): string {
   return count === 1 ? "1 business" : `${count} businesses`;
 }
 
-function termsText(state: Choose, monthly: number): string {
+function termsText(state: Choose, monthly: number, timeZone: string): string {
   const total = `${formatUsd(monthly)} a month for ${businesses(state.businessCount)}`;
   if (!state.trial) return `You pay ${total} today, then on the same date each month until you cancel.`;
-  const ends = new Date(Date.now() + TRIAL_DAYS * 24 * 60 * 60 * 1000).toLocaleDateString(undefined, { month: "long", day: "numeric", year: "numeric" });
+  // The viewer's own time zone, like Billing and the card step.
+  const ends = new Date(Date.now() + TRIAL_DAYS * 24 * 60 * 60 * 1000).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric", timeZone });
   return `${TRIAL_DAYS} days free, then ${total}. Cancel before ${ends} and you won't be charged.`;
 }
 

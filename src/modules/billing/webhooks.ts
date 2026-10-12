@@ -15,6 +15,17 @@ function stripeReader(): StripeReader {
     retrieveSubscription: (id) => getStripe().subscriptions.retrieve(id),
     listSubscriptionItems: (subscription) => getStripe().subscriptionItems.list({ subscription, limit: 100 }).autoPagingToArray({ limit: 1000 }),
     listInvoiceLines: (invoiceId) => getStripe().invoices.listLineItems(invoiceId, { limit: 100 }).autoPagingToArray({ limit: 1000 }),
+    retrieveInvoice: (id) => getStripe().invoices.retrieve(id),
+    checkoutBusinessIds: async (subscription) => {
+      const [session] = (await getStripe().checkout.sessions.list({ subscription, limit: 1 })).data;
+      if (!session) return new Map();
+      const lines = await getStripe().checkout.sessions.listLineItems(session.id, { limit: 100 }).autoPagingToArray({ limit: 1000 });
+      return new Map(lines.flatMap((l) => (l.price && l.metadata?.business_id ? [[l.price.id, l.metadata.business_id] as const] : [])));
+    },
+    tagItem: async (itemId, businessId) => {
+      // Setting the same business_id twice changes nothing, so no idempotency key is needed.
+      await getStripe().subscriptionItems.update(itemId, { metadata: { business_id: businessId } });
+    },
   };
 }
 
@@ -61,3 +72,41 @@ export async function processStripeWebhook(
     return { status: 500, body: { error: "Handler failed." } };
   }
 }
+
+/**
+ * The webhook's checkout.session.completed handler, for a page that found a completed session itself because the
+ * event is missed or late (checkout-recovery.ts). Every write in it is idempotent, so the event arriving later
+ * changes nothing.
+ */
+export async function applyCompletedCheckout(session: Stripe.Checkout.Session): Promise<void> {
+  const event = { id: `recovered_${session.id}`, type: "checkout.session.completed", data: { object: session } };
+  await dispatchEvent(defaultDeps(), event as unknown as Stripe.Event);
+}
+
+/**
+ * Grants a subscription's latest invoice the way invoice.paid does, when that event is missed or late (A1). Nothing
+ * happens while the invoice is unpaid, and a grant already made is never made again.
+ */
+export async function applyLatestInvoice(subscriptionId: string): Promise<void> {
+  const deps = defaultDeps();
+  const sub = await deps.stripe.retrieveSubscription(subscriptionId);
+  const invoiceId = typeof sub.latest_invoice === "string" ? sub.latest_invoice : sub.latest_invoice?.id;
+  if (!invoiceId) return;
+  const invoice = await deps.stripe.retrieveInvoice(invoiceId);
+  if (invoice.status !== "paid") return;
+  const event = { id: `recovered_${invoice.id}`, type: "invoice.paid", data: { object: invoice } };
+  await dispatchEvent(deps, event as unknown as Stripe.Event);
+}
+
+/**
+ * Saves a subscription's current items the way customer.subscription.updated does. For a subscription whose items
+ * were never linked to their businesses (started before BUG-104 was fixed, or a missed event): the Billing page
+ * runs it when Stripe has an item the database does not (BUG-121). Idempotent like the webhook.
+ */
+export async function resyncSubscription(subscriptionId: string): Promise<void> {
+  const deps = defaultDeps();
+  const sub = await deps.stripe.retrieveSubscription(subscriptionId);
+  const event = { id: `resync_${sub.id}`, type: "customer.subscription.updated", data: { object: sub } };
+  await dispatchEvent(deps, event as unknown as Stripe.Event);
+}
+

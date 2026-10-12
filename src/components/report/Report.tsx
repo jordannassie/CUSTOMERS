@@ -3,6 +3,7 @@ import { SignalsTable } from "@/components/competitors/SignalsTable";
 import { ModelScores } from "@/components/overview/ModelScores";
 import { ScoreSummary } from "@/components/overview/ScoreSummary";
 import { TrendChart } from "@/components/overview/TrendChart";
+import { PreparedOn, ReportPeriod } from "./ReportDates";
 import { Badge } from "@/components/ui/badge";
 import { matchedNone } from "@/modules/competitors";
 import type { ReportView } from "@/modules/reports";
@@ -30,12 +31,14 @@ export function Report({ report, logoSrc }: { report: ReportView; logoSrc: strin
               {report.agency.name}
             </span>
           </div>
-          <span className="shrink-0 text-[13px] text-muted-foreground">Prepared {report.preparedOn}</span>
+          <span className="shrink-0 text-[13px] text-muted-foreground">
+            Prepared <PreparedOn iso={report.preparedAt} />
+          </span>
         </div>
         <div className="flex flex-col gap-2">
           <h1 className="text-[32px] leading-tight font-semibold tracking-[-0.02em] text-balance">{report.businessName}</h1>
           <p className="text-[15px] text-muted-foreground" data-testid="report-period">
-            How often AI recommends this business, {report.period}
+            How often AI recommends this business, <ReportPeriod iso={report.preparedAt} windowDays={report.windowDays} />
           </p>
         </div>
       </header>

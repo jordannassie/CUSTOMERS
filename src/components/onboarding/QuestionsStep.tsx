@@ -127,6 +127,11 @@ export function QuestionsStep({ businessId, questions, limit, save }: Props) {
           </div>
         )}
       </div>
+      {/* Questions the user writes could raise the score at will, so only suggested ones count (BUG-129). */}
+      <p className="-mt-3 text-[13px] text-muted-foreground" data-testid="own-questions-note">
+        Your score counts the suggested questions. Questions you add or reword are checked too, but they don&apos;t count in
+        your score.
+      </p>
 
       <StepError message={error} />
       <StepActions backHref="/onboarding/competitors" pending={pending} />

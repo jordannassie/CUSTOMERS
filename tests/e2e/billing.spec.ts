@@ -9,6 +9,9 @@ import { expect, test, type Page } from "@playwright/test";
 const local = existsSync(".env.test.local") ? parseEnv(readFileSync(".env.test.local", "utf8")) : {};
 const hasDb = !!(local.NEXT_PUBLIC_SUPABASE_URL && local.SUPABASE_SERVICE_ROLE_KEY);
 test.skip(!hasDb, "Skipped: no local test database. Run scripts/test-db-reset.sh to create .env.test.local.");
+// Dates show in the viewer's zone (BUG-111) and dayOf() below is UTC: without this, runs between local midnight and
+// UTC midnight expect one day and see the next.
+test.use({ timezoneId: "UTC" });
 
 const db = hasDb
   ? createClient(local.NEXT_PUBLIC_SUPABASE_URL!, local.SUPABASE_SERVICE_ROLE_KEY!, { auth: { persistSession: false } })
@@ -153,6 +156,47 @@ test("trial: a business set up after the first joins the plan, free until the tr
   await expect(page.getByTestId("next-charge")).toHaveText("$298");
 });
 
+test("the new-business plan picker carries the chosen plan into setup", async ({ page }) => {
+  await logIn(page, { status: "trialing", businesses: [{ name: "Northside Plumbing", planId: "starter" }] });
+  // Billing has no See plans link beside Set up another business; the picker opens from the add-business block.
+  await expect(page.getByRole("link", { name: "See plans" })).toHaveCount(0);
+
+  await page.goto("/settings/billing/plans/new-business");
+  await page.getByTestId("plan-pro").click();
+  await page.getByRole("button", { name: "Continue" }).click();
+  await page.waitForURL((url) => url.pathname === "/onboarding/website" && url.searchParams.get("plan") === "pro");
+});
+
+test("a plan chosen on the picker wins over auto-matching the agency's other businesses", async ({ page }) => {
+  const { userId, agencyId } = await logIn(page, { status: "trialing", businesses: [{ name: "Northside Plumbing", planId: "starter" }] });
+  // What startBusiness saves when the website step is reached with ?plan=pro (new-business plan picker).
+  const { data: draft } = await db
+    .from("businesses")
+    .insert({
+      owner_user_id: userId,
+      agency_id: agencyId,
+      name: "Harbor Dental",
+      status: "onboarding",
+      onboarding_step: 7,
+      primary_city: "Austin",
+      requested_plan_id: "pro",
+    })
+    .select("id")
+    .single()
+    .throwOnError();
+
+  await page.goto("/onboarding/models");
+  await expect(page.getByTestId("add-on-note")).toContainText("This business joins your Pro plan");
+  await page.getByRole("button", { name: "Finish setup", exact: true }).filter({ visible: true }).last().click();
+  await page.waitForURL((url) => url.pathname === "/onboarding/first-scan", { timeout: 30_000 });
+
+  await expect
+    .poll(async () => (await db.from("business_subscriptions").select("plan_id").eq("business_id", draft.id).maybeSingle()).data?.plan_id ?? null)
+    .toBe("pro");
+  await page.goto("/settings/billing");
+  await expect(line(page, "Harbor Dental")).toContainText("Pro");
+});
+
 test("trial: a third saved business shows the trial limit instead of a price", async ({ page }) => {
   await logIn(page, {
     status: "trialing",
@@ -167,6 +211,23 @@ test("trial: a third saved business shows the trial limit instead of a price", a
   await expect(dialog.getByRole("alert")).toContainText("Your trial includes 2 businesses.");
   await expect(dialog.getByRole("button", { name: "Add to plan" })).toHaveCount(0);
   await expect(dialog.getByRole("button", { name: "Try again" })).toHaveCount(0);
+});
+
+test("trial: a third business can start the paid plan now, then set up on the plan picked", async ({ page }) => {
+  await logIn(page, {
+    status: "trialing",
+    trialCredits: 100,
+    businesses: [{ name: "Northside Plumbing", planId: "starter" }, { name: "Harbor Dental", planId: "starter" }],
+  });
+  await page.goto("/settings/billing/plans/new-business");
+  await page.getByTestId("plan-pro").click();
+  const box = page.getByTestId("plan-now");
+  await expect(box).toContainText("Start your plan now to add more businesses");
+  await expect(box).toContainText("$298 today");
+  await box.getByRole("button", { name: "Start my plan now" }).click();
+  await page.waitForURL((url) => url.pathname === "/onboarding/website" && url.searchParams.get("plan") === "pro", { timeout: 30_000 });
+  await page.goto("/settings/billing");
+  await expect(page.getByTestId("plan-status")).not.toContainText(/trial/i);
 });
 
 test("active: upgrade, remove at renewal, cancel and keep, and the portal", async ({ page }) => {
@@ -192,14 +253,29 @@ test("active: upgrade, remove at renewal, cancel and keep, and the portal", asyn
   await expect(line(page, "Harbor Dental").getByTestId("pending-change")).toContainText("Comes off your plan on");
   await expect(page.getByTestId("next-charge")).toHaveText("$249");
 
+  // B1: a business that is leaving can be kept, and offers no plan changes while it is leaving.
+  await expect(line(page, "Harbor Dental").getByRole("button", { name: /^Upgrade to|^Change to/ })).toHaveCount(0);
+  await line(page, "Harbor Dental").getByRole("button", { name: "Keep on plan" }).click();
+  await expect(dialog.getByTestId("change-preview")).toContainText("Harbor Dental stays on your plan");
+  await dialog.getByRole("button", { name: "Keep on plan" }).click();
+  await expect(dialog).toHaveCount(0);
+  await expect(line(page, "Harbor Dental").getByTestId("pending-change")).toHaveCount(0);
+  await expect(page.getByTestId("next-charge")).toHaveText("$398");
+  await line(page, "Harbor Dental").getByRole("button", { name: "Remove" }).click();
+  await dialog.getByRole("button", { name: "Remove from plan" }).click();
+  await expect(dialog).toHaveCount(0);
+  await expect(page.getByTestId("next-charge")).toHaveText("$249");
+
   await change(page, "Cancel plan", "Your plan credits work until then.", "Cancel plan");
   await expect(page.getByTestId("cancel-notice")).toContainText("Your plan ends on");
   await expect(page.getByTestId("charge-summary")).toContainText("No more charges.");
   await expect(page.getByRole("button", { name: "Upgrade to Pro" })).toHaveCount(0);
 
-  await change(page, "Keep my plan", "Your plan will keep going after", "Keep my plan");
+  // BUG-124: keeping the plan brings back the change scheduled before the cancel, so the next bill stays $249.
+  await change(page, "Keep my plan", "Harbor Dental still comes off your plan on", "Keep my plan");
   await expect(page.getByTestId("cancel-notice")).toHaveCount(0);
-  await expect(page.getByTestId("next-charge")).toBeVisible();
+  await expect(line(page, "Harbor Dental").getByTestId("pending-change")).toContainText("Comes off your plan on");
+  await expect(page.getByTestId("next-charge")).toHaveText("$249");
 
   await page.getByRole("button", { name: "Manage card and invoices" }).click();
   await page.waitForURL((url) => url.searchParams.get("portal") === "fixture");

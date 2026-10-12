@@ -11,6 +11,7 @@ import { appOrigin } from "../origin";
 import { liveTopupClient, topupFixtures } from "./client";
 import { agencyCustomerId, topupGrantFor } from "./dal";
 import { buyTopUp as buyTopUpWith, completeFixtureTopUp as completeFixture } from "./service";
+import { recoverTopUp } from "../checkout-recovery";
 import { createWebhookStore } from "../webhooks/dal";
 import { sendBillingEmail } from "../webhooks/emails";
 import { dispatchEvent } from "../webhooks/handlers";
@@ -56,7 +57,10 @@ export async function getTopUpStatus(input: unknown): Promise<ActionResult<TopUp
   const parsed = sessionInput.safeParse(input);
   if (!parsed.success) return badInput;
 
-  const [credited, balance] = await Promise.all([topupGrantFor(agencyId, parsed.data.sessionId), getBalance(agencyId)]);
+  let credited = await topupGrantFor(agencyId, parsed.data.sessionId);
+  // The webhook is late or missed: the paid session is read from Stripe and granted the same way (BUG-105).
+  if (!credited && (await recoverTopUp(agencyId, parsed.data.sessionId))) credited = await topupGrantFor(agencyId, parsed.data.sessionId);
+  const balance = await getBalance(agencyId);
   return { ok: true, data: { credited, balance: balance.balance ?? 0 } };
 }
 
@@ -77,6 +81,9 @@ export async function completeFixtureTopUp(input: unknown): Promise<ActionResult
       retrieveSubscription: () => Promise.reject(new Error("not used for top-ups")),
       listSubscriptionItems: () => Promise.reject(new Error("not used for top-ups")),
       listInvoiceLines: () => Promise.reject(new Error("not used for top-ups")),
+      retrieveInvoice: () => Promise.reject(new Error("not used for top-ups")),
+      checkoutBusinessIds: () => Promise.reject(new Error("not used for top-ups")),
+      tagItem: () => Promise.reject(new Error("not used for top-ups")),
     },
     sendEmail: sendBillingEmail,
     now: () => new Date(),

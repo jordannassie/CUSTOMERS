@@ -46,12 +46,20 @@ export async function addBusiness(agency: { agencyId: string; ownerId: string },
       .select("id")
       .single()
       .throwOnError();
+    // Only answers to suggested questions count in the score (BUG-129).
+    const { data: question } = await service
+      .from("tracked_prompts")
+      .insert({ business_id: business.id, prompt: `Best coffee shop near ${name}?`, source: "library" })
+      .select("id")
+      .single()
+      .throwOnError();
     await service
       .from("visibility_results")
       .insert(
         ["openai", "anthropic", "perplexity"].map((provider, i) => ({
           run_id: run.id,
           business_id: business.id,
+          tracked_prompt_id: question.id,
           provider,
           created_at: new Date(Date.now() - 3_600_000).toISOString(),
           business_mentioned: i !== 1,

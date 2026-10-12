@@ -34,7 +34,11 @@ export type PlaceSignals = {
 export type FetchSignals = (placeId: string) => Promise<PlaceSignals | null>;
 
 export class PlacesUnavailable extends Error {
-  constructor(message: string) {
+  constructor(
+    message: string,
+    /** Google's request limit was reached (429): trying again soon won't help. */
+    readonly limited = false,
+  ) {
     super(message);
     this.name = "PlacesUnavailable";
   }
@@ -89,7 +93,7 @@ export function createPlaceSignals(apiKey: string, doFetch: typeof fetch = fetch
       throw new PlacesUnavailable(err instanceof Error ? err.message : "Places could not be reached");
     }
     if (res.status === 404) return null;
-    if (!res.ok) throw new PlacesUnavailable(`Places returned ${res.status}`);
+    if (!res.ok) throw new PlacesUnavailable(`Places returned ${res.status}`, res.status === 429);
     return toSignals(await res.json().catch(() => null));
   };
 }

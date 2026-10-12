@@ -47,11 +47,15 @@ export function buildFindings(mine: Signals | null, them: Signals | null): Findi
       detail: "Your home page has little text. AI tools can only describe what your site actually says.",
     });
   }
+  // Names only what is missing, so it never asks for a phone number the table shows as found (BUG-114).
   if (!mine.hasPhone || !mine.hasAddress) {
+    const what = !mine.hasPhone && !mine.hasAddress ? "your phone number and address" : !mine.hasPhone ? "your phone number" : "your address";
     findings.push({
       level: "Worth doing",
-      title: "Show your phone number and address",
-      detail: "Clear contact details help AI tools confirm where you are and that you are a real local business.",
+      title: `Show ${what}`,
+      detail: mine.hasPhone
+        ? "Your phone number is there. Add your street address as business details AI tools can read, so they can confirm where you are."
+        : "Clear contact details help AI tools confirm where you are and that you are a real local business.",
     });
   }
   if (theyHave("hasReviews")) {

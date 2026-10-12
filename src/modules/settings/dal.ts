@@ -18,6 +18,8 @@ export type SettingsBusiness = {
   region: string;
   /** ISO code, or "" when not set (BUG-086). */
   country: string;
+  /** Neighborhood or area, "" when not set. */
+  area: string;
   phone: string;
   website: string;
   models: ModelId[];
@@ -44,7 +46,7 @@ export async function getSettings(options: GuardOptions = {}): Promise<SettingsV
     supabase.from("agencies").select("name, logo_url").eq("id", agency.id).single(),
     supabase
       .from("businesses")
-      .select("id, name, industry, services, primary_city, primary_region, primary_country, phone, domain, models, scan_frequency")
+      .select("id, name, industry, services, primary_city, primary_region, primary_country, primary_area, phone, domain, models, scan_frequency")
       .eq("agency_id", agency.id)
       .order("created_at", { ascending: false }),
     supabase.from("profiles").select("active_business_id").eq("id", user.id).maybeSingle(),
@@ -80,6 +82,7 @@ export async function getSettings(options: GuardOptions = {}): Promise<SettingsV
       city: row.primary_city ?? "",
       region: row.primary_region ?? "",
       country: countryCode(row.primary_country),
+      area: row.primary_area ?? "",
       phone: row.phone ?? "",
       website: row.domain ?? "",
       models: row.models.filter((m): m is ModelId => (MODEL_IDS as readonly string[]).includes(m)),
@@ -97,6 +100,7 @@ export type ProfileUpdate = {
   primary_city: string | null;
   primary_region: string | null;
   primary_country?: string | null;
+  primary_area?: string | null;
   phone: string | null;
   domain: string | null;
 };
@@ -116,8 +120,7 @@ async function updateBusiness(
   what: string,
 ): Promise<boolean> {
   const { agency } = await requireAgency();
-  const supabase = await createClient();
-  const { data, error } = await supabase
+  const { data, error } = await createServiceClient()
     .from("businesses")
     .update({ ...update, updated_at: new Date().toISOString() })
     .eq("id", businessId)

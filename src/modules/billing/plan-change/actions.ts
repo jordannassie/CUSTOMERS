@@ -1,5 +1,6 @@
 "use server";
 
+import { viewerTimeZone } from "@/lib/viewer-time-zone";
 import { authFailure, requireAgency, type ActionResult } from "@/modules/auth";
 import { canAddBusiness } from "@/modules/entitlements";
 import { billingAccess } from "../account/access";
@@ -44,7 +45,7 @@ async function run(
     const access = await billingAccess(data);
     if (!access) return unavailable;
     const { context, stripe } = access;
-    const deps = { stripe, plansByProduct: data.plansByProduct, now: () => new Date() };
+    const deps = { stripe, plansByProduct: data.plansByProduct, now: () => new Date(), timeZone: await viewerTimeZone() };
     if (previewedAt === undefined) {
       return { ok: true, data: { step: "preview", ...(await previewPlanChange(context, change, deps)) } };
     }
@@ -105,6 +106,16 @@ export async function removeBusiness(input: unknown): Promise<PlanChangeResult> 
   if (!parsed.success) return badInput;
   const { businessId, previewedAt } = parsed.data;
   return run(agency, { kind: "remove", businessId }, previewedAt);
+}
+
+/** Takes back a scheduled downgrade or removal of one business ("Keep Pro", "Keep on plan"). */
+export async function keepBusinessPlan(input: unknown): Promise<PlanChangeResult> {
+  const agency = await agencyId();
+  if (typeof agency !== "string") return agency;
+  const parsed = removeBusinessInput.safeParse(input);
+  if (!parsed.success) return badInput;
+  const { businessId, previewedAt } = parsed.data;
+  return run(agency, { kind: "keepBusiness", businessId }, previewedAt);
 }
 
 /** Ends the plan at the end of the billing period. */

@@ -1,6 +1,6 @@
 # Question picking
 
-Built in B-33 (MVP_SPEC 5.3, 25, D-62). Tests `src/modules/onboarding/questions.ts` with the prompt in `src/modules/onboarding/prompts/pick-questions.v1.ts`.
+Built in B-33 (MVP_SPEC 5.3, 25, D-62). Tests `src/modules/onboarding/questions.ts` with the prompt in `src/modules/onboarding/prompts/pick-questions.v3.ts`.
 
 | | |
 |---|---|

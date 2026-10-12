@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import { createBusinessExtractor, ExtractError } from "./extract";
 import { createFirecrawlScraper, FIRECRAWL_SCRAPE_URL, SITE_PATHS, toPage } from "./firecrawl";
 import { COFFEE_SITE_OUTPUT } from "./fixtures";
-import { createPlacesSearch, PLACES_FIELD_MASK, PLACES_TEXT_SEARCH_URL, PlacesError } from "./places";
+import { createPlacesSearch, PLACES_FIELD_MASK, PLACES_TEXT_SEARCH_URL, PlacesError, toCandidates } from "./places";
 import { AUTOFILL_SYSTEM } from "./prompts/business-autofill.v1";
 
 const json = (body: unknown, status = 200) =>
@@ -56,6 +56,7 @@ describe("Places Text Search", () => {
     displayName: { text: "Sunrise Coffee Bar", languageCode: "en" },
     formattedAddress: "120 Main St, Springfield, IL 62701, USA",
     addressComponents: [
+      { longText: "Downtown", shortText: "Downtown", types: ["neighborhood", "political"] },
       { longText: "Springfield", shortText: "Springfield", types: ["locality", "political"] },
       { longText: "Illinois", shortText: "IL", types: ["administrative_area_level_1", "political"] },
       { longText: "United States", shortText: "US", types: ["country", "political"] },
@@ -86,7 +87,18 @@ describe("Places Text Search", () => {
       city: "Springfield",
       state: "IL",
       country: "US",
+      area: "Downtown",
     });
+  });
+
+  it("takes the area from the neighborhood, else the sublocality, else none (form pre-fill only)", () => {
+    const withParts = (...parts: { longText: string; types: string[] }[]) =>
+      toCandidates({ places: [{ ...place, addressComponents: [...parts, ...place.addressComponents.slice(1)] }] })[0];
+    const sub = { longText: "Brooklyn", types: ["sublocality_level_1", "sublocality", "political"] };
+    expect(withParts({ longText: "Williamsburg", types: ["neighborhood", "political"] }, sub).area).toBe("Williamsburg");
+    expect(withParts(sub).area).toBe("Brooklyn");
+    expect(withParts({ longText: "Hyde Park", types: ["sublocality", "political"] }).area).toBe("Hyde Park");
+    expect(withParts().area).toBeNull();
   });
 
   it("returns an empty list for no match and throws on an error status", async () => {

@@ -1,8 +1,10 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { loadStripe, type Appearance, type Stripe } from "@stripe/stripe-js";
+import { useCallback, useMemo, useState } from "react";
 import { BillingAddressElement, CheckoutElementsProvider, PaymentElement, useCheckoutElements } from "@stripe/react-stripe-js/checkout";
+import { appearance, confirmErrorMessage, getStripeJs, LOAD_FAILED } from "@/app/(app)/_stripe/stripe-elements";
+import { useCheckoutSession } from "@/app/(app)/_stripe/use-checkout-session";
+import { forgetCheckout } from "@/lib/checkout-once";
 import { StepActions, StepError } from "@/components/onboarding/StepBits";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { ActionResult } from "@/modules/auth";
@@ -17,49 +19,32 @@ type Props = {
   onAccepted: () => void;
 };
 
-const LOAD_FAILED = "We couldn't load the card form. Refresh the page to try again.";
-
-let stripePromise: Promise<Stripe | null> | null = null;
-const getStripeJs = (key: string) => (stripePromise ??= loadStripe(key));
-
-// Stripe's frames cannot read our CSS variables, so the design tokens are passed in as values.
-function appearance(): Appearance {
-  const css = getComputedStyle(document.documentElement);
-  const token = (name: string) => css.getPropertyValue(name).trim();
-  return {
-    theme: "stripe",
-    variables: {
-      colorPrimary: token("--cd-primary"),
-      colorText: token("--cd-text"),
-      colorTextSecondary: token("--cd-text-secondary"),
-      colorDanger: token("--cd-low-text"),
-      colorBackground: token("--cd-surface"),
-      borderRadius: "4px",
-      fontFamily: getComputedStyle(document.body).fontFamily,
-      fontSizeBase: "14px",
-    },
-    rules: { ".Input": { borderColor: token("--cd-input-border"), boxShadow: "none" } },
-  };
-}
-
 export default function StripeCardForm({ businessId, publishableKey, start, onAccepted }: Props) {
   const [ownError, setOwnError] = useState<string | null>(null);
-  // One Checkout Session per visit to this step, created by our server with the plan and metadata.
+  // One Checkout Session per visit to this step, created by our server with the plan and metadata (BUG-105).
+  const key = `card:${businessId}`;
+  const create = useCallback(() => start({ businessId }), [start, businessId]);
+  const session = useCheckoutSession(key, create);
   const clientSecret = useMemo(
     () =>
-      start({ businessId }).then((r) => {
+      session.then((r) => {
         if (r.ok) return r.data.clientSecret;
         setOwnError(r.error);
         throw new Error(r.error);
       }),
-    [businessId, start],
+    [session],
   );
   const options = useMemo(() => ({ clientSecret, elementsOptions: { appearance: appearance() } }), [clientSecret]);
 
   if (ownError) return <StepError message={ownError} />;
   return (
     <CheckoutElementsProvider stripe={getStripeJs(publishableKey)} options={options}>
-      <CardFields onAccepted={onAccepted} />
+      <CardFields
+        onAccepted={() => {
+          forgetCheckout(key);
+          onAccepted();
+        }}
+      />
     </CheckoutElementsProvider>
   );
 }
@@ -90,8 +75,7 @@ function CardFields({ onAccepted }: { onAccepted: () => void }) {
     const result = await checkout.confirm({ redirect: "if_required" });
     setPending(false);
     if (result.type === "error") {
-      const declined = result.error.code === "paymentFailed";
-      return setError(declined ? `${result.error.message} Nothing was charged. Try another card.` : result.error.message);
+      return setError(confirmErrorMessage(result.error));
     }
     onAccepted();
   }

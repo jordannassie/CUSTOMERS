@@ -3,6 +3,7 @@ import type { ScoreReport } from "@/modules/scanning";
 import {
   changeText,
   overviewView,
+  ownQuestionsText,
   scanFailuresFrom,
   scoreSentence,
   scoreTone,
@@ -32,6 +33,7 @@ function report(overrides: Partial<ScoreReport> = {}): ScoreReport {
     lastCheckedAt: new Date("2026-09-27T10:00:00Z"),
     competitors: [],
     questions: [],
+    ownQuestions: null,
     ...overrides,
   };
 }
@@ -159,6 +161,22 @@ describe("overviewView", () => {
   it("shows the change only when the report found a real one", () => {
     const view = overviewView(report({ change: { direction: "down", points: 18.2 } }), []);
     expect(view.score?.change).toEqual({ direction: "down", text: "Down 18 points on last week" });
+  });
+
+  it("shows the user's own questions apart from the score, only when they have answers (BUG-129)", () => {
+    expect(overviewView(report(), []).ownQuestions).toBeNull();
+    expect(overviewView(report({ ownQuestions: { named: 3, answers: 9 } }), []).ownQuestions).toBe(
+      "Your own questions: named in 3 of 9 answers. Not part of the score.",
+    );
+    expect(ownQuestionsText({ named: 0, answers: 1 })).toBe("Your own questions: named in 0 of 1 answer. Not part of the score.");
+  });
+
+  it("says the score covers suggested questions only (BUG-129)", () => {
+    const details = overviewView(report(), []).score!.details;
+    expect(details.intro).toContain("suggested questions");
+    expect(details.sections[0].paragraphs).toContain(
+      "Your score counts the suggested questions you track now. Questions you added yourself, paused questions and removed questions are left out. We still check your own questions and show their results on their own.",
+    );
   });
 
   it("has no score before the first scan", () => {

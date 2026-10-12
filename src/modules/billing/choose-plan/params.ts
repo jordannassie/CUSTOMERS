@@ -1,5 +1,6 @@
 import type Stripe from "stripe";
 import { TRIAL_DAYS } from "../checkout";
+import type { PlanPriceData } from "../plan-price";
 
 // Choosing a plan after setup (BUG-079, BUG-066, D-56): one Checkout Session that starts a subscription with one
 // item per set-up business on the chosen plan. Pure, so tests check every parameter without Stripe.
@@ -10,7 +11,8 @@ export const PLAN_INTEGRATION_ID = "cd_choose_plan_mvkqrtze";
 export type PlanCheckoutInput = {
   agencyId: string;
   businessIds: string[];
-  priceId: string;
+  /** The plan's product and amount; every business gets a price of its own (BUG-103). */
+  price: PlanPriceData;
   /** The agency's Stripe customer when it had a plan before, so a restart never makes a second customer. */
   customerId: string | null;
   email: string | null;
@@ -28,7 +30,9 @@ export function planSessionParams(input: PlanCheckoutInput): Stripe.Checkout.Ses
     integration_identifier: PLAN_INTEGRATION_ID,
     client_reference_id: input.agencyId,
     metadata: { agency_id: input.agencyId, kind: input.trial ? "trial" : "plan" },
-    line_items: input.businessIds.map((businessId) => ({ price: input.priceId, quantity: 1, metadata: { business_id: businessId } })),
+    // Stripe refuses one price on two items, so each business has its own price_data (BUG-103). Checkout keeps
+    // the line item metadata off the subscription items; the webhook copies business_id over (BUG-104).
+    line_items: input.businessIds.map((businessId) => ({ price_data: input.price, quantity: 1, metadata: { business_id: businessId } })),
     subscription_data: {
       metadata: { agency_id: input.agencyId },
       ...(input.trial

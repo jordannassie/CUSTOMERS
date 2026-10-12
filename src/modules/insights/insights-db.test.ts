@@ -78,12 +78,21 @@ async function addRun(businessId: string): Promise<string> {
     .select("id")
     .single()
     .throwOnError();
+  // Reasons use only the answers the score counts: suggested questions that are active now (BUG-129).
+  const asked = [...new Set(COFFEE_CHECKS.map((c) => c.question))];
+  const { data: questions } = await service
+    .from("tracked_prompts")
+    .insert(asked.map((prompt) => ({ business_id: businessId, prompt, source: "library" })))
+    .select("id, prompt")
+    .throwOnError();
+  const questionId = new Map(questions!.map((q) => [q.prompt, q.id]));
   await service
     .from("visibility_results")
     .insert(
       COFFEE_CHECKS.map((c, i) => ({
         run_id: run.id,
         business_id: businessId,
+        tracked_prompt_id: questionId.get(c.question),
         provider: c.provider,
         question: c.question,
         answer_text: `answer ${i}`,

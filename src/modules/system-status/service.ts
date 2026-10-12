@@ -79,7 +79,8 @@ export const PROBES: Probe[] = [
     id: "stripe",
     name: "Stripe",
     group: "payments",
-    request: (key) => ({ url: "https://api.stripe.com/v1/balance", headers: { authorization: `Bearer ${key}` } }),
+    // Prices Read is already on the app key (billing README); /v1/balance needed Balance Read just for this check.
+    request: (key) => ({ url: "https://api.stripe.com/v1/prices?limit=1", headers: { authorization: `Bearer ${key}` } }),
   },
 ];
 
@@ -92,7 +93,7 @@ export function joinUrl(base: string, path: string): string {
   return `${base.replace(/\/+$/, "")}/${path.replace(/^\/+/, "")}`;
 }
 
-type ProbeResult = Pick<ServiceStatus, "state" | "detail">;
+export type ProbeResult = Pick<ServiceStatus, "state" | "detail">;
 
 export async function runProbe(probe: Probe, key: string | undefined, deps: ProbeDeps = {}): Promise<ProbeResult> {
   if (!key) return { state: "not_configured", detail: "No key is set." };

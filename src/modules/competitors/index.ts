@@ -2,6 +2,7 @@
 export { trackCompetitor } from "./actions";
 export { fetchPlaceSignals, getCompetitorsPage, getPickedInstead, loadCompetitorsPage } from "./dal";
 export type { PickedInstead } from "./picked";
+export { namedAs, rowName, trackedNote, type ChainOf } from "./chain";
 export type { FetchSignals, PlaceSignals } from "./places";
 export {
   COLLECTING_TEXT,

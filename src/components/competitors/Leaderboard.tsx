@@ -1,7 +1,7 @@
 import { cn } from "cn";
 import { Badge } from "@/components/ui/badge";
 import { PointsChange } from "@/components/overview/PointsChange";
-import { COLLECTING_TEXT, STANDING_TEXT, type CompetitorsView, type LeaderRow } from "@/modules/competitors";
+import { COLLECTING_TEXT, STANDING_TEXT, rowName, trackedNote, type CompetitorsView, type LeaderRow } from "@/modules/competitors";
 
 const SHADE = { 1: "bg-competitor-1", 2: "bg-competitor-2", 3: "bg-competitor-3" } as const;
 const STANDING_BADGE = { ahead: "good", behind: "mid", about_same: "secondary" } as const;
@@ -43,16 +43,25 @@ export function Leaderboard({ view }: { view: Pick<CompetitorsView, "leaderboard
 
 function Row({ row, band }: { row: LeaderRow; band: { left: number; right: number } | null }) {
   const pending = !row.isYou && row.score === null;
+  // A branch whose answers named only its chain shows the chain, with the tracked branch below it.
+  const note = trackedNote(row);
   return (
     <li
       className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1.5 sm:grid-cols-[minmax(0,260px)_minmax(0,1fr)_2.5rem_9.5rem]"
       data-you={row.isYou || undefined}
     >
-      <span className="flex min-w-0 items-baseline gap-2">
-        <span className={cn("truncate text-sm", row.isYou ? "font-semibold text-primary" : "text-foreground")}>
-          {row.isYou ? `${row.name} (you)` : row.name}
+      <span className="flex min-w-0 flex-col gap-0.5">
+        <span className="flex min-w-0 items-baseline gap-2">
+          <span className={cn("truncate text-sm", row.isYou ? "font-semibold text-primary" : "text-foreground")}>
+            {row.isYou ? `${row.name} (you)` : rowName(row)}
+          </span>
+          {row.change && <PointsChange change={row.change} neutral={!row.isYou} />}
         </span>
-        {row.change && <PointsChange change={row.change} neutral={!row.isYou} />}
+        {note && (
+          <span className="text-xs text-text-hint" data-testid="chain-note">
+            {note}
+          </span>
+        )}
       </span>
 
       {pending ? (

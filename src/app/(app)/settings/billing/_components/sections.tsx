@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { formatUsd } from "@/modules/billing/format";
 import type { BillingView } from "@/modules/billing";
 import { ChangeDialog, type ChangeAction } from "./change-dialog";
-import { longDate } from "./format";
+import { LocalDate } from "@/components/ui/local-date";
 
 const STATUS: Record<string, { label: string; variant: "tint" | "good" | "low" | "secondary" }> = {
   trialing: { label: "Free trial", variant: "tint" },
@@ -24,7 +24,7 @@ export function PlanStatus({ view, keep }: { view: BillingView; keep: ChangeActi
         <Badge variant={status.variant}>{status.label}</Badge>
         {view.status === "trialing" && view.trialEndsAt && !view.cancelAt && (
           <span className="text-muted-foreground">
-            Your free trial ends on {longDate(view.trialEndsAt)}. Cancel before then and you won&apos;t be charged.
+            Your free trial ends on <LocalDate iso={view.trialEndsAt} />. Cancel before then and you won&apos;t be charged.
           </span>
         )}
         {view.status === "active" && monthly > 0 && (
@@ -44,9 +44,11 @@ export function PlanStatus({ view, keep }: { view: BillingView; keep: ChangeActi
         <Notice tone="warning" testId="cancel-notice">
           {/* Matches the Overview banner (BUG-B): a cancelled trial is never charged and holds trial credits. */}
           <span>
+            {view.status === "trialing" ? "Your free trial ends on " : "Your plan ends on "}
+            <LocalDate iso={view.cancelAt} />
             {view.status === "trialing"
-              ? `Your free trial ends on ${longDate(view.cancelAt)}. Your trial credits work until then, and you won't be charged.`
-              : `Your plan ends on ${longDate(view.cancelAt)}. Your plan credits work until then, and you won't be charged again.`}
+              ? ". Your trial credits work until then, and you won't be charged."
+              : ". Your plan credits work until then, and you won't be charged again."}
           </span>
           <ChangeDialog
             label="Keep my plan"

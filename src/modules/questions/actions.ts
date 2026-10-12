@@ -3,8 +3,9 @@
 import { refresh } from "next/cache";
 import { authFailure, requireAgency, type ActionResult } from "@/modules/auth";
 import { canEditTracking } from "@/modules/entitlements";
-import { deleteQuestion, insertQuestion, updateQuestionActive, updateQuestionText, type ChangeResult } from "./dal";
-import { addQuestionInput, editQuestionInput, removeQuestionInput, setQuestionActiveInput } from "./schema";
+import type { QuestionAnswer } from "./answers";
+import { deleteQuestion, insertQuestion, loadQuestionAnswers, updateQuestionActive, updateQuestionText, type ChangeResult } from "./dal";
+import { addQuestionInput, editQuestionInput, questionAnswersInput, removeQuestionInput, setQuestionActiveInput } from "./schema";
 
 type Result = ActionResult<null>;
 
@@ -58,4 +59,19 @@ export async function removeQuestion(input: unknown): Promise<Result> {
   const parsed = removeQuestionInput.safeParse(input);
   if (!parsed.success) return invalid;
   return done(await deleteQuestion(auth.agencyId, parsed.data.businessId, parsed.data.questionId));
+}
+
+/** What each AI last answered to one question (BUG-089). Read only, so a paused or ended plan can still look. */
+export async function getQuestionAnswers(input: unknown): Promise<ActionResult<{ answers: QuestionAnswer[] }>> {
+  let agencyId: string;
+  try {
+    agencyId = (await requireAgency()).agency.id;
+  } catch (error) {
+    return authFailure(error);
+  }
+  const parsed = questionAnswersInput.safeParse(input);
+  if (!parsed.success) return { ok: false, status: 400, error: "Something was missing. Refresh the page and try again." };
+  const answers = await loadQuestionAnswers(agencyId, parsed.data.businessId, parsed.data.questionId);
+  if (!answers) return { ok: false, status: 404, error: "We could not find that question. Refresh the page and try again." };
+  return { ok: true, data: { answers } };
 }

@@ -190,7 +190,7 @@ Example: 12 questions × 3 models × weekly = about 155 credits a month.
 
 | Model | Text |
 |---|---|
-| ChatGPT | The most used AI. Most of your customers ask here. |
+| ChatGPT | The most widely used AI assistant. |
 | Perplexity | An AI search engine. Always checks the web and shows its sources. |
 | Claude | Growing fast, popular with professionals. |
 | On untick | "You won't see whether [model] recommends you. Customers using it are invisible to your report." |
@@ -235,7 +235,7 @@ Checks inside a scan run in parallel (limit 4 to 6 per scan).
 **At onboarding**
 - Claude Haiku picks the 12 templates that best fit the business's services from its industry library (a mix of intents), and fills in the city.
 - Industry not in the library yet: Claude writes 12 questions directly (same rules), and the industry is flagged in admin as a candidate for a new library.
-- The user can remove, pause or add their own custom questions (max 25 total). Custom questions work normally but are not shared.
+- The user can remove, pause or add their own custom questions (max 25 total). Custom questions are scanned and charged normally, are not shared, and are shown on their own, outside the visibility score (they are chosen by the user, so they could raise the score at will).
 
 **Rules for all questions**: plain natural grammar, no brand names, city always included. Fallback to the old template engine (`src/lib/geo/prompt-engine.ts`) only if Claude fails.
 
@@ -267,6 +267,7 @@ Based on research into how AEO tools and independent studies measure AI visibili
 
 **Score**
 - **Visibility score** (0 to 100) = mentions ÷ checks, over the **last 30 days** of checks. No bonus or penalty for position in a list.
+- The score counts suggested questions that are active now; paused, removed and custom questions are left out.
 - Per model scores, plus one overall score = equal-weight average of the chosen models (D-65). Per model scores are always shown next to it.
 - **Trend**: a "last 7 days" line and a note such as "Up since your last scan", so real improvements show quickly while the headline stays steady.
 - Position in lists is still stored (5.5) for later research, never shown as a rank.

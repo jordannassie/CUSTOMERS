@@ -7,7 +7,7 @@ import { createServiceClient } from "@/lib/supabase/service";
 import { requireAgency } from "@/modules/auth";
 import { maxCompetitors } from "@/modules/entitlements";
 import { limitMessage } from "@/modules/onboarding/server";
-import { loadAlsoRecommended, loadScoreReport } from "@/modules/scanning";
+import { loadAlsoRecommended, loadScoreReport, recountAfterCompetitorChange } from "@/modules/scanning";
 import { fixtureSignals } from "./place-fixtures";
 import { createPlaceSignals, PlacesUnavailable, type FetchSignals } from "./places";
 import { pickedInstead, type PickedInstead } from "./picked";
@@ -24,6 +24,12 @@ function liveSignals(): FetchSignals {
 
 // React's cache lives for one server request only, which is all Google allows us to keep (D-73).
 const signalsForRequest = cache((placeId: string) => liveSignals()(placeId));
+
+/** The first saved answer checked for a competitor: since it was added, or earlier once saved answers were checked again. */
+function countedFrom(r: { created_at: string; checked_from: string | null }): Date {
+  const added = new Date(r.created_at);
+  return r.checked_from && Date.parse(r.checked_from) < added.getTime() ? new Date(r.checked_from) : added;
+}
 
 /** Live Google signals for one place id; kept in memory for the request only (D-73). */
 export const fetchPlaceSignals: FetchSignals = (placeId) => signalsForRequest(placeId);
@@ -48,7 +54,7 @@ export async function loadCompetitorsPage(
     db.from("businesses").select("name, places_id").eq("id", businessId).eq("agency_id", agencyId).maybeSingle(),
     db
       .from("business_competitors")
-      .select("name, places_id, place_id, created_at")
+      .select("name, places_id, place_id, created_at, checked_from")
       .eq("business_id", businessId)
       .order("created_at"),
     maxCompetitors(businessId),
@@ -60,11 +66,14 @@ export async function loadCompetitorsPage(
   const competitors = rows.data!.map((r) => ({
     name: r.name,
     placesId: r.places_id ?? r.place_id,
-    createdAt: new Date(r.created_at),
+    countedFrom: countedFrom(r),
   }));
   const placeIds = [...new Set([business.data.places_id, ...competitors.map((c) => c.placesId)].filter((id) => id !== null))];
   const results = await Promise.all(
-    placeIds.map(async (id): Promise<[string, SignalResult]> => [id, await fetchSignals(id).catch(() => "error" as const)]),
+    placeIds.map(async (id): Promise<[string, SignalResult]> => [
+      id,
+      await fetchSignals(id).catch((e) => (e instanceof PlacesUnavailable && e.limited ? ("limited" as const) : ("error" as const))),
+    ]),
   );
 
   return competitorsView({
@@ -81,7 +90,7 @@ export type TrackResult = { ok: true } | { ok: false; status: 403 | 404; error: 
 
 /** "Track" on an AI-named business: the name only, as if typed by the user (no place id, D-73). */
 export async function trackCompetitorByName(userId: string, businessId: string, name: string): Promise<TrackResult> {
-  // RLS (business_competitors_owner_all) limits these reads and writes to the owner's own business.
+  // Reads go through the user's session (RLS); the one write uses the service role after the ownership check (SEC-10).
   const supabase = await createClient();
   const { data: business, error } = await supabase
     .from("businesses")
@@ -100,11 +109,13 @@ export async function trackCompetitorByName(userId: string, businessId: string, 
     return { ok: false, status: 403, error: `${limitMessage(limit)} Remove one to track another.` };
   }
 
-  const { error: insertError } = await supabase
+  const { error: insertError } = await createServiceClient()
     .from("business_competitors")
     .insert({ business_id: businessId, name, places_id: null, source: "manual", confirmed: true });
   // 23505: the same name was added a moment ago, in another tab or by a double click.
   if (insertError && insertError.code !== "23505") throw new Error(`Could not add the competitor: ${insertError.message}`);
+  // Saved answers are checked for it at once, so it is compared over the whole window (BUG-122).
+  if (!insertError) await recountAfterCompetitorChange(businessId);
   return { ok: true };
 }
 
@@ -119,7 +130,7 @@ export async function getPickedInstead(businessId: string): Promise<PickedInstea
   const [report, business, rows] = await Promise.all([
     loadScoreReport(agency.id, businessId, now),
     db.from("businesses").select("name, places_id").eq("id", businessId).eq("agency_id", agency.id).maybeSingle(),
-    db.from("business_competitors").select("name, places_id, place_id, created_at").eq("business_id", businessId).order("created_at"),
+    db.from("business_competitors").select("name, places_id, place_id, created_at, checked_from").eq("business_id", businessId).order("created_at"),
   ]);
   for (const r of [business, rows]) if (r.error) throw new Error(`Competitors: ${r.error.message}`);
   if (!report || !business.data) return null;
@@ -127,7 +138,7 @@ export async function getPickedInstead(businessId: string): Promise<PickedInstea
   const view = competitorsView({
     business: { name: business.data.name, placesId: business.data.places_id },
     report,
-    competitors: rows.data!.map((r) => ({ name: r.name, placesId: r.places_id ?? r.place_id, createdAt: new Date(r.created_at) })),
+    competitors: rows.data!.map((r) => ({ name: r.name, placesId: r.places_id ?? r.place_id, countedFrom: countedFrom(r) })),
     signals: new Map(),
     also: { names: [], answers: 0 },
     limit: null,

@@ -59,6 +59,13 @@ function webhookDeps(fake: FakeStripe): WebhookDeps {
       retrieveSubscription: async () => fake.subscription(),
       listSubscriptionItems: async () => fake.subscription().items.data,
       listInvoiceLines: async (id) => fake.invoices.find((i) => i.id === id)?.lines.data ?? [],
+      retrieveInvoice: async (id) => {
+        const invoice = fake.invoices.find((i) => i.id === id);
+        if (!invoice) throw new Error(`no fixture invoice ${id}`);
+        return invoice;
+      },
+      checkoutBusinessIds: async () => new Map(),
+      tagItem: async () => {},
     },
     sendEmail: sendBillingEmail,
     now: () => new Date(),

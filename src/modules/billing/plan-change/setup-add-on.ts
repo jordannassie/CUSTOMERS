@@ -1,4 +1,5 @@
 import "server-only";
+import { viewerTimeZone } from "@/lib/viewer-time-zone";
 import { billingAccess } from "../account/access";
 import { loadPlanChangeData, type PlanChangeData } from "./dal";
 import { PlanChangeError, type PlanChangeContext } from "./planner";
@@ -29,6 +30,12 @@ export function planForNewBusiness(context: PlanChangeContext, businessId: strin
   return context.plans.some((p) => p.id === used) ? used : null;
 }
 
+/** The new-business plan picker's choice, when it is still a plan on sale here; otherwise auto-match. */
+export function chosenPlanFor(context: PlanChangeContext, businessId: string, requestedPlanId: string | null | undefined): string | null {
+  if (requestedPlanId && context.plans.some((p) => p.id === requestedPlanId)) return requestedPlanId;
+  return planForNewBusiness(context, businessId);
+}
+
 async function prepare(agencyId: string, businessId: string) {
   const data: PlanChangeData = await loadPlanChangeData(agencyId);
   const { context } = data;
@@ -40,11 +47,11 @@ async function prepare(agencyId: string, businessId: string) {
   // Only a business added after one already on the plan. The first business joins the subscription at checkout,
   // and its row can arrive from the webhook after setup finishes; adding it here would bill it twice.
   if (!context.businesses.some((b) => b.id !== businessId && b.planId)) return null;
-  const planId = planForNewBusiness(context, businessId);
+  const planId = chosenPlanFor(context, businessId, business.requestedPlanId);
   if (!planId) return null;
   const access = await billingAccess(data);
   if (!access) return null;
-  const deps = { stripe: access.stripe, plansByProduct: data.plansByProduct, now: () => new Date() };
+  const deps = { stripe: access.stripe, plansByProduct: data.plansByProduct, now: () => new Date(), timeZone: await viewerTimeZone() };
   return { context: access.context, deps, planId };
 }
 

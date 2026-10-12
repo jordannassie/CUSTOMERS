@@ -1,13 +1,9 @@
 import "server-only";
-import { env } from "@/lib/env";
 import { createServiceClient } from "@/lib/supabase/service";
 import type { Json } from "@/types/database.types";
-import { createNameExtractor, type ExtractNames } from "../extract";
-import { createAnthropicCheck } from "../providers/anthropic";
-import { createOpenAICheck } from "../providers/openai";
-import { createPerplexityCheck } from "../providers/perplexity";
-import { PROVIDER_TIMEOUT_MS } from "../providers/request";
-import type { ProviderFailures, ProviderId, RunCheck } from "../providers/types";
+import type { ProviderFailures, ProviderId } from "../providers/types";
+
+export { liveCheckRunner, liveNameExtractor } from "./live";
 
 // Database access and API keys for scan runs (B-26); the cache and usage part is in ../dal.ts.
 // Everything here uses the service role: the worker runs with no user session.
@@ -43,6 +39,8 @@ export type ScanTargetRow = {
     region: string | null;
     country: string | null;
     status: string;
+    /** Set once the business is deleted; such a business is never scanned (A6). */
+    deletedAt: string | null;
     scanFrequency: string;
     models: string[];
   };
@@ -57,7 +55,7 @@ export async function loadScanTarget(businessId: string, agencyId: string): Prom
     db
       .from("businesses")
       .select(
-        "id, owner_user_id, name, domain, aliases, phone, has_website, primary_city, primary_region, primary_country, status, scan_frequency, models",
+        "id, owner_user_id, name, domain, aliases, phone, has_website, primary_city, primary_region, primary_country, status, deleted_at, scan_frequency, models",
       )
       .eq("id", businessId)
       .single(),
@@ -79,6 +77,7 @@ export async function loadScanTarget(businessId: string, agencyId: string): Prom
       region: b.primary_region,
       country: b.primary_country,
       status: b.status,
+      deletedAt: b.deleted_at,
       scanFrequency: b.scan_frequency,
       models: b.models,
     },
@@ -187,12 +186,24 @@ export async function finishRun(
   if (error) throw new Error(`Could not finish the scan run: ${error.message}`);
 }
 
-export async function setNextScanAt(businessId: string, at: Date): Promise<void> {
-  const { error } = await createServiceClient()
-    .from("businesses")
-    .update({ next_scan_at: at.toISOString() })
-    .eq("id", businessId);
+/**
+ * Schedules the business's next scan. A business deleted, or taken off the plan, while its scan ran stays
+ * unscheduled (A6); returns whether the date was set.
+ */
+export async function setNextScanAt(businessId: string, at: Date): Promise<boolean> {
+  const { data, error } = await createServiceClient().rpc("set_next_scan_at", { p_business_id: businessId, p_at: at.toISOString() });
   if (error) throw new Error(`Could not set the next scan time: ${error.message}`);
+  return data;
+}
+
+/** A running scan's sign of life: reset_stuck_jobs only resets a job that has shown none for 20 minutes (B4). */
+export async function touchScanJob(jobId: string): Promise<void> {
+  const { error } = await createServiceClient()
+    .from("scan_jobs")
+    .update({ locked_at: new Date().toISOString() })
+    .eq("id", jobId)
+    .eq("status", "running");
+  if (error) throw new Error(`Could not refresh the scan job: ${error.message}`);
 }
 
 /** Name extraction cost (B-25) is ours alone; the user is charged only for the check. */
@@ -216,29 +227,6 @@ export async function insertExtractionUsage(row: {
     estimated_cost_usd: row.costUsd,
   });
   if (error) throw new Error(`Could not record extraction usage: ${error.message}`);
-}
-
-const PROVIDER_KEYS: Record<ProviderId, () => string | undefined> = {
-  openai: () => env.OPENAI_API_KEY,
-  anthropic: () => env.ANTHROPIC_API_KEY,
-  perplexity: () => env.PERPLEXITY_API_KEY,
-};
-
-const ADAPTERS: Record<ProviderId, (apiKey: string) => RunCheck> = {
-  openai: (key) => createOpenAICheck(key, { timeoutMs: PROVIDER_TIMEOUT_MS.openai }),
-  anthropic: (key) => createAnthropicCheck(key, { timeoutMs: PROVIDER_TIMEOUT_MS.anthropic }),
-  perplexity: (key) => createPerplexityCheck(key, { timeoutMs: PROVIDER_TIMEOUT_MS.perplexity }),
-};
-
-/** The live adapter for a provider, or null when its API key is not set. */
-export function liveCheckRunner(provider: ProviderId): RunCheck | null {
-  const key = PROVIDER_KEYS[provider]();
-  return key ? ADAPTERS[provider](key) : null;
-}
-
-export function liveNameExtractor(): ExtractNames | null {
-  const key = env.ANTHROPIC_API_KEY;
-  return key ? createNameExtractor(key) : null;
 }
 
 /** Feeds the provider error spike alert (B-69, MVP_SPEC 22). Never throws: a lost row must not fail the check. */

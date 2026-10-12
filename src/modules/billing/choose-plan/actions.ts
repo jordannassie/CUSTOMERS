@@ -6,6 +6,7 @@ import { CHOOSE_PLAN_HREF } from "@/modules/workspace";
 import { checkoutFixtures, liveCheckoutClient } from "../checkout-client";
 import { getPlanPrice } from "../dal";
 import { appOrigin } from "../origin";
+import { planPriceData } from "../plan-price";
 import { loadChoosePlanAgency, loadChoosePlanRows } from "./dal";
 import { planSessionParams } from "./params";
 import { choosePlanState, planStarted } from "./service";
@@ -39,8 +40,8 @@ export async function startPlanCheckout(input: unknown): Promise<ActionResult<{ 
   const plan = await getPlanPrice(parsed.data.planId);
   if (!plan) return { ok: false, status: 400, error: "That plan isn't available. Pick another plan." };
   // Fixture mode runs before the Stripe catalog exists locally, so the price ID may still be empty.
-  const priceId = plan.stripePriceId ?? (checkoutFixtures() ? `price_fixture_${plan.id}` : null);
-  if (!priceId) {
+  // The catalog sync made the plan's product; fixture mode runs before the catalog exists locally.
+  if (!plan.stripePriceId && !checkoutFixtures()) {
     console.error(`[billing] plan ${plan.id} has no Stripe price; run the catalog sync (README.md)`);
     return unavailable;
   }
@@ -49,7 +50,7 @@ export async function startPlanCheckout(input: unknown): Promise<ActionResult<{ 
     planSessionParams({
       agencyId: session.agency.id,
       businessIds: rows.businesses.map((b) => b.id),
-      priceId,
+      price: planPriceData(plan),
       customerId: rows.agency.customerId,
       email: session.user.email,
       trial: state.trial,

@@ -2,6 +2,7 @@ import "server-only";
 import { timingSafeEqual } from "node:crypto";
 import { env } from "@/lib/env";
 import { createServiceClient } from "@/lib/supabase/service";
+import { scanCheckCount } from "@/modules/scanning";
 
 // scan_jobs access for the worker (B-27, MVP_SPEC 6.3). Service role: the worker runs with no user session.
 
@@ -10,7 +11,9 @@ export type ClaimedJob = { id: string; attempts: number; creditsCharged: number 
 export type JobUpdate =
   | { status: "done"; creditsCharged: number; error: string | null }
   | { status: "queued"; runAfter: Date; error: string }
-  | { status: "failed"; error: string };
+  | { status: "failed"; error: string }
+  /** Nothing was scanned (no questions, no city, out of credits...): not a failure, and the schedule moves on. */
+  | { status: "skipped"; error: string };
 
 export async function claimScanJobs(limit: number): Promise<ClaimedJob[]> {
   const { data, error } = await createServiceClient().rpc("claim_scan_jobs", { p_limit: limit });
@@ -34,15 +37,20 @@ export async function finishJob(job: ClaimedJob, update: JobUpdate, now: Date): 
     if (error) throw new Error(`requeue_scan_job failed: ${error.message}`);
     return data;
   }
-  const fields = {
-    status: update.status,
-    error: update.error,
-    finished_at: now.toISOString(),
-    ...(update.status === "done" ? { credits_charged: update.creditsCharged } : {}),
-  };
+  if (update.status === "failed" || update.status === "skipped") {
+    // One transaction: the job ends, its open credit hold is released, and the schedule moves on (A5, B5).
+    const { data, error } = await db.rpc("fail_scan_job", {
+      p_job_id: job.id,
+      p_attempts: job.attempts,
+      p_error: update.error,
+      p_skipped: update.status === "skipped",
+    });
+    if (error) throw new Error(`fail_scan_job failed: ${error.message}`);
+    return data;
+  }
   const { data, error } = await db
     .from("scan_jobs")
-    .update(fields)
+    .update({ status: "done", error: update.error, finished_at: now.toISOString(), credits_charged: update.creditsCharged })
     .eq("id", job.id)
     .eq("attempts", job.attempts)
     .eq("status", "running")
@@ -54,6 +62,13 @@ export async function finishJob(job: ClaimedJob, update: JobUpdate, now: Date): 
 export async function resetStuckJobs(): Promise<number> {
   const { data, error } = await createServiceClient().rpc("reset_stuck_jobs");
   if (error) throw new Error(`reset_stuck_jobs failed: ${error.message}`);
+  return data;
+}
+
+/** Safety sweep: releases open credit holds whose job already ended. Returns how many (A5). */
+export async function releaseOrphanHolds(): Promise<number> {
+  const { data, error } = await createServiceClient().rpc("release_orphan_holds");
+  if (error) throw new Error(`release_orphan_holds failed: ${error.message}`);
   return data;
 }
 
@@ -70,7 +85,7 @@ export function workerTimeBudgetMs(): number {
   return env.WORKER_TIME_BUDGET_SECONDS * 1000;
 }
 
-export type RetryResult = "queued" | "not_failed" | "business_busy";
+export type RetryResult = "queued" | "not_failed" | "business_busy" | "business_deleted";
 
 /**
  * Puts a failed job back in the queue with fresh attempts (admin Retry, B-67), in one transaction through
@@ -86,7 +101,7 @@ export async function retryFailedJob(jobId: string): Promise<RetryResult> {
 export const MANUAL_PRIORITY = 100;
 
 export type LatestJob = {
-  status: "queued" | "running" | "done" | "failed";
+  status: "queued" | "running" | "done" | "failed" | "skipped";
   finishedAt: string | null;
   /** The last attempt's error; set on a queued job when a failed attempt waits to run again. */
   error: string | null;
@@ -115,6 +130,18 @@ export async function insertManualJob(agencyId: string, businessId: string): Pro
   if (error?.code === "23505") return false;
   if (error) throw new Error(`Could not queue the scan: ${error.message}`);
   return true;
+}
+
+/** Credits a scan of the business would hold right now, counted the way the worker counts its checks (D-54). */
+export async function scanCost(businessId: string): Promise<number> {
+  const db = createServiceClient();
+  const [business, questions] = await Promise.all([
+    db.from("businesses").select("models").eq("id", businessId).single(),
+    db.from("tracked_prompts").select("id", { count: "exact", head: true }).eq("business_id", businessId).eq("active", true),
+  ]);
+  if (business.error) throw new Error(`Could not load the business: ${business.error.message}`);
+  if (questions.error) throw new Error(`Could not count the questions: ${questions.error.message}`);
+  return scanCheckCount(questions.count ?? 0, business.data.models);
 }
 
 export async function latestJob(businessId: string): Promise<LatestJob | null> {

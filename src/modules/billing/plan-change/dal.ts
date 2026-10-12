@@ -17,7 +17,7 @@ export async function loadPlanChangeData(agencyId: string): Promise<PlanChangeDa
       .from("plans")
       .select("id, name, price_cents, monthly_credits, stripe_price_id, stripe_product_id")
       .not("price_cents", "is", null),
-    db.from("businesses").select("id, name").eq("agency_id", agencyId),
+    db.from("businesses").select("id, name, deleted_at, requested_plan_id").eq("agency_id", agencyId),
     db.from("business_subscriptions").select("business_id, plan_id, stripe_subscription_item_id").eq("agency_id", agencyId),
   ]);
   if (agency.error) throw new Error(`Could not load agency: ${agency.error.message}`);
@@ -45,6 +45,8 @@ export async function loadPlanChangeData(agencyId: string): Promise<PlanChangeDa
         name: b.name,
         planId: itemOf.get(b.id)?.plan_id ?? null,
         itemId: itemOf.get(b.id)?.stripe_subscription_item_id ?? null,
+        deleted: b.deleted_at !== null,
+        requestedPlanId: b.requested_plan_id,
       })),
     },
   };

@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation";
 import type { Metadata } from "next";
 import { PageContainer } from "@/components/app/PageContainer";
 import { requireAgency } from "@/modules/auth";
@@ -5,6 +6,7 @@ import {
   addBusiness,
   cancelSubscription,
   downgradeBusiness,
+  keepBusinessPlan,
   keepSubscription,
   loadBillingPage,
   openBillingPortal,
@@ -21,12 +23,16 @@ export const metadata: Metadata = { title: "Billing", robots: { index: false } }
 const USAGE_HREF = "/settings/usage";
 const ADD_BUSINESS_HREF = "/onboarding/website";
 
-type Props = { searchParams: Promise<{ portal?: string | string[] }> };
+type Props = { searchParams: Promise<{ portal?: string | string[]; synced?: string | string[] }> };
 
 // B-46, MVP_SPEC 8.1 and 11: what the agency pays, for which businesses, the next charge, and the changes.
 export default async function BillingPage({ searchParams }: Props) {
   const { agency } = await requireAgency({ next: BILLING_HREF });
-  const [view, params] = await Promise.all([loadBillingPage(agency.id), searchParams]);
+  const params = await searchParams;
+  const loaded = await loadBillingPage(agency.id, { repair: params.synced === undefined });
+  // Saved again from Stripe (BUG-121): load once more with fresh reads.
+  if (loaded === "resynced") redirect(`${BILLING_HREF}?synced=1`);
+  const view = loaded;
   const hasPlan = view.stripe !== "none" && view.status !== "canceled";
 
   return (
@@ -53,7 +59,7 @@ export default async function BillingPage({ searchParams }: Props) {
               <PlanBill
                 view={view}
                 addBusinessHref={ADD_BUSINESS_HREF}
-                actions={{ upgrade: upgradeBusiness, downgrade: downgradeBusiness, remove: removeBusiness, add: addBusiness }}
+                actions={{ upgrade: upgradeBusiness, downgrade: downgradeBusiness, remove: removeBusiness, add: addBusiness, keep: keepBusinessPlan }}
               />
               <CreditsPanel buyHref={BUY_CREDITS_HREF} usageHref={USAGE_HREF} />
               {view.canChange && !view.cancelAt && <CancelPanel cancel={cancelSubscription} />}

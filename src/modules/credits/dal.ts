@@ -107,6 +107,16 @@ export async function grantTrialCredits(input: { agencyId: string; sourceId: str
   return data;
 }
 
+/** Moves the open trial grant's expiry to a later trial end (A3). Returns its ID, or null when none is left. */
+export async function extendTrialGrant(agencyId: string, expiresAt: Date): Promise<string | null> {
+  const { data, error } = await createServiceClient().rpc("extend_trial_grant", {
+    p_agency_id: agencyId,
+    p_expires_at: expiresAt.toISOString(),
+  });
+  if (error) fail("extend_trial_grant", error);
+  return data;
+}
+
 /** Zeroes every expired grant. Returns how many grants expired. */
 export async function expireGrants(): Promise<number> {
   const { data, error } = await createServiceClient().rpc("expire_grants");

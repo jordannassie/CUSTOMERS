@@ -88,7 +88,8 @@ describe("plan change actions with a session", () => {
       ok: true,
       data: { step: "done", message: "Acme Plumbing is now on Pro. The extra credits appear once the payment goes through." },
     });
-    expect(stripe.items.find((i) => i.metadata.business_id === seeded.ids[0])?.price).toBe("price_pro");
+    const price = stripe.items.find((i) => i.metadata.business_id === seeded.ids[0])!.price;
+    expect(stripe.prices[price].product).toBe("cd_plan_pro");
   });
 
   it("refuses bad input and another agency's business", async () => {

@@ -10,9 +10,9 @@ import {
 
 describe("questionsView", () => {
   const questions = [
-    { id: "q1", prompt: "Best coffee shop in Orange?", active: true, source: "library" },
-    { id: "q2", prompt: "Where can I get oat milk lattes in Orange?", active: true, source: "custom" },
-    { id: "q3", prompt: "Coffee shop open early in Orange?", active: false, source: "legacy" },
+    { id: "q1", prompt: "Best coffee shop in Orange?", active: true, own: false },
+    { id: "q2", prompt: "Where can I get oat milk lattes in Orange?", active: true, own: true },
+    { id: "q3", prompt: "Coffee shop open early in Orange?", active: false, own: true },
   ];
 
   it("splits active from paused and gives every chosen model a result, in the business's model order", () => {

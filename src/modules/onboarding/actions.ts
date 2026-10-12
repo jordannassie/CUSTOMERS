@@ -4,10 +4,10 @@ import { authFailure, getCurrentAgency, requireUser, type ActionResult } from "@
 import { canEditTracking } from "@/modules/entitlements";
 import type { CompetitorCandidate } from "./competitor-places";
 import { dedupeConfirmed } from "./competitors";
-import { lookupCompetitor, runBusinessAutofill, saveCompetitors } from "./dal";
+import { lookupCompetitor, runBusinessAutofill, saveBusinessPlace, saveCompetitors } from "./dal";
 import { websiteExists } from "./website/dal";
 import { websiteNotFoundText } from "./website/domain-check";
-import { autofillInput, competitorLookupInput, saveCompetitorsInput, toDomain, type AutofillResult } from "./schema";
+import { autofillInput, competitorLookupInput, pickPlaceInput, saveCompetitorsInput, toDomain, type AutofillResult } from "./schema";
 
 // Onboarding step 3 to 4 (MVP_SPEC 3.1, 3.2): fills the details form. Provider failures come back
 // as an empty form with a note, never as an error.
@@ -35,6 +35,23 @@ export async function autofillBusiness(input: unknown): Promise<ActionResult<Aut
   const result = await runBusinessAutofill(userId, parsed.data.businessId, request);
   if (!result) return { ok: false, status: 404, error: "Business not found." };
   return { ok: true, data: result };
+}
+
+// "Is one of these your business?" with no website (MVP_SPEC 3.3): the pick saves its place_id, "None of
+// these" clears it. Only after this does the form get the listing's details.
+export async function confirmBusinessPlace(input: unknown): Promise<ActionResult<null>> {
+  let userId: string;
+  try {
+    userId = (await requireUser()).id;
+  } catch (error) {
+    return authFailure(error);
+  }
+  const parsed = pickPlaceInput.safeParse(input);
+  if (!parsed.success) return { ok: false, status: 400, error: "Choose your business, or None of these." };
+  if (!(await saveBusinessPlace(userId, parsed.data.businessId, parsed.data.placeId))) {
+    return { ok: false, status: 404, error: "Business not found." };
+  }
+  return { ok: true, data: null };
 }
 
 // Onboarding step 5 (MVP_SPEC 3.1): "add by name" with an optional Places match near the business.

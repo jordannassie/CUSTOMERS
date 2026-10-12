@@ -1,4 +1,11 @@
-import { SCORE_WINDOW_DAYS, type Change, type Confidence, type ProviderId, type ScoreReport } from "@/modules/scanning";
+import {
+  SCORE_WINDOW_DAYS,
+  type Change,
+  type Confidence,
+  type OwnQuestionsResult,
+  type ProviderId,
+  type ScoreReport,
+} from "@/modules/scanning";
 import { CALIBRATION, listNames, methodPanel, type Calibration, type MethodPanel } from "./method";
 import { trendView, type TrendView } from "./trend";
 
@@ -55,6 +62,8 @@ export type OverviewView = {
   monthChange: PointsChange | null;
   /** One credit per answer: active questions times chosen models. */
   scanCredits: number;
+  /** "Your own questions: named in 3 of 9 answers. Not part of the score." Null when they have no answers (BUG-129). */
+  ownQuestions: string | null;
 };
 
 /** DESIGN.md bands: 70 to 100 good, 40 to 69 mid, under 40 low. */
@@ -76,6 +85,13 @@ export function scoreSentence(score: number): string {
 export function changeText(change: Change): string {
   const points = Math.round(change.points);
   return `${change.direction === "up" ? "Up" : "Down"} ${points} ${points === 1 ? "point" : "points"} on last week`;
+}
+
+/** The user's own questions, shown apart from the score they are not part of (BUG-129). */
+export function ownQuestionsText(result: OwnQuestionsResult | null): string | null {
+  if (!result) return null;
+  const answers = `${result.answers} ${result.answers === 1 ? "answer" : "answers"}`;
+  return `Your own questions: named in ${result.named} of ${answers}. Not part of the score.`;
 }
 
 /** Failed checks per AI in the latest finished scan. */
@@ -178,5 +194,6 @@ export function overviewView(
     lastCheckedAt: report.lastCheckedAt?.toISOString() ?? null,
     scanCredits: report.questions.length * report.models.length,
     monthChange: pointsChange(report.monthChange),
+    ownQuestions: ownQuestionsText(report.ownQuestions),
   };
 }

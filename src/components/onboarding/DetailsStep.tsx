@@ -4,10 +4,11 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Info } from "lucide-react";
 import { countryCode } from "@/lib/countries";
-import { INDUSTRIES, INDUSTRY_LABELS, isIndustry } from "@/lib/industries";
+import { INDUSTRIES, INDUSTRY_LABELS, isIndustry, servicesPlaceholder } from "@/lib/industries";
 import type { ActionResult } from "@/modules/auth";
 import type { AutofillResult, BusinessDetails } from "@/modules/onboarding/schema";
 import { domainBrand } from "@/modules/scanning/mention-text";
+import { AREA_MAX } from "@/modules/settings/schema";
 import { parseServices } from "@/modules/settings/service";
 import { CountrySelect, SELECT_CLASS } from "@/components/ui/country-select";
 import { FieldMessage, useFieldErrors } from "@/components/ui/field-errors";
@@ -26,6 +27,8 @@ export type DetailsInput = {
   city: string;
   state: string;
   country: string;
+  /** Neighborhood or area; empty saves none. */
+  area: string;
   phone: string;
 };
 
@@ -57,7 +60,8 @@ function DetailsForm({ businessId, domain, details, industryText, save, autofill
   const [v, setV] = useState({
     ...start,
     industry: start.industry && isIndustry(start.industry) ? start.industry : industryText ? "other" : "",
-    otherIndustry: industryText,
+    // Auto-fill names an unlisted type from Google, "Bookstore" (BUG-123); what the user saved wins.
+    otherIndustry: industryText || autofill?.details.industryText || "",
     services: start.services.join(", "),
     // Auto-fill may give "US" or "United States"; the select holds the code. No default (BUG-086).
     country: countryCode(start.country),
@@ -95,6 +99,7 @@ function DetailsForm({ businessId, domain, details, industryText, save, autofill
         city: v.city,
         state: v.state,
         country: v.country,
+        area: v.area,
         phone: v.phone,
       });
       if (!result.ok) return setError(result.error);
@@ -156,11 +161,14 @@ function DetailsForm({ businessId, domain, details, industryText, save, autofill
         </Field>
 
         <Field id="services" label="Services" optional hint="Separate with commas. These shape the questions we ask AI." className="sm:col-span-2">
-          <textarea id="services" value={v.services} onChange={set("services")} rows={2} placeholder="Emergency repairs, drain cleaning" className={textareaClass} />
+          <textarea id="services" value={v.services} onChange={set("services")} rows={2} placeholder={servicesPlaceholder(v.industry)} className={textareaClass} />
         </Field>
 
         <Field id="city" label="City" {...check("city")}>
           <Input id="city" value={v.city} onChange={set("city")} required maxLength={80} className="h-11 text-base" autoComplete="address-level2" {...fields.fieldProps("city")} />
+        </Field>
+        <Field id="area" label="Neighborhood or area" optional hint="For example: East Austin. We'll also ask AI about businesses in this part of the city.">
+          <Input id="area" value={v.area} onChange={set("area")} maxLength={AREA_MAX} className="h-11 text-base" aria-describedby="area-hint" />
         </Field>
         <Field id="state" label="State or region" optional>
           <Input id="state" value={v.state} onChange={set("state")} maxLength={80} className="h-11 text-base" autoComplete="address-level1" />
@@ -226,7 +234,7 @@ function Field({ id, label, optional, hint, error, errorId, className, children 
       </Label>
       {children}
       {errorId ? <FieldMessage id={errorId} message={error} /> : null}
-      {hint ? <FieldHint>{hint}</FieldHint> : null}
+      {hint ? <FieldHint id={`${id}-hint`}>{hint}</FieldHint> : null}
     </div>
   );
 }

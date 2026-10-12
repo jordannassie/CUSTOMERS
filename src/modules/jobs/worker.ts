@@ -25,6 +25,8 @@ export type WorkerSummary = {
   done: number;
   retrying: number;
   failed: number;
+  /** Scans that had nothing to scan (B5). */
+  skipped: number;
   /** Jobs that another worker took over (reset as stuck) before this one finished them. */
   lost: number;
   stoppedForTime: boolean;
@@ -46,8 +48,9 @@ export function jobUpdateFor(outcome: ScanOutcome | { status: "error"; error: st
   if (outcome.status === "skipped") {
     // An earlier attempt finished the scan but died before saving the job.
     if (outcome.reason === ALREADY_FINISHED) return { status: "done", creditsCharged: job.creditsCharged, error: null };
-    // Nothing was held; trying again minutes later would not change a missing plan or a paused business.
-    return { status: "failed", error: outcome.reason };
+    // Nothing was held; trying again minutes later would not change a missing plan or a paused business. It is
+    // not a failure either (B5): alerts ignore it and the business's next scan moves on.
+    return { status: "skipped", error: outcome.reason };
   }
   const error = outcome.status === "error" ? outcome.error : failedChecksError(outcome.errors);
   if (job.attempts >= MAX_ATTEMPTS) return { status: "failed", error };
@@ -56,7 +59,7 @@ export function jobUpdateFor(outcome: ScanOutcome | { status: "error"; error: st
 
 export async function runWorker(budgetMs: number, deps: WorkerDeps = liveDeps): Promise<WorkerSummary> {
   const started = deps.now().getTime();
-  const summary: WorkerSummary = { claimed: 0, done: 0, retrying: 0, failed: 0, lost: 0, stoppedForTime: false };
+  const summary: WorkerSummary = { claimed: 0, done: 0, retrying: 0, failed: 0, skipped: 0, lost: 0, stoppedForTime: false };
 
   while (true) {
     if (deps.now().getTime() - started >= budgetMs * CLAIM_CUTOFF) {
@@ -72,7 +75,7 @@ export async function runWorker(budgetMs: number, deps: WorkerDeps = liveDeps): 
   return summary;
 }
 
-async function runJob(job: ClaimedJob, deps: WorkerDeps): Promise<"done" | "retrying" | "failed" | "lost"> {
+async function runJob(job: ClaimedJob, deps: WorkerDeps): Promise<"done" | "retrying" | "failed" | "skipped" | "lost"> {
   let outcome: ScanOutcome | { status: "error"; error: string };
   try {
     outcome = await deps.run(job.id);

@@ -30,7 +30,7 @@ export async function loadQuestionsStep(
   const supabase = await createClient();
   const { data: b, error } = await supabase
     .from("businesses")
-    .select("name, industry, services, description, primary_city, primary_region")
+    .select("name, industry, services, description, primary_city, primary_region, primary_area")
     .eq("id", businessId)
     .eq("owner_user_id", userId)
     .maybeSingle();
@@ -51,6 +51,8 @@ export async function loadQuestionsStep(
       description: b.description ?? "",
       city: b.primary_city,
       region: b.primary_region,
+      // Set: about a third of the questions are asked about this neighborhood instead of the whole city.
+      area: b.primary_area,
     },
     clients,
   );
@@ -107,7 +109,6 @@ export async function saveQuestions(userId: string, businessId: string, question
   const limit = await questionLimit(businessId);
   if (unique.length > limit) return { ok: false, status: 403, error: `Your plan checks up to ${limit} questions.` };
 
-  const supabase = await createClient();
   const rows = await activeQuestions(businessId);
   const wanted = new Set(unique.map((q) => q.toLowerCase()));
   const kept = new Set(rows.map((r) => r.prompt.toLowerCase()));
@@ -115,16 +116,16 @@ export async function saveQuestions(userId: string, businessId: string, question
   const add = unique.filter((q) => !kept.has(q.toLowerCase()));
 
   if (remove.length) {
-    const { error } = await supabase.from("tracked_prompts").delete().in("id", remove);
+    const { error } = await createServiceClient().from("tracked_prompts").delete().in("id", remove).eq("business_id", businessId);
     if (error) throw new Error(`Could not remove questions: ${error.message}`);
   }
   if (add.length) {
-    const { error } = await supabase
+    const { error } = await createServiceClient()
       .from("tracked_prompts")
       .insert(add.map((prompt, i) => ({ business_id: businessId, prompt, source: "custom", active: true, created_at: inOrder(i) })));
     if (error) throw new Error(`Could not add questions: ${error.message}`);
   }
-  const { error } = await supabase
+  const { error } = await createServiceClient()
     .from("businesses")
     .update({ onboarding_step: nextStepNumber(current, "questions") })
     .eq("id", businessId)
@@ -168,8 +169,7 @@ export async function loadModelsStep(userId: string, businessId: string, plan: P
 export async function saveModels(userId: string, businessId: string, models: string[], frequency: string): Promise<boolean> {
   const current = await ownStep(userId, businessId);
   if (current === undefined) return false;
-  const supabase = await createClient();
-  const { error } = await supabase
+  const { error } = await createServiceClient()
     .from("businesses")
     .update({ models, scan_frequency: frequency, onboarding_step: nextStepNumber(current, "models") })
     .eq("id", businessId)
@@ -182,7 +182,7 @@ export async function saveModels(userId: string, businessId: string, models: str
 export async function finishWizard(userId: string, businessId: string, checks?: { models: string[]; frequency: string }): Promise<boolean> {
   if ((await ownStep(userId, businessId)) === undefined) return false;
   const supabase = await createClient();
-  const { error } = await supabase
+  const { error } = await createServiceClient()
     .from("businesses")
     .update({
       ...(checks ? { models: checks.models, scan_frequency: checks.frequency } : {}),

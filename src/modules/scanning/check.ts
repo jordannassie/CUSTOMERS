@@ -7,6 +7,7 @@ import { cacheKey, checkWithCache, recordCheckUsage, type CheckAnswer } from "./
 import { readStoredExtraction, toStoredExtraction, type ExtractNames, type StoredExtraction } from "./extract";
 import { matchNames } from "./extract-match";
 import { storeExtraction } from "./extract-store";
+import { mergeMentions } from "./mention-merge";
 import { detectMentions, type MentionTarget } from "./mentions";
 import { CHECK_MODELS } from "./providers/models";
 import { ProviderError } from "./providers/request";
@@ -57,8 +58,10 @@ export async function runOneCheck(task: CheckTask, ctx: CheckContext): Promise<C
     return { ok: false, error: `${task.provider}: ${message}`, reason: message };
   }
 
-  const mentions = detectMentions(answer.answerText, ctx.business, ctx.competitors);
   const extraction = await namesFor(input, answer, ctx);
+  const matched = extraction ? matchNames(extraction.names, ctx.business, ctx.competitors) : null;
+  const detected = detectMentions(answer.answerText, ctx.business, ctx.competitors);
+  const mentions = mergeMentions(answer.answerText, detected, matched);
 
   await saveCheckResult({
     id: task.checkId,
@@ -75,12 +78,7 @@ export async function runOneCheck(task: CheckTask, ctx: CheckContext): Promise<C
       .filter((c) => c.mentioned)
       .map((c) => ({ name: c.name, position: c.position })),
     citations: answer.citations,
-    extractedNames: extraction
-      ? ({
-          promptVersion: extraction.promptVersion,
-          names: matchNames(extraction.names, ctx.business, ctx.competitors),
-        } as Json)
-      : null,
+    extractedNames: extraction ? ({ promptVersion: extraction.promptVersion, names: matched } as Json) : null,
     cached: answer.cached,
     costUsd: answer.costUsd,
     latencyMs: answer.latencyMs,

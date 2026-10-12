@@ -54,7 +54,8 @@ export async function createScanBusiness(
     .single();
   if (error) throw error;
   const questions = Array.from({ length: 12 }, (_, i) => `Question ${i + 1}: best coffee shop in ${city}?`);
-  const prompts = await service.from("tracked_prompts").insert(questions.map((prompt) => ({ business_id: business.id, prompt })));
+  // Suggested questions, the only ones the score counts (BUG-129).
+  const prompts = await service.from("tracked_prompts").insert(questions.map((prompt) => ({ business_id: business.id, prompt, source: "library" })));
   if (prompts.error) throw prompts.error;
   const rivals = await service.from("business_competitors").insert({ business_id: business.id, name: "Rival Roasters", city });
   if (rivals.error) throw rivals.error;

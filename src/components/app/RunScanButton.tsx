@@ -6,9 +6,12 @@ import { Clock, Loader2, RefreshCw } from "lucide-react";
 import { cn } from "cn";
 import { Button } from "@/components/ui/button";
 import type { ActionResult } from "@/modules/auth";
-import type { ScanStatus } from "@/modules/jobs";
+import type { ScanStatus, StartScanResult } from "@/modules/jobs";
+import { needsOverdraftConfirm } from "@/modules/jobs/overdraft";
+import { OverdraftDialog } from "./OverdraftDialog";
 
 type ScanAction = (input: unknown) => Promise<ActionResult<ScanStatus>>;
+type StartAction = (input: unknown) => Promise<StartScanResult>;
 
 const POLL_MS = 3000;
 const ALREADY_RUNNING = "A scan is already running.";
@@ -29,7 +32,7 @@ export function RunScanButton({
 }: {
   businessId: string;
   initial: ScanStatus;
-  start: ScanAction;
+  start: StartAction;
   getStatus: ScanAction;
   /** Placement classes for the button itself, since the wrapper is `contents`. */
   className?: string;
@@ -39,6 +42,8 @@ export function RunScanButton({
   const [status, setStatus] = useState(initial);
   const [note, setNote] = useState<Note>(initial.blockedReason ? { text: initial.blockedReason, tone: "muted" } : null);
   const [pending, startTransition] = useTransition();
+  // The server's warning when the scan costs more than the balance (D-54); the scan waits for a confirm.
+  const [overdraft, setOverdraft] = useState<string | null>(null);
 
   useEffect(() => {
     if (!status.scanning) return;
@@ -67,13 +72,15 @@ export function RunScanButton({
   const blocked = !scanning && status.blockedReason !== null;
   const text = note?.text ?? (scanning ? (status.retrying ? RETRYING : stalled ? STALLED : "Results appear in about a minute.") : "");
 
-  function run() {
+  function run(confirmOverdraft = false) {
     if (scanning) return setNote({ text: ALREADY_RUNNING, tone: "muted" });
     setNote(null);
+    setOverdraft(null);
     startTransition(async () => {
-      const result = await start({ businessId }).catch(() => null);
+      const result = await start(confirmOverdraft ? { businessId, confirmOverdraft } : { businessId }).catch(() => null);
       if (!result) return setNote({ text: "Could not start the scan. Check your connection and try again.", tone: "error" });
       if (result.ok) return setStatus(result.data);
+      if (needsOverdraftConfirm(result)) return setOverdraft(result.error);
       if (result.status === 409) {
         setStatus((s) => ({ ...s, scanning: true }));
         return setNote({ text: ALREADY_RUNNING, tone: "muted" });
@@ -88,7 +95,7 @@ export function RunScanButton({
     <div className="contents">
       <Button
         type="button"
-        onClick={run}
+        onClick={() => run()}
         disabled={blocked}
         aria-disabled={scanning || undefined}
         aria-describedby={text ? `run-scan-note-${businessId}` : undefined}
@@ -114,6 +121,7 @@ export function RunScanButton({
       >
         {text}
       </p>
+      <OverdraftDialog message={overdraft} onConfirm={() => run(true)} onCancel={() => setOverdraft(null)} />
     </div>
   );
 }

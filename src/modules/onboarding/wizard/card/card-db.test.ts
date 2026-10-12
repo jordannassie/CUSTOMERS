@@ -75,11 +75,11 @@ describe("models step hands over to the card step", () => {
 
 describe("card step", () => {
   it("shows the chosen plan's price from the plans table", async () => {
-    const { userId, businessId } = await draftAtModels({ plan: "pro" });
-    expect(await loadCardStep(userId, businessId)).toBeNull();
+    const { userId, email, businessId } = await draftAtModels({ plan: "pro" });
+    expect(await loadCardStep({ id: userId, email }, businessId)).toBeNull();
     await service.from("businesses").update({ onboarding_step: 8 }).eq("id", businessId);
     const plan = await service.from("plans").select("name, price_cents").eq("id", "pro").single();
-    const step = await loadCardStep(userId, businessId);
+    const step = await loadCardStep({ id: userId, email }, businessId);
     expect(step?.offer).toMatchObject({ planName: plan.data!.name, priceCents: plan.data!.price_cents, mode: "fixture", publishableKey: null });
     const days = (Date.parse(step!.offer!.trialEndsAt) - Date.now()) / 86_400_000;
     expect(days).toBeGreaterThan(6.99);
@@ -95,7 +95,7 @@ describe("card step", () => {
       clientSecret: "cs_fixture_secret",
     });
     // The card form said yes, but no webhook yet: nothing is finished or granted.
-    expect(await finishCardStep(userId, businessId)).toBe(false);
+    expect(await finishCardStep({ id: userId, email }, businessId)).toBe(false);
     expect(await businessRow(businessId)).toMatchObject({ status: "onboarding", onboarding_step: 8 });
     const grants = await service.from("credit_grants").select("id").eq("agency_id", agencyId);
     expect(grants.data).toEqual([]);

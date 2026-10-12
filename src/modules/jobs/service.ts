@@ -3,7 +3,8 @@ import type { LatestJob } from "./dal";
 // What the Run scan button shows (B-29, MVP_SPEC 6.4). Pure, so the states are unit tested.
 
 // No worker has picked the job up long after it was due (cron runs the worker every minute, Run scan starts it at
-// once), or a running job outlived the worker's 10-minute time budget. Usually WORKER_URL, WORKER_SECRET or the
+// once), or a running job has shown no sign of life for 15 minutes (a live scan refreshes locked_at as it goes,
+// and reset_stuck_jobs only resets one after 20). Usually WORKER_URL, WORKER_SECRET or the
 // schedule is missing, so the screen says so instead of spinning forever.
 export const STALLED_QUEUED_MINUTES = 3;
 export const STALLED_RUNNING_MINUTES = 15;
@@ -29,7 +30,8 @@ export function scanStatusView(
   now = new Date(),
 ): ScanStatus {
   const scanning = job?.status === "queued" || job?.status === "running";
-  const finished = job?.status === "done" || job?.status === "failed" ? job.status : null;
+  // A skipped scan reads as one that did not run: the screen shows its reason like a failure's.
+  const finished = job?.status === "done" ? "done" : job?.status === "failed" || job?.status === "skipped" ? "failed" : null;
   return {
     scanning,
     retrying: job?.status === "queued" && !!job.error,

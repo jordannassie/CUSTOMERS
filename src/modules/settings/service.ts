@@ -3,7 +3,7 @@ import type { Frequency, ModelId } from "./schema";
 
 // MVP_SPEC 4.5.
 export const MODELS: { id: ModelId; label: string; explanation: string }[] = [
-  { id: "openai", label: "ChatGPT", explanation: "The most used AI. Most of your customers ask here." },
+  { id: "openai", label: "ChatGPT", explanation: "The most widely used AI assistant." },
   { id: "anthropic", label: "Claude", explanation: "Growing fast, popular with professionals." },
   { id: "perplexity", label: "Perplexity", explanation: "An AI search engine. Always checks the web and shows its sources." },
 ];

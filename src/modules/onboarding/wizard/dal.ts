@@ -74,6 +74,8 @@ export async function startBusiness(
   userId: string,
   request: AutofillRequest,
   clients: AutofillClients = liveAutofillClients(),
+  /** Chosen on the new-business plan picker, for a business after the first; ignored for a returning draft. */
+  plan: PlanId | null = null,
 ): Promise<StartBusinessResult> {
   const supabase = await createClient();
   const agency = await supabase.from("agencies").select("id").eq("owner_user_id", userId).maybeSingle();
@@ -89,7 +91,7 @@ export async function startBusiness(
   if (state.draft) {
     businessId = state.draft.id;
     // A new website means the old Places match may be wrong; auto-fill sets it again when it finds one.
-    const { error } = await supabase
+    const { error } = await createServiceClient()
       .from("businesses")
       .update({ ...typed, places_id: null, onboarding_step: nextStepNumber(state.draft.step, "website") })
       .eq("id", businessId)
@@ -98,7 +100,7 @@ export async function startBusiness(
   } else {
     const allowed = await canAddBusiness(agency.data.id);
     if (!allowed.allowed) return { ok: false, status: 403, error: allowed.reason };
-    const { data, error } = await supabase
+    const { data, error } = await createServiceClient()
       .from("businesses")
       .insert({
         name: "domain" in request ? request.domain : request.name,
@@ -107,6 +109,7 @@ export async function startBusiness(
         agency_id: agency.data.id,
         status: "onboarding",
         onboarding_step: nextStepNumber(null, "website"),
+        requested_plan_id: plan,
       })
       .select("id")
       .single();
@@ -156,7 +159,7 @@ export async function loadDetailsStep(userId: string, businessId: string): Promi
   const supabase = await createClient();
   const { data: b, error } = await supabase
     .from("businesses")
-    .select("name, domain, has_website, industry, description, services, primary_city, primary_region, primary_country, phone, onboarding_step")
+    .select("name, domain, has_website, industry, description, services, primary_city, primary_region, primary_country, primary_area, phone, onboarding_step")
     .eq("id", businessId)
     .eq("owner_user_id", userId)
     .maybeSingle();
@@ -173,6 +176,7 @@ export async function loadDetailsStep(userId: string, businessId: string): Promi
     city: b.primary_city ?? "",
     state: b.primary_region ?? "",
     country: b.primary_country ?? "",
+    area: b.primary_area ?? "",
     phone: b.phone ?? "",
     address: "",
   };
@@ -193,8 +197,7 @@ export async function loadDetailsStep(userId: string, businessId: string): Promi
 export async function saveDetails(userId: string, input: DetailsStepInput): Promise<boolean> {
   const current = await ownStep(userId, input.businessId);
   if (current === undefined) return false;
-  const supabase = await createClient();
-  const { error } = await supabase
+  const { error } = await createServiceClient()
     .from("businesses")
     .update({
       name: input.name,
@@ -204,6 +207,7 @@ export async function saveDetails(userId: string, input: DetailsStepInput): Prom
       primary_city: input.city,
       primary_region: input.state || null,
       primary_country: countryCode(input.country) || null,
+      ...(input.area === undefined ? {} : { primary_area: input.area }),
       phone: input.phone || null,
       onboarding_step: nextStepNumber(current, "details"),
     })
@@ -229,8 +233,7 @@ export async function ownStep(userId: string, businessId: string): Promise<numbe
 export async function advanceStep(userId: string, businessId: string, saved: StepSlug): Promise<boolean> {
   const current = await ownStep(userId, businessId);
   if (current === undefined) return false;
-  const supabase = await createClient();
-  const { error } = await supabase
+  const { error } = await createServiceClient()
     .from("businesses")
     .update({ onboarding_step: nextStepNumber(current, saved) })
     .eq("id", businessId)

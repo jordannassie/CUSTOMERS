@@ -28,14 +28,18 @@ export function aboutInTen(rate: number): string {
 
 /** The business AI named most: a tracked competitor by its score, or another name by its share of answers. */
 export function namedMostText(
-  competitors: { name: string; score: number }[],
+  competitors: { name: string; score: number; chain?: string | null }[],
   also: { names: { name: string; answers: number }[]; answers: number },
 ): string | null {
   const candidates = [
-    ...competitors.map((c) => ({ name: c.name, rate: c.score })),
-    ...also.names.map((n) => ({ name: n.name, rate: also.answers > 0 ? (100 * n.answers) / also.answers : 0 })),
+    ...competitors.map((c) => ({ name: c.name, rate: c.score, tracked: true, chain: c.chain ?? null })),
+    ...also.names.map((n) => ({ name: n.name, rate: also.answers > 0 ? (100 * n.answers) / also.answers : 0, tracked: false, chain: null })),
   ].filter((c) => c.rate > 0);
   if (candidates.length === 0) return null;
   const top = candidates.reduce((best, c) => (c.rate > best.rate ? c : best));
-  return `AI named ${top.name} most often, in ${aboutInTen(top.rate)} answers.`;
+  // A tracked branch whose answers named only its chain: the chain is what AI named.
+  if (top.chain) return `AI named ${top.chain} most often, in ${aboutInTen(top.rate)} answers. You track one of its locations, ${top.name}.`;
+  // Says whether it is one of the competitors you track, so a business you don't track never reads as one (BUG-113).
+  const which = top.tracked ? "one of the competitors you track" : "a business you don't track yet";
+  return `AI named ${top.name} most often, in ${aboutInTen(top.rate)} answers. It's ${which}.`;
 }

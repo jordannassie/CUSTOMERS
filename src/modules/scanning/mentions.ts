@@ -6,6 +6,7 @@ import {
   coreName,
   domainOf,
   findDomain,
+  findName,
   findPhrase,
   isGenericName,
   normaliseText,
@@ -54,6 +55,15 @@ export function detectMentions(answer: string, business: MentionTarget, competit
   };
 }
 
+/** The list item holding a name already known to be there (found by the extractor); null outside a list. */
+export function phrasePosition(answer: string, name: string): number | null {
+  for (const at of findName(answer, coreName(name))) {
+    const position = listPosition(answer, at);
+    if (position !== null) return position;
+  }
+  return null;
+}
+
 function findMatches(answer: string, target: MentionTarget): Match[] {
   const domain = domainOf(target.website);
   const noWebsite = target.hasWebsite === false;
@@ -62,18 +72,19 @@ function findMatches(answer: string, target: MentionTarget): Match[] {
   if (domain) for (const at of findDomain(answer, domain)) matches.push({ at, by: "domain" });
 
   const names = [
-    { text: target.name, by: "name" as const },
+    { text: target.name, by: "name" as const, short: false },
     // "Radiant Plumbing" counts for "Radiant Plumbing, Air Conditioning, & Electrical" (BUG-097).
-    ...brandForms(target).map((text) => ({ text, by: "name" as const })),
-    ...(target.aliases ?? []).map((text) => ({ text, by: "alias" as const })),
+    ...brandForms(target).map((text) => ({ text, by: "name" as const, short: true })),
+    ...(target.aliases ?? []).map((text) => ({ text, by: "alias" as const, short: false })),
   ];
-  for (const { text, by } of names) {
+  for (const { text, by, short } of names) {
     const core = coreName(text);
     if (!core) continue;
     const needsSecondSignal = noWebsite || isGenericName(core);
-    // A one-word name must still read as a name: "Sapphire" counts, "sapphire earrings" does not.
-    const needsProperNoun = needsSecondSignal || !core.includes(" ");
-    for (const at of findPhrase(answer, core)) {
+    // A one-word name must still read as a name: "Sapphire" counts, "sapphire earrings" does not. So must a short
+    // brand form: "First Light" counts, "at first light" does not.
+    const needsProperNoun = needsSecondSignal || short || !core.includes(" ");
+    for (const at of findName(answer, core)) {
       if (needsProperNoun && !isProperNounUse(answer, at, text)) continue;
       if (needsSecondSignal && !hasNearbySignal(answer, at, target, domain)) continue;
       matches.push({ at, by });

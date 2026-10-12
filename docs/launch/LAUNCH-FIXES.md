@@ -127,7 +127,7 @@ Fix in this order, then run one real scan per business to confirm.
 - **Fix:**
   - the wizard shows an "Add this business to your plan" step with the prorated price (D-57), and finishing adds the subscription item
   - trial accounts keep the 2-business limit (D-16)
-  - scans, manual or scheduled, need the business to have a plan item that is active, trialing or beta (migration 045)
+  - scans, manual or scheduled, need the business to have a plan item that is active, trialing or beta (a later migration; 045 is now the status page function)
 
 ### Phase 2 results (2026-10-08)
 
@@ -151,7 +151,7 @@ Built:
   - A declined card stops setup with a clear message, and nothing is added.
   - An agency with no subscription (no plan yet, or a test agency) is unchanged: the Choose plan page bills every business when the plan starts.
   - Only a business added after one already on the plan is added this way. The first business joins at checkout, and the Stripe webhook can save its row after setup finishes, so adding it here would bill it twice. The first-scan e2e caught this on 2026-10-08, and it's now guarded.
-  - The plan check on scans (migration 045) is still not built.
+  - The plan check on scans (a later migration) is still not built.
 - **Flaky billing tests explained:** the fake Stripe used in tests numbered new items `si_fake1`, `si_fake2` and so on, separately for each test. Two tests adding a business at the same time made the same item ID, and the database rejected the second (`duplicate key … stripe_subscription_item_id_key`). The fake now adds a random tag to its IDs. The failures that remained in fully parallel runs came from local Supabase auth timing out under load ("We couldn't check your account just now"). The same specs pass 32 of 32 with one worker.
 
 Checks (after the BUG-071 work, 2026-10-08):
@@ -372,7 +372,7 @@ Left in the sandbox for review: test customers `p5-*@example.test` (one with the
 
 Each step that touches the shared or live database needs a yes first (D-43):
 1. Back up the live database.
-2. Apply migrations 021 to 045.
+2. Apply migrations 021 to 051, then run `RECOUNT=1 npm run scans:recount` once (BUG-122). 047 (SEC-10) needs this app version, which no longer writes those tables as the user.
 3. Set the Netlify environment.
 4. Set the Vault secrets and turn on scheduled scans.
 5. Walk the [rehearsal checklist](./REHEARSAL-CHECKLIST.md).
@@ -400,7 +400,7 @@ Each step that touches the shared or live database needs a yes first (D-43):
 | Stripe | Keys empty locally | Sandbox keys and the Stripe CLI |
 | Email (Resend) | Key empty locally | `RESEND_API_KEY`, `EMAIL_FROM`, verified domain |
 | PDF (Browserless) | Key set locally; 404 seen | Check `BROWSERLESS_URL` on Netlify after BUG-082 |
-| Live database | Migrations 021 to 043 not applied (044 and 045 come from this work) | Backup, then apply ([BACKUPS.md](./BACKUPS.md)) |
+| Live database | Migrations 021 to 043 not applied (044 to 051 come from this work) | Backup, then apply ([BACKUPS.md](./BACKUPS.md)) |
 
 ## Working (spot-checked on 2026-10-07)
 

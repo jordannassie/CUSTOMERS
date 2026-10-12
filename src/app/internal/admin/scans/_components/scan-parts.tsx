@@ -4,6 +4,7 @@ import type { ScanStatus } from "@/modules/admin";
 
 export const STATUS: Record<ScanStatus, { label: string; badge: "good" | "low" | "mid" | "outline" }> = {
   failed: { label: "Failed", badge: "low" },
+  skipped: { label: "Skipped", badge: "outline" },
   running: { label: "Running", badge: "mid" },
   queued: { label: "Waiting", badge: "outline" },
   done: { label: "Done", badge: "good" },

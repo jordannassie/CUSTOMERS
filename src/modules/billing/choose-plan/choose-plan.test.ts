@@ -44,9 +44,10 @@ describe("choosePlanState (BUG-079, BUG-066)", () => {
 });
 
 describe("planSessionParams", () => {
-  const base = { agencyId: "a1", businessIds: ["b1", "b2"], priceId: "price_s", returnUrl: "https://x/plans?session_id={CHECKOUT_SESSION_ID}" };
+  const price = { currency: "usd" as const, product: "cd_plan_starter", unit_amount: 14900, recurring: { interval: "month" as const } };
+  const base = { agencyId: "a1", businessIds: ["b1", "b2"], price, returnUrl: "https://x/plans?session_id={CHECKOUT_SESSION_ID}" };
 
-  it("bills one item per business, with the webhook metadata (D-56)", () => {
+  it("bills one item per business, each with a price of its own, with the webhook metadata (D-56, BUG-103)", () => {
     const params = planSessionParams({ ...base, customerId: null, email: "o@x.com", trial: true });
     expect(params).toMatchObject({
       mode: "subscription",
@@ -57,8 +58,8 @@ describe("planSessionParams", () => {
       subscription_data: { metadata: { agency_id: "a1" }, trial_period_days: 7 },
     });
     expect(params.line_items).toEqual([
-      { price: "price_s", quantity: 1, metadata: { business_id: "b1" } },
-      { price: "price_s", quantity: 1, metadata: { business_id: "b2" } },
+      { price_data: price, quantity: 1, metadata: { business_id: "b1" } },
+      { price_data: price, quantity: 1, metadata: { business_id: "b2" } },
     ]);
   });
 

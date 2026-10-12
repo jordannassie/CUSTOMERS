@@ -18,7 +18,7 @@ vi.mock("@/lib/supabase/server", () => ({
 }));
 
 const { addQuestion, editQuestion, removeQuestion, setQuestionActive } = await import("./actions");
-const { loadQuestionsPage } = await import("./dal");
+const { loadQuestionAnswers, loadQuestionsPage } = await import("./dal");
 
 async function createOwner(questions: number) {
   const email = `vitest-questions-${randomUUID()}@example.test`;
@@ -122,3 +122,30 @@ describe("loadQuestionsPage", () => {
     expect(view!.active.map((q) => q.text)).toEqual(["Question 1 in Orange?", "Question 2 in Orange?"]);
   });
 });
+
+describe("loadQuestionAnswers (BUG-089)", () => {
+  it("gives the latest answer per model, and nothing for another agency", async () => {
+    const owner = await createOwner(1);
+    const other = await createOwner(1);
+    const [questionId] = owner.questionIds;
+    const { data: run } = await service.from("visibility_runs").insert({ business_id: owner.businessId, provider: "scan", status: "completed" }).select("id").single().throwOnError();
+    const result = (provider: string, hoursAgo: number, text: string, mentioned: boolean) => ({
+      id: randomUUID(),
+      run_id: run.id,
+      business_id: owner.businessId,
+      tracked_prompt_id: questionId,
+      provider,
+      created_at: new Date(Date.now() - hoursAgo * 3_600_000).toISOString(),
+      business_mentioned: mentioned,
+      competitors_mentioned: [],
+      answer_text: text,
+    });
+    await service.from("visibility_results").insert([result("openai", 30, "Older ChatGPT answer.", false), result("openai", 2, "Newest ChatGPT answer.", true)]).throwOnError();
+
+    const answers = await loadQuestionAnswers(owner.agencyId, owner.businessId, questionId);
+    expect(answers?.map((a) => [a.model, a.text, a.namedYou])).toEqual([["openai", "Newest ChatGPT answer.", true]]);
+    expect(await loadQuestionAnswers(other.agencyId, owner.businessId, questionId)).toBeNull();
+    expect(await loadQuestionAnswers(owner.agencyId, owner.businessId, other.questionIds[0])).toBeNull();
+  });
+});
+

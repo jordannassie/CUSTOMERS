@@ -5,6 +5,7 @@ import { AlertTriangle, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import type { ActionResult } from "@/modules/auth";
 import type { SettingsBusiness } from "@/modules/settings";
+import { AREA_MAX } from "@/modules/settings/schema";
 import { normalizeWebsite, parseServices } from "@/modules/settings/service";
 import { Button } from "@/components/ui/button";
 import { CountrySelect } from "@/components/ui/country-select";
@@ -27,6 +28,7 @@ export function BusinessProfileForm({ business, save }: { business: SettingsBusi
     city: business.city,
     region: business.region,
     country: business.country,
+    area: business.area,
     phone: business.phone,
   };
   const [form, setForm] = useState(initial);
@@ -105,6 +107,9 @@ export function BusinessProfileForm({ business, save }: { business: SettingsBusi
         <div className="grid gap-5 sm:grid-cols-2">
           <Row label="City" htmlFor="profile-city">
             <Input {...field("city")} maxLength={80} autoComplete="address-level2" />
+          </Row>
+          <Row label="Neighborhood or area" htmlFor="profile-area" hint="Optional, for example East Austin. We use it to suggest questions about your part of the city.">
+            <Input {...field("area")} maxLength={AREA_MAX} autoComplete="off" aria-describedby="profile-area-hint" />
           </Row>
           <Row label="State or region" htmlFor="profile-region">
             <Input {...field("region")} maxLength={80} autoComplete="address-level1" />

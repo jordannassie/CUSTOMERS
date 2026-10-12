@@ -44,9 +44,9 @@ export async function getModelsStep(businessId: string, next: string): Promise<M
   return loadModelsStep(user.id, businessId, await selectedPlan(user.id));
 }
 
-export async function getCardStep(businessId: string, next: string): Promise<{ offer: TrialOffer | null } | null> {
+export async function getCardStep(businessId: string, next: string): Promise<{ offer: TrialOffer | null; started: boolean } | null> {
   const user = await requireUser({ next });
-  return loadCardStep(user.id, businessId);
+  return loadCardStep(user, businessId);
 }
 
 /** Whether the first scan must wait for the trial credits to land (F-48). */

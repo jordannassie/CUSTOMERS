@@ -50,7 +50,8 @@ export function AddQuestionForm({ businessId, city, activeCount, models, frequen
           Add your own question
         </label>
         <p id="new-question-hint" className="text-[13px] text-muted-foreground">
-          Write it the way a customer would ask, and include your city. For example: {example}
+          Write it the way a customer would ask, and include your city. For example: {example} We check your own
+          questions on every scan and show their results here, but they don&apos;t count in your score.
         </p>
       </div>
       <div className="flex flex-col gap-2 sm:flex-row">

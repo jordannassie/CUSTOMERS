@@ -1,9 +1,9 @@
 // Text helpers for mention detection (MVP_SPEC 5.5). Pure functions, no I/O.
 
-const LEGAL_SUFFIXES = ["llc", "l l c", "pllc", "inc", "incorporated", "co", "corp", "corporation", "company", "ltd", "limited", "lp", "llp"];
+export const LEGAL_SUFFIXES = ["llc", "l l c", "pllc", "inc", "incorporated", "co", "corp", "corporation", "company", "ltd", "limited", "lp", "llp"];
 
 // Words that are too common on their own to prove a name match (MVP_SPEC 5.5: "Best", "Prime").
-const GENERIC_WORDS = new Set([
+export const GENERIC_WORDS = new Set([
   "a", "the", "and", "of", "best", "top", "prime", "ace", "pro", "pros", "quality", "premier", "premium", "elite",
   "first", "choice", "select", "express", "quick", "fast", "rapid", "reliable", "affordable", "discount", "budget",
   "local", "city", "metro", "county", "family", "friendly", "professional", "superior", "perfect", "precision",
@@ -36,7 +36,7 @@ export function coreName(name: string): string {
 }
 
 // Google titles add services or a branch after the brand. AI answers usually write only the brand (BUG-097).
-const TITLE_BREAK = /\s[-–—|]\s|[,:(]|\s\/\s/;
+export const TITLE_BREAK = /\s[-–—|]\s|[,:(]|\s\/\s/;
 
 /**
  * The brand inside a long Google title, as written: "Radiant Plumbing, Air Conditioning, & Electrical" and
@@ -74,9 +74,38 @@ export function domainBrand(name: string, website: string | null | undefined): s
   return null;
 }
 
+// Words that describe the service rather than name the business: where a brand ends in a Google title.
+export const SERVICE_WORDS = new Set([
+  "plumbing", "plumber", "plumbers", "drain", "drains", "sewer", "water", "roofing", "roofers", "electric",
+  "electrical", "electricians", "hvac", "heating", "cooling", "air", "dental", "dentistry", "law", "legal", "auto",
+  "repair", "repairs", "cleaning", "cleaners", "services", "service", "solutions", "group", "care", "clinic",
+  "construction", "contractors", "landscaping", "lawn", "pest", "control", "movers", "moving", "salon", "spa",
+  "fitness", "insurance", "realty", "restaurant", "pizza", "bakery", "cafe", "coffee", "and", "home", "homes",
+  // Shops (BUG-113): "First Light Book Shop" is named "First Light Books" in answers.
+  "book", "books", "bookstore", "bookshop", "shop", "shops", "store", "stores", "boutique", "market", "roasters",
+  "roastery", "coffeehouse", "espresso", "tea", "bar", "grill", "kitchen", "studio", "gallery", "outlet", "supply",
+]);
+
+/**
+ * The words before the first service word: "Roto-Rooter Plumbing & Water Cleanup" gives "Roto-Rooter" (counted 1 of 7
+ * times before). Null when there is no such word after the first, or what is left is one word or too generic to
+ * stand alone ("Precision Plumbing" gives "Precision").
+ */
+export function leadingBrand(name: string): string | null {
+  const words = name.trim().split(/\s+/);
+  const cut = words.findIndex((w, i) => i > 0 && SERVICE_WORDS.has(normaliseText(w)));
+  if (cut <= 0) return null;
+  const short = words.slice(0, cut).join(" ").replace(/[,:;-]+$/, "");
+  const core = coreName(short);
+  if (!core || core === coreName(name) || isGenericName(core)) return null;
+  // One word ("Martinez" from "Martinez Plumbing") is often a surname or a plain word; the extractor covers it.
+  if (!core.includes(" ")) return null;
+  return short;
+}
+
 /** Shorter forms of the name that AI answers use on their own (BUG-097). */
 export function brandForms(target: { name: string; city?: string | null; website?: string | null }): string[] {
-  const forms = [brandName(target.name, target.city), domainBrand(target.name, target.website)];
+  const forms = [brandName(target.name, target.city), domainBrand(target.name, target.website), leadingBrand(target.name)];
   return [...new Set(forms.filter((f): f is string => f !== null))];
 }
 
@@ -140,6 +169,33 @@ export function findPhrase(text: string, phrase: string): number[] {
     re.lastIndex = m.index + 1;
   }
   return hits;
+}
+
+/**
+ * Like findPhrase, but a name also matches when the answer spaces it differently: "BookWoman" is found as "Book
+ * Woman" or "Book-Woman", and "Book Woman" as "BookWoman" (B6). Only whole words count, so "Ace" is still not
+ * found inside "space". Names of 4 letters or fewer need the exact spelling.
+ */
+export function findName(text: string, phrase: string): number[] {
+  const hits = new Set(findPhrase(text, phrase));
+  const squashed = phrase.replace(/ /g, "");
+  if (squashed.length > 4) {
+    const { norm, offsets } = normaliseWithOffsets(text);
+    let at = 0;
+    const tokens = norm.split(" ").map((token) => {
+      const start = at;
+      at += token.length + 1;
+      return { token, start };
+    });
+    for (let i = 0; i < tokens.length; i++) {
+      let joined = "";
+      for (let j = i; j < tokens.length && joined.length < squashed.length; j++) {
+        joined += tokens[j].token;
+        if (joined === squashed) hits.add(offsets[tokens[i].start]);
+      }
+    }
+  }
+  return [...hits].sort((a, b) => a - b);
 }
 
 /** Start offsets of a domain such as "ace.com", not inside a longer host like "space.com". */

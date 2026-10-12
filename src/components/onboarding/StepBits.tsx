@@ -12,8 +12,10 @@ export function StepError({ message }: { message: string | null }) {
 }
 
 /** Back and Continue. On a phone the bar sticks to the bottom so Continue stays in reach. */
-export function StepActions({ backHref, pending, label = "Continue", disabled = false, phoneSummary }: {
+export function StepActions({ backHref, onBack, pending, label = "Continue", disabled = false, phoneSummary }: {
   backHref?: string;
+  /** Back within the step (no page change), used when there is no backHref. */
+  onBack?: () => void;
   pending: boolean;
   label?: string;
   disabled?: boolean;
@@ -29,6 +31,11 @@ export function StepActions({ backHref, pending, label = "Continue", disabled = 
             <ArrowLeft aria-hidden />
             Back
           </Link>
+        </Button>
+      ) : onBack ? (
+        <Button type="button" variant="ghost" onClick={onBack} disabled={pending} className={phoneSummary ? "max-sm:hidden" : undefined}>
+          <ArrowLeft aria-hidden />
+          Back
         </Button>
       ) : phoneSummary ? null : (
         <span />

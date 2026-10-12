@@ -1,6 +1,8 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
 import { SessionWatcher } from "@/app/_components/session-watcher";
+import { TimeZoneCookie } from "@/app/_components/time-zone-cookie";
+import { viewerTimeZone } from "@/lib/viewer-time-zone";
 import { AppShell } from "@/components/app/AppShell";
 import { AppShellSkeleton, PageSkeleton } from "@/components/app/AppShellSkeleton";
 import {
@@ -19,6 +21,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <>
       <SessionWatcher />
+      <TimeZoneCookie />
       <Suspense fallback={<AppShellSkeleton />}>
         <AppFrame>{children}</AppFrame>
       </Suspense>
@@ -42,13 +45,17 @@ async function AppFrame({ children }: { children: React.ReactNode }) {
 
   return (
     <AppShell
-      businesses={workspace.businesses.map(({ id, name, domain, logoUrl }) => ({ id, name, domain, logoUrl }))}
+      // Unfinished drafts stay out of the switcher; the one being set up is named on its own (BUG-092).
+      businesses={workspace.businesses
+        .filter((b) => b.status !== "onboarding")
+        .map(({ id, name, domain, logoUrl }) => ({ id, name, domain, logoUrl }))}
+      setupName={workspace.businesses.find((b) => b.status === "onboarding")?.name ?? null}
       activeBusinessId={active.id}
       switchBusiness={switchBusiness}
       switcherScores={switcherScores}
       usage={widget}
       isAdmin={workspace.isAdmin}
-      banners={usage && account ? pickBanners(usage, account, now) : []}
+      banners={usage && account ? pickBanners(usage, account, now, await viewerTimeZone()) : []}
       creditsShort={usage ? shortBalance(usage.balance) : null}
     >
       <Suspense fallback={<PageSkeleton />}>{children}</Suspense>

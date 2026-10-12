@@ -28,6 +28,8 @@ export type PlaceCandidate = {
   city: string | null;
   state: string | null;
   country: string | null;
+  /** The listing's neighborhood, else its sublocality ("East Austin", "Brooklyn"). Pre-fill only. */
+  area: string | null;
 };
 
 /** Throws when Places cannot be reached or refuses the request; an empty list means no match. */
@@ -93,6 +95,7 @@ export function toCandidates(body: unknown): PlaceCandidate[] {
       city: part("locality") ?? part("postal_town"),
       state: part("administrative_area_level_1", true),
       country: part("country", true),
+      area: part("neighborhood") ?? part("sublocality_level_1") ?? part("sublocality"),
     };
   });
 }

@@ -10,6 +10,7 @@ import type { CompetitorCandidate, SavedCompetitor } from "@/modules/onboarding"
 import { Button } from "@/components/ui/button";
 import { AddCompetitor, type LookupAction } from "./AddCompetitor";
 import { GoogleAttribution, PlaceRating } from "./PlaceBits";
+import { SuggestionRow } from "./SuggestionRow";
 
 type Picked = { name: string; placesId: string | null; live: CompetitorCandidate | null };
 
@@ -36,9 +37,11 @@ export type CompetitorPickerProps = {
   backHref?: string;
 };
 
+type Ref = { name: string; placesId: string | null };
 const key = (name: string) => name.trim().toLowerCase();
-const same = (a: { name: string; placesId: string | null }, b: { name: string; placesId: string | null }) =>
-  (a.placesId !== null && a.placesId === b.placesId) || key(a.name) === key(b.name);
+// The same Google place, or the same name when either has no place. One Pizza Hut branch is not all five (BUG-093).
+const same = (a: Ref, b: Ref) => (a.placesId !== null && b.placesId !== null ? a.placesId === b.placesId : key(a.name) === key(b.name));
+const sameName = (a: Ref, b: Ref) => key(a.name) === key(b.name);
 const sameList = (a: Picked[], b: Picked[]) => a.length === b.length && a.every((p, i) => same(p, b[i]));
 
 // Onboarding step 5 (MVP_SPEC 3.1): tick nearby businesses from Google, add any it missed, and save.
@@ -50,13 +53,16 @@ export function CompetitorPicker(props: CompetitorPickerProps) {
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
-  const isPicked = (c: { name: string; placesId: string | null }) => picked.some((p) => same(p, c));
+  const isPicked = (c: Ref) => picked.some((p) => same(p, c));
+  // Another branch of a business already picked: AI answers name the brand, and a name is tracked once.
+  const isOtherBranch = (c: Ref) => !isPicked(c) && picked.some((p) => sameName(p, c));
+  const isTaken = (c: Ref) => isPicked(c) || isOtherBranch(c);
   const full = limit !== null && picked.length >= limit;
   // The wizard always lets the user continue; the standalone page saves only real changes.
   const canSave = !pending && (Boolean(onSaved) || !sameList(picked, lastSaved));
 
   function add(c: Picked): boolean {
-    if (isPicked(c)) return true;
+    if (isTaken(c)) return true;
     if (full) {
       setLimitHit(true);
       return false;
@@ -65,7 +71,7 @@ export function CompetitorPicker(props: CompetitorPickerProps) {
     return true;
   }
 
-  function remove(c: { name: string; placesId: string | null }) {
+  function remove(c: Ref) {
     setLimitHit(false);
     setPicked((list) => list.filter((p) => !same(p, c)));
   }
@@ -73,7 +79,7 @@ export function CompetitorPicker(props: CompetitorPickerProps) {
   function toggle(s: CompetitorCandidate) {
     const c = { name: s.name, placesId: s.placeId, live: s };
     if (isPicked(c)) remove(c);
-    else add(c);
+    else if (!isOtherBranch(c)) add(c);
   }
 
   function submit() {
@@ -102,29 +108,8 @@ export function CompetitorPicker(props: CompetitorPickerProps) {
             <div className="mt-3 rounded-md border border-border bg-surface">
               <ul className="divide-y divide-border">
                 {suggestions.map((s) => {
-                  const checked = isPicked({ name: s.name, placesId: s.placeId });
-                  return (
-                    <li key={s.placeId}>
-                      <label
-                        className={cn(
-                          "flex cursor-pointer items-center gap-3 px-4 py-3 transition-colors duration-150 ease-out hover:bg-muted",
-                          checked && "bg-primary-tint hover:bg-primary-tint",
-                        )}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={checked}
-                          onChange={() => toggle(s)}
-                          className="size-4 shrink-0 accent-primary"
-                        />
-                        <span className="min-w-0 flex-1">
-                          <span className="block truncate text-sm font-medium">{s.name}</span>
-                          {s.address ? <span className="block truncate text-[13px] text-muted-foreground">{s.address}</span> : null}
-                        </span>
-                        <PlaceRating rating={s.rating} reviewCount={s.reviewCount} />
-                      </label>
-                    </li>
-                  );
+                  const ref = { name: s.name, placesId: s.placeId };
+                  return <SuggestionRow key={s.placeId} place={s} checked={isPicked(ref)} branch={isOtherBranch(ref)} onToggle={() => toggle(s)} />;
                 })}
               </ul>
               <GoogleAttribution className="border-t border-border px-4 py-2" />
@@ -142,7 +127,7 @@ export function CompetitorPicker(props: CompetitorPickerProps) {
             Add one we missed
           </h2>
           <p className="mb-3 mt-1 text-[13px] text-muted-foreground">Search Google by name, or add the name as you type it.</p>
-          <AddCompetitor businessId={businessId} lookup={lookup} isPicked={isPicked} onAdd={add} />
+          <AddCompetitor businessId={businessId} lookup={lookup} isPicked={isTaken} onAdd={add} />
         </section>
       </div>
 

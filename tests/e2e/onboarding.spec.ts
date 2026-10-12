@@ -145,7 +145,8 @@ test("the whole wizard: plan carried through, auto-filled, resumable, live estim
   expect(auth.user?.app_metadata.selected_plan).toBe("pro");
 });
 
-test("no website: the business is found on Google by name and city", async ({ page }) => {
+// No website (MVP_SPEC 3.3): Google's listings are only offered; nothing is filled in or saved until one is picked.
+async function findWithoutWebsite(page: Page) {
   const user = await newUser();
   await page.goto("/login?next=/onboarding");
   await page.locator("#email").fill(user.email);
@@ -159,8 +160,34 @@ test("no website: the business is found on Google by name and city", async ({ pa
   await page.locator("#business-name").fill("Sunrise Coffee");
   await page.locator("#business-city").fill("Springfield");
   await visible(page, "Find my business").click();
+  const choices = page.getByRole("group", { name: "Is one of these your business?" });
+  await slow(choices).toBeVisible();
+  await expect(choices.getByRole("radio")).toHaveCount(3);
+  await expect(choices.getByTestId("google-attribution")).toBeVisible();
+  const placesId = async () => (await db.from("businesses").select("places_id").eq("owner_user_id", user.id).single()).data?.places_id;
+  expect(await placesId()).toBeNull();
+  return { choices, placesId };
+}
+
+test("no website: the user picks their Google listing, which fills the form", async ({ page }) => {
+  const { choices, placesId } = await findWithoutWebsite(page);
+  await choices.getByRole("radio", { name: /Sunrise Coffee Bar & Roastery/ }).check();
+  await visible(page, "Continue").click();
   await slow(page.locator("#name")).toHaveValue("Sunrise Coffee Bar & Roastery");
   await expect(page.locator("#city")).toHaveValue("Springfield");
+  // BUG-131: the neighborhood comes from the picked listing too, for the user to confirm.
+  await expect(page.locator("#area")).toHaveValue("Downtown");
+  expect(await placesId()).toBe("ChIJ-fixture-sunrise-coffee");
+});
+
+test("no website: None of these keeps the name and city the user typed", async ({ page }) => {
+  const { choices, placesId } = await findWithoutWebsite(page);
+  await choices.getByRole("radio", { name: "None of these, I'll fill it in myself" }).check();
+  await visible(page, "Continue").click();
+  await slow(page.locator("#name")).toHaveValue("Sunrise Coffee");
+  await expect(page.locator("#city")).toHaveValue("Springfield");
+  await expect(page.locator("#phone")).toHaveValue("");
+  expect(await placesId()).toBeNull();
 });
 
 // A user whose first business is saved up to the AI models step, signed in on the card step.

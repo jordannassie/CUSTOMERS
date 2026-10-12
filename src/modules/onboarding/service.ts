@@ -1,6 +1,6 @@
 // Pure auto-fill rules (MVP_SPEC 3.2): which Places result is the business, how the two sources
 // combine, and the note shown above the form.
-import { industryFromPlacesType } from "./industries";
+import { industryFromPlacesType, placesTypeLabel } from "./industries";
 import type { PageResult } from "./firecrawl";
 import type { PlaceCandidate } from "./places";
 import type { AutofillOutput } from "./prompts/business-autofill.v1";
@@ -14,6 +14,7 @@ export const EMPTY_DETAILS: BusinessDetails = {
   city: "",
   state: "",
   country: "",
+  area: "",
   phone: "",
   address: "",
 };
@@ -23,6 +24,9 @@ export const NOTES = {
   googleOnly:
     "Your website didn't let us read it, so we filled in what we could from Google. Please check the details.",
   websiteOnly: "We filled this in from your website. Please check the details.",
+  chain:
+    "This website has several locations, so we left out the address. Enter the city and address of yours, and check the description fits it.",
+  noneChosen: "We kept the name and city you typed. Fill in the rest below.",
 } as const;
 
 function hostOf(url: string | null): string | null {
@@ -42,6 +46,24 @@ export function sameSite(websiteUri: string | null, domain: string): boolean {
 
 export function pickPlaceForDomain(candidates: PlaceCandidate[], domain: string): PlaceCandidate | null {
   return candidates.find((c) => sameSite(c.websiteUri, domain)) ?? null;
+}
+
+/**
+ * True when the domain's Google results are branches in more than one city (a chain like mrrooter.com). Any one of
+ * them would be a guess: Mr. Rooter came in as Seattle with an Oklahoma City description (BUG-117).
+ */
+export function isChain(candidates: PlaceCandidate[], domain: string): boolean {
+  const cities = candidates
+    .filter((c) => sameSite(c.websiteUri, domain) && c.city)
+    .map((c) => `${c.city}|${c.state ?? ""}`.toLowerCase());
+  return new Set(cities).size > 1;
+}
+
+/** A chain site's pages can be any branch's: its location facts are dropped, and a description naming a place. */
+export function withoutBranchFacts(site: AutofillOutput, branches: PlaceCandidate[]): AutofillOutput {
+  const places = [site.city, ...branches.map((b) => b.city)].filter((c): c is string => !!c?.trim());
+  const namesPlace = places.some((c) => new RegExp(`\\b${c.trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`, "i").test(site.description));
+  return { ...site, city: "", state: "", address: "", phone: "", description: namesPlace ? "" : site.description };
 }
 
 const digits = (s: string) => s.replace(/\D/g, "");
@@ -69,14 +91,19 @@ export function keepGrounded(site: AutofillOutput, pages: PageResult[]): Autofil
 export function mergeDetails(site: AutofillOutput | null, place: PlaceCandidate | null): BusinessDetails {
   // When Places has an address, the location fields come from the same address so they agree.
   const placeLocation = place?.address ? place : null;
+  // Google's type wins: a known one is the industry, any other specific one is "other" with Google's name for it.
+  const otherType = placesTypeLabel(place?.primaryType);
   return {
     name: place?.name || site?.name || "",
-    industry: industryFromPlacesType(place?.primaryType) ?? site?.industry ?? "",
+    industry: industryFromPlacesType(place?.primaryType) ?? (otherType ? "other" : (site?.industry ?? "")),
+    ...(otherType ? { industryText: otherType } : {}),
     description: site?.description.trim() ?? "",
     services: site?.services ?? [],
     city: (placeLocation ? placeLocation.city : site?.city) || "",
     state: (placeLocation ? placeLocation.state : site?.state) || "",
     country: (placeLocation ? placeLocation.country : site?.country) || "",
+    // Only Google names the neighborhood; the site extraction has no such field.
+    area: placeLocation?.area || "",
     phone: place?.phone || site?.phone || "",
     address: place?.address || site?.address || "",
   };
@@ -92,10 +119,12 @@ export function toResult(opts: {
   fromWebsite: boolean;
   fromGoogle: boolean;
   hadWebsite: boolean;
+  chain?: boolean;
 }): AutofillResult {
   const { details, fromWebsite, fromGoogle, hadWebsite } = opts;
   let note: string | null = null;
-  if (!fromWebsite && !fromGoogle) note = NOTES.nothingFound;
+  if (opts.chain) note = NOTES.chain;
+  else if (!fromWebsite && !fromGoogle) note = NOTES.nothingFound;
   else if (hadWebsite && !fromWebsite) note = NOTES.googleOnly;
   else if (hadWebsite && !fromGoogle) note = NOTES.websiteOnly;
   return { details, filledFrom: { website: fromWebsite, google: fromGoogle }, note };

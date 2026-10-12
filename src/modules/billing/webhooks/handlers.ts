@@ -11,6 +11,11 @@ export type StripeReader = {
   retrieveSubscription(id: string): Promise<Stripe.Subscription>;
   listSubscriptionItems(subscriptionId: string): Promise<Stripe.SubscriptionItem[]>;
   listInvoiceLines(invoiceId: string): Promise<Stripe.InvoiceLineItem[]>;
+  retrieveInvoice(id: string): Promise<Stripe.Invoice>;
+  /** Price ID to business_id, from the line items of the Checkout Session that started the subscription. */
+  checkoutBusinessIds(subscriptionId: string): Promise<Map<string, string>>;
+  /** Writes business_id onto a subscription item, so plan changes find the item by its business. */
+  tagItem(itemId: string, businessId: string): Promise<void>;
 };
 
 export type WebhookDeps = { store: WebhookStore; stripe: StripeReader; sendEmail: SendBillingEmail; now: () => Date };
@@ -37,6 +42,18 @@ export function agencyStatusFor(status: Stripe.Subscription.Status): AgencyStatu
   }
 }
 
+/**
+ * BUG-106: the billing change is saved before the email. An email that can't go out (email not set up here) is
+ * logged instead of failing the event, so Stripe stops retrying an event that has already been applied.
+ */
+async function notify(deps: WebhookDeps, input: Parameters<SendBillingEmail>[0]) {
+  try {
+    await deps.sendEmail(input);
+  } catch (error) {
+    console.error("[stripe/webhook] email not sent", input.type, error instanceof Error ? error.message : String(error));
+  }
+}
+
 async function requireAgency(deps: WebhookDeps, ref: { agencyId?: string | null; customerId?: string | null }) {
   const agency = await deps.store.findAgency(ref);
   // Thrown so Stripe retries: checkout.session.completed may not have linked the customer yet.
@@ -48,6 +65,31 @@ async function requireAgency(deps: WebhookDeps, ref: { agencyId?: string | null;
 export function cancelAt(sub: Stripe.Subscription, currentPeriodEnd: number | null): string | null {
   if (sub.status === "canceled") return null;
   return iso(sub.cancel_at ?? (sub.cancel_at_period_end ? currentPeriodEnd : null));
+}
+
+/**
+ * BUG-104: Checkout does not copy line item metadata to the subscription items, so a subscription started there has
+ * items without business_id. The business comes from the session's line items, matched by price (each business
+ * has its own, BUG-103), and is written onto the item once, for later plan changes.
+ */
+async function withBusinessIds(deps: WebhookDeps, subscriptionId: string, items: Stripe.SubscriptionItem[]) {
+  if (items.every((i) => i.metadata?.business_id)) return items;
+  const fromCheckout = await deps.stripe.checkoutBusinessIds(subscriptionId);
+  const found = new Map(items.flatMap((i) => (i.metadata?.business_id ? [] : fromCheckout.has(i.price.id) ? [[i.id, fromCheckout.get(i.price.id)!] as const] : [])));
+  // An item whose plan changed since checkout has a new price: when one item and one checkout business are left,
+  // they belong together (BUG-121).
+  const left = items.filter((i) => !i.metadata?.business_id && !found.has(i.id));
+  const used = new Set([...items.map((i) => i.metadata?.business_id), ...found.values()]);
+  const unused = [...new Set(fromCheckout.values())].filter((id) => !used.has(id));
+  if (left.length === 1 && unused.length === 1) found.set(left[0].id, unused[0]);
+  return Promise.all(
+    items.map(async (item) => {
+      const businessId = found.get(item.id);
+      if (!businessId) return item;
+      await deps.stripe.tagItem(item.id, businessId);
+      return { ...item, metadata: { ...item.metadata, business_id: businessId } };
+    }),
+  );
 }
 
 async function syncSubscription(deps: WebhookDeps, sub: Stripe.Subscription, agency: WebhookAgency) {
@@ -69,7 +111,7 @@ async function syncSubscription(deps: WebhookDeps, sub: Stripe.Subscription, age
   if (status === "canceled") return deps.store.setBusinessStatus(agency.id, "canceled");
 
   const businessItems: BusinessItem[] = [];
-  for (const item of items) {
+  for (const item of await withBusinessIds(deps, sub.id, items)) {
     const plan = plans.get(idOf(item.price.product) ?? "");
     if (!plan) throw new Error(`subscription item ${item.id}: product is not a plan`);
     businessItems.push({
@@ -88,7 +130,19 @@ async function checkoutCompleted(deps: WebhookDeps, session: Stripe.Checkout.Ses
   const agency = await requireAgency(deps, { agencyId, customerId: idOf(session.customer) });
 
   if (session.mode === "subscription") {
-    await deps.store.linkStripe(agency.id, { customerId: idOf(session.customer), subscriptionId: idOf(session.subscription) });
+    const subscriptionId = idOf(session.subscription);
+    await deps.store.linkStripe(agency.id, { customerId: idOf(session.customer), subscriptionId });
+    if (!subscriptionId) return;
+    // customer.subscription.created can come before the session is complete, when its items can't be matched to a
+    // business yet (BUG-104), so the businesses are saved again from here.
+    const sub = await deps.stripe.retrieveSubscription(subscriptionId);
+    await syncSubscription(deps, sub, agency);
+    // A missed invoice.paid left a new account linked but at 0 credits (A1). The first invoice is granted here too,
+    // with the same grants and keys as invoicePaid, so the webhook arriving later grants nothing more.
+    const invoiceId = idOf(sub.latest_invoice);
+    if (!invoiceId) return;
+    const first = await deps.stripe.retrieveInvoice(invoiceId);
+    if (first.status === "paid") await grantInvoice(deps, first, agency);
     return;
   }
   if (session.mode !== "payment" || session.metadata?.kind !== "topup") return;
@@ -111,6 +165,11 @@ async function invoicePaid(deps: WebhookDeps, invoice: Stripe.Invoice) {
   const sub = invoiceSubscription(invoice);
   if (!sub) return;
   const agency = await requireAgency(deps, { agencyId: sub.agencyId, customerId: idOf(invoice.customer) });
+  await grantInvoice(deps, invoice, agency);
+}
+
+/** The credits a paid invoice earns. Every grant is keyed by its invoice line, so running it twice grants once. */
+async function grantInvoice(deps: WebhookDeps, invoice: Stripe.Invoice, agency: WebhookAgency) {
   const lines = invoice.lines.has_more ? await deps.stripe.listInvoiceLines(invoice.id!) : invoice.lines.data;
   const plans = await deps.store.plansByProduct();
 
@@ -123,16 +182,22 @@ async function invoicePaid(deps: WebhookDeps, invoice: Stripe.Invoice) {
   if (unknown.length) console.warn("[stripe/webhook] invoice lines without a product", invoice.id, unknown.map((l) => l.id));
 }
 
-/** Scheduled scans stop at once (enqueue_due_scans skips past_due agencies); the dashboard stays readable. */
+/**
+ * Scheduled scans stop at once (enqueue_due_scans skips past_due agencies); the dashboard stays readable. A retried
+ * event can arrive after the card was fixed, so it only counts while the invoice is unpaid and Stripe says past due (A7).
+ */
 async function invoicePaymentFailed(deps: WebhookDeps, invoice: Stripe.Invoice) {
   const sub = invoiceSubscription(invoice);
   if (!sub) return;
   const agency = await requireAgency(deps, { agencyId: sub.agencyId, customerId: idOf(invoice.customer) });
+  if (invoice.status === "paid") return;
+  const status = sub.subscriptionId ? (await deps.stripe.retrieveSubscription(sub.subscriptionId)).status : "past_due";
+  if (status !== "past_due" && status !== "unpaid") return;
   await deps.store.updateAgency(agency.id, { status: "past_due" });
   await deps.store.setBusinessStatus(agency.id, "past_due");
 
   const to = await deps.store.ownerEmail(agency.ownerUserId);
-  if (to) await deps.sendEmail(paymentFailedEmail({ to, agencyId: agency.id, invoice }));
+  if (to) await notify(deps, paymentFailedEmail({ to, agencyId: agency.id, invoice }));
 }
 
 async function trialWillEnd(deps: WebhookDeps, sub: Stripe.Subscription) {
@@ -141,7 +206,7 @@ async function trialWillEnd(deps: WebhookDeps, sub: Stripe.Subscription) {
   if (sub.cancel_at_period_end || sub.cancel_at) return;
   const agency = await requireAgency(deps, { agencyId: sub.metadata?.agency_id, customerId: idOf(sub.customer) });
   const to = await deps.store.ownerEmail(agency.ownerUserId);
-  if (to) await deps.sendEmail(trialEndingEmail({ to, agencyId: agency.id, subscription: sub }));
+  if (to) await notify(deps, trialEndingEmail({ to, agencyId: agency.id, subscription: sub }));
 }
 
 /** Events can arrive out of order, so the subscription's current state is read from Stripe before it is saved. */
