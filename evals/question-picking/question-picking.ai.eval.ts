@@ -1,17 +1,19 @@
-// Runs the real question picking (one Claude Haiku call per business, paid) on the labelled businesses
+// Runs the real question picking (one Claude Haiku call per business, or the OpenAI backup with
+// EVAL_AI_PROVIDER=openai; paid) on the labelled businesses
 // against the reviewed library file, so it lives in the AI suite (eval-ai.yml).
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import Anthropic from "@anthropic-ai/sdk";
 import { expect, it } from "vitest";
 import { createHarness, describeEval } from "vitest-evals";
+import { AiUnavailableError } from "@/modules/ai";
 import { createQuestionModel, type QuestionModel } from "@/modules/onboarding/question-model";
 import { PICK_MODEL, PICK_PROMPT_VERSION } from "@/modules/onboarding/prompts/pick-questions.v3";
 import { prepareQuestions, type QuestionSet } from "@/modules/onboarding/questions";
 import { validateLibrary, type LibraryFile } from "@/modules/question-library";
+import { evalAiClients, EVAL_PROVIDER, missingEvalKey } from "../shared/ai-clients";
 import { apiErrorCase, gradeCase, LIBRARY_PATH, loadDataset, PASS_OVERLAP, poolNotInLibrary, score, type GradedCase, type PickingCase } from "./grader";
 
 const dataset = loadDataset();
-const apiKey = process.env.ANTHROPIC_API_KEY;
+const missingKey = missingEvalKey();
 
 function loadApprovedLibrary(): LibraryFile | string {
   if (!existsSync(LIBRARY_PATH)) return "supabase/seed/question-library.v1.json does not exist yet (B-32)";
@@ -27,8 +29,8 @@ const skipReason =
     ? "evals/question-picking/dataset.v1.jsonl is not labelled yet (see README.md)"
     : typeof library === "string"
       ? library
-      : !apiKey
-        ? "ANTHROPIC_API_KEY is not set"
+      : missingKey
+        ? `${missingKey} is not set`
         : null;
 
 function entriesFor(file: LibraryFile, industry: string) {
@@ -42,9 +44,9 @@ type Output = { set: QuestionSet | null; apiError: string | null };
 // prepareQuestions hides model failures behind the fallback; the eval records API errors so they
 // count apart (principle 9), while bad answers from the model stay scored as fallbacks.
 function recordingModel(errors: string[]): QuestionModel {
-  const model = createQuestionModel(apiKey ?? "");
+  const model = createQuestionModel(evalAiClients());
   const record = (err: unknown) => {
-    if (err instanceof Anthropic.APIError) errors.push(`anthropic: ${err.message}`);
+    if (err instanceof AiUnavailableError && !err.modelFault) errors.push(`${EVAL_PROVIDER}: ${err.message}`);
     throw err;
   };
   return { pick: (input) => model.pick(input).catch(record), write: (input) => model.write(input).catch(record) };
@@ -81,13 +83,13 @@ describeEval(`question picking ${PICK_PROMPT_VERSION}`, { harness, skipIf: () =>
       const picked = output.set.questions.flatMap((q) => (q.templateId ? [byId.get(q.templateId) ?? ""] : []));
       graded.push(gradeCase(c, picked, output.set.source));
     }
-    const result = { ...score(graded), model: PICK_MODEL, prompt: PICK_PROMPT_VERSION, libraryVersion: file.version };
+    const result = { ...score(graded), provider: EVAL_PROVIDER, model: PICK_MODEL, prompt: PICK_PROMPT_VERSION, libraryVersion: file.version };
 
     // Every case saved in full (principle 10). Real cost is read from the provider dashboard for now.
     const dir = new URL("../results/", import.meta.url);
     mkdirSync(dir, { recursive: true });
     const stamp = new Date().toISOString().replace(/[:.]/g, "-");
-    writeFileSync(new URL(`question-picking.${stamp}.json`, dir), JSON.stringify({ result, graded }, null, 2));
+    writeFileSync(new URL(`question-picking.${EVAL_PROVIDER}.${stamp}.json`, dir), JSON.stringify({ result, graded }, null, 2));
 
     console.log("question picking", result);
     for (const g of graded.filter((c) => c.missing.length || c.source === "fallback")) {

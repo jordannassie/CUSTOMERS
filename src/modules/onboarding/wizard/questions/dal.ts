@@ -25,7 +25,7 @@ export type QuestionsStep = {
 export async function loadQuestionsStep(
   userId: string,
   businessId: string,
-  clients: QuestionClients = liveQuestionClients(),
+  clients: QuestionClients = liveQuestionClients({ accountUserId: userId, businessId }),
 ): Promise<QuestionsStep | null | "no-city"> {
   const supabase = await createClient();
   const { data: b, error } = await supabase

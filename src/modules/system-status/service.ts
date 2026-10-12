@@ -152,3 +152,24 @@ export function timeAgo(then: Date, now: Date): string {
   if (hours < 48) return `${hours} h ago`;
   return `${Math.round(hours / 24)} days ago`;
 }
+
+/** How recent a credit error must be to mark the provider out of credit; a top-up clears it within the hour. */
+export const OUT_OF_CREDIT_WINDOW_MINUTES = 60;
+
+const OUT_OF_CREDIT_DETAIL: Record<string, string> = {
+  anthropic:
+    "Out of credit. Claude checks can't run and background jobs use the ChatGPT backup. Top up at console.anthropic.com (Plans & Billing).",
+  openai: "Out of credit. ChatGPT checks and the backup for background jobs can't run. Top up at platform.openai.com (Billing).",
+};
+
+/**
+ * The key probes only list models, which still works with an empty account, so an account out of credit looks fine
+ * there. Recent credit errors from real calls (provider_errors) override the probe for that provider (D-84).
+ */
+export function withCreditStatus(services: ServiceStatus[], outOfCredit: ReadonlySet<string>): ServiceStatus[] {
+  return services.map((s) =>
+    outOfCredit.has(s.id) && s.state !== "not_configured"
+      ? { ...s, state: "error", detail: OUT_OF_CREDIT_DETAIL[s.id] ?? "Out of credit. Top up the account." }
+      : s,
+  );
+}

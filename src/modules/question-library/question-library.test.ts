@@ -1,10 +1,10 @@
 import { existsSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { generateRequest, toTemplates } from "./generate";
+import { ANTHROPIC_CREDIT_ERROR, anthropicMessage, fakeAiClients, jsonResponse, openaiResponse, providerFetch } from "@/modules/ai";
+import { createTemplateDrafter, generateRequest, toTemplates } from "./generate";
 import { GENERATE_MODEL } from "./prompts/generate-templates.v1";
 import { LibraryNotLoadableError, toSeedRows } from "./service";
 import { validateLibrary } from "./validate";
-import type Anthropic from "@anthropic-ai/sdk";
 
 const example = JSON.parse(readFileSync("tests/fixtures/question-library.example.json", "utf8"));
 const approved = { ...example, status: "approved", review: { reviewer: "A Reviewer", reviewedAt: "2026-09-27" } };
@@ -74,25 +74,36 @@ describe("toSeedRows", () => {
 });
 
 describe("generator", () => {
-  it("asks Claude Sonnet for one industry with structured output", () => {
+  const text = JSON.stringify({ templates: [{ template: "Which med spa in {city} does lip filler?", tags: ["injectables"], intent: "best" }] });
+  const expected = [{ industry: "med_spa", template: "Which med spa in {city} does lip filler?", tags: ["injectables"], intent: "best" }];
+
+  it("asks Claude Sonnet for one industry with structured output", async () => {
     const req = generateRequest("med_spa");
     expect(req.model).toBe(GENERATE_MODEL);
     expect(GENERATE_MODEL).toBe("claude-sonnet-5");
-    expect(req.messages[0].content).toContain("Med spa");
-    expect(req.output_config.format.type).toBe("json_schema");
+    expect(req.user).toContain("Med spa");
+    const { fetch, calls } = providerFetch({ anthropic: [jsonResponse(anthropicMessage(text))] });
+    expect(await createTemplateDrafter(fakeAiClients(fetch))("med_spa")).toEqual(expected);
+    expect(calls.anthropic[0]).toMatchObject({ output_config: { format: { type: "json_schema" } } });
   });
 
   it("parses the reply into templates for that industry", () => {
-    const text = JSON.stringify({ templates: [{ template: "Which med spa in {city} does lip filler?", tags: ["injectables"], intent: "best" }] });
-    const message = { stop_reason: "end_turn", content: [{ type: "text", text }] } as unknown as Anthropic.Message;
-    expect(toTemplates("med_spa", message)).toEqual([
-      { industry: "med_spa", template: "Which med spa in {city} does lip filler?", tags: ["injectables"], intent: "best" },
-    ]);
+    expect(toTemplates("med_spa", JSON.parse(text))).toEqual(expected);
   });
 
-  it("fails loudly when the reply is cut off", () => {
-    const message = { stop_reason: "max_tokens", content: [] } as unknown as Anthropic.Message;
-    expect(() => toTemplates("med_spa", message)).toThrow(/output tokens/);
+  it("drafts with gpt-4.1 when Claude is out of credit", async () => {
+    const { fetch, calls } = providerFetch({
+      anthropic: [jsonResponse(ANTHROPIC_CREDIT_ERROR, 400)],
+      openai: [jsonResponse(openaiResponse(text, { model: "gpt-4.1-2025-04-14" }))],
+    });
+    expect(await createTemplateDrafter(fakeAiClients(fetch))("med_spa")).toEqual(expected);
+    expect(calls.openai[0]).toMatchObject({ model: "gpt-4.1" });
+  });
+
+  it("fails loudly when the reply is cut off and the backup is off", async () => {
+    const cut = jsonResponse(anthropicMessage("", { stop_reason: "max_tokens" }));
+    const { fetch } = providerFetch({ anthropic: [cut] });
+    await expect(createTemplateDrafter(fakeAiClients(fetch, { fallbackEnabled: false }))("med_spa")).rejects.toThrow(/output tokens/);
   });
 });
 

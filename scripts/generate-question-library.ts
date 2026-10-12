@@ -9,6 +9,7 @@ import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { parseEnv } from "node:util";
 import { expect, it } from "vitest";
 import { LIBRARY_INDUSTRIES } from "@/lib/industries";
+import { createAiClients } from "@/modules/ai";
 import { libraryFileSchema, validateLibrary, type LibraryFile } from "@/modules/question-library";
 import { createTemplateDrafter } from "@/modules/question-library/generate";
 import { GENERATE_MODEL, GENERATE_PROMPT_VERSION } from "@/modules/question-library/prompts/generate-templates.v1";
@@ -21,6 +22,12 @@ function key(name: string): string {
   const value = process.env[name] || fromFile;
   if (!value) throw new Error(`${name} is not set in the shell or .env.local`);
   return value;
+}
+
+/** Like key(), but undefined when unset: the OpenAI backup is optional (D-84). */
+function optionalKey(name: string): string | undefined {
+  const fromFile = existsSync(".env.local") ? parseEnv(readFileSync(".env.local", "utf8"))[name] : undefined;
+  return process.env[name] || fromFile || undefined;
 }
 
 function save(file: LibraryFile) {
@@ -40,7 +47,9 @@ it.runIf(live)("draft the question library", { timeout: 60 * 60_000 }, async () 
     review: null,
     templates: [],
   };
-  const draft = createTemplateDrafter(key("ANTHROPIC_API_KEY"));
+  const draft = createTemplateDrafter(
+    createAiClients({ anthropicKey: key("ANTHROPIC_API_KEY"), openaiKey: optionalKey("OPENAI_API_KEY"), maxRetries: 2 }),
+  );
   const failures: string[] = [];
 
   for (const industry of LIBRARY_INDUSTRIES) {

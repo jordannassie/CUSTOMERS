@@ -1,8 +1,8 @@
 import "server-only";
 // Database access for "why competitors win" (B-51). The worker runs explainAfterScan with the service
 // role (no user session); the page reads through getLiveOpportunities, which checks the agency first.
-import { env } from "@/lib/env";
 import { createServiceClient } from "@/lib/supabase/service";
+import { aiUsageMetadata, liveAiClients } from "@/modules/ai/server";
 import { requireAgency } from "@/modules/auth";
 import { fetchPlaceSignals } from "@/modules/competitors/server";
 import { loadAlsoRecommended, splitByQuestion } from "@/modules/scanning";
@@ -104,7 +104,8 @@ function pickWriter(isTest: boolean, deps: ExplainDeps): WriteExplanation | null
   // Test agencies never reach a live model, whatever was passed in (D-61).
   if (isTest) return templateWriter;
   if (deps.write !== undefined && deps.write !== null) return deps.write;
-  return env.ANTHROPIC_API_KEY ? createExplanationWriter(env.ANTHROPIC_API_KEY) : null;
+  const ai = liveAiClients();
+  return ai.anthropic || ai.openai ? createExplanationWriter(ai) : null;
 }
 
 /** Explains one finished scan run and replaces the business's open opportunities with the result. */
@@ -117,12 +118,15 @@ export async function explainAfterScan(runId: string, deps: ExplainDeps = {}): P
       account_user_id: ownerUserId,
       business_id: businessId,
       usage_type: "other",
-      provider: "anthropic",
+      provider: explanation.writer?.provider ?? "anthropic",
       model: explanation.model,
       input_tokens: explanation.usage.inputTokens,
       output_tokens: explanation.usage.outputTokens,
       request_count: 1,
-      estimated_cost_usd: usageCostUsd(explanation.usage),
+      estimated_cost_usd: usageCostUsd(explanation.usage, explanation.model),
+      ...(explanation.writer && {
+        metadata: aiUsageMetadata({ task: "why_competitors_win", fellBack: explanation.writer.fellBack, primaryError: explanation.writer.primaryError }),
+      }),
     });
     if (error) throw new Error(`Insights: could not record usage: ${error.message}`);
   }

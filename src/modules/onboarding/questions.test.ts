@@ -1,7 +1,8 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { libraryFileSchema } from "@/modules/question-library";
-import { pickRequest, writeRequest } from "./question-model";
+import { ANTHROPIC_CREDIT_ERROR, fakeAiClients, jsonResponse, openaiResponse, providerFetch } from "@/modules/ai";
+import { createQuestionModel, pickRequest, writeRequest } from "./question-model";
 import {
   COFFEE_BUSINESS,
   COFFEE_GOOD_PICK,
@@ -197,7 +198,23 @@ describe("rules", () => {
     const write = writeRequest({ business });
     expect(pick.model).toBe("claude-haiku-4-5");
     expect(write.model).toBe("claude-haiku-4-5");
-    expect(pick.messages[0].content).toContain("oat milk lattes");
-    expect(pick.messages[0].content).toContain("1. Best cafe in {city}? [intent: best; tags: general]");
+    expect(pick.user).toContain("oat milk lattes");
+    expect(pick.user).toContain("1. Best cafe in {city}? [intent: best; tags: general]");
+  });
+
+  it("picks and writes with gpt-4.1-mini when Claude is out of credit", async () => {
+    const business = { industry: "Coffee shop", services: ["oat milk lattes"], description: "Opens at 6am." };
+    const written = { questions: [{ template: "Which coffee shop in {city} has the best oat milk latte?", intent: "best" }] };
+    const { fetch, calls } = providerFetch({
+      anthropic: [jsonResponse(ANTHROPIC_CREDIT_ERROR, 400)],
+      openai: [(body) => jsonResponse(openaiResponse(JSON.stringify(String(body.instructions).startsWith("You choose") ? { numbers: [1] } : written)))],
+    });
+    const model = createQuestionModel(fakeAiClients(fetch));
+    const templates = [{ number: 1, template: "Best cafe in {city}?", tags: ["general"], intent: "best" }];
+    expect(await model.pick({ business, templates })).toEqual([1]);
+    expect(await model.write({ business })).toEqual(written.questions);
+    // Claude was tried once; the circuit then sent the second job straight to the backup.
+    expect(calls.anthropic).toHaveLength(1);
+    expect(calls.openai.map((c) => c.model)).toEqual(["gpt-4.1-mini", "gpt-4.1-mini"]);
   });
 });

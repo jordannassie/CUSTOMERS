@@ -1,4 +1,5 @@
 import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { createAiClients } from "@/modules/ai";
 import { getBalance } from "@/modules/credits";
 import seed from "../../../tests/fixtures/test-agency.json";
 import { createNameExtractor } from "./extract";
@@ -26,7 +27,7 @@ const noWait = { sleep: async () => {} };
 const ADAPTERS = { openai: createOpenAICheck, anthropic: createAnthropicCheck, perplexity: createPerplexityCheck };
 const liveWithFakeKeys = {
   checkRunner: (p: ProviderId) => ADAPTERS[p]("fake-key", noWait),
-  extractNames: createNameExtractor("fake-key", noWait),
+  extractNames: createNameExtractor(createAiClients({ anthropicKey: "fake-key", openaiKey: "fake-key", maxRetries: 0 })),
 };
 
 async function seedBusiness(agency: { agencyId: string; ownerUserId: string }, b: (typeof seed.businesses)[number]) {

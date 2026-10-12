@@ -14,6 +14,11 @@ export const env = createEnv({
     OPENAI_API_KEY: optional,
     OPENAI_NEWS_MODEL: z.string().min(1).default("gpt-4o"),
     ANTHROPIC_API_KEY: optional,
+    // Background AI jobs (auto-fill, questions, name extraction, explanations, question library) run on Claude and
+    // fall back to OpenAI when Claude fails. "false" turns the backup off. FAST stands in for Haiku, SMART for Sonnet.
+    AI_FALLBACK_ENABLED: flag,
+    AI_FALLBACK_MODEL_FAST: z.string().trim().min(1).default("gpt-4.1-mini"),
+    AI_FALLBACK_MODEL_SMART: z.string().trim().min(1).default("gpt-4.1"),
     PERPLEXITY_API_KEY: optional,
     GOOGLE_PLACES_API_KEY: optional,
     // Dev and Playwright only: the competitor step answers from hand-built fixtures, never Google.
@@ -76,6 +81,9 @@ export const env = createEnv({
     OPENAI_API_KEY: process.env.OPENAI_API_KEY,
     OPENAI_NEWS_MODEL: process.env.OPENAI_NEWS_MODEL,
     ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY,
+    AI_FALLBACK_ENABLED: process.env.AI_FALLBACK_ENABLED,
+    AI_FALLBACK_MODEL_FAST: process.env.AI_FALLBACK_MODEL_FAST,
+    AI_FALLBACK_MODEL_SMART: process.env.AI_FALLBACK_MODEL_SMART,
     PERPLEXITY_API_KEY: process.env.PERPLEXITY_API_KEY,
     GOOGLE_PLACES_API_KEY: process.env.GOOGLE_PLACES_API_KEY,
     PLACES_FIXTURES: process.env.PLACES_FIXTURES,

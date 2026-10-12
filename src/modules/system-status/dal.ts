@@ -4,7 +4,16 @@ import { env } from "@/lib/env";
 import { createServiceClient } from "@/lib/supabase/service";
 import { jobSettingsStatus, schedulesStatus, type CronJob } from "./schedules";
 import type { ServiceStatus, SystemStatus } from "./schema";
-import { PROBES, WORKER_OVERDUE_MINUTES, runProbe, stripeMode, workerStatus, type ProbeDeps } from "./service";
+import {
+  OUT_OF_CREDIT_WINDOW_MINUTES,
+  PROBES,
+  WORKER_OVERDUE_MINUTES,
+  runProbe,
+  stripeMode,
+  withCreditStatus,
+  workerStatus,
+  type ProbeDeps,
+} from "./service";
 
 const KEYS: Record<string, string | undefined> = {
   openai: env.OPENAI_API_KEY,
@@ -22,7 +31,7 @@ export async function getSystemStatus(deps: ProbeDeps = {}): Promise<SystemStatu
   await requireAdmin();
   const now = new Date();
 
-  const [probes, worker, jobs] = await Promise.all([
+  const [probes, worker, jobs, outOfCredit] = await Promise.all([
     Promise.all(
       PROBES.map(async (probe): Promise<ServiceStatus> => {
         const key = KEYS[probe.id];
@@ -33,9 +42,24 @@ export async function getSystemStatus(deps: ProbeDeps = {}): Promise<SystemStatu
     ),
     checkWorker(now),
     checkSchedules(now),
+    providersOutOfCredit(now),
   ]);
 
-  return { checkedAt: now.toISOString(), services: [...probes, worker, ...jobs] };
+  return { checkedAt: now.toISOString(), services: [...withCreditStatus(probes, outOfCredit), worker, ...jobs] };
+}
+
+// The messages real calls log: Anthropic's "credit balance is too low", OpenAI's "exceeded your current quota", and
+// the background jobs' "credit" kind (modules/ai). Never reads a key; only provider names come back.
+async function providersOutOfCredit(now: Date): Promise<Set<string>> {
+  const since = new Date(now.getTime() - OUT_OF_CREDIT_WINDOW_MINUTES * 60_000).toISOString();
+  const { data, error } = await createServiceClient()
+    .from("provider_errors")
+    .select("provider")
+    .gte("created_at", since)
+    .or("message.ilike.%credit balance%,message.ilike.%exceeded your current quota%,message.ilike.%insufficient_quota%")
+    .limit(50);
+  if (error) return new Set();
+  return new Set((data ?? []).map((r) => r.provider));
 }
 
 /** pg_cron's jobs and their last runs, and the Vault settings they need (BUG-108). Never reads a secret's value. */

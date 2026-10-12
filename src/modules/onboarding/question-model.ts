@@ -1,8 +1,7 @@
 import "server-only";
-// Claude Haiku picks or writes the questions (MVP_SPEC 5.3) with structured outputs. The API key is
-// passed in; only a dal.ts reads secrets.
-import Anthropic from "@anthropic-ai/sdk";
-import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
+// Claude Haiku picks or writes the questions (MVP_SPEC 5.3) with structured outputs; OpenAI answers the same
+// prompt and schema when Claude fails (D-84). Clients are passed in; only a dal.ts reads secrets.
+import { runJob, type AiClients } from "@/modules/ai";
 import {
   PICK_MAX_TOKENS,
   PICK_MODEL,
@@ -25,38 +24,31 @@ const TIMEOUT_MS = 30_000;
 
 export function pickRequest(input: Parameters<PickTemplates>[0]) {
   return {
+    task: "pick_questions",
     model: PICK_MODEL,
-    max_tokens: PICK_MAX_TOKENS,
+    maxTokens: PICK_MAX_TOKENS,
     system: PICK_SYSTEM,
-    messages: [{ role: "user" as const, content: pickUserMessage(input.business, input.templates) }],
-    output_config: { format: zodOutputFormat(pickOutput) },
+    user: pickUserMessage(input.business, input.templates),
+    schema: pickOutput,
+    timeoutMs: TIMEOUT_MS,
   };
 }
 
 export function writeRequest(input: Parameters<WriteQuestions>[0]) {
   return {
+    task: "write_questions",
     model: PICK_MODEL,
-    max_tokens: PICK_MAX_TOKENS,
+    maxTokens: PICK_MAX_TOKENS,
     system: WRITE_SYSTEM,
-    messages: [{ role: "user" as const, content: writeUserMessage(input.business) }],
-    output_config: { format: zodOutputFormat(writeOutput) },
+    user: writeUserMessage(input.business),
+    schema: writeOutput,
+    timeoutMs: TIMEOUT_MS,
   };
 }
 
-export function createQuestionModel(apiKey: string, deps: { fetch?: typeof fetch } = {}): QuestionModel {
-  const client = new Anthropic({ apiKey, fetch: deps.fetch, maxRetries: 1, timeout: TIMEOUT_MS });
+export function createQuestionModel(ai: AiClients): QuestionModel {
   return {
-    pick: async (input) => pickOutput.parse(messageJson(await client.messages.create(pickRequest(input)))).numbers,
-    write: async (input) => writeOutput.parse(messageJson(await client.messages.create(writeRequest(input)))).questions,
+    pick: async (input) => (await runJob(ai, pickRequest(input))).output.numbers,
+    write: async (input) => (await runJob(ai, writeRequest(input))).output.questions,
   };
-}
-
-export function messageJson(message: Anthropic.Message): unknown {
-  if (message.stop_reason === "refusal") throw new Error("Claude declined");
-  if (message.stop_reason === "max_tokens") throw new Error("Claude ran out of output tokens");
-  const text = message.content
-    .filter((b): b is Anthropic.TextBlock => b.type === "text")
-    .map((b) => b.text)
-    .join("");
-  return JSON.parse(text);
 }

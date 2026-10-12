@@ -206,8 +206,10 @@ Example: 12 questions × 3 models × weekly = about 155 credits a month.
 | Check on ChatGPT | `gpt-4.1-mini` (or its current cheap equivalent) via the **Responses API** | `web_search` tool with `user_location` |
 | Check on Claude | `claude-haiku-4-5` | `web_search_20250305` tool with `user_location` |
 | Check on Perplexity | `sonar` | Always on; `web_search_options.user_location` |
-| Auto-fill, question writing | `claude-haiku-4-5` | No |
-| "Why competitors win" | `claude-sonnet-5` | No |
+| Auto-fill, question writing, name extraction | `claude-haiku-4-5`, backup `gpt-4.1-mini` (D-84) | No |
+| "Why competitors win", auto-fill retry, question library | `claude-sonnet-5`, backup `gpt-4.1` (D-84) | No |
+
+Background jobs (the last two rows) fall back to OpenAI with the same prompt and schema when Claude fails, and the backup is logged and alerted (D-84). The Claude check never falls back: if Claude is down, its score says it couldn't be checked.
 
 Current code: only the first configured provider runs (`src/lib/geo/run-visibility.ts:58`), no web search on OpenAI or Claude, Claude pinned to the old `claude-3-5-haiku-20241022`, no request timeouts. All of that changes.
 

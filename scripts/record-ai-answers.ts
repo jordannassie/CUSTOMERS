@@ -9,6 +9,7 @@ import { existsSync, readdirSync, readFileSync, rmSync, writeFileSync } from "no
 import path from "node:path";
 import { parseEnv } from "node:util";
 import { expect, it } from "vitest";
+import { createAiClients } from "@/modules/ai";
 import { createNameExtractor } from "@/modules/scanning/extract";
 import { createAnthropicCheck } from "@/modules/scanning/providers/anthropic";
 import { CHECK_MODELS } from "@/modules/scanning/providers/models";
@@ -66,6 +67,12 @@ function key(name: string): string {
   return value;
 }
 
+/** Like key(), but undefined when unset: the OpenAI backup is optional (D-84). */
+function optionalKey(name: string): string | undefined {
+  const fromFile = existsSync(".env.local") ? parseEnv(readFileSync(".env.local", "utf8"))[name] : undefined;
+  return process.env[name] || fromFile || undefined;
+}
+
 type Job = { file: string; provider: ProviderId; question: string; location: CheckLocation };
 
 function jobs(): Job[] {
@@ -89,7 +96,9 @@ it.runIf(live)("record real answers for test mode", { timeout: 60 * 60_000 }, as
     anthropic: createAnthropicCheck(key("ANTHROPIC_API_KEY")),
     perplexity: createPerplexityCheck(key("PERPLEXITY_API_KEY")),
   };
-  const extractNames = createNameExtractor(key("ANTHROPIC_API_KEY"));
+  const extractNames = createNameExtractor(
+    createAiClients({ anthropicKey: key("ANTHROPIC_API_KEY"), openaiKey: optionalKey("OPENAI_API_KEY") }),
+  );
   const todo = jobs().filter((job) => !existsSync(path.join(DIR, job.file)));
   const failures: string[] = [];
   let spentUsd = 0;

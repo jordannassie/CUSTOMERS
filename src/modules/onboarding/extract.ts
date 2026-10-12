@@ -1,8 +1,7 @@
 import "server-only";
-// Claude reads the business's own pages and returns fixed fields (MVP_SPEC 3.2) with structured
-// outputs. The API key is passed in; only a dal.ts reads secrets.
-import Anthropic from "@anthropic-ai/sdk";
-import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
+// Claude reads the business's own pages and returns fixed fields (MVP_SPEC 3.2) with structured outputs; OpenAI
+// answers the same prompt and schema when Claude fails (D-84). Clients are passed in; only a dal.ts reads secrets.
+import { AiUnavailableError, runJob, type AiClients } from "@/modules/ai";
 import { INDUSTRIES } from "./industries";
 import {
   AUTOFILL_MAX_TOKENS,
@@ -21,9 +20,9 @@ export type ExtractBusiness = (input: {
   domain: string;
   pages: SitePage[];
   model: AutofillModel;
+  /** Told which model actually answered: the Claude model asked for, or the ChatGPT backup (D-84). */
+  answeredBy?: (model: string) => void;
 }) => Promise<AutofillOutput>;
-
-export type ExtractDeps = { fetch?: typeof fetch; timeoutMs?: number };
 
 const TIMEOUT_MS = 30_000;
 
@@ -39,42 +38,32 @@ export class ExtractError extends Error {
 
 export function extractRequest(input: Parameters<ExtractBusiness>[0]) {
   return {
+    task: input.model === AUTOFILL_MODEL ? "business_autofill" : "business_autofill_retry",
     model: input.model,
-    max_tokens: AUTOFILL_MAX_TOKENS,
+    maxTokens: AUTOFILL_MAX_TOKENS,
     system: AUTOFILL_SYSTEM,
-    messages: [{ role: "user" as const, content: autofillUserMessage(input.domain, input.pages) }],
-    output_config: { format: zodOutputFormat(autofillOutput) },
+    user: autofillUserMessage(input.domain, input.pages),
+    schema: autofillOutput,
+    timeoutMs: TIMEOUT_MS,
+    prepare: normalizeIndustry,
   };
 }
 
-export function createBusinessExtractor(apiKey: string, deps: ExtractDeps = {}): ExtractBusiness {
-  const client = new Anthropic({ apiKey, fetch: deps.fetch, maxRetries: 1, timeout: deps.timeoutMs ?? TIMEOUT_MS });
+export function createBusinessExtractor(ai: AiClients): ExtractBusiness {
   return async (input) => {
-    let message: Anthropic.Message;
     try {
-      message = await client.messages.create(extractRequest(input));
+      const result = await runJob(ai, extractRequest(input));
+      input.answeredBy?.(result.model);
+      return result.output;
     } catch (err) {
-      throw new ExtractError("Claude request failed", false, err);
+      // modelFault stays false when a provider failed, so the form can say auto-fill is unavailable.
+      if (err instanceof AiUnavailableError) throw new ExtractError(err.message, err.modelFault, err);
+      throw new ExtractError("Auto-fill request failed", false, err);
     }
-    return toOutput(message);
   };
 }
 
-export function toOutput(message: Anthropic.Message): AutofillOutput {
-  if (message.stop_reason === "refusal") throw new ExtractError("Claude declined", true);
-  if (message.stop_reason === "max_tokens") throw new ExtractError("Claude ran out of output tokens", true);
-  const text = message.content
-    .filter((b): b is Anthropic.TextBlock => b.type === "text")
-    .map((b) => b.text)
-    .join("");
-  try {
-    return autofillOutput.parse(normalizeIndustry(JSON.parse(text)));
-  } catch (err) {
-    throw new ExtractError("Claude returned JSON that does not match the schema", true, err);
-  }
-}
-
-// Structured outputs send the enum only as a hint, so "Coffee shop" can come back for coffee_shop.
+// Claude's structured outputs send the enum only as a hint, so "Coffee shop" can come back for coffee_shop.
 // Anything still off the list becomes empty rather than a guess.
 function normalizeIndustry(raw: unknown): unknown {
   if (!raw || typeof raw !== "object" || !("industry" in raw) || typeof raw.industry !== "string") return raw;

@@ -1,5 +1,6 @@
 // Pure auto-fill rules (MVP_SPEC 3.2): which Places result is the business, how the two sources
 // combine, and the note shown above the form.
+import { sameBrandSite } from "./autofill-safety";
 import { industryFromPlacesType, placesTypeLabel } from "./industries";
 import type { PageResult } from "./firecrawl";
 import type { PlaceCandidate } from "./places";
@@ -27,6 +28,9 @@ export const NOTES = {
   chain:
     "This website has several locations, so we left out the address. Enter the city and address of yours, and check the description fits it.",
   noneChosen: "We kept the name and city you typed. Fill in the rest below.",
+  // The AI that reads websites is down (both Claude and the ChatGPT backup), not that the business is unknown.
+  unavailable: "Auto-fill is temporarily unavailable, please fill in the form.",
+  unavailablePartly: "Auto-fill is temporarily unavailable, so we filled in what we could. Please check the details and fill in the rest.",
 } as const;
 
 function hostOf(url: string | null): string | null {
@@ -44,8 +48,9 @@ export function sameSite(websiteUri: string | null, domain: string): boolean {
   return host !== null && (host === domain || host.endsWith(`.${domain}`));
 }
 
+/** The listing whose website is this site: same domain, a subdomain, any path, or the brand's country version. */
 export function pickPlaceForDomain(candidates: PlaceCandidate[], domain: string): PlaceCandidate | null {
-  return candidates.find((c) => sameSite(c.websiteUri, domain)) ?? null;
+  return candidates.find((c) => sameSite(c.websiteUri, domain)) ?? candidates.find((c) => sameBrandSite(c.websiteUri, domain)) ?? null;
 }
 
 /**
@@ -120,10 +125,13 @@ export function toResult(opts: {
   fromGoogle: boolean;
   hadWebsite: boolean;
   chain?: boolean;
+  /** No AI could read the site (Claude and the backup both failed): say so rather than "not found". */
+  aiDown?: boolean;
 }): AutofillResult {
   const { details, fromWebsite, fromGoogle, hadWebsite } = opts;
   let note: string | null = null;
   if (opts.chain) note = NOTES.chain;
+  else if (opts.aiDown) note = fromWebsite || fromGoogle ? NOTES.unavailablePartly : NOTES.unavailable;
   else if (!fromWebsite && !fromGoogle) note = NOTES.nothingFound;
   else if (hadWebsite && !fromWebsite) note = NOTES.googleOnly;
   else if (hadWebsite && !fromGoogle) note = NOTES.websiteOnly;

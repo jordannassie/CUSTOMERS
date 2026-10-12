@@ -61,7 +61,8 @@ describe("autofill when the website can't be read (B7)", () => {
   it("logs why when nothing at all is found", async () => {
     const { clients } = fakeClients({ pages: new Error("Firecrawl returned 500"), places: new Error("Places returned 403") });
     const run = await autofill({ domain: "ebookwoman.com" }, clients);
-    expect(run.result.note).toBe(NOTES.nothingFound);
+    // Both sources failed: a provider outage, so not "we couldn't find your business" (D-84).
+    expect(run.result.note).toBe(NOTES.unavailable);
     expect(run.problems.map((p) => p.message).join("\n")).toMatch(/Reading ebookwoman.com failed: Firecrawl returned 500[\s\S]*Places returned 403/);
   });
 

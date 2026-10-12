@@ -1,5 +1,6 @@
 import "server-only";
 import { env } from "@/lib/env";
+import { liveAiClients, type UsageContext } from "@/modules/ai/server";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { INTENTS, type Intent } from "@/modules/question-library";
@@ -18,17 +19,20 @@ import type { AutofillResult } from "./schema";
 // PLACES_FIXTURES covers the competitor step, ONBOARDING_FIXTURES auto-fill and question picking.
 export const onboardingFixtures = () => env.ONBOARDING_FIXTURES === "true" && env.NODE_ENV !== "production";
 
-// A missing key turns that source off; auto-fill then works with whatever is left.
-export function liveAutofillClients(): AutofillClients {
+// A missing key turns that source off; auto-fill then works with whatever is left. Claude reads the site, with
+// OpenAI as the backup (D-84); the usage context charges the cost record to the user's business.
+export function liveAutofillClients(usage?: UsageContext): AutofillClients {
   if (onboardingFixtures()) return fixtureAutofillClients;
+  const ai = liveAiClients(usage);
   return {
     scrape: env.FIRECRAWL_API_KEY ? createFirecrawlScraper(env.FIRECRAWL_API_KEY) : async () => [],
     searchPlaces: env.GOOGLE_PLACES_API_KEY ? createPlacesSearch(env.GOOGLE_PLACES_API_KEY) : async () => [],
-    extract: env.ANTHROPIC_API_KEY
-      ? createBusinessExtractor(env.ANTHROPIC_API_KEY)
-      : async () => {
-          throw new ExtractError("ANTHROPIC_API_KEY is not set", false);
-        },
+    extract:
+      ai.anthropic || ai.openai
+        ? createBusinessExtractor(ai)
+        : async () => {
+            throw new ExtractError("Neither ANTHROPIC_API_KEY nor OPENAI_API_KEY is set", false);
+          },
   };
 }
 
@@ -74,11 +78,12 @@ export async function loadSharedQuestions(industry: string, city: string, region
 }
 
 // Without a key every model call fails, so the template engine fallback runs (MVP_SPEC 5.3).
-export function liveQuestionClients(): QuestionClients {
+export function liveQuestionClients(usage?: UsageContext): QuestionClients {
   const missing = async (): Promise<never> => {
-    throw new Error("ANTHROPIC_API_KEY is not set");
+    throw new Error("Neither ANTHROPIC_API_KEY nor OPENAI_API_KEY is set");
   };
-  const model = env.ANTHROPIC_API_KEY ? createQuestionModel(env.ANTHROPIC_API_KEY) : { pick: missing, write: missing };
+  const ai = liveAiClients(usage && { ...usage, usageType: "prompt_generation" });
+  const model = ai.anthropic || ai.openai ? createQuestionModel(ai) : { pick: missing, write: missing };
   return { loadLibrary: loadQuestionLibrary, loadShared: loadSharedQuestions, model: onboardingFixtures() ? fixtureQuestionModel : model };
 }
 
@@ -104,7 +109,7 @@ export async function runBusinessAutofill(
   userId: string,
   businessId: string,
   request: AutofillRequest,
-  clients: AutofillClients = liveAutofillClients(),
+  clients: AutofillClients = liveAutofillClients({ accountUserId: userId, businessId }),
 ): Promise<AutofillResult | null> {
   const supabase = await createClient();
   const { data: business, error } = await supabase

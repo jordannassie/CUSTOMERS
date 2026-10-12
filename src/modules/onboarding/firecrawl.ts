@@ -15,6 +15,8 @@ export type PageResult = {
   status: PageStatus;
   markdown: string;
   title: string | null;
+  /** The page's meta description, for auto-fill's no-AI safety net (D-84). */
+  description?: string | null;
 };
 
 export type ScrapeSite = (domain: string) => Promise<PageResult[]>;
@@ -27,6 +29,8 @@ const scrapeResponse = z.object({
       metadata: z
         .object({
           title: z.union([z.string(), z.array(z.string())]).nullish(),
+          description: z.union([z.string(), z.array(z.string())]).nullish(),
+          ogDescription: z.union([z.string(), z.array(z.string())]).nullish(),
           statusCode: z.number().nullish(),
         })
         .loose()
@@ -74,6 +78,9 @@ export function toPage(path: string, body: unknown): PageResult {
   const markdown = (parsed.data.data.markdown ?? "").trim();
   const rawTitle = parsed.data.data.metadata?.title;
   const title = (Array.isArray(rawTitle) ? rawTitle[0] : rawTitle)?.trim() || null;
+  const meta = parsed.data.data.metadata;
+  const rawDescription = meta?.description ?? meta?.ogDescription;
+  const description = (Array.isArray(rawDescription) ? rawDescription[0] : rawDescription)?.trim() || null;
   const statusCode = parsed.data.data.metadata?.statusCode ?? 200;
 
   if (statusCode === 404 || statusCode === 410) return { path, status: "missing", markdown: "", title };
@@ -85,5 +92,5 @@ export function toPage(path: string, body: unknown): PageResult {
     return { path, status: "blocked", markdown: "", title: null };
   }
   if (statusCode >= 400) return { path, status: "failed", markdown: "", title };
-  return { path, status: "ok", markdown, title };
+  return { path, status: "ok", markdown, title, description };
 }

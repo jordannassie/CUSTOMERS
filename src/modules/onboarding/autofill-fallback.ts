@@ -1,6 +1,7 @@
 // When a website can't be read and Google does not list it by its address, Google is asked for the brand the
 // domain spells (B7): "ebookwoman.com" is BookWoman. Pure helpers; the search itself is injected by autofill.ts.
 import type { PlaceCandidate } from "./places";
+import { sameBrandSite } from "./autofill-safety";
 import { sameSite } from "./service";
 
 export type AutofillProvider = "firecrawl" | "google_places" | "anthropic";
@@ -23,10 +24,11 @@ export function brandGuesses(domain: string): string[] {
 }
 
 /**
- * The listing that is this business: only the one whose website is the domain. The brand search has no city, so a
- * listing with no website that only shares the name ("Blue Door" for bluedoor.com, "Bakery" for thebakery.com)
- * may be a business anywhere else, and is never adopted.
+ * The listing that is this business: only one whose website is this site, a subdomain, a path on it or the brand's
+ * country version ("adidas.com.pk" for adidas.com). The brand search has no city, so a listing with no website that
+ * only shares the name ("Blue Door" for bluedoor.com, "Bakery" for thebakery.com) may be a business anywhere else,
+ * and is never adopted.
  */
 export function pickBrandPlace(candidates: PlaceCandidate[], domain: string): PlaceCandidate | null {
-  return candidates.find((c) => sameSite(c.websiteUri, domain)) ?? null;
+  return candidates.find((c) => sameSite(c.websiteUri, domain)) ?? candidates.find((c) => sameBrandSite(c.websiteUri, domain)) ?? null;
 }

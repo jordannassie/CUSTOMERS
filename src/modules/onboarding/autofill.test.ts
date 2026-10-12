@@ -84,8 +84,9 @@ describe("autofill with a website", () => {
   it("shows an empty form with a friendly note when nothing is found, even if every source throws", async () => {
     const { clients } = fakeClients({ pages: new Error("down"), places: new Error("403") });
     const run = await autofill({ domain: COFFEE_DOMAIN }, clients);
+    // Every source failed, so the note says auto-fill is unavailable, not that the business is unknown (D-84).
     expect(run).toMatchObject({
-      result: { details: EMPTY_DETAILS, filledFrom: { website: false, google: false }, note: NOTES.nothingFound },
+      result: { details: EMPTY_DETAILS, filledFrom: { website: false, google: false }, note: NOTES.unavailable },
       placeId: null,
       siteFacts: null,
     });
@@ -154,7 +155,8 @@ describe("autofill with a website", () => {
     });
     const placesOnly = await autofill({ domain: COFFEE_DOMAIN }, both.clients);
     expect(placesOnly.result.details.name).toBe(COFFEE_PLACE.name);
-    expect(placesOnly.result.note).toBe(NOTES.googleOnly);
+    // The site was readable; the AI was not (D-84). The old "didn't let us read it" note would be wrong here.
+    expect(placesOnly.result.note).toBe(NOTES.unavailablePartly);
     expect(placesOnly.siteFacts).toBeNull();
   });
 

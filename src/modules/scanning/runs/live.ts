@@ -1,5 +1,6 @@
 import "server-only";
 import { env } from "@/lib/env";
+import { liveAiClients } from "@/modules/ai/server";
 import { createNameExtractor, type ExtractNames } from "../extract";
 import { createAnthropicCheck } from "../providers/anthropic";
 import { createOpenAICheck } from "../providers/openai";
@@ -27,7 +28,8 @@ export function liveCheckRunner(provider: ProviderId): RunCheck | null {
   return key ? ADAPTERS[provider](key) : null;
 }
 
+/** Claude Haiku, with OpenAI as the backup (D-84); null only when neither key is set. Usage is recorded per check. */
 export function liveNameExtractor(): ExtractNames | null {
-  const key = env.ANTHROPIC_API_KEY;
-  return key ? createNameExtractor(key) : null;
+  const ai = liveAiClients();
+  return ai.anthropic || ai.openai ? createNameExtractor(ai) : null;
 }

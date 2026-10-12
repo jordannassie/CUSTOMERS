@@ -1,4 +1,5 @@
 import "server-only";
+import { aiUsageMetadata } from "@/modules/ai/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import type { Json } from "@/types/database.types";
 import type { ProviderFailures, ProviderId } from "../providers/types";
@@ -214,12 +215,17 @@ export async function insertExtractionUsage(row: {
   inputTokens: number;
   outputTokens: number;
   costUsd: number;
+  /** Who answered: Claude, or the ChatGPT backup (D-84). */
+  provider?: "anthropic" | "openai";
+  fellBack?: boolean;
+  primaryError?: string | null;
 }): Promise<void> {
   const { error } = await createServiceClient().from("usage_events").insert({
     account_user_id: row.accountUserId,
     business_id: row.businessId,
     usage_type: "other",
-    provider: "anthropic",
+    provider: row.provider ?? "anthropic",
+    metadata: aiUsageMetadata({ task: "extract_names", fellBack: row.fellBack ?? false, primaryError: row.primaryError ?? null }),
     model: row.model,
     input_tokens: row.inputTokens,
     output_tokens: row.outputTokens,

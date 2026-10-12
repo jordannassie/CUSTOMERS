@@ -10,8 +10,6 @@ import type { ExplainInput } from "../facts";
 export const EXPLAIN_PROMPT_VERSION = "explain.v2";
 export const EXPLAIN_MODEL = "claude-sonnet-5";
 export const EXPLAIN_MAX_TOKENS = 16_000;
-// Sonnet 5 list price in USD per million tokens, for our own cost records.
-export const EXPLAIN_PRICE = { inputPerMTok: 2, outputPerMTok: 10 };
 export const MIN_REASONS = 3;
 export const MAX_REASONS = 5;
 

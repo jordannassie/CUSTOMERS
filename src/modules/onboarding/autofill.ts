@@ -1,6 +1,7 @@
 // Business auto-fill (MVP_SPEC 3.2, D-18). Clients are injected, so tests and evals run the same
 // flow with fixtures. It never throws for a provider failure: the worst case is an empty form.
-import type { ExtractBusiness } from "./extract";
+import { factsFromPageMeta } from "./autofill-safety";
+import { ExtractError, type ExtractBusiness } from "./extract";
 import type { PageResult, ScrapeSite } from "./firecrawl";
 import type { PlaceCandidate, SearchPlaces } from "./places";
 import {
@@ -64,12 +65,17 @@ async function search(searchPlaces: SearchPlaces, query: string, note: Note): Pr
   }
 }
 
-async function tryExtract(clients: AutofillClients, args: Parameters<ExtractBusiness>[0], note: Note) {
+/** down is true when no AI could answer (Claude and the backup failed), not when a model's answer was unusable. */
+async function tryExtract(
+  clients: AutofillClients,
+  args: Parameters<ExtractBusiness>[0],
+  note: Note,
+): Promise<{ output: AutofillOutput | null; down: boolean }> {
   try {
-    return await clients.extract(args);
+    return { output: await clients.extract(args), down: false };
   } catch (err) {
     note("anthropic", `Reading ${args.domain} with ${args.model} failed: ${reason(err)}`);
-    return null;
+    return { output: null, down: !(err instanceof ExtractError && err.modelFault) };
   }
 }
 
@@ -93,15 +99,20 @@ export async function autofill(request: AutofillRequest, clients: AutofillClient
 
   let site: AutofillOutput | null = null;
   let model: string = AUTOFILL_MODEL;
+  let aiDown = false;
   if (sitePages.length > 0) {
-    const first = await tryExtract(clients, { domain, pages: sitePages, model: AUTOFILL_MODEL }, note);
-    site = first && keepGrounded(first, readable);
+    const first = await tryExtract(clients, { domain, pages: sitePages, model: AUTOFILL_MODEL, answeredBy: (m) => (model = m) }, note);
+    aiDown = first.down;
+    site = first.output && keepGrounded(first.output, readable);
   }
   if (site && chain) site = withoutBranchFacts(site, byDomain);
+  // No AI could read the site (D-84): its own page title and meta description stand in for the name and description.
+  const fromMeta = !site && aiDown ? factsFromPageMeta(pages, domain) : null;
 
   // Second Places query by the name the site gives, plus its city when stated. Not for a chain: it finds a branch.
-  if (!place && !chain && site?.name) {
-    const query = [site.name, site.city, site.state].filter(Boolean).join(" ");
+  const named = site ?? fromMeta;
+  if (!place && !chain && named?.name) {
+    const query = [named.name, named.city, named.state].filter(Boolean).join(" ");
     place = pickPlaceForDomain(await search(clients.searchPlaces, query, note), domain);
   }
 
@@ -117,11 +128,14 @@ export async function autofill(request: AutofillRequest, clients: AutofillClient
   }
 
   if (site && needsRetry(site, mergeDetails(site, place))) {
-    const retry = await tryExtract(clients, { domain, pages: sitePages, model: AUTOFILL_RETRY_MODEL }, note);
+    let retryModel: string = AUTOFILL_RETRY_MODEL;
+    const retry = (
+      await tryExtract(clients, { domain, pages: sitePages, model: AUTOFILL_RETRY_MODEL, answeredBy: (m) => (retryModel = m) }, note)
+    ).output;
     if (retry) {
       site = keepGrounded(retry, readable);
       if (chain) site = withoutBranchFacts(site, byDomain);
-      model = AUTOFILL_RETRY_MODEL;
+      model = retryModel;
     }
   }
 
@@ -129,14 +143,19 @@ export async function autofill(request: AutofillRequest, clients: AutofillClient
     const seen = pages.length ? pages.map((p) => `${p.path} ${p.status}`).join(", ") : "no pages came back";
     note("firecrawl", `Nothing readable on ${domain} (${seen}). ${place ? "Filled in from Google." : "No Google listing found either."}`);
   }
-  const details = mergeDetails(site, place);
+  const fromSite = site ?? fromMeta;
+  const details = mergeDetails(fromSite, place);
+  const fromWebsite = fromSite !== null && hasAnyValue(mergeDetails(fromSite, null));
+  const placesDown = problems.some((p) => p.provider === "google_places");
   return {
     result: toResult({
       details,
-      fromWebsite: site !== null && hasAnyValue(mergeDetails(site, null)),
+      fromWebsite,
       fromGoogle: place !== null,
       hadWebsite: true,
       chain,
+      // A provider failed, so "we couldn't find your business" would be wrong (D-84).
+      aiDown: aiDown || (placesDown && !fromWebsite && place === null),
     }),
     placeId: place?.placeId ?? null,
     // Saved even when nothing was readable, so advice can tell "blocks AI readers" from "no website" (BUG-087).

@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { canAddBusiness } from "@/modules/entitlements";
 import type { AutofillClients, AutofillRequest } from "../autofill";
-import { liveAutofillClients, runBusinessAutofill } from "../dal";
+import { runBusinessAutofill } from "../dal";
 import { isIndustry } from "@/lib/industries";
 import type { AutofillResult, BusinessDetails } from "../schema";
 import { needsCard, nextStepNumber, type PlanId, type StepSlug, type WizardState } from "./steps";
@@ -73,7 +73,8 @@ export type StartBusinessResult =
 export async function startBusiness(
   userId: string,
   request: AutofillRequest,
-  clients: AutofillClients = liveAutofillClients(),
+  /** Left out in the app, so auto-fill builds live clients that charge usage to this business. */
+  clients?: AutofillClients,
   /** Chosen on the new-business plan picker, for a business after the first; ignored for a returning draft. */
   plan: PlanId | null = null,
 ): Promise<StartBusinessResult> {

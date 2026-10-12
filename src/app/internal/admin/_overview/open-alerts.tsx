@@ -20,6 +20,8 @@ const KIND_LABEL: Record<string, string> = {
   provider_errors: "Provider errors",
   negative_balances: "Negative balances",
   daily_ai_cost: "AI cost",
+  anthropic_credit: "Anthropic out of credit",
+  ai_fallback: "ChatGPT backup in use",
 };
 const SEVERITY = {
   critical: { label: "Urgent", badge: "low", rail: "border-l-low" },

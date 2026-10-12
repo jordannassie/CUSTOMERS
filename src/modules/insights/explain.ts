@@ -12,7 +12,12 @@ import { reasonIssues } from "./validate";
 
 export type WriterUsage = { inputTokens: number; outputTokens: number };
 
-export type WriteExplanation = (input: ExplainInput) => Promise<{ output: ExplainOutput; model: string; usage: WriterUsage | null }>;
+/** Which provider answered, when the writer is a live model: Claude, or the ChatGPT backup (D-84). */
+export type WriterSource = { provider: "anthropic" | "openai"; fellBack: boolean; primaryError: string | null };
+
+export type WriteExplanation = (
+  input: ExplainInput,
+) => Promise<{ output: ExplainOutput; model: string; usage: WriterUsage | null; writer?: WriterSource }>;
 
 export type OpportunityDraft = {
   title: string;
@@ -33,6 +38,8 @@ export type Explanation = {
   /** Why the rules were used, when they were. */
   fallbackReason: string | null;
   usage: WriterUsage | null;
+  /** Set when a live model wrote the reasons. */
+  writer?: WriterSource;
 };
 
 export function stepsText(steps: string[]): string {
@@ -96,7 +103,7 @@ export async function explain(src: ExplainSources, write: WriteExplanation | nul
     ...extra,
   });
   if (src.checks.length === 0) return rules("the scan has no saved answers");
-  if (!write) return rules("no writer (ANTHROPIC_API_KEY is not set)");
+  if (!write) return rules("no writer (neither ANTHROPIC_API_KEY nor OPENAI_API_KEY is set)");
 
   const { input, keys } = buildExplainInput(src);
   let written: Awaited<ReturnType<WriteExplanation>>;
@@ -119,6 +126,7 @@ export async function explain(src: ExplainSources, write: WriteExplanation | nul
     return rules(`only ${drafts.length} of ${written.output.reasons.length} reasons passed the checks`, {
       dropped,
       usage: written.usage,
+      writer: written.writer,
     });
   }
   return {
@@ -128,5 +136,6 @@ export async function explain(src: ExplainSources, write: WriteExplanation | nul
     dropped,
     fallbackReason: null,
     usage: written.usage,
+    writer: written.writer,
   };
 }

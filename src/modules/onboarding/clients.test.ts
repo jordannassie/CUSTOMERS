@@ -1,5 +1,6 @@
 // The three provider clients against hand-built responses; fetch is mocked, nothing goes out.
 import { describe, expect, it, vi } from "vitest";
+import { ANTHROPIC_CREDIT_ERROR, anthropicMessage, fakeAiClients, openaiResponse, providerFetch } from "@/modules/ai";
 import { createBusinessExtractor, ExtractError } from "./extract";
 import { createFirecrawlScraper, FIRECRAWL_SCRAPE_URL, SITE_PATHS, toPage } from "./firecrawl";
 import { COFFEE_SITE_OUTPUT } from "./fixtures";
@@ -110,28 +111,22 @@ describe("Places Text Search", () => {
 });
 
 describe("Claude extractor", () => {
-  const message = (text: string, extra: Record<string, unknown> = {}) => ({
-    id: "msg_fixture",
-    type: "message",
-    role: "assistant",
-    model: "claude-haiku-4-5",
-    content: [{ type: "text", text }],
-    stop_reason: "end_turn",
-    stop_sequence: null,
-    usage: { input_tokens: 900, output_tokens: 150 },
-    ...extra,
-  });
+  const message = (text: string, extra: Record<string, unknown> = {}) => anthropicMessage(text, extra);
   const input = {
     domain: "sunrise-coffee.example",
     pages: [{ path: "/", markdown: "# Sunrise Coffee Bar" }],
     model: "claude-haiku-4-5" as const,
   };
+  const extractor = (anthropic: Response[], openai: Response[] = [], opts = {}) => {
+    const fake = providerFetch({ anthropic, openai });
+    return { extract: createBusinessExtractor(fakeAiClients(fake.fetch, opts)), calls: fake.calls };
+  };
 
   it("asks for structured output with the versioned prompt and parses the fields", async () => {
-    const fetch = vi.fn<typeof globalThis.fetch>(async () => json(message(JSON.stringify(COFFEE_SITE_OUTPUT))));
-    expect(await createBusinessExtractor("sk-ant-test", { fetch })(input)).toEqual(COFFEE_SITE_OUTPUT);
+    const { extract, calls } = extractor([json(message(JSON.stringify(COFFEE_SITE_OUTPUT)))]);
+    expect(await extract(input)).toEqual(COFFEE_SITE_OUTPUT);
 
-    const body = JSON.parse(String(fetch.mock.calls[0][1]?.body));
+    const body = calls.anthropic[0] as { messages: { content: string }[]; output_config: { format: { schema: { properties: Record<string, { description?: string }> } } }; tools?: unknown };
     expect(body).toMatchObject({
       model: "claude-haiku-4-5",
       system: AUTOFILL_SYSTEM,
@@ -141,25 +136,44 @@ describe("Claude extractor", () => {
     // The SDK sends enums as a description hint; zod enforces them on the answer.
     expect(body.output_config.format.schema.properties.industry.description).toContain("coffee_shop");
     expect(body.tools).toBeUndefined();
+    expect(calls.openai).toHaveLength(0);
   });
 
   it("maps a near-miss industry onto the list and anything else to empty", async () => {
-    const answer = (industry: string) =>
-      vi.fn<typeof globalThis.fetch>(async () => json(message(JSON.stringify({ ...COFFEE_SITE_OUTPUT, industry }))));
-    expect((await createBusinessExtractor("k", { fetch: answer("Coffee Shop") })(input)).industry).toBe("coffee_shop");
-    expect((await createBusinessExtractor("k", { fetch: answer("bakery") })(input)).industry).toBe("");
+    const answer = (industry: string) => extractor([json(message(JSON.stringify({ ...COFFEE_SITE_OUTPUT, industry })))]).extract;
+    expect((await answer("Coffee Shop")(input)).industry).toBe("coffee_shop");
+    expect((await answer("bakery")(input)).industry).toBe("");
+  });
+
+  it("fills the form from gpt-4.1-mini when Claude is out of credit, and says which model answered", async () => {
+    const { extract, calls } = extractor([json(ANTHROPIC_CREDIT_ERROR, 400)], [json(openaiResponse(JSON.stringify(COFFEE_SITE_OUTPUT)))]);
+    let answeredBy = "";
+    expect(await extract({ ...input, answeredBy: (m) => (answeredBy = m) })).toEqual(COFFEE_SITE_OUTPUT);
+    expect(answeredBy).toBe("gpt-4.1-mini-2025-04-14");
+    expect(calls.openai[0]).toMatchObject({ model: "gpt-4.1-mini", instructions: AUTOFILL_SYSTEM, text: { format: { type: "json_schema", strict: true } } });
+  });
+
+  it("asks gpt-4.1 for the Sonnet retry", async () => {
+    const { extract, calls } = extractor([json(ANTHROPIC_CREDIT_ERROR, 400)], [json(openaiResponse(JSON.stringify(COFFEE_SITE_OUTPUT)))]);
+    await extract({ ...input, model: "claude-sonnet-5" });
+    expect(calls.openai[0]).toMatchObject({ model: "gpt-4.1" });
   });
 
   it("tells model faults apart from API errors", async () => {
-    const refusal = vi.fn<typeof globalThis.fetch>(async () => json(message("", { stop_reason: "refusal" })));
-    await expect(createBusinessExtractor("k", { fetch: refusal })(input)).rejects.toMatchObject({ modelFault: true });
+    const off = { fallbackEnabled: false };
+    const refusal = extractor([json(message("", { stop_reason: "refusal" }))], [], off).extract;
+    await expect(refusal(input)).rejects.toMatchObject({ modelFault: true });
 
-    const badJson = vi.fn<typeof globalThis.fetch>(async () => json(message('{"name":1}')));
-    await expect(createBusinessExtractor("k", { fetch: badJson })(input)).rejects.toMatchObject({ modelFault: true });
+    const badJson = extractor([json(message('{"name":1}'))], [], off).extract;
+    await expect(badJson(input)).rejects.toMatchObject({ modelFault: true });
 
-    const down = vi.fn<typeof globalThis.fetch>(async () => json({ type: "error", error: { type: "api_error" } }, 500));
-    const err = await createBusinessExtractor("k", { fetch: down })(input).catch((e: unknown) => e);
+    const down = extractor([json({ type: "error", error: { type: "api_error" } }, 500)], [], off).extract;
+    const err = await down(input).catch((e: unknown) => e);
     expect(err).toBeInstanceOf(ExtractError);
     expect(err).toMatchObject({ modelFault: false });
+
+    // Both down: still an API error, so the form says auto-fill is unavailable rather than "not found".
+    const bothDown = extractor([json(ANTHROPIC_CREDIT_ERROR, 400)], [json({ error: { message: "server" } }, 500)]).extract;
+    await expect(bothDown(input)).rejects.toMatchObject({ name: "ExtractError", modelFault: false });
   });
 });

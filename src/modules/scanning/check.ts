@@ -119,10 +119,14 @@ async function namesFor(input: CheckInput, answer: CheckAnswer, ctx: CheckContex
         inputTokens: extraction.usage.inputTokens,
         outputTokens: extraction.usage.outputTokens,
         costUsd: extraction.costUsd,
+        provider: extraction.provider,
+        fellBack: extraction.fellBack,
+        primaryError: extraction.primaryError,
       });
     }
     return toStoredExtraction(extraction);
   } catch {
+    // Both Claude and the ChatGPT backup failed; the AI reporter already logged why to provider_errors (D-84).
     return null;
   }
 }

@@ -1,4 +1,5 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
+import { AiUnavailableError, fakeAiClients, openaiResponse, providerFetch } from "@/modules/ai";
 import {
   createNameExtractor,
   orderedNames,
@@ -7,18 +8,15 @@ import {
 import { alsoRecommended, isSameBusiness, matchNames } from "./extract-match";
 import recorded from "./fixtures/extract-names-message.json";
 import { EXTRACT_NAMES_SYSTEM, EXTRACT_NAMES_VERSION } from "./prompts/extract-names.v1";
-import { ProviderError } from "./providers/request";
 
 const ANSWER = "1. **Contra Coffee & Tea**: great pour-overs.\n2. **Portola Coffee Roasters**: see Yelp.";
 
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
 
-function setup(...responses: Response[]) {
-  const fetch = vi.fn<typeof globalThis.fetch>();
-  for (const r of responses) fetch.mockResolvedValueOnce(r);
-  const sleep = vi.fn(async () => {});
-  return { fetch, sleep, extract: createNameExtractor("sk-ant-test", { fetch, sleep }) };
+function setup(anthropic: Response[], openai: Response[] = [], opts = {}) {
+  const fake = providerFetch({ anthropic, openai });
+  return { calls: fake.calls, extract: createNameExtractor(fakeAiClients(fake.fetch, opts)) };
 }
 
 const withText = (text: string, extra: Record<string, unknown> = {}) => ({
@@ -29,12 +27,10 @@ const withText = (text: string, extra: Record<string, unknown> = {}) => ({
 
 describe("createNameExtractor", () => {
   it("asks Claude Haiku for structured output with the versioned prompt", async () => {
-    const { fetch, extract } = setup(json(recorded));
+    const { calls, extract } = setup([json(recorded)]);
     await extract(ANSWER);
 
-    const [url, init] = fetch.mock.calls[0];
-    expect(String(url)).toBe("https://api.anthropic.com/v1/messages");
-    const body = JSON.parse(String(init?.body));
+    const body = calls.anthropic[0] as { output_config: { format: { schema: unknown } }; tools?: unknown };
     expect(body).toMatchObject({
       model: "claude-haiku-4-5",
       system: EXTRACT_NAMES_SYSTEM,
@@ -50,11 +46,12 @@ describe("createNameExtractor", () => {
   });
 
   it("returns names in order of first appearance, without blanks or repeats", async () => {
-    const { extract } = setup(json(recorded));
+    const { extract } = setup([json(recorded)]);
     const result = await extract(ANSWER);
 
     expect(result.promptVersion).toBe(EXTRACT_NAMES_VERSION);
     expect(result.model).toBe("claude-haiku-4-5-20251001");
+    expect(result).toMatchObject({ provider: "anthropic", fellBack: false });
     expect(result.names).toEqual([
       { name: "Contra Coffee & Tea", position: 1 },
       { name: "Portola Coffee Roasters", position: 2 },
@@ -65,29 +62,34 @@ describe("createNameExtractor", () => {
   });
 
   it("returns an empty list when the answer names no business", async () => {
-    const { extract } = setup(json(withText('{"businesses":[]}')));
+    const { extract } = setup([json(withText('{"businesses":[]}'))]);
     expect((await extract("I could not find any coffee shops.")).names).toEqual([]);
   });
 
-  it("retries a 529 overload and then succeeds", async () => {
+  it("lists the names with gpt-4.1-mini when Claude is overloaded, at its price", async () => {
     const overloaded = json({ type: "error", error: { type: "overloaded_error", message: "overloaded" } }, 529);
-    const { fetch, sleep, extract } = setup(overloaded, json(recorded));
-    expect((await extract(ANSWER)).names).toHaveLength(3);
-    expect(fetch).toHaveBeenCalledTimes(2);
-    expect(sleep).toHaveBeenCalledOnce();
+    const names = JSON.stringify({ businesses: [{ name: "Contra Coffee & Tea" }, { name: "Kaffee Meister" }] });
+    const { calls, extract } = setup([overloaded], [json(openaiResponse(names))]);
+    const result = await extract(ANSWER);
+    expect(result).toMatchObject({ provider: "openai", model: "gpt-4.1-mini-2025-04-14", fellBack: true });
+    expect(result.primaryError).toMatch(/server 529/);
+    expect(result.names.map((n) => n.name)).toEqual(["Contra Coffee & Tea", "Kaffee Meister"]);
+    // 900 input at $0.40/M plus 150 output at $1.60/M.
+    expect(result.costUsd).toBe(0.0006);
+    expect(calls.openai[0]).toMatchObject({ model: "gpt-4.1-mini", input: `<answer>\n${ANSWER}\n</answer>` });
   });
 
   it.each([
-    ["a refusal", withText("", { stop_reason: "refusal" }), /declined/],
-    ["a cut-off list", withText('{"businesses":[{"name":"Con', { stop_reason: "max_tokens" }), /output tokens/],
-    ["JSON outside the schema", withText('{"names":["Contra"]}'), /does not match/],
-  ])("fails without retrying on %s", async (_label, body, message) => {
-    const { fetch, extract } = setup(json(body));
+    ["a refusal", withText("", { stop_reason: "refusal" }), 1],
+    ["a cut-off list", withText('{"businesses":[{"name":"Con', { stop_reason: "max_tokens" }), 2],
+    ["JSON outside the schema", withText('{"names":["Contra"]}'), 2],
+  ])("fails as a model fault on %s when the backup is off", async (_label, body, tries) => {
+    const { calls, extract } = setup([json(body)], [], { fallbackEnabled: false });
     const err = await extract(ANSWER).catch((e: unknown) => e);
-    expect(err).toBeInstanceOf(ProviderError);
-    expect((err as ProviderError).kind).toBe("bad_response");
-    expect((err as ProviderError).message).toMatch(message);
-    expect(fetch).toHaveBeenCalledOnce();
+    expect(err).toBeInstanceOf(AiUnavailableError);
+    expect((err as AiUnavailableError).modelFault).toBe(true);
+    // A refusal is final; a cut-off or malformed answer gets one more try.
+    expect(calls.anthropic).toHaveLength(tries);
   });
 });
 
