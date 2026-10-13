@@ -40,8 +40,11 @@ export function creditsWaitNext(waiting: boolean | null, elapsedMs: number): "st
   return elapsedMs >= CREDITS_WAIT_MS ? "late" : "wait";
 }
 
-/** What the screen is showing: a phase, or a scan no worker has picked up yet. */
-export type FirstScanView = FirstScanPhase | "stalled";
+/**
+ * What the screen is showing: a phase, a scan no worker has picked up yet, or "not-run": it stopped before any AI
+ * answered (out of credits, a start refused), so "didn't finish" would wrongly suggest part of it ran.
+ */
+export type FirstScanView = FirstScanPhase | "stalled" | "not-run";
 
 /** The heading and the sentence under it for each state of the screen. */
 export function firstScanCopy(
@@ -58,6 +61,8 @@ export function firstScanCopy(
       return { heading: "Your first scan needs more credits than you have", intro: `We're ready to check ${business} with ${names}.` };
     case "failed":
       return { heading: "Your first scan didn't finish", intro: `We couldn't finish checking ${business}.` };
+    case "not-run":
+      return { heading: "Your first scan didn't run", intro: `We haven't checked ${business} yet.` };
     case "stalled":
       return { heading: "Your first scan is taking longer than usual", intro: `${business} is in line to be checked by ${names}.` };
     case "done":

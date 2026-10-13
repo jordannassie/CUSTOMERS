@@ -114,6 +114,21 @@ describe("pickBanners", () => {
     expect(kinds(usage({}), active)).toEqual([]);
   });
 
+  it("warns at 80% of the period's credits, before they run out (MVP_SPEC 4.2)", () => {
+    const at80 = usage({ balance: 200, topupRemaining: 0, periodCredits: 1_000, periodUsed: 800 });
+    expect(pickBanners(at80, active, now)).toContainEqual({
+      kind: "low_credits",
+      tone: "warning",
+      message: "Only 200 credits left this period. Scans pause when they run out.",
+      action: { label: "Buy credits", href: BUY_CREDITS_HREF },
+    });
+    expect(kinds(usage({ balance: 210, topupRemaining: 0, periodCredits: 1_000, periodUsed: 790 }), active)).not.toContain("low_credits");
+    // Plenty of top-up credits left: no warning, though the plan's credits are 90% used.
+    expect(kinds(usage({ balance: 600, topupRemaining: 500, periodCredits: 1_000, periodUsed: 900 }), active)).not.toContain("low_credits");
+    // At 0 the out of credits banner says it instead.
+    expect(kinds(usage({ balance: 0, topupRemaining: 0, periodCredits: 1_000, periodUsed: 1_000 }), active)).toEqual(["out_of_credits"]);
+  });
+
   const trialUsage = usage({ balance: 564, topupRemaining: 500, periodCredits: 100, periodUsed: 36 });
 
   it("shows days and trial credits left and the charge date during the trial", () => {
@@ -125,7 +140,7 @@ describe("pickBanners", () => {
         action: null,
       },
     ]);
-    const lastDay = pickBanners(usage({ balance: 1, periodCredits: 100 }), { ...trial, trialEndsAt: inDays(0) }, now)[0];
+    const lastDay = pickBanners(usage({ balance: 1, periodCredits: 100 }), { ...trial, trialEndsAt: inDays(0) }, now).find((b) => b.kind === "trial")!;
     expect(lastDay.message).toBe("Your free trial ends today, with 1 trial credit left. Your card will be charged on September 27.");
   });
 

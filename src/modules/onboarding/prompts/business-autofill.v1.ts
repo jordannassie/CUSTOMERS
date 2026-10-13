@@ -2,6 +2,7 @@
 // this file; changing it means rerunning that eval (MVP_SPEC 25).
 import { z } from "zod";
 import { INDUSTRIES } from "../industries";
+import { contactLinesIn } from "../page-contact";
 
 export const AUTOFILL_PROMPT_VERSION = "business-autofill.v1";
 export const AUTOFILL_MODEL = "claude-haiku-4-5";
@@ -27,11 +28,18 @@ Rules:
 - address: the street address exactly as written.
 - confidence: "high" when the pages clearly describe one business and you filled the name and industry from them; otherwise "low" (for example a blank, blocked, parked or directory page).`;
 
-export type SitePage = { path: string; markdown: string };
+/** footer: the page footer's text, given once for the site since every page repeats it (BUG-138). */
+export type SitePage = { path: string; markdown: string; footer?: string };
 
 export function autofillUserMessage(domain: string, pages: SitePage[]): string {
   const body = pages
-    .map((p) => `<page path="${p.path}">\n${p.markdown.slice(0, MAX_PAGE_CHARS)}\n</page>`)
+    .map((p) => {
+      // A long page is cut, but its phone and address lines past the cut are kept (BUG-138).
+      const later = contactLinesIn(p.markdown.slice(MAX_PAGE_CHARS));
+      const rest = later.length ? `\n<later-on-page>\n${later.join("\n")}\n</later-on-page>` : "";
+      const footer = p.footer ? `\n<footer>\n${p.footer}\n</footer>` : "";
+      return `<page path="${p.path}">\n${p.markdown.slice(0, MAX_PAGE_CHARS)}${rest}${footer}\n</page>`;
+    })
     .join("\n\n");
   return `Website: ${domain}\n\n${body}`;
 }

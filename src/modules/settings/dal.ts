@@ -14,6 +14,8 @@ export type SettingsBusiness = {
   name: string;
   industry: string;
   services: string[];
+  /** Other names AI answers may use for the business, matched like its name (MVP_SPEC 5.5). */
+  aliases: string[];
   city: string;
   region: string;
   /** ISO code, or "" when not set (BUG-086). */
@@ -46,7 +48,7 @@ export async function getSettings(options: GuardOptions = {}): Promise<SettingsV
     supabase.from("agencies").select("name, logo_url").eq("id", agency.id).single(),
     supabase
       .from("businesses")
-      .select("id, name, industry, services, primary_city, primary_region, primary_country, primary_area, phone, domain, models, scan_frequency")
+      .select("id, name, industry, services, aliases, primary_city, primary_region, primary_country, primary_area, phone, domain, models, scan_frequency")
       .eq("agency_id", agency.id)
       .order("created_at", { ascending: false }),
     supabase.from("profiles").select("active_business_id").eq("id", user.id).maybeSingle(),
@@ -79,6 +81,7 @@ export async function getSettings(options: GuardOptions = {}): Promise<SettingsV
       name: row.name,
       industry: row.industry ?? "",
       services: row.services,
+      aliases: row.aliases ?? [],
       city: row.primary_city ?? "",
       region: row.primary_region ?? "",
       country: countryCode(row.primary_country),
@@ -97,6 +100,7 @@ export type ProfileUpdate = {
   name: string;
   industry: string | null;
   services: string[];
+  aliases?: string[];
   primary_city: string | null;
   primary_region: string | null;
   primary_country?: string | null;
@@ -104,6 +108,19 @@ export type ProfileUpdate = {
   phone: string | null;
   domain: string | null;
 };
+
+/** The business's saved industry, or undefined when it is not in the user's agency. */
+export async function businessIndustry(businessId: string): Promise<string | null | undefined> {
+  const { agency } = await requireAgency();
+  const { data, error } = await createServiceClient()
+    .from("businesses")
+    .select("industry")
+    .eq("id", businessId)
+    .eq("agency_id", agency.id)
+    .maybeSingle();
+  if (error) throw new Error(`Could not load the business: ${error.message}`);
+  return data ? data.industry : undefined;
+}
 
 /** False when the business is not in the user's agency. */
 export async function updateBusinessProfile(businessId: string, update: ProfileUpdate): Promise<boolean> {

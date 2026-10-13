@@ -1,13 +1,18 @@
-// Question picking, prompt v3 (MVP_SPEC 5.3, D-62). The eval in evals/question-picking imports this
+// Question picking, prompt v5 (MVP_SPEC 5.3, D-62). The eval in evals/question-picking imports this
 // file; changing it means rerunning that eval (MVP_SPEC 25).
 // v3: with no library, Claude writes candidates from the industry alone, like a library would hold, never from
 // this business's own services or description; the code then picks 12 by service fit. Questions written from a
 // shop's own listing ("Which coffee shop sells branded apparel?") were ones only that shop could win, so they
 // raised its score by themselves (BUG-130). No questions about opening hours or the time they are asked.
+// v4: picking never takes a template about a cuisine, product or service the business does not list (a fried
+// chicken restaurant got sushi, steak and wine questions); the code also filters picks by the same rule.
+// v5: written questions read like different people typing: about a third in the first person with a little context,
+// and varied openings (2026-10-13 review: 45 of 322 began "Where can", only 27% used "I" or "my"). The code also
+// spreads the twelve picked across openings (question-style.ts).
 import { z } from "zod";
 import { INTENTS } from "@/modules/question-library";
 
-export const PICK_PROMPT_VERSION = "pick-questions.v3";
+export const PICK_PROMPT_VERSION = "pick-questions.v5";
 export const PICK_MODEL = "claude-haiku-4-5";
 export const PICK_MAX_TOKENS = 1_500;
 export const QUESTION_COUNT = 12;
@@ -32,6 +37,7 @@ export const PICK_SYSTEM = `You choose the questions we ask ChatGPT, Claude and 
 Pick exactly ${QUESTION_COUNT} templates:
 - Prefer templates about the main services this business actually offers.
 - Leave out templates about services the business does not offer.
+- Never pick a template about a cuisine, product or service this business does not list.
 - Leave out templates that depend on when they are asked, such as "open now" or "today".
 - Keep a mix of intents (best, urgent, price, reviews, comparison): at least three different intents, and at most ${MAX_PER_INTENT} templates with the same intent.
 - Include one or two general "best" questions so the list is not only about niche services.
@@ -54,6 +60,8 @@ export const WRITE_SYSTEM = `You write the questions real local customers type i
 
 Write exactly ${WRITE_COUNT} questions:
 - Plain, natural grammar, the way a person really asks. One question each, ending with "?".
+- Write them the way different people type. About a third in the first person, with a little context about their situation ("I just moved to ${CITY} and need...", "My car is making a grinding noise, which..."), the rest short and direct. The context must fit most customers of this kind of business, never a time ("today", "tonight").
+- Vary how they start: no more than three may begin with the same two words (not a list of "Where can I find...").
 - Always include the placeholder ${CITY} exactly once, where the city name goes. No other placeholders. Never write "near me".
 - Never name a business, brand, chain, product brand or person.
 - Ask for a recommendation of a local business, not general advice.

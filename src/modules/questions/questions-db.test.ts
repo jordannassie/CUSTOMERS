@@ -107,8 +107,13 @@ describe("question actions", () => {
     expect(await editQuestion({ businessId: owner.businessId, questionId: q1, text: "Question 2 in Orange?" })).toMatchObject({ status: 400 });
     expect(await editQuestion({ businessId: owner.businessId, questionId: q1, text: "Best latte in Orange" })).toMatchObject({ ok: true });
     expect(await removeQuestion({ businessId: owner.businessId, questionId: q2 })).toMatchObject({ ok: true });
-    const { data } = await service.from("tracked_prompts").select("id, prompt, source").eq("business_id", owner.businessId);
+    // Removed, not deleted: it leaves every list but keeps its answers for past scores (step 9e).
+    const { data } = await service.from("tracked_prompts").select("id, prompt, source").eq("business_id", owner.businessId).is("removed_at", null);
     expect(data).toEqual([{ id: q1, prompt: "Best latte in Orange?", source: "custom" }]);
+    const { data: removed } = await service.from("tracked_prompts").select("active, inactive_since, removed_at").eq("id", q2).single();
+    expect(removed).toMatchObject({ active: false });
+    expect(removed?.removed_at).not.toBeNull();
+    expect(removed?.inactive_since).not.toBeNull();
   });
 });
 

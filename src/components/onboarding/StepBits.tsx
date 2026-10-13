@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { FieldMessage } from "@/components/ui/field-errors";
+import { Label } from "@/components/ui/label";
 
 export function StepError({ message }: { message: string | null }) {
   if (!message) return null;
@@ -53,5 +55,29 @@ export function FieldHint({ id, children }: { id?: string; children: React.React
     <p id={id} className="text-[13px] text-muted-foreground">
       {children}
     </p>
+  );
+}
+
+/** A labelled form field with its error and hint, as the details step lays them out. */
+export function Field({ id, label, optional, hint, error, errorId, className, children }: {
+  id: string;
+  label: string;
+  optional?: boolean;
+  hint?: string;
+  error?: string;
+  errorId?: string;
+  className?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className={`flex flex-col gap-2 ${className ?? ""}`}>
+      <Label htmlFor={id}>
+        {label}
+        {optional ? <span className="font-normal text-muted-foreground">(optional)</span> : null}
+      </Label>
+      {children}
+      {errorId ? <FieldMessage id={errorId} message={error} /> : null}
+      {hint ? <FieldHint id={`${id}-hint`}>{hint}</FieldHint> : null}
+    </div>
   );
 }

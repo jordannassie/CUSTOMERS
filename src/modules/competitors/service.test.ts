@@ -32,6 +32,7 @@ function report(overall: { score: number; margin: number } | null, competitors: 
     competitors,
     questions: [],
     ownQuestions: null,
+    ownChain: null,
   };
 }
 

@@ -160,7 +160,7 @@ async function checkContext(target: ScanTargetRow, runId: string, overrides: Par
   let extractNames = overrides.extractNames !== undefined ? overrides.extractNames : liveNameExtractor();
   if (isTest) {
     // Test agencies never reach a live model, whatever was passed in (D-61).
-    const recorded = recordedAnswers(await loadRecordedAnswers(overrides.recordedDir ?? RECORDED_ANSWERS_DIR));
+    const recorded = recordedAnswers(await loadRecordedAnswers(overrides.recordedDir ?? RECORDED_ANSWERS_DIR), business.industry);
     checkRunner = recorded.runCheck;
     extractNames = recorded.extractNames;
   }

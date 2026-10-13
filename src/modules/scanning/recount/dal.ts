@@ -15,14 +15,14 @@ export type RecountResult = { checked: number; changed: number };
 export async function recountSavedAnswers(businessId: string, now = new Date()): Promise<RecountResult> {
   const db = createServiceClient();
   const [business, competitors] = await Promise.all([
-    db.from("businesses").select("name, aliases, domain, primary_city, phone, has_website").eq("id", businessId).single(),
+    db.from("businesses").select("name, aliases, domain, primary_city, primary_area, phone, has_website").eq("id", businessId).single(),
     db.from("business_competitors").select("id, name, domain, phone, city").eq("business_id", businessId),
   ]);
   if (business.error) throw new Error(`Recount: could not load the business: ${business.error.message}`);
   if (competitors.error) throw new Error(`Recount: could not load competitors: ${competitors.error.message}`);
   const b = business.data;
   const targets = mentionTargets(
-    { name: b.name, aliases: b.aliases, domain: b.domain, city: b.primary_city, phone: b.phone, hasWebsite: b.has_website },
+    { name: b.name, aliases: b.aliases, domain: b.domain, city: b.primary_city, phone: b.phone, hasWebsite: b.has_website, area: b.primary_area },
     competitors.data,
   );
 

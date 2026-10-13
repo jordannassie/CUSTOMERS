@@ -15,6 +15,8 @@ export type YourWebsite = {
 
 const pages = z.object({ pages: z.array(z.object({ path: z.string(), status: z.string() })) });
 const facts = z.object({ phone: z.string(), address: z.string(), services: z.array(z.string()) });
+// Saved since BUG-138: what the pages show, apart from facts a chain's branch rule cleared. Older rows lack it.
+const contact = z.object({ hasPhone: z.boolean(), hasAddress: z.boolean() });
 
 /** Null when setup saved nothing about the site. */
 export function yourWebsite(saved: unknown): YourWebsite | null {
@@ -23,11 +25,12 @@ export function yourWebsite(saved: unknown): YourWebsite | null {
   const read = facts.safeParse((saved as { facts?: unknown }).facts);
   const list = site.data.pages;
   if (read.success) {
+    const shown = contact.safeParse((saved as { contact?: unknown }).contact);
     return {
       readStatus: "read",
       pagesRead: list.filter((p) => p.status === "ok").map((p) => p.path),
-      hasPhone: read.data.phone.trim() !== "",
-      hasAddress: read.data.address.trim() !== "",
+      hasPhone: shown.success ? shown.data.hasPhone : read.data.phone.trim() !== "",
+      hasAddress: shown.success ? shown.data.hasAddress : read.data.address.trim() !== "",
       servicesListed: read.data.services,
     };
   }

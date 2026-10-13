@@ -39,6 +39,10 @@ export type ScanTargetRow = {
     city: string | null;
     region: string | null;
     country: string | null;
+    /** The neighborhood or area; names a branch business in answers (step 7). */
+    area: string | null;
+    /** Test mode matches recorded answers to it (BUG-072). */
+    industry: string | null;
     status: string;
     /** Set once the business is deleted; such a business is never scanned (A6). */
     deletedAt: string | null;
@@ -56,7 +60,7 @@ export async function loadScanTarget(businessId: string, agencyId: string): Prom
     db
       .from("businesses")
       .select(
-        "id, owner_user_id, name, domain, aliases, phone, has_website, primary_city, primary_region, primary_country, status, deleted_at, scan_frequency, models",
+        "id, owner_user_id, name, domain, aliases, phone, has_website, primary_city, primary_region, primary_country, primary_area, industry, status, deleted_at, scan_frequency, models",
       )
       .eq("id", businessId)
       .single(),
@@ -77,6 +81,8 @@ export async function loadScanTarget(businessId: string, agencyId: string): Prom
       city: b.primary_city,
       region: b.primary_region,
       country: b.primary_country,
+      area: b.primary_area,
+      industry: b.industry,
       status: b.status,
       deletedAt: b.deleted_at,
       scanFrequency: b.scan_frequency,

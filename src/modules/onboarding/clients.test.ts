@@ -4,7 +4,7 @@ import { ANTHROPIC_CREDIT_ERROR, anthropicMessage, fakeAiClients, openaiResponse
 import { createBusinessExtractor, ExtractError } from "./extract";
 import { createFirecrawlScraper, FIRECRAWL_SCRAPE_URL, SITE_PATHS, toPage } from "./firecrawl";
 import { COFFEE_SITE_OUTPUT } from "./fixtures";
-import { createPlacesSearch, PLACES_FIELD_MASK, PLACES_TEXT_SEARCH_URL, PlacesError, toCandidates } from "./places";
+import { createPlaceLookup, createPlacesSearch, PLACES_FIELD_MASK, PLACES_TEXT_SEARCH_URL, PlacesError, toCandidates } from "./places";
 import { AUTOFILL_SYSTEM } from "./prompts/business-autofill.v1";
 
 const json = (body: unknown, status = 200) =>
@@ -16,8 +16,8 @@ const scrape = (markdown: string, metadata: Record<string, unknown> = {}) => ({
 });
 
 describe("Firecrawl scraper", () => {
-  it("asks for the four pages as main-content markdown", async () => {
-    const fetch = vi.fn<typeof globalThis.fetch>(async () => json(scrape("# Hello")));
+  it("asks for the four pages as main-content markdown, with the raw HTML for the footer", async () => {
+    const fetch = vi.fn<typeof globalThis.fetch>(async () => json(scrape("# Sunrise Coffee\n\nRoasted in house every morning.")));
     const pages = await createFirecrawlScraper("fc-test", { fetch })("sunrise-coffee.example");
 
     expect(pages.map((p) => [p.path, p.status])).toEqual(SITE_PATHS.map((p) => [p, "ok"]));
@@ -26,7 +26,7 @@ describe("Firecrawl scraper", () => {
     expect(new Headers(init?.headers).get("authorization")).toBe("Bearer fc-test");
     expect(JSON.parse(String(init?.body))).toMatchObject({
       url: "https://sunrise-coffee.example/",
-      formats: ["markdown"],
+      formats: ["markdown", "rawHtml"],
       onlyMainContent: true,
     });
   });
@@ -63,6 +63,7 @@ describe("Places Text Search", () => {
       { longText: "United States", shortText: "US", types: ["country", "political"] },
     ],
     primaryType: "coffee_shop",
+    types: ["coffee_shop", "cafe", "food", "establishment"],
     nationalPhoneNumber: "(217) 555-0142",
     websiteUri: "https://sunrise-coffee.example/",
   };
@@ -77,6 +78,7 @@ describe("Places Text Search", () => {
     expect(headers.get("x-goog-api-key")).toBe("gp-test");
     expect(headers.get("x-goog-fieldmask")).toBe(PLACES_FIELD_MASK);
     expect(PLACES_FIELD_MASK).not.toMatch(/rating|reviews|\*/);
+    expect(PLACES_FIELD_MASK).toContain("places.types");
     expect(JSON.parse(String(init?.body))).toEqual({ textQuery: "sunrise-coffee.example", pageSize: 5 });
     expect(found).toEqual({
       placeId: "ChIJ-fixture",
@@ -84,6 +86,7 @@ describe("Places Text Search", () => {
       address: "120 Main St, Springfield, IL 62701, USA",
       phone: "(217) 555-0142",
       primaryType: "coffee_shop",
+      types: ["coffee_shop", "cafe", "food", "establishment"],
       websiteUri: "https://sunrise-coffee.example/",
       city: "Springfield",
       state: "IL",
@@ -175,5 +178,23 @@ describe("Claude extractor", () => {
     // Both down: still an API error, so the form says auto-fill is unavailable rather than "not found".
     const bothDown = extractor([json(ANTHROPIC_CREDIT_ERROR, 400)], [json({ error: { message: "server" } }, 500)]).extract;
     await expect(bothDown(input)).rejects.toMatchObject({ name: "ExtractError", modelFault: false });
+  });
+});
+
+describe("Places lookup by place_id (BUG-139)", () => {
+  it("asks for one listing with the search's fields and reads it like a search result", async () => {
+    const fetch = vi.fn<typeof globalThis.fetch>(async () =>
+      json({ id: "ChIJ-1", displayName: { text: "First Light Book Shop" }, primaryType: "book_store", types: ["book_store", "cafe"] }),
+    );
+    const place = await createPlaceLookup("places-key", { fetch })("ChIJ-1");
+    expect(place).toMatchObject({ placeId: "ChIJ-1", name: "First Light Book Shop", primaryType: "book_store" });
+    const [url, init] = fetch.mock.calls[0];
+    expect(url).toBe("https://places.googleapis.com/v1/places/ChIJ-1");
+    expect(new Headers(init?.headers).get("x-goog-fieldmask")).toBe(PLACES_FIELD_MASK.replaceAll("places.", ""));
+  });
+
+  it("gives null for a listing Google removed and throws when Places fails", async () => {
+    expect(await createPlaceLookup("k", { fetch: async () => json({}, 404) })("gone")).toBeNull();
+    await expect(createPlaceLookup("k", { fetch: async () => json({}, 500) })("x")).rejects.toThrow(PlacesError);
   });
 });

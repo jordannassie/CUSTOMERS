@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { requireAgency } from "@/modules/auth";
 import { maxCompetitors } from "@/modules/entitlements";
-import { limitMessage } from "@/modules/onboarding/server";
+import { limitMessage, placeIdForName } from "@/modules/onboarding/server";
 import { loadAlsoRecommended, loadScoreReport, recountAfterCompetitorChange } from "@/modules/scanning";
 import { fixtureSignals } from "./place-fixtures";
 import { createPlaceSignals, PlacesUnavailable, type FetchSignals } from "./places";
@@ -23,7 +23,21 @@ function liveSignals(): FetchSignals {
 }
 
 // React's cache lives for one server request only, which is all Google allows us to keep (D-73).
-const signalsForRequest = cache((placeId: string) => liveSignals()(placeId));
+const signalsForRequest = cache(async (placeId: string) => {
+  try {
+    return await liveSignals()(placeId);
+  } catch (err) {
+    // Feeds the provider error spike alert (MVP_SPEC 22); a missing key is a setup gap, not a Google outage.
+    if (env.GOOGLE_PLACES_API_KEY) await recordPlacesError(err);
+    throw err;
+  }
+});
+
+async function recordPlacesError(err: unknown): Promise<void> {
+  const message = `Live lookup failed: ${err instanceof Error ? err.message : String(err)}`.slice(0, 500);
+  const { error } = await createServiceClient().from("provider_errors").insert({ provider: "google_places", message });
+  if (error) console.error(`Could not record the Places error: ${error.message}`);
+}
 
 /** The first saved answer checked for a competitor: since it was added, or earlier once saved answers were checked again. */
 function countedFrom(r: { created_at: string; checked_from: string | null }): Date {
@@ -88,7 +102,11 @@ export async function loadCompetitorsPage(
 
 export type TrackResult = { ok: true } | { ok: false; status: 403 | 404; error: string };
 
-/** "Track" on an AI-named business: the name only, as if typed by the user (no place id, D-73). */
+/**
+ * "Track" on an AI-named business: the name as AI wrote it, plus its Google listing's place id when a lookup near the
+ * business finds it clearly, so its rating and reviews show instead of "Not matched to a Google listing" (step 9c).
+ * Only the place id is stored (D-73).
+ */
 export async function trackCompetitorByName(userId: string, businessId: string, name: string): Promise<TrackResult> {
   // Reads go through the user's session (RLS); the one write uses the service role after the ownership check (SEC-10).
   const supabase = await createClient();
@@ -109,9 +127,10 @@ export async function trackCompetitorByName(userId: string, businessId: string, 
     return { ok: false, status: 403, error: `${limitMessage(limit)} Remove one to track another.` };
   }
 
+  const placesId = await placeIdForName(userId, businessId, name).catch(() => null);
   const { error: insertError } = await createServiceClient()
     .from("business_competitors")
-    .insert({ business_id: businessId, name, places_id: null, source: "manual", confirmed: true });
+    .insert({ business_id: businessId, name, places_id: placesId, source: "manual", confirmed: true });
   // 23505: the same name was added a moment ago, in another tab or by a double click.
   if (insertError && insertError.code !== "23505") throw new Error(`Could not add the competitor: ${insertError.message}`);
   // Saved answers are checked for it at once, so it is compared over the whole window (BUG-122).

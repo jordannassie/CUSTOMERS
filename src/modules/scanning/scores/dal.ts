@@ -4,7 +4,8 @@ import { cache } from "react";
 import { requestNow } from "@/lib/request-now";
 import { requireAgency } from "@/modules/auth";
 import { createServiceClient } from "@/lib/supabase/service";
-import { loadChains } from "../chains/dal";
+import type { OwnChain } from "../branch";
+import { loadChains, loadOwnChain } from "../chains/dal";
 import type { ProviderId } from "../providers/types";
 import {
   SCORE_WINDOW_DAYS,
@@ -68,6 +69,8 @@ export type ScoreReport = VisibilityScore & {
   }[];
   /** The user's own active questions over the window, kept out of the score; null when they have no answers. */
   ownQuestions: OwnQuestionsResult | null;
+  /** A business that is one branch: its chain's mentions, shown apart from the score (step 7). */
+  ownChain: OwnChain | null;
 };
 
 /** The signed-in agency's score for one of its businesses; null when it is not theirs. */
@@ -81,9 +84,10 @@ export async function getScoreReport(businessId: string, options: { next?: strin
 const scoreInputs = cache((agencyId: string, businessId: string) => {
   const db = createServiceClient();
   return Promise.all([
-    db.from("businesses").select("id, models, primary_city").eq("id", businessId).eq("agency_id", agencyId).maybeSingle(),
+    db.from("businesses").select("id, name, domain, models, primary_city").eq("id", businessId).eq("agency_id", agencyId).maybeSingle(),
     db.from("business_competitors").select("name, city").eq("business_id", businessId).order("name"),
-    db.from("tracked_prompts").select("id, prompt, source, active").eq("business_id", businessId).eq("active", true).order("created_at"),
+    // Stopped ones too, for past scores (step 9e); the screens list the active ones only.
+    db.from("tracked_prompts").select("id, prompt, source, active, inactive_since").eq("business_id", businessId).order("created_at"),
   ]);
 });
 const windowChecks = cache((businessId: string, sinceMs: number) => readChecks(businessId, new Date(sinceMs)));
@@ -120,17 +124,18 @@ export async function loadScoreReport(
     historyDays > TREND_DAYS ? olderChecks(businessId, start - historyDays * DAY_MS, weekBefore) : [],
   ]);
   // The same rule for the window and the history before it, so a change compares like with like.
-  const split = splitByQuestion(windowed, questions.data!);
+  const tracked = questions.data!.map((q) => ({ ...q, inactiveSince: q.inactive_since }));
+  const split = splitByQuestion(windowed, tracked);
   const checks = split.scored;
-  const all = splitByQuestion([...earlier, ...lastWeek, ...windowed], questions.data!).scored;
+  const all = splitByQuestion([...earlier, ...lastWeek, ...windowed], tracked, { history: true }).scored;
   const opts = { now, models };
   const rivals = competitorScores(checks, competitors.data!.map((c) => c.name), opts);
   const city = (name: string) => competitors.data!.find((c) => c.name === name)?.city ?? business.data!.primary_city;
-  const chains = await loadChains(
-    businessId,
-    rivals.map((c) => ({ name: c.name, city: city(c.name), score: c.estimate.score })),
-    windowStart,
-  );
+  const b = business.data;
+  const [chains, ownChain] = await Promise.all([
+    loadChains(businessId, rivals.map((c) => ({ name: c.name, city: city(c.name), score: c.estimate.score })), windowStart),
+    loadOwnChain(businessId, { name: b.name, city: b.primary_city, domain: b.domain }, new Set(checks.map((c) => c.questionId)), windowStart),
+  ]);
   const appearances = new Map(
     questionAppearances(windowed, {
       ...opts,
@@ -155,13 +160,14 @@ export async function loadScoreReport(
       change: competitorWeeklyChange(all, c.name, opts),
       chain: chains[i],
     })),
-    questions: questions.data!.map((q) => ({
+    questions: questions.data!.filter((q) => q.active).map((q) => ({
       id: q.id,
       question: q.prompt,
       appeared: appearances.get(q.id)?.appeared ?? 0,
       checks: appearances.get(q.id)?.checks ?? 0,
     })),
     ownQuestions: ownQuestionsResult(split.own, opts),
+    ownChain,
   };
 }
 

@@ -23,6 +23,8 @@ vi.mock("@/modules/questions/dal", () => ({
   deleteQuestion: writes,
 }));
 vi.mock("@/modules/settings/dal", () => ({
+  // The saved industry, read before a profile save to see whether the questions need rebuilding; unchanged here.
+  businessIndustry: vi.fn(async () => ""),
   updateBusinessProfile: writes,
   updateScanSettings: writes,
   updateAgencyName: writes,

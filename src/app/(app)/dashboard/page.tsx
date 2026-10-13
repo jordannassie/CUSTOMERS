@@ -81,7 +81,7 @@ export default async function OverviewPage() {
           <CardContent className="flex flex-col gap-8">
             {score ? (
               <>
-                <ScoreSummary score={score} ownQuestions={overview.ownQuestions} />
+                <ScoreSummary score={score} ownQuestions={overview.ownQuestions} ownChain={overview.ownChain} />
                 <ModelScoresRow models={overview.models} className="sm:hidden" />
                 <TrendChart trend={overview.trend} />
               </>

@@ -11,6 +11,7 @@ import {
   isGenericName,
   normaliseText,
 } from "./mention-text";
+import { findExactBrand, shortBrand } from "./short-brand";
 
 export type MentionTarget = {
   name: string;
@@ -20,6 +21,11 @@ export type MentionTarget = {
   phone?: string | null;
   /** D-08: businesses without a website always need the city or phone next to the name. */
   hasWebsite?: boolean;
+  /**
+   * Set when the tracked business is itself one branch of a chain ("Bennu Coffee on Congress"): the chain's name or
+   * website alone is the chain, so it counts only with one of these places (the branch's, its area) nearby (step 7).
+   */
+  branch?: { places: string[] } | null;
 };
 
 export type MentionResult = {
@@ -69,7 +75,9 @@ function findMatches(answer: string, target: MentionTarget): Match[] {
   const noWebsite = target.hasWebsite === false;
   const matches: Match[] = [];
 
-  if (domain) for (const at of findDomain(answer, domain)) matches.push({ at, by: "domain" });
+  // A branch's chain-only mentions (the brand, its website) need the branch's place nearby.
+  const chainOnly = (at: number) => !!target.branch && !placeNearby(answer, at, target.branch.places);
+  if (domain) for (const at of findDomain(answer, domain)) if (!chainOnly(at)) matches.push({ at, by: "domain" });
 
   const names = [
     { text: target.name, by: "name" as const, short: false },
@@ -80,24 +88,53 @@ function findMatches(answer: string, target: MentionTarget): Match[] {
   for (const { text, by, short } of names) {
     const core = coreName(text);
     if (!core) continue;
+    // "KFC", "BMW", "H&M" written exactly so are the brand, not a word: no city needed (D-08 aside). Any other way
+    // ("kfc" in lowercase prose) still needs the city, domain or phone nearby, like any short name.
+    const brand = shortBrand(text);
+    if (brand && !noWebsite) for (const at of findExactBrand(answer, brand)) if (!(short && chainOnly(at))) matches.push({ at, by });
     const needsSecondSignal = noWebsite || isGenericName(core);
     // A one-word name must still read as a name: "Sapphire" counts, "sapphire earrings" does not. So must a short
-    // brand form: "First Light" counts, "at first light" does not.
-    const needsProperNoun = needsSecondSignal || short || !core.includes(" ");
+    // brand form: "First Light" counts, "at first light" does not. A short capitals brand already counted as written.
+    const needsProperNoun = !brand && (needsSecondSignal || short || !core.includes(" "));
     for (const at of findName(answer, core)) {
       if (needsProperNoun && !isProperNounUse(answer, at, text)) continue;
       if (needsSecondSignal && !hasNearbySignal(answer, at, target, domain)) continue;
+      if (short && chainOnly(at)) continue;
       matches.push({ at, by });
     }
   }
-  return matches.sort((a, b) => a.at - b.at);
+  // The exact brand and its normalised spelling can find the same place twice.
+  const seen = new Set<number>();
+  return matches.filter((m) => !seen.has(m.at) && seen.add(m.at)).sort((a, b) => a.at - b.at);
 }
 
 // "the best plumbing in town" is prose; "Best Plumbing" is a name. Only applied to generic and one-word names.
 function isProperNounUse(answer: string, at: number, name: string): boolean {
   if (name === name.toLowerCase()) return true;
   const firstLetter = answer.slice(at).match(/[A-Za-z0-9]/)?.[0] ?? "";
-  return firstLetter !== firstLetter.toLowerCase() || /[0-9]/.test(firstLetter);
+  return firstLetter !== firstLetter.toLowerCase() || /[0-9]/.test(firstLetter) || writtenAsName(answer, at);
+}
+
+/**
+ * A brand that styles itself in lowercase ("adidas") is still a name when the answer sets it out as one: in bold,
+ * at the start of a list item or a heading (BUG-141). "adidas shoes" in running prose still is not.
+ */
+function writtenAsName(answer: string, at: number): boolean {
+  const lineStart = answer.lastIndexOf("\n", at - 1) + 1;
+  const before = answer.slice(lineStart, at);
+  if (/^\s*(?:#{1,6}\s+|(?:\d{1,2}[.)]|[-*•])\s+)?(?:\*\*|__)?\s*$/.test(before) && before.trim() !== "") return true;
+  // Inside a **bold** span on the same line.
+  const opens = (before.match(/\*\*|__/g) ?? []).length;
+  return opens % 2 === 1;
+}
+
+// How far around a chain's name to look for the branch's place: "Bennu Coffee ... on South Congress Ave".
+const PLACE_BEFORE = 60;
+const PLACE_AFTER = 200;
+
+function placeNearby(answer: string, at: number, places: string[]): boolean {
+  const nearby = `${answer.slice(Math.max(0, at - PLACE_BEFORE), at + PLACE_AFTER)}\n${listItemText(answer, at)}`;
+  return places.some((p) => findPhrase(nearby, normaliseText(p)).length > 0);
 }
 
 function hasNearbySignal(answer: string, at: number, target: MentionTarget, domain: string | null): boolean {

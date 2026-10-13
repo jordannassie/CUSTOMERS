@@ -24,9 +24,20 @@ it.runIf(enabled)("recount saved answers", { timeout: 600_000 }, async () => {
     if (error) throw new Error(error.message);
     ids = data.map((r) => r.id);
   }
-  const results = [];
-  for (const id of ids) results.push({ business: id, ...(await recountSavedAnswers(id)) });
-  console.table(results);
+  const { data: named } = await createServiceClient().from("businesses").select("id, name").in("id", ids);
+  const nameOf = new Map((named ?? []).map((b) => [b.id, b.name]));
+  const results: { business: string; id: string; checked: number; changed: number }[] = [];
+  for (const id of ids) results.push({ business: nameOf.get(id) ?? id, id, ...(await recountSavedAnswers(id)) });
+  // Written straight to stdout: vitest hides console output from a passing test, so the table never showed.
+  const changed = results.filter((r) => r.changed > 0);
+  const total = (k: "checked" | "changed") => results.reduce((n, r) => n + r[k], 0);
+  process.stdout.write(
+    [
+      `Recount on ${process.env.NEXT_PUBLIC_SUPABASE_URL}: ${results.length} businesses, ${total("checked")} saved answers checked, ${total("changed")} changed.`,
+      ...changed.map((r) => `  ${r.business} (${r.id}): ${r.changed} of ${r.checked} changed`),
+      "",
+    ].join("\n"),
+  );
   expect(results.length).toBeGreaterThanOrEqual(0);
 });
 

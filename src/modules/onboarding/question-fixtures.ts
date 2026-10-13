@@ -42,6 +42,21 @@ export const COFFEE_BUSINESS: QuestionBusiness = {
   region: "IL",
 };
 
+/** A coffee shop that offers everything the fixture library asks about, so more than 12 templates fit it. */
+export const COFFEE_FULL_BUSINESS: QuestionBusiness = {
+  ...COFFEE_BUSINESS,
+  services: [
+    ...COFFEE_BUSINESS.services,
+    "cold brew",
+    "vegan food",
+    "bubble tea",
+    "drive-through",
+    "wifi and laptop workspace",
+    "loyalty program",
+    "coffee roasting",
+  ],
+};
+
 /** What a good pick for COFFEE_BUSINESS looks like: its own services and hours, a mix of intents. */
 export const COFFEE_GOOD_PICK = [2, 6, 3, 1, 4, 5, 11, 12, 9, 7, 13, 14];
 

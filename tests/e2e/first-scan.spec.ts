@@ -143,13 +143,13 @@ test("a failed first scan shows Try again, never an empty dashboard, and the ret
   await finishSetup(page);
 
   await page.waitForURL("**/onboarding/first-scan");
-  await slow(page.getByRole("heading", { level: 1, name: "Your first scan didn't finish" })).toBeVisible();
+  await slow(page.getByRole("heading", { level: 1, name: "Your first scan didn't run" })).toBeVisible();
   await expect(page.getByTestId("first-scan-problem")).toHaveText("No credits were used. Try again in a moment.");
   expect(new URL(page.url()).pathname).toBe("/onboarding/first-scan");
 
   // A reload keeps the retry in view instead of starting another scan by itself.
   await page.reload();
-  await slow(page.getByRole("heading", { level: 1, name: "Your first scan didn't finish" })).toBeVisible();
+  await slow(page.getByRole("heading", { level: 1, name: "Your first scan didn't run" })).toBeVisible();
   const { count } = await db.from("scan_jobs").select("id", { count: "exact", head: true }).eq("business_id", businessId);
   expect(count).toBe(1);
 

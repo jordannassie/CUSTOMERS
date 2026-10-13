@@ -1,7 +1,8 @@
 // Pure auto-fill rules (MVP_SPEC 3.2): which Places result is the business, how the two sources
 // combine, and the note shown above the form.
 import { sameBrandSite } from "./autofill-safety";
-import { industryFromPlacesType, placesTypeLabel } from "./industries";
+import { INDUSTRY_LABELS } from "@/lib/industries";
+import { industriesFromPlacesTypes, industryFromPlacesType, placesTypeLabel } from "./industries";
 import type { PageResult } from "./firecrawl";
 import type { PlaceCandidate } from "./places";
 import type { AutofillOutput } from "./prompts/business-autofill.v1";
@@ -24,7 +25,8 @@ export const NOTES = {
   nothingFound: "We couldn't find your business details automatically. Please fill in the form below.",
   googleOnly:
     "Your website didn't let us read it, so we filled in what we could from Google. Please check the details.",
-  websiteOnly: "We filled this in from your website. Please check the details.",
+  // Shown under "We filled this in from your website", so it says what that line does not (it used to repeat it).
+  websiteOnly: "We didn't find it on Google, so check the address and phone in particular.",
   chain:
     "This website has several locations, so we left out the address. Enter the city and address of yours, and check the description fits it.",
   noneChosen: "We kept the name and city you typed. Fill in the rest below.",
@@ -77,7 +79,7 @@ const plain = (s: string) => s.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, "");
 // A second line of defence against invented values: short facts the site states must appear in
 // its text. Summaries (description, services) and normalised codes (state, country) are exempt.
 export function keepGrounded(site: AutofillOutput, pages: PageResult[]): AutofillOutput {
-  const text = pages.map((p) => `${p.title ?? ""}\n${p.markdown}`).join("\n");
+  const text = pages.map((p) => `${p.title ?? ""}\n${p.markdown}\n${p.footer ?? ""}`).join("\n");
   const textPlain = plain(text);
   const textDigits = digits(text);
   const found = (value: string) => !value || textPlain.includes(plain(value));
@@ -92,16 +94,45 @@ export function keepGrounded(site: AutofillOutput, pages: PageResult[]): Autofil
   };
 }
 
+type ChosenIndustry = Pick<BusinessDetails, "industry" | "industryText">;
+
+/**
+ * Google's type wins: a known one is the industry, any other specific one is "other" with Google's name for it
+ * (BUG-123). One exception: when the website says another of our industries and one of the listing's other types
+ * maps to it, the website wins. A Tim Hortons is primaryType restaurant with types cafe and coffee_shop; its site
+ * says coffee shop, and coffee shop questions fit it. A bookstore whose primary type is book_store stays
+ * "Other: Bookstore" even when it lists a cafe, since only a mapped Google industry can be overruled this way.
+ */
+export function chooseIndustry(site: AutofillOutput | null, place: PlaceCandidate | null): ChosenIndustry {
+  const google = industryFromPlacesType(place?.primaryType);
+  const otherType = placesTypeLabel(place?.primaryType);
+  const website = site?.industry && site.industry !== "other" ? site.industry : null;
+  if (google && website && website !== google && industriesFromPlacesTypes(place?.types ?? []).has(website)) {
+    return { industry: website };
+  }
+  return { industry: google ?? (otherType ? "other" : (site?.industry ?? "")), ...(otherType ? { industryText: otherType } : {}) };
+}
+
+/**
+ * When Google and the website still name different kinds of business, both labels, so the details step can ask the
+ * user to check: "Google says Restaurant, your website looks like Coffee shop." Null when they agree or one is silent.
+ */
+export function industryCheck(site: AutofillOutput | null, place: PlaceCandidate | null): { google: string; website: string } | null {
+  const website = site?.industry && site.industry !== "other" ? site.industry : null;
+  if (!website || !place) return null;
+  const google = industryFromPlacesType(place.primaryType);
+  const googleLabel = google ? INDUSTRY_LABELS[google] : placesTypeLabel(place.primaryType);
+  if (!googleLabel || chooseIndustry(site, place).industry === website) return null;
+  return { google: googleLabel, website: INDUSTRY_LABELS[website] };
+}
+
 /** Places wins for name, address, phone and category; the website wins for description and services. */
 export function mergeDetails(site: AutofillOutput | null, place: PlaceCandidate | null): BusinessDetails {
   // When Places has an address, the location fields come from the same address so they agree.
   const placeLocation = place?.address ? place : null;
-  // Google's type wins: a known one is the industry, any other specific one is "other" with Google's name for it.
-  const otherType = placesTypeLabel(place?.primaryType);
   return {
     name: place?.name || site?.name || "",
-    industry: industryFromPlacesType(place?.primaryType) ?? (otherType ? "other" : (site?.industry ?? "")),
-    ...(otherType ? { industryText: otherType } : {}),
+    ...chooseIndustry(site, place),
     description: site?.description.trim() ?? "",
     services: site?.services ?? [],
     city: (placeLocation ? placeLocation.city : site?.city) || "",
@@ -127,6 +158,8 @@ export function toResult(opts: {
   chain?: boolean;
   /** No AI could read the site (Claude and the backup both failed): say so rather than "not found". */
   aiDown?: boolean;
+  /** Google and the website name different kinds of business; the details step asks the user to check. */
+  industryCheck?: { google: string; website: string } | null;
 }): AutofillResult {
   const { details, fromWebsite, fromGoogle, hadWebsite } = opts;
   let note: string | null = null;
@@ -135,7 +168,12 @@ export function toResult(opts: {
   else if (!fromWebsite && !fromGoogle) note = NOTES.nothingFound;
   else if (hadWebsite && !fromWebsite) note = NOTES.googleOnly;
   else if (hadWebsite && !fromGoogle) note = NOTES.websiteOnly;
-  return { details, filledFrom: { website: fromWebsite, google: fromGoogle }, note };
+  return {
+    details,
+    filledFrom: { website: fromWebsite, google: fromGoogle },
+    note,
+    ...(opts.industryCheck ? { industryCheck: opts.industryCheck } : {}),
+  };
 }
 
 export function hasAnyValue(details: BusinessDetails): boolean {

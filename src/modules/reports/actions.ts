@@ -1,8 +1,8 @@
 "use server";
 
 import { authFailure, requireAgency, type ActionResult } from "@/modules/auth";
-import { createShare, revokeShare, withSharePage, type ShareLink } from "./dal";
-import { renderPdf, siteOrigin } from "./pdf";
+import { createShare, recordPdfError, revokeShare, withSharePage, type ShareLink } from "./dal";
+import { PdfError, renderPdf, siteOrigin } from "./pdf";
 import { createShareLinkInput, exportPdfInput, revokeShareLinkInput } from "./schema";
 import { pdfFileName } from "./service";
 
@@ -61,6 +61,7 @@ export async function exportPdf(input: unknown): Promise<ActionResult<PdfFile>> 
     return { ok: true, data: file };
   } catch (error) {
     console.error("[reports] PDF export failed:", error instanceof Error ? error.message : error);
+    if (error instanceof PdfError) await recordPdfError(error.message);
     return { ok: false, status: 502, error: PDF_FAILED };
   }
 }

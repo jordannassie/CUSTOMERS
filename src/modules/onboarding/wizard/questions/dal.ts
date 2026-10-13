@@ -116,7 +116,12 @@ export async function saveQuestions(userId: string, businessId: string, question
   const add = unique.filter((q) => !kept.has(q.toLowerCase()));
 
   if (remove.length) {
-    const { error } = await createServiceClient().from("tracked_prompts").delete().in("id", remove).eq("business_id", businessId);
+    // Removed, not deleted: a question asked before keeps its answers for past scores (step 9e).
+    const { error } = await createServiceClient()
+      .from("tracked_prompts")
+      .update({ active: false, removed_at: new Date().toISOString() })
+      .in("id", remove)
+      .eq("business_id", businessId);
     if (error) throw new Error(`Could not remove questions: ${error.message}`);
   }
   if (add.length) {

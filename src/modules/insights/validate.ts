@@ -1,7 +1,7 @@
 // Code checks on each reason Claude writes (MVP_SPEC 7.2, 25): only given facts and placeholders,
 // the right shape, and the writing guide. A reason with any issue is dropped before it is stored;
 // the eval grader runs the same checks.
-import { comparisonIssues, DOMAIN, listingIssues, websiteIssues } from "./claims";
+import { comparisonIssues, DOMAIN, listingIssues, websiteIssues, siteClaimIssues } from "./claims";
 import type { ExplainInput } from "./facts";
 import { bracesIn, stripPlaceholders } from "./placeholders";
 import type { ExplainReason } from "./prompts/explain.v2";
@@ -119,6 +119,8 @@ export function reasonIssues(reason: ExplainReason, input: ExplainInput): string
   }
   const claimed = [reason.title, reason.evidence, reason.why_it_matters, ...steps];
   issues.push(...comparisonIssues(claimed, input), ...listingIssues(claimed, input), ...websiteIssues(claimed, input));
+  // Only what the reason states as found; advice such as "add a page for each service" stays allowed.
+  issues.push(...siteClaimIssues([reason.title, reason.evidence, reason.why_it_matters], input));
   issues.push(...writingIssues(all));
   return [...new Set(issues)];
 }

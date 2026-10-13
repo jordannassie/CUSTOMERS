@@ -50,7 +50,7 @@ export async function loadBusinessDetail(id: string, now = new Date()) {
       : Promise.resolve({ data: null, error: null }),
     db.from("business_subscriptions").select("status, plans(name)").eq("business_id", id).maybeSingle(),
     db.from("business_competitors").select("id, name, domain, city").eq("business_id", id).order("created_at"),
-    db.from("tracked_prompts").select("id, prompt, active").eq("business_id", id).order("created_at"),
+    db.from("tracked_prompts").select("id, prompt, active").eq("business_id", id).is("removed_at", null).order("created_at"),
     allRows("scan jobs", (from, to) =>
       db
         .from("scan_jobs")

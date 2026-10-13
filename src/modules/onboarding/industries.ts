@@ -28,6 +28,14 @@ export function industryFromPlacesType(primaryType: string | null | undefined): 
   return null;
 }
 
+/**
+ * Every one of our industries any of the listing's types maps to. A Tim Hortons is primaryType restaurant, but its
+ * types also say cafe and coffee_shop, so it is a restaurant and a coffee shop as far as Google is concerned.
+ */
+export function industriesFromPlacesTypes(types: readonly string[]): Set<Industry> {
+  return new Set(types.map((t) => industryFromPlacesType(t)).filter((i): i is Industry => i !== null));
+}
+
 // Places types too broad to say what a business is.
 const BROAD_TYPES = new Set(["establishment", "point_of_interest", "store", "food", "service", "health", "finance", "premise"]);
 const TYPE_LABELS: Record<string, string> = { book_store: "Bookstore", clothing_store: "Clothing store", shoe_store: "Shoe store" };

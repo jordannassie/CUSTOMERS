@@ -2,6 +2,7 @@ import "server-only";
 // Scan job worker (B-27, MVP_SPEC 6.3, D-42): claims queued jobs, runs them in parallel, and marks each
 // done, queued again with backoff, or failed. The host entry point only checks the secret and calls this.
 import { explainAfterScan } from "@/modules/insights/server";
+import { refreshStaleSiteFacts } from "@/modules/onboarding/server";
 import { ALREADY_FINISHED, runScan, type ScanOutcome } from "@/modules/scanning";
 import { claimScanJobs, finishJob, isWorkerSecret, workerTimeBudgetMs, type ClaimedJob, type JobUpdate } from "./dal";
 
@@ -37,7 +38,11 @@ const liveDeps: WorkerDeps = {
   run: (jobId) => runScan(jobId),
   finish: finishJob,
   now: () => new Date(),
-  explain: explainAfterScan,
+  // Advice reads the website facts, so stale ones are refreshed first; a failed refresh keeps the old facts.
+  explain: async (runId: string) => {
+    await refreshStaleSiteFacts(runId).catch((err) => console.error(`scan worker: site refresh for run ${runId} failed: ${errorText(err)}`));
+    return explainAfterScan(runId);
+  },
 };
 
 /** How a job ends after one attempt. A thrown error is treated like a scan where every check failed. */

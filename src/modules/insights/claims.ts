@@ -3,6 +3,7 @@
 // - BUG-099: "you trail on rating" when the business's rating is higher than every competitor's.
 // - BUG-100: "check your listing on abchomeandcommercial.com" when that is another plumber's own website.
 // - BUG-087: "create a one-page website" for a business that has a website we could not read.
+// - BUG-140: "your /about and /contact pages were not found", or "your website shows no phone number" when it does.
 import type { ExplainInput } from "./facts";
 
 export const DOMAIN = /\b(?:[a-z0-9-]+\.)+(?:com|net|org|io|co|us|biz|info|app|dev|ai|example)\b/gi;
@@ -86,4 +87,33 @@ const BUILD_SITE = /\b(?:create|build|make|set up|start|launch)\s+(?:a|an|your)\
 export function websiteIssues(texts: string[], input: ExplainInput): string[] {
   if (!input.business.hasWebsite) return [];
   return texts.some((t) => BUILD_SITE.test(t)) ? ["tells a business with a website to build one"] : [];
+}
+
+// We open only /, /about, /about-us and /contact, so a page we did not find may well exist under another address.
+const PAGE_KIND = "(?:about(?:-us)?|contact|services?|location|locations|faq|menu|booking|dedicated|separate|individual|key|basic|important)";
+const MISSING_PAGE = new RegExp(
+  [
+    `\\b(?:no|missing|lacks?|lacking|without|(?:does not|doesn't|do not|don't) have|could not find|not found)\\b[^.\\n]{0,40}\\b${PAGE_KIND}\\s+(?:and \\w+\\s+)?pages?\\b`,
+    `\\b${PAGE_KIND}\\s+pages?\\b[^.\\n]{0,40}\\b(?:were|was|are|is) (?:not found|missing)\\b`,
+    `\\/(?:about|about-us|contact)\\b[^.\\n]{0,60}\\bnot found\\b`,
+  ].join("|"),
+  "i",
+);
+const NONE = String.raw`\b(?:no|missing|lacks?|without|(?:does not|doesn't) (?:have|show|list)|cannot find|can't find|could not find|not (?:listed|shown|found))\b[^.\n]{0,40}`;
+const NO_PHONE = new RegExp(`${NONE}\\bphone\\b`, "i");
+const NO_ADDRESS = new RegExp(`${NONE}\\b(?:address|location details)\\b`, "i");
+
+/**
+ * What a reason states about the business's own website must be something we saw (BUG-140): never that a page is
+ * missing, and never that the phone or address is missing unless the pages we read showed none.
+ */
+export function siteClaimIssues(texts: string[], input: ExplainInput): string[] {
+  if (!input.business.hasWebsite) return [];
+  const site = input.yourWebsite;
+  const text = texts.join("\n");
+  const issues: string[] = [];
+  if (MISSING_PAGE.test(text)) issues.push("says a page is missing, but we only open four pages");
+  if (NO_PHONE.test(text) && site?.hasPhone !== false) issues.push("says the website shows no phone number, but it does or we could not tell");
+  if (NO_ADDRESS.test(text) && site?.hasAddress !== false) issues.push("says the website shows no address, but it does or we could not tell");
+  return issues;
 }

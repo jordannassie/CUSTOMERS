@@ -9,7 +9,7 @@ import { autofill, type AutofillClients, type AutofillRequest, type AutofillRun 
 import { createBusinessExtractor, ExtractError } from "./extract";
 import { createFirecrawlScraper } from "./firecrawl";
 import { fixtureAutofillClients, fixtureQuestionModel } from "./dev-fixtures";
-import { createPlacesSearch } from "./places";
+import { createPlaceLookup, createPlacesSearch, type PlaceCandidate } from "./places";
 import { createQuestionModel } from "./question-model";
 import type { LibraryEntry } from "./question-rules";
 import type { QuestionClients } from "./questions";
@@ -34,6 +34,20 @@ export function liveAutofillClients(usage?: UsageContext): AutofillClients {
             throw new ExtractError("Neither ANTHROPIC_API_KEY nor OPENAI_API_KEY is set", false);
           },
   };
+}
+
+/**
+ * The business's Google listing, fetched live by place_id; null when there is none or Places fails (BUG-139). When
+ * the lookup fails (its daily quota is separate from search's and runs out first), the search auto-fill used finds
+ * it again by the website's domain.
+ */
+export async function liveListing(placeId: string | null, domain: string | null): Promise<PlaceCandidate | null> {
+  if (!placeId || onboardingFixtures() || !env.GOOGLE_PLACES_API_KEY) return null;
+  const key = env.GOOGLE_PLACES_API_KEY;
+  const byId = await createPlaceLookup(key)(placeId).catch(() => undefined);
+  if (byId !== undefined || !domain) return byId ?? null;
+  const found = await createPlacesSearch(key)(domain).catch((): PlaceCandidate[] => []);
+  return found.find((p) => p.placeId === placeId) ?? null;
 }
 
 /** Active templates of the newest library version for one industry (question_library is service role only). */

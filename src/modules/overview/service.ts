@@ -2,6 +2,7 @@ import {
   SCORE_WINDOW_DAYS,
   type Change,
   type Confidence,
+  type OwnChain,
   type OwnQuestionsResult,
   type ProviderId,
   type ScoreReport,
@@ -64,6 +65,8 @@ export type OverviewView = {
   scanCredits: number;
   /** "Your own questions: named in 3 of 9 answers. Not part of the score." Null when they have no answers (BUG-129). */
   ownQuestions: string | null;
+  /** "Bennu Coffee (all locations): named in 9 of 36 answers..." for a business that is one branch (step 7). */
+  ownChain: string | null;
 };
 
 /** DESIGN.md bands: 70 to 100 good, 40 to 69 mid, under 40 low. */
@@ -85,6 +88,13 @@ export function scoreSentence(score: number): string {
 export function changeText(change: Change): string {
   const points = Math.round(change.points);
   return `${change.direction === "up" ? "Up" : "Down"} ${points} ${points === 1 ? "point" : "points"} on last week`;
+}
+
+/** A branch business's chain-wide mentions, apart from its score, which counts only the branch (step 7). */
+export function ownChainText(chain: OwnChain | null): string | null {
+  if (!chain || chain.named === 0) return null;
+  const answers = `${chain.answers} ${chain.answers === 1 ? "answer" : "answers"}`;
+  return `${chain.brand} (all locations): named in ${chain.named} of ${answers}. Your score counts only the answers that name your location.`;
 }
 
 /** The user's own questions, shown apart from the score they are not part of (BUG-129). */
@@ -141,6 +151,9 @@ export function topOpportunities(opportunities: Opportunity[], count = 3): Overv
     .map(({ id, title, impact }) => ({ id, title, impact }));
 }
 
+/** Fewer different answers than this, with most of the last scan's checks for that AI failed, is no score for it. */
+export const MIN_MODEL_ANSWERS = 3;
+
 export function overviewView(
   report: ScoreReport,
   opportunities: Opportunity[],
@@ -151,13 +164,17 @@ export function overviewView(
   const scannedDays = report.trend.filter((p) => p.checks > 0).length;
   const byModel = new Map(report.byModel.map((m) => [m.model, m.estimate]));
   const models = report.models.map((id) => {
-    const estimate = byModel.get(id);
+    const failed = lastScanFailures?.[id] ?? 0;
+    // One cached answer while the rest of the scan failed is not a score for that AI: "Claude 0" there meant only
+    // that Claude was out of credit (First Light, 2026-10-12).
+    const thin = !!byModel.get(id) && byModel.get(id)!.uniqueAnswers < MIN_MODEL_ANSWERS && failed > byModel.get(id)!.checks;
+    const estimate = thin ? undefined : byModel.get(id);
     return {
       id,
       label: MODEL_LABELS[id],
       score: estimate ? Math.round(estimate.score) : null,
       margin: estimate ? Math.round(estimate.margin) : null,
-      notChecked: !estimate && (lastScanFailures?.[id] ?? 0) > 0,
+      notChecked: !estimate && failed > 0,
     };
   });
   return {
@@ -195,5 +212,6 @@ export function overviewView(
     scanCredits: report.questions.length * report.models.length,
     monthChange: pointsChange(report.monthChange),
     ownQuestions: ownQuestionsText(report.ownQuestions),
+    ownChain: ownChainText(report.ownChain),
   };
 }

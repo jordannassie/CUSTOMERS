@@ -5,6 +5,7 @@ import { ANTHROPIC_CREDIT_ERROR, fakeAiClients, jsonResponse, openaiResponse, pr
 import { createQuestionModel, pickRequest, writeRequest } from "./question-model";
 import {
   COFFEE_BUSINESS,
+  COFFEE_FULL_BUSINESS,
   COFFEE_GOOD_PICK,
   COFFEE_LIBRARY,
   fakeQuestionClients,
@@ -13,23 +14,25 @@ import {
 } from "./question-fixtures";
 import { asksForBusiness, balancePicks, cityLabel, fallbackQuestions, isUsableTemplate } from "./question-rules";
 import { prepareQuestions } from "./questions";
-import { MAX_PER_INTENT, PICK_MODEL, QUESTION_COUNT } from "./prompts/pick-questions.v3";
+import { MAX_PER_INTENT, PICK_MODEL, QUESTION_COUNT } from "./prompts/pick-questions.v5";
 
 const intents = (qs: { intent: string }[]) => new Set(qs.map((q) => q.intent));
 const maxPerIntent = (qs: { intent: string }[]) =>
   Math.max(...[...intents(qs)].map((i) => qs.filter((q) => q.intent === i).length));
 
 describe("picking from the industry library", () => {
-  it("keeps the coffee shop's own services (oat milk lattes, open early) and fills the city", async () => {
+  it("keeps the model's fitting picks in order, drops unfair ones (open early, right now), and fills the city", async () => {
     const { clients, calls } = fakeQuestionClients({ library: { coffee_shop: COFFEE_LIBRARY }, pick: COFFEE_GOOD_PICK });
-    const set = await prepareQuestions(COFFEE_BUSINESS, clients);
+    const set = await prepareQuestions(COFFEE_FULL_BUSINESS, clients);
 
-    expect(calls).toEqual({ pick: 1, write: 0 });
+    // 11 fitting templates survive the intent cap; the 12th comes from the written path, never a misfit.
+    expect(calls.pick).toBe(1);
     expect(set).toMatchObject({ source: "library", libraryCandidate: false, model: PICK_MODEL, error: null });
     expect(set.questions).toHaveLength(QUESTION_COUNT);
     const texts = set.questions.map((q) => q.text);
     expect(texts).toContain("Which coffee shop in Springfield, IL makes the best oat milk latte?");
-    expect(texts).toContain("Which coffee shop in Springfield, IL is open early in the morning?");
+    // isFairQuestion now applies to library templates too: hours and "right now" questions are never kept.
+    expect(texts.filter((t) => /open early|open late|right now/.test(t))).toEqual([]);
     expect(texts.every((t) => t.includes("Springfield, IL") && !t.includes("{city}"))).toBe(true);
     expect(set.questions[0].templateId).toBe("coffee-2");
   });
@@ -37,36 +40,52 @@ describe("picking from the industry library", () => {
   it("keeps a mix of intents even when the model picks one intent too often, and tops up to 12", async () => {
     const allBest = [1, 2, 3, 4, 5, 17, 18];
     const { clients } = fakeQuestionClients({ library: { coffee_shop: COFFEE_LIBRARY }, pick: allBest });
-    const set = await prepareQuestions(COFFEE_BUSINESS, clients);
+    const set = await prepareQuestions(COFFEE_FULL_BUSINESS, clients);
 
     expect(set.source).toBe("library");
     expect(set.questions).toHaveLength(QUESTION_COUNT);
     expect(maxPerIntent(set.questions)).toBeLessThanOrEqual(MAX_PER_INTENT);
-    expect(intents(set.questions).size).toBe(5);
+    expect(intents(set.questions).size).toBeGreaterThanOrEqual(3);
   });
 
   it("ignores repeated and out-of-range numbers", async () => {
     const { clients } = fakeQuestionClients({ library: { coffee_shop: COFFEE_LIBRARY }, pick: [2, 2, 99, 0, -1, ...COFFEE_GOOD_PICK] });
-    const set = await prepareQuestions(COFFEE_BUSINESS, clients);
-    const ids = set.questions.map((q) => q.templateId);
-    expect(new Set(ids).size).toBe(QUESTION_COUNT);
-    expect(ids.every((id) => id?.startsWith("coffee-"))).toBe(true);
+    const set = await prepareQuestions(COFFEE_FULL_BUSINESS, clients);
+    const ids = set.questions.map((q) => q.templateId).filter((id): id is string => id !== null);
+    expect(set.questions).toHaveLength(QUESTION_COUNT);
+    expect(new Set(ids).size).toBe(ids.length);
+    expect(ids.every((id) => id.startsWith("coffee-") && !["coffee-6", "coffee-7", "coffee-8", "coffee-14"].includes(id))).toBe(true);
   });
 
-  it("uses a library of 12 or fewer as it is, without a model call (example fixture)", async () => {
+  it("never pads with templates that do not fit: the fitting ones, then written or plain questions", async () => {
+    const { clients, calls } = fakeQuestionClients({ library: { coffee_shop: COFFEE_LIBRARY }, write: new Error("no write today") });
+    const set = await prepareQuestions(COFFEE_BUSINESS, clients);
+
+    // Only 8 templates fit this coffee shop, so no pick call; the write call failed, so plain questions fill in.
+    expect(calls).toEqual({ pick: 0, write: 1 });
+    expect(set).toMatchObject({ source: "library", model: null });
+    expect(set.questions).toHaveLength(QUESTION_COUNT);
+    const fromLibrary = set.questions.filter((q) => q.templateId).map((q) => q.templateId);
+    expect(fromLibrary.every((id) => ["coffee-1", "coffee-2", "coffee-3", "coffee-4", "coffee-5", "coffee-9", "coffee-11", "coffee-12"].includes(id!))).toBe(true);
+    expect(set.questions.map((q) => q.text).filter((t) => /laptop|vegan|cold brew|bubble tea|drive-through|loyalty/.test(t))).toEqual([]);
+  });
+
+  it("uses a short library as it is without a pick call, topped up to 12 (example fixture)", async () => {
     const example = libraryFileSchema.parse(JSON.parse(readFileSync("tests/fixtures/question-library.example.json", "utf8")));
     const dentist = example.templates
       .filter((t) => t.industry === "dentist")
       .map((t, i) => ({ id: `dentist-${i}`, template: t.template, tags: t.tags, intent: t.intent }));
-    const { clients, calls } = fakeQuestionClients({ library: { dentist } });
-    const set = await prepareQuestions({ ...COFFEE_BUSINESS, industry: "dentist", city: "Orange", region: "CA" }, clients);
+    const { clients, calls } = fakeQuestionClients({ library: { dentist }, write: new Error("no write") });
+    const business = { ...COFFEE_BUSINESS, industry: "dentist", services: ["emergency appointments", "cleanings"], city: "Orange", region: "CA" };
+    const set = await prepareQuestions(business, clients);
 
     expect(calls.pick).toBe(0);
     expect(set).toMatchObject({ source: "library", model: null });
-    expect(set.questions.map((q) => q.text)).toEqual([
+    expect(set.questions.slice(0, 2).map((q) => q.text)).toEqual([
       "Who is the best dentist in Orange, CA?",
       "Which dentist in Orange, CA offers emergency appointments?",
     ]);
+    expect(set.questions).toHaveLength(QUESTION_COUNT);
   });
 });
 
@@ -109,7 +128,7 @@ describe("industry not in the library", () => {
 describe("fallback to the old template engine", () => {
   it("is used when the pick call fails, still with 12 city questions and a mix of intents", async () => {
     const { clients } = fakeQuestionClients({ library: { coffee_shop: COFFEE_LIBRARY }, pick: new Error("529 overloaded") });
-    const set = await prepareQuestions(COFFEE_BUSINESS, clients);
+    const set = await prepareQuestions(COFFEE_FULL_BUSINESS, clients);
 
     expect(set).toMatchObject({ source: "fallback", libraryCandidate: false, model: null, error: "529 overloaded" });
     expect(set.questions).toHaveLength(QUESTION_COUNT);
@@ -127,7 +146,7 @@ describe("fallback to the old template engine", () => {
 
   it("is used when the model ignores the list", async () => {
     const { clients } = fakeQuestionClients({ library: { coffee_shop: COFFEE_LIBRARY }, pick: [1, 2, 40, 41] });
-    const set = await prepareQuestions(COFFEE_BUSINESS, clients);
+    const set = await prepareQuestions(COFFEE_FULL_BUSINESS, clients);
     expect(set.source).toBe("fallback");
   });
 

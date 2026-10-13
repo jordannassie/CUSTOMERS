@@ -3,9 +3,10 @@
 import { useState, useTransition } from "react";
 import { AlertTriangle, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { INDUSTRIES, INDUSTRY_LABELS, isIndustry } from "@/lib/industries";
 import type { ActionResult } from "@/modules/auth";
 import type { SettingsBusiness } from "@/modules/settings";
-import { AREA_MAX } from "@/modules/settings/schema";
+import { ALIASES_MAX, AREA_MAX } from "@/modules/settings/schema";
 import { normalizeWebsite, parseServices } from "@/modules/settings/service";
 import { Button } from "@/components/ui/button";
 import { CountrySelect } from "@/components/ui/country-select";
@@ -16,8 +17,11 @@ import { FormError, Panel, TEXTAREA_CLASS } from "./SettingsSection";
 
 export type SaveAction = (input: unknown) => Promise<ActionResult<null>>;
 
-type Fields = Omit<SettingsBusiness, "id" | "services" | "models" | "frequency"> & { services: string };
-type Checked = "name" | "website";
+type Fields = Omit<SettingsBusiness, "id" | "services" | "aliases" | "models" | "frequency"> & { services: string; aliases: string };
+type Checked = "name" | "website" | "industry";
+
+const SELECT_CLASS =
+  "h-9 w-full rounded-lg border border-input bg-surface px-3 text-base outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 md:text-sm";
 
 export function BusinessProfileForm({ business, save }: { business: SettingsBusiness; save: SaveAction }) {
   const initial: Fields = {
@@ -25,6 +29,7 @@ export function BusinessProfileForm({ business, save }: { business: SettingsBusi
     website: business.website,
     industry: business.industry,
     services: business.services.join(", "),
+    aliases: business.aliases.join(", "),
     city: business.city,
     region: business.region,
     country: business.country,
@@ -37,6 +42,9 @@ export function BusinessProfileForm({ business, save }: { business: SettingsBusi
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const fields = useFieldErrors<Checked>("profile");
+  // The same industry list as setup (3.1, 5.3): a known one picks its question library; "Other" keeps the owner's words.
+  const [otherIndustry, setOtherIndustry] = useState(() => !!business.industry && !isIndustry(business.industry) || business.industry === "other");
+  const industryChoice = otherIndustry ? "other" : form.industry;
   const typed = normalizeWebsite(form.website);
   const newWebsite = typed.ok ? typed.domain : form.website.trim();
   const websiteChanged = newWebsite !== (business.website || null);
@@ -56,11 +64,17 @@ export function BusinessProfileForm({ business, save }: { business: SettingsBusi
     setError(null);
     const bad = fields.show({
       name: form.name.trim() ? undefined : "Enter the business name.",
+      industry: !industryChoice ? "Choose an industry." : otherIndustry && !otherText(form.industry) ? "Say what kind of business it is." : undefined,
       website: typed.ok ? undefined : "Enter a website like yourbusiness.com, or leave it empty.",
     });
     if (bad) return;
     startTransition(async () => {
-      const result = await save({ businessId: business.id, ...form, services: parseServices(form.services) });
+      const result = await save({
+        businessId: business.id,
+        ...form,
+        services: parseServices(form.services),
+        aliases: parseServices(form.aliases).slice(0, ALIASES_MAX),
+      });
       if (!result.ok) return setError(result.error);
       setSaved(form);
       toast.success("Business profile saved");
@@ -74,9 +88,44 @@ export function BusinessProfileForm({ business, save }: { business: SettingsBusi
           <Row label="Business name" htmlFor="profile-name" error={fields.errors.name}>
             <Input {...field("name")} required maxLength={120} autoComplete="organization" {...fields.fieldProps("name")} />
           </Row>
-          <Row label="Industry" htmlFor="profile-industry" hint="For example: plumber, dentist, coffee shop.">
-            <Input {...field("industry")} maxLength={80} />
+          <Row label="Industry" htmlFor="profile-industry" error={fields.errors.industry}>
+            <select
+              id="profile-industry"
+              name="industry"
+              value={industryChoice}
+              onChange={(e) => {
+                const value = e.target.value;
+                setOtherIndustry(value === "other");
+                setForm((f) => ({ ...f, industry: value === "other" ? otherText(f.industry) : value }));
+                fields.clear("industry");
+              }}
+              className={SELECT_CLASS}
+              {...(otherIndustry ? {} : fields.fieldProps("industry"))}
+            >
+              <option value="" disabled>
+                Choose an industry
+              </option>
+              {INDUSTRIES.map((i) => (
+                <option key={i} value={i}>
+                  {INDUSTRY_LABELS[i]}
+                </option>
+              ))}
+            </select>
           </Row>
+          {otherIndustry && (
+            <Row label="What kind of business is it?" htmlFor="profile-other-industry" hint="For example: bookstore, yoga studio.">
+              <Input
+                id="profile-other-industry"
+                value={otherText(form.industry)}
+                onChange={(e) => {
+                  setForm((f) => ({ ...f, industry: e.target.value }));
+                  fields.clear("industry");
+                }}
+                maxLength={80}
+                {...fields.fieldProps("industry", "profile-other-industry-hint")}
+              />
+            </Row>
+          )}
         </div>
 
         <Row label="Website" htmlFor="profile-website" hint="Leave empty if the business has no website." error={fields.errors.website}>
@@ -102,6 +151,14 @@ export function BusinessProfileForm({ business, save }: { business: SettingsBusi
 
         <Row label="Services" htmlFor="profile-services" hint="Separate services with commas.">
           <textarea {...field("services")} rows={2} className={TEXTAREA_CLASS} />
+        </Row>
+
+        <Row
+          label="Other names"
+          htmlFor="profile-aliases"
+          hint={`Optional. Names customers and AI use for the business, separated with commas, up to ${ALIASES_MAX}. For example: Cheezious, Cheezious Golra.`}
+        >
+          <Input {...field("aliases")} maxLength={400} autoComplete="off" aria-describedby="profile-aliases-hint" />
         </Row>
 
         <div className="grid gap-5 sm:grid-cols-2">
@@ -165,4 +222,9 @@ function Row({
       )}
     </div>
   );
+}
+
+/** The owner's own words for an "Other" industry: never a list key, never the bare "other". */
+function otherText(industry: string): string {
+  return isIndustry(industry) ? "" : industry;
 }

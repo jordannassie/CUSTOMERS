@@ -27,6 +27,13 @@ export function alsoRecommended(matched: MatchedName[]): MatchedName[] {
 export function isSameBusiness(extractedName: string, target: MentionTarget): boolean {
   const got = coreName(extractedName);
   if (!got) return false;
+  // A branch (step 7): "Bennu Coffee" alone is the chain. Its full name, an alias, or a name with its place counts.
+  if (target.branch) {
+    return (
+      [target.name, ...(target.aliases ?? [])].some((known) => coreName(known) === got) ||
+      target.branch.places.some((p) => findName(got, coreName(p)).length > 0)
+    );
+  }
   const domain = domainOf(target.website);
   if (domain && findDomain(extractedName, domain).length > 0) return true;
 

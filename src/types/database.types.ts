@@ -1760,8 +1760,10 @@ export type Database = {
           category: string | null
           created_at: string
           id: string
+          inactive_since: string | null
           location: string | null
           prompt: string
+          removed_at: string | null
           source: string
         }
         Insert: {
@@ -1771,8 +1773,10 @@ export type Database = {
           category?: string | null
           created_at?: string
           id?: string
+          inactive_since?: string | null
           location?: string | null
           prompt: string
+          removed_at?: string | null
           source?: string
         }
         Update: {
@@ -1782,8 +1786,10 @@ export type Database = {
           category?: string | null
           created_at?: string
           id?: string
+          inactive_since?: string | null
           location?: string | null
           prompt?: string
+          removed_at?: string | null
           source?: string
         }
         Relationships: [

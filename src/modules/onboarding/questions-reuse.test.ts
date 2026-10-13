@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { FLORIST_BUSINESS, FLORIST_WRITTEN, fakeQuestionClients } from "./question-fixtures";
 import { asksForBusiness, dependsOnTime, fallbackQuestions, isGeneralQuestion, mixesServices } from "./question-rules";
 import { AREA_QUESTIONS, areaLabel, prepareQuestions } from "./questions";
-import { QUESTION_COUNT, writeUserMessage } from "./prompts/pick-questions.v3";
+import { QUESTION_COUNT, writeUserMessage } from "./prompts/pick-questions.v5";
 
 describe("a kind of business with no library (BUG-116)", () => {
   const GENERAL = (c: string, n = "florist") => [

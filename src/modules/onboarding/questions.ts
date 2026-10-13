@@ -1,20 +1,25 @@
 // Prepares a business's questions at onboarding (MVP_SPEC 5.3, D-62). The library and the model are
 // injected, so tests and evals run the same flow with fixtures. A model failure never reaches the
 // user: the old template engine fills in.
+import { tidyPlace } from "./question-style";
 import { INDUSTRY_LABELS, isIndustry, type LibraryIndustry } from "@/lib/industries";
 import { SEARCH_TERMS } from "./competitors";
 import type { Intent } from "@/modules/question-library";
 import type { QuestionModel } from "./question-model";
-import { PICK_MODEL, PICK_PROMPT_VERSION, QUESTION_COUNT, type PickBusiness } from "./prompts/pick-questions.v3";
+import { PICK_MODEL, PICK_PROMPT_VERSION, QUESTION_COUNT, type PickBusiness } from "./prompts/pick-questions.v5";
 import {
   balancePicks,
   cityLabel,
   fallbackQuestions,
   fillCity,
+  fitsBusiness,
   isFairQuestion,
+  KIND_WORDS,
   isGeneralQuestion,
   isUsableTemplate,
   mixesServices,
+  namesUnofferedTerm,
+  type FitContext,
   type LibraryEntry,
   type PreparedQuestion,
 } from "./question-rules";
@@ -67,7 +72,9 @@ function industryNoun(b: QuestionBusiness): string {
 export async function prepareQuestions(business: QuestionBusiness, clients: QuestionClients): Promise<QuestionSet> {
   if (!business.city.trim()) throw new Error("A city is required to prepare questions");
   const set = await citySet(business, clients);
-  return { ...set, questions: withArea(set.questions, business) };
+  // Every path (library, written, reused from a neighbour, plain) writes the place as a person would.
+  const questions = withArea(set.questions, business).map((q) => ({ ...q, text: tidyPlace(q.text, business.city, business.region) }));
+  return { ...set, questions };
 }
 
 async function citySet(business: QuestionBusiness, clients: QuestionClients): Promise<QuestionSet> {
@@ -87,7 +94,7 @@ async function citySet(business: QuestionBusiness, clients: QuestionClients): Pr
 
   try {
     if (library.length > 0) {
-      return { ...base, ...(await fromLibrary(input, library, city, clients.model)), source: "library", libraryCandidate: false };
+      return { ...base, ...(await fromLibrary(input, business, library, city, clients.model)), source: "library", libraryCandidate: false };
     }
     // One more try before the plain fallback: a failed call made one business's set unlike its neighbours'.
     const questions = await written(input, business, clients.model).catch(() => written(input, business, clients.model));
@@ -124,18 +131,57 @@ async function sharedQuestions(business: QuestionBusiness, clients: QuestionClie
   return balancePicks(general, general, business.services).map((q) => ({ text: q.template, intent: q.intent, templateId: null }));
 }
 
-async function fromLibrary(input: PickBusiness, library: LibraryEntry[], city: string, model: QuestionModel) {
+/** What the fit filter checks a library template against (question-rules.ts fitsBusiness). */
+function fitContext(business: QuestionBusiness): FitContext {
+  const known = libraryIndustry(business.industry);
+  return {
+    kind: `${industryLabel(business)} ${industryNoun(business)} ${known ? KIND_WORDS[known] : ""}`,
+    city: business.city,
+    region: business.region,
+    services: business.services,
+    description: business.description,
+  };
+}
+
+async function fromLibrary(input: PickBusiness, business: QuestionBusiness, library: LibraryEntry[], city: string, model: QuestionModel) {
   const toQuestion = (e: LibraryEntry): PreparedQuestion => ({ text: fillCity(e.template, city), intent: e.intent, templateId: e.id });
-  // A library this small leaves nothing to choose, so no call is made.
-  if (library.length <= QUESTION_COUNT) return { questions: library.map(toQuestion), model: null };
-  const numbers = await model.pick({
-    business: input,
-    templates: library.map((e, i) => ({ number: i + 1, template: e.template, tags: e.tags, intent: e.intent })),
+  // Only templates that fit this business, checked in code before and after the model: a fried chicken restaurant
+  // never gets the library's sushi, steak or wine questions, whatever the model picks. Fair questions only, as for
+  // written ones.
+  const ctx = fitContext(business);
+  const fit = library.filter((e) => isFairQuestion(e.template) && fitsBusiness(e, ctx));
+  let picked: LibraryEntry[];
+  let asked = false;
+  // A list this short leaves nothing to choose, so no call is made.
+  if (fit.length <= QUESTION_COUNT) picked = fit;
+  else {
+    asked = true;
+    // Only fitting templates are shown, under their library numbers; the answer is checked against the fit list too.
+    const numbers = await model.pick({
+      business: input,
+      templates: fit.map((e) => ({ number: library.indexOf(e) + 1, template: e.template, tags: e.tags, intent: e.intent })),
+    });
+    const fits = new Set(fit);
+    const chosen = numbers.filter((n) => n >= 1 && n <= library.length && fits.has(library[n - 1])).map((n) => library[n - 1]);
+    // Fewer than half usable means the answer ignored the list; the fallback is safer than guessing.
+    if (new Set(chosen).size < QUESTION_COUNT / 2) throw new Error(`Claude picked ${new Set(chosen).size} usable templates`);
+    picked = balancePicks(chosen, fit, input.services);
+  }
+  const questions = picked.map(toQuestion);
+  if (questions.length >= QUESTION_COUNT) return { questions, ...(asked ? {} : { model: null }) };
+  // Never padded with templates that do not fit: written questions (v4 rules) fill the rest, then plain ones.
+  const filled = await topUp(questions, input, business, model);
+  return { questions: filled.questions, ...(asked || filled.wrote ? {} : { model: null }) };
+}
+
+async function topUp(have: PreparedQuestion[], input: PickBusiness, business: QuestionBusiness, model: QuestionModel) {
+  let wrote = true;
+  const extra = await written(input, business, model).catch(() => {
+    wrote = false;
+    return fallbackQuestions(industryNoun(business), business.city, business.region);
   });
-  const chosen = numbers.filter((n) => n >= 1 && n <= library.length).map((n) => library[n - 1]);
-  // Fewer than half usable means the answer ignored the list; the fallback is safer than guessing.
-  if (new Set(chosen).size < QUESTION_COUNT / 2) throw new Error(`Claude picked ${new Set(chosen).size} usable templates`);
-  return { questions: balancePicks(chosen, library, input.services).map(toQuestion) };
+  const entry = (q: PreparedQuestion) => ({ template: q.text, tags: [] as string[], intent: q.intent, question: q });
+  return { questions: balancePicks(have.map(entry), extra.map(entry), []).map((e) => e.question), wrote };
 }
 
 async function written(input: PickBusiness, business: QuestionBusiness, model: QuestionModel): Promise<PreparedQuestion[]> {
@@ -143,7 +189,13 @@ async function written(input: PickBusiness, business: QuestionBusiness, model: Q
   // Candidates are written from the industry alone (prompt v3); the business's services only choose among them,
   // like picking from a library, so no question exists only because this business listed it (BUG-130).
   const drafts = (await model.write({ business: input }))
-    .filter((q) => isUsableTemplate(q.template) && isFairQuestion(q.template) && !mixesServices(q.template, input.services))
+    .filter(
+      (q) =>
+        isUsableTemplate(q.template) &&
+        isFairQuestion(q.template) &&
+        !mixesServices(q.template, input.services) &&
+        !namesUnofferedTerm(q.template, input.services, input.description),
+    )
     .map((q) => ({ template: fillCity(q.template, city), tags: [] as string[], intent: q.intent }));
   const kept = balancePicks([], drafts, input.services);
   if (kept.length < QUESTION_COUNT / 2) throw new Error(`Claude wrote ${kept.length} usable questions`);

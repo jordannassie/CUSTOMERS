@@ -41,6 +41,12 @@ vi.mock("@/lib/supabase/server", () => ({
     createSupabaseClient(env.NEXT_PUBLIC_SUPABASE_URL, env.NEXT_PUBLIC_SUPABASE_ANON_KEY, { auth: { persistSession: false } }),
 }));
 vi.mock("next/cache", () => ({ refresh: vi.fn() }));
+// A new industry rebuilds the questions (BUG-134); the rebuild itself is tested in onboarding, never a model call here.
+const rebuild = vi.hoisted(() => vi.fn(async () => ({ rebuilt: true, added: 12, retired: 12 })));
+vi.mock("@/modules/onboarding/server", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/modules/onboarding/server")>()),
+  rebuildQuestionsForIndustry: rebuild,
+}));
 
 const { saveAgencyName, saveBusinessProfile, saveScanSettings, uploadAgencyLogo } = await import("./actions");
 const { getSettings } = await import("./dal");
@@ -94,6 +100,10 @@ describe("settings actions", () => {
     expect(before.agency).toEqual({ name: "Settings test", logoUrl: null });
 
     expect(await saveBusinessProfile(profile(seed.businessId))).toEqual({ ok: true, data: null });
+    // The seed's industry was not Plumber, so the questions were rebuilt once; saving it again changes nothing.
+    expect(rebuild).toHaveBeenCalledExactlyOnceWith(seed.businessId);
+    expect(await saveBusinessProfile(profile(seed.businessId))).toEqual({ ok: true, data: null });
+    expect(rebuild).toHaveBeenCalledOnce();
     expect(await saveScanSettings({ businessId: seed.businessId, models: ["perplexity"], frequency: "daily" })).toEqual({
       ok: true,
       data: null,

@@ -2,7 +2,7 @@ import "server-only";
 // Google Places Text Search (New) for auto-fill (MVP_SPEC 3.2, 26). Results only pre-fill the form;
 // nothing here is stored except place_id (D-73).
 import { z } from "zod";
-import { postJson, type HttpDeps } from "./http";
+import { getJson, postJson, type HttpDeps } from "./http";
 
 export const PLACES_TEXT_SEARCH_URL = "https://places.googleapis.com/v1/places:searchText";
 // Only the fields the form uses. The phone number puts the call in the Enterprise tier either
@@ -13,6 +13,9 @@ export const PLACES_FIELD_MASK = [
   "places.formattedAddress",
   "places.addressComponents",
   "places.primaryType",
+  // Every type Google gives the listing, not only the primary one: a Tim Hortons is primaryType restaurant but
+  // also lists cafe, so a website that says coffee shop can win (industry rule in service.ts).
+  "places.types",
   "places.nationalPhoneNumber",
   "places.websiteUri",
 ].join(",");
@@ -24,6 +27,8 @@ export type PlaceCandidate = {
   address: string | null;
   phone: string | null;
   primaryType: string | null;
+  /** All of the listing's Places types, primaryType included; empty when Google sends none. Pre-fill only. */
+  types: string[];
   websiteUri: string | null;
   city: string | null;
   state: string | null;
@@ -50,6 +55,7 @@ const searchResponse = z.object({
         formattedAddress: z.string().nullish(),
         addressComponents: z.array(component).nullish(),
         primaryType: z.string().nullish(),
+        types: z.array(z.string()).nullish(),
         nationalPhoneNumber: z.string().nullish(),
         websiteUri: z.string().nullish(),
       }),
@@ -77,6 +83,21 @@ export function createPlacesSearch(apiKey: string, deps: HttpDeps = {}): SearchP
   };
 }
 
+/** One listing by its place_id, null when Google no longer has it. Throws when Places cannot be reached. */
+export type LookupPlace = (placeId: string) => Promise<PlaceCandidate | null>;
+
+// The details step opened again later: the listing is fetched live, never stored (D-73, BUG-139).
+export function createPlaceLookup(apiKey: string, deps: HttpDeps = {}): LookupPlace {
+  const fieldMask = PLACES_FIELD_MASK.replaceAll("places.", "");
+  return async (placeId) => {
+    const url = `https://places.googleapis.com/v1/places/${encodeURIComponent(placeId)}`;
+    const { status, body } = await getJson(url, { "X-Goog-Api-Key": apiKey, "X-Goog-FieldMask": fieldMask }, deps);
+    if (status === 404) return null;
+    if (status < 200 || status >= 300) throw new PlacesError(`Places returned ${status}`);
+    return toCandidates({ places: [body] })[0] ?? null;
+  };
+}
+
 export function toCandidates(body: unknown): PlaceCandidate[] {
   const parsed = searchResponse.safeParse(body);
   if (!parsed.success) throw new PlacesError("Places sent an unexpected response");
@@ -91,6 +112,7 @@ export function toCandidates(body: unknown): PlaceCandidate[] {
       address: p.formattedAddress || null,
       phone: p.nationalPhoneNumber || null,
       primaryType: p.primaryType || null,
+      types: p.types ?? [],
       websiteUri: p.websiteUri || null,
       city: part("locality") ?? part("postal_town"),
       state: part("administrative_area_level_1", true),

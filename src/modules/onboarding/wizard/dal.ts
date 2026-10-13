@@ -4,7 +4,10 @@ import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { canAddBusiness } from "@/modules/entitlements";
 import type { AutofillClients, AutofillRequest } from "../autofill";
-import { runBusinessAutofill } from "../dal";
+import { liveListing, runBusinessAutofill } from "../dal";
+import type { AutofillOutput } from "../prompts/business-autofill.v1";
+import { refillDetails } from "./refill";
+import { rebuildQuestionsForIndustry, sameIndustry, savedIndustry } from "./questions/rebuild/dal";
 import { isIndustry } from "@/lib/industries";
 import type { AutofillResult, BusinessDetails } from "../schema";
 import { needsCard, nextStepNumber, type PlanId, type StepSlug, type WizardState } from "./steps";
@@ -160,7 +163,7 @@ export async function loadDetailsStep(userId: string, businessId: string): Promi
   const supabase = await createClient();
   const { data: b, error } = await supabase
     .from("businesses")
-    .select("name, domain, has_website, industry, description, services, primary_city, primary_region, primary_country, primary_area, phone, onboarding_step")
+    .select("name, domain, has_website, industry, description, services, primary_city, primary_region, primary_country, primary_area, phone, onboarding_step, places_id")
     .eq("id", businessId)
     .eq("owner_user_id", userId)
     .maybeSingle();
@@ -181,16 +184,16 @@ export async function loadDetailsStep(userId: string, businessId: string): Promi
     phone: b.phone ?? "",
     address: "",
   };
-  let details = saved;
-  if (!confirmed && b.has_website) {
-    const facts = await supabase.from("business_site_facts").select("data").eq("business_id", businessId).maybeSingle();
-    const f = (facts.data?.data as { facts?: Partial<BusinessDetails> } | null)?.facts;
-    if (f) {
-      const found = Object.keys(saved).filter((k) => f[k as keyof BusinessDetails]).map((k) => [k, f[k as keyof BusinessDetails]]);
-      details = { ...saved, ...Object.fromEntries(found) };
-    }
+  let refill: ReturnType<typeof refillDetails> = { details: saved, industryText: null };
+  if (!confirmed) {
+    const [facts, place] = await Promise.all([
+      b.has_website ? supabase.from("business_site_facts").select("data").eq("business_id", businessId).maybeSingle() : null,
+      liveListing(b.places_id, b.domain),
+    ]);
+    refill = refillDetails(saved, (facts?.data?.data as { facts?: AutofillOutput | null } | null)?.facts ?? null, place);
   }
-  const industryText = b.industry && !isIndustry(b.industry) ? b.industry : "";
+  const { details } = refill;
+  const industryText = refill.industryText ?? (b.industry && !isIndustry(b.industry) ? b.industry : "");
   return { businessId, domain: b.domain, hasWebsite: b.has_website !== false, details, industryText, confirmed };
 }
 
@@ -198,6 +201,7 @@ export async function loadDetailsStep(userId: string, businessId: string): Promi
 export async function saveDetails(userId: string, input: DetailsStepInput): Promise<boolean> {
   const current = await ownStep(userId, input.businessId);
   if (current === undefined) return false;
+  const before = await savedIndustry(input.businessId);
   const { error } = await createServiceClient()
     .from("businesses")
     .update({
@@ -215,6 +219,8 @@ export async function saveDetails(userId: string, input: DetailsStepInput): Prom
     .eq("id", input.businessId)
     .eq("owner_user_id", userId);
   if (error) throw new Error(`Could not save business details: ${error.message}`);
+  // Back on this step with a new industry: the questions already made were for the old one.
+  if (!sameIndustry(before, input.industry)) await rebuildQuestionsForIndustry(input.businessId);
   return true;
 }
 

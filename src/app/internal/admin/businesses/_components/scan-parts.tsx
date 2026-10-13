@@ -61,5 +61,6 @@ export function formatDate(iso: string, withTime = false): string {
     ...(withTime && { hour: "numeric", minute: "2-digit" }),
     timeZone: "UTC",
   });
-  return withTime ? `${text} UTC` : text;
+  // Admin dates are UTC, and always say so (BUG-070).
+  return `${text} UTC`;
 }

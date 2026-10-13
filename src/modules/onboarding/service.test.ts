@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { COFFEE_PLACE, COFFEE_SITE_OUTPUT } from "./fixtures";
-import { industryFromPlacesType } from "./industries";
+import { industriesFromPlacesTypes, industryFromPlacesType } from "./industries";
 import { toDomain } from "./schema";
-import { mergeDetails, sameSite } from "./service";
+import { industryCheck, mergeDetails, sameSite, toResult, NOTES } from "./service";
 
 describe("toDomain", () => {
   it("accepts domains and URLs, and refuses anything else", () => {
@@ -52,5 +52,70 @@ describe("mergeDetails", () => {
       address: COFFEE_SITE_OUTPUT.address,
       city: "Springfield",
     });
+  });
+});
+
+describe("industry when Google and the website disagree", () => {
+  const timHortons = {
+    ...COFFEE_PLACE,
+    name: "Tim Hortons",
+    primaryType: "restaurant",
+    types: ["cafe", "coffee_shop", "restaurant", "food", "point_of_interest", "establishment"],
+  };
+  const coffeeSite = { ...COFFEE_SITE_OUTPUT, industry: "coffee_shop" as const };
+
+  it("takes the website's industry when one of the listing's other types is that industry (Tim Hortons)", () => {
+    expect(mergeDetails(coffeeSite, timHortons).industry).toBe("coffee_shop");
+    expect(industryCheck(coffeeSite, timHortons)).toBeNull();
+  });
+
+  it("keeps Google's industry when no listing type backs the website, and asks the user to check", () => {
+    const steakhouse = { ...timHortons, types: ["restaurant", "food", "establishment"] };
+    expect(mergeDetails(coffeeSite, steakhouse).industry).toBe("restaurant");
+    expect(industryCheck(coffeeSite, steakhouse)).toEqual({ google: "Restaurant", website: "Coffee shop" });
+  });
+
+  it("keeps BUG-123: a bookstore that also lists a cafe stays Other: Bookstore", () => {
+    const bookstore = { ...COFFEE_PLACE, primaryType: "book_store", types: ["book_store", "cafe", "store"] };
+    expect(mergeDetails(coffeeSite, bookstore)).toMatchObject({ industry: "other", industryText: "Bookstore" });
+    expect(industryCheck(coffeeSite, bookstore)).toEqual({ google: "Bookstore", website: "Coffee shop" });
+  });
+
+  it("takes coffee shop for a fast_food_restaurant listing that also lists coffee_shop", () => {
+    const fastFood = { ...timHortons, primaryType: "fast_food_restaurant", types: ["fast_food_restaurant", "coffee_shop", "restaurant", "food"] };
+    expect(mergeDetails(coffeeSite, fastFood).industry).toBe("coffee_shop");
+  });
+
+  it("gives a plumber and a dentist the same industry as before", () => {
+    const plumberPlace = { ...COFFEE_PLACE, primaryType: "plumber", types: ["plumber", "point_of_interest", "establishment"] };
+    const dentistPlace = { ...COFFEE_PLACE, primaryType: "dental_clinic", types: ["dental_clinic", "dentist", "health"] };
+    expect(mergeDetails({ ...COFFEE_SITE_OUTPUT, industry: "plumber" }, plumberPlace).industry).toBe("plumber");
+    expect(mergeDetails({ ...COFFEE_SITE_OUTPUT, industry: "dentist" }, dentistPlace).industry).toBe("dentist");
+    // The website alone, or Google alone, as before.
+    expect(mergeDetails({ ...COFFEE_SITE_OUTPUT, industry: "plumber" }, null).industry).toBe("plumber");
+    expect(mergeDetails(null, dentistPlace).industry).toBe("dentist");
+    // A website that says something else does not overrule Google when no listing type backs it.
+    expect(mergeDetails({ ...COFFEE_SITE_OUTPUT, industry: "dentist" }, plumberPlace).industry).toBe("plumber");
+  });
+
+  it("asks nothing when they agree or one says nothing", () => {
+    expect(industryCheck(coffeeSite, COFFEE_PLACE)).toBeNull();
+    expect(industryCheck({ ...coffeeSite, industry: "" }, timHortons)).toBeNull();
+    expect(industryCheck(coffeeSite, null)).toBeNull();
+    expect(industriesFromPlacesTypes(timHortons.types)).toEqual(new Set(["coffee_shop", "restaurant"]));
+  });
+
+  it("passes the check to the details step through auto-fill", () => {
+    const result = toResult({ details: mergeDetails(coffeeSite, timHortons), fromWebsite: true, fromGoogle: true, hadWebsite: true, industryCheck: { google: "Restaurant", website: "Coffee shop" } });
+    expect(result.industryCheck).toEqual({ google: "Restaurant", website: "Coffee shop" });
+    expect(toResult({ details: mergeDetails(coffeeSite, COFFEE_PLACE), fromWebsite: true, fromGoogle: true, hadWebsite: true }).industryCheck).toBeUndefined();
+  });
+});
+
+describe("the auto-fill note (step 9a, BUG-144)", () => {
+  it("never repeats the \"We filled this in from your website\" line the details step already shows", () => {
+    const result = toResult({ details: mergeDetails(COFFEE_SITE_OUTPUT, null), fromWebsite: true, fromGoogle: false, hadWebsite: true });
+    expect(result.note).toBe(NOTES.websiteOnly);
+    expect(result.note).not.toMatch(/We filled this in/);
   });
 });

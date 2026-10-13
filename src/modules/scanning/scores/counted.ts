@@ -4,7 +4,13 @@ import { checksInWindow } from "../scoring";
 // Which answers count in the visibility score (MVP_SPEC 5.6, BUG-129). The one place this rule lives: the score, its
 // confidence, trend, per-AI scores, competitor rates and the opportunities all read their answers through it.
 
-export type TrackedQuestion = { id: string; source: string; active: boolean };
+export type TrackedQuestion = {
+  id: string;
+  source: string;
+  active: boolean;
+  /** When it stopped being asked; null while active, or for a question stopped before this was recorded. */
+  inactiveSince?: string | null;
+};
 
 /** A question the user wrote or edited ("custom"), or an old prompt kept from before the library ("legacy"). */
 export function isOwnQuestion(source: string): boolean {
@@ -26,11 +32,23 @@ export function countsInScore(question: Pick<TrackedQuestion, "source" | "active
 export function splitByQuestion<T extends { questionId: string }>(
   checks: T[],
   questions: TrackedQuestion[],
-): { scored: T[]; own: T[] } {
+  options: { history?: boolean } = {},
+): { scored: (T & { activeUntil?: Date })[]; own: T[] } {
   const scoredIds = new Set(questions.filter(countsInScore).map((q) => q.id));
   const ownIds = new Set(questions.filter((q) => q.active && isOwnQuestion(q.source)).map((q) => q.id));
+  // For scores read at past moments (history, weekly changes): a suggested question that stopped at a known time
+  // still counts before then (step 9e). Today's score never sees it: checksInWindow drops it from that moment on.
+  const stopped = new Map(
+    options.history
+      ? questions.filter((q) => !q.active && q.inactiveSince && !isOwnQuestion(q.source)).map((q) => [q.id, new Date(q.inactiveSince!)])
+      : [],
+  );
   return {
-    scored: checks.filter((c) => scoredIds.has(c.questionId)),
+    scored: checks.flatMap((c) => {
+      if (scoredIds.has(c.questionId)) return [c];
+      const until = stopped.get(c.questionId);
+      return until ? [{ ...c, activeUntil: until }] : [];
+    }),
     own: checks.filter((c) => ownIds.has(c.questionId)),
   };
 }

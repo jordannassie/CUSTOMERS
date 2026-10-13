@@ -4,7 +4,9 @@ import { z } from "zod";
 import { INDUSTRY_LABELS, type LibraryIndustry } from "@/lib/industries";
 import { CITY, INTENTS } from "../schema";
 
-export const GENERATE_PROMPT_VERSION = "question-library.v1";
+// v2 (2026-10-13): questions read like different people typing, a third in the first person with context, and
+// varied openings, the same guidance as pick-questions.v5.
+export const GENERATE_PROMPT_VERSION = "question-library.v2";
 export const GENERATE_MODEL = "claude-sonnet-5";
 export const GENERATE_MAX_TOKENS = 8_000;
 export const TEMPLATES_PER_INDUSTRY = 40;
@@ -13,6 +15,8 @@ export const GENERATE_SYSTEM = `You write the questions a real local customer wo
 
 Rules for every question:
 - Plain, natural grammar, the way a person really asks. One question per template, ending with "?".
+- Write them the way different people type. About a third in the first person, with a little context about their situation ("I just moved to ${CITY} and need...", "My car is making a grinding noise, which..."), the rest short and direct. The context must fit most customers of this kind of business, never a time ("today", "tonight").
+- Vary how they start: no more than three may begin with the same two words (not a list of "Where can I find...").
 - Always include the placeholder ${CITY} exactly once, where the city name goes (for example "Who is the best dentist in ${CITY}?"). No other placeholders.
 - Never name a business, brand, chain, product brand or person.
 - Ask for a recommendation of a local business, not general advice.

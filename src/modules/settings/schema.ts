@@ -9,6 +9,8 @@ export type Frequency = (typeof FREQUENCIES)[number];
 
 const text = (max: number) => z.string().trim().max(max);
 
+export const ALIASES_MAX = 5;
+
 /** A business's neighborhood or area, "East Austin". Same 80 limit as businesses_primary_area_length; empty is null. */
 export const AREA_MAX = 80;
 export const areaText = z.string().trim().max(AREA_MAX).nullable().transform((area) => area || null);
@@ -18,6 +20,8 @@ export const businessProfileInput = z.object({
   name: text(120).min(1),
   industry: text(80),
   services: z.array(text(60).min(1)).max(20),
+  // Other names customers and AI use for the business (MVP_SPEC 5.5): "Cheezious" for "Cheezious Golra Mor Branch".
+  aliases: z.array(text(120).min(2)).max(ALIASES_MAX).optional(),
   city: text(80),
   region: text(80),
   country: text(80).optional(),

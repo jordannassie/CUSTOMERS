@@ -35,3 +35,16 @@ describe("a website we could not read (BUG-087)", () => {
     expect(websiteIssues(["Create a simple one-page website."], noSite)).toEqual([]);
   });
 });
+
+describe("the phone and address the pages show (BUG-138)", () => {
+  const facts = { phone: "", address: "", services: [] };
+  const pages = [{ path: "/", status: "ok" }];
+
+  it("uses the saved contact over facts a chain's branch rule cleared", () => {
+    expect(yourWebsite({ pages, facts, contact: { hasPhone: true, hasAddress: true } })).toMatchObject({ hasPhone: true, hasAddress: true });
+  });
+
+  it("falls back to the facts for rows saved before the contact was", () => {
+    expect(yourWebsite({ pages, facts })).toMatchObject({ hasPhone: false, hasAddress: false });
+  });
+});

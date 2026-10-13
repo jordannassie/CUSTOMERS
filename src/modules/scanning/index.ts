@@ -21,3 +21,4 @@ export {
   type TrendPoint,
 } from "./scoring";
 export type { Change, ScanPoint } from "./scoring-periods";
+export type { OwnChain } from "./branch";

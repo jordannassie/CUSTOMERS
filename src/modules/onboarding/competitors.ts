@@ -173,3 +173,19 @@ export function competitorFields(c: ConfirmedCompetitor) {
     confirmed: true,
   };
 }
+
+/**
+ * The Google listing for a business AI named, when one of the lookup's results is clearly it: "Canopy" matches
+ * "Canopy by Hilton Austin Downtown", and "Blue Door Coffee" matches "Blue Door Coffee". Null when none does, so a
+ * near miss is never saved as that business (step 9c).
+ */
+export function matchingPlace(name: string, candidates: CompetitorCandidate[]): CompetitorCandidate | null {
+  const want = name.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").trim();
+  if (want.replace(/ /g, "").length < 4) return null;
+  const plainName = (c: CompetitorCandidate) => c.name.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").trim();
+  const exact = candidates.find((c) => plainName(c) === want);
+  if (exact) return exact;
+  // A longer or shorter form only when it is the one result that fits: two "Canopy ..." places are a guess.
+  const close = candidates.filter((c) => plainName(c).startsWith(`${want} `) || want.startsWith(`${plainName(c)} `));
+  return close.length === 1 ? close[0] : null;
+}

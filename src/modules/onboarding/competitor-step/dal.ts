@@ -14,6 +14,7 @@ import {
   discoverCompetitors,
   limitMessage,
   lookupQuery,
+  matchingPlace,
   originOf,
   planSave,
   type BusinessForSearch,
@@ -162,4 +163,10 @@ export async function saveCompetitors(
   // Saved answers are checked for the new list, so a new competitor is not "still collecting" (BUG-122).
   if (plan.add.length || plan.remove.length) await recountAfterCompetitorChange(businessId);
   return { ok: true, count: list.length };
+}
+
+/** The place id of the Google listing for a name AI suggested, or null when none clearly matches or Places fails. */
+export async function placeIdForName(userId: string, businessId: string, name: string, places?: CompetitorPlaces): Promise<string | null> {
+  const found = await lookupCompetitor(userId, businessId, name, places);
+  return found ? (matchingPlace(name, found.matches)?.placeId ?? null) : null;
 }

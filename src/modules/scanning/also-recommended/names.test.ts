@@ -45,6 +45,24 @@ describe("alsoRecommendedNames", () => {
     const answers = [extraction(...Array.from({ length: 12 }, (_, i): [string] => [`Cafe Number ${i + 1}`]))];
     expect(alsoRecommendedNames(answers, business, [], 8).names).toHaveLength(8);
   });
+  it("lists one place once when answers name it two ways: Canopy and Canopy by Hilton Austin Downtown (step 9b)", () => {
+    const austin = { ...business, city: "Austin" };
+    const list = alsoRecommendedNames(
+      [
+        extraction(["Canopy"], ["The Driskill"]),
+        extraction(["Canopy by Hilton Austin Downtown"]),
+        extraction(["Canopy", "competitor"], ["Canopy by Hilton Austin Downtown"]),
+        // A generic first word or the city never pulls other names in.
+        extraction(["Austin Java"], ["The Line Austin"], ["The"], ["Austin"]),
+      ],
+      austin,
+      [],
+    );
+    const canopy = list.names.filter((n) => n.name.startsWith("Canopy"));
+    expect(canopy).toEqual([{ name: "Canopy", answers: 3 }]);
+    expect(list.names.map((n) => n.name)).toEqual(expect.arrayContaining(["Austin Java", "The Line Austin", "The Driskill"]));
+  });
+
   it("lists one brand once when answers write it long and short (BUG-097)", () => {
     const list = alsoRecommendedNames(
       [

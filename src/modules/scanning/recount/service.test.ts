@@ -38,6 +38,22 @@ describe("recountCheck", () => {
     expect(recountCheck({ ...saved(""), answer_text: null }, targets)).toBeNull();
   });
 
+  it("does not rewrite a row whose saved JSON only comes back in another key order", () => {
+    const answer = "Try First Light Books in Hyde Park.";
+    const first = recountCheck(saved(answer, { extracted_names: { promptVersion: "v1", names: [{ name: "First Light Books", position: 1 }] } }), targets)!;
+    // jsonb hands keys back sorted, not in the order they were written.
+    const reordered = JSON.parse(JSON.stringify(first.extracted_names), (_, v) =>
+      v && typeof v === "object" && !Array.isArray(v) ? Object.fromEntries(Object.entries(v).reverse()) : v,
+    );
+    const again = saved(answer, {
+      extracted_names: reordered,
+      business_mentioned: first.business_mentioned,
+      mention_position: first.mention_position,
+      competitors_mentioned: (first.competitors_mentioned as { name: string; position: number | null }[]).map((c) => ({ position: c.position, name: c.name })),
+    });
+    expect(recountCheck(again, targets)).toBeNull();
+  });
+
   it("re-matches the saved name extraction, so the extractor and the counts agree", () => {
     const names = { promptVersion: "v1", names: [{ name: "First Light Books", position: 1, matches: null, competitorName: null }] };
     const next = recountCheck(saved("Try First Light Books in Hyde Park.", { extracted_names: names }), targets);

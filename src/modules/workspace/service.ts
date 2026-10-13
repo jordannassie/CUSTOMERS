@@ -1,4 +1,5 @@
 // Pure rules for the app frame: the usage widget text and which banners show (MVP_SPEC 8.2, B-48).
+import { customerDate } from "@/lib/time-zone";
 
 const DAY = 24 * 60 * 60 * 1000;
 const WARN_AT_PERCENT = 80;
@@ -36,7 +37,7 @@ export type UsageWidgetView = {
 };
 
 export type Banner = {
-  kind: "suspended" | "past_due" | "out_of_credits" | "trial" | "ended";
+  kind: "suspended" | "past_due" | "out_of_credits" | "low_credits" | "trial" | "ended";
   tone: "danger" | "warning" | "info";
   message: string;
   action: { label: string; href: string } | null;
@@ -105,7 +106,7 @@ export function usageWidget(usage: UsageNumbers, account: AccountState, now: Dat
 
 /** In the viewer's zone, like the dates the pages format themselves (BUG-111); UTC when unknown. */
 function formatDate(date: Date, timeZone: string): string {
-  return date.toLocaleDateString("en-US", { month: "long", day: "numeric", timeZone });
+  return customerDate(date, timeZone, { month: "long", day: "numeric" });
 }
 
 /** Days and trial credits left, then the charge date, or that nothing is charged after a cancel (B-45, MVP_SPEC 4.4). */
@@ -177,6 +178,20 @@ export function pickBanners(usage: UsageNumbers, account: AccountState, now: Dat
         usage.balance < 0
           ? `You used ${plural(-usage.balance, "credit")} more than you had. New scans are paused, and your next top-up or renewal pays this back first.`
           : "You're out of credits. New scans are paused until you add more.",
+      action: { label: "Buy credits", href: BUY_CREDITS_HREF },
+    });
+  }
+
+  // MVP_SPEC 4.2: a warning at 80% of the period's credits, before scans pause at 0. Top-ups left over keep it
+  // quiet, so it shows only when what is left is also down to the last fifth.
+  // Whole numbers: 1 - 0.8 is 0.19999... in floating point, so exactly 80% would be missed.
+  const usedEnough = usage.periodUsed * 100 >= usage.periodCredits * WARN_AT_PERCENT;
+  const low = usage.balance * 100 <= usage.periodCredits * (100 - WARN_AT_PERCENT);
+  if (usage.balance > 0 && usage.periodCredits > 0 && usedEnough && low) {
+    banners.push({
+      kind: "low_credits",
+      tone: "warning",
+      message: `Only ${plural(usage.balance, "credit")} left this period. Scans pause when they run out.`,
       action: { label: "Buy credits", href: BUY_CREDITS_HREF },
     });
   }

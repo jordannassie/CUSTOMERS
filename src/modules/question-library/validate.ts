@@ -2,6 +2,7 @@
 // approved file records who reviewed it and when. Pure, so tests and scripts share it.
 import { LIBRARY_INDUSTRIES } from "@/lib/industries";
 import { CITY, libraryFileSchema, type LibraryFile } from "./schema";
+import { missingTermTags } from "./specific-terms";
 
 export type ValidationResult =
   | { ok: true; file: LibraryFile; warnings: string[] }
@@ -35,6 +36,9 @@ export function validateLibrary(raw: unknown): ValidationResult {
     if (!t.template.trim().endsWith("?")) errors.push(`${at}: not a question (must end with "?")`);
     if (!t.tags.some((tag) => tag.trim())) errors.push(`${at}: needs at least one tag`);
     if (t.tags.some((tag) => !tag.trim())) errors.push(`${at}: empty tag`);
+    // Onboarding gives a cuisine or service template only to a business that lists it, so the tags must name it.
+    const untagged = missingTermTags(t.template, t.tags);
+    if (untagged.length) errors.push(`${at}: names ${untagged.join(", ")} but its tags do not`);
     const key = `${t.industry}|${t.template.trim().toLowerCase()}`;
     if (seen.has(key)) errors.push(`${at}: duplicate template`);
     seen.add(key);

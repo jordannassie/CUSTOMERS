@@ -27,7 +27,8 @@ export async function loadQuestionsPage(agencyId: string, businessId: string, no
       .eq("id", businessId)
       .eq("agency_id", agencyId)
       .maybeSingle(),
-    db.from("tracked_prompts").select("id, prompt, active, source").eq("business_id", businessId).order("created_at").order("id"),
+    // A removed question is kept for past scores (step 9e) but never listed again.
+    db.from("tracked_prompts").select("id, prompt, active, source").eq("business_id", businessId).is("removed_at", null).order("created_at").order("id"),
   ]);
   for (const r of [business, questions]) if (r.error) throw new Error(`Questions: ${r.error.message}`);
   if (!business.data) return null;
@@ -96,7 +97,8 @@ async function ownedQuestions(agencyId: string, businessId: string) {
   const { data: questions, error: readError } = await supabase
     .from("tracked_prompts")
     .select("id, prompt, active")
-    .eq("business_id", businessId);
+    .eq("business_id", businessId)
+    .is("removed_at", null);
   if (readError) throw new Error(`Questions: could not load questions: ${readError.message}`);
   return { supabase, questions };
 }
@@ -143,11 +145,18 @@ export async function updateQuestionActive(agencyId: string, businessId: string,
   return { ok: true };
 }
 
-/** Deletes the question and, through the foreign key, its saved checks. */
+/**
+ * Removes the question from the list and stops asking it. Its saved answers are kept, so past weekly scores stay as
+ * they were (step 9e); deleting the row deleted them through the foreign key.
+ */
 export async function deleteQuestion(agencyId: string, businessId: string, questionId: string): Promise<ChangeResult> {
   const owned = await ownedQuestions(agencyId, businessId);
   if (!owned || !owned.questions.some((q) => q.id === questionId)) return notFound;
-  const { error } = await createServiceClient().from("tracked_prompts").delete().eq("id", questionId).eq("business_id", businessId);
+  const { error } = await createServiceClient()
+    .from("tracked_prompts")
+    .update({ active: false, removed_at: new Date().toISOString() })
+    .eq("id", questionId)
+    .eq("business_id", businessId);
   if (error) throw new Error(`Questions: could not remove the question: ${error.message}`);
   return { ok: true };
 }

@@ -165,7 +165,9 @@ export function FirstScan(props: Props) {
   const stalled = phase === "scanning" && !retrying && stalledJob;
   const anyAnswers = !!progress && [...progress.values()].some((m) => m.done > 0);
   const asked = questions > 0 ? `${questions} ${questions === 1 ? "question" : "questions"}` : "the questions";
-  const view = creditsLate ? "credits-late" : failed ? "failed" : waiting ? "credits" : stalled ? "stalled" : phase;
+  // Stopped before any AI answered (out of credits, say): nothing ran, so nothing "didn't finish".
+  const notRun = failed && !creditsLate && !anyAnswers;
+  const view = creditsLate ? "credits-late" : notRun ? "not-run" : failed ? "failed" : waiting ? "credits" : stalled ? "stalled" : phase;
   const copy = firstScanCopy(view, { business: businessName, models: models.map((m) => m.label), asked });
 
   return (
@@ -185,7 +187,7 @@ export function FirstScan(props: Props) {
           state={
             phase === "done"
               ? "done"
-              : waiting || phase === "confirm" || (stalled && !anyAnswers)
+              : waiting || phase === "confirm" || notRun || (stalled && !anyAnswers)
                 ? "waiting"
                 : failed || paused || stalled
                   ? "stopped"

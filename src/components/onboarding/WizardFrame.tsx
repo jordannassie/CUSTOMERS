@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { Check } from "lucide-react";
+import { Check, LogOut } from "lucide-react";
 import { cn } from "cn";
 import { stepPath, type StepSlug } from "@/modules/onboarding/wizard/steps";
 
@@ -38,6 +38,7 @@ export function WizardFrame({ steps, title, lead, embedded = false, wide = false
               ))}
             </ol>
             <p className="mt-auto text-xs leading-relaxed text-text-hint">Your progress saves after every step, so you can leave and come back.</p>
+            <SignOut className="mt-4" />
           </div>
         </aside>
       ) : null}
@@ -64,6 +65,8 @@ export function WizardFrame({ steps, title, lead, embedded = false, wide = false
             {lead ? <p className="mt-2 max-w-xl text-[15px] leading-relaxed text-muted-foreground">{lead}</p> : null}
           </header>
           <div className={wide ? undefined : "max-w-2xl"}>{children}</div>
+          {/* Signed up with the wrong account, or on a shared computer: the steps must not trap anyone. */}
+          {!embedded ? <SignOut className="mt-10 lg:hidden" /> : null}
         </div>
       </Main>
     </div>
@@ -101,5 +104,16 @@ function StepLink({ step, number }: { step: FrameStep; number: number }) {
     <div className={cn(row, step.state === "current" && "bg-surface")} aria-current={step.state === "current" ? "step" : undefined}>
       {body}
     </div>
+  );
+}
+
+function SignOut({ className }: { className?: string }) {
+  return (
+    <form action="/auth/signout" method="post" className={className}>
+      <button type="submit" className="inline-flex min-h-11 items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
+        <LogOut className="size-4" aria-hidden="true" />
+        Sign out
+      </button>
+    </form>
   );
 }

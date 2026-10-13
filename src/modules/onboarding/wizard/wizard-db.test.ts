@@ -171,8 +171,11 @@ describe("details, questions and models steps", () => {
     expect(await saveQuestions(userId, id, tooMany)).toMatchObject({ ok: false, status: 403 });
     const edited = [...step.questions.slice(1), "Which florist in Orange delivers on Sundays?"];
     expect(await saveQuestions(userId, id, edited)).toEqual({ ok: true, count: 12 });
-    const kept = await service.from("tracked_prompts").select("prompt, source").eq("business_id", id);
+    // The dropped question is removed, not deleted, so any answers it had stay for past scores (step 9e).
+    const kept = await service.from("tracked_prompts").select("prompt, source").eq("business_id", id).is("removed_at", null);
     expect(kept.data).toHaveLength(12);
+    const removed = await service.from("tracked_prompts").select("prompt, active").eq("business_id", id).not("removed_at", "is", null);
+    expect(removed.data).toEqual([{ prompt: step.questions[0], active: false }]);
     expect(kept.data).toContainEqual({ prompt: "Which florist in Orange delivers on Sundays?", source: "custom" });
     expect(kept.data).toContainEqual({ prompt: step.questions[1], source: "library" });
 

@@ -55,6 +55,8 @@ export type AutofillResult = {
   filledFrom: { website: boolean; google: boolean };
   /** A friendly line shown above the form, or null when everything went normally. */
   note: string | null;
+  /** Google and the website name different kinds of business: the industry field asks the user to check. */
+  industryCheck?: { google: string; website: string };
   /**
    * No website (MVP_SPEC 3.3): the Google listings the user picks theirs from. Until they pick one, the form
    * keeps only what they typed and no place_id is saved. Shown live, never stored (D-73).

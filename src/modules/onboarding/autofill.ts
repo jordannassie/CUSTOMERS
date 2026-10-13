@@ -3,6 +3,7 @@
 import { factsFromPageMeta } from "./autofill-safety";
 import { ExtractError, type ExtractBusiness } from "./extract";
 import type { PageResult, ScrapeSite } from "./firecrawl";
+import { siteContact, withFooterOnce } from "./page-contact";
 import type { PlaceCandidate, SearchPlaces } from "./places";
 import {
   AUTOFILL_MODEL,
@@ -15,6 +16,7 @@ import type { AutofillResult, PlaceChoice } from "./schema";
 import {
   EMPTY_DETAILS,
   hasAnyValue,
+  industryCheck,
   isChain,
   keepGrounded,
   mergeDetails,
@@ -42,6 +44,11 @@ export type SiteFacts = {
   pages: { path: string; status: PageResult["status"] }[];
   /** Null when no page could be read: the pages still say whether the site blocked us (BUG-087). */
   facts: AutofillOutput | null;
+  /**
+   * Whether the pages show a phone number and an address, kept apart from `facts`: a chain's facts drop the branch's
+   * phone and address, and advice must not then say the website shows none (BUG-138). Null when nothing was read.
+   */
+  contact?: { hasPhone: boolean; hasAddress: boolean } | null;
 };
 
 export type AutofillRun = {
@@ -95,7 +102,7 @@ export async function autofill(request: AutofillRequest, clients: AutofillClient
   const chain = isChain(byDomain, domain);
   let place = chain ? null : pickPlaceForDomain(byDomain, domain);
   const readable = pages.filter((p) => p.status === "ok" && p.markdown);
-  const sitePages = readable.map((p) => ({ path: p.path, markdown: p.markdown }));
+  const sitePages = withFooterOnce(readable);
 
   let site: AutofillOutput | null = null;
   let model: string = AUTOFILL_MODEL;
@@ -105,6 +112,7 @@ export async function autofill(request: AutofillRequest, clients: AutofillClient
     aiDown = first.down;
     site = first.output && keepGrounded(first.output, readable);
   }
+  let contact = siteContact(site, readable);
   if (site && chain) site = withoutBranchFacts(site, byDomain);
   // No AI could read the site (D-84): its own page title and meta description stand in for the name and description.
   const fromMeta = !site && aiDown ? factsFromPageMeta(pages, domain) : null;
@@ -134,6 +142,7 @@ export async function autofill(request: AutofillRequest, clients: AutofillClient
     ).output;
     if (retry) {
       site = keepGrounded(retry, readable);
+      contact = siteContact(site, readable);
       if (chain) site = withoutBranchFacts(site, byDomain);
       model = retryModel;
     }
@@ -156,6 +165,7 @@ export async function autofill(request: AutofillRequest, clients: AutofillClient
       chain,
       // A provider failed, so "we couldn't find your business" would be wrong (D-84).
       aiDown: aiDown || (placesDown && !fromWebsite && place === null),
+      industryCheck: industryCheck(fromSite, place),
     }),
     placeId: place?.placeId ?? null,
     // Saved even when nothing was readable, so advice can tell "blocks AI readers" from "no website" (BUG-087).
@@ -167,6 +177,7 @@ export async function autofill(request: AutofillRequest, clients: AutofillClient
             domain,
             pages: pages.map((p) => ({ path: p.path, status: p.status })),
             facts: site,
+            contact: site ? contact : null,
           }
         : null,
     problems,

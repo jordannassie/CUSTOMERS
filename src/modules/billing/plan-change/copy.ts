@@ -1,3 +1,4 @@
+import { customerDate } from "@/lib/time-zone";
 import { formatCount, formatUsd } from "../format";
 import type { PlanChange } from "./planner";
 
@@ -5,9 +6,7 @@ import type { PlanChange } from "./planner";
 
 /** In the viewer's zone, like Billing's own dates (BUG-111); UTC when unknown. */
 export function formatDate(seconds: number, timeZone = "UTC"): string {
-  return new Intl.DateTimeFormat("en-US", { month: "long", day: "numeric", year: "numeric", timeZone }).format(
-    new Date(seconds * 1000),
-  );
+  return customerDate(new Date(seconds * 1000), timeZone);
 }
 
 /** A change scheduled for the period end that a cancel drops, or "Keep my plan" puts back (BUG-124). */

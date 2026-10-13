@@ -1,7 +1,8 @@
 import "server-only";
 import { cache } from "react";
 import { createServiceClient } from "@/lib/supabase/service";
-import { branchOf, chainName } from "../branch";
+import { branchOf, chainName, ownChain, type OwnChain } from "../branch";
+import { ownBranch } from "../recount/service";
 
 // A tracked branch ("Bennu Coffee on Congress") counts every answer that names its chain (BUG-097). Read from the
 // saved answers when a page is shown, so nothing new is stored: for each branch that AI named, whether most of those
@@ -42,3 +43,33 @@ const branchAnswers = cache(async (businessId: string, name: string, sinceMs: nu
   }
   return answers;
 });
+
+/**
+ * The chain's mentions for a business that is itself one branch, over the answers its score counts; null when it is
+ * not a branch (step 7). Read from the saved answers when the page is shown, like the competitors' chains.
+ */
+export async function loadOwnChain(
+  businessId: string,
+  business: { name: string; city: string | null; domain: string | null },
+  questionIds: Set<string>,
+  since: Date,
+): Promise<OwnChain | null> {
+  // The same test as the matching (ownBranch), so the chain line shows exactly when the score counts only the branch.
+  const branch = ownBranch({ ...business, area: null }) && branchOf(business.name, business.city, business.domain);
+  if (!branch) return null;
+  const answers: string[] = [];
+  for (let from = 0; ; from += PAGE) {
+    const { data, error } = await createServiceClient()
+      .from("visibility_results_counted")
+      .select("answer_text, tracked_prompt_id")
+      .eq("business_id", businessId)
+      .gt("created_at", since.toISOString())
+      .order("created_at")
+      .order("id")
+      .range(from, from + PAGE - 1);
+    if (error) throw new Error(`Chains: could not read the answers for ${business.name}: ${error.message}`);
+    for (const r of data) if (r.answer_text && r.tracked_prompt_id && questionIds.has(r.tracked_prompt_id)) answers.push(r.answer_text);
+    if (data.length < PAGE) break;
+  }
+  return ownChain(branch.brand, answers);
+}

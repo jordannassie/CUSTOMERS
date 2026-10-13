@@ -1,5 +1,6 @@
 "use client";
 
+import { customerDate } from "@/lib/time-zone";
 import { useTimeZone } from "@/components/ui/local-date";
 import { useState } from "react";
 import dynamic from "next/dynamic";
@@ -134,7 +135,7 @@ function termsText(state: Choose, monthly: number, timeZone: string): string {
   const total = `${formatUsd(monthly)} a month for ${businesses(state.businessCount)}`;
   if (!state.trial) return `You pay ${total} today, then on the same date each month until you cancel.`;
   // The viewer's own time zone, like Billing and the card step.
-  const ends = new Date(Date.now() + TRIAL_DAYS * 24 * 60 * 60 * 1000).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric", timeZone });
+  const ends = customerDate(new Date(Date.now() + TRIAL_DAYS * 24 * 60 * 60 * 1000), timeZone);
   return `${TRIAL_DAYS} days free, then ${total}. Cancel before ${ends} and you won't be charged.`;
 }
 

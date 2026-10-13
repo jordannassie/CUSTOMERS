@@ -1,20 +1,19 @@
 import { Suspense } from "react";
-import { notFound, redirect } from "next/navigation";
+import { redirect } from "next/navigation";
 import { WizardFrame, type FrameStep } from "@/components/onboarding/WizardFrame";
-import { canOpen, getWizardState, isStepSlug, resumeStep, stepPath, visibleSteps, type StepSlug, type WizardContext } from "@/modules/onboarding";
+import { canOpen, getWizardState, resumeStep, stepPath, visibleSteps, type StepSlug, type WizardContext } from "@/modules/onboarding";
 import { StepContent, StepSkeleton, TITLES } from "./step-content";
 
-export const metadata = { title: "Set up", robots: { index: false } };
+export const stepMetadata = { title: "Set up", robots: { index: false } };
 
-// Blocking on purpose, like the admin layout (BUG-020): the resume redirect must happen before anything streams.
-export const instant = false;
+export type StepSearchParams = Promise<{ plan?: string; session_id?: string }>;
 
-type Props = { params: Promise<{ step: string }>; searchParams: Promise<{ plan?: string; session_id?: string }> };
-
-// Onboarding (MVP_SPEC 3.1, D-14). Every step saves through a Server Action, so a return resumes here.
-export default async function OnboardingStepPage({ params, searchParams }: Props) {
-  const { step } = await params;
-  if (!isStepSlug(step)) notFound();
+/**
+ * Onboarding (MVP_SPEC 3.1, D-14). Every step saves through a Server Action, so a return resumes here. Each step has
+ * its own small page that renders this (BUG-067): an unknown step then matches no route at all and answers a real
+ * 404, which a [step] segment could not, since the app frame starts streaming before notFound() runs.
+ */
+export async function OnboardingStep({ step, searchParams }: { step: StepSlug; searchParams: StepSearchParams }) {
   const state = await getWizardState(stepPath(step));
   if (!canOpen(step, state)) redirect(stepPath(resumeStep(state) ?? "website"));
 

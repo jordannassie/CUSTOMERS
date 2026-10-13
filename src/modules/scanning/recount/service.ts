@@ -2,6 +2,8 @@
 // matching rule fixed later (BUG-113), only showed in new scans. The same rules as a scan (check.ts) run on the saved
 // answer text and its saved name extraction. Pure, so every case is unit tested.
 import type { Json } from "@/types/database.types";
+import { branchOf } from "../branch";
+import { coreName, domainBrand } from "../mention-text";
 import { matchNames } from "../extract-match";
 import { mergeMentions } from "../mention-merge";
 import { detectMentions, type MentionTarget } from "../mentions";
@@ -13,9 +15,24 @@ export type TargetBusiness = {
   city: string | null;
   phone: string | null;
   hasWebsite: boolean | null;
+  /** The neighborhood or area, "Hyde Park": a branch named with it counts as named (step 7). */
+  area?: string | null;
 };
 
 export type TargetCompetitor = { name: string; domain: string | null; phone: string | null; city: string | null };
+
+/**
+ * When the business is itself one branch of a chain, the places that name it: its own ("Congress") and its area.
+ * Its score then counts only answers that name the branch, and the chain's mentions are shown apart (step 7).
+ */
+export function ownBranch(business: Pick<TargetBusiness, "name" | "city" | "domain" | "area">): { places: string[] } | null {
+  const branch = branchOf(business.name, business.city, business.domain);
+  // Only when its own website spells the chain's brand ("Bennu Coffee" on bennucoffee.com): a name that merely reads
+  // like "<brand> <place>" ("Push Pull on Union", "... Full Service AI Agency") must not lose its own mentions.
+  const spelled = branch && domainBrand(business.name, business.domain);
+  if (!branch || !spelled || coreName(spelled) !== coreName(branch.brand)) return null;
+  return { places: [branch.place, business.area ?? ""].filter((p) => p.trim()) };
+}
 
 /** The business and its competitors as mention detection sees them; the scan and the recount share it. */
 export function mentionTargets(business: TargetBusiness, competitors: TargetCompetitor[]) {
@@ -27,6 +44,7 @@ export function mentionTargets(business: TargetBusiness, competitors: TargetComp
       city: business.city,
       phone: business.phone,
       hasWebsite: business.hasWebsite ?? Boolean(business.domain),
+      branch: ownBranch(business),
     } satisfies MentionTarget,
     competitors: competitors.map((c): MentionTarget => ({ name: c.name, website: c.domain, phone: c.phone, city: c.city ?? business.city })),
   };
@@ -77,7 +95,20 @@ export function recountCheck(row: SavedCheck, targets: ReturnType<typeof mention
   const same =
     next.business_mentioned === row.business_mentioned &&
     next.mention_position === row.mention_position &&
-    JSON.stringify(next.competitors_mentioned) === JSON.stringify(row.competitors_mentioned ?? []) &&
-    JSON.stringify(next.extracted_names) === JSON.stringify(row.extracted_names ?? null);
+    sameJson(next.competitors_mentioned, row.competitors_mentioned ?? []) &&
+    sameJson(next.extracted_names, row.extracted_names ?? null);
   return same ? null : next;
+}
+
+/** Equal as JSON whatever the key order: jsonb gives keys back sorted, so plain text compare called every row changed. */
+function sameJson(a: unknown, b: unknown): boolean {
+  return JSON.stringify(sorted(a)) === JSON.stringify(sorted(b));
+}
+
+function sorted(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(sorted);
+  if (value && typeof value === "object") {
+    return Object.fromEntries(Object.entries(value).sort(([x], [y]) => x.localeCompare(y)).map(([k, v]) => [k, sorted(v)]));
+  }
+  return value;
 }

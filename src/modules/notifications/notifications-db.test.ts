@@ -1,6 +1,6 @@
 import { randomBytes, randomUUID } from "node:crypto";
 import { afterAll, describe, expect, it, vi } from "vitest";
-import { captureCredit, releaseHold } from "@/modules/credits";
+import { captureCredit, grantCredits, releaseHold } from "@/modules/credits";
 import { addBusiness, createAgency, deleteTestUsers, fakeMail, grantPlan, service, spend } from "./notifications.test-helpers";
 
 // B-62 against the local database `npm test` rebuilds: low credits, the weekly report and the welcome email,
@@ -68,6 +68,18 @@ describe("low credits", () => {
     expect(log.map((r) => r.idempotency_key)).toEqual(
       ["low", "empty", "negative"].map((level) => `low_credits:${a.agencyId}:${period}:${level}`),
     );
+  });
+
+  it("stays quiet when the period's plan credits are used but plenty is still left (step 9d)", async () => {
+    const a = await createAgency();
+    const business = await addBusiness(a, "Plenty Left Plumbing");
+    await grantPlan(a.agencyId, 100);
+    await spend(a, business, 85, 85);
+    // 85 of 100 plan credits used, but a 500 credit top-up is still there: 515 to spend.
+    await grantCredits({ agencyId: a.agencyId, source: "topup", sourceId: `ch_${randomUUID()}`, amount: 500, expiresAt: null });
+    const mail = fakeMail();
+    expect(await runLowCredits(deps([a.agencyId], mail.send))).toMatchObject({ sent: 0 });
+    expect(await listLowCreditAgencies().then((rows) => rows.filter((r) => r.agencyId === a.agencyId))).toEqual([]);
   });
 
   it("leaves out agencies that never had credits and agencies that are not paying", async () => {

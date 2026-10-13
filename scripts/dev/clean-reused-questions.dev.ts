@@ -28,15 +28,25 @@ it.runIf(enabled)("pause questions new sets no longer get", { timeout: 600_000 }
   const { data, error } = await query;
   if (error) throw new Error(error.message);
   const bad = data.filter((q) => !isFairQuestion(q.prompt) || also?.test(q.prompt));
-  console.table(bad.map((q) => ({ business: q.business_id, question: q.prompt })));
+  const { data: named } = await db.from("businesses").select("id, name").in("id", [...new Set(bad.map((q) => q.business_id))]);
+  const nameOf = new Map((named ?? []).map((b) => [b.id, b.name]));
+  // Written straight to stdout: vitest hides console output from a passing test, so the list never showed.
+  const apply = process.env.APPLY === "1";
+  process.stdout.write(
+    [
+      `${apply ? "Pausing" : "Would pause (dry run)"} ${bad.length} suggested questions on ${process.env.NEXT_PUBLIC_SUPABASE_URL}:`,
+      ...bad.map((q) => `  ${nameOf.get(q.business_id) ?? q.business_id}: ${q.prompt}`),
+      "",
+    ].join("\n"),
+  );
 
   if (process.env.APPLY === "1" && bad.length > 0) {
     const { error: updateError } = await db.from("tracked_prompts").update({ active: false }).in("id", bad.map((q) => q.id));
     if (updateError) throw new Error(updateError.message);
     const businesses = [...new Set(bad.map((q) => q.business_id))];
-    const results = [];
-    for (const id of businesses) results.push({ business: id, ...(await recountSavedAnswers(id)) });
-    console.table(results);
+    const results: { business: string; checked: number; changed: number }[] = [];
+    for (const id of businesses) results.push({ business: nameOf.get(id) ?? id, ...(await recountSavedAnswers(id)) });
+    process.stdout.write(`Recounted: ${results.map((r) => `${r.business} ${r.changed} of ${r.checked} changed`).join("; ")}\n`);
   }
   expect(bad.length).toBeGreaterThanOrEqual(0);
 });

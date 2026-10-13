@@ -14,7 +14,7 @@ import {
   type NumberedTemplate,
   type PickBusiness,
   type WriteOutput,
-} from "./prompts/pick-questions.v3";
+} from "./prompts/pick-questions.v5";
 
 export type PickTemplates = (input: { business: PickBusiness; templates: NumberedTemplate[] }) => Promise<number[]>;
 export type WriteQuestions = (input: { business: PickBusiness }) => Promise<WriteOutput["questions"]>;

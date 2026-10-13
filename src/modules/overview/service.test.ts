@@ -8,8 +8,7 @@ import {
   scoreSentence,
   scoreTone,
   topOpportunities,
-  type Opportunity,
-} from "./service";
+  type Opportunity, ownChainText } from "./service";
 
 const estimate = (score: number) => ({ score, margin: 9.6, checks: 36, uniqueAnswers: 36 });
 
@@ -34,6 +33,7 @@ function report(overrides: Partial<ScoreReport> = {}): ScoreReport {
     competitors: [],
     questions: [],
     ownQuestions: null,
+    ownChain: null,
     ...overrides,
   };
 }
@@ -117,6 +117,16 @@ describe("overviewView", () => {
       );
     });
 
+    it("says Claude couldn't be checked when one cached answer is all it has and the rest of the scan failed", () => {
+      const one = { score: 0, margin: 60, checks: 1, uniqueAnswers: 1 };
+      const withOne = report({ questions: twelve, byModel: [...report().byModel, { model: "anthropic", estimate: one }] });
+      const view = overviewView(withOne, [], { lastScanFailures: { anthropic: 11 } });
+      expect(view.models.find((m) => m.id === "anthropic")).toMatchObject({ score: null, notChecked: true });
+      // With enough answers, or when the scan did not mostly fail, the number stands.
+      const healthy = overviewView(withOne, [], { lastScanFailures: { anthropic: 1 } });
+      expect(healthy.models.find((m) => m.id === "anthropic")).toMatchObject({ score: 0, notChecked: false });
+    });
+
     it("says an AI simply has no checks yet when nothing failed", () => {
       const view = overviewView(report(), []);
       expect(view.score?.coverage).toBe("Based on ChatGPT and Perplexity. Claude has no checks yet.");
@@ -184,5 +194,15 @@ describe("overviewView", () => {
     expect(view.score).toBeNull();
     expect(view.lastCheckedAt).toBeNull();
     expect(view.models.every((m) => m.score === null)).toBe(true);
+  });
+});
+
+describe("ownChainText (step 7)", () => {
+  it("shows a branch business's chain mentions apart from its score", () => {
+    expect(ownChainText({ brand: "Bennu Coffee", named: 2, answers: 3 })).toBe(
+      "Bennu Coffee (all locations): named in 2 of 3 answers. Your score counts only the answers that name your location.",
+    );
+    expect(ownChainText({ brand: "Bennu Coffee", named: 0, answers: 3 })).toBeNull();
+    expect(ownChainText(null)).toBeNull();
   });
 });

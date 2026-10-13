@@ -2,7 +2,7 @@
 // neither the business nor one of its tracked competitors, and how often. Pure, over saved checks.
 import { z } from "zod";
 import { isSameBusiness } from "../extract-match";
-import { brandName, coreName } from "../mention-text";
+import { brandName, coreName, isGenericName } from "../mention-text";
 import type { MentionTarget } from "../mentions";
 
 export type AlsoRecommended = {
@@ -33,6 +33,11 @@ export function alsoRecommendedNames(
   max = 8,
 ): AlsoRecommendedList {
   const groups = new Map<string, { answers: number; spellings: Map<string, number> }>();
+  const keyOf = (name: string) => coreName(brandName(name, business.city) ?? name);
+  const sameAs = shortestForms(
+    extractions.flatMap((v) => stored.safeParse(v).data?.names.map((n) => keyOf(n.name)) ?? []),
+    coreName(business.city ?? ""),
+  );
   let answers = 0;
   for (const value of extractions) {
     const parsed = stored.safeParse(value);
@@ -41,7 +46,8 @@ export function alsoRecommendedNames(
     const seen = new Set<string>();
     for (const { name, matches } of parsed.data.names) {
       // "Abacus Plumbing, Air Conditioning & Electrical" and "Abacus Plumbing" are one business (BUG-097).
-      const key = coreName(brandName(name, business.city) ?? name);
+      // "Canopy by Hilton Austin Downtown" is the "Canopy" the other answers named (step 9b).
+      const key = sameAs.get(keyOf(name)) ?? keyOf(name);
       if (!key || seen.has(key) || matches === "business") continue;
       if (isSameBusiness(name, business) || competitors.some((c) => isSameBusiness(name, c))) continue;
       seen.add(key);
@@ -60,4 +66,18 @@ export function alsoRecommendedNames(
 
 function mostUsed(spellings: Map<string, number>): string {
   return [...spellings.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))[0][0];
+}
+
+/**
+ * Each name, mapped to the shortest other name in the list that its words start with: "canopy by hilton austin
+ * downtown" to "canopy". Only a distinctive name groups others; a generic one ("the") or the city never does.
+ */
+function shortestForms(keys: string[], city: string): Map<string, string> {
+  const distinct = [...new Set(keys.filter(Boolean))].sort((a, b) => a.length - b.length);
+  const out = new Map<string, string>();
+  for (const key of distinct) {
+    const short = distinct.find((s) => s !== key && key.startsWith(`${s} `) && !isGenericName(s) && s !== city);
+    if (short) out.set(key, out.get(short) ?? short);
+  }
+  return out;
 }

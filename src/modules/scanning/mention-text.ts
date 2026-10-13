@@ -103,9 +103,40 @@ export function leadingBrand(name: string): string | null {
   return short;
 }
 
+// Words a Google title adds after the brand for one branch: "Nike Flagship Store Islamabad", "Khaadi Outlet F-7".
+const BRANCH_WORDS = new Set([
+  "flagship", "store", "stores", "outlet", "branch", "showroom", "official", "location", "kiosk", "factory", "experience",
+  "centre", "center", "mall", "the", "at", "in", "of",
+]);
+
+/**
+ * The brand before a branch's own words and city: "Nike Flagship Store Islamabad" gives "Nike" (BUG-142). Null when
+ * the title has no branch word, or what is left is too generic to stand alone.
+ */
+export function branchBrand(name: string, city?: string | null): string | null {
+  const place = city ? normaliseText(city) : "";
+  const words = name.trim().split(/\s+/);
+  const cut = words.findIndex((w, i) => i > 0 && BRANCH_WORDS.has(normaliseText(w)) && normaliseText(w) !== "the");
+  if (cut <= 0) return null;
+  const rest = normaliseText(words.slice(cut).join(" "));
+  // Everything after the brand must be branch words or the city, so "Nike Running Club Store" keeps its name.
+  const leftover = place ? rest.replace(new RegExp(`\\b${place}\\b`), " ") : rest;
+  if (!leftover.split(" ").filter(Boolean).every((w) => BRANCH_WORDS.has(w) || /^[a-z]?\d+[a-z]?$/.test(w))) return null;
+  const short = words.slice(0, cut).join(" ").replace(/[,:;-]+$/, "");
+  const core = coreName(short);
+  // "Book Store" must not give "Book": a trade word alone is not a brand.
+  if (!core || core === coreName(name) || isGenericName(core) || SERVICE_WORDS.has(core)) return null;
+  return short;
+}
+
 /** Shorter forms of the name that AI answers use on their own (BUG-097). */
 export function brandForms(target: { name: string; city?: string | null; website?: string | null }): string[] {
-  const forms = [brandName(target.name, target.city), domainBrand(target.name, target.website), leadingBrand(target.name)];
+  const forms = [
+    brandName(target.name, target.city),
+    domainBrand(target.name, target.website),
+    leadingBrand(target.name),
+    branchBrand(target.name, target.city),
+  ];
   return [...new Set(forms.filter((f): f is string => f !== null))];
 }
 

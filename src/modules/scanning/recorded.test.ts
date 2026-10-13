@@ -34,6 +34,29 @@ describe("recorded answers (B-31)", () => {
     );
   });
 
+  it("matches the trade before the city and question words (BUG-072)", () => {
+    for (const provider of ["openai", "anthropic", "perplexity"] as ProviderId[]) {
+      const pool = answers.filter((a) => a.provider === provider);
+      const coffee = closestAnswer(pool, "Which coffee shop in Orange, CA has the best oat milk latte?").question.toLowerCase();
+      expect(coffee).toMatch(/coffee|cafe/);
+      // Real question from a test coffee shop that used to get an emergency dentist's answer.
+      expect(closestAnswer(pool, "Where can I find an affordable cup of coffee in Austin, TX?").question.toLowerCase()).toMatch(/coffee|cafe/);
+      expect(closestAnswer(pool, "Where can I get a cafe with fast wifi in Austin, TX?").question.toLowerCase()).toMatch(/coffee|cafe/);
+      expect(closestAnswer(pool, "Which plumber in Orange, CA fixes water heaters?").question.toLowerCase()).toContain("plumber");
+      expect(closestAnswer(pool, "Which dentist in Orange, CA takes walk-ins?").question.toLowerCase()).toContain("dentist");
+    }
+  });
+
+  it("uses the business's industry when the question names no trade (BUG-072: cold brew got a dentist)", async () => {
+    const question = "Where's the best place to get cold brew in North Loop, Austin, TX?";
+    for (const provider of ["openai", "anthropic", "perplexity"] as ProviderId[]) {
+      const { runCheck } = recordedAnswers(answers, "coffee_shop");
+      const result = await runCheck(provider)({ question, location, model: "gpt-4.1-mini" });
+      const used = answers.find((a) => a.provider === provider && a.answerText === result.answerText)!;
+      expect(used.question.toLowerCase()).toMatch(/coffee|cafe/);
+    }
+  });
+
   it("returns the labelled names for a recorded answer", async () => {
     const answer = answers[0];
     const { extractNames } = recordedAnswers(answers);

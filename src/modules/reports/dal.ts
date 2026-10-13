@@ -208,3 +208,9 @@ export async function getSharedLogo(token: string): Promise<{ bytes: ArrayBuffer
   const type = logoType(new Uint8Array(bytes, 0, Math.min(bytes.byteLength, 16)));
   return type ? { bytes, type } : null;
 }
+
+/** Feeds the provider error spike alert (MVP_SPEC 22): a PDF that Browserless or Chromium could not print. */
+export async function recordPdfError(message: string): Promise<void> {
+  const { error } = await createServiceClient().from("provider_errors").insert({ provider: "browserless", message: message.slice(0, 500) });
+  if (error) console.error(`Could not record the PDF error: ${error.message}`);
+}

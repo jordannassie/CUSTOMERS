@@ -2,14 +2,14 @@
 // format, and the real picking flow fed with a fixture library and fixture model answers.
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { COFFEE_GOOD_PICK, COFFEE_LIBRARY, fakeQuestionClients } from "@/modules/onboarding/question-fixtures";
+import { COFFEE_FULL_BUSINESS, COFFEE_GOOD_PICK, COFFEE_LIBRARY, fakeQuestionClients } from "@/modules/onboarding/question-fixtures";
 import { prepareQuestions } from "@/modules/onboarding/questions";
 import { apiErrorCase, EXAMPLE_PATH, gradeCase, loadDataset, parseDataset, PASS_OVERLAP, poolNotInLibrary, score } from "./grader";
 
 const examples = parseDataset(readFileSync(EXAMPLE_PATH, "utf8"), { allowExamples: true });
 const templateById = new Map(COFFEE_LIBRARY.map((e) => [e.id, e.template]));
 
-// Fixture model answers for each example row, standing in for Claude Haiku.
+// Fixture model answers for each example row, standing in for the live model.
 const fixturePicks: Record<string, number[] | Error> = {
   "qp-example-1": COFFEE_GOOD_PICK,
   "qp-example-2": new Error("529 overloaded"),
@@ -60,10 +60,22 @@ describe("question picking on fixtures", () => {
       const picked = set.questions.flatMap((q) => (q.templateId ? [templateById.get(q.templateId) ?? ""] : []));
       graded.push(gradeCase(c, picked, set.source));
     }
+    // v4: only fitting templates reach the model. The kiosk lists two services, so few enough templates fit that no
+    // pick call is made and the fixture outage never reaches it.
     expect(graded.map((g) => [g.source, g.overlap])).toEqual([
       ["library", 1],
-      ["fallback", 0],
+      ["library", 1],
     ]);
-    expect(score(graded)).toMatchObject({ scored: 2, fallbacks: 1, meanOverlap: 0.5, passed: false });
+    expect(score(graded)).toMatchObject({ scored: 2, fallbacks: 0, meanOverlap: 1, passed: true });
+  });
+
+  it("scores a fallback run 0 when the pick call fails (not an API error: the user still got questions)", async () => {
+    const [, kiosk] = examples;
+    const { clients } = fakeQuestionClients({ library: { coffee_shop: COFFEE_LIBRARY }, pick: new Error("529 overloaded") });
+    // A shop listing every service in the fixture library needs a pick call, so the outage reaches it.
+    const set = await prepareQuestions({ ...COFFEE_FULL_BUSINESS, city: kiosk.input.city, region: kiosk.input.region }, clients);
+    const graded = gradeCase(kiosk, set.questions.flatMap((q) => (q.templateId ? [templateById.get(q.templateId) ?? ""] : [])), set.source);
+    expect([graded.source, graded.overlap]).toEqual(["fallback", 0]);
+    expect(score([graded])).toMatchObject({ scored: 1, fallbacks: 1, passed: false });
   });
 });

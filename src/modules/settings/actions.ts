@@ -4,7 +4,8 @@ import { countryCode } from "@/lib/countries";
 import { refresh } from "next/cache";
 import { authFailure, requireAgency, type ActionResult } from "@/modules/auth";
 import { canEditTracking } from "@/modules/entitlements";
-import { saveAgencyLogo, updateAgencyName, updateBusinessProfile, updateScanSettings } from "./dal";
+import { rebuildQuestionsForIndustry, sameIndustry } from "@/modules/onboarding/server";
+import { businessIndustry, saveAgencyLogo, updateAgencyName, updateBusinessProfile, updateScanSettings } from "./dal";
 import { agencyNameInput, businessProfileInput, scanSettingsInput } from "./schema";
 import { checkLogo, normalizeWebsite } from "./service";
 
@@ -37,14 +38,17 @@ export async function saveBusinessProfile(input: unknown): Promise<Result> {
 
   const parsed = businessProfileInput.safeParse(input);
   if (!parsed.success) return { ok: false, status: 400, error: "Check the highlighted details and try again." };
-  const { businessId, name, industry, services, city, region, country, area, phone, website } = parsed.data;
+  const { businessId, name, industry, services, aliases, city, region, country, area, phone, website } = parsed.data;
   const site = normalizeWebsite(website);
   if (!site.ok) return { ok: false, status: 400, error: "Enter a website like yourbusiness.com, or leave it empty." };
 
+  const before = await businessIndustry(businessId);
+  if (before === undefined) return notFound;
   const saved = await updateBusinessProfile(businessId, {
     name,
     industry: industry || null,
     services,
+    ...(aliases === undefined ? {} : { aliases }),
     primary_city: city || null,
     primary_region: region || null,
     // Left as it is when the form did not send one; an unknown value clears it (BUG-086).
@@ -54,6 +58,8 @@ export async function saveBusinessProfile(input: unknown): Promise<Result> {
     domain: site.domain,
   });
   if (!saved) return notFound;
+  // A new industry gets questions for it; the user's own questions and past results stay.
+  if (!sameIndustry(before, industry || null)) await rebuildQuestionsForIndustry(businessId);
   refresh();
   return { ok: true, data: null };
 }

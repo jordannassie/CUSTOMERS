@@ -228,6 +228,10 @@ test("card step: a failed bank check lets the user try again, a passed one start
   await slow(page.getByText("Setting up your account…")).toBeVisible();
   await webhookLinks(user.id);
   await page.waitForURL("**/onboarding/first-scan", { timeout: 30_000 });
+  // A2: the URL changed under the old bug too, while the card page stayed frozen on "Setting up". The first-scan
+  // screen itself must render.
+  await expect(page.getByText("Setting up your account…")).toHaveCount(0);
+  await slow(page.getByRole("heading", { level: 1, name: /first scan|trial credits/i })).toBeVisible();
 });
 
 test("card step: a test agency never sees it", async ({ page }) => {

@@ -17,8 +17,7 @@ import {
   lookupQuery,
   nearbyQuery,
   planSave,
-  type BusinessForSearch,
-} from "./competitors";
+  type BusinessForSearch, matchingPlace } from "./competitors";
 import { PLACES_TEXT_SEARCH_URL, PlacesError } from "./places";
 
 const COFFEE: BusinessForSearch = {
@@ -194,5 +193,23 @@ describe("fixture Places", () => {
     expect(await places.search("plumber in Springfield, IL", 3)).toEqual(NEARBY_CANDIDATES.slice(0, 3));
     expect(await places.search("Blue Door in Springfield, IL", 5)).toEqual(LOOKUP_CANDIDATES);
     expect(await places.search("Nowhere Diner in Springfield, IL", 5)).toEqual([]);
+  });
+});
+
+describe("matchingPlace (step 9c)", () => {
+  const candidate = (name: string, placeId = name) => ({ placeId, name, rating: null, reviewCount: null, address: null, mapsUri: null });
+
+  it("finds the listing for a business AI named, long or short", () => {
+    expect(matchingPlace("Canopy", [candidate("Canopy by Hilton Austin Downtown", "p1")])?.placeId).toBe("p1");
+    expect(matchingPlace("Blue Door Coffee", [candidate("Kiln Coffee Co", "p0"), candidate("Blue Door Coffee", "p2")])?.placeId).toBe("p2");
+    expect(matchingPlace("Bennu Coffee on Congress", [candidate("Bennu Coffee", "p3")])?.placeId).toBe("p3");
+  });
+
+  it("saves no listing for a near miss or a very short name", () => {
+    // Two places start with "Canopy": a guess, so none is saved.
+    expect(matchingPlace("Canopy", [candidate("Canopy Tree Service", "x"), candidate("Canopy by Hilton Austin Downtown", "y")])).toBeNull();
+    expect(matchingPlace("Canopy", [candidate("Canopy Tree Service", "x"), candidate("Canopy", "z")])?.placeId).toBe("z");
+    expect(matchingPlace("Blue Door Coffee", [candidate("Blue Dog Coffee")])).toBeNull();
+    expect(matchingPlace("Ace", [candidate("Ace Hardware")])).toBeNull();
   });
 });

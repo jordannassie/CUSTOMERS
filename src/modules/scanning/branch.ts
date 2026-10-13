@@ -7,6 +7,7 @@ import {
   SERVICE_WORDS,
   TITLE_BREAK,
   coreName,
+  domainBrand,
   findName,
   findPhrase,
   isGenericName,
@@ -34,8 +35,10 @@ const AFTER = 200;
  * the name is part of the name ("Powell's City of Books"), says what the business does ("Roto-Rooter Plumbing & Water
  * Cleanup"), or is only the city the questions are about ("Reliant Plumbing - Austin").
  */
-export function branchOf(name: string, city?: string | null): Branch | null {
+export function branchOf(name: string, city?: string | null, website?: string | null): Branch | null {
   const trimmed = name.trim();
+  const spelled = website ? domainBranch(trimmed, city, website) : null;
+  if (spelled) return spelled;
   const at = trimmed.search(TITLE_BREAK);
   const split = at > 0 ? place(trimmed.slice(0, at), trimmed.slice(at), city, 1) : null;
   if (split) return split;
@@ -47,6 +50,24 @@ export function branchOf(name: string, city?: string | null): Branch | null {
   const cut = words.findIndex((w, i) => i > 0 && SERVICE_WORDS.has(normaliseText(w)));
   if (cut <= 0 || cut === words.length - 1) return null;
   return place(words.slice(0, cut + 1).join(" "), words.slice(cut + 1).join(" "), city, 2);
+}
+
+// Words a Google title adds for one location; what is left after them is the place.
+const LOCATION_WORDS = new Set(["branch", "outlet", "store", "flagship", "showroom", "location", "kiosk"]);
+
+/**
+ * "Cheezious Golra Mor Branch" on cheezious.com: the website spells the brand, and what follows it, without words
+ * like Branch or Outlet, is the place (step 7). "Nike Flagship Store Islamabad" leaves only the city, so it is not one.
+ */
+function domainBranch(name: string, city: string | null | undefined, website: string): Branch | null {
+  const brand = domainBrand(name, website);
+  if (!brand || !name.toLowerCase().startsWith(brand.toLowerCase())) return null;
+  const rest = name
+    .slice(brand.length)
+    .split(/\s+/)
+    .filter((w) => w && !LOCATION_WORDS.has(normaliseText(w)))
+    .join(" ");
+  return rest ? place(brand, rest, city, 1) : null;
 }
 
 function place(brandText: string, rest: string, city: string | null | undefined, minBrandWords: number): Branch | null {
@@ -89,4 +110,15 @@ export function chainName(name: string, city: string | null | undefined, answers
   if (!branch || answers.length === 0) return null;
   const named = answers.filter((answer) => namesBranch(answer, name, branch)).length;
   return named * 2 < answers.length ? branch.brand : null;
+}
+
+export type OwnChain = { brand: string; named: number; answers: number };
+
+/**
+ * For a business that is itself one branch: how many of the counted answers named its chain at all ("Bennu Coffee
+ * (all locations): named in 9 of 36 answers"), shown apart from its score, which counts only the branch (step 7).
+ */
+export function ownChain(brand: string, answers: string[]): OwnChain {
+  const core = coreName(brand);
+  return { brand, named: answers.filter((a) => findName(a, core).length > 0).length, answers: answers.length };
 }

@@ -11,12 +11,12 @@ import { domainBrand } from "@/modules/scanning/mention-text";
 import { AREA_MAX } from "@/modules/settings/schema";
 import { parseServices } from "@/modules/settings/service";
 import { CountrySelect, SELECT_CLASS } from "@/components/ui/country-select";
-import { FieldMessage, useFieldErrors } from "@/components/ui/field-errors";
+import { useFieldErrors } from "@/components/ui/field-errors";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { clearAutofill, useStoredAutofill } from "./autofill-store";
+import { IndustryCheck } from "./IndustryCheck";
 import { GoogleAttribution } from "./PlaceBits";
-import { FieldHint, StepActions, StepError } from "./StepBits";
+import { Field, StepActions, StepError } from "./StepBits";
 
 export type DetailsInput = {
   businessId: string;
@@ -67,11 +67,14 @@ function DetailsForm({ businessId, domain, details, industryText, save, autofill
     country: countryCode(start.country),
   });
   const [error, setError] = useState<string | null>(null);
+  // Google and the website disagree on the industry: highlighted until the user picks one themselves.
+  const [industryChecked, setIndustryChecked] = useState(!autofill?.industryCheck);
   const [pending, startTransition] = useTransition();
   const fields = useFieldErrors<Checked>("details");
   const set = (field: keyof typeof v) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     setV((s) => ({ ...s, [field]: e.target.value }));
     if (field === "name" || field === "industry" || field === "otherIndustry" || field === "city") fields.clear(field);
+    if (field === "industry") setIndustryChecked(true);
   };
   const check = (key: Checked) => ({ error: fields.errors[key], errorId: fields.idOf(key) });
   // Google names one branch ("Cheezious Golra Mor Branch"); customers and AI use the brand (BUG-097).
@@ -130,7 +133,15 @@ function DetailsForm({ businessId, domain, details, industryText, save, autofill
         </Field>
 
         <Field id="industry" label="Industry" className="sm:col-span-2" {...check("industry")}>
-          <select id="industry" value={v.industry} onChange={set("industry")} required className={SELECT_CLASS} {...fields.fieldProps("industry")}>
+          <select
+            id="industry"
+            value={v.industry}
+            onChange={set("industry")}
+            required
+            className={`${SELECT_CLASS} ${industryChecked ? "" : "border-mid ring-3 ring-mid/30"}`}
+            {...fields.fieldProps("industry")}
+            {...(industryChecked ? {} : { "aria-describedby": "industry-check" })}
+          >
             <option value="" disabled>
               Choose an industry
             </option>
@@ -140,6 +151,7 @@ function DetailsForm({ businessId, domain, details, industryText, save, autofill
               </option>
             ))}
           </select>
+          {!industryChecked && autofill?.industryCheck ? <IndustryCheck id="industry-check" {...autofill.industryCheck} /> : null}
         </Field>
         {v.industry === "other" ? (
           <Field id="other-industry" label="What kind of business is it?" className="sm:col-span-2" {...check("otherIndustry")}>
@@ -212,29 +224,6 @@ function AutofillNote({ autofill }: { autofill: AutofillResult | null }) {
         {found && autofill.note ? <p className="mt-1 text-muted-foreground">{autofill.note}</p> : null}
         {google ? <GoogleAttribution what="Business details" className="mt-2" /> : null}
       </div>
-    </div>
-  );
-}
-
-function Field({ id, label, optional, hint, error, errorId, className, children }: {
-  id: string;
-  label: string;
-  optional?: boolean;
-  hint?: string;
-  error?: string;
-  errorId?: string;
-  className?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className={`flex flex-col gap-2 ${className ?? ""}`}>
-      <Label htmlFor={id}>
-        {label}
-        {optional ? <span className="font-normal text-muted-foreground">(optional)</span> : null}
-      </Label>
-      {children}
-      {errorId ? <FieldMessage id={errorId} message={error} /> : null}
-      {hint ? <FieldHint id={`${id}-hint`}>{hint}</FieldHint> : null}
     </div>
   );
 }

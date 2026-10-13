@@ -37,7 +37,12 @@ export function QuestionsStep({ businessId, questions, limit, save }: Props) {
   function add(e: React.FormEvent | React.MouseEvent) {
     e.preventDefault();
     const text = draft.trim();
-    if (text.length < MIN_LENGTH || full) return;
+    if (full) return;
+    // Say why nothing was added: a short or repeated question used to vanish without a word.
+    if (text.length < MIN_LENGTH) return void fields.show({ add: `Each question needs at least ${MIN_LENGTH} characters.` });
+    if (rows.some((r) => r.text.trim().toLowerCase() === text.toLowerCase())) {
+      return void fields.show({ add: "You already have this question." });
+    }
     const id = nextId.current++;
     setRows((list) => [...list, { id, text }]);
     setDraft("");
