@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { checkLogo, LOGO_MAX_BYTES, normalizeWebsite, parseServices } from "./service";
+import { aliasesProblem, checkLogo, LOGO_MAX_BYTES, namesChanged, normalizeWebsite, parseServices } from "./service";
 
 const bytes = (...values: number[]) => new Uint8Array(values);
 const text = (s: string) => new TextEncoder().encode(s);
@@ -52,5 +52,22 @@ describe("checkLogo", () => {
     expect(checkLogo(0, png)).toMatchObject({ ok: false, error: expect.stringContaining("Choose an image") });
     expect(checkLogo(LOGO_MAX_BYTES + 1, png)).toMatchObject({ ok: false, error: expect.stringContaining("too big") });
     expect(checkLogo(LOGO_MAX_BYTES, png).ok).toBe(true);
+  });
+});
+
+describe("other names", () => {
+  it("allows up to 10, each 2 to 120 characters", () => {
+    expect(aliasesProblem([])).toBeUndefined();
+    expect(aliasesProblem(Array.from({ length: 10 }, (_, i) => `Name ${i}`))).toBeUndefined();
+    expect(aliasesProblem(Array.from({ length: 11 }, (_, i) => `Name ${i}`))).toBe("Add up to 10 other names.");
+    expect(aliasesProblem(["KFC", "K"])).toBe("Each other name needs at least 2 characters.");
+    expect(aliasesProblem(["x".repeat(121)])).toBe("Keep each other name under 120 characters.");
+  });
+
+  it("sees a change to the name or the list, not to its order or case", () => {
+    const before = { name: "Book Woman", aliases: ["BookWoman", "Old Name"] };
+    expect(namesChanged(before, { name: "Book Woman", aliases: ["old name", "BookWoman"] })).toBe(false);
+    expect(namesChanged(before, { name: "Book Woman", aliases: ["BookWoman"] })).toBe(true);
+    expect(namesChanged(before, { name: "BookWoman Austin", aliases: before.aliases })).toBe(true);
   });
 });

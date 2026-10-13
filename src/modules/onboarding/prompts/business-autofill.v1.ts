@@ -4,12 +4,14 @@ import { z } from "zod";
 import { INDUSTRIES } from "../industries";
 import { contactLinesIn } from "../page-contact";
 
-export const AUTOFILL_PROMPT_VERSION = "business-autofill.v1";
+// v2 (2026-10-13): the services, menu or products page, or the main menu's pages, are read too and marked with
+// kind="services" or kind="menu"; services come mainly from them.
+export const AUTOFILL_PROMPT_VERSION = "business-autofill.v2";
 export const AUTOFILL_MODEL = "claude-haiku-4-5";
 // Used once when Haiku leaves the name or industry empty or says its confidence is low.
 export const AUTOFILL_RETRY_MODEL = "claude-sonnet-5";
 export const AUTOFILL_MAX_TOKENS = 1_500;
-// Per page, so four long pages still fit comfortably in one Haiku call.
+// Per page, so five long pages still fit comfortably in one Haiku call.
 export const MAX_PAGE_CHARS = 8_000;
 
 // The model reads only the business's own website. Google Places values are merged in code
@@ -22,14 +24,17 @@ Rules:
 - name: the business's own name as the site writes it, without taglines or a city added.
 - industry: pick one value from the list: ${INDUSTRIES.join(", ")}. Use "other" when the business is clearly none of these. Leave it empty if the pages do not say what the business does.
 - description: one or two plain sentences, written only from what the pages say about the business.
-- services: the main services or products the business itself offers, short phrases, at most 12. Do not list brands it sells for others unless they are what it offers.
+- services: the main services or products the business itself offers, short phrases, at most 12. Take them mainly from the pages marked kind="services" (its services, menu or products page) or kind="menu" (pages from its main menu), then from the other pages. Do not list brands it sells for others unless they are what it offers.
 - city, state, country: where the business is located, only when the pages state its address or location. state as written (for the US, the two-letter code if the page uses it). country as the two-letter ISO code when the address makes it clear.
 - phone: the business's main phone number exactly as written.
 - address: the street address exactly as written.
 - confidence: "high" when the pages clearly describe one business and you filled the name and industry from them; otherwise "low" (for example a blank, blocked, parked or directory page).`;
 
-/** footer: the page footer's text, given once for the site since every page repeats it (BUG-138). */
-export type SitePage = { path: string; markdown: string; footer?: string };
+/**
+ * footer: the page footer's text, given once for the site since every page repeats it (BUG-138). kind: a services,
+ * menu or products page, or a page from the main menu (site-pages.ts).
+ */
+export type SitePage = { path: string; markdown: string; footer?: string; kind?: "services" | "menu" };
 
 export function autofillUserMessage(domain: string, pages: SitePage[]): string {
   const body = pages
@@ -38,7 +43,8 @@ export function autofillUserMessage(domain: string, pages: SitePage[]): string {
       const later = contactLinesIn(p.markdown.slice(MAX_PAGE_CHARS));
       const rest = later.length ? `\n<later-on-page>\n${later.join("\n")}\n</later-on-page>` : "";
       const footer = p.footer ? `\n<footer>\n${p.footer}\n</footer>` : "";
-      return `<page path="${p.path}">\n${p.markdown.slice(0, MAX_PAGE_CHARS)}${rest}${footer}\n</page>`;
+      const kind = p.kind ? ` kind="${p.kind}"` : "";
+      return `<page path="${p.path}"${kind}>\n${p.markdown.slice(0, MAX_PAGE_CHARS)}${rest}${footer}\n</page>`;
     })
     .join("\n\n");
   return `Website: ${domain}\n\n${body}`;

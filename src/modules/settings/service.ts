@@ -1,5 +1,5 @@
 // Pure rules for the Settings page (B-55). No framework, database or env imports, so the forms use them too.
-import type { Frequency, ModelId } from "./schema";
+import { ALIASES_MAX, type Frequency, type ModelId } from "./schema";
 
 // MVP_SPEC 4.5.
 export const MODELS: { id: ModelId; label: string; explanation: string }[] = [
@@ -62,4 +62,18 @@ export function checkLogo(size: number, head: Uint8Array): { ok: true; contentTy
   const type = LOGO_TYPES.find((t) => t.matches(head));
   if (!type) return { ok: false, error: `That file type isn't supported. ${LOGO_RULES}` };
   return { ok: true, contentType: type.contentType };
+}
+
+/** Whether a save changed the names mention detection looks for: the name, or the other names in any way but order. */
+export function namesChanged(before: { name: string; aliases: string[] }, after: { name: string; aliases: string[] }): boolean {
+  const set = (list: string[]) => [...new Set(list.map((a) => a.trim().toLowerCase()))].sort().join("\n");
+  return before.name.trim() !== after.name.trim() || set(before.aliases) !== set(after.aliases);
+}
+
+/** What is wrong with a typed list of other names, for the field's message; undefined when it can be saved. */
+export function aliasesProblem(names: string[]): string | undefined {
+  if (names.length > ALIASES_MAX) return `Add up to ${ALIASES_MAX} other names.`;
+  if (names.some((n) => n.length < 2)) return "Each other name needs at least 2 characters.";
+  if (names.some((n) => n.length > 120)) return "Keep each other name under 120 characters.";
+  return undefined;
 }

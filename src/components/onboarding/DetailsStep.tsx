@@ -8,8 +8,8 @@ import { INDUSTRIES, INDUSTRY_LABELS, isIndustry, servicesPlaceholder } from "@/
 import type { ActionResult } from "@/modules/auth";
 import type { AutofillResult, BusinessDetails } from "@/modules/onboarding/schema";
 import { domainBrand } from "@/modules/scanning/mention-text";
-import { AREA_MAX } from "@/modules/settings/schema";
-import { parseServices } from "@/modules/settings/service";
+import { ALIASES_MAX, AREA_MAX } from "@/modules/settings/schema";
+import { aliasesProblem, parseServices } from "@/modules/settings/service";
 import { CountrySelect, SELECT_CLASS } from "@/components/ui/country-select";
 import { useFieldErrors } from "@/components/ui/field-errors";
 import { Input } from "@/components/ui/input";
@@ -24,6 +24,8 @@ export type DetailsInput = {
   industry: string;
   description: string;
   services: string[];
+  /** Other names customers and AI use for the business. */
+  aliases: string[];
   city: string;
   state: string;
   country: string;
@@ -38,6 +40,8 @@ type Props = {
   domain?: string | null;
   details: BusinessDetails;
   industryText: string;
+  /** Other names the user saved before, if they came back to this step. */
+  aliases: string[];
   /** Already confirmed once: show saved values, not a stale auto-fill. */
   confirmed: boolean;
   save: (input: DetailsInput) => Promise<ActionResult<null>>;
@@ -53,11 +57,11 @@ export function DetailsStep(props: Props) {
   return <DetailsForm key={key} {...props} autofill={fresh} />;
 }
 
-type Checked = "name" | "industry" | "otherIndustry" | "city" | "country";
+type Checked = "name" | "industry" | "otherIndustry" | "aliases" | "city" | "country";
 const textareaClass =
   "w-full rounded-lg border border-input bg-surface px-3 py-2 text-base outline-none transition-colors placeholder:text-text-hint focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 md:text-sm";
 
-function DetailsForm({ businessId, domain, details, industryText, save, autofill }: Props & { autofill: AutofillResult | null }) {
+function DetailsForm({ businessId, domain, details, industryText, aliases, save, autofill }: Props & { autofill: AutofillResult | null }) {
   const router = useRouter();
   const start = autofill ? { ...details, ...nonEmpty(autofill.details) } : details;
   const [v, setV] = useState({
@@ -66,6 +70,7 @@ function DetailsForm({ businessId, domain, details, industryText, save, autofill
     // Auto-fill names an unlisted type from Google, "Bookstore" (BUG-123); what the user saved wins.
     otherIndustry: industryText || autofill?.details.industryText || "",
     services: start.services.join(", "),
+    aliases: aliases.join(", "),
     // Auto-fill may give "US" or "United States"; the select holds the code. No default (BUG-086).
     country: countryCode(start.country),
   });
@@ -76,7 +81,7 @@ function DetailsForm({ businessId, domain, details, industryText, save, autofill
   const fields = useFieldErrors<Checked>("details");
   const set = (field: keyof typeof v) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     setV((s) => ({ ...s, [field]: e.target.value }));
-    if (field === "name" || field === "industry" || field === "otherIndustry" || field === "city") fields.clear(field);
+    if (field === "name" || field === "industry" || field === "otherIndustry" || field === "aliases" || field === "city") fields.clear(field);
     if (field === "industry") setIndustryChecked(true);
   };
   const check = (key: Checked) => ({ error: fields.errors[key], errorId: fields.idOf(key) });
@@ -90,6 +95,7 @@ function DetailsForm({ businessId, domain, details, industryText, save, autofill
       name: v.name.trim() ? undefined : "Enter your business name.",
       industry: v.industry ? undefined : "Choose an industry.",
       otherIndustry: v.industry === "other" && !v.otherIndustry.trim() ? "Say what kind of business it is." : undefined,
+      aliases: aliasesProblem(parseServices(v.aliases)),
       city: v.city.trim() ? undefined : "Enter the city your business is in.",
       country: v.country ? undefined : "Choose the country your business is in.",
     });
@@ -102,6 +108,7 @@ function DetailsForm({ businessId, domain, details, industryText, save, autofill
         industry,
         description: v.description,
         services: parseServices(v.services).slice(0, 20),
+        aliases: parseServices(v.aliases),
         city: v.city,
         state: v.state,
         country: v.country,
@@ -177,6 +184,26 @@ function DetailsForm({ businessId, domain, details, industryText, save, autofill
 
         <Field id="services" label="Services" optional hint="Separate with commas. These shape the questions we ask AI." className="sm:col-span-2">
           <textarea id="services" value={v.services} onChange={set("services")} rows={2} placeholder={servicesPlaceholder(v.industry)} className={textareaClass} />
+        </Field>
+
+        <Field
+          id="aliases"
+          label="Other names"
+          optional
+          hint={`Short names, old names or other spellings customers use, separated with commas, up to ${ALIASES_MAX}. AI answers that use them count for you.`}
+          className="sm:col-span-2"
+          {...check("aliases")}
+        >
+          <Input
+            id="aliases"
+            value={v.aliases}
+            onChange={set("aliases")}
+            maxLength={1300}
+            placeholder="For example: KFC"
+            className="h-11 text-base"
+            autoComplete="off"
+            {...fields.fieldProps("aliases", "aliases-hint")}
+          />
         </Field>
 
         <Field id="city" label="City" {...check("city")}>

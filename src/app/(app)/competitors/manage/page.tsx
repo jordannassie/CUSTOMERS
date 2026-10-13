@@ -2,7 +2,9 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { PageContainer } from "@/components/app/PageContainer";
+import { CompetitorAliases } from "@/components/competitors/CompetitorAliases";
 import { CompetitorPicker } from "@/components/onboarding/CompetitorPicker";
+import { getCompetitorAliases, saveCompetitorAliases } from "@/modules/competitors";
 import { getCompetitorStep, limitMessage, lookupCompetitorByName, saveCompetitorList } from "@/modules/onboarding";
 import { getWorkspace } from "@/modules/workspace";
 
@@ -16,8 +18,8 @@ export default async function ManageCompetitorsPage() {
   const business = workspace.businesses.find((b) => b.id === workspace.activeBusinessId);
   if (!business || business.status === "onboarding") redirect("/dashboard");
 
-  const step = await getCompetitorStep(business.id, { next: PATH });
-  if (!step) notFound();
+  const [step, aliases] = await Promise.all([getCompetitorStep(business.id, { next: PATH }), getCompetitorAliases(business.id, PATH)]);
+  if (!step || !aliases) notFound();
 
   return (
     <PageContainer>
@@ -45,6 +47,8 @@ export default async function ManageCompetitorsPage() {
         lookup={lookupCompetitorByName}
         save={saveCompetitorList}
       />
+      {/* Keyed by the list, so a competitor added or removed above shows here after the save. */}
+      <CompetitorAliases key={aliases.map((c) => c.id).join()} businessId={business.id} competitors={aliases} save={saveCompetitorAliases} />
     </PageContainer>
   );
 }

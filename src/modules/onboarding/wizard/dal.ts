@@ -1,18 +1,12 @@
 import "server-only";
-import { countryCode } from "@/lib/countries";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { canAddBusiness } from "@/modules/entitlements";
 import type { AutofillClients, AutofillRequest } from "../autofill";
-import { liveListing, runBusinessAutofill } from "../dal";
-import type { AutofillOutput } from "../prompts/business-autofill.v1";
-import { refillDetails } from "./refill";
+import { runBusinessAutofill } from "../dal";
 import { restartIfAnotherBusiness } from "./restart/dal";
-import { rebuildQuestionsForIndustry, sameIndustry, savedIndustry } from "./questions/rebuild/dal";
-import { isIndustry } from "@/lib/industries";
-import type { AutofillResult, BusinessDetails } from "../schema";
+import type { AutofillResult } from "../schema";
 import { needsCard, nextStepNumber, type PlanId, type StepSlug, type WizardState } from "./steps";
-import type { DetailsStepInput } from "./schema";
 
 export type WizardContext = WizardState & { agencyName: string | null; agencyLogoUrl: string | null };
 
@@ -147,81 +141,6 @@ async function keepActiveBusiness(userId: string): Promise<void> {
   if (!latest.data) return;
   const { error } = await supabase.from("profiles").update({ active_business_id: latest.data.id }).eq("id", userId);
   if (error) throw new Error(`Could not save the active business: ${error.message}`);
-}
-
-export type DetailsStep = {
-  businessId: string;
-  domain: string | null;
-  hasWebsite: boolean;
-  /** Saved values once confirmed, else the business's own site facts; the screen adds the fresh auto-fill. */
-  details: BusinessDetails;
-  /** The user's own words for their trade when the industry is "other". */
-  industryText: string;
-  confirmed: boolean;
-};
-
-export async function loadDetailsStep(userId: string, businessId: string): Promise<DetailsStep | null> {
-  const supabase = await createClient();
-  const { data: b, error } = await supabase
-    .from("businesses")
-    .select("name, domain, has_website, industry, description, services, primary_city, primary_region, primary_country, primary_area, phone, onboarding_step, places_id")
-    .eq("id", businessId)
-    .eq("owner_user_id", userId)
-    .maybeSingle();
-  if (error) throw new Error(`Could not load business: ${error.message}`);
-  if (!b) return null;
-
-  const confirmed = (b.onboarding_step ?? 0) > 4;
-  const saved: BusinessDetails = {
-    // Before confirming, the name is only the typed domain, so it is not offered as the name.
-    name: confirmed || !b.has_website ? b.name : "",
-    industry: (b.industry && isIndustry(b.industry) ? b.industry : b.industry ? "other" : "") as BusinessDetails["industry"],
-    description: b.description ?? "",
-    services: b.services,
-    city: b.primary_city ?? "",
-    state: b.primary_region ?? "",
-    country: b.primary_country ?? "",
-    area: b.primary_area ?? "",
-    phone: b.phone ?? "",
-    address: "",
-  };
-  let refill: ReturnType<typeof refillDetails> = { details: saved, industryText: null };
-  if (!confirmed) {
-    const [facts, place] = await Promise.all([
-      b.has_website ? supabase.from("business_site_facts").select("data").eq("business_id", businessId).maybeSingle() : null,
-      liveListing(b.places_id, b.domain),
-    ]);
-    refill = refillDetails(saved, (facts?.data?.data as { facts?: AutofillOutput | null } | null)?.facts ?? null, place);
-  }
-  const industryText = refill.industryText ?? (b.industry && !isIndustry(b.industry) ? b.industry : "");
-  return { businessId, domain: b.domain, hasWebsite: b.has_website !== false, details: refill.details, industryText, confirmed };
-}
-
-/** Step 4: saves what the user confirmed about their own business. False when it is not theirs. */
-export async function saveDetails(userId: string, input: DetailsStepInput): Promise<boolean> {
-  const current = await ownStep(userId, input.businessId);
-  if (current === undefined) return false;
-  const before = await savedIndustry(input.businessId);
-  const { error } = await createServiceClient()
-    .from("businesses")
-    .update({
-      name: input.name,
-      industry: input.industry,
-      description: input.description || null,
-      services: input.services,
-      primary_city: input.city,
-      primary_region: input.state || null,
-      primary_country: countryCode(input.country) || null,
-      ...(input.area === undefined ? {} : { primary_area: input.area }),
-      phone: input.phone || null,
-      onboarding_step: nextStepNumber(current, "details"),
-    })
-    .eq("id", input.businessId)
-    .eq("owner_user_id", userId);
-  if (error) throw new Error(`Could not save business details: ${error.message}`);
-  // Back on this step with a new industry: the questions already made were for the old one.
-  if (!sameIndustry(before, input.industry)) await rebuildQuestionsForIndustry(input.businessId);
-  return true;
 }
 
 /** The business's onboarding_step, null when unset, undefined when it is not the user's. */

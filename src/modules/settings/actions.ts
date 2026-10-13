@@ -5,9 +5,10 @@ import { refresh } from "next/cache";
 import { authFailure, requireAgency, type ActionResult } from "@/modules/auth";
 import { canEditTracking } from "@/modules/entitlements";
 import { rebuildQuestionsForIndustry, sameIndustry } from "@/modules/onboarding/server";
-import { businessIndustry, saveAgencyLogo, updateAgencyName, updateBusinessProfile, updateScanSettings } from "./dal";
+import { recountAfterNamesChange } from "@/modules/scanning";
+import { businessBefore, saveAgencyLogo, updateAgencyName, updateBusinessProfile, updateScanSettings } from "./dal";
 import { agencyNameInput, businessProfileInput, scanSettingsInput } from "./schema";
-import { checkLogo, normalizeWebsite } from "./service";
+import { checkLogo, namesChanged, normalizeWebsite } from "./service";
 
 type Result<T = null> = ActionResult<T>;
 
@@ -42,7 +43,7 @@ export async function saveBusinessProfile(input: unknown): Promise<Result> {
   const site = normalizeWebsite(website);
   if (!site.ok) return { ok: false, status: 400, error: "Enter a website like yourbusiness.com, or leave it empty." };
 
-  const before = await businessIndustry(businessId);
+  const before = await businessBefore(businessId);
   if (before === undefined) return notFound;
   const saved = await updateBusinessProfile(businessId, {
     name,
@@ -59,7 +60,9 @@ export async function saveBusinessProfile(input: unknown): Promise<Result> {
   });
   if (!saved) return notFound;
   // A new industry gets questions for it; the user's own questions and past results stay.
-  if (!sameIndustry(before, industry || null)) await rebuildQuestionsForIndustry(businessId);
+  if (!sameIndustry(before.industry, industry || null)) await rebuildQuestionsForIndustry(businessId);
+  // Saved answers are checked again for the new names, so the score counts "KFC" from today, not the next scan.
+  if (namesChanged(before, { name, aliases: aliases ?? before.aliases })) await recountAfterNamesChange(businessId);
   refresh();
   return { ok: true, data: null };
 }

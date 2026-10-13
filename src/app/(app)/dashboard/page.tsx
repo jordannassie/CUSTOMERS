@@ -8,10 +8,11 @@ import { Card, CardAction, CardContent, CardHeader, CardTitle } from "@/componen
 import { ModelScores, ModelScoresRow } from "@/components/overview/ModelScores";
 import { ScoreSummary } from "@/components/overview/ScoreSummary";
 import { OPPORTUNITIES_HREF, TopOpportunities } from "@/components/overview/TopOpportunities";
+import { QuestionTrends } from "@/components/overview/QuestionTrends";
 import { TrendChart } from "@/components/overview/TrendChart";
 import { getPickedInstead } from "@/modules/competitors";
 import { getScanStatus, startScan } from "@/modules/jobs";
-import { getOverview } from "@/modules/overview";
+import { getOverview, getQuestionTrends } from "@/modules/overview";
 import { createShareLink, exportPdf, getShareLink, revokeShareLink } from "@/modules/reports";
 import { getWorkspace } from "@/modules/workspace";
 
@@ -24,11 +25,12 @@ export default async function OverviewPage() {
   // Setup is the onboarding wizard's job (B-36); it resumes where the user stopped.
   if (!business || business.status === "onboarding") redirect("/onboarding");
 
-  const [overview, scanStatus, shareLink, picked] = await Promise.all([
+  const [overview, scanStatus, shareLink, picked, trends] = await Promise.all([
     getOverview(business.id),
     getScanStatus({ businessId: business.id }),
     getShareLink(business.id),
     getPickedInstead(business.id),
+    getQuestionTrends(business.id),
   ]);
   if (!overview) notFound();
   const { score } = overview;
@@ -150,6 +152,8 @@ export default async function OverviewPage() {
           <TopOpportunities opportunities={overview.opportunities} hasScore={score !== null} />
         </CardContent>
       </Card>
+
+      {trends && <QuestionTrends trends={trends} businessName={business.name} />}
 
       <p className="max-w-prose text-xs text-text-hint">
         Scores come from asking each AI your customers&apos; questions with web search and your location. Answers in the

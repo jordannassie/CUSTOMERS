@@ -19,7 +19,14 @@ export type TargetBusiness = {
   area?: string | null;
 };
 
-export type TargetCompetitor = { name: string; domain: string | null; phone: string | null; city: string | null };
+export type TargetCompetitor = {
+  name: string;
+  /** Other names AI may use for it, "KFC" (migration 055). */
+  aliases?: string[] | null;
+  domain: string | null;
+  phone: string | null;
+  city: string | null;
+};
 
 /**
  * When the business is itself one branch of a chain, the places that name it: its own ("Congress") and its area.
@@ -46,7 +53,9 @@ export function mentionTargets(business: TargetBusiness, competitors: TargetComp
       hasWebsite: business.hasWebsite ?? Boolean(business.domain),
       branch: ownBranch(business),
     } satisfies MentionTarget,
-    competitors: competitors.map((c): MentionTarget => ({ name: c.name, website: c.domain, phone: c.phone, city: c.city ?? business.city })),
+    competitors: competitors.map(
+      (c): MentionTarget => ({ name: c.name, aliases: c.aliases ?? [], website: c.domain, phone: c.phone, city: c.city ?? business.city }),
+    ),
   };
 }
 

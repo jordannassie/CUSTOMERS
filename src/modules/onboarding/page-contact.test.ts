@@ -3,7 +3,7 @@ import { autofill } from "./autofill";
 import { toPage } from "./firecrawl";
 import { COFFEE_DOMAIN, COFFEE_PAGES, COFFEE_PLACE, COFFEE_SITE_OUTPUT, fakeClients } from "./fixtures";
 import { contactLinesIn, footerText, showsPhone, siteContact, withFooterOnce } from "./page-contact";
-import { AUTOFILL_MODEL, autofillUserMessage, MAX_PAGE_CHARS } from "./prompts/business-autofill.v1";
+import { AUTOFILL_MODEL, AUTOFILL_SYSTEM, autofillUserMessage, MAX_PAGE_CHARS } from "./prompts/business-autofill.v1";
 
 // firstlightaustin.com (BUG-138): Webflow's footer is a div class="footer", and main-content markdown left it out, so
 // the advice said the website showed no phone number.
@@ -69,6 +69,31 @@ describe("the footer in auto-fill", () => {
     const run = await autofill({ domain: COFFEE_DOMAIN }, clients);
     expect(run.siteFacts?.facts).toMatchObject({ phone: "", address: "" });
     expect(run.siteFacts?.contact).toEqual({ hasPhone: true, hasAddress: true });
+  });
+});
+
+describe("the services page in auto-fill (business-autofill.v2)", () => {
+  it("marks the services page and menu pages for the model, which takes services mainly from them", () => {
+    const pages = withFooterOnce([
+      { path: "/", markdown: "# Magic Plumbing", footer: "(650) 555-0100" },
+      { path: "/services", markdown: "Drain cleaning. Water heaters.", footer: "(650) 555-0100", kind: "services" },
+      { path: "/drains", markdown: "Hydro jetting", kind: "menu" },
+    ]);
+    expect(pages[1]).toEqual({ path: "/services", markdown: "Drain cleaning. Water heaters.", kind: "services" });
+    const message = autofillUserMessage("magicplumbing.example", pages);
+    expect(message).toContain('<page path="/services" kind="services">');
+    expect(message).toContain('<page path="/drains" kind="menu">');
+    expect(message).toContain('<page path="/">');
+    expect(AUTOFILL_SYSTEM).toMatch(/services: [^\n]*mainly from the pages marked kind="services"/);
+  });
+
+  it("hands the services page to the model with the rest", async () => {
+    const services = { path: "/services", status: "ok" as const, title: "Services", markdown: "Pour over, cold brew, catering", kind: "services" as const };
+    const { clients } = fakeClients({ pages: [...COFFEE_PAGES, services], outputs: { [AUTOFILL_MODEL]: COFFEE_SITE_OUTPUT } });
+    const seen: { path: string; kind?: string }[][] = [];
+    const extract = clients.extract;
+    await autofill({ domain: COFFEE_DOMAIN }, { ...clients, extract: async (args) => (seen.push(args.pages), extract(args)) });
+    expect(seen[0]).toContainEqual(expect.objectContaining({ path: "/services", kind: "services" }));
   });
 });
 

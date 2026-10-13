@@ -410,6 +410,7 @@ export type Database = {
       }
       business_competitors: {
         Row: {
+          aliases: string[]
           business_id: string
           category: string | null
           checked_from: string | null
@@ -431,6 +432,7 @@ export type Database = {
           source: string | null
         }
         Insert: {
+          aliases?: string[]
           business_id: string
           category?: string | null
           checked_from?: string | null
@@ -452,6 +454,7 @@ export type Database = {
           source?: string | null
         }
         Update: {
+          aliases?: string[]
           business_id?: string
           category?: string | null
           checked_from?: string | null

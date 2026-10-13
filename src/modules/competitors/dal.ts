@@ -7,7 +7,7 @@ import { createServiceClient } from "@/lib/supabase/service";
 import { requireAgency } from "@/modules/auth";
 import { maxCompetitors } from "@/modules/entitlements";
 import { limitMessage, placeIdForName } from "@/modules/onboarding/server";
-import { loadAlsoRecommended, loadScoreReport, recountAfterCompetitorChange } from "@/modules/scanning";
+import { loadAlsoRecommended, loadScoreReport, recountAfterNamesChange } from "@/modules/scanning";
 import { fixtureSignals } from "./place-fixtures";
 import { createPlaceSignals, PlacesUnavailable, type FetchSignals } from "./places";
 import { pickedInstead, type PickedInstead } from "./picked";
@@ -134,7 +134,7 @@ export async function trackCompetitorByName(userId: string, businessId: string, 
   // 23505: the same name was added a moment ago, in another tab or by a double click.
   if (insertError && insertError.code !== "23505") throw new Error(`Could not add the competitor: ${insertError.message}`);
   // Saved answers are checked for it at once, so it is compared over the whole window (BUG-122).
-  if (!insertError) await recountAfterCompetitorChange(businessId);
+  if (!insertError) await recountAfterNamesChange(businessId);
   return { ok: true };
 }
 

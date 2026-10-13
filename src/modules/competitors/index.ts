@@ -1,5 +1,6 @@
 // The only file other modules may import from (eslint-plugin-boundaries).
-export { trackCompetitor } from "./actions";
+export { saveCompetitorAliases, trackCompetitor } from "./actions";
+export { getCompetitorAliases, type CompetitorNames } from "./aliases/dal";
 export { fetchPlaceSignals, getCompetitorsPage, getPickedInstead, loadCompetitorsPage } from "./dal";
 export type { PickedInstead } from "./picked";
 export { namedAs, rowName, trackedNote, type ChainOf } from "./chain";

@@ -70,15 +70,16 @@ export function showsPhone(text: string): boolean {
   });
 }
 
-type ReadPage = { path: string; markdown: string; footer?: string };
+type ReadPage = { path: string; markdown: string; footer?: string; kind?: "services" | "menu" };
 
 /** The pages for the model, with the footer given once: every page of a site repeats the same one. */
 export function withFooterOnce(pages: ReadPage[]): ReadPage[] {
   const seen = new Set<string>();
-  return pages.map(({ path, markdown, footer }) => {
-    if (!footer || seen.has(footer)) return { path, markdown };
+  return pages.map(({ path, markdown, footer, kind }) => {
+    const page = kind ? { path, markdown, kind } : { path, markdown };
+    if (!footer || seen.has(footer)) return page;
     seen.add(footer);
-    return { path, markdown, footer };
+    return { ...page, footer };
   });
 }
 

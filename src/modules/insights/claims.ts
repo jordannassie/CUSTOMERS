@@ -89,7 +89,8 @@ export function websiteIssues(texts: string[], input: ExplainInput): string[] {
   return texts.some((t) => BUILD_SITE.test(t)) ? ["tells a business with a website to build one"] : [];
 }
 
-// We open only /, /about, /about-us and /contact, so a page we did not find may well exist under another address.
+// We open only a few addresses (/, /about, the services page or menu links, /contact, /about-us), so a page we did not
+// find may well exist under another address.
 const PAGE_KIND = "(?:about(?:-us)?|contact|services?|location|locations|faq|menu|booking|dedicated|separate|individual|key|basic|important)";
 const MISSING_PAGE = new RegExp(
   [

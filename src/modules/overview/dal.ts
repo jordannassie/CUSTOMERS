@@ -1,7 +1,8 @@
 import "server-only";
+import { env } from "@/lib/env";
 import { requestNow } from "@/lib/request-now";
 import { requireAgency } from "@/modules/auth";
-import { loadScoreReport } from "@/modules/scanning";
+import { loadQuestionTrends, loadScoreReport, type QuestionTrends } from "@/modules/scanning";
 import { createServiceClient } from "@/lib/supabase/service";
 import { overviewView, scanFailuresFrom, type Impact, type OverviewView } from "./service";
 import { HISTORY_DAYS } from "./trend";
@@ -14,6 +15,15 @@ const STOPPED_AGENCIES = ["past_due", "canceled", "suspended", "deleted"];
 export async function getOverview(businessId: string): Promise<OverviewView | null> {
   const { agency } = await requireAgency({ next: "/dashboard" });
   return loadOverview(agency.id, businessId, requestNow());
+}
+
+/**
+ * Up or down per question at the last weekly scans; null when the business is not the agency's. With SHOW_POSITION
+ * on, also where AI listed the business (D-63: off until decided).
+ */
+export async function getQuestionTrends(businessId: string): Promise<QuestionTrends | null> {
+  const { agency } = await requireAgency({ next: "/dashboard" });
+  return loadQuestionTrends(agency.id, businessId, requestNow(), { places: env.SHOW_POSITION === "true" });
 }
 
 // Callers check the viewer may see this agency first (the signed-in owner, or a live share link).

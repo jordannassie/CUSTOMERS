@@ -3,7 +3,7 @@ import { env } from "@/lib/env";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { maxCompetitors } from "@/modules/entitlements";
-import { recountAfterCompetitorChange } from "@/modules/scanning";
+import { recountAfterNamesChange } from "@/modules/scanning";
 import { fixturePlaces } from "../competitor-fixtures";
 import { createCompetitorPlaces, type CompetitorCandidate, type CompetitorPlaces } from "../competitor-places";
 import {
@@ -161,7 +161,7 @@ export async function saveCompetitors(
     }
   }
   // Saved answers are checked for the new list, so a new competitor is not "still collecting" (BUG-122).
-  if (plan.add.length || plan.remove.length) await recountAfterCompetitorChange(businessId);
+  if (plan.add.length || plan.remove.length) await recountAfterNamesChange(businessId);
   return { ok: true, count: list.length };
 }
 

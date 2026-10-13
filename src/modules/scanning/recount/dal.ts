@@ -16,7 +16,7 @@ export async function recountSavedAnswers(businessId: string, now = new Date()):
   const db = createServiceClient();
   const [business, competitors] = await Promise.all([
     db.from("businesses").select("name, aliases, domain, primary_city, primary_area, phone, has_website").eq("id", businessId).single(),
-    db.from("business_competitors").select("id, name, domain, phone, city").eq("business_id", businessId),
+    db.from("business_competitors").select("id, name, aliases, domain, phone, city").eq("business_id", businessId),
   ]);
   if (business.error) throw new Error(`Recount: could not load the business: ${business.error.message}`);
   if (competitors.error) throw new Error(`Recount: could not load competitors: ${competitors.error.message}`);
@@ -67,8 +67,11 @@ export async function recountSavedAnswers(businessId: string, now = new Date()):
   return { checked, changed };
 }
 
-/** After the competitor list changes: never fails the change itself, only logs. */
-export async function recountAfterCompetitorChange(businessId: string): Promise<void> {
+/**
+ * After the names a scan looks for change: the competitor list, or the other names of the business or a competitor.
+ * Never fails the change itself, only logs.
+ */
+export async function recountAfterNamesChange(businessId: string): Promise<void> {
   try {
     await recountSavedAnswers(businessId);
   } catch (error) {

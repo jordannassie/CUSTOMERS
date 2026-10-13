@@ -7,7 +7,7 @@ import { INDUSTRIES, INDUSTRY_LABELS, isIndustry } from "@/lib/industries";
 import type { ActionResult } from "@/modules/auth";
 import type { SettingsBusiness } from "@/modules/settings";
 import { ALIASES_MAX, AREA_MAX } from "@/modules/settings/schema";
-import { normalizeWebsite, parseServices } from "@/modules/settings/service";
+import { aliasesProblem, normalizeWebsite, parseServices } from "@/modules/settings/service";
 import { Button } from "@/components/ui/button";
 import { CountrySelect } from "@/components/ui/country-select";
 import { FieldMessage, useFieldErrors } from "@/components/ui/field-errors";
@@ -18,7 +18,7 @@ import { FormError, Panel, TEXTAREA_CLASS } from "./SettingsSection";
 export type SaveAction = (input: unknown) => Promise<ActionResult<null>>;
 
 type Fields = Omit<SettingsBusiness, "id" | "services" | "aliases" | "models" | "frequency"> & { services: string; aliases: string };
-type Checked = "name" | "website" | "industry";
+type Checked = "name" | "website" | "industry" | "aliases";
 
 const SELECT_CLASS =
   "h-9 w-full rounded-lg border border-input bg-surface px-3 text-base outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 md:text-sm";
@@ -55,7 +55,7 @@ export function BusinessProfileForm({ business, save }: { business: SettingsBusi
     value: form[key],
     onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
       setForm((f) => ({ ...f, [key]: e.target.value }));
-      if (key === "name" || key === "website") fields.clear(key);
+      if (key === "name" || key === "website" || key === "aliases") fields.clear(key);
     },
   });
 
@@ -66,6 +66,7 @@ export function BusinessProfileForm({ business, save }: { business: SettingsBusi
       name: form.name.trim() ? undefined : "Enter the business name.",
       industry: !industryChoice ? "Choose an industry." : otherIndustry && !otherText(form.industry) ? "Say what kind of business it is." : undefined,
       website: typed.ok ? undefined : "Enter a website like yourbusiness.com, or leave it empty.",
+      aliases: aliasesProblem(parseServices(form.aliases)),
     });
     if (bad) return;
     startTransition(async () => {
@@ -73,7 +74,7 @@ export function BusinessProfileForm({ business, save }: { business: SettingsBusi
         businessId: business.id,
         ...form,
         services: parseServices(form.services),
-        aliases: parseServices(form.aliases).slice(0, ALIASES_MAX),
+        aliases: parseServices(form.aliases),
       });
       if (!result.ok) return setError(result.error);
       setSaved(form);
@@ -156,9 +157,10 @@ export function BusinessProfileForm({ business, save }: { business: SettingsBusi
         <Row
           label="Other names"
           htmlFor="profile-aliases"
-          hint={`Optional. Names customers and AI use for the business, separated with commas, up to ${ALIASES_MAX}. For example: Cheezious, Cheezious Golra.`}
+          hint={`Optional. Other names customers and AI use for the business, such as a short name or an old name. Separate them with commas, up to ${ALIASES_MAX}. AI answers that use them count for you.`}
+          error={fields.errors.aliases}
         >
-          <Input {...field("aliases")} maxLength={400} autoComplete="off" aria-describedby="profile-aliases-hint" />
+          <Input {...field("aliases")} maxLength={1300} autoComplete="off" {...fields.fieldProps("aliases", "profile-aliases-hint")} />
         </Row>
 
         <div className="grid gap-5 sm:grid-cols-2">

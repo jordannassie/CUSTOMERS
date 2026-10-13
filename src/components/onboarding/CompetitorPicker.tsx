@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { ArrowLeft, Loader2, MapPin, X } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "cn";
@@ -47,6 +48,7 @@ const sameList = (a: Picked[], b: Picked[]) => a.length === b.length && a.every(
 // Onboarding step 5 (MVP_SPEC 3.1): tick nearby businesses from Google, add any it missed, and save.
 export function CompetitorPicker(props: CompetitorPickerProps) {
   const { businessId, limit, limitText, suggestions, note, lookup, save, onSaved, saveLabel = "Save competitors", backHref } = props;
+  const router = useRouter();
   const [picked, setPicked] = useState<Picked[]>(() => props.saved.map((s) => ({ ...s })));
   const [lastSaved, setLastSaved] = useState<Picked[]>(picked);
   const [limitHit, setLimitHit] = useState(false);
@@ -91,6 +93,8 @@ export function CompetitorPicker(props: CompetitorPickerProps) {
       // In the wizard the next step is the confirmation; a toast there would cover its Continue bar on a phone.
       if (onSaved) return onSaved(result.data.count);
       toast.success(result.data.count === 1 ? "1 competitor saved" : `${result.data.count} competitors saved`);
+      // Manage competitors lists the saved ones again below, for their other names.
+      router.refresh();
     });
   }
 

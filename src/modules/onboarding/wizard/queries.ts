@@ -3,7 +3,8 @@ import { getCurrentAgency, requireUser } from "@/modules/auth";
 import { canAddBusiness } from "@/modules/entitlements";
 import { previewSetupAddOn, type SetupAddOn, type TrialOffer } from "@/modules/billing";
 import { awaitingTrialCredits, loadCardStep } from "./card/dal";
-import { loadDetailsStep, loadWizardState, type DetailsStep, type WizardContext } from "./dal";
+import { loadWizardState, type WizardContext } from "./dal";
+import { loadDetailsStep, type DetailsStep } from "./details/dal";
 import { loadModelsStep, loadQuestionsStep, selectedPlan, type ModelsStep, type QuestionsStep } from "./questions/dal";
 
 // For the wizard pages: each redirects to login (then back to `next`) when signed out.

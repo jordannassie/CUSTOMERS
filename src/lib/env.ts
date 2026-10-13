@@ -67,6 +67,8 @@ export const env = createEnv({
     BILLING_ENABLED: flag,
     BETA_FREE_ACCESS: flag,
     TRIAL_ENABLED: flag,
+    // Where AI listed the business ("named 2nd") on the Overview. Off until Jordan decides (D-63: stored, not shown).
+    SHOW_POSITION: flag,
   },
   client: {
     NEXT_PUBLIC_SUPABASE_URL: z.url(),
@@ -112,6 +114,7 @@ export const env = createEnv({
     ALERT_DAILY_COST_USD: process.env.ALERT_DAILY_COST_USD,
     DELETION_WAIT_DAYS: process.env.DELETION_WAIT_DAYS,
     BILLING_ENABLED: process.env.BILLING_ENABLED,
+    SHOW_POSITION: process.env.SHOW_POSITION,
     BETA_FREE_ACCESS: process.env.BETA_FREE_ACCESS,
     TRIAL_ENABLED: process.env.TRIAL_ENABLED,
     NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,

@@ -83,6 +83,7 @@ export async function StepContent({ step, state, plan, returned }: Props) {
         domain={d.domain}
         details={d.details}
         industryText={d.industryText}
+        aliases={d.aliases}
         confirmed={d.confirmed}
         save={saveDetailsStep}
       />

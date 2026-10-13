@@ -2,7 +2,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { ANTHROPIC_CREDIT_ERROR, anthropicMessage, fakeAiClients, openaiResponse, providerFetch } from "@/modules/ai";
 import { createBusinessExtractor, ExtractError } from "./extract";
-import { createFirecrawlScraper, FIRECRAWL_SCRAPE_URL, SITE_PATHS, toPage } from "./firecrawl";
+import { createFirecrawlScraper, FIRECRAWL_SCRAPE_URL, toPage } from "./firecrawl";
 import { COFFEE_SITE_OUTPUT } from "./fixtures";
 import { createPlaceLookup, createPlacesSearch, PLACES_FIELD_MASK, PLACES_TEXT_SEARCH_URL, PlacesError, toCandidates } from "./places";
 import { AUTOFILL_SYSTEM } from "./prompts/business-autofill.v1";
@@ -16,11 +16,12 @@ const scrape = (markdown: string, metadata: Record<string, unknown> = {}) => ({
 });
 
 describe("Firecrawl scraper", () => {
-  it("asks for the four pages as main-content markdown, with the raw HTML for the footer", async () => {
+  it("asks for the pages as main-content markdown, with the raw HTML for the footer", async () => {
     const fetch = vi.fn<typeof globalThis.fetch>(async () => json(scrape("# Sunrise Coffee\n\nRoasted in house every morning.")));
     const pages = await createFirecrawlScraper("fc-test", { fetch })("sunrise-coffee.example");
 
-    expect(pages.map((p) => [p.path, p.status])).toEqual(SITE_PATHS.map((p) => [p, "ok"]));
+    // A home page with no links: the home and about pages, then the contact and about-us addresses as before.
+    expect(pages.map((p) => [p.path, p.status])).toEqual([["/", "ok"], ["/about", "ok"], ["/contact", "ok"], ["/about-us", "ok"]]);
     const [url, init] = fetch.mock.calls[0];
     expect(url).toBe(FIRECRAWL_SCRAPE_URL);
     expect(new Headers(init?.headers).get("authorization")).toBe("Bearer fc-test");
@@ -41,6 +42,42 @@ describe("Firecrawl scraper", () => {
     const pages = await createFirecrawlScraper("fc-test", { fetch })("brandastic-like.example");
     expect(pages.map((p) => p.status)).toEqual(["blocked", "blocked", "missing", "failed"]);
     expect(pages.every((p) => p.markdown === "")).toBe(true);
+  });
+
+  // A site's pages by address; the home page links to the given paths in its menu.
+  const site = (homeLinks: string[], missing: string[] = []) =>
+    vi.fn<typeof globalThis.fetch>(async (_url, init) => {
+      const path = new URL(JSON.parse(String(init?.body)).url as string).pathname.replace(/\/$/, "") || "/";
+      if (missing.includes(path)) return json(scrape("", { statusCode: 404 }));
+      const page = scrape(`# Page ${path}\n\nWhat we say on ${path}.`);
+      const rawHtml = `<header><nav>${homeLinks.map((l) => `<a href="${l}">${l.slice(1)}</a>`).join("")}</nav></header><footer>Call (512) 555-0100</footer>`;
+      return json(path === "/" ? { ...page, data: { ...page.data, rawHtml } } : page);
+    });
+  const asked = (fetch: ReturnType<typeof site>) => fetch.mock.calls.map(([, init]) => new URL(JSON.parse(String(init?.body)).url).pathname);
+
+  it("reads the services page the home page links to, marked for the model, 5 pages at most", async () => {
+    const fetch = site(["/about", "/team", "/services", "/blog", "/contact"]);
+    const pages = await createFirecrawlScraper("fc-test", { fetch })("magic-plumbing.example");
+    expect(pages.map((p) => [p.path, p.kind ?? null])).toEqual([["/", null], ["/about", null], ["/services", "services"], ["/contact", null], ["/about-us", null]]);
+    expect(fetch).toHaveBeenCalledTimes(5);
+  });
+
+  it("reads the first 3 links of the main menu when there is no services page", async () => {
+    const fetch = site(["/about", "/cart", "/plumbing", "/drains", "/water-heaters", "/reviews"]);
+    const pages = await createFirecrawlScraper("fc-test", { fetch })("menu-only.example");
+    expect(pages.map((p) => [p.path, p.kind ?? null])).toEqual([["/", null], ["/about", null], ["/plumbing", "menu"], ["/drains", "menu"], ["/water-heaters", "menu"]]);
+    expect(asked(fetch)).not.toContain("/cart");
+    expect(fetch).toHaveBeenCalledTimes(5);
+  });
+
+  it("carries on when pages are missing or the home page cannot be read", async () => {
+    const missing = site(["/menu"], ["/menu", "/about", "/contact"]);
+    const pages = await createFirecrawlScraper("fc-test", { fetch: missing })("small-cafe.example");
+    expect(pages.map((p) => [p.path, p.status])).toEqual([["/", "ok"], ["/about", "missing"], ["/menu", "missing"], ["/contact", "missing"], ["/about-us", "ok"]]);
+
+    const down = vi.fn<typeof globalThis.fetch>().mockRejectedValue(new TypeError("fetch failed"));
+    const none = await createFirecrawlScraper("fc-test", { fetch: down })("down.example");
+    expect(none.map((p) => [p.path, p.status])).toEqual([["/", "failed"], ["/about", "failed"], ["/contact", "failed"], ["/about-us", "failed"]]);
   });
 
   it("does not call a long page blocked just because it mentions access denied", () => {

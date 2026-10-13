@@ -2,7 +2,7 @@
 
 ## question-library.v1.json (B-32, MVP_SPEC 5.3)
 
-Not created yet. It waits for the rotated AI keys (B-01) and a reviewer.
+Drafted 2026-10-13 with prompt `question-library.v2` and `claude-sonnet-5`: 399 templates, status `draft`. Three missing tags were added (steak; steakhouse, italian; coffee beans); no wording was changed. It now waits for a reviewer (step 2 below).
 
 1. `LIVE_AI_CALL=1 npm run question-library:generate` drafts about 40 templates per industry with Claude Sonnet (status `draft`).
 2. A person reads every template, fixes wording, removes weak ones, then sets `"status": "approved"` and `"review": { "reviewer": "<name>", "reviewedAt": "YYYY-MM-DD" }`.

@@ -101,7 +101,7 @@ Rules:
 
 Run in parallel when the user submits a domain:
 
-1. **Firecrawl**: scrape `/`, `/about`, `/about-us`, `/contact` as markdown (main content only). Pattern taken from `voxtell-ai/apps/api/src/utils/generate-business-description.ts`.
+1. **Firecrawl**: scrape `/` and `/about` as markdown (main content only), then up to 3 more within the same time limit, 5 pages in all: the services page the home page links to (`/services`, `/our-services`, `/menu`, `/products`, or a page named for them such as `/plumbing-services`), or else the first 3 links of its main menu that can list services (not about, team, blog, contact), then `/contact` and `/about-us`. Services come mainly from the services or menu pages (`business-autofill.v2`, 2026-10-13). Pattern taken from `voxtell-ai/apps/api/src/utils/generate-business-description.ts`.
 2. **Google Places Text Search**: query by domain, then by the scraped name plus city if needed. Request only the fields we use (field mask) to stay in the cheaper price tier.
 
 Then **Claude Haiku 4.5** (`claude-haiku-4-5`) with structured outputs returns:
@@ -257,7 +257,7 @@ Every active question is scanned.
 
 Replace today's substring match (`src/lib/geo/providers/types.ts:33`):
 - Word-boundary match on the business name, ignoring case and suffixes like LLC, Inc, Co.
-- Also match the domain and known aliases (`businesses.aliases`).
+- Also match the domain and known aliases: up to 10 other names for the business (`businesses.aliases`, set on the details step and in Settings) and for each tracked competitor (`business_competitors.aliases`, migration 055, set on Manage competitors). Saving them checks saved answers again, so the score counts them at once.
 - For short or generic names (3 letters or fewer, or only common words like "Best", "Prime"), require a second signal: city, domain, or phone near the name. A distinctive one-word name ("Khaadi", "Starbucks") needs no second signal but must be written as a name, not as an ordinary word (BUG-076).
 - Record position in lists (1st, 2nd…) when the answer is a list.
 - Same rules for competitors.
@@ -272,7 +272,7 @@ Based on research into how AEO tools and independent studies measure AI visibili
 - The score counts suggested questions that are active now; paused, removed and custom questions are left out.
 - Per model scores, plus one overall score = equal-weight average of the chosen models (D-65). Per model scores are always shown next to it.
 - **Trend**: a "last 7 days" line and a note such as "Up since your last scan", so real improvements show quickly while the headline stays steady.
-- Position in lists is still stored (5.5) for later research, never shown as a rank.
+- Position in lists is still stored (5.5) for later research, never shown as a rank. Behind `SHOW_POSITION` (off by default, for Jordan to decide), the Overview's per-question table shows "named 2nd" or "named, not in a list" and an average place, never called a rank.
 
 **Confidence (D-64)**
 - Margin of error is computed per question cluster (questions differ in difficulty), from **unique answers**: a cached answer reused for several businesses counts once for confidence, even though each business is charged.
@@ -382,7 +382,7 @@ Items can be ticked by the user. Automatic verification comes later.
 
 | Item | Contents |
 |---|---|
-| **Overview** | Visibility score and trend, per-model scores, top 3 opportunities, last scan time, Run scan button, Export PDF and Share buttons |
+| **Overview** | Visibility score and trend, per-model scores, top 3 opportunities, last scan time, Run scan button, Export PDF and Share buttons; "Question by question": each active question at the last 6 weekly scans ("2 of 3" AI tools named the business, up, down or same), "Getting better" and "Getting worse" over 4 weeks, own questions apart (saved results only) |
 | **Competitors** | Leaderboard (score vs competitors), manage list (add / remove), side-by-side signals (7.1), "Also recommended by AI" list |
 | **Opportunities** | All fix steps, status (open / done / dismissed), Copy for Claude |
 | **Questions** | Question list, per-question results per model, add / edit / pause |

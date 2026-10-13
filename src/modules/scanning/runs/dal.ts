@@ -51,7 +51,7 @@ export type ScanTargetRow = {
   };
   isTest: boolean;
   questions: { id: string; prompt: string }[];
-  competitors: { name: string; domain: string | null; phone: string | null; city: string | null }[];
+  competitors: { name: string; aliases: string[]; domain: string | null; phone: string | null; city: string | null }[];
 };
 
 export async function loadScanTarget(businessId: string, agencyId: string): Promise<ScanTargetRow> {
@@ -66,7 +66,7 @@ export async function loadScanTarget(businessId: string, agencyId: string): Prom
       .single(),
     db.from("agencies").select("is_test").eq("id", agencyId).single(),
     db.from("tracked_prompts").select("id, prompt").eq("business_id", businessId).eq("active", true).order("created_at"),
-    db.from("business_competitors").select("name, domain, phone, city").eq("business_id", businessId),
+    db.from("business_competitors").select("name, aliases, domain, phone, city").eq("business_id", businessId),
   ]);
   const b = must("load the business", business);
   return {

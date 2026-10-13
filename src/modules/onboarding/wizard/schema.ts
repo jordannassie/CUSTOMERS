@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { areaText, FREQUENCIES, MODEL_IDS } from "@/modules/settings";
+import { aliasesInput, areaText, FREQUENCIES, MODEL_IDS } from "@/modules/settings";
 import { PLAN_IDS } from "./steps";
 
 const text = (max: number) => z.string().trim().max(max);
@@ -30,6 +30,8 @@ export const detailsStepInput = z.object({
   industry: text(80).min(1),
   description: text(1000),
   services: z.array(text(60).min(1)).max(20),
+  // Other names customers and AI use for it, optional: left as they are when not sent.
+  aliases: aliasesInput.optional(),
   city: text(80).min(1),
   state: text(80),
   country: text(80),

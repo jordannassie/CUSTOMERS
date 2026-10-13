@@ -9,7 +9,10 @@ export { getScoreReport, loadQuestionResults, loadScoreReport, type ScoreReport 
 export type { ModelAppearance } from "./scores/questions";
 export { countsInScore, isOwnQuestion, splitByQuestion, type OwnQuestionsResult } from "./scores/counted";
 export { loadAlsoRecommended } from "./also-recommended/dal";
-export { recountAfterCompetitorChange, recountSavedAnswers, type RecountResult } from "./recount/dal";
+export { loadQuestionTrends } from "./question-trends/dal";
+export type { Mover, QuestionTrends, Tally, TrendCell, TrendRow } from "./question-trends/service";
+export { placeText, type AveragePlace, type Place } from "./question-trends/places";
+export { recountAfterNamesChange, recountSavedAnswers, type RecountResult } from "./recount/dal";
 export type { AlsoRecommended, AlsoRecommendedList } from "./also-recommended/names";
 export {
   compareWithCompetitor,

@@ -109,17 +109,19 @@ export type ProfileUpdate = {
   domain: string | null;
 };
 
-/** The business's saved industry, or undefined when it is not in the user's agency. */
-export async function businessIndustry(businessId: string): Promise<string | null | undefined> {
+export type SavedNames = { industry: string | null; name: string; aliases: string[] };
+
+/** The business's saved industry and names, or undefined when it is not in the user's agency. */
+export async function businessBefore(businessId: string): Promise<SavedNames | undefined> {
   const { agency } = await requireAgency();
   const { data, error } = await createServiceClient()
     .from("businesses")
-    .select("industry")
+    .select("industry, name, aliases")
     .eq("id", businessId)
     .eq("agency_id", agency.id)
     .maybeSingle();
   if (error) throw new Error(`Could not load the business: ${error.message}`);
-  return data ? data.industry : undefined;
+  return data ?? undefined;
 }
 
 /** False when the business is not in the user's agency. */

@@ -29,7 +29,8 @@ export {
   getQuestionsStep,
   getWizardState,
 } from "./wizard/queries";
-export type { DetailsStep, WizardContext } from "./wizard/dal";
+export type { WizardContext } from "./wizard/dal";
+export type { DetailsStep } from "./wizard/details/dal";
 export type { ModelsStep, QuestionsStep } from "./wizard/questions/dal";
 export {
   CREDITS_LATE,

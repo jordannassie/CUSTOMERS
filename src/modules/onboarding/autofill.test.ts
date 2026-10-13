@@ -11,7 +11,7 @@ import {
   OTHER_PLACE,
   fakeClients,
 } from "./fixtures";
-import { AUTOFILL_MODEL, AUTOFILL_RETRY_MODEL } from "./prompts/business-autofill.v1";
+import { AUTOFILL_MODEL, AUTOFILL_PROMPT_VERSION, AUTOFILL_RETRY_MODEL } from "./prompts/business-autofill.v1";
 import { EMPTY_DETAILS, NOTES } from "./service";
 
 describe("autofill with a website", () => {
@@ -48,7 +48,7 @@ describe("autofill with a website", () => {
     });
     const { siteFacts } = await autofill({ domain: COFFEE_DOMAIN }, clients);
 
-    expect(siteFacts).toMatchObject({ promptVersion: "business-autofill.v1", model: AUTOFILL_MODEL, domain: COFFEE_DOMAIN });
+    expect(siteFacts).toMatchObject({ promptVersion: AUTOFILL_PROMPT_VERSION, model: AUTOFILL_MODEL, domain: COFFEE_DOMAIN });
     expect(siteFacts?.facts).toEqual(COFFEE_SITE_OUTPUT);
     const stored = JSON.stringify(siteFacts);
     for (const placesOnly of [COFFEE_PLACE.placeId, COFFEE_PLACE.name!, COFFEE_PLACE.address!]) {
