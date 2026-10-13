@@ -47,7 +47,10 @@ type Props = {
 export function DetailsStep(props: Props) {
   const stored = useStoredAutofill(props.businessId);
   const fresh = props.confirmed ? null : stored;
-  return <DetailsForm key={fresh ? "autofill" : "saved"} {...props} autofill={fresh} />;
+  // Keyed by what it shows: the app keeps a visited step's form, so going Back and entering another website kept
+  // the old business's name and details in it until a reload (2026-10-13). New auto-fill now starts a new form.
+  const key = fresh ? `autofill:${JSON.stringify(fresh.details)}` : `saved:${props.domain ?? ""}:${props.details.name}`;
+  return <DetailsForm key={key} {...props} autofill={fresh} />;
 }
 
 type Checked = "name" | "industry" | "otherIndustry" | "city" | "country";

@@ -60,6 +60,8 @@ export function WebsiteStep({ defaultDomain, defaultNoWebsite, backHref, plan = 
       if (choices?.length) return setPicking({ businessId: result.data.businessId, typed, choices });
       saveAutofill(result.data.businessId, typed);
       router.push("/onboarding/details");
+      // A changed website starts the draft over on the server; never show the details step from before.
+      router.refresh();
     });
   }
 

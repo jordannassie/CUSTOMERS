@@ -41,6 +41,7 @@ export function PlaceChoices({ businessId, searched, choices, typed, pick, onBac
       if (!result.ok) return setError(result.error);
       saveAutofill(businessId, choice ? choice.autofill : typed);
       router.push("/onboarding/details");
+      router.refresh();
     });
   }
 

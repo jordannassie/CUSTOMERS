@@ -7,6 +7,7 @@ import type { AutofillClients, AutofillRequest } from "../autofill";
 import { liveListing, runBusinessAutofill } from "../dal";
 import type { AutofillOutput } from "../prompts/business-autofill.v1";
 import { refillDetails } from "./refill";
+import { restartIfAnotherBusiness } from "./restart/dal";
 import { rebuildQuestionsForIndustry, sameIndustry, savedIndustry } from "./questions/rebuild/dal";
 import { isIndustry } from "@/lib/industries";
 import type { AutofillResult, BusinessDetails } from "../schema";
@@ -94,10 +95,10 @@ export async function startBusiness(
   let businessId: string;
   if (state.draft) {
     businessId = state.draft.id;
-    // A new website means the old Places match may be wrong; auto-fill sets it again when it finds one.
+    const restarted = await restartIfAnotherBusiness(userId, businessId, request);
     const { error } = await createServiceClient()
       .from("businesses")
-      .update({ ...typed, places_id: null, onboarding_step: nextStepNumber(state.draft.step, "website") })
+      .update({ ...typed, places_id: null, ...(restarted ? {} : { onboarding_step: nextStepNumber(state.draft.step, "website") }) })
       .eq("id", businessId)
       .eq("owner_user_id", userId);
     if (error) throw new Error(`Could not update business: ${error.message}`);
@@ -192,9 +193,8 @@ export async function loadDetailsStep(userId: string, businessId: string): Promi
     ]);
     refill = refillDetails(saved, (facts?.data?.data as { facts?: AutofillOutput | null } | null)?.facts ?? null, place);
   }
-  const { details } = refill;
   const industryText = refill.industryText ?? (b.industry && !isIndustry(b.industry) ? b.industry : "");
-  return { businessId, domain: b.domain, hasWebsite: b.has_website !== false, details, industryText, confirmed };
+  return { businessId, domain: b.domain, hasWebsite: b.has_website !== false, details: refill.details, industryText, confirmed };
 }
 
 /** Step 4: saves what the user confirmed about their own business. False when it is not theirs. */
