@@ -55,7 +55,7 @@ export function RunScanButton({
       if (!result.data.scanning) {
         setNote(
           result.data.lastResult === "failed"
-            ? { text: FAILED, tone: "error" }
+            ? { text: result.data.failedReason ?? FAILED, tone: "error" }
             : result.data.blockedReason
               ? { text: result.data.blockedReason, tone: "muted" }
               : { text: "Scan finished.", tone: "muted" },

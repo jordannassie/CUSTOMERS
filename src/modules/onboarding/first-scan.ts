@@ -31,7 +31,7 @@ export function firstScanPhase(status: ScanStatus, awaitingCredits = false): Fir
 
 /** The message under a failed or blocked first scan: the plain reason when one is known. */
 export function firstScanProblem(status: ScanStatus): string {
-  return status.blockedReason ?? FIRST_SCAN_FAILED;
+  return status.failedReason ?? status.blockedReason ?? FIRST_SCAN_FAILED;
 }
 
 /** After a credits check (null when it failed): start the scan, check again, or give up for now. */

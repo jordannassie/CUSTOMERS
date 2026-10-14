@@ -12,7 +12,7 @@ export async function deleteTestUsers() {
   for (const id of userIds.splice(0)) await service.auth.admin.deleteUser(id);
 }
 
-export async function createAgency(opts: { status?: string; weeklyReport?: boolean } = {}) {
+export async function createAgency(opts: { status?: string; weeklyReport?: boolean; isTest?: boolean } = {}) {
   const email = `vitest-notify-${randomUUID()}@example.test`;
   const { data: user, error } = await service.auth.admin.createUser({ email, email_confirm: true });
   if (error || !user.user) throw error ?? new Error("no user");
@@ -22,7 +22,7 @@ export async function createAgency(opts: { status?: string; weeklyReport?: boole
     .insert({
       owner_user_id: user.user.id,
       name: "Notify test",
-      is_test: true,
+      is_test: opts.isTest ?? true,
       status: opts.status ?? "active",
       weekly_report_emails: opts.weeklyReport ?? true,
     })

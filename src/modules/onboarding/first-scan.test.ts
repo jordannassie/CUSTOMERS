@@ -9,6 +9,7 @@ const status = (s: Partial<ScanStatus>): ScanStatus => ({
   lastResult: null,
   lastFinishedAt: null,
   blockedReason: null,
+  failedReason: null,
   ...s,
 });
 

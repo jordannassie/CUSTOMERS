@@ -159,6 +159,17 @@ describe("share links", () => {
     expect(json).not.toMatch(/@example\.test|ChIJ-/);
   });
 
+  it("says test mode on a test agency's share link, and not on a real one's (D-61)", async () => {
+    const owner = await createOwner();
+    session = owner.client;
+    const link = await createShareLink({ businessId: owner.businessId });
+    if (!link.ok) throw new Error("create failed");
+    expect((await getSharedReport(tokenOf(link.data.path)))?.agency.isTest).toBe(true);
+    const { data: b } = await service.from("businesses").select("agency_id").eq("id", owner.businessId).single().throwOnError();
+    await service.from("agencies").update({ is_test: false }).eq("id", b.agency_id!).throwOnError();
+    expect((await getSharedReport(tokenOf(link.data.path)))?.agency.isTest).toBe(false);
+  });
+
   it("refuses another agency's business and link", async () => {
     const [owner, other] = await Promise.all([createOwner(), createOwner()]);
     session = other.client;

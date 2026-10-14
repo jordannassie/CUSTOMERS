@@ -78,7 +78,10 @@ test("buying a pack pays back a negative balance first, then shows the new balan
   await page.getByRole("button", { name: "Pay $50" }).click();
   await expect(page.getByTestId("topup-done")).toContainText("500 credits added.");
   await expect(page.getByTestId("topup-balance")).toHaveText("485 credits");
-  await expect(page.getByTestId("app-banners")).toHaveCount(0);
+  // E2E agencies are test agencies, so the test mode banner always shows (D-61); no other banner may.
+  const banners = page.getByTestId("app-banners").locator("[data-kind]");
+  await expect(banners).toHaveCount(1);
+  await expect(banners).toHaveAttribute("data-kind", "test_mode");
 });
 
 test("the usage page's button opens the packs, and a cancelled plan cannot buy", async ({ page }) => {

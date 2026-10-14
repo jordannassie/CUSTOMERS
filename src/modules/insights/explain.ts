@@ -123,9 +123,12 @@ export async function explain(src: ExplainSources, write: WriteExplanation | nul
     else dropped.push({ title: reason.title, issues: issues.length ? issues : ["unknown competitor key"] });
   }
   if (drafts.length < MIN_REASONS) {
+    // The model was paid for, so its model stays on the result and its cost is recorded (2026-10-14: Car4Tune's
+    // explanation fell back here and the Sonnet call left no usage row).
     return rules(`only ${drafts.length} of ${written.output.reasons.length} reasons passed the checks`, {
       dropped,
       usage: written.usage,
+      model: written.model,
       writer: written.writer,
     });
   }

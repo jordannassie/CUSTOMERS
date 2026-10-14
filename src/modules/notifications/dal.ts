@@ -49,12 +49,13 @@ export async function listLowCreditAgencies(db: Db = createServiceClient()): Pro
 
 export type ReportAgency = { id: string; ownerUserId: string };
 
-/** Paying or trialing agencies that still want the weekly report. */
+/** Paying or trialing agencies that still want the weekly report. Never a test agency: its scores are sample data (D-61). */
 export async function listWeeklyReportAgencies(db: Db = createServiceClient()): Promise<ReportAgency[]> {
   const { data, error } = await db
     .from("agencies")
     .select("id, owner_user_id")
     .eq("weekly_report_emails", true)
+    .eq("is_test", false)
     .in("status", ["trialing", "active"])
     .is("deleted_at", null)
     .order("created_at");

@@ -9,6 +9,7 @@ import { orderedNames, type ExtractNames } from "./extract";
 import { EXTRACT_NAMES_VERSION } from "./prompts/extract-names.v1";
 import { CHECK_MODELS } from "./providers/models";
 import { ProviderError } from "./providers/request";
+import { NO_SAMPLE_ANSWERS } from "./sample-answers";
 import type { ProviderId, RunCheck } from "./providers/types";
 
 export const RECORDED_ANSWERS_DIR = path.join(process.cwd(), "tests", "fixtures", "ai-answers");
@@ -64,10 +65,12 @@ export function recordedAnswers(answers: RecordedAnswer[], kind?: string | null)
   const runCheck =
     (provider: ProviderId): RunCheck =>
     async (input) => {
-      const pool = narrowed(byProvider.get(provider) ?? [], kind, input.location.city);
-      if (pool.length === 0) {
+      const all = byProvider.get(provider) ?? [];
+      if (all.length === 0) {
         throw new ProviderError({ provider, kind: "client", attempts: 1, message: `No recorded ${provider} answers` });
       }
+      const pool = narrowed(all, kind, input.location.city);
+      if (pool.length === 0) throw new ProviderError({ provider, kind: "client", attempts: 1, message: NO_SAMPLE_ANSWERS });
       const answer = closestAnswer(pool, `${input.question}${hint}`);
       return {
         answerText: answer.answerText,
@@ -94,17 +97,21 @@ export function recordedAnswers(answers: RecordedAnswer[], kind?: string | null)
   return { runCheck, extractNames };
 }
 
+
+const placeMatches = (place: string | undefined, city: string) => !!place && (place === slug(city) || place.startsWith(`${slug(city)}-`));
+
 /**
- * The answers recorded for the same industry and city, else the same industry, else all of them (BUG-072): a test
- * coffee shop in Austin never gets a plumber's or an Orange, CA answer. An industry with no recordings yet (a
- * restaurant, until `RECORD_SET=food` is recorded) gets the closest of all.
+ * Only answers recorded for the same industry and the same city (BUG-072, 2026-10-14): a test plumber in Islamabad
+ * never gets Austin plumbers, and a test restaurant gets no plumbers at all. With none, the check fails with
+ * NO_SAMPLE_ANSWERS instead of showing another city's or trade's answers. A business with no industry (only ever
+ * made by automated tests) keeps the closest answer of all.
  */
 export function narrowed(pool: RecordedAnswer[], kind: string | null | undefined, city: string | null | undefined): RecordedAnswer[] {
-  const industry = kind ? RECORDED_INDUSTRY[kind] : undefined;
-  const same = industry ? pool.filter((a) => a.industry === industry) : [];
-  if (same.length === 0) return pool;
-  const here = city ? same.filter((a) => a.place?.startsWith(`${slug(city)}-`) || a.place === slug(city)) : [];
-  return here.length > 0 ? here : same;
+  if (!kind) return pool;
+  // "coffee_shop" as stored, or "Coffee shop" as some seeds write it.
+  const industry = RECORDED_INDUSTRY[kind.trim().toLowerCase().replace(/[\s-]+/g, "_")];
+  if (!industry || !city) return [];
+  return pool.filter((a) => a.industry === industry && placeMatches(a.place, city));
 }
 
 /**

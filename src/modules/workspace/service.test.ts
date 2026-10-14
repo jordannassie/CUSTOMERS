@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { TEST_MODE_MESSAGE } from "@/lib/test-mode";
 import { BILLING_HREF, BUY_CREDITS_HREF, CHOOSE_PLAN_HREF, pickBanners, shortBalance, usageWidget, type AccountState, type UsageNumbers } from "./service";
 
 const now = new Date("2026-09-27T12:00:00Z");
@@ -116,6 +117,17 @@ describe("usageWidget", () => {
     expect(
       usageWidget(usage({ balance: 10, periodCredits: 100 }), { ...trial, trialEndsAt: inDays(-1) }, now).headline,
     ).toBe("Trial ends today, 10 of 100 credits left");
+  });
+});
+
+describe("test mode banner (D-61)", () => {
+  it("comes first on every page of a test agency, above billing banners, and never for a real one", () => {
+    const banners = pickBanners(usage({ balance: 0 }), { ...active, status: "past_due", isTest: true }, now);
+    expect(banners[0]).toEqual({ kind: "test_mode", tone: "warning", message: TEST_MODE_MESSAGE, action: null });
+    expect(banners.map((b) => b.kind)).toContain("past_due");
+    expect(pickBanners(usage({}), { ...active, isTest: true }, now).map((b) => b.kind)).toEqual(["test_mode"]);
+    expect(pickBanners(usage({}), active, now).some((b) => b.kind === "test_mode")).toBe(false);
+    expect(TEST_MODE_MESSAGE).toBe("Test mode: these are sample AI answers, not real results. Scores are not real.");
   });
 });
 

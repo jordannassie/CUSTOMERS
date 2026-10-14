@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { SampleDataBadge } from "@/components/app/SampleDataBadge";
 import { notFound, redirect } from "next/navigation";
 import { PageContainer } from "@/components/app/PageContainer";
 import { OwnSiteStatus } from "@/components/sources/OwnSiteStatus";
@@ -25,7 +26,9 @@ export default async function SourcesPage() {
     <PageContainer>
       <div className="flex flex-col gap-6">
         <header className="flex max-w-[680px] flex-col gap-1.5">
-          <h1 className="text-2xl font-semibold tracking-[-0.02em]">Sources</h1>
+          <h1 className="flex flex-wrap items-center gap-2 text-2xl font-semibold tracking-[-0.02em]">
+            Sources <SampleDataBadge show={workspace.account?.isTest} />
+          </h1>
           <p className="text-sm text-muted-foreground">
             Websites AI cited in the last 30 days when answering customer questions{where}. Being listed on these
             sites makes it easier for AI to recommend you.

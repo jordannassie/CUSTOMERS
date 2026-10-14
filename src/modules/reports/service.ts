@@ -17,7 +17,8 @@ export const isShareToken = (token: string): boolean => SHARE_TOKEN.test(token);
 export const sharePath = (token: string): string => `/r/${token}`;
 
 export type ReportView = {
-  agency: { name: string; hasLogo: boolean };
+  /** isTest: test mode (D-61), so the report says its answers are samples. */
+  agency: { name: string; hasLogo: boolean; isTest?: boolean };
   businessName: string;
   /** When the report was made and how many days the score covers; shown in the viewer's time zone. */
   preparedAt: string;
@@ -36,7 +37,7 @@ export type ReportView = {
  * field here ends up in a public page's HTML.
  */
 export function reportView(input: {
-  agency: { name: string; hasLogo: boolean };
+  agency: { name: string; hasLogo: boolean; isTest?: boolean };
   businessName: string;
   now: Date;
   windowDays: number;

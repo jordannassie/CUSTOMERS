@@ -1,4 +1,5 @@
 import { notFound, redirect } from "next/navigation";
+import { SampleDataBadge } from "@/components/app/SampleDataBadge";
 import { PageContainer } from "@/components/app/PageContainer";
 import { AddQuestionForm } from "@/components/questions/AddQuestionForm";
 import { CreditSummary } from "@/components/questions/CreditSummary";
@@ -36,7 +37,9 @@ export default async function QuestionsPage() {
     <PageContainer>
       <div className="flex flex-col gap-6">
         <header className="flex max-w-[680px] flex-col gap-1.5">
-          <h1 className="text-2xl font-semibold tracking-[-0.02em]">Questions</h1>
+          <h1 className="flex flex-wrap items-center gap-2 text-2xl font-semibold tracking-[-0.02em]">
+            Questions <SampleDataBadge show={workspace.account?.isTest} />
+          </h1>
           <p className="text-sm text-muted-foreground">
             The customer questions we ask {asked} for you on every scan. Each bar shows the last checks from the past
             30 days, filled in where AI recommended you.

@@ -4,7 +4,9 @@ import { PageContainer } from "@/components/app/PageContainer";
 import { GetFoundChecklist } from "@/components/opportunities/GetFoundChecklist";
 import { OpportunityList } from "@/components/opportunities/OpportunityList";
 import { PickBranch } from "@/components/opportunities/PickBranch";
+import { WaitForFixes } from "@/components/opportunities/WaitForFixes";
 import { Button } from "@/components/ui/button";
+import { checkFixes, getFixesState } from "@/modules/insights";
 import { pickBranch, searchBranches } from "@/modules/onboarding";
 import { getOpportunitiesPage, setChecklistItem, setOpportunityStatus } from "@/modules/opportunities";
 import { getWorkspace } from "@/modules/workspace";
@@ -17,8 +19,8 @@ export default async function OpportunitiesPage() {
   const business = workspace.businesses.find((b) => b.id === workspace.activeBusinessId);
   if (!business || business.status === "onboarding") redirect("/dashboard");
 
-  const view = await getOpportunitiesPage(business.id);
-  if (!view) notFound();
+  const [view, fixes] = await Promise.all([getOpportunitiesPage(business.id), getFixesState(business.id)]);
+  if (!view || !fixes) notFound();
   const toDo = view.items.filter((o) => o.status === "open").length;
 
   return (
@@ -51,16 +53,34 @@ export default async function OpportunitiesPage() {
           />
         )}
 
-        {view.items.length === 0 ? (
-          <section className="rounded-md border border-border bg-surface p-5" data-testid="no-opportunities">
-            <h2 className="text-base font-semibold">No fixes yet</h2>
-            <p className="mt-1 max-w-[560px] text-sm text-muted-foreground">
-              Fixes appear after a scan shows why AI picks other businesses. Run a scan from the Overview to get your list.
-            </p>
-            <Button asChild className="mt-4 w-fit">
-              <Link href="/dashboard">Go to Overview</Link>
-            </Button>
+        {fixes.pending ? (
+          <section className="rounded-md border border-border bg-surface p-5" data-testid="fixes-working">
+            <WaitForFixes businessId={business.id} check={checkFixes} />
+            {view.items.length > 0 ? (
+              <p className="mt-1 text-sm text-muted-foreground">Below are the fixes from your previous scan until then.</p>
+            ) : null}
           </section>
+        ) : null}
+
+        {view.items.length === 0 ? (
+          fixes.pending ? null : fixes.everScanned ? (
+            <section className="rounded-md border border-border bg-surface p-5" data-testid="no-opportunities">
+              <h2 className="text-base font-semibold">Nothing to fix right now</h2>
+              <p className="mt-1 max-w-[560px] text-sm text-muted-foreground">
+                Your latest scan found no fixes. New steps appear here when a scan shows why AI picks other businesses.
+              </p>
+            </section>
+          ) : (
+            <section className="rounded-md border border-border bg-surface p-5" data-testid="no-opportunities">
+              <h2 className="text-base font-semibold">No fixes yet</h2>
+              <p className="mt-1 max-w-[560px] text-sm text-muted-foreground">
+                Fixes appear after a scan shows why AI picks other businesses. Run a scan from the Overview to get your list.
+              </p>
+              <Button asChild className="mt-4 w-fit">
+                <Link href="/dashboard">Go to Overview</Link>
+              </Button>
+            </section>
+          )
         ) : (
           <OpportunityList key={`list-${business.id}`} businessId={business.id} initialItems={view.items} setStatus={setOpportunityStatus} />
         )}

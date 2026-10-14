@@ -127,7 +127,10 @@ test("usage widget: normal plan", async ({ page }) => {
   await expect(widget).toContainText("620 of 1,200 credits used");
   await expect(widget).toContainText("Renews in 12 days");
   await expect(widget.getByRole("link", { name: "Buy credits" })).toHaveCount(0);
-  await expect(page.getByTestId("app-banners")).toHaveCount(0);
+  // E2E agencies are test agencies, so the test mode banner always shows (D-61); no other banner may.
+  const banners = page.getByTestId("app-banners").locator("[data-kind]");
+  await expect(banners).toHaveCount(1);
+  await expect(banners).toHaveAttribute("data-kind", "test_mode");
 });
 
 test("usage widget: trial", async ({ page }) => {

@@ -79,6 +79,7 @@ export async function getWorkspace(options: GuardOptions = {}): Promise<Workspac
             trialEndsAt: dates.trial_ends_at ? new Date(dates.trial_ends_at) : null,
             periodEndsAt: dates.current_period_end ? new Date(dates.current_period_end) : null,
             cancelAt: dates.cancel_at ? new Date(dates.cancel_at) : null,
+            isTest: agency.isTest,
           }
         : null,
     usage,

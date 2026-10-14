@@ -1,5 +1,6 @@
 import { Leaderboard } from "@/components/competitors/Leaderboard";
 import { SignalsTable } from "@/components/competitors/SignalsTable";
+import { TEST_MODE_MESSAGE } from "@/lib/test-mode";
 import { ModelScores } from "@/components/overview/ModelScores";
 import { ScoreSummary } from "@/components/overview/ScoreSummary";
 import { TrendChart } from "@/components/overview/TrendChart";
@@ -20,6 +21,12 @@ export function Report({ report, logoSrc }: { report: ReportView; logoSrc: strin
   const { score, competitors } = report;
   return (
     <article className="report mx-auto flex w-full max-w-[880px] flex-col gap-10 px-4 py-8 sm:px-8 sm:py-12">
+      {report.agency.isTest ? (
+        // Test mode (D-61): the report and its share link say the answers are samples, on screen and in the PDF.
+        <p role="note" className="rounded-md border border-mid/30 bg-mid-bg px-4 py-3 text-sm font-medium text-mid-text" data-testid="report-test-mode">
+          {TEST_MODE_MESSAGE}
+        </p>
+      ) : null}
       <header className="flex flex-col gap-8">
         <div className="flex flex-col items-start gap-2 border-b border-border pb-5 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
           <div className="flex min-w-0 items-center gap-3">

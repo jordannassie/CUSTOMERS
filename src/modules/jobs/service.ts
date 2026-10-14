@@ -1,3 +1,4 @@
+import { NO_SAMPLE_ANSWERS } from "@/modules/scanning";
 import type { LatestJob } from "./dal";
 
 // What the Run scan button shows (B-29, MVP_SPEC 6.4). Pure, so the states are unit tested.
@@ -20,7 +21,12 @@ export type ScanStatus = {
   lastFinishedAt: string | null;
   /** Why a scan cannot start now (plain language), or null when it can. */
   blockedReason: string | null;
+  /** Why the latest scan failed, when the screen can say it plainly; null otherwise. */
+  failedReason: string | null;
 };
+
+/** Test mode with no sample answers of the business's own trade and city (BUG-072, D-61). */
+export const NO_SAMPLE_ANSWERS_TEXT = `${NO_SAMPLE_ANSWERS}. Test mode only has sample answers for some trades and cities, so this scan could not run.`;
 
 type JobView = Pick<LatestJob, "status" | "finishedAt"> & Partial<Pick<LatestJob, "error" | "runAfter" | "lockedAt">>;
 
@@ -39,6 +45,7 @@ export function scanStatusView(
     lastResult: finished,
     lastFinishedAt: finished ? job!.finishedAt : null,
     blockedReason: scanning || canStart.allowed ? null : canStart.reason,
+    failedReason: finished === "failed" && job?.error?.includes(NO_SAMPLE_ANSWERS) ? NO_SAMPLE_ANSWERS_TEXT : null,
   };
 }
 

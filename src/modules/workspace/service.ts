@@ -1,5 +1,6 @@
 // Pure rules for the app frame: the usage widget text and which banners show (MVP_SPEC 8.2, B-48).
 import { customerDate } from "@/lib/time-zone";
+import { TEST_MODE_MESSAGE } from "@/lib/test-mode";
 
 const DAY = 24 * 60 * 60 * 1000;
 const WARN_AT_PERCENT = 80;
@@ -18,6 +19,8 @@ export type AccountState = {
   periodEndsAt: Date | null;
   /** A pending cancel's date: the subscription ends then and nothing more is charged. */
   cancelAt: Date | null;
+  /** Test mode (agencies.is_test, D-61): scans use sample answers, so every page says so. */
+  isTest?: boolean;
 };
 
 export type UsageNumbers = {
@@ -42,7 +45,7 @@ export type UsageWidgetView = {
 export const PAYMENT_FAILED_STATUSES = ["past_due", "unpaid"];
 
 export type Banner = {
-  kind: "suspended" | "past_due" | "out_of_credits" | "low_credits" | "trial" | "ended";
+  kind: "test_mode" | "suspended" | "past_due" | "out_of_credits" | "low_credits" | "trial" | "ended";
   tone: "danger" | "warning" | "info";
   message: string;
   action: { label: string; href: string } | null;
@@ -158,6 +161,12 @@ function endedBanner(account: AccountState): Banner {
 
 /** Most urgent first. */
 export function pickBanners(usage: UsageNumbers, account: AccountState, now: Date, timeZone = "UTC"): Banner[] {
+  const banners = accountBanners(usage, account, now, timeZone);
+  // First, above any billing banner: nothing on a test agency's pages is a real result.
+  return account.isTest ? [{ kind: "test_mode", tone: "warning", message: TEST_MODE_MESSAGE, action: null }, ...banners] : banners;
+}
+
+function accountBanners(usage: UsageNumbers, account: AccountState, now: Date, timeZone: string): Banner[] {
   const banners: Banner[] = [];
 
   if (account.status === "suspended" || account.status === "deleted") {

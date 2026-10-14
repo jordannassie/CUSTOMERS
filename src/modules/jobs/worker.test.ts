@@ -35,6 +35,13 @@ describe("jobUpdateFor", () => {
     });
     expect(jobUpdateFor(allFailed, job(3), NOW)).toEqual({ status: "failed", error: "Every check failed: openai returned 503" });
   });
+
+  it("fails a test scan with no sample answers at once, since a retry finds none either (BUG-072)", () => {
+    const none = { ...allFailed, errors: ["openai: No sample answers for this kind of business", "anthropic: No sample answers for this kind of business"] };
+    expect(jobUpdateFor(none, job(1), NOW)).toMatchObject({ status: "failed" });
+    // One model with a real outage among them still retries.
+    expect(jobUpdateFor({ ...none, errors: [...none.errors, "perplexity: returned 503"] }, job(1), NOW)).toMatchObject({ status: "queued" });
+  });
 });
 
 function fakeDeps(queue: string[], opts: { runMs?: number; clock?: { t: number } } = {}) {

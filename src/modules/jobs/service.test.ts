@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { STALLED_QUEUED_MINUTES, STALLED_RUNNING_MINUTES, scanStatusView } from "./service";
+import { NO_SAMPLE_ANSWERS_TEXT, STALLED_QUEUED_MINUTES, STALLED_RUNNING_MINUTES, scanStatusView } from "./service";
 
 const ok = { allowed: true, reason: "" };
 const broke = { allowed: false, reason: "You're out of credits. Buy a top-up or upgrade." };
@@ -26,6 +26,7 @@ describe("scanStatusView", () => {
       lastResult: "done",
       lastFinishedAt: at,
       blockedReason: null,
+      failedReason: null,
     });
     expect(scanStatusView({ status: "failed", finishedAt: at }, ok)).toMatchObject({ lastResult: "failed" });
   });
@@ -38,7 +39,16 @@ describe("scanStatusView", () => {
       lastResult: null,
       lastFinishedAt: null,
       blockedReason: broke.reason,
+      failedReason: null,
     });
+  });
+
+  it("says a test business has no sample answers instead of a plain failure (BUG-072)", () => {
+    const at = "2026-10-14T12:00:00Z";
+    const failed = scanStatusView({ status: "failed", finishedAt: at, error: "Every check failed: No sample answers for this kind of business" }, ok);
+    expect(failed.failedReason).toBe(NO_SAMPLE_ANSWERS_TEXT);
+    expect(NO_SAMPLE_ANSWERS_TEXT).toMatch(/^No sample answers for this kind of business\./);
+    expect(scanStatusView({ status: "failed", finishedAt: at, error: "Every check failed: openai timeout" }, ok).failedReason).toBeNull();
   });
 
   describe("stalled", () => {

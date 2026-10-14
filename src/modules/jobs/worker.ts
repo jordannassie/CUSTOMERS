@@ -3,7 +3,7 @@ import "server-only";
 // done, queued again with backoff, or failed. The host entry point only checks the secret and calls this.
 import { explainAfterScan } from "@/modules/insights/server";
 import { refreshStaleSiteFacts } from "@/modules/onboarding/server";
-import { ALREADY_FINISHED, runScan, type ScanOutcome } from "@/modules/scanning";
+import { ALREADY_FINISHED, NO_SAMPLE_ANSWERS, runScan, type ScanOutcome } from "@/modules/scanning";
 import { claimScanJobs, finishJob, isWorkerSecret, workerTimeBudgetMs, type ClaimedJob, type JobUpdate } from "./dal";
 
 export const CLAIM_LIMIT = 10;
@@ -58,7 +58,10 @@ export function jobUpdateFor(outcome: ScanOutcome | { status: "error"; error: st
     return { status: "skipped", error: outcome.reason };
   }
   const error = outcome.status === "error" ? outcome.error : failedChecksError(outcome.errors);
-  if (job.attempts >= MAX_ATTEMPTS) return { status: "failed", error };
+  // A test business with no sample answers of its trade and city gets none on a retry either (BUG-072): it fails
+  // at once, so the screen says why instead of "trying again".
+  const noSamples = outcome.status === "failed" && outcome.errors.length > 0 && outcome.errors.every((e) => e.includes(NO_SAMPLE_ANSWERS));
+  if (noSamples || job.attempts >= MAX_ATTEMPTS) return { status: "failed", error };
   return { status: "queued", runAfter: new Date(now.getTime() + RETRY_STEP_MS * job.attempts), error };
 }
 

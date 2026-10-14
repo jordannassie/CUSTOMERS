@@ -95,7 +95,7 @@ describe("low credits", () => {
 
 describe("weekly report", () => {
   it("sends each agency one summary a week with scores, new fixes and a share link", async () => {
-    const a = await createAgency();
+    const a = await createAgency({ isTest: false });
     const scored = await addBusiness(a, "Sunrise Coffee Bar", { scored: true });
     await addBusiness(a, "Brand New Bakery");
     const mail = fakeMail();
@@ -117,12 +117,12 @@ describe("weekly report", () => {
   });
 
   it("never turns a share link back on, skips agencies with no scores, and respects unsubscribes", async () => {
-    const revoked = await createAgency();
+    const revoked = await createAgency({ isTest: false });
     const business = await addBusiness(revoked, "Closed Link Dental", { scored: true });
     await service.from("report_shares").insert({ business_id: business, token: randomBytes(32).toString("base64url"), revoked_at: new Date().toISOString() }).throwOnError();
-    const empty = await createAgency();
+    const empty = await createAgency({ isTest: false });
     await addBusiness(empty, "No Scans Yet Roofing");
-    const unsubscribed = await createAgency({ weeklyReport: false });
+    const unsubscribed = await createAgency({ weeklyReport: false, isTest: false });
     await addBusiness(unsubscribed, "Quiet Florist", { scored: true });
     const mail = fakeMail();
 
@@ -162,5 +162,15 @@ describe("email job route", () => {
     const none = liveJobDeps({ lowCreditAgencies: async () => [] });
     const ok = await handleEmailJobRequest(post({ job: "low_credits" }, workerSecret.value), none);
     expect(await ok.json()).toEqual({ job: "low_credits", sent: 0, skipped: 0, failed: 0, remaining: 0 });
+  });
+});
+
+describe("weekly report in test mode (D-61)", () => {
+  it("is never sent to a test agency, whose scores are sample data", async () => {
+    const test = await createAgency({ isTest: true });
+    await addBusiness(test, "Sample Coffee", { scored: true });
+    const mail = fakeMail();
+    expect((await listWeeklyReportAgencies()).some((a) => a.id === test.agencyId)).toBe(false);
+    expect(await runWeeklyReport(deps([test.agencyId], mail.send))).toMatchObject({ sent: 0 });
   });
 });

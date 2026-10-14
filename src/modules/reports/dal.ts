@@ -132,7 +132,7 @@ export async function revokeShare(agencyId: string, id: string): Promise<boolean
   return true;
 }
 
-type Shared = { agencyId: string; businessId: string; businessName: string; agencyName: string; logoUrl: string | null };
+type Shared = { agencyId: string; businessId: string; businessName: string; agencyName: string; logoUrl: string | null; isTest: boolean };
 
 // Looked up by the token itself, never compared in code. Errors never include the token.
 async function sharedBusiness(token: string): Promise<Shared | null> {
@@ -149,7 +149,7 @@ async function sharedBusiness(token: string): Promise<Shared | null> {
 
   const { data: business, error: businessError } = await db
     .from("businesses")
-    .select("name, agency_id, agencies!inner(name, logo_url, status, deleted_at)")
+    .select("name, agency_id, agencies!inner(name, logo_url, status, deleted_at, is_test)")
     .eq("id", share.business_id)
     .is("deleted_at", null)
     .maybeSingle();
@@ -163,6 +163,7 @@ async function sharedBusiness(token: string): Promise<Shared | null> {
     businessName: business.name,
     agencyName: business.agencies.name,
     logoUrl: business.agencies.logo_url,
+    isTest: business.agencies.is_test,
   };
 }
 
@@ -182,7 +183,7 @@ export async function getSharedReport(token: string): Promise<ReportView | null>
   ]);
   if (!overview || !competitors) return null;
   return reportView({
-    agency: { name: shared.agencyName, hasLogo: logoPath(shared.logoUrl) !== null },
+    agency: { name: shared.agencyName, hasLogo: logoPath(shared.logoUrl) !== null, isTest: shared.isTest },
     businessName: shared.businessName,
     now,
     windowDays: SCORE_WINDOW_DAYS,

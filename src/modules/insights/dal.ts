@@ -9,7 +9,8 @@ import { loadAlsoRecommended, splitByQuestion } from "@/modules/scanning";
 import type { Opportunity } from "@/types/geo";
 import { explain, type Explanation, type WriteExplanation } from "./explain";
 import type { ExplainSources, Signals } from "./facts";
-import { fillOpportunity, hasPlaceValues, liveLookup, planSave, referencedCompetitors, usageCostUsd, usesBusinessValues } from "./service";
+import { markExplained, recordExplainFallback, saveExplanation, type SaveOutcome } from "./save/dal";
+import { fillOpportunity, hasPlaceValues, liveLookup, referencedCompetitors, usageCostUsd, usesBusinessValues } from "./service";
 import { templateWriter } from "./template-writer";
 import { createExplanationWriter } from "./writer";
 
@@ -108,47 +109,40 @@ function pickWriter(isTest: boolean, deps: ExplainDeps): WriteExplanation | null
   return ai.anthropic || ai.openai ? createExplanationWriter(ai) : null;
 }
 
-/** Explains one finished scan run and replaces the business's open opportunities with the result. */
-export async function explainAfterScan(runId: string, deps: ExplainDeps = {}): Promise<Explanation> {
-  const { sources, businessId, ownerUserId, isTest } = await loadSources(runId, deps);
-  const explanation = await explain(sources, pickWriter(isTest, deps));
-  await saveDrafts(businessId, explanation);
-  if (explanation.usage && explanation.model) {
-    const { error } = await createServiceClient().from("usage_events").insert({
-      account_user_id: ownerUserId,
-      business_id: businessId,
-      usage_type: "other",
-      provider: explanation.writer?.provider ?? "anthropic",
-      model: explanation.model,
-      input_tokens: explanation.usage.inputTokens,
-      output_tokens: explanation.usage.outputTokens,
-      request_count: 1,
-      estimated_cost_usd: usageCostUsd(explanation.usage, explanation.model),
-      ...(explanation.writer && {
-        metadata: aiUsageMetadata({ task: "why_competitors_win", fellBack: explanation.writer.fellBack, primaryError: explanation.writer.primaryError }),
-      }),
-    });
-    if (error) throw new Error(`Insights: could not record usage: ${error.message}`);
+/**
+ * Explains one finished scan run and saves the fixes (save/dal.ts): the cost is recorded, a fallback to the fixed rules
+ * is logged to provider_errors, and the run is marked explained even when a step fails.
+ */
+export async function explainAfterScan(runId: string, deps: ExplainDeps = {}): Promise<Explanation & { saved?: SaveOutcome }> {
+  try {
+    const { sources, businessId, ownerUserId, isTest } = await loadSources(runId, deps);
+    const explanation = await explain(sources, pickWriter(isTest, deps));
+    if (!isTest) await recordExplainFallback(explanation);
+    const saved = await saveExplanation(businessId, runId, explanation);
+    await recordUsage(explanation, ownerUserId, businessId);
+    return { ...explanation, saved };
+  } finally {
+    await markExplained(runId);
   }
-  return explanation;
 }
 
-async function saveDrafts(businessId: string, explanation: Explanation): Promise<void> {
-  const db = createServiceClient();
-  const existing = must(
-    "load opportunities",
-    await db.from("opportunities").select("id, title, status").eq("business_id", businessId),
-  );
-  const { insert, removeIds } = planSave(existing, explanation.drafts);
-  // Insert first, so a failure leaves the old list rather than an empty one.
-  if (insert.length > 0) {
-    const { error } = await db.from("opportunities").insert(insert.map((d) => ({ ...d, business_id: businessId, status: "open" })));
-    if (error) throw new Error(`Insights: could not save opportunities: ${error.message}`);
-  }
-  if (removeIds.length > 0) {
-    const { error } = await db.from("opportunities").delete().in("id", removeIds).eq("status", "open");
-    if (error) throw new Error(`Insights: could not replace old opportunities: ${error.message}`);
-  }
+async function recordUsage(explanation: Explanation, ownerUserId: string, businessId: string): Promise<void> {
+  if (!explanation.usage || !explanation.model) return;
+  const { error } = await createServiceClient().from("usage_events").insert({
+    account_user_id: ownerUserId,
+    business_id: businessId,
+    usage_type: "other",
+    provider: explanation.writer?.provider ?? "anthropic",
+    model: explanation.model,
+    input_tokens: explanation.usage.inputTokens,
+    output_tokens: explanation.usage.outputTokens,
+    request_count: 1,
+    estimated_cost_usd: usageCostUsd(explanation.usage, explanation.model),
+    ...(explanation.writer && {
+      metadata: aiUsageMetadata({ task: "why_competitors_win", fellBack: explanation.writer.fellBack, primaryError: explanation.writer.primaryError }),
+    }),
+  });
+  if (error) throw new Error(`Insights: could not record usage: ${error.message}`);
 }
 
 /** Opportunities for one of the signed-in agency's businesses, with Google values filled in live. */

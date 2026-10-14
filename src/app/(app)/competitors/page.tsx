@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { SampleDataBadge } from "@/components/app/SampleDataBadge";
 import { notFound, redirect } from "next/navigation";
 import { Settings2 } from "lucide-react";
 import { AlsoRecommended } from "@/components/competitors/AlsoRecommended";
@@ -28,7 +29,9 @@ export default async function CompetitorsPage() {
     <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-6 p-5 sm:p-8">
       <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex min-w-0 flex-col gap-1">
-          <h1 className="text-2xl font-semibold tracking-[-0.02em]">Competitors</h1>
+          <h1 className="flex flex-wrap items-center gap-2 text-2xl font-semibold tracking-[-0.02em]">
+            Competitors <SampleDataBadge show={workspace.account?.isTest} />
+          </h1>
           <p className="text-sm text-muted-foreground">How often AI picks you vs competitors over the last 30 days.</p>
         </div>
         <div className="flex items-center gap-3 sm:flex-col sm:items-end sm:gap-1.5">

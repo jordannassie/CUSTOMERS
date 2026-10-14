@@ -146,4 +146,12 @@ Live has 001 to 020 (Baseline above) and none of the files below. Go-live applie
 - `051_revoke_truncate.sql` (fix list B8: `anon` and `authenticated` lose TRUNCATE on every public table and on tables made later; no app change)
 - `052_business_area.sql` (`businesses.primary_area`, the optional neighborhood or area set on the details step or in Settings, max 80 characters; area-level questions use it. Then run `npm run db:types`)
 
+- `053_low_credit_remaining.sql`, `054_question_stopped_at.sql`, `055_competitor_aliases.sql` (see each file's header; then run `npm run db:types`)
+- `056_webhook_event_claim.sql` (BUG-151: `stripe_webhook_events.claimed_at`; apply with the app version that claims events)
+- `057_business_is_chain.sql` (`businesses.is_chain`, saved at auto-fill)
+- `058_provider_error_counts.sql` (`provider_errors.kind` and `occurrences`, `record_provider_error()`; `check_system_alerts` sums occurrences)
+- `059_keep_ai_costs_after_deletion.sql` (BUG-160: `usage_events.account_user_id` becomes nullable and SET NULL; changes an existing foreign key, so not purely additive; approved 2026-10-14)
+- `060_ledger_test_agency_flag.sql` (BUG-184: `credit_transactions.from_test_agency`)
+- `061_run_explained_at.sql` (`visibility_runs.explained_at`; the pages say "Working out your fixes" until it is set)
+
 Any file added after 043 joins this list.

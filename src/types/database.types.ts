@@ -1984,6 +1984,7 @@ export type Database = {
           completed_at: string | null
           created_at: string
           error: string | null
+          explained_at: string | null
           failed_by_provider: Json | null
           id: string
           provider: string
@@ -1998,6 +1999,7 @@ export type Database = {
           completed_at?: string | null
           created_at?: string
           error?: string | null
+          explained_at?: string | null
           failed_by_provider?: Json | null
           id?: string
           provider: string
@@ -2012,6 +2014,7 @@ export type Database = {
           completed_at?: string | null
           created_at?: string
           error?: string | null
+          explained_at?: string | null
           failed_by_provider?: Json | null
           id?: string
           provider?: string

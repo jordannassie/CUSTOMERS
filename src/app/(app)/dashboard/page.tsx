@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { SampleDataBadge } from "@/components/app/SampleDataBadge";
 import { notFound, redirect } from "next/navigation";
 import { RunScanButton } from "@/components/app/RunScanButton";
 import { PickedInstead } from "@/components/competitors/PickedInstead";
@@ -12,6 +13,7 @@ import { QuestionTrends } from "@/components/overview/QuestionTrends";
 import { TrendChart } from "@/components/overview/TrendChart";
 import { getPickedInstead } from "@/modules/competitors";
 import { getScanStatus, startScan } from "@/modules/jobs";
+import { checkFixes, getFixesState } from "@/modules/insights";
 import { getOverview, getQuestionTrends } from "@/modules/overview";
 import { createShareLink, exportPdf, getShareLink, revokeShareLink } from "@/modules/reports";
 import { getWorkspace } from "@/modules/workspace";
@@ -25,12 +27,13 @@ export default async function OverviewPage() {
   // Setup is the onboarding wizard's job (B-36); it resumes where the user stopped.
   if (!business || business.status === "onboarding") redirect("/onboarding");
 
-  const [overview, scanStatus, shareLink, picked, trends] = await Promise.all([
+  const [overview, scanStatus, shareLink, picked, trends, fixes] = await Promise.all([
     getOverview(business.id),
     getScanStatus({ businessId: business.id }),
     getShareLink(business.id),
     getPickedInstead(business.id),
     getQuestionTrends(business.id),
+    getFixesState(business.id, "/dashboard"),
   ]);
   if (!overview) notFound();
   const { score } = overview;
@@ -64,8 +67,13 @@ export default async function OverviewPage() {
 
       {scanStatus.ok && scanStatus.data.lastResult === "failed" && !scanStatus.data.scanning && (
         <p role="status" className="rounded-md border border-border bg-mid-bg px-4 py-3 text-sm text-mid-text">
-          The last scan could not finish.{score ? " Your score uses the results from earlier scans." : ""} Try again in a
-          few minutes.
+          {/* A known reason (test mode with no sample answers) is said as it is: trying again would not help. */}
+          {scanStatus.data.failedReason ?? (
+            <>
+              The last scan could not finish.{score ? " Your score uses the results from earlier scans." : ""} Try again in a few
+              minutes.
+            </>
+          )}
         </p>
       )}
 
@@ -78,7 +86,9 @@ export default async function OverviewPage() {
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Visibility score, last 30 days</CardTitle>
+            <CardTitle className="flex flex-wrap items-center gap-2 text-base">
+              Visibility score, last 30 days <SampleDataBadge show={workspace.account?.isTest} />
+            </CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col gap-8">
             {score ? (
@@ -149,7 +159,11 @@ export default async function OverviewPage() {
           )}
         </CardHeader>
         <CardContent>
-          <TopOpportunities opportunities={overview.opportunities} hasScore={score !== null} />
+          <TopOpportunities
+            opportunities={overview.opportunities}
+            hasScore={score !== null}
+            wait={fixes?.pending ? { businessId: business.id, check: checkFixes } : null}
+          />
         </CardContent>
       </Card>
 

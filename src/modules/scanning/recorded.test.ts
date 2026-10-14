@@ -75,9 +75,21 @@ describe("recorded answers (B-31)", () => {
     const plumbers = narrowed(answers, "plumber", "Orange");
     expect(plumbers.length).toBeGreaterThan(0);
     expect(plumbers.every((a) => a.industry === "plumber" && a.place === "orange-ca")).toBe(true);
-    // A city with no recordings keeps the industry; an industry with none (a restaurant) keeps everything.
-    expect(narrowed(answers, "dentist", "Islamabad").every((a) => a.industry === "dentist")).toBe(true);
-    expect(narrowed(answers, "restaurant", "Islamabad")).toHaveLength(answers.length);
+    // A city or an industry with no recordings gets none, never another city's or trade's (2026-10-14).
+    expect(narrowed(answers, "dentist", "Islamabad")).toEqual([]);
+    expect(narrowed(answers, "restaurant", "Austin")).toEqual([]);
+    expect(narrowed(answers, "plumber", null)).toEqual([]);
+    // A business with no industry, which only automated tests make, keeps the closest of all.
+    expect(narrowed(answers, null, "Testville")).toHaveLength(answers.length);
+  });
+
+  it("fails the check with 'No sample answers for this kind of business' instead of using another city's answers", async () => {
+    const islamabad = { city: "Islamabad", region: "Islamabad Capital Territory", country: "PK" };
+    for (const provider of ["openai", "anthropic", "perplexity"] as ProviderId[]) {
+      await expect(recordedAnswers(answers, "plumber").runCheck(provider)({ question: "Who is the best plumber in Islamabad?", location: islamabad, model: "gpt-4.1-mini" })).rejects.toThrow(
+        "No sample answers for this kind of business",
+      );
+    }
   });
 
   it("returns the labelled names for a recorded answer", async () => {

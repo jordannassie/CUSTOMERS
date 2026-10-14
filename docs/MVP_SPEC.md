@@ -363,7 +363,7 @@ After each scan, Claude Sonnet 5 gets the signals above for the business and its
 - Only use provided facts. No guessing about competitors' websites.
 - Google Places numbers are never written into stored text. Claude writes placeholders (for example `{competitor.review_count}`) and the live Places values are filled in when the page is shown (D-73).
 
-The fixed rules in `src/lib/geo/opportunity-engine.ts` stay as a fallback.
+The fixed rules in `src/lib/geo/opportunity-engine.ts` stay as a fallback. A fallback never removes open fixes from an earlier scan, is logged to `provider_errors`, and an older scan's explanation never replaces a newer one's. Until the latest scan's fixes are saved (`visibility_runs.explained_at`), the Opportunities page and "What to fix first" say "Working out your fixes. This takes about a minute."
 
 ### 7.3 "Get found by AI" checklist (businesses with no website, and any business missing basics)
 
@@ -560,7 +560,7 @@ New or changed tables. Keep existing ones (`businesses`, `business_competitors`,
 agencies
   id, owner_user_id, name, logo_url, stripe_customer_id, stripe_subscription_id,
   status (trialing | active | past_due | canceled | suspended | deleted),
-  trial_ends_at, current_period_end, is_test (true = worker skips real scans),
+  trial_ends_at, current_period_end, is_test (true = worker skips real scans and answers from sample answers of the same trade and city only; every page, the report and the share link say test mode, and no weekly report email is sent),
   created_at
 
 plans                      -- prices and limits live here, not in code (D-58)

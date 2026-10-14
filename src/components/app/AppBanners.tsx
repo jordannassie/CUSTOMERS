@@ -6,7 +6,7 @@ import { AlertTriangle, Info, PauseCircle, type LucideIcon } from "lucide-react"
 import { cn } from "cn";
 
 export type AppBanner = {
-  kind: "suspended" | "past_due" | "out_of_credits" | "low_credits" | "trial" | "ended";
+  kind: "test_mode" | "suspended" | "past_due" | "out_of_credits" | "low_credits" | "trial" | "ended";
   tone: "danger" | "warning" | "info";
   message: string;
   action: { label: string; href: string } | null;
