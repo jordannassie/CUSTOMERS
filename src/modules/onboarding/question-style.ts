@@ -23,3 +23,15 @@ export function openingCount(picked: { template: string }[], question: string): 
   const opening = openingOf(question);
   return picked.filter((p) => openingOf(p.template) === opening).length;
 }
+
+// Words that change how a question is asked, not what it asks: "What is the best..." and "Which is the best..."
+// ask the same thing, and only exact repeats were dropped before (2026-10-14).
+const ASKING_WORDS = new Set(
+  "what whats which who whos where wheres is are was the a an can could you recommend suggest me tell any some there i im do does for in at of to s please".split(" "),
+);
+
+/** What a question asks, for spotting the same question worded another way: its other words, sorted. */
+export function questionKey(question: string): string {
+  const words = question.toLowerCase().replace(/['’]/g, "").match(/[a-z0-9]+/g) ?? [];
+  return [...new Set(words.filter((w) => !ASKING_WORDS.has(w)))].sort().join(" ");
+}

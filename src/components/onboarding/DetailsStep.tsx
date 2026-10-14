@@ -9,7 +9,7 @@ import type { ActionResult } from "@/modules/auth";
 import type { AutofillResult, BusinessDetails } from "@/modules/onboarding/schema";
 import { domainBrand } from "@/modules/scanning/mention-text";
 import { ALIASES_MAX, AREA_MAX } from "@/modules/settings/schema";
-import { aliasesProblem, parseServices } from "@/modules/settings/service";
+import { aliasesProblem, aliasExample, parseServices } from "@/modules/settings/service";
 import { CountrySelect, SELECT_CLASS } from "@/components/ui/country-select";
 import { useFieldErrors } from "@/components/ui/field-errors";
 import { Input } from "@/components/ui/input";
@@ -199,7 +199,7 @@ function DetailsForm({ businessId, domain, details, industryText, aliases, save,
             value={v.aliases}
             onChange={set("aliases")}
             maxLength={1300}
-            placeholder="For example: KFC"
+            placeholder={aliasExample(v.name)}
             className="h-11 text-base"
             autoComplete="off"
             {...fields.fieldProps("aliases", "aliases-hint")}

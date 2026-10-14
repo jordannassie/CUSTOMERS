@@ -7,8 +7,8 @@ import { LogOut, ShieldCheck } from "lucide-react";
 import { cn } from "cn";
 import type { SwitcherScores } from "@/modules/workspace";
 import { BusinessSwitcher, type SwitchBusinessAction, type SwitcherBusiness } from "./BusinessSwitcher";
-import { APP_NAV, isNavActive } from "./nav";
-import { SuggestFeatureDialog } from "./SuggestFeatureDialog";
+import { APP_NAV, isNavActive, setupLabel } from "./nav";
+import { SuggestFeatureDialog, type SuggestFeatureAction } from "./SuggestFeatureDialog";
 import { UsageWidget, type UsageWidgetProps } from "./UsageWidget";
 
 export type AppSidebarProps = {
@@ -20,6 +20,7 @@ export type AppSidebarProps = {
   isAdmin: boolean;
   /** The business being set up, shown instead of the switcher on setup pages (BUG-092). */
   setupName?: string | null;
+  suggestFeature: SuggestFeatureAction;
 };
 
 const FOOTER_ITEM =
@@ -33,6 +34,7 @@ export function AppSidebar({
   usage,
   isAdmin,
   setupName = null,
+  suggestFeature,
   onNavigate,
 }: AppSidebarProps & { onNavigate?: () => void }) {
   const pathname = usePathname();
@@ -48,7 +50,9 @@ export function AppSidebar({
       {settingUp ? (
         <div className="rounded-md border border-border bg-surface px-3 py-2.5" data-testid="setting-up">
           <p className="text-[13px] text-muted-foreground">Setting up</p>
-          <p className="truncate text-sm font-medium">{setupName?.trim() || "A new business"}</p>
+          <p className="truncate text-sm font-medium">
+            {setupLabel(pathname, setupName, businesses.find((b) => b.id === activeBusinessId)?.name ?? null)}
+          </p>
         </div>
       ) : (
         <BusinessSwitcher
@@ -93,7 +97,7 @@ export function AppSidebar({
               Admin
             </Link>
           )}
-          <SuggestFeatureDialog businessId={activeBusinessId} triggerClassName={FOOTER_ITEM} />
+          <SuggestFeatureDialog businessId={activeBusinessId} triggerClassName={FOOTER_ITEM} suggest={suggestFeature} />
           <form action="/auth/signout" method="post">
             <button type="submit" className={FOOTER_ITEM}>
               <LogOut aria-hidden="true" />

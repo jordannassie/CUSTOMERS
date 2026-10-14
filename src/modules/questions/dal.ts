@@ -23,7 +23,7 @@ export async function loadQuestionsPage(agencyId: string, businessId: string, no
   const [business, questions] = await Promise.all([
     db
       .from("businesses")
-      .select("id, models, scan_frequency, primary_city")
+      .select("id, models, scan_frequency, primary_city, industry")
       .eq("id", businessId)
       .eq("agency_id", agencyId)
       .maybeSingle(),
@@ -38,6 +38,7 @@ export async function loadQuestionsPage(agencyId: string, businessId: string, no
   return questionsView({
     businessId,
     city: business.data.primary_city,
+    industry: business.data.industry,
     models,
     frequency: FREQUENCIES.includes(business.data.scan_frequency) ? (business.data.scan_frequency as ScanFrequency) : "weekly",
     questions: questions.data!.map(({ source, ...q }) => ({ ...q, own: isOwnQuestion(source) })),

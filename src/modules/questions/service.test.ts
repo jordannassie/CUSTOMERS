@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
+import { INDUSTRIES } from "@/lib/industries";
+import { isFairQuestion } from "@/modules/onboarding";
 import {
+  exampleQuestion,
   atLimit,
   limitText,
   questionsView,
@@ -58,5 +61,17 @@ describe("wording", () => {
     expect(atLimit(25, 25)).toBe(true);
     expect(atLimit(500, null)).toBe(false);
     expect(limitText(25)).toBe("You have 25 active questions, the most your plan allows. Pause or remove one to add another.");
+  });
+});
+
+describe("the example under 'Add your own question' (step 6c)", () => {
+  it("is a question our own rules keep, for every kind of business", () => {
+    for (const industry of [...INDUSTRIES, null, "something new"]) {
+      const example = exampleQuestion("Islamabad", industry);
+      expect(isFairQuestion(example), example).toBe(true);
+      expect(example).not.toMatch(/open late|weekend|near me/i);
+    }
+    expect(exampleQuestion("Islamabad", "coffee_shop")).toBe("Which coffee shop in Islamabad do locals recommend most?");
+    expect(exampleQuestion(null, "plumber")).toBe("Which plumber in my city do locals recommend most?");
   });
 });

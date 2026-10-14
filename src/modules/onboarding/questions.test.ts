@@ -14,7 +14,7 @@ import {
 } from "./question-fixtures";
 import { asksForBusiness, balancePicks, cityLabel, fallbackQuestions, isUsableTemplate } from "./question-rules";
 import { prepareQuestions } from "./questions";
-import { MAX_PER_INTENT, PICK_MODEL, QUESTION_COUNT } from "./prompts/pick-questions.v5";
+import { MAX_PER_INTENT, PICK_MODEL, QUESTION_COUNT } from "./prompts/pick-questions.v6";
 
 const intents = (qs: { intent: string }[]) => new Set(qs.map((q) => q.intent));
 const maxPerIntent = (qs: { intent: string }[]) =>
@@ -212,7 +212,7 @@ describe("rules", () => {
   });
 
   it("never sends the business name, and pins the model", () => {
-    const business = { industry: "Coffee shop", services: ["oat milk lattes"], description: "Opens at 6am." };
+    const business = { industry: "Coffee shop", kind: "coffee shop (lattes)", services: ["oat milk lattes"], description: "Opens at 6am." };
     const pick = pickRequest({ business, templates: [{ number: 1, template: "Best cafe in {city}?", tags: ["general"], intent: "best" }] });
     const write = writeRequest({ business });
     expect(pick.model).toBe("claude-haiku-4-5");
@@ -222,7 +222,7 @@ describe("rules", () => {
   });
 
   it("picks and writes with gpt-4.1-mini when Claude is out of credit", async () => {
-    const business = { industry: "Coffee shop", services: ["oat milk lattes"], description: "Opens at 6am." };
+    const business = { industry: "Coffee shop", kind: "coffee shop (lattes)", services: ["oat milk lattes"], description: "Opens at 6am." };
     const written = { questions: [{ template: "Which coffee shop in {city} has the best oat milk latte?", intent: "best" }] };
     const { fetch, calls } = providerFetch({
       anthropic: [jsonResponse(ANTHROPIC_CREDIT_ERROR, 400)],

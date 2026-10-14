@@ -22,7 +22,19 @@ describe("usageWidget", () => {
       percentUsed: 52,
       details: ["Renews in 12 days"],
       showBuyCredits: false,
+      paymentFailed: null,
     });
+  });
+
+  it("says the payment failed, with a link to Billing, instead of a renewal date when past due", () => {
+    for (const status of ["past_due", "unpaid"]) {
+      const view = usageWidget(usage({ balance: 64, periodCredits: 100, periodUsed: 36, topupRemaining: 0 }), { ...active, status }, now);
+      expect(view.details.join(" ")).not.toMatch(/Renews/);
+      expect(view.paymentFailed).toEqual({ text: "Payment failed. Update your card", href: BILLING_HREF });
+    }
+    // Out of credits too: the card comes first, so no Buy credits button.
+    expect(usageWidget(usage({ balance: 0 }), { ...active, status: "past_due" }, now)).toMatchObject({ showBuyCredits: false, tone: "empty" });
+    expect(usageWidget(usage({}), active, now).paymentFailed).toBeNull();
   });
 
   it("shows days and credits left during the trial", () => {

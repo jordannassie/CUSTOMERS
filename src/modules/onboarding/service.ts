@@ -1,5 +1,6 @@
 // Pure auto-fill rules (MVP_SPEC 3.2): which Places result is the business, how the two sources
 // combine, and the note shown above the form.
+import { hostOf as siteHost } from "@/lib/site-type";
 import { sameBrandSite } from "./autofill-safety";
 import { INDUSTRY_LABELS } from "@/lib/industries";
 import { industriesFromPlacesTypes, industryFromPlacesType, placesTypeLabel } from "./industries";
@@ -35,14 +36,8 @@ export const NOTES = {
   unavailablePartly: "Auto-fill is temporarily unavailable, so we filled in what we could. Please check the details and fill in the rest.",
 } as const;
 
-function hostOf(url: string | null): string | null {
-  if (!url) return null;
-  try {
-    return new URL(url).hostname.toLowerCase().replace(/^www\./, "");
-  } catch {
-    return null;
-  }
-}
+// One reading of a web address for every caller (lib/site-type.ts); a listing may have none.
+const hostOf = (url: string | null): string | null => (url ? siteHost(url) : null);
 
 /** Places matches only count when the listing's website is this domain (or a subdomain of it). */
 export function sameSite(websiteUri: string | null, domain: string): boolean {
@@ -156,7 +151,7 @@ export function toResult(opts: {
   fromGoogle: boolean;
   hadWebsite: boolean;
   chain?: boolean;
-  /** No AI could read the site (Claude and the backup both failed): say so rather than "not found". */
+  /** A source failed (no AI could read the site, Firecrawl or Google refused): say so rather than "not found". */
   aiDown?: boolean;
   /** Google and the website name different kinds of business; the details step asks the user to check. */
   industryCheck?: { google: string; website: string } | null;

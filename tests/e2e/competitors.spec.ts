@@ -183,7 +183,8 @@ test("leaderboard, Google side by side, and tracking a business AI keeps naming"
     .throwOnError();
   expect(data).toEqual([
     { name: "Bean House", places_id: "ChIJ-fixture-bean-house", source: "confirmed_place", formatted_address: null, category: null, phone: null, domain: null, city: null },
-    { name: "Blue Door Coffee", places_id: null, source: "manual", formatted_address: null, category: null, phone: null, domain: null, city: null },
+    // Tracking a business AI named looks up its listing and keeps only the place id (step 9c, 2026-10-13).
+    { name: "Blue Door Coffee", places_id: "ChIJ-fixture-blue-door", source: "manual", formatted_address: null, category: null, phone: null, domain: null, city: null },
     { name: "The Daily Grind", places_id: "ChIJ-fixture-daily-grind", source: "confirmed_place", formatted_address: null, category: null, phone: null, domain: null, city: null },
   ]);
 });

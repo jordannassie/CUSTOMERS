@@ -5,7 +5,9 @@ import { authFailure, requireAgency, type ActionResult } from "@/modules/auth";
 import { canEditTracking } from "@/modules/entitlements";
 import { saveCompetitorAliases as saveAliases } from "./aliases/dal";
 import { trackCompetitorByName } from "./dal";
-import { competitorAliasesInput, trackCompetitorInput } from "./schema";
+import { competitorAliasesInput, competitorWebsiteInput, trackCompetitorInput } from "./schema";
+import { websiteDomain } from "./service";
+import { saveCompetitorWebsite as saveWebsite } from "./website/dal";
 
 // "Also recommended by AI" (B-50): one click adds a business AI named to the competitor list.
 export async function trackCompetitor(input: unknown): Promise<ActionResult<{ name: string }>> {
@@ -44,4 +46,26 @@ export async function saveCompetitorAliases(input: unknown): Promise<ActionResul
   if (!result.ok) return result;
   refresh();
   return { ok: true, data: { changed: result.changed } };
+}
+
+// "Add website" on Side by side on Google: the user's own entry for a competitor Google lists no website for.
+export async function saveCompetitorWebsite(input: unknown): Promise<ActionResult<{ domain: string | null }>> {
+  let agencyId: string;
+  try {
+    const { agency } = await requireAgency();
+    const edit = canEditTracking(agency);
+    if (!edit.allowed) return { ok: false, status: 403, error: edit.reason };
+    agencyId = agency.id;
+  } catch (error) {
+    return authFailure(error);
+  }
+  const parsed = competitorWebsiteInput.safeParse(input);
+  if (!parsed.success) return { ok: false, status: 400, error: "Enter a website like burningbrownie.com." };
+  const domain = parsed.data.website ? websiteDomain(parsed.data.website) : null;
+  if (parsed.data.website && !domain) return { ok: false, status: 400, error: "Enter a website like burningbrownie.com." };
+
+  const result = await saveWebsite(agencyId, parsed.data.businessId, parsed.data.competitorId, domain);
+  if (!result.ok) return result;
+  refresh();
+  return { ok: true, data: { domain: result.domain } };
 }

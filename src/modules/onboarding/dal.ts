@@ -1,4 +1,5 @@
 import "server-only";
+import { providerErrorKind } from "@/lib/provider-error-kind";
 import { env } from "@/lib/env";
 import { liveAiClients, type UsageContext } from "@/modules/ai/server";
 import { createClient } from "@/lib/supabase/server";
@@ -98,7 +99,11 @@ export function liveQuestionClients(usage?: UsageContext): QuestionClients {
   };
   const ai = liveAiClients(usage && { ...usage, usageType: "prompt_generation" });
   const model = ai.anthropic || ai.openai ? createQuestionModel(ai) : { pick: missing, write: missing };
-  return { loadLibrary: loadQuestionLibrary, loadShared: loadSharedQuestions, model: onboardingFixtures() ? fixtureQuestionModel : model };
+  const placeTypes = async (placeId: string) => {
+    const place = await liveListing(placeId, null);
+    return place ? { primaryType: place.primaryType, types: place.types } : null;
+  };
+  return { loadLibrary: loadQuestionLibrary, loadShared: loadSharedQuestions, model: onboardingFixtures() ? fixtureQuestionModel : model, placeTypes };
 }
 
 /** Why a source gave nothing (B7): the server log, and provider_errors for the error spike alert. Never throws. */
@@ -107,10 +112,12 @@ async function recordAutofillProblems(request: AutofillRequest, problems: Autofi
   const what = "domain" in request ? request.domain : `${request.name}, ${request.city}`;
   for (const p of problems) console.warn(`auto-fill for ${what}: ${p.provider}: ${p.message}`);
   if (onboardingFixtures()) return;
-  const { error } = await createServiceClient()
-    .from("provider_errors")
-    .insert(problems.map((p) => ({ provider: p.provider, message: `Auto-fill: ${p.message}`.slice(0, 500) })));
-  if (error) console.error(`Could not record the auto-fill errors: ${error.message}`);
+  // One row per provider and kind of failure an hour, with a count (migration 058).
+  for (const p of problems) {
+    const message = `Auto-fill: ${p.message}`.slice(0, 500);
+    const { error } = await createServiceClient().rpc("record_provider_error", { p_provider: p.provider, p_kind: providerErrorKind(message), p_message: message });
+    if (error) console.error(`Could not record the auto-fill error: ${error.message}`);
+  }
 }
 
 /**
@@ -141,10 +148,12 @@ export async function runBusinessAutofill(
   // business_site_facts has no write policy for signed-in users, so writes use the service role
   // after the ownership check above.
   const service = createServiceClient();
-  if (run.placeId) {
-    const { error: placeError } = await service.from("businesses").update({ places_id: run.placeId }).eq("id", businessId);
-    if (placeError) throw new Error(`Could not save place_id: ${placeError.message}`);
-  }
+  // Whether it is a chain is saved every time: another website typed in later may be a single shop (step 2).
+  const { error: placeError } = await service
+    .from("businesses")
+    .update({ is_chain: run.chain, ...(run.placeId ? { places_id: run.placeId } : {}) })
+    .eq("id", businessId);
+  if (placeError) throw new Error(`Could not save place_id: ${placeError.message}`);
   if (run.siteFacts) {
     const { error: factsError } = await service
       .from("business_site_facts")

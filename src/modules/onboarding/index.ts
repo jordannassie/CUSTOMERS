@@ -1,13 +1,15 @@
 // The only file other modules may import from (eslint-plugin-boundaries).
 export { autofillBusiness, confirmBusinessPlace, lookupCompetitorByName, saveCompetitorList } from "./actions";
 export type { CompetitorCandidate } from "./competitor-places";
+export { pickBranch, searchBranches } from "./branch/actions";
+export type { BranchChoice, BranchSearch } from "./branch/service";
 export { limitMessage } from "./competitors";
 export type { CompetitorStep, SavedCompetitor } from "./dal";
 export { INDUSTRIES, industryFromPlacesType, type Industry } from "./industries";
 export { getCompetitorStep } from "./queries";
 export type { AutofillResult, BusinessDetails, PlaceChoice } from "./schema";
 export { prepareQuestions, type QuestionBusiness, type QuestionSet } from "./questions";
-export type { PreparedQuestion } from "./question-rules";
+export { isFairQuestion, type PreparedQuestion } from "./question-rules";
 export {
   checkCardStep,
   checkTrialCredits,

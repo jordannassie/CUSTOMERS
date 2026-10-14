@@ -184,6 +184,8 @@ describe("autofill for a chain's website (BUG-117)", () => {
     expect(run.result.details).toMatchObject({ name: "Sunrise Coffee Bar", city: "", state: "", address: "", phone: "", description: "" });
     expect(run.result.details.services).toEqual(COFFEE_SITE_OUTPUT.services);
     expect(run.result.note).toBe(NOTES.chain);
+    // Saved as businesses.is_chain, so the questions include chain ones (step 2).
+    expect(run.chain).toBe(true);
     // No second search by name: it would only find another branch.
     expect(calls.places).toEqual([COFFEE_DOMAIN]);
   });

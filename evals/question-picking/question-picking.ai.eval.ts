@@ -6,7 +6,7 @@ import { expect, it } from "vitest";
 import { createHarness, describeEval } from "vitest-evals";
 import { AiUnavailableError } from "@/modules/ai";
 import { createQuestionModel, type QuestionModel } from "@/modules/onboarding/question-model";
-import { PICK_MODEL, PICK_PROMPT_VERSION } from "@/modules/onboarding/prompts/pick-questions.v5";
+import { PICK_MODEL, PICK_PROMPT_VERSION } from "@/modules/onboarding/prompts/pick-questions.v6";
 import { prepareQuestions, type QuestionSet } from "@/modules/onboarding/questions";
 import { validateLibrary, type LibraryFile } from "@/modules/question-library";
 import { evalAiClients, EVAL_PROVIDER, missingEvalKey } from "../shared/ai-clients";

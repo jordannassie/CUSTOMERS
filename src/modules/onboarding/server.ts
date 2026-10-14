@@ -7,3 +7,6 @@ export { rebuildQuestionsForIndustry, sameIndustry } from "./wizard/questions/re
 export { refreshStaleSiteFacts } from "./site-refresh/dal";
 // Tracking a business AI named looks up its Google listing, so its signals show (step 9c).
 export { placeIdForName } from "./competitor-step/dal";
+// A chain's own branch on Google, for Opportunities and Competitors (step 6d).
+export { findBranches } from "./branch/dal";
+export { needsBranch, showClaimStep, type BranchSearch } from "./branch/service";

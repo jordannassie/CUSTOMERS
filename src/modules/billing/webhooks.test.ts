@@ -207,3 +207,40 @@ describe("failures are retried", () => {
     expect(await ledgerTotal(a.agencyId)).toBe(1200);
   });
 });
+
+describe("two deliveries of one event at once (migration 056)", () => {
+  it("runs the handler once: the other delivery is told to come back later, then reads it as done", async () => {
+    const a = await setup("active");
+    await service.from("agencies").update({ stripe_customer_id: a.customer }).eq("id", a.agencyId).throwOnError();
+    const h = harness();
+    const subId = fx.id("sub");
+    const lines = [fx.line({ product: "cd_plan_starter", amount: 14900, subscriptionId: subId, start: fx.nowSeconds(), end: fx.nowSeconds() + 30 * DAY })];
+    const paid = fx.event("invoice.paid", fx.invoice({ customer: a.customer, subscriptionId: subId, billingReason: "subscription_cycle", lines }));
+
+    const both = await Promise.all([h.deliver(paid), h.deliver(paid)]);
+    expect(both.map((r) => r.status).sort()).toEqual([200, 409]);
+    expect(both.find((r) => r.status === 200)?.body).toEqual({ received: true, outcome: "handled" });
+    expect((await h.deliver(paid)).body).toEqual({ received: true, duplicate: true });
+    expect(await ledgerTotal(a.agencyId)).toBe(1200);
+    // A running event never reads as failed: the "Stripe webhook failed" alert reads error only.
+    const { data } = await service.from("stripe_webhook_events").select("error, claimed_at").eq("stripe_event_id", paid.id).single().throwOnError();
+    expect(data).toEqual({ error: null, claimed_at: null });
+  });
+
+  it("takes over a claim left by a crash once it is stale", async () => {
+    const a = await setup("active");
+    await service.from("agencies").update({ stripe_customer_id: a.customer }).eq("id", a.agencyId).throwOnError();
+    const h = harness();
+    const subId = fx.id("sub");
+    const lines = [fx.line({ product: "cd_plan_starter", amount: 14900, subscriptionId: subId, start: fx.nowSeconds(), end: fx.nowSeconds() + 30 * DAY })];
+    const paid = fx.event("invoice.paid", fx.invoice({ customer: a.customer, subscriptionId: subId, billingReason: "subscription_cycle", lines }));
+    const claimedAt = (minutesAgo: number) => new Date(Date.now() - minutesAgo * 60_000).toISOString();
+
+    await service.from("stripe_webhook_events").insert({ stripe_event_id: paid.id, event_type: paid.type, claimed_at: claimedAt(1) }).throwOnError();
+    expect((await h.deliver(paid)).status).toBe(409);
+    await service.from("stripe_webhook_events").update({ claimed_at: claimedAt(10) }).eq("stripe_event_id", paid.id).throwOnError();
+    expect((await h.deliver(paid)).body).toEqual({ received: true, outcome: "handled" });
+    expect(await ledgerTotal(a.agencyId)).toBe(1200);
+  });
+});
+

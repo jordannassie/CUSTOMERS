@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { FLORIST_BUSINESS, FLORIST_WRITTEN, fakeQuestionClients } from "./question-fixtures";
 import { asksForBusiness, dependsOnTime, fallbackQuestions, isGeneralQuestion, mixesServices } from "./question-rules";
 import { AREA_QUESTIONS, areaLabel, prepareQuestions } from "./questions";
-import { QUESTION_COUNT, writeUserMessage } from "./prompts/pick-questions.v5";
+import { QUESTION_COUNT, writeUserMessage } from "./prompts/pick-questions.v6";
 
 describe("a kind of business with no library (BUG-116)", () => {
   const GENERAL = (c: string, n = "florist") => [
@@ -60,8 +60,8 @@ describe("a kind of business with no library (BUG-116)", () => {
   });
 
   it("writes from the industry alone, so a shop's own listing never becomes its questions (BUG-130)", () => {
-    const message = writeUserMessage({ industry: "Coffee shop", services: ["Coffee subscriptions", "Merchandise"], description: "Sells branded gear." });
-    expect(message).toBe("Kind of business: Coffee shop");
+    const message = writeUserMessage({ industry: "Coffee shop", kind: "coffee shop", services: ["Coffee subscriptions", "Merchandise"], description: "Sells branded gear." });
+    expect(message).toBe("Kind of business: coffee shop");
   });
 
   it("drops questions about hours, the time, near me, or two of the shop's services, and picks by service fit (BUG-130)", async () => {

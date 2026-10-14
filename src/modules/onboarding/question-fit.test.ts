@@ -5,7 +5,7 @@ import { missingTermTags, validateLibrary, type Intent } from "@/modules/questio
 import { COFFEE_FULL_BUSINESS, COFFEE_GOOD_PICK, COFFEE_LIBRARY, fakeQuestionClients } from "./question-fixtures";
 import { balancePicks, fillCity, fitsBusiness, isFairQuestion, type LibraryEntry } from "./question-rules";
 import { prepareQuestions, type QuestionBusiness } from "./questions";
-import { QUESTION_COUNT } from "./prompts/pick-questions.v5";
+import { QUESTION_COUNT } from "./prompts/pick-questions.v6";
 
 const lib = (prefix: string, rows: [string, Intent, string[]][]): LibraryEntry[] =>
   rows.map(([template, intent, tags], i) => ({ id: `${prefix}-${i + 1}`, template, intent, tags }));
@@ -40,6 +40,19 @@ const KFC: QuestionBusiness = {
 };
 
 const OFF_MENU = /sushi|steak|wine|seafood|italian|vegan/i;
+
+describe("{city} in a template", () => {
+  it("fills every {city}, so the placeholder never shows", () => {
+    expect(fillCity("Best cafe in {city} or close to {city}?", "Austin, TX")).toBe("Best cafe in Austin, TX or close to Austin, TX?");
+  });
+
+  it("leaves out a library template with two {city}, as written ones already were", async () => {
+    const twice: LibraryEntry = { id: "twice", template: "Best coffee shop in {city} or near {city}?", tags: ["general"], intent: "best" };
+    const { clients } = fakeQuestionClients({ library: { coffee_shop: [twice, ...COFFEE_LIBRARY] }, pick: COFFEE_GOOD_PICK });
+    const set = await prepareQuestions(COFFEE_FULL_BUSINESS, clients);
+    expect(set.questions.some((q) => q.templateId === "twice" || q.text.includes("{city}"))).toBe(false);
+  });
+});
 
 describe("library templates that fit the business", () => {
   it("shows the model only templates that fit, under their library numbers", async () => {

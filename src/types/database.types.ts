@@ -581,6 +581,7 @@ export type Database = {
           has_website: boolean | null
           id: string
           industry: string | null
+          is_chain: boolean
           language: string
           logo_url: string | null
           models: string[]
@@ -612,6 +613,7 @@ export type Database = {
           has_website?: boolean | null
           id?: string
           industry?: string | null
+          is_chain?: boolean
           language?: string
           logo_url?: string | null
           models?: string[]
@@ -643,6 +645,7 @@ export type Database = {
           has_website?: boolean | null
           id?: string
           industry?: string | null
+          is_chain?: boolean
           language?: string
           logo_url?: string | null
           models?: string[]
@@ -867,6 +870,7 @@ export type Database = {
           agency_id: string | null
           created_at: string
           delta: number
+          from_test_agency: boolean
           grant_id: string | null
           hold_id: string | null
           id: string
@@ -880,6 +884,7 @@ export type Database = {
           agency_id?: string | null
           created_at?: string
           delta: number
+          from_test_agency?: boolean
           grant_id?: string | null
           hold_id?: string | null
           id?: string
@@ -893,6 +898,7 @@ export type Database = {
           agency_id?: string | null
           created_at?: string
           delta?: number
+          from_test_agency?: boolean
           grant_id?: string | null
           hold_id?: string | null
           id?: string
@@ -1343,19 +1349,25 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          kind: string | null
           message: string | null
+          occurrences: number
           provider: string
         }
         Insert: {
           created_at?: string
           id?: string
+          kind?: string | null
           message?: string | null
+          occurrences?: number
           provider: string
         }
         Update: {
           created_at?: string
           id?: string
+          kind?: string | null
           message?: string | null
+          occurrences?: number
           provider?: string
         }
         Relationships: []
@@ -1620,6 +1632,7 @@ export type Database = {
       }
       stripe_webhook_events: {
         Row: {
+          claimed_at: string | null
           error: string | null
           event_type: string
           id: string
@@ -1627,6 +1640,7 @@ export type Database = {
           stripe_event_id: string
         }
         Insert: {
+          claimed_at?: string | null
           error?: string | null
           event_type: string
           id?: string
@@ -1634,6 +1648,7 @@ export type Database = {
           stripe_event_id: string
         }
         Update: {
+          claimed_at?: string | null
           error?: string | null
           event_type?: string
           id?: string
@@ -1807,7 +1822,7 @@ export type Database = {
       }
       usage_events: {
         Row: {
-          account_user_id: string
+          account_user_id: string | null
           business_id: string | null
           cached: boolean
           created_at: string
@@ -1824,7 +1839,7 @@ export type Database = {
           visibility_run_id: string | null
         }
         Insert: {
-          account_user_id: string
+          account_user_id?: string | null
           business_id?: string | null
           cached?: boolean
           created_at?: string
@@ -1841,7 +1856,7 @@ export type Database = {
           visibility_run_id?: string | null
         }
         Update: {
-          account_user_id?: string
+          account_user_id?: string | null
           business_id?: string | null
           cached?: boolean
           created_at?: string
@@ -2368,6 +2383,10 @@ export type Database = {
       rate_limit_hit: {
         Args: { p_key: string; p_window_start: string }
         Returns: number
+      }
+      record_provider_error: {
+        Args: { p_kind: string; p_message: string; p_provider: string }
+        Returns: undefined
       }
       release_hold: { Args: { p_hold_id: string }; Returns: number }
       release_orphan_holds: { Args: never; Returns: number }

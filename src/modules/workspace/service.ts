@@ -34,7 +34,12 @@ export type UsageWidgetView = {
   percentUsed: number | null;
   details: string[];
   showBuyCredits: boolean;
+  /** A failed payment: the widget says so and links to Billing instead of a renewal date that won't happen. */
+  paymentFailed: { text: string; href: string } | null;
 };
+
+/** The subscription's last charge failed (Stripe past_due, or unpaid after the retries ran out). */
+export const PAYMENT_FAILED_STATUSES = ["past_due", "unpaid"];
 
 export type Banner = {
   kind: "suspended" | "past_due" | "out_of_credits" | "low_credits" | "trial" | "ended";
@@ -84,13 +89,15 @@ export function usageWidget(usage: UsageNumbers, account: AccountState, now: Dat
   const details: string[] = [];
   const { plan, topup, other } = splitCredits(usage);
   const hasPlan = periodCredits > 0;
+  const paymentFailed = PAYMENT_FAILED_STATUSES.includes(account.status);
 
   let headline: string;
   if (isTrial(account)) {
     headline = `${trialText(daysUntil(account.trialEndsAt!, now))}, ${count(plan)} of ${count(periodCredits)} credits left`;
   } else if (hasPlan) {
     headline = `${count(periodUsed)} of ${count(periodCredits)} credits used`;
-    if (account.periodEndsAt) details.push(renewsText(daysUntil(account.periodEndsAt, now)));
+    // Past due, the plan does not renew until the card is fixed, so no renewal date is shown.
+    if (account.periodEndsAt && !paymentFailed) details.push(renewsText(daysUntil(account.periodEndsAt, now)));
   } else {
     headline = `${plural(Math.max(0, balance), "credit")} left`;
   }
@@ -101,7 +108,15 @@ export function usageWidget(usage: UsageNumbers, account: AccountState, now: Dat
   if (topup > 0) details.push(`${hasPlan ? "Plus" : "Includes"} ${plural(topup, "top-up credit")}`);
   if (other > 0 && hasPlan) details.push(`Plus ${plural(other, "extra credit")}`);
 
-  return { tone, headline, percentUsed, details, showBuyCredits: empty };
+  return {
+    tone,
+    headline,
+    percentUsed,
+    details,
+    // A failed payment comes first: buying credits does not help while scans are paused.
+    showBuyCredits: empty && !paymentFailed,
+    paymentFailed: paymentFailed ? { text: "Payment failed. Update your card", href: BILLING_HREF } : null,
+  };
 }
 
 /** In the viewer's zone, like the dates the pages format themselves (BUG-111); UTC when unknown. */

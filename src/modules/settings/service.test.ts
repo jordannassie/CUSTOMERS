@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { aliasesProblem, checkLogo, LOGO_MAX_BYTES, namesChanged, normalizeWebsite, parseServices } from "./service";
+import { aliasesProblem, aliasExample, checkLogo, LOGO_MAX_BYTES, matchingChanged, normalizeWebsite, parseServices } from "./service";
 
 const bytes = (...values: number[]) => new Uint8Array(values);
 const text = (s: string) => new TextEncoder().encode(s);
@@ -64,10 +64,37 @@ describe("other names", () => {
     expect(aliasesProblem(["x".repeat(121)])).toBe("Keep each other name under 120 characters.");
   });
 
+  const before = { name: "Book Woman", aliases: ["BookWoman", "Old Name"], domain: "ebookwoman.com", phone: "(512) 472-2785", city: "Austin", area: null };
+
   it("sees a change to the name or the list, not to its order or case", () => {
-    const before = { name: "Book Woman", aliases: ["BookWoman", "Old Name"] };
-    expect(namesChanged(before, { name: "Book Woman", aliases: ["old name", "BookWoman"] })).toBe(false);
-    expect(namesChanged(before, { name: "Book Woman", aliases: ["BookWoman"] })).toBe(true);
-    expect(namesChanged(before, { name: "BookWoman Austin", aliases: before.aliases })).toBe(true);
+    expect(matchingChanged(before, { ...before, aliases: ["old name", "BookWoman"] })).toBe(false);
+    expect(matchingChanged(before, { ...before, aliases: ["BookWoman"] })).toBe(true);
+    expect(matchingChanged(before, { ...before, name: "BookWoman Austin" })).toBe(true);
+  });
+
+  it("sees a new website, phone, city or area, not the same ones written another way", () => {
+    expect(matchingChanged(before, { ...before, domain: "bookwoman.com" })).toBe(true);
+    expect(matchingChanged(before, { ...before, domain: null })).toBe(true);
+    expect(matchingChanged(before, { ...before, phone: "512-555-0100" })).toBe(true);
+    expect(matchingChanged(before, { ...before, city: "Round Rock" })).toBe(true);
+    expect(matchingChanged(before, { ...before, area: "North Loop" })).toBe(true);
+    expect(matchingChanged(before, { ...before, phone: "512.472.2785", city: "austin ", domain: "EBOOKWOMAN.com" })).toBe(false);
   });
 });
+
+describe("aliasExample", () => {
+  it("takes the first letter of each word of the business's name", () => {
+    expect(aliasExample("Kentucky Fried Chicken")).toBe("For example: KFC");
+    expect(aliasExample("Book Woman")).toBe("For example: BW");
+    expect(aliasExample("Magic Plumbing Heating & Cooling")).toBe("For example: MPHC");
+    expect(aliasExample("Mr. Rooter Plumbing")).toBe("For example: MRP");
+    expect(aliasExample("Sunrise Coffee Co. LLC")).toBe("For example: SC");
+    expect(aliasExample("  advanced  plumbing-drain ")).toBe("For example: APD");
+  });
+
+  it("suggests an old name when there is no short form", () => {
+    expect(aliasExample("Cheezious")).toBe("For example: an old name or another spelling");
+    expect(aliasExample("")).toBe("For example: an old name or another spelling");
+  });
+});
+

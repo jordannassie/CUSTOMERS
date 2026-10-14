@@ -122,6 +122,19 @@ describe("check_system_alerts (B-69, MVP_SPEC 22)", () => {
     expect(alert.message).toMatch(/Firecrawl \(\d+\)/);
   });
 
+  it("provider error spike: counts the repeats one row holds (migration 058)", async () => {
+    await resolveOpen("provider_errors");
+    for (let i = 0; i < 5; i++) {
+      await service.rpc("record_provider_error", { p_provider: "google_places", p_kind: "rate_limit", p_message: "Places returned 429" }).throwOnError();
+    }
+    const { data } = await service.from("provider_errors").select("occurrences").eq("provider", "google_places").eq("kind", "rate_limit").gt("created_at", new Date(Date.now() - 3_600_000).toISOString()).throwOnError();
+    // One row for the five failures this hour, not five.
+    expect(data).toHaveLength(1);
+    expect(data[0].occurrences).toBeGreaterThanOrEqual(5);
+    const alert = await expectFiresOnce("provider_errors");
+    expect(alert.message).toMatch(/Google Places \(\d+\)/);
+  });
+
   it("negative credit balance: fires once", async () => {
     await resolveOpen("negative_balances");
     const overdrawn = await createAgencyWithBusiness("Alerts Overdrawn");

@@ -1,3 +1,4 @@
+import { namedMost, namedMostSentence } from "@/modules/scanning";
 import { namedAs } from "./chain";
 import type { CompetitorsView, LeaderRow } from "./service";
 
@@ -15,6 +16,11 @@ export type PickedInstead = {
   sentence: string | null;
   /** True when AI did not name you at all: the screen then points to the first fix instead. */
   notNamed: boolean;
+  /**
+   * "AI named Burning Brownie most often, in about 4 of 10 answers, a business you don't track." Set only when a
+   * business you don't track was named more than every competitor you do, in the first scan screen's words (step 6a).
+   */
+  untracked: string | null;
 };
 
 const inTen = (score: number) => {
@@ -32,7 +38,9 @@ function levelSentence(name: string, theirs: number, yours: number): string {
 }
 
 /** Null when there is no score yet or no competitor has been compared with you. */
-export function pickedInstead(view: Pick<CompetitorsView, "leaderboard" | "hasScore" | "margin">): PickedInstead | null {
+export function pickedInstead(
+  view: Pick<CompetitorsView, "leaderboard" | "hasScore" | "margin"> & Partial<Pick<CompetitorsView, "also" | "answers">>,
+): PickedInstead | null {
   if (!view.hasScore) return null;
   // Only competitors compared over the whole window (F-53); the leaderboard already sorts them around you.
   const ranked = view.leaderboard.filter((r) => r.isYou || (r.score !== null && r.standing !== null));
@@ -58,5 +66,8 @@ export function pickedInstead(view: Pick<CompetitorsView, "leaderboard" | "hasSc
       : top.standing === "about_same"
         ? levelSentence(topName, top.score!, you.score)
         : `You were named more often than ${collecting ? "the competitors compared so far" : "your competitors"}, in ${inTen(you.score)} answers.`;
-  return { rows, margin: view.margin, sentence, notNamed };
+  const tracked = ranked.filter((r) => !r.isYou).map((r) => ({ name: namedAs(r), score: r.score! }));
+  const most = namedMost(tracked, { names: view.also ?? [], answers: view.answers ?? 0 });
+  const untracked = most && !most.tracked ? namedMostSentence(most) : null;
+  return { rows, margin: view.margin, sentence, notNamed, untracked };
 }

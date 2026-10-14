@@ -24,7 +24,16 @@ const recordedAnswer = z.object({
   names: z.array(z.string()).optional(),
 });
 
-export type RecordedAnswer = z.infer<typeof recordedAnswer>;
+/** `industry` and `place` come from the file name ("synthetic-openai-coffee-austin-tx-1.json"), when it has them. */
+export type RecordedAnswer = z.infer<typeof recordedAnswer> & { industry?: string; place?: string };
+
+// "{synthetic|recorded}-{provider}-{industry}-{place}-{n}.json", as scripts/record-ai-answers.ts names them.
+const FILE_NAME = /^(?:synthetic|recorded)-(?:openai|anthropic|perplexity)-([a-z]+)-([a-z0-9-]+?)-\d+\.json$/;
+
+// The business industries the recordings cover, by the word in the file name.
+const RECORDED_INDUSTRY: Record<string, string> = { coffee_shop: "coffee", dentist: "dentist", plumber: "plumber", restaurant: "restaurant" };
+
+const slug = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 
 export type RecordedAnswers = {
   runCheck: (provider: ProviderId) => RunCheck;
@@ -35,7 +44,8 @@ export async function loadRecordedAnswers(dir = RECORDED_ANSWERS_DIR): Promise<R
   const files = await readdir(dir).catch(() => [] as string[]);
   const answers: RecordedAnswer[] = [];
   for (const file of files.filter((f) => f.endsWith(".json")).sort()) {
-    answers.push(recordedAnswer.parse(JSON.parse(await readFile(path.join(dir, file), "utf8"))));
+    const [, industry, place] = FILE_NAME.exec(file) ?? [];
+    answers.push({ ...recordedAnswer.parse(JSON.parse(await readFile(path.join(dir, file), "utf8"))), industry, place });
   }
   return answers;
 }
@@ -54,7 +64,7 @@ export function recordedAnswers(answers: RecordedAnswer[], kind?: string | null)
   const runCheck =
     (provider: ProviderId): RunCheck =>
     async (input) => {
-      const pool = byProvider.get(provider) ?? [];
+      const pool = narrowed(byProvider.get(provider) ?? [], kind, input.location.city);
       if (pool.length === 0) {
         throw new ProviderError({ provider, kind: "client", attempts: 1, message: `No recorded ${provider} answers` });
       }
@@ -82,6 +92,19 @@ export function recordedAnswers(answers: RecordedAnswer[], kind?: string | null)
   };
 
   return { runCheck, extractNames };
+}
+
+/**
+ * The answers recorded for the same industry and city, else the same industry, else all of them (BUG-072): a test
+ * coffee shop in Austin never gets a plumber's or an Orange, CA answer. An industry with no recordings yet (a
+ * restaurant, until `RECORD_SET=food` is recorded) gets the closest of all.
+ */
+export function narrowed(pool: RecordedAnswer[], kind: string | null | undefined, city: string | null | undefined): RecordedAnswer[] {
+  const industry = kind ? RECORDED_INDUSTRY[kind] : undefined;
+  const same = industry ? pool.filter((a) => a.industry === industry) : [];
+  if (same.length === 0) return pool;
+  const here = city ? same.filter((a) => a.place?.startsWith(`${slug(city)}-`) || a.place === slug(city)) : [];
+  return here.length > 0 ? here : same;
 }
 
 /**

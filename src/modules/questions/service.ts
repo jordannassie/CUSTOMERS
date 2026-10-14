@@ -1,3 +1,4 @@
+import { INDUSTRY_LABELS, isIndustry } from "@/lib/industries";
 import type { ScanFrequency } from "@/modules/credits";
 import type { ModelAppearance, ProviderId } from "@/modules/scanning";
 
@@ -17,6 +18,8 @@ export type QuestionRow = { id: string; text: string; active: boolean; custom: b
 export type QuestionsView = {
   businessId: string;
   city: string | null;
+  /** The example under "Add your own question": one our own question rules keep (step 6c). */
+  example: string;
   models: { id: ProviderId; label: string }[];
   frequency: ScanFrequency;
   active: QuestionRow[];
@@ -25,9 +28,22 @@ export type QuestionsView = {
   limit: number | null;
 };
 
+// The kind of business as a customer would say it; the labels with a note in brackets get a plain word.
+const EXAMPLE_NOUNS: Partial<Record<string, string>> = { hvac: "heating and air conditioning company", salon: "salon", other: "business" };
+
+/**
+ * "Which coffee shop in Austin, TX do locals recommend most?" Never about opening hours, the time it is asked or
+ * "near me": those questions are dropped from our own sets (BUG-130), so the example must not suggest one (step 6c).
+ */
+export function exampleQuestion(city: string | null, industry: string | null): string {
+  const noun = EXAMPLE_NOUNS[industry ?? "other"] ?? (industry && isIndustry(industry) ? INDUSTRY_LABELS[industry].toLowerCase() : "business");
+  return `Which ${noun} in ${city ?? "my city"} do locals recommend most?`;
+}
+
 export function questionsView(input: {
   businessId: string;
   city: string | null;
+  industry?: string | null;
   models: ProviderId[];
   frequency: ScanFrequency;
   questions: QuestionRecord[];
@@ -50,6 +66,7 @@ export function questionsView(input: {
   return {
     businessId: input.businessId,
     city: input.city,
+    example: exampleQuestion(input.city, input.industry ?? null),
     models: input.models.map((id) => ({ id, label: MODEL_LABELS[id] })),
     frequency: input.frequency,
     active: rows.filter((r) => r.active),

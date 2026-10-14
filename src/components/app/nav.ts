@@ -23,3 +23,15 @@ export function isNavActive(item: NavItem, pathname: string): boolean {
   if (item.notActiveOn?.some((p) => under(pathname, p))) return false;
   return [item.href, ...(item.alsoActiveOn ?? [])].some((p) => under(pathname, p));
 }
+
+// The first scan runs on the business just finished, which is already the active one (step 6b).
+const FIRST_SCAN = "/onboarding/first-scan";
+
+/**
+ * The name under "Setting up" on setup pages (BUG-092): the draft being set up, or during the first scan the
+ * business being scanned. "A new business" only before the draft has a name.
+ */
+export function setupLabel(pathname: string, draftName: string | null, activeName: string | null): string {
+  const name = under(pathname, FIRST_SCAN) ? activeName : draftName;
+  return name?.trim() || "A new business";
+}

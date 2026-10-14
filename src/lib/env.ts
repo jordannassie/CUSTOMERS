@@ -33,8 +33,6 @@ export const env = createEnv({
     // Local Chrome for the chromium renderer on a laptop; unset uses the @sparticuz/chromium build (Linux only).
     CHROMIUM_PATH: optional,
     // Search Intelligence stays on hold until D-06 is decided.
-    DATAFORSEO_USERNAME: optional,
-    DATAFORSEO_PASSWORD: optional,
 
     STRIPE_SECRET_KEY: optional,
     STRIPE_WEBHOOK_SECRET: optional,
@@ -64,9 +62,6 @@ export const env = createEnv({
     // until then (MVP_SPEC 23). 30 until a lawyer confirms the legal deadlines (D-77).
     DELETION_WAIT_DAYS: z.coerce.number().int().min(1).max(365).default(30),
 
-    BILLING_ENABLED: flag,
-    BETA_FREE_ACCESS: flag,
-    TRIAL_ENABLED: flag,
     // Where AI listed the business ("named 2nd") on the Overview. Off until Jordan decides (D-63: stored, not shown).
     SHOW_POSITION: flag,
   },
@@ -95,8 +90,6 @@ export const env = createEnv({
     PDF_RENDERER: process.env.PDF_RENDERER,
     BROWSERLESS_URL: process.env.BROWSERLESS_URL,
     CHROMIUM_PATH: process.env.CHROMIUM_PATH,
-    DATAFORSEO_USERNAME: process.env.DATAFORSEO_USERNAME,
-    DATAFORSEO_PASSWORD: process.env.DATAFORSEO_PASSWORD,
     STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY,
     STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET,
     STRIPE_CHECKOUT_FIXTURES: process.env.STRIPE_CHECKOUT_FIXTURES,
@@ -113,10 +106,7 @@ export const env = createEnv({
     ADMIN_EMAILS: process.env.ADMIN_EMAILS,
     ALERT_DAILY_COST_USD: process.env.ALERT_DAILY_COST_USD,
     DELETION_WAIT_DAYS: process.env.DELETION_WAIT_DAYS,
-    BILLING_ENABLED: process.env.BILLING_ENABLED,
     SHOW_POSITION: process.env.SHOW_POSITION,
-    BETA_FREE_ACCESS: process.env.BETA_FREE_ACCESS,
-    TRIAL_ENABLED: process.env.TRIAL_ENABLED,
     NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
     NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
     NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL,

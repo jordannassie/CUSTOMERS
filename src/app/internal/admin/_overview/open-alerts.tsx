@@ -10,7 +10,7 @@ import { cn } from "cn";
 import Section, { Empty } from "../businesses/[id]/_components/section";
 
 // Dates arrive formatted: the shared date helper lives beside server-only code.
-export type AlertRowData = OpenAlert & { started: string; lastSeen: string };
+export type AlertRowData = OpenAlert & { started: string; lastSeen: string; stale: boolean };
 type Resolve = (input: { alertId: string; reason: string }) => Promise<ActionResult<unknown>>;
 
 const KIND_LABEL: Record<string, string> = {
@@ -79,7 +79,7 @@ function AlertRow({ alert, resolve, onResolved }: { alert: AlertRowData; resolve
           </span>
           <p className="text-[14px] break-words text-foreground">{alert.message}</p>
           <p className="text-text-hint">
-            Started {alert.started}. Last seen {alert.lastSeen}.
+            Started {alert.started}. Last seen {alert.lastSeen}.{alert.stale ? " Nothing new since." : ""}
           </p>
         </div>
         {!open && (

@@ -2,7 +2,8 @@ import { Suspense } from "react";
 import { ArrowDown, ArrowUp } from "lucide-react";
 import type { MonthChange } from "@/modules/admin";
 import { Skeleton } from "@/components/ui/skeleton";
-import { loadLibraryGaps, loadOverview, resolveAlert } from "@/modules/admin";
+import { alertWording, loadLibraryGaps, loadOverview, resolveAlert } from "@/modules/admin";
+import { requestNow } from "@/lib/request-now";
 import { requireAdmin } from "@/modules/auth";
 import { formatDate } from "./businesses/_components/scan-parts";
 import { credits } from "./agencies/_components/agency-parts";
@@ -29,7 +30,13 @@ export default async function AdminOverviewPage() {
 
 async function Overview() {
   const [o, gaps] = await Promise.all([loadOverview(), loadLibraryGaps()]);
-  const alerts = o.openAlerts.map((a) => ({ ...a, started: formatDate(a.createdAt, true), lastSeen: formatDate(a.lastSeenAt, true) }));
+  const now = requestNow();
+  const alerts = o.openAlerts.map((a) => ({
+    ...a,
+    ...alertWording(a, now),
+    started: formatDate(a.createdAt, true),
+    lastSeen: formatDate(a.lastSeenAt, true),
+  }));
   return (
     <>
       <header>

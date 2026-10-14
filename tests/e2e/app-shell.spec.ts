@@ -4,6 +4,9 @@ import { parseEnv } from "node:util";
 import { createClient } from "@supabase/supabase-js";
 import { expect, test, type Page } from "@playwright/test";
 
+// Failed in full local runs and passed alone (BUG-068: shared test data and auth under load): one retry here only.
+test.describe.configure({ retries: 1 });
+
 // B-48 against the local Supabase stack only: the dev server must run with .env.test.local
 // (see the PR), and every test seeds its own agency so a reset by another session cannot break it.
 const local = existsSync(".env.test.local") ? parseEnv(readFileSync(".env.test.local", "utf8")) : {};

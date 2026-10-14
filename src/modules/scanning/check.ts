@@ -10,7 +10,7 @@ import { storeExtraction } from "./extract-store";
 import { mergeMentions } from "./mention-merge";
 import { detectMentions, type MentionTarget } from "./mentions";
 import { CHECK_MODELS } from "./providers/models";
-import { ProviderError } from "./providers/request";
+import { ProviderError, retriedInside } from "./providers/request";
 import type { CheckInput, CheckLocation, ProviderId, RunCheck } from "./providers/types";
 import { insertExtractionUsage, recordProviderError, saveCheckResult } from "./runs/dal";
 
@@ -87,14 +87,15 @@ export async function runOneCheck(task: CheckTask, ctx: CheckContext): Promise<C
   return { ok: true };
 }
 
-// A timeout or a passing outage often clears in seconds; one more try beats failing the check (BUG-083). A check
-// that still fails is not charged (D-53).
+// A timeout or an unfinished search often clears in seconds; one more try beats failing the check (BUG-083). Rate
+// limits, server and network errors were already tried again inside the provider call (withRetries), so they are not
+// wrapped in a second round. A check that still fails is not charged (D-53).
 async function answerWithOneRetry(input: CheckInput, ctx: CheckContext): Promise<CheckAnswer> {
   const ask = () => (ctx.isTest ? recordedAnswer(input, ctx.runner!) : checkWithCache(input, ctx.runner!));
   try {
     return await ask();
   } catch (err) {
-    if (!(err instanceof ProviderError) || !err.retryable) throw err;
+    if (!(err instanceof ProviderError) || !err.retryable || retriedInside(err.kind)) throw err;
     return ask();
   }
 }

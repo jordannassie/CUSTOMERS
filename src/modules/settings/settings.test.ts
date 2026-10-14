@@ -131,6 +131,29 @@ describe("settings actions", () => {
     expect(agency.data?.name).toBe("Blue Door Marketing");
   });
 
+  it("checks saved answers again when the website changes, and keeps has_website in step with it", async () => {
+    const seed = await createAgency();
+    await signIn(seed);
+    const { data: run } = await service.from("visibility_runs").insert({ business_id: seed.businessId, provider: "openai", status: "completed" }).select("id").single().throwOnError();
+    const resultId = randomUUID();
+    await service
+      .from("visibility_results")
+      .insert({ id: resultId, run_id: run.id, business_id: seed.businessId, provider: "openai", business_mentioned: false, competitors_mentioned: [], answer_text: "For drains, try www.northside-plumbing.com in Austin." })
+      .throwOnError();
+    const counted = async () => (await service.from("visibility_results").select("business_mentioned").eq("id", resultId).single().throwOnError()).data.business_mentioned;
+    const flags = async () => (await service.from("businesses").select("has_website").eq("id", seed.businessId).single().throwOnError()).data.has_website;
+
+    // The new website is in the answer: it counts at once.
+    expect(await saveBusinessProfile(profile(seed.businessId))).toEqual({ ok: true, data: null });
+    expect(await counted()).toBe(true);
+    expect(await flags()).toBe(true);
+
+    // No website any more: the answer no longer counts, and the stricter no-website rules apply (D-08).
+    expect(await saveBusinessProfile({ ...profile(seed.businessId), website: "" })).toEqual({ ok: true, data: null });
+    expect(await counted()).toBe(false);
+    expect(await flags()).toBe(false);
+  });
+
   it("reject bad input", async () => {
     const seed = await createAgency();
     await signIn(seed);

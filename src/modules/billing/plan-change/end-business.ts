@@ -3,6 +3,7 @@ import { billingAccess } from "../account/access";
 import { loadPlanChangeData } from "./dal";
 import { isCancelling, itemFor, periodEnd, PlanChangeError, type PlanChange } from "./planner";
 import { applyPlanChange } from "./service";
+import { isMissingInStripe } from "../stripe-missing";
 
 // Deleting a business (B-77, MVP_SPEC 23): its plan item goes at the end of the billing period, with no refund
 // (11.5). When it is the only business on the plan, the whole plan ends then instead, since Stripe needs one item.
@@ -18,7 +19,15 @@ export async function endBusinessPlan(agencyId: string, businessId: string, now 
   if (!access) {
     throw new PlanChangeError(503, "We couldn't reach our payment provider, so nothing was deleted. Try again in a minute.");
   }
-  const sub = await access.stripe.retrieveSubscription(data.context.subscriptionId);
+  let sub;
+  try {
+    sub = await access.stripe.retrieveSubscription(data.context.subscriptionId);
+  } catch (error) {
+    // Stripe has no such subscription: there is no plan to end, so the business can go (2026-10-14).
+    if (!isMissingInStripe(error)) throw error;
+    console.warn("[billing] subscription not in Stripe, nothing to end:", data.context.subscriptionId);
+    return { endsAt: null };
+  }
   if (sub.status === "canceled" || sub.status === "incomplete_expired") return { endsAt: null };
   const business = access.context.businesses.find((b) => b.id === businessId)!;
   if (!itemFor(sub, business)) return { endsAt: null };

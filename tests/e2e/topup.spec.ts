@@ -4,6 +4,9 @@ import { parseEnv } from "node:util";
 import { createClient } from "@supabase/supabase-js";
 import { expect, test, type Page } from "@playwright/test";
 
+// Failed in full local runs and passed alone (BUG-068: shared test data and auth under load): one retry here only.
+test.describe.configure({ retries: 1 });
+
 // B-43 against the local Supabase stack with STRIPE_CHECKOUT_FIXTURES (playwright.config.ts): the fake card form
 // runs the real checkout.session.completed handler, so credits come from grant_credits and Stripe is never called.
 const local = existsSync(".env.test.local") ? parseEnv(readFileSync(".env.test.local", "utf8")) : {};

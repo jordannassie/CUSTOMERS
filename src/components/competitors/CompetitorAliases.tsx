@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import type { ActionResult } from "@/modules/auth";
 import type { CompetitorNames } from "@/modules/competitors";
 import { ALIASES_MAX } from "@/modules/settings/schema";
-import { aliasesProblem, parseServices } from "@/modules/settings/service";
+import { aliasesProblem, aliasExample, parseServices } from "@/modules/settings/service";
 import { Button } from "@/components/ui/button";
 import { FieldMessage } from "@/components/ui/field-errors";
 import { Input } from "@/components/ui/input";
@@ -77,7 +77,7 @@ export function CompetitorAliases({ businessId, competitors, save }: { businessI
                   setErrors((prev) => Object.fromEntries(Object.entries(prev).filter(([key]) => key !== c.id)));
                 }}
                 maxLength={1300}
-                placeholder="For example: KFC"
+                placeholder={aliasExample(c.name)}
                 autoComplete="off"
                 aria-invalid={errors[c.id] ? true : undefined}
                 aria-describedby={errors[c.id] ? `${id}-error` : undefined}

@@ -30,6 +30,10 @@ export type SignalRow = {
    */
   status: "linked" | "missing" | "error" | "limited";
   signals: PlaceSignals | null;
+  /** The tracked competitor's id, for "Add website"; null for your own row. */
+  competitorId?: string | null;
+  /** A website the user typed for this competitor (user data, never Google's, D-73). */
+  savedSite?: string | null;
 };
 
 export type CompetitorsView = {
@@ -45,13 +49,15 @@ export type CompetitorsView = {
   count: number;
   /** Null when the plan sets no limit. */
   limit: number | null;
+  /** A chain with no branch picked on Google yet: your row links to "Pick your branch on Google" (step 6d). */
+  pickBranch: boolean;
 };
 
 /**
  * `countedFrom`: the first saved answer checked for this competitor. When it was added, unless saved answers were
  * checked again for it since (BUG-122), which reaches back to the oldest answer still shown.
  */
-export type CompetitorRow = { name: string; placesId: string | null; countedFrom: Date };
+export type CompetitorRow = { name: string; placesId: string | null; countedFrom: Date; id?: string; domain?: string | null };
 
 export type SignalResult = PlaceSignals | null | "error" | "limited";
 
@@ -66,7 +72,7 @@ export const COLLECTING_TEXT = "New, still collecting";
 const key = (name: string) => name.trim().toLowerCase();
 
 export function competitorsView(input: {
-  business: { name: string; placesId: string | null };
+  business: { name: string; placesId: string | null; chain?: boolean };
   report: ScoreReport;
   competitors: CompetitorRow[];
   signals: Map<string, SignalResult>;
@@ -127,12 +133,13 @@ export function competitorsView(input: {
     leaderboard,
     signals: [
       signalRow(business.name, true, business.placesId, signals),
-      ...competitors.map((c) => signalRow(c.name, false, c.placesId, signals)),
+      ...competitors.map((c) => ({ ...signalRow(c.name, false, c.placesId, signals), competitorId: c.id ?? null, savedSite: c.domain ?? null })),
     ],
     also: also.names,
     answers: also.answers,
     count: competitors.length,
     limit,
+    pickBranch: !!business.chain && !business.placesId,
   };
 }
 
@@ -141,6 +148,37 @@ function signalRow(name: string, isYou: boolean, placesId: string | null, signal
   if (result === "error" || result === "limited") return { name, isYou, status: result, signals: null };
   if (!result) return { name, isYou, status: "missing", signals: null };
   return { name, isYou, status: "linked", signals: result };
+}
+
+export type WebsiteShown = { kind: "google"; url: string } | { kind: "saved"; domain: string } | { kind: "none_on_google" } | { kind: "unknown" };
+
+/**
+ * What the Website column shows: Google's website, else one the user typed ("added by you"), else "No website on
+ * Google" when Google answered without one. When the lookup failed or found no listing, it is unknown, never "no
+ * website" (2026-10-14).
+ */
+export function websiteShown(row: Pick<SignalRow, "status" | "signals" | "savedSite">): WebsiteShown {
+  const google = row.signals?.website;
+  if (google && /^https?:\/\//i.test(google)) return { kind: "google", url: google };
+  if (row.savedSite) return { kind: "saved", domain: row.savedSite };
+  return row.status === "linked" ? { kind: "none_on_google" } : { kind: "unknown" };
+}
+
+/**
+ * A website the user typed for a competitor, as a bare domain: "https://www.Burning-Brownie.com/menu" gives
+ * "burning-brownie.com". Null when it is not a public web address.
+ */
+export function websiteDomain(raw: string): string | null {
+  const text = raw.trim();
+  if (!text) return null;
+  try {
+    const url = new URL(/^[a-z]+:\/\//i.test(text) ? text : `https://${text}`);
+    if (url.protocol !== "https:" && url.protocol !== "http:") return null;
+    const host = url.hostname.toLowerCase().replace(/^www\./, "");
+    return /^(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z]{2,}$/.test(host) ? host : null;
+  } catch {
+    return null;
+  }
 }
 
 /** True when Google had no listing for any row, so a table would be all blanks (DB-016). A load error is not this. */

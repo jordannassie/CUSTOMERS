@@ -1,5 +1,6 @@
 // Competitor step rules (MVP_SPEC 3.1 step 5, D-73): what to search for, which results to show, and
 // what gets saved. Places values are only shown; a saved competitor is the user's name plus a place id.
+import { businessKind } from "./business-kind";
 import { isIndustry, type Industry } from "@/lib/industries";
 import type { CompetitorCandidate, CompetitorPlaces, Origin } from "./competitor-places";
 
@@ -50,6 +51,10 @@ function area(b: BusinessForSearch): string {
  * other ("Sportswear store", BUG-085), then its Google type ("clothing_store"), then its first service.
  */
 function searchTerm(b: BusinessForSearch, origin: Origin | null): string | null {
+  // A fast food place is searched as one, with its main product: "fast food fried chicken", not "restaurant"
+  // (2026-10-14: KFC got Bistro Noir, Xander's and The Dome). Other kinds keep their term.
+  const kind = kindForSearch(b, origin);
+  if (kind.takeaway) return ["fast food", kind.products[0]].filter(Boolean).join(" ");
   if (b.industry && isIndustry(b.industry)) {
     const term = SEARCH_TERMS[b.industry];
     if (term) return term;
@@ -57,6 +62,17 @@ function searchTerm(b: BusinessForSearch, origin: Origin | null): string | null 
     return b.industry.trim();
   }
   return origin?.primaryType?.replace(/_/g, " ") || b.services[0]?.trim() || null;
+}
+
+function kindForSearch(b: BusinessForSearch, origin: Origin | null) {
+  const noun = b.industry && isIndustry(b.industry) ? (SEARCH_TERMS[b.industry] ?? b.industry) : (b.industry ?? "");
+  return businessKind({ industry: b.industry, noun, services: b.services, primaryType: origin?.primaryType ?? null });
+}
+
+/** Results of the type the business is, first, keeping Google's order otherwise. */
+export function sameTypeFirst(found: CompetitorCandidate[], type: string | null): CompetitorCandidate[] {
+  if (!type) return found;
+  return [...found.filter((c) => c.primaryType === type), ...found.filter((c) => c.primaryType !== type)];
 }
 
 export function nearbyQuery(b: BusinessForSearch, origin: Origin | null = null): string | null {
@@ -100,8 +116,10 @@ export async function discoverCompetitors(b: BusinessForSearch, places: Competit
   if (!query) return { suggestions: [], note: COMPETITOR_NOTES.noCategory };
   let found: CompetitorCandidate[];
   try {
-    // Near the business and of its own Google type (BUG-085). One extra result covers the business itself.
-    found = await places.search(query, MAX_SUGGESTIONS + 1, origin, true);
+    // Near the business and of its own Google type (BUG-085); a fast food place with no listing of its own keeps to
+    // fast food places. One extra result covers the business itself.
+    const orType = kindForSearch(b, origin).takeaway ? "fast_food_restaurant" : null;
+    found = sameTypeFirst(await places.search(query, MAX_SUGGESTIONS + 1, origin, true, orType), origin?.primaryType ?? orType);
   } catch {
     return { suggestions: [], note: COMPETITOR_NOTES.unavailable };
   }

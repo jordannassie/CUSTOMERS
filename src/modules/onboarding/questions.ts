@@ -6,7 +6,7 @@ import { INDUSTRY_LABELS, isIndustry, type LibraryIndustry } from "@/lib/industr
 import { SEARCH_TERMS } from "./competitors";
 import type { Intent } from "@/modules/question-library";
 import type { QuestionModel } from "./question-model";
-import { PICK_MODEL, PICK_PROMPT_VERSION, QUESTION_COUNT, type PickBusiness } from "./prompts/pick-questions.v5";
+import { PICK_MODEL, PICK_PROMPT_VERSION, QUESTION_COUNT, type PickBusiness } from "./prompts/pick-questions.v6";
 import {
   balancePicks,
   cityLabel,
@@ -23,6 +23,12 @@ import {
   type LibraryEntry,
   type PreparedQuestion,
 } from "./question-rules";
+import { namesOwnBusiness, ownNames, withoutNames } from "./question-kind";
+import { businessKind, type BusinessKind } from "./business-kind";
+import { withKindQuestions } from "./kind-questions";
+import { withArea } from "./question-area";
+
+export { AREA_QUESTIONS, areaLabel } from "./question-area";
 
 export type QuestionBusiness = {
   /** One of INDUSTRIES; anything else (or "other") has no library. */
@@ -35,12 +41,30 @@ export type QuestionBusiness = {
   region: string | null;
   /** Neighbourhood or area of the city ("East Austin"): some questions ask about it too. */
   area?: string | null;
+  /** The business's own name, other names and website: never sent to the writer or kept in a question. */
+  name?: string;
+  aliases?: string[];
+  domain?: string | null;
+  /** Google's types for its listing, read live and never stored (D-73): "fast_food_restaurant" makes it fast food. */
+  primaryType?: string | null;
+  types?: string[];
+  /** Several locations under one brand (businesses.is_chain): some questions ask about chains. */
+  chain?: boolean;
 };
 
 export type LoadLibrary = (industry: LibraryIndustry) => Promise<LibraryEntry[]>;
 /** Questions already chosen for another business of this industry in this city, oldest set first. */
 export type LoadShared = (industry: string, city: string, region: string | null) => Promise<{ text: string; intent: Intent }[]>;
-export type QuestionClients = { loadLibrary: LoadLibrary; model: QuestionModel; loadShared?: LoadShared };
+/** Google's types for a listing, read live (never stored, D-73); null when Google can't say. */
+export type LoadPlaceTypes = (placeId: string) => Promise<{ primaryType: string | null; types: string[] } | null>;
+export type QuestionClients = { loadLibrary: LoadLibrary; model: QuestionModel; loadShared?: LoadShared; placeTypes?: LoadPlaceTypes };
+
+/** The listing's types for the kind of business; nothing when there is no listing or Google fails. */
+export async function placeTypesOf(placeId: string | null, clients: QuestionClients) {
+  if (!placeId || !clients.placeTypes) return {};
+  const found = await clients.placeTypes(placeId).catch(() => null);
+  return found ? { primaryType: found.primaryType, types: found.types } : {};
+}
 
 export type QuestionSet = {
   questions: PreparedQuestion[];
@@ -69,17 +93,27 @@ function industryNoun(b: QuestionBusiness): string {
   return (known ? SEARCH_TERMS[known] : null) ?? (b.industryText?.trim() || "local business");
 }
 
-export async function prepareQuestions(business: QuestionBusiness, clients: QuestionClients): Promise<QuestionSet> {
-  if (!business.city.trim()) throw new Error("A city is required to prepare questions");
-  const set = await citySet(business, clients);
+export async function prepareQuestions(given: QuestionBusiness, clients: QuestionClients): Promise<QuestionSet> {
+  if (!given.city.trim()) throw new Error("A city is required to prepare questions");
+  // The user's own words for an unlisted trade may hold the business's name; only the kind of business is kept.
+  const business = { ...given, industryText: withoutNames(given.industryText ?? "", ownNames(given)) || undefined };
+  const kind = kindOf(business);
+  const set = await citySet(business, kind, clients);
+  // Fast food never gets sit-down questions; product and chain questions come from its kind (business-kind.ts).
+  const plain = fallbackQuestions(kind.noun, business.city, business.region);
+  const fitted = withKindQuestions(set.questions, kind, cityLabel(business.city, business.region), plain, business.services);
   // Every path (library, written, reused from a neighbour, plain) writes the place as a person would.
-  const questions = withArea(set.questions, business).map((q) => ({ ...q, text: tidyPlace(q.text, business.city, business.region) }));
+  const questions = withArea(fitted, business).map((q) => ({ ...q, text: tidyPlace(q.text, business.city, business.region) }));
   return { ...set, questions };
 }
 
-async function citySet(business: QuestionBusiness, clients: QuestionClients): Promise<QuestionSet> {
+function kindOf(b: QuestionBusiness): BusinessKind {
+  return businessKind({ industry: b.industry, noun: industryNoun(b), services: b.services, primaryType: b.primaryType, types: b.types, chain: b.chain });
+}
+
+async function citySet(business: QuestionBusiness, kind: BusinessKind, clients: QuestionClients): Promise<QuestionSet> {
   const city = cityLabel(business.city, business.region);
-  const input: PickBusiness = { industry: industryLabel(business), services: business.services, description: business.description };
+  const input: PickBusiness = { industry: industryLabel(business), kind: kind.label, services: business.services, description: business.description };
   const known = libraryIndustry(business.industry);
   const library = known ? await clients.loadLibrary(known) : [];
   const base = { promptVersion: PICK_PROMPT_VERSION, model: PICK_MODEL, error: null };
@@ -148,8 +182,8 @@ async function fromLibrary(input: PickBusiness, business: QuestionBusiness, libr
   // Only templates that fit this business, checked in code before and after the model: a fried chicken restaurant
   // never gets the library's sushi, steak or wine questions, whatever the model picks. Fair questions only, as for
   // written ones.
-  const ctx = fitContext(business);
-  const fit = library.filter((e) => isFairQuestion(e.template) && fitsBusiness(e, ctx));
+  const ctx = { ...fitContext(business), takeaway: kindOf(business).takeaway };
+  const fit = library.filter((e) => isUsableTemplate(e.template) && isFairQuestion(e.template) && fitsBusiness(e, ctx));
   let picked: LibraryEntry[];
   let asked = false;
   // A list this short leaves nothing to choose, so no call is made.
@@ -193,6 +227,7 @@ async function written(input: PickBusiness, business: QuestionBusiness, model: Q
       (q) =>
         isUsableTemplate(q.template) &&
         isFairQuestion(q.template) &&
+        !namesOwnBusiness(q.template, business) &&
         !mixesServices(q.template, input.services) &&
         !namesUnofferedTerm(q.template, input.services, input.description),
     )
@@ -206,37 +241,4 @@ async function written(input: PickBusiness, business: QuestionBusiness, model: Q
     intent: q.intent,
   }));
   return balancePicks(kept, extra, []).map((q) => ({ text: q.template, intent: q.intent, templateId: null }));
-}
-
-/** How many of the 12 ask about the business's own part of the city when it has one. */
-export const AREA_QUESTIONS = 4;
-
-/**
- * "East Austin, TX" or "Hyde Park, Austin, TX": the area with the city it is in. Questions keep the city so the
- * AI knows which East Austin, and businesses in the same area share the wording (and the answer cache).
- */
-export function areaLabel(area: string, city: string, region: string | null): string {
-  const where = cityLabel(city, region);
-  const inName = new RegExp(`\\b${city.trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`, "i").test(area);
-  return inName ? where.replace(city.trim(), area.trim()) : `${area.trim()}, ${where}`;
-}
-
-/**
- * A small shop measured only against its whole city always looks invisible (BUG-131). With an area set, a few of
- * the "best", "reviews" and "price" questions ask about the area instead; the rest stay city-wide.
- */
-function withArea(questions: PreparedQuestion[], business: QuestionBusiness): PreparedQuestion[] {
-  const area = business.area?.trim();
-  if (!area) return questions;
-  const city = cityLabel(business.city, business.region);
-  const local = areaLabel(area, business.city, business.region);
-  if (local === city) return questions;
-  const order = ["best", "reviews", "price", "best", "comparison", "reviews"];
-  const chosen = new Set<number>();
-  for (const intent of order) {
-    if (chosen.size >= AREA_QUESTIONS) break;
-    const i = questions.findIndex((q, n) => !chosen.has(n) && q.intent === intent && q.text.includes(city));
-    if (i >= 0) chosen.add(i);
-  }
-  return questions.map((q, n) => (chosen.has(n) ? { ...q, text: q.text.replace(city, local) } : q));
 }

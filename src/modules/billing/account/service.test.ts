@@ -91,6 +91,11 @@ describe("billingView", () => {
     expect(view.stripe).toBe("error");
     expect(view.canChange).toBe(false);
     expect(view.onPlan).toHaveLength(2);
+
+    // A subscription Stripe does not have is not an outage: "missing", not "refresh to try again" (2026-10-14).
+    const gone = { retrieveSubscription: () => Promise.reject(Object.assign(new Error("No such subscription"), { type: "StripeInvalidRequestError", code: "resource_missing", statusCode: 404 })) };
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    expect((await billingView({ rows: rows(), access: { context: ctx, stripe: gone as unknown as PlanChangeStripe } })).stripe).toBe("missing");
   });
 
   it("a past due plan keeps its lines; an ended one can't be changed", async () => {

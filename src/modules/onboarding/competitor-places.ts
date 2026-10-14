@@ -8,7 +8,8 @@ import { placeIdPattern } from "./schema";
 
 export const PLACES_DETAILS_URL = "https://places.googleapis.com/v1/places";
 // rating and userRatingCount put these calls in the Enterprise tier; nothing else we ask for costs more.
-const FIELDS = ["id", "displayName", "rating", "userRatingCount", "shortFormattedAddress", "googleMapsUri"];
+// primaryType ranks suggestions of the business's own kind first (2026-10-14); shown nowhere, never stored.
+const FIELDS = ["id", "displayName", "rating", "userRatingCount", "shortFormattedAddress", "googleMapsUri", "primaryType"];
 export const COMPETITOR_SEARCH_FIELD_MASK = FIELDS.map((f) => `places.${f}`).join(",");
 export const COMPETITOR_DETAILS_FIELD_MASK = FIELDS.join(",");
 // The business's own place, read live to search near it (never stored, MVP_SPEC 26).
@@ -26,6 +27,8 @@ export type CompetitorCandidate = {
   reviewCount: number | null;
   address: string | null;
   mapsUri: string | null;
+  /** Google's type, to put suggestions of the business's own kind first. */
+  primaryType?: string | null;
 };
 
 /** Where the business is and its Google type, so suggestions are nearby businesses of the same kind (BUG-085). */
@@ -33,7 +36,8 @@ export type Origin = { latitude: number; longitude: number; primaryType: string 
 
 export type CompetitorPlaces = {
   /** Throws PlacesError when Places cannot be reached; an empty list means no match. */
-  search: (textQuery: string, pageSize: number, near?: Origin | null, sameType?: boolean) => Promise<CompetitorCandidate[]>;
+  /** `orType`: the type to keep when the business's own type is unknown ("fast_food_restaurant" for a fast food place). */
+  search: (textQuery: string, pageSize: number, near?: Origin | null, sameType?: boolean, orType?: string | null) => Promise<CompetitorCandidate[]>;
   /** The business's own location and type, or null when Places has none. */
   origin?: (placeId: string) => Promise<Origin | null>;
   /** Null when the place no longer exists. */
@@ -47,6 +51,7 @@ const place = z.object({
   userRatingCount: z.number().int().nullish(),
   shortFormattedAddress: z.string().nullish(),
   googleMapsUri: z.string().nullish(),
+  primaryType: z.string().nullish(),
 });
 
 function toCandidate(p: z.infer<typeof place>): CompetitorCandidate | null {
@@ -59,6 +64,7 @@ function toCandidate(p: z.infer<typeof place>): CompetitorCandidate | null {
     reviewCount: p.userRatingCount ?? null,
     address: p.shortFormattedAddress || null,
     mapsUri: p.googleMapsUri || null,
+    ...(p.primaryType ? { primaryType: p.primaryType } : {}),
   };
 }
 
@@ -73,14 +79,15 @@ const origin = z.object({
   primaryType: z.string().nullish(),
 });
 
-export function searchBody(textQuery: string, pageSize: number, near: Origin | null | undefined, sameType: boolean) {
+export function searchBody(textQuery: string, pageSize: number, near: Origin | null | undefined, sameType: boolean, orType?: string | null) {
+  const type = sameType ? (near?.primaryType ?? orType ?? null) : null;
   return {
     textQuery,
     pageSize,
     ...(near
       ? { locationBias: { circle: { center: { latitude: near.latitude, longitude: near.longitude }, radius: NEARBY_RADIUS_M } } }
       : {}),
-    ...(sameType && near?.primaryType ? { includedType: near.primaryType } : {}),
+    ...(type ? { includedType: type } : {}),
   };
 }
 
@@ -89,10 +96,11 @@ export function createCompetitorPlaces(apiKey: string, deps: HttpDeps = {}): Com
   const searchOnce = (body: unknown) =>
     postJson(PLACES_TEXT_SEARCH_URL, { "X-Goog-Api-Key": apiKey, "X-Goog-FieldMask": COMPETITOR_SEARCH_FIELD_MASK }, body, deps);
   return {
-    async search(textQuery, pageSize, near, sameType = false) {
-      let { status, body } = await searchOnce(searchBody(textQuery, pageSize, near, sameType));
+    async search(textQuery, pageSize, near, sameType = false, orType = null) {
+      const first = searchBody(textQuery, pageSize, near, sameType, orType);
+      let { status, body } = await searchOnce(first);
       // A place type Text Search does not accept as a filter: search again without it.
-      if (status === 400 && sameType && near?.primaryType) ({ status, body } = await searchOnce(searchBody(textQuery, pageSize, near, false)));
+      if (status === 400 && "includedType" in first) ({ status, body } = await searchOnce(searchBody(textQuery, pageSize, near, false)));
       if (status < 200 || status >= 300) throw new PlacesError(`Places returned ${status}`);
       return toCompetitorCandidates(body);
     },

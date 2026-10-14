@@ -1,4 +1,5 @@
 import "server-only";
+import { providerErrorKind } from "@/lib/provider-error-kind";
 import { aiUsageMetadata } from "@/modules/ai/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import type { Json } from "@/types/database.types";
@@ -243,8 +244,7 @@ export async function insertExtractionUsage(row: {
 
 /** Feeds the provider error spike alert (B-69, MVP_SPEC 22). Never throws: a lost row must not fail the check. */
 export async function recordProviderError(provider: ProviderId, message: string): Promise<void> {
-  const { error } = await createServiceClient()
-    .from("provider_errors")
-    .insert({ provider, message: message.slice(0, 500) });
+  // One row per kind of failure an hour, with a count (migration 058).
+  const { error } = await createServiceClient().rpc("record_provider_error", { p_provider: provider, p_kind: providerErrorKind(message.slice(0, 500)), p_message: message.slice(0, 500) });
   if (error) console.error(`Could not record the ${provider} error: ${error.message}`);
 }

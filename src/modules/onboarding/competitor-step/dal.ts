@@ -1,4 +1,5 @@
 import "server-only";
+import { cachedPlaceId, placeIdKey, rememberPlaceId } from "../place-id-cache";
 import { env } from "@/lib/env";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
@@ -167,6 +168,14 @@ export async function saveCompetitors(
 
 /** The place id of the Google listing for a name AI suggested, or null when none clearly matches or Places fails. */
 export async function placeIdForName(userId: string, businessId: string, name: string, places?: CompetitorPlaces): Promise<string | null> {
+  // The same name near the same business matched a day ago: no new search (only the place ID is kept, D-73).
+  const key = placeIdKey(businessId, name);
+  const known = cachedPlaceId(key);
+  if (known !== undefined) return known;
   const found = await lookupCompetitor(userId, businessId, name, places);
-  return found ? (matchingPlace(name, found.matches)?.placeId ?? null) : null;
+  if (!found) return null;
+  const placeId = matchingPlace(name, found.matches)?.placeId ?? null;
+  // A failed search is not remembered: the next one tries Google again.
+  if (found.note !== COMPETITOR_NOTES.unavailable) rememberPlaceId(key, placeId);
+  return placeId;
 }

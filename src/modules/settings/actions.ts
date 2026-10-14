@@ -8,7 +8,7 @@ import { rebuildQuestionsForIndustry, sameIndustry } from "@/modules/onboarding/
 import { recountAfterNamesChange } from "@/modules/scanning";
 import { businessBefore, saveAgencyLogo, updateAgencyName, updateBusinessProfile, updateScanSettings } from "./dal";
 import { agencyNameInput, businessProfileInput, scanSettingsInput } from "./schema";
-import { checkLogo, namesChanged, normalizeWebsite } from "./service";
+import { checkLogo, matchingChanged, normalizeWebsite } from "./service";
 
 type Result<T = null> = ActionResult<T>;
 
@@ -57,12 +57,22 @@ export async function saveBusinessProfile(input: unknown): Promise<Result> {
     ...(area === undefined ? {} : { primary_area: area }),
     phone: phone || null,
     domain: site.domain,
+    has_website: site.domain !== null,
   });
   if (!saved) return notFound;
   // A new industry gets questions for it; the user's own questions and past results stay.
   if (!sameIndustry(before.industry, industry || null)) await rebuildQuestionsForIndustry(businessId);
-  // Saved answers are checked again for the new names, so the score counts "KFC" from today, not the next scan.
-  if (namesChanged(before, { name, aliases: aliases ?? before.aliases })) await recountAfterNamesChange(businessId);
+  // Saved answers are checked again for the new names, website, phone, city or area, so the score counts "KFC" or the
+  // new website from today, not from the next scan.
+  const after = {
+    name,
+    aliases: aliases ?? before.aliases,
+    domain: site.domain,
+    phone: phone || null,
+    city: city || null,
+    area: area === undefined ? before.area : area,
+  };
+  if (matchingChanged(before, after)) await recountAfterNamesChange(businessId);
   refresh();
   return { ok: true, data: null };
 }

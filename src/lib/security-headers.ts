@@ -13,8 +13,8 @@ export function contentSecurityPolicy({ supabaseUrl, isDev }: Options): string {
     "script-src": ["'self'", "'unsafe-inline'", ...STRIPE_JS, ...(isDev ? ["'unsafe-eval'"] : [])],
     // Tailwind, Next.js and Stripe Elements all set inline styles.
     "style-src": ["'self'", "'unsafe-inline'"],
-    // Business logos can come from any website the user entered.
-    "img-src": ["'self'", "data:", "blob:", "https:"],
+    // Business logos can come from any website the user entered; uploaded ones from our Supabase storage.
+    "img-src": ["'self'", "data:", "blob:", "https:", supabase],
     "font-src": ["'self'", "data:"],
     // Supabase auth and realtime in the browser, Stripe Elements API calls.
     "connect-src": ["'self'", supabase, supabaseSocket, "https://api.stripe.com"],
@@ -34,14 +34,12 @@ export function contentSecurityPolicy({ supabaseUrl, isDev }: Options): string {
 
 export function securityHeaders(options: Options) {
   return [
-    { key: "Strict-Transport-Security", value: "max-age=63072000" },
+    { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains" },
     { key: "X-Content-Type-Options", value: "nosniff" },
     { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
     { key: "X-Frame-Options", value: "DENY" },
     { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=(), browsing-topics=()" },
-    // Safe to enforce now: nothing embeds our pages, and we use no plugins or <base>.
-    { key: "Content-Security-Policy", value: "frame-ancestors 'none'; object-src 'none'; base-uri 'self'" },
-    // The full policy is report-only first: violations show in the browser console without blocking anything.
-    { key: "Content-Security-Policy-Report-Only", value: contentSecurityPolicy(options) },
+    // Enforced since 2026-10-14 (SEC-04), after a report-only period with no violations on our pages and Stripe.
+    { key: "Content-Security-Policy", value: contentSecurityPolicy(options) },
   ];
 }

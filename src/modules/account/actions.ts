@@ -12,7 +12,7 @@ import {
   type ActionResult,
   type SessionUser,
 } from "@/modules/auth";
-import { endBusinessPlan, PlanChangeError, type BusinessPlanEnd } from "@/modules/billing";
+import { endBusinessPlan, isMissingInStripe, PlanChangeError, type BusinessPlanEnd } from "@/modules/billing";
 import {
   deletionWaitDays,
   hasPasswordSignIn,
@@ -168,8 +168,11 @@ export async function deleteAccount(input: unknown): Promise<ActionResult<{ redi
       try {
         await stripe.cancelNow(target.subscriptionId, `account-delete:${agency.id}`);
       } catch (error) {
-        console.error("[account] subscription cancel failed", error);
-        return STRIPE_DOWN;
+        // Stripe has no such subscription: nothing to cancel, so the account can go (2026-10-14).
+        if (!isMissingInStripe(error)) {
+          console.error("[account] subscription cancel failed", error);
+          return STRIPE_DOWN;
+        }
       }
     }
 

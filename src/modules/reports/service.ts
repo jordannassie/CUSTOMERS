@@ -64,7 +64,8 @@ export function reportView(input: {
     competitors: {
       leaderboard: competitors.leaderboard,
       margin: competitors.margin,
-      signals: competitors.signals,
+      // A shared report is public: the competitor's database id never goes in it; a website the user added does.
+      signals: competitors.signals.map((row) => ({ name: row.name, isYou: row.isYou, status: row.status, signals: row.signals, savedSite: row.savedSite ?? null })),
       count: competitors.count,
       hasScore: competitors.hasScore,
     },

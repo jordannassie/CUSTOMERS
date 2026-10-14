@@ -14,7 +14,8 @@ export type QuestionAction = (input: unknown) => Promise<ActionResult<null>>;
 
 type Props = {
   businessId: string;
-  city: string | null;
+  /** From the Questions page view: a question our own rules keep (step 6c). */
+  example: string;
   activeCount: number;
   models: number;
   frequency: ScanFrequency;
@@ -22,14 +23,13 @@ type Props = {
   add: QuestionAction;
 };
 
-export function AddQuestionForm({ businessId, city, activeCount, models, frequency, limitMessage, add }: Props) {
+export function AddQuestionForm({ businessId, example, activeCount, models, frequency, limitMessage, add }: Props) {
   const [text, setText] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const full = limitMessage !== null;
   const now = monthlyCredits(activeCount, models, frequency);
   const after = monthlyCredits(activeCount + 1, models, frequency);
-  const example = `Which places in ${city ?? "my city"} are open late on weekends?`;
 
   function submit(e: React.FormEvent) {
     e.preventDefault();

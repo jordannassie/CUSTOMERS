@@ -20,6 +20,15 @@ describe("get found by AI checklist", () => {
     expect(missingBasics({ ...full, placesId: null, phone: " " })).toEqual(["a Google Business Profile", "a phone number"]);
   });
 
+  it("never asks a chain to claim a profile while its branch can still be picked on Google (step 6d)", () => {
+    const chain = { ...full, hasWebsite: true, domain: "kfcpakistan.com", phone: "+92 51 111 532 532", placesId: null, branchPending: true };
+    expect(missingBasics(chain)).toEqual([]);
+    expect(checklist(chain, new Set()).map((i) => i.key)).not.toContain("google_profile");
+    // Google lists no branch: the claim step is back.
+    expect(missingBasics({ ...chain, branchPending: false })).toEqual(["a Google Business Profile"]);
+    expect(checklist({ ...chain, branchPending: false }, new Set()).map((i) => i.key)).toContain("google_profile");
+  });
+
   it("never tells a business with a website to build one (BUG-087)", () => {
     expect(checklist(full, new Set()).map((i) => i.key)).not.toContain("website");
   });

@@ -1,6 +1,7 @@
 import "server-only";
 // Share links (B-59). report_shares has RLS with an owner-only select policy and nothing public, so the
 // writes and the public read use the service role here, after checking ownership or the token.
+import { providerErrorKind } from "@/lib/provider-error-kind";
 import { env } from "@/lib/env";
 import { createServiceClient } from "@/lib/supabase/service";
 import { requireAgency } from "@/modules/auth";
@@ -211,6 +212,6 @@ export async function getSharedLogo(token: string): Promise<{ bytes: ArrayBuffer
 
 /** Feeds the provider error spike alert (MVP_SPEC 22): a PDF that Browserless or Chromium could not print. */
 export async function recordPdfError(message: string): Promise<void> {
-  const { error } = await createServiceClient().from("provider_errors").insert({ provider: "browserless", message: message.slice(0, 500) });
+  const { error } = await createServiceClient().rpc("record_provider_error", { p_provider: "browserless", p_kind: providerErrorKind(message.slice(0, 500)), p_message: message.slice(0, 500) });
   if (error) console.error(`Could not record the PDF error: ${error.message}`);
 }

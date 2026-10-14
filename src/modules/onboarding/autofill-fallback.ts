@@ -11,16 +11,22 @@ export type AutofillProblem = { provider: AutofillProvider; message: string };
 // Letters people put in front of a brand in a web address: "ebookwoman", "thebookwoman", "getfoo".
 const DOMAIN_PREFIXES = ["the", "my", "get", "shop", "visit", "go", "e"];
 
-/** "ebookwoman.com" gives ["ebookwoman", "bookwoman"]; "book-woman.co.uk" gives ["book woman", "bookwoman", ...]. */
+// Each guess is one Places Text Search in the Enterprise tier (websiteUri, which picks the listing, is in it).
+export const MAX_BRAND_SEARCHES = 2;
+
+/**
+ * "ebookwoman.com" gives ["ebookwoman", "bookwoman"]; "the-book-woman.co.uk" gives ["the book woman", "bookwoman"].
+ * A hyphenated name is searched spaced only: Google finds "book woman" and "bookwoman" alike. At most 2 searches.
+ */
 export function brandGuesses(domain: string): string[] {
   const parts = domain.toLowerCase().split(".");
   const label = (parts.length >= 3 && parts[parts.length - 2].length <= 3 ? parts[parts.length - 3] : parts[parts.length - 2]) ?? "";
-  const guesses = [label.includes("-") ? label.replace(/-+/g, " ") : "", label.replace(/-+/g, "")];
+  const guesses = [label.includes("-") ? label.replace(/-+/g, " ") : label];
   for (const prefix of DOMAIN_PREFIXES) {
     const rest = label.replace(/-+/g, "");
     if (rest.startsWith(prefix) && rest.length - prefix.length >= 4) guesses.push(rest.slice(prefix.length));
   }
-  return [...new Set(guesses.filter((g) => g.trim().length >= 3))];
+  return [...new Set(guesses.filter((g) => g.trim().length >= 3))].slice(0, MAX_BRAND_SEARCHES);
 }
 
 /**

@@ -183,6 +183,17 @@ describe("signals", () => {
   });
 });
 
+describe("pick your branch (step 6d)", () => {
+  it("links your row to the branch picker only for a chain with no listing picked", () => {
+    const r = report({ score: 40, margin: 6 }, []);
+    const as = (business: { name: string; placesId: string | null; chain?: boolean }) =>
+      competitorsView({ business, report: r, competitors: [], signals: new Map(), also: noAlso, limit: 5 }).pickBranch;
+    expect(as({ name: "KFC", placesId: null, chain: true })).toBe(true);
+    expect(as({ name: "KFC", placesId: "ChIJ-kfc-f7-markaz", chain: true })).toBe(false);
+    expect(as({ name: "Sunrise Coffee Bar", placesId: null })).toBe(false);
+  });
+});
+
 describe("toSignals", () => {
   it("reads the Places details fields and drops generic types", () => {
     const s = toSignals({

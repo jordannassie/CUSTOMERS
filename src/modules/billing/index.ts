@@ -19,6 +19,7 @@ export {
 export { endBusinessPlan, type BusinessPlanEnd } from "./plan-change/end-business";
 export { addBusinessAtSetup, previewSetupAddOn, type SetupAddOn, type SetupAddOnResult } from "./plan-change/setup-add-on";
 export { PlanChangeError } from "./plan-change/planner";
+export { isMissingInStripe } from "./stripe-missing";
 export { TRIAL_DAYS, trialAllowed } from "./checkout";
 export { TRIAL_CREDITS } from "./webhooks/credits";
 export { extendSubscriptionTrial } from "./trial-extend";

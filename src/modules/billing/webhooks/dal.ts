@@ -15,7 +15,11 @@ export type AgencyStatus = "trialing" | "active" | "past_due" | "canceled";
 export type ItemStatus = AgencyStatus;
 export type WebhookAgency = { id: string; ownerUserId: string; status: string };
 export type BusinessItem = { businessId: string | null; itemId: string; planId: string; periodEnd: string | null };
-export type EventState = "new" | "failed" | "done";
+/** claimed: this delivery runs the handler; done: already handled; busy: another delivery is running it now. */
+export type EventClaim = "claimed" | "done" | "busy";
+
+// A claim older than this was left by a crash or a timeout, and another delivery may take it over.
+export const STALE_CLAIM_MS = 5 * 60_000;
 
 // Set by an admin; Stripe events never overwrite them.
 const ADMIN_STATUSES = ["suspended", "deleted"];
@@ -24,23 +28,39 @@ export type WebhookStore = ReturnType<typeof createWebhookStore>;
 
 export function createWebhookStore(db: Db = createServiceClient()) {
   return {
-    /** "done" blocks a replay; "failed" (an earlier attempt threw) is processed again. */
-    async eventState(eventId: string): Promise<EventState> {
-      const { data, error } = await db
-        .from("stripe_webhook_events")
-        .select("error")
-        .eq("stripe_event_id", eventId)
-        .maybeSingle();
+    /**
+     * Claims the event for this delivery before any handler runs (migration 056): the insert on the unique
+     * stripe_event_id is atomic, so of two deliveries at once only one runs it. A finished event is "done"; one that
+     * failed earlier, or whose claim went stale, is claimed again with a conditional update.
+     */
+    async claimEvent(eventId: string, eventType: string, now: Date): Promise<EventClaim> {
+      const at = now.toISOString();
+      const inserted = await db.from("stripe_webhook_events").insert({ stripe_event_id: eventId, event_type: eventType, claimed_at: at, processed_at: at });
+      if (!inserted.error) return "claimed";
+      if (inserted.error.code !== "23505") throw new Error(`stripe_webhook_events claim failed: ${inserted.error.message}`);
+
+      const { data, error } = await db.from("stripe_webhook_events").select("error, claimed_at").eq("stripe_event_id", eventId).single();
       if (error) throw new Error(`stripe_webhook_events read failed: ${error.message}`);
-      if (!data) return "new";
-      return data.error === null ? "done" : "failed";
+      if (data.claimed_at === null && data.error === null) return "done";
+      const stale = new Date(now.getTime() - STALE_CLAIM_MS).toISOString();
+      if (data.claimed_at !== null && Date.parse(data.claimed_at) > Date.parse(stale)) return "busy";
+      // Failed earlier, or a stale claim: take it over, unless another delivery just did.
+      const retake = await db
+        .from("stripe_webhook_events")
+        .update({ claimed_at: at })
+        .eq("stripe_event_id", eventId)
+        .or(`and(claimed_at.is.null,error.not.is.null),claimed_at.lt.${stale}`)
+        .select("id");
+      if (retake.error) throw new Error(`stripe_webhook_events claim failed: ${retake.error.message}`);
+      return retake.data.length > 0 ? "claimed" : "busy";
     },
 
     async recordEvent(eventId: string, eventType: string, failure: string | null): Promise<void> {
       const { error } = await db
         .from("stripe_webhook_events")
         .upsert(
-          { stripe_event_id: eventId, event_type: eventType, error: failure, processed_at: new Date().toISOString() },
+          // Finished, handled or failed: the claim is released, so a retry of a failure can claim it again.
+          { stripe_event_id: eventId, event_type: eventType, error: failure, processed_at: new Date().toISOString(), claimed_at: null },
           { onConflict: "stripe_event_id" },
         );
       if (error) throw new Error(`stripe_webhook_events write failed: ${error.message}`);

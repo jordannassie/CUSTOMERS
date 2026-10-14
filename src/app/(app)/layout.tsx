@@ -5,6 +5,7 @@ import { TimeZoneCookie } from "@/app/_components/time-zone-cookie";
 import { viewerTimeZone } from "@/lib/viewer-time-zone";
 import { AppShell } from "@/components/app/AppShell";
 import { AppShellSkeleton, PageSkeleton } from "@/components/app/AppShellSkeleton";
+import { suggestFeature } from "@/modules/feedback";
 import {
   BUY_CREDITS_HREF,
   getSwitcherScores,
@@ -52,6 +53,7 @@ async function AppFrame({ children }: { children: React.ReactNode }) {
       setupName={workspace.businesses.find((b) => b.status === "onboarding")?.name ?? null}
       activeBusinessId={active.id}
       switchBusiness={switchBusiness}
+      suggestFeature={suggestFeature}
       switcherScores={switcherScores}
       usage={widget}
       isAdmin={workspace.isAdmin}

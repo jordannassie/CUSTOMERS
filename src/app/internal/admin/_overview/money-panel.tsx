@@ -80,9 +80,18 @@ export default function MoneyPanel({
             ? "No revenue to compare with yet, so there is no margin to show."
             : share >= 1
               ? `AI costs more than we take in: ${usd(aiCostUsd)} against ${usd(revenueUsd!)}.`
-              : `AI costs ${Math.round(share * 100)} cents of every dollar customers pay.`}
+              : costShareText(share)}
         </p>
       </div>
     </section>
   );
 }
+
+/** "AI costs 12 cents of every dollar"; under a cent says so rather than rounding to "0 cents" (2026-10-14). */
+function costShareText(share: number): string {
+  const cents = share * 100;
+  if (cents > 0 && cents < 1) return "AI costs less than 1 cent of every dollar customers pay.";
+  const rounded = Math.round(cents);
+  return `AI costs ${rounded} ${rounded === 1 ? "cent" : "cents"} of every dollar customers pay.`;
+}
+

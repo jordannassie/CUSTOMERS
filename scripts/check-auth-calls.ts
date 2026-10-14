@@ -17,6 +17,7 @@ const PUBLIC: Record<string, string> = {
   "src/app/r/[token]/logo/route.ts": "share link logo; the token is the access check (B-59)",
   "src/app/api/alerts/check/route.ts": "pg_cron call, worker secret header (B-69)",
   "src/app/api/email/jobs/route.ts": "pg_cron call, worker secret header (B-62)",
+  "src/app/api/dev/scan-worker/route.ts": "local pg_cron call, worker secret header; 404 in production (BUG-167)",
 };
 
 function walk(dir: string): string[] {

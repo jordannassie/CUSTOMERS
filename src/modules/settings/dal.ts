@@ -4,6 +4,7 @@ import { getCurrentAgency, requireAgency, requireUser, type GuardOptions } from 
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { FREQUENCIES, MODEL_IDS, type Frequency, type ModelId } from "./schema";
+import type { MatchedFields } from "./service";
 
 const LOGO_BUCKET = "business-logos";
 // A business with no subscription item yet gets the smallest plan, as in entitlements.
@@ -107,21 +108,25 @@ export type ProfileUpdate = {
   primary_area?: string | null;
   phone: string | null;
   domain: string | null;
+  /** Kept in step with the website: mention rules are stricter without one (D-08). */
+  has_website: boolean;
 };
 
-export type SavedNames = { industry: string | null; name: string; aliases: string[] };
+/** What a profile save may change that the questions or the matching of saved answers depend on. */
+export type SavedProfile = MatchedFields & { industry: string | null };
 
-/** The business's saved industry and names, or undefined when it is not in the user's agency. */
-export async function businessBefore(businessId: string): Promise<SavedNames | undefined> {
+/** The business's saved industry and matching fields, or undefined when it is not in the user's agency. */
+export async function businessBefore(businessId: string): Promise<SavedProfile | undefined> {
   const { agency } = await requireAgency();
   const { data, error } = await createServiceClient()
     .from("businesses")
-    .select("industry, name, aliases")
+    .select("industry, name, aliases, domain, phone, primary_city, primary_area")
     .eq("id", businessId)
     .eq("agency_id", agency.id)
     .maybeSingle();
   if (error) throw new Error(`Could not load the business: ${error.message}`);
-  return data ?? undefined;
+  if (!data) return undefined;
+  return { industry: data.industry, name: data.name, aliases: data.aliases, domain: data.domain, phone: data.phone, city: data.primary_city, area: data.primary_area };
 }
 
 /** False when the business is not in the user's agency. */

@@ -30,7 +30,10 @@ export function validateLibrary(raw: unknown): ValidationResult {
   file.templates.forEach((t, i) => {
     const at = `templates.${i} (${t.industry}: "${t.template}")`;
     if (t.industry === "other") errors.push(`${at}: "other" has no library`);
-    if (!t.template.includes(CITY)) errors.push(`${at}: missing ${CITY}`);
+    const cities = t.template.split(CITY).length - 1;
+    if (cities === 0) errors.push(`${at}: missing ${CITY}`);
+    // The same rule as onboarding's isUsableTemplate: exactly one place for the city.
+    if (cities > 1) errors.push(`${at}: ${CITY} more than once`);
     const otherPlaceholders = (t.template.match(/\{[^}]*\}/g) ?? []).filter((p) => p !== CITY);
     if (otherPlaceholders.length) errors.push(`${at}: unknown placeholder ${otherPlaceholders.join(", ")}`);
     if (!t.template.trim().endsWith("?")) errors.push(`${at}: not a question (must end with "?")`);

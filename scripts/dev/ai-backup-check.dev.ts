@@ -36,7 +36,7 @@ const ai = (): AiClients =>
     : createAiClients({ anthropicKey: null, openaiKey: key("OPENAI_API_KEY") });
 
 const pages = COFFEE_PAGES.filter((p) => p.status === "ok" && p.markdown).map((p) => ({ path: p.path, markdown: p.markdown }));
-const business = { industry: COFFEE_BUSINESS.industry ?? "coffee_shop", services: COFFEE_BUSINESS.services, description: COFFEE_BUSINESS.description };
+const business = { industry: COFFEE_BUSINESS.industry ?? "coffee_shop", kind: "coffee shop", services: COFFEE_BUSINESS.services, description: COFFEE_BUSINESS.description };
 
 describe.runIf(live)(`background jobs on ${provider}`, () => {
   it.each<AutofillModel>([AUTOFILL_MODEL, AUTOFILL_RETRY_MODEL])("auto-fill reads the site (%s tier)", { timeout: TIMEOUT }, async (model) => {

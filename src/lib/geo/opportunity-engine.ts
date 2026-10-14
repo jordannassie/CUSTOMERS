@@ -86,7 +86,8 @@ export function generateOpportunities(input: OpportunityEngineInput): Opportunit
   // A) Overall mention rate
   if (mentionRate < 0.5) {
     const impact: OpportunityImpact = mentionRate < 0.2 ? "high" : "medium";
-    const evidence = `AI assistants mentioned ${businessName} in ${mentionedCount} of ${promptsTested} questions customers ask (${mentionPct}%).`;
+    // Each result is one AI answer (questions × models), not one question: "0 of 36 answers", not "0 of 36 questions".
+    const evidence = `AI assistants mentioned ${businessName} in ${mentionedCount} of ${promptsTested} answers to customer questions (${mentionPct}%).`;
     opportunities.push({
       title: mentionedCount === 0 ? "AI assistants don't mention you yet" : "AI assistants leave you out of most answers",
       description:
@@ -146,7 +147,7 @@ export function generateOpportunities(input: OpportunityEngineInput): Opportunit
 
   for (const [competitorName, count] of gaps) {
     const gap = count - mentionedCount;
-    const evidence = `AI assistants mentioned "${competitorName}" in ${count} of the same ${promptsTested} questions, and ${businessName} in ${mentionedCount}.`;
+    const evidence = `AI assistants mentioned "${competitorName}" in ${count} of the same ${promptsTested} answers, and ${businessName} in ${mentionedCount}.`;
     opportunities.push({
       title: `AI assistants pick ${competitorName} more often than you`,
       description: "A competitor you track comes up more often than you when customers ask the same questions.",

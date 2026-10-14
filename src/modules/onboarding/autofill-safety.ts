@@ -1,5 +1,6 @@
 // Auto-fill's safety net when no AI can read the site (D-84): a looser match between a Google listing's website
 // and the domain, and the name and description the site's own page title and meta description give. Pure helpers.
+import { hostOf as siteHost } from "@/lib/site-type";
 import type { PageResult } from "./firecrawl";
 import type { AutofillOutput } from "./prompts/business-autofill.v1";
 
@@ -7,14 +8,8 @@ import type { AutofillOutput } from "./prompts/business-autofill.v1";
 const CC_SECOND_LEVEL = /^(com|co|net|org|gov|edu|ac|or|ne)\.[a-z]{2}$/;
 const GENERIC_TLD = new Set(["com", "net", "org", "co", "biz", "info", "shop", "store"]);
 
-function hostOf(url: string | null): string | null {
-  if (!url) return null;
-  try {
-    return new URL(url).hostname.toLowerCase().replace(/^www\./, "");
-  } catch {
-    return null;
-  }
-}
+// One reading of a web address for every caller (lib/site-type.ts); a listing may have none.
+const hostOf = (url: string | null): string | null => (url ? siteHost(url) : null);
 
 /** "shop.adidas.com.pk" is the "adidas" label under "com.pk". */
 export function splitHost(host: string): { label: string; suffix: string } {

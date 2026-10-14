@@ -204,8 +204,8 @@ Example: 12 questions × 3 models × weekly = about 155 credits a month.
 | Role | Model | Web search |
 |---|---|---|
 | Check on ChatGPT | `gpt-4.1-mini` (or its current cheap equivalent) via the **Responses API** | `web_search` tool with `user_location` |
-| Check on Claude | `claude-haiku-4-5` | `web_search_20250305` tool with `user_location` |
-| Check on Perplexity | `sonar` | Always on; `web_search_options.user_location` |
+| Check on Claude | `claude-haiku-4-5` | `web_search_20250305` tool with `user_location`; for a country Claude's search rejects, the check runs again without it |
+| Check on Perplexity | `perplexity/sonar` through the **Agent API** (`/v1/agent`) | `web_search` tool with `user_location` (the Sonar Chat Completions endpoint and `web_search_options` retired on 2026-09-27, BUG-016) |
 | Auto-fill, question writing, name extraction | `claude-haiku-4-5`, backup `gpt-4.1-mini` (D-84) | No |
 | "Why competitors win", auto-fill retry, question library | `claude-sonnet-5`, backup `gpt-4.1` (D-84) | No |
 
@@ -213,7 +213,7 @@ Background jobs (the last two rows) fall back to OpenAI with the same prompt and
 
 Current code: only the first configured provider runs (`src/lib/geo/run-visibility.ts:58`), no web search on OpenAI or Claude, Claude pinned to the old `claude-3-5-haiku-20241022`, no request timeouts. All of that changes.
 
-Live test on 2026-09-26 ("best coffee shop near me", location Orange, CA): `gpt-4o-mini` did not search and asked for a location (not usable); `gpt-4.1-mini` searched and returned real local shops (about 8,000 input tokens, about $0.03 per check); `gpt-5-mini` also worked but used about 30,000 input tokens. OpenAI location only works in the Responses API, not the older Chat Completions search models. Claude and Perplexity location support is confirmed in their docs; not tested live because `.env.local` has no Anthropic or Perplexity key (D-67, D-68).
+Live test on 2026-09-26 ("best coffee shop near me", location Orange, CA): `gpt-4o-mini` did not search and asked for a location (not usable); `gpt-4.1-mini` searched and returned real local shops (about 8,000 input tokens, about $0.03 per check); `gpt-5-mini` also worked but used about 30,000 input tokens. OpenAI location only works in the Responses API, not the older Chat Completions search models. Claude and Perplexity location were confirmed in their docs and have run live on real scans since 2026-10 (D-67, D-68). OpenAI checks get a 60-second timeout, the others 30 seconds (BUG-083).
 
 ### 5.2 One check
 
@@ -239,7 +239,9 @@ Checks inside a scan run in parallel (limit 4 to 6 per scan).
 - Industry not in the library yet: Claude writes 12 questions directly (same rules), and the industry is flagged in admin as a candidate for a new library.
 - The user can remove, pause or add their own custom questions (max 25 total). Custom questions are scanned and charged normally, are not shared, and are shown on their own, outside the visibility score (they are chosen by the user, so they could raise the score at will).
 
-**Rules for all questions**: plain natural grammar, no brand names, city always included. Fallback to the old template engine (`src/lib/geo/prompt-engine.ts`) only if Claude fails.
+**Kind of business (2026-10-14)**: the picker and writer also get the kind of business, from the Google listing's types plus the services ("fast food restaurant, takeaway"). Sit-down questions (date night, special occasion, group booking, fine dining, rooftop, reservations) are dropped for fast food and takeaway places. Up to 4 of the 12 may ask about a general product in plain words ("fried chicken", "coffee"), never a brand or menu name. A side product (donuts or sandwiches at a coffee shop) is asked with the kind of business in the question, so a donut shop is not the answer. A chain (`businesses.is_chain`, saved at auto-fill) gets 2 or 3 questions about chains. Plumbers, dentists and other businesses with no products keep their set.
+
+**Rules for all questions**: plain natural grammar, no brand names, city always included. Fallback to plain questions (`src/modules/onboarding/plain-questions.ts`, which replaced the old `src/lib/geo/prompt-engine.ts`) only if Claude fails.
 
 Every active question is scanned.
 
@@ -373,6 +375,8 @@ The fixed rules in `src/lib/geo/opportunity-engine.ts` stay as a fallback.
 6. List in local and industry directories
 
 Items can be ticked by the user. Automatic verification comes later.
+
+A chain with no listing picked (its website matches branches in several cities) is not asked to claim a profile: Opportunities shows "Pick your branch on Google" with a search, and only the picked place ID is saved (D-73). Item 1 shows only when Google lists no branch.
 
 ---
 
@@ -637,7 +641,7 @@ Notes:
 | Payments | Stripe |
 | Monitoring | None in MVP (D-44). Log errors to the console and to `scan_jobs.error`. |
 
-Environment variables (new or changed): `FIRECRAWL_API_KEY`, `BROWSERLESS_API_KEY`, `GOOGLE_PLACES_API_KEY`, `WORKER_SECRET`, `RESEND_API_KEY`, `EMAIL_FROM`, Stripe restricted key and webhook secret, plan price IDs, top-up price IDs. Remove unused: `DATAFORSEO_*`, `GEMINI_API_KEY`, `GOOGLE_AI_API_KEY`, `CLAUDE_API_KEY`, `ADMIN_PIN`, `ADMIN_SESSION_SECRET`, `BETA_FREE_ACCESS`, `TRIAL_ENABLED` (replaced by one `BILLING_ENABLED` flag).
+Environment variables (new or changed): `FIRECRAWL_API_KEY`, `BROWSERLESS_API_KEY`, `GOOGLE_PLACES_API_KEY`, `WORKER_SECRET`, `RESEND_API_KEY`, `EMAIL_FROM`, Stripe restricted key and webhook secret, plan price IDs, top-up price IDs. Remove unused: `DATAFORSEO_*`, `GEMINI_API_KEY`, `GOOGLE_AI_API_KEY`, `CLAUDE_API_KEY`, `ADMIN_PIN`, `ADMIN_SESSION_SECRET`, `BETA_FREE_ACCESS`, `TRIAL_ENABLED`, `BILLING_ENABLED` (all removed 2026-10-14; billing is always on, and Stripe test keys are what keep local and staging safe).
 
 Before any key goes into the hosting environment, all keys must be rotated (malware incident, see MVP_ROADMAP SEC-01).
 
@@ -703,7 +707,7 @@ Delete after the backup tag exists. Check each path for remaining imports first.
 - `src/app/api/internal/admin/apply-migration`
 - `src/app/api/geo/direct-agent`, `geo/agent-readiness*`, `geo/seo`, `geo/service-requests`
 - `src/lib/agent-readiness/*`, `src/lib/seo/*`
-- `src/lib/plans.ts`, deprecated aliases in `src/config/pricing.ts` and `src/lib/trial.ts`
+- `src/lib/plans.ts`, deprecated aliases in `src/config/pricing.ts` and `src/lib/trial.ts` (removed 2026-10-14 with `src/config/product-access.ts`, `/api/user/trial`, `src/lib/google-places.ts` and the unused `src/lib/geo` prompt engine, scanner and competitor search)
 - `chatgpt_ads` and `call_bar` values in the contact form, chat widget and leads admin
 
 **Keep until Jordan answers**: `/internal/admin/news` (LinkedIn Studio) and its APIs.
@@ -863,7 +867,7 @@ D-77.
 1. Stripe subscription cancelled immediately, no refund.
 2. Agency set to `deleted` (soft delete): login blocked, scans stopped, share links revoked.
 3. After 30 days a pg_cron job permanently deletes businesses, questions, results, logos and the Supabase auth user. The account can be restored by an admin within those 30 days.
-4. Invoices stay in Stripe for accounting. `credit_transactions` rows are anonymised (agency link removed), not deleted.
+4. Invoices stay in Stripe for accounting. `credit_transactions` rows are anonymised (agency link removed), not deleted. `usage_events` (what the AI providers charged us) are kept the same way (migration 059, BUG-160): user, business, scan run and error text removed; provider, model, cost, tokens, task and date kept, so admin cost totals stay whole. A test agency's rows of both kinds keep that they were a test one (`credit_transactions.from_test_agency`, metadata `testAccount`, migrations 059 and 060), so they stay out of real totals.
 5. Confirmation email at each step.
 
 **Delete a business**: same pattern for one business; its subscription item is removed at period end (11.5).

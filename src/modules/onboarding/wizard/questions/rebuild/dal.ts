@@ -6,7 +6,7 @@ import { createServiceClient } from "@/lib/supabase/service";
 import { maxQuestions } from "@/modules/entitlements";
 import { liveQuestionClients } from "../../../dal";
 import { cityLabel } from "../../../question-rules";
-import { prepareQuestions, type QuestionClients } from "../../../questions";
+import { placeTypesOf, prepareQuestions, type QuestionClients } from "../../../questions";
 
 // Used when the plan sets no limit (Enterprise): MVP_SPEC 3.1 step 6 caps questions at 25.
 const QUESTION_CAP = 25;
@@ -33,7 +33,7 @@ export async function rebuildQuestionsForIndustry(businessId: string, clients?: 
   const db = createServiceClient();
   const { data: b, error } = await db
     .from("businesses")
-    .select("owner_user_id, industry, services, description, primary_city, primary_region, primary_area")
+    .select("owner_user_id, name, aliases, domain, industry, services, description, primary_city, primary_region, primary_area, places_id, is_chain")
     .eq("id", businessId)
     .maybeSingle();
   if (error) throw new Error(`Could not load business: ${error.message}`);
@@ -47,6 +47,7 @@ export async function rebuildQuestionsForIndustry(businessId: string, clients?: 
   if (activeError) throw new Error(`Could not load questions: ${activeError.message}`);
   if (!active?.length) return { rebuilt: false };
 
+  const questionClients = clients ?? liveQuestionClients({ accountUserId: b.owner_user_id, businessId });
   const set = await prepareQuestions(
     {
       industry: b.industry,
@@ -56,8 +57,14 @@ export async function rebuildQuestionsForIndustry(businessId: string, clients?: 
       city: b.primary_city,
       region: b.primary_region,
       area: b.primary_area,
+      name: b.name,
+      aliases: b.aliases,
+      domain: b.domain,
+      chain: b.is_chain,
+      // Google's types, read live (D-73): a fast food listing gets fast food questions.
+      ...(await placeTypesOf(b.places_id, questionClients)),
     },
-    clients ?? liveQuestionClients({ accountUserId: b.owner_user_id, businessId }),
+    questionClients,
   );
   if (set.error) console.warn(`Question rebuild fell back (${set.source}): ${set.error}`);
 

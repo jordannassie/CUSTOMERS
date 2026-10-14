@@ -1,10 +1,11 @@
 // What the first scan screen shows while it runs and when it is done (DB-010). Pure, so every state is unit tested.
+import { aboutInTen, namedMost, namedMostSentence, type AlsoRecommendedList } from "@/modules/scanning";
 
 export type ModelProgress = { id: string; done: number; total: number; asking: string | null };
 
 export type FirstScanSummary = {
   score: { value: number; tone: "good" | "mid" | "low"; sentence: string } | null;
-  /** "AI named Bean House most often, in about 7 of 10 answers." Null when AI named no other business. */
+  /** "AI named Bean House most often, in about 7 of 10 answers, one of the competitors you track." Null when AI named no other business. */
   namedMost: string | null;
   firstFix: { title: string; impact: "high" | "medium" | "low" } | null;
 };
@@ -20,26 +21,13 @@ export function scanProgress(models: string[], questions: string[], done: Map<st
   });
 }
 
-/** "about 7 of 10" from a 0 to 100 rate, worded like the score sentence (D-63). */
-export function aboutInTen(rate: number): string {
-  const inTen = Math.round(rate / 10);
-  return inTen === 0 ? "fewer than 1 of 10" : `about ${inTen} of 10`;
-}
+export { aboutInTen };
 
-/** The business AI named most: a tracked competitor by its score, or another name by its share of answers. */
+/** The business AI named most, in the same words as the Overview's "Who AI picked instead" (step 6a). */
 export function namedMostText(
   competitors: { name: string; score: number; chain?: string | null }[],
-  also: { names: { name: string; answers: number }[]; answers: number },
+  also: AlsoRecommendedList,
 ): string | null {
-  const candidates = [
-    ...competitors.map((c) => ({ name: c.name, rate: c.score, tracked: true, chain: c.chain ?? null })),
-    ...also.names.map((n) => ({ name: n.name, rate: also.answers > 0 ? (100 * n.answers) / also.answers : 0, tracked: false, chain: null })),
-  ].filter((c) => c.rate > 0);
-  if (candidates.length === 0) return null;
-  const top = candidates.reduce((best, c) => (c.rate > best.rate ? c : best));
-  // A tracked branch whose answers named only its chain: the chain is what AI named.
-  if (top.chain) return `AI named ${top.chain} most often, in ${aboutInTen(top.rate)} answers. You track one of its locations, ${top.name}.`;
-  // Says whether it is one of the competitors you track, so a business you don't track never reads as one (BUG-113).
-  const which = top.tracked ? "one of the competitors you track" : "a business you don't track yet";
-  return `AI named ${top.name} most often, in ${aboutInTen(top.rate)} answers. It's ${which}.`;
+  const top = namedMost(competitors, also);
+  return top && namedMostSentence(top);
 }

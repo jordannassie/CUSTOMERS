@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { namedMost, namedMostSentence } from "@/modules/scanning";
 import { pickedInstead } from "./picked";
 import type { LeaderRow } from "./service";
 
@@ -64,6 +65,21 @@ describe("pickedInstead (DB-004)", () => {
     const chain = { brand: "Bennu Coffee", tracked: ["Bennu Coffee on Congress"] };
     const picked = pickedInstead(view([row("Bennu Coffee on Congress", 25, "behind", { chain }), you(8)]));
     expect(picked!.sentence).toBe("Bennu Coffee was named in about 3 of 10 answers, you in about 1.");
+  });
+
+  it("says when the business AI named most is one you don't track, in the first scan screen's words (step 6a)", () => {
+    const also = [{ name: "Burning Brownie", answers: 5 }];
+    const picked = pickedInstead({ ...view([row("Bean House", 30, "behind"), you(10)]), also, answers: 12 });
+    expect(picked!.sentence).toBe("Bean House was named in about 3 of 10 answers, you in about 1.");
+    expect(picked!.untracked).toBe("AI named Burning Brownie most often, in about 4 of 10 answers, a business you don't track.");
+    // The first scan screen builds its line from the same two functions.
+    expect(namedMostSentence(namedMost([{ name: "Bean House", score: 30 }], { names: also, answers: 12 })!)).toBe(picked!.untracked);
+  });
+
+  it("adds nothing when a competitor you track was named most", () => {
+    const picked = pickedInstead({ ...view([row("Bean House", 70, "behind"), you(10)]), also: [{ name: "Burning Brownie", answers: 5 }], answers: 12 });
+    expect(picked!.untracked).toBeNull();
+    expect(pickedInstead(view([row("Bean House", 70, "behind"), you(10)]))!.untracked).toBeNull();
   });
 
   it("is null before a score or with no compared competitor", () => {

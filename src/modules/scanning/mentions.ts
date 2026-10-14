@@ -7,10 +7,9 @@ import {
   domainOf,
   findDomain,
   findName,
-  findPhrase,
   isGenericName,
-  normaliseText,
 } from "./mention-text";
+import { findPlace } from "./place-text";
 import { findExactBrand, shortBrand } from "./short-brand";
 
 export type MentionTarget = {
@@ -134,12 +133,12 @@ const PLACE_AFTER = 200;
 
 function placeNearby(answer: string, at: number, places: string[]): boolean {
   const nearby = `${answer.slice(Math.max(0, at - PLACE_BEFORE), at + PLACE_AFTER)}\n${listItemText(answer, at)}`;
-  return places.some((p) => findPhrase(nearby, normaliseText(p)).length > 0);
+  return places.some((p) => findPlace(nearby, p).length > 0);
 }
 
 function hasNearbySignal(answer: string, at: number, target: MentionTarget, domain: string | null): boolean {
   const nearby = `${answer.slice(Math.max(0, at - NEARBY_CHARS), at + NEARBY_CHARS)}\n${listItemText(answer, at)}`;
-  if (target.city && findPhrase(nearby, normaliseText(target.city)).length > 0) return true;
+  if (target.city && findPlace(nearby, target.city).length > 0) return true;
   if (domain && findDomain(nearby, domain).length > 0) return true;
   return containsPhone(nearby, target.phone);
 }

@@ -1,7 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
 import { fakeCompetitorPlaces, OWN_CANDIDATE } from "./competitor-fixtures";
 import { COMPETITOR_TIMEOUT_MS, createCompetitorPlaces, NEARBY_RADIUS_M, ORIGIN_FIELD_MASK, searchBody } from "./competitor-places";
-import { discoverCompetitors, type BusinessForSearch } from "./competitors";
+import { discoverCompetitors, nearbyQuery, type BusinessForSearch } from "./competitors";
+import type { CompetitorCandidate } from "./competitor-places";
 
 // Competitor suggestions near the business and of its own Google type (BUG-085), with a short timeout (BUG-088).
 const COFFEE: BusinessForSearch = {
@@ -64,3 +65,45 @@ describe("searching near the business (BUG-085)", () => {
     expect(calls.search).toHaveLength(2);
   });
 });
+
+// 2026-10-14 retest: KFC (restaurant, no Google listing of its own as a chain) got Bistro Noir, Xander's and The Dome.
+describe("suggestions of the business's own kind", () => {
+  const KFC: BusinessForSearch = {
+    name: "KFC",
+    industry: "restaurant",
+    services: ["Fried chicken", "Burgers", "Wings", "Delivery"],
+    city: "Islamabad",
+    region: null,
+    placesId: null,
+  };
+  const place = (name: string, primaryType: string): CompetitorCandidate => ({
+    placeId: `ChIJ-${name}`,
+    name,
+    rating: 4.2,
+    reviewCount: 100,
+    address: null,
+    mapsUri: null,
+    primaryType,
+  });
+
+  it("searches a fast food place as fast food with its main product, and puts fast food results first", async () => {
+    const seen: unknown[] = [];
+    const places = {
+      search: async (query: string, n: number, near?: unknown, sameType?: boolean, orType?: string | null) => {
+        seen.push({ query, sameType, orType });
+        return [place("Bistro Noir", "restaurant"), place("Hardee's", "fast_food_restaurant"), place("The Dome", "fine_dining_restaurant"), place("McDonald's", "fast_food_restaurant")];
+      },
+      details: async () => null,
+    };
+    const { suggestions } = await discoverCompetitors(KFC, places);
+    expect(seen).toEqual([{ query: "fast food fried chicken in Islamabad", sameType: true, orType: "fast_food_restaurant" }]);
+    expect(suggestions.slice(0, 2).map((s) => s.name)).toEqual(["Hardee's", "McDonald's"]);
+  });
+
+  it("keeps the coffee shop and plumber searches as they were", () => {
+    expect(nearbyQuery(COFFEE)).toBe("coffee shop in Springfield, IL");
+    expect(nearbyQuery({ ...COFFEE, industry: "plumber", services: ["Drain cleaning"] })).toBe("plumber in Springfield, IL");
+    expect(searchBody("fast food fried chicken in Islamabad", 11, null, true, "fast_food_restaurant")).toMatchObject({ includedType: "fast_food_restaurant" });
+  });
+});
+

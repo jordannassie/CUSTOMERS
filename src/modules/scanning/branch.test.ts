@@ -48,6 +48,8 @@ describe("namesBranch", () => {
     expect(namesBranch("Try Bennu Coffee on Congress for late nights.", name, bennu)).toBe(true);
     expect(namesBranch("- Bennu Coffee is located at 515 S Congress Ave.", name, bennu)).toBe(true);
     expect(namesBranch("**Bennu Coffee** is open 24/7 and has locations around Austin, including on South Congress.", name, bennu)).toBe(true);
+    // The place in the possessive (BUG-146).
+    expect(namesBranch("Bennu Coffee is one of Congress's late night spots.", name, bennu)).toBe(true);
   });
 
   it("is false when the answer names only the chain", () => {

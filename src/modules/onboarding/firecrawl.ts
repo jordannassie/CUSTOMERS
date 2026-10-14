@@ -27,6 +27,8 @@ export type PageResult = {
   kind?: PageKind;
   /** On the home page: the pages to read next, from its links. */
   follow?: FollowPage[];
+  /** Firecrawl itself refused (429, 402, 5xx), after one more try: the website was never asked (2026-10-14). */
+  readerDown?: boolean;
 };
 
 export type ScrapeSite = (domain: string) => Promise<PageResult[]>;
@@ -76,6 +78,7 @@ export function createFirecrawlScraper(apiKey: string, deps: HttpDeps = {}): Scr
         { ...deps, timeoutMs },
       );
       if (status === 403) return { ...empty, status: "blocked" };
+      if (status === 402 || status === 429 || status >= 500) return { ...empty, status: "failed", readerDown: true };
       if (status < 200 || status >= 300) return { ...empty, status: "failed" };
       const page = toPage(path, body, path === "/" ? domain : undefined);
       return kind ? { ...page, kind } : page;

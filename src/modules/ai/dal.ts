@@ -2,6 +2,7 @@ import "server-only";
 // Live clients for the background AI jobs (D-84) and the logging that keeps a Claude outage visible: every failed
 // attempt goes to provider_errors with its reason, the backup and an empty Anthropic account raise admin alerts,
 // and usage is recorded with the provider and model that actually answered.
+import { providerErrorKind } from "@/lib/provider-error-kind";
 import { env } from "@/lib/env";
 import { createServiceClient } from "@/lib/supabase/service";
 import type { Json } from "@/types/database.types";
@@ -48,9 +49,9 @@ async function recordFailure(task: string, failure: AiFailure, fellBack: boolean
   // Our own bad request is a bug in this code, not an outage: no backup, and it says so in the log.
   if (failure.kind === "bad_request") console.error(`AI request bug, ${line}`);
   else console.warn(`AI failure, ${line}`);
-  const { error } = await createServiceClient()
-    .from("provider_errors")
-    .insert({ provider: failure.provider, message: (failure.kind === "bad_request" ? `Bug: ${line}` : line).slice(0, 500) });
+  const message = (failure.kind === "bad_request" ? `Bug: ${line}` : line).slice(0, 500);
+  // One row per kind of failure an hour, with a count (migration 058).
+  const { error } = await createServiceClient().rpc("record_provider_error", { p_provider: failure.provider, p_kind: providerErrorKind(message), p_message: message });
   if (error) console.error(`Could not record the AI failure: ${error.message}`);
   if (failure.provider === "anthropic" && failure.kind === "credit") {
     await raiseAlert(ALERT_ANTHROPIC_CREDIT, "critical", CREDIT_MESSAGE, { task, status: failure.status });

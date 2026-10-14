@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { autofill, MAX_PLACE_CHOICES } from "./autofill";
-import { COFFEE_PLACE, OTHER_PLACE, fakeClients } from "./fixtures";
+import { BLOCKED_PAGES, COFFEE_PLACE, OTHER_PLACE, fakeClients } from "./fixtures";
+import { PlacesError } from "./places";
 import { EMPTY_DETAILS, NOTES } from "./service";
 
 // The top Google result by name and city used to be adopted silently, even when it was another business.
@@ -45,13 +46,35 @@ describe("autofill without a website (MVP_SPEC 3.3)", () => {
   });
 
   it("keeps what the user typed, with no choices, when Places finds nothing or fails", async () => {
-    for (const places of [undefined, new Error("403")]) {
+    for (const [places, note] of [[undefined, NOTES.nothingFound], [new Error("403"), NOTES.unavailable]] as const) {
       const { clients } = fakeClients({ places });
       const run = await autofill({ name: "Sunrise Coffee", city: "Springfield" }, clients);
       expect(run.result.details).toEqual(typed);
-      expect(run.result.note).toBe(NOTES.nothingFound);
+      // Nothing found says so; Google failing says auto-fill is unavailable (2026-10-14).
+      expect(run.result.note).toBe(note);
       expect(run.result.choices).toBeUndefined();
       expect(run.placeId).toBeNull();
     }
   });
 });
+
+describe("a source that refused, not a business that was not found (2026-10-14)", () => {
+  it("says auto-fill is unavailable when Google refused, keeping what was typed", async () => {
+    const { clients } = fakeClients({ places: new PlacesError("Places returned 429") });
+    const run = await autofill({ name: "Sunrise Coffee", city: "Springfield" }, clients);
+    expect(run.result.note).toBe(NOTES.unavailable);
+    expect(run.result.details).toMatchObject({ name: "Sunrise Coffee", city: "Springfield" });
+    expect(run.problems).toEqual([{ provider: "google_places", message: 'Search for "Sunrise Coffee Springfield" failed: Places returned 429' }]);
+  });
+
+  it("says auto-fill is unavailable when Firecrawl itself refused, not that the website blocked us", async () => {
+    const refused = BLOCKED_PAGES.map((p) => ({ ...p, status: "failed" as const, readerDown: true }));
+    const { clients } = fakeClients({ pages: refused });
+    const run = await autofill({ domain: "sunrise-coffee.example" }, clients);
+    expect(run.result.note).toBe(NOTES.unavailable);
+    // A site that blocks readers still reads as before.
+    const blocked = await autofill({ domain: "sunrise-coffee.example" }, fakeClients({ pages: BLOCKED_PAGES }).clients);
+    expect(blocked.result.note).toBe(NOTES.nothingFound);
+  });
+});
+

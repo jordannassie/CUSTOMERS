@@ -3,9 +3,9 @@
 import type { SiteFacts } from "../autofill";
 import type { ExtractBusiness } from "../extract";
 import type { ScrapeSite } from "../firecrawl";
-import { siteContact, withFooterOnce } from "../page-contact";
-import { AUTOFILL_MODEL, AUTOFILL_PROMPT_VERSION } from "../prompts/business-autofill.v1";
-import { keepGrounded } from "../service";
+import { siteContact } from "../page-contact";
+import { AUTOFILL_PROMPT_VERSION } from "../prompts/business-autofill.v1";
+import { readablePages, readFacts, readPages } from "../site-read";
 
 export const SITE_FACTS_MAX_AGE_DAYS = 30;
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -22,18 +22,15 @@ export function siteFactsStale(fetchedAt: string | null | undefined, now: Date):
  * saved as such, so advice says so rather than repeating last month's facts.
  */
 export async function readSiteFacts(domain: string, clients: { scrape: ScrapeSite; extract: ExtractBusiness }): Promise<SiteFacts | null> {
-  const pages = await clients.scrape(domain).catch(() => null);
-  if (!pages || pages.length === 0 || pages.every((p) => p.status === "failed")) return null;
+  // The same steps as auto-fill at setup (site-read.ts).
+  const pages = await readPages(clients.scrape, domain);
+  if (pages.length === 0 || pages.every((p) => p.status === "failed")) return null;
   const statuses = pages.map((p) => ({ path: p.path, status: p.status }));
-  const readable = pages.filter((p) => p.status === "ok" && p.markdown);
+  const readable = readablePages(pages);
   if (readable.length === 0) {
     return { promptVersion: AUTOFILL_PROMPT_VERSION, model: null, domain, pages: statuses, facts: null, contact: null };
   }
-  let model: string = AUTOFILL_MODEL;
-  const output = await clients
-    .extract({ domain, pages: withFooterOnce(readable), model: AUTOFILL_MODEL, answeredBy: (m) => (model = m) })
-    .catch(() => null);
-  if (!output) return null;
-  const facts = keepGrounded(output, readable);
+  const { facts, model } = await readFacts(clients.extract, domain, readable);
+  if (!facts) return null;
   return { promptVersion: AUTOFILL_PROMPT_VERSION, model, domain, pages: statuses, facts, contact: siteContact(facts, readable) };
 }

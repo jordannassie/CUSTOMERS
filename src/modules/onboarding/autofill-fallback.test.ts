@@ -23,7 +23,9 @@ describe("brand guesses from a domain", () => {
   it("reads the brand a domain spells", () => {
     expect(brandGuesses("ebookwoman.com")).toEqual(["ebookwoman", "bookwoman"]);
     expect(brandGuesses("www.thebookwoman.co.uk".replace("www.", ""))).toEqual(["thebookwoman", "bookwoman"]);
-    expect(brandGuesses("book-woman.com")).toEqual(["book woman", "bookwoman"]);
+    expect(brandGuesses("book-woman.com")).toEqual(["book woman"]);
+    // At most 2 Places searches, however many guesses the name allows.
+    expect(brandGuesses("the-book-woman.co.uk")).toEqual(["the book woman", "bookwoman"]);
     expect(brandGuesses("cheezious.com")).toEqual(["cheezious"]);
     expect(brandGuesses("go.com")).toEqual([]);
   });

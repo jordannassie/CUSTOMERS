@@ -3,7 +3,9 @@ import { notFound, redirect } from "next/navigation";
 import { PageContainer } from "@/components/app/PageContainer";
 import { GetFoundChecklist } from "@/components/opportunities/GetFoundChecklist";
 import { OpportunityList } from "@/components/opportunities/OpportunityList";
+import { PickBranch } from "@/components/opportunities/PickBranch";
 import { Button } from "@/components/ui/button";
+import { pickBranch, searchBranches } from "@/modules/onboarding";
 import { getOpportunitiesPage, setChecklistItem, setOpportunityStatus } from "@/modules/opportunities";
 import { getWorkspace } from "@/modules/workspace";
 
@@ -34,6 +36,10 @@ export default async function OpportunitiesPage() {
             )}
           </p>
         </header>
+
+        {view.branch && (
+          <PickBranch key={`branch-${business.id}`} businessId={business.id} initial={view.branch} search={searchBranches} pick={pickBranch} />
+        )}
 
         {view.checklist && (
           <GetFoundChecklist

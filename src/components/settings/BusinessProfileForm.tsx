@@ -7,7 +7,7 @@ import { INDUSTRIES, INDUSTRY_LABELS, isIndustry } from "@/lib/industries";
 import type { ActionResult } from "@/modules/auth";
 import type { SettingsBusiness } from "@/modules/settings";
 import { ALIASES_MAX, AREA_MAX } from "@/modules/settings/schema";
-import { aliasesProblem, normalizeWebsite, parseServices } from "@/modules/settings/service";
+import { aliasesProblem, aliasExample, normalizeWebsite, parseServices } from "@/modules/settings/service";
 import { Button } from "@/components/ui/button";
 import { CountrySelect } from "@/components/ui/country-select";
 import { FieldMessage, useFieldErrors } from "@/components/ui/field-errors";
@@ -160,7 +160,7 @@ export function BusinessProfileForm({ business, save }: { business: SettingsBusi
           hint={`Optional. Other names customers and AI use for the business, such as a short name or an old name. Separate them with commas, up to ${ALIASES_MAX}. AI answers that use them count for you.`}
           error={fields.errors.aliases}
         >
-          <Input {...field("aliases")} maxLength={1300} autoComplete="off" {...fields.fieldProps("aliases", "profile-aliases-hint")} />
+          <Input {...field("aliases")} maxLength={1300} autoComplete="off" placeholder={aliasExample(form.name)} {...fields.fieldProps("aliases", "profile-aliases-hint")} />
         </Row>
 
         <div className="grid gap-5 sm:grid-cols-2">

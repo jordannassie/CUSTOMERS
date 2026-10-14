@@ -83,6 +83,21 @@ To change one later: `select vault.update_secret((select id from vault.secrets w
 
 Check the calls: `select id, status_code, left(content, 200), created from net._http_response order by created desc limit 5;`
 
+Production (and customers-dev) values to fill in, all four at once. Replace `<host>` with the site's domain (for example the Netlify URL of that deploy) and `<WORKER_SECRET>` with the value of that host's `WORKER_SECRET` env var. Never paste a real secret into this file or a migration.
+
+| Secret | Value |
+|---|---|
+| `scan_worker_url` | `https://<host>/.netlify/functions/scan-worker-background` |
+| `scan_worker_secret` | `<WORKER_SECRET>` |
+| `system_alerts_url` | `https://<host>/api/alerts/check` |
+| `email_jobs_url` | `https://<host>/api/email/jobs` |
+
+Then check that each one is set without printing it: `select name, decrypted_secret <> '' as is_set from vault.decrypted_secrets where name in ('scan_worker_url','scan_worker_secret','system_alerts_url','email_jobs_url');`
+
+### Local Supabase (Docker)
+
+`npm run vault:local` (`scripts/dev/setup-local-vault.sh` and `.sql`) sets the same four secrets in the local Docker database only. It refuses when the env file's Supabase URL is not `127.0.0.1` or `localhost`. The values point at `npm run dev` on port 3000 through `host.docker.internal`; the scan worker URL is the dev-only route `/api/dev/scan-worker` (404 on a production build), and the secret is `WORKER_SECRET` from `.env.local` (or `.env`). Run it again after `supabase db reset`.
+
 ### Before go-live
 
 - The worker URL points at the `mvp` staging deploy (`https://mvp--<netlify-site>.netlify.app/.netlify/functions/scan-worker-background`).

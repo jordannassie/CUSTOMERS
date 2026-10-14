@@ -13,8 +13,11 @@ export type PendingChange = { kind: "plan"; planName: string; at: string } | { k
 /** `deleted`: the business was deleted and its item runs to the period end; no plan changes are offered. */
 export type BillingBusiness = { id: string; name: string; plan: BillingPlan; pending: PendingChange | null; deleted: boolean };
 
-/** "none": no plan yet. "unavailable": Stripe is not set up here. "error": Stripe could not be reached. */
-export type StripeState = "ok" | "none" | "unavailable" | "error";
+/**
+ * "none": no plan yet. "unavailable": Stripe is not set up here. "error": Stripe could not be reached. "missing": the
+ * saved subscription is not in Stripe (deleted there, or never real).
+ */
+export type StripeState = "ok" | "none" | "unavailable" | "error" | "missing";
 
 export type BillingView = {
   status: string;

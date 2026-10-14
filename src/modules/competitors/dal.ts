@@ -1,4 +1,5 @@
 import "server-only";
+import { providerErrorKind } from "@/lib/provider-error-kind";
 import { cache } from "react";
 import { env } from "@/lib/env";
 import { requestNow } from "@/lib/request-now";
@@ -35,7 +36,8 @@ const signalsForRequest = cache(async (placeId: string) => {
 
 async function recordPlacesError(err: unknown): Promise<void> {
   const message = `Live lookup failed: ${err instanceof Error ? err.message : String(err)}`.slice(0, 500);
-  const { error } = await createServiceClient().from("provider_errors").insert({ provider: "google_places", message });
+  // One row per kind of failure an hour, with a count (migration 058): a used-up quota no longer writes one per visit.
+  const { error } = await createServiceClient().rpc("record_provider_error", { p_provider: "google_places", p_kind: providerErrorKind(message), p_message: message });
   if (error) console.error(`Could not record the Places error: ${error.message}`);
 }
 
@@ -65,10 +67,10 @@ export async function loadCompetitorsPage(
   const [report, also, business, rows, limit] = await Promise.all([
     loadScoreReport(agencyId, businessId, now),
     loadAlsoRecommended(agencyId, businessId, now),
-    db.from("businesses").select("name, places_id").eq("id", businessId).eq("agency_id", agencyId).maybeSingle(),
+    db.from("businesses").select("name, places_id, is_chain").eq("id", businessId).eq("agency_id", agencyId).maybeSingle(),
     db
       .from("business_competitors")
-      .select("name, places_id, place_id, created_at, checked_from")
+      .select("id, name, domain, places_id, place_id, created_at, checked_from")
       .eq("business_id", businessId)
       .order("created_at"),
     maxCompetitors(businessId),
@@ -78,7 +80,10 @@ export async function loadCompetitorsPage(
 
   // place_id is where older code kept the id (B-35 moves it on the next save).
   const competitors = rows.data!.map((r) => ({
+    id: r.id,
     name: r.name,
+    // Only ever a website the user typed (D-73): Google's is shown live, never saved.
+    domain: r.domain,
     placesId: r.places_id ?? r.place_id,
     countedFrom: countedFrom(r),
   }));
@@ -91,7 +96,7 @@ export async function loadCompetitorsPage(
   );
 
   return competitorsView({
-    business: { name: business.data.name, placesId: business.data.places_id },
+    business: { name: business.data.name, placesId: business.data.places_id, chain: business.data.is_chain },
     report,
     competitors,
     signals: new Map(results),
@@ -139,27 +144,28 @@ export async function trackCompetitorByName(userId: string, businessId: string, 
 }
 
 /**
- * The Overview's "Who AI picked instead" (DB-004): the leaderboard only, with no Google calls (D-73) and no other
- * names. Null when the business is not the agency's.
+ * The Overview's "Who AI picked instead" (DB-004): the leaderboard, plus the business AI named most when you don't
+ * track it (step 6a). No Google calls (D-73). Null when the business is not the agency's.
  */
 export async function getPickedInstead(businessId: string): Promise<PickedInstead | null | "none-tracked"> {
   const { agency } = await requireAgency({ next: "/dashboard" });
   const db = createServiceClient();
   const now = requestNow();
-  const [report, business, rows] = await Promise.all([
+  const [report, also, business, rows] = await Promise.all([
     loadScoreReport(agency.id, businessId, now),
+    loadAlsoRecommended(agency.id, businessId, now),
     db.from("businesses").select("name, places_id").eq("id", businessId).eq("agency_id", agency.id).maybeSingle(),
     db.from("business_competitors").select("name, places_id, place_id, created_at, checked_from").eq("business_id", businessId).order("created_at"),
   ]);
   for (const r of [business, rows]) if (r.error) throw new Error(`Competitors: ${r.error.message}`);
-  if (!report || !business.data) return null;
+  if (!report || !also || !business.data) return null;
   if (rows.data!.length === 0) return "none-tracked";
   const view = competitorsView({
     business: { name: business.data.name, placesId: business.data.places_id },
     report,
     competitors: rows.data!.map((r) => ({ name: r.name, placesId: r.places_id ?? r.place_id, countedFrom: countedFrom(r) })),
     signals: new Map(),
-    also: { names: [], answers: 0 },
+    also,
     limit: null,
   });
   return pickedInstead(view);

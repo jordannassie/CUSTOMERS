@@ -9,6 +9,7 @@ export { getScoreReport, loadQuestionResults, loadScoreReport, type ScoreReport 
 export type { ModelAppearance } from "./scores/questions";
 export { countsInScore, isOwnQuestion, splitByQuestion, type OwnQuestionsResult } from "./scores/counted";
 export { loadAlsoRecommended } from "./also-recommended/dal";
+export { aboutInTen, namedMost, namedMostSentence, type NamedMost } from "./also-recommended/named-most";
 export { loadQuestionTrends } from "./question-trends/dal";
 export type { Mover, QuestionTrends, Tally, TrendCell, TrendRow } from "./question-trends/service";
 export { placeText, type AveragePlace, type Place } from "./question-trends/places";

@@ -4,7 +4,7 @@ import { createServiceClient } from "@/lib/supabase/service";
 import { maxQuestions } from "@/modules/entitlements";
 import { liveQuestionClients } from "../../dal";
 import { cityLabel } from "../../question-rules";
-import { prepareQuestions, type QuestionClients } from "../../questions";
+import { placeTypesOf, prepareQuestions, type QuestionClients } from "../../questions";
 import { FINISHED_STEP, nextStepNumber, type PlanId } from "../steps";
 import { ownStep } from "../dal";
 
@@ -30,7 +30,7 @@ export async function loadQuestionsStep(
   const supabase = await createClient();
   const { data: b, error } = await supabase
     .from("businesses")
-    .select("name, industry, services, description, primary_city, primary_region, primary_area")
+    .select("name, aliases, domain, industry, services, description, primary_city, primary_region, primary_area, places_id, is_chain")
     .eq("id", businessId)
     .eq("owner_user_id", userId)
     .maybeSingle();
@@ -53,6 +53,12 @@ export async function loadQuestionsStep(
       region: b.primary_region,
       // Set: about a third of the questions are asked about this neighborhood instead of the whole city.
       area: b.primary_area,
+      name: b.name,
+      aliases: b.aliases,
+      domain: b.domain,
+      chain: b.is_chain,
+      // Google's types, read live (D-73): a fast food listing gets fast food questions.
+      ...(await placeTypesOf(b.places_id, clients)),
     },
     clients,
   );

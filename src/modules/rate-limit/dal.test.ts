@@ -39,7 +39,7 @@ describe("shared rate limit store", () => {
     const results = await Promise.all(
       Array.from({ length: LIMITS.compare.max + 2 }, (_, i) => (i % 2 ? serverA : serverB)("compare", ip, now)),
     );
-    expect(results.filter(Boolean)).toHaveLength(LIMITS.compare.max);
+    expect(results.filter((r) => r === "allowed")).toHaveLength(LIMITS.compare.max);
   });
 
   it("stores a hash, never the raw IP", async () => {

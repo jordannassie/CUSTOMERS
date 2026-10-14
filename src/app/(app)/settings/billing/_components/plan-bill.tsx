@@ -212,6 +212,12 @@ function NextCharge({ view }: { view: BillingView }) {
         No more charges. Your {view.status === "trialing" ? "free trial" : "plan"} ends on <LocalDate iso={view.cancelAt} />.
       </p>
     );
+  } else if (view.stripe === "missing") {
+    body = (
+      <p className="text-sm text-muted-foreground" data-testid="billing-missing">
+        We couldn&apos;t find your plan with our payment provider. Contact us and we&apos;ll sort it out.
+      </p>
+    );
   } else if (view.stripe === "error") {
     body = <p className="text-sm text-muted-foreground">We couldn&apos;t load your next charge. Refresh the page to try again.</p>;
   } else if (view.stripe === "unavailable") {

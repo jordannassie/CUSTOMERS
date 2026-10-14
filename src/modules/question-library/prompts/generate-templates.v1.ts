@@ -5,7 +5,7 @@ import { INDUSTRY_LABELS, type LibraryIndustry } from "@/lib/industries";
 import { CITY, INTENTS } from "../schema";
 
 // v2 (2026-10-13): questions read like different people typing, a third in the first person with context, and
-// varied openings, the same guidance as pick-questions.v5.
+// varied openings, the same guidance as pick-questions.v5 (now v6).
 export const GENERATE_PROMPT_VERSION = "question-library.v2";
 export const GENERATE_MODEL = "claude-sonnet-5";
 export const GENERATE_MAX_TOKENS = 8_000;

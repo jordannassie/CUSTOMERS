@@ -41,6 +41,8 @@
     "seed:test-agency": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/seed-test-agency.ts",
     "stripe:catalog-sync": "vitest run --project dev scripts/dev/stripe-catalog-sync.dev.ts",
     "stripe:catalog-check": "vitest run --project dev scripts/dev/stripe-catalog-check.dev.ts",
+    "vault:local": "bash scripts/dev/setup-local-vault.sh",
+    "alerts:resolve-stale": "bash scripts/dev/resolve-stale-alerts.sh",
     "scans:recount": "vitest run --project dev scripts/dev/recount-saved-answers.dev.ts",
     "questions:clean": "vitest run --project dev scripts/dev/clean-reused-questions.dev.ts"
   },

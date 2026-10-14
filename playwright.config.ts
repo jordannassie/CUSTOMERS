@@ -20,6 +20,9 @@ export default defineConfig({
   timeout: 90_000,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,
+  // Every test signs in and writes to the one local database; with a worker per core the local auth calls timed out
+  // and 7 specs failed that pass alone (BUG-068). E2E_WORKERS raises or lowers it; CI keeps Playwright's default.
+  workers: process.env.CI ? undefined : Number(process.env.E2E_WORKERS ?? 2),
   reporter: process.env.CI ? "github" : "list",
   use: { baseURL, trace: "retain-on-failure" },
   // Screen sizes from MVP_SPEC 21: every UI change is checked at 1440px and 390px.

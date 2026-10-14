@@ -232,6 +232,6 @@ describe("Places lookup by place_id (BUG-139)", () => {
 
   it("gives null for a listing Google removed and throws when Places fails", async () => {
     expect(await createPlaceLookup("k", { fetch: async () => json({}, 404) })("gone")).toBeNull();
-    await expect(createPlaceLookup("k", { fetch: async () => json({}, 500) })("x")).rejects.toThrow(PlacesError);
+    await expect(createPlaceLookup("k", { fetch: async () => json({}, 500), retryDelayMs: 0 })("x")).rejects.toThrow(PlacesError);
   });
 });

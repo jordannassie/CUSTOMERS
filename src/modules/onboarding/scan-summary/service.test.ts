@@ -19,10 +19,10 @@ describe("namedMostText", () => {
   it("picks the business with the highest share of answers, tracked or not", () => {
     const also = { names: [{ name: "Starbucks", answers: 9 }], answers: 12 };
     expect(namedMostText([{ name: "Bean House", score: 58 }], also)).toBe(
-      "AI named Starbucks most often, in about 8 of 10 answers. It's a business you don't track yet.",
+      "AI named Starbucks most often, in about 8 of 10 answers, a business you don't track.",
     );
     expect(namedMostText([{ name: "Bean House", score: 91 }], also)).toBe(
-      "AI named Bean House most often, in about 9 of 10 answers. It's one of the competitors you track.",
+      "AI named Bean House most often, in about 9 of 10 answers, one of the competitors you track.",
     );
   });
 

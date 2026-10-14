@@ -1,6 +1,7 @@
 import "server-only";
 import { loadPlanChangeData } from "../plan-change/dal";
 import { resyncSubscription } from "../webhooks";
+import { isMissingInStripe } from "../stripe-missing";
 import { billingAccess, type BillingAccess } from "./access";
 import { loadBillingRows } from "./dal";
 import { billingView } from "./service";
@@ -35,6 +36,8 @@ async function resynced(access: BillingAccess, subscriptionId: string, businesse
     await resyncSubscription(subscriptionId);
     return true;
   } catch (error) {
+    // Not in Stripe: nothing to re-sync; the page says so (billingView).
+    if (isMissingInStripe(error)) return false;
     const e = error as { type?: string; message?: string };
     console.error("[billing/account] re-sync failed", e?.type ?? e?.message);
     return false;

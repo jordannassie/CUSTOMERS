@@ -64,10 +64,32 @@ export function checkLogo(size: number, head: Uint8Array): { ok: true; contentTy
   return { ok: true, contentType: type.contentType };
 }
 
-/** Whether a save changed the names mention detection looks for: the name, or the other names in any way but order. */
-export function namesChanged(before: { name: string; aliases: string[] }, after: { name: string; aliases: string[] }): boolean {
+/** What mention detection matches a business by (scanning's mentionTargets): its names, website, phone, city and area. */
+export type MatchedFields = {
+  name: string;
+  aliases: string[];
+  domain: string | null;
+  phone: string | null;
+  city: string | null;
+  area: string | null;
+};
+
+/**
+ * Whether a save changed what saved answers are matched by, so they must be checked again: the name, the other names
+ * (in any way but order or case), the website, the phone (its digits), the city or the area (case aside).
+ */
+export function matchingChanged(before: MatchedFields, after: MatchedFields): boolean {
   const set = (list: string[]) => [...new Set(list.map((a) => a.trim().toLowerCase()))].sort().join("\n");
-  return before.name.trim() !== after.name.trim() || set(before.aliases) !== set(after.aliases);
+  const text = (v: string | null) => (v ?? "").trim().toLowerCase();
+  const digits = (v: string | null) => (v ?? "").replace(/\D/g, "");
+  return (
+    before.name.trim() !== after.name.trim() ||
+    set(before.aliases) !== set(after.aliases) ||
+    text(before.domain) !== text(after.domain) ||
+    digits(before.phone) !== digits(after.phone) ||
+    text(before.city) !== text(after.city) ||
+    text(before.area) !== text(after.area)
+  );
 }
 
 /** What is wrong with a typed list of other names, for the field's message; undefined when it can be saved. */
@@ -76,4 +98,20 @@ export function aliasesProblem(names: string[]): string | undefined {
   if (names.some((n) => n.length < 2)) return "Each other name needs at least 2 characters.";
   if (names.some((n) => n.length > 120)) return "Keep each other name under 120 characters.";
   return undefined;
+}
+
+// Legal endings are not part of what customers call a business.
+const LEGAL_ENDINGS = new Set(["llc", "inc", "ltd", "co", "corp", "pllc", "plc", "lp", "llp"]);
+
+/**
+ * The "Other names" placeholder from the business's own name: the first letter of each word, "Kentucky Fried Chicken"
+ * gives "For example: KFC". A one-word name has no short form, so an old name is suggested instead.
+ */
+export function aliasExample(name: string): string {
+  const words = name
+    .split(/[\s/-]+/)
+    .map((w) => w.replace(/[^\p{L}\p{N}]/gu, ""))
+    .filter((w) => w && !LEGAL_ENDINGS.has(w.toLowerCase()));
+  const initials = words.map((w) => w[0].toUpperCase()).join("");
+  return initials.length >= 2 ? `For example: ${initials}` : "For example: an old name or another spelling";
 }

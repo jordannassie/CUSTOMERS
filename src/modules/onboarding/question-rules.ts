@@ -1,10 +1,12 @@
 // Pure rules for question picking (MVP_SPEC 5.3): check what the model returned, keep the intent mix,
 // fill the city, and plain questions that fit any business as the last fallback.
-import { openingCount } from "./question-style";
+import { needsSitDown } from "./business-kind";
+export { fallbackQuestions } from "./plain-questions";
+import { openingCount, questionKey } from "./question-style";
 import type { LibraryIndustry } from "@/lib/industries";
 import { placeLabel } from "@/lib/place-label";
 import { offersTerm, specificTermsIn, type Intent } from "@/modules/question-library";
-import { MAX_PER_INTENT, QUESTION_COUNT } from "./prompts/pick-questions.v5";
+import { MAX_PER_INTENT, QUESTION_COUNT } from "./prompts/pick-questions.v6";
 
 export type LibraryEntry = { id: string; template: string; tags: string[]; intent: Intent };
 
@@ -22,7 +24,8 @@ export function cityLabel(city: string, region: string | null): string {
 }
 
 export function fillCity(template: string, city: string): string {
-  return template.replace(CITY, city).replace(/\s+/g, " ").trim();
+  // Every {city}: a template that slipped through with two must never show the placeholder.
+  return template.replaceAll(CITY, city).replace(/\s+/g, " ").trim();
 }
 
 /** Same rules as the library (question-library/validate.ts): one {city}, no other placeholder, a question. */
@@ -42,8 +45,9 @@ export function serviceFit(entry: Pick<LibraryEntry, "template" | "tags">, servi
 }
 
 /**
- * Keeps the model's choices in its order, drops repeats and anything past MAX_PER_INTENT, then tops up
- * to QUESTION_COUNT preferring intents still missing and templates closest to the services.
+ * Keeps the model's choices in its order, drops repeats (also the same question worded another way) and anything
+ * past MAX_PER_INTENT, then tops up to QUESTION_COUNT preferring intents still missing and templates closest to the
+ * services.
  */
 export function balancePicks<T extends Pick<LibraryEntry, "template" | "tags" | "intent">>(
   chosen: T[],
@@ -54,16 +58,16 @@ export function balancePicks<T extends Pick<LibraryEntry, "template" | "tags" | 
   const perIntent = new Map<Intent, number>();
   const seen = new Set<string>();
   const add = (t: T) => {
-    const key = t.template.trim().toLowerCase();
+    const key = questionKey(t.template);
     if (seen.has(key) || (perIntent.get(t.intent) ?? 0) >= MAX_PER_INTENT || picked.length >= QUESTION_COUNT) return;
     seen.add(key);
     perIntent.set(t.intent, (perIntent.get(t.intent) ?? 0) + 1);
     picked.push(t);
   };
   chosen.forEach(add);
-  let rest = pool.filter((t) => !seen.has(t.template.trim().toLowerCase()));
+  let rest = pool.filter((t) => !seen.has(questionKey(t.template)));
   while (picked.length < QUESTION_COUNT) {
-    rest = rest.filter((t) => !seen.has(t.template.trim().toLowerCase()) && (perIntent.get(t.intent) ?? 0) < MAX_PER_INTENT);
+    rest = rest.filter((t) => !seen.has(questionKey(t.template)) && (perIntent.get(t.intent) ?? 0) < MAX_PER_INTENT);
     if (!rest.length) break;
     const count = (t: T) => perIntent.get(t.intent) ?? 0;
     // Missing intents first, then openings not used yet (a set of twelve "Where can I find..." reads like a form),
@@ -74,39 +78,6 @@ export function balancePicks<T extends Pick<LibraryEntry, "template" | "tags" | 
     add(rest.reduce((best, t) => (better(t, best) ? t : best)));
   }
   return picked;
-}
-
-// Plain questions that read right for any business, a shop or a restaurant as much as a trade (BUG-084). The
-// old template engine asked about "same-day or emergency service" and what a "clothing store typically costs".
-const FALLBACK: { template: string; intent: Intent }[] = [
-  { template: "What is the best {industry} in {city}?", intent: "best" },
-  { template: "Can you recommend a good {industry} in {city}?", intent: "best" },
-  { template: "Which {industry} in {city} do locals recommend?", intent: "best" },
-  { template: "I'm looking for a good {industry} in {city}. Which one should I choose?", intent: "best" },
-  { template: "Which {industry} in {city} has the best reviews?", intent: "reviews" },
-  { template: "What is the most trusted {industry} in {city}?", intent: "reviews" },
-  { template: "What is the most popular {industry} in {city}?", intent: "reviews" },
-  { template: "Which {industry} in {city} offers the best value?", intent: "comparison" },
-  { template: "Which of the top {industry} options in {city} compares best?", intent: "comparison" },
-  { template: "Which {industry} in {city} has fair prices?", intent: "price" },
-  { template: "What is an affordable {industry} in {city}?", intent: "price" },
-  { template: "Which {industry} in {city} is the most highly rated?", intent: "reviews" },
-];
-
-/** "Coffee shop" reads as "coffee shop" mid-sentence; "HVAC contractor" keeps its capitals. */
-function midSentence(label: string): string {
-  return label
-    .trim()
-    .split(/\s+/)
-    .map((w) => (w.length > 1 && w === w.toUpperCase() ? w : w.toLowerCase()))
-    .join(" ");
-}
-
-/** Used when Claude fails, and to fill a short written list: plain questions that read right for any business. */
-export function fallbackQuestions(industry: string, city: string, region: string | null): PreparedQuestion[] {
-  const where = cityLabel(city, region);
-  const noun = midSentence(industry) || "local business";
-  return FALLBACK.map((q) => ({ text: fillCity(q.template.replace("{industry}", noun), where), intent: q.intent, templateId: null }));
 }
 
 // Advice questions ("How much does drain cleaning typically cost?", "Should I get a camera inspection or start
@@ -222,7 +193,15 @@ export const KIND_WORDS: Record<LibraryIndustry, string> = {
 };
 
 /** What a library template is checked against: the kind of business, where it is, and what it lists. */
-export type FitContext = { kind: string; city: string; region: string | null; services: string[]; description: string };
+export type FitContext = {
+  kind: string;
+  city: string;
+  region: string | null;
+  services: string[];
+  description: string;
+  /** A counter or takeaway place: sit-down templates (date night, group booking) never fit it (business-kind.ts). */
+  takeaway?: boolean;
+};
 
 /**
  * True when a library template fits this business (deterministic, after the model's pick too). A template that
@@ -233,6 +212,7 @@ export type FitContext = { kind: string; city: string; region: string | null; se
 export function fitsBusiness(entry: Pick<LibraryEntry, "template" | "tags">, ctx: FitContext): boolean {
   const offered = `${ctx.services.join(" ; ")} ; ${ctx.description}`;
   const text = `${entry.template} ${entry.tags.join(" ")}`;
+  if (ctx.takeaway && needsSitDown(entry.template)) return false;
   if (namesUnofferedTerm(text, ctx.services, ctx.description)) return false;
   if (isGeneralQuestion(entry.template, ctx.kind, ctx.city, ctx.region, [])) return true;
   if (ctx.services.length === 0) return false;

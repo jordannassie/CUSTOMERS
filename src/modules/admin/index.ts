@@ -29,6 +29,6 @@ export { aiCostShare, type MonthChange, type Revenue } from "./overview/service"
 export { resolveAlert } from "./alerts/actions";
 export { handleAlertsRequest } from "./alerts/cron";
 export { ALERT_KINDS, type AlertKind } from "./alerts/schema";
-export type { OpenAlert } from "./alerts/service";
+export { alertWording, type OpenAlert } from "./alerts/service";
 export { loadLibraryGaps } from "./library-gaps/dal";
 export { LIBRARY_GAPS_SHOWN, type LibraryGap } from "./library-gaps/service";

@@ -17,6 +17,7 @@ describe("validateLibrary", () => {
 
   it.each([
     [{ template: "Who is the best dentist near me?" }, "missing {city}"],
+    [{ template: "Best dentist in {city} or near {city}?" }, "{city} more than once"],
     [{ tags: [] }, "at least one tag"],
     [{ tags: ["  "] }, "at least one tag"],
     [{ template: "Best dentist in {city} for {service}?" }, "unknown placeholder {service}"],

@@ -1,6 +1,7 @@
 import type { ActionResult } from "@/modules/auth";
 import type { PlanChangeStripe } from "../plan-change/client";
 import { isCancelling, scheduleIdOf, type PlanChangeContext } from "../plan-change/planner";
+import { isMissingInStripe } from "../stripe-missing";
 import type { BillingRows } from "./dal";
 import type { PortalClient } from "./access";
 import { buildBillingView, type BillingView } from "./summary";
@@ -31,6 +32,10 @@ export async function billingView({ rows, access }: BillingPageDeps): Promise<Bi
         : await stripe.previewInvoice(schedule ? { schedule: schedule.id } : { subscription: sub.id });
     return buildBillingView(rows, { sub, schedule, upcoming });
   } catch (error) {
+    if (isMissingInStripe(error)) {
+      console.warn("[billing/account] subscription not in Stripe:", subscriptionId);
+      return buildBillingView(rows, "missing");
+    }
     const e = error as { type?: string; message?: string };
     console.error("[billing/account] could not load the subscription", e?.type ?? e?.message);
     return buildBillingView(rows, "error");

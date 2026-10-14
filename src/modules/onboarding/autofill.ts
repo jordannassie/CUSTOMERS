@@ -1,24 +1,23 @@
 // Business auto-fill (MVP_SPEC 3.2, D-18). Clients are injected, so tests and evals run the same
 // flow with fixtures. It never throws for a provider failure: the worst case is an empty form.
 import { factsFromPageMeta } from "./autofill-safety";
-import { ExtractError, type ExtractBusiness } from "./extract";
+import type { ExtractBusiness } from "./extract";
 import type { PageResult, ScrapeSite } from "./firecrawl";
-import { siteContact, withFooterOnce } from "./page-contact";
+import { siteContact } from "./page-contact";
 import type { PlaceCandidate, SearchPlaces } from "./places";
 import {
-  AUTOFILL_MODEL,
   AUTOFILL_PROMPT_VERSION,
   AUTOFILL_RETRY_MODEL,
   type AutofillOutput,
 } from "./prompts/business-autofill.v1";
 import { brandGuesses, pickBrandPlace, type AutofillProblem, type AutofillProvider } from "./autofill-fallback";
+import { readablePages, readFacts, readPages } from "./site-read";
 import type { AutofillResult, PlaceChoice } from "./schema";
 import {
   EMPTY_DETAILS,
   hasAnyValue,
   industryCheck,
   isChain,
-  keepGrounded,
   mergeDetails,
   needsRetry,
   NOTES,
@@ -56,6 +55,8 @@ export type AutofillRun = {
   /** The only Places value we may keep (D-73). */
   placeId: string | null;
   siteFacts: SiteFacts | null;
+  /** The website matches listings in several cities: one brand with several locations (businesses.is_chain). */
+  chain: boolean;
   /** What went wrong along the way, for the server log and provider_errors (B7). Empty on a clean run. */
   problems: AutofillProblem[];
 };
@@ -72,20 +73,6 @@ async function search(searchPlaces: SearchPlaces, query: string, note: Note): Pr
   }
 }
 
-/** down is true when no AI could answer (Claude and the backup failed), not when a model's answer was unusable. */
-async function tryExtract(
-  clients: AutofillClients,
-  args: Parameters<ExtractBusiness>[0],
-  note: Note,
-): Promise<{ output: AutofillOutput | null; down: boolean }> {
-  try {
-    return { output: await clients.extract(args), down: false };
-  } catch (err) {
-    note("anthropic", `Reading ${args.domain} with ${args.model} failed: ${reason(err)}`);
-    return { output: null, down: !(err instanceof ExtractError && err.modelFault) };
-  }
-}
-
 export async function autofill(request: AutofillRequest, clients: AutofillClients): Promise<AutofillRun> {
   if (!("domain" in request)) return autofillWithoutWebsite(request, clients);
   const { domain } = request;
@@ -93,25 +80,18 @@ export async function autofill(request: AutofillRequest, clients: AutofillClient
   const note: Note = (provider, message) => problems.push({ provider, message });
 
   const [pages, byDomain] = await Promise.all([
-    clients.scrape(domain).catch((err): PageResult[] => {
-      note("firecrawl", `Reading ${domain} failed: ${reason(err)}`);
-      return [];
-    }),
+    readPages(clients.scrape, domain, (message) => note("firecrawl", message)),
     search(clients.searchPlaces, domain, note),
   ]);
   const chain = isChain(byDomain, domain);
   let place = chain ? null : pickPlaceForDomain(byDomain, domain);
-  const readable = pages.filter((p) => p.status === "ok" && p.markdown);
-  const sitePages = withFooterOnce(readable);
+  const readable = readablePages(pages);
+  const onAiError = (message: string) => note("anthropic", message);
 
-  let site: AutofillOutput | null = null;
-  let model: string = AUTOFILL_MODEL;
-  let aiDown = false;
-  if (sitePages.length > 0) {
-    const first = await tryExtract(clients, { domain, pages: sitePages, model: AUTOFILL_MODEL, answeredBy: (m) => (model = m) }, note);
-    aiDown = first.down;
-    site = first.output && keepGrounded(first.output, readable);
-  }
+  const first = await readFacts(clients.extract, domain, readable, { onError: onAiError });
+  let site: AutofillOutput | null = first.facts;
+  let model: string = first.model;
+  const aiDown = first.down;
   let contact = siteContact(site, readable);
   if (site && chain) site = withoutBranchFacts(site, byDomain);
   // No AI could read the site (D-84): its own page title and meta description stand in for the name and description.
@@ -136,15 +116,12 @@ export async function autofill(request: AutofillRequest, clients: AutofillClient
   }
 
   if (site && needsRetry(site, mergeDetails(site, place))) {
-    let retryModel: string = AUTOFILL_RETRY_MODEL;
-    const retry = (
-      await tryExtract(clients, { domain, pages: sitePages, model: AUTOFILL_RETRY_MODEL, answeredBy: (m) => (retryModel = m) }, note)
-    ).output;
-    if (retry) {
-      site = keepGrounded(retry, readable);
+    const retry = await readFacts(clients.extract, domain, readable, { model: AUTOFILL_RETRY_MODEL, onError: onAiError });
+    if (retry.facts) {
+      site = retry.facts;
       contact = siteContact(site, readable);
       if (chain) site = withoutBranchFacts(site, byDomain);
-      model = retryModel;
+      model = retry.model;
     }
   }
 
@@ -156,6 +133,8 @@ export async function autofill(request: AutofillRequest, clients: AutofillClient
   const details = mergeDetails(fromSite, place);
   const fromWebsite = fromSite !== null && hasAnyValue(mergeDetails(fromSite, null));
   const placesDown = problems.some((p) => p.provider === "google_places");
+  // Firecrawl itself refused (its quota, an outage), not the website: the site was never asked.
+  const readerDown = readable.length === 0 && pages.some((p) => p.readerDown);
   return {
     result: toResult({
       details,
@@ -164,10 +143,11 @@ export async function autofill(request: AutofillRequest, clients: AutofillClient
       hadWebsite: true,
       chain,
       // A provider failed, so "we couldn't find your business" would be wrong (D-84).
-      aiDown: aiDown || (placesDown && !fromWebsite && place === null),
+      aiDown: aiDown || readerDown || (placesDown && !fromWebsite && place === null),
       industryCheck: industryCheck(fromSite, place),
     }),
     placeId: place?.placeId ?? null,
+    chain,
     // Saved even when nothing was readable, so advice can tell "blocks AI readers" from "no website" (BUG-087).
     siteFacts:
       site || (pages.length > 0 && readable.length === 0)
@@ -209,11 +189,19 @@ async function autofillWithoutWebsite(
         autofill: toResult({ details: { ...details, city: details.city || request.city }, fromWebsite: false, fromGoogle: true, hadWebsite: false }),
       };
     });
-  const typed = toResult({ details: { ...EMPTY_DETAILS, name: request.name, city: request.city }, fromWebsite: false, fromGoogle: false, hadWebsite: false });
+  // Google failed (a used-up quota, an outage): "temporarily unavailable", never "we couldn't find your business".
+  const typed = toResult({
+    details: { ...EMPTY_DETAILS, name: request.name, city: request.city },
+    fromWebsite: false,
+    fromGoogle: false,
+    hadWebsite: false,
+    aiDown: problems.length > 0,
+  });
   return {
     result: choices.length ? { ...typed, note: NOTES.noneChosen, choices } : typed,
     placeId: null,
     siteFacts: null,
+    chain: false,
     problems,
   };
 }

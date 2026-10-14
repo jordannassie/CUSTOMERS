@@ -53,6 +53,10 @@ Planning after this audit changed the scope. The decisions are in [DECISIONS.md]
 | OPS-02 to OPS-06 | Unchanged. OPS-02: also add the new tables in MVP_SPEC 13. OPS-04: zod everywhere (MVP_SPEC 18.1). OPS-05: env var changes in MVP_SPEC 14. |
 | CLEAN-01 to CLEAN-03 | Folded into the removal list (MVP_SPEC 17). |
 | NICE-01 | Team members: after the MVP (D-10). |
+| BILL-04 (2026-10-14) | Done in Stripe test mode: signup, real card form, trial with 100 credits, first scan, a 500-credit top-up (granted once), upgrade to Pro, cancel and keep, and a failed payment (past due, banners, scans paused). 12 webhook events, all processed once with no error. Emails could not be sent locally (no `EMAIL_FROM` or Resend key) but each was attempted. |
+| SEC-04, SEC-07 (2026-10-14) | Full CSP enforced; rate limits refuse when their store fails; feature requests limited per user (BUG-174 to BUG-176). Captcha skipped for now. |
+| OPS-05 (2026-10-14) | `BILLING_ENABLED` removed too: a search showed nothing read it. |
+| CLEAN (2026-10-14) | Done: the last old files (`src/config/pricing.ts`, `src/config/product-access.ts`, `src/lib/trial.ts`, `/api/user/trial`, `src/lib/google-places.ts`, and `prompt-engine`, `scanner`, `competitor-discovery`, `competitor-search` in `src/lib/geo`) are deleted. File references below are from the audit date. |
 
 ## Product in one paragraph
 

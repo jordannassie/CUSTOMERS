@@ -34,9 +34,10 @@ function defaultDeps(): WebhookDeps {
 }
 
 /**
- * Verifies the signature on the raw body, skips events already processed (stripe_webhook_events), runs the
- * handler and records the outcome. A failed handler returns 500 so Stripe retries; the retry runs it again.
- * Grants and emails have their own unique keys, so even two copies of one event running at once apply once.
+ * Verifies the signature on the raw body, claims the event (stripe_webhook_events, migration 056), runs the handler
+ * and records the outcome. An event already handled returns 200; one another delivery is running now returns 409, so
+ * Stripe sends it again later instead of both running at once. A failed handler returns 500 so Stripe retries; the
+ * retry claims it again. Grants and emails also have their own unique keys.
  */
 export async function processStripeWebhook(
   rawBody: string,
@@ -57,9 +58,9 @@ export async function processStripeWebhook(
   }
 
   const deps = options.deps ?? defaultDeps();
-  if ((await deps.store.eventState(event.id)) === "done") {
-    return { status: 200, body: { received: true, duplicate: true } };
-  }
+  const claim = await deps.store.claimEvent(event.id, event.type, deps.now());
+  if (claim === "done") return { status: 200, body: { received: true, duplicate: true } };
+  if (claim === "busy") return { status: 409, body: { error: "This event is being processed." } };
 
   try {
     const outcome = await dispatchEvent(deps, event);

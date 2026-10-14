@@ -6,7 +6,7 @@ import { Leaderboard } from "@/components/competitors/Leaderboard";
 import { SignalsTable } from "@/components/competitors/SignalsTable";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { answersText, getCompetitorsPage, trackCompetitor } from "@/modules/competitors";
+import { answersText, getCompetitorsPage, saveCompetitorWebsite, trackCompetitor } from "@/modules/competitors";
 import { getWorkspace } from "@/modules/workspace";
 
 export const metadata = { title: "Competitors", robots: { index: false } };
@@ -93,7 +93,7 @@ export default async function CompetitorsPage() {
           {view.count === 0 ? (
             <Empty text="Add competitors to compare your Google reviews, ratings and hours with theirs." />
           ) : (
-            <SignalsTable rows={view.signals} />
+            <SignalsTable rows={view.signals} pickBranch={view.pickBranch} edit={{ businessId: business.id, save: saveCompetitorWebsite }} />
           )}
         </CardContent>
       </Card>

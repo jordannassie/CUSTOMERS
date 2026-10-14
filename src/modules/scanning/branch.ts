@@ -9,10 +9,10 @@ import {
   coreName,
   domainBrand,
   findName,
-  findPhrase,
   isGenericName,
   normaliseText,
 } from "./mention-text";
+import { findPlace } from "./place-text";
 
 export type Branch = {
   /** The chain, as written in the name: "Bennu Coffee". */
@@ -95,9 +95,8 @@ function place(brandText: string, rest: string, city: string | null | undefined,
 /** True when the answer names the branch itself: its full name, or its place near the chain's name. */
 export function namesBranch(answer: string, name: string, branch: Branch): boolean {
   if (findName(answer, coreName(name)).length > 0) return true;
-  const where = normaliseText(branch.place);
   return findName(answer, coreName(branch.brand)).some(
-    (at) => findPhrase(answer.slice(Math.max(0, at - BEFORE), at + AFTER), where).length > 0,
+    (at) => findPlace(answer.slice(Math.max(0, at - BEFORE), at + AFTER), branch.place).length > 0,
   );
 }
 

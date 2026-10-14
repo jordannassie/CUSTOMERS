@@ -47,7 +47,7 @@ export default async function QuestionsPage() {
 
         <AddQuestionForm
           businessId={view.businessId}
-          city={view.city}
+          example={view.example}
           activeCount={view.active.length}
           models={view.models.length}
           frequency={view.frequency}

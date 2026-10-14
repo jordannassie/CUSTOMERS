@@ -7,11 +7,19 @@ import { defineConfig } from "vitest/config";
 // so tests cannot reach the shared database or spend real AI credits.
 const TEST_ENV_FILE = ".env.test.local";
 // These read or write the whole scan queue, so they run one at a time after every other unit file.
-const SERIAL_TESTS = ["src/modules/jobs/queue.test.ts", "src/modules/jobs/schedules.test.ts"];
+// scan-schedule-safety and payment-failed also call enqueue_due_scans, which queues every due business in the database
+// and failed on one another file deleted mid-insert (BUG-035, seen again 2026-10-14).
+const SERIAL_TESTS = [
+  "src/modules/jobs/queue.test.ts",
+  "src/modules/jobs/schedules.test.ts",
+  "src/modules/jobs/scan-schedule-safety.test.ts",
+  "src/modules/billing/webhooks/payment-failed.test.ts",
+];
 const testEnv = existsSync(TEST_ENV_FILE) ? parseEnv(readFileSync(TEST_ENV_FILE, "utf8")) : {};
 // Database tests share the machine with other workers' stacks (BUG-010); 5s and 20s timed out under that load.
 // Hooks get the same limit: their set-up and clean-up (creating and deleting users) hit the 10s default.
 const DB_TEST_TIMEOUT = 60_000;
+const TEST_MAX_WORKERS = Number(process.env.TEST_MAX_WORKERS ?? 4);
 
 export default defineConfig({
   resolve: {
@@ -27,6 +35,9 @@ export default defineConfig({
           name: "unit",
           include: ["src/**/*.test.ts"],
           exclude: SERIAL_TESTS,
+          // Most unit files talk to the one local database; with a worker per core, its auth and REST gateway fell
+          // behind and a few files failed with "fetch failed" (BUG-069). TEST_MAX_WORKERS raises or lowers it.
+          maxWorkers: TEST_MAX_WORKERS,
           setupFiles: ["tests/setup/retry-gateway-502.ts"],
           env: testEnv as Record<string, string>,
           testTimeout: DB_TEST_TIMEOUT,

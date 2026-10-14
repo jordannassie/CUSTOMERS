@@ -137,6 +137,21 @@ describe("runScan (B-26)", () => {
     expect(slowOnce).toHaveBeenCalledTimes(24);
   });
 
+  it("does not wrap a second round around errors the provider call already retried", async () => {
+    const agency = await createScanAgency();
+    const business = await createScanBusiness(agency);
+    const job = await newJob(business);
+    // Claude keeps failing with a server error after its own retries (attempts: 3): the check fails once, uncharged.
+    const flapping = vi.fn<RunCheck>(async () => {
+      throw new ProviderError({ provider: "anthropic", kind: "server", attempts: 3, message: "anthropic returned 529: overloaded" });
+    });
+
+    const outcome = await runScan(job, { ...runners({ anthropic: flapping }), extractNames });
+
+    expect(outcome).toMatchObject({ checks: 36, failed: 12, charged: 24 });
+    expect(flapping).toHaveBeenCalledTimes(12);
+  });
+
   it("serves a second business in the same city from the cache and still charges 1 credit a check", async () => {
     const agency = await createScanAgency();
     const first = await createScanBusiness(agency);

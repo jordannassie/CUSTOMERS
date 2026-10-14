@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { closestAnswer, loadRecordedAnswers, recordedAnswers, type RecordedAnswer } from "./recorded";
+import { closestAnswer, loadRecordedAnswers, narrowed, recordedAnswers, type RecordedAnswer } from "./recorded";
 import type { ProviderId } from "./providers/types";
 
 const location = { city: "Orange", region: "CA", country: "US" };
@@ -55,6 +55,29 @@ describe("recorded answers (B-31)", () => {
       const used = answers.find((a) => a.provider === provider && a.answerText === result.answerText)!;
       expect(used.question.toLowerCase()).toMatch(/coffee|cafe/);
     }
+  });
+
+  it("reads the industry and city from each file name", () => {
+    expect(new Set(answers.map((a) => a.industry))).toEqual(new Set(["coffee", "dentist", "plumber"]));
+    expect(new Set(answers.map((a) => a.place))).toEqual(new Set(["austin-tx", "orange-ca"]));
+  });
+
+  it("answers only from the same industry and city when it has recordings (BUG-072)", async () => {
+    const austin = { city: "Austin", region: "TX", country: "US" };
+    // Words that would pull a plumber's or a dentist's answer if every recording were in the pool.
+    for (const question of ["Who fixes a leaking pipe fast in Austin, TX?", "Which place in Austin, TX takes emergency walk-ins?"]) {
+      for (const provider of ["openai", "anthropic", "perplexity"] as ProviderId[]) {
+        const result = await recordedAnswers(answers, "coffee_shop").runCheck(provider)({ question, location: austin, model: "gpt-4.1-mini" });
+        const used = answers.find((a) => a.provider === provider && a.answerText === result.answerText)!;
+        expect([used.industry, used.place]).toEqual(["coffee", "austin-tx"]);
+      }
+    }
+    const plumbers = narrowed(answers, "plumber", "Orange");
+    expect(plumbers.length).toBeGreaterThan(0);
+    expect(plumbers.every((a) => a.industry === "plumber" && a.place === "orange-ca")).toBe(true);
+    // A city with no recordings keeps the industry; an industry with none (a restaurant) keeps everything.
+    expect(narrowed(answers, "dentist", "Islamabad").every((a) => a.industry === "dentist")).toBe(true);
+    expect(narrowed(answers, "restaurant", "Islamabad")).toHaveLength(answers.length);
   });
 
   it("returns the labelled names for a recorded answer", async () => {

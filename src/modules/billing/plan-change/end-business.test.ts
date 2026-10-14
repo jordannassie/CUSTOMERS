@@ -59,6 +59,18 @@ describe("endBusinessPlan", () => {
     expect(s.stripe.calls).toHaveLength(0);
   });
 
+  it("lets the business go when Stripe has no such subscription, but not when Stripe is down (2026-10-14)", async () => {
+    const s = use(setup());
+    const missing = Object.assign(new Error("No such subscription: 'sub_local_sim_abdul'"), { type: "StripeInvalidRequestError", code: "resource_missing", statusCode: 404 });
+    vi.spyOn(s.stripe, "retrieveSubscription").mockRejectedValueOnce(missing);
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    expect(await endBusinessPlan("agency-1", A, now(s))).toEqual({ endsAt: null });
+
+    const down = Object.assign(new Error("connection reset"), { type: "StripeConnectionError" });
+    vi.spyOn(s.stripe, "retrieveSubscription").mockRejectedValueOnce(down);
+    await expect(endBusinessPlan("agency-1", A, now(s))).rejects.toThrow("connection reset");
+  });
+
   it("refuses a business from another agency", async () => {
     const s = use(setup());
     await expect(endBusinessPlan("agency-1", "00000000-0000-4000-8000-0000000000ff", now(s))).rejects.toMatchObject({ status: 404 });

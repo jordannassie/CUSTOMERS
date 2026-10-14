@@ -24,7 +24,7 @@ vi.mock("@/modules/questions/dal", () => ({
 }));
 vi.mock("@/modules/settings/dal", () => ({
   // The saved industry and names, read before a profile save to see whether to rebuild questions or recount.
-  businessBefore: vi.fn(async () => ({ industry: "", name: "Plumbing", aliases: [] })),
+  businessBefore: vi.fn(async () => ({ industry: "", name: "Plumbing", aliases: [], domain: null, phone: null, city: null, area: null })),
   updateBusinessProfile: writes,
   updateScanSettings: writes,
   updateAgencyName: writes,
