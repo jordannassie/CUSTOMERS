@@ -33,6 +33,32 @@ export function parseCategoryList(value: string): AppCategoryId[] {
   return ids.filter(isCategoryId);
 }
 
+const OWN_HOSTS = new Set(["customers.direct", "www.customers.direct", "localhost"]);
+
+export function utmFromReferer(referer: string | null): {
+  utmSource: string | null;
+  utmMedium: string | null;
+  utmCampaign: string | null;
+} {
+  const empty = { utmSource: null, utmMedium: null, utmCampaign: null };
+  if (!referer) return empty;
+  try {
+    const url = new URL(referer);
+    if (!OWN_HOSTS.has(url.hostname)) return empty;
+    const clip = (key: string) => {
+      const value = url.searchParams.get(key)?.trim().slice(0, 80) ?? "";
+      return value || null;
+    };
+    return {
+      utmSource: clip("utm_source"),
+      utmMedium: clip("utm_medium"),
+      utmCampaign: clip("utm_campaign"),
+    };
+  } catch {
+    return empty;
+  }
+}
+
 export function destinationFor(app: { affiliateUrl: string | null; websiteUrl: string }): {
   url: string;
   kind: "affiliate" | "direct";

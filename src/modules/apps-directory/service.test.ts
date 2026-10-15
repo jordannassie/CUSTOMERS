@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { DIRECTORY_CATALOG, HOME_FEATURED_SLUGS } from "./catalog";
-import { destinationFor } from "./schema";
+import { destinationFor, utmFromReferer } from "./schema";
 import { mergeCatalog, queryDirectory } from "./service";
 
 const baseQuery = { q: "", category: "all", sort: "name" as const, page: 1 };
@@ -44,5 +44,8 @@ describe("apps directory", () => {
     expect(merged.some((app) => app.slug === DIRECTORY_CATALOG[0].slug)).toBe(false);
     expect(destinationFor({ affiliateUrl: "https://partner.example/go", websiteUrl: "https://example.com" }).kind).toBe("affiliate");
     expect(destinationFor({ affiliateUrl: null, websiteUrl: "https://example.com" }).kind).toBe("direct");
+    const utm = utmFromReferer("https://customers.direct/apps?utm_source=newsletter&utm_medium=email&utm_campaign=oct");
+    expect(utm).toEqual({ utmSource: "newsletter", utmMedium: "email", utmCampaign: "oct" });
+    expect(utmFromReferer("https://evil.example/?utm_source=nope").utmSource).toBeNull();
   });
 });

@@ -16,7 +16,7 @@ export function AppCard({ app, source, badge = false }: { app: DirectoryApp; sou
       <p className="mt-2 line-clamp-2 flex-1 text-[13.5px] leading-relaxed text-[#777773]">{app.description}</p>
       <p className="mt-3 text-[11px] font-medium text-[#0866F5]">{app.categories.map(categoryLabel).join(" · ")}</p>
       <a
-        href={`/apps/go/${app.slug}?source=${source}`}
+        href={`/apps/go/${app.slug}/${source}`}
         className="mt-4 inline-flex h-10 items-center justify-center gap-1.5 rounded-xl bg-[#0866F5] text-[13.5px] font-semibold text-white transition hover:bg-[#0757D4]"
       >
         Get Started
