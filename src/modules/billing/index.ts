@@ -31,4 +31,6 @@ export { loadChoosePlanPage, type ChoosePlanPage } from "./choose-plan/load";
 export type { ChoosePlanState } from "./choose-plan/service";
 export { getPlanNowStatus, startPlanNow } from "./end-trial/actions";
 export { loadPlanNowOffer, type PlanNowView } from "./end-trial/load";
+export { checkPaidNotActive } from "./paid-not-active/dal";
 export type { BillingBusiness, BillingPlan, BillingView, PendingChange } from "./account/summary";
+export { subscriptionAgencyStatus } from "./subscription-status";

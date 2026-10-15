@@ -14,6 +14,8 @@ export const LIMITS = {
   compare: { max: 6, windowMs: HOUR },
   contact: { max: 5, windowMs: HOUR },
   feature_request: { max: 10, windowMs: HOUR },
+  // Each auto-fill reads a website and Google and asks an AI model, all paid for (onboarding).
+  autofill: { max: 20, windowMs: HOUR },
 } satisfies Record<string, Limit>;
 
 export type Bucket = keyof typeof LIMITS;

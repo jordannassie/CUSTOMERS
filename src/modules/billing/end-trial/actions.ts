@@ -9,8 +9,8 @@ import { startPlanNowInput } from "./schema";
 import { DECLINED, endTrialNow, type PlanNowDone } from "./service";
 
 // "Start my plan now" on the new-business plan page (D-16, MVP_SPEC 4.4). Each action checks auth and input itself;
-// the agency always comes from the session. Nothing here marks the agency paid or grants credits: the Stripe
-// webhook does both (MVP_SPEC 11.3), and the page polls getPlanNowStatus until it has.
+// the agency always comes from the session. The agency is marked paid and credited only from what Stripe says,
+// through the webhook's own handlers: when the webhook comes, or when these actions read Stripe back (A1, 2026-10-15).
 
 const badInput = { ok: false, status: 400, error: "Something was wrong with that request. Refresh the page and try again." } as const;
 const unavailable = {
@@ -47,7 +47,7 @@ export async function startPlanNow(input: unknown): Promise<ActionResult<PlanNow
     const data = await loadPlanChangeData(agency);
     const access = await billingAccess(data);
     if (!access) return unavailable;
-    const deps = { stripe: access.stripe, plansByProduct: data.plansByProduct, now: () => new Date() };
+    const deps = { stripe: access.stripe, plansByProduct: data.plansByProduct, now: () => new Date(), sync: access.sync };
     return { ok: true, data: await endTrialNow(access.context, parsed.data.attemptId, deps) };
   } catch (error) {
     if (error instanceof PlanChangeError) return { ok: false, status: error.status, error: error.message };
@@ -57,9 +57,21 @@ export async function startPlanNow(input: unknown): Promise<ActionResult<PlanNow
   }
 }
 
-/** Polled after startPlanNow: true once the webhook has saved the plan as active, so a new business is allowed. */
+/**
+ * Polled after startPlanNow, and run by "Check again": true once the plan is saved as active, so a new business is
+ * allowed. Until then each call reads the subscription back from Stripe and applies it like the webhook would.
+ */
 export async function getPlanNowStatus(): Promise<ActionResult<{ started: boolean }>> {
   const agency = await agencyId();
   if (typeof agency !== "string") return agency;
+  if ((await canAddBusiness(agency)).allowed) return { ok: true, data: { started: true } };
+  try {
+    const data = await loadPlanChangeData(agency);
+    const access = await billingAccess(data);
+    if (access && data.context.subscriptionId) await access.sync(data.context.subscriptionId);
+  } catch (error) {
+    // The next check tries again; the screen keeps waiting instead of showing an error.
+    console.error("[billing/end-trial] sync from Stripe failed", error instanceof Error ? error.message : String(error));
+  }
   return { ok: true, data: { started: (await canAddBusiness(agency)).allowed } };
 }

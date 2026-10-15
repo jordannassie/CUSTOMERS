@@ -87,9 +87,10 @@ export function ruleDrafts(src: ExplainSources): OpportunityDraft[] {
   }).map((o) => ({ ...o, claude_prompt: o.claude_prompt || null }));
 }
 
+// Saved as { name, position } for each named competitor; named unless an older row says `mentioned: false`.
 function mentionedNames(value: unknown): string[] {
   if (!Array.isArray(value)) return [];
-  return value.filter((m) => m && m.mentioned === true && typeof m.name === "string").map((m) => m.name as string);
+  return value.filter((m) => m && m.mentioned !== false && typeof m.name === "string").map((m) => m.name as string);
 }
 
 export async function explain(src: ExplainSources, write: WriteExplanation | null): Promise<Explanation> {

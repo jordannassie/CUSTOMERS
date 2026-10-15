@@ -25,7 +25,13 @@ const DAY = 86_400_000;
 let agency: Awaited<ReturnType<typeof createAgencyWithBusiness>>;
 
 function fakeStripe(overrides: Partial<AdminStripeClient> = {}): AdminStripeClient & { extendTrial: ReturnType<typeof vi.fn> } {
-  return { mode: "stripe", extendTrial: vi.fn(async () => {}), revenueSince: vi.fn(async () => 0), ...overrides } as never;
+  return {
+    mode: "stripe",
+    extendTrial: vi.fn(async () => {}),
+    revenueSince: vi.fn(async () => 0),
+    subscriptionStatus: vi.fn(async () => null),
+    ...overrides,
+  } as never;
 }
 
 async function setAgency(fields: Database["public"]["Tables"]["agencies"]["Update"]) {
@@ -161,6 +167,38 @@ describe("agency actions (B-65)", () => {
 
     expect(await auditRows("agency.suspend")).toMatchObject([{ details: { reason: REASON, previous_status: "past_due" } }]);
     expect(await auditRows("agency.unsuspend")).toMatchObject([{ details: { reason: "Paid by phone", new_status: "past_due" } }]);
+  });
+
+  it("unsuspends to the status Stripe has now, since webhooks were not saved while suspended", async () => {
+    await setAgency({ status: "active", stripe_subscription_id: `sub_${randomUUID()}` });
+    expect((await actions.suspendAgency({ agencyId: agency.agencyId, reason: REASON })).ok).toBe(true);
+    const subscriptionStatus = vi.fn(async () => "canceled" as const);
+    stripe.client = fakeStripe({ subscriptionStatus });
+    expect((await actions.unsuspendAgency({ agencyId: agency.agencyId, reason: "Paid by phone" })).ok).toBe(true);
+    expect((await readAgency()).status).toBe("canceled");
+    expect(subscriptionStatus).toHaveBeenCalledTimes(1);
+    expect(await auditRows("agency.unsuspend")).toMatchObject([{ details: { new_status: "canceled", status_from_stripe: true } }]);
+  });
+
+  it("keeps the agency suspended when Stripe cannot be reached", async () => {
+    await setAgency({ status: "active", stripe_subscription_id: `sub_${randomUUID()}` });
+    expect((await actions.suspendAgency({ agencyId: agency.agencyId, reason: REASON })).ok).toBe(true);
+    stripe.client = fakeStripe({ subscriptionStatus: vi.fn(async () => Promise.reject(new Error("connection reset"))) });
+    expect(await actions.unsuspendAgency({ agencyId: agency.agencyId, reason: "Paid by phone" })).toMatchObject({ ok: false, status: 502 });
+    expect((await readAgency()).status).toBe("suspended");
+    expect(await auditRows("agency.unsuspend")).toHaveLength(0);
+  });
+
+  it("falls back to the status from suspend time when Stripe is not connected or has nothing to go on", async () => {
+    await setAgency({ status: "past_due", stripe_subscription_id: `sub_${randomUUID()}` });
+    expect((await actions.suspendAgency({ agencyId: agency.agencyId, reason: REASON })).ok).toBe(true);
+    expect((await actions.unsuspendAgency({ agencyId: agency.agencyId, reason: "Paid by phone" })).ok).toBe(true);
+    expect((await readAgency()).status).toBe("past_due");
+
+    expect((await actions.suspendAgency({ agencyId: agency.agencyId, reason: REASON })).ok).toBe(true);
+    stripe.client = fakeStripe();
+    expect((await actions.unsuspendAgency({ agencyId: agency.agencyId, reason: "Paid by phone" })).ok).toBe(true);
+    expect((await readAgency()).status).toBe("past_due");
   });
 
   it("restores a deleted account before its purge date, and not after", async () => {

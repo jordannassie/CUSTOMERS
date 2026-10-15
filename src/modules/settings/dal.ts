@@ -113,20 +113,49 @@ export type ProfileUpdate = {
 };
 
 /** What a profile save may change that the questions or the matching of saved answers depend on. */
-export type SavedProfile = MatchedFields & { industry: string | null };
+export type SavedProfile = MatchedFields & { industry: string | null; region: string | null };
 
 /** The business's saved industry and matching fields, or undefined when it is not in the user's agency. */
 export async function businessBefore(businessId: string): Promise<SavedProfile | undefined> {
   const { agency } = await requireAgency();
   const { data, error } = await createServiceClient()
     .from("businesses")
-    .select("industry, name, aliases, domain, phone, primary_city, primary_area")
+    .select("industry, name, aliases, domain, phone, primary_city, primary_region, primary_area")
     .eq("id", businessId)
     .eq("agency_id", agency.id)
     .maybeSingle();
   if (error) throw new Error(`Could not load the business: ${error.message}`);
   if (!data) return undefined;
-  return { industry: data.industry, name: data.name, aliases: data.aliases, domain: data.domain, phone: data.phone, city: data.primary_city, area: data.primary_area };
+  return {
+    industry: data.industry,
+    name: data.name,
+    aliases: data.aliases,
+    domain: data.domain,
+    phone: data.phone,
+    city: data.primary_city,
+    region: data.primary_region,
+    area: data.primary_area,
+  };
+}
+
+/**
+ * The website changed: what was read from the old one no longer describes the business. Its site facts are deleted,
+ * so the scan worker reads the new site (MVP_SPEC 7.1). With a new website, the Google listing and chain flag found
+ * through the old one are cleared too, so the listing is looked up again by the new domain (BUG-158). With no website
+ * left, the listing stays: nothing could find it again. Only for a business in the user's agency.
+ */
+export async function forgetOldWebsite(businessId: string, newDomain: string | null): Promise<void> {
+  const { agency } = await requireAgency();
+  const db = createServiceClient();
+  const { data, error } = await db.from("businesses").select("id").eq("id", businessId).eq("agency_id", agency.id).maybeSingle();
+  if (error) throw new Error(`Could not load the business: ${error.message}`);
+  if (!data) return;
+  if (newDomain) {
+    const { error: listingError } = await db.from("businesses").update({ places_id: null, is_chain: false }).eq("id", businessId).eq("agency_id", agency.id);
+    if (listingError) throw new Error(`Could not clear the old website's listing: ${listingError.message}`);
+  }
+  const { error: factsError } = await db.from("business_site_facts").delete().eq("business_id", businessId);
+  if (factsError) throw new Error(`Could not clear the old website's facts: ${factsError.message}`);
 }
 
 /** False when the business is not in the user's agency. */

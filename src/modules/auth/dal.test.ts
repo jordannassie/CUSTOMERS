@@ -145,6 +145,35 @@ describe("signed in", () => {
   });
 });
 
+// An address in ADMIN_EMAILS is only trusted once its owner has confirmed it.
+describe("unconfirmed admin address", () => {
+  const adminAddress = "owner@example.test";
+  function sessionFor(emailConfirmedAt: string | null) {
+    const user = { id: randomUUID(), email: adminAddress, email_confirmed_at: emailConfirmedAt };
+    return { auth: { getUser: async () => ({ data: { user }, error: null }) } } as unknown as SupabaseClient<Database>;
+  }
+
+  beforeEach(() => {
+    adminEnv.emails = adminAddress;
+  });
+  afterAll(() => {
+    adminEnv.emails = "";
+  });
+
+  it("is not an admin until the email is confirmed", async () => {
+    current = sessionFor(null);
+    await expect(requireAdmin()).rejects.toMatchObject({ reason: "forbidden", status: 403 });
+    await expect(requireAdmin({ next: "/internal/admin" })).rejects.toThrow("REDIRECT /dashboard");
+    expect(await isCurrentUserAdmin()).toBe(false);
+  });
+
+  it("is an admin once confirmed", async () => {
+    current = sessionFor(new Date().toISOString());
+    expect(await requireAdmin()).toMatchObject({ email: adminAddress });
+    expect(await isCurrentUserAdmin()).toBe(true);
+  });
+});
+
 // E2E-0929 BUG-4 and BUG-5: a slow or failing auth server is not a sign-out.
 describe("auth server unavailable", () => {
   let outage: "none" | "network" | "gateway" = "none";

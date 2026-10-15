@@ -29,9 +29,10 @@ export {
   getModelsStep,
   getSetupAddOn,
   getQuestionsStep,
+  getWebsiteStep,
   getWizardState,
 } from "./wizard/queries";
-export type { WizardContext } from "./wizard/dal";
+export type { WebsiteStepDefaults, WizardContext } from "./wizard/dal";
 export type { DetailsStep } from "./wizard/details/dal";
 export type { ModelsStep, QuestionsStep } from "./wizard/questions/dal";
 export {

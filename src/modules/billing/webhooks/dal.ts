@@ -13,7 +13,8 @@ type Db = SupabaseClient<Database>;
 
 export type AgencyStatus = "trialing" | "active" | "past_due" | "canceled";
 export type ItemStatus = AgencyStatus;
-export type WebhookAgency = { id: string; ownerUserId: string; status: string };
+/** `subscriptionId`: the subscription the agency is linked to, so events for another one (a duplicate) are ignored. */
+export type WebhookAgency = { id: string; ownerUserId: string; status: string; subscriptionId: string | null };
 export type BusinessItem = { businessId: string | null; itemId: string; planId: string; periodEnd: string | null };
 /** claimed: this delivery runs the handler; done: already handled; busy: another delivery is running it now. */
 export type EventClaim = "claimed" | "done" | "busy";
@@ -68,7 +69,7 @@ export function createWebhookStore(db: Db = createServiceClient()) {
 
     /** By our agency ID from metadata first, then by the Stripe customer the agency is linked to. */
     async findAgency(ref: { agencyId?: string | null; customerId?: string | null }): Promise<WebhookAgency | null> {
-      const query = db.from("agencies").select("id, owner_user_id, status");
+      const query = db.from("agencies").select("id, owner_user_id, status, stripe_subscription_id");
       const { data, error } = ref.agencyId
         ? await query.eq("id", ref.agencyId).maybeSingle()
         : ref.customerId
@@ -76,7 +77,7 @@ export function createWebhookStore(db: Db = createServiceClient()) {
           : { data: null, error: null };
       if (error) throw new Error(`agency lookup failed: ${error.message}`);
       if (!data && ref.agencyId && ref.customerId) return this.findAgency({ customerId: ref.customerId });
-      return data ? { id: data.id, ownerUserId: data.owner_user_id, status: data.status } : null;
+      return data ? { id: data.id, ownerUserId: data.owner_user_id, status: data.status, subscriptionId: data.stripe_subscription_id } : null;
     },
 
     async linkStripe(agencyId: string, ids: { customerId: string | null; subscriptionId: string | null }): Promise<void> {

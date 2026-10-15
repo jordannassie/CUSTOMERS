@@ -23,8 +23,9 @@ export type MentionTarget = {
   /**
    * Set when the tracked business is itself one branch of a chain ("Bennu Coffee on Congress"): the chain's name or
    * website alone is the chain, so it counts only with one of these places (the branch's, its area) nearby (step 7).
+   * `brand` is the chain's name ("Bennu Coffee"): a place or area alone is not the business either.
    */
-  branch?: { places: string[] } | null;
+  branch?: { brand: string; places: string[] } | null;
 };
 
 export type MentionResult = {

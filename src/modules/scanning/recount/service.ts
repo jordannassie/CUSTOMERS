@@ -32,13 +32,15 @@ export type TargetCompetitor = {
  * When the business is itself one branch of a chain, the places that name it: its own ("Congress") and its area.
  * Its score then counts only answers that name the branch, and the chain's mentions are shown apart (step 7).
  */
-export function ownBranch(business: Pick<TargetBusiness, "name" | "city" | "domain" | "area">): { places: string[] } | null {
+export function ownBranch(
+  business: Pick<TargetBusiness, "name" | "city" | "domain" | "area">,
+): { brand: string; places: string[] } | null {
   const branch = branchOf(business.name, business.city, business.domain);
   // Only when its own website spells the chain's brand ("Bennu Coffee" on bennucoffee.com): a name that merely reads
   // like "<brand> <place>" ("Push Pull on Union", "... Full Service AI Agency") must not lose its own mentions.
   const spelled = branch && domainBrand(business.name, business.domain);
   if (!branch || !spelled || coreName(spelled) !== coreName(branch.brand)) return null;
-  return { places: [branch.place, business.area ?? ""].filter((p) => p.trim()) };
+  return { brand: branch.brand, places: [branch.place, business.area ?? ""].filter((p) => p.trim()) };
 }
 
 /** The business and its competitors as mention detection sees them; the scan and the recount share it. */

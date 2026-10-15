@@ -15,6 +15,9 @@ import { FieldHint, StepActions, StepError } from "./StepBits";
 type Props = {
   defaultDomain: string;
   defaultNoWebsite: boolean;
+  /** The draft's saved name and city when it has no website, so Back shows them again. */
+  defaultName?: string;
+  defaultCity?: string;
   backHref?: string;
   /** Chosen on the new-business plan picker, carried through to the business this step creates. */
   plan?: string | null;
@@ -28,12 +31,12 @@ type Props = {
 type Picking = { businessId: string; typed: AutofillResult; choices: PlaceChoice[] };
 
 // MVP_SPEC 3.1 step 3. Auto-fill runs here and takes a few seconds, so the wait gets its own screen.
-export function WebsiteStep({ defaultDomain, defaultNoWebsite, backHref, plan = null, save, pick }: Props) {
+export function WebsiteStep({ defaultDomain, defaultNoWebsite, defaultName = "", defaultCity = "", backHref, plan = null, save, pick }: Props) {
   const router = useRouter();
   const [noWebsite, setNoWebsite] = useState(defaultNoWebsite);
   const [domain, setDomain] = useState(defaultDomain);
-  const [name, setName] = useState("");
-  const [city, setCity] = useState("");
+  const [name, setName] = useState(defaultName);
+  const [city, setCity] = useState(defaultCity);
   const [error, setError] = useState<string | null>(null);
   const [picking, setPicking] = useState<Picking | null>(null);
   const [pending, startTransition] = useTransition();

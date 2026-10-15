@@ -2,15 +2,16 @@
 
 import { headers } from "next/headers";
 import { env } from "@/lib/env";
-import { authFailure, getCurrentAgency, requireUser, type ActionResult } from "@/modules/auth";
+import { authFailure, getCurrentAgency, type ActionResult } from "@/modules/auth";
 import { addBusinessAtSetup } from "@/modules/billing";
 import { sendWelcomeEmail } from "@/modules/notifications";
 import { dedupeConfirmed } from "../competitors";
 import { saveCompetitors } from "../dal";
+import { activeUser, autofillLimit } from "../guard";
 import { websiteExists } from "../website/dal";
 import { websiteNotFoundText } from "../website/domain-check";
 import { saveCompetitorsInput, toDomain, type AutofillResult } from "../schema";
-import { advanceStep, saveAgency, startBusiness } from "./dal";
+import { advanceStep, isOwnDraft, saveAgency, startBusiness } from "./dal";
 import { saveDetails } from "./details/dal";
 import { awaitingTrialCredits, finishCardStep, startCardCheckout } from "./card/dal";
 import { finishWizard, saveModels, saveQuestions } from "./questions/dal";
@@ -18,11 +19,12 @@ import { agencyStepInput, businessOnly, detailsStepInput, modelsStepInput, quest
 import { FIRST_SCAN_PATH, stepPath } from "./steps";
 import { loadWizardState } from "./dal";
 
-// Every onboarding step saves through one of these (MVP_SPEC 3.1). Each checks the session itself.
+// Every onboarding step saves through one of these (MVP_SPEC 3.1). Each checks the session itself, and refuses a
+// suspended or deleted agency. The step saves change only the user's draft: a live business is edited in the app.
 
 async function signedIn(): Promise<{ id: string; email: string | null } | ActionResult<never>> {
   try {
-    return await requireUser();
+    return await activeUser();
   } catch (error) {
     return authFailure(error);
   }
@@ -63,6 +65,8 @@ export async function saveWebsiteStep(input: unknown): Promise<ActionResult<{ bu
     const { name, city } = parsed.data;
     request = { name, city };
   }
+  const limited = await autofillLimit(user);
+  if (limited) return limited;
   const result = await startBusiness(user, request, undefined, plan ?? null);
   if (!result.ok) return result;
   return { ok: true, data: { businessId: result.businessId, autofill: result.autofill } };
@@ -84,6 +88,7 @@ export async function saveCompetitorsStep(input: unknown): Promise<ActionResult<
   const parsed = saveCompetitorsInput.safeParse(input);
   if (!parsed.success) return { ok: false, status: 400, error: "Check the competitor names and try again." };
 
+  if (!(await isOwnDraft(user, parsed.data.businessId))) return notFound;
   const result = await saveCompetitors(user, parsed.data.businessId, dedupeConfirmed(parsed.data.competitors));
   if (!result.ok) return result;
   if (!(await advanceStep(user, parsed.data.businessId, "competitors"))) return notFound;
@@ -107,6 +112,7 @@ export async function saveModelsStep(input: unknown): Promise<ActionResult<{ nex
   const parsed = modelsStepInput.safeParse(input);
   if (!parsed.success) return { ok: false, status: 400, error: "Pick at least one AI model and how often to check." };
   const { businessId, models, frequency, addOn } = parsed.data;
+  if (!(await isOwnDraft(user, businessId))) return notFound;
   if ((await loadWizardState(user)).needsCard) {
     if (!(await saveModels(user, businessId, models, frequency))) return notFound;
     return { ok: true, data: { next: stepPath("card") } };

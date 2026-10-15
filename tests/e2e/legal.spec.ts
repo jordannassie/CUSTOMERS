@@ -13,7 +13,7 @@ test("terms state the trial, renewal and cancel rules", async ({ page }) => {
   await page.goto("/terms#trial");
   const trial = page.locator("#trial");
   await expect(trial).toContainText("The trial lasts 7 days.");
-  await expect(trial).toContainText("up to 2 businesses and includes 100 trial credits");
+  await expect(trial).toContainText("up to 2 businesses and includes 150 trial credits");
   await expect(page.locator("#plans")).toContainText("renews automatically every month");
   await expect(page.locator("#cancel")).toContainText("open Settings, then Billing, and choose Cancel plan");
   await expect(page.locator("#credits")).toContainText("Credits have no cash value.");

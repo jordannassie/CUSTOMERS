@@ -155,5 +155,7 @@ Live has 001 to 020 (Baseline above) and none of the files below. Go-live applie
 - `061_run_explained_at.sql` (`visibility_runs.explained_at`; the pages say "Working out your fixes" until it is set)
 - `062_cancel_reasons.sql` (new table `cancel_reasons`, service role only: the optional reason from the "Before you cancel" dialog, shown on the admin agency page)
 - `063_resolve_quiet_alerts.sql` (new function `resolve_quiet_system_alerts`, called by `run_system_alerts`: closes stuck_jobs, failed_scans, ai_fallback, provider_errors and negative_balances alerts not seen for an hour)
+- `064_report_shares_for_pdf.sql` (`report_shares.for_pdf`: PDF export links are their own rows, never handed out by Share or the weekly email; apply with the app version that writes it)
+- `065_purge_files_and_quiet_paid_alert.sql` (redefines `purge_deleted_accounts`: after 7 days `account_purges` rows lose the address and name but stay until the logo files are removed; redefines `resolve_quiet_system_alerts` to also close paid_not_active)
 
 Any file added after 043 joins this list.

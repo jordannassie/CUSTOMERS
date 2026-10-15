@@ -78,6 +78,23 @@ describe("entitlements against the database", () => {
     expect(await loadBusinessFacts(businessId)).toMatchObject({ planName: "Pro", maxQuestions: 25, maxCompetitors: 10 });
   });
 
+  it("uses the plan chosen for a business still being set up, before it has a subscription item", async () => {
+    // Picked on the new-business plan picker (?plan=pro).
+    const picked = await createAgency(1);
+    await service.from("businesses").update({ requested_plan_id: "pro" }).eq("id", picked.businessIds[0]).throwOnError();
+    expect(await loadBusinessFacts(picked.businessIds[0])).toMatchObject({ planName: "Pro", maxCompetitors: 10 });
+
+    // Picked on the pricing page: the agency step keeps it on the owner.
+    const priced = await createAgency(1);
+    const owner = (await service.from("agencies").select("owner_user_id").eq("id", priced.agencyId).single().throwOnError()).data.owner_user_id;
+    await service.auth.admin.updateUserById(owner, { app_metadata: { selected_plan: "pro" } });
+    expect(await loadBusinessFacts(priced.businessIds[0])).toMatchObject({ planName: "Pro", maxCompetitors: 10 });
+
+    // Once set up, only the subscription item counts; without one it is Starter, as before.
+    await service.from("businesses").update({ status: "active" }).eq("id", priced.businessIds[0]).throwOnError();
+    expect(await loadBusinessFacts(priced.businessIds[0])).toMatchObject({ planName: "Starter", maxCompetitors: 5 });
+  });
+
   it("counts only active questions against the limit", async () => {
     const agency = await createAgency(1);
     const [businessId] = agency.businessIds;

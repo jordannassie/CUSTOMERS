@@ -17,7 +17,7 @@ vi.mock("@/lib/supabase/server", () => ({
 }));
 
 const actions = await import("../actions");
-const { saveAgency, startBusiness } = await import("../dal");
+const { loadWebsiteStep, saveAgency, startBusiness } = await import("../dal");
 
 async function signUp() {
   const email = `vitest-restart-${randomUUID()}@example.test`;
@@ -95,5 +95,45 @@ describe("website step", () => {
     await actions.saveDetailsStep({ businessId: id, name: "Orange Florist", industry: "Florist", description: "", services: [], city: "Orange", state: "CA", country: "US", phone: "" });
     await startBusiness(userId, { domain: "orange-florist.example" }, fakeClients().clients);
     expect(await business(id)).toMatchObject({ name: "Orange Florist", primary_city: "Orange", onboarding_step: 5 });
+  });
+
+  it("keeps a no-website draft's competitors, questions and listing when Back sends the same business again", async () => {
+    const userId = await signUp();
+    const started = await startBusiness(userId, { name: "sunrise coffee", city: "springfield" }, fakeClients().clients);
+    if (!started.ok) throw new Error("website step failed");
+    const id = started.businessId;
+    await service.from("businesses").update({ places_id: "ChIJ-sunrise" }).eq("id", id).throwOnError();
+    // The details step confirms Google's spelling, not what was typed.
+    expect(
+      await actions.saveDetailsStep({ businessId: id, name: "Sunrise Coffee Bar", industry: "coffee_shop", description: "", services: [], city: "Springfield", state: "IL", country: "US", phone: "" }),
+    ).toEqual({ ok: true, data: null });
+    await service.from("business_competitors").insert({ business_id: id, name: "Bean House", source: "manual", confirmed: true }).throwOnError();
+    await service.from("tracked_prompts").insert({ business_id: id, prompt: "Best coffee in Springfield, IL?", source: "library" }).throwOnError();
+
+    // Back on the website step, the form shows what was saved, and sending it again changes nothing.
+    const defaults = await loadWebsiteStep(userId, id);
+    expect(defaults).toEqual({ domain: "", hasWebsite: false, name: "Sunrise Coffee Bar", city: "Springfield" });
+    const again = await startBusiness(userId, { name: defaults!.name, city: defaults!.city }, fakeClients().clients);
+    expect(again).toMatchObject({ ok: true, businessId: id });
+
+    const { data: row } = await service.from("businesses").select("name, primary_city, places_id, industry, onboarding_step").eq("id", id).single().throwOnError();
+    expect(row).toEqual({ name: "Sunrise Coffee Bar", primary_city: "Springfield", places_id: "ChIJ-sunrise", industry: "coffee_shop", onboarding_step: 5 });
+    expect((await service.from("business_competitors").select("id").eq("business_id", id)).data).toHaveLength(1);
+    expect((await service.from("tracked_prompts").select("id").eq("business_id", id).is("removed_at", null)).data).toHaveLength(1);
+
+    // Another business does start over, and its Google listing goes with it.
+    await startBusiness(userId, { name: "Orange Florist", city: "Orange" }, fakeClients().clients);
+    const { data: other } = await service.from("businesses").select("name, places_id").eq("id", id).single().throwOnError();
+    expect(other).toEqual({ name: "Orange Florist", places_id: null });
+  });
+
+  it("keeps the listing when the same website is sent again and Google finds nothing this time", async () => {
+    const userId = await signUp();
+    const started = await startBusiness(userId, { domain: "orange-florist.example" }, fakeClients().clients);
+    if (!started.ok) throw new Error("website step failed");
+    await service.from("businesses").update({ places_id: "ChIJ-orange" }).eq("id", started.businessId).throwOnError();
+    await startBusiness(userId, { domain: "orange-florist.example" }, fakeClients().clients);
+    const { data } = await service.from("businesses").select("places_id").eq("id", started.businessId).single().throwOnError();
+    expect(data.places_id).toBe("ChIJ-orange");
   });
 });

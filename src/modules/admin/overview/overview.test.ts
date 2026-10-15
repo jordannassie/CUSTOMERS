@@ -40,6 +40,7 @@ const { loadOverview } = await import("./dal");
 const stripeWith = (revenueSince: AdminStripeClient["revenueSince"]): AdminStripeClient => ({
   mode: "stripe",
   extendTrial: async () => {},
+  subscriptionStatus: async () => null,
   revenueSince,
 });
 

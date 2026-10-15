@@ -113,7 +113,7 @@ describe("delete account (B-77, MVP_SPEC 23)", () => {
     expect(result).toEqual({ ok: true, data: { redirectTo: "/account-deleted" } });
 
     const agency = one(await service.from("agencies").select("status, deleted_at, purge_after, stripe_subscription_id").eq("id", a.agencyId).single());
-    expect(stripe.cancelNow).toHaveBeenCalledWith(agency.stripe_subscription_id, `account-delete:${a.agencyId}`);
+    expect(stripe.cancelNow).toHaveBeenCalledWith(agency.stripe_subscription_id, `account-delete:${a.agencyId}:${agency.stripe_subscription_id}`);
     expect(agency.status).toBe("deleted");
     const waitMs = new Date(agency.purge_after!).getTime() - new Date(agency.deleted_at!).getTime();
     expect(Math.round(waitMs / DAY)).toBe(30);

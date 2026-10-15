@@ -22,6 +22,8 @@ const KIND_LABEL: Record<string, string> = {
   daily_ai_cost: "AI cost",
   anthropic_credit: "Anthropic out of credit",
   ai_fallback: "ChatGPT backup in use",
+  paid_not_active: "Paid but still on trial",
+  schedule_lost: "Scheduled change lost",
 };
 const SEVERITY = {
   critical: { label: "Urgent", badge: "low", rail: "border-l-low" },

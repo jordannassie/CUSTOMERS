@@ -1,5 +1,5 @@
 import type Stripe from "stripe";
-import { line } from "../stripe-objects";
+import { invoice, line } from "../stripe-objects";
 import type { ItemSpec } from "./planner";
 
 // The Stripe-shaped objects the in-memory Stripe hands out, and its prices and dates.
@@ -183,4 +183,20 @@ export function pricedSpec(spec: ItemSpec | Stripe.SubscriptionUpdateParams.Item
   }
   if (!price) throw new Error("item has no price");
   return { price, quantity: spec.quantity ?? 1, metadata: { ...((spec.metadata ?? {}) as Record<string, string>) } };
+}
+
+/** The renewal bill for `items` for the month from `start`, still open. */
+export function renewalInvoice(
+  s: Pick<SubscriptionState, "customerId" | "subscriptionId" | "prices">,
+  items: Priced[],
+  start: number,
+): Stripe.Invoice {
+  const end = monthAfter(start);
+  return invoice({
+    customer: s.customerId,
+    subscriptionId: s.subscriptionId,
+    billingReason: "subscription_cycle",
+    lines: items.map((i) => line({ product: s.prices[i.price].product, amount: s.prices[i.price].unitAmount, subscriptionId: s.subscriptionId, start, end })),
+    status: "open",
+  });
 }

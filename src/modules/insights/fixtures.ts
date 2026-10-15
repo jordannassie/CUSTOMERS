@@ -27,7 +27,10 @@ function check(i: number, named: string[], cites: string[]): CheckRow {
     provider: PROVIDERS[i % 3],
     question: QUESTIONS[Math.floor(i / 3) % 2],
     businessMentioned: named.includes("Sunrise Coffee Bar"),
-    competitorsMentioned: ["Bean House", "Daily Grind"].map((name) => ({ name, mentioned: named.includes(name), position: null })),
+    // The shape a scan saves (scanning/check.ts): only the named competitors, as { name, position }.
+    competitorsMentioned: ["Bean House", "Daily Grind"]
+      .filter((name) => named.includes(name))
+      .map((name) => ({ name, position: named.indexOf(name) + 1 })),
     citations: cites.map((url) => ({ url, title: null })),
   };
 }
@@ -92,7 +95,7 @@ export const PLUMBER_SOURCES: ExplainSources = {
     provider: PROVIDERS[i],
     question: "Emergency plumber in Springfield?",
     businessMentioned: false,
-    competitorsMentioned: [{ name: "Fast Pipes", mentioned: i < 2 }],
+    competitorsMentioned: i < 2 ? [{ name: "Fast Pipes", position: 1 }] : [],
     citations: [],
   })),
   alsoNamed: [],

@@ -5,7 +5,7 @@ import { authFailure, requireAgency, type ActionResult } from "@/modules/auth";
 import { getBalance } from "@/modules/credits";
 import { canAddBusiness } from "@/modules/entitlements";
 import { billingAccess } from "../account/access";
-import { loadPlanChangeData, saveCancelReason } from "./dal";
+import { loadPlanChangeData, raiseScheduleLost, saveCancelReason } from "./dal";
 import { PlanChangeError, type PlanChange } from "./planner";
 import { businessPlanInput, cancelInput, keepBusinessInput, removeBusinessInput, subscriptionInput, type CancelReason } from "./schema";
 import { applyPlanChange, previewPlanChange, type PlanChangeDone, type PlanChangePreview } from "./service";
@@ -70,6 +70,7 @@ async function run(
       now: () => new Date(),
       timeZone: await viewerTimeZone(),
       credits: ending && previewedAt === undefined ? await creditsLeft(agencyId) : undefined,
+      onScheduleLost: raiseScheduleLost,
     };
     if (previewedAt === undefined) {
       return { ok: true, data: { step: "preview", ...(await previewPlanChange(context, change, deps)) } };

@@ -1,47 +1,26 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { CheckCircle2, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { StatusAction } from "./choose-plan";
+import { usePlanStatus } from "./use-plan-status";
 
-const POLL_MS = 1500;
-// About a minute; Stripe's webhook normally lands within a few seconds.
-const MAX_POLLS = 40;
-
-type State = "waiting" | "started" | "slow";
-
-// After the card is accepted, the plan starts through Stripe's webhook, never from this page. It only watches.
+// After the card is accepted, each check reads the plan back from Stripe and starts it here too if the webhook is
+// late (A1, 2026-10-15). After 30 seconds the user can check again instead of waiting for good.
 export function PlanProgress({ status }: { status: StatusAction }) {
   const router = useRouter();
-  const [state, setState] = useState<State>("waiting");
+  const [started, setStarted] = useState(false);
+  const onStarted = useCallback(() => {
+    setStarted(true);
+    // Updates the sidebar balance and banners.
+    router.refresh();
+  }, [router]);
+  const { slow, checking, checkAgain } = usePlanStatus(status, !started, onStarted);
 
-  useEffect(() => {
-    let polls = 0;
-    let timer: ReturnType<typeof setTimeout>;
-    let stopped = false;
-    async function poll() {
-      const result = await status().catch(() => null);
-      if (stopped) return;
-      if (result?.ok && result.data.started) {
-        setState("started");
-        // Updates the sidebar balance and banners.
-        router.refresh();
-        return;
-      }
-      if (++polls >= MAX_POLLS) return setState("slow");
-      timer = setTimeout(poll, POLL_MS);
-    }
-    poll();
-    return () => {
-      stopped = true;
-      clearTimeout(timer);
-    };
-  }, [status, router]);
-
-  if (state === "waiting") {
+  if (!started && !slow) {
     return (
       <p role="status" data-testid="plan-waiting" className="flex items-center gap-2 rounded-md border border-border bg-surface px-4 py-3 text-sm">
         <Loader2 className="size-4 animate-spin text-primary" aria-hidden="true" />
@@ -49,12 +28,18 @@ export function PlanProgress({ status }: { status: StatusAction }) {
       </p>
     );
   }
-  if (state === "slow") {
+  if (!started) {
     return (
-      <p role="status" data-testid="plan-slow" className="rounded-md border border-mid/30 bg-mid-bg px-4 py-3 text-sm text-mid-text">
-        Your card was accepted, but your plan is taking longer than usual to start. Refresh this page in a minute. If it
-        still hasn&apos;t started, contact us and we&apos;ll sort it out.
-      </p>
+      <div role="status" data-testid="plan-slow" className="flex flex-col items-start gap-3 rounded-md border border-mid/30 bg-mid-bg px-4 py-3 text-sm text-mid-text">
+        <p>
+          Your card was accepted, but your plan is taking longer than usual to start. Check again in a moment. If it still
+          hasn&apos;t started, contact us and we&apos;ll sort it out.
+        </p>
+        <Button type="button" variant="outline" size="sm" onClick={checkAgain} disabled={checking}>
+          {checking ? <Loader2 className="animate-spin" aria-hidden="true" /> : null}
+          Check again
+        </Button>
+      </div>
     );
   }
   return (

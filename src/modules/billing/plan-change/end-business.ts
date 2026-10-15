@@ -1,6 +1,6 @@
 import "server-only";
 import { billingAccess } from "../account/access";
-import { loadPlanChangeData } from "./dal";
+import { cancelBusinessPlanRow, loadPlanChangeData } from "./dal";
 import type Stripe from "stripe";
 import type { PlanChangeStripe } from "./client";
 import { isCancelling, itemFor, periodEnd, PlanChangeError, scheduleIdOf, type BusinessRow, type PlanChange } from "./planner";
@@ -19,7 +19,13 @@ export type BusinessPlanEnd = { endsAt: string | null; removedNow?: boolean };
 export async function endBusinessPlan(agencyId: string, businessId: string, now = new Date()): Promise<BusinessPlanEnd> {
   const data = await loadPlanChangeData(agencyId);
   if (!data.context.businesses.some((b) => b.id === businessId)) throw new PlanChangeError(404, "Business not found.");
-  if (!data.context.subscriptionId) return { endsAt: null };
+  // With no plan in Stripe to end, no webhook will cancel the business's row, so it is done here: the account purge
+  // skips businesses whose row is not canceled.
+  const noPlan = async (): Promise<BusinessPlanEnd> => {
+    await cancelBusinessPlanRow(agencyId, businessId);
+    return { endsAt: null };
+  };
+  if (!data.context.subscriptionId) return noPlan();
 
   const access = await billingAccess(data);
   if (!access) {
@@ -32,9 +38,9 @@ export async function endBusinessPlan(agencyId: string, businessId: string, now 
     // Stripe has no such subscription: there is no plan to end, so the business can go (2026-10-14).
     if (!isMissingInStripe(error)) throw error;
     console.warn("[billing] subscription not in Stripe, nothing to end:", data.context.subscriptionId);
-    return { endsAt: null };
+    return noPlan();
   }
-  if (sub.status === "canceled" || sub.status === "incomplete_expired") return { endsAt: null };
+  if (sub.status === "canceled" || sub.status === "incomplete_expired") return noPlan();
   const business = access.context.businesses.find((b) => b.id === businessId)!;
   if (!itemFor(sub, business)) return { endsAt: null };
 

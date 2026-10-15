@@ -1,7 +1,7 @@
 import "server-only";
 import { viewerTimeZone } from "@/lib/viewer-time-zone";
 import { billingAccess } from "../account/access";
-import { loadPlanChangeData, type PlanChangeData } from "./dal";
+import { loadPlanChangeData, raiseScheduleLost, type PlanChangeData } from "./dal";
 import { PlanChangeError, type PlanChangeContext } from "./planner";
 import { applyPlanChange, previewPlanChange } from "./service";
 
@@ -51,7 +51,13 @@ async function prepare(agencyId: string, businessId: string) {
   if (!planId) return null;
   const access = await billingAccess(data);
   if (!access) return null;
-  const deps = { stripe: access.stripe, plansByProduct: data.plansByProduct, now: () => new Date(), timeZone: await viewerTimeZone() };
+  const deps = {
+    stripe: access.stripe,
+    plansByProduct: data.plansByProduct,
+    now: () => new Date(),
+    timeZone: await viewerTimeZone(),
+    onScheduleLost: raiseScheduleLost,
+  };
   return { context: access.context, deps, planId };
 }
 

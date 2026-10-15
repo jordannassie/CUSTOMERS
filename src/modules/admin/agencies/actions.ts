@@ -7,7 +7,7 @@ import { adminAdjustCredits, extendTrialGrant } from "@/modules/credits";
 import { logAdminAction } from "../dal";
 import { changeStatus, ownerEmail, readAgencyState, setTestFlag, setTrialEnd, statusBeforeSuspend, type AgencyState } from "./dal";
 import { adjustCreditsInput, extendTrialInput, markTestInput, reasonInput } from "./schema";
-import { canRestore, extendedTrialEnd, isBillingStatus, statusAfterUnsuspend } from "./service";
+import { canRestore, extendedTrialEnd, isBillingStatus, statusAfterUnsuspend, type BillingStatus } from "./service";
 import { adminStripeClient } from "./stripe";
 
 // Agency actions (B-65, MVP_SPEC 9.1). Each checks admin access itself, needs a reason and writes the audit log.
@@ -118,9 +118,21 @@ export async function unsuspendAgency(input: unknown): Promise<Done> {
     if (!r.ok) return r;
     if (r.state.status !== "suspended") return { ok: false, status: 409, error: "This agency is not suspended." };
 
-    const next = statusAfterUnsuspend(await statusBeforeSuspend(agencyId));
+    // Webhooks leave a suspended agency's status alone, so Stripe is asked what it is now; without Stripe (or with
+    // nothing to go on) the agency gets back the status it had when suspended.
+    let fromStripe: BillingStatus | null = null;
+    const stripe = r.state.subscriptionId ? adminStripeClient() : null;
+    if (stripe && r.state.subscriptionId) {
+      try {
+        fromStripe = await stripe.subscriptionStatus(r.state.subscriptionId);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "unknown error";
+        return { ok: false, status: 502, error: `We couldn't check the subscription in Stripe, so nothing changed. Stripe said: ${message}` };
+      }
+    }
+    const next = fromStripe ?? statusAfterUnsuspend(await statusBeforeSuspend(agencyId));
     if (!(await changeStatus(agencyId, "suspended", next))) return CHANGED;
-    await finish("agency.unsuspend", agencyId, { reason, new_status: next });
+    await finish("agency.unsuspend", agencyId, { reason, new_status: next, status_from_stripe: fromStripe !== null });
     return DONE;
   } catch (error) {
     return authFailure(error);

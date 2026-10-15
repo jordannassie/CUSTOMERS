@@ -4,8 +4,13 @@ import { A, B, C, plansByProduct, RENEWAL, setup } from "./scenario.test-helpers
 import type { FakeStripe } from "./fake-stripe";
 
 // Deleting a business ends its plan item at period end (B-77, MVP_SPEC 23), against the in-memory Stripe.
-const loaded = vi.hoisted(() => ({ ctx: null as PlanChangeContext | null, stripe: null as FakeStripe | null }));
-vi.mock("./dal", () => ({ loadPlanChangeData: async () => ({ context: loaded.ctx, plansByProduct }) }));
+const loaded = vi.hoisted(() => ({ ctx: null as PlanChangeContext | null, stripe: null as FakeStripe | null, canceledRows: [] as string[] }));
+vi.mock("./dal", () => ({
+  loadPlanChangeData: async () => ({ context: loaded.ctx, plansByProduct }),
+  cancelBusinessPlanRow: async (_agencyId: string, businessId: string) => {
+    loaded.canceledRows.push(businessId);
+  },
+}));
 vi.mock("../account/access", () => ({
   billingAccess: async () => ({ mode: "fixture", context: loaded.ctx, stripe: loaded.stripe }),
 }));
@@ -23,6 +28,7 @@ const now = (s: ReturnType<typeof setup>) => new Date(s.stripe.clock * 1000);
 beforeEach(() => {
   loaded.ctx = null;
   loaded.stripe = null;
+  loaded.canceledRows = [];
 });
 
 describe("endBusinessPlan", () => {
@@ -57,6 +63,7 @@ describe("endBusinessPlan", () => {
     loaded.ctx = { ...s.ctx, subscriptionId: null };
     expect(await endBusinessPlan("agency-1", A, now(s))).toEqual({ endsAt: null });
     expect(s.stripe.calls).toHaveLength(0);
+    expect(loaded.canceledRows).toEqual([A]);
   });
 
   it("lets the business go when Stripe has no such subscription, but not when Stripe is down (2026-10-14)", async () => {
@@ -65,10 +72,25 @@ describe("endBusinessPlan", () => {
     vi.spyOn(s.stripe, "retrieveSubscription").mockRejectedValueOnce(missing);
     vi.spyOn(console, "warn").mockImplementation(() => {});
     expect(await endBusinessPlan("agency-1", A, now(s))).toEqual({ endsAt: null });
+    expect(loaded.canceledRows).toEqual([A]);
 
     const down = Object.assign(new Error("connection reset"), { type: "StripeConnectionError" });
     vi.spyOn(s.stripe, "retrieveSubscription").mockRejectedValueOnce(down);
     await expect(endBusinessPlan("agency-1", A, now(s))).rejects.toThrow("connection reset");
+    expect(loaded.canceledRows).toEqual([A]);
+  });
+
+  it("cancels the business's own row when Stripe says the plan already ended", async () => {
+    const s = use(setup());
+    s.stripe.status = "canceled";
+    expect(await endBusinessPlan("agency-1", A, now(s))).toEqual({ endsAt: null });
+    expect(loaded.canceledRows).toEqual([A]);
+  });
+
+  it("leaves the row to the webhook when Stripe still has a plan to end", async () => {
+    const s = use(setup());
+    await endBusinessPlan("agency-1", A, now(s));
+    expect(loaded.canceledRows).toEqual([]);
   });
 
   it("refuses a business from another agency", async () => {

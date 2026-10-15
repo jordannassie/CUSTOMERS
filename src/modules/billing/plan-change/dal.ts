@@ -6,8 +6,8 @@ import type { PlanChangeContext } from "./planner";
 import type { CancelReason } from "./schema";
 
 // Reads for plan changes, as the service role. Callers pass the agency from requireAgency(), so every query
-// is scoped to it. The Stripe webhook (B-42) saves the result of a change; the only write here is the optional
-// reason given when cancelling (migration 062).
+// is scoped to it. The Stripe webhook (B-42) saves the result of a change; the only writes here are the optional
+// reason given when cancelling (migration 062) and a deleted business's plan row when Stripe has no plan to end.
 
 export type PlanChangeData = { context: PlanChangeContext; plansByProduct: Map<string, PlanCredits> };
 
@@ -68,4 +68,30 @@ export async function saveCancelReason(
     .from("cancel_reasons")
     .insert({ agency_id: agencyId, business_id: input.businessId, kind: input.kind, reason: input.reason });
   if (error) throw new Error(`Could not save the cancel reason: ${error.message}`);
+}
+
+/**
+ * Marks one business's plan row canceled when there is no Stripe plan left to end for it (no subscription, or Stripe
+ * has none or a canceled one), so no webhook will. The account purge skips businesses with a row that is not canceled.
+ */
+export async function cancelBusinessPlanRow(agencyId: string, businessId: string): Promise<void> {
+  const db = createServiceClient();
+  const { error } = await db
+    .from("business_subscriptions")
+    .update({ status: "canceled" })
+    .eq("agency_id", agencyId)
+    .eq("business_id", businessId)
+    .neq("status", "canceled");
+  if (error) throw new Error(`Could not cancel the business plan: ${error.message}`);
+}
+
+/** Admin alert (MVP_SPEC 22): a scheduled change was lost around a paid change and must be put back in Stripe. */
+export async function raiseScheduleLost(message: string): Promise<void> {
+  const { error } = await createServiceClient().rpc("raise_system_alert", {
+    p_kind: "schedule_lost",
+    p_severity: "critical",
+    p_message: message,
+    p_details: {},
+  });
+  if (error) throw new Error(`Could not raise the schedule_lost alert: ${error.message}`);
 }

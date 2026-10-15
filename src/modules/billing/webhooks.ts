@@ -5,6 +5,7 @@ import { getStripe } from "./stripe";
 import { createWebhookStore } from "./webhooks/dal";
 import { sendBillingEmail } from "./webhooks/emails";
 import { dispatchEvent, type StripeReader, type WebhookDeps } from "./webhooks/handlers";
+import { syncFromStripe, type StripeSync } from "./webhooks/sync";
 
 // Stripe webhook processing (B-42, MVP_SPEC 11.3, D-39). The only place billing state and plan credits come from.
 
@@ -111,3 +112,11 @@ export async function resyncSubscription(subscriptionId: string): Promise<void> 
   await dispatchEvent(deps, event as unknown as Stripe.Event);
 }
 
+
+/**
+ * Applies the subscription and its latest paid invoice from Stripe the way the webhooks do, for a page that cannot
+ * wait for them ("Start my plan now", the plan checkout, 2026-10-15). Idempotent like the webhooks.
+ */
+export async function syncSubscriptionFromStripe(subscriptionId: string): Promise<StripeSync> {
+  return syncFromStripe(defaultDeps(), subscriptionId);
+}

@@ -2,6 +2,7 @@ export {
   adminEmails,
   getCurrentAgency,
   getCurrentUser,
+  hasRecentRecoverySession,
   isCurrentUserAdmin,
   requireAdmin,
   requireAgency,

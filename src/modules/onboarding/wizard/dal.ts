@@ -89,12 +89,19 @@ export async function startBusiness(
   let businessId: string;
   if (state.draft) {
     businessId = state.draft.id;
+    // Another business clears the old one's details and Google listing and saves the new name and city. The same
+    // business entered again (Back from the details step) keeps its confirmed name, city, listing and progress.
     const restarted = await restartIfAnotherBusiness(userId, businessId, request);
     const { error } = await createServiceClient()
       .from("businesses")
-      .update({ ...typed, places_id: null, ...(restarted ? {} : { onboarding_step: nextStepNumber(state.draft.step, "website") }) })
+      .update({
+        domain: typed.domain,
+        has_website: typed.has_website,
+        ...(restarted ? {} : { onboarding_step: nextStepNumber(state.draft.step, "website") }),
+      })
       .eq("id", businessId)
-      .eq("owner_user_id", userId);
+      .eq("owner_user_id", userId)
+      .eq("status", "onboarding");
     if (error) throw new Error(`Could not update business: ${error.message}`);
   } else {
     const allowed = await canAddBusiness(agency.data.id);
@@ -145,19 +152,53 @@ async function keepActiveBusiness(userId: string): Promise<void> {
 
 /** The business's onboarding_step, null when unset, undefined when it is not the user's. */
 export async function ownStep(userId: string, businessId: string): Promise<number | null | undefined> {
+  return stepOf(userId, businessId, false);
+}
+
+/**
+ * Like ownStep, but only for the user's draft (status "onboarding"). The wizard's saves use this: once setup finishes
+ * the business is live, and its details, competitors, questions and checks change in the app, where an ended plan is
+ * read-only. Setup's last save (the models step, or the card step's finish) is what moves it out of "onboarding".
+ */
+export async function ownDraftStep(userId: string, businessId: string): Promise<number | null | undefined> {
+  return stepOf(userId, businessId, true);
+}
+
+async function stepOf(userId: string, businessId: string, draftOnly: boolean): Promise<number | null | undefined> {
   const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("businesses")
-    .select("onboarding_step")
-    .eq("id", businessId)
-    .eq("owner_user_id", userId)
-    .maybeSingle();
+  let query = supabase.from("businesses").select("onboarding_step").eq("id", businessId).eq("owner_user_id", userId);
+  if (draftOnly) query = query.eq("status", "onboarding");
+  const { data, error } = await query.maybeSingle();
   if (error) throw new Error(`Could not load business: ${error.message}`);
   return data ? data.onboarding_step : undefined;
 }
 
+/** True when the business is the user's draft, still being set up. */
+export async function isOwnDraft(userId: string, businessId: string): Promise<boolean> {
+  return (await ownDraftStep(userId, businessId)) !== undefined;
+}
+
+/** What the website step starts from when the user comes back to it: the draft as saved, with no Places call. */
+export type WebsiteStepDefaults = { domain: string; hasWebsite: boolean; name: string; city: string };
+
+export async function loadWebsiteStep(userId: string, businessId: string): Promise<WebsiteStepDefaults | null> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("businesses")
+    .select("domain, has_website, name, primary_city")
+    .eq("id", businessId)
+    .eq("owner_user_id", userId)
+    .eq("status", "onboarding")
+    .maybeSingle();
+  if (error) throw new Error(`Could not load business: ${error.message}`);
+  if (!data) return null;
+  const hasWebsite = data.has_website !== false;
+  // With a website the name is the typed domain until the details step, so only a no-website draft offers it.
+  return { domain: data.domain ?? "", hasWebsite, name: hasWebsite ? "" : data.name, city: hasWebsite ? "" : (data.primary_city ?? "") };
+}
+
 export async function advanceStep(userId: string, businessId: string, saved: StepSlug): Promise<boolean> {
-  const current = await ownStep(userId, businessId);
+  const current = await ownDraftStep(userId, businessId);
   if (current === undefined) return false;
   const { error } = await createServiceClient()
     .from("businesses")

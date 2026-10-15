@@ -20,6 +20,7 @@ vi.mock("@/lib/supabase/server", () => ({
 vi.mock("./pdf", async (original) => ({ ...(await original<typeof import("./pdf")>()), renderPdf }));
 
 const { createShareLink, exportPdf } = await import("./actions");
+const { isShareLinkActive, shareForEmail } = await import("./dal");
 
 const FRIENDLY = "PDF could not be created. Try again, or use Print, Save as PDF.";
 
@@ -44,7 +45,7 @@ async function createOwner() {
   const client = createSupabaseClient(env.NEXT_PUBLIC_SUPABASE_URL, env.NEXT_PUBLIC_SUPABASE_ANON_KEY, { auth: { persistSession: false } });
   const signIn = await client.auth.signInWithPassword({ email, password });
   if (signIn.error) throw signIn.error;
-  return { businessId: business.id, client };
+  return { businessId: business.id, agencyId: agency.id, client };
 }
 
 async function liveLinks(businessId: string) {
@@ -80,14 +81,49 @@ describe("exportPdf", () => {
     expect(await liveLinks(owner.businessId)).toEqual([]);
   });
 
-  it("reuses the live share link and leaves it on", async () => {
+  it("prints through its own link and leaves the agency's live link on", async () => {
     const owner = await createOwner();
     session = owner.client;
     const link = await createShareLink({ businessId: owner.businessId });
     if (!link.ok) throw new Error("create failed");
     expect(await exportPdf({ businessId: owner.businessId })).toMatchObject({ ok: true });
-    expect(renderPdf).toHaveBeenCalledWith(`https://app.customers.test${link.data.path}`, "Sunrise Coffee Bar");
+    const printed = renderPdf.mock.calls[0][0] as string;
+    expect(printed).toMatch(/\/r\/[A-Za-z0-9_-]{43}$/);
+    expect(printed).not.toBe(`https://app.customers.test${link.data.path}`);
     expect(await liveLinks(owner.businessId)).toEqual([{ token: link.data.path.slice(3) }]);
+  });
+
+  it("never hands the PDF link to Share or the weekly email during an export", async () => {
+    const owner = await createOwner();
+    session = owner.client;
+    let shared: string | null = null;
+    let emailed: string | null = null;
+    renderPdf.mockImplementation(async (url: string) => {
+      const token = url.split("/r/")[1];
+      // The public page still opens the PDF link while the export runs.
+      expect(await isShareLinkActive(token)).toBe(true);
+      const link = await createShareLink({ businessId: owner.businessId });
+      if (!link.ok) throw new Error("create failed");
+      shared = link.data.path;
+      emailed = (await shareForEmail(owner.agencyId, owner.businessId))?.path ?? null;
+      expect(shared).not.toBe(`/r/${token}`);
+      return new TextEncoder().encode("%PDF-1.7 test");
+    });
+    expect(await exportPdf({ businessId: owner.businessId })).toMatchObject({ ok: true });
+    expect(emailed).toBe(shared);
+    // The agency's link outlives the export; the PDF link is off.
+    expect(await liveLinks(owner.businessId)).toEqual([{ token: shared!.slice(3) }]);
+    const pdfToken = (renderPdf.mock.calls[0][0] as string).split("/r/")[1];
+    expect(await isShareLinkActive(pdfToken)).toBe(false);
+  });
+
+  it("does not count a finished PDF link as a link the agency turned off", async () => {
+    const owner = await createOwner();
+    session = owner.client;
+    expect(await exportPdf({ businessId: owner.businessId })).toMatchObject({ ok: true });
+    const emailed = await shareForEmail(owner.agencyId, owner.businessId);
+    expect(emailed?.path).toMatch(/^\/r\/[A-Za-z0-9_-]{43}$/);
+    expect(await liveLinks(owner.businessId)).toEqual([{ token: emailed!.path.slice(3) }]);
   });
 
   it("refuses another agency's business and bad input", async () => {

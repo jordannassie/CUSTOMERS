@@ -855,6 +855,7 @@ A pg_cron job every 15 minutes checks, and emails the admin (at most once per ho
 - Error spike from one AI provider, Firecrawl, Places or Browserless.
 - Agencies with a negative credit balance.
 - Daily real AI cost above a set limit.
+- An agency Stripe has as paid and active while the app still shows a trial for more than 5 minutes (`paid_not_active`, checked by the app because it reads Stripe; 2026-10-15).
 
 Alerts are stored in `system_alerts` and shown on the admin Overview. The hosting provider's function logs cover everything else.
 

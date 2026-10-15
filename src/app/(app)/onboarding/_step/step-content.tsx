@@ -17,6 +17,7 @@ import {
   getModelsStep,
   getQuestionsStep,
   getSetupAddOn,
+  getWebsiteStep,
   limitMessage,
   lookupCompetitorByName,
   saveAgencyStep,
@@ -59,11 +60,14 @@ export async function StepContent({ step, state, plan, returned }: Props) {
       const blocked = await getAddBusinessBlock(next);
       if (blocked) return <UpgradeNote reason={blocked} hasBusinesses={state.hasFinishedBusiness} />;
     }
-    const details = draftId ? await getDetailsStep(draftId, next) : null;
+    // Back from a later step: what was entered shows again, so the same business sent again never starts over.
+    const saved = draftId ? await getWebsiteStep(draftId, next) : null;
     return (
       <WebsiteStep
-        defaultDomain={details?.domain ?? ""}
-        defaultNoWebsite={details ? !details.hasWebsite : false}
+        defaultDomain={saved?.domain ?? ""}
+        defaultNoWebsite={saved ? !saved.hasWebsite : false}
+        defaultName={saved?.name ?? ""}
+        defaultCity={saved?.city ?? ""}
         backHref={state.hasFinishedBusiness ? undefined : stepPath("agency")}
         plan={plan}
         save={saveWebsiteStep}

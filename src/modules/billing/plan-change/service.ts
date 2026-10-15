@@ -1,5 +1,5 @@
 import type Stripe from "stripe";
-import { planInvoiceGrants, type PlanCredits } from "../webhooks/credits";
+import { planInvoiceGrants, prorationPeriodStarts, type PlanCredits } from "../webhooks/credits";
 import type { PlanChangeStripe } from "./client";
 import { changesDroppedByCancel, changesRestoredByKeep, cancelScheduleParams, keepScheduleParams } from "./cancel-schedule";
 import { doneCopy, previewCopy, type Copy, type ScheduledNote } from "./copy";
@@ -8,11 +8,8 @@ import {
   checkChange,
   currentItems,
   idempotencyKey,
-  itemSpec,
   periodEnd,
-  phasesOf,
   PlanChangeError,
-  previewItemsFor,
   scheduleIdOf,
   subscriptionItemsFor,
   timingOf,
@@ -21,7 +18,9 @@ import {
   type PlanChangeContext,
   type Timing,
 } from "./planner";
+import { previewParams, schedulePhases } from "./preview-params";
 import { phasesOnOnePrice, phasesWithoutPending, refuseWhileLeaving } from "./pending";
+import { changeNowAroundSchedule } from "./schedule-now";
 
 // Previews and applies plan changes (MVP_SPEC 11.5, D-57). Changes made now invoice the proration at once;
 // credits for it are granted by the invoice.paid webhook (B-42), never here. Period-end changes go on a
@@ -35,6 +34,8 @@ export type PlanChangeDeps = {
   timeZone?: string;
   /** Credits left now, read for a cancel or a removal so the preview can say how many end. */
   credits?: { plan: number; topup: number };
+  /** Raises an admin alert when a pending change could not be put back after a change made now (schedule-now.ts). */
+  onScheduleLost?: (message: string) => Promise<void>;
 };
 
 export type PlanChangePreview = Copy & {
@@ -87,39 +88,8 @@ function scheduledNotes(ctx: PlanChangeContext, { schedule }: Loaded, kind: Plan
 
 const seconds = (date: Date) => Math.floor(date.getTime() / 1000);
 
-function schedulePhases(sub: Stripe.Subscription, schedule: Stripe.SubscriptionSchedule, checked: CheckedChange) {
-  const { current, next } = phasesOf(schedule);
-  return buildPhases(
-    sub,
-    { start: current.start_date, end: current.end_date, items: current.items.map(itemSpec) },
-    next ? next.items.map(itemSpec) : null,
-    checked,
-  );
-}
-
 function effectiveAt(timing: Timing, sub: Stripe.Subscription, nowSeconds: number): number {
   return timing === "now" ? nowSeconds : periodEnd(sub);
-}
-
-function previewParams(
-  { sub, schedule }: Loaded,
-  checked: CheckedChange,
-  prorationDate: number,
-): Stripe.InvoiceCreatePreviewParams | null {
-  const kind = checked.change.kind;
-  if (kind === "cancel" || kind === "keep" || kind === "keepBusiness") return null;
-  const proration_behavior = timingOf(kind) === "now" ? "always_invoice" : "none";
-  if (schedule) {
-    return { schedule: schedule.id, schedule_details: { phases: schedulePhases(sub, schedule, checked), proration_behavior } };
-  }
-  return {
-    subscription: sub.id,
-    subscription_details: {
-      items: previewItemsFor(checked),
-      proration_behavior,
-      ...(proration_behavior === "always_invoice" ? { proration_date: prorationDate } : {}),
-    },
-  };
 }
 
 export async function previewPlanChange(
@@ -139,7 +109,8 @@ export async function previewPlanChange(
   const invoice = params ? await deps.stripe.previewInvoice(params) : null;
   const extraCredits =
     invoice && timing === "now" && !trialing
-      ? planInvoiceGrants(invoice, invoice.lines.data, deps.plansByProduct, now).reduce((sum, g) => sum + g.amount, 0)
+      ? planInvoiceGrants(invoice, invoice.lines.data, deps.plansByProduct, now, prorationPeriodStarts(loaded.sub.items.data, invoice.lines.data))
+          .reduce((sum, g) => sum + g.amount, 0)
       : 0;
   const at = effectiveAt(timing, loaded.sub, previewedAt);
 
@@ -197,6 +168,9 @@ export async function applyPlanChange(
     const phases = phasesWithoutPending(sub, schedule!, change.businessId, checked.business!.name);
     if (phases) await deps.stripe.updateSchedule(schedule!.id, { phases }, `${key}:schedule`);
     else await deps.stripe.releaseSchedule(schedule!.id, `${key}:release`);
+  } else if (schedule && timing === "now" && sub.status !== "trialing") {
+    // A schedule update can't refuse a declined card, so a paid change made now goes on the subscription itself.
+    await changeNowAroundSchedule({ stripe: deps.stripe, ctx, sub, schedule, checked, previewedAt, key, onScheduleLost: deps.onScheduleLost });
   } else if (schedule) {
     const updated = await deps.stripe.updateSchedule(
       schedule.id,

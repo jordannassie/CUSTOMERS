@@ -35,12 +35,42 @@ export function monthBefore(end: Date): Date {
   );
 }
 
-/** Share of a monthly period a proration line covers: 15 of 30 days left is 0.5. */
-export function periodFraction(period: { start: number; end: number }): number {
+/**
+ * Share of a monthly period a proration line covers: 15 of 30 days left is 0.5. `periodStart` is the billing period's
+ * real start from Stripe; without it the start is worked out as a month before the end, which is wrong when the
+ * billing day is the 29th to 31st (January 31 to February 28 is 28 days, not 31).
+ */
+export function periodFraction(period: { start: number; end: number }, periodStart?: number): number {
   const end = new Date(period.end * 1000);
-  const full = end.getTime() - monthBefore(end).getTime();
+  // A start after the line's own start belongs to a later period (an event replayed after the renewal).
+  const start = periodStart !== undefined && periodStart <= period.start ? periodStart * 1000 : monthBefore(end).getTime();
+  const full = end.getTime() - start;
   if (full <= 0) return 0;
   return Math.min(1, Math.max(0, (period.end - period.start) * 1000 / full));
+}
+
+/** True when the invoice has proration lines, the only grants that need the billing period's start. */
+export function hasProrations(lines: Stripe.InvoiceLineItem[]): boolean {
+  return lines.some((l) => subscriptionDetails(l)?.proration);
+}
+
+/**
+ * For each proration line's item, the start of the billing period it is prorated against: the earliest start of the
+ * subscription's items whose period ends when the line ends. So an item added mid-period (or not on the subscription
+ * yet, in a preview) gets its cycle's start, and a period that has since renewed is not used.
+ */
+export function prorationPeriodStarts(
+  items: Pick<Stripe.SubscriptionItem, "current_period_start" | "current_period_end">[],
+  lines: Stripe.InvoiceLineItem[],
+): Map<string, number> {
+  const starts = new Map<string, number>();
+  for (const line of lines) {
+    const details = subscriptionDetails(line);
+    if (!details?.proration) continue;
+    const sameEnd = items.filter((i) => i.current_period_end === line.period.end).map((i) => i.current_period_start);
+    if (sameEnd.length > 0) starts.set(details.subscription_item, Math.min(...sameEnd));
+  }
+  return starts;
 }
 
 function isTrialStart(invoice: Stripe.Invoice, lines: Stripe.InvoiceLineItem[]): boolean {
@@ -55,12 +85,14 @@ function isTrialStart(invoice: Stripe.Invoice, lines: Stripe.InvoiceLineItem[]):
  *   unused time, e.g. Starter to Pro with 15 of 30 days left is (2,500 - 1,200) x 0.5 = +650. Downgrades never
  *   produce a negative grant; current grants stay until they expire.
  * Grants that would already be expired (a very late replay) are left out. Unknown products throw.
+ * `periodStarts`: subscription item ID to the start of its current billing period, for prorations.
  */
 export function planInvoiceGrants(
   invoice: Stripe.Invoice,
   lines: Stripe.InvoiceLineItem[],
   plans: Map<string, PlanCredits>,
   now: Date,
+  periodStarts: ReadonlyMap<string, number> = new Map(),
 ): PlannedGrant[] {
   const subLines = lines.filter((l) => subscriptionDetails(l));
   const grants: PlannedGrant[] = [];
@@ -102,10 +134,11 @@ export function planInvoiceGrants(
     }
   }
 
-  for (const group of prorations.values()) {
+  for (const [itemId, group] of prorations) {
     const charged = group.filter((l) => l.amount > 0);
     if (charged.length === 0) continue;
-    const net = group.reduce((sum, l) => sum + Math.sign(l.amount) * creditsFor(l) * periodFraction(l.period), 0);
+    const start = periodStarts.get(itemId);
+    const net = group.reduce((sum, l) => sum + Math.sign(l.amount) * creditsFor(l) * periodFraction(l.period, start), 0);
     const amount = Math.round(net);
     if (amount <= 0) continue;
     const anchor = charged.reduce((a, b) => (b.amount > a.amount ? b : a));

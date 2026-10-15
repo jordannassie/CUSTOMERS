@@ -6,8 +6,9 @@ import { createServiceClient } from "@/lib/supabase/service";
 import { liveListing } from "../../dal";
 import type { AutofillOutput } from "../../prompts/business-autofill.v1";
 import type { BusinessDetails } from "../../schema";
-import { ownStep } from "../dal";
-import { rebuildQuestionsForIndustry, sameIndustry, savedIndustry } from "../questions/rebuild/dal";
+import type { QuestionClients } from "../../questions";
+import { ownDraftStep } from "../dal";
+import { questionBasisChanged, rebuildQuestionsForIndustry, savedQuestionBasis } from "../questions/rebuild/dal";
 import { refillDetails } from "../refill";
 import type { DetailsStepInput } from "../schema";
 import { nextStepNumber } from "../steps";
@@ -64,11 +65,11 @@ export async function loadDetailsStep(userId: string, businessId: string): Promi
   return { businessId, domain: b.domain, hasWebsite: b.has_website !== false, details: refill.details, industryText, aliases: b.aliases, confirmed };
 }
 
-/** Step 4: saves what the user confirmed about their own business. False when it is not theirs. */
-export async function saveDetails(userId: string, input: DetailsStepInput): Promise<boolean> {
-  const current = await ownStep(userId, input.businessId);
+/** Step 4: saves what the user confirmed about their own draft business. False when it is not their draft. */
+export async function saveDetails(userId: string, input: DetailsStepInput, clients?: QuestionClients): Promise<boolean> {
+  const current = await ownDraftStep(userId, input.businessId);
   if (current === undefined) return false;
-  const before = await savedIndustry(input.businessId);
+  const before = await savedQuestionBasis(input.businessId);
   const { error } = await createServiceClient()
     .from("businesses")
     .update({
@@ -87,7 +88,8 @@ export async function saveDetails(userId: string, input: DetailsStepInput): Prom
     .eq("id", input.businessId)
     .eq("owner_user_id", userId);
   if (error) throw new Error(`Could not save business details: ${error.message}`);
-  // Back on this step with a new industry: the questions already made were for the old one.
-  if (!sameIndustry(before, input.industry)) await rebuildQuestionsForIndustry(input.businessId);
+  // Back on this step with a new industry, city, region or area: the questions already made were for the old one.
+  const after = { industry: input.industry, city: input.city, region: input.state || null, area: input.area === undefined ? (before?.area ?? null) : input.area };
+  if (before && questionBasisChanged(before, after)) await rebuildQuestionsForIndustry(input.businessId, clients);
   return true;
 }

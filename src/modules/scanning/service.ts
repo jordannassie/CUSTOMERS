@@ -110,7 +110,9 @@ export async function runScan(jobId: string, overrides: Partial<ScanDeps> = {}):
   });
   const charged = capture.charged();
 
-  const released = await releaseHold(holdId);
+  // The run is finished and the next scan set before the hold closes. If either write fails, the worker retries a
+  // job whose hold is still open, so the retry re-uses the saved checks, charges none twice and finishes the run.
+  // Closing the hold first left the run "running" and the due date in the past for good.
   const allFailed = errors.length === tasks.length;
   await finishRun(run.id, {
     status: allFailed ? "failed" : "completed",
@@ -121,6 +123,7 @@ export async function runScan(jobId: string, overrides: Partial<ScanDeps> = {}):
   });
   // A scan with no result keeps its due date, so the next scheduled run tries again.
   if (!allFailed) await setNextScanAt(job.businessId, nextScanAt(target.business.scanFrequency, ctx.now()));
+  const released = await releaseHold(holdId);
 
   return {
     status: allFailed ? "failed" : "done",

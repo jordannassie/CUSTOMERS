@@ -154,6 +154,50 @@ describe("settings actions", () => {
     expect(await flags()).toBe(false);
   });
 
+  it("rebuilds the suggested questions for a new city, region or area, not for other changes", async () => {
+    const seed = await createAgency();
+    await signIn(seed);
+    expect(await saveBusinessProfile(profile(seed.businessId))).toEqual({ ok: true, data: null });
+    rebuild.mockClear();
+
+    expect(await saveBusinessProfile({ ...profile(seed.businessId), phone: "(512) 555-0199", services: ["Leak repair"] })).toEqual({ ok: true, data: null });
+    expect(rebuild).not.toHaveBeenCalled();
+    expect(await saveBusinessProfile({ ...profile(seed.businessId), city: "Dallas" })).toEqual({ ok: true, data: null });
+    expect(rebuild).toHaveBeenCalledExactlyOnceWith(seed.businessId);
+    expect(await saveBusinessProfile({ ...profile(seed.businessId), city: "Dallas", region: "OK" })).toEqual({ ok: true, data: null });
+    expect(await saveBusinessProfile({ ...profile(seed.businessId), city: "Dallas", region: "OK", area: "Uptown" })).toEqual({ ok: true, data: null });
+    expect(rebuild).toHaveBeenCalledTimes(3);
+  });
+
+  it("forgets what was read from the old website when it changes, so the new one is read", async () => {
+    const seed = await createAgency();
+    await signIn(seed);
+    const facts = () => service.from("business_site_facts").select("business_id").eq("business_id", seed.businessId);
+    const listing = async () =>
+      (await service.from("businesses").select("places_id, is_chain").eq("id", seed.businessId).single().throwOnError()).data;
+    const readOldSite = async () => {
+      await service.from("businesses").update({ places_id: "ChIJ-northside", is_chain: true }).eq("id", seed.businessId).throwOnError();
+      await service.from("business_site_facts").upsert({ business_id: seed.businessId, data: { domain: "northside.example" } }).throwOnError();
+    };
+
+    // The same site in other words (case, www.) keeps everything.
+    await readOldSite();
+    expect(await saveBusinessProfile({ ...profile(seed.businessId), website: "WWW.Northside.example" })).toEqual({ ok: true, data: null });
+    expect((await facts()).data).toHaveLength(1);
+    expect(await listing()).toEqual({ places_id: "ChIJ-northside", is_chain: true });
+
+    // Another site: its facts, listing and chain flag are found again from the new website.
+    expect(await saveBusinessProfile(profile(seed.businessId))).toEqual({ ok: true, data: null });
+    expect((await facts()).data).toEqual([]);
+    expect(await listing()).toEqual({ places_id: null, is_chain: false });
+
+    // No website left: the old site's facts go, but the listing stays, since nothing could find it again.
+    await readOldSite();
+    expect(await saveBusinessProfile({ ...profile(seed.businessId), website: "" })).toEqual({ ok: true, data: null });
+    expect((await facts()).data).toEqual([]);
+    expect(await listing()).toEqual({ places_id: "ChIJ-northside", is_chain: true });
+  });
+
   it("reject bad input", async () => {
     const seed = await createAgency();
     await signIn(seed);

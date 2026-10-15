@@ -4,11 +4,12 @@ import type { PlanChangeStripe } from "../plan-change/client";
 import { formatDate } from "../plan-change/copy";
 import { itemSpec, phasesOf, PlanChangeError, scheduleIdOf, type PlanChangeContext } from "../plan-change/planner";
 import type { PlanCredits } from "../webhooks/credits";
+import type { StripeSync } from "../webhooks/sync";
 
 // Start the paid plan before the trial ends (D-16, MVP_SPEC 4.4): a trial covers 2 businesses, so a 3rd needs the
 // plan to start. Stripe ends the trial now, restarts the billing period today and charges the full month at once.
-// Nothing here writes to the database or grants credits: the webhook saves the active status and grants the
-// month's credits when that invoice is paid (B-42).
+// Then `sync` reads the subscription and its latest invoice back from Stripe and applies them with the webhook's own
+// handlers (A1, 2026-10-15), so the plan starts even when invoice.paid is missed; the webhook later changes nothing.
 
 export type EndTrialDeps = {
   stripe: PlanChangeStripe;
@@ -16,6 +17,8 @@ export type EndTrialDeps = {
   now: () => Date;
   /** For the dates in the sentences; UTC when unknown. */
   timeZone?: string;
+  /** Applies the subscription and its paid invoice from Stripe like the webhooks (webhooks/sync.ts). */
+  sync?: (subscriptionId: string) => Promise<StripeSync>;
 };
 
 export type PlanNowOffer = {
@@ -26,7 +29,8 @@ export type PlanNowOffer = {
   lines: string[];
 };
 
-export type PlanNowDone = { alreadyActive: boolean };
+/** `started`: the plan is saved as active here and its credits are granted, so setup can go on now. */
+export type PlanNowDone = { alreadyActive: boolean; started: boolean };
 
 export const DECLINED =
   "Your card was declined, so nothing was charged and your trial goes on. Update your card with Manage card and invoices on Billing, then try again.";
@@ -98,20 +102,45 @@ export async function planNowOffer(ctx: PlanChangeContext, deps: EndTrialDeps): 
   return { amountCents, credits, businessCount, lines };
 }
 
+/** Applies what Stripe now says; true once it is paid and active. Without a sync (fixtures) the webhook does it. */
+async function synced(sub: Stripe.Subscription, deps: EndTrialDeps): Promise<boolean> {
+  if (!deps.sync) return false;
+  try {
+    const result = await deps.sync(sub.id);
+    return result.paid && result.status === "active";
+  } catch (error) {
+    // The charge went through; the page's status check syncs again, so this never fails the request.
+    console.error("[billing/end-trial] sync after the charge failed", error instanceof Error ? error.message : String(error));
+    return false;
+  }
+}
+
+// Two clicks at once share one try, so Stripe is asked once (the idempotency key also covers other instances).
+const inFlight = new Map<string, Promise<PlanNowDone>>();
+
 /**
  * Ends the trial now. With a change scheduled for the trial end (a downgrade or removal, D-57), the schedule's
  * pending items are put in place first, still free during the trial, and the schedule is released: Stripe refuses
  * a new trial end on a subscription a schedule controls (A4). The trial then ends with payment_behavior
  * error_if_incomplete, so a declined card changes nothing and the trial goes on.
  * `attemptId` is new for each try, so a double click charges once and a retry after a decline is a new request.
+ * When Stripe already shows the trial ended, nothing is charged again: it only syncs.
  */
 export async function endTrialNow(ctx: PlanChangeContext, attemptId: string, deps: EndTrialDeps): Promise<PlanNowDone> {
+  const key = `end-trial:${ctx.agencyId}:${attemptId}`;
+  const running = inFlight.get(key);
+  if (running) return running;
+  const attempt = endTrial(ctx, key, deps).finally(() => inFlight.delete(key));
+  inFlight.set(key, attempt);
+  return attempt;
+}
+
+async function endTrial(ctx: PlanChangeContext, key: string, deps: EndTrialDeps): Promise<PlanNowDone> {
   const loaded = await load(ctx, deps);
   const { sub, schedule } = loaded;
-  // Already started (a second click, or a retry after the first went through): nothing more to do.
-  if (sub.status === "active" && !endsWithoutPlan(loaded)) return { alreadyActive: true };
+  // Already started (a second click, or a retry after the first went through): only bring this side up to date.
+  if (sub.status === "active" && !endsWithoutPlan(loaded)) return { alreadyActive: true, started: await synced(sub, deps) };
   refuseUnlessTrialing(loaded);
-  const key = `end-trial:${ctx.agencyId}:${attemptId}`;
 
   if (schedule) {
     const { current, next } = phasesOf(schedule);
@@ -136,5 +165,5 @@ export async function endTrialNow(ctx: PlanChangeContext, attemptId: string, dep
   );
   // error_if_incomplete answers a decline with a 402; anything else that is not active means it was not paid.
   if (updated.status !== "active") throw new PlanChangeError(402, DECLINED);
-  return { alreadyActive: false };
+  return { alreadyActive: false, started: await synced(updated, deps) };
 }

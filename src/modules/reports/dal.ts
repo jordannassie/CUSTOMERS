@@ -27,11 +27,13 @@ async function ownsBusiness(agencyId: string, businessId: string): Promise<boole
   return data !== null;
 }
 
+// The agency's own link. PDF export links (for_pdf) are never handed out: they are turned off after the export.
 async function activeShare(businessId: string): Promise<ShareLink | null> {
   const { data, error } = await createServiceClient()
     .from("report_shares")
     .select("id, token")
     .eq("business_id", businessId)
+    .eq("for_pdf", false)
     .is("revoked_at", null)
     .order("created_at", { ascending: false })
     .limit(1)
@@ -63,9 +65,10 @@ export async function createShare(agencyId: string, businessId: string): Promise
 }
 
 /**
- * Runs `print` with a live share page for one of the agency's businesses (B-60). Reuses the live link; a link
- * made only for the PDF is turned off again afterwards, so exporting never leaves a public link the agency did
- * not choose to share. Null when not the agency's business.
+ * Runs `print` with a live share page for one of the agency's businesses (B-60). Always makes its own for_pdf link
+ * and turns only that one off afterwards, so exporting never leaves a public link the agency did not choose to
+ * share, and Share or the weekly email never hand out a link that is about to stop working. Null when not the
+ * agency's business.
  */
 export async function withSharePage<T>(
   agencyId: string,
@@ -82,27 +85,29 @@ export async function withSharePage<T>(
   if (error) throw new Error(`Reports: could not read the business: ${error.message}`);
   if (!business) return null;
 
-  const existing = await activeShare(businessId);
-  const link = existing ?? (await createShare(agencyId, businessId));
-  if (!link) return null;
+  const token = newShareToken();
+  const { data: link, error: insertError } = await createServiceClient()
+    .from("report_shares")
+    .insert({ business_id: businessId, token, for_pdf: true })
+    .select("id")
+    .single();
+  if (insertError) throw new Error(`Reports: could not create the PDF link: ${insertError.message}`);
   try {
-    return await print({ path: link.path, businessName: business.name });
+    return await print({ path: sharePath(token), businessName: business.name });
   } finally {
-    // Only this one row: a link the agency makes meanwhile from Share must stay on.
-    if (!existing) {
-      const { error: revokeError } = await createServiceClient()
-        .from("report_shares")
-        .update({ revoked_at: new Date().toISOString() })
-        .eq("id", link.id);
-      if (revokeError) throw new Error(`Reports: could not turn off the PDF link: ${revokeError.message}`);
-    }
+    // Only this one row: the agency's own link stays as it is.
+    const { error: revokeError } = await createServiceClient()
+      .from("report_shares")
+      .update({ revoked_at: new Date().toISOString() })
+      .eq("id", link.id);
+    if (revokeError) throw new Error(`Reports: could not turn off the PDF link: ${revokeError.message}`);
   }
 }
 
 /**
  * The share link for the weekly report email (B-62): the live one, or a new one through createShare. Null when
- * any link for the business was turned off before, so an email never switches a report back on without them.
- * That includes the short-lived PDF links (withSharePage), which cannot be told apart from the agency's own.
+ * the agency turned a link for the business off before, so an email never switches a report back on without them.
+ * PDF export links (for_pdf) do not count: the export turns those off itself.
  */
 export async function shareForEmail(agencyId: string, businessId: string): Promise<ShareLink | null> {
   const existing = await activeShare(businessId);
@@ -111,6 +116,7 @@ export async function shareForEmail(agencyId: string, businessId: string): Promi
     .from("report_shares")
     .select("id", { count: "exact", head: true })
     .eq("business_id", businessId)
+    .eq("for_pdf", false)
     .not("revoked_at", "is", null);
   if (error) throw new Error(`Reports: could not read share links: ${error.message}`);
   return count ? null : createShare(agencyId, businessId);
@@ -122,11 +128,13 @@ export async function revokeShare(agencyId: string, id: string): Promise<boolean
   const { data: share, error } = await db.from("report_shares").select("business_id").eq("id", id).maybeSingle();
   if (error) throw new Error(`Reports: could not read the share link: ${error.message}`);
   if (!share || !(await ownsBusiness(agencyId, share.business_id))) return false;
-  // Every live link for the business, so a second link from a double click can never stay on unseen.
+  // Every live link for the business, so a second link from a double click can never stay on unseen. A PDF
+  // export running now keeps its own link until it finishes, then turns it off itself.
   const { error: updateError } = await db
     .from("report_shares")
     .update({ revoked_at: new Date().toISOString() })
     .eq("business_id", share.business_id)
+    .eq("for_pdf", false)
     .is("revoked_at", null);
   if (updateError) throw new Error(`Reports: could not turn off the share link: ${updateError.message}`);
   return true;

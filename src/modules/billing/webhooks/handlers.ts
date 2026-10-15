@@ -2,6 +2,7 @@ import type Stripe from "stripe";
 import { lineProductId, planInvoiceGrants } from "./credits";
 import type { AgencyStatus, BusinessItem, WebhookAgency, WebhookStore } from "./dal";
 import { paymentFailedEmail, trialEndingEmail, type SendBillingEmail } from "./emails";
+import { periodStartsFor, withBusinessIds } from "./stripe-reads";
 
 // One handler per Stripe event (MVP_SPEC 11.3, 11.5, D-39, D-57). Everything outside comes in through deps,
 // so fixture tests run them with no Stripe calls and no real email sends.
@@ -68,31 +69,19 @@ export function cancelAt(sub: Stripe.Subscription, currentPeriodEnd: number | nu
 }
 
 /**
- * BUG-104: Checkout does not copy line item metadata to the subscription items, so a subscription started there has
- * items without business_id. The business comes from the session's line items, matched by price (each business
- * has its own, BUG-103), and is written onto the item once, for later plan changes.
+ * An event for a subscription other than the agency's saved one (a duplicate checkout, BUG-118) must not change the
+ * agency: a cancelled duplicate would otherwise mark a paying agency and all its businesses canceled. A subscription
+ * is linked when the agency has none yet (subscription.created can come before checkout.session.completed) or its
+ * saved one has ended (the plan starts again).
  */
-async function withBusinessIds(deps: WebhookDeps, subscriptionId: string, items: Stripe.SubscriptionItem[]) {
-  if (items.every((i) => i.metadata?.business_id)) return items;
-  const fromCheckout = await deps.stripe.checkoutBusinessIds(subscriptionId);
-  const found = new Map(items.flatMap((i) => (i.metadata?.business_id ? [] : fromCheckout.has(i.price.id) ? [[i.id, fromCheckout.get(i.price.id)!] as const] : [])));
-  // An item whose plan changed since checkout has a new price: when one item and one checkout business are left,
-  // they belong together (BUG-121).
-  const left = items.filter((i) => !i.metadata?.business_id && !found.has(i.id));
-  const used = new Set([...items.map((i) => i.metadata?.business_id), ...found.values()]);
-  const unused = [...new Set(fromCheckout.values())].filter((id) => !used.has(id));
-  if (left.length === 1 && unused.length === 1) found.set(left[0].id, unused[0]);
-  return Promise.all(
-    items.map(async (item) => {
-      const businessId = found.get(item.id);
-      if (!businessId) return item;
-      await deps.stripe.tagItem(item.id, businessId);
-      return { ...item, metadata: { ...item.metadata, business_id: businessId } };
-    }),
-  );
+export function isOtherSubscription(agency: WebhookAgency, subscriptionId: string): boolean {
+  if (!agency.subscriptionId || agency.subscriptionId === subscriptionId || agency.status === "canceled") return false;
+  console.warn("[stripe/webhook] ignored: not the agency's subscription", agency.id, subscriptionId);
+  return true;
 }
 
 async function syncSubscription(deps: WebhookDeps, sub: Stripe.Subscription, agency: WebhookAgency) {
+  if (isOtherSubscription(agency, sub.id)) return;
   const items = sub.items.has_more ? await deps.stripe.listSubscriptionItems(sub.id) : sub.items.data;
   const plans = await deps.store.plansByProduct();
   const status = agencyStatusFor(sub.status);
@@ -111,7 +100,7 @@ async function syncSubscription(deps: WebhookDeps, sub: Stripe.Subscription, age
   if (status === "canceled") return deps.store.setBusinessStatus(agency.id, "canceled");
 
   const businessItems: BusinessItem[] = [];
-  for (const item of await withBusinessIds(deps, sub.id, items)) {
+  for (const item of await withBusinessIds(deps.stripe, sub.id, items)) {
     const plan = plans.get(idOf(item.price.product) ?? "");
     if (!plan) throw new Error(`subscription item ${item.id}: product is not a plan`);
     businessItems.push({
@@ -131,12 +120,13 @@ async function checkoutCompleted(deps: WebhookDeps, session: Stripe.Checkout.Ses
 
   if (session.mode === "subscription") {
     const subscriptionId = idOf(session.subscription);
+    if (subscriptionId && isOtherSubscription(agency, subscriptionId)) return;
     await deps.store.linkStripe(agency.id, { customerId: idOf(session.customer), subscriptionId });
     if (!subscriptionId) return;
     // customer.subscription.created can come before the session is complete, when its items can't be matched to a
     // business yet (BUG-104), so the businesses are saved again from here.
     const sub = await deps.stripe.retrieveSubscription(subscriptionId);
-    await syncSubscription(deps, sub, agency);
+    await syncSubscription(deps, sub, { ...agency, subscriptionId });
     // A missed invoice.paid left a new account linked but at 0 credits (A1). The first invoice is granted here too,
     // with the same grants and keys as invoicePaid, so the webhook arriving later grants nothing more.
     const invoiceId = idOf(sub.latest_invoice);
@@ -172,8 +162,9 @@ async function invoicePaid(deps: WebhookDeps, invoice: Stripe.Invoice) {
 async function grantInvoice(deps: WebhookDeps, invoice: Stripe.Invoice, agency: WebhookAgency) {
   const lines = invoice.lines.has_more ? await deps.stripe.listInvoiceLines(invoice.id!) : invoice.lines.data;
   const plans = await deps.store.plansByProduct();
+  const periodStarts = await periodStartsFor(deps.stripe, invoiceSubscription(invoice)?.subscriptionId ?? null, invoice.id, lines);
 
-  for (const grant of planInvoiceGrants(invoice, lines, plans, deps.now())) {
+  for (const grant of planInvoiceGrants(invoice, lines, plans, deps.now(), periodStarts)) {
     const { sourceId, amount, expiresAt } = grant;
     if (grant.source === "trial") await deps.store.grantTrial({ agencyId: agency.id, sourceId, amount, expiresAt });
     else await deps.store.grant({ agencyId: agency.id, source: grant.source, sourceId, amount, expiresAt });
@@ -191,6 +182,7 @@ async function invoicePaymentFailed(deps: WebhookDeps, invoice: Stripe.Invoice) 
   if (!sub) return;
   const agency = await requireAgency(deps, { agencyId: sub.agencyId, customerId: idOf(invoice.customer) });
   if (invoice.status === "paid") return;
+  if (sub.subscriptionId && isOtherSubscription(agency, sub.subscriptionId)) return;
   const status = sub.subscriptionId ? (await deps.stripe.retrieveSubscription(sub.subscriptionId)).status : "past_due";
   if (status !== "past_due" && status !== "unpaid") return;
   await deps.store.updateAgency(agency.id, { status: "past_due" });

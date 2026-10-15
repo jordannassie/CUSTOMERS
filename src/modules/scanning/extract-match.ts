@@ -1,5 +1,6 @@
 // Matches extracted names to one business and its tracked competitors (MVP_SPEC 5.2, D-74).
 // Runs per business on the shared extraction, so a cache hit needs no new AI call.
+import { namesBranch } from "./branch";
 import type { ExtractedName } from "./extract";
 import type { MentionTarget } from "./mentions";
 import { brandForms, coreName, domainOf, findDomain, findName, isGenericName } from "./mention-text";
@@ -27,11 +28,13 @@ export function alsoRecommended(matched: MatchedName[]): MatchedName[] {
 export function isSameBusiness(extractedName: string, target: MentionTarget): boolean {
   const got = coreName(extractedName);
   if (!got) return false;
-  // A branch (step 7): "Bennu Coffee" alone is the chain. Its full name, an alias, or a name with its place counts.
+  // A branch (step 7): "Bennu Coffee" alone is the chain. Its full name, an alias, or the chain's name with its place
+  // or area counts; the place alone does not ("Houndstooth Coffee - Congress Ave", "East Austin Coffee House").
   if (target.branch) {
+    const { brand, places } = target.branch;
     return (
       [target.name, ...(target.aliases ?? [])].some((known) => coreName(known) === got) ||
-      target.branch.places.some((p) => findName(got, coreName(p)).length > 0)
+      places.some((place) => namesBranch(extractedName, target.name, { brand, place }))
     );
   }
   const domain = domainOf(target.website);

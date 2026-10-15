@@ -74,7 +74,14 @@ export async function loadSharedQuestions(industry: string, city: string, region
   const db = createServiceClient();
   // Exact matches ignoring case: % and _ in what the user typed are not wildcards.
   const exact = (v: string) => v.trim().replace(/[%_\\]/g, "\\$&");
-  let peers = db.from("businesses").select("id").ilike("industry", exact(industry)).ilike("primary_city", exact(city)).is("deleted_at", null);
+  // Set-up businesses only: a draft's questions are not settled yet, and a deleted one's are not shared.
+  let peers = db
+    .from("businesses")
+    .select("id")
+    .ilike("industry", exact(industry))
+    .ilike("primary_city", exact(city))
+    .is("deleted_at", null)
+    .neq("status", "onboarding");
   if (region) peers = peers.ilike("primary_region", exact(region));
   const { data: businesses, error } = await peers.order("created_at").limit(5);
   if (error) throw new Error(`Could not load businesses for shared questions: ${error.message}`);
@@ -84,6 +91,9 @@ export async function loadSharedQuestions(industry: string, city: string, region
       .select("prompt, buyer_intent")
       .eq("business_id", b.id)
       .eq("source", "library")
+      // The questions it asks now: never ones it paused or removed.
+      .eq("active", true)
+      .is("removed_at", null)
       .order("created_at");
     if (readError) throw new Error(`Could not load shared questions: ${readError.message}`);
     const set = data.filter((q) => INTENTS.includes(q.buyer_intent as Intent)).map((q) => ({ text: q.prompt, intent: q.buyer_intent as Intent }));
@@ -124,7 +134,8 @@ async function recordAutofillProblems(request: AutofillRequest, problems: Autofi
  * Runs auto-fill for one of the user's businesses. Returns null when the business is not theirs.
  * Stores only place_id from Places and the site's own facts (D-73); the form values go back to
  * the screen and are saved only when the user confirms them (B-36). With no website, no place_id
- * is saved here: the user picks their listing first (confirmBusinessPlace).
+ * is saved here: the user picks their listing first (confirmBusinessPlace). Drafts only: a live business's listing and
+ * chain flag are never rewritten by setup.
  */
 export async function runBusinessAutofill(
   userId: string,
@@ -138,6 +149,7 @@ export async function runBusinessAutofill(
     .select("id")
     .eq("id", businessId)
     .eq("owner_user_id", userId)
+    .eq("status", "onboarding")
     .maybeSingle();
   if (error) throw new Error(`Could not load business: ${error.message}`);
   if (!business) return null;
@@ -165,7 +177,7 @@ export async function runBusinessAutofill(
 
 /**
  * "Is one of these your business?" (MVP_SPEC 3.3): saves the listing the user picked, or clears it for
- * "None of these". Only place_id is kept (D-73). False when it is not the user's business without a website.
+ * "None of these". Only place_id is kept (D-73). False when it is not the user's draft without a website.
  */
 export async function saveBusinessPlace(userId: string, businessId: string, placeId: string | null): Promise<boolean> {
   const supabase = await createClient();
@@ -175,6 +187,7 @@ export async function saveBusinessPlace(userId: string, businessId: string, plac
     .eq("id", businessId)
     .eq("owner_user_id", userId)
     .eq("has_website", false)
+    .eq("status", "onboarding")
     .maybeSingle();
   if (error) throw new Error(`Could not load business: ${error.message}`);
   if (!business) return false;

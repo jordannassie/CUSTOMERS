@@ -4,6 +4,7 @@ import { z } from "zod";
 import { authFailure, requireAgency, type ActionResult } from "@/modules/auth";
 import { CHOOSE_PLAN_HREF } from "@/modules/workspace";
 import { checkoutFixtures, liveCheckoutClient } from "../checkout-client";
+import { recoverPlanCheckout } from "../checkout-recovery";
 import { getPlanPrice } from "../dal";
 import { appOrigin } from "../origin";
 import { planPriceData } from "../plan-price";
@@ -11,8 +12,8 @@ import { loadChoosePlanAgency, loadChoosePlanRows } from "./dal";
 import { planSessionParams } from "./params";
 import { choosePlanState, planStarted } from "./service";
 
-// Choose plan (BUG-079, BUG-066). Each action checks auth itself; the agency always comes from the session. Nothing
-// here marks the agency paid: only the Stripe webhook does that (MVP_SPEC 11.3).
+// Choose plan (BUG-079, BUG-066). Each action checks auth itself; the agency always comes from the session. The agency
+// is marked paid only from what Stripe says, through the webhook's own handlers (MVP_SPEC 11.3, A1).
 
 const planInput = z.object({ planId: z.string().regex(/^[a-z0-9_]{1,64}$/) });
 const badInput = { ok: false, status: 400, error: "Something was wrong with that request. Refresh the page and try again." } as const;
@@ -60,13 +61,20 @@ export async function startPlanCheckout(input: unknown): Promise<ActionResult<{ 
   return { ok: true, data: { clientSecret: created.clientSecret } };
 }
 
-/** Polled after the card is accepted: true once the webhook has started the plan. */
+/**
+ * Polled after the card is accepted, and run by "Check again": true once the plan has started. Until then each call
+ * looks for the completed checkout in Stripe and applies it with the webhook's own handler, so a missed webhook
+ * never leaves the page waiting (A1, 2026-10-15).
+ */
 export async function getPlanStartStatus(): Promise<ActionResult<{ started: boolean }>> {
-  let agencyId: string;
+  let session;
   try {
-    agencyId = (await requireAgency()).agency.id;
+    session = await requireAgency();
   } catch (error) {
     return authFailure(error);
   }
+  const agencyId = session.agency.id;
+  if (planStarted(await loadChoosePlanAgency(agencyId))) return { ok: true, data: { started: true } };
+  await recoverPlanCheckout(agencyId, session.user.email ?? null);
   return { ok: true, data: { started: planStarted(await loadChoosePlanAgency(agencyId)) } };
 }

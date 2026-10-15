@@ -3,7 +3,7 @@ import { getCurrentAgency, requireUser } from "@/modules/auth";
 import { canAddBusiness } from "@/modules/entitlements";
 import { previewSetupAddOn, type SetupAddOn, type TrialOffer } from "@/modules/billing";
 import { awaitingTrialCredits, loadCardStep } from "./card/dal";
-import { loadWizardState, type WizardContext } from "./dal";
+import { loadWebsiteStep, loadWizardState, type WebsiteStepDefaults, type WizardContext } from "./dal";
 import { loadDetailsStep, type DetailsStep } from "./details/dal";
 import { loadModelsStep, loadQuestionsStep, selectedPlan, type ModelsStep, type QuestionsStep } from "./questions/dal";
 
@@ -28,6 +28,12 @@ export async function getSetupAddOn(businessId: string, next: string): Promise<S
   await requireUser({ next });
   const agency = await getCurrentAgency();
   return agency ? previewSetupAddOn(agency.id, businessId) : null;
+}
+
+/** The draft's saved website, or name and city, so going Back to the website step shows what was entered. */
+export async function getWebsiteStep(businessId: string, next: string): Promise<WebsiteStepDefaults | null> {
+  const user = await requireUser({ next });
+  return loadWebsiteStep(user.id, businessId);
 }
 
 export async function getDetailsStep(businessId: string, next: string): Promise<DetailsStep | null> {

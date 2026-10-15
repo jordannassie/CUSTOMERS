@@ -1,7 +1,8 @@
 import "server-only";
-// A business whose industry changes after its questions were made (back on the details step, or in Settings) gets
-// questions for the new industry: a bakery's "best sushi" questions say nothing about a coffee shop. The questions
-// we suggested are set inactive, never deleted, so past scan results keep them; the user's own questions stay.
+// A business whose industry or place changes after its questions were made (back on the details step, or in Settings)
+// gets questions for the new one: a bakery's "best sushi" questions say nothing about a coffee shop, and questions
+// about Austin say nothing about a shop that moved to Dallas. The questions we suggested are removed (inactive with
+// removed_at, like any other removal), never deleted, so past scan results keep them; the user's own questions stay.
 import { createServiceClient } from "@/lib/supabase/service";
 import { maxQuestions } from "@/modules/entitlements";
 import { liveQuestionClients } from "../../../dal";
@@ -16,17 +17,29 @@ export function sameIndustry(a: string | null | undefined, b: string | null | un
   return (a ?? "").trim().toLowerCase() === (b ?? "").trim().toLowerCase();
 }
 
-/** The saved industry; the caller has already checked the business is the user's. */
-export async function savedIndustry(businessId: string): Promise<string | null> {
-  const { data, error } = await createServiceClient().from("businesses").select("industry").eq("id", businessId).maybeSingle();
+/** What the suggested questions are written for: the trade and the place. */
+export type QuestionBasis = { industry: string | null; city: string | null; region: string | null; area: string | null };
+
+/** True when the trade, city, region or area changed (ignoring case and spacing), so the suggestions are out of date. */
+export function questionBasisChanged(before: QuestionBasis, after: QuestionBasis): boolean {
+  return (["industry", "city", "region", "area"] as const).some((k) => !sameIndustry(before[k], after[k]));
+}
+
+/** The saved industry and place; the caller has already checked the business is the user's. */
+export async function savedQuestionBasis(businessId: string): Promise<QuestionBasis | null> {
+  const { data, error } = await createServiceClient()
+    .from("businesses")
+    .select("industry, primary_city, primary_region, primary_area")
+    .eq("id", businessId)
+    .maybeSingle();
   if (error) throw new Error(`Could not load business: ${error.message}`);
-  return data?.industry ?? null;
+  return data && { industry: data.industry, city: data.primary_city, region: data.primary_region, area: data.primary_area };
 }
 
 export type RebuildResult = { rebuilt: false } | { rebuilt: true; added: number; retired: number };
 
 /**
- * Replaces the business's suggested questions with a set for its current industry. Does nothing before the first
+ * Replaces the business's suggested questions with a set for its current industry and place. Does nothing before the first
  * set exists: the questions step makes that one. Call only after the caller has checked the business is the user's.
  */
 export async function rebuildQuestionsForIndustry(businessId: string, clients?: QuestionClients): Promise<RebuildResult> {
@@ -39,13 +52,14 @@ export async function rebuildQuestionsForIndustry(businessId: string, clients?: 
   if (error) throw new Error(`Could not load business: ${error.message}`);
   if (!b?.primary_city) return { rebuilt: false };
 
-  const { data: active, error: activeError } = await db
+  const { data: current, error: activeError } = await db
     .from("tracked_prompts")
-    .select("id, prompt, source")
+    .select("id, prompt, source, active")
     .eq("business_id", businessId)
-    .eq("active", true);
+    .is("removed_at", null);
   if (activeError) throw new Error(`Could not load questions: ${activeError.message}`);
-  if (!active?.length) return { rebuilt: false };
+  const active = (current ?? []).filter((q) => q.active);
+  if (!active.length) return { rebuilt: false };
 
   const questionClients = clients ?? liveQuestionClients({ accountUserId: b.owner_user_id, businessId });
   const set = await prepareQuestions(
@@ -69,7 +83,8 @@ export async function rebuildQuestionsForIndustry(businessId: string, clients?: 
   if (set.error) console.warn(`Question rebuild fell back (${set.source}): ${set.error}`);
 
   const own = active.filter((q) => q.source === "custom");
-  const retired = active.filter((q) => q.source !== "custom").map((q) => q.id);
+  // Paused suggestions go too: Resume would bring back a question for the old trade or place.
+  const retired = (current ?? []).filter((q) => q.source !== "custom").map((q) => q.id);
   const limit = (await maxQuestions(businessId)).limit ?? QUESTION_CAP;
   const taken = new Set(own.map((q) => q.prompt.trim().toLowerCase()));
   const location = cityLabel(b.primary_city, b.primary_region);
@@ -93,7 +108,12 @@ export async function rebuildQuestionsForIndustry(businessId: string, clients?: 
     if (insertError) throw new Error(`Could not save the new questions: ${insertError.message}`);
   }
   if (retired.length) {
-    const { error: retireError } = await db.from("tracked_prompts").update({ active: false }).in("id", retired).eq("business_id", businessId);
+    // removed_at too, or the Questions page shows them as paused with Resume, and they block adding the same text.
+    const { error: retireError } = await db
+      .from("tracked_prompts")
+      .update({ active: false, removed_at: new Date().toISOString() })
+      .in("id", retired)
+      .eq("business_id", businessId);
     if (retireError) throw new Error(`Could not retire the old questions: ${retireError.message}`);
   }
   return { rebuilt: true, added: rows.length, retired: retired.length };

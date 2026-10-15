@@ -23,6 +23,19 @@ describe("buildExplainInput", () => {
     expect(keys).toEqual({ c1: BEAN_HOUSE_ID, c2: DAILY_GRIND_ID });
   });
 
+  it("counts competitors from saved checks that hold only { name, position } (no mentioned field)", () => {
+    const saved = COFFEE_SOURCES.checks.map((c) => ({
+      ...c,
+      competitorsMentioned: (c.competitorsMentioned as { name: string }[]).map(({ name }, i) => ({ name, position: i + 1 })),
+    }));
+    const built = buildExplainInput({ ...COFFEE_SOURCES, checks: saved }).input;
+    expect(built.competitors.map((c) => [c.name, c.answersNamingThem])).toEqual([
+      ["Bean House", 5],
+      ["Daily Grind", 3],
+    ]);
+    expect(built.questions.flatMap((q) => q.competitorsNamed)).toContain("Bean House");
+  });
+
   it("names an assistant that was asked but has no answers, instead of dropping it (BUG-077)", () => {
     const withoutClaude = { ...COFFEE_SOURCES, models: ["openai", "anthropic", "perplexity"], checks: COFFEE_SOURCES.checks.filter((c) => c.provider !== "anthropic") };
     const { input: scan } = buildExplainInput(withoutClaude);

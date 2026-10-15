@@ -32,7 +32,7 @@ describe("start my plan now", () => {
 
   it("ends the trial now: one charge for the month, plan credits from the paid invoice, status active", async () => {
     const s = trial();
-    expect(await endTrialNow(s.ctx, ATTEMPT, s.deps)).toEqual({ alreadyActive: false });
+    expect(await endTrialNow(s.ctx, ATTEMPT, s.deps)).toEqual({ alreadyActive: false, started: false });
 
     expect(updates(s)).toEqual([
       expect.objectContaining({
@@ -55,7 +55,7 @@ describe("start my plan now", () => {
   it("is idempotent: a second click, or two at once, charges once", async () => {
     const s = trial();
     await Promise.all([endTrialNow(s.ctx, ATTEMPT, s.deps), endTrialNow(s.ctx, ATTEMPT, s.deps)]);
-    expect(await endTrialNow(s.ctx, ATTEMPT, s.deps)).toEqual({ alreadyActive: true });
+    expect(await endTrialNow(s.ctx, ATTEMPT, s.deps)).toEqual({ alreadyActive: true, started: false });
     expect(s.stripe.invoices).toHaveLength(1);
     expect(new Set(updates(s).map((c) => c.key))).toEqual(new Set([`end-trial:agency-1:${ATTEMPT}:subscription`]));
   });
@@ -63,7 +63,7 @@ describe("start my plan now", () => {
   it("refuses when there is no trial to end", async () => {
     const active = trial({ status: "active" });
     await expect(planNowOffer(active.ctx, active.deps)).rejects.toMatchObject({ status: 409 });
-    expect(await endTrialNow(active.ctx, ATTEMPT, active.deps)).toEqual({ alreadyActive: true });
+    expect(await endTrialNow(active.ctx, ATTEMPT, active.deps)).toEqual({ alreadyActive: true, started: false });
     expect(updates(active)).toEqual([]);
 
     const pastDue = trial({ status: "active" });
@@ -93,7 +93,7 @@ describe("start my plan now", () => {
     expect(s.stripe.subscription().status).toBe("trialing");
     expect(s.stripe.invoices).toEqual([]);
 
-    expect(await endTrialNow(s.ctx, RETRY, s.deps)).toEqual({ alreadyActive: false });
+    expect(await endTrialNow(s.ctx, RETRY, s.deps)).toEqual({ alreadyActive: false, started: false });
     expect(s.stripe.subscription().status).toBe("active");
   });
 

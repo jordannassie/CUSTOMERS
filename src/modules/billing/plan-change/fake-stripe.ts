@@ -1,8 +1,8 @@
 import type Stripe from "stripe";
-import { invoice, line } from "../stripe-objects";
+import { invoice } from "../stripe-objects";
 import type { PlanChangeStripe } from "./client";
 import type { ItemSpec } from "./planner";
-import { endsPlan, mergedMetadata, monthAfter, noUpcomingInvoice, PRICES, pricedSpec, prorationLines, scheduleObject, seededPrices, subscriptionObject, uniquePrices } from "./fake-stripe-objects";
+import { endsPlan, mergedMetadata, monthAfter, noUpcomingInvoice, PRICES, pricedSpec, prorationLines, renewalInvoice, scheduleObject, seededPrices, subscriptionObject, uniquePrices } from "./fake-stripe-objects";
 import type { FakeSchedule, Item, Phase, Priced, PriceTable } from "./fake-stripe-objects";
 
 export { at, PRICES, type PriceTable } from "./fake-stripe-objects";
@@ -87,32 +87,24 @@ export class FakeStripe implements PlanChangeStripe {
 
   private pricedAll = (items: unknown): Priced[] => uniquePrices((items as ItemSpec[]).map((i) => this.priced(i)));
 
-  private renewalInvoice(items: Priced[], start: number): Stripe.Invoice {
-    const end = monthAfter(start);
-    return invoice({
-      customer: this.customerId,
-      subscriptionId: this.subscriptionId,
-      billingReason: "subscription_cycle",
-      lines: items.map((i) =>
-        line({ product: this.prices[i.price].product, amount: this.prices[i.price].unitAmount, subscriptionId: this.subscriptionId, start, end }),
-      ),
-      status: "open",
-    });
-  }
+  private renewalInvoice = (items: Priced[], start: number): Stripe.Invoice => renewalInvoice(this, items, start);
 
   private prorationInvoice(to: Priced[], date: number): Stripe.Invoice {
     const lines = this.status === "trialing" ? [] : prorationLines(this, this.specs(), to, date);
     return invoice({ customer: this.customerId, subscriptionId: this.subscriptionId, billingReason: "subscription_update", lines, status: "open" });
   }
 
-  /** Moves the subscription to `to` now, charging the proration like payment_behavior error_if_incomplete. */
-  private changeNow(to: Priced[], date: number) {
+  /** Moves the subscription to `to` now, charging the proration. A declined card changes nothing with error_if_incomplete;
+   * without it (a schedule update has none) Stripe applies the change, leaves the invoice open and goes past due. */
+  private changeNow(to: Priced[], date: number, errorIfIncomplete = true) {
     const bill = this.prorationInvoice(to, date);
-    if (bill.amount_due > 0 && this.declineNextCharge) {
+    const declined = bill.amount_due > 0 && this.declineNextCharge;
+    if (declined) {
       this.declineNextCharge = false;
-      throw Object.assign(new Error("Your card was declined."), { type: "StripeCardError", statusCode: 402 });
+      if (errorIfIncomplete) throw Object.assign(new Error("Your card was declined."), { type: "StripeCardError", statusCode: 402 });
+      this.status = "past_due";
     }
-    if (bill.lines.data.length > 0) this.invoices.push({ ...bill, status: "paid", amount_paid: bill.amount_due });
+    if (bill.lines.data.length > 0) this.invoices.push(declined ? bill : { ...bill, status: "paid", amount_paid: bill.amount_due });
     this.setItems(to);
   }
 
@@ -183,7 +175,7 @@ export class FakeStripe implements PlanChangeStripe {
       const current: Phase = { start: first.start_date as number, end: first.end_date as number, items: this.pricedAll(first.items) };
       const phases = [current];
       if (second) phases.push({ start: current.end, end: monthAfter(current.end), items: this.pricedAll(second.items) });
-      if (params.proration_behavior === "always_invoice") this.changeNow(current.items, this.clock);
+      if (params.proration_behavior === "always_invoice") this.changeNow(current.items, this.clock, false);
       // Stripe puts a changed current phase in place at once; with no proration nothing is billed.
       else if (params.proration_behavior === "none") this.setItems(current.items);
       const metadata = mergedMetadata(this.schedule!.metadata, params.metadata);

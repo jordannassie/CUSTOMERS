@@ -11,12 +11,12 @@ const { business } = mentionTargets(bennu, []);
 
 describe("a business that is one branch (step 7)", () => {
   it("knows its places: the branch's own and its area", () => {
-    expect(ownBranch(bennu)).toEqual({ places: ["Congress", "Travis Heights"] });
+    expect(ownBranch(bennu)).toEqual({ brand: "Bennu Coffee", places: ["Congress", "Travis Heights"] });
     expect(ownBranch({ ...bennu, name: "Bennu Coffee" })).toBeNull();
     // A name that only reads like "<brand> <place>" keeps its own mentions: the website must spell the brand.
     expect(ownBranch({ ...bennu, name: "Push Pull on Union", domain: null, city: "Seattle" })).toBeNull();
     expect(ownBranch({ ...bennu, name: "Bedigital.pk - Digitizing Businesses - Full Service AI Agency", domain: "bedigital.pk", city: "Rawalpindi" })).toBeNull();
-    expect(ownBranch({ ...bennu, name: "Cheezious Golra Mor Branch", domain: "cheezious.com", city: "Islamabad", area: null })).toEqual({ places: ["Golra Mor"] });
+    expect(ownBranch({ ...bennu, name: "Cheezious Golra Mor Branch", domain: "cheezious.com", city: "Islamabad", area: null })).toEqual({ brand: "Cheezious", places: ["Golra Mor"] });
   });
 
   it("counts only answers that name the branch, or the brand with its place or area", () => {
@@ -31,6 +31,17 @@ describe("a business that is one branch (step 7)", () => {
     expect(isSameBusiness("Bennu Coffee", business)).toBe(false);
     expect(isSameBusiness("Bennu Coffee on Congress", business)).toBe(true);
     expect(isSameBusiness("Bennu Coffee (Congress)", business)).toBe(true);
+  });
+
+  it("needs the chain's name with the place or area: another business on that street or in that area is not it", () => {
+    const eastAustin = mentionTargets({ ...bennu, area: "East Austin" }, []).business;
+    expect(isSameBusiness("Houndstooth Coffee - Congress Ave", eastAustin)).toBe(false);
+    expect(isSameBusiness("East Austin Coffee House", eastAustin)).toBe(false);
+    expect(isSameBusiness("Congress Avenue Kitchen", eastAustin)).toBe(false);
+    expect(isSameBusiness("Bennu Coffee Congress", eastAustin)).toBe(true);
+    expect(isSameBusiness("Bennu Coffee East Austin", eastAustin)).toBe(true);
+    expect(isSameBusiness("Bennu Coffee on Congress", eastAustin)).toBe(true);
+    expect(isSameBusiness("Bennu Coffee", eastAustin)).toBe(false);
   });
 
   it("re-marks a saved chain-only answer when the answers are counted again", () => {

@@ -5,16 +5,18 @@ import { canEditTracking } from "@/modules/entitlements";
 import type { CompetitorCandidate } from "./competitor-places";
 import { dedupeConfirmed } from "./competitors";
 import { lookupCompetitor, runBusinessAutofill, saveBusinessPlace, saveCompetitors } from "./dal";
+import { activeUser, autofillLimit } from "./guard";
 import { websiteExists } from "./website/dal";
 import { websiteNotFoundText } from "./website/domain-check";
 import { autofillInput, competitorLookupInput, pickPlaceInput, saveCompetitorsInput, toDomain, type AutofillResult } from "./schema";
 
 // Onboarding step 3 to 4 (MVP_SPEC 3.1, 3.2): fills the details form. Provider failures come back
-// as an empty form with a note, never as an error.
+// as an empty form with a note, never as an error. Paid for (AI and Places), so a suspended or deleted agency is
+// refused and each user has an hourly limit.
 export async function autofillBusiness(input: unknown): Promise<ActionResult<AutofillResult>> {
   let userId: string;
   try {
-    userId = (await requireUser()).id;
+    userId = (await activeUser()).id;
   } catch (error) {
     return authFailure(error);
   }
@@ -32,6 +34,8 @@ export async function autofillBusiness(input: unknown): Promise<ActionResult<Aut
     request = { name: parsed.data.name, city: parsed.data.city };
   }
 
+  const limited = await autofillLimit(userId);
+  if (limited) return limited;
   const result = await runBusinessAutofill(userId, parsed.data.businessId, request);
   if (!result) return { ok: false, status: 404, error: "Business not found." };
   return { ok: true, data: result };
@@ -42,7 +46,7 @@ export async function autofillBusiness(input: unknown): Promise<ActionResult<Aut
 export async function confirmBusinessPlace(input: unknown): Promise<ActionResult<null>> {
   let userId: string;
   try {
-    userId = (await requireUser()).id;
+    userId = (await activeUser()).id;
   } catch (error) {
     return authFailure(error);
   }
@@ -60,7 +64,7 @@ export async function lookupCompetitorByName(
 ): Promise<ActionResult<{ matches: CompetitorCandidate[]; note: string | null }>> {
   let userId: string;
   try {
-    userId = (await requireUser()).id;
+    userId = (await activeUser()).id;
   } catch (error) {
     return authFailure(error);
   }

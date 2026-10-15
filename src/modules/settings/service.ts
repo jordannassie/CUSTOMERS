@@ -92,6 +92,12 @@ export function matchingChanged(before: MatchedFields, after: MatchedFields): bo
   );
 }
 
+/** Whether the website is another site now (case and "www." aside), so what was read from the old one is out of date. */
+export function websiteChanged(before: string | null, after: string | null): boolean {
+  const site = (v: string | null) => (v ?? "").trim().toLowerCase().replace(/^www\./, "");
+  return site(before) !== site(after);
+}
+
 /** What is wrong with a typed list of other names, for the field's message; undefined when it can be saved. */
 export function aliasesProblem(names: string[]): string | undefined {
   if (names.length > ALIASES_MAX) return `Add up to ${ALIASES_MAX} other names.`;

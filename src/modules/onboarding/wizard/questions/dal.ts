@@ -6,7 +6,7 @@ import { liveQuestionClients } from "../../dal";
 import { cityLabel } from "../../question-rules";
 import { placeTypesOf, prepareQuestions, type QuestionClients } from "../../questions";
 import { FINISHED_STEP, nextStepNumber, type PlanId } from "../steps";
-import { ownStep } from "../dal";
+import { ownDraftStep, ownStep } from "../dal";
 
 // Used when the plan sets no limit (Enterprise): MVP_SPEC 3.1 step 6 caps questions at 25.
 const QUESTION_CAP = 25;
@@ -109,7 +109,8 @@ export type SaveQuestionsResult = { ok: true; count: number } | { ok: false; sta
 
 /** Keeps questions the user left alone (and how they were made), removes the rest, adds the new ones. */
 export async function saveQuestions(userId: string, businessId: string, questions: string[]): Promise<SaveQuestionsResult> {
-  const current = await ownStep(userId, businessId);
+  // Drafts only: a live business's questions change on the Questions page, where an ended plan is read-only.
+  const current = await ownDraftStep(userId, businessId);
   if (current === undefined) return { ok: false, status: 404, error: "Business not found." };
   const unique = [...new Map(questions.map((q) => [q.trim().toLowerCase(), q.trim()])).values()];
   const limit = await questionLimit(businessId);
@@ -178,7 +179,7 @@ export async function loadModelsStep(userId: string, businessId: string, plan: P
 
 /** Step 7 saved when the card step still follows: the business stays a draft, now at step 8. */
 export async function saveModels(userId: string, businessId: string, models: string[], frequency: string): Promise<boolean> {
-  const current = await ownStep(userId, businessId);
+  const current = await ownDraftStep(userId, businessId);
   if (current === undefined) return false;
   const { error } = await createServiceClient()
     .from("businesses")
@@ -189,7 +190,10 @@ export async function saveModels(userId: string, businessId: string, models: str
   return true;
 }
 
-/** The last step saved: the business is set up. It becomes the one the dashboard shows. */
+/**
+ * The last step saved: the business is set up. It becomes the one the dashboard shows. Any of the user's businesses,
+ * not only a draft, so a card step polled again after it finished still answers; the models step checks the draft.
+ */
 export async function finishWizard(userId: string, businessId: string, checks?: { models: string[]; frequency: string }): Promise<boolean> {
   if ((await ownStep(userId, businessId)) === undefined) return false;
   const supabase = await createClient();

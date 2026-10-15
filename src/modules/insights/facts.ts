@@ -89,7 +89,9 @@ const MAX_COMPETITORS = 5;
 const MAX_QUESTIONS = 8;
 const MAX_SITES = 8;
 
-const mentions = z.array(z.object({ name: z.string(), mentioned: z.boolean() }));
+// A scan saves only the named competitors, as { name, position } (scanning/check.ts); older rows may carry
+// `mentioned`. An item counts as named unless it says `mentioned: false` (as questions/answers.ts reads it).
+const mentions = z.array(z.object({ name: z.string(), mentioned: z.boolean().optional() }));
 const citations = z.array(z.object({ url: z.string() }));
 
 const key = (s: string) => s.trim().toLowerCase();
@@ -104,7 +106,7 @@ export function domainOf(url: string): string | null {
 
 function namedIn(check: CheckRow): Set<string> {
   const parsed = mentions.safeParse(check.competitorsMentioned);
-  return new Set(parsed.success ? parsed.data.filter((m) => m.mentioned).map((m) => key(m.name)) : []);
+  return new Set(parsed.success ? parsed.data.filter((m) => m.mentioned !== false).map((m) => key(m.name)) : []);
 }
 
 function citedDomains(check: CheckRow): Set<string> {
