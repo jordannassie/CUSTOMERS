@@ -4,6 +4,7 @@ import React from "react";
 import Link from "next/link";
 import AgencyWorkspaceDemo from "@/components/site/AgencyWorkspaceDemo";
 import HomeHero from "@/components/site/HomeHero";
+import { HomeAppsSection } from "@/components/site/apps/HomeAppsSection";
 import StartAiBusinessHomeSection from "@/components/site/StartAiBusinessHomeSection";
 import { PlatformIcon } from "@/components/PlatformIcon";
 import {
@@ -1515,6 +1516,7 @@ export default function HomepagePlatform() {
   return (
     <>
       <HeroSection />
+      <HomeAppsSection />
       <HeroVideoSection />
       <BannerRotationSection />
       <ShopperImageSection />
