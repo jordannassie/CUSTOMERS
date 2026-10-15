@@ -16,6 +16,7 @@ import {
   HelpCircle,
   Building2,
   Mail,
+  LayoutGrid,
 } from "lucide-react";
 import { MrDirectAvatar } from "@/components/site/MrDirectAvatar";
 
@@ -61,6 +62,7 @@ const PRODUCT_FEATURES = [
 
 const RESOURCES = [
   { label: "How It Works",         href: "/#how-it-works", icon: BookOpen  },
+  { label: "AI Apps",              href: "/apps",           icon: LayoutGrid },
   { label: "FAQ",                  href: "/#faq",           icon: HelpCircle },
   { label: "Agencies & Resellers", href: "/agency",          icon: Building2  },
   { label: "Contact",              href: "/contact",         icon: Mail      },

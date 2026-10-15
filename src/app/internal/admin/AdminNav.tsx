@@ -30,6 +30,15 @@ const NAV_ITEMS = [
     ),
   },
   {
+    label: "AI apps",
+    href: "/internal/admin/apps",
+    icon: (
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+        <path d="M2 2h5v5H2V2zm7 0h5v5H9V2zM2 9h5v5H2V9zm7 0h5v5H9V9z"/>
+      </svg>
+    ),
+  },
+  {
     label: "Video ads",
     href: "/internal/admin/video-ads",
     icon: (

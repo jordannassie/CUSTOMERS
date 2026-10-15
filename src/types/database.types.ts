@@ -1662,6 +1662,84 @@ export type Database = {
           },
         ]
       }
+      directory_apps: {
+        Row: {
+          active: boolean
+          affiliate_url: string | null
+          categories: string[]
+          description: string
+          featured: boolean
+          name: string
+          popular: boolean
+          provider: string
+          slug: string
+          top_pick: boolean
+          updated_at: string
+          website_url: string
+        }
+        Insert: {
+          active?: boolean
+          affiliate_url?: string | null
+          categories: string[]
+          description: string
+          featured?: boolean
+          name: string
+          popular?: boolean
+          provider: string
+          slug: string
+          top_pick?: boolean
+          updated_at?: string
+          website_url: string
+        }
+        Update: {
+          active?: boolean
+          affiliate_url?: string | null
+          categories?: string[]
+          description?: string
+          featured?: boolean
+          name?: string
+          popular?: boolean
+          provider?: string
+          slug?: string
+          top_pick?: boolean
+          updated_at?: string
+          website_url?: string
+        }
+        Relationships: []
+      }
+      directory_clicks: {
+        Row: {
+          created_at: string
+          destination: string
+          id: string
+          slug: string
+          source: string
+          utm_campaign: string | null
+          utm_medium: string | null
+          utm_source: string | null
+        }
+        Insert: {
+          created_at?: string
+          destination: string
+          id?: string
+          slug: string
+          source: string
+          utm_campaign?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+        }
+        Update: {
+          created_at?: string
+          destination?: string
+          id?: string
+          slug?: string
+          source?: string
+          utm_campaign?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+        }
+        Relationships: []
+      }
       video_ad_orders: {
         Row: {
           amount_cents: number

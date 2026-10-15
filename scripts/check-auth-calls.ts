@@ -10,6 +10,7 @@ const AUTH_CALL = /\brequire(User|Admin)\s*\(/;
 const PUBLIC: Record<string, string> = {
   "src/app/api/contact/route.ts": "public contact form, validated input",
   "src/app/api/public/compare/route.ts": "public free compare tool",
+  "src/app/apps/go/[slug]/route.ts": "public outbound app redirect, slug lookup only",
   "src/app/auth/callback/route.ts": "OAuth and email-link callback",
   "src/app/auth/signout/route.ts": "signs out the current session",
   "src/app/api/stripe/webhook/route.ts": "Stripe signature check",

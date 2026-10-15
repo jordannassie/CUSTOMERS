@@ -69,6 +69,7 @@ const FOOTER_COLUMNS = [
     heading: "Resources",
     links: [
       { label: "How It Works", href: "/#how-it-works" },
+      { label: "AI Apps", href: "/apps" },
       { label: "FAQ", href: "/#faq" },
     ],
   },
