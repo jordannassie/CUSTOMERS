@@ -33,6 +33,7 @@ export type DirectoryApp = {
   reviewUrl: string | null;
   rating: number | null;
   reviewCount: number | null;
+  ratingScale: number;
   ratingLastUpdated: string | null;
 };
 

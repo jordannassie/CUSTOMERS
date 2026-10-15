@@ -1,6 +1,6 @@
 import Link from "next/link";
+import { AppRating } from "@/components/site/apps/AppRating";
 import { logoUrl } from "@/modules/apps-directory/catalog";
-import { isAllowedReviewUrl } from "@/modules/apps-directory/schema";
 import { categoryLabel, type AppSource, type DirectoryApp } from "@/modules/apps-directory/types";
 
 export function AppCard({
@@ -16,7 +16,6 @@ export function AppCard({
 }) {
   const home = layout === "home";
   const categories = app.categories.map(categoryLabel);
-  const reviews = isAllowedReviewUrl(app.reviewUrl);
   return (
     <article
       className={`relative flex h-full flex-col rounded-2xl border border-[#E5E5E1] bg-white shadow-sm transition hover:-translate-y-0.5 hover:border-[#BFDBFE] hover:shadow-md ${home ? "min-h-[204px] items-center p-3 text-center" : "p-3.5"}`}
@@ -46,16 +45,7 @@ export function AppCard({
       <p className={`line-clamp-1 font-medium text-[#0866F5] ${home ? "mt-1 w-full text-[10px]" : "mt-2 text-[11px]"}`}>
         {home ? categories[0] : categories.join(" · ")}
       </p>
-      {reviews ? (
-        <a
-          href={`/apps/go/${app.slug}/review/${source}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className={`relative z-10 font-semibold text-[#0866F5] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0866F5] ${home ? "mt-1 text-[11px]" : "mt-2 text-[12px]"}`}
-        >
-          Read Reviews <span aria-hidden="true">↗</span>
-        </a>
-      ) : null}
+      <AppRating app={app} source={source} compact={home} />
       <a
         href={`/apps/go/${app.slug}/${source}`}
         className={`relative z-10 inline-flex w-full items-center justify-center gap-1 rounded-xl bg-[#0866F5] font-semibold text-white transition hover:bg-[#0757D4] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0866F5] focus-visible:ring-offset-2 ${home ? "mt-2 h-8 text-[12px]" : "mt-3 h-9 text-[13px]"}`}

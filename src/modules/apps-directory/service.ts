@@ -42,6 +42,7 @@ export function mergeCatalog(base: DirectoryApp[], overrides: DirectoryApp[]): D
       reviewUrl: row.reviewUrl ?? previous?.reviewUrl ?? null,
       rating: row.rating ?? previous?.rating ?? null,
       reviewCount: row.reviewCount ?? previous?.reviewCount ?? null,
+      ratingScale: row.ratingScale || previous?.ratingScale || 5,
       ratingLastUpdated: row.ratingLastUpdated ?? previous?.ratingLastUpdated ?? null,
     });
   }

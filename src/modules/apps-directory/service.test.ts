@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { DIRECTORY_CATALOG, HOME_FEATURED_SLUGS } from "./catalog";
+import { hasVerifiedRating, ratingStars } from "./rating";
 import { destinationFor, isAllowedReviewUrl, utmFromReferer } from "./schema";
 import { mergeCatalog, queryDirectory } from "./service";
 
@@ -10,7 +11,9 @@ describe("apps directory", () => {
     expect(DIRECTORY_CATALOG.length).toBeGreaterThanOrEqual(30);
     expect(DIRECTORY_CATALOG.every((app) => app.websiteUrl.startsWith("https://"))).toBe(true);
     expect(DIRECTORY_CATALOG.every((app) => app.affiliateUrl === null)).toBe(true);
-    expect(DIRECTORY_CATALOG.every((app) => app.rating === null && app.reviewCount === null)).toBe(true);
+    expect(DIRECTORY_CATALOG.every((app) => app.rating === null && app.reviewCount === null && app.ratingScale === 5)).toBe(true);
+    expect(DIRECTORY_CATALOG.every((app) => hasVerifiedRating(app) === false)).toBe(true);
+    expect(ratingStars(4.6, 5)).toEqual([1, 1, 1, 1, 0.6]);
     const reviewed = DIRECTORY_CATALOG.filter((app) => app.reviewUrl);
     expect(reviewed.every((app) => isAllowedReviewUrl(app.reviewUrl))).toBe(true);
     expect(DIRECTORY_CATALOG.find((app) => app.slug === "chatgpt")?.reviewUrl).toBe("https://www.g2.com/products/chatgpt/reviews");

@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import SiteHeader from "@/components/site/SiteHeader";
 import SiteFooter from "@/components/site/SiteFooter";
 import { AppCard } from "@/components/site/apps/AppCard";
+import { AppRating } from "@/components/site/apps/AppRating";
 import { DIRECTORY_CATALOG, logoUrl } from "@/modules/apps-directory/catalog";
 import { listDirectoryOverrides, recordAppClick } from "@/modules/apps-directory/dal";
 import { isAllowedReviewUrl, utmFromReferer } from "@/modules/apps-directory/schema";
@@ -90,6 +91,7 @@ export default async function AppDetailPage({ params, searchParams }: { params: 
               <div>
                 <h1 className="text-[28px] font-bold tracking-tight text-[#171717]">{app.name}</h1>
                 <p className="mt-1 text-[14px] text-[#777773]">{app.provider}</p>
+                <AppRating app={app} source="detail" link={false} />
               </div>
             </div>
             <p className="mt-5 text-[16px] leading-relaxed text-[#171717]">{app.description}</p>

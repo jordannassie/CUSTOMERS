@@ -175,23 +175,18 @@ function UrlField({
 
 export default function HomeHero() {
   return (
-    <div className="mx-auto grid max-w-[1180px] items-center gap-8 lg:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)] lg:gap-12">
-      <div className="order-2 lg:order-1">
-        <div
-          className="overflow-hidden rounded-[28px] bg-[#E8EEF8]"
-          style={{ boxShadow: "0 18px 50px rgba(6,59,157,0.12)" }}
-        >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={HERO_IMAGE}
-            alt="Mr. Direct at his desk with AI assistant icons"
-            className="aspect-square w-full object-cover object-center"
-          />
-        </div>
+    <div className="mx-auto grid max-w-[1180px] items-stretch gap-6 lg:grid-cols-[minmax(0,0.96fr)_minmax(0,1.04fr)] lg:gap-8">
+      <div className="relative order-2 h-[340px] overflow-hidden rounded-[28px] bg-[#E8EEF8] shadow-[0_18px_50px_rgba(6,59,157,0.12)] sm:h-[460px] lg:order-1 lg:h-full lg:min-h-[560px]">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={HERO_IMAGE}
+          alt="Mr. Direct at his desk with AI assistant icons"
+          className="absolute inset-0 h-full w-full object-cover object-center"
+        />
       </div>
 
-      <div className="order-1 lg:order-2">
-        <div className="mb-5 inline-flex items-center rounded-full border border-[#E5E5E1] bg-[#F0F0EC] px-3 py-1 text-[11px] font-semibold tracking-wide text-[#777773]">
+      <div className="order-1 flex flex-col justify-center lg:order-2">
+        <div className="mb-3 inline-flex w-fit items-center rounded-full border border-[#E5E5E1] bg-[#F0F0EC] px-3 py-1 text-[11px] font-semibold tracking-wide text-[#777773]">
           Get more Customers with AI Search
         </div>
 

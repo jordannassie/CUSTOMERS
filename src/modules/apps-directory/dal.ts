@@ -35,6 +35,7 @@ function mapRow(row: AppRow): DirectoryApp | null {
     reviewUrl: null,
     rating: null,
     reviewCount: null,
+    ratingScale: 5,
     ratingLastUpdated: null,
     categories,
     featured: row.featured,
