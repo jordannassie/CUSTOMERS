@@ -4,49 +4,18 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { expect, it } from "vitest";
 import { createHarness, describeEval } from "vitest-evals";
-import { autofill, type AutofillClients } from "@/modules/onboarding/autofill";
-import { createBusinessExtractor, ExtractError } from "@/modules/onboarding/extract";
-import { createFirecrawlScraper } from "@/modules/onboarding/firecrawl";
-import { createPlacesSearch } from "@/modules/onboarding/places";
+import { autofill } from "@/modules/onboarding/autofill";
 import { AUTOFILL_MODEL, AUTOFILL_PROMPT_VERSION, AUTOFILL_RETRY_MODEL } from "@/modules/onboarding/prompts/business-autofill.v1";
 import type { BusinessDetails } from "@/modules/onboarding/schema";
-import { evalAiClients, EVAL_PROVIDER, missingEvalKey } from "../shared/ai-clients";
+import { EVAL_PROVIDER } from "../shared/ai-clients";
+import { missingAutofillKeys, recordingClients } from "./clients";
 import { apiErrorCase, gradeCase, loadDataset, score, type AutofillCase, type GradedCase } from "./grader";
 
 const dataset = loadDataset();
-const keys = {
-  firecrawl: process.env.FIRECRAWL_API_KEY,
-  places: process.env.GOOGLE_PLACES_API_KEY,
-};
-const missingKeys = [...Object.entries(keys).filter(([, v]) => !v).map(([k]) => k), ...[missingEvalKey() ?? []].flat()];
+const missingKeys = missingAutofillKeys();
 const ready = dataset !== null && missingKeys.length === 0;
 
 type Output = { details: BusinessDetails | null; apiError: string | null };
-
-// Auto-fill hides provider failures from the user; the eval records them so they count as API
-// errors (principle 9) rather than as model failures.
-function recordingClients(errors: string[]): AutofillClients {
-  const scrape = createFirecrawlScraper(keys.firecrawl ?? "");
-  const searchPlaces = createPlacesSearch(keys.places ?? "");
-  const extract = createBusinessExtractor(evalAiClients());
-  return {
-    scrape: async (domain) => {
-      const pages = await scrape(domain);
-      if (pages.every((p) => p.status === "failed")) errors.push("firecrawl: every page failed");
-      return pages;
-    },
-    searchPlaces: (query) =>
-      searchPlaces(query).catch((err: unknown) => {
-        errors.push(`places: ${String(err)}`);
-        throw err;
-      }),
-    extract: (input) =>
-      extract(input).catch((err: unknown) => {
-        if (!(err instanceof ExtractError && err.modelFault)) errors.push(`${EVAL_PROVIDER}: ${String(err)}`);
-        throw err;
-      }),
-  };
-}
 
 const harness = createHarness<AutofillCase, Output>({
   name: "business-autofill",

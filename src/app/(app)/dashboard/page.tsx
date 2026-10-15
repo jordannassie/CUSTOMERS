@@ -41,8 +41,11 @@ export default async function OverviewPage() {
   return (
     <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-6 p-5 sm:p-8">
       <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div className="flex min-w-0 flex-col gap-1">
-          <h1 className="truncate text-2xl font-semibold tracking-[-0.02em]">{business.name}</h1>
+        <div className="flex min-w-0 flex-1 flex-col gap-1">
+          {/* Two lines at most; under 640px the buttons sit on their own row below, so the name has the full width. */}
+          <h1 className="line-clamp-2 text-2xl font-semibold tracking-[-0.02em] break-words" title={business.name}>
+            {business.name}
+          </h1>
           <p className="text-sm text-muted-foreground" data-testid="last-scan">
             {overview.lastCheckedAt ? `Last scan ${timeAgo(new Date(overview.lastCheckedAt))}` : "No scans yet"}
           </p>

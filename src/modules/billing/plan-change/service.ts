@@ -21,7 +21,7 @@ import {
   type PlanChangeContext,
   type Timing,
 } from "./planner";
-import { phasesWithoutPending, refuseWhileLeaving } from "./pending";
+import { phasesOnOnePrice, phasesWithoutPending, refuseWhileLeaving } from "./pending";
 
 // Previews and applies plan changes (MVP_SPEC 11.5, D-57). Changes made now invoice the proration at once;
 // credits for it are granted by the invoice.paid webhook (B-42), never here. Period-end changes go on a
@@ -33,6 +33,8 @@ export type PlanChangeDeps = {
   now: () => Date;
   /** For the dates in the sentences; UTC when unknown. */
   timeZone?: string;
+  /** Credits left now, read for a cancel or a removal so the preview can say how many end. */
+  credits?: { plan: number; topup: number };
 };
 
 export type PlanChangePreview = Copy & {
@@ -73,10 +75,11 @@ function checkAgainstSchedule({ sub, schedule }: Loaded, checked: CheckedChange)
 /** The scheduled changes a cancel drops, or "Keep my plan" puts back, in the words the sentences need. */
 function scheduledNotes(ctx: PlanChangeContext, { schedule }: Loaded, kind: PlanChange["kind"]): ScheduledNote[] {
   const changes =
-    kind === "cancel" ? changesDroppedByCancel(schedule, ctx.plans) : kind === "keep" ? changesRestoredByKeep(schedule) : [];
+    kind === "cancel" ? changesDroppedByCancel(schedule, ctx.plans) : kind === "keep" ? changesRestoredByKeep(schedule, ctx.plans) : [];
   return changes.flatMap(({ businessId, planId }) => {
     const business = ctx.businesses.find((b) => b.id === businessId);
-    if (!business) return [];
+    // A deleted business leaves either way; a cancel or keep changes nothing for it (2026-10-15).
+    if (!business || business.deleted) return [];
     const planName = planId === null ? null : (ctx.plans.find((p) => p.id === planId)?.name ?? "another plan");
     return [{ businessName: business.name, planName }];
   });
@@ -152,6 +155,7 @@ export async function previewPlanChange(
       effectiveAt: timing === "now" && trialing ? periodEnd(loaded.sub) : at,
       timeZone: deps.timeZone,
       scheduled: scheduledNotes(ctx, loaded, change.kind),
+      credits: deps.credits,
     }),
     timing,
     effectiveAt: new Date(at * 1000).toISOString(),
@@ -194,7 +198,7 @@ export async function applyPlanChange(
     if (phases) await deps.stripe.updateSchedule(schedule!.id, { phases }, `${key}:schedule`);
     else await deps.stripe.releaseSchedule(schedule!.id, `${key}:release`);
   } else if (schedule) {
-    await deps.stripe.updateSchedule(
+    const updated = await deps.stripe.updateSchedule(
       schedule.id,
       {
         phases: schedulePhases(sub, schedule, checked),
@@ -202,6 +206,9 @@ export async function applyPlanChange(
       },
       `${key}:schedule`,
     );
+    // An add or upgrade made now got a price of its own in each phase; one price keeps a plan change from showing.
+    const onePrice = timing === "now" && checked.business ? phasesOnOnePrice(sub, updated, checked.business.id) : null;
+    if (onePrice) await deps.stripe.updateSchedule(schedule.id, { phases: onePrice, proration_behavior: "none" }, `${key}:one-price`);
   } else if (timing === "now") {
     await deps.stripe.updateSubscription(
       sub.id,

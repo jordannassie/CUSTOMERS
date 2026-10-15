@@ -153,5 +153,7 @@ Live has 001 to 020 (Baseline above) and none of the files below. Go-live applie
 - `059_keep_ai_costs_after_deletion.sql` (BUG-160: `usage_events.account_user_id` becomes nullable and SET NULL; changes an existing foreign key, so not purely additive; approved 2026-10-14)
 - `060_ledger_test_agency_flag.sql` (BUG-184: `credit_transactions.from_test_agency`)
 - `061_run_explained_at.sql` (`visibility_runs.explained_at`; the pages say "Working out your fixes" until it is set)
+- `062_cancel_reasons.sql` (new table `cancel_reasons`, service role only: the optional reason from the "Before you cancel" dialog, shown on the admin agency page)
+- `063_resolve_quiet_alerts.sql` (new function `resolve_quiet_system_alerts`, called by `run_system_alerts`: closes stuck_jobs, failed_scans, ai_fallback, provider_errors and negative_balances alerts not seen for an hour)
 
 Any file added after 043 joins this list.

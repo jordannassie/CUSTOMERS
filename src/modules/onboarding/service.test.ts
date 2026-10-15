@@ -45,6 +45,13 @@ describe("mergeDetails", () => {
     expect(mergeDetails(site, place)).toMatchObject({ city: "Chatham", state: "IL", address: COFFEE_PLACE.address });
   });
 
+  it("prefills the brand when Google's name is a page title, and keeps a plain name (2026-10-15)", () => {
+    const titled = { ...COFFEE_PLACE, name: "Wilshire Smile Studio - Los Angeles Dentist, Cosmetic...", websiteUri: "https://wilshiresmilestudio.com/" };
+    expect(mergeDetails(COFFEE_SITE_OUTPUT, titled).name).toBe("Wilshire Smile Studio");
+    expect(mergeDetails(COFFEE_SITE_OUTPUT, COFFEE_PLACE).name).toBe(COFFEE_PLACE.name);
+    expect(mergeDetails(COFFEE_SITE_OUTPUT, { ...COFFEE_PLACE, name: null }).name).toBe(COFFEE_SITE_OUTPUT.name);
+  });
+
   it("falls back to the site for any field Places leaves empty", () => {
     const place = { ...COFFEE_PLACE, phone: null, address: null };
     expect(mergeDetails(COFFEE_SITE_OUTPUT, place)).toMatchObject({

@@ -77,7 +77,8 @@ export function FirstScan(props: Props) {
     setProblem(null);
     setPhase("scanning");
     startTransition(async () => {
-      const result = await start(confirmOverdraft ? { businessId, confirmOverdraft } : { businessId }).catch(() => null);
+      // The first scan never asks "Scan again?" (that is for Run scan within 24 hours of a finished scan).
+      const result = await start({ businessId, confirmRecent: true, ...(confirmOverdraft ? { confirmOverdraft } : {}) }).catch(() => null);
       if (!result) return fail(NO_CONNECTION);
       if (needsOverdraftConfirm(result)) {
         setProblem(result.error);

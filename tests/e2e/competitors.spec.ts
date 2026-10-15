@@ -233,6 +233,26 @@ test("no competitors and no scans: each section says what to do next", async ({ 
   await expect(page.getByText("Scores appear after your first scan.", { exact: false })).toBeVisible();
 });
 
+test("a Google page-title name is added on its brand, with the long name kept as another name (2026-10-15)", async ({ page }) => {
+  const businessId = await seed(page, { competitors: [], answers: [] });
+  await page.goto("/competitors/manage");
+  await expect(page.getByRole("heading", { level: 1, name: "Manage competitors" })).toBeVisible({ timeout: 60_000 });
+  await page.getByLabel("Competitor name").fill("BeRejuved");
+  await page.getByRole("button", { name: "Find" }).click();
+  await page.getByRole("button", { name: "Add BeRejuved Medical Spa & Wellness Studio - NYC" }).click();
+
+  const picked = page.getByRole("list", { name: "Picked competitors" });
+  await expect(picked.getByText("BeRejuved Medical Spa & Wellness Studio", { exact: true })).toBeVisible();
+  await expect(picked.getByTestId("google-full-name")).toContainText("Google: BeRejuved Medical Spa & Wellness Studio - NYC");
+  // A long name in the list never widens the page on a phone (2026-10-15).
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(page.viewportSize()!.width);
+  await page.getByRole("button", { name: "Save competitors" }).filter({ visible: true }).click();
+  await expect(page.getByText("1 competitor saved")).toBeVisible(ACTION);
+
+  const { data } = await db.from("business_competitors").select("name, aliases").eq("business_id", businessId).throwOnError();
+  expect(data).toEqual([{ name: "BeRejuved Medical Spa & Wellness Studio", aliases: ["BeRejuved Medical Spa & Wellness Studio - NYC"] }]);
+});
+
 test("the old address sends people to the new page", async ({ page }) => {
   await seed(page, { competitors: [], answers: [] });
   await page.goto("/dashboard/competitors");

@@ -241,6 +241,30 @@ test("Run scan short of credits: a warning first, and nothing starts until Run s
   expect(await jobs()).toBe(1);
 });
 
+test("Run scan again the same day: asks first, with the credits it still uses (2026-10-15, D-54)", async ({ page }) => {
+  const business = await seedBusiness(page);
+  await page.getByRole("button", { name: "Run first scan" }).click();
+  await expect(page.getByTestId("score-summary")).toBeVisible({ timeout: 60_000 });
+  const jobs = async () => (await db.from("scan_jobs").select("id").eq("business_id", business.id)).data?.length ?? 0;
+  expect(await jobs()).toBe(1);
+
+  const run = page.getByRole("button", { name: "Run scan" }).first();
+  await run.click();
+  const dialog = page.getByTestId("recent-scan-dialog");
+  await expect(dialog.getByRole("heading", { name: "Scan again?" })).toBeVisible();
+  await expect(dialog.getByTestId("recent-scan-message")).toHaveText(
+    "You scanned today. Most answers will be the same as the last scan and still use 9 credits.",
+  );
+  await dialog.getByRole("button", { name: "Not now" }).click();
+  await expect(dialog).toHaveCount(0);
+  expect(await jobs()).toBe(1);
+
+  await run.click();
+  await dialog.getByRole("button", { name: "Scan again" }).click();
+  await expect(page.getByRole("button", { name: /Scanning/ }).first()).toBeVisible();
+  await expect.poll(jobs).toBe(2);
+});
+
 test("old Visibility and Reports bookmarks land on the Overview (B-58)", async ({ page }) => {
   await seedBusiness(page);
   for (const path of ["/dashboard/visibility", "/dashboard/reports"]) {

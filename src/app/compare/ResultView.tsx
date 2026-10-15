@@ -37,7 +37,7 @@ function SiteScore({ site, you }: { site: SiteResult; you: boolean }) {
       )}
       <div className="flex min-w-0 flex-col gap-2">
         <p className="text-[13px] text-muted-foreground">{you ? "Your website" : "Competitor"}</p>
-        <p className="truncate text-lg font-semibold">{site.domain}</p>
+        <p className="truncate text-lg font-semibold" title={site.domain}>{site.domain}</p>
         {site.reached && <span className={cn("w-fit rounded-sm px-2 py-0.5 text-[13px] font-medium", b.className)}>{b.label}</span>}
         {site.blocked && (
           <p className="text-[13px] text-muted-foreground" data-testid="blocked-note">

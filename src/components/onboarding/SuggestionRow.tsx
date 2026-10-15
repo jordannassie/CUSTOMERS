@@ -23,8 +23,8 @@ export function SuggestionRow({ place, checked, branch, onToggle }: Props) {
       >
         <input type="checkbox" checked={checked} disabled={branch} onChange={onToggle} className="size-4 shrink-0 accent-primary" />
         <span className="min-w-0 flex-1">
-          <span className="block truncate text-sm font-medium">{place.name}</span>
-          {place.address ? <span className="block truncate text-[13px] text-muted-foreground">{place.address}</span> : null}
+          <span className="block truncate text-sm font-medium" title={place.name}>{place.name}</span>
+          {place.address ? <span className="block truncate text-[13px] text-muted-foreground" title={place.address}>{place.address}</span> : null}
           {branch ? (
             <span className="block text-[13px] text-muted-foreground" data-testid="other-branch">
               Already tracking {place.name}

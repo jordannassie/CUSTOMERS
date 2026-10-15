@@ -10,14 +10,15 @@ import type { ActionResult } from "@/modules/auth";
 import type { CompetitorCandidate, SavedCompetitor } from "@/modules/onboarding";
 import { Button } from "@/components/ui/button";
 import { AddCompetitor, type LookupAction } from "./AddCompetitor";
+import { FullName, withBrand, type BrandedPick } from "./PickedBrand";
 import { GoogleAttribution, PlaceRating } from "./PlaceBits";
 import { SuggestionRow } from "./SuggestionRow";
 
-type Picked = { name: string; placesId: string | null; live: CompetitorCandidate | null };
+type Picked = BrandedPick & { live: CompetitorCandidate | null };
 
 export type SaveCompetitorsAction = (input: {
   businessId: string;
-  competitors: { name: string; placesId: string | null }[];
+  competitors: { name: string; placesId: string | null; aliases?: string[] }[];
 }) => Promise<ActionResult<{ count: number }>>;
 
 export type CompetitorPickerProps = {
@@ -43,7 +44,7 @@ const key = (name: string) => name.trim().toLowerCase();
 // The same Google place, or the same name when either has no place. One Pizza Hut branch is not all five (BUG-093).
 const same = (a: Ref, b: Ref) => (a.placesId !== null && b.placesId !== null ? a.placesId === b.placesId : key(a.name) === key(b.name));
 const sameName = (a: Ref, b: Ref) => key(a.name) === key(b.name);
-const sameList = (a: Picked[], b: Picked[]) => a.length === b.length && a.every((p, i) => same(p, b[i]));
+const sameList = (a: Picked[], b: Picked[]) => a.length === b.length && a.every((p, i) => same(p, b[i]) && p.name === b[i].name);
 
 // Onboarding step 5 (MVP_SPEC 3.1): tick nearby businesses from Google, add any it missed, and save.
 export function CompetitorPicker(props: CompetitorPickerProps) {
@@ -63,7 +64,8 @@ export function CompetitorPicker(props: CompetitorPickerProps) {
   // The wizard always lets the user continue; the standalone page saves only real changes.
   const canSave = !pending && (Boolean(onSaved) || !sameList(picked, lastSaved));
 
-  function add(c: Picked): boolean {
+  function add(added: Picked): boolean {
+    const c = withBrand(added);
     if (isTaken(c)) return true;
     if (full) {
       setLimitHit(true);
@@ -79,15 +81,22 @@ export function CompetitorPicker(props: CompetitorPickerProps) {
   }
 
   function toggle(s: CompetitorCandidate) {
-    const c = { name: s.name, placesId: s.placeId, live: s };
+    const c = withBrand({ name: s.name, placesId: s.placeId, live: s });
     if (isPicked(c)) remove(c);
     else if (!isOtherBranch(c)) add(c);
+  }
+
+  function keepFullName(p: Picked) {
+    setPicked((list) => list.map((x) => (same(x, p) ? { ...x, name: p.aliases![0], aliases: undefined } : x)));
   }
 
   function submit() {
     setError(null);
     startTransition(async () => {
-      const result = await save({ businessId, competitors: picked.map(({ name, placesId }) => ({ name, placesId })) });
+      const result = await save({
+        businessId,
+        competitors: picked.map(({ name, placesId, aliases }) => (aliases?.length ? { name, placesId, aliases } : { name, placesId })),
+      });
       if (!result.ok) return setError(result.error);
       setLastSaved(picked);
       // In the wizard the next step is the confirmation; a toast there would cover its Continue bar on a phone.
@@ -100,8 +109,9 @@ export function CompetitorPicker(props: CompetitorPickerProps) {
 
   const count = limit === null ? `${picked.length} picked` : `${picked.length} of ${limit} picked`;
 
+  // One column on phones that never grows past the screen: a long name in the list widened the page (2026-10-15).
   return (
-    <div className="grid gap-8 pb-20 lg:grid-cols-[minmax(0,1fr)_340px] lg:pb-0">
+    <div className="grid grid-cols-[minmax(0,1fr)] gap-8 pb-20 lg:grid-cols-[minmax(0,1fr)_340px] lg:pb-0">
       <div className="flex min-w-0 flex-col gap-8">
         <section aria-labelledby="suggested-title">
           <h2 id="suggested-title" className="text-base font-semibold tracking-[-0.02em]">
@@ -159,8 +169,9 @@ export function CompetitorPicker(props: CompetitorPickerProps) {
               {picked.map((p) => (
                 <li key={p.placesId ?? key(p.name)} className="flex items-center gap-2 rounded-md py-1.5 pl-1">
                   <span className="min-w-0 flex-1">
-                    <span className="block truncate text-sm">{p.name}</span>
+                    <span className="block truncate text-sm" title={p.name}>{p.name}</span>
                     {!p.placesId ? <span className="block text-xs text-text-hint">Added by name</span> : null}
+                    {p.aliases?.length ? <FullName google={p.aliases[0]} onUse={() => keepFullName(p)} /> : null}
                   </span>
                   {p.live ? <PlaceRating rating={p.live.rating} reviewCount={p.live.reviewCount} /> : null}
                   <Button type="button" variant="ghost" size="icon-sm" onClick={() => remove(p)} aria-label={`Remove ${p.name}`}>
@@ -229,3 +240,4 @@ export function CompetitorPicker(props: CompetitorPickerProps) {
     </div>
   );
 }
+

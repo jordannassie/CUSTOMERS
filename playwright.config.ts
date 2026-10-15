@@ -9,8 +9,8 @@ const baseURL = `http://localhost:${port}`;
 // The dev server must use this worktree's local stack (written by npm test), not .env.local and the remote dev
 // database (BUG-034). Env passed to next dev wins over its .env files.
 const testDb = existsSync(".env.test.local") ? parseEnv(readFileSync(".env.test.local", "utf8")) : {};
-// One admin per project for tests/e2e/admin-access.spec.ts, which reads the same list.
-const adminEmails = process.env.ADMIN_EMAILS ?? "e2e-admin-desktop@example.test,e2e-admin-mobile@example.test";
+// One admin per project for tests/e2e/admin-access.spec.ts, and one for responsive.spec.ts, which read the same list.
+const adminEmails = process.env.ADMIN_EMAILS ?? "e2e-admin-desktop@example.test,e2e-admin-mobile@example.test,e2e-admin-responsive@example.test";
 process.env.ADMIN_EMAILS = adminEmails;
 
 export default defineConfig({

@@ -49,7 +49,7 @@ export function WizardFrame({ steps, title, lead, embedded = false, wide = false
             <p className="text-[13px] font-medium">
               Step {index + 1} of {steps.length}
             </p>
-            <p className="truncate text-[13px] text-muted-foreground">{current?.label}</p>
+            <p className="truncate text-[13px] text-muted-foreground" title={current?.label}>{current?.label}</p>
           </div>
           <div className="mx-auto mt-2 flex max-w-3xl gap-1" aria-hidden>
             {steps.map((s) => (

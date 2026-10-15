@@ -131,3 +131,32 @@ describe("portalUrl", () => {
     });
   });
 });
+
+// 2026-10-15: a business deleted during a trial was listed at $149 a month.
+describe("a business deleted during a trial", () => {
+  const deletedB = (base: BillingRows) => ({ ...base, businesses: base.businesses.map((b) => (b.id === B ? { ...b, deleted: true } : b)) });
+
+  it("is not listed once Stripe has taken its item off, even before the webhook updates our row", async () => {
+    const { stripe, ctx } = setup({ a: "price_pro", status: "trialing" });
+    await stripe.updateSubscription(stripe.subscriptionId, { items: [{ id: `si_${B}`, deleted: true }], proration_behavior: "none" }, "k");
+    const view = await billingView({ rows: deletedB(rows("trialing")), access: { context: ctx, stripe } });
+    expect(view.onPlan.map((b) => b.name)).toEqual(["Acme Plumbing"]);
+  });
+
+  it("shows as removed and not charged, with no pending change, while its item is still there", async () => {
+    const { stripe, ctx, change } = setup({ status: "trialing" });
+    await change({ kind: "remove", businessId: B });
+    const view = await billingView({ rows: deletedB(rows("trialing")), access: { context: ctx, stripe } });
+    expect(view.onPlan.map((b) => [b.name, b.notCharged, b.pending])).toEqual([
+      ["Acme Plumbing", false, null],
+      ["Bay Dental", true, null],
+    ]);
+  });
+
+  it("on a paid plan, still shows the item running to the period end", async () => {
+    const { stripe, ctx, change } = setup();
+    await change({ kind: "remove", businessId: B });
+    const view = await billingView({ rows: deletedB(rows()), access: { context: ctx, stripe } });
+    expect(view.onPlan.find((b) => b.id === B)).toMatchObject({ deleted: true, notCharged: false, pending: { kind: "remove" } });
+  });
+});

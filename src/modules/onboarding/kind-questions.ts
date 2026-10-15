@@ -3,7 +3,7 @@
 // every business of the kind can be judged on them (BUG-130 rules). Pure.
 import type { Intent } from "@/modules/question-library";
 import { isCoreProduct, needsSitDown, productOf, type BusinessKind } from "./business-kind";
-import { QUESTION_COUNT } from "./prompts/pick-questions.v6";
+import { QUESTION_COUNT } from "./prompts/pick-questions.v7";
 import { balancePicks, type PreparedQuestion } from "./question-rules";
 
 /** Of the 12 questions, at most this many ask about one product the business sells. */

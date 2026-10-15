@@ -25,6 +25,7 @@ vi.mock("../account/access", () => ({
 vi.mock("./dal", async (importOriginal) => {
   const real = await importOriginal<typeof import("./dal")>();
   return {
+    ...real,
     loadPlanChangeData: async (agencyId: string) => {
       const data = await real.loadPlanChangeData(agencyId);
       const plans = data.context.plans.map((p) => ({ ...p, stripePriceId: p.id === "starter" || p.id === "pro" ? `price_${p.id}` : null }));
@@ -33,7 +34,7 @@ vi.mock("./dal", async (importOriginal) => {
   };
 });
 
-const { addBusiness, upgradeBusiness } = await import("./actions");
+const { addBusiness, cancelSubscription, removeBusiness, upgradeBusiness } = await import("./actions");
 
 async function seedAgency(status: "active" | "trialing", businessNames: string[]) {
   const email = `vitest-plan-change-${randomUUID()}@example.test`;
@@ -123,3 +124,56 @@ describe("plan change actions with a session", () => {
   });
 });
 
+const reasonsOf = async (agencyId: string) =>
+  (await service.from("cancel_reasons").select("kind, reason, business_id").eq("agency_id", agencyId).throwOnError()).data;
+
+describe("Before you cancel", () => {
+  it("counts the real trial credits, saves nothing on preview, and keeps the reason on Cancel anyway", async () => {
+    const seeded = await seedAgency("trialing", ["Acme Plumbing"]);
+    session = seeded.client;
+    const stripe = useFake("trialing", seeded.ids);
+    const trialEnd = new Date(Date.now() + 5 * 86_400_000).toISOString();
+    await service
+      .rpc("grant_trial_credits", { p_agency_id: seeded.agencyId, p_source_id: `il_${randomUUID()}`, p_amount: 150, p_expires_at: trialEnd })
+      .throwOnError();
+
+    const preview = await cancelSubscription({});
+    if (!preview.ok || preview.data.step !== "preview") throw new Error(JSON.stringify(preview));
+    expect(preview.data.headline).toMatch(/^Your free trial keeps going until \w+ \d+, \d{4}\. Your card won't be charged\.$/);
+    expect(preview.data.details[0]).toMatch(/^You have 150 trial credits left\. Any left on \w+ \d+, \d{4} are removed\.$/);
+    expect(preview.data.losses?.items).toContain("Weekly scans and Run scan");
+    expect(stripe.cancelAtPeriodEnd).toBe(false);
+    expect(await reasonsOf(seeded.agencyId)).toEqual([]);
+
+    const done = await cancelSubscription({ previewedAt: preview.data.previewedAt, reason: "just_testing" });
+    expect(done).toMatchObject({ ok: true, data: { step: "done" } });
+    expect(stripe.cancelAtPeriodEnd).toBe(true);
+    expect(await reasonsOf(seeded.agencyId)).toEqual([{ kind: "cancel", reason: "just_testing", business_id: null }]);
+    // Admin reads them; the owner's own session can't (RLS, no policies).
+    const own = await seeded.client.from("cancel_reasons").select("id");
+    expect(own.data ?? []).toEqual([]);
+  });
+
+  it("keeps the business on a removal reason, and cancels without one when none is picked", async () => {
+    const seeded = await seedAgency("active", ["Acme Plumbing", "Bay Dental"]);
+    session = seeded.client;
+    useFake("active", seeded.ids);
+    const preview = await removeBusiness({ businessId: seeded.ids[1] });
+    if (!preview.ok || preview.data.step !== "preview") throw new Error(JSON.stringify(preview));
+    expect(preview.data.headline).toMatch(/^Bay Dental stays on your plan until \w+ \d+, \d{4}\. No refund\.$/);
+    await removeBusiness({ businessId: seeded.ids[1], previewedAt: preview.data.previewedAt, reason: "too_expensive" });
+    expect(await reasonsOf(seeded.agencyId)).toEqual([{ kind: "remove", reason: "too_expensive", business_id: seeded.ids[1] }]);
+
+    const cancel = await cancelSubscription({});
+    if (!cancel.ok || cancel.data.step !== "preview") throw new Error(JSON.stringify(cancel));
+    await cancelSubscription({ previewedAt: cancel.data.previewedAt });
+    expect(await reasonsOf(seeded.agencyId)).toHaveLength(1);
+  });
+
+  it("refuses a reason that is not on the list", async () => {
+    const seeded = await seedAgency("active", ["Acme Plumbing"]);
+    session = seeded.client;
+    useFake("active", seeded.ids);
+    expect(await cancelSubscription({ previewedAt: 1, reason: "free text" })).toMatchObject({ ok: false, status: 400 });
+  });
+});

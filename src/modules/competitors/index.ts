@@ -14,6 +14,7 @@ export {
   matchedNone,
   reviewsText,
   websiteLabel,
+  websiteAction,
   websiteShown,
   type CompetitorsView,
   type LeaderRow,

@@ -46,7 +46,7 @@ To change a decision, edit its row, add the new date, and keep the old choice in
 | D-14 | Flow: create account, agency name, business (website or "no website"), details auto-filled, competitors, AI-written questions, AI models and scan frequency, card, first scan, dashboard. | Decided | Card comes after the user has invested effort, right before the first paid action. | Card at the very start |
 | D-15 | Card required to start the trial. | Decided | Filters out random signups. | No-card trial |
 | D-16 | Trial: 7 days, 2 businesses, auto-charged on day 7 unless cancelled. | Decided | Jordan: trial limited to 2 businesses (07:43). | |
-| D-17 | Trial credits: 100. | Proposed | 50 covers barely one scan; 100 covers first scans for both businesses plus one rescan. | 50 credits |
+| D-17 | Trial credits: 150. | Decided (2026-10-15, the user) | 50 covers barely one scan; 100 covered first scans for both businesses plus one rescan; 150 leaves room for a second rescan. Trials started before the change keep the 100 they were granted (no backfill). | 50 or 100 credits |
 | D-18 | Business details are auto-filled from Firecrawl (website pages) plus Google Places, combined by Claude Haiku 4.5 into fixed fields. The user confirms. Manual form if both fail. | Proposed | Same idea as Voxtell's onboarding; Firecrawl gets past Cloudflare; Places is authoritative for address, phone and category. About $0.01 to $0.10 per business. | Our own HTML scanner only (fails on Cloudflare) |
 
 ## 4. Pricing and credits
@@ -190,6 +190,6 @@ Send when he is back (about 14 days from 2026-09-25).
 - [ ] Change all API keys (malware found in the repo; his commit `80d3b13` brought it in, so his machine may be infected)
 - [ ] Budget, milestones and launch date (T8)
 - [ ] Who controls the domain's DNS settings (needed for the Vercel move, D-70)
-- [ ] Existing beta users at launch: fresh 7-day trial with 100 credits? (D-69)
+- [ ] Existing beta users at launch: fresh 7-day trial with 150 credits? (D-69)
 - [ ] New Anthropic and Perplexity API keys (the local setup only has an OpenAI key)
 - [ ] Lawyer (or Jordan) review: Terms and Privacy updates (D-78), our reading of Google's Places terms (D-73), and deletion deadlines (D-77)

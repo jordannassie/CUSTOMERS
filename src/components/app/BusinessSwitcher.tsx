@@ -93,25 +93,26 @@ function Items({ businesses, activeId, pending, target, choose, scores }: ItemsP
         key={b.id}
         onSelect={() => choose(b.id)}
         disabled={pending}
-        className="gap-2.5 py-2"
+        className="items-start gap-2.5 py-2"
         aria-current={b.id === activeId ? "true" : undefined}
+        title={b.name}
         data-testid="switcher-item"
       >
         <BusinessMark name={b.name} logoUrl={b.logoUrl} />
         <span className="flex min-w-0 flex-1 flex-col">
-          <span className="truncate">{b.name}</span>
+          <span className="line-clamp-2 break-words">{b.name}</span>
           {score && <ScoreLine score={score} />}
         </span>
         {score?.score != null && score.tone && (
-          <span className="flex items-center gap-1.5 text-sm font-semibold tabular-nums" data-testid="switcher-score">
+          <span className="flex shrink-0 items-center gap-1.5 text-sm font-semibold tabular-nums" data-testid="switcher-score">
             <span className={cn("size-2 rounded-full", DOT[score.tone])} aria-hidden="true" />
             {score.score}
           </span>
         )}
         {target === b.id ? (
-          <Loader2 className="size-4 animate-spin text-muted-foreground" aria-hidden="true" />
+          <Loader2 className="size-4 shrink-0 animate-spin text-muted-foreground" aria-hidden="true" />
         ) : (
-          <Check className={cn("size-4 text-primary", b.id !== activeId && "invisible")} aria-hidden="true" />
+          <Check className={cn("size-4 shrink-0 text-primary", b.id !== activeId && "invisible")} aria-hidden="true" />
         )}
       </DropdownMenuItem>
     );
@@ -154,12 +155,16 @@ export function BusinessSwitcher({
       <DropdownMenuTrigger
         className="flex w-full items-center gap-2.5 rounded-md border border-border bg-surface px-2.5 py-2 text-left outline-none transition-colors hover:border-input focus-visible:ring-3 focus-visible:ring-ring/50"
         aria-label={`Business: ${active.name}. Switch business`}
+        title={active.name}
         data-testid="business-switcher"
       >
         <BusinessMark name={active.name} logoUrl={active.logoUrl} />
+        {/* Long names get two lines, so the start of the name and the domain both stay readable. */}
         <span className="min-w-0 flex-1">
-          <span className="block truncate text-sm font-medium text-foreground">{active.name}</span>
-          {active.domain && <span className="block truncate text-xs text-muted-foreground">{active.domain}</span>}
+          <span className="line-clamp-2 text-sm font-medium break-words text-foreground" data-testid="switcher-name">
+            {active.name}
+          </span>
+          {active.domain && <span className="block truncate text-xs text-muted-foreground" title={active.domain}>{active.domain}</span>}
         </span>
         {pending ? (
           <Loader2 className="size-4 shrink-0 animate-spin text-muted-foreground" aria-label="Switching" />

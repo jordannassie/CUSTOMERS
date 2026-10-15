@@ -62,7 +62,7 @@ export default async function BillingPage({ searchParams }: Props) {
                 actions={{ upgrade: upgradeBusiness, downgrade: downgradeBusiness, remove: removeBusiness, add: addBusiness, keep: keepBusinessPlan }}
               />
               <CreditsPanel buyHref={BUY_CREDITS_HREF} usageHref={USAGE_HREF} />
-              {view.canChange && !view.cancelAt && <CancelPanel cancel={cancelSubscription} />}
+              {view.canChange && !view.cancelAt && <CancelPanel cancel={cancelSubscription} trialing={view.status === "trialing"} />}
             </>
           ) : (
             <NoPlan ended={view.status === "canceled"} choosePlanHref={CHOOSE_PLAN_HREF} />

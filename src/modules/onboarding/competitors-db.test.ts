@@ -185,6 +185,26 @@ describe("saving competitors", () => {
     const kept = rows.find((r) => r.name === bean.name)!;
     expect(kept).toMatchObject({ id: legacy.data.id, places_id: bean.placeId, formatted_address: null, phone: null, category: null });
   });
+
+  it("keeps the long Google name as another name when the short brand is saved (2026-10-15)", async () => {
+    const owner = await createOwner();
+    session = owner.client;
+    const [bean] = pick(1);
+    const long = `${bean.name} - Coffee, Pastries & Brunch in Springfield`;
+    const input = [{ name: bean.name, placesId: bean.placeId, aliases: [long] }];
+    expect(await saveCompetitorList({ businessId: owner.businessId, competitors: input })).toMatchObject({ ok: true });
+    const aliasesOf = async () =>
+      (await service.from("business_competitors").select("aliases").eq("business_id", owner.businessId).single().throwOnError()).data.aliases;
+    expect(await aliasesOf()).toEqual([long]);
+
+    // Saved again, with another name the owner added in the meantime: both stay, once each.
+    await service.from("business_competitors").update({ aliases: [long, "Bean House Cafe"] }).eq("business_id", owner.businessId).throwOnError();
+    expect(await saveCompetitorList({ businessId: owner.businessId, competitors: input })).toMatchObject({ ok: true });
+    expect(await aliasesOf()).toEqual([long, "Bean House Cafe"]);
+    // A save without aliases (the list reloaded) leaves them alone.
+    expect(await saveCompetitorList({ businessId: owner.businessId, competitors: asInput([bean]) })).toMatchObject({ ok: true });
+    expect(await aliasesOf()).toEqual([long, "Bean House Cafe"]);
+  });
 });
 
 describe("loading the step", () => {

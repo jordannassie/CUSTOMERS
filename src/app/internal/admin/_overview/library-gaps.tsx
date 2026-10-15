@@ -18,7 +18,7 @@ export default function LibraryGaps({ rows }: { rows: LibraryGap[] }) {
           <ul className="divide-y divide-border rounded-md border border-border bg-surface text-[13px]" data-testid="library-gaps">
             {shown.map((g) => (
               <li key={g.label} className="flex items-center justify-between gap-3 px-4 py-3">
-                <span className="min-w-0 truncate font-medium">
+                <span className="min-w-0 truncate font-medium" title={g.label}>
                   {g.label}
                   {!g.listed && <span className="ml-2 font-normal text-text-hint">Other</span>}
                 </span>

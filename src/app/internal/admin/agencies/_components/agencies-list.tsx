@@ -80,21 +80,21 @@ export default function AgenciesList({ list, status }: { list: AdminAgencyList; 
               <TableBody>
                 {rows.map((r) => (
                   <TableRow key={r.id}>
-                    <TableCell className="max-w-[260px]">
-                      <span className="flex items-center gap-2">
-                        <Link href={href(r.id)} className="truncate font-medium text-primary hover:underline">
+                    <TableCell className="max-w-[260px] min-w-44 whitespace-normal">
+                      <span className="flex items-start gap-2">
+                        <Link href={href(r.id)} className="line-clamp-2 min-w-0 break-words font-medium text-primary hover:underline" title={r.name}>
                           {r.name}
                         </Link>
                         {r.isTest && <TestBadge />}
                       </span>
-                      <span className="block truncate text-text-hint">{r.ownerEmail ?? "Owner email unknown"}</span>
+                      <span className="block truncate text-text-hint" title={r.ownerEmail ?? "Owner email unknown"}>{r.ownerEmail ?? "Owner email unknown"}</span>
                     </TableCell>
                     <TableCell>
                       <StatusCell row={r} />
                     </TableCell>
                     <TableCell className="max-w-[200px]">
                       <span className="tabular-nums">{r.businesses}</span>
-                      <span className="block truncate text-text-hint">{r.planMix || "No plan yet"}</span>
+                      <span className="block truncate text-text-hint" title={r.planMix || "No plan yet"}>{r.planMix || "No plan yet"}</span>
                     </TableCell>
                     <TableCell className="text-right">
                       <CreditsCell row={r} />
@@ -113,11 +113,11 @@ export default function AgenciesList({ list, status }: { list: AdminAgencyList; 
                 <Link href={href(r.id)} className="flex flex-col gap-2 px-4 py-3 text-[13px] hover:bg-muted">
                   <span className="flex items-start justify-between gap-3">
                     <span className="min-w-0">
-                      <span className="flex items-center gap-2">
-                        <span className="truncate text-[14px] font-medium text-primary">{r.name}</span>
+                      <span className="flex items-start gap-2">
+                        <span className="line-clamp-2 min-w-0 break-words text-[14px] font-medium text-primary" title={r.name}>{r.name}</span>
                         {r.isTest && <TestBadge />}
                       </span>
-                      <span className="block truncate text-text-hint">{r.ownerEmail ?? "Owner email unknown"}</span>
+                      <span className="block truncate text-text-hint" title={r.ownerEmail ?? "Owner email unknown"}>{r.ownerEmail ?? "Owner email unknown"}</span>
                     </span>
                     <StatusBadge status={r.status} />
                   </span>

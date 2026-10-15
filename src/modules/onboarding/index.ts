@@ -9,7 +9,7 @@ export { INDUSTRIES, industryFromPlacesType, type Industry } from "./industries"
 export { getCompetitorStep } from "./queries";
 export type { AutofillResult, BusinessDetails, PlaceChoice } from "./schema";
 export { prepareQuestions, type QuestionBusiness, type QuestionSet } from "./questions";
-export { isFairQuestion, type PreparedQuestion } from "./question-rules";
+export { hasPlaceholder, isFairQuestion, type PreparedQuestion } from "./question-rules";
 export {
   checkCardStep,
   checkTrialCredits,

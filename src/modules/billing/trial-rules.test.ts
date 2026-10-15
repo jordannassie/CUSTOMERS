@@ -94,7 +94,7 @@ describe("trial", () => {
     };
     const deps = { stripe, plansByProduct: new Map([["cd_plan_starter", { planId: "starter", monthlyCredits: 1200 }]]), now: () => new Date(stripe.clock * 1000) };
     const preview = await previewPlanChange(ctx, { kind: "cancel" }, deps);
-    expect(preview.details).toContain("Your card won't be charged.");
+    expect(preview.headline).toContain("Your card won't be charged.");
     await applyPlanChange(ctx, { kind: "cancel" }, preview.previewedAt, deps);
     await sendEvents("customer.subscription.updated");
 

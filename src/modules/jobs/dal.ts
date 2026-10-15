@@ -164,6 +164,21 @@ export async function latestJob(businessId: string): Promise<LatestJob | null> {
   );
 }
 
+/** When the business's last scan finished with results, for the same-day rescan question (D-54); null if never. */
+export async function lastDoneScanAt(businessId: string): Promise<string | null> {
+  const { data, error } = await createServiceClient()
+    .from("scan_jobs")
+    .select("finished_at")
+    .eq("business_id", businessId)
+    .eq("status", "done")
+    .not("finished_at", "is", null)
+    .order("finished_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error) throw new Error(`Could not load the last scan: ${error.message}`);
+  return data?.finished_at ?? null;
+}
+
 /**
  * Starts the hosted worker now instead of at the next scheduled minute. Returns false when no WORKER_URL
  * is set. A Netlify background function answers 202 at once, so this does not wait for the scan.

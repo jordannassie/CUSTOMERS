@@ -31,7 +31,7 @@ export function CompetitorWebsite({
 
   if (!open) {
     return (
-      <Button type="button" variant="link" size="sm" className="h-auto p-0 text-[13px]" onClick={() => setOpen(true)} data-testid="add-website">
+      <Button type="button" variant="link" size="sm" className="h-auto self-start p-0 text-[13px]" onClick={() => setOpen(true)} data-testid="add-website">
         {current ? "Edit" : "Add website"}
       </Button>
     );
@@ -50,14 +50,14 @@ export function CompetitorWebsite({
 
   return (
     <form onSubmit={submit} className="flex flex-col gap-1.5" aria-label={`Website for ${name}`}>
-      <div className="flex items-center gap-1.5">
+      <div className="flex flex-wrap items-center gap-1.5">
         <Input
           value={value}
           onChange={(e) => setValue(e.target.value)}
           placeholder="theirsite.com"
           aria-label={`Website for ${name}`}
           maxLength={200}
-          className="h-8 w-40 text-[13px]"
+          className="h-8 w-40 max-w-full min-w-0 text-[13px]"
           autoFocus
         />
         <Button type="submit" size="sm" className="h-8" disabled={pending}>

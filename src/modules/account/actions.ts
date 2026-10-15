@@ -141,7 +141,7 @@ export async function deleteBusiness(input: unknown): Promise<ActionResult<{ pur
     }
     if (user.email) {
       await sendSafely(
-        businessDeletedEmail({ to: user.email, agencyId: agency.id, businessId, businessName: name, planEndsAt: plan.endsAt, purgeAt }),
+        businessDeletedEmail({ to: user.email, agencyId: agency.id, businessId, businessName: name, planEndsAt: plan.endsAt, removedNow: plan.removedNow, purgeAt }),
       );
     }
     refresh();

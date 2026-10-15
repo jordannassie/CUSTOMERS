@@ -68,8 +68,8 @@ export function LeadRows({
                   <p className={cn("truncate text-[14px]", lead.read_at ? "text-foreground" : "font-semibold")}>
                     {lead.name}
                   </p>
-                  <p className="truncate text-[12px] text-muted-foreground">{lead.email}</p>
-                  {lead.company && <p className="truncate text-[12px] text-muted-foreground">{lead.company}</p>}
+                  <p className="truncate text-[12px] text-muted-foreground" title={lead.email}>{lead.email}</p>
+                  {lead.company && <p className="truncate text-[12px] text-muted-foreground" title={lead.company}>{lead.company}</p>}
                 </div>
               </div>
               <div className="flex shrink-0 flex-col items-end gap-1">

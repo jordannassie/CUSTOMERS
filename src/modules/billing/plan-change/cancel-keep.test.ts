@@ -35,8 +35,10 @@ describe("cancel with a scheduled downgrade, then keep the plan", () => {
 
     const cancel = await change({ kind: "cancel" });
     expect(cancel.preview.details).toEqual([
-      "You won't be charged again, and there's no refund for this month.",
+      "Any plan credits left on October 1, 2026 are removed.",
       "Top-up credits stay on your account, but you can only use them with an active plan.",
+      "Your results, past scans and share links stay. From October 1, 2026, questions, competitors and business details can't be changed.",
+      "You can keep your plan any time before October 1, 2026.",
       "Your change to Starter for Acme Plumbing is also canceled.",
       "If you keep your plan, this change comes back.",
     ]);
@@ -129,9 +131,8 @@ describe("cancel and keep during a trial", () => {
     const { stripe, change } = setup({ a: "price_pro", status: "trialing" });
     await change({ kind: "downgrade", businessId: A, planId: "starter" });
     const cancel = await change({ kind: "cancel" });
-    expect(cancel.preview.details).toEqual([
-      "Your card won't be charged.",
-      "Top-up credits stay on your account, but you can only use them with an active plan.",
+    expect(cancel.preview.headline).toMatch(/^Your free trial keeps going until \w+ \d+, \d{4}\. Your card won't be charged\.$/);
+    expect(cancel.preview.details.slice(-2)).toEqual([
       "Your change to Starter for Acme Plumbing is also canceled.",
       "If you keep your plan, this change comes back.",
     ]);
@@ -155,7 +156,9 @@ describe("cancel with nothing scheduled", () => {
   it("still uses cancel_at_period_end, and keep undoes it", async () => {
     const { stripe, change } = setup();
     const cancel = await change({ kind: "cancel" });
-    expect(cancel.preview.details).toHaveLength(2);
+    // Credits, top-ups, what stays and the undo; no scheduled-change lines.
+    expect(cancel.preview.details).toHaveLength(4);
+    expect(cancel.preview.details.join(" ")).not.toMatch(/also canceled/);
     expect(cancel.done.message).toBe("Your plan ends on October 1, 2026.");
     expect(stripe.calls.some((c) => c.method === "updateSchedule")).toBe(false);
     expect(stripe.cancelAtPeriodEnd).toBe(true);

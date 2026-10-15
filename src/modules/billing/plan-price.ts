@@ -35,3 +35,17 @@ export function planIdOfPrice(price: PriceRef, plans: { id: string }[]): string 
   const product = productOfPrice(price);
   return plans.find((p) => productIdFor({ kind: "plan", id: p.id }) === product)?.id ?? null;
 }
+
+const priceIdOf = (price: PriceRef) => (!price ? "" : typeof price === "string" ? price : price.id);
+
+/**
+ * True when two item prices are the same plan. Adding a business while a change is scheduled wrote it into both
+ * schedule phases with `price_data`, and Stripe made a separate price for each phase, so "Starter" showed as moving
+ * to Starter (2026-10-15). The product decides; the price ID only when a product is unknown.
+ */
+export function samePlanPrice(a: PriceRef, b: PriceRef): boolean {
+  const productA = productOfPrice(a);
+  const productB = productOfPrice(b);
+  if (productA && productB) return productA === productB;
+  return priceIdOf(a) === priceIdOf(b);
+}

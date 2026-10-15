@@ -43,7 +43,7 @@ export function Report({ report, logoSrc }: { report: ReportView; logoSrc: strin
           </span>
         </div>
         <div className="flex flex-col gap-2">
-          <h1 className="text-[32px] leading-tight font-semibold tracking-[-0.02em] text-balance">{report.businessName}</h1>
+          <h1 className="text-[32px] leading-tight font-semibold tracking-[-0.02em] text-balance break-words">{report.businessName}</h1>
           <p className="text-[15px] text-muted-foreground" data-testid="report-period">
             How often AI recommends this business, <ReportPeriod iso={report.preparedAt} windowDays={report.windowDays} />
           </p>

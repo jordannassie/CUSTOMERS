@@ -103,7 +103,7 @@ export function LeadDetail({
           <Field label="Source">{SOURCE_LABELS[lead.source ?? ""] ?? lead.source ?? "-"}</Field>
           {lead.page_path && (
             <Field label="Page" className="col-span-2">
-              <span className="block truncate">{lead.page_path}</span>
+              <span className="block truncate" title={lead.page_path}>{lead.page_path}</span>
             </Field>
           )}
         </div>

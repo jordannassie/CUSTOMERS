@@ -10,6 +10,7 @@ import { ALIASES_MAX, AREA_MAX } from "@/modules/settings/schema";
 import { aliasesProblem, aliasExample, normalizeWebsite, parseServices } from "@/modules/settings/service";
 import { Button } from "@/components/ui/button";
 import { CountrySelect } from "@/components/ui/country-select";
+import { Select } from "@/components/ui/select";
 import { FieldMessage, useFieldErrors } from "@/components/ui/field-errors";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -20,8 +21,9 @@ export type SaveAction = (input: unknown) => Promise<ActionResult<null>>;
 type Fields = Omit<SettingsBusiness, "id" | "services" | "aliases" | "models" | "frequency"> & { services: string; aliases: string };
 type Checked = "name" | "website" | "industry" | "aliases";
 
-const SELECT_CLASS =
-  "h-9 w-full rounded-lg border border-input bg-surface px-3 text-base outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 md:text-sm";
+// Matches the height of the inputs in this form.
+const SELECT_HEIGHT = "h-9";
+const INDUSTRY_OPTIONS = INDUSTRIES.map((i) => ({ value: i, label: INDUSTRY_LABELS[i] }));
 
 export function BusinessProfileForm({ business, save }: { business: SettingsBusiness; save: SaveAction }) {
   const initial: Fields = {
@@ -90,28 +92,20 @@ export function BusinessProfileForm({ business, save }: { business: SettingsBusi
             <Input {...field("name")} required maxLength={120} autoComplete="organization" {...fields.fieldProps("name")} />
           </Row>
           <Row label="Industry" htmlFor="profile-industry" error={fields.errors.industry}>
-            <select
+            <Select
               id="profile-industry"
               name="industry"
               value={industryChoice}
-              onChange={(e) => {
-                const value = e.target.value;
+              onValueChange={(value) => {
                 setOtherIndustry(value === "other");
                 setForm((f) => ({ ...f, industry: value === "other" ? otherText(f.industry) : value }));
                 fields.clear("industry");
               }}
-              className={SELECT_CLASS}
+              options={INDUSTRY_OPTIONS}
+              placeholder="Choose an industry"
+              className={SELECT_HEIGHT}
               {...(otherIndustry ? {} : fields.fieldProps("industry"))}
-            >
-              <option value="" disabled>
-                Choose an industry
-              </option>
-              {INDUSTRIES.map((i) => (
-                <option key={i} value={i}>
-                  {INDUSTRY_LABELS[i]}
-                </option>
-              ))}
-            </select>
+            />
           </Row>
           {otherIndustry && (
             <Row label="What kind of business is it?" htmlFor="profile-other-industry" hint="For example: bookstore, yoga studio.">
@@ -179,7 +173,7 @@ export function BusinessProfileForm({ business, save }: { business: SettingsBusi
               name="country"
               value={form.country}
               onValueChange={(country) => setForm((f) => ({ ...f, country }))}
-              className="h-9 w-full rounded-lg border border-input bg-surface px-3 text-base outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 md:text-sm"
+              className={SELECT_HEIGHT}
             />
           </Row>
           <Row label="Phone" htmlFor="profile-phone">

@@ -19,7 +19,7 @@ export function Breakdown({ title, rows, total, testId }: { title: string; rows:
                 <div className="flex items-baseline justify-between gap-3 text-sm">
                   <span className="flex min-w-0 items-center gap-2">
                     {row.dot && <span aria-hidden className={cn("size-2 shrink-0 rounded-full", row.dot)} />}
-                    <span className="truncate">{row.label}</span>
+                    <span className="truncate" title={row.label}>{row.label}</span>
                   </span>
                   <span className="shrink-0 tabular-nums">
                     <span data-credits className="font-medium">

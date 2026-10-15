@@ -2,11 +2,12 @@
 
 import { viewerTimeZone } from "@/lib/viewer-time-zone";
 import { authFailure, requireAgency, type ActionResult } from "@/modules/auth";
+import { getBalance } from "@/modules/credits";
 import { canAddBusiness } from "@/modules/entitlements";
 import { billingAccess } from "../account/access";
-import { loadPlanChangeData } from "./dal";
+import { loadPlanChangeData, saveCancelReason } from "./dal";
 import { PlanChangeError, type PlanChange } from "./planner";
-import { businessPlanInput, removeBusinessInput, subscriptionInput } from "./schema";
+import { businessPlanInput, cancelInput, keepBusinessInput, removeBusinessInput, subscriptionInput, type CancelReason } from "./schema";
 import { applyPlanChange, previewPlanChange, type PlanChangeDone, type PlanChangePreview } from "./service";
 
 // Plan changes (B-44, MVP_SPEC 11.5, D-57). Each action checks auth and input itself. Called without
@@ -35,21 +36,47 @@ function stripeFailure(error: unknown): PlanChangeResult | null {
   return null;
 }
 
+/** Credits left now, so the cancel and removal previews can say how many end (plan or trial) and how many stay. */
+async function creditsLeft(agencyId: string) {
+  const balance = await getBalance(agencyId);
+  return { plan: Math.max(0, balance.plan_remaining ?? 0), topup: Math.max(0, balance.topup_remaining ?? 0) };
+}
+
+/** Never fails the cancel itself: the reason is optional, and the plan change already happened. */
+async function keepReason(agencyId: string, change: PlanChange, reason: CancelReason | undefined) {
+  if (!reason || (change.kind !== "cancel" && change.kind !== "remove")) return;
+  try {
+    await saveCancelReason(agencyId, { kind: change.kind, reason, businessId: change.kind === "remove" ? change.businessId : null });
+  } catch (error) {
+    console.error("[billing/plan-change] cancel reason not saved", error);
+  }
+}
+
 async function run(
   agencyId: string,
   change: PlanChange,
   previewedAt: number | undefined,
+  reason?: CancelReason,
 ): Promise<PlanChangeResult> {
   try {
     const data = await loadPlanChangeData(agencyId);
     const access = await billingAccess(data);
     if (!access) return unavailable;
     const { context, stripe } = access;
-    const deps = { stripe, plansByProduct: data.plansByProduct, now: () => new Date(), timeZone: await viewerTimeZone() };
+    const ending = change.kind === "cancel" || change.kind === "remove";
+    const deps = {
+      stripe,
+      plansByProduct: data.plansByProduct,
+      now: () => new Date(),
+      timeZone: await viewerTimeZone(),
+      credits: ending && previewedAt === undefined ? await creditsLeft(agencyId) : undefined,
+    };
     if (previewedAt === undefined) {
       return { ok: true, data: { step: "preview", ...(await previewPlanChange(context, change, deps)) } };
     }
-    return { ok: true, data: { step: "done", ...(await applyPlanChange(context, change, previewedAt, deps)) } };
+    const done = await applyPlanChange(context, change, previewedAt, deps);
+    await keepReason(agencyId, change, reason);
+    return { ok: true, data: { step: "done", ...done } };
   } catch (error) {
     if (error instanceof PlanChangeError) return { ok: false, status: error.status, error: error.message };
     const failure = stripeFailure(error);
@@ -104,15 +131,15 @@ export async function removeBusiness(input: unknown): Promise<PlanChangeResult> 
   if (typeof agency !== "string") return agency;
   const parsed = removeBusinessInput.safeParse(input);
   if (!parsed.success) return badInput;
-  const { businessId, previewedAt } = parsed.data;
-  return run(agency, { kind: "remove", businessId }, previewedAt);
+  const { businessId, previewedAt, reason } = parsed.data;
+  return run(agency, { kind: "remove", businessId }, previewedAt, reason);
 }
 
 /** Takes back a scheduled downgrade or removal of one business ("Keep Pro", "Keep on plan"). */
 export async function keepBusinessPlan(input: unknown): Promise<PlanChangeResult> {
   const agency = await agencyId();
   if (typeof agency !== "string") return agency;
-  const parsed = removeBusinessInput.safeParse(input);
+  const parsed = keepBusinessInput.safeParse(input);
   if (!parsed.success) return badInput;
   const { businessId, previewedAt } = parsed.data;
   return run(agency, { kind: "keepBusiness", businessId }, previewedAt);
@@ -122,9 +149,9 @@ export async function keepBusinessPlan(input: unknown): Promise<PlanChangeResult
 export async function cancelSubscription(input: unknown): Promise<PlanChangeResult> {
   const agency = await agencyId();
   if (typeof agency !== "string") return agency;
-  const parsed = subscriptionInput.safeParse(input);
+  const parsed = cancelInput.safeParse(input);
   if (!parsed.success) return badInput;
-  return run(agency, { kind: "cancel" }, parsed.data.previewedAt);
+  return run(agency, { kind: "cancel" }, parsed.data.previewedAt, parsed.data.reason);
 }
 
 /** Undoes a cancel before the period ends. */

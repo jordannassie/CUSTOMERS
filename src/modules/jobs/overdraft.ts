@@ -1,4 +1,5 @@
 import type { ActionResult } from "@/modules/auth";
+import type { RecentScanNeeded } from "./recent-scan";
 import type { ScanStatus } from "./service";
 
 // Run scan's credit check before a scan starts (D-54). Pure, so the three outcomes are unit tested.
@@ -34,7 +35,7 @@ export type OverdraftNeeded = {
   overdraft: { cost: number; balance: number };
 };
 
-export type StartScanResult = ActionResult<ScanStatus> | OverdraftNeeded;
+export type StartScanResult = ActionResult<ScanStatus> | OverdraftNeeded | RecentScanNeeded;
 
 export function overdraftNeeded(check: Extract<ScanCreditCheck, { kind: "warn" }>): OverdraftNeeded {
   return { ok: false, status: 402, error: overdraftWarning(check), overdraft: { cost: check.cost, balance: check.balance } };
@@ -43,4 +44,9 @@ export function overdraftNeeded(check: Extract<ScanCreditCheck, { kind: "warn" }
 /** True when startScan stopped to ask for confirmation instead of starting the scan. */
 export function needsOverdraftConfirm(result: StartScanResult): result is OverdraftNeeded {
   return !result.ok && "overdraft" in result;
+}
+
+/** True when startScan stopped to ask whether to scan again so soon after the last scan. */
+export function needsRecentScanConfirm(result: StartScanResult): result is RecentScanNeeded {
+  return !result.ok && "recentScan" in result;
 }

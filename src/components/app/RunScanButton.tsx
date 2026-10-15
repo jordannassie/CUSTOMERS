@@ -7,8 +7,9 @@ import { cn } from "cn";
 import { Button } from "@/components/ui/button";
 import type { ActionResult } from "@/modules/auth";
 import type { ScanStatus, StartScanResult } from "@/modules/jobs";
-import { needsOverdraftConfirm } from "@/modules/jobs/overdraft";
+import { needsOverdraftConfirm, needsRecentScanConfirm } from "@/modules/jobs/overdraft";
 import { OverdraftDialog } from "./OverdraftDialog";
+import { RecentScanDialog } from "./RecentScanDialog";
 
 type ScanAction = (input: unknown) => Promise<ActionResult<ScanStatus>>;
 type StartAction = (input: unknown) => Promise<StartScanResult>;
@@ -44,6 +45,9 @@ export function RunScanButton({
   const [pending, startTransition] = useTransition();
   // The server's warning when the scan costs more than the balance (D-54); the scan waits for a confirm.
   const [overdraft, setOverdraft] = useState<string | null>(null);
+  // Asked first when the business was scanned in the last 24 hours (2026-10-15); a yes carries into the overdraft one.
+  const [recent, setRecent] = useState<string | null>(null);
+  const [recentConfirmed, setRecentConfirmed] = useState(false);
 
   useEffect(() => {
     if (!status.scanning) return;
@@ -72,14 +76,19 @@ export function RunScanButton({
   const blocked = !scanning && status.blockedReason !== null;
   const text = note?.text ?? (scanning ? (status.retrying ? RETRYING : stalled ? STALLED : "Results appear in about a minute.") : "");
 
-  function run(confirmOverdraft = false) {
+  function run(confirm: { overdraft?: boolean; recent?: boolean } = {}) {
     if (scanning) return setNote({ text: ALREADY_RUNNING, tone: "muted" });
     setNote(null);
     setOverdraft(null);
+    setRecent(null);
+    const confirmRecent = confirm.recent ?? (confirm.overdraft ? recentConfirmed : false);
+    setRecentConfirmed(confirmRecent);
     startTransition(async () => {
-      const result = await start(confirmOverdraft ? { businessId, confirmOverdraft } : { businessId }).catch(() => null);
+      const input = { businessId, ...(confirm.overdraft ? { confirmOverdraft: true } : {}), ...(confirmRecent ? { confirmRecent: true } : {}) };
+      const result = await start(input).catch(() => null);
       if (!result) return setNote({ text: "Could not start the scan. Check your connection and try again.", tone: "error" });
       if (result.ok) return setStatus(result.data);
+      if (needsRecentScanConfirm(result)) return setRecent(result.error);
       if (needsOverdraftConfirm(result)) return setOverdraft(result.error);
       if (result.status === 409) {
         setStatus((s) => ({ ...s, scanning: true }));
@@ -121,7 +130,8 @@ export function RunScanButton({
       >
         {text}
       </p>
-      <OverdraftDialog message={overdraft} onConfirm={() => run(true)} onCancel={() => setOverdraft(null)} />
+      <RecentScanDialog message={recent} onConfirm={() => run({ recent: true })} onCancel={() => setRecent(null)} />
+      <OverdraftDialog message={overdraft} onConfirm={() => run({ overdraft: true })} onCancel={() => setOverdraft(null)} />
     </div>
   );
 }

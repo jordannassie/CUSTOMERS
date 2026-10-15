@@ -3,7 +3,7 @@ import { ExternalLink } from "lucide-react";
 import { cn } from "cn";
 import { GoogleAttribution, PlaceRating } from "@/components/onboarding/PlaceBits";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { headToHead, hoursText, matchedNone, reviewsText, websiteLabel, websiteShown, type SignalRow } from "@/modules/competitors";
+import { headToHead, hoursText, matchedNone, reviewsText, websiteAction, websiteLabel, websiteShown, type SignalRow } from "@/modules/competitors";
 import { CompetitorWebsite, type SaveWebsiteAction } from "./CompetitorWebsite";
 
 // Google could not be reached or its daily limit was used up: one quiet note above the table, and a short word in
@@ -67,7 +67,7 @@ export function SignalsTable({ rows, pickBranch = false, edit = null }: { rows: 
           <TableBody>
             {rows.map((row) => (
               <TableRow key={`${row.isYou}-${row.name}`} className={cn(row.isYou && "bg-primary-tint hover:bg-primary-tint")}>
-                <TableCell className={cn("max-w-56 truncate font-medium", row.isYou && "text-primary")}>
+                <TableCell className={cn("max-w-64 min-w-40 font-medium break-words whitespace-normal", row.isYou && "text-primary")}>
                   {row.isYou ? `${row.name} (you)` : row.name}
                 </TableCell>
                 {row.signals ? (
@@ -75,7 +75,9 @@ export function SignalsTable({ rows, pickBranch = false, edit = null }: { rows: 
                     <TableCell>
                       <PlaceRating rating={row.signals.rating} reviewCount={row.signals.reviewCount} />
                     </TableCell>
-                    <TableCell className="max-w-48 truncate">{row.signals.categories.join(", ") || <Hint>Not listed</Hint>}</TableCell>
+                    <TableCell className="max-w-48 truncate" title={row.signals.categories.join(", ") || undefined}>
+                      {row.signals.categories.join(", ") || <Hint>Not listed</Hint>}
+                    </TableCell>
                     <TableCell>
                       <WebsiteCell row={row} edit={edit} />
                     </TableCell>
@@ -101,7 +103,7 @@ export function SignalsTable({ rows, pickBranch = false, edit = null }: { rows: 
       <ul className="flex flex-col divide-y divide-border @min-[760px]:hidden print:hidden">
         {rows.map((row) => (
           <li key={`${row.isYou}-${row.name}`} className="flex flex-col gap-1 py-3 first:pt-0 last:pb-0">
-            <span className={cn("truncate text-sm font-medium", row.isYou && "text-primary")}>
+            <span className={cn("text-sm font-medium break-words", row.isYou && "text-primary")}>
               {row.isYou ? `${row.name} (you)` : row.name}
             </span>
             {row.signals ? (
@@ -144,13 +146,14 @@ function Hint({ children }: { children: React.ReactNode }) {
 
 /**
  * Google's website when it lists one. Otherwise a website the user typed, marked "added by you", or "No website on
- * Google" with "Add website". When Google could not be reached, nothing here says the business has no website.
+ * Google" with "Add website". When Google could not be reached or found no listing, the cell is empty: the row's own
+ * note says why, and nothing here says the business has no website or asks for one (2026-10-15).
  */
 function WebsiteCell({ row, edit }: { row: SignalRow; edit: WebsiteEdit | null }) {
   const shown = websiteShown(row);
   if (shown.kind === "google") return <WebsiteLink url={shown.url} />;
   const action =
-    edit && row.competitorId ? (
+    edit && row.competitorId && websiteAction(shown) ? (
       <CompetitorWebsite businessId={edit.businessId} competitorId={row.competitorId} name={row.name} current={row.savedSite ?? null} save={edit.save} />
     ) : null;
   if (shown.kind === "saved") {
@@ -162,8 +165,7 @@ function WebsiteCell({ row, edit }: { row: SignalRow; edit: WebsiteEdit | null }
       </span>
     );
   }
-  // A failed lookup or no listing: the row's own note says so; nothing here claims there is no website.
-  if (shown.kind === "unknown") return action;
+  if (shown.kind === "unknown") return null;
   return (
     <span className="flex flex-wrap items-center gap-x-2 gap-y-1" data-testid="no-google-website">
       <Hint>No website on Google</Hint>
@@ -180,7 +182,9 @@ function WebsiteLink({ url }: { url: string }) {
       rel="noopener noreferrer nofollow"
       className="inline-flex max-w-48 items-center gap-1 text-[13px] text-primary hover:underline"
     >
-      <span className="truncate">{websiteLabel(url)}</span>
+      <span className="truncate" title={websiteLabel(url)}>
+        {websiteLabel(url)}
+      </span>
       <ExternalLink aria-hidden className="size-3 shrink-0" />
     </a>
   );

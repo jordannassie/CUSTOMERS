@@ -24,9 +24,33 @@ export type CopyInput = {
   timeZone?: string;
   effectiveAt: number;
   scheduled?: ScheduledNote[];
+  /** Credits left now, for a cancel or a removal: plan or trial credits, and top-ups. Unknown when absent. */
+  credits?: { plan: number; topup: number };
 };
 
-export type Copy = { headline: string; details: string[] };
+/** What stops on the end date of a cancel or a removal, listed under the heading. */
+export type Losses = { heading: string; items: string[] };
+
+export type Copy = { headline: string; details: string[]; losses?: Losses };
+
+// What an ended plan stops (entitlements: no scans, no edits; jobs: no weekly scans, so no new scores, competitor
+// checks or fixes). Results, share links and top-up credits stay: nothing deletes a cancelled account's data.
+const LOST = ["Weekly scans and Run scan", "Score updates", "Competitor tracking", "New opportunities"];
+
+/** Plan or trial credits end with the period; top-ups stay but need an active plan (entitlements canSpendTopUps). */
+function creditLines(credits: CopyInput["credits"], trialing: boolean, date: string): string[] {
+  const kind = trialing ? "trial" : "plan";
+  const left = credits
+    ? `You have ${formatCount(credits.plan)} ${kind} ${credits.plan === 1 ? "credit" : "credits"} left. Any left on ${date} are removed.`
+    : `Any ${kind} credits left on ${date} are removed.`;
+  const topups =
+    credits && credits.topup > 0
+      ? credits.topup === 1
+        ? "Your 1 top-up credit stays on your account, but you can only use it with an active plan."
+        : `Your ${formatCount(credits.topup)} top-up credits stay on your account, but you can only use them with an active plan.`
+      : "Top-up credits stay on your account, but you can only use them with an active plan.";
+  return [left, topups];
+}
 
 /** What a cancel does to each scheduled change, and that keeping the plan brings them back. */
 function droppedLines(scheduled: ScheduledNote[] = []): string[] {
@@ -81,13 +105,18 @@ export function previewCopy(input: CopyInput): Copy {
         ],
       };
     case "remove":
+      // During a trial nothing was paid, so there is nothing to refund: the business comes off when the trial ends.
       return {
-        headline: noRefund,
+        headline: input.trialing
+          ? `${business} stays on your trial until ${date}. You won't be charged for it.`
+          : `${business} stays on your plan until ${date}. No refund.`,
         details: [
-          `Scans for ${business} stop on that day.`,
+          `After that, scans for ${business} stop. Its results stay visible.`,
           `Your next bill will be ${formatUsd(input.amountCents)}.`,
           creditsStay,
+          `You can keep ${business} on your plan any time before ${date}.`,
         ],
+        losses: { heading: `From ${date}, ${business} loses:`, items: LOST },
       };
     case "keepBusiness":
       return {
@@ -95,16 +124,24 @@ export function previewCopy(input: CopyInput): Copy {
         details: ["The change you scheduled is canceled. Nothing is charged now."],
       };
     case "cancel": {
-      const topups = "Top-up credits stay on your account, but you can only use them with an active plan.";
+      // Cancelling never ends anything at once (cancel_at_period_end): the trial or the paid month runs to its end.
+      const stays = [
+        `Your results, past scans and share links stay. From ${date}, questions, competitors and business details can't be changed.`,
+        `You can keep your plan any time before ${date}.`,
+      ];
+      const losses = { heading: `From ${date} you lose:`, items: LOST };
+      const credits = creditLines(input.credits, input.trialing, date);
       if (input.trialing) {
         return {
-          headline: `Your free trial ends on ${date}. Your trial credits work until then.`,
-          details: ["Your card won't be charged.", topups, ...droppedLines(input.scheduled)],
+          headline: `Your free trial keeps going until ${date}. Your card won't be charged.`,
+          details: [...credits, ...stays, ...droppedLines(input.scheduled)],
+          losses,
         };
       }
       return {
-        headline: `Your plan ends on ${date}. Your plan credits work until then.`,
-        details: ["You won't be charged again, and there's no refund for this month.", topups, ...droppedLines(input.scheduled)],
+        headline: `Your plan stays active until ${date}. You won't be charged again, and there's no refund for this month.`,
+        details: [...credits, ...stays, ...droppedLines(input.scheduled)],
+        losses,
       };
     }
     case "keep":

@@ -165,6 +165,15 @@ export function websiteShown(row: Pick<SignalRow, "status" | "signals" | "savedS
 }
 
 /**
+ * The website button a row offers: "add" only when Google answered with no website, "change" for one the user
+ * added. Null when Google's website shows, or when the lookup failed or found no listing (2026-10-15): asking for a
+ * website there reads as if the business has none.
+ */
+export function websiteAction(shown: WebsiteShown): "add" | "change" | null {
+  return shown.kind === "none_on_google" ? "add" : shown.kind === "saved" ? "change" : null;
+}
+
+/**
  * A website the user typed for a competitor, as a bare domain: "https://www.Burning-Brownie.com/menu" gives
  * "burning-brownie.com". Null when it is not a public web address.
  */

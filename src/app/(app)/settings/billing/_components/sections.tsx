@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { formatUsd } from "@/modules/billing/format";
 import type { BillingView } from "@/modules/billing";
+import { CancelDialog } from "./cancel-dialog";
 import { ChangeDialog, type ChangeAction } from "./change-dialog";
 import { LocalDate } from "@/components/ui/local-date";
 
@@ -16,7 +17,8 @@ const STATUS: Record<string, { label: string; variant: "tint" | "good" | "low" |
 
 export function PlanStatus({ view, keep }: { view: BillingView; keep: ChangeAction }) {
   const status = STATUS[view.status] ?? { label: "Active", variant: "good" as const };
-  const monthly = view.onPlan.reduce((sum, b) => sum + b.plan.priceCents, 0);
+  const billed = view.onPlan.filter((b) => !b.notCharged);
+  const monthly = billed.reduce((sum, b) => sum + b.plan.priceCents, 0);
 
   return (
     <div className="flex flex-col gap-3">
@@ -29,7 +31,7 @@ export function PlanStatus({ view, keep }: { view: BillingView; keep: ChangeActi
         )}
         {view.status === "active" && monthly > 0 && (
           <span className="text-muted-foreground">
-            {view.onPlan.length === 1 ? "1 business" : `${view.onPlan.length} businesses`} for {formatUsd(monthly)} a month.
+            {billed.length === 1 ? "1 business" : `${billed.length} businesses`} for {formatUsd(monthly)} a month.
           </span>
         )}
       </p>
@@ -104,22 +106,25 @@ export function CreditsPanel({ buyHref, usageHref }: { buyHref: string; usageHre
   );
 }
 
-export function CancelPanel({ cancel }: { cancel: ChangeAction }) {
+export function CancelPanel({ cancel, trialing }: { cancel: ChangeAction; trialing: boolean }) {
   return (
     <section aria-labelledby="cancel-heading" className="rounded-md border border-border bg-surface p-5">
       <h2 id="cancel-heading" className="text-base font-semibold tracking-[-0.02em]">
         Cancel plan
       </h2>
       <p className="mt-1 text-sm text-muted-foreground">
-        Your plan stops at the end of this billing period. Your results stay visible, and you can keep your plan any time
-        before then.
+        {trialing
+          ? "Your free trial keeps going until its end date, and you won't be charged."
+          : "Your plan stops at the end of this billing period."}{" "}
+        Your results stay visible, and you can keep your plan any time before then.
       </p>
-      <ChangeDialog
+      <CancelDialog
         label="Cancel plan"
-        title="Cancel your plan?"
-        confirmLabel="Cancel plan"
+        title="Before you cancel"
+        keepLabel="Keep my plan"
+        confirmLabel="Cancel anyway"
+        reasonLabel="Why are you canceling? (optional)"
         action={cancel}
-        tone="danger"
         className="mt-4 border-low/50 text-low-text hover:bg-low-bg hover:text-low-text"
       />
     </section>

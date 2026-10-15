@@ -146,7 +146,7 @@ Rules for the extraction prompt:
 - **Credits are grants.** Every grant is its own row (13): plan renewal, top-up, trial, promo, admin adjustment, refund. Each has `amount`, `remaining`, `expires_at` (null = never) and `source`.
   - Plan grants expire at the end of the billing period.
   - Top-up grants never expire, but can only be spent while the agency has an active plan or trial.
-  - Trial grant: 100 credits, expires at trial end.
+  - Trial grant: 150 credits (D-17), expires at trial end. Trials started before 2026-10-15 keep their 100.
 - **Spending order**: the grant that expires soonest first; grants that never expire last.
 - **Balance** = sum of `remaining` on unexpired grants, minus active holds.
 - Top-up packs: 500 credits for $50, 2,000 for $180 (Proposed).
@@ -181,7 +181,7 @@ Example: 12 questions × 3 models × weekly = about 155 credits a month.
 
 ### 4.4 Trial (D-15 to D-17)
 
-- 7 days, card required, 2 businesses, 100 credits (100 is Proposed).
+- 7 days, card required, 2 businesses, 150 credits (D-17).
 - The plan chosen on the pricing page is charged automatically on day 7 unless cancelled.
 - Trial credits are a one-time grant, not added again at the first renewal.
 - Cancel during trial: account becomes read-only at trial end; no charge.
@@ -337,6 +337,7 @@ Based on research into how AEO tools and independent studies measure AI visibili
 ### 6.4 Manual scan
 
 - "Run scan" inserts a job with high priority and calls the worker immediately (no wait for the next minute).
+- Within 24 hours of the last finished scan, "Run scan" asks first: "You scanned today. Most answers will be the same as the last scan and still use X credits." (2026-10-15; charging unchanged until D-54 is decided).
 - Dashboard polls the job and shows "Scanning…" until `done` or `failed`.
 - No daily cap beyond credits, but only one queued or running job per business at a time.
 
@@ -397,7 +398,7 @@ Sidebar also has: business switcher, usage widget (8.2), "Suggest a feature", si
 
 ### 8.2 Usage widget and page (D-33)
 
-- **Widget** (always visible): "620 of 1,200 credits used", progress bar, "Renews in 12 days". During trial: "Trial: 5 days left, 64 of 100 credits left".
+- **Widget** (always visible): "620 of 1,200 credits used", progress bar, "Renews in 12 days". During trial: "Trial: 5 days left, 64 of 150 credits left".
 - **Usage page**: balance (plan and top-up), used this month, by business, by model, forecast to renewal from the scan schedules, scan history with credits per scan, Buy credits button.
 
 ### 8.3 Export and Share (D-12)
@@ -791,7 +792,7 @@ The data is small, but the move is still scripted and repeatable so it can be te
    - Existing tracked prompts become custom questions (`source = legacy`), not library questions.
    - Existing visibility results are kept and mapped to checks, so the 30-day score includes history.
    - Stripe data is **not** carried over: current rows point to the "WorkNex sandbox" test account. Existing users start fresh on Jordan's Stripe.
-   - Existing beta users: treatment is an open question (Ask Jordan). Proposed: a fresh 7-day trial with 100 credits at launch, and an email explaining the change.
+   - Existing beta users: treatment is an open question (Ask Jordan). Proposed: a fresh 7-day trial with 150 credits at launch, and an email explaining the change.
 3. **Verify**: row counts match, every business has an agency, and a normal user token can read only its own rows.
 4. **Switch** the app to the new tables. Old tables stay untouched and unused for 30 days after launch, then a later migration drops them.
 
@@ -856,6 +857,8 @@ A pg_cron job every 15 minutes checks, and emails the admin (at most once per ho
 - Daily real AI cost above a set limit.
 
 Alerts are stored in `system_alerts` and shown on the admin Overview. The hosting provider's function logs cover everything else.
+
+An alert closes on its own once its check has been clean for an hour (2026-10-15, migration 063): failed scans, stuck jobs, AI fallback, provider errors and negative balances. Webhook failures, Anthropic credit and the daily cost alert wait for an admin.
 
 ---
 

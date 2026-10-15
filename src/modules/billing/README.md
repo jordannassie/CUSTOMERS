@@ -72,7 +72,7 @@ Test card run in the sandbox (after B-01 and the first-time setup above):
 3. Sign up with a new (non test) account and go through onboarding to the card step. Check the price and the date.
 4. `4000 0000 0000 0002`: a clear decline message, the form stays, nothing in Stripe's subscriptions.
 5. `4000 0025 0000 3155`: fail the bank check once (message, try again), then complete it: "Setting up your account", then the first scan screen.
-6. New account, `4242 4242 4242 4242`: the first scan screen opens after the webhook and the scan starts once the trial credits arrive; in Stripe the subscription is `trialing` with `agency_id` metadata and the item has `business_id`; the agency row has the customer, subscription and `trial_ends_at`, and 100 trial credits arrive with `invoice.paid`.
+6. New account, `4242 4242 4242 4242`: the first scan screen opens after the webhook and the scan starts once the trial credits arrive; in Stripe the subscription is `trialing` with `agency_id` metadata and the item has `business_id`; the agency row has the customer, subscription and `trial_ends_at`, and 150 trial credits arrive with `invoice.paid`.
 
 ## Webhook (B-42, MVP_SPEC 11.3)
 
@@ -84,7 +84,7 @@ Endpoint: `POST /api/stripe/webhook`, secret `STRIPE_WEBHOOK_SECRET`. Subscribe 
 |---|---|
 | `checkout.session.completed` | Links the Stripe customer and subscription to the agency. A paid top-up grants its pack's credits (never expire, `source_id` = session ID). |
 | `checkout.session.async_payment_succeeded` | Same as above, for payment methods that finish later. |
-| `invoice.paid` | Grants credits per invoice line (`source_id` = line ID): `TRIAL_CREDITS` (100) on the $0 first invoice through `grant_trial_credits` (expire at trial end, once per agency), plan credits per business on each paid period, prorated extra credits for upgrades and added businesses. |
+| `invoice.paid` | Grants credits per invoice line (`source_id` = line ID): `TRIAL_CREDITS` (150) on the $0 first invoice through `grant_trial_credits` (expire at trial end, once per agency), plan credits per business on each paid period, prorated extra credits for upgrades and added businesses. |
 | `invoice.payment_failed` | Agency and its businesses `past_due` (scheduled scans stop, the banner shows), one email per invoice. |
 | `customer.subscription.created` / `updated` | Reads the current subscription from Stripe (events can arrive out of order), then saves status, trial end, period end, a pending cancel's date (`agencies.cancel_at`) and one `business_subscriptions` row per item. A business whose item is gone is canceled and taken off the scan schedule. |
 | `customer.subscription.deleted` | Agency and all its businesses `canceled`. |
@@ -139,7 +139,7 @@ Server Actions in `plan-change/actions.ts`, exported from `index.ts`: `upgradeBu
 ## Trial rules (B-45, MVP_SPEC 4.4, D-16, D-17)
 
 - 7 days, 2 businesses (`TRIAL_MAX_BUSINESSES` in entitlements), charged on day 7 unless cancelled.
-- Trial credits: one setting, `TRIAL_CREDITS` in `webhooks/credits.ts`, 100 while D-17 is Proposed. One grant from the first $0 invoice, expiring at the trial end, never again at the first renewal.
+- Trial credits: one setting, `TRIAL_CREDITS` in `webhooks/credits.ts`, 150 (D-17). `grant_trial_credits` takes the amount from it, so the SQL has no number of its own. Trials started before 2026-10-15 keep the 100 they were granted. One grant from the first $0 invoice, expiring at the trial end, never again at the first renewal.
 - One trial per agency and per Stripe customer (F-43): `trialAllowed` in `checkout.ts` refuses the card step for an agency Stripe already knows, and `grant_trial_credits` (migration `043`) grants nothing to an agency that had a trial.
 - Cancel during the trial (`cancelSubscription`): Stripe ends the subscription at the trial end with no invoice. Until then the app banner says "Your trial ends on [date]. You won't be charged."; after it, the agency is `canceled` and entitlements refuse scans, new businesses and top-ups, while results stay readable.
 - `trial-rules.test.ts` runs the day 7 conversion and the cancelled trial on the in-memory Stripe and its clock. The same two still need a run with real Stripe test clocks once the sandbox exists (B-01, B-40).

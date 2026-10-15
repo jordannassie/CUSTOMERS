@@ -1,6 +1,6 @@
 import type Stripe from "stripe";
 import { planIdOfPrice } from "../plan-price";
-import { itemSpec, phasesOf, type ItemSpec, type PlanRow } from "./planner";
+import { itemSpec, phasesOf, type PlanRow } from "./planner";
 
 // Cancel and "Keep my plan" when a downgrade or removal is scheduled (BUG-124, D-57). Stripe refuses
 // cancel_at_period_end on a subscription a schedule controls, so the schedule ends the plan instead: it keeps only
@@ -60,14 +60,14 @@ function keptOf(item: Stripe.SubscriptionSchedule.Phase.Item, plans: PlanRow[]):
   return [item.metadata?.business_id ?? "", idOf(item.price), item.quantity ?? 1, planIdOfPrice(item.price, plans) ?? ""];
 }
 
-function changesBetween(now: ItemSpec[], later: KeptItem[]): ScheduledChange[] {
+function changesBetween(now: KeptItem[], later: KeptItem[]): ScheduledChange[] {
   const changes: ScheduledChange[] = [];
-  for (const item of now) {
-    const businessId = item.metadata.business_id;
+  for (const [businessId, price, , planId] of now) {
     if (!businessId) continue;
     const next = later.find(([id]) => id === businessId);
     if (!next) changes.push({ businessId, planId: null });
-    else if (next[1] !== item.price) changes.push({ businessId, planId: next[3] || "" });
+    // Another price of the same plan is not a change (2026-10-15).
+    else if (planId && next[3] ? next[3] !== planId : next[1] !== price) changes.push({ businessId, planId: next[3] || "" });
   }
   return changes;
 }
@@ -105,12 +105,12 @@ export function keepScheduleParams(sub: Stripe.Subscription, schedule: Stripe.Su
 export function changesDroppedByCancel(schedule: Stripe.SubscriptionSchedule | null, plans: PlanRow[]): ScheduledChange[] {
   if (!schedule) return [];
   const { current, next } = phasesOf(schedule);
-  return next ? changesBetween(current.items.map(itemSpec), next.items.map((i) => keptOf(i, plans))) : [];
+  return next ? changesBetween(current.items.map((i) => keptOf(i, plans)), next.items.map((i) => keptOf(i, plans))) : [];
 }
 
 /** What "Keep my plan" would put back: the changes saved on a schedule that is ending the plan. */
-export function changesRestoredByKeep(schedule: Stripe.SubscriptionSchedule | null): ScheduledChange[] {
+export function changesRestoredByKeep(schedule: Stripe.SubscriptionSchedule | null, plans: PlanRow[]): ScheduledChange[] {
   if (!schedule) return [];
   const kept = savedItems(schedule);
-  return kept ? changesBetween(phasesOf(schedule).current.items.map(itemSpec), kept) : [];
+  return kept ? changesBetween(phasesOf(schedule).current.items.map((i) => keptOf(i, plans)), kept) : [];
 }

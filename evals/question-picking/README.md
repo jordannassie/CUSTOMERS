@@ -1,6 +1,6 @@
 # Question picking
 
-Built in B-33 (MVP_SPEC 5.3, 25, D-62). Tests `src/modules/onboarding/questions.ts` with the prompt in `src/modules/onboarding/prompts/pick-questions.v4.ts`. v4 (2026-10-12) adds: never pick a template about a cuisine, product or service the business does not list; the code applies the same fit filter (`fitsBusiness` in `question-rules.ts`).
+Built in B-33 (MVP_SPEC 5.3, 25, D-62). Tests `src/modules/onboarding/questions.ts` with the prompt in `src/modules/onboarding/prompts/pick-questions.v7.ts` (its header lists every version). v4 (2026-10-12) adds: never pick a template about a cuisine, product or service the business does not list; the code applies the same fit filter (`fitsBusiness` in `question-rules.ts`). v7 (2026-10-15): a comparison names two real options, never stand-ins like "dentist A or B"; the code also drops any left (`hasPlaceholder`).
 
 | | |
 |---|---|

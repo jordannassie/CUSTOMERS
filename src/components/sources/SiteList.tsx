@@ -36,7 +36,7 @@ export function SiteList({ sites, answers }: { sites: SourcesView["sites"]; answ
               rel="noopener noreferrer nofollow"
               className="flex min-w-0 items-center gap-1.5 text-sm font-medium hover:text-primary hover:underline"
             >
-              <span className="truncate">{s.host}</span>
+              <span className="truncate" title={s.host}>{s.host}</span>
               <ExternalLink className="size-3.5 shrink-0 text-text-hint" aria-hidden="true" />
               <span className="sr-only">(opens in a new tab)</span>
             </a>

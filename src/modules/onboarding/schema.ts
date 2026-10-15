@@ -92,6 +92,13 @@ export const saveCompetitorsInput = z.object({
   businessId: z.uuid(),
   // The plan limit is checked in the action; this only stops absurd payloads.
   competitors: z
-    .array(z.object({ name: competitorName, placesId: z.string().regex(placeIdPattern).nullable() }))
+    .array(
+      z.object({
+        name: competitorName,
+        placesId: z.string().regex(placeIdPattern).nullable(),
+        // The long Google name when the user took the short brand instead (2026-10-15).
+        aliases: z.array(z.string().trim().min(2).max(120)).max(10).optional(),
+      }),
+    )
     .max(50),
 });

@@ -43,9 +43,9 @@ async function trialStarted(invoiceStatus: "paid" | "open" = "paid") {
 }
 
 describe("checkout linked without invoice.paid", () => {
-  it("grants the 100 trial credits, so the first scan can be queued", async () => {
+  it("grants the 150 trial credits (D-17), so the first scan can be queued", async () => {
     const { a } = await trialStarted();
-    expect((await getBalance(a.agencyId)).balance).toBe(100);
+    expect((await getBalance(a.agencyId)).balance).toBe(150);
     expect(await canStartScan(a.agencyId, a.businesses[0])).toEqual({ allowed: true, reason: "" });
     // What Run scan inserts once the check above passes (jobs insertManualJob).
     const { data: job } = await service
@@ -60,7 +60,7 @@ describe("checkout linked without invoice.paid", () => {
   it("grants nothing more when the late invoice.paid arrives", async () => {
     const { a, h, first } = await trialStarted();
     for (const res of await h.deliverTwice(fx.event("invoice.paid", first))) expect(res.status).toBe(200);
-    expect((await getBalance(a.agencyId)).balance).toBe(100);
+    expect((await getBalance(a.agencyId)).balance).toBe(150);
     expect(await grants(a.agencyId)).toHaveLength(1);
   });
 

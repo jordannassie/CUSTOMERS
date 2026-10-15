@@ -151,8 +151,9 @@ describe("remove a business", () => {
   it("drops the item at renewal, not before", async () => {
     const { stripe, change } = setup();
     const { preview, done } = await change({ kind: "remove", businessId: B });
-    expect(preview.headline).toBe("Takes effect on October 1, 2026. No refund.");
-    expect(preview.details[0]).toBe("Scans for Bay Dental stop on that day.");
+    expect(preview.headline).toBe("Bay Dental stays on your plan until October 1, 2026. No refund.");
+    expect(preview.details[0]).toBe("After that, scans for Bay Dental stop. Its results stay visible.");
+    expect(preview.losses?.heading).toBe("From October 1, 2026, Bay Dental loses:");
     expect(preview.amountCents).toBe(14900);
     expect(done.message).toBe("Bay Dental comes off your plan on October 1, 2026.");
     expect(stripe.items).toHaveLength(2);
@@ -172,7 +173,7 @@ describe("cancel", () => {
   it("ends the plan at the period end with no further charge", async () => {
     const { stripe, change } = setup();
     const { preview, done } = await change({ kind: "cancel" });
-    expect(preview.headline).toBe("Your plan ends on October 1, 2026. Your plan credits work until then.");
+    expect(preview.headline).toBe("Your plan stays active until October 1, 2026. You won't be charged again, and there's no refund for this month.");
     expect(preview.details[1]).toBe("Top-up credits stay on your account, but you can only use them with an active plan.");
     expect(done.message).toBe("Your plan ends on October 1, 2026.");
     expect(stripe.calls.some((c) => c.method === "previewInvoice")).toBe(false);

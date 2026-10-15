@@ -2,8 +2,8 @@ import type Stripe from "stripe";
 
 // Which credit grants a paid invoice earns (MVP_SPEC 4.2, 4.4, 11.3, 11.5, D-17, D-57). Pure: no database, env or Stripe calls.
 
-/** D-17 (Proposed): one grant per trial, expiring when the trial ends. */
-export const TRIAL_CREDITS = 100;
+/** D-17: 150 credits, one grant per trial, expiring when the trial ends. Earlier trials keep the 100 they were granted. */
+export const TRIAL_CREDITS = 150;
 
 export type PlanCredits = { planId: string; monthlyCredits: number };
 

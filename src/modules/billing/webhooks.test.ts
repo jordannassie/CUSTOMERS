@@ -27,7 +27,7 @@ describe("signature and replay guard", () => {
 });
 
 describe("signup with a trial", () => {
-  it("links the agency, syncs each business, grants 100 trial credits once, and emails before the trial ends", async () => {
+  it("links the agency, syncs each business, grants 150 trial credits once, and emails before the trial ends", async () => {
     const a = await setup();
     const h = harness();
     const trialEnd = fx.nowSeconds() + 7 * DAY;
@@ -68,9 +68,9 @@ describe("signup with a trial", () => {
     await h.deliver(fx.event("invoice.paid", trialInvoice));
 
     const trialGrants = await grants(a.agencyId);
-    expect(trialGrants).toMatchObject([{ source: "trial", source_id: trialLines[0].id, amount: 100, remaining: 100 }]);
+    expect(trialGrants).toMatchObject([{ source: "trial", source_id: trialLines[0].id, amount: 150, remaining: 150 }]);
     expect(Date.parse(trialGrants[0].expires_at!)).toBe(trialEnd * 1000);
-    expect(await ledgerTotal(a.agencyId)).toBe(100);
+    expect(await ledgerTotal(a.agencyId)).toBe(150);
 
     await h.deliverTwice(fx.event("customer.subscription.trial_will_end", sub));
     expect(h.emails.map((e) => [e.type, e.to, e.idempotencyKey])).toEqual([

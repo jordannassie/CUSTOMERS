@@ -5,7 +5,7 @@ import { missingTermTags, validateLibrary, type Intent } from "@/modules/questio
 import { COFFEE_FULL_BUSINESS, COFFEE_GOOD_PICK, COFFEE_LIBRARY, fakeQuestionClients } from "./question-fixtures";
 import { balancePicks, fillCity, fitsBusiness, isFairQuestion, type LibraryEntry } from "./question-rules";
 import { prepareQuestions, type QuestionBusiness } from "./questions";
-import { QUESTION_COUNT } from "./prompts/pick-questions.v6";
+import { QUESTION_COUNT } from "./prompts/pick-questions.v7";
 
 const lib = (prefix: string, rows: [string, Intent, string[]][]): LibraryEntry[] =>
   rows.map(([template, intent, tags], i) => ({ id: `${prefix}-${i + 1}`, template, intent, tags }));

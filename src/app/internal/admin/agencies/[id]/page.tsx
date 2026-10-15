@@ -19,7 +19,7 @@ import { requireAdmin } from "@/modules/auth";
 import { formatDate } from "../../businesses/_components/scan-parts";
 import { StatusBadge, TestBadge, credits } from "../_components/agency-parts";
 import AgencyActions from "./_components/agency-actions";
-import { AuditLog, Businesses, CreditHistory } from "./_components/history";
+import { AuditLog, Businesses, CancelReasons, CreditHistory } from "./_components/history";
 
 export const metadata = { title: "Agency" };
 
@@ -92,6 +92,7 @@ async function Detail({ id }: { id: string }) {
       <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start">
         <div className="flex min-w-0 flex-col gap-8">
           <Businesses rows={detail.businesses} />
+          <CancelReasons rows={detail.cancelReasons} />
           <AuditLog rows={detail.audit} />
           <CreditHistory rows={detail.ledger} />
         </div>

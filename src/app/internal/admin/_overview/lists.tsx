@@ -26,12 +26,12 @@ export function RecentSignups({ rows }: { rows: AdminOverview["recentSignups"] }
               <li key={a.id} className="flex items-start justify-between gap-3 px-4 py-3">
                 <span className="min-w-0">
                   <span className="flex items-center gap-2">
-                    <Link href={`/internal/admin/agencies/${a.id}`} className="truncate font-medium text-primary hover:underline">
+                    <Link href={`/internal/admin/agencies/${a.id}`} className="truncate font-medium text-primary hover:underline" title={a.name}>
                       {a.name}
                     </Link>
                     {a.isTest && <TestBadge />}
                   </span>
-                  <span className="block truncate text-text-hint">{a.ownerEmail ?? "Owner email unknown"}</span>
+                  <span className="block truncate text-text-hint" title={a.ownerEmail ?? "Owner email unknown"}>{a.ownerEmail ?? "Owner email unknown"}</span>
                   <span className="block text-text-hint">Signed up {formatDate(a.createdAt)}</span>
                 </span>
                 <StatusBadge status={a.status} />
@@ -56,12 +56,12 @@ export function FailedScans({ rows }: { rows: AdminOverview["recentFailedScans"]
             {rows.map((j) => (
               <li key={j.id} className="flex flex-col gap-0.5 px-4 py-3">
                 <span className="flex items-start justify-between gap-3">
-                  <Link href={`/internal/admin/businesses/${j.businessId}`} className="truncate font-medium text-primary hover:underline">
+                  <Link href={`/internal/admin/businesses/${j.businessId}`} className="truncate font-medium text-primary hover:underline" title={j.businessName}>
                     {j.businessName}
                   </Link>
                   <span className="shrink-0 text-text-hint">{formatDate(j.at)}</span>
                 </span>
-                {j.agencyName && <span className="truncate text-muted-foreground">{j.agencyName}</span>}
+                {j.agencyName && <span className="truncate text-muted-foreground" title={j.agencyName}>{j.agencyName}</span>}
                 <span className="line-clamp-2 break-words text-low-text">{j.error ?? "No error message"}</span>
               </li>
             ))}

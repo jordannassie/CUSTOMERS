@@ -15,6 +15,7 @@ import {
   discoverCompetitors,
   limitMessage,
   lookupQuery,
+  mergeAliases,
   nearbyQuery,
   planSave,
   type BusinessForSearch, matchingPlace } from "./competitors";
@@ -211,5 +212,21 @@ describe("matchingPlace (step 9c)", () => {
     expect(matchingPlace("Canopy", [candidate("Canopy Tree Service", "x"), candidate("Canopy", "z")])?.placeId).toBe("z");
     expect(matchingPlace("Blue Door Coffee", [candidate("Blue Dog Coffee")])).toBeNull();
     expect(matchingPlace("Ace", [candidate("Ace Hardware")])).toBeNull();
+  });
+});
+
+// 2026-10-15: the long Google name stays as another name when the short brand is saved.
+describe("other names from Google", () => {
+  it("keep the aliases through dedupe and into the row", () => {
+    const long = "BeRejuved Medical Spa & Wellness Studio - NYC";
+    const [c] = dedupeConfirmed([{ name: "BeRejuved Medical Spa & Wellness Studio", placesId: "ChIJbe", aliases: [long] }]);
+    expect(c.aliases).toEqual([long]);
+    expect(competitorFields(c)).toMatchObject({ name: "BeRejuved Medical Spa & Wellness Studio", aliases: [long] });
+    expect(competitorFields({ name: "Blue Door", placesId: null })).not.toHaveProperty("aliases");
+  });
+
+  it("merge once each, never the name itself, up to ten", () => {
+    expect(mergeAliases(["Old Name"], ["old name", "Long Google Name", "Glow"], "Glow")).toEqual(["Old Name", "Long Google Name"]);
+    expect(mergeAliases([], Array.from({ length: 12 }, (_, i) => `Name ${i}`), "X")).toHaveLength(10);
   });
 });

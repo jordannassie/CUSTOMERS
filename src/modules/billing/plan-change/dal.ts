@@ -3,9 +3,11 @@ import { createServiceClient } from "@/lib/supabase/service";
 import { productIdFor } from "../catalog";
 import type { PlanCredits } from "../webhooks/credits";
 import type { PlanChangeContext } from "./planner";
+import type { CancelReason } from "./schema";
 
 // Reads for plan changes, as the service role. Callers pass the agency from requireAgency(), so every query
-// is scoped to it. Nothing here writes: the Stripe webhook (B-42) saves the result of a change.
+// is scoped to it. The Stripe webhook (B-42) saves the result of a change; the only write here is the optional
+// reason given when cancelling (migration 062).
 
 export type PlanChangeData = { context: PlanChangeContext; plansByProduct: Map<string, PlanCredits> };
 
@@ -50,4 +52,20 @@ export async function loadPlanChangeData(agencyId: string): Promise<PlanChangeDa
       })),
     },
   };
+}
+
+/** Saves why the owner cancelled the plan or took a business off it, for admin. The business must be the agency's. */
+export async function saveCancelReason(
+  agencyId: string,
+  input: { kind: "cancel" | "remove"; reason: CancelReason; businessId: string | null },
+): Promise<void> {
+  const db = createServiceClient();
+  if (input.businessId) {
+    const { data } = await db.from("businesses").select("id").eq("id", input.businessId).eq("agency_id", agencyId).maybeSingle();
+    if (!data) return;
+  }
+  const { error } = await db
+    .from("cancel_reasons")
+    .insert({ agency_id: agencyId, business_id: input.businessId, kind: input.kind, reason: input.reason });
+  if (error) throw new Error(`Could not save the cancel reason: ${error.message}`);
 }

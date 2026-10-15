@@ -101,6 +101,15 @@ async function change(page: Page, button: string, preview: RegExp | string, conf
   await expect(dialog).toHaveCount(0);
 }
 
+/** Cancel or remove through "Before you cancel": the preview first, then the destructive button. */
+async function cancelAnyway(page: Page, button: string, preview: RegExp | string, confirm: string) {
+  await page.getByRole("button", { name: button, exact: true }).click();
+  const dialog = page.getByTestId("cancel-dialog");
+  await expect(dialog.getByTestId("change-preview")).toContainText(preview);
+  await dialog.getByRole("button", { name: confirm, exact: true }).click();
+  await expect(dialog).toHaveCount(0);
+}
+
 const line = (page: Page, name: string) => page.getByTestId("plan-lines").locator("li").filter({ hasText: name });
 
 test.afterAll(async () => {
@@ -127,7 +136,7 @@ test("trial: shows the first charge, adds a saved business at no cost today", as
   await expect(page.getByTestId("next-charge")).toHaveText("$398");
 
   // BUG-B: after cancelling, one message that agrees with the Overview banner.
-  await change(page, "Cancel plan", "Your card won't be charged.", "Cancel plan");
+  await cancelAnyway(page, "Cancel plan", "Your card won't be charged.", "Cancel anyway");
   await expect(page.getByTestId("cancel-notice")).toContainText("Your free trial ends on");
   await expect(page.getByTestId("cancel-notice")).toContainText("Your trial credits work until then, and you won't be charged.");
   await expect(page.getByTestId("plan-status")).not.toContainText("Cancel before then");
@@ -249,10 +258,11 @@ test("active: upgrade, remove at renewal, cancel and keep, and the portal", asyn
   await expect(line(page, "Northside Plumbing")).toContainText("Pro");
   await expect(page.getByTestId("next-charge")).toHaveText("$398");
 
-  await line(page, "Harbor Dental").getByRole("button", { name: "Remove" }).click();
-  await expect(dialog.getByTestId("change-preview")).toContainText(/Takes effect on \w+ \d+, \d{4}\. No refund\./);
-  await dialog.getByRole("button", { name: "Remove from plan" }).click();
-  await expect(dialog).toHaveCount(0);
+  await line(page, "Harbor Dental").getByRole("button", { name: "Remove", exact: true }).click();
+  const before = page.getByTestId("cancel-dialog");
+  await expect(before.getByTestId("change-preview")).toContainText(/Harbor Dental stays on your plan until \w+ \d+, \d{4}\. No refund\./);
+  await before.getByRole("button", { name: "Remove anyway" }).click();
+  await expect(before).toHaveCount(0);
   await expect(line(page, "Harbor Dental").getByTestId("pending-change")).toContainText("Comes off your plan on");
   await expect(page.getByTestId("next-charge")).toHaveText("$249");
 
@@ -264,12 +274,12 @@ test("active: upgrade, remove at renewal, cancel and keep, and the portal", asyn
   await expect(dialog).toHaveCount(0);
   await expect(line(page, "Harbor Dental").getByTestId("pending-change")).toHaveCount(0);
   await expect(page.getByTestId("next-charge")).toHaveText("$398");
-  await line(page, "Harbor Dental").getByRole("button", { name: "Remove" }).click();
-  await dialog.getByRole("button", { name: "Remove from plan" }).click();
-  await expect(dialog).toHaveCount(0);
+  await line(page, "Harbor Dental").getByRole("button", { name: "Remove", exact: true }).click();
+  await before.getByRole("button", { name: "Remove anyway" }).click();
+  await expect(before).toHaveCount(0);
   await expect(page.getByTestId("next-charge")).toHaveText("$249");
 
-  await change(page, "Cancel plan", "Your plan credits work until then.", "Cancel plan");
+  await cancelAnyway(page, "Cancel plan", "Your plan stays active until", "Cancel anyway");
   await expect(page.getByTestId("cancel-notice")).toContainText("Your plan ends on");
   await expect(page.getByTestId("charge-summary")).toContainText("No more charges.");
   await expect(page.getByRole("button", { name: "Upgrade to Pro" })).toHaveCount(0);
@@ -295,7 +305,7 @@ test("trial banner: days, credits and the charge date, then no charge after canc
   const banner = page.locator('[data-kind="trial"]');
   await expect(banner).toHaveText(`Your free trial has 5 days and 100 trial credits left. Your card will be charged on ${dayOf(ends)}.`);
 
-  await change(page, "Cancel plan", "Your card won't be charged.", "Cancel plan");
+  await cancelAnyway(page, "Cancel plan", "Your card won't be charged.", "Cancel anyway");
   await expect(banner).toContainText(`Your free trial has 5 days and 100 trial credits left. Your trial ends on ${dayOf(ends)}. You won't be charged.`);
   await expect(banner.getByRole("link", { name: "Keep my plan" })).toHaveAttribute("href", "/settings/billing");
   await page.goto("/dashboard");

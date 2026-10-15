@@ -16,6 +16,7 @@ import {
   limitMessage,
   lookupQuery,
   matchingPlace,
+  mergeAliases,
   originOf,
   planSave,
   type BusinessForSearch,
@@ -139,7 +140,7 @@ export async function saveCompetitors(
 
   // The business was checked as the user's above; users can't write competitors themselves (migration 047, SEC-10).
   const supabase = await createClient();
-  const existing = await supabase.from("business_competitors").select("id, name").eq("business_id", businessId);
+  const existing = await supabase.from("business_competitors").select("id, name, aliases").eq("business_id", businessId);
   if (existing.error) throw new Error(`Could not load competitors: ${existing.error.message}`);
   const plan = planSave(existing.data, list);
 
@@ -150,7 +151,7 @@ export async function saveCompetitors(
   for (const { id, competitor } of plan.keep) {
     const { error } = await createServiceClient()
       .from("business_competitors")
-      .update({ ...competitorFields(competitor), ...CLEARED_PLACES_COLUMNS })
+      .update({ ...competitorFields(competitor), ...keptAliases(existing.data, id, competitor), ...CLEARED_PLACES_COLUMNS })
       .eq("id", id).eq("business_id", businessId);
     if (error) throw new Error(`Could not update a competitor: ${error.message}`);
   }
@@ -162,8 +163,14 @@ export async function saveCompetitors(
     }
   }
   // Saved answers are checked for the new list, so a new competitor is not "still collecting" (BUG-122).
-  if (plan.add.length || plan.remove.length) await recountAfterNamesChange(businessId);
+  if (plan.add.length || plan.remove.length || plan.keep.some((k) => k.competitor.aliases?.length)) await recountAfterNamesChange(businessId);
   return { ok: true, count: list.length };
+}
+
+/** A kept competitor keeps its other names; a new one from this save (the long Google name) is added to them. */
+function keptAliases(rows: { id: string; aliases: string[] }[], id: string, competitor: ConfirmedCompetitor) {
+  if (!competitor.aliases?.length) return {};
+  return { aliases: mergeAliases(rows.find((r) => r.id === id)?.aliases ?? [], competitor.aliases, competitor.name) };
 }
 
 /** The place id of the Google listing for a name AI suggested, or null when none clearly matches or Places fails. */

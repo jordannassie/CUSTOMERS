@@ -1,9 +1,12 @@
 import type Stripe from "stripe";
+import { samePlanPrice } from "../plan-price";
 import { itemSpec, phasesOf, PlanChangeError, type ItemSpec } from "./planner";
 
 // B1: what a pending downgrade or removal looks like on the subscription schedule, and how to take it back.
 
 const bidOf = (i: ItemSpec) => i.metadata.business_id;
+type PhaseItem = Stripe.SubscriptionSchedule.Phase.Item;
+const itemOf = (items: PhaseItem[], businessId: string) => items.find((i) => i.metadata?.business_id === businessId);
 
 export type PendingKind = "plan" | "remove";
 
@@ -12,11 +15,12 @@ export function pendingFor(schedule: Stripe.SubscriptionSchedule | null, busines
   if (!schedule) return null;
   const { current, next } = phasesOf(schedule);
   if (!next) return null;
-  const mine = current.items.map(itemSpec).find((i) => bidOf(i) === businessId);
+  const mine = itemOf(current.items, businessId);
   if (!mine) return null;
-  const later = next.items.map(itemSpec).find((i) => bidOf(i) === businessId);
+  const later = itemOf(next.items, businessId);
   if (!later) return "remove";
-  return later.price !== mine.price ? "plan" : null;
+  // Another price of the same plan is not a change (2026-10-15: "Starter, moves to Starter").
+  return samePlanPrice(later.price, mine.price) ? null : "plan";
 }
 
 /** A business that is leaving the plan can only stay or go; an upgrade or downgrade would not mean anything. */
@@ -25,6 +29,8 @@ export function refuseWhileLeaving(schedule: Stripe.SubscriptionSchedule | null,
     throw new PlanChangeError(409, `${name} is coming off your plan. Keep it on the plan first, then make this change.`);
   }
 }
+
+const trialEndOf = (sub: Stripe.Subscription) => (sub.status === "trialing" && sub.trial_end ? { trial_end: sub.trial_end } : {});
 
 /**
  * The schedule phases after one business's scheduled change is taken back: its next-phase item goes back to what it
@@ -44,11 +50,44 @@ export function phasesWithoutPending(
   const later = next!.items.map(itemSpec);
   const restored = kind === "remove" ? [...later, mine] : later.map((i) => (bidOf(i) === businessId ? mine : i));
 
-  const unchanged = restored.length === now.length && now.every((i) => restored.find((r) => bidOf(r) === bidOf(i))?.price === i.price);
+  // Prices as Stripe sent them, so two prices of one plan count as the same.
+  const priceOf = new Map([...current.items, ...next!.items].map((i) => [typeof i.price === "string" ? i.price : i.price.id, i.price]));
+  const unchanged =
+    restored.length === now.length &&
+    now.every((i) => {
+      const r = restored.find((x) => bidOf(x) === bidOf(i));
+      return r !== undefined && samePlanPrice(priceOf.get(r.price!) ?? r.price, priceOf.get(i.price!) ?? i.price);
+    });
   if (unchanged) return null;
-  const trialEnd = sub.status === "trialing" && sub.trial_end ? { trial_end: sub.trial_end } : {};
   return [
-    { items: now, start_date: current.start_date, end_date: current.end_date, ...trialEnd },
+    { items: now, start_date: current.start_date, end_date: current.end_date, ...trialEndOf(sub) },
     { items: restored, duration: { interval: "month", interval_count: 1 }, proration_behavior: "none" },
+  ];
+}
+
+/**
+ * After a change made now on a schedule (an add or an upgrade), the business's item is in both phases, each with a
+ * price Stripe made from the same `price_data`. Returns phases with the next phase on the current phase's price, so
+ * nothing looks scheduled for it; null when the two already match.
+ */
+export function phasesOnOnePrice(
+  sub: Stripe.Subscription,
+  schedule: Stripe.SubscriptionSchedule,
+  businessId: string,
+): Stripe.SubscriptionScheduleUpdateParams.Phase[] | null {
+  const { current, next } = phasesOf(schedule);
+  if (!next) return null;
+  const now = itemOf(current.items, businessId);
+  const later = itemOf(next.items, businessId);
+  if (!now || !later) return null;
+  const price = itemSpec(now).price!;
+  if (itemSpec(later).price === price) return null;
+  return [
+    { items: current.items.map(itemSpec), start_date: current.start_date, end_date: current.end_date, ...trialEndOf(sub) },
+    {
+      items: next.items.map((i) => (i === later ? { ...itemSpec(i), price } : itemSpec(i))),
+      duration: { interval: "month", interval_count: 1 },
+      proration_behavior: "none",
+    },
   ];
 }

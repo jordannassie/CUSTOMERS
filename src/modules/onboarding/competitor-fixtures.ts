@@ -36,8 +36,11 @@ export const LOOKUP_CANDIDATES: CompetitorCandidate[] = [
   candidate("blue-door-2", "Blue Door Coffee Downtown", 4.2, 88, "90 Center St"),
 ];
 
+/** A Google name that is a page title, found only by name (2026-10-15: the picker starts it on the brand). */
+export const TITLE_CANDIDATE: CompetitorCandidate = candidate("berejuved", "BeRejuved Medical Spa & Wellness Studio - NYC", 4.8, 120, "12 W 23rd St");
+
 const plain = (s: string) => s.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, "");
-const ALL = [...NEARBY_CANDIDATES, ...LOOKUP_CANDIDATES];
+const ALL = [...NEARBY_CANDIDATES, ...LOOKUP_CANDIDATES, TITLE_CANDIDATE];
 
 const CATEGORY_TERMS = new Set(Object.values(SEARCH_TERMS).flatMap((t) => (t ? plain(t) : [])));
 

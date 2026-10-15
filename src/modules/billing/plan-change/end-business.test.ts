@@ -76,3 +76,51 @@ describe("endBusinessPlan", () => {
     await expect(endBusinessPlan("agency-1", "00000000-0000-4000-8000-0000000000ff", now(s))).rejects.toMatchObject({ status: 404 });
   });
 });
+
+// 2026-10-15: a business deleted during a trial was still listed at $149 a month until the trial end.
+describe("endBusinessPlan during a trial", () => {
+  const ids = (s: ReturnType<typeof setup>) => s.stripe.items.map((i) => i.metadata.business_id);
+
+  it("takes the business off the plan at once, with nothing charged now or at the trial end", async () => {
+    const s = use(setup({ status: "trialing" }));
+    expect(await endBusinessPlan("agency-1", A, now(s))).toEqual({ endsAt: null, removedNow: true });
+    expect(ids(s)).toEqual([B]);
+    expect(s.stripe.invoices).toHaveLength(0);
+
+    s.stripe.advanceTo(RENEWAL + 60);
+    const firstBill = s.stripe.invoices.at(-1)!;
+    expect(firstBill.amount_due).toBe(14900);
+  });
+
+  it("takes it out of every schedule phase, keeping another business's scheduled change", async () => {
+    const s = use(setup({ a: "price_pro", status: "trialing" }));
+    await s.change({ kind: "add", businessId: C, planId: "starter" });
+    await s.change({ kind: "downgrade", businessId: A, planId: "starter" });
+
+    await endBusinessPlan("agency-1", B, now(s));
+    expect(ids(s).sort()).toEqual([A, C].sort());
+    const phases = s.stripe.schedule!.phases;
+    expect(phases.map((p) => p.items.map((i) => i.metadata.business_id).sort())).toEqual([[A, C].sort(), [A, C].sort()]);
+    expect(JSON.stringify(s.stripe.calls.at(-1)!.params)).toContain("trial_end");
+
+    s.stripe.advanceTo(RENEWAL + 60);
+    expect(s.stripe.invoices.at(-1)!.amount_due).toBe(14900 * 2);
+  });
+
+  it("ends the plan at the trial end when every other business was already coming off", async () => {
+    const s = use(setup({ status: "trialing" }));
+    await s.change({ kind: "remove", businessId: B });
+    await endBusinessPlan("agency-1", A, now(s));
+    expect(ids(s)).toEqual([B]);
+    expect(s.stripe.schedule!.endBehavior).toBe("cancel");
+    s.stripe.advanceTo(RENEWAL + 60);
+    expect(s.stripe.status).toBe("canceled");
+  });
+
+  it("still cancels at the trial end when it is the only business, which is never charged either", async () => {
+    const s = use(setup({ b: null, status: "trialing" }));
+    const result = await endBusinessPlan("agency-1", A, now(s));
+    expect(result.removedNow).toBeUndefined();
+    expect(s.stripe.subscription().cancel_at_period_end).toBe(true);
+  });
+});

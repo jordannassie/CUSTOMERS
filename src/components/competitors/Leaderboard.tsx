@@ -52,7 +52,10 @@ function Row({ row, band }: { row: LeaderRow; band: { left: number; right: numbe
     >
       <span className="flex min-w-0 flex-col gap-0.5">
         <span className="flex min-w-0 items-baseline gap-2">
-          <span className={cn("truncate text-sm", row.isYou ? "font-semibold text-primary" : "text-foreground")}>
+          <span
+            className={cn("truncate text-sm", row.isYou ? "font-semibold text-primary" : "text-foreground")}
+            title={row.isYou ? `${row.name} (you)` : rowName(row)}
+          >
             {row.isYou ? `${row.name} (you)` : rowName(row)}
           </span>
           {row.change && <PointsChange change={row.change} neutral={!row.isYou} />}

@@ -6,7 +6,8 @@ import { CITY, INTENTS } from "../schema";
 
 // v2 (2026-10-13): questions read like different people typing, a third in the first person with context, and
 // varied openings, the same guidance as pick-questions.v5 (now v6).
-export const GENERATE_PROMPT_VERSION = "question-library.v2";
+// v3 (2026-10-15): a comparison names two real options, never stand-ins like "dentist A or B" (pick-questions.v7).
+export const GENERATE_PROMPT_VERSION = "question-library.v3";
 export const GENERATE_MODEL = "claude-sonnet-5";
 export const GENERATE_MAX_TOKENS = 8_000;
 export const TEMPLATES_PER_INDUSTRY = 40;
@@ -24,7 +25,7 @@ Rules for every question:
 - No duplicates or near duplicates.
 
 Each question has:
-- intent, one of: best (who is the best or a good choice), urgent (need it now, open late, same day, emergency), price (affordable, cost, deals, financing), reviews (best reviewed, trusted, recommended), comparison (which one is better for a specific need or type of customer).
+- intent, one of: best (who is the best or a good choice), urgent (need it now, open late, same day, emergency), price (affordable, cost, deals, financing), reviews (best reviewed, trusted, recommended), comparison (which one is better for a specific need or type of customer, comparing two real options by what they are; never stand-in names such as "dentist A or B", "option A or option B" or "X or Y").
 - tags: 1 to 3 short lowercase service phrases the question is about (for example "emergency dental care", "teeth whitening"). Use "general" when the question is not about one service.
 
 Spread the questions across all five intents, at least 5 per intent.`;

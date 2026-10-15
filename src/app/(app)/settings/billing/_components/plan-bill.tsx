@@ -3,7 +3,9 @@ import { Plus } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { formatUsd } from "@/modules/billing/format";
 import type { BillingBusiness, BillingView } from "@/modules/billing";
+import { CancelDialog } from "./cancel-dialog";
 import { ChangeDialog, type ChangeAction } from "./change-dialog";
+import { RemovedLine } from "./removed-line";
 import { LocalDate } from "@/components/ui/local-date";
 
 export type PlanActions = { upgrade: ChangeAction; downgrade: ChangeAction; remove: ChangeAction; add: ChangeAction; keep: ChangeAction };
@@ -108,6 +110,7 @@ function BusinessLine({
 }) {
   const { plan, pending } = business;
   const others = view.plans.filter((p) => p.id !== plan.id);
+  if (business.notCharged) return <RemovedLine id={business.id} name={business.name} />;
   return (
     <li className="px-5 py-4" data-testid={`plan-line-${business.id}`}>
       <div className="flex items-start justify-between gap-4">
@@ -171,14 +174,15 @@ function BusinessLine({
             ),
           )}
           {canRemove && pending?.kind !== "remove" && (
-            <ChangeDialog
+            <CancelDialog
               label="Remove"
-              title={`Remove ${business.name} from your plan?`}
-              confirmLabel="Remove from plan"
+              title={`Before you remove ${business.name}`}
+              keepLabel="Keep on plan"
+              confirmLabel="Remove anyway"
+              reasonLabel="Why are you removing it? (optional)"
               action={actions.remove}
               input={{ businessId: business.id }}
               variant="ghost"
-              tone="danger"
               className="text-low-text hover:bg-low-bg hover:text-low-text"
             />
           )}

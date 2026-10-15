@@ -144,12 +144,12 @@ function BusinessCell({ row }: { row: AdminScanRow }) {
     <div className="min-w-0">
       <Link
         href={`/internal/admin/businesses/${row.businessId}`}
-        className="block truncate text-[14px] font-medium hover:text-primary hover:underline"
+        className="block truncate text-[14px] font-medium hover:text-primary hover:underline" title={row.businessName}
       >
         {row.businessName}
       </Link>
       <p className="flex items-center gap-1.5 truncate text-[12px] text-muted-foreground">
-        <span className="truncate">{row.agencyName || "No agency"}</span>
+        <span className="truncate" title={row.agencyName || "No agency"}>{row.agencyName || "No agency"}</span>
         {row.isTest && <Badge variant="outline">Test</Badge>}
         {row.attempts > 1 && <span className="tabular whitespace-nowrap">{row.attempts} tries</span>}
       </p>

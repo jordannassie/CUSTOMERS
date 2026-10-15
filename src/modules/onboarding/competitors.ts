@@ -127,8 +127,24 @@ export async function discoverCompetitors(b: BusinessForSearch, places: Competit
   return { suggestions, note: suggestions.length ? null : COMPETITOR_NOTES.noneFound };
 }
 
-export type ConfirmedCompetitor = { name: string; placesId: string | null };
-export type SavedCompetitorRow = { id: string; name: string };
+/** `aliases`: other names to keep with it, like the long Google name when the short brand was taken (2026-10-15). */
+export type ConfirmedCompetitor = { name: string; placesId: string | null; aliases?: string[] };
+export type SavedCompetitorRow = { id: string; name: string; aliases?: string[] };
+
+const ALIASES_MAX = 10;
+
+/** The saved other names plus new ones, once each and never the name itself, up to the column's limit. */
+export function mergeAliases(saved: string[], added: string[], name: string): string[] {
+  const seen = new Set([nameKey(name)]);
+  const out: string[] = [];
+  for (const alias of [...saved, ...added]) {
+    const text = alias.trim();
+    if (!text || seen.has(nameKey(text))) continue;
+    seen.add(nameKey(text));
+    out.push(text);
+  }
+  return out.slice(0, ALIASES_MAX);
+}
 
 // Matches the unique index on (business_id, lower(name)).
 export const nameKey = (name: string) => name.trim().toLowerCase();
@@ -143,7 +159,7 @@ export function dedupeConfirmed(list: ConfirmedCompetitor[]): ConfirmedCompetito
     if (!name || names.has(nameKey(name)) || (c.placesId && placeIds.has(c.placesId))) continue;
     names.add(nameKey(name));
     if (c.placesId) placeIds.add(c.placesId);
-    out.push({ name, placesId: c.placesId });
+    out.push(c.aliases?.length ? { name, placesId: c.placesId, aliases: c.aliases } : { name, placesId: c.placesId });
   }
   return out;
 }
@@ -189,6 +205,7 @@ export function competitorFields(c: ConfirmedCompetitor) {
     // The name is always the user's; the source only says whether a place id is attached.
     source: c.placesId ? "confirmed_place" : "manual",
     confirmed: true,
+    ...(c.aliases?.length ? { aliases: mergeAliases([], c.aliases, c.name) } : {}),
   };
 }
 

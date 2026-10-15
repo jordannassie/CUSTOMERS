@@ -8,15 +8,19 @@ import { INDUSTRIES, INDUSTRY_LABELS, isIndustry, servicesPlaceholder } from "@/
 import type { ActionResult } from "@/modules/auth";
 import type { AutofillResult, BusinessDetails } from "@/modules/onboarding/schema";
 import { domainBrand } from "@/modules/scanning/mention-text";
+import { titleBrand } from "@/modules/onboarding/title-brand";
 import { ALIASES_MAX, AREA_MAX } from "@/modules/settings/schema";
 import { aliasesProblem, aliasExample, parseServices } from "@/modules/settings/service";
-import { CountrySelect, SELECT_CLASS } from "@/components/ui/country-select";
+import { CountrySelect } from "@/components/ui/country-select";
 import { useFieldErrors } from "@/components/ui/field-errors";
 import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
 import { clearAutofill, useStoredAutofill } from "./autofill-store";
 import { IndustryCheck } from "./IndustryCheck";
 import { GoogleAttribution } from "./PlaceBits";
 import { Field, StepActions, StepError } from "./StepBits";
+
+const INDUSTRY_OPTIONS = INDUSTRIES.map((i) => ({ value: i, label: INDUSTRY_LABELS[i] }));
 
 export type DetailsInput = {
   businessId: string;
@@ -86,7 +90,8 @@ function DetailsForm({ businessId, domain, details, industryText, aliases, save,
   };
   const check = (key: Checked) => ({ error: fields.errors[key], errorId: fields.idOf(key) });
   // Google names one branch ("Cheezious Golra Mor Branch"); customers and AI use the brand (BUG-097).
-  const brand = domainBrand(v.name, domain);
+  // A Google page title as the name ("Bedigital.pk - Digitizing Businesses") gets the same suggestion (2026-10-15).
+  const brand = domainBrand(v.name, domain) ?? titleBrand(v.name, domain);
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -143,24 +148,21 @@ function DetailsForm({ businessId, domain, details, industryText, aliases, save,
         </Field>
 
         <Field id="industry" label="Industry" className="sm:col-span-2" {...check("industry")}>
-          <select
+          <Select
             id="industry"
             value={v.industry}
-            onChange={set("industry")}
+            onValueChange={(industry) => {
+              setV((s) => ({ ...s, industry }));
+              fields.clear("industry");
+              setIndustryChecked(true);
+            }}
+            options={INDUSTRY_OPTIONS}
+            placeholder="Choose an industry"
             required
-            className={`${SELECT_CLASS} ${industryChecked ? "" : "border-mid ring-3 ring-mid/30"}`}
+            className={industryChecked ? undefined : "border-mid ring-3 ring-mid/30"}
             {...fields.fieldProps("industry")}
             {...(industryChecked ? {} : { "aria-describedby": "industry-check" })}
-          >
-            <option value="" disabled>
-              Choose an industry
-            </option>
-            {INDUSTRIES.map((i) => (
-              <option key={i} value={i}>
-                {INDUSTRY_LABELS[i]}
-              </option>
-            ))}
-          </select>
+          />
           {!industryChecked && autofill?.industryCheck ? <IndustryCheck id="industry-check" {...autofill.industryCheck} /> : null}
         </Field>
         {v.industry === "other" ? (

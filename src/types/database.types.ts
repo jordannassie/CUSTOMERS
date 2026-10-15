@@ -691,6 +691,55 @@ export type Database = {
           },
         ]
       }
+      cancel_reasons: {
+        Row: {
+          agency_id: string
+          business_id: string | null
+          created_at: string
+          id: string
+          kind: string
+          reason: string
+        }
+        Insert: {
+          agency_id: string
+          business_id?: string | null
+          created_at?: string
+          id?: string
+          kind: string
+          reason: string
+        }
+        Update: {
+          agency_id?: string
+          business_id?: string | null
+          created_at?: string
+          id?: string
+          kind?: string
+          reason?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cancel_reasons_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cancel_reasons_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agency_credit_balance"
+            referencedColumns: ["agency_id"]
+          },
+          {
+            foreignKeyName: "cancel_reasons_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contact_submissions: {
         Row: {
           company: string | null
@@ -2403,6 +2452,7 @@ export type Database = {
         Returns: boolean
       }
       reset_stuck_jobs: { Args: never; Returns: number }
+      resolve_quiet_system_alerts: { Args: { p_quiet?: unknown }; Returns: number }
       retry_scan_job: { Args: { p_job_id: string }; Returns: string }
       run_account_purge: { Args: never; Returns: number }
       run_email_job: { Args: { p_job: string }; Returns: number }

@@ -33,7 +33,7 @@ export default defineConfig({
         extends: true,
         test: {
           name: "unit",
-          include: ["src/**/*.test.ts"],
+          include: ["src/**/*.test.ts", "scripts/**/*.test.ts"],
           exclude: SERIAL_TESTS,
           // Most unit files talk to the one local database; with a worker per core, its auth and REST gateway fell
           // behind and a few files failed with "fetch failed" (BUG-069). TEST_MAX_WORKERS raises or lowers it.

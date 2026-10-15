@@ -12,10 +12,12 @@
 // v6 (2026-10-14): the kind of business goes with the industry ("fast food restaurant (fried chicken, burgers)", not
 // only "Restaurant"), so KFC no longer gets "nice dinner with my partner" or "large group booking" questions; a counter
 // or takeaway place never gets sit-down ones. The code adds product and chain questions itself (kind-questions.ts).
+// v7 (2026-10-15): a comparison question names two real options, never stand-ins: written questions had "dentist A or
+// B" and "option A or option B" (Wilshire Smile Studio, Krispy Krunchy Chicken). The code drops any left (question-rules).
 import { z } from "zod";
 import { INTENTS } from "@/modules/question-library";
 
-export const PICK_PROMPT_VERSION = "pick-questions.v6";
+export const PICK_PROMPT_VERSION = "pick-questions.v7";
 export const PICK_MODEL = "claude-haiku-4-5";
 export const PICK_MAX_TOKENS = 1_500;
 export const QUESTION_COUNT = 12;
@@ -73,7 +75,7 @@ Write exactly ${WRITE_COUNT} questions:
 - Fit the exact kind you are given. A fast food or takeaway place is ordered at a counter or delivered: never ask about sit-down dining (date night, a dinner with a partner, special occasions, group bookings, reservations, fine dining, rooftops).
 - Every question must fit most businesses of this kind. A question may name one service or product that most businesses of this kind offer (for a coffee shop: espresso, cold brew, pastries). Never a speciality, add-on or extra that only some offer (subscriptions, merchandise, a diet, an amenity, events), and never two of them in one question.
 - Never ask about opening hours or days (open late, open early, open on Sundays, 24 hours) or about when the question is asked (now, today, tonight, this weekend, currently). The checks run at night and each business keeps its own hours.
-- Mix the intents: best (who is the best or a good choice), urgent (same day, emergency, quick turnaround), price (affordable, cost, deals), reviews (best reviewed, trusted, recommended), comparison (which one is better for a specific need). At least three different intents, at most ${MAX_PER_INTENT} with the same intent. Skip urgent when this kind of business is never urgent.
+- Mix the intents: best (who is the best or a good choice), urgent (same day, emergency, quick turnaround), price (affordable, cost, deals), reviews (best reviewed, trusted, recommended), comparison (which one is better for a specific need, comparing two real options by what they are, like "braces or clear aligners" or "a dealership or an independent shop"; never stand-in names such as "dentist A or B", "option A or option B" or "X or Y"). At least three different intents, at most ${MAX_PER_INTENT} with the same intent. Skip urgent when this kind of business is never urgent.
 - No duplicates or near duplicates.`;
 
 /** Only the kind of business: its own services and description would make questions only it can win (BUG-130). */

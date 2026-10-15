@@ -44,7 +44,8 @@
     "vault:local": "bash scripts/dev/setup-local-vault.sh",
     "alerts:resolve-stale": "bash scripts/dev/resolve-stale-alerts.sh",
     "scans:recount": "vitest run --project dev scripts/dev/recount-saved-answers.dev.ts",
-    "questions:clean": "vitest run --project dev scripts/dev/clean-reused-questions.dev.ts"
+    "questions:clean": "vitest run --project dev scripts/dev/clean-reused-questions.dev.ts",
+    "dev:clean-test-data": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/dev/clean-test-data.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.128.0",

@@ -2,11 +2,12 @@
 // fill the city, and plain questions that fit any business as the last fallback.
 import { needsSitDown } from "./business-kind";
 export { fallbackQuestions } from "./plain-questions";
+import { comparesOptions } from "./question-options";
 import { openingCount, questionKey } from "./question-style";
 import type { LibraryIndustry } from "@/lib/industries";
 import { placeLabel } from "@/lib/place-label";
 import { offersTerm, specificTermsIn, type Intent } from "@/modules/question-library";
-import { MAX_PER_INTENT, QUESTION_COUNT } from "./prompts/pick-questions.v6";
+import { MAX_PER_INTENT, QUESTION_COUNT } from "./prompts/pick-questions.v7";
 
 export type LibraryEntry = { id: string; template: string; tags: string[]; intent: Intent };
 
@@ -99,7 +100,7 @@ const SERVICE_FILLER = /^\s*who can (?:do|handle|help with)\b/i;
 
 /** True for a question a customer asks to find a business, which AI answers by naming some. */
 export function asksForBusiness(question: string): boolean {
-  return !ADVICE.some((re) => re.test(question)) && !SERVICE_FILLER.test(question);
+  return !ADVICE.some((re) => re.test(question)) && !SERVICE_FILLER.test(question) && !comparesOptions(question);
 }
 
 // "Open now" asked at 02:00 gets a different answer than at noon, so the score would move with the clock (A8).
@@ -113,12 +114,28 @@ export function dependsOnTime(question: string): boolean {
   return TIME_BOUND.test(question) || HOURS.test(question);
 }
 
+// Stand-ins a writer left in (2026-10-15): "med spa A or med spa B", "dentist A or B", "option A or option B",
+// "X or Y", "Company A", "[name]", "<industry>", or a {placeholder} other than {city}. "I" is never a stand-in
+// ("should I or my partner"), and a letter after a real word ("Plan B", "vitamin A") is not one either.
+const PLACEHOLDERS = [
+  /\b[A-HJ-Z] (?:or|and|vs\.?|versus) (?:[a-z]+ ){0,3}[A-HJ-Z]\b/,
+  /\b(?:[Oo]ption|[Bb]usiness|[Cc]ompany|[Bb]rand|[Pp]lace|[Ss]hop|[Ss]tore|[Pp]rovider|[Ff]irm|[Aa]gency) [A-Z]\b/,
+  /\[[^\]]*\]/,
+  /<[^>]*>/,
+  /\{(?!city\})[^}]*\}/,
+];
+
+/** True for a question with a stand-in name or a placeholder left in it; never shown or asked. */
+export function hasPlaceholder(question: string): boolean {
+  return PLACEHOLDERS.some((re) => re.test(question));
+}
+
 /**
  * A question every business of the kind can be judged on: asks for a business, not advice; not tied to the time or
- * to opening hours; and no "near me", since the AI only knows the city.
+ * to opening hours; no "near me", since the AI only knows the city; and no stand-in names left by a writer.
  */
 export function isFairQuestion(question: string): boolean {
-  return asksForBusiness(question) && !dependsOnTime(question) && !/\bnear me\b/i.test(question);
+  return asksForBusiness(question) && !dependsOnTime(question) && !/\bnear me\b/i.test(question) && !hasPlaceholder(question);
 }
 
 // Words that carry no detail about what one business sells or offers: a question made only of these (plus the

@@ -50,7 +50,7 @@ export function AppSidebar({
       {settingUp ? (
         <div className="rounded-md border border-border bg-surface px-3 py-2.5" data-testid="setting-up">
           <p className="text-[13px] text-muted-foreground">Setting up</p>
-          <p className="truncate text-sm font-medium">
+          <p className="line-clamp-2 text-sm font-medium break-words">
             {setupLabel(pathname, setupName, businesses.find((b) => b.id === activeBusinessId)?.name ?? null)}
           </p>
         </div>

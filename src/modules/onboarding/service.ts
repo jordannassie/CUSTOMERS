@@ -2,12 +2,14 @@
 // combine, and the note shown above the form.
 import { hostOf as siteHost } from "@/lib/site-type";
 import { sameBrandSite } from "./autofill-safety";
-import { INDUSTRY_LABELS } from "@/lib/industries";
-import { industriesFromPlacesTypes, industryFromPlacesType, placesTypeLabel } from "./industries";
+import { titleBrand } from "./title-brand";
+import { chooseIndustry } from "./industry-choice";
 import type { PageResult } from "./firecrawl";
 import type { PlaceCandidate } from "./places";
 import type { AutofillOutput } from "./prompts/business-autofill.v1";
 import type { AutofillResult, BusinessDetails } from "./schema";
+
+export { chooseIndustry, industryCheck } from "./industry-choice";
 
 export const EMPTY_DETAILS: BusinessDetails = {
   name: "",
@@ -89,36 +91,12 @@ export function keepGrounded(site: AutofillOutput, pages: PageResult[]): Autofil
   };
 }
 
-type ChosenIndustry = Pick<BusinessDetails, "industry" | "industryText">;
-
 /**
- * Google's type wins: a known one is the industry, any other specific one is "other" with Google's name for it
- * (BUG-123). One exception: when the website says another of our industries and one of the listing's other types
- * maps to it, the website wins. A Tim Hortons is primaryType restaurant with types cafe and coffee_shop; its site
- * says coffee shop, and coffee shop questions fit it. A bookstore whose primary type is book_store stays
- * "Other: Bookstore" even when it lists a cafe, since only a mapped Google industry can be overruled this way.
+ * Google's name, cut to the brand when Google keeps a page title as the name ("Wilshire Smile Studio - Los Angeles
+ * Dentist, Cosmetic..." is "Wilshire Smile Studio"). The user sees it on the form and can change it.
  */
-export function chooseIndustry(site: AutofillOutput | null, place: PlaceCandidate | null): ChosenIndustry {
-  const google = industryFromPlacesType(place?.primaryType);
-  const otherType = placesTypeLabel(place?.primaryType);
-  const website = site?.industry && site.industry !== "other" ? site.industry : null;
-  if (google && website && website !== google && industriesFromPlacesTypes(place?.types ?? []).has(website)) {
-    return { industry: website };
-  }
-  return { industry: google ?? (otherType ? "other" : (site?.industry ?? "")), ...(otherType ? { industryText: otherType } : {}) };
-}
-
-/**
- * When Google and the website still name different kinds of business, both labels, so the details step can ask the
- * user to check: "Google says Restaurant, your website looks like Coffee shop." Null when they agree or one is silent.
- */
-export function industryCheck(site: AutofillOutput | null, place: PlaceCandidate | null): { google: string; website: string } | null {
-  const website = site?.industry && site.industry !== "other" ? site.industry : null;
-  if (!website || !place) return null;
-  const google = industryFromPlacesType(place.primaryType);
-  const googleLabel = google ? INDUSTRY_LABELS[google] : placesTypeLabel(place.primaryType);
-  if (!googleLabel || chooseIndustry(site, place).industry === website) return null;
-  return { google: googleLabel, website: INDUSTRY_LABELS[website] };
+function placeName(place: PlaceCandidate): string {
+  return place.name ? (titleBrand(place.name, place.websiteUri) ?? place.name) : "";
 }
 
 /** Places wins for name, address, phone and category; the website wins for description and services. */
@@ -126,7 +104,7 @@ export function mergeDetails(site: AutofillOutput | null, place: PlaceCandidate 
   // When Places has an address, the location fields come from the same address so they agree.
   const placeLocation = place?.address ? place : null;
   return {
-    name: place?.name || site?.name || "",
+    name: (place ? placeName(place) : "") || site?.name || "",
     ...chooseIndustry(site, place),
     description: site?.description.trim() ?? "",
     services: site?.services ?? [],

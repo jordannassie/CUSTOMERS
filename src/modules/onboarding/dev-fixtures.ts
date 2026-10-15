@@ -6,7 +6,7 @@ import type { PageResult } from "./firecrawl";
 import { BLOCKED_DOMAIN, BLOCKED_PAGES, BLOCKED_PLACE, COFFEE_DOMAIN, COFFEE_PAGES, COFFEE_PLACE, COFFEE_SITE_OUTPUT, OTHER_PLACE } from "./fixtures";
 import { ExtractError } from "./extract";
 import type { QuestionModel } from "./question-model";
-import { QUESTION_COUNT } from "./prompts/pick-questions.v6";
+import { QUESTION_COUNT } from "./prompts/pick-questions.v7";
 
 const SITES: Record<string, PageResult[]> = { [COFFEE_DOMAIN]: COFFEE_PAGES, [BLOCKED_DOMAIN]: BLOCKED_PAGES };
 

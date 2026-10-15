@@ -138,10 +138,12 @@ describe("copy", () => {
     const cancel = (trialing: boolean) =>
       previewCopy({ ...input, trialing, amountCents: 0, extraCredits: 0, effectiveAt: 1_790_000_000 });
     const trial = cancel(true);
-    expect(trial.headline).toBe("Your free trial ends on September 21, 2026. Your trial credits work until then.");
-    expect(trial.details[0]).toBe("Your card won't be charged.");
+    expect(trial.headline).toBe("Your free trial keeps going until September 21, 2026. Your card won't be charged.");
+    expect(trial.details[0]).toBe("Any trial credits left on September 21, 2026 are removed.");
     expect([trial.headline, ...trial.details].join(" ")).not.toMatch(/again|refund/);
-    expect(cancel(false).details[0]).toBe("You won't be charged again, and there's no refund for this month.");
+    expect(cancel(false).headline).toBe(
+      "Your plan stays active until September 21, 2026. You won't be charged again, and there's no refund for this month.",
+    );
   });
 
   it("says the trial ends, not the plan, once a trial is canceled (BUG-B)", () => {

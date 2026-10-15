@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { detectMentions, type ScoreReport } from "@/modules/scanning";
 import { FIXTURE_SIGNALS } from "../place-fixtures";
-import { competitorsView, websiteDomain, websiteShown, type CompetitorRow, type SignalResult } from "../service";
+import { competitorsView, websiteAction, websiteDomain, websiteShown, type CompetitorRow, type SignalResult } from "../service";
 
 // Side by side on Google: Google's website is shown live and never saved; a website the user typed is theirs.
 const BEFORE = new Date("2026-08-10T12:00:00Z");
@@ -34,6 +34,19 @@ describe("competitor websites (D-73: only what the user typed is saved)", () => 
       ["Daily Grind", "c-4", { kind: "saved", domain: "dailygrind.com" }],
       ["Cloudy Cafe", "c-5", { kind: "unknown" }],
     ]);
+  });
+
+  it("offers Add website only when Google answered with no website (2026-10-15)", () => {
+    const actions = view(report, competitors, signals).signals.slice(1).map((r) => [r.name, websiteAction(websiteShown(r))]);
+    expect(actions).toEqual([
+      ["Bean House", null],
+      ["Burning Brownie", "add"],
+      ["Typed Cafe", "change"],
+      ["Daily Grind", "change"],
+      // The Google lookup failed: nothing asks for a website.
+      ["Cloudy Cafe", null],
+    ]);
+    expect(websiteAction({ kind: "unknown" })).toBeNull();
   });
 
   it("keeps a typed website as a bare domain, and refuses what is not one", () => {

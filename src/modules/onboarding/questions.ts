@@ -6,13 +6,14 @@ import { INDUSTRY_LABELS, isIndustry, type LibraryIndustry } from "@/lib/industr
 import { SEARCH_TERMS } from "./competitors";
 import type { Intent } from "@/modules/question-library";
 import type { QuestionModel } from "./question-model";
-import { PICK_MODEL, PICK_PROMPT_VERSION, QUESTION_COUNT, type PickBusiness } from "./prompts/pick-questions.v6";
+import { PICK_MODEL, PICK_PROMPT_VERSION, QUESTION_COUNT, type PickBusiness } from "./prompts/pick-questions.v7";
 import {
   balancePicks,
   cityLabel,
   fallbackQuestions,
   fillCity,
   fitsBusiness,
+  hasPlaceholder,
   isFairQuestion,
   KIND_WORDS,
   isGeneralQuestion,
@@ -159,7 +160,7 @@ async function sharedQuestions(business: QuestionBusiness, clients: QuestionClie
   // Only questions that fit any business of the kind: "a bookstore with a coffee shop" stays with the shop it was
   // written for even when this one lists coffee too, since it is written from this business's own services below.
   const general = all
-    .filter((q) => isGeneralQuestion(q.text, kind, business.city, business.region, []))
+    .filter((q) => isGeneralQuestion(q.text, kind, business.city, business.region, []) && !hasPlaceholder(q.text))
     .map((q) => ({ template: q.text, tags: [] as string[], intent: q.intent }));
   // The same intent mix as any other set.
   return balancePicks(general, general, business.services).map((q) => ({ text: q.template, intent: q.intent, templateId: null }));

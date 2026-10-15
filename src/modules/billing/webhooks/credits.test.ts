@@ -25,7 +25,7 @@ describe("monthBefore and periodFraction", () => {
 });
 
 describe("planInvoiceGrants", () => {
-  it("grants 100 trial credits once on a $0 first invoice, expiring at trial end, and no plan credits", () => {
+  it("grants 150 trial credits (D-17) once on a $0 first invoice, expiring at trial end, and no plan credits", () => {
     const trialEnd = at("2026-09-22T00:00:00Z");
     const lines = [
       line({ product: "cd_plan_starter", amount: 0, subscriptionId: sub, start: periodStart, end: trialEnd }),
@@ -35,6 +35,7 @@ describe("planInvoiceGrants", () => {
     expect(grants).toEqual([
       { source: "trial", sourceId: lines[0].id, amount: TRIAL_CREDITS, expiresAt: new Date(trialEnd * 1000), reason: "trial_start" },
     ]);
+    expect(grants[0].amount).toBe(150);
   });
 
   it("grants each business line its plan's monthly credits on renewal, keyed by the line ID", () => {

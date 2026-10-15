@@ -37,7 +37,7 @@ export function ScanHistory({ scans }: { scans: UsageReport["scans"] }) {
               return (
                 <li key={scan.id} className="flex items-center justify-between gap-3 px-5 py-3">
                   <div className="min-w-0">
-                    <p className="truncate text-sm">{scan.businessName}</p>
+                    <p className="truncate text-sm" title={scan.businessName}>{scan.businessName}</p>
                     <p className="mt-0.5 text-xs tabular-nums text-muted-foreground">
                       <LocalDayAndTime iso={scan.at} />
                     </p>
