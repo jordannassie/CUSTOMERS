@@ -74,7 +74,7 @@ function PopularStrip({ apps }: { apps: DirectoryApp[] }) {
         {apps.map((app) => (
           <a
             key={app.slug}
-            href={`/apps/go/${app.slug}/directory`}
+            href={`/apps/${app.slug}`}
             className="flex w-[108px] shrink-0 flex-col items-center rounded-2xl border border-[#E5E5E1] bg-white px-2 py-3 text-center transition hover:-translate-y-0.5 hover:border-[#BFDBFE] hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0866F5]"
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}

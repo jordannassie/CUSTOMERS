@@ -12,13 +12,31 @@ type Seed = {
   topPick?: boolean;
 };
 
+/** Review pages confirmed from the publisher's own listing. Ratings stay empty until a licensed feed exists. */
+const VERIFIED_REVIEWS: Record<string, { reviewSource: "g2" | "capterra"; reviewUrl: string }> = {
+  chatgpt: { reviewSource: "g2", reviewUrl: "https://www.g2.com/products/chatgpt/reviews" },
+  canva: { reviewSource: "capterra", reviewUrl: "https://www.capterra.com/p/168956/Canva/reviews/" },
+  hubspot: { reviewSource: "capterra", reviewUrl: "https://www.capterra.com/p/152373/HubSpot-CRM/reviews/" },
+  notion: { reviewSource: "g2", reviewUrl: "https://www.g2.com/products/notion/reviews" },
+  perplexity: { reviewSource: "g2", reviewUrl: "https://www.g2.com/products/perplexity/reviews" },
+  mailchimp: { reviewSource: "g2", reviewUrl: "https://www.g2.com/products/intuit-mailchimp-email-marketing/reviews" },
+  zendesk: { reviewSource: "g2", reviewUrl: "https://www.g2.com/products/zendesk-support-suite/reviews" },
+  slack: { reviewSource: "capterra", reviewUrl: "https://www.capterra.com/p/135003/Slack/reviews/" },
+};
+
 function app(seed: Seed): DirectoryApp {
+  const review = VERIFIED_REVIEWS[seed.slug];
   return {
     affiliateUrl: null,
     active: true,
     featured: false,
     popular: false,
     topPick: false,
+    rating: null,
+    reviewCount: null,
+    ratingLastUpdated: null,
+    reviewSource: review?.reviewSource ?? null,
+    reviewUrl: review?.reviewUrl ?? null,
     ...seed,
   };
 }

@@ -24,6 +24,11 @@ export async function saveDirectoryAppAction(formData: FormData): Promise<{ erro
   const saved = await saveDirectoryApp({
     ...parsed.data,
     affiliateUrl: parsed.data.affiliateUrl ? parsed.data.affiliateUrl : null,
+    reviewSource: null,
+    reviewUrl: null,
+    rating: null,
+    reviewCount: null,
+    ratingLastUpdated: null,
   });
   if (!saved.ok) {
     return { error: saved.unavailable ? "Apply migration 025 before saving directory apps." : "Could not save that app." };
