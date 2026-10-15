@@ -31,6 +31,11 @@ function mapRow(row: AppRow): DirectoryApp | null {
     description: row.description,
     websiteUrl: row.website_url,
     affiliateUrl: row.affiliate_url,
+    reviewSource: null,
+    reviewUrl: null,
+    rating: null,
+    reviewCount: null,
+    ratingLastUpdated: null,
     categories,
     featured: row.featured,
     popular: row.popular,
@@ -80,7 +85,7 @@ export async function saveDirectoryApp(app: DirectoryApp): Promise<{ ok: true } 
 export async function recordAppClick(input: {
   slug: string;
   source: AppSource;
-  kind: "affiliate" | "direct";
+  kind: "affiliate" | "direct" | "review" | "view";
   utmSource: string | null;
   utmMedium: string | null;
   utmCampaign: string | null;

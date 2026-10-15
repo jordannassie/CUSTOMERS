@@ -35,9 +35,24 @@ export function mergeCatalog(base: DirectoryApp[], overrides: DirectoryApp[]): D
       bySlug.delete(row.slug);
       continue;
     }
-    bySlug.set(row.slug, row);
+    const previous = bySlug.get(row.slug);
+    bySlug.set(row.slug, {
+      ...row,
+      reviewSource: row.reviewSource ?? previous?.reviewSource ?? null,
+      reviewUrl: row.reviewUrl ?? previous?.reviewUrl ?? null,
+      rating: row.rating ?? previous?.rating ?? null,
+      reviewCount: row.reviewCount ?? previous?.reviewCount ?? null,
+      ratingLastUpdated: row.ratingLastUpdated ?? previous?.ratingLastUpdated ?? null,
+    });
   }
   return [...bySlug.values()];
+}
+
+export function relatedApps(apps: DirectoryApp[], current: DirectoryApp, limit = 4): DirectoryApp[] {
+  return apps
+    .filter((app) => app.active && app.slug !== current.slug && app.categories.some((category) => current.categories.includes(category)))
+    .sort((a, b) => a.name.localeCompare(b.name))
+    .slice(0, limit);
 }
 
 export function queryDirectory(apps: DirectoryApp[], query: DirectoryQuery): DirectoryResult {

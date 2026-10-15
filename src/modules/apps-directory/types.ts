@@ -15,6 +15,8 @@ export const APP_CATEGORIES = [
 
 export type AppCategoryId = (typeof APP_CATEGORIES)[number]["id"];
 
+export type ReviewSource = "g2" | "capterra";
+
 export type DirectoryApp = {
   slug: string;
   name: string;
@@ -27,11 +29,16 @@ export type DirectoryApp = {
   popular: boolean;
   topPick: boolean;
   active: boolean;
+  reviewSource: ReviewSource | null;
+  reviewUrl: string | null;
+  rating: number | null;
+  reviewCount: number | null;
+  ratingLastUpdated: string | null;
 };
 
 export type AppSort = "name" | "provider";
 
-export type AppSource = "homepage" | "directory";
+export type AppSource = "homepage" | "directory" | "detail";
 
 export function categoryLabel(id: string): string {
   return APP_CATEGORIES.find((category) => category.id === id)?.label ?? id;

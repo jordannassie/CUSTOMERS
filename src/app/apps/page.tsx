@@ -47,7 +47,7 @@ export default async function AppsPage({ searchParams }: { searchParams: SearchP
       "@type": "ListItem",
       position: index + 1,
       name: app.name,
-      url: app.websiteUrl,
+      url: `https://customers.direct/apps/${app.slug}`,
       description: app.description,
     })),
   };

@@ -59,6 +59,18 @@ export function utmFromReferer(referer: string | null): {
   }
 }
 
+const REVIEW_HOSTS = new Set(["www.g2.com", "g2.com", "www.capterra.com", "capterra.com"]);
+
+export function isAllowedReviewUrl(value: string | null | undefined): value is string {
+  if (!value || !value.startsWith("https://")) return false;
+  try {
+    const url = new URL(value);
+    return REVIEW_HOSTS.has(url.hostname) && url.pathname.toLowerCase().includes("review");
+  } catch {
+    return false;
+  }
+}
+
 export function destinationFor(app: { affiliateUrl: string | null; websiteUrl: string }): {
   url: string;
   kind: "affiliate" | "direct";

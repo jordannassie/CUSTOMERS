@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { DIRECTORY_CATALOG, HOME_FEATURED_SLUGS } from "./catalog";
-import { destinationFor, utmFromReferer } from "./schema";
+import { destinationFor, isAllowedReviewUrl, utmFromReferer } from "./schema";
 import { mergeCatalog, queryDirectory } from "./service";
 
 const baseQuery = { q: "", category: "all", sort: "name" as const, page: 1 };
@@ -10,6 +10,12 @@ describe("apps directory", () => {
     expect(DIRECTORY_CATALOG.length).toBeGreaterThanOrEqual(30);
     expect(DIRECTORY_CATALOG.every((app) => app.websiteUrl.startsWith("https://"))).toBe(true);
     expect(DIRECTORY_CATALOG.every((app) => app.affiliateUrl === null)).toBe(true);
+    expect(DIRECTORY_CATALOG.every((app) => app.rating === null && app.reviewCount === null)).toBe(true);
+    const reviewed = DIRECTORY_CATALOG.filter((app) => app.reviewUrl);
+    expect(reviewed.every((app) => isAllowedReviewUrl(app.reviewUrl))).toBe(true);
+    expect(DIRECTORY_CATALOG.find((app) => app.slug === "chatgpt")?.reviewUrl).toBe("https://www.g2.com/products/chatgpt/reviews");
+    expect(DIRECTORY_CATALOG.find((app) => app.slug === "canva")?.reviewUrl).toBe("https://www.capterra.com/p/168956/Canva/reviews/");
+    expect(DIRECTORY_CATALOG.find((app) => app.slug === "figma")?.reviewUrl).toBeNull();
     expect(new Set(DIRECTORY_CATALOG.map((app) => app.slug)).size).toBe(DIRECTORY_CATALOG.length);
   });
 
@@ -47,5 +53,7 @@ describe("apps directory", () => {
     const utm = utmFromReferer("https://customers.direct/apps?utm_source=newsletter&utm_medium=email&utm_campaign=oct");
     expect(utm).toEqual({ utmSource: "newsletter", utmMedium: "email", utmCampaign: "oct" });
     expect(utmFromReferer("https://evil.example/?utm_source=nope").utmSource).toBeNull();
+    expect(isAllowedReviewUrl("https://evil.example/reviews")).toBe(false);
+    expect(isAllowedReviewUrl("https://www.g2.com/products/chatgpt/reviews")).toBe(true);
   });
 });
