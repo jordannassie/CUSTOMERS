@@ -34,6 +34,7 @@ function app(seed: Seed): DirectoryApp {
     topPick: false,
     rating: null,
     reviewCount: null,
+    ratingScale: 5,
     ratingLastUpdated: null,
     reviewSource: review?.reviewSource ?? null,
     reviewUrl: review?.reviewUrl ?? null,

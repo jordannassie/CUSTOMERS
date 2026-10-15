@@ -447,7 +447,7 @@ function HeroDashboardPreview() {
 
 function HeroSection() {
   return (
-    <section className="overflow-hidden border-b border-[#EEEEEA] bg-[#FAFAF8] px-4 pb-12 pt-16 sm:pt-20">
+    <section className="overflow-hidden border-b border-[#EEEEEA] bg-[#FAFAF8] px-4 pb-8 pt-6 sm:pb-10 sm:pt-8">
       <HomeHero />
       <div className="mx-auto mt-14 max-w-4xl">
         <HeroDashboardPreview />

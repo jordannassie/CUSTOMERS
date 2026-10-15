@@ -28,6 +28,7 @@ export async function saveDirectoryAppAction(formData: FormData): Promise<{ erro
     reviewUrl: null,
     rating: null,
     reviewCount: null,
+    ratingScale: 5,
     ratingLastUpdated: null,
   });
   if (!saved.ok) {
