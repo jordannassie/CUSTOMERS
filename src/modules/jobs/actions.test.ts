@@ -118,7 +118,7 @@ describe("startScan", () => {
     expect(await startScan({ businessId })).toEqual({
       ok: false,
       status: 428,
-      error: "You scanned today. Most answers will be the same as the last scan and still use 6 credits.",
+      error: "You scanned in the last 24 hours. Most answers will be the same as the last scan and still use 6 credits.",
       recentScan: { cost: 6 },
     });
     expect(await jobsFor(businessId)).toEqual([{ status: "done", priority: 0 }]);

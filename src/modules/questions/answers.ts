@@ -10,6 +10,8 @@ export type AnswerRecord = {
   business_mentioned: boolean;
   competitors_mentioned: unknown;
   answer_text: string | null;
+  /** Served from the shared answer cache (D-24) rather than asked again. */
+  cached?: boolean | null;
 };
 
 export type QuestionAnswer = {
@@ -20,6 +22,8 @@ export type QuestionAnswer = {
   /** Tracked competitors this answer named. */
   competitors: string[];
   text: string;
+  /** The answer came from the answer cache, so this scan did not ask the AI again (2026-10-16). */
+  reused: boolean;
 };
 
 // Long enough for any normal answer; a runaway one is cut so the dialog stays light.
@@ -58,6 +62,7 @@ export function latestAnswers(rows: AnswerRecord[], models: ProviderId[]): Quest
         namedYou: row.business_mentioned,
         competitors: competitorNames(row.competitors_mentioned),
         text: plainAnswer(row.answer_text!),
+        reused: row.cached === true,
       },
     ];
   });

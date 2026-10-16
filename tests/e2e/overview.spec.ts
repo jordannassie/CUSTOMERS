@@ -253,7 +253,7 @@ test("Run scan again the same day: asks first, with the credits it still uses (2
   const dialog = page.getByTestId("recent-scan-dialog");
   await expect(dialog.getByRole("heading", { name: "Scan again?" })).toBeVisible();
   await expect(dialog.getByTestId("recent-scan-message")).toHaveText(
-    "You scanned today. Most answers will be the same as the last scan and still use 9 credits.",
+    "You scanned in the last 24 hours. Most answers will be the same as the last scan and still use 9 credits.",
   );
   await dialog.getByRole("button", { name: "Not now" }).click();
   await expect(dialog).toHaveCount(0);

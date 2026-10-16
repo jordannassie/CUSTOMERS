@@ -68,9 +68,11 @@ export async function websiteTaken(agencyId: string, domain: string, exceptId: s
 }
 
 /**
- * True when auto-fill already ran for this draft as it is now, so the website step sent again (Back, then Continue
- * with nothing changed) costs no AI or Firecrawl call: the details are confirmed, or the website's facts are saved,
- * or (no website) a Google listing was picked. The details step refills from what is saved (BUG-139).
+ * True when auto-fill already ran for this draft as it is now and worked, so the website step sent again (Back, then
+ * Continue with nothing changed) costs no AI or Firecrawl call: the details are confirmed, or the website was read
+ * (its facts are saved), or (no website) a Google listing was picked. The details step refills from what is saved
+ * (BUG-139). A run that failed (the site blocked us or did not load, our reader or AI was down, Google failed) saves
+ * no facts, so the same website sent again runs auto-fill again (O1).
  */
 export async function autofillDone(businessId: string): Promise<boolean> {
   const db = createServiceClient();
@@ -79,7 +81,14 @@ export async function autofillDone(businessId: string): Promise<boolean> {
   if (!b) return false;
   if ((b.onboarding_step ?? 0) > stepNumber("details")) return true;
   if (b.has_website === false) return b.places_id !== null;
-  const facts = await db.from("business_site_facts").select("business_id").eq("business_id", businessId).maybeSingle();
+  const facts = await db.from("business_site_facts").select("data").eq("business_id", businessId).maybeSingle();
   if (facts.error) throw new Error(`Could not load site facts: ${facts.error.message}`);
-  return facts.data !== null;
+  return siteWasRead(facts.data?.data ?? null);
+}
+
+/** Saved site facts hold what the AI read; a site that turned us away saves only its pages, with facts null (BUG-087). */
+export function siteWasRead(saved: unknown): boolean {
+  if (typeof saved !== "object" || saved === null) return false;
+  const facts = (saved as { facts?: unknown }).facts;
+  return typeof facts === "object" && facts !== null;
 }

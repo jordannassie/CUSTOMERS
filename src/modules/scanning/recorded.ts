@@ -9,7 +9,7 @@ import { orderedNames, type ExtractNames } from "./extract";
 import { EXTRACT_NAMES_VERSION } from "./prompts/extract-names.v1";
 import { CHECK_MODELS } from "./providers/models";
 import { ProviderError } from "./providers/request";
-import { NO_SAMPLE_ANSWERS } from "./sample-answers";
+import { NO_SAMPLE_ANSWERS, noRecordedAnswers } from "./sample-answers";
 import type { ProviderId, RunCheck } from "./providers/types";
 
 export const RECORDED_ANSWERS_DIR = path.join(process.cwd(), "tests", "fixtures", "ai-answers");
@@ -67,7 +67,7 @@ export function recordedAnswers(answers: RecordedAnswer[], kind?: string | null)
     async (input) => {
       const all = byProvider.get(provider) ?? [];
       if (all.length === 0) {
-        throw new ProviderError({ provider, kind: "client", attempts: 1, message: `No recorded ${provider} answers` });
+        throw new ProviderError({ provider, kind: "client", attempts: 1, message: noRecordedAnswers(provider) });
       }
       const pool = narrowed(all, kind, input.location.city);
       if (pool.length === 0) throw new ProviderError({ provider, kind: "client", attempts: 1, message: NO_SAMPLE_ANSWERS });

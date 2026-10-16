@@ -1,7 +1,7 @@
 import type Stripe from "stripe";
 import { afterAll, describe, expect, it } from "vitest";
 import { processStripeWebhook } from "./webhooks";
-import { monthBefore } from "./webhooks/credits";
+import { monthBefore, PERIOD_GRACE_MS } from "./webhooks/credits";
 import * as fx from "./webhooks/fixtures.test-helpers";
 import { agencyRow, businessRows, cleanUp, grants, harness, ledgerTotal, secret, service, setup } from "./webhooks/harness.test-helpers";
 
@@ -69,7 +69,7 @@ describe("signup with a trial", () => {
 
     const trialGrants = await grants(a.agencyId);
     expect(trialGrants).toMatchObject([{ source: "trial", source_id: trialLines[0].id, amount: 150, remaining: 150 }]);
-    expect(Date.parse(trialGrants[0].expires_at!)).toBe(trialEnd * 1000);
+    expect(Date.parse(trialGrants[0].expires_at!)).toBe(trialEnd * 1000 + PERIOD_GRACE_MS);
     expect(await ledgerTotal(a.agencyId)).toBe(150);
 
     await h.deliverTwice(fx.event("customer.subscription.trial_will_end", sub));

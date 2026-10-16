@@ -42,6 +42,15 @@ describe("jobUpdateFor", () => {
     // One model with a real outage among them still retries.
     expect(jobUpdateFor({ ...none, errors: [...none.errors, "perplexity: returned 503"] }, job(1), NOW)).toMatchObject({ status: "queued" });
   });
+
+  it("also fails at once when the other models have no recordings at all, so the job never sits queued", () => {
+    const mixed = { ...allFailed, errors: ["openai: No sample answers for this kind of business", "perplexity: No recorded perplexity answers"] };
+    const update = jobUpdateFor(mixed, job(1), NOW);
+    expect(update).toMatchObject({ status: "failed" });
+    expect(update.error).toContain("No sample answers for this kind of business");
+    // With no sample answers error at all, an empty fixtures folder still retries as before.
+    expect(jobUpdateFor({ ...allFailed, errors: ["openai: No recorded openai answers"] }, job(1), NOW)).toMatchObject({ status: "queued" });
+  });
 });
 
 function fakeDeps(queue: string[], opts: { runMs?: number; clock?: { t: number } } = {}) {

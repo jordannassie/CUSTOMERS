@@ -16,6 +16,10 @@ export const LIMITS = {
   feature_request: { max: 10, windowMs: HOUR },
   // Each auto-fill reads a website and Google and asks an AI model, all paid for (onboarding).
   autofill: { max: 20, windowMs: HOUR },
+  // Each export opens the share page in a hosted browser, which is slow and paid for (reports).
+  pdf_export: { max: 10, windowMs: HOUR },
+  // Each competitor lookup is a paid Google Places search (onboarding and Competitors).
+  competitor_lookup: { max: 30, windowMs: HOUR },
 } satisfies Record<string, Limit>;
 
 export type Bucket = keyof typeof LIMITS;

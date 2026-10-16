@@ -6,7 +6,7 @@ import type { CompetitorCandidate } from "./competitor-places";
 import { dedupeConfirmed } from "./competitors";
 import { DUPLICATE_BUSINESS_TEXT, DuplicateBusinessError } from "./duplicates";
 import { lookupCompetitor, runBusinessAutofill, saveBusinessPlace, saveCompetitors } from "./dal";
-import { activeUser, autofillLimit } from "./guard";
+import { activeUser, autofillLimit, competitorLookupLimit } from "./guard";
 import { websiteExists } from "./website/dal";
 import { websiteNotFoundText } from "./website/domain-check";
 import { autofillInput, competitorLookupInput, pickPlaceInput, saveCompetitorsInput, toDomain, type AutofillResult } from "./schema";
@@ -78,6 +78,8 @@ export async function lookupCompetitorByName(
   const parsed = competitorLookupInput.safeParse(input);
   if (!parsed.success) return { ok: false, status: 400, error: "Type at least 2 letters of the business name." };
 
+  const limited = await competitorLookupLimit(userId);
+  if (limited) return limited;
   const result = await lookupCompetitor(userId, parsed.data.businessId, parsed.data.name);
   if (!result) return { ok: false, status: 404, error: "Business not found." };
   return { ok: true, data: result };

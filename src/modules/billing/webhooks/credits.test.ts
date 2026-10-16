@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { monthBefore, periodFraction, planInvoiceGrants, prorationPeriodStarts, TRIAL_CREDITS, type PlanCredits } from "./credits";
+import { monthBefore, PERIOD_GRACE_MS, periodFraction, planInvoiceGrants, prorationPeriodStarts, TRIAL_CREDITS, type PlanCredits } from "./credits";
 import { DAY, invoice, line } from "./fixtures.test-helpers";
 
 const plans = new Map<string, PlanCredits>([
@@ -41,7 +41,7 @@ describe("planInvoiceGrants", () => {
     ];
     const grants = planInvoiceGrants(invoice({ customer: "cus", subscriptionId: sub, billingReason: "subscription_create", lines }), lines, plans, now);
     expect(grants).toEqual([
-      { source: "trial", sourceId: lines[0].id, amount: TRIAL_CREDITS, expiresAt: new Date(trialEnd * 1000), reason: "trial_start" },
+      { source: "trial", sourceId: lines[0].id, amount: TRIAL_CREDITS, expiresAt: new Date(trialEnd * 1000 + PERIOD_GRACE_MS), reason: "trial_start" },
     ]);
     expect(grants[0].amount).toBe(150);
   });
@@ -56,7 +56,7 @@ describe("planInvoiceGrants", () => {
       [lines[0].id, 1200, "plan"],
       [lines[1].id, 5000, "plan"],
     ]);
-    expect(grants[0].expiresAt).toEqual(new Date(periodEnd * 1000));
+    expect(grants[0].expiresAt).toEqual(new Date(periodEnd * 1000 + PERIOD_GRACE_MS));
   });
 
   it("grants the prorated difference on an upgrade: Starter to Pro with 15 of 30 days left is +650", () => {
@@ -68,7 +68,7 @@ describe("planInvoiceGrants", () => {
     ];
     const grants = planInvoiceGrants(invoice({ customer: "cus", subscriptionId: sub, billingReason: "subscription_update", lines }), lines, plans, now);
     expect(grants).toEqual([
-      { source: "plan", sourceId: lines[1].id, amount: 650, expiresAt: new Date(periodEnd * 1000), reason: "proration" },
+      { source: "plan", sourceId: lines[1].id, amount: 650, expiresAt: new Date(periodEnd * 1000 + PERIOD_GRACE_MS), reason: "proration" },
     ]);
   });
 

@@ -152,6 +152,20 @@ describe("entitlements against the database", () => {
     expect((await canStartScan(agency.agencyId, agency.businessIds[0])).reason).toBe(REASONS.outOfCredits);
   });
 
+  it("blocks a scan of a business taken off the plan, and keeps trials and businesses with no plan item scanning (M1)", async () => {
+    const agency = await createAgency(3);
+    await topup(agency, 100);
+    const [offPlan, trial, noItem] = agency.businessIds;
+    const item = (businessId: string, status: string) => ({ business_id: businessId, agency_id: agency.agencyId, plan_id: "starter", status });
+    await service.from("business_subscriptions").insert([item(offPlan, "canceled"), item(trial, "trialing")]).throwOnError();
+
+    expect(await loadBusinessFacts(offPlan)).toMatchObject({ onPlan: false });
+    expect(await canStartScan(agency.agencyId, offPlan)).toEqual({ allowed: false, reason: "This business is off your plan." });
+    // A trial's item, and a test agency's or first business's missing one, are on the plan.
+    expect(await canStartScan(agency.agencyId, trial)).toEqual({ allowed: true, reason: "" });
+    expect(await canStartScan(agency.agencyId, noItem)).toEqual({ allowed: true, reason: "" });
+  });
+
   it("keeps top-ups unspendable once the plan is cancelled (F-20)", async () => {
     const agency = await createAgency(1);
     await topup(agency, 500);

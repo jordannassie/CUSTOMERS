@@ -29,6 +29,7 @@ const business = (over: Partial<BusinessFacts> = {}): BusinessFacts => ({
   activeQuestionCount: 0,
   competitorCount: 0,
   hasOpenScan: false,
+  onPlan: true,
   ...over,
 });
 
@@ -130,6 +131,15 @@ describe("canStartScan", () => {
       reason: REASONS.notYourBusiness,
     });
     expect(canStartScan(agency(), business({ agencyId: null })).allowed).toBe(false);
+  });
+
+  it("blocks a business taken off the plan, even with credits (M1)", () => {
+    expect(canStartScan(agency({ balance: 500 }), business({ onPlan: false }))).toEqual({
+      allowed: false,
+      reason: "This business is off your plan.",
+    });
+    // The account problem still comes first.
+    expect(canStartScan(agency({ status: "past_due" }), business({ onPlan: false })).reason).toBe(REASONS.pastDue);
   });
 
   it("reports the account problem before the credit problem", () => {

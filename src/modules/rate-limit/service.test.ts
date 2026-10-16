@@ -43,3 +43,15 @@ describe("rate limiter", () => {
     expect(clientIp(new Headers())).toBe("unknown");
   });
 });
+
+describe("signed-in limits", () => {
+  it("cap PDF exports at 10 and competitor lookups at 30 an hour per user", async () => {
+    expect(LIMITS.pdf_export).toEqual({ max: 10, windowMs: 3_600_000 });
+    expect(LIMITS.competitor_lookup).toEqual({ max: 30, windowMs: 3_600_000 });
+    const allow = createLimiter(memoryStore());
+    for (let i = 0; i < 10; i++) expect(await allow("pdf_export", "user-1", 0)).toBe("allowed");
+    expect(await allow("pdf_export", "user-1", 0)).toBe("limited");
+    // Each bucket keeps its own count.
+    expect(await allow("competitor_lookup", "user-1", 0)).toBe("allowed");
+  });
+});

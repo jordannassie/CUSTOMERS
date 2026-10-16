@@ -9,9 +9,20 @@ const STATUS = {
   running: { label: "Running", variant: "tint" },
   queued: { label: "Waiting", variant: "secondary" },
   failed: { label: "Failed", variant: "low" },
+  skipped: { label: "Did not run", variant: "secondary" },
 } as const;
 
 const statusOf = (s: string) => STATUS[s as keyof typeof STATUS] ?? STATUS.queued;
+
+/** Checks answered from the shared answer cache (H1): the same answer as a recent scan, still 1 credit each. */
+function Reused({ n }: { n: number }) {
+  if (n === 0) return null;
+  return (
+    <span data-reused className="block text-xs text-muted-foreground">
+      {n === 1 ? "1 reused answer" : `${count(n)} reused answers`}
+    </span>
+  );
+}
 
 export function ScanHistory({ scans }: { scans: UsageReport["scans"] }) {
   return (
@@ -21,7 +32,8 @@ export function ScanHistory({ scans }: { scans: UsageReport["scans"] }) {
           Scan history
         </h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          Each check a model answers costs 1 credit. Checks that fail are never charged.
+          Each check a model answers costs 1 credit, including answers reused from a recent scan. Checks that fail are
+          never charged.
         </p>
       </div>
       {scans.length === 0 ? (
@@ -41,6 +53,7 @@ export function ScanHistory({ scans }: { scans: UsageReport["scans"] }) {
                     <p className="mt-0.5 text-xs tabular-nums text-muted-foreground">
                       <LocalDayAndTime iso={scan.at} />
                     </p>
+                    <Reused n={scan.reused} />
                   </div>
                   <div className="flex shrink-0 flex-col items-end gap-1">
                     <span className="text-sm font-medium tabular-nums">{credits(scan.credits)}</span>
@@ -70,7 +83,10 @@ export function ScanHistory({ scans }: { scans: UsageReport["scans"] }) {
                       </TableCell>
                       <TableCell className="max-w-[16rem] truncate">{scan.businessName}</TableCell>
                       <TableCell>
-                        <Badge variant={status.variant}>{status.label}</Badge>
+                        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                          <Badge variant={status.variant}>{status.label}</Badge>
+                          <Reused n={scan.reused} />
+                        </div>
                       </TableCell>
                       <TableCell data-credits className="pr-5 text-right font-medium tabular-nums">
                         {count(scan.credits)}

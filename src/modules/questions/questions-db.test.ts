@@ -105,15 +105,98 @@ describe("question actions", () => {
 
     session = owner.client;
     expect(await editQuestion({ businessId: owner.businessId, questionId: q1, text: "Question 2 in Orange?" })).toMatchObject({ status: 400 });
-    expect(await editQuestion({ businessId: owner.businessId, questionId: q1, text: "Best latte in Orange" })).toMatchObject({ ok: true });
     expect(await removeQuestion({ businessId: owner.businessId, questionId: q2 })).toMatchObject({ ok: true });
     // Removed, not deleted: it leaves every list but keeps its answers for past scores (step 9e).
-    const { data } = await service.from("tracked_prompts").select("id, prompt, source").eq("business_id", owner.businessId).is("removed_at", null);
-    expect(data).toEqual([{ id: q1, prompt: "Best latte in Orange?", source: "custom" }]);
+    const { data } = await service.from("tracked_prompts").select("id").eq("business_id", owner.businessId).is("removed_at", null);
+    expect(data).toEqual([{ id: q1 }]);
     const { data: removed } = await service.from("tracked_prompts").select("active, inactive_since, removed_at").eq("id", q2).single();
     expect(removed).toMatchObject({ active: false });
     expect(removed?.removed_at).not.toBeNull();
     expect(removed?.inactive_since).not.toBeNull();
+  });
+});
+
+describe("editQuestion (M2)", () => {
+  const rows = async (businessId: string) =>
+    (
+      await service
+        .from("tracked_prompts")
+        .select("id, prompt, source, active, inactive_since, removed_at")
+        .eq("business_id", businessId)
+        .order("created_at")
+        .throwOnError()
+    ).data;
+
+  async function answer(businessId: string, questionId: string) {
+    const { data: run } = await service.from("visibility_runs").insert({ business_id: businessId, provider: "scan", status: "completed" }).select("id").single().throwOnError();
+    await service
+      .from("visibility_results")
+      .insert({ run_id: run.id, business_id: businessId, tracked_prompt_id: questionId, provider: "openai", business_mentioned: true, competitors_mentioned: [], answer_text: "Bean There." })
+      .throwOnError();
+  }
+
+  it("saves a suggested question's new wording as a new question and pauses the old one with its answers", async () => {
+    const owner = await createOwner(2);
+    session = owner.client;
+    const [q1] = owner.questionIds;
+    await answer(owner.businessId, q1);
+    expect(await editQuestion({ businessId: owner.businessId, questionId: q1, text: "best latte in Orange" })).toEqual({ ok: true, data: { newQuestion: true } });
+    const after = await rows(owner.businessId);
+    const old = after!.find((q) => q.id === q1)!;
+    expect(old).toMatchObject({ prompt: "Question 1 in Orange?", source: "library", active: false, removed_at: null });
+    expect(old.inactive_since).not.toBeNull();
+    const added = after!.find((q) => q.prompt === "Best latte in Orange?")!;
+    expect(added).toMatchObject({ source: "custom", active: true, inactive_since: null });
+    // The old answers stay with the old wording.
+    const { count } = await service.from("visibility_results").select("id", { count: "exact", head: true }).eq("tracked_prompt_id", q1);
+    expect(count).toBe(1);
+    expect(await activeCount(owner.businessId)).toBe(2);
+    // The page lists both: the new one active, the old one paused.
+    const view = await loadQuestionsPage(owner.agencyId, owner.businessId, new Date());
+    expect(view!.active.map((q) => q.text)).toEqual(["Question 2 in Orange?", "Best latte in Orange?"]);
+    expect(view!.paused.map((q) => q.text)).toEqual(["Question 1 in Orange?"]);
+  });
+
+  it("works at the plan limit, since the new question takes the old one's place", async () => {
+    const owner = await createOwner(25);
+    session = owner.client;
+    expect(await editQuestion({ businessId: owner.businessId, questionId: owner.questionIds[0], text: "Best latte in Orange?" })).toMatchObject({ ok: true });
+    expect(await activeCount(owner.businessId)).toBe(25);
+  });
+
+  it("keeps a paused question's copy paused", async () => {
+    const owner = await createOwner(1);
+    session = owner.client;
+    const [q1] = owner.questionIds;
+    await setQuestionActive({ businessId: owner.businessId, questionId: q1, active: false });
+    expect(await editQuestion({ businessId: owner.businessId, questionId: q1, text: "Best latte in Orange?" })).toMatchObject({ ok: true, data: { newQuestion: true } });
+    expect((await rows(owner.businessId))!.map((q) => [q.source, q.active])).toEqual([["library", false], ["custom", false]]);
+  });
+
+  it("refuses wording another question already has, paused ones included, and does nothing for the same wording", async () => {
+    const owner = await createOwner(2);
+    session = owner.client;
+    const [q1, q2] = owner.questionIds;
+    await setQuestionActive({ businessId: owner.businessId, questionId: q2, active: false });
+    expect(await editQuestion({ businessId: owner.businessId, questionId: q1, text: "question 2 in orange" })).toMatchObject({ ok: false, status: 400 });
+    expect(await editQuestion({ businessId: owner.businessId, questionId: q1, text: "Question 1 in Orange" })).toEqual({ ok: true, data: { newQuestion: false } });
+    expect((await rows(owner.businessId))!.length).toBe(2);
+  });
+
+  it("rewrites the user's own question in place until it has answers, then saves a new one", async () => {
+    const owner = await createOwner(0);
+    session = owner.client;
+    await addQuestion({ businessId: owner.businessId, text: "Best cold brew in Orange?" });
+    const [own] = (await rows(owner.businessId))!;
+    expect(await editQuestion({ businessId: owner.businessId, questionId: own.id, text: "Best iced coffee in Orange?" })).toEqual({ ok: true, data: { newQuestion: false } });
+    expect((await rows(owner.businessId))!.map((q) => [q.id, q.prompt, q.active])).toEqual([[own.id, "Best iced coffee in Orange?", true]]);
+
+    await answer(owner.businessId, own.id);
+    expect(await editQuestion({ businessId: owner.businessId, questionId: own.id, text: "Best iced latte in Orange?" })).toEqual({ ok: true, data: { newQuestion: true } });
+    expect((await rows(owner.businessId))!.map((q) => [q.prompt, q.source, q.active])).toEqual([
+      ["Best iced coffee in Orange?", "custom", false],
+      ["Best iced latte in Orange?", "custom", true],
+    ]);
   });
 });
 

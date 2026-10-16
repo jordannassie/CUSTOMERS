@@ -4,14 +4,19 @@ import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Globe, Loader2, MapPin } from "lucide-react";
 import type { ActionResult } from "@/modules/auth";
-import { toDomain, type AutofillResult, type PlaceChoice } from "@/modules/onboarding/schema";
+import { toDomain, type AutofillResult } from "@/modules/onboarding/schema";
 import { FieldMessage, useFieldErrors } from "@/components/ui/field-errors";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { AutofillFailed } from "./AutofillFailed";
 import { saveAutofill } from "./autofill-store";
-import { PlaceChoices, type PickPlaceAction } from "./PlaceChoices";
+import { PlaceChoices, type PickPlaceAction, type PlaceChoicesState } from "./PlaceChoices";
 import { FieldHint, StepActions, StepError } from "./StepBits";
+
+/** The website step's save: makes or finds the draft and runs auto-fill. The details step's "Try again" sends it too. */
+export type FindBusinessAction = (
+  input: ({ domain: string } | { name: string; city: string }) & { plan?: string | null; createKey?: string; retry?: boolean },
+) => Promise<ActionResult<{ businessId: string; autofill: AutofillResult | null }>>;
 
 type Props = {
   defaultDomain: string;
@@ -22,14 +27,11 @@ type Props = {
   backHref?: string;
   /** Chosen on the new-business plan picker, carried through to the business this step creates. */
   plan?: string | null;
-  save: (
-    input: ({ domain: string } | { name: string; city: string }) & { plan?: string | null; createKey?: string; retry?: boolean },
-  ) => Promise<ActionResult<{ businessId: string; autofill: AutofillResult | null }>>;
+  save: FindBusinessAction;
   /** Saves the Google listing picked with no website, or none (MVP_SPEC 3.3). */
   pick: PickPlaceAction;
 };
 
-type Picking = { businessId: string; typed: AutofillResult; choices: PlaceChoice[]; searched: string; note?: string };
 type Failed = { businessId: string; typed: AutofillResult };
 
 // MVP_SPEC 3.1 step 3. Auto-fill runs here and takes a few seconds, so the wait gets its own screen.
@@ -40,7 +42,7 @@ export function WebsiteStep({ defaultDomain, defaultNoWebsite, defaultName = "",
   const [name, setName] = useState(defaultName);
   const [city, setCity] = useState(defaultCity);
   const [error, setError] = useState<string | null>(null);
-  const [picking, setPicking] = useState<Picking | null>(null);
+  const [picking, setPicking] = useState<PlaceChoicesState | null>(null);
   // Neither the website nor Google answered: "Try again" runs auto-fill once more for the same draft (2026-10-16).
   const [failed, setFailed] = useState<Failed | null>(null);
   const [pending, startTransition] = useTransition();

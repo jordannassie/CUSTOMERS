@@ -23,6 +23,11 @@ export type BusinessFacts = {
   competitorCount: number;
   /** A queued or running scan job exists (D-55 allows one). */
   hasOpenScan: boolean;
+  /**
+   * scan_job_business_on_plan (migration 050): false once the business's plan item is canceled. A business with no
+   * plan item yet (a trial or test agency, a first business before its webhook) is on the plan.
+   */
+  onPlan: boolean;
 };
 
 // D-16: the trial covers 2 businesses.
@@ -38,6 +43,7 @@ export const REASONS = {
   canceled: "Your plan has ended. Contact us to start it again.",
   readOnly: "Your plan has ended, so your account is read-only. Contact us to start it again.",
   paused: "Your account is paused. Contact support to turn it back on.",
+  offPlan: "This business is off your plan.",
 } as const;
 
 const allow: Entitlement = { allowed: true, reason: REASONS.ok };
@@ -93,6 +99,8 @@ export function canStartScan(agency: AgencyFacts, business: BusinessFacts): Enti
   if (business.agencyId !== agency.id) return deny(REASONS.notYourBusiness);
   const blocked = canSpendTopUps(agency);
   if (!blocked.allowed) return blocked;
+  // M1: a business taken off the plan keeps its data but is never scanned again, with top-ups or without.
+  if (!business.onPlan) return deny(REASONS.offPlan);
   // D-54: no new scan at 0 or below.
   if (agency.balance <= 0) return deny(REASONS.outOfCredits);
   if (business.hasOpenScan) return deny(REASONS.scanAlreadyQueued);

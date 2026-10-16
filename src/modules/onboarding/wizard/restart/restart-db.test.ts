@@ -11,6 +11,7 @@ const service = createServiceClient();
 const userIds: string[] = [];
 let session: SupabaseClient | null = null;
 
+vi.mock("next/cache", () => ({ refresh: vi.fn() }));
 vi.mock("@/lib/supabase/server", () => ({
   createClient: async () =>
     session ?? createSupabaseClient(env.NEXT_PUBLIC_SUPABASE_URL, env.NEXT_PUBLIC_SUPABASE_ANON_KEY, { auth: { persistSession: false } }),

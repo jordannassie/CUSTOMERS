@@ -12,6 +12,7 @@ const writes = vi.hoisted(() => ({
   start: vi.fn(async () => ({ ok: true, businessId: "7b0c4b4e-8a59-4a4f-9a8e-2f1d1b2c3d4e", autofill: { details: {}, note: null } })),
   agency: vi.fn(async () => ({ agencyId: "agency-1" })),
   place: vi.fn(async () => true),
+  lookup: vi.fn(async () => ({ matches: [], note: null })),
 }));
 
 vi.mock("@/modules/auth", async (importOriginal) => {
@@ -35,7 +36,7 @@ vi.mock("./dal", () => ({
   runBusinessAutofill: writes.autofill,
   saveBusinessPlace: writes.place,
   saveCompetitors: vi.fn(),
-  lookupCompetitor: vi.fn(),
+  lookupCompetitor: writes.lookup,
 }));
 vi.mock("./wizard/dal", () => ({
   saveAgency: writes.agency,
@@ -47,7 +48,7 @@ vi.mock("./wizard/dal", () => ({
 vi.mock("@/modules/notifications", () => ({ sendWelcomeEmail: vi.fn() }));
 
 const { LIMITS } = await import("@/modules/rate-limit");
-const { autofillBusiness, confirmBusinessPlace } = await import("./actions");
+const { autofillBusiness, confirmBusinessPlace, lookupCompetitorByName } = await import("./actions");
 const { saveAgencyStep, saveWebsiteStep } = await import("./wizard/actions");
 
 const businessId = "7b0c4b4e-8a59-4a4f-9a8e-2f1d1b2c3d4e";
@@ -99,5 +100,30 @@ describe("auto-fill limit", () => {
     state.storeDown = true;
     expect(await saveWebsiteStep({ domain: "sunrise-coffee.com" })).toMatchObject({ ok: false, status: 503 });
     expect(writes.start).not.toHaveBeenCalled();
+  });
+});
+
+describe("competitor lookup limit", () => {
+  it(`allows ${LIMITS.competitor_lookup.max} Google lookups an hour per user, then refuses kindly`, async () => {
+    expect(LIMITS.competitor_lookup.max).toBe(30);
+    for (let i = 0; i < LIMITS.competitor_lookup.max; i++) {
+      expect(await lookupCompetitorByName({ businessId, name: `Blue Door ${i}` })).toMatchObject({ ok: true });
+    }
+    expect(await lookupCompetitorByName({ businessId, name: "Blue Door" })).toEqual({
+      ok: false,
+      status: 429,
+      error: "You've looked up a lot of competitors this hour. Try again later.",
+    });
+    expect(writes.lookup).toHaveBeenCalledTimes(LIMITS.competitor_lookup.max);
+    // Its own count: auto-fill still works.
+    expect(await saveWebsiteStep({ domain: "sunrise-coffee.com" })).toMatchObject({ ok: true });
+  });
+
+  it("does not count bad input, and refuses with a try-again message when the count cannot be read", async () => {
+    expect(await lookupCompetitorByName({ businessId, name: "B" })).toMatchObject({ ok: false, status: 400 });
+    expect(state.hits.size).toBe(0);
+    state.storeDown = true;
+    expect(await lookupCompetitorByName({ businessId, name: "Blue Door" })).toMatchObject({ ok: false, status: 503 });
+    expect(writes.lookup).not.toHaveBeenCalled();
   });
 });

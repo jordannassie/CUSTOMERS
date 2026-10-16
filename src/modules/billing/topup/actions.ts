@@ -84,6 +84,7 @@ export async function completeFixtureTopUp(input: unknown): Promise<ActionResult
       retrieveInvoice: () => Promise.reject(new Error("not used for top-ups")),
       checkoutBusinessIds: () => Promise.reject(new Error("not used for top-ups")),
       tagItem: () => Promise.reject(new Error("not used for top-ups")),
+      checkoutSessionForPaymentIntent: () => Promise.reject(new Error("not used for top-ups")),
     },
     sendEmail: sendBillingEmail,
     now: () => new Date(),

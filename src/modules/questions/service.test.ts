@@ -2,8 +2,11 @@ import { describe, expect, it } from "vitest";
 import { INDUSTRIES } from "@/lib/industries";
 import { isFairQuestion } from "@/modules/onboarding";
 import {
+  editMakesNewQuestion,
   exampleQuestion,
   atLimit,
+  newQuestionWarning,
+  rowHasAnswers,
   limitText,
   questionsView,
   resultText,
@@ -73,5 +76,23 @@ describe("the example under 'Add your own question' (step 6c)", () => {
     }
     expect(exampleQuestion("Islamabad", "coffee_shop")).toBe("Which coffee shop in Islamabad do locals recommend most?");
     expect(exampleQuestion(null, "plumber")).toBe("Which plumber in my city do locals recommend most?");
+  });
+});
+
+describe("editing a question (M2)", () => {
+  it("starts a new question for a suggested one, or the user's own once it has answers", () => {
+    expect(editMakesNewQuestion({ custom: false, answered: false })).toBe(true);
+    expect(editMakesNewQuestion({ custom: false, answered: true })).toBe(true);
+    expect(editMakesNewQuestion({ custom: true, answered: true })).toBe(true);
+    expect(editMakesNewQuestion({ custom: true, answered: false })).toBe(false);
+  });
+
+  it("reads answers from the page's results and words the warning by state", () => {
+    const result = (checks: number) => ({ model: "openai" as const, label: "ChatGPT", appeared: 0, checks });
+    expect(rowHasAnswers({ results: [result(0), result(0)] })).toBe(false);
+    expect(rowHasAnswers({ results: [result(0), result(2)] })).toBe(true);
+    expect(newQuestionWarning(true)).toBe("Editing makes this a new question. The old one is paused and keeps its results.");
+    expect(newQuestionWarning(false)).toContain("stays paused");
+    expect(newQuestionWarning(true)).not.toMatch(/[\u2013\u2014]/);
   });
 });

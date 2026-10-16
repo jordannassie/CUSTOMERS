@@ -180,6 +180,7 @@ export function toResult(opts: {
     ...(opts.choices?.length ? { choices: opts.choices } : {}),
     ...(unreadable && opts.choices?.length ? { pickNote: unreadableNote(unreadable.domain, unreadable.blocked, "pick") } : {}),
     ...(retry ? { retry: true } : {}),
+    ...(!opts.chain && (opts.aiDown || unreadable || opts.googleDown) ? { failed: true } : {}),
   };
 }
 

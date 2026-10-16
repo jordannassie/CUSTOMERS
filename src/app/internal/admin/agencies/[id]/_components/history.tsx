@@ -11,6 +11,7 @@ const ACTIONS: Record<string, string> = {
   "agency.unsuspend": "Unsuspended",
   "agency.restore": "Restored account",
   "agency.mark_test": "Changed test flag",
+  "stripe.topup_refund": "Top-up refunded in Stripe",
 };
 
 const KINDS: Record<string, string> = {
@@ -18,6 +19,7 @@ const KINDS: Record<string, string> = {
   expire: "Credits expired",
   admin_adjust: "Admin change",
   overdraft_settle: "Overdraft paid back",
+  refund: "Refunded top-up",
 };
 
 export function Businesses({ rows }: { rows: AdminAgencyDetail["businesses"] }) {
@@ -94,7 +96,7 @@ export function AuditLog({ rows }: { rows: AdminAgencyDetail["audit"] }) {
               <span className="font-medium">{ACTIONS[a.action] ?? a.action}</span>
               {a.reason && <span className="break-words text-muted-foreground">{a.reason}</span>}
               <span className="text-text-hint">
-                {a.by ?? "Unknown admin"}, {formatDate(a.createdAt, true)}
+                {a.by ?? (a.action.startsWith("stripe.") ? "Stripe" : "Unknown admin")}, {formatDate(a.createdAt, true)}
               </span>
             </li>
           ))}

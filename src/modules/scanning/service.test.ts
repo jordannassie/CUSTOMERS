@@ -111,9 +111,11 @@ describe("runScan (B-26)", () => {
     expect(run!.failed_by_provider).toEqual({ anthropic: { failed: 12, reason: expect.stringContaining("503") } });
 
     const { data: biz } = await service.from("businesses").select("next_scan_at").eq("id", business.businessId).single();
-    const days = (new Date(biz!.next_scan_at!).getTime() - Date.now()) / 86_400_000;
-    expect(days).toBeGreaterThan(6.9);
+    const next = new Date(biz!.next_scan_at!);
+    const days = (next.getTime() - Date.now()) / 86_400_000;
+    expect(days).toBeGreaterThan(6);
     expect(days).toBeLessThan(7.1);
+    expect(next.getUTCHours()).toBe(2); // the 02:00 UTC run a week on (H1)
   });
 
   it("tries a timed out check once more instead of failing it (BUG-083)", async () => {

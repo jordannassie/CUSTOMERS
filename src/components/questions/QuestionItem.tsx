@@ -5,7 +5,6 @@ import { Loader2, MessageSquareText, MoreHorizontal, Pause, Pencil, Play, Trash2
 import { toast } from "sonner";
 import { cn } from "cn";
 import type { ScanFrequency } from "@/modules/credits/estimate";
-import { QUESTION_MAX_LENGTH } from "@/modules/questions/schema";
 import type { QuestionRow } from "@/modules/questions/service";
 import { creditChangeText } from "./credits";
 import { Badge } from "@/components/ui/badge";
@@ -20,12 +19,12 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Input } from "@/components/ui/input";
 import type { QuestionAction } from "./AddQuestionForm";
 import { AnswersDialog, type AnswersAction, type AnswersState } from "./AnswersDialog";
+import { EditQuestionForm, type EditAction } from "./EditQuestionForm";
 import { ResultPips } from "./ResultPips";
 
-export type QuestionActions = { edit: QuestionAction; setActive: QuestionAction; remove: QuestionAction; answers: AnswersAction };
+export type QuestionActions = { edit: EditAction; setActive: QuestionAction; remove: QuestionAction; answers: AnswersAction };
 
 type Props = {
   businessId: string;
@@ -41,7 +40,6 @@ type Props = {
 
 export function QuestionItem({ businessId, question, activeCount, models, frequency, limitMessage, actions, gridClass }: Props) {
   const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState(question.text);
   const [confirmRemove, setConfirmRemove] = useState(false);
   const [showAnswers, setShowAnswers] = useState(false);
   const [answers, setAnswers] = useState<AnswersState>(null);
@@ -70,39 +68,11 @@ export function QuestionItem({ businessId, question, activeCount, models, freque
     setAnswers(result.ok ? { answers: result.data.answers } : { error: result.error });
   }
 
-  function save(e: React.FormEvent) {
-    e.preventDefault();
-    if (draft.trim() === question.text) return setEditing(false);
-    run(actions.edit, { text: draft }, "Question saved.", () => setEditing(false));
-  }
-
-  function cancelEdit() {
-    setEditing(false);
-    setDraft(question.text);
-    setError(null);
-  }
-
   return (
     <li data-testid="question-row" className={cn("relative grid gap-3 px-5 py-4", gridClass, !question.active && "text-muted-foreground")}>
       <div className="flex min-w-0 flex-col gap-1.5 pr-10 lg:pr-0">
         {editing ? (
-          <>
-            <form onSubmit={save} className="flex flex-col gap-2 sm:flex-row" aria-label="Edit question">
-              <Input value={draft} onChange={(e) => setDraft(e.target.value)} maxLength={QUESTION_MAX_LENGTH} aria-label="Question" autoFocus />
-              <div className="flex gap-2">
-                <Button type="submit" size="sm" disabled={pending}>
-                  {pending && <Loader2 className="animate-spin" aria-hidden="true" />}
-                  Save
-                </Button>
-                <Button type="button" size="sm" variant="ghost" onClick={cancelEdit}>
-                  Cancel
-                </Button>
-              </div>
-            </form>
-            {!question.custom && (
-              <p className="text-[13px] text-muted-foreground">An edited question counts as your own, so it stops counting in your score.</p>
-            )}
-          </>
+          <EditQuestionForm businessId={businessId} question={question} edit={actions.edit} onDone={() => setEditing(false)} />
         ) : (
           <p data-testid="question-text" className={cn("text-sm wrap-break-word", question.active && "font-medium text-foreground")}>
             {question.text}
@@ -144,7 +114,12 @@ export function QuestionItem({ businessId, question, activeCount, models, freque
               <MessageSquareText aria-hidden="true" />
               See the answers
             </DropdownMenuItem>
-            <DropdownMenuItem onSelect={() => setEditing(true)}>
+            <DropdownMenuItem
+              onSelect={() => {
+                setError(null);
+                setEditing(true);
+              }}
+            >
               <Pencil aria-hidden="true" />
               Edit
             </DropdownMenuItem>

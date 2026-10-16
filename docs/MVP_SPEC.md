@@ -248,7 +248,7 @@ Every active question is scanned.
 ### 5.4 Answer cache (D-24)
 
 - Key: hash of `model + normalized question text + city/state`.
-- Lifetime: 24 hours.
+- Lifetime: 20 hours (D-24, changed from 24 on 2026-10-16), shorter than the gap between two scheduled scans: the next scheduled scan is the 02:00 run at least 20 hours after the last one, so it is never served the business's own last answers. A manual rescan inside 20 hours reuses them, still at 1 credit each, after the "Scan again?" warning; the Questions page marks them "Reused answer" and Scan history counts them.
 - Shared across all businesses and agencies (the answer to "best dentist in Orange, CA" is the same for everyone). Library questions (5.3) are worded identically for every business in the same industry and city, so they hit the cache; custom questions rarely do.
 - All due scans start in the same 02:00 run (6.2), so businesses sharing questions are scanned within the same 24 hours.
 - Margins in section 15 assume no cache savings; the cache is a bonus.
@@ -337,7 +337,7 @@ Based on research into how AEO tools and independent studies measure AI visibili
 ### 6.4 Manual scan
 
 - "Run scan" inserts a job with high priority and calls the worker immediately (no wait for the next minute).
-- Within 24 hours of the last finished scan, "Run scan" asks first: "You scanned today. Most answers will be the same as the last scan and still use X credits." (2026-10-15; charging unchanged until D-54 is decided).
+- Within 24 hours of the last finished scan, "Run scan" asks first: "You scanned in the last 24 hours. Most answers will be the same as the last scan and still use X credits." (2026-10-15, wording 2026-10-16; charging unchanged until D-54 is decided).
 - Dashboard polls the job and shows "Scanning…" until `done` or `failed`.
 - No daily cap beyond credits, but only one queued or running job per business at a time.
 
@@ -602,7 +602,7 @@ question_library
 
 ai_answer_cache
   cache_key (unique), model, question, location, answer, citations jsonb,
-  created_at   -- valid 24 hours
+  created_at   -- valid 20 hours (D-24)
 
 business_site_facts            -- Firecrawl facts about the business's own site only
   business_id, data jsonb, fetched_at

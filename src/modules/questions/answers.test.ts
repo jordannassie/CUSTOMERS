@@ -26,6 +26,17 @@ describe("latestAnswers", () => {
     expect(answers[1].competitors).toEqual(["Pure Plumbing & Air"]);
   });
 
+  it("marks an answer served from the answer cache as reused (2026-10-16)", () => {
+    const answers = latestAnswers(
+      [{ ...row("openai", "2026-10-09T09:00:00Z", false, "Cached."), cached: true }, row("perplexity", "2026-10-09T09:00:00Z", true, "Asked again.")],
+      ["openai", "perplexity"],
+    );
+    expect(answers.map((a) => [a.label, a.reused])).toEqual([
+      ["ChatGPT", true],
+      ["Perplexity", false],
+    ]);
+  });
+
   it("skips a check with no answer text, and gives nothing when a model has none", () => {
     expect(latestAnswers([row("openai", "2026-10-09T09:00:00Z", false, null)], ["openai"])).toEqual([]);
     expect(latestAnswers([], ["openai", "anthropic"])).toEqual([]);

@@ -7,6 +7,16 @@ export const TRIAL_CREDITS = 150;
 
 export type PlanCredits = { planId: string; monthlyCredits: number };
 
+/**
+ * Plan and trial grants last this long past their period end (M6, 2026-10-16). Stripe pays a renewal minutes to hours
+ * after the period ends; without it the balance sat at 0 in between and scheduled scans were skipped. The old grant
+ * still expires first, so it is spent first, and once the new period's invoice is paid what is left of it ends at
+ * once (end_previous_period_grants, migration 070).
+ */
+export const PERIOD_GRACE_MS = 6 * 60 * 60 * 1000;
+
+const graceEnd = (periodEndSeconds: number) => new Date(periodEndSeconds * 1000 + PERIOD_GRACE_MS);
+
 export type PlannedGrant = {
   source: "plan" | "trial";
   /** Always a Stripe invoice line ID, so a replayed event can never grant twice (MVP_SPEC 11.3). */
@@ -80,7 +90,8 @@ function isTrialStart(invoice: Stripe.Invoice, lines: Stripe.InvoiceLineItem[]):
 /**
  * Plans the grants for a paid subscription invoice.
  * - Trial start (a $0 first invoice): one trial grant, never plan credits.
- * - Period lines (signup without trial, renewal): the plan's monthly credits per business, expiring at period end.
+ * - Period lines (signup without trial, renewal): the plan's monthly credits per business, expiring at period end
+ *   plus PERIOD_GRACE_MS (so are the trial and proration grants).
  * - Prorations (upgrade, added business): per subscription item, credits of the new time minus credits of the
  *   unused time, e.g. Starter to Pro with 15 of 30 days left is (2,500 - 1,200) x 0.5 = +650. Downgrades never
  *   produce a negative grant; current grants stay until they expire.
@@ -103,7 +114,7 @@ export function planInvoiceGrants(
       source: "trial",
       sourceId: first.id,
       amount: TRIAL_CREDITS,
-      expiresAt: new Date(first.period.end * 1000),
+      expiresAt: graceEnd(first.period.end),
       reason: "trial_start",
     });
     return grants.filter((g) => g.expiresAt > now);
@@ -128,7 +139,7 @@ export function planInvoiceGrants(
         source: "plan",
         sourceId: line.id,
         amount: creditsFor(line),
-        expiresAt: new Date(line.period.end * 1000),
+        expiresAt: graceEnd(line.period.end),
         reason: "period",
       });
     }
@@ -146,10 +157,22 @@ export function planInvoiceGrants(
       source: "plan",
       sourceId: anchor.id,
       amount,
-      expiresAt: new Date(anchor.period.end * 1000),
+      expiresAt: graceEnd(anchor.period.end),
       reason: "proration",
     });
   }
 
   return grants.filter((g) => g.expiresAt > now);
+}
+
+/**
+ * The start of the new billing period a paid invoice opens (a renewal, a paid signup, a trial that ended), from its
+ * paid period lines; null for an invoice with only prorations or a $0 trial start. The previous period's grants end
+ * once this invoice's grants are in (M6).
+ */
+export function newPeriodStart(invoice: Stripe.Invoice, lines: Stripe.InvoiceLineItem[]): Date | null {
+  const subLines = lines.filter((l) => subscriptionDetails(l));
+  if (isTrialStart(invoice, subLines)) return null;
+  const starts = subLines.filter((l) => !subscriptionDetails(l)!.proration && l.amount > 0).map((l) => l.period.start);
+  return starts.length ? new Date(Math.min(...starts) * 1000) : null;
 }

@@ -24,6 +24,7 @@ const KIND_LABEL: Record<string, string> = {
   ai_fallback: "ChatGPT backup in use",
   paid_not_active: "Paid but still on trial",
   schedule_lost: "Scheduled change lost",
+  topup_refund_unrecovered: "Refunded credits not taken back",
 };
 const SEVERITY = {
   critical: { label: "Urgent", badge: "low", rail: "border-l-low" },

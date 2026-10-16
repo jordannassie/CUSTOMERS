@@ -49,6 +49,11 @@ export function AnswersDialog({ question, open, onOpenChange, state }: Props) {
                     <LocalDate iso={a.checkedAt} options={SHORT} />
                   </span>
                   <Badge variant={a.namedYou ? "good" : "secondary"}>{a.namedYou ? "Named you" : "Did not name you"}</Badge>
+                  {a.reused && (
+                    <Badge variant="secondary" title="This answer was reused from an earlier check of the same question in the last 20 hours.">
+                      Reused answer
+                    </Badge>
+                  )}
                 </div>
                 {a.competitors.length > 0 && (
                   <p className="text-[13px] text-muted-foreground">Competitors it named: {a.competitors.join(", ")}</p>

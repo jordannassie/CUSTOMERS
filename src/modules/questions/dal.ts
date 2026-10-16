@@ -6,7 +6,7 @@ import { CHECK_MODELS, isOwnQuestion, loadQuestionResults, type ProviderId } fro
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { latestAnswers, type QuestionAnswer } from "./answers";
-import { questionsView, sameQuestion, tidyQuestion, type QuestionsView } from "./service";
+import { editMakesNewQuestion, questionsView, sameQuestion, tidyQuestion, type QuestionsView } from "./service";
 
 const FREQUENCIES: readonly string[] = ["daily", "weekly", "monthly"] satisfies ScanFrequency[];
 const isModel = (m: string): m is ProviderId => m in CHECK_MODELS;
@@ -62,7 +62,7 @@ export async function loadQuestionAnswers(agencyId: string, businessId: string, 
   // The rows that count: never sample answers once the agency is real (migration 044).
   const { data, error } = await db
     .from("visibility_results_counted")
-    .select("provider, created_at, business_mentioned, competitors_mentioned, answer_text")
+    .select("provider, created_at, business_mentioned, competitors_mentioned, answer_text, cached")
     .eq("business_id", businessId)
     .eq("tracked_prompt_id", questionId)
     .order("created_at", { ascending: false })
@@ -74,14 +74,16 @@ export async function loadQuestionAnswers(agencyId: string, businessId: string, 
     business_mentioned: r.business_mentioned ?? false,
     competitors_mentioned: r.competitors_mentioned,
     answer_text: r.answer_text,
+    cached: r.cached,
   }));
   return latestAnswers(rows, business.data.models.filter(isModel));
 }
 
-export type ChangeResult = { ok: true } | { ok: false; status: 400 | 403 | 404; error: string };
+type ChangeFailure = { ok: false; status: 400 | 403 | 404; error: string };
+export type ChangeResult = { ok: true } | ChangeFailure;
 
-const notFound: ChangeResult = { ok: false, status: 404, error: "We could not find that question. Refresh the page and try again." };
-const duplicate: ChangeResult = { ok: false, status: 400, error: "You already track this question." };
+const notFound: ChangeFailure = { ok: false, status: 404, error: "We could not find that question. Refresh the page and try again." };
+const duplicate: ChangeFailure = { ok: false, status: 400, error: "You already track this question." };
 
 // The writes below take the agency from the action's auth guard and check the business is the agency's. Users can't
 // write tracked_prompts themselves (migration 047, SEC-10), so the writes use the service role, scoped to the business.
@@ -97,7 +99,7 @@ async function ownedQuestions(agencyId: string, businessId: string) {
   if (!business) return null;
   const { data: questions, error: readError } = await supabase
     .from("tracked_prompts")
-    .select("id, prompt, active")
+    .select("id, prompt, active, source")
     .eq("business_id", businessId)
     .is("removed_at", null);
   if (readError) throw new Error(`Questions: could not load questions: ${readError.message}`);
@@ -121,15 +123,50 @@ export async function insertQuestion(agencyId: string, businessId: string, text:
   return { ok: true };
 }
 
-/** An edited question is the user's own wording from then on, so it counts as custom. */
-export async function updateQuestionText(agencyId: string, businessId: string, questionId: string, text: string): Promise<ChangeResult> {
+export type EditResult = { ok: true; newQuestion: boolean } | ChangeFailure;
+
+async function hasAnswers(questionId: string): Promise<boolean> {
+  const { count, error } = await createServiceClient()
+    .from("visibility_results")
+    .select("id", { count: "exact", head: true })
+    .eq("tracked_prompt_id", questionId);
+  if (error) throw new Error(`Questions: could not read answers: ${error.message}`);
+  return (count ?? 0) > 0;
+}
+
+/**
+ * An edited question is the user's own wording from then on, so it counts as custom (M2). A suggested question, or one
+ * of the user's own that already has answers, becomes a new question and the old one is paused: its answers belong to
+ * the old wording, so they stay with it (and a paused suggested question keeps counting in past scores, step 9e).
+ * The new one takes the old one's place, active or paused, so the active count and the plan limit do not change.
+ */
+export async function updateQuestionText(agencyId: string, businessId: string, questionId: string, text: string): Promise<EditResult> {
   const owned = await ownedQuestions(agencyId, businessId);
-  if (!owned || !owned.questions.some((q) => q.id === questionId)) return notFound;
+  const question = owned?.questions.find((q) => q.id === questionId);
+  if (!owned || !question) return notFound;
   const prompt = tidyQuestion(text);
+  if (question.prompt === prompt) return { ok: true, newQuestion: false };
   if (owned.questions.some((q) => q.id !== questionId && sameQuestion(q.prompt, prompt))) return duplicate;
-  const { error } = await createServiceClient().from("tracked_prompts").update({ prompt, source: "custom" }).eq("id", questionId).eq("business_id", businessId);
-  if (error) throw new Error(`Questions: could not save the question: ${error.message}`);
-  return { ok: true };
+  const db = createServiceClient();
+  if (!editMakesNewQuestion({ custom: isOwnQuestion(question.source), answered: await hasAnswers(questionId) })) {
+    const { error } = await db.from("tracked_prompts").update({ prompt, source: "custom" }).eq("id", questionId).eq("business_id", businessId);
+    if (error) throw new Error(`Questions: could not save the question: ${error.message}`);
+    return { ok: true, newQuestion: false };
+  }
+  const { data: added, error } = await db
+    .from("tracked_prompts")
+    .insert({ business_id: businessId, prompt, source: "custom", active: question.active })
+    .select("id")
+    .single();
+  if (error) throw new Error(`Questions: could not add the new question: ${error.message}`);
+  // Pausing sets inactive_since (migration 054). Never removed_at: the old question stays listed with its results.
+  const { error: pauseError } = await db.from("tracked_prompts").update({ active: false }).eq("id", questionId).eq("business_id", businessId);
+  if (pauseError) {
+    // Undo, so there are never two active copies. The new row has no answers yet.
+    await db.from("tracked_prompts").delete().eq("id", added.id);
+    throw new Error(`Questions: could not pause the old question: ${pauseError.message}`);
+  }
+  return { ok: true, newQuestion: true };
 }
 
 export async function updateQuestionActive(agencyId: string, businessId: string, questionId: string, active: boolean): Promise<ChangeResult> {

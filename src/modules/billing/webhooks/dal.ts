@@ -1,13 +1,14 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createServiceClient } from "@/lib/supabase/service";
-import { endTrialGrant, grantCredits, grantTrialCredits } from "@/modules/credits";
+import { endPreviousPeriodGrants, endTrialGrant, grantCredits, grantTrialCredits, hasTrialGrantAfter, refundTopupGrant } from "@/modules/credits";
 import type { Database } from "@/types/database.types";
 import { productIdFor } from "../catalog";
 import type { PlanCredits } from "./credits";
+import { queueSkippedScans } from "@/modules/jobs/server";
 
 // Database reads and writes for the Stripe webhook (B-42), all as the service role.
-// Credits change only through grant_credits (via the credits module), never by updating balances here.
+// Credits change only through the credit SQL functions (via the credits module), never by updating balances here.
 
 type Db = SupabaseClient<Database>;
 
@@ -135,7 +136,12 @@ export function createWebhookStore(db: Db = createServiceClient()) {
 
     grant: grantCredits,
     grantTrial: grantTrialCredits,
+    /** After a top-up: the scans skipped for lack of credits run now, not at the next 02:00 (M3, migration 069). */
+    queueSkippedScans,
     endTrialGrant,
+    hasTrialGrantAfter,
+    endPreviousPeriodGrants,
+    refundTopupGrant,
 
     /**
      * Makes business_subscriptions match the subscription's items. Items name their business in metadata;

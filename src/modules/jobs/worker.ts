@@ -3,7 +3,7 @@ import "server-only";
 // done, queued again with backoff, or failed. The host entry point only checks the secret and calls this.
 import { explainAfterScan } from "@/modules/insights/server";
 import { refreshStaleSiteFacts } from "@/modules/onboarding/server";
-import { ALREADY_FINISHED, NO_SAMPLE_ANSWERS, runScan, type ScanOutcome } from "@/modules/scanning";
+import { ALREADY_FINISHED, isMissingSample, NO_SAMPLE_ANSWERS, runScan, type ScanOutcome } from "@/modules/scanning";
 import { claimScanJobs, finishJob, isWorkerSecret, workerTimeBudgetMs, type ClaimedJob, type JobUpdate } from "./dal";
 
 export const CLAIM_LIMIT = 10;
@@ -59,8 +59,12 @@ export function jobUpdateFor(outcome: ScanOutcome | { status: "error"; error: st
   }
   const error = outcome.status === "error" ? outcome.error : failedChecksError(outcome.errors);
   // A test business with no sample answers of its trade and city gets none on a retry either (BUG-072): it fails
-  // at once, so the screen says why instead of "trying again".
-  const noSamples = outcome.status === "failed" && outcome.errors.length > 0 && outcome.errors.every((e) => e.includes(NO_SAMPLE_ANSWERS));
+  // at once, so the screen says why instead of "trying again" and the stuck jobs alert does not keep it open. That
+  // holds when other models have no recordings at all; a real outage among the errors still retries.
+  const noSamples =
+    outcome.status === "failed" &&
+    outcome.errors.some((e) => e.includes(NO_SAMPLE_ANSWERS)) &&
+    outcome.errors.every(isMissingSample);
   if (noSamples || job.attempts >= MAX_ATTEMPTS) return { status: "failed", error };
   return { status: "queued", runAfter: new Date(now.getTime() + RETRY_STEP_MS * job.attempts), error };
 }

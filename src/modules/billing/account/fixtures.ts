@@ -70,6 +70,7 @@ function webhookDeps(fake: FakeStripe): WebhookDeps {
       },
       checkoutBusinessIds: async () => new Map(),
       tagItem: async () => {},
+      checkoutSessionForPaymentIntent: async () => null,
     },
     sendEmail: sendBillingEmail,
     now: () => new Date(),

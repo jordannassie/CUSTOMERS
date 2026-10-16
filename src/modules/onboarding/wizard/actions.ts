@@ -1,5 +1,6 @@
 "use server";
 
+import { refresh } from "next/cache";
 import { headers } from "next/headers";
 import { env } from "@/lib/env";
 import { OTHER_LABEL_HINT } from "@/lib/other-label";
@@ -84,6 +85,8 @@ export async function saveDetailsStep(input: unknown): Promise<ActionResult<null
     return { ok: false, status: 400, error: vague ? OTHER_LABEL_HINT : "Add your business name, industry and city." };
   }
   if (!(await saveDetails(user, parsed.data))) return notFound;
+  // The sidebar and the switcher name the draft: from now on by the name just saved, not its website (O2).
+  refresh();
   return { ok: true, data: null };
 }
 

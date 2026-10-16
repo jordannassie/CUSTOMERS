@@ -3,7 +3,7 @@ import { needsRecentScanConfirm } from "./overdraft";
 import { recentScanNeeded, recentScanWarning, scannedRecently } from "./recent-scan";
 
 // 2026-10-15 (D-54, charging unchanged): Run scan asks first when the business was scanned in the last 24 hours.
-describe("same-day rescan", () => {
+describe("rescan within 24 hours", () => {
   const now = new Date("2026-10-15T12:00:00Z");
 
   it("counts a finished scan less than 24 hours old as recent", () => {
@@ -14,7 +14,7 @@ describe("same-day rescan", () => {
   });
 
   it("says how many credits the scan still uses", () => {
-    expect(recentScanWarning(36)).toBe("You scanned today. Most answers will be the same as the last scan and still use 36 credits.");
+    expect(recentScanWarning(36)).toBe("You scanned in the last 24 hours. Most answers will be the same as the last scan and still use 36 credits.");
     expect(recentScanWarning(1)).toContain("still use 1 credit.");
     const asked = recentScanNeeded(36);
     expect(needsRecentScanConfirm(asked)).toBe(true);

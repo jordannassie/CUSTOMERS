@@ -11,6 +11,7 @@ import { mentionTargets } from "./recount/service";
 import type { CheckLocation, ProviderFailures, ProviderId, RunCheck } from "./providers/types";
 import { countryCode } from "./country";
 import { loadRecordedAnswers, recordedAnswers, RECORDED_ANSWERS_DIR } from "./recorded";
+import { nextScanAt } from "./schedule";
 import {
   finishRun,
   findOrCreateRun,
@@ -27,10 +28,8 @@ import {
 // MVP_SPEC 5.2: 4 to 6 checks at a time per scan.
 export const CHECKS_AT_ONCE = 5;
 
-const DAY_MS = 24 * 60 * 60 * 1000;
 // A running scan refreshes its job at most this often, as its checks finish (B4).
 const HEARTBEAT_MS = 60 * 1000;
-const FREQUENCY_DAYS: Record<string, number> = { daily: 1, weekly: 7, monthly: 30 };
 const PROVIDERS: ProviderId[] = ["openai", "anthropic", "perplexity"];
 
 /** The skip reason when a job's hold is already closed: an earlier run finished it. */
@@ -196,9 +195,8 @@ function locationOf(business: ScanTargetRow["business"]): CheckLocation {
   return { city: business.city ?? "", region: business.region ?? "", country: countryCode(business.country) };
 }
 
-export function nextScanAt(frequency: string, from: Date): Date {
-  return new Date(from.getTime() + (FREQUENCY_DAYS[frequency] ?? 7) * DAY_MS);
-}
+// On a 02:00 run far enough out that the next scan never reuses this one's cached answers (H1, schedule.ts).
+export { nextScanAt };
 
 function isProvider(model: string): model is ProviderId {
   return (PROVIDERS as string[]).includes(model);

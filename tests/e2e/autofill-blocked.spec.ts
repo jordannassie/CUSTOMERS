@@ -64,4 +64,11 @@ test("a site that blocks readers and Google can't be reached: the real reason, T
   await failed.getByRole("button", { name: "Fill in the details" }).click();
   await page.waitForURL("**/onboarding/details");
   await slow(page.locator("#name")).toBeVisible();
+  // The details step keeps the real reason and Try again above the form (O1).
+  const retry = page.getByTestId("details-retry");
+  await expect(retry).toContainText("We couldn't read your website or find it on Google right now.");
+  await expect(retry.getByRole("button", { name: "Try again" })).toBeVisible();
+  await expect(retry.getByRole("button", { name: "Fill in the details" })).toHaveCount(0);
+  await retry.getByRole("button", { name: "Try again" }).click();
+  await slow(retry).toContainText("We couldn't read your website or find it on Google right now.");
 });

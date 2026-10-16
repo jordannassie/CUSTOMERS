@@ -20,7 +20,7 @@ export class InsufficientCreditsError extends Error {
   }
 }
 
-function fail(fn: string, error: PostgrestError): never {
+export function fail(fn: string, error: PostgrestError): never {
   if (error.message === "insufficient_credits") throw new InsufficientCreditsError();
   throw new Error(`${fn} failed: ${error.message}`);
 }

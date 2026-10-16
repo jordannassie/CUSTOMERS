@@ -20,3 +20,11 @@ export async function autofillLimit(userId: string): Promise<ActionResult<never>
   if (limit === "unavailable") return { ok: false, status: 503, error: "We couldn't look up your business just now. Try again in a few minutes." };
   return null;
 }
+
+/** Null when this user may look up another competitor on Google now, else the refusal to return. Per user. */
+export async function competitorLookupLimit(userId: string): Promise<ActionResult<never> | null> {
+  const limit = await checkRateLimit("competitor_lookup", userId);
+  if (limit === "limited") return { ok: false, status: 429, error: "You've looked up a lot of competitors this hour. Try again later." };
+  if (limit === "unavailable") return { ok: false, status: 503, error: "We couldn't look up competitors just now. Try again in a few minutes." };
+  return null;
+}

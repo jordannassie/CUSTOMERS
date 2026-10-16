@@ -66,6 +66,11 @@ export type AutofillResult = {
   pickNote?: string;
   /** Neither the website nor Google answered: the website step offers "Try again" (2026-10-16). */
   retry?: boolean;
+  /**
+   * Something failed on the way (the website blocked us or did not load, Google or our reader or AI was down), so a
+   * second run may find more: the note says what, and the details step offers "Try again" (O1).
+   */
+  failed?: boolean;
 };
 
 /** One Google listing offered as "is this your business?", with what the form gets if the user picks it. */

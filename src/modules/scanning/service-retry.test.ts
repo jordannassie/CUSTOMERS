@@ -72,7 +72,8 @@ async function afterRetry(fail: keyof typeof failNext) {
   const { data: run } = await service.from("visibility_runs").select("status, checks_total").eq("id", retry.runId).single();
   expect(run).toEqual({ status: "completed", checks_total: 36 });
   const { data: biz } = await service.from("businesses").select("next_scan_at").eq("id", business.businessId).single();
-  expect(new Date(biz!.next_scan_at!).getTime()).toBeGreaterThan(Date.now() + 6.9 * 86_400_000);
+  // Weekly: the 02:00 UTC run on the day a week from now (H1).
+  expect(new Date(biz!.next_scan_at!).getTime()).toBeGreaterThan(Date.now() + 6 * 86_400_000);
 
   // A third run finds the hold closed and leaves everything as it is.
   expect(await runScan(job, { ...runners(), extractNames })).toEqual({ status: "skipped", reason: "This scan already finished." });

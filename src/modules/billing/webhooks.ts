@@ -27,6 +27,8 @@ function stripeReader(): StripeReader {
       // Setting the same business_id twice changes nothing, so no idempotency key is needed.
       await getStripe().subscriptionItems.update(itemId, { metadata: { business_id: businessId } });
     },
+    checkoutSessionForPaymentIntent: async (payment_intent) =>
+      (await getStripe().checkout.sessions.list({ payment_intent, limit: 1 })).data[0] ?? null,
   };
 }
 

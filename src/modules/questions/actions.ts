@@ -8,11 +8,13 @@ import { deleteQuestion, insertQuestion, loadQuestionAnswers, updateQuestionActi
 import { addQuestionInput, editQuestionInput, questionAnswersInput, removeQuestionInput, setQuestionActiveInput } from "./schema";
 
 type Result = ActionResult<null>;
+// Failures fit every action's result type.
+type Failure = ActionResult<never>;
 
-const invalidText: Result = { ok: false, status: 400, error: "Write a question between 8 and 200 characters." };
-const invalid: Result = { ok: false, status: 400, error: "Something was missing. Refresh the page and try again." };
+const invalidText: Failure = { ok: false, status: 400, error: "Write a question between 8 and 200 characters." };
+const invalid: Failure = { ok: false, status: 400, error: "Something was missing. Refresh the page and try again." };
 
-async function guard(): Promise<{ agencyId: string } | { denied: Result }> {
+async function guard(): Promise<{ agencyId: string } | { denied: Failure }> {
   try {
     const { agency } = await requireAgency();
     const edit = canEditTracking(agency);
@@ -37,12 +39,16 @@ export async function addQuestion(input: unknown): Promise<Result> {
   return done(await insertQuestion(auth.agencyId, parsed.data.businessId, parsed.data.text));
 }
 
-export async function editQuestion(input: unknown): Promise<Result> {
+/** `newQuestion`: the edit was saved as a new question and the old one paused with its results (M2). */
+export async function editQuestion(input: unknown): Promise<ActionResult<{ newQuestion: boolean }>> {
   const auth = await guard();
   if ("denied" in auth) return auth.denied;
   const parsed = editQuestionInput.safeParse(input);
   if (!parsed.success) return invalidText;
-  return done(await updateQuestionText(auth.agencyId, parsed.data.businessId, parsed.data.questionId, parsed.data.text));
+  const result = await updateQuestionText(auth.agencyId, parsed.data.businessId, parsed.data.questionId, parsed.data.text);
+  if (!result.ok) return result;
+  refresh();
+  return { ok: true, data: { newQuestion: result.newQuestion } };
 }
 
 export async function setQuestionActive(input: unknown): Promise<Result> {

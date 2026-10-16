@@ -21,13 +21,18 @@ type Props = {
   note?: string;
   pick: PickPlaceAction;
   onBack: () => void;
+  /** Called after the pick is saved, in place of going to the details step (the details step's "Try again"). */
+  onPicked?: () => void;
 };
+
+/** What the picker shows, as the website step and the details step's "Try again" hold it. */
+export type PlaceChoicesState = Pick<Props, "businessId" | "searched" | "choices" | "typed" | "note">;
 
 const NONE = "none";
 
 // MVP_SPEC 3.3, 26: with no website, the Google listings for the name and city are only offered. Nothing from
 // them fills the form, and no place_id is saved, until the user picks one. "None of these" keeps what they typed.
-export function PlaceChoices({ businessId, searched, choices, typed, note, pick, onBack }: Props) {
+export function PlaceChoices({ businessId, searched, choices, typed, note, pick, onBack, onPicked }: Props) {
   const router = useRouter();
   const [chosen, setChosen] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -42,6 +47,7 @@ export function PlaceChoices({ businessId, searched, choices, typed, note, pick,
       const result = await pick({ businessId, placeId: choice?.placeId ?? null });
       if (!result.ok) return setError(result.error);
       saveAutofill(businessId, choice ? choice.autofill : typed);
+      if (onPicked) return onPicked();
       router.push("/onboarding/details");
       router.refresh();
     });

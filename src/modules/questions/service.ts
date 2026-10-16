@@ -97,3 +97,20 @@ export function atLimit(activeCount: number, limit: number | null): boolean {
 export function limitText(limit: number): string {
   return `You have ${limit} active questions, the most your plan allows. Pause or remove one to add another.`;
 }
+
+/**
+ * Editing rewrites the question in place only while it is the user's own with no answers yet. Otherwise the old
+ * answers belong to the old wording, so the edit saves a new question and pauses the old one (M2).
+ */
+export function editMakesNewQuestion(q: { custom: boolean; answered: boolean }): boolean {
+  return !q.custom || q.answered;
+}
+
+/** The Questions page only knows the last 30 days of checks, which is what it shows the user. */
+export const rowHasAnswers = (row: Pick<QuestionRow, "results">) => row.results.some((r) => r.checks > 0);
+
+export function newQuestionWarning(active: boolean): string {
+  return active
+    ? "Editing makes this a new question. The old one is paused and keeps its results."
+    : "Editing makes this a new question. The old one stays paused and keeps its results.";
+}

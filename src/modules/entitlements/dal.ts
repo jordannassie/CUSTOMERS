@@ -52,7 +52,7 @@ export async function loadAgencyFacts(agencyId: string): Promise<AgencyFacts> {
 
 export async function loadBusinessFacts(businessId: string): Promise<BusinessFacts> {
   const db = createServiceClient();
-  const [business, subscription, questions, competitors, openJobs] = await Promise.all([
+  const [business, subscription, questions, competitors, openJobs, onPlan] = await Promise.all([
     db.from("businesses").select("id, agency_id, owner_user_id, status, requested_plan_id").eq("id", businessId).single(),
     db.from("business_subscriptions").select("plan_id").eq("business_id", businessId).maybeSingle(),
     db.from("tracked_prompts").select("id", { count: "exact", head: true }).eq("business_id", businessId).eq("active", true),
@@ -62,6 +62,8 @@ export async function loadBusinessFacts(businessId: string): Promise<BusinessFac
       .select("id", { count: "exact", head: true })
       .eq("business_id", businessId)
       .in("status", ["queued", "running"]),
+    // The same rule the schedule uses (enqueue_due_scans, set_next_scan_at), so the app and the database agree.
+    db.rpc("scan_job_business_on_plan", { p_business_id: businessId }),
   ]);
   const row = found("business", business);
   const planId = check("subscription", subscription)?.plan_id ?? (await setupPlan(row)) ?? FALLBACK_PLAN_ID;
@@ -79,6 +81,7 @@ export async function loadBusinessFacts(businessId: string): Promise<BusinessFac
     activeQuestionCount: countOf("questions", questions),
     competitorCount: countOf("competitors", competitors),
     hasOpenScan: countOf("scan jobs", openJobs) > 0,
+    onPlan: check("plan status", onPlan) !== false,
   };
 }
 

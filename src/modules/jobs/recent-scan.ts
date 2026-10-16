@@ -1,5 +1,6 @@
-// Run scan after a scan in the last 24 hours (2026-10-15, D-54). Charging is unchanged: the answers come from the
-// 24-hour cache (D-24) and each check still uses a credit, so the user is asked first. Pure, so it is unit tested.
+// Run scan after a scan in the last 24 hours (2026-10-15, D-54). Charging is unchanged: inside 20 hours the answers
+// come from the shared cache (cache.ts, H1) and each check still uses a credit, so the user is asked first; the scan
+// history shows how many were reused. Pure, so it is unit tested.
 
 export const RECENT_SCAN_HOURS = 24;
 
@@ -14,7 +15,7 @@ const credits = (n: number) => `${n} ${n === 1 ? "credit" : "credits"}`;
 
 /** What the user reads before scanning again; the dialog's title asks "Scan again?". */
 export function recentScanWarning(cost: number): string {
-  return `You scanned today. Most answers will be the same as the last scan and still use ${credits(cost)}.`;
+  return `You scanned in the last 24 hours. Most answers will be the same as the last scan and still use ${credits(cost)}.`;
 }
 
 /** startScan's answer when the business was scanned in the last 24 hours and the user has not confirmed. */

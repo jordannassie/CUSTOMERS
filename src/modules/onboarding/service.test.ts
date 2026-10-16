@@ -126,3 +126,21 @@ describe("the auto-fill note (step 9a, BUG-144)", () => {
     expect(result.note).not.toMatch(/We filled this in/);
   });
 });
+
+describe("a failed auto-fill offers Try again on the details step (O1)", () => {
+  const base = { details: mergeDetails(COFFEE_SITE_OUTPUT, null), fromWebsite: false, fromGoogle: false, hadWebsite: true };
+  it("marks a blocked or unopened site, Google failing and our AI being down as failed", () => {
+    expect(toResult({ ...base, unreadable: { domain: "a.example", blocked: true } }).failed).toBe(true);
+    expect(toResult({ ...base, unreadable: { domain: "a.example", blocked: false }, fromGoogle: true }).failed).toBe(true);
+    expect(toResult({ ...base, unreadable: { domain: "a.example", blocked: true }, googleDown: true })).toMatchObject({ retry: true, failed: true });
+    expect(toResult({ ...base, aiDown: true })).toMatchObject({ note: NOTES.unavailable, failed: true });
+    expect(toResult({ ...base, fromWebsite: true, googleDown: true })).toMatchObject({ note: NOTES.googleDown, failed: true });
+  });
+
+  it("leaves a clean run, nothing found and a chain unmarked", () => {
+    expect(toResult({ ...base, fromWebsite: true, fromGoogle: true }).failed).toBeUndefined();
+    expect(toResult(base)).toMatchObject({ note: NOTES.nothingFound });
+    expect(toResult(base).failed).toBeUndefined();
+    expect(toResult({ ...base, chain: true, aiDown: true }).failed).toBeUndefined();
+  });
+});

@@ -72,6 +72,18 @@ export async function releaseOrphanHolds(): Promise<number> {
   return data;
 }
 
+/**
+ * After a top-up (M3): queues now the agency's scheduled scans that did not run for lack of credits, instead of
+ * waiting for the 02:00 run. Same rules as the nightly schedule, never a business scanned in the last 20 hours
+ * (queue_skipped_scans, migration 069). Starts no worker: the every-minute schedule picks the jobs up. Returns how
+ * many scans were queued.
+ */
+export async function queueSkippedScans(agencyId: string): Promise<number> {
+  const { data, error } = await createServiceClient().rpc("queue_skipped_scans", { p_agency_id: agencyId });
+  if (error) throw new Error(`queue_skipped_scans failed: ${error.message}`);
+  return data;
+}
+
 /** Constant-time check of the x-worker-secret header. With no WORKER_SECRET set, every call is refused. */
 export function isWorkerSecret(header: string | null): boolean {
   const secret = env.WORKER_SECRET;

@@ -1,8 +1,9 @@
 import type Stripe from "stripe";
-import { lineProductId, planInvoiceGrants } from "./credits";
 import type { AgencyStatus, BusinessItem, WebhookAgency, WebhookStore } from "./dal";
 import { paymentFailedEmail, trialEndingEmail, type SendBillingEmail } from "./emails";
-import { periodStartsFor, withBusinessIds } from "./stripe-reads";
+import { endTrialIfPaid, grantInvoice, invoiceSubscription } from "./invoice-grants";
+import { withBusinessIds } from "./stripe-reads";
+import { chargeRefunded, grantTopup, isTopupSession } from "./topup";
 
 // One handler per Stripe event (MVP_SPEC 11.3, 11.5, D-39, D-57). Everything outside comes in through deps,
 // so fixture tests run them with no Stripe calls and no real email sends.
@@ -17,6 +18,8 @@ export type StripeReader = {
   checkoutBusinessIds(subscriptionId: string): Promise<Map<string, string>>;
   /** Writes business_id onto a subscription item, so plan changes find the item by its business. */
   tagItem(itemId: string, businessId: string): Promise<void>;
+  /** The Checkout Session that took this payment, for a refunded top-up; null when none did (an invoice charge). */
+  checkoutSessionForPaymentIntent(paymentIntentId: string): Promise<Stripe.Checkout.Session | null>;
 };
 
 export type WebhookDeps = { store: WebhookStore; stripe: StripeReader; sendEmail: SendBillingEmail; now: () => Date };
@@ -96,9 +99,6 @@ async function syncSubscription(deps: WebhookDeps, sub: Stripe.Subscription, age
     cancelAt: cancelAt(sub, currentPeriodEnd),
   });
   if (!status) return;
-  // A trial that ended early ("Start my plan now") ends its trial credits too: they are replaced by the plan credits,
-  // as Billing says. At the planned trial end the grant already expires then, so this changes nothing (2026-10-16).
-  if ((status === "active" || status === "past_due") && sub.trial_end) await deps.store.endTrialGrant(agency.id, new Date(sub.trial_end * 1000));
   // A whole-account cancel keeps each business's schedule, so scans resume if the agency subscribes again.
   if (status === "canceled") return deps.store.setBusinessStatus(agency.id, "canceled");
 
@@ -114,6 +114,7 @@ async function syncSubscription(deps: WebhookDeps, sub: Stripe.Subscription, age
     });
   }
   await deps.store.syncBusinessItems(agency.id, businessItems, status);
+  if (status === "active" && sub.trial_end) await endTrialIfPaid(deps, sub, agency);
 }
 
 /** Links the customer and subscription to the agency; for a paid top-up, grants its credits (never expire). */
@@ -138,20 +139,11 @@ async function checkoutCompleted(deps: WebhookDeps, session: Stripe.Checkout.Ses
     if (first.status === "paid") await grantInvoice(deps, first, agency);
     return;
   }
-  if (session.mode !== "payment" || session.metadata?.kind !== "topup") return;
+  if (!isTopupSession(session)) return;
   await deps.store.linkStripe(agency.id, { customerId: idOf(session.customer), subscriptionId: null });
   // Delayed payment methods finish later, in checkout.session.async_payment_succeeded.
   if (session.payment_status !== "paid") return;
-
-  const packId = session.metadata?.topup_pack_id ?? "";
-  const credits = await deps.store.topupCredits(packId);
-  if (!credits) throw new Error(`checkout ${session.id}: unknown top-up pack ${packId}`);
-  await deps.store.grant({ agencyId: agency.id, source: "topup", sourceId: session.id, amount: credits, expiresAt: null });
-}
-
-function invoiceSubscription(invoice: Stripe.Invoice) {
-  const details = invoice.parent?.type === "subscription_details" ? invoice.parent.subscription_details : null;
-  return details ? { subscriptionId: idOf(details.subscription), agencyId: details.metadata?.agency_id ?? null } : null;
+  await grantTopup(deps, session, agency);
 }
 
 async function invoicePaid(deps: WebhookDeps, invoice: Stripe.Invoice) {
@@ -159,21 +151,6 @@ async function invoicePaid(deps: WebhookDeps, invoice: Stripe.Invoice) {
   if (!sub) return;
   const agency = await requireAgency(deps, { agencyId: sub.agencyId, customerId: idOf(invoice.customer) });
   await grantInvoice(deps, invoice, agency);
-}
-
-/** The credits a paid invoice earns. Every grant is keyed by its invoice line, so running it twice grants once. */
-async function grantInvoice(deps: WebhookDeps, invoice: Stripe.Invoice, agency: WebhookAgency) {
-  const lines = invoice.lines.has_more ? await deps.stripe.listInvoiceLines(invoice.id!) : invoice.lines.data;
-  const plans = await deps.store.plansByProduct();
-  const periodStarts = await periodStartsFor(deps.stripe, invoiceSubscription(invoice)?.subscriptionId ?? null, invoice.id, lines);
-
-  for (const grant of planInvoiceGrants(invoice, lines, plans, deps.now(), periodStarts)) {
-    const { sourceId, amount, expiresAt } = grant;
-    if (grant.source === "trial") await deps.store.grantTrial({ agencyId: agency.id, sourceId, amount, expiresAt });
-    else await deps.store.grant({ agencyId: agency.id, source: grant.source, sourceId, amount, expiresAt });
-  }
-  const unknown = lines.filter((l) => l.parent?.type === "subscription_item_details" && !lineProductId(l));
-  if (unknown.length) console.warn("[stripe/webhook] invoice lines without a product", invoice.id, unknown.map((l) => l.id));
 }
 
 /**
@@ -238,6 +215,9 @@ export async function dispatchEvent(deps: WebhookDeps, event: Stripe.Event): Pro
       return "handled";
     case "customer.subscription.deleted":
       await subscriptionDeleted(deps, event.data.object);
+      return "handled";
+    case "charge.refunded":
+      await chargeRefunded(deps, event.data.object);
       return "handled";
     default:
       return "ignored";

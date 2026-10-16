@@ -92,6 +92,9 @@ export async function StepContent({ step, state, plan, returned }: Props) {
         aliases={d.aliases}
         confirmed={d.confirmed}
         save={saveDetailsStep}
+        findAgainRequest={d.hasWebsite ? (d.domain ? { domain: d.domain } : null) : d.details.name && d.details.city ? { name: d.details.name, city: d.details.city } : null}
+        findAgain={saveWebsiteStep}
+        pick={confirmBusinessPlace}
       />
     );
   }

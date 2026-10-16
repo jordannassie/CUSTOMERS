@@ -2381,6 +2381,14 @@ export type Database = {
         }[]
       }
       enqueue_due_scans: { Args: { p_include_real?: boolean }; Returns: number }
+      end_previous_period_grants: {
+        Args: {
+          p_agency_id: string
+          p_grace_seconds: number
+          p_period_start: string
+        }
+        Returns: number
+      }
       end_trial_grant: {
         Args: { p_agency_id: string; p_trial_end: string }
         Returns: number
@@ -2438,6 +2446,7 @@ export type Database = {
           used: number
         }[]
       }
+      next_scheduled_scan_run: { Args: { p_after: string }; Returns: string }
       purge_deleted_accounts: {
         Args: never
         Returns: {
@@ -2445,6 +2454,7 @@ export type Database = {
           businesses: number
         }[]
       }
+      queue_skipped_scans: { Args: { p_agency_id: string }; Returns: number }
       raise_system_alert: {
         Args: {
           p_details: Json
@@ -2461,6 +2471,17 @@ export type Database = {
       record_provider_error: {
         Args: { p_kind: string; p_message: string; p_provider: string }
         Returns: undefined
+      }
+      refund_topup_grant: {
+        Args: {
+          p_agency_id: string
+          p_charge_cents: number
+          p_charge_id: string
+          p_refund_id: string
+          p_refunded_cents: number
+          p_source_id: string
+        }
+        Returns: Json
       }
       release_hold: { Args: { p_hold_id: string }; Returns: number }
       release_orphan_holds: { Args: never; Returns: number }
@@ -2492,6 +2513,13 @@ export type Database = {
       }
       scan_job_business_on_plan: { Args: { p_business_id: string }; Returns: boolean }
       scan_job_settle_failure: { Args: { p_job_id: string; p_skipped: boolean }; Returns: undefined }
+      scan_jobs_reused_answers: {
+        Args: { p_job_ids: string[] }
+        Returns: {
+          reused: number
+          scan_job_id: string
+        }[]
+      }
       set_next_scan_at: { Args: { p_at: string; p_business_id: string }; Returns: boolean }
       soft_delete_agency: {
         Args: { p_agency_id: string; p_purge_after: string }

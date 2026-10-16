@@ -143,4 +143,20 @@ describe("exportPdf", () => {
     expect(await exportPdf({ businessId: owner.businessId })).toEqual({ ok: false, status: 502, error: FRIENDLY });
     expect(await liveLinks(owner.businessId)).toEqual([]);
   });
+
+  it("allows 10 exports an hour per user, then refuses with a friendly message and no render", async () => {
+    const owner = await createOwner();
+    session = owner.client;
+    for (let i = 0; i < 10; i++) expect(await exportPdf({ businessId: owner.businessId })).toMatchObject({ ok: true });
+    expect(await exportPdf({ businessId: owner.businessId })).toEqual({
+      ok: false,
+      status: 429,
+      error: "You've exported a lot of PDFs this hour. Try again later, or use Print, Save as PDF.",
+    });
+    expect(renderPdf).toHaveBeenCalledTimes(10);
+    // Another user has their own count.
+    const other = await createOwner();
+    session = other.client;
+    expect(await exportPdf({ businessId: other.businessId })).toMatchObject({ ok: true });
+  });
 });

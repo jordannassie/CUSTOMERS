@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { at } from "../plan-change/fake-stripe";
 import { monthAfter } from "../plan-change/fake-stripe-objects";
+import { PERIOD_GRACE_MS } from "../webhooks/credits";
 import { PlanChangeError } from "../plan-change/planner";
 import { A, B, creditsOf, MID_MONTH, planOf, plansByProduct, setup } from "../plan-change/scenario.test-helpers";
 import { DECLINED, endTrialNow, monthLater, planNowOffer, type EndTrialDeps } from "./service";
@@ -47,8 +48,8 @@ describe("start my plan now", () => {
     expect(s.stripe.invoices.map((i) => [i.status, i.amount_paid])).toEqual([["paid", 29800]]);
     // What invoice.paid grants: each business's monthly credits, for the new period that starts today.
     expect(creditsOf(s.stripe, 0).map((g) => [g.source, g.amount, g.reason, g.expiresAt.getTime() / 1000])).toEqual([
-      ["plan", 1200, "period", monthAfter(MID_MONTH)],
-      ["plan", 1200, "period", monthAfter(MID_MONTH)],
+      ["plan", 1200, "period", monthAfter(MID_MONTH) + PERIOD_GRACE_MS / 1000],
+      ["plan", 1200, "period", monthAfter(MID_MONTH) + PERIOD_GRACE_MS / 1000],
     ]);
   });
 
