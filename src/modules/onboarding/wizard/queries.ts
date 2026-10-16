@@ -1,6 +1,6 @@
 import "server-only";
 import { getCurrentAgency, requireUser } from "@/modules/auth";
-import { canAddBusiness } from "@/modules/entitlements";
+import { canAddBusiness, canFinishDraft } from "@/modules/entitlements";
 import { previewSetupAddOn, type SetupAddOn, type TrialOffer } from "@/modules/billing";
 import { awaitingTrialCredits, loadCardStep } from "./card/dal";
 import { loadWebsiteStep, loadWizardState, type WebsiteStepDefaults, type WizardContext } from "./dal";
@@ -14,12 +14,21 @@ export async function getWizardState(next: string): Promise<WizardContext> {
   return loadWizardState(user.id);
 }
 
-/** Why a new business cannot be added (trial limit), or null. */
+/** Why a new business cannot be started (trial limit, set-up businesses only), or null. */
 export async function getAddBusinessBlock(next: string): Promise<string | null> {
   await requireUser({ next });
   const agency = await getCurrentAgency();
   if (!agency) return null;
   const allowed = await canAddBusiness(agency.id);
+  return allowed.allowed ? null : allowed.reason;
+}
+
+/** Why the draft cannot be finished yet (a trial with 2 set-up businesses already, D-16), or null. */
+export async function getFinishBlock(next: string): Promise<string | null> {
+  await requireUser({ next });
+  const agency = await getCurrentAgency();
+  if (!agency) return null;
+  const allowed = await canFinishDraft(agency.id);
   return allowed.allowed ? null : allowed.reason;
 }
 

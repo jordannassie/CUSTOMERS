@@ -1,6 +1,6 @@
 import type Stripe from "stripe";
 import { afterAll, describe, expect, it } from "vitest";
-import { getBalance } from "@/modules/credits";
+import { endTrialGrant, getBalance, grantTrialCredits } from "@/modules/credits";
 import { FakeStripe } from "../plan-change/fake-stripe";
 import type { PlanChangeContext } from "../plan-change/planner";
 import { plansByProduct } from "../plan-change/scenario.test-helpers";
@@ -53,6 +53,37 @@ async function trialAgency() {
 const planGrants = async (agencyId: string) => (await grants(agencyId)).filter((g) => g.source === "plan");
 const trialEnds = (stripe: FakeStripe) =>
   stripe.calls.filter((c) => c.method === "updateSubscription" && (c.params as { trial_end?: string }).trial_end === "now");
+
+describe("trial credits when the trial ends early (2026-10-16)", () => {
+  it("are replaced by the plan credits, once, and a late webhook changes nothing", async () => {
+    const { a, h, stripe, ctx, deps } = await trialAgency();
+    const trialEnd = new Date((stripe.subscription().trial_end ?? 0) * 1000);
+    await grantTrialCredits({ agencyId: a.agencyId, sourceId: fx.id("in"), amount: 150, expiresAt: trialEnd });
+    expect((await getBalance(a.agencyId)).balance).toBe(150);
+
+    await endTrialNow(ctx, ATTEMPT, deps);
+    const trial = (await grants(a.agencyId)).find((g) => g.source === "trial")!;
+    expect(trial.remaining).toBe(0);
+    expect(Date.parse(trial.expires_at!)).toBeLessThanOrEqual(Date.now());
+    expect((await getBalance(a.agencyId)).balance).toBe(2400);
+
+    for (const res of await h.deliverTwice(fx.event("customer.subscription.updated", stripe.subscription()))) expect(res.status).toBe(200);
+    for (const res of await h.deliverTwice(fx.event("invoice.paid", stripe.invoices[0]))) expect(res.status).toBe(200);
+    expect((await getBalance(a.agencyId)).balance).toBe(2400);
+    const { data: expiries } = await service.from("credit_transactions").select("delta").eq("agency_id", a.agencyId).eq("kind", "expire").throwOnError();
+    expect(expiries).toEqual([{ delta: -150 }]);
+  });
+
+  it("are kept while the trial runs, and an extended trial is never shortened", async () => {
+    const { a, stripe, deps } = await trialAgency();
+    const trialEnd = new Date((stripe.subscription().trial_end ?? 0) * 1000);
+    await grantTrialCredits({ agencyId: a.agencyId, sourceId: fx.id("in"), amount: 150, expiresAt: trialEnd });
+    await deps.sync!(stripe.subscriptionId);
+    expect((await getBalance(a.agencyId)).balance).toBe(150);
+    expect(await endTrialGrant(a.agencyId, new Date(trialEnd.getTime() + 86_400_000))).toBe(0);
+    expect((await getBalance(a.agencyId)).balance).toBe(150);
+  });
+});
 
 describe("start my plan now without the webhook", () => {
   it("is active with the month's credits at once, granted once", async () => {

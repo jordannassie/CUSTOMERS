@@ -198,6 +198,7 @@ export const CLEARED_PLACES_COLUMNS = {
   enrichment_status: "none",
 } as const;
 
+/** The fields a save writes on a kept row; its other names are merged separately, so they are never wiped. */
 export function competitorFields(c: ConfirmedCompetitor) {
   return {
     name: c.name,
@@ -205,8 +206,16 @@ export function competitorFields(c: ConfirmedCompetitor) {
     // The name is always the user's; the source only says whether a place id is attached.
     source: c.placesId ? "confirmed_place" : "manual",
     confirmed: true,
-    ...(c.aliases?.length ? { aliases: mergeAliases([], c.aliases, c.name) } : {}),
   };
+}
+
+/**
+ * A new row, with every column the save writes. One insert sends many rows, and a column one row has and another
+ * lacks is sent as null for that row: a long Google name (aliases) next to a plain name broke the not-null aliases
+ * column (2026-10-16). So aliases is always there, empty when there are none.
+ */
+export function competitorInsertRow(businessId: string, c: ConfirmedCompetitor) {
+  return { business_id: businessId, ...competitorFields(c), aliases: mergeAliases([], c.aliases ?? [], c.name) };
 }
 
 /**

@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { AlertTriangle, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { INDUSTRIES, INDUSTRY_LABELS, isIndustry } from "@/lib/industries";
+import { isVagueOtherLabel, OTHER_LABEL_HINT } from "@/lib/other-label";
 import type { ActionResult } from "@/modules/auth";
 import type { SettingsBusiness } from "@/modules/settings";
 import { ALIASES_MAX, AREA_MAX } from "@/modules/settings/schema";
@@ -66,7 +67,13 @@ export function BusinessProfileForm({ business, save }: { business: SettingsBusi
     setError(null);
     const bad = fields.show({
       name: form.name.trim() ? undefined : "Enter the business name.",
-      industry: !industryChoice ? "Choose an industry." : otherIndustry && !otherText(form.industry) ? "Say what kind of business it is." : undefined,
+      industry: !industryChoice
+        ? "Choose an industry."
+        : otherIndustry && !otherText(form.industry)
+          ? "Say what kind of business it is."
+          : otherIndustry && form.industry !== business.industry && isVagueOtherLabel(otherText(form.industry))
+            ? OTHER_LABEL_HINT
+            : undefined,
       website: typed.ok ? undefined : "Enter a website like yourbusiness.com, or leave it empty.",
       aliases: aliasesProblem(parseServices(form.aliases)),
     });

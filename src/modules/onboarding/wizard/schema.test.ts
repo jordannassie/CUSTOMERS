@@ -24,4 +24,13 @@ describe("details step input", () => {
   it("still accepts details sent without an area", () => {
     expect(detailsStepInput.parse(details).area).toBeUndefined();
   });
+
+  it("refuses a vague other label, so no questions are written from it", () => {
+    for (const industry of ["Consultant", "Store", "Services", "other", "Small business"]) {
+      expect(detailsStepInput.safeParse({ ...details, industry }).success, industry).toBe(false);
+    }
+    for (const industry of ["dentist", "IT consultant", "Marketing agency", "Bookstore"]) {
+      expect(detailsStepInput.safeParse({ ...details, industry }).success, industry).toBe(true);
+    }
+  });
 });

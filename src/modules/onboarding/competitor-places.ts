@@ -14,6 +14,8 @@ export const COMPETITOR_SEARCH_FIELD_MASK = FIELDS.map((f) => `places.${f}`).joi
 export const COMPETITOR_DETAILS_FIELD_MASK = FIELDS.join(",");
 // The business's own place, read live to search near it (never stored, MVP_SPEC 26).
 export const ORIGIN_FIELD_MASK = "location,primaryType";
+// A saved competitor's city, region and country, read live when the business moves (Essentials tier, never stored).
+export const AREA_FIELD_MASK = "addressComponents";
 // The competitor step waits on these calls; a slow Google should show "add by name" quickly (BUG-088).
 export const COMPETITOR_TIMEOUT_MS = 8_000;
 // Results are biased to this circle around the business, not limited to it.
@@ -31,6 +33,9 @@ export type CompetitorCandidate = {
   primaryType?: string | null;
 };
 
+/** Where a place is: its city names (town, borough), region names (long and short) and country code. Never stored. */
+export type PlaceArea = { cities: string[]; regions: string[]; country: string | null };
+
 /** Where the business is and its Google type, so suggestions are nearby businesses of the same kind (BUG-085). */
 export type Origin = { latitude: number; longitude: number; primaryType: string | null };
 
@@ -42,6 +47,8 @@ export type CompetitorPlaces = {
   origin?: (placeId: string) => Promise<Origin | null>;
   /** Null when the place no longer exists. */
   details: (placeId: string) => Promise<CompetitorCandidate | null>;
+  /** Where a saved competitor is. Throws PlacesError when Places cannot be reached; null when the place is gone. */
+  area?: (placeId: string) => Promise<PlaceArea | null>;
 };
 
 const place = z.object({
@@ -78,6 +85,24 @@ const origin = z.object({
   location: z.object({ latitude: z.number(), longitude: z.number() }).nullish(),
   primaryType: z.string().nullish(),
 });
+
+const CITY_TYPES = ["locality", "postal_town", "sublocality", "sublocality_level_1", "administrative_area_level_3"];
+const components = z.object({
+  addressComponents: z
+    .array(z.object({ longText: z.string().nullish(), shortText: z.string().nullish(), types: z.array(z.string()).nullish() }))
+    .nullish(),
+});
+
+/** The city, region and country names in a Place Details addressComponents answer. */
+export function toPlaceArea(body: unknown): PlaceArea {
+  const parsed = components.safeParse(body);
+  if (!parsed.success) throw new PlacesError("Places sent an unexpected response");
+  const list = parsed.data.addressComponents ?? [];
+  const names = (types: string[]) =>
+    [...new Set(list.filter((c) => c.types?.some((t) => types.includes(t))).flatMap((c) => [c.longText, c.shortText]).filter((n): n is string => !!n?.trim()))];
+  const country = list.find((c) => c.types?.includes("country"))?.shortText?.trim().toUpperCase() || null;
+  return { cities: names(CITY_TYPES), regions: names(["administrative_area_level_1"]), country };
+}
 
 export function searchBody(textQuery: string, pageSize: number, near: Origin | null | undefined, sameType: boolean, orType?: string | null) {
   const type = sameType ? (near?.primaryType ?? orType ?? null) : null;
@@ -128,6 +153,17 @@ export function createCompetitorPlaces(apiKey: string, deps: HttpDeps = {}): Com
       const parsed = place.safeParse(body);
       if (!parsed.success) throw new PlacesError("Places sent an unexpected response");
       return toCandidate(parsed.data);
+    },
+    async area(placeId) {
+      if (!placeIdPattern.test(placeId)) return null;
+      const { status, body } = await getJson(
+        `${PLACES_DETAILS_URL}/${placeId}`,
+        { "X-Goog-Api-Key": apiKey, "X-Goog-FieldMask": AREA_FIELD_MASK },
+        deps,
+      );
+      if (status === 404) return null;
+      if (status < 200 || status >= 300) throw new PlacesError(`Places returned ${status}`);
+      return toPlaceArea(body);
     },
   };
 }

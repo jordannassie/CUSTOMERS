@@ -22,6 +22,12 @@ const NO_GET_SESSION = {
   selector: "CallExpression[callee.object.property.name='auth'][callee.property.name='getSession']",
   message: "getSession() reads an unverified cookie; use getUser() or getClaims() for trust decisions.",
 };
+// A browser's own select list opens past the screen edge in a narrow window (BUG-188, BUG-189): our Select in
+// src/components/ui/select.tsx keeps it on screen. Only src/components/ui may use a raw <select> (2026-10-16).
+const NO_NATIVE_SELECT = {
+  selector: "JSXOpeningElement[name.name='select']",
+  message: "Use Select from src/components/ui/select.tsx; its list stays on screen at 360px.",
+};
 const NO_SELECT_STAR = {
   // Head-only counts (select("*", { count, head: true })) return no rows, so they are allowed.
   selector:
@@ -139,7 +145,7 @@ const eslintConfig = defineConfig([
     },
     rules: {
       "boundaries/dependencies": ["error", dependencyOptions],
-      "no-restricted-syntax": ["error", NO_PROCESS_ENV, NO_GET_SESSION],
+      "no-restricted-syntax": ["error", NO_PROCESS_ENV, NO_GET_SESSION, NO_NATIVE_SELECT],
       "local/no-select-star": ["error", NO_SELECT_STAR],
       "no-restricted-imports": ["error", NO_SERVICE_CLIENT],
     },
@@ -147,6 +153,11 @@ const eslintConfig = defineConfig([
   {
     files: ["src/lib/env.ts"],
     rules: { "no-restricted-syntax": ["error", NO_GET_SESSION] },
+  },
+  {
+    // The shared controls themselves (select.tsx, country-select.tsx) may build on a raw <select>.
+    files: ["src/components/ui/**/*.tsx"],
+    rules: { "no-restricted-syntax": ["error", NO_PROCESS_ENV, NO_GET_SESSION] },
   },
   {
     files: ["src/**/dal.ts"],

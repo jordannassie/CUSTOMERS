@@ -226,6 +226,17 @@ test("delete a business after typing its name", async ({ page }) => {
   expect(data?.deleted_at).not.toBeNull();
 });
 
+test("during a trial, the delete dialog says the business leaves the trial now and is never charged (2026-10-16)", async ({ page }) => {
+  const s = await logIn(page);
+  await db.from("agencies").update({ status: "trialing" }).eq("id", s.agencyId).throwOnError();
+  await page.reload();
+  await page.getByRole("button", { name: "Delete business" }).click();
+  const dialog = page.getByTestId("delete-dialog");
+  await expect(dialog.getByText("It leaves your trial now and you won't be charged for it.")).toBeVisible();
+  await expect(dialog.getByText("End of this billing period")).toHaveCount(0);
+  await expect(dialog.getByText(/no refund/)).toHaveCount(0);
+});
+
 test("deleting the only business after the plan ended leads to settings, not a loop (BUG-D)", async ({ page }) => {
   const s = await logIn(page);
   await db.from("agencies").update({ status: "canceled" }).eq("id", s.agencyId).throwOnError();

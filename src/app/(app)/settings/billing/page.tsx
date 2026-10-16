@@ -21,7 +21,8 @@ import { CancelPanel, CreditsPanel, NoPlan, PlanStatus } from "./_components/sec
 export const metadata: Metadata = { title: "Billing", robots: { index: false } };
 
 const USAGE_HREF = "/settings/usage";
-const ADD_BUSINESS_HREF = "/onboarding/website";
+// The open draft first, if any (ADD_BUSINESS_PATH), else a new business on the website step.
+const ADD_BUSINESS_HREF = "/onboarding?add=1";
 
 type Props = { searchParams: Promise<{ portal?: string | string[]; synced?: string | string[] }> };
 

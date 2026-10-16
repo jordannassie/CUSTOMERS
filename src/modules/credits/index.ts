@@ -2,6 +2,7 @@ export {
   adminAdjustCredits,
   captureCredit,
   captureCredits,
+  endTrialGrant,
   expireGrants,
   extendTrialGrant,
   grantCredits,

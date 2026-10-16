@@ -7,6 +7,7 @@ import { createServiceClient } from "@/lib/supabase/service";
 import { INTENTS, type Intent } from "@/modules/question-library";
 import type { Json } from "@/types/database.types";
 import { autofill, type AutofillClients, type AutofillRequest, type AutofillRun } from "./autofill";
+import { DuplicateBusinessError, duplicateBusiness } from "./duplicates";
 import { createBusinessExtractor, ExtractError } from "./extract";
 import { createFirecrawlScraper } from "./firecrawl";
 import { fixtureAutofillClients, fixtureQuestionModel } from "./dev-fixtures";
@@ -165,6 +166,9 @@ export async function runBusinessAutofill(
     .from("businesses")
     .update({ is_chain: run.chain, ...(run.placeId ? { places_id: run.placeId } : {}) })
     .eq("id", businessId);
+  // The listing found for this website is another business's in the agency already (migration 067).
+  const duplicate = duplicateBusiness(placeError);
+  if (duplicate) throw new DuplicateBusinessError(duplicate);
   if (placeError) throw new Error(`Could not save place_id: ${placeError.message}`);
   if (run.siteFacts) {
     const { error: factsError } = await service
@@ -179,23 +183,25 @@ export async function runBusinessAutofill(
  * "Is one of these your business?" (MVP_SPEC 3.3): saves the listing the user picked, or clears it for
  * "None of these". Only place_id is kept (D-73). False when it is not the user's draft without a website.
  */
-export async function saveBusinessPlace(userId: string, businessId: string, placeId: string | null): Promise<boolean> {
+export async function saveBusinessPlace(userId: string, businessId: string, placeId: string | null): Promise<boolean | "duplicate"> {
   const supabase = await createClient();
   const { data: business, error } = await supabase
     .from("businesses")
     .select("id")
     .eq("id", businessId)
     .eq("owner_user_id", userId)
-    .eq("has_website", false)
     .eq("status", "onboarding")
     .maybeSingle();
   if (error) throw new Error(`Could not load business: ${error.message}`);
+  // A draft with no website, or one whose website turned us away and so got the same list (2026-10-16).
   if (!business) return false;
   const { error: placeError } = await createServiceClient()
     .from("businesses")
     .update({ places_id: placeId })
     .eq("id", businessId)
     .eq("owner_user_id", userId);
+  // The picked listing is another business's in the agency already (migration 067).
+  if (duplicateBusiness(placeError)) return "duplicate";
   if (placeError) throw new Error(`Could not save place_id: ${placeError.message}`);
   return true;
 }

@@ -37,13 +37,16 @@ export default async function ManageCompetitorsPage() {
           {step.limit !== null ? ` Your plan tracks up to ${step.limit}.` : null}
         </p>
       </header>
+      {/* Keyed by the saved list and the move note: a list changed by a move, or saved for the new place, shows fresh. */}
       <CompetitorPicker
+        key={[...step.saved.map((s) => s.placesId ?? s.name), step.locationNote].join("|")}
         businessId={business.id}
         limit={step.limit}
         limitText={step.limit !== null ? limitMessage(step.limit) : null}
         saved={step.saved}
         suggestions={step.suggestions}
         note={step.note}
+        locationNote={step.locationNote}
         lookup={lookupCompetitorByName}
         save={saveCompetitorList}
       />

@@ -1,7 +1,8 @@
 import "server-only";
 import { createServiceClient } from "@/lib/supabase/service";
+import { duplicateBusiness } from "@/modules/onboarding/server";
 
-export type RestoreRefusal = "not_found" | "not_deleted" | "too_late" | "agency_deleted";
+export type RestoreRefusal = "not_found" | "not_deleted" | "too_late" | "agency_deleted" | "duplicate";
 export type RestoreResult = { ok: true; deletedAt: string } | { ok: false; reason: RestoreRefusal };
 
 /**
@@ -31,6 +32,8 @@ export async function restoreDeletedBusiness(businessId: string, now = new Date(
     .gt("purge_after", now.toISOString())
     .select("id")
     .maybeSingle();
+  // Another live business in the agency now has its website, Google listing or setup draft (migration 067).
+  if (duplicateBusiness(updateError)) return { ok: false, reason: "duplicate" };
   if (updateError) throw new Error(`Could not restore the business: ${updateError.message}`);
   return data ? { ok: true, deletedAt: b.deleted_at } : { ok: false, reason: "not_deleted" };
 }

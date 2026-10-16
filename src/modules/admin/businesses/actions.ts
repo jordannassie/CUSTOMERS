@@ -45,6 +45,7 @@ const NOT_RESTORED: Record<RestoreRefusal, { status: number; error: string }> = 
   not_deleted: { status: 409, error: "This business is not deleted." },
   too_late: { status: 409, error: "The waiting period has passed, so this business can no longer be restored." },
   agency_deleted: { status: 409, error: "The whole account was deleted. Restore the account first." },
+  duplicate: { status: 409, error: "Another business in this account has the same website or Google listing, or is still being set up. Delete that one first." },
 };
 
 /** Restore a deleted business within its waiting period (MVP_SPEC 23), with the reason in the audit log. */

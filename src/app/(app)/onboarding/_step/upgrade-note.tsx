@@ -5,13 +5,16 @@ import { NEW_BUSINESS_PLAN_HREF } from "@/modules/workspace";
 
 // MVP_SPEC 3.1: a trial covers 2 businesses; a 3rd is an upgrade, not an error.
 // With no business left (BUG-D) the dashboard sends the user back here, so the way out is settings instead.
-export function UpgradeNote({ reason, hasBusinesses }: { reason: string; hasBusinesses: boolean }) {
+// `draftSaved`: shown on the last setup step, where the draft waits for the plan instead of being lost (D-16).
+export function UpgradeNote({ reason, hasBusinesses, draftSaved = false }: { reason: string; hasBusinesses: boolean; draftSaved?: boolean }) {
   return (
     <div className="rounded-md border border-border bg-surface p-6" data-testid="upgrade-note">
       <Building2 aria-hidden className="size-5 text-primary" />
       <p className="mt-3 text-[15px] font-medium">{reason}</p>
       <p className="mt-1 text-sm text-muted-foreground">
-        {hasBusinesses
+        {draftSaved
+          ? "This business is saved. Start your plan, then come back here to finish setting it up."
+          : hasBusinesses
           ? "Your businesses and their scans stay as they are."
           : "There are no businesses in your account right now. Your settings and billing are still here."}
       </p>

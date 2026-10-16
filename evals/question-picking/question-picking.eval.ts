@@ -1,10 +1,11 @@
 // Code-only checks, no provider call, so they run on every pull request: the grader, the dataset
 // format, and the real picking flow fed with a fixture library and fixture model answers.
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { COFFEE_FULL_BUSINESS, COFFEE_GOOD_PICK, COFFEE_LIBRARY, fakeQuestionClients } from "@/modules/onboarding/question-fixtures";
 import { prepareQuestions } from "@/modules/onboarding/questions";
-import { apiErrorCase, EXAMPLE_PATH, gradeCase, loadDataset, parseDataset, PASS_OVERLAP, poolNotInLibrary, score } from "./grader";
+import { isFairQuestion } from "@/modules/onboarding/question-rules";
+import { apiErrorCase, EXAMPLE_PATH, gradeCase, LIBRARY_PATH, loadDataset, parseDataset, PASS_OVERLAP, poolNotInLibrary, score } from "./grader";
 
 const examples = parseDataset(readFileSync(EXAMPLE_PATH, "utf8"), { allowExamples: true });
 const templateById = new Map(COFFEE_LIBRARY.map((e) => [e.id, e.template]));
@@ -77,5 +78,17 @@ describe("question picking on fixtures", () => {
     const graded = gradeCase(kiosk, set.questions.flatMap((q) => (q.templateId ? [templateById.get(q.templateId) ?? ""] : [])), set.source);
     expect([graded.source, graded.overlap]).toEqual(["fallback", 0]);
     expect(score([graded])).toMatchObject({ scored: 1, fallbacks: 1, passed: false });
+  });
+});
+
+// 2026-10-16: the rules that drop choices, unfinished questions and brands (question-options.ts, question-brands.ts)
+// took 31 of the 399 templates. Every industry must still have plenty to pick from.
+describe("the reviewed library under the question rules", () => {
+  it("keeps at least 25 fair templates per industry", () => {
+    if (!existsSync(LIBRARY_PATH)) return;
+    const file = JSON.parse(readFileSync(LIBRARY_PATH, "utf8")) as { templates: { industry: string; template: string }[] };
+    const fair = new Map<string, number>();
+    for (const t of file.templates) fair.set(t.industry, (fair.get(t.industry) ?? 0) + (isFairQuestion(t.template) ? 1 : 0));
+    for (const [industry, n] of fair) expect(n, industry).toBeGreaterThanOrEqual(25);
   });
 });

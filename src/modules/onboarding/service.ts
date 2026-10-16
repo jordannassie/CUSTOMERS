@@ -33,10 +33,26 @@ export const NOTES = {
   chain:
     "This website has several locations, so we left out the address. Enter the city and address of yours, and check the description fits it.",
   noneChosen: "We kept the name and city you typed. Fill in the rest below.",
-  // The AI that reads websites is down (both Claude and the ChatGPT backup), not that the business is unknown.
+  // Google could not be reached (after a retry), but the website was read.
+  googleDown: "We filled this in from your website, but couldn't reach Google just now, so check the address and phone in particular.",
+  // The website and Google both failed: nothing to fill in, and a moment later may work (2026-10-16).
+  bothFailed: "We couldn't read your website or find it on Google right now. Fill in the details below, or try again in a minute.",
+  // Our own reader or AI is down (Firecrawl, both Claude and the ChatGPT backup), not that the business is unknown.
   unavailable: "Auto-fill is temporarily unavailable, please fill in the form.",
   unavailablePartly: "Auto-fill is temporarily unavailable, so we filled in what we could. Please check the details and fill in the rest.",
 } as const;
+
+/**
+ * The website gave us nothing, said with its address and why (2026-10-16, bennucoffee.com): a site that turns automated
+ * readers away is said to, so the owner knows AI tools may be turned away too.
+ */
+export function unreadableNote(domain: string, blocked: boolean, then: "pick" | "fill-picked" | "google" | "fill"): string {
+  const why = blocked ? `We couldn't read ${domain} because it blocks automated readers.` : `We couldn't open ${domain}.`;
+  if (then === "pick") return `${why} Pick your Google listing or fill in the details below.`;
+  if (then === "fill-picked") return `${why} Please fill in the details below.`;
+  if (then === "google") return `${why} We filled in what we could from Google. Please check the details.`;
+  return `${why} We didn't find it on Google either, so please fill in the details below.`;
+}
 
 // One reading of a web address for every caller (lib/site-type.ts); a listing may have none.
 const hostOf = (url: string | null): string | null => (url ? siteHost(url) : null);
@@ -133,11 +149,26 @@ export function toResult(opts: {
   aiDown?: boolean;
   /** Google and the website name different kinds of business; the details step asks the user to check. */
   industryCheck?: { google: string; website: string } | null;
+  /** The website could not be read (it blocked us, or did not load): its own note, never "temporarily unavailable". */
+  unreadable?: { domain: string; blocked: boolean } | null;
+  /** Google could not be reached, after a retry. */
+  googleDown?: boolean;
+  /** Google listings to pick from (the website could not be read). */
+  choices?: AutofillResult["choices"];
 }): AutofillResult {
-  const { details, fromWebsite, fromGoogle, hadWebsite } = opts;
+  const { details, fromWebsite, fromGoogle, hadWebsite, unreadable } = opts;
   let note: string | null = null;
+  let retry = false;
   if (opts.chain) note = NOTES.chain;
   else if (opts.aiDown) note = fromWebsite || fromGoogle ? NOTES.unavailablePartly : NOTES.unavailable;
+  // With listings to pick from, the picker says why; "None of these" then leaves the form to fill in.
+  else if (unreadable && opts.choices?.length) note = unreadableNote(unreadable.domain, unreadable.blocked, "fill-picked");
+  else if (unreadable && fromGoogle) note = unreadableNote(unreadable.domain, unreadable.blocked, "google");
+  else if (unreadable && !fromWebsite && opts.googleDown) {
+    note = NOTES.bothFailed;
+    retry = true;
+  } else if (unreadable && !fromWebsite) note = unreadableNote(unreadable.domain, unreadable.blocked, "fill");
+  else if (opts.googleDown && fromWebsite && !fromGoogle) note = NOTES.googleDown;
   else if (!fromWebsite && !fromGoogle) note = NOTES.nothingFound;
   else if (hadWebsite && !fromWebsite) note = NOTES.googleOnly;
   else if (hadWebsite && !fromGoogle) note = NOTES.websiteOnly;
@@ -146,6 +177,9 @@ export function toResult(opts: {
     filledFrom: { website: fromWebsite, google: fromGoogle },
     note,
     ...(opts.industryCheck ? { industryCheck: opts.industryCheck } : {}),
+    ...(opts.choices?.length ? { choices: opts.choices } : {}),
+    ...(unreadable && opts.choices?.length ? { pickNote: unreadableNote(unreadable.domain, unreadable.blocked, "pick") } : {}),
+    ...(retry ? { retry: true } : {}),
   };
 }
 

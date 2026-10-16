@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   canAddBusiness,
+  canFinishDraft,
   canEditTracking,
   canSpendTopUps,
   canStartScan,
@@ -77,6 +78,25 @@ describe("canAddBusiness", () => {
 
   it.each(blockedStatuses)("blocks a %s agency", (status, reason) => {
     expect(canAddBusiness(agency({ status, businessCount: 0 }))).toEqual({ allowed: false, reason });
+  });
+});
+
+describe("canFinishDraft", () => {
+  // businessCount holds set-up businesses only, so the draft being finished is not in it.
+  it("lets a trial with 1 set-up business finish its draft", () => {
+    expect(canFinishDraft(agency({ status: "trialing", businessCount: 1 })).allowed).toBe(true);
+  });
+
+  it("stops a trial with 2 set-up businesses from turning on a third", () => {
+    expect(canFinishDraft(agency({ status: "trialing", businessCount: 2 }))).toEqual({
+      allowed: false,
+      reason: "Your trial includes 2 businesses. Upgrade to add more.",
+    });
+  });
+
+  it("has no limit on a paid plan, and never blocks on status alone", () => {
+    expect(canFinishDraft(agency({ status: "active", businessCount: 40 })).allowed).toBe(true);
+    expect(canFinishDraft(agency({ status: "past_due", businessCount: 0 })).allowed).toBe(true);
   });
 });
 

@@ -5,7 +5,7 @@ import { missingTermTags, validateLibrary, type Intent } from "@/modules/questio
 import { COFFEE_FULL_BUSINESS, COFFEE_GOOD_PICK, COFFEE_LIBRARY, fakeQuestionClients } from "./question-fixtures";
 import { balancePicks, fillCity, fitsBusiness, isFairQuestion, type LibraryEntry } from "./question-rules";
 import { prepareQuestions, type QuestionBusiness } from "./questions";
-import { QUESTION_COUNT } from "./prompts/pick-questions.v7";
+import { QUESTION_COUNT } from "./prompts/pick-questions.v8";
 
 const lib = (prefix: string, rows: [string, Intent, string[]][]): LibraryEntry[] =>
   rows.map(([template, intent, tags], i) => ({ id: `${prefix}-${i + 1}`, template, intent, tags }));
@@ -149,11 +149,12 @@ const DENTIST_LIBRARY = lib("dentist", [
   ["What is the most trusted dentist in {city}?", "reviews", ["general"]],
   ["Which dentist in {city} offers the best value for implants?", "price", ["dental implants"]],
   ["Which dentist in {city} can see me for a toothache quickly?", "urgent", ["emergency appointments", "toothache"]],
-  ["Which dentist in {city} is best for Invisalign?", "best", ["invisalign"]],
+  // Was "Invisalign", a brand: brand questions are dropped now (question-brands.ts).
+  ["Which dentist in {city} is best for clear aligners?", "best", ["clear aligners"]],
 ]);
 const DENTIST: QuestionBusiness = {
   industry: "dentist",
-  services: ["emergency appointments", "teeth whitening", "dental implants", "cleanings", "pediatric dentistry for kids", "invisalign", "toothache care"],
+  services: ["emergency appointments", "teeth whitening", "dental implants", "cleanings", "pediatric dentistry for kids", "clear aligners", "toothache care"],
   description: "Family dental practice in Orange.",
   city: "Orange",
   region: "CA",

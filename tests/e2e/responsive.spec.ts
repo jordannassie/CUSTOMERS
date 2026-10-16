@@ -69,7 +69,8 @@ test.beforeAll(async ({}, info) => {
     .select("id")
     .single()
     .throwOnError();
-  const business = async (name: string) =>
+  // The second business gets its own website and listing: migration 067 refuses two copies of one business.
+  const business = async (name: string, own = true) =>
     (
       await db
         .from("businesses")
@@ -79,11 +80,11 @@ test.beforeAll(async ({}, info) => {
           name,
           status: "active",
           industry: "auto repair",
-          domain: DOMAIN,
+          domain: own ? DOMAIN : `other-${DOMAIN}`,
           primary_city: "Oklahoma City",
           primary_region: "OK",
           primary_country: "United States",
-          places_id: "ChIJ-fixture-sunrise-coffee",
+          places_id: own ? "ChIJ-fixture-sunrise-coffee" : null,
           models: [...MODELS],
         })
         .select("id")
@@ -91,7 +92,7 @@ test.beforeAll(async ({}, info) => {
         .throwOnError()
     ).data;
   // The second one first, so the long-named one is the business shown after login.
-  const other = await business(OTHER);
+  const other = await business(OTHER, false);
   const main = await business(NAME);
   for (const b of [other, main]) {
     await db
@@ -328,5 +329,48 @@ for (const width of WIDTHS) {
     await visit(page, `/internal/admin/businesses/${businessId}`, page.getByRole("heading", { level: 1, name: NAME }));
     await noSideScroll(page, `${width} admin business`);
     await shot(page, width, "admin-business");
+
+    // 2026-10-16: the Overview's section headings wrap instead of being cut off.
+    await visit(page, "/internal/admin", page.getByRole("heading", { level: 1 }).first());
+    await headingsFit(page, `${width} admin overview`);
+
+    // The leads filters and the contact form's topic are our Select now: each list opens on screen at every width.
+    await visit(page, "/internal/admin/leads", page.getByRole("heading", { level: 1 }).first());
+    await noSideScroll(page, `${width} admin leads`);
+    await shot(page, width, "admin-leads");
+    for (const [id, file] of [
+      ["#leads-interest", "menu-leads-interest"],
+      ["#leads-source", "menu-leads-source"],
+      ["#leads-status", "menu-leads-status"],
+    ] as const) {
+      await openList(page, id, `${width} ${id}`, width, file);
+    }
+
+    await visit(page, "/contact", page.locator("#cf-interest"));
+    await noSideScroll(page, `${width} contact`);
+    await openList(page, "#cf-interest", `${width} contact topic`, width, "menu-contact-topic");
+    await shot(page, width, "contact");
   });
+}
+
+/** Opens a Select by its trigger id, checks its list is on screen, then closes it without choosing. */
+async function openList(page: Page, id: string, label: string, width: number, file: string) {
+  await page.locator(id).scrollIntoViewIfNeeded();
+  await page.locator(id).click();
+  const list = page.getByRole("listbox");
+  await onScreen(page, list, label);
+  await shot(page, width, file, false);
+  await page.keyboard.press("Escape");
+  await expect(list).toHaveCount(0);
+}
+
+/** Every section heading shows in full: none is cut off or wider than its box. */
+async function headingsFit(page: Page, label: string) {
+  const cut = await page.evaluate(() =>
+    [...document.querySelectorAll("h1, h2, h3")]
+      .filter((h) => getComputedStyle(h).position !== "absolute" && h.getBoundingClientRect().width > 1)
+      .filter((h) => h.scrollWidth > h.clientWidth + 1)
+      .map((h) => h.textContent?.trim()),
+  );
+  expect(cut, `${label}: headings cut off`).toEqual([]);
 }

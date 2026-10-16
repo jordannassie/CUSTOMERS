@@ -12,9 +12,10 @@ const FALLBACK: { template: string; intent: Intent }[] = [
   { template: "What is the most trusted {industry} in {city}?", intent: "reviews" },
   { template: "What is the most popular {industry} in {city}?", intent: "reviews" },
   { template: "Which {industry} in {city} offers the best value?", intent: "comparison" },
-  { template: "Which of the top {industry} options in {city} compares best?", intent: "comparison" },
+  // Was "Which of the top {industry} options in {city} compares best?", which no person types (2026-10-16).
+  { template: "Which {industry} in {city} stands out from the rest?", intent: "comparison" },
   { template: "Which {industry} in {city} has fair prices?", intent: "price" },
-  { template: "What is an affordable {industry} in {city}?", intent: "price" },
+  { template: "Can you suggest an affordable {industry} in {city}?", intent: "price" },
   { template: "Which {industry} in {city} is the most highly rated?", intent: "reviews" },
 ];
 

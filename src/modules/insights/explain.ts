@@ -8,6 +8,7 @@ import { buildExplainInput, domainOf, type ExplainInput, type ExplainSources } f
 import { capitalizeFirst, fixNameCase } from "./name-case";
 import { toStored } from "./placeholders";
 import { MAX_REASONS, MIN_REASONS, type ExplainOutput, type ExplainReason } from "./prompts/explain.v2";
+import { withBlockedSite } from "./blocked-site";
 import { reasonIssues } from "./validate";
 
 export type WriterUsage = { inputTokens: number; outputTokens: number };
@@ -97,7 +98,7 @@ export async function explain(src: ExplainSources, write: WriteExplanation | nul
   const rules = (fallbackReason: string, extra: Partial<Explanation> = {}): Explanation => ({
     source: "rules",
     model: null,
-    drafts: ruleDrafts(src),
+    drafts: withBlockedSite(ruleDrafts(src), src, Number.POSITIVE_INFINITY),
     dropped: [],
     fallbackReason,
     usage: null,
@@ -136,7 +137,7 @@ export async function explain(src: ExplainSources, write: WriteExplanation | nul
   return {
     source: "ai",
     model: written.model,
-    drafts: drafts.slice(0, MAX_REASONS),
+    drafts: withBlockedSite(drafts, src, MAX_REASONS),
     dropped,
     fallbackReason: null,
     usage: written.usage,

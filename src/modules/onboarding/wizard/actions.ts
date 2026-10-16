@@ -2,8 +2,10 @@
 
 import { headers } from "next/headers";
 import { env } from "@/lib/env";
+import { OTHER_LABEL_HINT } from "@/lib/other-label";
 import { authFailure, getCurrentAgency, type ActionResult } from "@/modules/auth";
 import { addBusinessAtSetup } from "@/modules/billing";
+import { canFinishDraft } from "@/modules/entitlements";
 import { sendWelcomeEmail } from "@/modules/notifications";
 import { dedupeConfirmed } from "../competitors";
 import { saveCompetitors } from "../dal";
@@ -48,12 +50,12 @@ export async function saveAgencyStep(input: unknown): Promise<ActionResult<null>
   return { ok: true, data: null };
 }
 
-export async function saveWebsiteStep(input: unknown): Promise<ActionResult<{ businessId: string; autofill: AutofillResult }>> {
+export async function saveWebsiteStep(input: unknown): Promise<ActionResult<{ businessId: string; autofill: AutofillResult | null }>> {
   const user = await userId();
   if (typeof user !== "string") return user;
   const parsed = websiteStepInput.safeParse(input);
   if (!parsed.success) return { ok: false, status: 400, error: "Enter your website, or your business name and city." };
-  const { plan } = parsed.data;
+  const { plan, createKey, retry } = parsed.data;
 
   let request: { domain: string } | { name: string; city: string };
   if ("domain" in parsed.data) {
@@ -67,7 +69,7 @@ export async function saveWebsiteStep(input: unknown): Promise<ActionResult<{ bu
   }
   const limited = await autofillLimit(user);
   if (limited) return limited;
-  const result = await startBusiness(user, request, undefined, plan ?? null);
+  const result = await startBusiness(user, request, undefined, plan ?? null, createKey ?? null, retry === true && "domain" in request);
   if (!result.ok) return result;
   return { ok: true, data: { businessId: result.businessId, autofill: result.autofill } };
 }
@@ -76,7 +78,11 @@ export async function saveDetailsStep(input: unknown): Promise<ActionResult<null
   const user = await userId();
   if (typeof user !== "string") return user;
   const parsed = detailsStepInput.safeParse(input);
-  if (!parsed.success) return { ok: false, status: 400, error: "Add your business name, industry and city." };
+  if (!parsed.success) {
+    // A vague "Other" label gets the same hint the field shows, not the generic message (2026-10-16).
+    const vague = parsed.error.issues.some((i) => i.message === OTHER_LABEL_HINT);
+    return { ok: false, status: 400, error: vague ? OTHER_LABEL_HINT : "Add your business name, industry and city." };
+  }
   if (!(await saveDetails(user, parsed.data))) return notFound;
   return { ok: true, data: null };
 }
@@ -120,6 +126,9 @@ export async function saveModelsStep(input: unknown): Promise<ActionResult<{ nex
   // BUG-071: a business added after the first joins the subscription before it starts scanning.
   const agency = await getCurrentAgency();
   if (agency) {
+    // D-16: drafts never count toward the trial's limit, so this is where a third set-up business is refused.
+    const allowed = await canFinishDraft(agency.id);
+    if (!allowed.allowed) return { ok: false, status: 403, error: allowed.reason };
     const added = await addBusinessAtSetup(agency.id, businessId, addOn ?? null);
     if (!added.ok) return added;
   }

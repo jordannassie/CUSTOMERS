@@ -4,6 +4,8 @@ import { createServiceClient } from "@/lib/supabase/service";
 import { canAddBusiness } from "@/modules/entitlements";
 import type { AutofillClients, AutofillRequest } from "../autofill";
 import { runBusinessAutofill } from "../dal";
+import { DUPLICATE_BUSINESS_TEXT, DuplicateBusinessError, duplicateBusiness } from "../duplicates";
+import { autofillDone, insertDraft, websiteTaken } from "./draft/dal";
 import { restartIfAnotherBusiness } from "./restart/dal";
 import type { AutofillResult } from "../schema";
 import { needsCard, nextStepNumber, type PlanId, type StepSlug, type WizardState } from "./steps";
@@ -20,6 +22,7 @@ export async function loadWizardState(userId: string): Promise<WizardContext> {
       .select("id, onboarding_step")
       .eq("owner_user_id", userId)
       .eq("status", "onboarding")
+      .is("deleted_at", null)
       .order("created_at", { ascending: false })
       .limit(1),
     supabase.from("businesses").select("id", { count: "exact", head: true }).eq("owner_user_id", userId).neq("status", "onboarding"),
@@ -61,12 +64,14 @@ export async function saveAgency(userId: string, name: string, plan: PlanId | nu
 }
 
 export type StartBusinessResult =
-  | { ok: true; businessId: string; autofill: AutofillResult }
+  /** autofill is null when it already ran for this draft as it is: the details step refills from what is saved. */
+  | { ok: true; businessId: string; autofill: AutofillResult | null }
   | { ok: false; status: 403 | 409; error: string };
 
 /**
- * Step 3: reuses the user's one draft business (no duplicates on return) or creates it, then runs auto-fill.
- * Only what the user typed is saved here; auto-fill values come back to pre-fill the form (D-73).
+ * Step 3: reuses the agency's one draft business (no duplicates on return, a double submit or a second tab) or creates
+ * it, then runs auto-fill when the draft is new or now another business. Only what the user typed is saved here;
+ * auto-fill values come back to pre-fill the form (D-73).
  */
 export async function startBusiness(
   userId: string,
@@ -75,58 +80,79 @@ export async function startBusiness(
   clients?: AutofillClients,
   /** Chosen on the new-business plan picker, for a business after the first; ignored for a returning draft. */
   plan: PlanId | null = null,
+  /** The browser's key for this attempt (migration 067): sent twice, it finds the same draft. */
+  createKey: string | null = null,
+  /** "Try again" after the website and Google both failed: auto-fill runs once more for the same website. */
+  retry = false,
 ): Promise<StartBusinessResult> {
   const supabase = await createClient();
   const agency = await supabase.from("agencies").select("id").eq("owner_user_id", userId).maybeSingle();
   if (agency.error) throw new Error(`Could not load agency: ${agency.error.message}`);
   if (!agency.data) return { ok: false, status: 409, error: "Add your agency name first." };
+  const agencyId = agency.data.id;
 
   const typed =
     "domain" in request
       ? { domain: request.domain, has_website: true }
       : { domain: null, has_website: false, name: request.name, primary_city: request.city };
   const state = await loadWizardState(userId);
-  let businessId: string;
-  if (state.draft) {
-    businessId = state.draft.id;
-    // Another business clears the old one's details and Google listing and saves the new name and city. The same
-    // business entered again (Back from the details step) keeps its confirmed name, city, listing and progress.
-    const restarted = await restartIfAnotherBusiness(userId, businessId, request);
-    const { error } = await createServiceClient()
-      .from("businesses")
-      .update({
-        domain: typed.domain,
-        has_website: typed.has_website,
-        ...(restarted ? {} : { onboarding_step: nextStepNumber(state.draft.step, "website") }),
-      })
-      .eq("id", businessId)
-      .eq("owner_user_id", userId)
-      .eq("status", "onboarding");
-    if (error) throw new Error(`Could not update business: ${error.message}`);
-  } else {
-    const allowed = await canAddBusiness(agency.data.id);
+  let draft = state.draft;
+  if (!draft) {
+    const allowed = await canAddBusiness(agencyId);
     if (!allowed.allowed) return { ok: false, status: 403, error: allowed.reason };
-    const { data, error } = await createServiceClient()
-      .from("businesses")
-      .insert({
-        name: "domain" in request ? request.domain : request.name,
-        ...typed,
-        owner_user_id: userId,
-        agency_id: agency.data.id,
-        status: "onboarding",
-        onboarding_step: nextStepNumber(null, "website"),
-        requested_plan_id: plan,
-      })
-      .select("id")
-      .single();
-    if (error) throw new Error(`Could not create business: ${error.message}`);
-    businessId = data.id;
-    if (state.hasFinishedBusiness) await keepActiveBusiness(userId);
+    const created = await insertDraft({
+      userId,
+      agencyId,
+      name: "domain" in request ? request.domain : request.name,
+      domain: typed.domain,
+      hasWebsite: typed.has_website,
+      city: "city" in request ? request.city : null,
+      step: nextStepNumber(null, "website"),
+      plan,
+      createKey,
+    });
+    if (created.kind === "duplicate") return { ok: false, status: 409, error: DUPLICATE_BUSINESS_TEXT };
+    if (created.kind === "created") {
+      if (state.hasFinishedBusiness) await keepActiveBusiness(userId);
+      return withAutofill(userId, created.id, request, clients);
+    }
+    // This attempt, or another tab, made the draft a moment ago: carry on with that one.
+    draft = (await loadWizardState(userId)).draft;
+    if (!draft) return { ok: false, status: 409, error: DUPLICATE_BUSINESS_TEXT };
   }
 
-  const autofill = await runBusinessAutofill(userId, businessId, request, clients);
-  if (!autofill) throw new Error("The draft business vanished during auto-fill");
-  return { ok: true, businessId, autofill };
+  const businessId = draft.id;
+  if (typed.domain && (await websiteTaken(agencyId, typed.domain, businessId))) return { ok: false, status: 409, error: DUPLICATE_BUSINESS_TEXT };
+  // Another business clears the old one's details and Google listing and saves the new name and city. The same
+  // business entered again (Back from the details step) keeps its confirmed name, city, listing and progress.
+  const restarted = await restartIfAnotherBusiness(userId, businessId, request);
+  const { error } = await createServiceClient()
+    .from("businesses")
+    .update({
+      domain: typed.domain,
+      has_website: typed.has_website,
+      ...(restarted ? {} : { onboarding_step: nextStepNumber(draft.step, "website") }),
+    })
+    .eq("id", businessId)
+    .eq("owner_user_id", userId)
+    .eq("status", "onboarding");
+  if (duplicateBusiness(error)) return { ok: false, status: 409, error: DUPLICATE_BUSINESS_TEXT };
+  if (error) throw new Error(`Could not update business: ${error.message}`);
+  // The same business sent again: no second AI or Firecrawl call for what auto-fill already found.
+  if (!restarted && !retry && (await autofillDone(businessId))) return { ok: true, businessId, autofill: null };
+  return withAutofill(userId, businessId, request, clients);
+}
+
+async function withAutofill(userId: string, businessId: string, request: AutofillRequest, clients?: AutofillClients): Promise<StartBusinessResult> {
+  try {
+    const autofill = await runBusinessAutofill(userId, businessId, request, clients);
+    if (!autofill) throw new Error("The draft business vanished during auto-fill");
+    return { ok: true, businessId, autofill };
+  } catch (error) {
+    // Google's listing for this website is another business's already (migration 067).
+    if (error instanceof DuplicateBusinessError) return { ok: false, status: 409, error: DUPLICATE_BUSINESS_TEXT };
+    throw error;
+  }
 }
 
 // With no active business saved, the app falls back to the newest one, which would now be the draft

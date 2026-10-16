@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Globe, Loader2, MapPin } from "lucide-react";
 import type { ActionResult } from "@/modules/auth";
@@ -8,6 +8,7 @@ import { toDomain, type AutofillResult, type PlaceChoice } from "@/modules/onboa
 import { FieldMessage, useFieldErrors } from "@/components/ui/field-errors";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { AutofillFailed } from "./AutofillFailed";
 import { saveAutofill } from "./autofill-store";
 import { PlaceChoices, type PickPlaceAction } from "./PlaceChoices";
 import { FieldHint, StepActions, StepError } from "./StepBits";
@@ -22,13 +23,14 @@ type Props = {
   /** Chosen on the new-business plan picker, carried through to the business this step creates. */
   plan?: string | null;
   save: (
-    input: { domain: string; plan?: string | null } | { name: string; city: string; plan?: string | null },
-  ) => Promise<ActionResult<{ businessId: string; autofill: AutofillResult }>>;
+    input: ({ domain: string } | { name: string; city: string }) & { plan?: string | null; createKey?: string; retry?: boolean },
+  ) => Promise<ActionResult<{ businessId: string; autofill: AutofillResult | null }>>;
   /** Saves the Google listing picked with no website, or none (MVP_SPEC 3.3). */
   pick: PickPlaceAction;
 };
 
-type Picking = { businessId: string; typed: AutofillResult; choices: PlaceChoice[] };
+type Picking = { businessId: string; typed: AutofillResult; choices: PlaceChoice[]; searched: string; note?: string };
+type Failed = { businessId: string; typed: AutofillResult };
 
 // MVP_SPEC 3.1 step 3. Auto-fill runs here and takes a few seconds, so the wait gets its own screen.
 export function WebsiteStep({ defaultDomain, defaultNoWebsite, defaultName = "", defaultCity = "", backHref, plan = null, save, pick }: Props) {
@@ -39,8 +41,12 @@ export function WebsiteStep({ defaultDomain, defaultNoWebsite, defaultName = "",
   const [city, setCity] = useState(defaultCity);
   const [error, setError] = useState<string | null>(null);
   const [picking, setPicking] = useState<Picking | null>(null);
+  // Neither the website nor Google answered: "Try again" runs auto-fill once more for the same draft (2026-10-16).
+  const [failed, setFailed] = useState<Failed | null>(null);
   const [pending, startTransition] = useTransition();
   const fields = useFieldErrors<"website" | "name" | "city">("onb");
+  // One key for this visit's attempts (migration 067): a double submit or a retry finds the same draft business.
+  const createKey = useRef<string | undefined>(undefined);
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -51,17 +57,33 @@ export function WebsiteStep({ defaultDomain, defaultNoWebsite, defaultName = "",
         : { website: !domain.trim() ? "Enter your website, or choose I don't have a website." : toDomain(domain) ? undefined : "Enter a website address like yourbusiness.com." },
     );
     if (bad) return;
+    run(false);
+  }
+
+  function run(retry: boolean) {
+    createKey.current ??= newKey();
+    setFailed(null);
     startTransition(async () => {
-      const result = await save(noWebsite ? { name, city, plan } : { domain, plan });
+      const key = createKey.current;
+      const result = await save(noWebsite ? { name, city, plan, createKey: key } : { domain, plan, createKey: key, ...(retry ? { retry } : {}) });
       if (!result.ok) {
         // A typo in the address goes on the website field itself (BUG-102).
         if (result.field === "website") return void fields.show({ website: result.error });
         return setError(result.error);
       }
-      // No website: Google's listings are only offered; the user picks theirs before anything is filled in.
-      const { choices, ...typed } = result.data.autofill;
-      if (choices?.length) return setPicking({ businessId: result.data.businessId, typed, choices });
-      saveAutofill(result.data.businessId, typed);
+      // Null: the same business sent again, so auto-fill did not run twice; the details step shows what is saved.
+      if (result.data.autofill) {
+        // No website: Google's listings are only offered; the user picks theirs before anything is filled in.
+        const { choices, pickNote, ...typed } = result.data.autofill;
+        const businessId = result.data.businessId;
+        // No website, or a website that turned us away: Google's listings are only offered, and the user picks.
+        if (choices?.length) {
+          const searched = noWebsite ? `${name.trim()} in ${city.trim()}` : (toDomain(domain) ?? domain.trim());
+          return setPicking({ businessId, typed, choices, searched, note: pickNote });
+        }
+        if (typed.retry) return setFailed({ businessId, typed });
+        saveAutofill(businessId, typed);
+      }
       router.push("/onboarding/details");
       // A changed website starts the draft over on the server; never show the details step from before.
       router.refresh();
@@ -69,8 +91,20 @@ export function WebsiteStep({ defaultDomain, defaultNoWebsite, defaultName = "",
   }
 
   if (pending) return <Reading what={noWebsite ? `${name} in ${city}` : domain} noWebsite={noWebsite} />;
-  if (picking) {
-    return <PlaceChoices {...picking} searched={`${name.trim()} in ${city.trim()}`} pick={pick} onBack={() => setPicking(null)} />;
+  if (picking) return <PlaceChoices {...picking} pick={pick} onBack={() => setPicking(null)} />;
+  if (failed) {
+    return (
+      <AutofillFailed
+        note={failed.typed.note ?? ""}
+        pending={pending}
+        onRetry={() => run(true)}
+        onFill={() => {
+          saveAutofill(failed.businessId, failed.typed);
+          router.push("/onboarding/details");
+          router.refresh();
+        }}
+      />
+    );
   }
 
   return (
@@ -158,6 +192,11 @@ export function WebsiteStep({ defaultDomain, defaultNoWebsite, defaultName = "",
       <StepActions backHref={backHref} pending={pending} label="Find my business" />
     </form>
   );
+}
+
+// randomUUID needs a secure page (https or localhost); without it the attempt simply has no key.
+function newKey(): string | undefined {
+  return typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : undefined;
 }
 
 function Reading({ what, noWebsite }: { what: string; noWebsite: boolean }) {

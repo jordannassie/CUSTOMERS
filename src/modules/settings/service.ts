@@ -1,4 +1,5 @@
 // Pure rules for the Settings page (B-55). No framework, database or env imports, so the forms use them too.
+import { needsClearerIndustry } from "@/lib/other-label";
 import { ALIASES_MAX, type Frequency, type ModelId } from "./schema";
 
 // MVP_SPEC 4.5.
@@ -120,4 +121,12 @@ export function aliasExample(name: string): string {
     .filter((w) => w && !LEGAL_ENDINGS.has(w.toLowerCase()));
   const initials = words.map((w) => w[0].toUpperCase()).join("");
   return initials.length >= 2 ? `For example: ${initials}` : "For example: an old name or another spelling";
+}
+
+/**
+ * True when a profile save changes the industry to a vague "Other" label ("Consultant", "Store"): questions are
+ * written from that label. One saved before this rule stays while other fields change (2026-10-16).
+ */
+export function refusesOtherLabel(before: string | null, next: string): boolean {
+  return next !== (before ?? "") && needsClearerIndustry(next);
 }

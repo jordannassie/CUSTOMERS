@@ -103,4 +103,13 @@ describe("rebuilding questions after an industry change", () => {
     expect(questionBasisChanged(austin, { ...austin, area: "East Austin" })).toBe(true);
     expect(questionBasisChanged(austin, { ...austin, industry: "electrician" })).toBe(true);
   });
+
+  it("counts new services as a change, ignoring case, spacing and order, and skips them when a side has none", () => {
+    const plumber = { industry: "plumber", city: "Austin", region: "TX", area: null, services: ["Drain cleaning", "water heaters"] };
+    expect(questionBasisChanged(plumber, { ...plumber, services: [" water heaters", "drain cleaning "] })).toBe(false);
+    expect(questionBasisChanged(plumber, { ...plumber, services: ["drain cleaning", "water heaters", "leak repair"] })).toBe(true);
+    expect(questionBasisChanged(plumber, { ...plumber, services: [] })).toBe(true);
+    // Settings sends no services: only the trade and place count there.
+    expect(questionBasisChanged(plumber, { ...plumber, services: undefined })).toBe(false);
+  });
 });

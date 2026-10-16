@@ -2,7 +2,7 @@
 
 import { Suspense, use, useState, useTransition } from "react";
 import Link from "next/link";
-import { ArrowDown, ArrowUp, Check, ChevronsUpDown, Loader2, Plus } from "lucide-react";
+import { ArrowDown, ArrowUp, Check, ChevronsUpDown, CircleDashed, Loader2, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "cn";
 import {
@@ -15,6 +15,11 @@ import {
 import type { SwitcherScore, SwitcherScores } from "@/modules/workspace";
 
 export type SwitcherBusiness = { id: string; name: string; domain: string | null; logoUrl: string | null };
+/** The agency's unfinished draft: "Finish setting up <name>", linking to the step where it stopped. */
+export type SwitcherDraft = { label: string; href: string };
+
+// Every "Add a business" link: the open draft continues, else a new business starts (ADD_BUSINESS_PATH).
+const ADD_BUSINESS_HREF = "/onboarding?add=1";
 export type SwitchBusinessAction = (
   input: { businessId: string },
 ) => Promise<{ ok: true } | { ok: false; error: string }>;
@@ -125,9 +130,12 @@ export function BusinessSwitcher({
   switchBusiness,
   onSwitched,
   scores,
+  draft = null,
 }: {
   businesses: SwitcherBusiness[];
   activeBusinessId: string;
+  /** Shown instead of Add business: with a draft open, adding one means finishing it (one draft per agency). */
+  draft?: SwitcherDraft | null;
   switchBusiness: SwitchBusinessAction;
   onSwitched?: () => void;
   /** Loaded after the frame, so the page never waits for every client's score. */
@@ -181,12 +189,21 @@ export function BusinessSwitcher({
           <Items {...items} scores={null} />
         )}
         <DropdownMenuSeparator />
-        <DropdownMenuItem asChild className="gap-2.5 py-2 text-muted-foreground">
-          <Link href="/onboarding/website" onClick={onSwitched}>
-            <Plus className="size-4" aria-hidden="true" />
-            Add business
-          </Link>
-        </DropdownMenuItem>
+        {draft ? (
+          <DropdownMenuItem asChild className="items-start gap-2.5 py-2 text-foreground" title={draft.label}>
+            <Link href={draft.href} onClick={onSwitched} data-testid="switcher-draft">
+              <CircleDashed className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden="true" />
+              <span className="line-clamp-2 min-w-0 break-words">{draft.label}</span>
+            </Link>
+          </DropdownMenuItem>
+        ) : (
+          <DropdownMenuItem asChild className="gap-2.5 py-2 text-muted-foreground">
+            <Link href={ADD_BUSINESS_HREF} onClick={onSwitched}>
+              <Plus className="size-4" aria-hidden="true" />
+              Add business
+            </Link>
+          </DropdownMenuItem>
+        )}
       </DropdownMenuContent>
     </DropdownMenu>
   );

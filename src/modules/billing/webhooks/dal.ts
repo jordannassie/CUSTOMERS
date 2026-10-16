@@ -1,7 +1,7 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createServiceClient } from "@/lib/supabase/service";
-import { grantCredits, grantTrialCredits } from "@/modules/credits";
+import { endTrialGrant, grantCredits, grantTrialCredits } from "@/modules/credits";
 import type { Database } from "@/types/database.types";
 import { productIdFor } from "../catalog";
 import type { PlanCredits } from "./credits";
@@ -135,6 +135,7 @@ export function createWebhookStore(db: Db = createServiceClient()) {
 
     grant: grantCredits,
     grantTrial: grantTrialCredits,
+    endTrialGrant,
 
     /**
      * Makes business_subscriptions match the subscription's items. Items name their business in metadata;

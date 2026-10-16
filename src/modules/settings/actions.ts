@@ -1,14 +1,21 @@
 "use server";
 
 import { countryCode } from "@/lib/countries";
+import { OTHER_LABEL_HINT } from "@/lib/other-label";
 import { refresh } from "next/cache";
 import { authFailure, requireAgency, type ActionResult } from "@/modules/auth";
 import { canEditTracking } from "@/modules/entitlements";
-import { questionBasisChanged, rebuildQuestionsForIndustry } from "@/modules/onboarding/server";
+import {
+  DUPLICATE_BUSINESS_TEXT,
+  keepCompetitorsNear,
+  questionBasisChanged,
+  rebuildQuestionsForIndustry,
+  savedLocation,
+} from "@/modules/onboarding/server";
 import { recountAfterNamesChange } from "@/modules/scanning";
 import { businessBefore, forgetOldWebsite, saveAgencyLogo, updateAgencyName, updateBusinessProfile, updateScanSettings } from "./dal";
 import { agencyNameInput, businessProfileInput, scanSettingsInput } from "./schema";
-import { checkLogo, matchingChanged, normalizeWebsite, websiteChanged } from "./service";
+import { checkLogo, matchingChanged, normalizeWebsite, refusesOtherLabel, websiteChanged } from "./service";
 
 type Result<T = null> = ActionResult<T>;
 
@@ -45,6 +52,10 @@ export async function saveBusinessProfile(input: unknown): Promise<Result> {
 
   const before = await businessBefore(businessId);
   if (before === undefined) return notFound;
+  const location = await savedLocation(businessId);
+  // A new "Other" label must say what the business does; one saved before this rule can stay while other fields
+  // change (2026-10-16).
+  if (refusesOtherLabel(before.industry, industry)) return { ok: false, status: 400, error: OTHER_LABEL_HINT };
   const saved = await updateBusinessProfile(businessId, {
     name,
     industry: industry || null,
@@ -59,9 +70,12 @@ export async function saveBusinessProfile(input: unknown): Promise<Result> {
     domain: site.domain,
     has_website: site.domain !== null,
   });
+  if (saved === "duplicate") return { ok: false, status: 409, error: DUPLICATE_BUSINESS_TEXT };
   if (!saved) return notFound;
   // Another website: the old site's facts, and the Google listing found through it, are read again for the new one.
   if (websiteChanged(before.domain, site.domain)) await forgetOldWebsite(businessId, site.domain);
+  // A new city, region or country: competitors picked from Google for the old place go, and Manage competitors says so.
+  const { removed } = await keepCompetitorsNear(businessId, location, { recount: false });
   // A new industry, city, region or area gets questions for it; the user's own questions and past results stay.
   const basis = { industry: industry || null, city: city || null, region: region || null, area: area === undefined ? before.area : area };
   if (questionBasisChanged({ industry: before.industry, city: before.city, region: before.region, area: before.area }, basis)) {
@@ -77,7 +91,7 @@ export async function saveBusinessProfile(input: unknown): Promise<Result> {
     city: city || null,
     area: area === undefined ? before.area : area,
   };
-  if (matchingChanged(before, after)) await recountAfterNamesChange(businessId);
+  if (removed || matchingChanged(before, after)) await recountAfterNamesChange(businessId);
   refresh();
   return { ok: true, data: null };
 }

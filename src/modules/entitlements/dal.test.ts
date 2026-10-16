@@ -3,7 +3,7 @@ import { afterAll, describe, expect, it } from "vitest";
 import { createServiceClient } from "@/lib/supabase/service";
 import { grantCredits } from "@/modules/credits";
 import { loadAgencyFacts, loadBusinessFacts } from "./dal";
-import { canAddBusiness, canSpendTopUps, canStartScan, maxQuestions, REASONS } from "./index";
+import { canAddBusiness, canFinishDraft, canSpendTopUps, canStartScan, maxQuestions, REASONS } from "./index";
 
 // Runs against the local database `npm test` rebuilds.
 const service = createServiceClient();
@@ -14,7 +14,8 @@ afterAll(async () => {
   for (const id of userIds) await service.auth.admin.deleteUser(id);
 });
 
-async function createAgency(businesses: number): Promise<Agency> {
+/** `businesses` set-up businesses, then `drafts` still being set up (status "onboarding", as the wizard makes them). */
+async function createAgency(businesses: number, drafts = 0): Promise<Agency> {
   const { data: user, error } = await service.auth.admin.createUser({
     email: `vitest-entitlements-${randomUUID()}@example.test`,
     email_confirm: true,
@@ -29,9 +30,21 @@ async function createAgency(businesses: number): Promise<Agency> {
     .select("id")
     .single();
   if (agency.error) throw agency.error;
-  const rows = Array.from({ length: businesses }, (_, i) => ({ owner_user_id: owner, agency_id: agency.data.id, name: `B${i}` }));
-  const made = await service.from("businesses").insert(rows).select("id");
+  const rows = Array.from({ length: businesses }, (_, i) => ({
+    owner_user_id: owner,
+    agency_id: agency.data.id,
+    name: `B${i}`,
+    status: "active",
+  }));
+  const made = rows.length ? await service.from("businesses").insert(rows).select("id") : { data: [], error: null };
   if (made.error) throw made.error;
+  // One at a time: migration 067 allows one wizard draft per agency, and these have no onboarding_step, like seeds.
+  for (let i = 0; i < drafts; i++) {
+    const draft = await service
+      .from("businesses")
+      .insert({ owner_user_id: owner, agency_id: agency.data.id, name: `Draft${i}`, status: "onboarding", onboarding_step: i === 0 ? 5 : null });
+    if (draft.error) throw draft.error;
+  }
   return { agencyId: agency.data.id, businessIds: made.data.map((b) => b.id) };
 }
 
@@ -66,6 +79,27 @@ describe("entitlements against the database", () => {
     expect(await canAddBusiness(agency.agencyId)).toEqual({ allowed: false, reason: REASONS.trialBusinessLimit });
   });
 
+  it("never counts a draft still being set up, or a deleted business (D-16)", async () => {
+    const agency = await createAgency(1, 2);
+    const { error } = await service
+      .from("businesses")
+      .insert({ owner_user_id: userIds.at(-1)!, agency_id: agency.agencyId, name: "Gone", status: "active", deleted_at: new Date().toISOString() });
+    if (error) throw error;
+    expect((await loadAgencyFacts(agency.agencyId)).businessCount).toBe(1);
+    expect(await canAddBusiness(agency.agencyId)).toEqual({ allowed: true, reason: "" });
+  });
+
+  it("lets a trial with 1 set-up business and a draft finish the draft", async () => {
+    const agency = await createAgency(1, 1);
+    expect(await canFinishDraft(agency.agencyId)).toEqual({ allowed: true, reason: "" });
+  });
+
+  it("refuses a third set-up business on a trial with 2 and a draft", async () => {
+    const agency = await createAgency(2, 1);
+    expect(await canFinishDraft(agency.agencyId)).toEqual({ allowed: false, reason: REASONS.trialBusinessLimit });
+    expect(await canAddBusiness(agency.agencyId)).toEqual({ allowed: false, reason: REASONS.trialBusinessLimit });
+  });
+
   it("uses the business's plan limits, and Starter limits before it has a plan", async () => {
     const agency = await createAgency(1);
     const [businessId] = agency.businessIds;
@@ -81,11 +115,12 @@ describe("entitlements against the database", () => {
   it("uses the plan chosen for a business still being set up, before it has a subscription item", async () => {
     // Picked on the new-business plan picker (?plan=pro).
     const picked = await createAgency(1);
-    await service.from("businesses").update({ requested_plan_id: "pro" }).eq("id", picked.businessIds[0]).throwOnError();
+    await service.from("businesses").update({ requested_plan_id: "pro", status: "onboarding" }).eq("id", picked.businessIds[0]).throwOnError();
     expect(await loadBusinessFacts(picked.businessIds[0])).toMatchObject({ planName: "Pro", maxCompetitors: 10 });
 
     // Picked on the pricing page: the agency step keeps it on the owner.
     const priced = await createAgency(1);
+    await service.from("businesses").update({ status: "onboarding" }).eq("id", priced.businessIds[0]).throwOnError();
     const owner = (await service.from("agencies").select("owner_user_id").eq("id", priced.agencyId).single().throwOnError()).data.owner_user_id;
     await service.auth.admin.updateUserById(owner, { app_metadata: { selected_plan: "pro" } });
     expect(await loadBusinessFacts(priced.businessIds[0])).toMatchObject({ planName: "Pro", maxCompetitors: 10 });

@@ -14,6 +14,7 @@ import {
   getCardStep,
   getCompetitorStep,
   getDetailsStep,
+  getFinishBlock,
   getModelsStep,
   getQuestionsStep,
   getSetupAddOn,
@@ -58,6 +59,7 @@ export async function StepContent({ step, state, plan, returned }: Props) {
   if (step === "website") {
     if (!draftId) {
       const blocked = await getAddBusinessBlock(next);
+      // No draft here, so nothing is saved yet: the note only says how to go on.
       if (blocked) return <UpgradeNote reason={blocked} hasBusinesses={state.hasFinishedBusiness} />;
     }
     // Back from a later step: what was entered shows again, so the same business sent again never starts over.
@@ -96,14 +98,18 @@ export async function StepContent({ step, state, plan, returned }: Props) {
   if (step === "competitors") {
     const c = await getCompetitorStep(draftId, { next });
     if (!c) redirect(stepPath("website"));
+    // Keyed by the saved list: a step shown again keeps its state (Back), but not once the list changed on the server,
+    // as when a move to another city removed competitors (2026-10-16).
     return (
       <CompetitorsStep
+        key={[...c.saved.map((s) => s.placesId ?? s.name), c.locationNote].join("|")}
         businessId={draftId}
         limit={c.limit}
         limitText={c.limit !== null ? limitMessage(c.limit) : null}
         saved={c.saved}
         suggestions={c.suggestions}
         note={c.note}
+        locationNote={c.locationNote}
         lookup={lookupCompetitorByName}
         save={saveCompetitorsStep}
       />
@@ -112,7 +118,7 @@ export async function StepContent({ step, state, plan, returned }: Props) {
   if (step === "questions") {
     const q = await getQuestionsStep(draftId, next);
     if (q === "no-city" || !q) redirect(stepPath("details"));
-    return <QuestionsStep businessId={draftId} questions={q.questions} limit={q.limit} save={saveQuestionsStep} />;
+    return <QuestionsStep businessId={draftId} questions={q.questions} limit={q.limit} updated={q.updated} save={saveQuestionsStep} />;
   }
   if (step === "card") {
     const c = await getCardStep(draftId, next);
@@ -139,12 +145,15 @@ export async function StepContent({ step, state, plan, returned }: Props) {
       />
     );
   }
-  const [m, addOn] = await Promise.all([
+  const [m, addOn, blocked] = await Promise.all([
     getModelsStep(draftId, next),
     // Only when setup finishes here: on the card step the checkout bills the business.
     state.needsCard ? null : getSetupAddOn(draftId, next),
+    state.needsCard ? null : getFinishBlock(next),
   ]);
   if (!m) redirect(stepPath("website"));
+  // A trial with 2 set-up businesses already: the draft stays saved until the plan starts (D-16).
+  if (blocked) return <UpgradeNote reason={blocked} hasBusinesses={state.hasFinishedBusiness} draftSaved />;
   return (
     <ModelsStep
       businessId={draftId}

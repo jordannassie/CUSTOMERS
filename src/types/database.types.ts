@@ -574,6 +574,9 @@ export type Database = {
         Row: {
           agency_id: string | null
           aliases: string[]
+          competitors_removed: number | null
+          competitors_removed_from: string[] | null
+          create_key: string | null
           created_at: string
           deleted_at: string | null
           description: string | null
@@ -583,6 +586,7 @@ export type Database = {
           industry: string | null
           is_chain: boolean
           language: string
+          location_changed_at: string | null
           logo_url: string | null
           models: string[]
           name: string
@@ -596,6 +600,7 @@ export type Database = {
           primary_country: string | null
           primary_region: string | null
           purge_after: string | null
+          questions_updated_at: string | null
           reach_type: string | null
           requested_plan_id: string | null
           scan_frequency: string
@@ -606,6 +611,9 @@ export type Database = {
         Insert: {
           agency_id?: string | null
           aliases?: string[]
+          competitors_removed?: number | null
+          competitors_removed_from?: string[] | null
+          create_key?: string | null
           created_at?: string
           deleted_at?: string | null
           description?: string | null
@@ -615,6 +623,7 @@ export type Database = {
           industry?: string | null
           is_chain?: boolean
           language?: string
+          location_changed_at?: string | null
           logo_url?: string | null
           models?: string[]
           name: string
@@ -628,6 +637,7 @@ export type Database = {
           primary_country?: string | null
           primary_region?: string | null
           purge_after?: string | null
+          questions_updated_at?: string | null
           reach_type?: string | null
           requested_plan_id?: string | null
           scan_frequency?: string
@@ -638,6 +648,9 @@ export type Database = {
         Update: {
           agency_id?: string | null
           aliases?: string[]
+          competitors_removed?: number | null
+          competitors_removed_from?: string[] | null
+          create_key?: string | null
           created_at?: string
           deleted_at?: string | null
           description?: string | null
@@ -647,6 +660,7 @@ export type Database = {
           industry?: string | null
           is_chain?: boolean
           language?: string
+          location_changed_at?: string | null
           logo_url?: string | null
           models?: string[]
           name?: string
@@ -660,6 +674,7 @@ export type Database = {
           primary_country?: string | null
           primary_region?: string | null
           purge_after?: string | null
+          questions_updated_at?: string | null
           reach_type?: string | null
           requested_plan_id?: string | null
           scan_frequency?: string
@@ -2366,6 +2381,10 @@ export type Database = {
         }[]
       }
       enqueue_due_scans: { Args: { p_include_real?: boolean }; Returns: number }
+      end_trial_grant: {
+        Args: { p_agency_id: string; p_trial_end: string }
+        Returns: number
+      }
       expire_grants: { Args: never; Returns: number }
       extend_trial_grant: {
         Args: { p_agency_id: string; p_expires_at: string }

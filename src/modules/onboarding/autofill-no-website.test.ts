@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { autofill, MAX_PLACE_CHOICES } from "./autofill";
 import { BLOCKED_PAGES, COFFEE_PLACE, OTHER_PLACE, fakeClients } from "./fixtures";
 import { PlacesError } from "./places";
-import { EMPTY_DETAILS, NOTES } from "./service";
+import { EMPTY_DETAILS, NOTES, unreadableNote } from "./service";
 
 // The top Google result by name and city used to be adopted silently, even when it was another business.
 describe("autofill without a website (MVP_SPEC 3.3)", () => {
@@ -74,7 +74,7 @@ describe("a source that refused, not a business that was not found (2026-10-14)"
     expect(run.result.note).toBe(NOTES.unavailable);
     // A site that blocks readers still reads as before.
     const blocked = await autofill({ domain: "sunrise-coffee.example" }, fakeClients({ pages: BLOCKED_PAGES }).clients);
-    expect(blocked.result.note).toBe(NOTES.nothingFound);
+    expect(blocked.result.note).toBe(unreadableNote("sunrise-coffee.example", true, "fill"));
   });
 });
 

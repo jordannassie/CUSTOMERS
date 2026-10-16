@@ -6,6 +6,7 @@ import { viewerTimeZone } from "@/lib/viewer-time-zone";
 import { AppShell } from "@/components/app/AppShell";
 import { AppShellSkeleton, PageSkeleton } from "@/components/app/AppShellSkeleton";
 import { suggestFeature } from "@/modules/feedback";
+import { draftLabel, draftStep, stepPath } from "@/modules/onboarding";
 import {
   BUY_CREDITS_HREF,
   getSwitcherScores,
@@ -42,15 +43,18 @@ async function AppFrame({ children }: { children: React.ReactNode }) {
   const switcherScores = getSwitcherScores(
     workspace.businesses.filter((b) => b.status !== "onboarding").map((b) => b.id),
   ).catch(() => null);
+  // An unfinished draft is never lost: the switcher links back to the step where it stopped.
+  const draft = workspace.businesses.find((b) => b.status === "onboarding");
   const widget = usage && account ? { ...usageWidget(usage, account, now), buyCreditsHref: BUY_CREDITS_HREF } : null;
 
   return (
     <AppShell
-      // Unfinished drafts stay out of the switcher; the one being set up is named on its own (BUG-092).
+      // Unfinished drafts stay out of the switcher's list; the one being set up is named on its own (BUG-092).
       businesses={workspace.businesses
         .filter((b) => b.status !== "onboarding")
         .map(({ id, name, domain, logoUrl }) => ({ id, name, domain, logoUrl }))}
-      setupName={workspace.businesses.find((b) => b.status === "onboarding")?.name ?? null}
+      setupName={draft?.name ?? null}
+      draft={draft ? { label: draftLabel(draft), href: stepPath(draftStep(draft.onboardingStep)) } : null}
       activeBusinessId={active.id}
       switchBusiness={switchBusiness}
       suggestFeature={suggestFeature}

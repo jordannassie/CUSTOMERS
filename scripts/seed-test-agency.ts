@@ -105,7 +105,11 @@ for (const b of seed.businesses) {
   );
   must(
     `add competitors for ${b.name}`,
-    await db.from("business_competitors").insert(b.competitors.map((c) => ({ business_id: business.id, ...c, city: b.city }))).select("id"),
+    // Every row lists the same columns: in one insert, a column one row lacks is sent as null for it.
+    await db
+      .from("business_competitors")
+      .insert(b.competitors.map((c) => ({ business_id: business.id, name: c.name, domain: c.domain ?? null, city: b.city })))
+      .select("id"),
   );
   console.log(`${b.name} (${b.city}, ${b.region}): ${business.id}, ${b.questions.length} questions, ${b.competitors.length} competitors`);
 }

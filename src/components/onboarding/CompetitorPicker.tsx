@@ -10,11 +10,13 @@ import type { ActionResult } from "@/modules/auth";
 import type { CompetitorCandidate, SavedCompetitor } from "@/modules/onboarding";
 import { Button } from "@/components/ui/button";
 import { AddCompetitor, type LookupAction } from "./AddCompetitor";
+import { CompetitorLocationNote } from "./CompetitorLocationNote";
 import { FullName, withBrand, type BrandedPick } from "./PickedBrand";
+import { PickerPhoneBar } from "./PickerPhoneBar";
 import { GoogleAttribution, PlaceRating } from "./PlaceBits";
 import { SuggestionRow } from "./SuggestionRow";
 
-type Picked = BrandedPick & { live: CompetitorCandidate | null };
+type Picked = BrandedPick & { live: CompetitorCandidate | null; checkNear?: string | null };
 
 export type SaveCompetitorsAction = (input: {
   businessId: string;
@@ -30,6 +32,8 @@ export type CompetitorPickerProps = {
   saved: SavedCompetitor[];
   suggestions: CompetitorCandidate[];
   note: string | null;
+  /** "We removed 2 competitors from Austin.": the business moved; saving the list confirms it. */
+  locationNote?: string | null;
   lookup: LookupAction;
   save: SaveCompetitorsAction;
   /** The onboarding wizard (B-36) moves to the next step here. */
@@ -48,7 +52,7 @@ const sameList = (a: Picked[], b: Picked[]) => a.length === b.length && a.every(
 
 // Onboarding step 5 (MVP_SPEC 3.1): tick nearby businesses from Google, add any it missed, and save.
 export function CompetitorPicker(props: CompetitorPickerProps) {
-  const { businessId, limit, limitText, suggestions, note, lookup, save, onSaved, saveLabel = "Save competitors", backHref } = props;
+  const { businessId, limit, limitText, suggestions, note, locationNote, lookup, save, onSaved, saveLabel = "Save competitors", backHref } = props;
   const router = useRouter();
   const [picked, setPicked] = useState<Picked[]>(() => props.saved.map((s) => ({ ...s })));
   const [lastSaved, setLastSaved] = useState<Picked[]>(picked);
@@ -61,8 +65,8 @@ export function CompetitorPicker(props: CompetitorPickerProps) {
   const isOtherBranch = (c: Ref) => !isPicked(c) && picked.some((p) => sameName(p, c));
   const isTaken = (c: Ref) => isPicked(c) || isOtherBranch(c);
   const full = limit !== null && picked.length >= limit;
-  // The wizard always lets the user continue; the standalone page saves only real changes.
-  const canSave = !pending && (Boolean(onSaved) || !sameList(picked, lastSaved));
+  // The wizard always lets the user continue; the standalone page saves only real changes, or confirms the list after a move.
+  const canSave = !pending && (Boolean(onSaved) || Boolean(locationNote) || !sameList(picked, lastSaved));
 
   function add(added: Picked): boolean {
     const c = withBrand(added);
@@ -112,6 +116,7 @@ export function CompetitorPicker(props: CompetitorPickerProps) {
   // One column on phones that never grows past the screen: a long name in the list widened the page (2026-10-15).
   return (
     <div className="grid grid-cols-[minmax(0,1fr)] gap-8 pb-20 lg:grid-cols-[minmax(0,1fr)_340px] lg:pb-0">
+      {locationNote ? <CompetitorLocationNote text={locationNote} /> : null}
       <div className="flex min-w-0 flex-col gap-8">
         <section aria-labelledby="suggested-title">
           <h2 id="suggested-title" className="text-base font-semibold tracking-[-0.02em]">
@@ -170,7 +175,7 @@ export function CompetitorPicker(props: CompetitorPickerProps) {
                 <li key={p.placesId ?? key(p.name)} className="flex items-center gap-2 rounded-md py-1.5 pl-1">
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-sm" title={p.name}>{p.name}</span>
-                    {!p.placesId ? <span className="block text-xs text-text-hint">Added by name</span> : null}
+                    {!p.placesId ? <span className={cn("block text-xs", p.checkNear ? "text-mid-text" : "text-text-hint")}>{p.checkNear ?? "Added by name"}</span> : null}
                     {p.aliases?.length ? <FullName google={p.aliases[0]} onUse={() => keepFullName(p)} /> : null}
                   </span>
                   {p.live ? <PlaceRating rating={p.live.rating} reviewCount={p.live.reviewCount} /> : null}
@@ -222,21 +227,16 @@ export function CompetitorPicker(props: CompetitorPickerProps) {
         </div>
       ) : null}
 
-      {/* On a phone the list sits below the fold, so the limit note and Save stay in reach here. */}
-      <div className="fixed inset-x-0 bottom-0 z-10 border-t border-border bg-surface px-5 py-3 lg:hidden">
-        {limitHit && limitText ? (
-          <p aria-hidden className="mb-2 rounded-md bg-mid-bg px-3 py-2 text-[13px] text-mid-text">
-            {limitText}
-          </p>
-        ) : null}
-        <div className="flex items-center justify-between gap-3">
-          <span className="text-[13px] tabular-nums text-muted-foreground">{count}</span>
-          <Button type="button" disabled={!canSave} onClick={submit}>
-            {pending ? <Loader2 aria-hidden className="animate-spin" /> : null}
-            {saveLabel}
-          </Button>
-        </div>
-      </div>
+      {/* On a phone the list sits below the fold, so Back, the limit note and Save stay in reach here. */}
+      <PickerPhoneBar
+        backHref={backHref}
+        count={count}
+        limitNote={limitHit ? limitText : null}
+        canSave={canSave}
+        pending={pending}
+        saveLabel={saveLabel}
+        onSave={submit}
+      />
     </div>
   );
 }

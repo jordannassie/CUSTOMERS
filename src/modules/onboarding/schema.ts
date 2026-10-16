@@ -62,6 +62,10 @@ export type AutofillResult = {
    * keeps only what they typed and no place_id is saved. Shown live, never stored (D-73).
    */
   choices?: PlaceChoice[];
+  /** Said above the listings when the website could not be read (2026-10-16); the no-website picker has its own. */
+  pickNote?: string;
+  /** Neither the website nor Google answered: the website step offers "Try again" (2026-10-16). */
+  retry?: boolean;
 };
 
 /** One Google listing offered as "is this your business?", with what the form gets if the user picks it. */

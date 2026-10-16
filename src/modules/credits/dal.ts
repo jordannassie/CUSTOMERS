@@ -117,6 +117,19 @@ export async function extendTrialGrant(agencyId: string, expiresAt: Date): Promi
   return data;
 }
 
+/**
+ * Ends the open trial grant at the real trial end when the trial ended early ("Start my plan now", 2026-10-16), and
+ * removes what is left when that is already past. Never lengthens a grant. Returns the credits removed.
+ */
+export async function endTrialGrant(agencyId: string, trialEnd: Date): Promise<number> {
+  const { data, error } = await createServiceClient().rpc("end_trial_grant", {
+    p_agency_id: agencyId,
+    p_trial_end: trialEnd.toISOString(),
+  });
+  if (error) fail("end_trial_grant", error);
+  return data;
+}
+
 /** Zeroes every expired grant. Returns how many grants expired. */
 export async function expireGrants(): Promise<number> {
   const { data, error } = await createServiceClient().rpc("expire_grants");

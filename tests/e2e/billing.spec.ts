@@ -59,7 +59,7 @@ async function logIn(page: Page, seed: Seed): Promise<{ ends: string; userId: st
   for (const b of seed.businesses) {
     const { data: business } = await db
       .from("businesses")
-      .insert({ owner_user_id: user.user.id, agency_id: agency.id, name: b.name, status: "active", domain: "example.test" })
+      .insert({ owner_user_id: user.user.id, agency_id: agency.id, name: b.name, status: "active", domain: `${randomUUID().slice(0, 8)}.example.test` })
       .select("id")
       .single()
       .throwOnError();

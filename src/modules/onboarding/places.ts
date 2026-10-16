@@ -70,14 +70,30 @@ export class PlacesError extends Error {
   }
 }
 
+// Places answers in well under a second; a slow call is cut off sooner than the 25 seconds Firecrawl gets, so the
+// one retry still fits in an interactive auto-fill.
+export const PLACES_TIMEOUT_MS = 10_000;
+const NETWORK_RETRY_MS = 800;
+
 export function createPlacesSearch(apiKey: string, deps: HttpDeps = {}): SearchPlaces {
-  return async (textQuery) => {
-    const { status, body } = await postJson(
+  const call = (textQuery: string) =>
+    postJson(
       PLACES_TEXT_SEARCH_URL,
       { "X-Goog-Api-Key": apiKey, "X-Goog-FieldMask": PLACES_FIELD_MASK },
       { textQuery, pageSize: PAGE_SIZE },
-      deps,
+      { timeoutMs: PLACES_TIMEOUT_MS, ...deps },
     );
+  return async (textQuery) => {
+    let response;
+    try {
+      response = await call(textQuery);
+    } catch {
+      // "fetch failed" or a timeout (2026-10-16, bennucoffee.com): tried once more after a short wait. A busy or
+      // failing answer (429, 5xx) is already tried again inside postJson.
+      await new Promise((resolve) => setTimeout(resolve, deps.retryDelayMs ?? NETWORK_RETRY_MS));
+      response = await call(textQuery);
+    }
+    const { status, body } = response;
     if (status < 200 || status >= 300) throw new PlacesError(`Places returned ${status}`);
     return toCandidates(body);
   };

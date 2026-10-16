@@ -87,7 +87,7 @@ describe("website step", () => {
     expect(second.businessId).toBe(first.businessId);
     const drafts = await service.from("businesses").select("id").eq("owner_user_id", userId);
     expect(drafts.data).toHaveLength(1);
-    expect(first.autofill.details).toMatchObject({ name: "Sunrise Coffee Bar & Roastery", phone: "(217) 555-0142", industry: "coffee_shop" });
+    expect(first.autofill?.details).toMatchObject({ name: "Sunrise Coffee Bar & Roastery", phone: "(217) 555-0142", industry: "coffee_shop" });
 
     const row = await business(first.businessId);
     expect(row).toMatchObject({ name: COFFEE_DOMAIN, phone: null, primary_city: null, places_id: COFFEE_PLACE.placeId, onboarding_step: 4 });

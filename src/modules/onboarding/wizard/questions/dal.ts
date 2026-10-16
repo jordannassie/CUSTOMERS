@@ -15,6 +15,8 @@ export type QuestionsStep = {
   businessName: string;
   questions: string[];
   limit: number;
+  /** The suggestions were rebuilt for new business details (Back to the details step): said once, until saved. */
+  updated: boolean;
 };
 
 /**
@@ -30,7 +32,7 @@ export async function loadQuestionsStep(
   const supabase = await createClient();
   const { data: b, error } = await supabase
     .from("businesses")
-    .select("name, aliases, domain, industry, services, description, primary_city, primary_region, primary_area, places_id, is_chain")
+    .select("name, aliases, domain, industry, services, description, primary_city, primary_region, primary_area, places_id, is_chain, questions_updated_at")
     .eq("id", businessId)
     .eq("owner_user_id", userId)
     .maybeSingle();
@@ -38,9 +40,13 @@ export async function loadQuestionsStep(
   if (!b) return null;
   if (!b.primary_city) return "no-city";
 
-  const [rows, limit] = await Promise.all([activeQuestions(businessId), questionLimit(businessId)]);
+  const [rows, limit, rivals] = await Promise.all([
+    activeQuestions(businessId),
+    questionLimit(businessId),
+    supabase.from("business_competitors").select("name, aliases").eq("business_id", businessId),
+  ]);
   if (rows.length > 0) {
-    return { businessName: b.name, questions: rows.map((r) => r.prompt), limit };
+    return { businessName: b.name, questions: rows.map((r) => r.prompt), limit, updated: b.questions_updated_at !== null };
   }
 
   const set = await prepareQuestions(
@@ -56,6 +62,8 @@ export async function loadQuestionsStep(
       name: b.name,
       aliases: b.aliases,
       domain: b.domain,
+      // Competitors' names never appear in a question (2026-10-16).
+      competitors: (rivals.data ?? []).flatMap((c) => [c.name, ...(c.aliases ?? [])]),
       chain: b.is_chain,
       // Google's types, read live (D-73): a fast food listing gets fast food questions.
       ...(await placeTypesOf(b.places_id, clients)),
@@ -82,7 +90,7 @@ export async function loadQuestionsStep(
     })),
   });
   if (saveError) throw new Error(`Could not save questions: ${saveError.message}`);
-  return { businessName: b.name, questions: saved.map((r) => r.prompt), limit };
+  return { businessName: b.name, questions: saved.map((r) => r.prompt), limit, updated: false };
 }
 
 // Rows saved in one insert share a timestamp, so each gets its own to keep the list in order.
@@ -136,14 +144,33 @@ export async function saveQuestions(userId: string, businessId: string, question
       .from("tracked_prompts")
       .insert(add.map((prompt, i) => ({ business_id: businessId, prompt, source: "custom", active: true, created_at: inOrder(i) })));
     if (error) throw new Error(`Could not add questions: ${error.message}`);
+    await dropRepeats(businessId);
   }
   const { error } = await createServiceClient()
     .from("businesses")
-    .update({ onboarding_step: nextStepNumber(current, "questions") })
+    // Saved: the "we updated your questions" notice has been seen.
+    .update({ onboarding_step: nextStepNumber(current, "questions"), questions_updated_at: null })
     .eq("id", businessId)
     .eq("owner_user_id", userId);
   if (error) throw new Error(`Could not save progress: ${error.message}`);
   return { ok: true, count: unique.length };
+}
+
+/**
+ * Two saves at once (a second tab) each add the same new question. tracked_prompts has no unique text index, so the
+ * later copies are deleted: the first by created_at then id, the same choice in every save. A draft has no answers.
+ */
+async function dropRepeats(businessId: string): Promise<void> {
+  const seen = new Set<string>();
+  const repeats = (await activeQuestions(businessId)).filter((r) => {
+    const key = r.prompt.trim().toLowerCase();
+    if (seen.has(key)) return true;
+    seen.add(key);
+    return false;
+  });
+  if (!repeats.length) return;
+  const { error } = await createServiceClient().from("tracked_prompts").delete().in("id", repeats.map((r) => r.id)).eq("business_id", businessId);
+  if (error) throw new Error(`Could not remove repeated questions: ${error.message}`);
 }
 
 export type ModelsStep = {

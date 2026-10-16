@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Info } from "lucide-react";
 import { countryCode } from "@/lib/countries";
 import { INDUSTRIES, INDUSTRY_LABELS, isIndustry, servicesPlaceholder } from "@/lib/industries";
+import { isVagueOtherLabel, OTHER_LABEL_HINT } from "@/lib/other-label";
 import type { ActionResult } from "@/modules/auth";
 import type { AutofillResult, BusinessDetails } from "@/modules/onboarding/schema";
 import { domainBrand } from "@/modules/scanning/mention-text";
@@ -99,7 +100,8 @@ function DetailsForm({ businessId, domain, details, industryText, aliases, save,
     const bad = fields.show({
       name: v.name.trim() ? undefined : "Enter your business name.",
       industry: v.industry ? undefined : "Choose an industry.",
-      otherIndustry: v.industry === "other" && !v.otherIndustry.trim() ? "Say what kind of business it is." : undefined,
+      // "Consultant" or "Store" says too little to write questions from (2026-10-16); the server refuses it too.
+      otherIndustry: v.industry === "other" && isVagueOtherLabel(v.otherIndustry) ? OTHER_LABEL_HINT : undefined,
       aliases: aliasesProblem(parseServices(v.aliases)),
       city: v.city.trim() ? undefined : "Enter the city your business is in.",
       country: v.country ? undefined : "Choose the country your business is in.",
@@ -173,7 +175,7 @@ function DetailsForm({ businessId, domain, details, industryText, aliases, save,
               onChange={set("otherIndustry")}
               required
               maxLength={80}
-              placeholder="Florist"
+              placeholder="Florist, marketing agency, IT consultant"
               className="h-11 text-base"
               {...fields.fieldProps("otherIndustry")}
             />

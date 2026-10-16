@@ -3,6 +3,7 @@ import { countryCode } from "@/lib/countries";
 import { getCurrentAgency, requireAgency, requireUser, type GuardOptions } from "@/modules/auth";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
+import { duplicateBusiness } from "@/modules/onboarding/server";
 import { FREQUENCIES, MODEL_IDS, type Frequency, type ModelId } from "./schema";
 import type { MatchedFields } from "./service";
 
@@ -158,20 +159,23 @@ export async function forgetOldWebsite(businessId: string, newDomain: string | n
   if (factsError) throw new Error(`Could not clear the old website's facts: ${factsError.message}`);
 }
 
-/** False when the business is not in the user's agency. */
-export async function updateBusinessProfile(businessId: string, update: ProfileUpdate): Promise<boolean> {
+/**
+ * False when the business is not in the user's agency; "duplicate" when another business in it already has this
+ * website (migration 067).
+ */
+export async function updateBusinessProfile(businessId: string, update: ProfileUpdate): Promise<boolean | "duplicate"> {
   return updateBusiness(businessId, update, "save the business profile");
 }
 
 export async function updateScanSettings(businessId: string, models: ModelId[], frequency: Frequency): Promise<boolean> {
-  return updateBusiness(businessId, { models, scan_frequency: frequency }, "save the scan settings");
+  return (await updateBusiness(businessId, { models, scan_frequency: frequency }, "save the scan settings")) === true;
 }
 
 async function updateBusiness(
   businessId: string,
   update: ProfileUpdate | { models: ModelId[]; scan_frequency: Frequency },
   what: string,
-): Promise<boolean> {
+): Promise<boolean | "duplicate"> {
   const { agency } = await requireAgency();
   const { data, error } = await createServiceClient()
     .from("businesses")
@@ -180,6 +184,7 @@ async function updateBusiness(
     .eq("agency_id", agency.id)
     .select("id")
     .maybeSingle();
+  if (duplicateBusiness(error)) return "duplicate";
   if (error) throw new Error(`Could not ${what}: ${error.message}`);
   return !!data;
 }

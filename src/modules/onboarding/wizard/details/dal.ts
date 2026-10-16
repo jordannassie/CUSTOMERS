@@ -4,6 +4,8 @@ import { isIndustry } from "@/lib/industries";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { liveListing } from "../../dal";
+import { keepCompetitorsNear, savedLocation } from "../../competitor-location/dal";
+import type { CompetitorPlaces } from "../../competitor-places";
 import type { AutofillOutput } from "../../prompts/business-autofill.v1";
 import type { BusinessDetails } from "../../schema";
 import type { QuestionClients } from "../../questions";
@@ -66,10 +68,15 @@ export async function loadDetailsStep(userId: string, businessId: string): Promi
 }
 
 /** Step 4: saves what the user confirmed about their own draft business. False when it is not their draft. */
-export async function saveDetails(userId: string, input: DetailsStepInput, clients?: QuestionClients): Promise<boolean> {
+export async function saveDetails(
+  userId: string,
+  input: DetailsStepInput,
+  clients?: QuestionClients,
+  places?: CompetitorPlaces,
+): Promise<boolean> {
   const current = await ownDraftStep(userId, input.businessId);
   if (current === undefined) return false;
-  const before = await savedQuestionBasis(input.businessId);
+  const [before, location] = await Promise.all([savedQuestionBasis(input.businessId), savedLocation(input.businessId)]);
   const { error } = await createServiceClient()
     .from("businesses")
     .update({
@@ -88,8 +95,26 @@ export async function saveDetails(userId: string, input: DetailsStepInput, clien
     .eq("id", input.businessId)
     .eq("owner_user_id", userId);
   if (error) throw new Error(`Could not save business details: ${error.message}`);
-  // Back on this step with a new industry, city, region or area: the questions already made were for the old one.
-  const after = { industry: input.industry, city: input.city, region: input.state || null, area: input.area === undefined ? (before?.area ?? null) : input.area };
-  if (before && questionBasisChanged(before, after)) await rebuildQuestionsForIndustry(input.businessId, clients);
+  // Back on this step with a new city, region or country: competitors picked from Google for the old place go, and the
+  // competitors step says so once.
+  await keepCompetitorsNear(input.businessId, location, { places });
+  // Back on this step with a new industry, services, city, region or area: the questions already made were for the old
+  // one. The user's own questions stay, and the questions step says once that the suggestions changed.
+  const after = {
+    industry: input.industry,
+    services: input.services,
+    city: input.city,
+    region: input.state || null,
+    area: input.area === undefined ? (before?.area ?? null) : input.area,
+  };
+  if (before && questionBasisChanged(before, after)) {
+    const rebuilt = await rebuildQuestionsForIndustry(input.businessId, clients);
+    if (rebuilt.rebuilt) await markQuestionsUpdated(input.businessId);
+  }
   return true;
+}
+
+async function markQuestionsUpdated(businessId: string): Promise<void> {
+  const { error } = await createServiceClient().from("businesses").update({ questions_updated_at: new Date().toISOString() }).eq("id", businessId);
+  if (error) throw new Error(`Could not save the questions notice: ${error.message}`);
 }

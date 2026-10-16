@@ -39,7 +39,8 @@ export async function queueTestJob(agency: { agencyId: string; ownerUserId: stri
       owner_user_id: agency.ownerUserId,
       agency_id: agency.agencyId,
       name: "Bean There Coffee",
-      domain: "beanthere.example",
+      // Its own website: migration 067 refuses two live businesses with one website in an agency.
+      domain: `beanthere-${randomUUID().slice(0, 8)}.example`,
       primary_city: city,
       primary_region: "CA",
       primary_country: "United States",

@@ -1,5 +1,24 @@
 // The onboarding wizard's steps and resume rules (MVP_SPEC 3.1, D-14). Pure, so the pages, actions and
 // tests share them. Numbers match businesses.onboarding_step.
+//
+// What each Continue saves, and why Back then Continue (changed or not) never duplicates anything (2026-10-16):
+// - agency (2): saveAgency upserts the one agency per owner; the welcome email has its own key.
+// - website (3): startBusiness reuses the agency's one draft (migration 067 refuses a second, and the browser's
+//   create key finds the same draft on a double submit). Same website, or name and city: no auto-fill again when it
+//   already ran (autofillDone), so no extra AI cost. Another website: the draft starts over (restart/dal.ts). A website
+//   another business in the agency has: "This business is already in your account".
+// - details (4): an update of the draft. A new industry, services, city, region or area rebuilds the suggested
+//   questions (the user's own stay) and sets questions_updated_at, which the questions step shows once.
+// - competitors (5): saveCompetitors plans keep, add and remove by name, so the same list changes nothing; two saves at
+//   once retry once on the unique name index. Questions are left alone.
+// - questions (6): the first visit saves one set (save_first_questions locks the business); saving keeps unchanged
+//   rows, adds and removes the rest, drops a question two saves added at once, and clears the notice.
+// - models (7): saveModels updates the draft, or finishWizard (with addBusinessAtSetup, whose Stripe call has an
+//   idempotency key) when no card follows.
+// - card (8): one Checkout Session per visit; startCardCheckout refuses once the agency has a subscription, and
+//   finishCardStep only finishes after the webhook (or the recovery from Stripe) linked it. Credits come from webhooks.
+// Every step's Continue is disabled while it saves, and nextStepNumber never moves progress backwards, so a refresh
+// returns to the same step with what was saved.
 
 export const WIZARD_STEPS = [
   { slug: "agency", number: 2, label: "Your agency" },
@@ -56,8 +75,31 @@ export function needsCard(agency: { isTest: boolean; hasSubscription: boolean },
 export function resumeStep(state: WizardState): StepSlug | null {
   if (!state.hasAgency) return "agency";
   if (!state.draft) return state.hasFinishedBusiness ? null : "website";
-  const step = Math.max(state.draft.step ?? 0, stepNumber("details"));
+  return draftStep(state.draft.step);
+}
+
+/** The step a draft continues at: where it stopped, never before details (the website step made it). */
+export function draftStep(onboardingStep: number | null): StepSlug {
+  const step = Math.max(onboardingStep ?? 0, stepNumber("details"));
   return WIZARD_STEPS.find((s) => s.number === step)?.slug ?? "models";
+}
+
+/**
+ * "Add a business" everywhere in the app links here: the agency's open draft continues where it stopped, and only with
+ * no draft does a new one start on the website step. The trial limit counts set-up businesses only (D-16).
+ */
+export const ADD_BUSINESS_PATH = "/onboarding?add=1";
+
+/** Where "Add a business" goes: the resume step, or the website step when nothing is being set up. */
+export function addBusinessStep(state: WizardState): StepSlug {
+  return resumeStep(state) ?? "website";
+}
+
+/** What the business switcher calls a draft: its name, else its website, else a stand-in (the name starts as the website). */
+export function draftLabel(draft: { name: string | null; domain: string | null }): string {
+  const name = draft.name?.trim() ?? "";
+  const domain = draft.domain?.trim() ?? "";
+  return `Finish setting up ${name && name !== domain ? name : domain || "your new business"}`;
 }
 
 /** A step can be opened when it is the resume step or one already passed; later steps redirect back. */

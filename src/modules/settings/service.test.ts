@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { aliasesProblem, aliasExample, checkLogo, LOGO_MAX_BYTES, matchingChanged, normalizeWebsite, parseServices } from "./service";
+import { aliasesProblem, aliasExample, checkLogo, LOGO_MAX_BYTES, matchingChanged, normalizeWebsite, parseServices, refusesOtherLabel } from "./service";
 
 const bytes = (...values: number[]) => new Uint8Array(values);
 const text = (s: string) => new TextEncoder().encode(s);
@@ -98,3 +98,14 @@ describe("aliasExample", () => {
   });
 });
 
+
+// 2026-10-16: questions are written from an "Other" label, so a vague new one is refused; an old one can stay.
+describe("refusesOtherLabel", () => {
+  it("refuses a change to a vague label only", () => {
+    expect(refusesOtherLabel("Plumber", "Consultant")).toBe(true);
+    expect(refusesOtherLabel(null, "Store")).toBe(true);
+    expect(refusesOtherLabel("Plumber", "IT consultant")).toBe(false);
+    expect(refusesOtherLabel("Store", "Store")).toBe(false);
+    expect(refusesOtherLabel("Plumber", "plumber")).toBe(false);
+  });
+});

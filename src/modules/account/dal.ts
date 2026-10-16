@@ -26,6 +26,8 @@ export type AccountView = {
   hasPassword: boolean;
   agencyName: string | null;
   waitDays: number;
+  /** On a free trial: a deleted business leaves the plan at once and is never charged (BUG-194). */
+  trialing: boolean;
 };
 
 export async function getAccountView(options: GuardOptions = {}): Promise<AccountView> {
@@ -40,6 +42,7 @@ export async function getAccountView(options: GuardOptions = {}): Promise<Accoun
     hasPassword: providers.includes("email"),
     agencyName: agency?.name ?? null,
     waitDays: deletionWaitDays(),
+    trialing: agency?.status === "trialing",
   };
 }
 

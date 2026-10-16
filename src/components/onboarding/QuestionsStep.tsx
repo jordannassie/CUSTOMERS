@@ -2,7 +2,7 @@
 
 import { useId, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, X } from "lucide-react";
+import { Info, Plus, X } from "lucide-react";
 import { cn } from "cn";
 import type { ActionResult } from "@/modules/auth";
 import { Button } from "@/components/ui/button";
@@ -14,13 +14,15 @@ type Props = {
   businessId: string;
   questions: string[];
   limit: number;
+  /** The suggestions were rebuilt for new business details (Back to the details step). */
+  updated?: boolean;
   save: (input: { businessId: string; questions: string[] }) => Promise<ActionResult<{ count: number }>>;
 };
 
 const MIN_LENGTH = 8;
 
 // MVP_SPEC 3.1 step 6: the questions each scan asks AI. Edit, remove or add, up to the plan's limit.
-export function QuestionsStep({ businessId, questions, limit, save }: Props) {
+export function QuestionsStep({ businessId, questions, limit, updated = false, save }: Props) {
   const router = useRouter();
   const [rows, setRows] = useState(() => questions.map((text, id) => ({ id, text })));
   const nextId = useRef(questions.length);
@@ -66,6 +68,12 @@ export function QuestionsStep({ businessId, questions, limit, save }: Props) {
 
   return (
     <form onSubmit={submit} className="flex flex-col gap-6" noValidate>
+      {updated ? (
+        <div role="status" data-testid="questions-updated" className="flex items-start gap-3 rounded-md border border-border bg-primary-tint px-4 py-3">
+          <Info aria-hidden className="mt-0.5 size-4 shrink-0 text-primary" />
+          <p className="text-sm">We updated your questions to match your new business details. Questions you wrote yourself are kept.</p>
+        </div>
+      ) : null}
       <div className="rounded-md border border-border bg-surface">
         <div className="flex items-baseline justify-between gap-3 border-b border-border px-4 py-3">
           <h2 className="text-sm font-medium">Questions we ask AI</h2>

@@ -14,7 +14,7 @@ import {
 } from "./question-fixtures";
 import { asksForBusiness, balancePicks, cityLabel, fallbackQuestions, isUsableTemplate } from "./question-rules";
 import { prepareQuestions } from "./questions";
-import { MAX_PER_INTENT, PICK_MODEL, QUESTION_COUNT } from "./prompts/pick-questions.v7";
+import { MAX_PER_INTENT, PICK_MODEL, QUESTION_COUNT } from "./prompts/pick-questions.v8";
 
 const intents = (qs: { intent: string }[]) => new Set(qs.map((q) => q.intent));
 const maxPerIntent = (qs: { intent: string }[]) =>

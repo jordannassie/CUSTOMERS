@@ -2,6 +2,8 @@
 // pinned in one place. The client is injected, so suites test their grading with a fake judge.
 import Anthropic from "@anthropic-ai/sdk";
 import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
+import OpenAI from "openai";
+import { zodTextFormat } from "openai/helpers/zod";
 import type { z } from "zod";
 
 export const JUDGE_MODEL = "claude-haiku-4-5";
@@ -48,4 +50,36 @@ export function createJudge(apiKey: string, deps: { fetch?: typeof fetch } = {})
       .join("");
     return req.schema.parse(JSON.parse(text));
   };
+}
+
+// A judge from the other model family, for suites whose writer is Claude (principle 5: a model never grades its own
+// output, and a judge of the same family tends to agree with it). Same Judge shape, so suites pick by writer.
+export const OPENAI_JUDGE_MODEL = "gpt-4.1";
+
+export function createOpenAiJudge(apiKey: string, deps: { fetch?: typeof fetch } = {}): Judge {
+  const client = new OpenAI({ apiKey, fetch: deps.fetch, maxRetries: 2, timeout: TIMEOUT_MS });
+  return async (req) => {
+    let response: OpenAI.Responses.Response;
+    try {
+      response = await client.responses.create({
+        model: OPENAI_JUDGE_MODEL,
+        instructions: req.system,
+        input: req.user,
+        max_output_tokens: JUDGE_MAX_TOKENS,
+        store: false,
+        text: { format: zodTextFormat(req.schema, "judge") },
+      });
+    } catch (err) {
+      throw new JudgeApiError("judge request failed", err);
+    }
+    if (response.status !== "completed") throw new JudgeApiError(`judge stopped with ${response.status}`);
+    return req.schema.parse(JSON.parse(response.output_text));
+  };
+}
+
+/** "anthropic" for claude-*, "openai" for gpt-* and o-series: two models of one family must not grade each other. */
+export function modelFamily(model: string): "anthropic" | "openai" | "other" {
+  if (model.startsWith("claude")) return "anthropic";
+  if (/^(gpt|o\d)/.test(model)) return "openai";
+  return "other";
 }

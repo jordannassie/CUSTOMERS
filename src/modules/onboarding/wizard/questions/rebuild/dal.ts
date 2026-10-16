@@ -17,23 +17,33 @@ export function sameIndustry(a: string | null | undefined, b: string | null | un
   return (a ?? "").trim().toLowerCase() === (b ?? "").trim().toLowerCase();
 }
 
-/** What the suggested questions are written for: the trade and the place. */
-export type QuestionBasis = { industry: string | null; city: string | null; region: string | null; area: string | null };
+/** What the suggested questions are written for: the trade, the services and the place. */
+export type QuestionBasis = {
+  industry: string | null;
+  city: string | null;
+  region: string | null;
+  area: string | null;
+  /** Compared only when both sides have them: Settings leaves them out. */
+  services?: string[];
+};
 
-/** True when the trade, city, region or area changed (ignoring case and spacing), so the suggestions are out of date. */
+const serviceSet = (list: string[]) => [...new Set(list.map((s) => s.trim().toLowerCase()).filter(Boolean))].sort().join("\n");
+
+/** True when the trade, services, city, region or area changed (ignoring case, spacing and order), so the suggestions are out of date. */
 export function questionBasisChanged(before: QuestionBasis, after: QuestionBasis): boolean {
+  if (before.services && after.services && serviceSet(before.services) !== serviceSet(after.services)) return true;
   return (["industry", "city", "region", "area"] as const).some((k) => !sameIndustry(before[k], after[k]));
 }
 
-/** The saved industry and place; the caller has already checked the business is the user's. */
+/** The saved industry, services and place; the caller has already checked the business is the user's. */
 export async function savedQuestionBasis(businessId: string): Promise<QuestionBasis | null> {
   const { data, error } = await createServiceClient()
     .from("businesses")
-    .select("industry, primary_city, primary_region, primary_area")
+    .select("industry, services, primary_city, primary_region, primary_area")
     .eq("id", businessId)
     .maybeSingle();
   if (error) throw new Error(`Could not load business: ${error.message}`);
-  return data && { industry: data.industry, city: data.primary_city, region: data.primary_region, area: data.primary_area };
+  return data && { industry: data.industry, services: data.services, city: data.primary_city, region: data.primary_region, area: data.primary_area };
 }
 
 export type RebuildResult = { rebuilt: false } | { rebuilt: true; added: number; retired: number };
@@ -61,6 +71,7 @@ export async function rebuildQuestionsForIndustry(businessId: string, clients?: 
   const active = (current ?? []).filter((q) => q.active);
   if (!active.length) return { rebuilt: false };
 
+  const { data: rivals } = await db.from("business_competitors").select("name, aliases").eq("business_id", businessId);
   const questionClients = clients ?? liveQuestionClients({ accountUserId: b.owner_user_id, businessId });
   const set = await prepareQuestions(
     {
@@ -74,6 +85,8 @@ export async function rebuildQuestionsForIndustry(businessId: string, clients?: 
       name: b.name,
       aliases: b.aliases,
       domain: b.domain,
+      // Competitors' names never appear in a question (2026-10-16).
+      competitors: (rivals ?? []).flatMap((c) => [c.name, ...(c.aliases ?? [])]),
       chain: b.is_chain,
       // Google's types, read live (D-73): a fast food listing gets fast food questions.
       ...(await placeTypesOf(b.places_id, questionClients)),

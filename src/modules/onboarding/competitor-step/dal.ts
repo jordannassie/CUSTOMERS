@@ -12,6 +12,7 @@ import {
   COMPETITOR_NOTES,
   MAX_LOOKUP_RESULTS,
   competitorFields,
+  competitorInsertRow,
   discoverCompetitors,
   limitMessage,
   lookupQuery,
@@ -22,6 +23,7 @@ import {
   type BusinessForSearch,
   type ConfirmedCompetitor,
 } from "../competitors";
+import { clearLocationNotes, loadLocationNotes } from "../competitor-location/notes/dal";
 import { PlacesError } from "../places";
 
 // The competitors step (MVP_SPEC 3.1 step 5): suggestions near the business, lookups by name and the saved list.
@@ -63,7 +65,13 @@ async function competitorLimit(businessId: string): Promise<number | null> {
 }
 
 /** A saved competitor: the user's name and place id from the database, Places values fetched live. */
-export type SavedCompetitor = { name: string; placesId: string | null; live: CompetitorCandidate | null };
+export type SavedCompetitor = {
+  name: string;
+  placesId: string | null;
+  live: CompetitorCandidate | null;
+  /** "Added by name: check it is near Dallas" when it was typed before the business moved. */
+  checkNear?: string | null;
+};
 
 export type CompetitorStep = {
   businessName: string;
@@ -72,6 +80,8 @@ export type CompetitorStep = {
   saved: SavedCompetitor[];
   suggestions: CompetitorCandidate[];
   note: string | null;
+  /** "We removed 2 competitors from Austin.", shown until the list is saved again. */
+  locationNote: string | null;
 };
 
 /** Everything the competitor step shows. Null when the business is not the user's. */
@@ -86,24 +96,34 @@ export async function loadCompetitorStep(
   const supabase = await createClient();
   const { data: rows, error } = await supabase
     .from("business_competitors")
-    .select("name, places_id, place_id")
+    .select("name, places_id, place_id, created_at")
     .eq("business_id", businessId)
     .order("created_at");
   if (error) throw new Error(`Could not load competitors: ${error.message}`);
 
-  const [found, saved, limit] = await Promise.all([
+  const [found, saved, limit, notes] = await Promise.all([
     discoverCompetitors(business, places),
     Promise.all(
-      rows.map(async (row): Promise<SavedCompetitor> => {
+      rows.map(async (row): Promise<SavedCompetitor & { createdAt: string }> => {
         // place_id is where older code kept the id; it moves to places_id on the next save.
         const placesId = row.places_id ?? row.place_id;
         const live = placesId ? await places.details(placesId).catch(() => null) : null;
-        return { name: row.name, placesId, live };
+        return { name: row.name, placesId, live, createdAt: row.created_at };
       }),
     ),
     competitorLimit(businessId),
+    loadLocationNotes(businessId),
   ]);
-  return { businessName: business.name, limit, saved, ...found };
+  return {
+    businessName: business.name,
+    limit,
+    saved: saved.map(({ createdAt, ...c }) => {
+      const checkNear = notes.forCompetitor({ placesId: c.placesId, createdAt });
+      return checkNear ? { ...c, checkNear } : c;
+    }),
+    ...found,
+    locationNote: notes.removed,
+  };
 }
 
 /** "Add by name" with a Places lookup near the business. Null when the business is not the user's. */
@@ -138,7 +158,21 @@ export async function saveCompetitors(
   const limit = await competitorLimit(businessId);
   if (limit !== null && list.length > limit) return { ok: false, status: 403, error: limitMessage(limit) };
 
-  // The business was checked as the user's above; users can't write competitors themselves (migration 047, SEC-10).
+  // Two saves at once (a double click, a second tab) both add the same name; the unique name index refuses the later
+  // one. Planned again from what is saved now, that save only keeps rows, so both end with the same list.
+  let saved = await writeCompetitors(businessId, list);
+  const retried = saved === "conflict";
+  if (retried) saved = await writeCompetitors(businessId, list);
+  if (saved === "conflict") return { ok: false, status: 409, error: "That list changed in another tab. Reload and try again." };
+  // Saved answers are checked for the new list, so a new competitor is not "still collecting" (BUG-122).
+  if (retried || saved.changed) await recountAfterNamesChange(businessId);
+  // The list was confirmed for where the business is now: the "removed" note and "check it is near" lines go.
+  await clearLocationNotes(businessId);
+  return { ok: true, count: list.length };
+}
+
+async function writeCompetitors(businessId: string, list: ConfirmedCompetitor[]): Promise<{ changed: boolean } | "conflict"> {
+  // The business was checked as the user's by the caller; users can't write competitors themselves (migration 047, SEC-10).
   const supabase = await createClient();
   const existing = await supabase.from("business_competitors").select("id, name, aliases").eq("business_id", businessId);
   if (existing.error) throw new Error(`Could not load competitors: ${existing.error.message}`);
@@ -156,15 +190,11 @@ export async function saveCompetitors(
     if (error) throw new Error(`Could not update a competitor: ${error.message}`);
   }
   if (plan.add.length) {
-    const { error } = await createServiceClient().from("business_competitors").insert(plan.add.map((c) => ({ business_id: businessId, ...competitorFields(c) })));
-    if (error) {
-      if (error.code === "23505") return { ok: false, status: 409, error: "That list changed in another tab. Reload and try again." };
-      throw new Error(`Could not add competitors: ${error.message}`);
-    }
+    const { error } = await createServiceClient().from("business_competitors").insert(plan.add.map((c) => competitorInsertRow(businessId, c)));
+    if (error?.code === "23505") return "conflict";
+    if (error) throw new Error(`Could not add competitors: ${error.message}`);
   }
-  // Saved answers are checked for the new list, so a new competitor is not "still collecting" (BUG-122).
-  if (plan.add.length || plan.remove.length || plan.keep.some((k) => k.competitor.aliases?.length)) await recountAfterNamesChange(businessId);
-  return { ok: true, count: list.length };
+  return { changed: plan.add.length > 0 || plan.remove.length > 0 || plan.keep.some((k) => k.competitor.aliases?.length) };
 }
 
 /** A kept competitor keeps its other names; a new one from this save (the long Google name) is added to them. */

@@ -6,6 +6,7 @@ export type LimitEntitlement = Entitlement & { limit: number | null };
 export type AgencyFacts = {
   id: string;
   status: string;
+  /** Set-up (not "onboarding"), not deleted businesses: drafts never count toward the trial limit (D-16). */
   businessCount: number;
   /** agency_credit_balance.balance: unexpired grants minus holds minus overdraft. */
   balance: number;
@@ -67,6 +68,17 @@ export function canEditTracking(agency: Pick<AgencyFacts, "status">): Entitlemen
 export function canAddBusiness(agency: AgencyFacts): Entitlement {
   const blocked = statusBlock(agency.status);
   if (blocked) return blocked;
+  if (agency.status === "trialing" && agency.businessCount >= TRIAL_MAX_BUSINESSES) {
+    return deny(REASONS.trialBusinessLimit);
+  }
+  return allow;
+}
+
+/**
+ * Finishing setup turns the agency's draft into a set-up business, so on a trial it must still fit the limit. Only the
+ * limit: the draft was allowed when it started, and finishing spends nothing (scans have their own check).
+ */
+export function canFinishDraft(agency: AgencyFacts): Entitlement {
   if (agency.status === "trialing" && agency.businessCount >= TRIAL_MAX_BUSINESSES) {
     return deny(REASONS.trialBusinessLimit);
   }

@@ -11,6 +11,7 @@ import {
   COMPETITOR_NOTES,
   MAX_SUGGESTIONS,
   competitorFields,
+  competitorInsertRow,
   dedupeConfirmed,
   discoverCompetitors,
   limitMessage,
@@ -221,8 +222,18 @@ describe("other names from Google", () => {
     const long = "BeRejuved Medical Spa & Wellness Studio - NYC";
     const [c] = dedupeConfirmed([{ name: "BeRejuved Medical Spa & Wellness Studio", placesId: "ChIJbe", aliases: [long] }]);
     expect(c.aliases).toEqual([long]);
-    expect(competitorFields(c)).toMatchObject({ name: "BeRejuved Medical Spa & Wellness Studio", aliases: [long] });
-    expect(competitorFields({ name: "Blue Door", placesId: null })).not.toHaveProperty("aliases");
+    expect(competitorInsertRow("b1", c)).toMatchObject({ name: "BeRejuved Medical Spa & Wellness Studio", aliases: [long] });
+    // A kept row's other names are merged separately, never overwritten by a save.
+    expect(competitorFields(c)).not.toHaveProperty("aliases");
+  });
+
+  it("every new row has the same columns, so one insert can mix a long Google name and a plain one (2026-10-16)", () => {
+    const rows = [
+      competitorInsertRow("b1", { name: "Blue Door", placesId: null }),
+      competitorInsertRow("b1", { name: "BeRejuved", placesId: "ChIJbe", aliases: ["BeRejuved Medical Spa - NYC"] }),
+    ];
+    expect(Object.keys(rows[0]).sort()).toEqual(Object.keys(rows[1]).sort());
+    expect(rows[0].aliases).toEqual([]);
   });
 
   it("merge once each, never the name itself, up to ten", () => {

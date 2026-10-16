@@ -20,7 +20,9 @@ export async function business(agency: Agency, fields: Record<string, unknown> =
   const { data } = await service
     .from("businesses")
     .insert({
-      owner_user_id: agency.ownerUserId, agency_id: agency.agencyId, name: "Bean There Coffee", domain: "beanthere.example",
+      owner_user_id: agency.ownerUserId, agency_id: agency.agencyId, name: "Bean There Coffee",
+      // Its own website: migration 067 refuses two live businesses with one website in an agency.
+      domain: `beanthere-${randomUUID().slice(0, 8)}.example`,
       primary_city: city, primary_region: "CA", primary_country: "United States", status: "active", scan_frequency: "weekly",
       models: ["openai", "anthropic", "perplexity"], ...fields,
     })

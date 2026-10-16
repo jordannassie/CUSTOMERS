@@ -6,6 +6,7 @@ import { createServiceClient } from "@/lib/supabase/service";
 import { requireAgency } from "@/modules/auth";
 import type { Explanation } from "../explain";
 import { fallbackMessage, fixesPending, saveFor } from "./service";
+import { trackedWording } from "../tracked-wording";
 
 export type SaveOutcome = "saved" | "superseded";
 
@@ -34,7 +35,19 @@ export async function saveExplanation(businessId: string, runId: string, explana
   const { insert, removeIds } = saveFor(existing.data, explanation);
   // Insert first, so a failure leaves the old list rather than an empty one.
   if (insert.length > 0) {
-    const { error } = await db.from("opportunities").insert(insert.map((d) => ({ ...d, business_id: businessId, status: "open" })));
+    // Every column named on every row: in a many-row insert a missing one is sent as null for that row.
+    const rows = insert.map((d) => ({
+      business_id: businessId,
+      status: "open",
+      title: trackedWording(d.title),
+      description: trackedWording(d.description),
+      evidence: trackedWording(d.evidence),
+      impact: d.impact,
+      category: d.category,
+      recommended_action: trackedWording(d.recommended_action),
+      claude_prompt: d.claude_prompt === null ? null : trackedWording(d.claude_prompt),
+    }));
+    const { error } = await db.from("opportunities").insert(rows);
     if (error) throw new Error(`Insights: could not save opportunities: ${error.message}`);
   }
   if (removeIds.length > 0) {

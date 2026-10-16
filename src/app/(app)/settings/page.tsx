@@ -65,7 +65,7 @@ export default async function SettingsPage() {
             <Building2 className="size-5 text-muted-foreground" aria-hidden="true" />
             <p className="text-sm">Add a business to set its profile and AI checks here.</p>
             <Button asChild size="sm">
-              <Link href="/onboarding/website">Add a business</Link>
+              <Link href="/onboarding?add=1">Add a business</Link>
             </Button>
           </Panel>
         </SettingsSection>
@@ -105,6 +105,7 @@ export default async function SettingsPage() {
             business={business && { id: business.id, name: business.name }}
             agencyName={account.agencyName}
             waitDays={account.waitDays}
+            trialing={account.trialing}
             deleteBusiness={deleteBusiness}
             deleteAccount={deleteAccount}
           />

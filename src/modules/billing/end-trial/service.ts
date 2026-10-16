@@ -96,7 +96,7 @@ export async function planNowOffer(ctx: PlanChangeContext, deps: EndTrialDeps): 
   const lines = [
     loaded.sub.trial_end ? `Your trial ends today instead of on ${date(loaded.sub.trial_end)}.` : "Your trial ends today.",
     `We charge the card on file ${formatUsd(amountCents)} today for the ${businesses} on your plan. Your next charge is on ${date(monthLater(now))}.`,
-    `${formatCount(credits)} credits are added for the month.`,
+    `${formatCount(credits)} credits are added for the month. Your remaining trial credits are replaced by your plan credits.`,
   ];
   if (loaded.schedule && phasesOf(loaded.schedule).next) lines.push("Changes you scheduled for the end of your trial happen today.");
   return { amountCents, credits, businessCount, lines };

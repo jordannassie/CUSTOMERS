@@ -12,7 +12,7 @@ import { LIBRARY_INDUSTRIES } from "@/lib/industries";
 import { createAiClients } from "@/modules/ai";
 import { libraryFileSchema, validateLibrary, type LibraryFile } from "@/modules/question-library";
 import { createTemplateDrafter } from "@/modules/question-library/generate";
-import { GENERATE_MODEL, GENERATE_PROMPT_VERSION } from "@/modules/question-library/prompts/generate-templates.v1";
+import { GENERATE_MODEL, GENERATE_PROMPT_VERSION } from "@/modules/question-library/prompts/generate-templates.v4";
 
 const live = process.env.LIVE_AI_CALL === "1";
 const OUT = "supabase/seed/question-library.v1.json";

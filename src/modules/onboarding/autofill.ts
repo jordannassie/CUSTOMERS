@@ -64,13 +64,37 @@ export type AutofillRun = {
 type Note = (provider: AutofillProvider, message: string) => void;
 const reason = (err: unknown) => (err instanceof Error ? err.message : String(err)).slice(0, 300);
 
-async function search(searchPlaces: SearchPlaces, query: string, note: Note): Promise<PlaceCandidate[]> {
+/** How the Places searches of one run went, so "Google couldn't be reached" is told apart from "no listing". */
+type SearchLog = { ok: number; failed: number };
+
+async function search(searchPlaces: SearchPlaces, query: string, note: Note, log?: SearchLog): Promise<PlaceCandidate[]> {
   try {
-    return await searchPlaces(query);
+    const found = await searchPlaces(query);
+    if (log) log.ok++;
+    return found;
   } catch (err) {
+    if (log) log.failed++;
     note("google_places", `Search for "${query}" failed: ${reason(err)}`);
     return [];
   }
+}
+
+/** Google listings offered as "Is one of these your business?", each with what the form gets when picked. */
+function placeChoices(found: PlaceCandidate[], city: string): PlaceChoice[] {
+  const once = [...new Map(found.map((place) => [place.placeId, place])).values()];
+  return once
+    .filter((place): place is PlaceCandidate & { name: string } => Boolean(place.name))
+    .slice(0, MAX_PLACE_CHOICES)
+    .map((place) => {
+      const details = mergeDetails(null, place);
+      return {
+        placeId: place.placeId,
+        name: place.name,
+        address: place.address,
+        // A listing with no city keeps the one the user typed.
+        autofill: toResult({ details: { ...details, city: details.city || city }, fromWebsite: false, fromGoogle: true, hadWebsite: false }),
+      };
+    });
 }
 
 export async function autofill(request: AutofillRequest, clients: AutofillClients): Promise<AutofillRun> {
@@ -79,9 +103,10 @@ export async function autofill(request: AutofillRequest, clients: AutofillClient
   const problems: AutofillProblem[] = [];
   const note: Note = (provider, message) => problems.push({ provider, message });
 
+  const log: SearchLog = { ok: 0, failed: 0 };
   const [pages, byDomain] = await Promise.all([
     readPages(clients.scrape, domain, (message) => note("firecrawl", message)),
-    search(clients.searchPlaces, domain, note),
+    search(clients.searchPlaces, domain, note, log),
   ]);
   const chain = isChain(byDomain, domain);
   let place = chain ? null : pickPlaceForDomain(byDomain, domain);
@@ -101,17 +126,20 @@ export async function autofill(request: AutofillRequest, clients: AutofillClient
   const named = site ?? fromMeta;
   if (!place && !chain && named?.name) {
     const query = [named.name, named.city, named.state].filter(Boolean).join(" ");
-    place = pickPlaceForDomain(await search(clients.searchPlaces, query, note), domain);
+    place = pickPlaceForDomain(await search(clients.searchPlaces, query, note, log), domain);
   }
 
   // The site could not be read and Google does not list it by its address: ask for the brand the domain spells (B7).
+  // What the brand searches found, offered as listings to pick from when none is this website (2026-10-16).
+  const brandFound: PlaceCandidate[] = [];
   if (!place && !chain && !site) {
     const guesses = brandGuesses(domain);
     for (const guess of guesses) {
-      const found = await search(clients.searchPlaces, guess, note);
+      const found = await search(clients.searchPlaces, guess, note, log);
       if (isChain(found, domain)) break;
       place = pickBrandPlace(found, domain);
       if (place) break;
+      brandFound.push(...found);
     }
   }
 
@@ -132,9 +160,15 @@ export async function autofill(request: AutofillRequest, clients: AutofillClient
   const fromSite = site ?? fromMeta;
   const details = mergeDetails(fromSite, place);
   const fromWebsite = fromSite !== null && hasAnyValue(mergeDetails(fromSite, null));
-  const placesDown = problems.some((p) => p.provider === "google_places");
-  // Firecrawl itself refused (its quota, an outage), not the website: the site was never asked.
-  const readerDown = readable.length === 0 && pages.some((p) => p.readerDown);
+  // Every Places search failed, the retry included: Google could not be reached, which is not "no listing".
+  const googleDown = log.failed > 0 && log.ok === 0;
+  // Firecrawl itself refused (its quota, an outage) or could not be reached at all, not the website: the site was never
+  // asked, so this is our own outage ("temporarily unavailable").
+  const readerThrew = pages.length === 0 && problems.some((p) => p.provider === "firecrawl");
+  const readerDown = readable.length === 0 && (readerThrew || pages.some((p) => p.readerDown));
+  // The website turned us away or did not load: say so with its address, and offer Google's listings to pick from.
+  const unreadable = readable.length === 0 && pages.length > 0 && !readerDown ? { domain, blocked: pages.some((p) => p.status === "blocked") } : null;
+  const choices = unreadable && !place && !chain && !fromWebsite ? placeChoices([...byDomain, ...brandFound], "") : [];
   return {
     result: toResult({
       details,
@@ -142,9 +176,12 @@ export async function autofill(request: AutofillRequest, clients: AutofillClient
       fromGoogle: place !== null,
       hadWebsite: true,
       chain,
-      // A provider failed, so "we couldn't find your business" would be wrong (D-84).
-      aiDown: aiDown || readerDown || (placesDown && !fromWebsite && place === null),
+      // Only our own reader or AI being down is "temporarily unavailable" (D-84); a website or Google failing says so.
+      aiDown: aiDown || readerDown,
       industryCheck: industryCheck(fromSite, place),
+      unreadable,
+      googleDown,
+      choices,
     }),
     placeId: place?.placeId ?? null,
     chain,
@@ -176,19 +213,7 @@ async function autofillWithoutWebsite(
 ): Promise<AutofillRun> {
   const problems: AutofillProblem[] = [];
   const found = await search(clients.searchPlaces, `${request.name} ${request.city}`, (provider, message) => problems.push({ provider, message }));
-  const choices: PlaceChoice[] = found
-    .filter((place): place is PlaceCandidate & { name: string } => Boolean(place.name))
-    .slice(0, MAX_PLACE_CHOICES)
-    .map((place) => {
-      const details = mergeDetails(null, place);
-      return {
-        placeId: place.placeId,
-        name: place.name,
-        address: place.address,
-        // A listing with no city keeps the one the user typed.
-        autofill: toResult({ details: { ...details, city: details.city || request.city }, fromWebsite: false, fromGoogle: true, hadWebsite: false }),
-      };
-    });
+  const choices = placeChoices(found, request.city);
   // Google failed (a used-up quota, an outage): "temporarily unavailable", never "we couldn't find your business".
   const typed = toResult({
     details: { ...EMPTY_DETAILS, name: request.name, city: request.city },

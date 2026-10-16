@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { FLORIST_BUSINESS, FLORIST_WRITTEN, fakeQuestionClients } from "./question-fixtures";
 import { asksForBusiness, dependsOnTime, fallbackQuestions, isGeneralQuestion, mixesServices } from "./question-rules";
 import { AREA_QUESTIONS, areaLabel, prepareQuestions } from "./questions";
-import { QUESTION_COUNT, writeUserMessage } from "./prompts/pick-questions.v7";
+import { QUESTION_COUNT, writeUserMessage } from "./prompts/pick-questions.v8";
 
 describe("a kind of business with no library (BUG-116)", () => {
   const GENERAL = (c: string, n = "florist") => [
@@ -13,9 +13,9 @@ describe("a kind of business with no library (BUG-116)", () => {
     `What is the most trusted ${n} in ${c}?`,
     `What is the most popular ${n} in ${c}?`,
     `Which ${n} in ${c} offers the best value?`,
-    `Which of the top ${n} options in ${c} compares best?`,
+    `Which ${n} in ${c} stands out from the rest?`,
     `Which ${n} in ${c} has fair prices?`,
-    `What is an affordable ${n} in ${c}?`,
+    `Can you suggest an affordable ${n} in ${c}?`,
     `Which ${n} in ${c} is the most highly rated?`,
     `I'm looking for a good ${n} in ${c}. Which one should I choose?`,
   ];

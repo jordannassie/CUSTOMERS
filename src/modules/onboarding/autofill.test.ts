@@ -12,7 +12,7 @@ import {
   fakeClients,
 } from "./fixtures";
 import { AUTOFILL_MODEL, AUTOFILL_PROMPT_VERSION, AUTOFILL_RETRY_MODEL } from "./prompts/business-autofill.v1";
-import { EMPTY_DETAILS, NOTES } from "./service";
+import { EMPTY_DETAILS, NOTES, unreadableNote } from "./service";
 
 describe("autofill with a website", () => {
   it("combines the site and Places: Places wins name, address, phone and category; the site wins description and services", async () => {
@@ -73,7 +73,8 @@ describe("autofill with a website", () => {
       industryText: "Marketing agency",
       description: "",
     });
-    expect(run.result.note).toBe(NOTES.googleOnly);
+    // 2026-10-16: the note says which website turned us away, not a general "didn't let us read it".
+    expect(run.result.note).toBe(unreadableNote("brandastic-like.example", true, "google"));
     expect(run.placeId).toBe(BLOCKED_PLACE.placeId);
     // Kept, so advice knows the site blocked us rather than that there is no site (BUG-087).
     expect(run.siteFacts).toMatchObject({ model: null, facts: null });

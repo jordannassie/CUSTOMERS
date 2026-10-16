@@ -9,7 +9,7 @@ import {
   generateOutput,
   generateUserMessage,
   type GenerateOutput,
-} from "./prompts/generate-templates.v1";
+} from "./prompts/generate-templates.v4";
 import type { LibraryTemplate } from "./schema";
 
 export type DraftTemplates = (industry: LibraryIndustry) => Promise<LibraryTemplate[]>;

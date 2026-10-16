@@ -26,7 +26,7 @@ describe("start my plan now", () => {
     expect(offer.lines).toEqual([
       "Your trial ends today instead of on October 1, 2026.",
       "We charge the card on file $298 today for the 2 businesses on your plan. Your next charge is on October 16, 2026.",
-      "2,400 credits are added for the month.",
+      "2,400 credits are added for the month. Your remaining trial credits are replaced by your plan credits.",
     ]);
   });
 

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { needsClearerIndustry, OTHER_LABEL_HINT } from "@/lib/other-label";
 import { aliasesInput, areaText, FREQUENCIES, MODEL_IDS } from "@/modules/settings";
 import { PLAN_IDS } from "./steps";
 
@@ -20,14 +21,23 @@ export const websiteStepInput = z.intersection(
     // "I don't have a website" (MVP_SPEC 3.3).
     z.object({ name: text(200).min(1), city: text(100).min(1) }),
   ]),
-  z.object({ plan: planField }),
+  z.object({
+    plan: planField,
+    // Made by the browser for each attempt (migration 067): a double submit or a retry finds the same draft.
+    createKey: z.uuid().optional(),
+    // "Try again" after the website and Google both failed (2026-10-16).
+    retry: z.boolean().optional(),
+  }),
 );
 
 export const detailsStepInput = z.object({
   businessId: z.uuid(),
   name: text(120).min(1),
-  // One of INDUSTRIES, or the user's own words when it is "other".
-  industry: text(80).min(1),
+  // One of INDUSTRIES, or the user's own words when it is "other". A vague label ("Consultant", "Store") is refused,
+  // so questions are never written from it (2026-10-16).
+  industry: text(80)
+    .min(1)
+    .refine((industry) => !needsClearerIndustry(industry), OTHER_LABEL_HINT),
   description: text(1000),
   services: z.array(text(60).min(1)).max(20),
   // Other names customers and AI use for it, optional: left as they are when not sent.

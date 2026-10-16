@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import { LogOut, ShieldCheck } from "lucide-react";
 import { cn } from "cn";
 import type { SwitcherScores } from "@/modules/workspace";
-import { BusinessSwitcher, type SwitchBusinessAction, type SwitcherBusiness } from "./BusinessSwitcher";
+import { BusinessSwitcher, type SwitchBusinessAction, type SwitcherBusiness, type SwitcherDraft } from "./BusinessSwitcher";
 import { APP_NAV, isNavActive, setupLabel } from "./nav";
 import { SuggestFeatureDialog, type SuggestFeatureAction } from "./SuggestFeatureDialog";
 import { UsageWidget, type UsageWidgetProps } from "./UsageWidget";
@@ -20,6 +20,8 @@ export type AppSidebarProps = {
   isAdmin: boolean;
   /** The business being set up, shown instead of the switcher on setup pages (BUG-092). */
   setupName?: string | null;
+  /** The agency's unfinished draft, offered in the switcher as "Finish setting up <name>". */
+  draft?: SwitcherDraft | null;
   suggestFeature: SuggestFeatureAction;
 };
 
@@ -34,6 +36,7 @@ export function AppSidebar({
   usage,
   isAdmin,
   setupName = null,
+  draft = null,
   suggestFeature,
   onNavigate,
 }: AppSidebarProps & { onNavigate?: () => void }) {
@@ -61,6 +64,7 @@ export function AppSidebar({
           switchBusiness={switchBusiness}
           onSwitched={onNavigate}
           scores={switcherScores}
+          draft={draft}
         />
       )}
 

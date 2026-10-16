@@ -96,6 +96,9 @@ async function syncSubscription(deps: WebhookDeps, sub: Stripe.Subscription, age
     cancelAt: cancelAt(sub, currentPeriodEnd),
   });
   if (!status) return;
+  // A trial that ended early ("Start my plan now") ends its trial credits too: they are replaced by the plan credits,
+  // as Billing says. At the planned trial end the grant already expires then, so this changes nothing (2026-10-16).
+  if ((status === "active" || status === "past_due") && sub.trial_end) await deps.store.endTrialGrant(agency.id, new Date(sub.trial_end * 1000));
   // A whole-account cancel keeps each business's schedule, so scans resume if the agency subscribes again.
   if (status === "canceled") return deps.store.setBusinessStatus(agency.id, "canceled");
 

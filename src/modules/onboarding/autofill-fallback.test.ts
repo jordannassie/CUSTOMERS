@@ -4,7 +4,7 @@ import { brandGuesses, pickBrandPlace } from "./autofill-fallback";
 import { BLOCKED_PAGES, COFFEE_PAGES, COFFEE_PLACE, COFFEE_SITE_OUTPUT, fakeClients } from "./fixtures";
 import { AUTOFILL_MODEL } from "./prompts/business-autofill.v1";
 import type { PlaceCandidate } from "./places";
-import { NOTES } from "./service";
+import { NOTES, unreadableNote } from "./service";
 
 // B7: ebookwoman.com can't be read, and Google does not find "ebookwoman.com" as text. The brand it spells is BookWoman.
 const BOOKWOMAN: PlaceCandidate = {
@@ -54,7 +54,7 @@ describe("autofill when the website can't be read (B7)", () => {
 
     expect(calls.places).toEqual(["ebookwoman.com", "ebookwoman", "bookwoman"]);
     expect(run.placeId).toBe(BOOKWOMAN.placeId);
-    expect(run.result.note).toBe(NOTES.googleOnly);
+    expect(run.result.note).toBe(unreadableNote("ebookwoman.com", true, "google"));
     expect(run.result.details).toMatchObject({ name: "BookWoman", city: "Austin", state: "TX" });
     expect(calls.extract).toEqual([]);
     expect(run.problems).toEqual([expect.objectContaining({ provider: "firecrawl", message: expect.stringContaining("Nothing readable on ebookwoman.com") })]);

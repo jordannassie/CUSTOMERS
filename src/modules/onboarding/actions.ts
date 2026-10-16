@@ -4,6 +4,7 @@ import { authFailure, getCurrentAgency, requireUser, type ActionResult } from "@
 import { canEditTracking } from "@/modules/entitlements";
 import type { CompetitorCandidate } from "./competitor-places";
 import { dedupeConfirmed } from "./competitors";
+import { DUPLICATE_BUSINESS_TEXT, DuplicateBusinessError } from "./duplicates";
 import { lookupCompetitor, runBusinessAutofill, saveBusinessPlace, saveCompetitors } from "./dal";
 import { activeUser, autofillLimit } from "./guard";
 import { websiteExists } from "./website/dal";
@@ -36,7 +37,13 @@ export async function autofillBusiness(input: unknown): Promise<ActionResult<Aut
 
   const limited = await autofillLimit(userId);
   if (limited) return limited;
-  const result = await runBusinessAutofill(userId, parsed.data.businessId, request);
+  let result: AutofillResult | null;
+  try {
+    result = await runBusinessAutofill(userId, parsed.data.businessId, request);
+  } catch (error) {
+    if (error instanceof DuplicateBusinessError) return { ok: false, status: 409, error: DUPLICATE_BUSINESS_TEXT };
+    throw error;
+  }
   if (!result) return { ok: false, status: 404, error: "Business not found." };
   return { ok: true, data: result };
 }
@@ -52,9 +59,9 @@ export async function confirmBusinessPlace(input: unknown): Promise<ActionResult
   }
   const parsed = pickPlaceInput.safeParse(input);
   if (!parsed.success) return { ok: false, status: 400, error: "Choose your business, or None of these." };
-  if (!(await saveBusinessPlace(userId, parsed.data.businessId, parsed.data.placeId))) {
-    return { ok: false, status: 404, error: "Business not found." };
-  }
+  const saved = await saveBusinessPlace(userId, parsed.data.businessId, parsed.data.placeId);
+  if (saved === "duplicate") return { ok: false, status: 409, error: DUPLICATE_BUSINESS_TEXT };
+  if (!saved) return { ok: false, status: 404, error: "Business not found." };
   return { ok: true, data: null };
 }
 

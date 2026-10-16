@@ -2,7 +2,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { ANTHROPIC_CREDIT_ERROR, anthropicMessage, fakeAiClients, jsonResponse, openaiResponse, providerFetch } from "@/modules/ai";
 import { createTemplateDrafter, generateRequest, toTemplates } from "./generate";
-import { GENERATE_MODEL } from "./prompts/generate-templates.v1";
+import { GENERATE_MODEL } from "./prompts/generate-templates.v4";
 import { LibraryNotLoadableError, toSeedRows } from "./service";
 import { validateLibrary } from "./validate";
 

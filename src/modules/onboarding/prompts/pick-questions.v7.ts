@@ -1,5 +1,5 @@
-// Question picking, prompt v6 (MVP_SPEC 5.3, D-62). The eval in evals/question-picking imports this
-// file; changing it means rerunning that eval (MVP_SPEC 25).
+// Question picking, prompt v7 (MVP_SPEC 5.3, D-62). Replaced by pick-questions.v8.ts: kept only so
+// evals/question-picking/samples.ai.eval.ts can print v7 and v8 side by side. Delete it once that comparison is done.
 // v3: with no library, Claude writes candidates from the industry alone, like a library would hold, never from
 // this business's own services or description; the code then picks 12 by service fit. Questions written from a
 // shop's own listing ("Which coffee shop sells branded apparel?") were ones only that shop could win, so they

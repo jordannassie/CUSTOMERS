@@ -192,7 +192,7 @@ describe("no website: picking the Google listing (MVP_SPEC 3.3)", () => {
     expect((await stored(owner.businessId)).business).toMatchObject({ places_id: null, name: "Sunrise Coffee" });
   });
 
-  it("checks the session, the input, and that the business is the user's own without a website", async () => {
+  it("checks the session, the input, and that the business is the user's own draft", async () => {
     const pick = { businessId: randomUUID(), placeId: COFFEE_PLACE.placeId };
     expect(await confirmBusinessPlace(pick)).toMatchObject({ ok: false, status: 401 });
 
@@ -200,7 +200,9 @@ describe("no website: picking the Google listing (MVP_SPEC 3.3)", () => {
     const other = await createOwner();
     expect(await confirmBusinessPlace({ businessId: owner.businessId, placeId: "../bad" })).toMatchObject({ ok: false, status: 400 });
     expect(await confirmBusinessPlace({ ...pick, businessId: other.businessId })).toMatchObject({ ok: false, status: 404 });
-    await service.from("businesses").update({ has_website: true }).eq("id", owner.businessId);
+    // A website draft may pick too: its site blocked readers, so it got the same listings (2026-10-16). A business
+    // that is no longer a draft may not.
+    await service.from("businesses").update({ has_website: true, status: "active" }).eq("id", owner.businessId);
     expect(await confirmBusinessPlace({ ...pick, businessId: owner.businessId })).toMatchObject({ ok: false, status: 404 });
     expect((await stored(other.businessId)).business?.places_id).toBeNull();
   });

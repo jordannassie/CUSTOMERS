@@ -17,6 +17,8 @@ type Props = {
   choices: PlaceChoice[];
   /** The form with only what the user typed, for "None of these". */
   typed: AutofillResult;
+  /** Why the listings are offered when the website could not be read; replaces the no-website line. */
+  note?: string;
   pick: PickPlaceAction;
   onBack: () => void;
 };
@@ -25,7 +27,7 @@ const NONE = "none";
 
 // MVP_SPEC 3.3, 26: with no website, the Google listings for the name and city are only offered. Nothing from
 // them fills the form, and no place_id is saved, until the user picks one. "None of these" keeps what they typed.
-export function PlaceChoices({ businessId, searched, choices, typed, pick, onBack }: Props) {
+export function PlaceChoices({ businessId, searched, choices, typed, note, pick, onBack }: Props) {
   const router = useRouter();
   const [chosen, setChosen] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -55,7 +57,7 @@ export function PlaceChoices({ businessId, searched, choices, typed, pick, onBac
       <fieldset className="flex min-w-0 flex-col gap-3" aria-describedby="place-choices-hint">
         <legend className="mb-1 text-[15px] font-medium">Is one of these your business?</legend>
         <p id="place-choices-hint" className="text-sm text-muted-foreground">
-          We searched Google for {searched}. Pick yours to fill in its details, or choose None of these to keep what you typed.
+          {note ?? `We searched Google for ${searched}. Pick yours to fill in its details, or choose None of these to keep what you typed.`}
         </p>
         <div className="rounded-md border border-border bg-surface">
           <ul className="divide-y divide-border" data-testid="place-choices">

@@ -26,6 +26,7 @@ export {
   getAwaitingTrialCredits,
   getCardStep,
   getDetailsStep,
+  getFinishBlock,
   getModelsStep,
   getSetupAddOn,
   getQuestionsStep,
@@ -47,10 +48,14 @@ export {
 export { getFirstScanProgress, getFirstScanSummary } from "./scan-summary/actions";
 export type { FirstScanSummary, ModelProgress } from "./scan-summary/service";
 export {
+  ADD_BUSINESS_PATH,
   FIRST_SCAN_PATH,
   PLAN_IDS,
   WIZARD_STEPS,
+  addBusinessStep,
   canOpen,
+  draftLabel,
+  draftStep,
   isStepSlug,
   resumeStep,
   stepPath,
