@@ -58,7 +58,7 @@ export function AppRating({
       {nativeRated && native?.average !== null && native?.average !== undefined ? (
         <ScoreLine rating={native.average} count={nativeCount} label="Customers.Direct" compact={compact} />
       ) : null}
-      {showEmpty && !nativeRated ? <p className="text-[13px] text-[#777773]">Not yet rated</p> : null}
+      {showEmpty && !nativeRated ? <p className="text-[14px] text-[#777773]">Not yet rated.</p> : null}
       {licensed && app.rating !== null && app.reviewSource ? (
         <ScoreLine rating={app.rating} count={app.reviewCount} label={reviewSourceLabel(app.reviewSource)} compact={compact} />
       ) : null}
