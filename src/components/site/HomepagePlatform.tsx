@@ -1514,11 +1514,11 @@ function HeroVideoSection() {
 
 // ─── Main export ──────────────────────────────────────────────────────────
 
-export default function HomepagePlatform({ ratings = {}, embedSrc = null }: { ratings?: Record<string, NativeSummary>; embedSrc?: string | null }) {
+export default function HomepagePlatform({ ratings = {}, embedSrc = null, formId = null }: { ratings?: Record<string, NativeSummary>; embedSrc?: string | null; formId?: string | null }) {
   return (
     <>
       <HeroSection />
-      <NewsletterSignup placement="homepage" variant="hero" embedSrc={embedSrc} embed />
+      <NewsletterSignup placement="homepage" variant="hero" embedSrc={embedSrc} formId={formId} embed />
       <HomeAppsSection ratings={ratings} />
       <HeroVideoSection />
       <BannerRotationSection />

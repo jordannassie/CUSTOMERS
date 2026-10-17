@@ -91,7 +91,7 @@ export default function SiteFooter() {
   return (
     <footer className="bg-[#171717] text-white">
       <div className="max-w-[1200px] mx-auto px-4 sm:px-6 pt-16 pb-10">
-        <NewsletterSignup placement="footer" variant="footer" embedSrc={env.NEXT_PUBLIC_BEEHIIV_EMBED_SRC} />
+        <NewsletterSignup placement="footer" variant="footer" embedSrc={env.NEXT_PUBLIC_BEEHIIV_EMBED_SRC} formId={env.NEXT_PUBLIC_BEEHIIV_FORM_ID} embed />
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-10 mb-12">
           {/* Brand: 2 cols */}
           <div className="lg:col-span-2">

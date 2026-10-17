@@ -1,51 +1,103 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { isAllowedEmbedSrc, type NewsletterPlacement } from "@/modules/newsletter/signup";
+import { resolveEmbed, type NewsletterPlacement } from "@/modules/newsletter/signup";
 
 const COPY = {
   hero: {
     title: "Don't Let AI Replace You.",
-    text: "Discover one new AI tool every day to help grow your business.",
+    text: "Discover one new AI tool every day to grow your business, save time, and stay ahead.",
   },
   compact: {
-    title: "Discover a New AI Tool Every Day.",
+    title: "One New AI Tool Every Day.",
     text: "Join the free AI newsletter from Customers.Direct.",
   },
   detail: {
     title: "Don't Let AI Replace You.",
-    text: "Discover one new AI tool every day to help grow your business.",
+    text: "Discover one new AI tool every day to grow your business, save time, and stay ahead.",
   },
   footer: {
     title: "Don't Let AI Replace You.",
-    text: "Discover one new AI tool every day to help grow your business.",
+    text: "Discover one new AI tool every day to grow your business, save time, and stay ahead.",
   },
 } as const;
 
-function BeehiivEmbed({ src }: { src: string }) {
+const BEEHIIV_ORIGIN = "https://subscribe-forms.beehiiv.com";
+
+function BeehiivForm({ placement, src, formId }: { placement: NewsletterPlacement; src: string; formId: string }) {
   const ref = useRef<HTMLDivElement>(null);
+  const [failed, setFailed] = useState(false);
+
   useEffect(() => {
     const root = ref.current;
-    if (!root || document.querySelector("script[data-customers-beehiiv]")) return;
+    if (!root || root.dataset.mounted === "true") return;
+    const slot = root;
+    slot.dataset.mounted = "true";
     const script = document.createElement("script");
-    script.src = src;
+    const url = new URL(src);
+    url.searchParams.set("placement", placement);
+    script.src = url.toString();
     script.async = true;
-    script.dataset.customersBeehiiv = "true";
-    root.appendChild(script);
-  }, [src]);
-  return <div ref={ref} className="mt-4 min-h-[88px] w-full" />;
+    script.dataset.beehiivForm = formId;
+    script.dataset.customersBeehiiv = placement;
+    script.addEventListener("error", () => setFailed(true));
+    slot.appendChild(script);
+
+    const watch = new MutationObserver(() => {
+      if (slot.querySelector("iframe")) {
+        setFailed(false);
+        watch.disconnect();
+      }
+    });
+    watch.observe(root, { childList: true, subtree: true });
+    const timer = window.setTimeout(() => {
+      if (!slot.querySelector("iframe")) setFailed(true);
+    }, 8000);
+
+    function onMessage(event: MessageEvent) {
+      if (event.origin !== BEEHIIV_ORIGIN) return;
+      const data = event.data as { type?: string } | null;
+      if (!data || data.type !== "beehiiv:submitted") return;
+      const iframe = slot.querySelector("iframe");
+      if (!iframe || event.source !== iframe.contentWindow) return;
+      void fetch("/api/public/newsletter", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ event: "confirmed", placement }),
+      }).catch(() => undefined);
+    }
+    window.addEventListener("message", onMessage);
+    return () => {
+      watch.disconnect();
+      window.clearTimeout(timer);
+      window.removeEventListener("message", onMessage);
+    };
+  }, [formId, placement, src]);
+
+  return (
+    <div className="mt-4 w-full max-w-full">
+      <div ref={ref} className="min-h-[88px] w-full max-w-full overflow-hidden" />
+      {failed ? (
+        <a href={`/newsletter/go/${placement}`} className="inline-flex h-11 items-center justify-center rounded-full bg-[#0866F5] px-5 text-[14px] font-semibold text-white hover:bg-[#0757D4]">
+          Join the Free AI Newsletter
+        </a>
+      ) : null}
+    </div>
+  );
 }
 
 export function NewsletterSignup({
   placement,
   variant,
   embedSrc,
+  formId,
   embed = false,
 }: {
   placement: NewsletterPlacement;
   variant: keyof typeof COPY;
   embedSrc?: string | null;
+  formId?: string | null;
   embed?: boolean;
 }) {
   const sectionRef = useRef<HTMLElement>(null);
@@ -68,10 +120,9 @@ export function NewsletterSignup({
   }, [placement]);
 
   const copy = COPY[variant];
-  const showEmbed = embed && isAllowedEmbedSrc(embedSrc);
+  const config = resolveEmbed({ src: embedSrc, formId });
   const dark = variant === "footer";
   const band = variant === "hero";
-  const href = `/newsletter/go/${placement}`;
 
   return (
     <section
@@ -83,8 +134,8 @@ export function NewsletterSignup({
       <div className={band ? "mx-auto max-w-[880px] rounded-2xl border border-[#BFDBFE] bg-[#FAFAF8] px-5 py-6 sm:px-8 sm:py-8" : ""}>
         <h2 className={dark ? "text-[20px] font-bold text-white" : variant === "compact" ? "text-[18px] font-bold text-[#171717]" : "text-[28px] font-bold tracking-tight text-[#171717] sm:text-[34px]"}>{copy.title}</h2>
         <p className={dark ? "mt-1 max-w-xl text-[13px] text-white/60" : "mt-2 max-w-xl text-[15px] text-[#777773]"}>{copy.text}</p>
-        {showEmbed ? <BeehiivEmbed src={embedSrc} /> : (
-          <a href={href} className={`mt-4 inline-flex h-11 items-center justify-center rounded-full px-5 text-[14px] font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0866F5] ${dark ? "bg-white text-[#0866F5]" : "bg-[#0866F5] text-white hover:bg-[#0757D4]"}`}>
+        {embed ? <BeehiivForm placement={placement} src={config.src} formId={config.formId} /> : (
+          <a href={`/newsletter/go/${placement}`} className={`mt-4 inline-flex h-11 items-center justify-center rounded-full px-5 text-[14px] font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0866F5] ${dark ? "bg-white text-[#0866F5]" : "bg-[#0866F5] text-white hover:bg-[#0757D4]"}`}>
             Join the Free AI Newsletter
           </a>
         )}

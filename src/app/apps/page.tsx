@@ -60,7 +60,7 @@ export default async function AppsPage({ searchParams }: { searchParams: SearchP
       <SiteHeader />
       <main className="min-h-screen bg-[#FAFAF8]">
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(itemList) }} />
-        <AppsBrowse query={query} result={result} ratings={ratings} embedSrc={env.NEXT_PUBLIC_BEEHIIV_EMBED_SRC} />
+        <AppsBrowse query={query} result={result} ratings={ratings} embedSrc={env.NEXT_PUBLIC_BEEHIIV_EMBED_SRC} formId={env.NEXT_PUBLIC_BEEHIIV_FORM_ID} />
       </main>
       <SiteFooter />
     </>

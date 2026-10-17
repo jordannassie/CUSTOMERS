@@ -7,7 +7,7 @@ function missingTable(error: { code?: string; message?: string } | null) {
   return error.code === "42P01" || error.code === "PGRST205" || /newsletter_events/i.test(error.message ?? "");
 }
 
-export async function recordNewsletterEvent(input: { event: "impression" | "click"; placement: NewsletterPlacement }): Promise<void> {
+export async function recordNewsletterEvent(input: { event: "impression" | "click" | "confirmed"; placement: NewsletterPlacement }): Promise<void> {
   try {
     const svc = createServiceClient();
     const { error } = await svc.from("newsletter_events").insert({

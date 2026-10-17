@@ -136,7 +136,7 @@ export default async function AppDetailPage({ params, searchParams }: { params: 
               </div>
             ) : <p className="mt-2 text-[14px] text-[#777773]">No related apps are listed yet.</p>}
           </section>
-          <NewsletterSignup placement="detail" variant="detail" embedSrc={env.NEXT_PUBLIC_BEEHIIV_EMBED_SRC} embed />
+          <NewsletterSignup placement="detail" variant="detail" embedSrc={env.NEXT_PUBLIC_BEEHIIV_EMBED_SRC} formId={env.NEXT_PUBLIC_BEEHIIV_FORM_ID} embed />
         </article>
       </main>
       <SiteFooter />

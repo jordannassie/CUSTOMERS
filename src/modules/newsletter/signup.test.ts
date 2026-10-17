@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isAllowedEmbedSrc, signupHref } from "./signup";
+import { BEEHIIV_FORM_ID, BEEHIIV_LOADER_SRC, isAllowedEmbedSrc, resolveEmbed, signupHref } from "./signup";
 
 describe("newsletter signup", () => {
   it("sends each placement to the Beehiiv signup page with its own referral", () => {
@@ -21,5 +21,14 @@ describe("newsletter signup", () => {
     expect(isAllowedEmbedSrc("https://evil.example/embed.js")).toBe(false);
     expect(isAllowedEmbedSrc("https://subscribe-forms.beehiiv.com/embed.js")).toBe(true);
     expect(isAllowedEmbedSrc("https://embeds.beehiiv.com/form")).toBe(true);
+  });
+
+  it("uses the official Beehiiv form unless a valid override is set", () => {
+    expect(resolveEmbed()).toEqual({ src: BEEHIIV_LOADER_SRC, formId: BEEHIIV_FORM_ID });
+    expect(resolveEmbed({ src: "https://evil.example/loader.js", formId: "not-a-form" })).toEqual({
+      src: BEEHIIV_LOADER_SRC,
+      formId: BEEHIIV_FORM_ID,
+    });
+    expect(resolveEmbed({ src: "https://cdn.beehiiv.com/loader.js" }).src).toBe("https://cdn.beehiiv.com/loader.js");
   });
 });
