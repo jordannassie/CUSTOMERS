@@ -90,10 +90,11 @@ export const DIRECTORY_CATALOG: DirectoryApp[] = [
 
 export const HOME_FEATURED_SLUGS = ["chatgpt", "canva", "hubspot", "meta-ads", "google-ai", "notion"] as const;
 
-export function logoUrl(websiteUrl: string): string {
+export function logoUrl(websiteUrl: string, size = 128): string {
   try {
     const host = new URL(websiteUrl).hostname;
-    return `https://www.google.com/s2/favicons?domain=${encodeURIComponent(host)}&sz=128`;
+    const safeSize = Math.min(256, Math.max(16, Math.round(size)));
+    return `https://www.google.com/s2/favicons?domain=${encodeURIComponent(host)}&sz=${safeSize}`;
   } catch {
     return "";
   }
