@@ -9,6 +9,7 @@ import { count, day, monthName } from "@/components/usage/format";
 import { ScanHistory } from "@/components/usage/ScanHistory";
 import { getUsageReport, type ModelKey } from "@/modules/usage";
 import { BUY_CREDITS_HREF } from "@/modules/workspace";
+import { PageHeader } from "@/components/app/PageHeader";
 
 export const metadata: Metadata = { title: "Usage" };
 
@@ -26,22 +27,22 @@ export default async function UsagePage() {
 
   return (
     <PageContainer>
-      <header className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-[-0.02em]">Usage</h1>
-          <p className="mt-1 text-[15px] text-muted-foreground">Where your credits went, what is left, and how long it will last.</p>
-        </div>
-        <Button asChild>
-          <Link href={BUY_CREDITS_HREF}>Buy credits</Link>
-        </Button>
-      </header>
+      <PageHeader
+        title="Usage"
+        description="Where your credits went, what is left, and how long it will last."
+        actions={
+          <Button asChild>
+            <Link href={BUY_CREDITS_HREF}>Buy credits</Link>
+          </Button>
+        }
+      />
 
-      <div className="mt-6 grid gap-4 lg:grid-cols-2">
+      <div className="mt-6 grid gap-6 lg:grid-cols-2">
         <BalanceSummary balance={report.balance} />
         <ForecastCard forecast={report.forecast} buyCreditsHref={BUY_CREDITS_HREF} />
       </div>
 
-      <section aria-labelledby="month-heading" className="mt-10">
+      <section aria-labelledby="month-heading" className="mt-6">
         <div className="flex flex-wrap items-baseline justify-between gap-2">
           <h2 id="month-heading" className="text-lg font-semibold tracking-[-0.02em]">
             Used in {monthName(month.startsAt)}
@@ -58,7 +59,7 @@ export default async function UsagePage() {
             No credits used yet this month. Each scan&apos;s checks will show here by business and by AI model.
           </p>
         ) : (
-          <div className="mt-3 grid gap-4 lg:grid-cols-2">
+          <div className="mt-3 grid gap-6 lg:grid-cols-2">
             <Breakdown
               title="By business"
               testId="by-business"
@@ -75,7 +76,7 @@ export default async function UsagePage() {
         )}
       </section>
 
-      <div className="mt-10">
+      <div className="mt-6">
         <ScanHistory scans={report.scans} />
       </div>
     </PageContainer>

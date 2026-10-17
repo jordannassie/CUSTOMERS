@@ -4,6 +4,7 @@ import { billingAccess } from "../account/access";
 import { loadPlanChangeData, raiseScheduleLost, type PlanChangeData } from "./dal";
 import { PlanChangeError, type PlanChangeContext } from "./planner";
 import { applyPlanChange, previewPlanChange } from "./service";
+import { syncAfterChange } from "./sync-after";
 
 // BUG-071, D-57: a business set up after the first joins the agency's subscription when setup finishes. On a trial
 // that costs nothing until the trial ends, then it is billed with the others; on a paid plan the prorated amount is
@@ -58,7 +59,7 @@ async function prepare(agencyId: string, businessId: string) {
     timeZone: await viewerTimeZone(),
     onScheduleLost: raiseScheduleLost,
   };
-  return { context: access.context, deps, planId };
+  return { context: access.context, deps, planId, access };
 }
 
 /** What finishing setup will add to the bill, or null when this business is not added to a subscription. */
@@ -92,6 +93,8 @@ export async function addBusinessAtSetup(
   }
   try {
     await applyPlanChange(ready.context, { kind: "add", businessId, planId: ready.planId }, confirmed.previewedAt, ready.deps);
+    // Billing then lists the business on its plan at once, not under "Not on your plan" until the webhook (BUG-238).
+    await syncAfterChange(ready.access, ready.context.subscriptionId);
     return { ok: true };
   } catch (error) {
     if (error instanceof PlanChangeError) return { ok: false, status: error.status, error: error.message };

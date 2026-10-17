@@ -8,6 +8,7 @@ import { getBalance } from "@/modules/credits";
 import { canSpendTopUps } from "@/modules/entitlements";
 import { BILLING_HREF, BUY_CREDITS_HREF } from "@/modules/workspace";
 import { TopupCheckout } from "./_components/topup-checkout";
+import { PageHeader } from "@/components/app/PageHeader";
 
 export const metadata: Metadata = { title: "Buy credits" };
 
@@ -28,12 +29,11 @@ export default async function BuyCreditsPage({ searchParams }: Props) {
 
   return (
     <PageContainer>
-      <header>
-        <h1 className="text-2xl font-semibold tracking-[-0.02em]">Buy credits</h1>
-        <p className="mt-1 text-[15px] text-muted-foreground">
-          Top-up credits never expire. We use them after your plan credits, while you have an active plan or trial.
-        </p>
-        <p data-testid="current-balance" className="mt-3 text-sm">
+      <PageHeader
+        title="Buy credits"
+        description="Top-up credits never expire. We use them after your plan credits, while you have an active plan or trial."
+      >
+        <p data-testid="current-balance" className="text-sm">
           {total < 0 ? (
             <span className="font-medium text-low-text">
               You&apos;re {credits(-total)} over. A top-up pays that back first.
@@ -44,7 +44,7 @@ export default async function BuyCreditsPage({ searchParams }: Props) {
             </>
           )}
         </p>
-      </header>
+      </PageHeader>
 
       <div className="mt-6 max-w-[640px]">
         {!spend.allowed && !returned ? (

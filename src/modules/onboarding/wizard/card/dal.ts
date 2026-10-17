@@ -10,7 +10,8 @@ import {
   type TrialOffer,
 } from "@/modules/billing";
 import { ownStep } from "../dal";
-import { finishWizard, selectedPlan } from "../questions/dal";
+import { draftPlanId } from "../plan/dal";
+import { finishWizard } from "../questions/dal";
 import { needsCard, stepNumber } from "../steps";
 
 // Step 8, the card (B-41, MVP_SPEC 3.1). The wizard only finishes once the Stripe webhook has linked the
@@ -35,9 +36,6 @@ async function loadAgency(userId: string) {
   );
 }
 
-// The plan picked on the pricing page, else Starter, as the models step and entitlements assume.
-const chosenPlan = async (userId: string) => (await selectedPlan(userId)) ?? "starter";
-
 /**
  * The card was accepted but the webhook never linked the subscription: links it from Stripe now, so the step finishes
  * instead of offering a second checkout (and a second subscription). True when it did.
@@ -59,7 +57,7 @@ export async function loadCardStep(
   const step = await ownStep(user.id, businessId);
   if (step === undefined || (step ?? 0) < stepNumber("card")) return null;
   const started = await recovered(user);
-  return { offer: started ? null : await getTrialOffer(await chosenPlan(user.id)), started };
+  return { offer: started ? null : await getTrialOffer(await draftPlanId(user.id, businessId)), started };
 }
 
 export async function startCardCheckout(
@@ -74,7 +72,7 @@ export async function startCardCheckout(
   // A second session would start a second subscription for the same agency.
   if (!needsCard(agency, false) || (await recovered(user))) return { ok: false, status: 409, error: "Your free trial has already started." };
   if (!agency.trialAllowed) return { ok: false, status: 409, error: "You've already had your free trial. Contact us to start your plan." };
-  return createTrialCheckout({ agencyId: agency.id, businessId, email: user.email, returnUrl, planId: await chosenPlan(user.id) });
+  return createTrialCheckout({ agencyId: agency.id, businessId, email: user.email, returnUrl, planId: await draftPlanId(user.id, businessId) });
 }
 
 /**

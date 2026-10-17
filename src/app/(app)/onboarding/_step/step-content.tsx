@@ -9,6 +9,7 @@ import { WebsiteStep } from "@/components/onboarding/WebsiteStep";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   checkCardStep,
+  chooseSetupPlan,
   confirmBusinessPlace,
   getAddBusinessBlock,
   getCardStep,
@@ -18,6 +19,7 @@ import {
   getModelsStep,
   getQuestionsStep,
   getSetupAddOn,
+  getSetupPlans,
   getWebsiteStep,
   limitMessage,
   lookupCompetitorByName,
@@ -148,8 +150,9 @@ export async function StepContent({ step, state, plan, returned }: Props) {
       />
     );
   }
-  const [m, addOn, blocked] = await Promise.all([
+  const [m, setup, addOn, blocked] = await Promise.all([
     getModelsStep(draftId, next),
+    getSetupPlans(draftId, next),
     // Only when setup finishes here: on the card step the checkout bills the business.
     state.needsCard ? null : getSetupAddOn(draftId, next),
     state.needsCard ? null : getFinishBlock(next),
@@ -157,13 +160,17 @@ export async function StepContent({ step, state, plan, returned }: Props) {
   if (!m) redirect(stepPath("website"));
   // A trial with 2 set-up businesses already: the draft stays saved until the plan starts (D-16).
   if (blocked) return <UpgradeNote reason={blocked} hasBusinesses={state.hasFinishedBusiness} draftSaved />;
+  // The plan finishing bills: Billing's add-on plan when the business joins a running subscription, else the draft's.
+  const planId = addOn?.planId ?? setup.planId;
+  const current = setup.plans.find((p) => p.id === planId);
   return (
     <ModelsStep
       businessId={draftId}
       models={m.models as ModelId[]}
       frequency={m.frequency as Frequency}
       activeQuestions={m.activeQuestions}
-      plan={m.plan}
+      plan={current ? { name: current.name, monthlyCredits: current.monthlyCredits } : m.plan}
+      planChoice={setup.plans.length > 1 ? { plans: setup.plans, currentId: planId, choose: chooseSetupPlan } : null}
       finishLabel={state.needsCard ? "Continue" : "Finish setup"}
       addOn={addOn}
       save={saveModelsStep}

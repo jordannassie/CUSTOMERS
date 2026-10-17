@@ -7,6 +7,7 @@ import { CompetitorPicker } from "@/components/onboarding/CompetitorPicker";
 import { getCompetitorAliases, saveCompetitorAliases } from "@/modules/competitors";
 import { getCompetitorStep, limitMessage, lookupCompetitorByName, saveCompetitorList } from "@/modules/onboarding";
 import { getWorkspace } from "@/modules/workspace";
+import { PageHeader } from "@/components/app/PageHeader";
 
 export const metadata = { title: "Manage competitors", robots: { index: false } };
 
@@ -30,13 +31,17 @@ export default async function ManageCompetitorsPage() {
         <ArrowLeft aria-hidden className="size-4" />
         Back to competitors
       </Link>
-      <header className="mb-8 max-w-2xl">
-        <h1 className="text-2xl font-semibold tracking-[-0.02em]">Manage competitors</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Each scan checks whether AI recommends these businesses instead of {step.businessName}.
-          {step.limit !== null ? ` Your plan tracks up to ${step.limit}.` : null}
-        </p>
-      </header>
+      <div className="mb-6">
+        <PageHeader
+          title="Manage competitors"
+          description={
+            <>
+              Each scan checks whether AI recommends these businesses instead of {step.businessName}.
+              {step.limit !== null ? ` Your plan tracks up to ${step.limit}.` : null}
+            </>
+          }
+        />
+      </div>
       {/* Keyed by the saved list and the move note: a list changed by a move, or saved for the new place, shows fresh. */}
       <CompetitorPicker
         key={[...step.saved.map((s) => s.placesId ?? s.name), step.locationNote].join("|")}

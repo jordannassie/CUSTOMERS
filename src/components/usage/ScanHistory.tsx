@@ -28,10 +28,10 @@ export function ScanHistory({ scans }: { scans: UsageReport["scans"] }) {
   return (
     <section aria-labelledby="history-heading" className="rounded-md border border-border bg-surface">
       <div className="px-5 pt-5 pb-3">
-        <h2 id="history-heading" className="text-[15px] font-semibold tracking-[-0.02em]">
+        <h2 id="history-heading" className="text-base font-semibold tracking-[-0.02em]">
           Scan history
         </h2>
-        <p className="mt-1 text-sm text-muted-foreground">
+        <p className="mt-3 text-sm text-muted-foreground">
           Each check a model answers costs 1 credit, including answers reused from a recent scan. Checks that fail are
           never charged.
         </p>

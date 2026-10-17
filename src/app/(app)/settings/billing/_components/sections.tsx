@@ -91,10 +91,10 @@ export function CreditsPanel({ buyHref, usageHref }: { buyHref: string; usageHre
       <h2 id="credits-heading" className="text-base font-semibold tracking-[-0.02em]">
         Credits
       </h2>
-      <p className="mt-1 text-sm text-muted-foreground">
+      <p className="mt-3 text-sm text-muted-foreground">
         Plan credits reset each month. If you run low, top-up credits never expire.
       </p>
-      <div className="mt-4 flex flex-wrap gap-2">
+      <div className="mt-3 flex flex-wrap gap-2">
         <Button asChild>
           <Link href={buyHref}>Buy credits</Link>
         </Button>
@@ -112,7 +112,7 @@ export function CancelPanel({ cancel, trialing }: { cancel: ChangeAction; triali
       <h2 id="cancel-heading" className="text-base font-semibold tracking-[-0.02em]">
         Cancel plan
       </h2>
-      <p className="mt-1 text-sm text-muted-foreground">
+      <p className="mt-3 text-sm text-muted-foreground">
         {trialing
           ? "Your free trial keeps going until its end date, and you won't be charged."
           : "Your plan stops at the end of this billing period."}{" "}
@@ -125,7 +125,7 @@ export function CancelPanel({ cancel, trialing }: { cancel: ChangeAction; triali
         confirmLabel="Cancel anyway"
         reasonLabel="Why are you canceling? (optional)"
         action={cancel}
-        className="mt-4 border-low/50 text-low-text hover:bg-low-bg hover:text-low-text"
+        className="mt-3 border-low/50 text-low-text hover:bg-low-bg hover:text-low-text"
       />
     </section>
   );
@@ -136,12 +136,12 @@ export function NoPlan({ ended, choosePlanHref }: { ended: boolean; choosePlanHr
   return (
     <section className="rounded-md border border-dashed border-border bg-surface px-6 py-10 text-center" data-testid="no-plan">
       <h2 className="text-base font-semibold tracking-[-0.02em]">{ended ? "Your plan has ended" : "You don't have a plan yet"}</h2>
-      <p className="mx-auto mt-2 max-w-[440px] text-sm text-muted-foreground">
+      <p className="mx-auto mt-3 max-w-[440px] text-sm text-muted-foreground">
         {ended
           ? "Your results are still here to read. Choose a plan to start your scans again."
           : "Choose a plan for your businesses to keep your scans running."}
       </p>
-      <Button asChild className="mt-5">
+      <Button asChild className="mt-3">
         <Link href={choosePlanHref}>{ended ? "Start your plan again" : "Choose a plan"}</Link>
       </Button>
     </section>

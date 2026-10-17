@@ -45,7 +45,7 @@ export function AddQuestionForm({ businessId, example, activeCount, models, freq
 
   return (
     <form onSubmit={submit} aria-label="Add a question" className="flex flex-col gap-3 rounded-md border border-border bg-surface p-5">
-      <div className="flex flex-col gap-1">
+      <div className="flex flex-col gap-3">
         <label htmlFor="new-question" className="text-sm font-medium">
           Add your own question
         </label>

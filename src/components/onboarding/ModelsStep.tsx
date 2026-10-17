@@ -8,6 +8,7 @@ import { setupAddOnText, type SetupAddOnCopy } from "@/modules/billing/plan-chan
 import { estimateMonthlyCredits } from "@/modules/credits/estimate";
 import { FREQUENCIES, type Frequency, type ModelId } from "@/modules/settings/schema";
 import { FREQUENCY_LABELS, MODELS, untickWarning } from "@/modules/settings/service";
+import { SetupPlan, type SetupPlanChoice } from "./SetupPlan";
 import { StepActions, StepError } from "./StepBits";
 
 const DOT: Record<ModelId, string> = { openai: "bg-chatgpt", anthropic: "bg-claude", perplexity: "bg-perplexity" };
@@ -24,6 +25,8 @@ type Props = {
   finishLabel: string;
   /** Finishing adds this business to the agency's subscription at this price (BUG-071, D-57). */
   addOn?: AddOn | null;
+  /** The plan picker for this business (BUG-244); `currentId` is the plan finishing bills. */
+  planChoice?: { plans: SetupPlanChoice[]; currentId: string; choose: React.ComponentProps<typeof SetupPlan>["choose"] } | null;
   save: (input: {
     businessId: string;
     models: ModelId[];
@@ -35,7 +38,7 @@ type Props = {
 type AddOn = SetupAddOnCopy & { planId: string; previewedAt: number };
 
 // MVP_SPEC 3.1 step 7 and 4.3: the estimate follows every tick and switch at once, before anything is saved.
-export function ModelsStep({ businessId, models, frequency, activeQuestions, plan, finishLabel, addOn = null, save }: Props) {
+export function ModelsStep({ businessId, models, frequency, activeQuestions, plan, finishLabel, addOn = null, planChoice = null, save }: Props) {
   const router = useRouter();
   const [chosen, setChosen] = useState<ModelId[]>(models);
   const [often, setOften] = useState<Frequency>(frequency);
@@ -64,9 +67,9 @@ export function ModelsStep({ businessId, models, frequency, activeQuestions, pla
   }
 
   return (
-    <form onSubmit={submit} className="flex flex-col gap-8">
-      <div className="grid gap-8 md:grid-cols-[minmax(0,1fr)_260px]">
-        <div className="flex flex-col gap-8">
+    <form onSubmit={submit} className="flex flex-col gap-6">
+      <div className="grid gap-6 md:grid-cols-[minmax(0,1fr)_260px] md:gap-8">
+        <div className="flex flex-col gap-6">
           <fieldset className="flex flex-col gap-2">
             <legend className="mb-2 text-sm font-medium">Which AI should we check?</legend>
             {MODELS.map((model) => {
@@ -116,12 +119,12 @@ export function ModelsStep({ businessId, models, frequency, activeQuestions, pla
 
         <aside aria-live="polite" data-testid="credit-estimate" className="self-start rounded-md border border-border bg-muted p-5 md:sticky md:top-8">
           <p className="text-[13px] text-muted-foreground">Estimated use</p>
-          <p className="mt-2 leading-none">
+          <p className="mt-3 leading-none">
             <span className="text-[32px] font-semibold tracking-[-0.03em] tabular-nums">{count(credits)}</span>
-            <span className="mt-2 block text-sm text-muted-foreground">credits a month</span>
+            <span className="mt-3 block text-sm text-muted-foreground">credits a month</span>
           </p>
           {share !== null ? (
-            <div className="mt-4 flex flex-col gap-1.5">
+            <div className="mt-3 flex flex-col gap-1.5">
               <div className="h-1.5 overflow-hidden rounded-[2px] bg-border" aria-hidden>
                 <div className={cn("h-full transition-[width] duration-200 ease-out", over ? "bg-mid" : "bg-primary")} style={{ width: `${share}%` }} />
               </div>
@@ -132,17 +135,25 @@ export function ModelsStep({ businessId, models, frequency, activeQuestions, pla
               </p>
             </div>
           ) : null}
-          <p className="mt-4 border-t border-border pt-3 text-xs leading-relaxed text-text-hint">
+          <p className="mt-3 border-t border-border pt-3 text-xs leading-relaxed text-text-hint">
             {count(activeQuestions)} {activeQuestions === 1 ? "question" : "questions"} × {chosen.length} {chosen.length === 1 ? "model" : "models"}, checked {CADENCE[often]}. Each answer uses 1 credit.
           </p>
         </aside>
       </div>
 
-      {addOn && (
+      {planChoice ? (
+        <SetupPlan
+          businessId={businessId}
+          plans={planChoice.plans}
+          currentId={planChoice.currentId}
+          note={addOn ? setupAddOnText(addOn) : null}
+          choose={planChoice.choose}
+        />
+      ) : addOn ? (
         <p data-testid="add-on-note" className="rounded-md border border-border bg-surface px-4 py-3 text-sm">
           {setupAddOnText(addOn)}
         </p>
-      )}
+      ) : null}
       <StepError message={error} />
       <StepActions
         backHref="/onboarding/questions"

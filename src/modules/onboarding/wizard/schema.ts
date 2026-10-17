@@ -58,6 +58,9 @@ export const questionsStepInput = z.object({
 
 export const businessOnly = z.object({ businessId: z.uuid() });
 
+/** The plan picked for the draft on the last setup step (BUG-244). */
+export const setupPlanInput = z.object({ businessId: z.uuid(), planId: z.enum(PLAN_IDS) });
+
 export const modelsStepInput = z.object({
   businessId: z.uuid(),
   models: z

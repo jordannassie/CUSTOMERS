@@ -7,6 +7,7 @@ import { getCurrentAgency, requireAgency, requireUser } from "@/modules/auth";
 import { getPlanStartStatus, loadChoosePlanPage, startPlanCheckout } from "@/modules/billing";
 import { BILLING_HREF, CHOOSE_PLAN_HREF } from "@/modules/workspace";
 import { ChoosePlan } from "./_components/choose-plan";
+import { PageHeader } from "@/components/app/PageHeader";
 
 export const metadata: Metadata = { title: "Choose a plan", robots: { index: false } };
 
@@ -30,18 +31,16 @@ export default async function ChoosePlanPage({ searchParams }: Props) {
   return (
     <PageContainer>
       <div className="max-w-[760px]">
-        <header>
-          <h1 className="text-2xl font-semibold tracking-[-0.02em]">
-            {page.state.kind === "choose" && page.state.ended ? "Start your plan again" : "Choose a plan"}
-          </h1>
-          <p className="mt-1 text-[15px] text-muted-foreground">One plan for each of your businesses. You can change it any time on Billing.</p>
-        </header>
+        <PageHeader
+          title={page.state.kind === "choose" && page.state.ended ? "Start your plan again" : "Choose a plan"}
+          description="One plan for each of your businesses. You can change it any time on Billing."
+        />
         <div className="mt-6">
           {page.state.kind === "no_business" ? (
             <section className="rounded-md border border-dashed border-border bg-surface px-6 py-10 text-center" data-testid="no-business">
               <h2 className="text-base font-semibold tracking-[-0.02em]">Set up a business first</h2>
-              <p className="mx-auto mt-2 max-w-[440px] text-sm text-muted-foreground">Each plan covers one business. Add yours, then choose its plan.</p>
-              <Button asChild className="mt-5">
+              <p className="mx-auto mt-3 max-w-[440px] text-sm text-muted-foreground">Each plan covers one business. Add yours, then choose its plan.</p>
+              <Button asChild className="mt-3">
                 <Link href="/onboarding">Set up a business</Link>
               </Button>
             </section>

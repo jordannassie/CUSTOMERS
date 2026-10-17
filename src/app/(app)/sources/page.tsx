@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getSources } from "@/modules/sources";
 import { getWorkspace } from "@/modules/workspace";
+import { PageHeader } from "@/components/app/PageHeader";
 
 export const metadata = { title: "Sources", robots: { index: false } };
 
@@ -25,15 +26,19 @@ export default async function SourcesPage() {
   return (
     <PageContainer>
       <div className="flex flex-col gap-6">
-        <header className="flex max-w-[680px] flex-col gap-1.5">
-          <h1 className="flex flex-wrap items-center gap-2 text-2xl font-semibold tracking-[-0.02em]">
-            Sources <SampleDataBadge show={workspace.account?.isTest} />
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            Websites AI cited in the last 30 days when answering customer questions{where}. Being listed on these
-            sites makes it easier for AI to recommend you.
-          </p>
-        </header>
+        <PageHeader
+          title={
+            <>
+              Sources <SampleDataBadge show={workspace.account?.isTest} />
+            </>
+          }
+          description={
+            <>
+              Websites AI cited in the last 30 days when answering customer questions{where}. Being listed on these sites
+              makes it easier for AI to recommend you.
+            </>
+          }
+        />
 
         {sources.answers === 0 ? (
           <Empty testId="no-scans" title="No scans yet">
@@ -87,8 +92,8 @@ function Empty({ title, testId, children }: { title: string; testId: string; chi
   return (
     <Card data-testid={testId}>
       <CardContent className="flex flex-col">
-        <h2 className="text-base font-semibold">{title}</h2>
-        <div className="mt-1 flex max-w-[560px] flex-col text-sm text-muted-foreground">{children}</div>
+        <h2 className="text-base font-semibold tracking-[-0.02em]">{title}</h2>
+        <div className="mt-3 flex max-w-[560px] flex-col text-sm text-muted-foreground">{children}</div>
       </CardContent>
     </Card>
   );

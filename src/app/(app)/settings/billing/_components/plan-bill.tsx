@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Plus } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { formatUsd } from "@/modules/billing/format";
+import { planMoves } from "@/modules/billing/plan-change/labels";
 import type { BillingBusiness, BillingView } from "@/modules/billing";
 import { CancelDialog } from "./cancel-dialog";
 import { ChangeDialog, type ChangeAction } from "./change-dialog";
@@ -21,7 +22,7 @@ export function PlanBill({ view, actions, addBusinessHref }: Props) {
 
   return (
     <section aria-labelledby="plan-heading" className="rounded-md border border-border bg-surface">
-      <div className="flex flex-wrap items-baseline justify-between gap-2 px-5 pt-5">
+      <div className="flex flex-wrap items-baseline justify-between gap-3 px-5 pt-5">
         <h2 id="plan-heading" className="text-base font-semibold tracking-[-0.02em]">
           Businesses on your plan
         </h2>
@@ -29,7 +30,7 @@ export function PlanBill({ view, actions, addBusinessHref }: Props) {
       </div>
 
       {view.onPlan.length === 0 ? (
-        <p className="mx-5 mt-4 rounded-md border border-dashed border-border px-4 py-6 text-center text-sm text-muted-foreground">
+        <p className="mx-5 mt-3 rounded-md border border-dashed border-border px-4 py-6 text-center text-sm text-muted-foreground">
           No businesses are on your plan yet. Add one below to start its scans.
         </p>
       ) : (
@@ -51,7 +52,7 @@ export function PlanBill({ view, actions, addBusinessHref }: Props) {
       {view.notOnPlan.length > 0 && (
         <div className="border-t border-border px-5 py-4" data-testid="not-on-plan">
           <h3 className="text-sm font-medium">Not on your plan yet</h3>
-          <ul className="mt-2 flex flex-col gap-3">
+          <ul className="mt-3 flex flex-col gap-3">
             {view.notOnPlan.map((b) => (
               <li key={b.id} className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                 <span className="text-sm">{b.name}</span>
@@ -109,7 +110,6 @@ function BusinessLine({
   canRemove: boolean;
 }) {
   const { plan, pending } = business;
-  const others = view.plans.filter((p) => p.id !== plan.id);
   if (business.notCharged) return <RemovedLine id={business.id} name={business.name} />;
   return (
     <li className="px-5 py-4" data-testid={`plan-line-${business.id}`}>
@@ -147,13 +147,14 @@ function BusinessLine({
               variant="default"
             />
           )}
-          {/* A business that is leaving can only stay: moving it to another plan would mean nothing. */}
-          {pending?.kind !== "remove" && others.map((p) =>
-            p.priceCents > plan.priceCents ? (
+          {/* A business that is leaving can only stay: moving it to another plan would mean nothing. The labels follow
+              the plan it is on (planMoves), so a business on Pro is never offered "Upgrade to Pro" (BUG-238). */}
+          {pending?.kind !== "remove" && planMoves(plan.id, view.plans).map(({ plan: p, move, label }) =>
+            move === "upgrade" ? (
               !pastDue && (
                 <ChangeDialog
                   key={p.id}
-                  label={`Upgrade to ${p.name}`}
+                  label={label}
                   title={`Upgrade ${business.name} to ${p.name}?`}
                   confirmLabel="Upgrade now"
                   action={actions.upgrade}
@@ -164,9 +165,9 @@ function BusinessLine({
               !(pending?.kind === "plan" && pending.planName === p.name) && (
                 <ChangeDialog
                   key={p.id}
-                  label={`Change to ${p.name}`}
+                  label={label}
                   title={`Move ${business.name} to ${p.name}?`}
-                  confirmLabel={`Change to ${p.name}`}
+                  confirmLabel={label}
                   action={actions.downgrade}
                   input={{ businessId: business.id, planId: p.id }}
                 />

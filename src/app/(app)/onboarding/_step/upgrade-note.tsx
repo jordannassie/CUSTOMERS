@@ -11,14 +11,14 @@ export function UpgradeNote({ reason, hasBusinesses, draftSaved = false }: { rea
     <div className="rounded-md border border-border bg-surface p-6" data-testid="upgrade-note">
       <Building2 aria-hidden className="size-5 text-primary" />
       <p className="mt-3 text-[15px] font-medium">{reason}</p>
-      <p className="mt-1 text-sm text-muted-foreground">
+      <p className="mt-3 text-sm text-muted-foreground">
         {draftSaved
           ? "This business is saved. Start your plan, then come back here to finish setting it up."
           : hasBusinesses
           ? "Your businesses and their scans stay as they are."
           : "There are no businesses in your account right now. Your settings and billing are still here."}
       </p>
-      <div className="mt-5 flex flex-wrap gap-3">
+      <div className="mt-3 flex flex-wrap gap-3">
         <Button asChild>
           <Link href={NEW_BUSINESS_PLAN_HREF}>See plans</Link>
         </Button>

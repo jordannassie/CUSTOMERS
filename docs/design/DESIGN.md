@@ -54,6 +54,11 @@ Rules:
 
 - **Corners**: 4px on buttons, inputs, cards, chips, menus and dialogs. 3px on badges. 2px on progress bars. Round only for score rings, avatars and colour dots.
 - **Spacing**: 4px grid (4, 8, 12, 16, 20, 24, 32, 48, 64, 88).
+- **Rhythm** (the same on a phone and a desktop):
+  - Page header: use `PageHeader` (`src/components/app/PageHeader.tsx`). Title, description and any line under them are 12px apart; the page's content starts 24px below.
+  - Cards and panels: 20px padding. Title 16px, weight 600, -0.02em (the shadcn `CardTitle` default). Title, description and the first content under them are 12px apart (the `Card` default), and so is every following line or button row.
+  - 24px between bigger blocks inside a card (a list, a table, a chart), between cards on a page, and between onboarding form field groups. Repeated items in a list of cards are 12px apart.
+  - Kept tight on purpose: a list row's name and its detail line (0 to 4px), a label above its field (8px), a chart and its axis labels.
 - **Shadows**: none on cards (border only). A soft shadow only on floating layers: menus, popovers, dialogs, toasts.
 - **Layout**: content max width 1120px on marketing pages; dashboard uses a 240px sidebar and fluid content.
 

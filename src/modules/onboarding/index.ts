@@ -13,6 +13,7 @@ export { hasPlaceholder, isFairQuestion, type PreparedQuestion } from "./questio
 export {
   checkCardStep,
   checkTrialCredits,
+  chooseSetupPlan,
   saveAgencyStep,
   saveCompetitorsStep,
   saveDetailsStep,
@@ -29,12 +30,14 @@ export {
   getFinishBlock,
   getModelsStep,
   getSetupAddOn,
+  getSetupPlans,
   getQuestionsStep,
   getWebsiteStep,
   getWizardState,
 } from "./wizard/queries";
 export type { WebsiteStepDefaults, WizardContext } from "./wizard/dal";
 export type { DetailsStep } from "./wizard/details/dal";
+export type { SetupPlanOption } from "./wizard/plan/dal";
 export type { ModelsStep, QuestionsStep } from "./wizard/questions/dal";
 export {
   CREDITS_LATE,

@@ -16,7 +16,13 @@ export function TrialSummary({ offer }: { offer: CardOffer }) {
   return (
     <section aria-label="Your trial" className="rounded-md border border-border bg-muted p-5">
       <div className="flex items-baseline justify-between gap-4">
-        <p className="text-sm font-medium">{offer.planName} plan, 1 business</p>
+        <p className="text-sm font-medium">
+          {offer.planName} plan, 1 business{" "}
+          {/* The plan is picked on the step before (BUG-244). */}
+          <Link href="/onboarding/models" className="ml-1 text-[13px] font-medium text-primary underline-offset-2 hover:underline">
+            Change plan
+          </Link>
+        </p>
         <p className="text-sm tabular-nums">
           <span className="font-semibold">$0</span> <span className="text-muted-foreground">today</span>
         </p>

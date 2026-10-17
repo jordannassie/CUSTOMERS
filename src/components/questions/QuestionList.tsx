@@ -32,9 +32,9 @@ export function QuestionList({ title, description, testId, questions, view, limi
 
   return (
     <section aria-labelledby={`${testId}-title`} data-testid={testId} className="overflow-hidden rounded-md border border-border bg-surface">
-      <div className={`grid gap-1 border-b border-border px-5 py-4 ${grid}`}>
-        <div className="flex flex-col gap-1">
-          <h2 id={`${testId}-title`} className="text-base font-semibold">
+      <div className={`grid gap-1 border-b border-border p-5 ${grid}`}>
+        <div className="flex flex-col gap-3">
+          <h2 id={`${testId}-title`} className="text-base font-semibold tracking-[-0.02em]">
             {title}
           </h2>
           <p className="text-[13px] text-muted-foreground">{description}</p>

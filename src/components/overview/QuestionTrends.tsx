@@ -15,6 +15,8 @@ export function QuestionTrends({ trends, businessName }: { trends: Trends; busin
   // Only with SHOW_POSITION (D-63): where AI listed the business. Never called a rank.
   const places = trends.averagePlace !== undefined;
   return (
+    // Title, description and the lines under them 12px apart (the Card default, DESIGN.md Rhythm); the bigger blocks
+    // (movers, tables) 24px.
     <Card data-testid="question-trends">
       <CardHeader>
         <CardTitle className="text-base">Question by question</CardTitle>
@@ -22,15 +24,18 @@ export function QuestionTrends({ trends, businessName }: { trends: Trends; busin
           How many of the AI tools named {businessName} for each question, at each weekly scan.
         </CardDescription>
       </CardHeader>
-      <CardContent className="flex flex-col gap-8">
+      <CardContent className="flex flex-col gap-6">
         {scans.length === 0 ? (
           <p className="text-sm text-muted-foreground">Each question&apos;s results show here after your first scan.</p>
         ) : (
           <>
-            {places && <AveragePlaceLine average={trends.averagePlace ?? null} businessName={businessName} />}
-            {scans.length < 2 ? (
-              <p className="text-sm text-muted-foreground">Up or down shows from your second weekly scan.</p>
-            ) : (
+            {(places || scans.length < 2) && (
+              <div className="flex flex-col gap-3">
+                {places && <AveragePlaceLine average={trends.averagePlace ?? null} businessName={businessName} />}
+                {scans.length < 2 && <p className="text-sm text-muted-foreground">Up or down shows from your second weekly scan.</p>}
+              </div>
+            )}
+            {scans.length >= 2 && (
               <div className="grid gap-6 sm:grid-cols-2">
                 <Movers title="Getting better" movers={trends.better} up empty="No question has gone up in the last 4 weeks." />
                 <Movers title="Getting worse" movers={trends.worse} up={false} empty="No question has gone down in the last 4 weeks." />
@@ -39,7 +44,7 @@ export function QuestionTrends({ trends, businessName }: { trends: Trends; busin
             {trends.rows.length > 0 && <TrendTable caption="Questions in your score" rows={trends.rows} scans={scans} places={places} />}
             {trends.own.length > 0 && (
               <div className="flex flex-col gap-3" data-testid="own-question-trends">
-                <div>
+                <div className="flex flex-col gap-3">
                   <h3 className="text-sm font-medium">Your own questions</h3>
                   <p className="text-sm text-muted-foreground">Not part of the score.</p>
                 </div>

@@ -5,7 +5,9 @@ import { previewSetupAddOn, type SetupAddOn, type TrialOffer } from "@/modules/b
 import { awaitingTrialCredits, loadCardStep } from "./card/dal";
 import { loadWebsiteStep, loadWizardState, type WebsiteStepDefaults, type WizardContext } from "./dal";
 import { loadDetailsStep, type DetailsStep } from "./details/dal";
-import { loadModelsStep, loadQuestionsStep, selectedPlan, type ModelsStep, type QuestionsStep } from "./questions/dal";
+import { draftPlanId, loadSetupPlans, type SetupPlanOption } from "./plan/dal";
+import { loadModelsStep, loadQuestionsStep, type ModelsStep, type QuestionsStep } from "./questions/dal";
+import type { PlanId } from "./steps";
 
 // For the wizard pages: each redirects to login (then back to `next`) when signed out.
 
@@ -57,7 +59,14 @@ export async function getQuestionsStep(businessId: string, next: string): Promis
 
 export async function getModelsStep(businessId: string, next: string): Promise<ModelsStep | null> {
   const user = await requireUser({ next });
-  return loadModelsStep(user.id, businessId, await selectedPlan(user.id));
+  return loadModelsStep(user.id, businessId, await draftPlanId(user.id, businessId));
+}
+
+/** The plans the draft can be set up on and the one it is on now (BUG-244). */
+export async function getSetupPlans(businessId: string, next: string): Promise<{ plans: SetupPlanOption[]; planId: PlanId }> {
+  const user = await requireUser({ next });
+  const [plans, planId] = await Promise.all([loadSetupPlans(), draftPlanId(user.id, businessId)]);
+  return { plans, planId };
 }
 
 export async function getCardStep(businessId: string, next: string): Promise<{ offer: TrialOffer | null; started: boolean } | null> {

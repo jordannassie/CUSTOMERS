@@ -115,14 +115,14 @@ export function CompetitorPicker(props: CompetitorPickerProps) {
 
   // One column on phones that never grows past the screen: a long name in the list widened the page (2026-10-15).
   return (
-    <div className="grid grid-cols-[minmax(0,1fr)] gap-8 pb-20 lg:grid-cols-[minmax(0,1fr)_340px] lg:pb-0">
+    <div className="grid grid-cols-[minmax(0,1fr)] gap-6 pb-20 lg:grid-cols-[minmax(0,1fr)_340px] lg:pb-0">
       {locationNote ? <CompetitorLocationNote text={locationNote} /> : null}
-      <div className="flex min-w-0 flex-col gap-8">
+      <div className="flex min-w-0 flex-col gap-6">
         <section aria-labelledby="suggested-title">
           <h2 id="suggested-title" className="text-base font-semibold tracking-[-0.02em]">
             Near you on Google
           </h2>
-          <p className="mt-1 text-[13px] text-muted-foreground">Tick the ones customers compare you with.</p>
+          <p className="mt-3 text-[13px] text-muted-foreground">Tick the ones customers compare you with.</p>
           {suggestions.length ? (
             <div className="mt-3 rounded-md border border-border bg-surface">
               <ul className="divide-y divide-border">
@@ -145,7 +145,7 @@ export function CompetitorPicker(props: CompetitorPickerProps) {
           <h2 id="add-title" className="text-base font-semibold tracking-[-0.02em]">
             Add one we missed
           </h2>
-          <p className="mb-3 mt-1 text-[13px] text-muted-foreground">Search Google by name, or add the name as you type it.</p>
+          <p className="mb-3 mt-3 text-[13px] text-muted-foreground">Search Google by name, or add the name as you type it.</p>
           <AddCompetitor businessId={businessId} lookup={lookup} isPicked={isTaken} onAdd={add} />
         </section>
       </div>
@@ -170,11 +170,11 @@ export function CompetitorPicker(props: CompetitorPickerProps) {
           ) : null}
 
           {picked.length ? (
-            <ul className="mt-4 flex flex-col gap-1" aria-label="Picked competitors">
+            <ul className="mt-3 flex flex-col gap-1" aria-label="Picked competitors">
               {picked.map((p) => (
                 <li key={p.placesId ?? key(p.name)} className="flex items-center gap-2 rounded-md py-1.5 pl-1">
                   <span className="min-w-0 flex-1">
-                    <span className="block truncate text-sm" title={p.name}>{p.name}</span>
+                    <span className="block break-words text-sm">{p.name}</span>
                     {!p.placesId ? <span className={cn("block text-xs", p.checkNear ? "text-mid-text" : "text-text-hint")}>{p.checkNear ?? "Added by name"}</span> : null}
                     {p.aliases?.length ? <FullName google={p.aliases[0]} onUse={() => keepFullName(p)} /> : null}
                   </span>
@@ -186,25 +186,25 @@ export function CompetitorPicker(props: CompetitorPickerProps) {
               ))}
             </ul>
           ) : (
-            <p className="mt-4 text-sm text-muted-foreground">
+            <p className="mt-3 text-sm text-muted-foreground">
               Nothing picked yet. We&apos;ll check whether AI recommends these businesses instead of you.
             </p>
           )}
           {picked.some((p) => p.live) ? <GoogleAttribution className="mt-3" /> : null}
 
           {limitHit && limitText ? (
-            <p role="status" className="mt-4 rounded-md bg-mid-bg px-3 py-2 text-[13px] text-mid-text">
+            <p role="status" className="mt-3 rounded-md bg-mid-bg px-3 py-2 text-[13px] text-mid-text">
               {limitText} Remove one to add another.
             </p>
           ) : null}
           {error ? (
-            <p role="alert" className="mt-4 rounded-md bg-low-bg px-3 py-2 text-[13px] text-low-text">
+            <p role="alert" className="mt-3 rounded-md bg-low-bg px-3 py-2 text-[13px] text-low-text">
               {error}
             </p>
           ) : null}
 
           {backHref ? null : (
-            <Button type="button" className="mt-5 hidden w-full lg:inline-flex" disabled={!canSave} onClick={submit}>
+            <Button type="button" className="mt-3 hidden w-full lg:inline-flex" disabled={!canSave} onClick={submit}>
               {pending ? <Loader2 aria-hidden className="animate-spin" /> : null}
               {saveLabel}
             </Button>
@@ -214,7 +214,7 @@ export function CompetitorPicker(props: CompetitorPickerProps) {
 
       {backHref ? (
         <div className="hidden items-center justify-between gap-3 lg:col-span-2 lg:flex">
-          <Button asChild variant="ghost">
+          <Button asChild variant="ghost" className="-ml-4">
             <Link href={backHref}>
               <ArrowLeft aria-hidden />
               Back

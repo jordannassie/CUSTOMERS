@@ -81,7 +81,7 @@ function CardFields({ onAccepted }: { onAccepted: () => void }) {
   }
 
   return (
-    <form onSubmit={submit} className="flex flex-col gap-5">
+    <form onSubmit={submit} className="flex flex-col gap-6">
       <BillingAddressElement />
       <PaymentElement options={{ layout: "tabs" }} />
       <StepError message={error} />

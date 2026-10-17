@@ -46,9 +46,9 @@ export function PickBranch({ businessId, initial, search, pick }: { businessId: 
   }
 
   return (
-    <section id="pick-branch" className="flex flex-col gap-4 rounded-md border border-border bg-surface p-5" data-testid="pick-branch">
-      <div className="flex max-w-[620px] flex-col gap-1">
-        <h2 className="text-base font-semibold tracking-[-0.01em]">Pick your branch on Google</h2>
+    <section id="pick-branch" className="flex flex-col gap-3 rounded-md border border-border bg-surface p-5" data-testid="pick-branch">
+      <div className="flex max-w-[620px] flex-col gap-3">
+        <h2 className="text-base font-semibold tracking-[-0.02em]">Pick your branch on Google</h2>
         <p className="text-sm text-muted-foreground">
           Your website belongs to a business with several locations, so we didn&apos;t pick one for you. Choose the branch
           you manage, so we can compare its Google rating, reviews and hours with your competitors.

@@ -17,6 +17,7 @@ import { BILLING_HREF, BUY_CREDITS_HREF, CHOOSE_PLAN_HREF } from "@/modules/work
 import { PlanBill } from "./_components/plan-bill";
 import { PortalButton } from "./_components/portal-button";
 import { CancelPanel, CreditsPanel, NoPlan, PlanStatus } from "./_components/sections";
+import { PageHeader } from "@/components/app/PageHeader";
 
 export const metadata: Metadata = { title: "Billing", robots: { index: false } };
 
@@ -39,13 +40,11 @@ export default async function BillingPage({ searchParams }: Props) {
   return (
     <PageContainer>
       <div className="max-w-[760px]">
-        <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <h1 className="text-2xl font-semibold tracking-[-0.02em]">Billing</h1>
-            <p className="mt-1 text-[15px] text-muted-foreground">What you pay, for which businesses, and when.</p>
-          </div>
-          {view.stripe !== "none" && <PortalButton open={openBillingPortal} variant={view.status === "past_due" ? "default" : "outline"} />}
-        </header>
+        <PageHeader
+          title="Billing"
+          description="What you pay, for which businesses, and when."
+          actions={view.stripe !== "none" && <PortalButton open={openBillingPortal} variant={view.status === "past_due" ? "default" : "outline"} />}
+        />
 
         {params.portal === "fixture" && (
           <p role="status" data-testid="portal-fixture" className="mt-4 rounded-md border border-border bg-primary-tint px-4 py-3 text-sm">

@@ -17,8 +17,17 @@ import { saveCompetitorsInput, toDomain, type AutofillResult } from "../schema";
 import { advanceStep, isOwnDraft, saveAgency, startBusiness } from "./dal";
 import { saveDetails } from "./details/dal";
 import { awaitingTrialCredits, finishCardStep, startCardCheckout } from "./card/dal";
+import { saveDraftPlan } from "./plan/dal";
 import { finishWizard, saveModels, saveQuestions } from "./questions/dal";
-import { agencyStepInput, businessOnly, detailsStepInput, modelsStepInput, questionsStepInput, websiteStepInput } from "./schema";
+import {
+  agencyStepInput,
+  businessOnly,
+  detailsStepInput,
+  modelsStepInput,
+  questionsStepInput,
+  setupPlanInput,
+  websiteStepInput,
+} from "./schema";
 import { FIRST_SCAN_PATH, stepPath } from "./steps";
 import { loadWizardState } from "./dal";
 
@@ -137,6 +146,21 @@ export async function saveModelsStep(input: unknown): Promise<ActionResult<{ nex
   }
   if (!(await finishWizard(user, businessId, { models, frequency }))) return notFound;
   return { ok: true, data: { next: FIRST_SCAN_PATH } };
+}
+
+/**
+ * The plan for the business being set up, picked on the last step (BUG-244). Nothing is charged here: finishing setup
+ * adds the business to the subscription on this plan, at the price the step shows (D-57), or the card step starts
+ * the trial on it.
+ */
+export async function chooseSetupPlan(input: unknown): Promise<ActionResult<{ planId: string }>> {
+  const user = await userId();
+  if (typeof user !== "string") return user;
+  const parsed = setupPlanInput.safeParse(input);
+  if (!parsed.success) return { ok: false, status: 400, error: "Pick a plan and try again." };
+  const { businessId, planId } = parsed.data;
+  const saved = await saveDraftPlan(user, businessId, planId);
+  return saved.ok ? { ok: true, data: { planId } } : saved;
 }
 
 /** Step 8: the Checkout Session the card form runs on (B-41). */

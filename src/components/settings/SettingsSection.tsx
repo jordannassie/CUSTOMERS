@@ -26,7 +26,7 @@ export function SettingsSection({
         >
           {title}
         </h2>
-        <div className="mt-1.5 text-[13px] leading-relaxed text-muted-foreground">{description}</div>
+        <div className="mt-3 text-[13px] leading-relaxed text-muted-foreground">{description}</div>
       </div>
       <div className="min-w-0">{children}</div>
     </section>

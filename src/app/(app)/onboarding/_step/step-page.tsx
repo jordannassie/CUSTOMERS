@@ -20,7 +20,7 @@ export async function OnboardingStep({ step, searchParams }: { step: StepSlug; s
   const { plan, session_id: sessionId } = await searchParams;
   const { title, lead } = TITLES[step];
   return (
-    <WizardFrame steps={frameSteps(step, state)} title={title} lead={lead} embedded={state.hasFinishedBusiness} wide={step === "competitors" || step === "models"}>
+    <WizardFrame steps={frameSteps(step, state)} title={title} lead={lead} embedded={state.hasFinishedBusiness}>
       <Suspense fallback={<StepSkeleton step={step} />}>
         <StepContent step={step} state={state} plan={plan ?? null} returned={step === "card" && Boolean(sessionId)} />
       </Suspense>

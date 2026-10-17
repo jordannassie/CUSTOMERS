@@ -180,7 +180,7 @@ export type ModelsStep = {
   plan: { name: string; monthlyCredits: number | null } | null;
 };
 
-/** Step 7. The plan is the one picked on the pricing page, else Starter, as in entitlements. */
+/** Step 7. The plan is the draft's (draftPlanId): the one picked for it, else on the pricing page, else Starter. */
 export async function loadModelsStep(userId: string, businessId: string, plan: PlanId | null): Promise<ModelsStep | null> {
   const supabase = await createClient();
   const { data: b, error } = await supabase

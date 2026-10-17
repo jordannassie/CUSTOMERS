@@ -53,7 +53,7 @@ export function ForecastCard({ forecast: f, buyCreditsHref }: Props) {
       <h2 id="forecast-heading" className="text-sm font-medium text-muted-foreground">
         Forecast to {f.kind === "trial" ? "trial end" : f.kind === "renewal" ? "renewal" : "the next 30 days"}
       </h2>
-      <p className={cn("mt-1 flex items-start gap-2 text-xl font-semibold tracking-[-0.02em]", short && "text-low-text")}>
+      <p className={cn("mt-3 flex items-start gap-2 text-xl font-semibold tracking-[-0.02em]", short && "text-low-text")}>
         {short ? (
           <CircleAlert aria-hidden className="mt-1 size-5 shrink-0" />
         ) : (
@@ -61,10 +61,10 @@ export function ForecastCard({ forecast: f, buyCreditsHref }: Props) {
         )}
         {headline}
       </p>
-      <p className="mt-2 max-w-prose text-sm text-muted-foreground">{detail}</p>
+      <p className="mt-3 max-w-prose text-sm text-muted-foreground">{detail}</p>
 
       {f.scans > 0 && (
-        <div className="mt-5">
+        <div className="mt-3">
           <div className={cn("h-2 overflow-hidden rounded-[2px]", short ? "bg-low/25" : "bg-muted")} aria-hidden>
             <div className={cn("h-full", short ? "bg-low" : "bg-primary")} style={{ width: `${fill}%` }} />
           </div>
@@ -76,7 +76,7 @@ export function ForecastCard({ forecast: f, buyCreditsHref }: Props) {
       )}
 
       {short && (
-        <Button asChild className="mt-5 self-start">
+        <Button asChild className="mt-3 self-start">
           <Link href={buyCreditsHref}>Buy credits</Link>
         </Button>
       )}

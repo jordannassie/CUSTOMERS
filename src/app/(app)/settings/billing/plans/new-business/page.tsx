@@ -7,6 +7,7 @@ import { canAddBusiness, REASONS, TRIAL_MAX_BUSINESSES } from "@/modules/entitle
 import { addBusinessStep, getWizardState, PLAN_IDS, stepPath } from "@/modules/onboarding";
 import { BILLING_HREF } from "@/modules/workspace";
 import { NewBusinessPlanPicker } from "./_components/plan-picker";
+import { PageHeader } from "@/components/app/PageHeader";
 
 export const metadata: Metadata = { title: "Choose a plan", robots: { index: false } };
 
@@ -27,12 +28,10 @@ export default async function NewBusinessPlanPage() {
   return (
     <PageContainer>
       <div className="max-w-[760px]">
-        <header>
-          <h1 className="text-2xl font-semibold tracking-[-0.02em]">Choose a plan</h1>
-          <p className="mt-1 text-[15px] text-muted-foreground">
-            Pick a plan for the business you&apos;re about to set up. You can change it any time on Billing.
-          </p>
-        </header>
+        <PageHeader
+          title="Choose a plan"
+          description="Pick a plan for the business you're about to set up. You can change it any time on Billing."
+        />
         <div className="mt-6">
           {plans.length === 0 ? (
             <p className="rounded-md border border-dashed border-border bg-surface px-6 py-10 text-center text-sm text-muted-foreground">

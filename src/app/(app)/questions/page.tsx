@@ -15,6 +15,7 @@ import {
   setQuestionActive,
 } from "@/modules/questions";
 import { getWorkspace } from "@/modules/workspace";
+import { PageHeader } from "@/components/app/PageHeader";
 
 export const metadata = { title: "Questions", robots: { index: false } };
 
@@ -36,15 +37,19 @@ export default async function QuestionsPage() {
   return (
     <PageContainer>
       <div className="flex flex-col gap-6">
-        <header className="flex max-w-[680px] flex-col gap-1.5">
-          <h1 className="flex flex-wrap items-center gap-2 text-2xl font-semibold tracking-[-0.02em]">
-            Questions <SampleDataBadge show={workspace.account?.isTest} />
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            The customer questions we ask {asked} for you on every scan. Each bar shows the last checks from the past
-            30 days, filled in where AI recommended you.
-          </p>
-        </header>
+        <PageHeader
+          title={
+            <>
+              Questions <SampleDataBadge show={workspace.account?.isTest} />
+            </>
+          }
+          description={
+            <>
+              The customer questions we ask {asked} for you on every scan. Each bar shows the last checks from the past 30
+              days, filled in where AI recommended you.
+            </>
+          }
+        />
 
         <CreditSummary view={view} />
 
@@ -60,8 +65,8 @@ export default async function QuestionsPage() {
 
         {view.active.length === 0 ? (
           <div data-testid="no-questions" className="rounded-md border border-border bg-surface p-5">
-            <h2 className="text-base font-semibold">No active questions</h2>
-            <p className="mt-1 text-sm text-muted-foreground">
+            <h2 className="text-base font-semibold tracking-[-0.02em]">No active questions</h2>
+            <p className="mt-3 text-sm text-muted-foreground">
               Scans check nothing until you add a question{view.paused.length > 0 ? " or resume a paused one" : ""}.
             </p>
           </div>

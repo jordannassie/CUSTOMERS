@@ -9,6 +9,7 @@ import { loadPlanChangeData, raiseScheduleLost, saveCancelReason } from "./dal";
 import { PlanChangeError, type PlanChange } from "./planner";
 import { businessPlanInput, cancelInput, keepBusinessInput, removeBusinessInput, subscriptionInput, type CancelReason } from "./schema";
 import { applyPlanChange, previewPlanChange, type PlanChangeDone, type PlanChangePreview } from "./service";
+import { syncAfterChange } from "./sync-after";
 
 // Plan changes (B-44, MVP_SPEC 11.5, D-57). Each action checks auth and input itself. Called without
 // previewedAt it returns the price effect to confirm; called again with the preview's previewedAt it applies.
@@ -76,6 +77,8 @@ async function run(
       return { ok: true, data: { step: "preview", ...(await previewPlanChange(context, change, deps)) } };
     }
     const done = await applyPlanChange(context, change, previewedAt, deps);
+    // The page refreshes next: it must show the new plan, not wait for the webhook (BUG-238).
+    await syncAfterChange(access, context.subscriptionId);
     await keepReason(agencyId, change, reason);
     return { ok: true, data: { step: "done", ...done } };
   } catch (error) {

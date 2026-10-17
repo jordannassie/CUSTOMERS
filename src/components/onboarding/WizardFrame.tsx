@@ -12,12 +12,11 @@ type Props = {
   lead?: React.ReactNode;
   /** Inside the app frame (adding another business): no full-height rail. */
   embedded?: boolean;
-  wide?: boolean;
   children: React.ReactNode;
 };
 
 // MVP_SPEC 3.1: one calm step at a time. Desktop keeps the whole path in a rail; a phone gets a compact bar.
-export function WizardFrame({ steps, title, lead, embedded = false, wide = false, children }: Props) {
+export function WizardFrame({ steps, title, lead, embedded = false, children }: Props) {
   const index = steps.findIndex((s) => s.state === "current");
   const current = steps[index];
   // The app frame already has the page's <main>.
@@ -44,31 +43,55 @@ export function WizardFrame({ steps, title, lead, embedded = false, wide = false
       ) : null}
 
       <Main className="min-w-0">
-        <div className={cn("border-b border-border bg-surface px-4 py-3 sm:px-8", embedded ? "" : "lg:hidden")}>
-          <div className="mx-auto flex max-w-3xl items-baseline justify-between gap-3">
-            <p className="text-[13px] font-medium">
-              Step {index + 1} of {steps.length}
-            </p>
-            <p className="truncate text-[13px] text-muted-foreground" title={current?.label}>{current?.label}</p>
+        {/* Outside the app frame a phone gets a full-width strip; inside it, the bar sits in the step's column, clear of the
+            banners above (BUG-239). */}
+        {!embedded ? (
+          <div className="border-b border-border bg-surface py-3 lg:hidden">
+            <StepProgress steps={steps} index={index} label={current?.label} className={cn(STEP_COLUMN, "mx-auto")} />
           </div>
-          <div className="mx-auto mt-2 flex max-w-3xl gap-1" aria-hidden>
-            {steps.map((s) => (
-              <span key={s.slug} className={cn("h-1 flex-1 rounded-[2px]", s.state === "todo" ? "bg-border" : "bg-primary")} />
-            ))}
-          </div>
-        </div>
+        ) : null}
 
-        {/* Every step shares one left edge; narrow steps just stop sooner on the right (UI-008). */}
-        <div className="mx-auto max-w-5xl px-4 py-8 sm:px-8 lg:py-12">
-          <header className="mb-8">
-            <h1 className="text-2xl font-semibold tracking-[-0.02em] sm:text-[32px] sm:leading-tight">{title}</h1>
-            {lead ? <p className="mt-2 max-w-xl text-[15px] leading-relaxed text-muted-foreground">{lead}</p> : null}
-          </header>
-          <div className={wide ? undefined : "max-w-2xl"}>{children}</div>
-          {/* Signed up with the wrong account, or on a shared computer: the steps must not trap anyone. */}
-          {!embedded ? <SignOut className="mt-10 lg:hidden" /> : null}
+        {/* One column for every step and every part of it (bar, heading, form, Back and Continue), so the edges and the
+            Continue button stay put from step to step. Inside the app frame it sits in the page column, under the
+            banners' left edge, like every other app page. */}
+        <div className={embedded ? "mx-auto w-full max-w-[1200px] px-4 py-6 sm:p-8" : cn(STEP_COLUMN, "mx-auto py-8 lg:py-12")}>
+          <div className={embedded ? STEP_WIDTH : undefined}>
+            {embedded ? <StepProgress steps={steps} index={index} label={current?.label} className="mb-6" /> : null}
+            <header className="mb-6">
+              <h1 className="text-2xl font-semibold tracking-[-0.02em] sm:text-[32px] sm:leading-tight">{title}</h1>
+              {lead ? <p className="mt-3 max-w-xl text-[15px] leading-relaxed text-muted-foreground">{lead}</p> : null}
+            </header>
+            {children}
+            {/* Signed up with the wrong account, or on a shared computer: the steps must not trap anyone. */}
+            {!embedded ? <SignOut className="mt-10 lg:hidden" /> : null}
+          </div>
         </div>
       </Main>
+    </div>
+  );
+}
+
+// Every step's content width, and the column around it with the same side padding as the app banners.
+const STEP_WIDTH = "max-w-[832px]";
+const STEP_COLUMN = "w-full max-w-[896px] px-4 sm:px-8";
+
+/** "Step 2 of 5" and one segment per step. Segments share the row (min-w-0), so any number of steps fits any width. */
+function StepProgress({ steps, index, label, className }: { steps: FrameStep[]; index: number; label?: string; className?: string }) {
+  return (
+    <div className={className} data-testid="step-progress">
+      <div className="flex min-w-0 items-baseline justify-between gap-3">
+        <p className="shrink-0 text-[13px] font-medium tabular-nums">
+          Step {index + 1} of {steps.length}
+        </p>
+        <p className="min-w-0 truncate text-[13px] text-muted-foreground" title={label}>
+          {label}
+        </p>
+      </div>
+      <div className="mt-2 flex min-w-0 gap-1" aria-hidden>
+        {steps.map((s) => (
+          <span key={s.slug} data-segment className={cn("h-1 min-w-0 flex-1 rounded-[2px]", s.state === "todo" ? "bg-border" : "bg-primary")} />
+        ))}
+      </div>
     </div>
   );
 }

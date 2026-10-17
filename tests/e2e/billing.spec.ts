@@ -256,6 +256,9 @@ test("active: upgrade, remove at renewal, cancel and keep, and the portal", asyn
   await dialog.getByRole("button", { name: "Upgrade now" }).click();
   await expect(dialog).toHaveCount(0);
   await expect(line(page, "Northside Plumbing")).toContainText("Pro");
+  // BUG-238: the button follows the new plan without a reload.
+  await expect(line(page, "Northside Plumbing").getByRole("button", { name: "Upgrade to Pro" })).toHaveCount(0);
+  await expect(line(page, "Northside Plumbing").getByRole("button", { name: "Move to Starter" })).toBeVisible();
   await expect(page.getByTestId("next-charge")).toHaveText("$398");
 
   await line(page, "Harbor Dental").getByRole("button", { name: "Remove", exact: true }).click();
@@ -267,7 +270,7 @@ test("active: upgrade, remove at renewal, cancel and keep, and the portal", asyn
   await expect(page.getByTestId("next-charge")).toHaveText("$249");
 
   // B1: a business that is leaving can be kept, and offers no plan changes while it is leaving.
-  await expect(line(page, "Harbor Dental").getByRole("button", { name: /^Upgrade to|^Change to/ })).toHaveCount(0);
+  await expect(line(page, "Harbor Dental").getByRole("button", { name: /^Upgrade to|^Move to/ })).toHaveCount(0);
   await line(page, "Harbor Dental").getByRole("button", { name: "Keep on plan" }).click();
   await expect(dialog.getByTestId("change-preview")).toContainText("Harbor Dental stays on your plan");
   await dialog.getByRole("button", { name: "Keep on plan" }).click();

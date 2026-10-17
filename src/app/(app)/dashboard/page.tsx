@@ -17,6 +17,7 @@ import { checkFixes, getFixesState } from "@/modules/insights";
 import { getOverview, getQuestionTrends } from "@/modules/overview";
 import { createShareLink, exportPdf, getShareLink, revokeShareLink } from "@/modules/reports";
 import { getWorkspace } from "@/modules/workspace";
+import { PageHeader } from "@/components/app/PageHeader";
 
 export const metadata = { title: "Overview", robots: { index: false } };
 
@@ -39,19 +40,16 @@ export default async function OverviewPage() {
   const { score } = overview;
 
   return (
-    <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-6 p-5 sm:p-8">
-      <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div className="flex min-w-0 flex-1 flex-col gap-1">
-          {/* Two lines at most; under 640px the buttons sit on their own row below, so the name has the full width. */}
-          <h1 className="line-clamp-2 text-2xl font-semibold tracking-[-0.02em] break-words" title={business.name}>
-            {business.name}
-          </h1>
-          <p className="text-sm text-muted-foreground" data-testid="last-scan">
-            {overview.lastCheckedAt ? `Last scan ${timeAgo(new Date(overview.lastCheckedAt))}` : "No scans yet"}
-          </p>
-        </div>
-        {/* Before the first score Run scan sits in the empty card, and there is nothing to share or export yet. */}
-        {score && (
+    <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-6 px-4 py-5 sm:p-8">
+      {/* Two lines at most; under 640px the buttons sit on their own row below, so the name has the full width. */}
+      <PageHeader
+        title={business.name}
+        clampTitle={business.name}
+        description={overview.lastCheckedAt ? `Last scan ${timeAgo(new Date(overview.lastCheckedAt))}` : "No scans yet"}
+        descriptionTestId="last-scan"
+        actions={
+          // Before the first score Run scan sits in the empty card, and there is nothing to share or export yet.
+          score && (
           <div className="grid grid-cols-2 gap-3 sm:flex sm:flex-row-reverse sm:flex-wrap sm:items-start">
             {scanStatus.ok && (
               <RunScanButton
@@ -65,8 +63,9 @@ export default async function OverviewPage() {
             <ShareButton businessId={business.id} initial={shareLink} create={createShareLink} revoke={revokeShareLink} />
             <ExportPdfButton businessId={business.id} exportPdf={exportPdf} />
           </div>
-        )}
-      </header>
+          )
+        }
+      />
 
       {scanStatus.ok && scanStatus.data.lastResult === "failed" && !scanStatus.data.scanning && (
         <p role="status" className="rounded-md border border-border bg-mid-bg px-4 py-3 text-sm text-mid-text">

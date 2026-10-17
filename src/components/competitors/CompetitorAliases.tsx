@@ -57,11 +57,11 @@ export function CompetitorAliases({ businessId, competitors, save }: { businessI
       <h2 id="competitor-aliases-title" className="text-base font-semibold tracking-[-0.02em]">
         Other names
       </h2>
-      <p className="mt-1 text-sm text-muted-foreground">
+      <p className="mt-3 text-sm text-muted-foreground">
         Short names, old names or other spellings AI may use for a competitor, separated with commas, up to {ALIASES_MAX} each.
         Answers that use them count for that competitor.
       </p>
-      <form onSubmit={submit} className="mt-5 flex flex-col gap-5" aria-label="Competitors' other names" noValidate>
+      <form onSubmit={submit} className="mt-3 flex flex-col gap-6" aria-label="Competitors' other names" noValidate>
         {competitors.map((c) => {
           const id = `aliases-${c.id}`;
           return (

@@ -5,7 +5,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 function Frame({ children }: { children: React.ReactNode }) {
   return (
-    <div role="status" aria-label="Loading" className="mx-auto flex w-full max-w-[1200px] flex-col gap-6 p-5 sm:p-8">
+    <div role="status" aria-label="Loading" className="mx-auto flex w-full max-w-[1200px] flex-col gap-6 px-4 py-5 sm:p-8">
       {children}
     </div>
   );
