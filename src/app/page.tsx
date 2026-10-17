@@ -3,6 +3,7 @@ import SiteFooter from "@/components/site/SiteFooter";
 import HomepagePlatform from "@/components/site/HomepagePlatform";
 import ChatWidget from "@/components/ChatWidget";
 import { listNativeSummaries } from "@/modules/apps-directory/review-dal";
+import { env } from "@/lib/env";
 
 const homeTitle = "Customers.Direct — AI sends customers directly to your business";
 const homeDescription =
@@ -40,7 +41,7 @@ export default async function Home() {
     <>
       <SiteHeader />
       <main>
-        <HomepagePlatform ratings={ratings} />
+        <HomepagePlatform ratings={ratings} embedSrc={env.NEXT_PUBLIC_BEEHIIV_EMBED_SRC} />
       </main>
       <SiteFooter />
       <ChatWidget />
