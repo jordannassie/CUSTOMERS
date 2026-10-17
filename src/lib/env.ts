@@ -45,6 +45,7 @@ export const env = createEnv({
     NEXT_PUBLIC_SITE_URL: z.url().optional(),
     NEXT_PUBLIC_APP_URL: z.url().optional(),
     NEXT_PUBLIC_LAUNCH_KIT_PAYMENT_LINK: z.url().optional(),
+    NEXT_PUBLIC_BEEHIIV_EMBED_SRC: z.url().optional(),
   },
   runtimeEnv: {
     SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
@@ -76,6 +77,7 @@ export const env = createEnv({
     NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL,
     NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
     NEXT_PUBLIC_LAUNCH_KIT_PAYMENT_LINK: process.env.NEXT_PUBLIC_LAUNCH_KIT_PAYMENT_LINK,
+    NEXT_PUBLIC_BEEHIIV_EMBED_SRC: process.env.NEXT_PUBLIC_BEEHIIV_EMBED_SRC,
   },
   emptyStringAsUndefined: true,
 });

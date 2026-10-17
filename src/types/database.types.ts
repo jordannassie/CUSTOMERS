@@ -1881,6 +1881,27 @@ export type Database = {
         }
         Relationships: []
       }
+      newsletter_events: {
+        Row: {
+          created_at: string
+          event: string
+          id: string
+          placement: string
+        }
+        Insert: {
+          created_at?: string
+          event: string
+          id?: string
+          placement: string
+        }
+        Update: {
+          created_at?: string
+          event?: string
+          id?: string
+          placement?: string
+        }
+        Relationships: []
+      }
       video_ad_orders: {
         Row: {
           amount_cents: number

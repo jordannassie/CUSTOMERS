@@ -17,6 +17,7 @@ import {
   Building2,
   Mail,
   LayoutGrid,
+  Newspaper,
 } from "lucide-react";
 import { MrDirectAvatar } from "@/components/site/MrDirectAvatar";
 
@@ -63,6 +64,7 @@ const PRODUCT_FEATURES = [
 const RESOURCES = [
   { label: "How It Works",         href: "/#how-it-works", icon: BookOpen  },
   { label: "AI Apps",              href: "/apps",           icon: LayoutGrid },
+  { label: "AI Newsletter",        href: "/#newsletter",    icon: Newspaper },
   { label: "FAQ",                  href: "/#faq",           icon: HelpCircle },
   { label: "Agencies & Resellers", href: "/agency",          icon: Building2  },
   { label: "Contact",              href: "/contact",         icon: Mail      },
@@ -202,6 +204,7 @@ export default function SiteHeader() {
             </div>
 
             <Link href="/pricing" className={navLink()}>Pricing</Link>
+            <Link href="/#newsletter" className={navLink()}>AI Newsletter</Link>
 
             {/* Resources dropdown */}
             <div className="relative" ref={resourcesRef}>

@@ -1,6 +1,8 @@
 import type React from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { NewsletterSignup } from "@/components/site/NewsletterSignup";
+import { env } from "@/lib/env";
 
 const LOGO = "/images/logos/logo-white.png";
 
@@ -70,6 +72,7 @@ const FOOTER_COLUMNS = [
     links: [
       { label: "How It Works", href: "/#how-it-works" },
       { label: "AI Apps", href: "/apps" },
+      { label: "AI Newsletter", href: "/#newsletter" },
       { label: "FAQ", href: "/#faq" },
     ],
   },
@@ -88,6 +91,7 @@ export default function SiteFooter() {
   return (
     <footer className="bg-[#171717] text-white">
       <div className="max-w-[1200px] mx-auto px-4 sm:px-6 pt-16 pb-10">
+        <NewsletterSignup placement="footer" variant="footer" embedSrc={env.NEXT_PUBLIC_BEEHIIV_EMBED_SRC} />
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-10 mb-12">
           {/* Brand: 2 cols */}
           <div className="lg:col-span-2">

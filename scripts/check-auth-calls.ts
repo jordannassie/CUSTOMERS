@@ -11,6 +11,8 @@ const PUBLIC: Record<string, string> = {
   "src/app/api/contact/route.ts": "public contact form, validated input",
   "src/app/api/public/compare/route.ts": "public free compare tool",
   "src/app/apps/go/[slug]/[[...source]]/route.ts": "public outbound app redirect, slug lookup only",
+  "src/app/newsletter/go/[placement]/route.ts": "public newsletter signup redirect, placement lookup only",
+  "src/app/api/public/newsletter/route.ts": "public newsletter impression log, no personal data",
   "src/app/auth/callback/route.ts": "OAuth and email-link callback",
   "src/app/auth/signout/route.ts": "signs out the current session",
   "src/app/api/stripe/webhook/route.ts": "Stripe signature check",

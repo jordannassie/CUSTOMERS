@@ -5,6 +5,7 @@ import Link from "next/link";
 import AgencyWorkspaceDemo from "@/components/site/AgencyWorkspaceDemo";
 import HomeHero from "@/components/site/HomeHero";
 import { HomeAppsSection } from "@/components/site/apps/HomeAppsSection";
+import { NewsletterSignup } from "@/components/site/NewsletterSignup";
 import type { NativeSummary } from "@/modules/apps-directory/review-types";
 import StartAiBusinessHomeSection from "@/components/site/StartAiBusinessHomeSection";
 import { PlatformIcon } from "@/components/PlatformIcon";
@@ -1513,10 +1514,11 @@ function HeroVideoSection() {
 
 // ─── Main export ──────────────────────────────────────────────────────────
 
-export default function HomepagePlatform({ ratings = {} }: { ratings?: Record<string, NativeSummary> }) {
+export default function HomepagePlatform({ ratings = {}, embedSrc = null }: { ratings?: Record<string, NativeSummary>; embedSrc?: string | null }) {
   return (
     <>
       <HeroSection />
+      <NewsletterSignup placement="homepage" variant="hero" embedSrc={embedSrc} embed />
       <HomeAppsSection ratings={ratings} />
       <HeroVideoSection />
       <BannerRotationSection />

@@ -7,6 +7,7 @@ import { listDirectoryOverrides } from "@/modules/apps-directory/dal";
 import { directorySearchSchema } from "@/modules/apps-directory/schema";
 import { mergeCatalog, queryDirectory } from "@/modules/apps-directory/service";
 import { listNativeSummaries } from "@/modules/apps-directory/review-dal";
+import { env } from "@/lib/env";
 
 const TITLE = "AI Apps Directory";
 const DESCRIPTION = "Search AI tools, apps, and software for marketing, sales, support, and everyday work.";
@@ -59,7 +60,7 @@ export default async function AppsPage({ searchParams }: { searchParams: SearchP
       <SiteHeader />
       <main className="min-h-screen bg-[#FAFAF8]">
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(itemList) }} />
-        <AppsBrowse query={query} result={result} ratings={ratings} />
+        <AppsBrowse query={query} result={result} ratings={ratings} embedSrc={env.NEXT_PUBLIC_BEEHIIV_EMBED_SRC} />
       </main>
       <SiteFooter />
     </>

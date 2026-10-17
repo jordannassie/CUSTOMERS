@@ -14,6 +14,8 @@ import { mergeCatalog, relatedApps } from "@/modules/apps-directory/service";
 import { categoryLabel } from "@/modules/apps-directory/types";
 import { currentReviewer, findOwnReview, listNativeSummaries, listPublishedReviews } from "@/modules/apps-directory/review-dal";
 import { softwareReviewJsonLd } from "@/modules/apps-directory/review-service";
+import { NewsletterSignup } from "@/components/site/NewsletterSignup";
+import { env } from "@/lib/env";
 
 type Params = Promise<{ slug: string }>;
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
@@ -134,6 +136,7 @@ export default async function AppDetailPage({ params, searchParams }: { params: 
               </div>
             ) : <p className="mt-2 text-[14px] text-[#777773]">No related apps are listed yet.</p>}
           </section>
+          <NewsletterSignup placement="detail" variant="detail" embedSrc={env.NEXT_PUBLIC_BEEHIIV_EMBED_SRC} embed />
         </article>
       </main>
       <SiteFooter />
