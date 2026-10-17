@@ -83,6 +83,21 @@ To change one later: `select vault.update_secret((select id from vault.secrets w
 
 Check the calls: `select id, status_code, left(content, 200), created from net._http_response order by created desc limit 5;`
 
+Production (and customers-dev) values to fill in, all four at once. Replace `<host>` with the site's domain (for example the Netlify URL of that deploy) and `<WORKER_SECRET>` with the value of that host's `WORKER_SECRET` env var. Never paste a real secret into this file or a migration.
+
+| Secret | Value |
+|---|---|
+| `scan_worker_url` | `https://<host>/.netlify/functions/scan-worker-background` |
+| `scan_worker_secret` | `<WORKER_SECRET>` |
+| `system_alerts_url` | `https://<host>/api/alerts/check` |
+| `email_jobs_url` | `https://<host>/api/email/jobs` |
+
+Then check that each one is set without printing it: `select name, decrypted_secret <> '' as is_set from vault.decrypted_secrets where name in ('scan_worker_url','scan_worker_secret','system_alerts_url','email_jobs_url');`
+
+### Local Supabase (Docker)
+
+`npm run vault:local` (`scripts/dev/setup-local-vault.sh` and `.sql`) sets the same four secrets in the local Docker database only. It refuses when the env file's Supabase URL is not `127.0.0.1` or `localhost`. The values point at `npm run dev` on port 3000 through `host.docker.internal`; the scan worker URL is the dev-only route `/api/dev/scan-worker` (404 on a production build), and the secret is `WORKER_SECRET` from `.env.local` (or `.env`). Run it again after `supabase db reset`.
+
 ### Before go-live
 
 - The worker URL points at the `mvp` staging deploy (`https://mvp--<netlify-site>.netlify.app/.netlify/functions/scan-worker-background`).
@@ -121,5 +136,31 @@ Live has 001 to 020 (Baseline above) and none of the files below. Go-live applie
 - `041_capture_credits.sql` (E2E-0929)
 - `042_account_deletion.sql` (B-77; adds the `purge-deleted-accounts` cron job. `DELETION_WAIT_DAYS` on the host sets the wait, default 30)
 - `043_trial_rules.sql` (B-45)
+- `044_sample_checks_and_failures.sql` (BUG-074, BUG-075; marks old recorded test answers as samples and recreates `visibility_checks_30d`. Then run `npm run db:types` and check the diff only adds `is_sample`, `failed_by_provider` and `visibility_results_counted`)
+- `045_job_settings_status.sql` (BUG-108; `job_settings_status()` for the admin status page: whether the worker, alerts and email jobs Vault secrets are set and whether scheduled scans include real accounts. Yes/no only, never a value)
+- `046_competitor_checked_from.sql` (BUG-122; `business_competitors.checked_from`. Then run `RECOUNT=1 npm run scans:recount` once, so saved answers are checked with the current matching rules)
+- `047_owner_tables_read_only.sql` (SEC-10; owner tables read only to users, writes through server code. Apply together with the app version that writes them with the service role)
+- `048_extend_trial_grant.sql` (A3; `extend_trial_grant()`, so the admin "Extend trial" action moves the open trial grant's expiry with the trial. Then run `npm run db:types`)
+- `049_requested_plan_id.sql` (a plan chosen on `/settings/billing/plans/new-business` before setting up a later business; read once by the add-to-plan step, then ignored. Then run `npm run db:types`)
+- `050_scan_job_safety.sql` (fix list Step 2: failed jobs release their credit hold, `release_orphan_holds()` sweep and its cron job, deleted or off-plan businesses are never scheduled, a retry grows its hold, stuck means 20 minutes without a heartbeat, `skipped` scan status. Apply together with the app version that calls `fail_scan_job` and `set_next_scan_at`. Then run `npm run db:types`)
+- `051_revoke_truncate.sql` (fix list B8: `anon` and `authenticated` lose TRUNCATE on every public table and on tables made later; no app change)
+- `052_business_area.sql` (`businesses.primary_area`, the optional neighborhood or area set on the details step or in Settings, max 80 characters; area-level questions use it. Then run `npm run db:types`)
 
+- `053_low_credit_remaining.sql`, `054_question_stopped_at.sql`, `055_competitor_aliases.sql` (see each file's header; then run `npm run db:types`)
+- `056_webhook_event_claim.sql` (BUG-151: `stripe_webhook_events.claimed_at`; apply with the app version that claims events)
+- `057_business_is_chain.sql` (`businesses.is_chain`, saved at auto-fill)
+- `058_provider_error_counts.sql` (`provider_errors.kind` and `occurrences`, `record_provider_error()`; `check_system_alerts` sums occurrences)
+- `059_keep_ai_costs_after_deletion.sql` (BUG-160: `usage_events.account_user_id` becomes nullable and SET NULL; changes an existing foreign key, so not purely additive; approved 2026-10-14)
+- `060_ledger_test_agency_flag.sql` (BUG-184: `credit_transactions.from_test_agency`)
+- `061_run_explained_at.sql` (`visibility_runs.explained_at`; the pages say "Working out your fixes" until it is set)
+- `062_cancel_reasons.sql` (new table `cancel_reasons`, service role only: the optional reason from the "Before you cancel" dialog, shown on the admin agency page)
+- `063_resolve_quiet_alerts.sql` (new function `resolve_quiet_system_alerts`, called by `run_system_alerts`: closes stuck_jobs, failed_scans, ai_fallback, provider_errors and negative_balances alerts not seen for an hour)
+- `064_report_shares_for_pdf.sql` (`report_shares.for_pdf`: PDF export links are their own rows, never handed out by Share or the weekly email; apply with the app version that writes it)
+- `065_purge_files_and_quiet_paid_alert.sql` (redefines `purge_deleted_accounts`: after 7 days `account_purges` rows lose the address and name but stay until the logo files are removed; redefines `resolve_quiet_system_alerts` to also close paid_not_active)
+- `066_end_trial_grant.sql` (new credit function `end_trial_grant`: a trial that ends early ends its trial grant too, removing what is left with an expire ledger row)
+- `067_business_duplicates.sql` (trigger `businesses_refuse_duplicates`: in one agency no two live businesses with the same website (unless the other is a chain) or Google listing, and one setup draft; checks only the row written, so existing copies stay until `npm run dev:dedupe-businesses` (local) or a person removes them. Also `businesses.create_key` with a unique index per owner, and `businesses.questions_updated_at`. Apply with the app version that maps the refusal to "This business is already in your account". Then run `npm run db:types` and check the diff only adds those two columns)
+- `068_competitor_location.sql` (`businesses.location_changed_at`, `competitors_removed`, `competitors_removed_from`: after the city, region or country changes, Google competitors elsewhere are removed (checked live, D-73), the competitor list says "We removed N competitors from <old city>" once and flags competitors added by name; all three clear when the list is saved. Additive; apply with the app version that writes them. Then run `npm run db:types` and check the diff only adds those three columns)
+- `069_scan_schedule_and_reuse.sql` (H1, M3: new functions `next_scheduled_scan_run` (the first 02:00 UTC enqueue-due-scans run after a time), `queue_skipped_scans(agency)` (after a top-up, queues the agency's scans that did not run for lack of credits, with the enqueue_due_scans filters and its go-live switch, never a business with a finished scan in the last 20 hours) and `scan_jobs_reused_answers` (per scan job, checks answered from the shared cache, for the scan history); redefines `scan_job_settle_failure` so a scan skipped for lack of credits is due again at the next 02:00 run instead of a full cycle later. Apply with the app version that has the 20-hour answer cache and 02:00-aligned next scan dates. Then run `npm run db:types` and check the diff only adds those three functions)
+
+- `070_topup_refunds_and_renewal_grace.sql` (credit_transactions kind `refund`; new credit functions `refund_topup_grant` (Stripe `charge.refunded` for a top-up: removes the refunded share of what is left, audit row `stripe.topup_refund`, alert `topup_refund_unrecovered` for spent credits) and `end_previous_period_grants` (a paid new period ends the previous period's plan and trial grants, which now run 6 hours past their period end); redefines `low_credit_agencies` so the email's renewal date comes from `agencies.current_period_end`. Additive; apply with the app version that calls them. New functions added to `database.types.ts` by hand)
 Any file added after 043 joins this list.

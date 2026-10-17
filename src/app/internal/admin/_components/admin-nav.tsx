@@ -52,7 +52,7 @@ function NavLink({
       )}
     >
       <Icon className="size-4 shrink-0" aria-hidden="true" />
-      <span className="truncate">{item.label}</span>
+      <span className="truncate" title={item.label}>{item.label}</span>
       {badge ? (
         <span
           className={cn(

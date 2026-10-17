@@ -11,11 +11,15 @@ export function businessDeletedEmail(input: {
   businessId: string;
   businessName: string;
   planEndsAt: string | null;
+  /** It left a trial plan at once (2026-10-15). */
+  removedNow?: boolean;
   purgeAt: Date;
 }): SendEmailInput {
-  const billing = input.planEndsAt
-    ? `Its plan ends on ${longDate(input.planEndsAt)}. You won't be charged for it after that, and there is no refund for the time left.`
-    : "It wasn't on a paid plan, so your bill doesn't change.";
+  const billing = input.removedNow
+    ? "It came off your plan straight away, so you won't be charged for it when your trial ends."
+    : input.planEndsAt
+      ? `Its plan ends on ${longDate(input.planEndsAt)}. You won't be charged for it after that, and there is no refund for the time left.`
+      : "It wasn't on a paid plan, so your bill doesn't change.";
   return {
     type: "business_deleted",
     to: input.to,

@@ -4,6 +4,8 @@ import { cache } from "react";
 import { requestNow } from "@/lib/request-now";
 import { requireAgency } from "@/modules/auth";
 import { createServiceClient } from "@/lib/supabase/service";
+import type { OwnChain } from "../branch";
+import { loadChains, loadOwnChain } from "../chains/dal";
 import type { ProviderId } from "../providers/types";
 import {
   SCORE_WINDOW_DAYS,
@@ -25,9 +27,11 @@ import {
   type Change,
   type ScanPoint,
 } from "../scoring-periods";
+import { ownQuestionsResult, splitByQuestion, type OwnQuestionsResult } from "./counted";
 import { questionAppearances, questionAppearancesByModel, type ModelAppearance } from "./questions";
 
-// 30-day score aggregates (B-30 step 2) from the visibility_checks_30d view (migration 032).
+// 30-day score aggregates (B-30 step 2) from the visibility_checks_30d view (migration 032). Only answers to active
+// suggested questions count (counted.ts, BUG-129); answers to the user's own questions are summed on their own.
 const PAGE = 1000;
 const LAST_CHECKS_PER_QUESTION = 10;
 const DAY_MS = 86_400_000;
@@ -53,13 +57,20 @@ export type ScoreReport = VisibilityScore & {
     standing: CompetitorScore["standing"];
     /** Weekly change in how often AI named it, only outside the margin (DB-013). */
     change: Change | null;
+    /** "Bennu Coffee" for a tracked "Bennu Coffee on Congress" when most answers named only the chain (branch.ts). */
+    chain?: string | null;
   }[];
+  /** Every active question, suggested or the user's own: each one is checked and charged on every scan. */
   questions: {
     id: string;
     question: string;
     appeared: number;
     checks: number;
   }[];
+  /** The user's own active questions over the window, kept out of the score; null when they have no answers. */
+  ownQuestions: OwnQuestionsResult | null;
+  /** A business that is one branch: its chain's mentions, shown apart from the score (step 7). */
+  ownChain: OwnChain | null;
 };
 
 /** The signed-in agency's score for one of its businesses; null when it is not theirs. */
@@ -73,9 +84,10 @@ export async function getScoreReport(businessId: string, options: { next?: strin
 const scoreInputs = cache((agencyId: string, businessId: string) => {
   const db = createServiceClient();
   return Promise.all([
-    db.from("businesses").select("id, models").eq("id", businessId).eq("agency_id", agencyId).maybeSingle(),
-    db.from("business_competitors").select("name").eq("business_id", businessId).order("name"),
-    db.from("tracked_prompts").select("id, prompt").eq("business_id", businessId).eq("active", true).order("created_at"),
+    db.from("businesses").select("id, name, domain, models, primary_city").eq("id", businessId).eq("agency_id", agencyId).maybeSingle(),
+    db.from("business_competitors").select("name, city").eq("business_id", businessId).order("name"),
+    // Stopped ones too, for past scores (step 9e); the screens list the active ones only.
+    db.from("tracked_prompts").select("id, prompt, source, active, inactive_since").eq("business_id", businessId).order("created_at"),
   ]);
 });
 const windowChecks = cache((businessId: string, sinceMs: number) => readChecks(businessId, new Date(sinceMs)));
@@ -106,15 +118,26 @@ export async function loadScoreReport(
   // Weekly changes compare with the 30-day score a week ago, so the week before the window is always read. Longer
   // history is a separate read of the days before that, so each stretch is read once per request.
   const weekBefore = start - TREND_DAYS * DAY_MS;
-  const [checks, lastWeek, earlier] = await Promise.all([
+  const [windowed, lastWeek, earlier] = await Promise.all([
     windowChecks(businessId, start),
     olderChecks(businessId, weekBefore, start),
     historyDays > TREND_DAYS ? olderChecks(businessId, start - historyDays * DAY_MS, weekBefore) : [],
   ]);
-  const all = [...earlier, ...lastWeek, ...checks];
+  // The same rule for the window and the history before it, so a change compares like with like.
+  const tracked = questions.data!.map((q) => ({ ...q, inactiveSince: q.inactive_since }));
+  const split = splitByQuestion(windowed, tracked);
+  const checks = split.scored;
+  const all = splitByQuestion([...earlier, ...lastWeek, ...windowed], tracked, { history: true }).scored;
   const opts = { now, models };
+  const rivals = competitorScores(checks, competitors.data!.map((c) => c.name), opts);
+  const city = (name: string) => competitors.data!.find((c) => c.name === name)?.city ?? business.data!.primary_city;
+  const b = business.data;
+  const [chains, ownChain] = await Promise.all([
+    loadChains(businessId, rivals.map((c) => ({ name: c.name, city: city(c.name), score: c.estimate.score })), windowStart),
+    loadOwnChain(businessId, { name: b.name, city: b.primary_city, domain: b.domain }, new Set(checks.map((c) => c.questionId)), windowStart),
+  ]);
   const appearances = new Map(
-    questionAppearances(checks, {
+    questionAppearances(windowed, {
       ...opts,
       last: LAST_CHECKS_PER_QUESTION,
     }).map((a) => [a.questionId, a]),
@@ -128,23 +151,23 @@ export async function loadScoreReport(
     modelChanges: modelWeeklyChanges(all, opts),
     monthChange: historyDays >= SCORE_WINDOW_DAYS ? monthlyChange(all, opts) : null,
     firstCheckedAt: checks[0]?.checkedAt ?? null,
-    lastCheckedAt: checks.at(-1)?.checkedAt ?? null,
-    competitors: competitorScores(
-      checks,
-      competitors.data!.map((c) => c.name),
-      opts,
-    ).map((c) => ({
+    // The last scan, whichever questions it asked.
+    lastCheckedAt: windowed.at(-1)?.checkedAt ?? null,
+    competitors: rivals.map((c, i) => ({
       name: c.name,
       score: c.estimate.score,
       standing: c.standing,
       change: competitorWeeklyChange(all, c.name, opts),
+      chain: chains[i],
     })),
-    questions: questions.data!.map((q) => ({
+    questions: questions.data!.filter((q) => q.active).map((q) => ({
       id: q.id,
       question: q.prompt,
       appeared: appearances.get(q.id)?.appeared ?? 0,
       checks: appearances.get(q.id)?.checks ?? 0,
     })),
+    ownQuestions: ownQuestionsResult(split.own, opts),
+    ownChain,
   };
 }
 
@@ -187,14 +210,15 @@ async function readChecks(businessId: string, since: Date): Promise<ScoreCheck[]
 }
 
 /**
- * Checks older than the visibility_checks_30d view keeps, read from visibility_results and shaped the same way
- * (migration 032): the same answer key, so an answer repeated across the 30-day line still counts once.
+ * Checks older than the visibility_checks_30d view keeps, read from the rows that count (migration 044, no
+ * sample answers for a real agency) and shaped the same way as migration 032: the same answer key, so an answer
+ * repeated across the 30-day line still counts once.
  */
 export async function readOlderChecks(businessId: string, from: Date, to: Date): Promise<ScoreCheck[]> {
   const checks: ScoreCheck[] = [];
   for (let start = 0; ; start += PAGE) {
     const { data, error } = await createServiceClient()
-      .from("visibility_results")
+      .from("visibility_results_counted")
       .select("id, provider, tracked_prompt_id, created_at, business_mentioned, competitors_mentioned, answer_text")
       .eq("business_id", businessId)
       .gt("created_at", from.toISOString())
@@ -203,14 +227,15 @@ export async function readOlderChecks(businessId: string, from: Date, to: Date):
       .order("id")
       .range(start, start + PAGE - 1);
     if (error) throw new Error(`Scores: could not read older checks: ${error.message}`);
+    // View columns are typed nullable, but the underlying columns are not null.
     for (const r of data) {
       checks.push({
         provider: r.provider as ProviderId,
         questionId: r.tracked_prompt_id ?? "none",
-        checkedAt: new Date(r.created_at),
-        mentioned: r.business_mentioned,
+        checkedAt: new Date(r.created_at!),
+        mentioned: r.business_mentioned!,
         competitorsMentioned: competitorNames(r.competitors_mentioned),
-        answerKey: r.answer_text === null ? r.id : createHash("md5").update(r.provider + r.answer_text).digest("hex"),
+        answerKey: r.answer_text === null ? r.id! : createHash("md5").update(r.provider! + r.answer_text).digest("hex"),
       });
     }
     if (data.length < PAGE) break;

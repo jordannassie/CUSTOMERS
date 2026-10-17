@@ -3,6 +3,7 @@ import { at, FakeStripe } from "./fake-stripe";
 import { doneCopy, previewCopy } from "./copy";
 import { copyFor } from "./copy.test-helpers";
 import { buildPhases, checkChange, idempotencyKey, phasesOf, type PlanChangeContext } from "./planner";
+import { trialExtendedPhases } from "./trial-phases";
 
 const A = "00000000-0000-4000-8000-00000000000a";
 const B = "00000000-0000-4000-8000-00000000000b";
@@ -86,6 +87,38 @@ describe("buildPhases", () => {
   });
 });
 
+describe("trialExtendedPhases (A4)", () => {
+  const item = (price: string, business: string) => ({ price: { id: price }, quantity: 1, metadata: { business_id: business } });
+  const schedule = (next: boolean) =>
+    ({
+      id: "sub_sched_x",
+      current_phase: { start_date: 100, end_date: 700 },
+      phases: [
+        { start_date: 100, end_date: 700, trial_end: 700, items: [item("price_pro", A)] },
+        ...(next ? [{ start_date: 700, end_date: 3400, items: [item("price_starter_new", A)] }] : []),
+      ],
+    }) as never;
+
+  it("runs the current phase to the new trial end and starts the pending change then", () => {
+    const phases = trialExtendedPhases(schedule(true), 900);
+    expect(phases[0]).toEqual({
+      items: [{ price: "price_pro", quantity: 1, metadata: { business_id: A } }],
+      start_date: 100,
+      end_date: 900,
+      trial_end: 900,
+    });
+    expect(phases[1]).toEqual({
+      items: [{ price: "price_starter_new", quantity: 1, metadata: { business_id: A } }],
+      duration: { interval: "month", interval_count: 1 },
+      proration_behavior: "none",
+    });
+  });
+
+  it("writes only the current phase when nothing is pending", () => {
+    expect(trialExtendedPhases(schedule(false), 900)).toHaveLength(1);
+  });
+});
+
 describe("idempotencyKey", () => {
   it("is the same for the same confirm and differs per change", () => {
     const upgrade = { kind: "upgrade", businessId: A, planId: "pro" } as const;
@@ -105,10 +138,12 @@ describe("copy", () => {
     const cancel = (trialing: boolean) =>
       previewCopy({ ...input, trialing, amountCents: 0, extraCredits: 0, effectiveAt: 1_790_000_000 });
     const trial = cancel(true);
-    expect(trial.headline).toBe("Your free trial ends on September 21, 2026. Your trial credits work until then.");
-    expect(trial.details[0]).toBe("Your card won't be charged.");
+    expect(trial.headline).toBe("Your free trial keeps going until September 21, 2026. Your card won't be charged.");
+    expect(trial.details[0]).toBe("Any trial credits left on September 21, 2026 are removed.");
     expect([trial.headline, ...trial.details].join(" ")).not.toMatch(/again|refund/);
-    expect(cancel(false).details[0]).toBe("You won't be charged again, and there's no refund for this month.");
+    expect(cancel(false).headline).toBe(
+      "Your plan stays active until September 21, 2026. You won't be charged again, and there's no refund for this month.",
+    );
   });
 
   it("says the trial ends, not the plan, once a trial is canceled (BUG-B)", () => {

@@ -38,3 +38,21 @@ export const INDUSTRY_LABELS: Record<Industry, string> = {
 export function isIndustry(value: string): value is Industry {
   return (INDUSTRIES as readonly string[]).includes(value);
 }
+
+// The Services field's placeholder, by industry (BUG-091). Before, every business saw plumbing examples.
+const SERVICE_EXAMPLES: Record<LibraryIndustry, string> = {
+  dentist: "Cleanings, teeth whitening, implants",
+  lawyer: "Personal injury, family law, wills",
+  restaurant: "Dine-in, takeout, catering",
+  coffee_shop: "Espresso drinks, pastries, breakfast",
+  plumber: "Emergency repairs, drain cleaning",
+  hvac: "AC repair, furnace installation, maintenance",
+  med_spa: "Botox, facials, laser hair removal",
+  real_estate: "Home buying, selling, rentals",
+  auto_repair: "Oil changes, brakes, diagnostics",
+  salon: "Haircuts, color, blowouts",
+};
+
+export function servicesPlaceholder(industry: string): string {
+  return SERVICE_EXAMPLES[industry as LibraryIndustry] ?? "Your main services, separated by commas";
+}

@@ -1,14 +1,17 @@
 import "server-only";
 // Run a scan (B-26, MVP_SPEC 5.2, 4.2, D-53, D-54): hold the credits, run every question on every
 // chosen model, charge 1 credit per successful check, then return the rest of the hold.
+import { placeLabel } from "@/lib/place-label";
 import { captureCredits, holdCredits, InsufficientCreditsError, isHoldOpen, releaseHold } from "@/modules/credits";
 import { canRunScanJob, REASONS } from "@/modules/entitlements";
 import { captureBatcher } from "./capture-batch";
 import { checkIdFor, runOneCheck, type CheckContext, type CheckTask } from "./check";
 import type { ExtractNames } from "./extract";
-import type { MentionTarget } from "./mentions";
-import type { CheckLocation, ProviderId, RunCheck } from "./providers/types";
+import { mentionTargets } from "./recount/service";
+import type { CheckLocation, ProviderFailures, ProviderId, RunCheck } from "./providers/types";
+import { countryCode } from "./country";
 import { loadRecordedAnswers, recordedAnswers, RECORDED_ANSWERS_DIR } from "./recorded";
+import { nextScanAt } from "./schedule";
 import {
   finishRun,
   findOrCreateRun,
@@ -18,14 +21,15 @@ import {
   loadScanJob,
   loadScanTarget,
   setNextScanAt,
+  touchScanJob,
   type ScanTargetRow,
 } from "./runs/dal";
 
 // MVP_SPEC 5.2: 4 to 6 checks at a time per scan.
 export const CHECKS_AT_ONCE = 5;
 
-const DAY_MS = 24 * 60 * 60 * 1000;
-const FREQUENCY_DAYS: Record<string, number> = { daily: 1, weekly: 7, monthly: 30 };
+// A running scan refreshes its job at most this often, as its checks finish (B4).
+const HEARTBEAT_MS = 60 * 1000;
 const PROVIDERS: ProviderId[] = ["openai", "anthropic", "perplexity"];
 
 /** The skip reason when a job's hold is already closed: an earlier run finished it. */
@@ -85,10 +89,19 @@ export async function runScan(jobId: string, overrides: Partial<ScanDeps> = {}):
 
   const capture = captureBatcher((checkIds) => captureCredits(holdId, checkIds));
   const errors: string[] = [];
+  const failures: ProviderFailures = {};
+  let lastBeat = ctx.now().getTime();
   await forEachLimited(tasks, CHECKS_AT_ONCE, async (task) => {
     const outcome = saved.has(task.checkId) ? { ok: true as const } : await runOneCheck(task, ctx.forProvider(task.provider));
+    // Tell the reset job this scan is alive, so a long one is not taken for a dead worker and run twice (B4).
+    if (ctx.now().getTime() - lastBeat >= HEARTBEAT_MS) {
+      lastBeat = ctx.now().getTime();
+      await touchScanJob(jobId).catch((err) => console.error(`scan ${jobId}: could not refresh the job: ${err instanceof Error ? err.message : err}`));
+    }
     if (!outcome.ok) {
       errors.push(outcome.error);
+      const seen = failures[task.provider];
+      failures[task.provider] = { failed: (seen?.failed ?? 0) + 1, reason: seen?.reason ?? outcome.reason };
       return;
     }
     // Capture right after each check, so a scan cut off halfway has charged exactly what it saved.
@@ -96,16 +109,20 @@ export async function runScan(jobId: string, overrides: Partial<ScanDeps> = {}):
   });
   const charged = capture.charged();
 
-  const released = await releaseHold(holdId);
+  // The run is finished and the next scan set before the hold closes. If either write fails, the worker retries a
+  // job whose hold is still open, so the retry re-uses the saved checks, charges none twice and finishes the run.
+  // Closing the hold first left the run "running" and the due date in the past for good.
   const allFailed = errors.length === tasks.length;
   await finishRun(run.id, {
     status: allFailed ? "failed" : "completed",
     checksTotal: tasks.length,
     checksFailed: errors.length,
     error: errors.length > 0 ? summarise(errors) : null,
+    failedByProvider: errors.length > 0 ? failures : null,
   });
   // A scan with no result keeps its due date, so the next scheduled run tries again.
   if (!allFailed) await setNextScanAt(job.businessId, nextScanAt(target.business.scanFrequency, ctx.now()));
+  const released = await releaseHold(holdId);
 
   return {
     status: allFailed ? "failed" : "done",
@@ -119,6 +136,7 @@ export async function runScan(jobId: string, overrides: Partial<ScanDeps> = {}):
 }
 
 function scanBlocker({ business, questions }: ScanTargetRow): string | null {
+  if (business.deletedAt) return "This business was deleted.";
   if (business.status === "paused") return "This business is paused.";
   if (!business.city) return "Add the business city before scanning.";
   if (questions.length === 0) return "This business has no active questions.";
@@ -144,7 +162,7 @@ async function checkContext(target: ScanTargetRow, runId: string, overrides: Par
   let extractNames = overrides.extractNames !== undefined ? overrides.extractNames : liveNameExtractor();
   if (isTest) {
     // Test agencies never reach a live model, whatever was passed in (D-61).
-    const recorded = recordedAnswers(await loadRecordedAnswers(overrides.recordedDir ?? RECORDED_ANSWERS_DIR));
+    const recorded = recordedAnswers(await loadRecordedAnswers(overrides.recordedDir ?? RECORDED_ANSWERS_DIR), business.industry);
     checkRunner = recorded.runCheck;
     extractNames = recorded.extractNames;
   }
@@ -153,17 +171,7 @@ async function checkContext(target: ScanTargetRow, runId: string, overrides: Par
     runId,
     businessId: business.id,
     ownerUserId: business.ownerUserId,
-    business: {
-      name: business.name,
-      aliases: business.aliases,
-      website: business.domain,
-      city: business.city,
-      phone: business.phone,
-      hasWebsite: business.hasWebsite ?? Boolean(business.domain),
-    },
-    competitors: competitors.map(
-      (c): MentionTarget => ({ name: c.name, website: c.domain, phone: c.phone, city: c.city ?? business.city }),
-    ),
+    ...mentionTargets(business, competitors),
     location: locationOf(business),
     isTest,
     extractNames,
@@ -179,40 +187,24 @@ async function checkContext(target: ScanTargetRow, runId: string, overrides: Par
 export function withCity(question: string, city: string, region: string | null): string {
   const text = question.trim();
   if (text.toLowerCase().includes(city.toLowerCase())) return text;
-  const place = region ? `${city}, ${region}` : city;
+  const place = placeLabel(city, region);
   return `${text.replace(/[?.!\s]+$/, "")} in ${place}?`;
-}
-
-const COUNTRY_CODES: Record<string, string> = {
-  "united states": "US",
-  "united states of america": "US",
-  usa: "US",
-  "u s": "US",
-  "u s a": "US",
-  canada: "CA",
-  "united kingdom": "GB",
-  uk: "GB",
-  australia: "AU",
-};
-
-/** The providers want an ISO country code; businesses store whatever onboarding saved. */
-export function countryCode(country: string | null): string {
-  const text = (country ?? "").trim();
-  if (/^[a-z]{2}$/i.test(text)) return text.toUpperCase();
-  const key = text.toLowerCase().replace(/[^a-z ]+/g, " ").replace(/\s+/g, " ").trim();
-  return COUNTRY_CODES[key] ?? "US";
 }
 
 function locationOf(business: ScanTargetRow["business"]): CheckLocation {
   return { city: business.city ?? "", region: business.region ?? "", country: countryCode(business.country) };
 }
 
-export function nextScanAt(frequency: string, from: Date): Date {
-  return new Date(from.getTime() + (FREQUENCY_DAYS[frequency] ?? 7) * DAY_MS);
-}
+// On a 02:00 run far enough out that the next scan never reuses this one's cached answers (H1, schedule.ts).
+export { nextScanAt };
 
 function isProvider(model: string): model is ProviderId {
   return (PROVIDERS as string[]).includes(model);
+}
+
+/** Credits a scan holds, counted like checkTasks: each active question on each chosen AI model (D-54). */
+export function scanCheckCount(activeQuestions: number, models: string[]): number {
+  return activeQuestions * models.filter(isProvider).length;
 }
 
 function summarise(errors: string[]): string {

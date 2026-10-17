@@ -1,12 +1,11 @@
 import "server-only";
-import { env } from "@/lib/env";
+import { providerErrorKind } from "@/lib/provider-error-kind";
+import { aiUsageMetadata } from "@/modules/ai/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import type { Json } from "@/types/database.types";
-import { createNameExtractor, type ExtractNames } from "../extract";
-import { createAnthropicCheck } from "../providers/anthropic";
-import { createOpenAICheck } from "../providers/openai";
-import { createPerplexityCheck } from "../providers/perplexity";
-import type { ProviderId, RunCheck } from "../providers/types";
+import type { ProviderFailures, ProviderId } from "../providers/types";
+
+export { liveCheckRunner, liveNameExtractor } from "./live";
 
 // Database access and API keys for scan runs (B-26); the cache and usage part is in ../dal.ts.
 // Everything here uses the service role: the worker runs with no user session.
@@ -41,13 +40,19 @@ export type ScanTargetRow = {
     city: string | null;
     region: string | null;
     country: string | null;
+    /** The neighborhood or area; names a branch business in answers (step 7). */
+    area: string | null;
+    /** Test mode matches recorded answers to it (BUG-072). */
+    industry: string | null;
     status: string;
+    /** Set once the business is deleted; such a business is never scanned (A6). */
+    deletedAt: string | null;
     scanFrequency: string;
     models: string[];
   };
   isTest: boolean;
   questions: { id: string; prompt: string }[];
-  competitors: { name: string; domain: string | null; phone: string | null; city: string | null }[];
+  competitors: { name: string; aliases: string[]; domain: string | null; phone: string | null; city: string | null }[];
 };
 
 export async function loadScanTarget(businessId: string, agencyId: string): Promise<ScanTargetRow> {
@@ -56,13 +61,13 @@ export async function loadScanTarget(businessId: string, agencyId: string): Prom
     db
       .from("businesses")
       .select(
-        "id, owner_user_id, name, domain, aliases, phone, has_website, primary_city, primary_region, primary_country, status, scan_frequency, models",
+        "id, owner_user_id, name, domain, aliases, phone, has_website, primary_city, primary_region, primary_country, primary_area, industry, status, deleted_at, scan_frequency, models",
       )
       .eq("id", businessId)
       .single(),
     db.from("agencies").select("is_test").eq("id", agencyId).single(),
     db.from("tracked_prompts").select("id, prompt").eq("business_id", businessId).eq("active", true).order("created_at"),
-    db.from("business_competitors").select("name, domain, phone, city").eq("business_id", businessId),
+    db.from("business_competitors").select("name, aliases, domain, phone, city").eq("business_id", businessId),
   ]);
   const b = must("load the business", business);
   return {
@@ -77,7 +82,10 @@ export async function loadScanTarget(businessId: string, agencyId: string): Prom
       city: b.primary_city,
       region: b.primary_region,
       country: b.primary_country,
+      area: b.primary_area,
+      industry: b.industry,
       status: b.status,
+      deletedAt: b.deleted_at,
       scanFrequency: b.scan_frequency,
       models: b.models,
     },
@@ -130,6 +138,8 @@ export type CheckResultRow = {
   cached: boolean;
   costUsd: number;
   latencyMs: number;
+  /** A recorded answer for a test agency (D-61); it stops counting once the agency is real (BUG-075). */
+  isSample: boolean;
 };
 
 export async function saveCheckResult(row: CheckResultRow): Promise<void> {
@@ -153,6 +163,7 @@ export async function saveCheckResult(row: CheckResultRow): Promise<void> {
         cached: row.cached,
         cost_usd: row.costUsd,
         latency_ms: row.latencyMs,
+        is_sample: row.isSample,
       },
       { onConflict: "id", ignoreDuplicates: true },
     );
@@ -161,7 +172,13 @@ export async function saveCheckResult(row: CheckResultRow): Promise<void> {
 
 export async function finishRun(
   runId: string,
-  outcome: { status: "completed" | "failed"; checksTotal: number; checksFailed: number; error: string | null },
+  outcome: {
+    status: "completed" | "failed";
+    checksTotal: number;
+    checksFailed: number;
+    error: string | null;
+    failedByProvider: ProviderFailures | null;
+  },
 ): Promise<void> {
   const { error } = await createServiceClient()
     .from("visibility_runs")
@@ -170,18 +187,31 @@ export async function finishRun(
       checks_total: outcome.checksTotal,
       checks_failed: outcome.checksFailed,
       error: outcome.error,
+      failed_by_provider: outcome.failedByProvider,
       completed_at: new Date().toISOString(),
     })
     .eq("id", runId);
   if (error) throw new Error(`Could not finish the scan run: ${error.message}`);
 }
 
-export async function setNextScanAt(businessId: string, at: Date): Promise<void> {
-  const { error } = await createServiceClient()
-    .from("businesses")
-    .update({ next_scan_at: at.toISOString() })
-    .eq("id", businessId);
+/**
+ * Schedules the business's next scan. A business deleted, or taken off the plan, while its scan ran stays
+ * unscheduled (A6); returns whether the date was set.
+ */
+export async function setNextScanAt(businessId: string, at: Date): Promise<boolean> {
+  const { data, error } = await createServiceClient().rpc("set_next_scan_at", { p_business_id: businessId, p_at: at.toISOString() });
   if (error) throw new Error(`Could not set the next scan time: ${error.message}`);
+  return data;
+}
+
+/** A running scan's sign of life: reset_stuck_jobs only resets a job that has shown none for 20 minutes (B4). */
+export async function touchScanJob(jobId: string): Promise<void> {
+  const { error } = await createServiceClient()
+    .from("scan_jobs")
+    .update({ locked_at: new Date().toISOString() })
+    .eq("id", jobId)
+    .eq("status", "running");
+  if (error) throw new Error(`Could not refresh the scan job: ${error.message}`);
 }
 
 /** Name extraction cost (B-25) is ours alone; the user is charged only for the check. */
@@ -192,12 +222,17 @@ export async function insertExtractionUsage(row: {
   inputTokens: number;
   outputTokens: number;
   costUsd: number;
+  /** Who answered: Claude, or the ChatGPT backup (D-84). */
+  provider?: "anthropic" | "openai";
+  fellBack?: boolean;
+  primaryError?: string | null;
 }): Promise<void> {
   const { error } = await createServiceClient().from("usage_events").insert({
     account_user_id: row.accountUserId,
     business_id: row.businessId,
     usage_type: "other",
-    provider: "anthropic",
+    provider: row.provider ?? "anthropic",
+    metadata: aiUsageMetadata({ task: "extract_names", fellBack: row.fellBack ?? false, primaryError: row.primaryError ?? null }),
     model: row.model,
     input_tokens: row.inputTokens,
     output_tokens: row.outputTokens,
@@ -207,33 +242,9 @@ export async function insertExtractionUsage(row: {
   if (error) throw new Error(`Could not record extraction usage: ${error.message}`);
 }
 
-const PROVIDER_KEYS: Record<ProviderId, () => string | undefined> = {
-  openai: () => env.OPENAI_API_KEY,
-  anthropic: () => env.ANTHROPIC_API_KEY,
-  perplexity: () => env.PERPLEXITY_API_KEY,
-};
-
-const ADAPTERS: Record<ProviderId, (apiKey: string) => RunCheck> = {
-  openai: createOpenAICheck,
-  anthropic: createAnthropicCheck,
-  perplexity: createPerplexityCheck,
-};
-
-/** The live adapter for a provider, or null when its API key is not set. */
-export function liveCheckRunner(provider: ProviderId): RunCheck | null {
-  const key = PROVIDER_KEYS[provider]();
-  return key ? ADAPTERS[provider](key) : null;
-}
-
-export function liveNameExtractor(): ExtractNames | null {
-  const key = env.ANTHROPIC_API_KEY;
-  return key ? createNameExtractor(key) : null;
-}
-
 /** Feeds the provider error spike alert (B-69, MVP_SPEC 22). Never throws: a lost row must not fail the check. */
 export async function recordProviderError(provider: ProviderId, message: string): Promise<void> {
-  const { error } = await createServiceClient()
-    .from("provider_errors")
-    .insert({ provider, message: message.slice(0, 500) });
+  // One row per kind of failure an hour, with a count (migration 058).
+  const { error } = await createServiceClient().rpc("record_provider_error", { p_provider: provider, p_kind: providerErrorKind(message.slice(0, 500)), p_message: message.slice(0, 500) });
   if (error) console.error(`Could not record the ${provider} error: ${error.message}`);
 }

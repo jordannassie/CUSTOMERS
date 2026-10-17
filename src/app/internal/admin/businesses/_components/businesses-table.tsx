@@ -47,9 +47,9 @@ export default function BusinessesTable({ rows }: { rows: AdminBusinessRow[] }) 
           <TableBody>
             {rows.map((r) => (
               <TableRow key={r.id}>
-                <TableCell className="max-w-[220px]">
-                  <span className="flex items-center gap-2">
-                    <Link href={href(r.id)} className="truncate font-medium text-primary hover:underline">
+                <TableCell className="max-w-[260px] min-w-44 whitespace-normal">
+                  <span className="flex items-start gap-2">
+                    <Link href={href(r.id)} className="line-clamp-2 min-w-0 break-words font-medium text-primary hover:underline" title={r.name}>
                       {r.name}
                     </Link>
                     {r.deleted && <DeletedBadge />}
@@ -58,7 +58,7 @@ export default function BusinessesTable({ rows }: { rows: AdminBusinessRow[] }) 
                     {r.deleted ? deletedNote(r.deleted.at, r.deleted.purgeAfter, true) : r.location || "No location"}
                   </span>
                 </TableCell>
-                <TableCell className="max-w-[220px]">
+                <TableCell className="max-w-[260px] min-w-44 whitespace-normal">
                   <AgencyCell agency={r.agency} />
                 </TableCell>
                 <TableCell>{r.plan ?? <span className="text-text-hint">No plan</span>}</TableCell>
@@ -82,11 +82,11 @@ export default function BusinessesTable({ rows }: { rows: AdminBusinessRow[] }) 
             <Link href={href(r.id)} className="flex flex-col gap-2 px-4 py-3 text-[13px] hover:bg-muted">
               <span className="flex items-start justify-between gap-3">
                 <span className="min-w-0">
-                  <span className="flex items-center gap-2">
-                    <span className="truncate text-[14px] font-medium text-primary">{r.name}</span>
+                  <span className="flex items-start gap-2">
+                    <span className="line-clamp-2 min-w-0 break-words text-[14px] font-medium text-primary" title={r.name}>{r.name}</span>
                     {r.deleted && <DeletedBadge />}
                   </span>
-                  <span className="block truncate text-text-hint">{r.agency?.name ?? "No agency"}</span>
+                  <span className="block truncate text-text-hint" title={r.agency?.name ?? "No agency"}>{r.agency?.name ?? "No agency"}</span>
                   {r.deleted && (
                     <span className="block text-text-hint">{deletedNote(r.deleted.at, r.deleted.purgeAfter, true)}</span>
                   )}
@@ -111,10 +111,10 @@ function AgencyCell({ agency }: { agency: AdminBusinessRow["agency"] }) {
   return (
     <>
       <span className="flex items-center gap-2">
-        <span className="truncate">{agency.name}</span>
+        <span className="truncate" title={agency.name}>{agency.name}</span>
         {agency.isTest && <Badge variant="secondary">Test</Badge>}
       </span>
-      <span className="block truncate text-text-hint">{agency.ownerEmail ?? "Owner email unknown"}</span>
+      <span className="block truncate text-text-hint" title={agency.ownerEmail ?? "Owner email unknown"}>{agency.ownerEmail ?? "Owner email unknown"}</span>
     </>
   );
 }

@@ -65,10 +65,18 @@ const nextConfig: NextConfig = {
       // Visibility and Reports were merged into the Overview (B-58).
       { source: "/dashboard/visibility", destination: "/dashboard", permanent: true },
       { source: "/dashboard/reports", destination: "/dashboard", permanent: true },
+      // Search intelligence (DataForSEO) is on hold; its page and API were removed.
+      { source: "/dashboard/seo", destination: "/dashboard", permanent: true },
       { source: "/dashboard/settings", destination: "/settings", permanent: true },
       { source: "/dashboard/billing/:path*", destination: "/settings/billing", permanent: true },
       { source: "/dashboard/competitors", destination: "/competitors", permanent: true },
       { source: "/dashboard/prompts", destination: "/questions", permanent: true },
+      // These used to be pages that only called redirect(). A redirect thrown while rendering trips a React dev
+      // timing bug ("cannot have a negative time stamp"), and a config redirect never renders anything.
+      { source: "/dashboard/citations", destination: "/sources", permanent: true },
+      { source: "/dashboard/opportunities", destination: "/opportunities", permanent: true },
+      // Adding another business runs the wizard's business steps; the website step checks the trial limit.
+      { source: "/dashboard/add-business", destination: "/onboarding/website", permanent: false },
       {
         source: "/book",
         destination: "https://calendar.app.google/muM2Kqc8oYnWBPXXA",

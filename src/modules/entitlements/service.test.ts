@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   canAddBusiness,
+  canFinishDraft,
   canEditTracking,
   canSpendTopUps,
   canStartScan,
@@ -28,6 +29,7 @@ const business = (over: Partial<BusinessFacts> = {}): BusinessFacts => ({
   activeQuestionCount: 0,
   competitorCount: 0,
   hasOpenScan: false,
+  onPlan: true,
   ...over,
 });
 
@@ -80,6 +82,25 @@ describe("canAddBusiness", () => {
   });
 });
 
+describe("canFinishDraft", () => {
+  // businessCount holds set-up businesses only, so the draft being finished is not in it.
+  it("lets a trial with 1 set-up business finish its draft", () => {
+    expect(canFinishDraft(agency({ status: "trialing", businessCount: 1 })).allowed).toBe(true);
+  });
+
+  it("stops a trial with 2 set-up businesses from turning on a third", () => {
+    expect(canFinishDraft(agency({ status: "trialing", businessCount: 2 }))).toEqual({
+      allowed: false,
+      reason: "Your trial includes 2 businesses. Upgrade to add more.",
+    });
+  });
+
+  it("has no limit on a paid plan, and never blocks on status alone", () => {
+    expect(canFinishDraft(agency({ status: "active", businessCount: 40 })).allowed).toBe(true);
+    expect(canFinishDraft(agency({ status: "past_due", businessCount: 0 })).allowed).toBe(true);
+  });
+});
+
 describe("canStartScan", () => {
   it("allows a scan with credits, a live plan and no open job", () => {
     expect(canStartScan(agency(), business())).toEqual({ allowed: true, reason: "" });
@@ -110,6 +131,15 @@ describe("canStartScan", () => {
       reason: REASONS.notYourBusiness,
     });
     expect(canStartScan(agency(), business({ agencyId: null })).allowed).toBe(false);
+  });
+
+  it("blocks a business taken off the plan, even with credits (M1)", () => {
+    expect(canStartScan(agency({ balance: 500 }), business({ onPlan: false }))).toEqual({
+      allowed: false,
+      reason: "This business is off your plan.",
+    });
+    // The account problem still comes first.
+    expect(canStartScan(agency({ status: "past_due" }), business({ onPlan: false })).reason).toBe(REASONS.pastDue);
   });
 
   it("reports the account problem before the credit problem", () => {

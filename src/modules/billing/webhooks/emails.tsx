@@ -1,3 +1,4 @@
+import { utcDate } from "@/lib/time-zone";
 import type Stripe from "stripe";
 import { PaymentFailedEmail, sendEmail, TrialEndingEmail, type SendEmailInput, type SendEmailResult } from "@/modules/email";
 import { formatUsd } from "../format";
@@ -8,7 +9,6 @@ export type SendBillingEmail = (input: SendEmailInput) => Promise<SendEmailResul
 
 export const sendBillingEmail: SendBillingEmail = (input) => sendEmail(input);
 
-const DATE = new Intl.DateTimeFormat("en-US", { month: "long", day: "numeric", timeZone: "UTC" });
 
 /** What the first charge after the trial will be: every item's price times its quantity. Null when a price is unknown. */
 export function trialChargeCents(sub: Stripe.Subscription): number | null {
@@ -38,7 +38,8 @@ export function paymentFailedEmail(input: { to: string; agencyId: string; invoic
 export function trialEndingEmail(input: { to: string; agencyId: string; subscription: Stripe.Subscription }): SendEmailInput {
   const sub = input.subscription;
   const trialEnd = new Date(sub.trial_end! * 1000);
-  const date = DATE.format(trialEnd);
+  // The reader's zone is unknown in an email, so the date is UTC and says so (BUG-070).
+  const date = utcDate(trialEnd);
   const cents = trialChargeCents(sub);
   return {
     type: "trial_ending",

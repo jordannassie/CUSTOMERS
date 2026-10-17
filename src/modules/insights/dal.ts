@@ -1,15 +1,16 @@
 import "server-only";
 // Database access for "why competitors win" (B-51). The worker runs explainAfterScan with the service
 // role (no user session); the page reads through getLiveOpportunities, which checks the agency first.
-import { env } from "@/lib/env";
 import { createServiceClient } from "@/lib/supabase/service";
+import { aiUsageMetadata, liveAiClients } from "@/modules/ai/server";
 import { requireAgency } from "@/modules/auth";
 import { fetchPlaceSignals } from "@/modules/competitors/server";
-import { loadAlsoRecommended } from "@/modules/scanning";
+import { loadAlsoRecommended, splitByQuestion } from "@/modules/scanning";
 import type { Opportunity } from "@/types/geo";
 import { explain, type Explanation, type WriteExplanation } from "./explain";
 import type { ExplainSources, Signals } from "./facts";
-import { fillOpportunity, hasPlaceValues, liveLookup, planSave, referencedCompetitors, usageCostUsd, usesBusinessValues } from "./service";
+import { markExplained, recordExplainFallback, saveExplanation, type SaveOutcome } from "./save/dal";
+import { fillOpportunity, hasPlaceValues, liveLookup, referencedCompetitors, usageCostUsd, usesBusinessValues } from "./service";
 import { templateWriter } from "./template-writer";
 import { createExplanationWriter } from "./writer";
 
@@ -40,9 +41,10 @@ async function signalsFor(placeIds: (string | null)[], fetchSignals: FetchSignal
 
 async function loadSources(runId: string, deps: ExplainDeps) {
   const db = createServiceClient();
-  const runResult = await db.from("visibility_runs").select("business_id").eq("id", runId).single();
-  const businessId = must("load the scan run", runResult).business_id;
-  const [business, competitors, checks, facts] = await Promise.all([
+  const runResult = await db.from("visibility_runs").select("business_id, provider").eq("id", runId).single();
+  const run = must("load the scan run", runResult);
+  const businessId = run.business_id;
+  const [business, competitors, checks, questions, facts] = await Promise.all([
     db
       .from("businesses")
       .select(
@@ -53,9 +55,10 @@ async function loadSources(runId: string, deps: ExplainDeps) {
     db.from("business_competitors").select("id, name, places_id, place_id").eq("business_id", businessId).order("created_at"),
     db
       .from("visibility_results")
-      .select("provider, question, business_mentioned, competitors_mentioned, cited_sources")
+      .select("provider, question, business_mentioned, competitors_mentioned, cited_sources, tracked_prompt_id")
       .eq("run_id", runId)
       .order("id"),
+    db.from("tracked_prompts").select("id, source, active").eq("business_id", businessId),
     db.from("business_site_facts").select("data").eq("business_id", businessId).maybeSingle(),
   ]);
   const b = must("load the business", business);
@@ -79,7 +82,12 @@ async function loadSources(runId: string, deps: ExplainDeps) {
       placesId: b.places_id,
     },
     competitors: rivals,
-    checks: must("load the checks", checks).map((c) => ({
+    models: run.provider.split(",").map((m) => m.trim()).filter(Boolean),
+    // The answers the score counts, so the reasons quote the same numbers as the score (BUG-129).
+    checks: splitByQuestion(
+      must("load the checks", checks).map((c) => ({ ...c, questionId: c.tracked_prompt_id ?? "none" })),
+      must("load the questions", questions),
+    ).scored.map((c) => ({
       provider: c.provider,
       question: c.question ?? "",
       businessMentioned: c.business_mentioned,
@@ -97,47 +105,44 @@ function pickWriter(isTest: boolean, deps: ExplainDeps): WriteExplanation | null
   // Test agencies never reach a live model, whatever was passed in (D-61).
   if (isTest) return templateWriter;
   if (deps.write !== undefined && deps.write !== null) return deps.write;
-  return env.ANTHROPIC_API_KEY ? createExplanationWriter(env.ANTHROPIC_API_KEY) : null;
+  const ai = liveAiClients();
+  return ai.anthropic || ai.openai ? createExplanationWriter(ai) : null;
 }
 
-/** Explains one finished scan run and replaces the business's open opportunities with the result. */
-export async function explainAfterScan(runId: string, deps: ExplainDeps = {}): Promise<Explanation> {
-  const { sources, businessId, ownerUserId, isTest } = await loadSources(runId, deps);
-  const explanation = await explain(sources, pickWriter(isTest, deps));
-  await saveDrafts(businessId, explanation);
-  if (explanation.usage && explanation.model) {
-    const { error } = await createServiceClient().from("usage_events").insert({
-      account_user_id: ownerUserId,
-      business_id: businessId,
-      usage_type: "other",
-      provider: "anthropic",
-      model: explanation.model,
-      input_tokens: explanation.usage.inputTokens,
-      output_tokens: explanation.usage.outputTokens,
-      request_count: 1,
-      estimated_cost_usd: usageCostUsd(explanation.usage),
-    });
-    if (error) throw new Error(`Insights: could not record usage: ${error.message}`);
+/**
+ * Explains one finished scan run and saves the fixes (save/dal.ts): the cost is recorded, a fallback to the fixed rules
+ * is logged to provider_errors, and the run is marked explained even when a step fails.
+ */
+export async function explainAfterScan(runId: string, deps: ExplainDeps = {}): Promise<Explanation & { saved?: SaveOutcome }> {
+  try {
+    const { sources, businessId, ownerUserId, isTest } = await loadSources(runId, deps);
+    const explanation = await explain(sources, pickWriter(isTest, deps));
+    if (!isTest) await recordExplainFallback(explanation);
+    const saved = await saveExplanation(businessId, runId, explanation);
+    await recordUsage(explanation, ownerUserId, businessId);
+    return { ...explanation, saved };
+  } finally {
+    await markExplained(runId);
   }
-  return explanation;
 }
 
-async function saveDrafts(businessId: string, explanation: Explanation): Promise<void> {
-  const db = createServiceClient();
-  const existing = must(
-    "load opportunities",
-    await db.from("opportunities").select("id, title, status").eq("business_id", businessId),
-  );
-  const { insert, removeIds } = planSave(existing, explanation.drafts);
-  // Insert first, so a failure leaves the old list rather than an empty one.
-  if (insert.length > 0) {
-    const { error } = await db.from("opportunities").insert(insert.map((d) => ({ ...d, business_id: businessId, status: "open" })));
-    if (error) throw new Error(`Insights: could not save opportunities: ${error.message}`);
-  }
-  if (removeIds.length > 0) {
-    const { error } = await db.from("opportunities").delete().in("id", removeIds).eq("status", "open");
-    if (error) throw new Error(`Insights: could not replace old opportunities: ${error.message}`);
-  }
+async function recordUsage(explanation: Explanation, ownerUserId: string, businessId: string): Promise<void> {
+  if (!explanation.usage || !explanation.model) return;
+  const { error } = await createServiceClient().from("usage_events").insert({
+    account_user_id: ownerUserId,
+    business_id: businessId,
+    usage_type: "other",
+    provider: explanation.writer?.provider ?? "anthropic",
+    model: explanation.model,
+    input_tokens: explanation.usage.inputTokens,
+    output_tokens: explanation.usage.outputTokens,
+    request_count: 1,
+    estimated_cost_usd: usageCostUsd(explanation.usage, explanation.model),
+    ...(explanation.writer && {
+      metadata: aiUsageMetadata({ task: "why_competitors_win", fellBack: explanation.writer.fellBack, primaryError: explanation.writer.primaryError }),
+    }),
+  });
+  if (error) throw new Error(`Insights: could not record usage: ${error.message}`);
 }
 
 /** Opportunities for one of the signed-in agency's businesses, with Google values filled in live. */

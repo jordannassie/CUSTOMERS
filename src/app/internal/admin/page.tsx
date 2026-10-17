@@ -2,7 +2,8 @@ import { Suspense } from "react";
 import { ArrowDown, ArrowUp } from "lucide-react";
 import type { MonthChange } from "@/modules/admin";
 import { Skeleton } from "@/components/ui/skeleton";
-import { loadOverview, resolveAlert } from "@/modules/admin";
+import { alertWording, loadLibraryGaps, loadOverview, resolveAlert } from "@/modules/admin";
+import { requestNow } from "@/lib/request-now";
 import { requireAdmin } from "@/modules/auth";
 import { formatDate } from "./businesses/_components/scan-parts";
 import { credits } from "./agencies/_components/agency-parts";
@@ -10,6 +11,7 @@ import Sparkline from "./_overview/sparkline";
 import MoneyPanel from "./_overview/money-panel";
 import { FailedScans, RecentSignups } from "./_overview/lists";
 import OpenAlerts from "./_overview/open-alerts";
+import LibraryGaps from "./_overview/library-gaps";
 
 // The admin layout's title template only reaches pages below it, so its own page names the pattern itself.
 export const metadata = { title: { absolute: "Overview | Admin" } };
@@ -27,8 +29,14 @@ export default async function AdminOverviewPage() {
 }
 
 async function Overview() {
-  const o = await loadOverview();
-  const alerts = o.openAlerts.map((a) => ({ ...a, started: formatDate(a.createdAt, true), lastSeen: formatDate(a.lastSeenAt, true) }));
+  const [o, gaps] = await Promise.all([loadOverview(), loadLibraryGaps()]);
+  const now = requestNow();
+  const alerts = o.openAlerts.map((a) => ({
+    ...a,
+    ...alertWording(a, now),
+    started: formatDate(a.createdAt, true),
+    lastSeen: formatDate(a.lastSeenAt, true),
+  }));
   return (
     <>
       <header>
@@ -75,6 +83,8 @@ async function Overview() {
         <RecentSignups rows={o.recentSignups} />
         <FailedScans rows={o.recentFailedScans} />
       </div>
+
+      <LibraryGaps rows={gaps} />
 
       {alerts.length === 0 && <OpenAlerts rows={alerts} resolve={resolveAlert} />}
     </>

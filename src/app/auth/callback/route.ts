@@ -31,11 +31,16 @@ export async function GET(request: NextRequest) {
     env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ??
     (forwardedHost ? `${forwardedProto}://${forwardedHost}` : new URL(request.url).origin);
 
+  // The signup confirmation email links here too (from=signup); its failures are not Google's, so the login page
+  // must not say "Google sign-in failed" for them.
+  const fromSignup = searchParams.get("from") === "signup";
+
   // Supabase sends error_code / error when the provider-side exchange fails
   const providerError = searchParams.get("error_code") ?? searchParams.get("error");
   if (providerError) {
     console.error("[auth/callback] provider error:", providerError);
-    return NextResponse.redirect(`${baseUrl}/login?error=oauth_provider_error`);
+    // An expired or already used confirmation link: the user needs a new email, not a Google retry.
+    return NextResponse.redirect(`${baseUrl}/login?error=${fromSignup ? "signup_link_invalid" : "oauth_provider_error"}`);
   }
 
   // Determine where to redirect after a successful login
@@ -53,7 +58,9 @@ export async function GET(request: NextRequest) {
 
   // Build both responses up-front so we can attach cookies to whichever we return
   const successResponse = NextResponse.redirect(`${baseUrl}${safePath}`);
-  const errorResponse   = NextResponse.redirect(`${baseUrl}/login?error=oauth_callback_failed`);
+  // A confirmation link opened in another browser than the one that signed up: Supabase has already confirmed the
+  // email, but the session cannot be made here (PKCE), so the user just needs to log in.
+  const errorResponse = NextResponse.redirect(`${baseUrl}/login?error=${fromSignup ? "signup_confirmed" : "oauth_callback_failed"}`);
 
   // Read cookies via next/headers (canonical for App Router Route Handlers)
   const cookieStore = await cookies();

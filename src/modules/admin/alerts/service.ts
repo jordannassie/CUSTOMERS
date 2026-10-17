@@ -12,6 +12,20 @@ export type OpenAlert = {
   lastSeenAt: string;
 };
 
+// Checks that count events in the last hour (migration 058). Once the events stop the check stops firing, so the
+// message stays as it was last raised, "in the last hour" included (BUG-161).
+const HOURLY_KINDS = new Set(["failed_scans", "webhook_failures", "provider_errors"]);
+const HOUR_MS = 60 * 60 * 1000;
+
+/**
+ * What the Overview shows for an open alert. An hourly alert not seen for over an hour says "in one hour" instead of
+ * "in the last hour", and `stale` adds "Nothing new since" next to when it was last seen.
+ */
+export function alertWording(alert: Pick<OpenAlert, "kind" | "message" | "lastSeenAt">, now: Date): { message: string; stale: boolean } {
+  const stale = HOURLY_KINDS.has(alert.kind) && now.getTime() - Date.parse(alert.lastSeenAt) > HOUR_MS;
+  return { message: stale ? alert.message.replace(/\bin the last hour\b/g, "in one hour") : alert.message, stale };
+}
+
 export type NotifyDeps = {
   /** Open alerts no admin has been emailed about yet. */
   unemailed: () => Promise<OpenAlert[]>;

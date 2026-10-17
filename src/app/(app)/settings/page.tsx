@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { changeEmail, changePassword, deleteAccount, deleteBusiness, getAccountView } from "@/modules/account";
 import { BILLING_HREF } from "@/modules/workspace";
 import { getSettings, saveAgencyName, saveBusinessProfile, saveScanSettings, uploadAgencyLogo } from "@/modules/settings";
+import { PageHeader } from "@/components/app/PageHeader";
 
 export const metadata = { title: "Settings", robots: { index: false } };
 
@@ -25,12 +26,9 @@ export default async function SettingsPage() {
 
   return (
     <PageContainer>
-      <header className="mb-8">
-        <h1 className="text-2xl font-semibold tracking-[-0.02em]">Settings</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          {business ? `${business.name} and your account, in one place.` : "Your account, in one place."}
-        </p>
-      </header>
+      <div className="mb-6">
+        <PageHeader title="Settings" description={business ? `${business.name} and your account, in one place.` : "Your account, in one place."} />
+      </div>
 
       {business ? (
         <>
@@ -65,7 +63,7 @@ export default async function SettingsPage() {
             <Building2 className="size-5 text-muted-foreground" aria-hidden="true" />
             <p className="text-sm">Add a business to set its profile and AI checks here.</p>
             <Button asChild size="sm">
-              <Link href="/dashboard/add-business">Add a business</Link>
+              <Link href="/onboarding?add=1">Add a business</Link>
             </Button>
           </Panel>
         </SettingsSection>
@@ -105,6 +103,7 @@ export default async function SettingsPage() {
             business={business && { id: business.id, name: business.name }}
             agencyName={account.agencyName}
             waitDays={account.waitDays}
+            trialing={account.trialing}
             deleteBusiness={deleteBusiness}
             deleteAccount={deleteAccount}
           />

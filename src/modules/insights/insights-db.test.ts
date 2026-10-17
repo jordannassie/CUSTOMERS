@@ -78,12 +78,21 @@ async function addRun(businessId: string): Promise<string> {
     .select("id")
     .single()
     .throwOnError();
+  // Reasons use only the answers the score counts: suggested questions that are active now (BUG-129).
+  const asked = [...new Set(COFFEE_CHECKS.map((c) => c.question))];
+  const { data: questions } = await service
+    .from("tracked_prompts")
+    .insert(asked.map((prompt) => ({ business_id: businessId, prompt, source: "library" })))
+    .select("id, prompt")
+    .throwOnError();
+  const questionId = new Map(questions!.map((q) => [q.prompt, q.id]));
   await service
     .from("visibility_results")
     .insert(
       COFFEE_CHECKS.map((c, i) => ({
         run_id: run.id,
         business_id: businessId,
+        tracked_prompt_id: questionId.get(c.question),
         provider: c.provider,
         question: c.question,
         answer_text: `answer ${i}`,
@@ -148,6 +157,66 @@ describe("explainAfterScan", () => {
     expect(write).toHaveBeenCalledTimes(1);
     const { data } = await service.from("usage_events").select("model, estimated_cost_usd").eq("business_id", businessId).throwOnError();
     expect(data).toEqual([{ model: "claude-sonnet-5", estimated_cost_usd: 0.04 }]);
+  });
+});
+
+// 2026-10-14, Car4Tune: a scan and a rescan two minutes apart explained in parallel, the AI reasons failed the checks,
+// and the business was left with 1 fix and no record of why.
+describe("explaining two scans close together", () => {
+  const explainedAt = async (runId: string) => (await service.from("visibility_runs").select("explained_at").eq("id", runId).single().throwOnError()).data.explained_at;
+  const finish = (runId: string, at: Date) => service.from("visibility_runs").update({ completed_at: at.toISOString() }).eq("id", runId).throwOnError();
+
+  it("never lets the older scan, explained last, replace the newer scan's fixes, and marks both explained", async () => {
+    const { businessId } = await seed(true);
+    const [older, newer] = [await addRun(businessId), await addRun(businessId)];
+    await finish(older, new Date(Date.now() - 60_000));
+    await finish(newer, new Date());
+    expect((await explainAfterScan(newer, { fetchSignals: fixtureSignals })).saved).toBe("saved");
+    const fromNewer = await opportunities(businessId);
+    expect((await explainAfterScan(older, { fetchSignals: fixtureSignals })).saved).toBe("superseded");
+    expect(await opportunities(businessId)).toEqual(fromNewer);
+    expect(await explainedAt(older)).not.toBeNull();
+    expect(await explainedAt(newer)).not.toBeNull();
+  });
+
+  it("keeps the earlier fixes when the rules stand in, logs why to provider_errors and records the cost", async () => {
+    const { businessId } = await seed(false);
+    const ai = vi.fn(async (input: Parameters<typeof templateWriter>[0]) => ({ ...(await templateWriter(input)), model: "claude-sonnet-5", usage: { inputTokens: 1_000, outputTokens: 500 } }));
+    await explainAfterScan(await addRun(businessId), { fetchSignals: fixtureSignals, write: ai });
+    const before = await opportunities(businessId);
+    expect(before.length).toBeGreaterThanOrEqual(3);
+
+    // The writer answers, but none of its reasons passes the checks.
+    const empty = vi.fn(async (input: Parameters<typeof templateWriter>[0]) => ({
+      ...(await templateWriter(input)),
+      output: { reasons: [] },
+      model: "claude-sonnet-5",
+      usage: { inputTokens: 2_000, outputTokens: 700 },
+    }));
+    const result = await explainAfterScan(await addRun(businessId), { fetchSignals: fixtureSignals, write: empty });
+    expect(result.source).toBe("rules");
+    const after = await opportunities(businessId);
+    expect(after.length).toBeGreaterThanOrEqual(before.length);
+    expect(after.map((o) => o.title)).toEqual(expect.arrayContaining(before.map((o) => o.title)));
+
+    const { data: logged } = await service.from("provider_errors").select("message").like("message", "Why competitors win fell back to the fixed rules: only 0 of 0%").throwOnError();
+    expect(logged!.length).toBeGreaterThan(0);
+    const { data: usage } = await service.from("usage_events").select("input_tokens").eq("business_id", businessId).order("created_at").throwOnError();
+    expect(usage!.map((u) => u.input_tokens)).toEqual([1_000, 2_000]);
+  });
+
+  it("marks the run explained even when explaining fails, so the pages stop waiting", async () => {
+    const { businessId } = await seed(true);
+    const run = await addRun(businessId);
+    await expect(
+      explainAfterScan(run, {
+        fetchSignals: fixtureSignals,
+        now: () => {
+          throw new Error("clock broke");
+        },
+      }),
+    ).rejects.toThrow("clock broke");
+    expect(await explainedAt(run)).not.toBeNull();
   });
 });
 

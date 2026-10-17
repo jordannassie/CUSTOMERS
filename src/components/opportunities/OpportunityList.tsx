@@ -65,7 +65,7 @@ export function OpportunityList({
       {TABS.map((tab) => {
         const shown = items.filter((o) => o.status === tab.status);
         return (
-          <TabsContent key={tab.status} value={tab.status} className="flex flex-col gap-4" data-testid={`list-${tab.status}`}>
+          <TabsContent key={tab.status} value={tab.status} className="flex flex-col gap-3" data-testid={`list-${tab.status}`}>
             {shown.length === 0 ? (
               <p className="rounded-md border border-dashed border-border px-5 py-8 text-center text-sm text-muted-foreground">
                 {tab.empty}

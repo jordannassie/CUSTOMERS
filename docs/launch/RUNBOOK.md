@@ -49,9 +49,6 @@ Needed in production (the build passes without them, but a feature breaks):
 | `WORKER_SECRET` | Shared secret for the worker, alerts and email jobs. Must equal Vault `scan_worker_secret` | Make one (random) |
 | `WORKER_URL` | Starts the worker at once on "Run scan" (`https://<domain>/.netlify/functions/scan-worker-background`) | Our domain |
 | `ADMIN_EMAILS` | Comma separated admin emails; the only source of admin access | Jordan |
-| `BILLING_ENABLED` | Set to `true` | Our setting |
-| `BETA_FREE_ACCESS` | Set to `false` (it is on unless set to `false`) | Our setting |
-| `TRIAL_ENABLED` | Set to `true` if trials are shown (MVP_SPEC 14 plans to remove this flag) | Our setting |
 
 Optional:
 
@@ -63,7 +60,6 @@ Optional:
 | `BROWSERLESS_URL` | Browserless region address | Browserless San Francisco |
 | `OPENAI_NEWS_MODEL` | Model for admin news | `gpt-4o` |
 | `DELETION_WAIT_DAYS` | Days before a deleted account or business is removed for good (B-77). The Privacy page shows this number | 30 |
-| `DATAFORSEO_USERNAME`, `DATAFORSEO_PASSWORD` | Search data, on hold (D-06) | Unset |
 | `STRIPE_PRICE_STARTER_MONTHLY`, `STRIPE_PRICE_GROWTH_MONTHLY`, `STRIPE_PRICE_PRO_MONTHLY` | Old pricing config only; real price IDs live in the `plans` table | Unset |
 
 Must NOT be set in production (test and local only): `PLACES_FIXTURES`, `ONBOARDING_FIXTURES`, `STRIPE_CHECKOUT_FIXTURES`, `WORKER_IN_PROCESS`, `CHROMIUM_PATH`. The fixture flags are ignored in production anyway.
@@ -225,6 +221,6 @@ Same day, on production, as an internal account:
 
 - Supabase Auth emails use the built in sender (step 8). Needs a decision.
 - Done: Netlify, CI and `package.json` now use Node 24, the active LTS. Supabase JS needs 22 or later, so Node 20 no longer fit.
-- MVP_SPEC 14 plans to remove `BETA_FREE_ACCESS`, `TRIAL_ENABLED` and `DATAFORSEO_*`; they are still read by the code, so step 1 sets them.
+- Done (2026-10-14): `BETA_FREE_ACCESS`, `TRIAL_ENABLED` and `DATAFORSEO_*` are removed from the code (MVP_SPEC 14); delete them from Netlify if set. `BILLING_ENABLED` is removed too (nothing read it; billing is always on).
 - Done: `supabase/migrations/README.md` "Pending for live" lists every file live needs, 021 to 043.
 - Backups on production (B-83): proposal in `BACKUPS.md`, waiting for Jordan's approval.

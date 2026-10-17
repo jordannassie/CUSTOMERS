@@ -46,7 +46,7 @@ To change a decision, edit its row, add the new date, and keep the old choice in
 | D-14 | Flow: create account, agency name, business (website or "no website"), details auto-filled, competitors, AI-written questions, AI models and scan frequency, card, first scan, dashboard. | Decided | Card comes after the user has invested effort, right before the first paid action. | Card at the very start |
 | D-15 | Card required to start the trial. | Decided | Filters out random signups. | No-card trial |
 | D-16 | Trial: 7 days, 2 businesses, auto-charged on day 7 unless cancelled. | Decided | Jordan: trial limited to 2 businesses (07:43). | |
-| D-17 | Trial credits: 100. | Proposed | 50 covers barely one scan; 100 covers first scans for both businesses plus one rescan. | 50 credits |
+| D-17 | Trial credits: 150. | Decided (2026-10-15, the user) | 50 covers barely one scan; 100 covered first scans for both businesses plus one rescan; 150 leaves room for a second rescan. Trials started before the change keep the 100 they were granted (no backfill). | 50 or 100 credits |
 | D-18 | Business details are auto-filled from Firecrawl (website pages) plus Google Places, combined by Claude Haiku 4.5 into fixed fields. The user confirms. Manual form if both fail. | Proposed | Same idea as Voxtell's onboarding; Firecrawl gets past Cloudflare; Places is authoritative for address, phone and category. About $0.01 to $0.10 per business. | Our own HTML scanner only (fails on Cloudflare) |
 
 ## 4. Pricing and credits
@@ -58,7 +58,7 @@ To change a decision, edit its row, add the new date, and keep the old choice in
 | D-21 | Plans: Starter $149 per business per month (1,200 credits), Pro $249 per business per month (2,500 credits). | Ask Jordan | Jordan said $150 to $250 a month (07:33, 07:39). About 75% margin or more. | Current $149 / $297 / $497 three-tier plans |
 | D-22 | Top-ups: 500 credits for $50, 2,000 for $180. Top-up credits never expire; plan credits reset each month. | Proposed | Buyers of top-ups paid separately, so they keep them. | Expiring top-ups |
 | D-23 | Every check uses web search and costs 1 credit, whichever model. Credit value about $0.10. | Proposed | One simple rule. ChatGPT with web search costs about $0.026, still about 70% margin. | Different credit prices per model |
-| D-24 | Answers are cached for 24 hours. A cached answer still costs the user 1 credit. | Decided | Same freshness and value for the user; the saving covers API overhead and margin. | 7-day cache (too stale for daily scans); free cached answers |
+| D-24 | Answers are cached for 20 hours (24 until 2026-10-16, changed at the owner's request). A cached answer still costs the user 1 credit. Scheduled scans land on the 02:00 run at least 20 hours after the last scan, so a scheduled scan never reuses the business's own last answers; a manual rescan inside 20 hours does, with a warning, and the answer shows "Reused answer". | Decided | Same freshness and value for the user; the saving covers API overhead and margin. | 7-day cache (too stale for daily scans); free cached answers |
 | D-25 | At 0 credits every scan stops (manual and automatic). Past results stay visible. Emails at 80% used and at 0. | Decided | No credits, no work. | |
 
 ## 5. Scanning
@@ -172,6 +172,7 @@ Details in [MVP_SPEC.md](./MVP_SPEC.md) sections 4.2, 11.4, 11.5 and 13.
 | D-81 | AI evals with `vitest-evals` (plus `autoevals` scorers) in an `evals/` folder: six suites, code graders first, calibrated AI graders, fast suite on every PR, AI-graded suite on prompt or model change (MVP_SPEC section 25). | Decided | Protects the AI parts that drive scores and advice; in-repo, no lock-in. vitest-evals is actively maintained (updated 2026-09-10). | Hosted eval platforms (LangSmith, Braintrust platform); evalite (last updated February 2026) |
 | D-82 | Malware and secret protection in the repo: payload and secret scanners (self-testing) run on commit, on push (full tree of each pushed commit), after checkout and merge (warning), before `dev` and `build` (blocks Netlify builds of infected code), and in GitHub Actions (Security and CI). Never bypass with `--no-verify`. Done in PR #4 (2026-09-26). | Decided | The same malware family hit this repo (from 2026-08-12) and the GCS repo; it arrived in harmless-looking commits and a VS Code auto-run task. | Relying on manual review |
 | D-83 | The free `/compare` tool is an "AI readiness check": it reads both home pages, scores website basics (business details for AI, contact info, content, reviews) and makes no AI calls. The headline and result say what it measures, and the result ends with an invitation to start the trial for the real AI check (B-73, option A). | Proposed | Honest (MVP_SPEC 12.3), costs nothing per use, and keeps the existing per-IP rate limit. | One real Perplexity check per use (option B, about $0.01 each and needs a shared rate limit store) |
+| D-84 | Background AI jobs keep Claude as the main model with OpenAI as an automatic backup: auto-fill, question picking and writing, "Also recommended" name extraction (`gpt-4.1-mini` for Haiku) and the auto-fill retry, "why competitors win" and question library drafting (`gpt-4.1` for Sonnet). Same prompt files and zod schemas on both, through `src/modules/ai` (`runStructured`). Falls back on a credit or auth error, 429, 5xx, timeout, network error or an unusable answer after one retry; never on our own bad request. After a credit or auth error Claude is skipped for 15 minutes, after 429 or 5xx for 2 minutes. `AI_FALLBACK_ENABLED` (default on), `AI_FALLBACK_MODEL_FAST`, `AI_FALLBACK_MODEL_SMART`. Usage is recorded with the provider and model that answered and `metadata.fellBack`. The Claude check (asking Claude the customer's questions) never falls back. | Decided | The Anthropic account ran out of credit on 2026-10-12 and onboarding and scans quietly lost auto-fill, questions, names and opportunities (BUG-133). | Move background jobs to OpenAI for good; no backup |
 
 ---
 
@@ -189,6 +190,6 @@ Send when he is back (about 14 days from 2026-09-25).
 - [ ] Change all API keys (malware found in the repo; his commit `80d3b13` brought it in, so his machine may be infected)
 - [ ] Budget, milestones and launch date (T8)
 - [ ] Who controls the domain's DNS settings (needed for the Vercel move, D-70)
-- [ ] Existing beta users at launch: fresh 7-day trial with 100 credits? (D-69)
+- [ ] Existing beta users at launch: fresh 7-day trial with 150 credits? (D-69)
 - [ ] New Anthropic and Perplexity API keys (the local setup only has an OpenAI key)
 - [ ] Lawyer (or Jordan) review: Terms and Privacy updates (D-78), our reading of Google's Places terms (D-73), and deletion deadlines (D-77)

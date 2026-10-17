@@ -4,12 +4,13 @@ import { notFound } from "next/navigation";
 import { ChevronLeft } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { loadBusinessDetail, runScanNow } from "@/modules/admin";
+import { loadBusinessDetail, runScanNow, restoreBusiness } from "@/modules/admin";
 import { requireAdmin } from "@/modules/auth";
 import { DeletedBadge, ScanBadge, formatDate } from "../_components/scan-parts";
 import AnswersGrid from "./_components/answers-grid";
 import { Competitors, Opportunities, Questions } from "./_components/lists";
 import Profile from "./_components/profile";
+import RestoreBusiness from "./_components/restore-business";
 import RunScanButton from "./_components/run-scan-button";
 import ScanHistory from "./_components/scan-history";
 
@@ -48,7 +49,7 @@ async function Detail({ id }: { id: string }) {
       <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
           <h1 className="flex flex-wrap items-center gap-2 text-[24px] font-semibold tracking-[-0.02em]">
-            <span className="break-words">{business.name}</span>
+            <span className="min-w-0 break-words">{business.name}</span>
             {business.deleted_at && <DeletedBadge />}
             {agency?.isTest && <Badge variant="secondary">Test</Badge>}
           </h1>
@@ -70,6 +71,20 @@ async function Detail({ id }: { id: string }) {
           runScanNow={runScanNow}
         />
       </header>
+
+      {business.deleted_at && (
+        <RestoreBusiness
+          businessId={business.id}
+          blocked={
+            agency?.status === "deleted"
+              ? "The whole account was deleted. Restore the account first."
+              : !business.purge_after || new Date(business.purge_after) <= new Date()
+                ? "The waiting period has passed, so this business can no longer be restored."
+                : null
+          }
+          restoreBusiness={restoreBusiness}
+        />
+      )}
 
       <dl className="grid grid-cols-2 gap-px overflow-hidden rounded-md border border-border bg-border lg:grid-cols-4">
         <Stat label="Last scan">

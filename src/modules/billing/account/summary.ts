@@ -1,5 +1,6 @@
 import type Stripe from "stripe";
-import { periodEnd, phasesOf } from "../plan-change/planner";
+import { isCancelling, periodEnd, phasesOf } from "../plan-change/planner";
+import { planIdOfPrice, samePlanPrice } from "../plan-price";
 import type { BillingRows } from "./dal";
 
 // Pure: what the billing page shows (B-46, MVP_SPEC 11). Plans per business come from the database (the webhook
@@ -9,10 +10,24 @@ export type BillingPlan = { id: string; name: string; priceCents: number; monthl
 
 export type PendingChange = { kind: "plan"; planName: string; at: string } | { kind: "remove"; at: string };
 
-export type BillingBusiness = { id: string; name: string; plan: BillingPlan; pending: PendingChange | null };
+/**
+ * `deleted`: the business was deleted and its item runs to the period end; no plan changes are offered.
+ * `notCharged`: deleted during a trial, so it is never billed and shows no price (2026-10-15).
+ */
+export type BillingBusiness = {
+  id: string;
+  name: string;
+  plan: BillingPlan;
+  pending: PendingChange | null;
+  deleted: boolean;
+  notCharged: boolean;
+};
 
-/** "none": no plan yet. "unavailable": Stripe is not set up here. "error": Stripe could not be reached. */
-export type StripeState = "ok" | "none" | "unavailable" | "error";
+/**
+ * "none": no plan yet. "unavailable": Stripe is not set up here. "error": Stripe could not be reached. "missing": the
+ * saved subscription is not in Stripe (deleted there, or never real).
+ */
+export type StripeState = "ok" | "none" | "unavailable" | "error" | "missing";
 
 export type BillingView = {
   status: string;
@@ -31,12 +46,9 @@ export type StripeSnapshot = {
   sub: Stripe.Subscription;
   schedule: Stripe.SubscriptionSchedule | null;
   upcoming: Stripe.Invoice | null;
-  /** Stripe price ID to plan ID. */
-  planOfPrice: Map<string, string>;
 };
 
 const iso = (seconds: number) => new Date(seconds * 1000).toISOString();
-const idOf = (ref: string | { id: string }) => (typeof ref === "string" ? ref : ref.id);
 
 function pendingChanges(snapshot: StripeSnapshot, plans: BillingPlan[]): Map<string, PendingChange> {
   const pending = new Map<string, PendingChange>();
@@ -51,8 +63,10 @@ function pendingChanges(snapshot: StripeSnapshot, plans: BillingPlan[]): Map<str
     const later = nextOf.get(businessId);
     if (!later) {
       pending.set(businessId, { kind: "remove", at });
-    } else if (idOf(later.price) !== idOf(item.price)) {
-      const plan = plans.find((p) => p.id === snapshot.planOfPrice.get(idOf(later.price)));
+    } else if (!samePlanPrice(later.price, item.price)) {
+      // Each business has a price of its own (BUG-103), so the plan comes from the price's product. Another price of
+      // the same plan is not a change (2026-10-15).
+      const plan = plans.find((p) => p.id === planIdOfPrice(later.price, plans));
       if (plan) pending.set(businessId, { kind: "plan", planName: plan.name, at });
     }
   }
@@ -62,18 +76,25 @@ function pendingChanges(snapshot: StripeSnapshot, plans: BillingPlan[]): Map<str
 export function buildBillingView(rows: BillingRows, stripe: StripeSnapshot | Exclude<StripeState, "ok">): BillingView {
   const snapshot = typeof stripe === "string" ? null : stripe;
   const pending = snapshot ? pendingChanges(snapshot, rows.plans) : new Map<string, PendingChange>();
+  const sub = snapshot?.sub ?? null;
+  const trialing = rows.agency.status === "trialing" || sub?.status === "trialing";
+  // Stripe no longer bills a deleted business whose item is gone, even before the webhook updates our row.
+  const inStripe = (b: BillingRows["businesses"][number]) =>
+    !sub || sub.items.data.some((i) => i.metadata?.business_id === b.id || (b.itemId !== null && i.id === b.itemId));
   const onPlan: BillingBusiness[] = [];
   const notOnPlan: BillingView["notOnPlan"] = [];
   for (const b of rows.businesses) {
     const plan = rows.plans.find((p) => p.id === b.planId);
-    if (plan) onPlan.push({ id: b.id, name: b.name, plan, pending: pending.get(b.id) ?? null });
-    else notOnPlan.push({ id: b.id, name: b.name });
+    if (plan && b.deleted && !inStripe(b)) continue;
+    if (plan) {
+      const notCharged = b.deleted && trialing;
+      onPlan.push({ id: b.id, name: b.name, plan, pending: notCharged ? null : (pending.get(b.id) ?? null), deleted: b.deleted, notCharged });
+    } else if (!b.deleted) notOnPlan.push({ id: b.id, name: b.name });
   }
 
-  const sub = snapshot?.sub ?? null;
   const ended = rows.agency.status === "canceled" || sub?.status === "canceled";
   const ends = sub && !ended ? iso(periodEnd(sub)) : null;
-  const cancelling = !!sub?.cancel_at_period_end;
+  const cancelling = !!sub && isCancelling(sub);
 
   return {
     status: rows.agency.status,

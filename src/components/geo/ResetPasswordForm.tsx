@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
@@ -40,7 +41,7 @@ export default function ResetPasswordForm() {
     setLoading(false);
 
     if (updateError) {
-      setError(updateError.message);
+      setError(resetErrorText(updateError.message));
       return;
     }
 
@@ -85,7 +86,19 @@ export default function ResetPasswordForm() {
             error={fieldError?.field === "confirm" ? fieldError.text : null}
           />
 
-          {error && <AuthAlert tone="error">{error}</AuthAlert>}
+          {error && (
+            <AuthAlert tone="error">
+              {error}
+              {error === EXPIRED ? (
+                <>
+                  {" "}
+                  <Link href="/forgot-password" className="font-medium underline underline-offset-4">
+                    Send a new link
+                  </Link>
+                </>
+              ) : null}
+            </AuthAlert>
+          )}
 
           <Button type="submit" size="lg" disabled={loading} className="w-full">
             {loading && <Loader2 className="animate-spin" aria-hidden="true" />}
@@ -95,4 +108,14 @@ export default function ResetPasswordForm() {
       </AuthCard>
     </div>
   );
+}
+
+const EXPIRED = "This reset link has expired or was already used.";
+
+/** Supabase's messages in plain words; opening this page without a fresh reset link is the common case. */
+function resetErrorText(message: string): string {
+  const msg = message.toLowerCase();
+  if (msg.includes("session") || msg.includes("expired") || msg.includes("jwt")) return EXPIRED;
+  if (msg.includes("different from the old")) return "Choose a password you have not used for this account before.";
+  return "We couldn't set your password. Try again.";
 }

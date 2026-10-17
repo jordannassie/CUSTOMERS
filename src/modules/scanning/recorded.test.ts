@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { closestAnswer, loadRecordedAnswers, recordedAnswers, type RecordedAnswer } from "./recorded";
+import { closestAnswer, loadRecordedAnswers, narrowed, recordedAnswers, type RecordedAnswer } from "./recorded";
 import type { ProviderId } from "./providers/types";
 
 const location = { city: "Orange", region: "CA", country: "US" };
@@ -32,6 +32,64 @@ describe("recorded answers (B-31)", () => {
     expect(closestAnswer(pool, "what is THE best coffee shop in orange ca").question).toBe(
       "What is the best coffee shop in Orange, CA?",
     );
+  });
+
+  it("matches the trade before the city and question words (BUG-072)", () => {
+    for (const provider of ["openai", "anthropic", "perplexity"] as ProviderId[]) {
+      const pool = answers.filter((a) => a.provider === provider);
+      const coffee = closestAnswer(pool, "Which coffee shop in Orange, CA has the best oat milk latte?").question.toLowerCase();
+      expect(coffee).toMatch(/coffee|cafe/);
+      // Real question from a test coffee shop that used to get an emergency dentist's answer.
+      expect(closestAnswer(pool, "Where can I find an affordable cup of coffee in Austin, TX?").question.toLowerCase()).toMatch(/coffee|cafe/);
+      expect(closestAnswer(pool, "Where can I get a cafe with fast wifi in Austin, TX?").question.toLowerCase()).toMatch(/coffee|cafe/);
+      expect(closestAnswer(pool, "Which plumber in Orange, CA fixes water heaters?").question.toLowerCase()).toContain("plumber");
+      expect(closestAnswer(pool, "Which dentist in Orange, CA takes walk-ins?").question.toLowerCase()).toContain("dentist");
+    }
+  });
+
+  it("uses the business's industry when the question names no trade (BUG-072: cold brew got a dentist)", async () => {
+    const question = "Where's the best place to get cold brew in North Loop, Austin, TX?";
+    for (const provider of ["openai", "anthropic", "perplexity"] as ProviderId[]) {
+      const { runCheck } = recordedAnswers(answers, "coffee_shop");
+      const result = await runCheck(provider)({ question, location, model: "gpt-4.1-mini" });
+      const used = answers.find((a) => a.provider === provider && a.answerText === result.answerText)!;
+      expect(used.question.toLowerCase()).toMatch(/coffee|cafe/);
+    }
+  });
+
+  it("reads the industry and city from each file name", () => {
+    expect(new Set(answers.map((a) => a.industry))).toEqual(new Set(["coffee", "dentist", "plumber"]));
+    expect(new Set(answers.map((a) => a.place))).toEqual(new Set(["austin-tx", "orange-ca"]));
+  });
+
+  it("answers only from the same industry and city when it has recordings (BUG-072)", async () => {
+    const austin = { city: "Austin", region: "TX", country: "US" };
+    // Words that would pull a plumber's or a dentist's answer if every recording were in the pool.
+    for (const question of ["Who fixes a leaking pipe fast in Austin, TX?", "Which place in Austin, TX takes emergency walk-ins?"]) {
+      for (const provider of ["openai", "anthropic", "perplexity"] as ProviderId[]) {
+        const result = await recordedAnswers(answers, "coffee_shop").runCheck(provider)({ question, location: austin, model: "gpt-4.1-mini" });
+        const used = answers.find((a) => a.provider === provider && a.answerText === result.answerText)!;
+        expect([used.industry, used.place]).toEqual(["coffee", "austin-tx"]);
+      }
+    }
+    const plumbers = narrowed(answers, "plumber", "Orange");
+    expect(plumbers.length).toBeGreaterThan(0);
+    expect(plumbers.every((a) => a.industry === "plumber" && a.place === "orange-ca")).toBe(true);
+    // A city or an industry with no recordings gets none, never another city's or trade's (2026-10-14).
+    expect(narrowed(answers, "dentist", "Islamabad")).toEqual([]);
+    expect(narrowed(answers, "restaurant", "Austin")).toEqual([]);
+    expect(narrowed(answers, "plumber", null)).toEqual([]);
+    // A business with no industry, which only automated tests make, keeps the closest of all.
+    expect(narrowed(answers, null, "Testville")).toHaveLength(answers.length);
+  });
+
+  it("fails the check with 'No sample answers for this kind of business' instead of using another city's answers", async () => {
+    const islamabad = { city: "Islamabad", region: "Islamabad Capital Territory", country: "PK" };
+    for (const provider of ["openai", "anthropic", "perplexity"] as ProviderId[]) {
+      await expect(recordedAnswers(answers, "plumber").runCheck(provider)({ question: "Who is the best plumber in Islamabad?", location: islamabad, model: "gpt-4.1-mini" })).rejects.toThrow(
+        "No sample answers for this kind of business",
+      );
+    }
   });
 
   it("returns the labelled names for a recorded answer", async () => {

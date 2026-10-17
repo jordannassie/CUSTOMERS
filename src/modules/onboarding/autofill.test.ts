@@ -11,8 +11,8 @@ import {
   OTHER_PLACE,
   fakeClients,
 } from "./fixtures";
-import { AUTOFILL_MODEL, AUTOFILL_RETRY_MODEL } from "./prompts/business-autofill.v1";
-import { EMPTY_DETAILS, NOTES } from "./service";
+import { AUTOFILL_MODEL, AUTOFILL_PROMPT_VERSION, AUTOFILL_RETRY_MODEL } from "./prompts/business-autofill.v1";
+import { EMPTY_DETAILS, NOTES, unreadableNote } from "./service";
 
 describe("autofill with a website", () => {
   it("combines the site and Places: Places wins name, address, phone and category; the site wins description and services", async () => {
@@ -31,6 +31,7 @@ describe("autofill with a website", () => {
       city: "Springfield",
       state: "IL",
       country: "US",
+      area: "Downtown",
       phone: "(217) 555-0142",
       address: "120 Main St, Springfield, IL 62701, USA",
     });
@@ -47,7 +48,7 @@ describe("autofill with a website", () => {
     });
     const { siteFacts } = await autofill({ domain: COFFEE_DOMAIN }, clients);
 
-    expect(siteFacts).toMatchObject({ promptVersion: "business-autofill.v1", model: AUTOFILL_MODEL, domain: COFFEE_DOMAIN });
+    expect(siteFacts).toMatchObject({ promptVersion: AUTOFILL_PROMPT_VERSION, model: AUTOFILL_MODEL, domain: COFFEE_DOMAIN });
     expect(siteFacts?.facts).toEqual(COFFEE_SITE_OUTPUT);
     const stored = JSON.stringify(siteFacts);
     for (const placesOnly of [COFFEE_PLACE.placeId, COFFEE_PLACE.name!, COFFEE_PLACE.address!]) {
@@ -67,23 +68,31 @@ describe("autofill with a website", () => {
       phone: "(949) 555-0199",
       address: "500 Harbor Blvd, Costa Mesa, CA 92626, USA",
       city: "Costa Mesa",
-      industry: "",
+      // Google's marketing_agency is none of our industries: "other", named the way Google does (BUG-123).
+      industry: "other",
+      industryText: "Marketing agency",
       description: "",
     });
-    expect(run.result.note).toBe(NOTES.googleOnly);
+    // 2026-10-16: the note says which website turned us away, not a general "didn't let us read it".
+    expect(run.result.note).toBe(unreadableNote("brandastic-like.example", true, "google"));
     expect(run.placeId).toBe(BLOCKED_PLACE.placeId);
-    expect(run.siteFacts).toBeNull();
+    // Kept, so advice knows the site blocked us rather than that there is no site (BUG-087).
+    expect(run.siteFacts).toMatchObject({ model: null, facts: null });
+    expect(run.siteFacts?.pages.some((p) => p.status === "blocked")).toBe(true);
     expect(calls.extract).toEqual([]);
   });
 
   it("shows an empty form with a friendly note when nothing is found, even if every source throws", async () => {
     const { clients } = fakeClients({ pages: new Error("down"), places: new Error("403") });
     const run = await autofill({ domain: COFFEE_DOMAIN }, clients);
-    expect(run).toEqual({
-      result: { details: EMPTY_DETAILS, filledFrom: { website: false, google: false }, note: NOTES.nothingFound },
+    // Every source failed, so the note says auto-fill is unavailable, not that the business is unknown (D-84).
+    expect(run).toMatchObject({
+      result: { details: EMPTY_DETAILS, filledFrom: { website: false, google: false }, note: NOTES.unavailable },
       placeId: null,
       siteFacts: null,
     });
+    // The reasons are kept for the server log and provider_errors (B7).
+    expect(run.problems.map((p) => p.provider)).toEqual(expect.arrayContaining(["firecrawl", "google_places"]));
   });
 
   it("falls back to name plus city, and ignores listings for another website", async () => {
@@ -147,7 +156,8 @@ describe("autofill with a website", () => {
     });
     const placesOnly = await autofill({ domain: COFFEE_DOMAIN }, both.clients);
     expect(placesOnly.result.details.name).toBe(COFFEE_PLACE.name);
-    expect(placesOnly.result.note).toBe(NOTES.googleOnly);
+    // The site was readable; the AI was not (D-84). The old "didn't let us read it" note would be wrong here.
+    expect(placesOnly.result.note).toBe(NOTES.unavailablePartly);
     expect(placesOnly.siteFacts).toBeNull();
   });
 
@@ -159,20 +169,61 @@ describe("autofill with a website", () => {
   });
 });
 
-describe("autofill without a website (MVP_SPEC 3.3)", () => {
-  it("searches Places by name plus city and never scrapes or calls the model", async () => {
-    const { clients, calls } = fakeClients({ places: { "Sunrise Coffee Springfield": [COFFEE_PLACE] } });
-    const run = await autofill({ name: "Sunrise Coffee", city: "Springfield" }, clients);
-    expect(run.result.details.name).toBe(COFFEE_PLACE.name);
-    expect(run.result.note).toBeNull();
-    expect(run.placeId).toBe(COFFEE_PLACE.placeId);
-    expect(calls).toMatchObject({ scrape: [], extract: [] });
+describe("autofill for a chain's website (BUG-117)", () => {
+  // Two branches share the website: picking either one guessed the owner's city.
+  const seattle = { ...COFFEE_PLACE, placeId: "ChIJ-fixture-sunrise-seattle", city: "Seattle", state: "WA", address: "1 Pike St, Seattle, WA" };
+
+  it("picks no branch, leaves the location out, drops a description that names a city, and says why", async () => {
+    const { clients, calls } = fakeClients({
+      pages: COFFEE_PAGES,
+      places: { [COFFEE_DOMAIN]: [seattle, COFFEE_PLACE] },
+      outputs: { [AUTOFILL_MODEL]: COFFEE_SITE_OUTPUT },
+    });
+    const run = await autofill({ domain: COFFEE_DOMAIN }, clients);
+
+    expect(run.placeId).toBeNull();
+    expect(run.result.details).toMatchObject({ name: "Sunrise Coffee Bar", city: "", state: "", address: "", phone: "", description: "" });
+    expect(run.result.details.services).toEqual(COFFEE_SITE_OUTPUT.services);
+    expect(run.result.note).toBe(NOTES.chain);
+    // Saved as businesses.is_chain, so the questions include chain ones (step 2).
+    expect(run.chain).toBe(true);
+    // No second search by name: it would only find another branch.
+    expect(calls.places).toEqual([COFFEE_DOMAIN]);
   });
 
-  it("keeps what the user typed when Places finds nothing", async () => {
-    const { clients } = fakeClients();
-    const run = await autofill({ name: "Sunrise Coffee", city: "Springfield" }, clients);
-    expect(run.result.details).toEqual({ ...EMPTY_DETAILS, name: "Sunrise Coffee", city: "Springfield" });
-    expect(run.result.note).toBe(NOTES.nothingFound);
+  it("keeps a description that names no place", async () => {
+    const { clients } = fakeClients({
+      pages: COFFEE_PAGES,
+      places: { [COFFEE_DOMAIN]: [seattle, COFFEE_PLACE] },
+      outputs: { [AUTOFILL_MODEL]: { ...COFFEE_SITE_OUTPUT, description: "Coffee roasted in house, every day." } },
+    });
+    const run = await autofill({ domain: COFFEE_DOMAIN }, clients);
+    expect(run.result.details.description).toBe("Coffee roasted in house, every day.");
+  });
+});
+
+describe("industry from Google's type (BUG-123)", () => {
+  it("makes an unlisted type 'other' with Google's name for it, over the website's guess", async () => {
+    const bookstore = { ...COFFEE_PLACE, primaryType: "book_store" };
+    const { clients } = fakeClients({
+      pages: COFFEE_PAGES,
+      places: { [COFFEE_DOMAIN]: [bookstore] },
+      outputs: { [AUTOFILL_MODEL]: COFFEE_SITE_OUTPUT },
+    });
+    const run = await autofill({ domain: COFFEE_DOMAIN }, clients);
+    expect(run.result.details).toMatchObject({ industry: "other", industryText: "Bookstore" });
+  });
+
+  it("keeps a known type, and the website's guess when Google's type is too broad", async () => {
+    for (const [primaryType, want] of [["cafe", "coffee_shop"], ["store", "coffee_shop"]] as const) {
+      const { clients } = fakeClients({
+        pages: COFFEE_PAGES,
+        places: { [COFFEE_DOMAIN]: [{ ...COFFEE_PLACE, primaryType }] },
+        outputs: { [AUTOFILL_MODEL]: COFFEE_SITE_OUTPUT },
+      });
+      const run = await autofill({ domain: COFFEE_DOMAIN }, clients);
+      expect(run.result.details.industry).toBe(want);
+      expect(run.result.details.industryText).toBeUndefined();
+    }
   });
 });

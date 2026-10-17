@@ -1,5 +1,5 @@
 import { requireAdmin } from "@/modules/auth";
-import { createServiceClient } from "@/lib/supabase/service";
+import { listFeatureRequests } from "@/modules/feedback";
 import FeatureRequestsClient from "./FeatureRequestsClient";
 
 export const metadata = { title: "Feature requests" };
@@ -7,24 +7,8 @@ export const metadata = { title: "Feature requests" };
 export default async function AdminFeatureRequestsPage() {
   await requireAdmin({ next: "/internal/admin/feature-requests" });
 
-  const svc = createServiceClient();
-
-  // A fetch error means the table is missing
-  const { data: requests, error: fetchError } = await svc
-    .from("feature_requests")
-    .select(`
-      id,
-      user_id,
-      business_id,
-      title,
-      description,
-      page_context,
-      status,
-      created_at,
-      businesses ( name, domain )
-    `)
-    .order("created_at", { ascending: false })
-    .limit(200);
+  const result = await listFeatureRequests();
+  const fetchError = "error" in result ? { message: result.error } : null;
 
   // Show migration instructions
   if (fetchError) {
@@ -70,30 +54,7 @@ create policy "feature_requests_select_own" on public.feature_requests
     );
   }
 
-  // Get user emails
-  const userIds = [...new Set((requests ?? []).map((r) => r.user_id))];
-  const emailMap: Record<string, string> = {};
-  for (const uid of userIds) {
-    try {
-      const { data } = await svc.auth.admin.getUserById(uid);
-      if (data.user?.email) emailMap[uid] = data.user.email;
-    } catch { /* skip */ }
-  }
-
-  const enriched = (requests ?? []).map((r) => ({
-    id:          r.id as string,
-    userId:      r.user_id as string,
-    businessId:  r.business_id as string | null,
-    title:       r.title as string,
-    description: r.description as string,
-    pageContext: r.page_context as string | null,
-    status:      r.status as string,
-    createdAt:   r.created_at as string,
-    email:       emailMap[r.user_id as string] ?? "unknown",
-    businessName: (Array.isArray(r.businesses)
-      ? r.businesses[0]
-      : r.businesses as { name: string } | null)?.name ?? null,
-  }));
+  const enriched = "requests" in result ? result.requests : [];
 
   const newCount = enriched.filter((r) => r.status === "new").length;
 

@@ -1,9 +1,10 @@
 // Pure rules for the Settings page (B-55). No framework, database or env imports, so the forms use them too.
-import type { Frequency, ModelId } from "./schema";
+import { needsClearerIndustry } from "@/lib/other-label";
+import { ALIASES_MAX, type Frequency, type ModelId } from "./schema";
 
 // MVP_SPEC 4.5.
 export const MODELS: { id: ModelId; label: string; explanation: string }[] = [
-  { id: "openai", label: "ChatGPT", explanation: "The most used AI. Most of your customers ask here." },
+  { id: "openai", label: "ChatGPT", explanation: "The most widely used AI assistant." },
   { id: "anthropic", label: "Claude", explanation: "Growing fast, popular with professionals." },
   { id: "perplexity", label: "Perplexity", explanation: "An AI search engine. Always checks the web and shows its sources." },
 ];
@@ -62,4 +63,70 @@ export function checkLogo(size: number, head: Uint8Array): { ok: true; contentTy
   const type = LOGO_TYPES.find((t) => t.matches(head));
   if (!type) return { ok: false, error: `That file type isn't supported. ${LOGO_RULES}` };
   return { ok: true, contentType: type.contentType };
+}
+
+/** What mention detection matches a business by (scanning's mentionTargets): its names, website, phone, city and area. */
+export type MatchedFields = {
+  name: string;
+  aliases: string[];
+  domain: string | null;
+  phone: string | null;
+  city: string | null;
+  area: string | null;
+};
+
+/**
+ * Whether a save changed what saved answers are matched by, so they must be checked again: the name, the other names
+ * (in any way but order or case), the website, the phone (its digits), the city or the area (case aside).
+ */
+export function matchingChanged(before: MatchedFields, after: MatchedFields): boolean {
+  const set = (list: string[]) => [...new Set(list.map((a) => a.trim().toLowerCase()))].sort().join("\n");
+  const text = (v: string | null) => (v ?? "").trim().toLowerCase();
+  const digits = (v: string | null) => (v ?? "").replace(/\D/g, "");
+  return (
+    before.name.trim() !== after.name.trim() ||
+    set(before.aliases) !== set(after.aliases) ||
+    text(before.domain) !== text(after.domain) ||
+    digits(before.phone) !== digits(after.phone) ||
+    text(before.city) !== text(after.city) ||
+    text(before.area) !== text(after.area)
+  );
+}
+
+/** Whether the website is another site now (case and "www." aside), so what was read from the old one is out of date. */
+export function websiteChanged(before: string | null, after: string | null): boolean {
+  const site = (v: string | null) => (v ?? "").trim().toLowerCase().replace(/^www\./, "");
+  return site(before) !== site(after);
+}
+
+/** What is wrong with a typed list of other names, for the field's message; undefined when it can be saved. */
+export function aliasesProblem(names: string[]): string | undefined {
+  if (names.length > ALIASES_MAX) return `Add up to ${ALIASES_MAX} other names.`;
+  if (names.some((n) => n.length < 2)) return "Each other name needs at least 2 characters.";
+  if (names.some((n) => n.length > 120)) return "Keep each other name under 120 characters.";
+  return undefined;
+}
+
+// Legal endings are not part of what customers call a business.
+const LEGAL_ENDINGS = new Set(["llc", "inc", "ltd", "co", "corp", "pllc", "plc", "lp", "llp"]);
+
+/**
+ * The "Other names" placeholder from the business's own name: the first letter of each word, "Kentucky Fried Chicken"
+ * gives "For example: KFC". A one-word name has no short form, so an old name is suggested instead.
+ */
+export function aliasExample(name: string): string {
+  const words = name
+    .split(/[\s/-]+/)
+    .map((w) => w.replace(/[^\p{L}\p{N}]/gu, ""))
+    .filter((w) => w && !LEGAL_ENDINGS.has(w.toLowerCase()));
+  const initials = words.map((w) => w[0].toUpperCase()).join("");
+  return initials.length >= 2 ? `For example: ${initials}` : "For example: an old name or another spelling";
+}
+
+/**
+ * True when a profile save changes the industry to a vague "Other" label ("Consultant", "Store"): questions are
+ * written from that label. One saved before this rule stays while other fields change (2026-10-16).
+ */
+export function refusesOtherLabel(before: string | null, next: string): boolean {
+  return next !== (before ?? "") && needsClearerIndustry(next);
 }

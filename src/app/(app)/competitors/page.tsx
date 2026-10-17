@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { SampleDataBadge } from "@/components/app/SampleDataBadge";
 import { notFound, redirect } from "next/navigation";
 import { Settings2 } from "lucide-react";
 import { AlsoRecommended } from "@/components/competitors/AlsoRecommended";
@@ -6,8 +7,9 @@ import { Leaderboard } from "@/components/competitors/Leaderboard";
 import { SignalsTable } from "@/components/competitors/SignalsTable";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { answersText, getCompetitorsPage, trackCompetitor } from "@/modules/competitors";
+import { answersText, getCompetitorsPage, saveCompetitorWebsite, trackCompetitor } from "@/modules/competitors";
 import { getWorkspace } from "@/modules/workspace";
+import { PageHeader } from "@/components/app/PageHeader";
 
 export const metadata = { title: "Competitors", robots: { index: false } };
 
@@ -25,24 +27,28 @@ export default async function CompetitorsPage() {
   const tracked = view.limit === null ? `${view.count} tracked` : `${view.count} of ${view.limit} tracked`;
 
   return (
-    <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-6 p-5 sm:p-8">
-      <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div className="flex min-w-0 flex-col gap-1">
-          <h1 className="text-2xl font-semibold tracking-[-0.02em]">Competitors</h1>
-          <p className="text-sm text-muted-foreground">How often AI picks you vs competitors over the last 30 days.</p>
-        </div>
-        <div className="flex items-center gap-3 sm:flex-col sm:items-end sm:gap-1.5">
-          <Button asChild variant="outline">
-            <Link href={MANAGE}>
-              <Settings2 aria-hidden />
-              Manage list
-            </Link>
-          </Button>
-          <span className="text-[13px] tabular-nums text-muted-foreground" data-testid="tracked-count">
-            {tracked}
-          </span>
-        </div>
-      </header>
+    <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-6 px-4 py-5 sm:p-8">
+      <PageHeader
+        title={
+          <>
+            Competitors <SampleDataBadge show={workspace.account?.isTest} />
+          </>
+        }
+        description="How often AI picks you vs competitors over the last 30 days."
+        actions={
+          <div className="flex items-center gap-3 sm:flex-col sm:items-end sm:gap-1.5">
+            <Button asChild variant="outline">
+              <Link href={MANAGE}>
+                <Settings2 aria-hidden />
+                Manage list
+              </Link>
+            </Button>
+            <span className="text-[13px] tabular-nums text-muted-foreground" data-testid="tracked-count">
+              {tracked}
+            </span>
+          </div>
+        }
+      />
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
         <Card>
@@ -93,7 +99,7 @@ export default async function CompetitorsPage() {
           {view.count === 0 ? (
             <Empty text="Add competitors to compare your Google reviews, ratings and hours with theirs." />
           ) : (
-            <SignalsTable rows={view.signals} />
+            <SignalsTable rows={view.signals} pickBranch={view.pickBranch} edit={{ businessId: business.id, save: saveCompetitorWebsite }} />
           )}
         </CardContent>
       </Card>

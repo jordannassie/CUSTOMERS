@@ -1,14 +1,16 @@
 "use server";
 
 import { authFailure, requireAgency, type ActionResult } from "@/modules/auth";
-import { createShare, revokeShare, withSharePage, type ShareLink } from "./dal";
-import { renderPdf, siteOrigin } from "./pdf";
+import { checkRateLimit } from "@/modules/rate-limit";
+import { createShare, recordPdfError, revokeShare, withSharePage, type ShareLink } from "./dal";
+import { PdfError, renderPdf, siteOrigin } from "./pdf";
 import { createShareLinkInput, exportPdfInput, revokeShareLinkInput } from "./schema";
 import { pdfFileName } from "./service";
 
 export type PdfFile = { fileName: string; base64: string };
 
 const PDF_FAILED = "PDF could not be created. Try again, or use Print, Save as PDF.";
+const PDF_LIMITED = "You've exported a lot of PDFs this hour. Try again later, or use Print, Save as PDF.";
 
 export async function createShareLink(input: unknown): Promise<ActionResult<ShareLink>> {
   let agencyId: string;
@@ -44,13 +46,20 @@ export async function revokeShareLink(input: unknown): Promise<ActionResult<null
 /** Export PDF (B-60, D-71): prints the business's share page and returns the file for the browser to save. */
 export async function exportPdf(input: unknown): Promise<ActionResult<PdfFile>> {
   let agencyId: string;
+  let userId: string;
   try {
-    agencyId = (await requireAgency()).agency.id;
+    const { user, agency } = await requireAgency();
+    agencyId = agency.id;
+    userId = user.id;
   } catch (error) {
     return authFailure(error);
   }
   const parsed = exportPdfInput.safeParse(input);
   if (!parsed.success) return { ok: false, status: 400, error: PDF_FAILED };
+  // Each PDF opens the page in a hosted browser, so each user gets a few an hour (LIMITS.pdf_export).
+  const limit = await checkRateLimit("pdf_export", userId);
+  if (limit === "limited") return { ok: false, status: 429, error: PDF_LIMITED };
+  if (limit === "unavailable") return { ok: false, status: 503, error: "We couldn't create the PDF just now. Try again in a few minutes." };
 
   try {
     const file = await withSharePage(agencyId, parsed.data.businessId, async ({ path, businessName }) => ({
@@ -61,6 +70,7 @@ export async function exportPdf(input: unknown): Promise<ActionResult<PdfFile>> 
     return { ok: true, data: file };
   } catch (error) {
     console.error("[reports] PDF export failed:", error instanceof Error ? error.message : error);
+    if (error instanceof PdfError) await recordPdfError(error.message);
     return { ok: false, status: 502, error: PDF_FAILED };
   }
 }

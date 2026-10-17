@@ -2,6 +2,7 @@
 // approved file records who reviewed it and when. Pure, so tests and scripts share it.
 import { LIBRARY_INDUSTRIES } from "@/lib/industries";
 import { CITY, libraryFileSchema, type LibraryFile } from "./schema";
+import { missingTermTags } from "./specific-terms";
 
 export type ValidationResult =
   | { ok: true; file: LibraryFile; warnings: string[] }
@@ -29,12 +30,18 @@ export function validateLibrary(raw: unknown): ValidationResult {
   file.templates.forEach((t, i) => {
     const at = `templates.${i} (${t.industry}: "${t.template}")`;
     if (t.industry === "other") errors.push(`${at}: "other" has no library`);
-    if (!t.template.includes(CITY)) errors.push(`${at}: missing ${CITY}`);
+    const cities = t.template.split(CITY).length - 1;
+    if (cities === 0) errors.push(`${at}: missing ${CITY}`);
+    // The same rule as onboarding's isUsableTemplate: exactly one place for the city.
+    if (cities > 1) errors.push(`${at}: ${CITY} more than once`);
     const otherPlaceholders = (t.template.match(/\{[^}]*\}/g) ?? []).filter((p) => p !== CITY);
     if (otherPlaceholders.length) errors.push(`${at}: unknown placeholder ${otherPlaceholders.join(", ")}`);
     if (!t.template.trim().endsWith("?")) errors.push(`${at}: not a question (must end with "?")`);
     if (!t.tags.some((tag) => tag.trim())) errors.push(`${at}: needs at least one tag`);
     if (t.tags.some((tag) => !tag.trim())) errors.push(`${at}: empty tag`);
+    // Onboarding gives a cuisine or service template only to a business that lists it, so the tags must name it.
+    const untagged = missingTermTags(t.template, t.tags);
+    if (untagged.length) errors.push(`${at}: names ${untagged.join(", ")} but its tags do not`);
     const key = `${t.industry}|${t.template.trim().toLowerCase()}`;
     if (seen.has(key)) errors.push(`${at}: duplicate template`);
     seen.add(key);

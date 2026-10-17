@@ -1,13 +1,15 @@
 import { describe, expect, it } from "vitest";
 import type { ScanStatus } from "@/modules/jobs";
-import { CREDITS_WAIT_MS, FIRST_SCAN_FAILED, creditsWaitNext, firstScanPhase, firstScanProblem } from "./first-scan";
+import { CREDITS_WAIT_MS, FIRST_SCAN_FAILED, creditsWaitNext, firstScanCopy, firstScanPhase, firstScanProblem } from "./first-scan";
 
 const status = (s: Partial<ScanStatus>): ScanStatus => ({
   scanning: false,
   retrying: false,
+  stalled: false,
   lastResult: null,
   lastFinishedAt: null,
   blockedReason: null,
+  failedReason: null,
   ...s,
 });
 
@@ -71,5 +73,43 @@ describe("waiting for the trial credits (F-48)", () => {
   it("gives up with a clear message when the credits never arrive", () => {
     expect(creditsWaitNext(true, CREDITS_WAIT_MS)).toBe("late");
     expect(creditsWaitNext(null, CREDITS_WAIT_MS)).toBe("late");
+  });
+});
+
+describe("firstScanCopy", () => {
+  const facts = { business: "Bean House", models: ["ChatGPT", "Claude", "Perplexity"], asked: "12 questions" };
+
+  it("says a scan is running while it runs", () => {
+    expect(firstScanCopy("scanning", facts)).toEqual({
+      heading: "Running your first scan",
+      intro: "We're asking ChatGPT, Claude and Perplexity 12 questions your customers ask, and looking for Bean House in every answer.",
+    });
+  });
+
+  it("stops claiming the scan is running once it has stalled", () => {
+    const copy = firstScanCopy("stalled", facts);
+    expect(copy.heading).toBe("Your first scan is taking longer than usual");
+    expect(copy.intro).toBe("Bean House is in line to be checked by ChatGPT, Claude and Perplexity.");
+    expect(copy.intro).not.toMatch(/asking/);
+  });
+
+  it("keeps the credits, failed and done wording", () => {
+    expect(firstScanCopy("credits-late", facts).heading).toBe("Your trial credits aren't in yet");
+    expect(firstScanCopy("credits", facts).heading).toBe("Getting your first scan ready");
+    expect(firstScanCopy("failed", facts).intro).toBe("We couldn't finish checking Bean House.");
+    expect(firstScanCopy("done", { ...facts, models: ["ChatGPT"] }).intro).toMatch(/^We asked ChatGPT 12 questions/);
+  });
+
+  it("says a scan that stopped before any answer didn't run, not that it didn't finish", () => {
+    expect(firstScanCopy("not-run", facts)).toEqual({ heading: "Your first scan didn't run", intro: "We haven't checked Bean House yet." });
+  });
+
+  it("asks before a scan that costs more than the balance, without claiming it runs (D-54)", () => {
+    const copy = firstScanCopy("confirm", facts);
+    expect(copy).toEqual({
+      heading: "Your first scan needs more credits than you have",
+      intro: "We're ready to check Bean House with ChatGPT, Claude and Perplexity.",
+    });
+    expect(copy.intro).not.toMatch(/asking/);
   });
 });

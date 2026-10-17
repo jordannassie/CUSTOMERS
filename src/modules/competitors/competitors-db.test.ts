@@ -4,7 +4,7 @@ import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { env } from "@/lib/env";
 import { createServiceClient } from "@/lib/supabase/service";
 import { fixtureSignals } from "./place-fixtures";
-import type { FetchSignals } from "./places";
+import { PlacesUnavailable, type FetchSignals } from "./places";
 
 // B-50 against the local database: what the page reads, that loading it stores no Places data (D-73),
 // and the one-click Track action.
@@ -84,12 +84,20 @@ async function addChecks(businessId: string, names: string[][]) {
     .select("id")
     .single()
     .throwOnError();
+  // Only answers to suggested questions count in the score (BUG-129).
+  const { data: question } = await service
+    .from("tracked_prompts")
+    .insert({ business_id: businessId, prompt: `Best coffee shop near me ${randomUUID()}?`, source: "library" })
+    .select("id")
+    .single()
+    .throwOnError();
   await service
     .from("visibility_results")
     .insert(
       names.map((answer, i) => ({
         run_id: run.id,
         business_id: businessId,
+        tracked_prompt_id: question.id,
         provider: ["openai", "anthropic", "perplexity"][i % 3],
         created_at: new Date(Date.now() - 3_600_000).toISOString(),
         business_mentioned: answer.includes("Sunrise Coffee Bar"),
@@ -172,6 +180,14 @@ describe("loadCompetitorsPage", () => {
       throw new Error("down");
     });
     expect(view!.signals.map((s) => s.status)).toEqual(["error", "error"]);
+  });
+
+  it("says when Google's request limit is reached, since a refresh won't help", async () => {
+    const owner = await createOwner();
+    const view = await loadCompetitorsPage(owner.agencyId, owner.businessId, new Date(), async () => {
+      throw new PlacesUnavailable("Places returned 429", true);
+    });
+    expect(view!.signals.map((s) => s.status)).toEqual(["limited"]);
   });
 });
 

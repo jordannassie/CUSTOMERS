@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { allowRequest, clientIp } from "@/modules/rate-limit";
+import { checkRateLimit, clientIp } from "@/modules/rate-limit";
 import {
   compareSites,
   extractDomain,
@@ -13,9 +13,9 @@ import {
  * No AI calls. Public by design, so it is rate limited per IP instead of checking auth.
  */
 export async function POST(request: NextRequest) {
-  if (!(await allowRequest("compare", clientIp(request.headers)))) {
-    return NextResponse.json({ error: "Too many checks. Try again in an hour." }, { status: 429 });
-  }
+  const limit = await checkRateLimit("compare", clientIp(request.headers));
+  if (limit === "limited") return NextResponse.json({ error: "Too many checks. Try again in an hour." }, { status: 429 });
+  if (limit === "unavailable") return NextResponse.json({ error: "The check is busy right now. Try again in a few minutes." }, { status: 503 });
 
   const body = await request.json().catch(() => null);
   const parsed = readinessCheckInput.safeParse(body);
@@ -37,7 +37,5 @@ export async function POST(request: NextRequest) {
   }
 
   const [mine, them] = await Promise.all([readSite(myUrl), readSite(competitorUrl)]);
-  return NextResponse.json(
-    compareSites({ domain: myDomain, signals: mine }, { domain: themDomain, signals: them }),
-  );
+  return NextResponse.json(compareSites({ domain: myDomain, ...mine }, { domain: themDomain, ...them }));
 }

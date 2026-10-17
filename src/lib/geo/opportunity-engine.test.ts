@@ -45,7 +45,7 @@ describe("rules fallback wording (BUG-A)", () => {
   it("says plainly when AI never mentioned the business", () => {
     const [none] = all(0, 36);
     expect(none.title).toBe("AI assistants don't mention you yet");
-    expect(none.evidence).toBe("AI assistants mentioned Sunrise Coffee Bar in 0 of 36 questions customers ask (0%).");
+    expect(none.evidence).toBe("AI assistants mentioned Sunrise Coffee Bar in 0 of 36 answers to customer questions (0%).");
     expect(none.description).not.toMatch(/most/);
     expect(all(5, 36)[0].title).toBe("AI assistants leave you out of most answers");
   });

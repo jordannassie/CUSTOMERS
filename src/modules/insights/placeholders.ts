@@ -67,7 +67,8 @@ export function fillPlaceholders(text: string, lookup: Lookup): string {
     .split("\n")
     .map((line) =>
       line
-        .split(/(?<=[.?!])\s+/)
+        // "Mr. Rooter has 40 reviews." is one sentence, so dropping it leaves no stray "Mr.".
+        .split(/(?<=(?<!\b(?:Mr|Mrs|Ms|Dr|St|Jr|Sr|Inc|Co|Ltd|vs))[.?!])\s+/)
         .map((s) => fillSentence(s, lookup))
         .filter((s): s is string => s !== null)
         .join(" "),

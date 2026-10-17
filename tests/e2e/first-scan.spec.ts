@@ -33,7 +33,7 @@ test.afterAll(async () => {
  * Stripe subscription as checkout.session.completed does; `credits: false` leaves out the grant that
  * invoice.paid brings (F-48).
  */
-async function seedAtModelsStep(page: Page, opts: { subscription?: boolean; credits?: boolean } = {}) {
+async function seedAtModelsStep(page: Page, opts: { subscription?: boolean; credits?: boolean; amount?: number } = {}) {
   const email = `e2e-first-scan-${randomUUID()}@example.test`;
   const password = `pw-${randomUUID()}`;
   const { data: user, error } = await db.auth.admin.createUser({ email, password, email_confirm: true });
@@ -72,9 +72,10 @@ async function seedAtModelsStep(page: Page, opts: { subscription?: boolean; cred
     .throwOnError();
   await db
     .from("tracked_prompts")
-    .insert(QUESTIONS.map((prompt) => ({ business_id: business.id, prompt })))
+    // Suggested questions: only these count in the score (BUG-129).
+    .insert(QUESTIONS.map((prompt) => ({ business_id: business.id, prompt, source: "library" })))
     .throwOnError();
-  if (opts.credits !== false) await grant(agency.id, opts.subscription ? "trial" : "admin");
+  if (opts.credits !== false) await grant(agency.id, opts.subscription ? "trial" : "admin", opts.amount);
 
   await page.goto("/login?next=/onboarding");
   await page.locator("#email").fill(email);
@@ -84,12 +85,12 @@ async function seedAtModelsStep(page: Page, opts: { subscription?: boolean; cred
   return { businessId: business.id, agencyId: agency.id };
 }
 
-async function grant(agencyId: string, source: string) {
+async function grant(agencyId: string, source: string, amount = 200) {
   const { error } = await db.rpc("grant_credits", {
     p_agency_id: agencyId,
     p_source: source,
     p_source_id: `e2e-${randomUUID()}`,
-    p_amount: 200,
+    p_amount: amount,
     p_expires_at: null,
   });
   if (error) throw error;
@@ -121,6 +122,20 @@ test("finish setup: a short progress screen, a summary, then the dashboard with 
   await expect(page.getByTestId("no-score")).toHaveCount(0);
 });
 
+test("short of credits: the first scan waits for Run scan anyway, then runs into the overdraft (D-54)", async ({ page }) => {
+  const { businessId } = await seedAtModelsStep(page, { amount: 5 });
+  await finishSetup(page);
+  await page.waitForURL("**/onboarding/first-scan");
+  await slow(page.getByTestId("first-scan-overdraft")).toHaveText(
+    "This scan uses 9 credits and you have 5. It will still finish, and the 4 extra credits come out of your next renewal or top-up.",
+  );
+  const jobs = async () => (await db.from("scan_jobs").select("id").eq("business_id", businessId)).data?.length ?? 0;
+  expect(await jobs()).toBe(0);
+  await page.getByRole("button", { name: "Run scan anyway" }).click();
+  await slow(page.getByRole("heading", { level: 1, name: "Your first scan is done" })).toBeVisible();
+  expect(await jobs()).toBe(1);
+});
+
 test("a failed first scan shows Try again, never an empty dashboard, and the retry opens the score", async ({ page }) => {
   const { businessId } = await seedAtModelsStep(page);
   // Forced failure: with no active questions the worker fails the job at once, without holding credits.
@@ -128,13 +143,13 @@ test("a failed first scan shows Try again, never an empty dashboard, and the ret
   await finishSetup(page);
 
   await page.waitForURL("**/onboarding/first-scan");
-  await slow(page.getByRole("heading", { level: 1, name: "Your first scan didn't finish" })).toBeVisible();
+  await slow(page.getByRole("heading", { level: 1, name: "Your first scan didn't run" })).toBeVisible();
   await expect(page.getByTestId("first-scan-problem")).toHaveText("No credits were used. Try again in a moment.");
   expect(new URL(page.url()).pathname).toBe("/onboarding/first-scan");
 
   // A reload keeps the retry in view instead of starting another scan by itself.
   await page.reload();
-  await slow(page.getByRole("heading", { level: 1, name: "Your first scan didn't finish" })).toBeVisible();
+  await slow(page.getByRole("heading", { level: 1, name: "Your first scan didn't run" })).toBeVisible();
   const { count } = await db.from("scan_jobs").select("id", { count: "exact", head: true }).eq("business_id", businessId);
   expect(count).toBe(1);
 
@@ -192,4 +207,28 @@ test.describe("trial credits after the card (F-48)", () => {
     await page.getByRole("button", { name: "Try again" }).click();
     await openDashboard(page);
   });
+});
+
+test("a scan no worker picks up says so instead of spinning, and carries on once a worker runs it", async ({ page }) => {
+  const { businessId, agencyId } = await seedAtModelsStep(page);
+  // A worker that died 20 minutes ago (or was never set up): the job is still "running" and nobody resets it.
+  const lockedAt = new Date(Date.now() - 20 * 60_000).toISOString();
+  const { data: job } = await db
+    .from("scan_jobs")
+    .insert({ agency_id: agencyId, business_id: businessId, status: "running", attempts: 1, locked_at: lockedAt, run_after: lockedAt })
+    .select("id")
+    .single()
+    .throwOnError();
+  await finishSetup(page);
+
+  await page.waitForURL("**/onboarding/first-scan");
+  await slow(page.getByRole("heading", { level: 1, name: "Your first scan is taking longer than usual" })).toBeVisible();
+  await expect(page.getByTestId("first-scan-stalled")).toContainText("finishes on its own");
+  await expect(page.getByText("Bean There Coffee is in line to be checked by ChatGPT, Claude and Perplexity.")).toBeVisible();
+  await expect(page.getByTestId("first-scan-models").getByText("Not started")).toHaveCount(3);
+  await expect(page.getByRole("link", { name: "Go to dashboard" })).toBeVisible();
+
+  // The screen keeps polling: once a worker takes the job, it moves on to the result by itself.
+  await db.from("scan_jobs").update({ status: "queued", locked_at: null, run_after: new Date().toISOString() }).eq("id", job.id).throwOnError();
+  await slow(page.getByRole("heading", { level: 1, name: "Your first scan is done" })).toBeVisible();
 });

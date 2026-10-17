@@ -1,14 +1,14 @@
 // Hand-built competitor results for tests and for the dev server's Places fixture mode, so no real
 // Google call is needed to see the competitor step. Made-up businesses; no provider was called.
-import type { CompetitorCandidate, CompetitorPlaces } from "./competitor-places";
+import type { CompetitorCandidate, CompetitorPlaces, PlaceArea } from "./competitor-places";
 import { SEARCH_TERMS } from "./competitors";
 
-const candidate = (slug: string, name: string, rating: number | null, reviewCount: number | null, street: string) => ({
+const candidate = (slug: string, name: string, rating: number | null, reviewCount: number | null, street: string, city = "Springfield") => ({
   placeId: `ChIJ-fixture-${slug}`,
   name,
   rating,
   reviewCount,
-  address: `${street}, Springfield`,
+  address: `${street}, ${city}`,
   mapsUri: `https://maps.google.com/?cid=fixture-${slug}`,
 });
 
@@ -36,8 +36,29 @@ export const LOOKUP_CANDIDATES: CompetitorCandidate[] = [
   candidate("blue-door-2", "Blue Door Coffee Downtown", 4.2, 88, "90 Center St"),
 ];
 
+/** Found only by name, in other cities: a business that moves from Austin to Dallas keeps only the Dallas one. */
+export const AUSTIN_CANDIDATE: CompetitorCandidate = candidate("austin-bean", "Austin Bean Co", 4.4, 140, "1100 Congress Ave", "Austin");
+export const DALLAS_CANDIDATE: CompetitorCandidate = candidate("dallas-roast", "Dallas Roast Co", 4.6, 230, "2500 Elm St", "Dallas");
+
+/** A Google name that is a page title, found only by name (2026-10-15: the picker starts it on the brand). */
+export const TITLE_CANDIDATE: CompetitorCandidate = candidate("berejuved", "BeRejuved Medical Spa & Wellness Studio - NYC", 4.8, 120, "12 W 23rd St");
+
 const plain = (s: string) => s.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, "");
-const ALL = [...NEARBY_CANDIDATES, ...LOOKUP_CANDIDATES];
+const ALL = [...NEARBY_CANDIDATES, ...LOOKUP_CANDIDATES, AUSTIN_CANDIDATE, DALLAS_CANDIDATE, TITLE_CANDIDATE];
+
+// The made-up cities above, as Google's address parts would name them.
+const FIXTURE_REGIONS: Record<string, [string, string]> = {
+  Springfield: ["Illinois", "IL"],
+  Austin: ["Texas", "TX"],
+  Dallas: ["Texas", "TX"],
+  NYC: ["New York", "NY"],
+};
+
+/** Where a fixture place is, from the city at the end of its address. */
+export function fixtureArea(c: CompetitorCandidate): PlaceArea {
+  const city = c.address?.split(",").at(-1)?.trim() ?? "";
+  return { cities: city ? [city] : [], regions: FIXTURE_REGIONS[city] ?? [], country: "US" };
+}
 
 const CATEGORY_TERMS = new Set(Object.values(SEARCH_TERMS).flatMap((t) => (t ? plain(t) : [])));
 
@@ -51,11 +72,15 @@ function answer(textQuery: string, pageSize: number): CompetitorCandidate[] {
 export const fixturePlaces: CompetitorPlaces = {
   search: async (textQuery, pageSize) => answer(textQuery, pageSize),
   details: async (placeId) => ALL.find((c) => c.placeId === placeId) ?? null,
+  area: async (placeId) => {
+    const found = ALL.find((c) => c.placeId === placeId);
+    return found ? fixtureArea(found) : null;
+  },
 };
 
 /** A fixture client that records its calls, or fails every call when given an error. */
 export function fakeCompetitorPlaces(fail?: Error) {
-  const calls = { search: [] as string[], details: [] as string[] };
+  const calls = { search: [] as string[], details: [] as string[], area: [] as string[] };
   const places: CompetitorPlaces = {
     search: async (query, pageSize) => {
       calls.search.push(query);
@@ -66,6 +91,11 @@ export function fakeCompetitorPlaces(fail?: Error) {
       calls.details.push(placeId);
       if (fail) throw fail;
       return fixturePlaces.details(placeId);
+    },
+    area: async (placeId) => {
+      calls.area.push(placeId);
+      if (fail) throw fail;
+      return fixturePlaces.area!(placeId);
     },
   };
   return { places, calls };

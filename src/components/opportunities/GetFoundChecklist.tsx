@@ -49,12 +49,15 @@ export function GetFoundChecklist({
   }
 
   return (
-    <section className="flex flex-col gap-4 rounded-md border border-border bg-surface p-5" data-testid="get-found-checklist">
+    <section className="flex flex-col gap-3 rounded-md border border-border bg-surface p-5" data-testid="get-found-checklist">
       <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <div className="flex max-w-[620px] flex-col gap-1">
-          <h2 className="text-base font-semibold tracking-[-0.01em]">Get found by AI</h2>
+        <div className="flex max-w-[620px] flex-col gap-3">
+          <h2 className="text-base font-semibold tracking-[-0.02em]">Get found by AI</h2>
           <p className="text-sm text-muted-foreground">
-            We have no record of {missingText(missing)} for your business. AI assistants lean on these basics, so start here.
+            {/* "Couldn't confirm", not "no record": a Google profile is also unconfirmed when Google could not be reached at
+                setup, or its listing did not match the website (2026-10-14). */}
+            We couldn&apos;t confirm {missingText(missing)} for your business. AI assistants lean on these basics, so check them
+            first.
           </p>
         </div>
         <div className="flex w-full flex-col gap-1.5 sm:w-44">

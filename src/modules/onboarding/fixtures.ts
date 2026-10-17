@@ -51,10 +51,13 @@ export const COFFEE_PLACE: PlaceCandidate = {
   address: "120 Main St, Springfield, IL 62701, USA",
   phone: "(217) 555-0142",
   primaryType: "coffee_shop",
+  types: ["coffee_shop", "cafe", "food", "point_of_interest", "establishment"],
   websiteUri: "https://www.sunrise-coffee.example/",
   city: "Springfield",
   state: "IL",
   country: "US",
+  // Google's neighborhood for the listing: pre-fills "Neighborhood or area" on the details form.
+  area: "Downtown",
 };
 
 export const OTHER_PLACE: PlaceCandidate = {
@@ -79,10 +82,13 @@ export const BLOCKED_PLACE: PlaceCandidate = {
   address: "500 Harbor Blvd, Costa Mesa, CA 92626, USA",
   phone: "(949) 555-0199",
   primaryType: "marketing_agency",
+  types: ["marketing_agency", "point_of_interest", "establishment"],
   websiteUri: "https://brandastic-like.example",
   city: "Costa Mesa",
   state: "CA",
   country: "US",
+  // No neighborhood on this listing: the field stays empty.
+  area: null,
 };
 
 type FakeOptions = {

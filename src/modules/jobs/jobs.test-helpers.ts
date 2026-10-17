@@ -39,7 +39,8 @@ export async function queueTestJob(agency: { agencyId: string; ownerUserId: stri
       owner_user_id: agency.ownerUserId,
       agency_id: agency.agencyId,
       name: "Bean There Coffee",
-      domain: "beanthere.example",
+      // Its own website: migration 067 refuses two live businesses with one website in an agency.
+      domain: `beanthere-${randomUUID().slice(0, 8)}.example`,
       primary_city: city,
       primary_region: "CA",
       primary_country: "United States",
@@ -49,7 +50,7 @@ export async function queueTestJob(agency: { agencyId: string; ownerUserId: stri
     .select("id")
     .single();
   if (error) throw error;
-  const prompts = Array.from({ length: 12 }, (_, i) => ({ business_id: business.id, prompt: `Question ${i + 1}: best coffee shop in ${city}?` }));
+  const prompts = Array.from({ length: 12 }, (_, i) => ({ business_id: business.id, prompt: `Question ${i + 1}: best coffee shop in ${city}?`, source: "library" }));
   const inserted = await service.from("tracked_prompts").insert(prompts);
   if (inserted.error) throw inserted.error;
   const { data: job, error: jobError } = await service

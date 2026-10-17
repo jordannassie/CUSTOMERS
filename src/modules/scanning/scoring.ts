@@ -17,6 +17,8 @@ export type ScoreCheck = {
   competitorsMentioned: string[];
   /** Checks sharing a key saw the same answer and count once for confidence (D-64). */
   answerKey: string;
+  /** When its question stopped being asked; it counts in scores read before then, not after (step 9e). */
+  activeUntil?: Date;
 };
 
 export type Estimate = {
@@ -36,9 +38,13 @@ export type Mentioned = (check: ScoreCheck) => boolean;
 
 type Stats = Estimate & { variance: number };
 
-export function checksInWindow<T extends { checkedAt: Date }>(checks: T[], now: Date, days = SCORE_WINDOW_DAYS): T[] {
+export function checksInWindow<T extends { checkedAt: Date; activeUntil?: Date }>(checks: T[], now: Date, days = SCORE_WINDOW_DAYS): T[] {
   const since = now.getTime() - days * DAY_MS;
-  return checks.filter((c) => c.checkedAt.getTime() > since && c.checkedAt.getTime() <= now.getTime());
+  // A question paused or removed later still counts in a score read at an earlier moment, so past points stay as
+  // they were (step 9e); from the moment it stopped it no longer counts.
+  return checks.filter(
+    (c) => c.checkedAt.getTime() > since && c.checkedAt.getTime() <= now.getTime() && (!c.activeUntil || c.activeUntil > now),
+  );
 }
 
 export function confidenceLabel(uniqueAnswers: number): Confidence {

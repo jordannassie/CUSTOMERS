@@ -24,13 +24,13 @@ export function RequestRow({ req, expanded, saving, onToggle, onStatus }: Props)
       >
         <span className="grid min-w-0 flex-1 gap-1 md:grid-cols-[1fr_180px_110px] md:items-center md:gap-3">
           <span className="min-w-0">
-            <span className="block truncate text-[14px] font-medium">{req.title}</span>
+            <span className="block truncate text-[14px] font-medium" title={req.title}>{req.title}</span>
             <span className="block truncate text-[13px] text-text-hint">
               {req.email}
               {req.businessName && `, ${req.businessName}`}
             </span>
           </span>
-          <span className="truncate text-[13px] text-text-hint">{req.pageContext ?? "-"}</span>
+          <span className="truncate text-[13px] text-text-hint" title={req.pageContext ?? "-"}>{req.pageContext ?? "-"}</span>
           <span className="text-[13px] text-text-hint">{fmt(req.createdAt)}</span>
         </span>
         {/* Fixed width so the date column lines up whatever the badge says. */}

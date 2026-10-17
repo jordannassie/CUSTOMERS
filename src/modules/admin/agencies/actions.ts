@@ -1,13 +1,13 @@
 "use server";
 
 import { refresh } from "next/cache";
-import { authFailure, requireAdmin, type ActionResult, type SessionUser } from "@/modules/auth";
+import { AuthError, authFailure, requireAdmin, type ActionResult, type SessionUser } from "@/modules/auth";
 import { accountRestoredEmail, sendSafely } from "@/modules/account";
-import { adminAdjustCredits } from "@/modules/credits";
+import { adminAdjustCredits, extendTrialGrant } from "@/modules/credits";
 import { logAdminAction } from "../dal";
 import { changeStatus, ownerEmail, readAgencyState, setTestFlag, setTrialEnd, statusBeforeSuspend, type AgencyState } from "./dal";
 import { adjustCreditsInput, extendTrialInput, markTestInput, reasonInput } from "./schema";
-import { canRestore, extendedTrialEnd, isBillingStatus, statusAfterUnsuspend } from "./service";
+import { canRestore, extendedTrialEnd, isBillingStatus, statusAfterUnsuspend, type BillingStatus } from "./service";
 import { adminStripeClient } from "./stripe";
 
 // Agency actions (B-65, MVP_SPEC 9.1). Each checks admin access itself, needs a reason and writes the audit log.
@@ -71,16 +71,24 @@ export async function extendTrial(input: unknown): Promise<ActionResult<{ trialE
       return { ok: false, status: 502, error: `Stripe did not accept the change, so nothing was saved. Stripe said: ${message}` };
     }
     await setTrialEnd(agencyId, trialEnd);
+    // A3: the trial credits last as long as the trial.
+    const trialGrantId = await extendTrialGrant(agencyId, trialEnd);
     await finish("agency.extend_trial", agencyId, {
       reason,
       days,
       previous_trial_end: r.state.trialEndsAt,
       new_trial_end: trialEnd.toISOString(),
+      trial_grant_id: trialGrantId,
+      trial_grant_expires_at: trialGrantId ? trialEnd.toISOString() : null,
       stripe_mode: stripe.mode,
     });
     return { ok: true, data: { trialEndsAt: trialEnd.toISOString() } };
   } catch (error) {
-    return authFailure(error);
+    // A4: a failure after Stripe accepted the change is shown in the form, never dropped.
+    if (error instanceof AuthError) return authFailure(error);
+    const message = error instanceof Error ? error.message : String(error);
+    console.error("[admin] extend trial failed", message);
+    return { ok: false, status: 500, error: `The trial may be only partly extended: ${message}. Refresh the page to see what changed.` };
   }
 }
 
@@ -110,9 +118,21 @@ export async function unsuspendAgency(input: unknown): Promise<Done> {
     if (!r.ok) return r;
     if (r.state.status !== "suspended") return { ok: false, status: 409, error: "This agency is not suspended." };
 
-    const next = statusAfterUnsuspend(await statusBeforeSuspend(agencyId));
+    // Webhooks leave a suspended agency's status alone, so Stripe is asked what it is now; without Stripe (or with
+    // nothing to go on) the agency gets back the status it had when suspended.
+    let fromStripe: BillingStatus | null = null;
+    const stripe = r.state.subscriptionId ? adminStripeClient() : null;
+    if (stripe && r.state.subscriptionId) {
+      try {
+        fromStripe = await stripe.subscriptionStatus(r.state.subscriptionId);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "unknown error";
+        return { ok: false, status: 502, error: `We couldn't check the subscription in Stripe, so nothing changed. Stripe said: ${message}` };
+      }
+    }
+    const next = fromStripe ?? statusAfterUnsuspend(await statusBeforeSuspend(agencyId));
     if (!(await changeStatus(agencyId, "suspended", next))) return CHANGED;
-    await finish("agency.unsuspend", agencyId, { reason, new_status: next });
+    await finish("agency.unsuspend", agencyId, { reason, new_status: next, status_from_stripe: fromStripe !== null });
     return DONE;
   } catch (error) {
     return authFailure(error);

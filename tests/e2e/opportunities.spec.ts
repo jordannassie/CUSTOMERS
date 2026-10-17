@@ -157,7 +157,7 @@ test("a business with no website gets the checklist, and ticks are saved", async
   await seed(page, { hasWebsite: false, opportunities: false });
 
   const list = page.getByTestId("get-found-checklist");
-  await expect(list).toContainText("We have no record of a website, a Google Business Profile and a phone number");
+  await expect(list).toContainText("We couldn't confirm a website, a Google Business Profile and a phone number");
   await expect(list.getByRole("checkbox")).toHaveCount(6);
   await expect(page.getByTestId("checklist-progress")).toHaveText("0 of 6 done");
   await expect(page.getByTestId("no-opportunities")).toBeVisible();

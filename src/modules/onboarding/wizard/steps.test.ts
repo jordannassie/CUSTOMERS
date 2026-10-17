@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { canOpen, needsCard, nextStepNumber, resumeStep, visibleSteps, type WizardState } from "./steps";
+import { addBusinessStep, canOpen, draftLabel, draftStep, needsCard, nextStepNumber, resumeStep, visibleSteps, type WizardState } from "./steps";
 
 const fresh: WizardState = { hasAgency: false, draft: null, hasFinishedBusiness: false, needsCard: true };
 const withAgency: WizardState = { ...fresh, hasAgency: true };
@@ -28,6 +28,36 @@ describe("resumeStep", () => {
 
   it("has nothing to do when every business is set up", () => {
     expect(resumeStep({ ...withAgency, hasFinishedBusiness: true })).toBeNull();
+  });
+});
+
+describe("addBusinessStep", () => {
+  const second = (step: number | null): WizardState => ({ ...at(step), hasFinishedBusiness: true, needsCard: false });
+
+  it("goes to the open draft's saved step, never a new website step", () => {
+    expect(addBusinessStep(second(4))).toBe("details");
+    expect(addBusinessStep(second(6))).toBe("questions");
+    expect(addBusinessStep(second(null))).toBe("details");
+  });
+
+  it("starts a new business on the website step when nothing is being set up", () => {
+    expect(addBusinessStep({ ...withAgency, hasFinishedBusiness: true })).toBe("website");
+    expect(addBusinessStep(withAgency)).toBe("website");
+    expect(addBusinessStep(fresh)).toBe("agency");
+  });
+
+  it("matches resumeStep for a draft", () => {
+    expect(draftStep(7)).toBe("models");
+    expect(draftStep(3)).toBe("details");
+  });
+});
+
+describe("draftLabel", () => {
+  it("names the draft, else its website, else a stand-in", () => {
+    expect(draftLabel({ name: "Sunrise Coffee", domain: "sunrise.example" })).toBe("Finish setting up Sunrise Coffee");
+    expect(draftLabel({ name: "sunrise.example", domain: "sunrise.example" })).toBe("Finish setting up sunrise.example");
+    expect(draftLabel({ name: "  ", domain: "sunrise.example" })).toBe("Finish setting up sunrise.example");
+    expect(draftLabel({ name: "", domain: null })).toBe("Finish setting up your new business");
   });
 });
 

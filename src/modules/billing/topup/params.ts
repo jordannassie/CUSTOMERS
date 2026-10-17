@@ -20,11 +20,12 @@ export type TopupSessionInput = {
 
 /**
  * A one-time payment for one pack. The metadata follows the webhook contract in README.md: the webhook
- * grants the pack's credits on checkout.session.completed, keyed by the session ID. No payment_method_types,
+ * grants metadata.credits on checkout.session.completed, keyed by the session ID. No payment_method_types,
  * so Stripe picks the payment methods.
  */
 export function topupSessionParams(input: TopupSessionInput): Stripe.Checkout.SessionCreateParams {
-  const metadata = { agency_id: input.agencyId, kind: "topup", topup_pack_id: input.pack.id };
+  // credits: what this session sells, read back by the webhook, so a pack changed after checkout started changes nothing.
+  const metadata = { agency_id: input.agencyId, kind: "topup", topup_pack_id: input.pack.id, credits: String(input.pack.credits) };
   return {
     mode: "payment",
     ui_mode: "elements",

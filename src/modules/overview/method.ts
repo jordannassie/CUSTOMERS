@@ -19,7 +19,7 @@ export type MethodInput = {
   margin: number;
   checks: number;
   uniqueAnswers: number;
-  models: { id: ProviderId; label: string; score: number | null; margin: number | null }[];
+  models: { id: ProviderId; label: string; score: number | null; margin: number | null; notChecked?: boolean }[];
 };
 
 export type MethodPanel = {
@@ -44,10 +44,10 @@ export function methodPanel(input: MethodInput, calibration: Calibration | null)
   const aiNames = listNames(input.models.map((m) => m.label));
   return {
     title: "How your score is calculated",
-    intro: `Your score is how often AI recommended you when we asked the questions your customers ask, over the last ${input.windowDays} days.`,
+    intro: `Your score is how often AI recommended you when we asked the suggested questions on your Questions page, over the last ${input.windowDays} days.`,
     numbers: [
       { label: "Time covered", value: `Last ${input.windowDays} days` },
-      { label: "Answers checked", value: count(input.checks) },
+      { label: "Answers checked", value: count(input.checks), hint: "Answers to suggested questions only." },
       {
         label: "Different answers",
         value: count(input.uniqueAnswers),
@@ -59,7 +59,7 @@ export function methodPanel(input: MethodInput, calibration: Calibration | null)
     models: input.models.map((m) => ({
       id: m.id,
       label: m.label,
-      value: m.score === null ? "No checks yet" : `${m.score}, plus or minus ${points(m.margin ?? 0)}`,
+      value: m.score !== null ? `${m.score}, plus or minus ${points(m.margin ?? 0)}` : m.notChecked ? "Couldn't be checked" : "No checks yet",
     })),
     modelsNote: "Your overall score is the average of these, each counted equally.",
     sections: [
@@ -67,6 +67,8 @@ export function methodPanel(input: MethodInput, calibration: Calibration | null)
         heading: "How we check",
         paragraphs: [
           `We ask ${aiNames} the questions on your Questions page, the same way a customer would.`,
+          // BUG-129: questions the user writes could raise the score at will, so only suggested ones count.
+          "Your score counts the suggested questions you track now. Questions you added yourself, paused questions and removed questions are left out. We still check your own questions and show their results on their own.",
           "Each AI searches the web for its answer, and we tell it your city so it answers like it would for someone near you.",
           "We count an answer when it names your business. Where you appear in a list does not change your score.",
           "We use each AI's direct connection for software (its API), not the chat apps. Answers in the apps can be a little different.",

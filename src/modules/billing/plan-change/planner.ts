@@ -1,4 +1,5 @@
 import type Stripe from "stripe";
+import { planIdOfPrice, planPriceData, type PlanPriceData } from "../plan-price";
 
 // Pure rules for plan changes (MVP_SPEC 11.5, D-57): which change is allowed, and the exact Stripe items or
 // schedule phases it becomes. No database, env or Stripe calls, so every case is unit tested.
@@ -8,11 +9,15 @@ export type PlanChange =
   | { kind: "add"; businessId: string; planId: string }
   | { kind: "downgrade"; businessId: string; planId: string }
   | { kind: "remove"; businessId: string }
+  /** Takes back a scheduled downgrade or removal of one business (B1). */
+  | { kind: "keepBusiness"; businessId: string }
   | { kind: "cancel" }
   | { kind: "keep" };
 
 export type PlanRow = { id: string; name: string; priceCents: number; stripePriceId: string | null };
-export type BusinessRow = { id: string; name: string; planId: string | null; itemId: string | null };
+/** `deleted`: the business was deleted; its item may only come off the plan (BUG-120). `requestedPlanId`: chosen
+ * on the new-business plan picker before setup, read once by setup-add-on.ts. */
+export type BusinessRow = { id: string; name: string; planId: string | null; itemId: string | null; deleted?: boolean; requestedPlanId?: string | null };
 
 /** What the DAL loads for one agency. Only this agency's businesses are ever in here. */
 export type PlanChangeContext = {
@@ -23,8 +28,11 @@ export type PlanChangeContext = {
   businesses: BusinessRow[];
 };
 
-/** One subscription item as a schedule phase or preview sees it. */
-export type ItemSpec = { price: string; quantity: number; metadata: Record<string, string> };
+/**
+ * One subscription item as a schedule phase or preview sees it. Items already on the subscription keep their price
+ * ID; a business that is added or changes plan gets a price of its own (`price_data`, BUG-103).
+ */
+export type ItemSpec = { price?: string; price_data?: PlanPriceData; quantity: number; metadata: Record<string, string> };
 
 export type Timing = "now" | "period_end";
 
@@ -57,6 +65,9 @@ export function itemFor(sub: Stripe.Subscription, business: BusinessRow): Stripe
   );
 }
 
+/** Set to end: cancel_at_period_end, or cancel_at when a schedule ends the plan (a cancel with a change scheduled). */
+export const isCancelling = (sub: Stripe.Subscription) => sub.cancel_at_period_end || sub.cancel_at != null;
+
 /** When a period-end change happens: the trial end during a trial, else the renewal date. */
 export function periodEnd(sub: Stripe.Subscription): number {
   if (sub.status === "trialing" && sub.trial_end) return sub.trial_end;
@@ -76,7 +87,7 @@ function businessById(ctx: PlanChangeContext, businessId: string): BusinessRow {
 }
 
 function priceOfItem(ctx: PlanChangeContext, item: Stripe.SubscriptionItem): number {
-  const plan = ctx.plans.find((p) => p.stripePriceId === item.price.id);
+  const plan = ctx.plans.find((p) => p.id === planIdOfPrice(item.price, ctx.plans));
   return plan?.priceCents ?? item.price.unit_amount ?? 0;
 }
 
@@ -93,10 +104,10 @@ export function checkChange(ctx: PlanChangeContext, sub: Stripe.Subscription, ch
     throw refused(409, "Your plan has ended. Contact us to start it again.");
   }
   if (change.kind === "keep") {
-    if (!sub.cancel_at_period_end) throw refused(409, "Your plan is not set to end.");
+    if (!isCancelling(sub)) throw refused(409, "Your plan is not set to end.");
     return { change, business: null, item: null, plan: null };
   }
-  if (sub.cancel_at_period_end) {
+  if (isCancelling(sub)) {
     throw refused(409, "Your plan is set to end. Keep your plan first, then make this change.");
   }
   if (change.kind === "cancel") return { change, business: null, item: null, plan: null };
@@ -105,7 +116,15 @@ export function checkChange(ctx: PlanChangeContext, sub: Stripe.Subscription, ch
   }
 
   const business = businessById(ctx, change.businessId);
+  if (business.deleted && change.kind !== "remove") throw refused(409, `${business.name} was deleted, so it can't be added or changed.`);
   const item = itemFor(sub, business);
+
+  if (change.kind === "keepBusiness") {
+    if (business.deleted) throw refused(409, `${business.name} was deleted, so it can't stay on your plan.`);
+    if (!item) throw refused(404, `${business.name} is not on your plan.`);
+    const currentId = planIdOfPrice(item.price, ctx.plans);
+    return { change, business, item, plan: currentId ? planById(ctx, currentId) : null };
+  }
 
   if (change.kind === "add") {
     if (item) throw refused(409, `${business.name} is already on your plan.`);
@@ -122,7 +141,7 @@ export function checkChange(ctx: PlanChangeContext, sub: Stripe.Subscription, ch
 
   const plan = planById(ctx, change.planId);
   const current = priceOfItem(ctx, item);
-  if (item.price.id === plan.stripePriceId) throw refused(409, `${business.name} is already on ${plan.name}.`);
+  if (planIdOfPrice(item.price, ctx.plans) === plan.id) throw refused(409, `${business.name} is already on ${plan.name}.`);
   if (change.kind === "upgrade" && plan.priceCents <= current) {
     throw refused(400, `${plan.name} costs less than the current plan. Choose downgrade instead.`);
   }
@@ -145,12 +164,12 @@ export function applyToItems(items: ItemSpec[], checked: CheckedChange): ItemSpe
   const matches = (i: ItemSpec) => i.metadata.business_id === business.id;
   switch (change.kind) {
     case "add":
-      return [...items, { price: plan!.stripePriceId, quantity: 1, metadata: { business_id: business.id } }];
+      return [...items, { price_data: planPriceData(plan!), quantity: 1, metadata: { business_id: business.id } }];
     case "remove":
       return items.filter((i) => !matches(i));
     case "upgrade":
     case "downgrade":
-      return items.map((i) => (matches(i) ? { ...i, price: plan!.stripePriceId } : i));
+      return items.map((i) => (matches(i) ? { price_data: planPriceData(plan!), quantity: i.quantity, metadata: i.metadata } : i));
     default:
       return items;
   }
@@ -210,23 +229,17 @@ export function buildPhases(
 /** Items for a direct subscription update (no schedule): the one item that changes now. */
 export function subscriptionItemsFor(checked: CheckedChange): Stripe.SubscriptionUpdateParams.Item[] {
   const { change, item, plan, business } = checked;
-  if (change.kind === "add") return [{ price: plan!.stripePriceId, quantity: 1, metadata: { business_id: business!.id } }];
-  if (change.kind === "upgrade") return [{ id: item!.id, price: plan!.stripePriceId }];
+  if (change.kind === "add") return [{ price_data: planPriceData(plan!), quantity: 1, metadata: { business_id: business!.id } }];
+  if (change.kind === "upgrade") return [{ id: item!.id, price_data: planPriceData(plan!) }];
   throw new Error(`${change.kind} is not a change made now`);
 }
 
 /** The change in the preview's item shape. For period-end changes the preview is the next renewal bill. */
 export function previewItemsFor(checked: CheckedChange): Stripe.InvoiceCreatePreviewParams.SubscriptionDetails.Item[] {
   const { change, item, plan } = checked;
-  if (change.kind === "downgrade") return [{ id: item!.id, price: plan!.stripePriceId }];
+  if (change.kind === "downgrade") return [{ id: item!.id, price_data: planPriceData(plan!) }];
   if (change.kind === "remove") return [{ id: item!.id, deleted: true }];
   return subscriptionItemsFor(checked);
 }
 
-/** Stable per change and preview, so a double click or a retried request changes Stripe once. */
-export function idempotencyKey(agencyId: string, change: PlanChange, prorationDate: number): string {
-  const parts = [agencyId, change.kind];
-  if ("businessId" in change) parts.push(change.businessId);
-  if ("planId" in change) parts.push(change.planId);
-  return `plan-change:${parts.join(":")}:${prorationDate}`;
-}
+export { idempotencyKey } from "./idempotency";

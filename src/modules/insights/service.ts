@@ -2,7 +2,8 @@
 import type { OpportunityDraft, WriterUsage } from "./explain";
 import type { Signals } from "./facts";
 import { fillPlaceholders, formatSignal, type Lookup } from "./placeholders";
-import { EXPLAIN_PRICE } from "./prompts/explain.v1";
+import { aiCostUsd } from "@/modules/ai";
+import { EXPLAIN_MODEL } from "./prompts/explain.v2";
 
 // Legacy statuses: "open" is what a new scan replaces; anything the user touched stays.
 const REPLACEABLE = "open";
@@ -28,9 +29,9 @@ export function planSave(
   return { insert, removeIds: existing.filter((o) => o.status === REPLACEABLE).map((o) => o.id) };
 }
 
-export function usageCostUsd(usage: WriterUsage): number {
-  const cost = (usage.inputTokens * EXPLAIN_PRICE.inputPerMTok + usage.outputTokens * EXPLAIN_PRICE.outputPerMTok) / 1_000_000;
-  return Math.round(cost * 1_000_000) / 1_000_000;
+/** The writer's cost at the list price of the model that actually answered (Claude, or the ChatGPT backup). */
+export function usageCostUsd(usage: WriterUsage, model: string = EXPLAIN_MODEL): number {
+  return aiCostUsd(model, { inputTokens: usage.inputTokens, cachedInputTokens: 0, outputTokens: usage.outputTokens });
 }
 
 const COMPETITOR_ID = /\{competitor\.([0-9a-f-]{36})\.[a-z_]+\}/g;

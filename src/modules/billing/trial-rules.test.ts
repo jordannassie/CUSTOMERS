@@ -7,7 +7,7 @@ import type { PlanChangeContext } from "./plan-change/planner";
 import { applyPlanChange, previewPlanChange } from "./plan-change/service";
 import * as fx from "./webhooks/fixtures.test-helpers";
 import { agencyRow, businessRows, cleanUp, grants, harness, service, setup } from "./webhooks/harness.test-helpers";
-import { TRIAL_CREDITS } from "./webhooks/credits";
+import { PERIOD_GRACE_MS, TRIAL_CREDITS } from "./webhooks/credits";
 
 // B-45 (MVP_SPEC 4.4, D-16, D-17, F-43) on the local database. The in-memory Stripe and its clock stand in for a
 // Stripe test clock; every change reaches the database only through the real webhook handlers.
@@ -50,7 +50,8 @@ async function startTrial() {
   return { a, h, stripe, trialEnd, sendEvents };
 }
 
-const trialGrant = (trialEnd: number) => ({ source: "trial", amount: TRIAL_CREDITS, expires_at: new Date(trialEnd * 1000).toISOString() });
+// Plan and trial grants run PERIOD_GRACE_MS past their period (M6).
+const trialGrant = (trialEnd: number) => ({ source: "trial", amount: TRIAL_CREDITS, expires_at: new Date(trialEnd * 1000 + PERIOD_GRACE_MS).toISOString() });
 
 async function agencyState(agencyId: string) {
   const row = await agencyRow(agencyId);
@@ -79,7 +80,7 @@ describe("trial", () => {
     expect(await agencyState(a.agencyId)).toEqual({ status: "active", cancelAt: null });
     expect(await grantRows(a.agencyId)).toEqual([
       trialGrant(trialEnd),
-      { source: "plan", amount: 1200, expires_at: new Date(monthAfter(trialEnd) * 1000).toISOString() },
+      { source: "plan", amount: 1200, expires_at: new Date(monthAfter(trialEnd) * 1000 + PERIOD_GRACE_MS).toISOString() },
     ]);
   });
 
@@ -94,7 +95,7 @@ describe("trial", () => {
     };
     const deps = { stripe, plansByProduct: new Map([["cd_plan_starter", { planId: "starter", monthlyCredits: 1200 }]]), now: () => new Date(stripe.clock * 1000) };
     const preview = await previewPlanChange(ctx, { kind: "cancel" }, deps);
-    expect(preview.details).toContain("Your card won't be charged.");
+    expect(preview.headline).toContain("Your card won't be charged.");
     await applyPlanChange(ctx, { kind: "cancel" }, preview.previewedAt, deps);
     await sendEvents("customer.subscription.updated");
 

@@ -1,16 +1,30 @@
 // Business auto-fill (MVP_SPEC 3.2, D-18). Clients are injected, so tests and evals run the same
 // flow with fixtures. It never throws for a provider failure: the worst case is an empty form.
+import { factsFromPageMeta } from "./autofill-safety";
 import type { ExtractBusiness } from "./extract";
 import type { PageResult, ScrapeSite } from "./firecrawl";
+import { siteContact } from "./page-contact";
 import type { PlaceCandidate, SearchPlaces } from "./places";
 import {
-  AUTOFILL_MODEL,
   AUTOFILL_PROMPT_VERSION,
   AUTOFILL_RETRY_MODEL,
   type AutofillOutput,
 } from "./prompts/business-autofill.v1";
-import type { AutofillResult } from "./schema";
-import { EMPTY_DETAILS, hasAnyValue, keepGrounded, mergeDetails, needsRetry, pickPlaceForDomain, toResult } from "./service";
+import { brandGuesses, pickBrandPlace, type AutofillProblem, type AutofillProvider } from "./autofill-fallback";
+import { readablePages, readFacts, readPages } from "./site-read";
+import type { AutofillResult, PlaceChoice } from "./schema";
+import {
+  EMPTY_DETAILS,
+  hasAnyValue,
+  industryCheck,
+  isChain,
+  mergeDetails,
+  needsRetry,
+  NOTES,
+  pickPlaceForDomain,
+  toResult,
+  withoutBranchFacts,
+} from "./service";
 
 export type AutofillClients = {
   scrape: ScrapeSite;
@@ -23,10 +37,17 @@ export type AutofillRequest = { domain: string } | { name: string; city: string 
 /** Facts read from the business's own site only, for business_site_facts. Never Places data (D-73). */
 export type SiteFacts = {
   promptVersion: string;
-  model: string;
+  /** Null when no page could be read, so no model was asked. */
+  model: string | null;
   domain: string;
   pages: { path: string; status: PageResult["status"] }[];
-  facts: AutofillOutput;
+  /** Null when no page could be read: the pages still say whether the site blocked us (BUG-087). */
+  facts: AutofillOutput | null;
+  /**
+   * Whether the pages show a phone number and an address, kept apart from `facts`: a chain's facts drop the branch's
+   * phone and address, and advice must not then say the website shows none (BUG-138). Null when nothing was read.
+   */
+  contact?: { hasPhone: boolean; hasAddress: boolean } | null;
 };
 
 export type AutofillRun = {
@@ -34,86 +55,178 @@ export type AutofillRun = {
   /** The only Places value we may keep (D-73). */
   placeId: string | null;
   siteFacts: SiteFacts | null;
+  /** The website matches listings in several cities: one brand with several locations (businesses.is_chain). */
+  chain: boolean;
+  /** What went wrong along the way, for the server log and provider_errors (B7). Empty on a clean run. */
+  problems: AutofillProblem[];
 };
 
-async function search(searchPlaces: SearchPlaces, query: string): Promise<PlaceCandidate[]> {
+type Note = (provider: AutofillProvider, message: string) => void;
+const reason = (err: unknown) => (err instanceof Error ? err.message : String(err)).slice(0, 300);
+
+/** How the Places searches of one run went, so "Google couldn't be reached" is told apart from "no listing". */
+type SearchLog = { ok: number; failed: number };
+
+async function search(searchPlaces: SearchPlaces, query: string, note: Note, log?: SearchLog): Promise<PlaceCandidate[]> {
   try {
-    return await searchPlaces(query);
-  } catch {
+    const found = await searchPlaces(query);
+    if (log) log.ok++;
+    return found;
+  } catch (err) {
+    if (log) log.failed++;
+    note("google_places", `Search for "${query}" failed: ${reason(err)}`);
     return [];
   }
 }
 
-async function tryExtract(clients: AutofillClients, args: Parameters<ExtractBusiness>[0]) {
-  try {
-    return await clients.extract(args);
-  } catch {
-    return null;
-  }
+/** Google listings offered as "Is one of these your business?", each with what the form gets when picked. */
+function placeChoices(found: PlaceCandidate[], city: string): PlaceChoice[] {
+  const once = [...new Map(found.map((place) => [place.placeId, place])).values()];
+  return once
+    .filter((place): place is PlaceCandidate & { name: string } => Boolean(place.name))
+    .slice(0, MAX_PLACE_CHOICES)
+    .map((place) => {
+      const details = mergeDetails(null, place);
+      return {
+        placeId: place.placeId,
+        name: place.name,
+        address: place.address,
+        // A listing with no city keeps the one the user typed.
+        autofill: toResult({ details: { ...details, city: details.city || city }, fromWebsite: false, fromGoogle: true, hadWebsite: false }),
+      };
+    });
 }
 
 export async function autofill(request: AutofillRequest, clients: AutofillClients): Promise<AutofillRun> {
   if (!("domain" in request)) return autofillWithoutWebsite(request, clients);
   const { domain } = request;
+  const problems: AutofillProblem[] = [];
+  const note: Note = (provider, message) => problems.push({ provider, message });
 
+  const log: SearchLog = { ok: 0, failed: 0 };
   const [pages, byDomain] = await Promise.all([
-    clients.scrape(domain).catch((): PageResult[] => []),
-    search(clients.searchPlaces, domain),
+    readPages(clients.scrape, domain, (message) => note("firecrawl", message)),
+    search(clients.searchPlaces, domain, note, log),
   ]);
-  let place = pickPlaceForDomain(byDomain, domain);
-  const readable = pages.filter((p) => p.status === "ok" && p.markdown);
-  const sitePages = readable.map((p) => ({ path: p.path, markdown: p.markdown }));
+  const chain = isChain(byDomain, domain);
+  let place = chain ? null : pickPlaceForDomain(byDomain, domain);
+  const readable = readablePages(pages);
+  const onAiError = (message: string) => note("anthropic", message);
 
-  let site: AutofillOutput | null = null;
-  let model: string = AUTOFILL_MODEL;
-  if (sitePages.length > 0) {
-    const first = await tryExtract(clients, { domain, pages: sitePages, model: AUTOFILL_MODEL });
-    site = first && keepGrounded(first, readable);
+  const first = await readFacts(clients.extract, domain, readable, { onError: onAiError });
+  let site: AutofillOutput | null = first.facts;
+  let model: string = first.model;
+  const aiDown = first.down;
+  let contact = siteContact(site, readable);
+  if (site && chain) site = withoutBranchFacts(site, byDomain);
+  // No AI could read the site (D-84): its own page title and meta description stand in for the name and description.
+  const fromMeta = !site && aiDown ? factsFromPageMeta(pages, domain) : null;
+
+  // Second Places query by the name the site gives, plus its city when stated. Not for a chain: it finds a branch.
+  const named = site ?? fromMeta;
+  if (!place && !chain && named?.name) {
+    const query = [named.name, named.city, named.state].filter(Boolean).join(" ");
+    place = pickPlaceForDomain(await search(clients.searchPlaces, query, note, log), domain);
   }
 
-  // Second Places query by the name the site gives, plus its city when stated.
-  if (!place && site?.name) {
-    const query = [site.name, site.city, site.state].filter(Boolean).join(" ");
-    place = pickPlaceForDomain(await search(clients.searchPlaces, query), domain);
-  }
-
-  if (site && needsRetry(site, mergeDetails(site, place))) {
-    const retry = await tryExtract(clients, { domain, pages: sitePages, model: AUTOFILL_RETRY_MODEL });
-    if (retry) {
-      site = keepGrounded(retry, readable);
-      model = AUTOFILL_RETRY_MODEL;
+  // The site could not be read and Google does not list it by its address: ask for the brand the domain spells (B7).
+  // What the brand searches found, offered as listings to pick from when none is this website (2026-10-16).
+  const brandFound: PlaceCandidate[] = [];
+  if (!place && !chain && !site) {
+    const guesses = brandGuesses(domain);
+    for (const guess of guesses) {
+      const found = await search(clients.searchPlaces, guess, note, log);
+      if (isChain(found, domain)) break;
+      place = pickBrandPlace(found, domain);
+      if (place) break;
+      brandFound.push(...found);
     }
   }
 
-  const details = mergeDetails(site, place);
+  if (site && needsRetry(site, mergeDetails(site, place))) {
+    const retry = await readFacts(clients.extract, domain, readable, { model: AUTOFILL_RETRY_MODEL, onError: onAiError });
+    if (retry.facts) {
+      site = retry.facts;
+      contact = siteContact(site, readable);
+      if (chain) site = withoutBranchFacts(site, byDomain);
+      model = retry.model;
+    }
+  }
+
+  if (readable.length === 0) {
+    const seen = pages.length ? pages.map((p) => `${p.path} ${p.status}`).join(", ") : "no pages came back";
+    note("firecrawl", `Nothing readable on ${domain} (${seen}). ${place ? "Filled in from Google." : "No Google listing found either."}`);
+  }
+  const fromSite = site ?? fromMeta;
+  const details = mergeDetails(fromSite, place);
+  const fromWebsite = fromSite !== null && hasAnyValue(mergeDetails(fromSite, null));
+  // Every Places search failed, the retry included: Google could not be reached, which is not "no listing".
+  const googleDown = log.failed > 0 && log.ok === 0;
+  // Firecrawl itself refused (its quota, an outage) or could not be reached at all, not the website: the site was never
+  // asked, so this is our own outage ("temporarily unavailable").
+  const readerThrew = pages.length === 0 && problems.some((p) => p.provider === "firecrawl");
+  const readerDown = readable.length === 0 && (readerThrew || pages.some((p) => p.readerDown));
+  // The website turned us away or did not load: say so with its address, and offer Google's listings to pick from.
+  const unreadable = readable.length === 0 && pages.length > 0 && !readerDown ? { domain, blocked: pages.some((p) => p.status === "blocked") } : null;
+  const choices = unreadable && !place && !chain && !fromWebsite ? placeChoices([...byDomain, ...brandFound], "") : [];
   return {
-    result: toResult({ details, fromWebsite: site !== null && hasAnyValue(mergeDetails(site, null)), fromGoogle: place !== null, hadWebsite: true }),
+    result: toResult({
+      details,
+      fromWebsite,
+      fromGoogle: place !== null,
+      hadWebsite: true,
+      chain,
+      // Only our own reader or AI being down is "temporarily unavailable" (D-84); a website or Google failing says so.
+      aiDown: aiDown || readerDown,
+      industryCheck: industryCheck(fromSite, place),
+      unreadable,
+      googleDown,
+      choices,
+    }),
     placeId: place?.placeId ?? null,
-    siteFacts: site
-      ? {
-          promptVersion: AUTOFILL_PROMPT_VERSION,
-          model,
-          domain,
-          pages: pages.map((p) => ({ path: p.path, status: p.status })),
-          facts: site,
-        }
-      : null,
+    chain,
+    // Saved even when nothing was readable, so advice can tell "blocks AI readers" from "no website" (BUG-087).
+    siteFacts:
+      site || (pages.length > 0 && readable.length === 0)
+        ? {
+            promptVersion: AUTOFILL_PROMPT_VERSION,
+            model: site ? model : null,
+            domain,
+            pages: pages.map((p) => ({ path: p.path, status: p.status })),
+            facts: site,
+            contact: site ? contact : null,
+          }
+        : null,
+    problems,
   };
 }
 
-// MVP_SPEC 3.3: no website, so no scrape and no model call. The top Places result pre-fills the
-// form and the user confirms it; with no result the form keeps what they typed.
+/** How many Google listings "Is one of these your business?" offers. */
+export const MAX_PLACE_CHOICES = 5;
+
+// MVP_SPEC 3.3: no website, so no scrape and no model call. The top result by name and city can be another
+// business, so nothing is adopted here: the listings come back as choices, and the form keeps what the user
+// typed until they pick one. placeId stays null; the pick saves it (confirmBusinessPlace).
 async function autofillWithoutWebsite(
   request: { name: string; city: string },
   clients: AutofillClients,
 ): Promise<AutofillRun> {
-  const [place] = await search(clients.searchPlaces, `${request.name} ${request.city}`);
-  const details = place
-    ? mergeDetails(null, place)
-    : { ...EMPTY_DETAILS, name: request.name, city: request.city };
+  const problems: AutofillProblem[] = [];
+  const found = await search(clients.searchPlaces, `${request.name} ${request.city}`, (provider, message) => problems.push({ provider, message }));
+  const choices = placeChoices(found, request.city);
+  // Google failed (a used-up quota, an outage): "temporarily unavailable", never "we couldn't find your business".
+  const typed = toResult({
+    details: { ...EMPTY_DETAILS, name: request.name, city: request.city },
+    fromWebsite: false,
+    fromGoogle: false,
+    hadWebsite: false,
+    aiDown: problems.length > 0,
+  });
   return {
-    result: toResult({ details, fromWebsite: false, fromGoogle: Boolean(place), hadWebsite: false }),
-    placeId: place?.placeId ?? null,
+    result: choices.length ? { ...typed, note: NOTES.noneChosen, choices } : typed,
+    placeId: null,
     siteFacts: null,
+    chain: false,
+    problems,
   };
 }

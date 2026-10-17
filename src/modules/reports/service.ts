@@ -1,5 +1,5 @@
 import { randomBytes } from "node:crypto";
-import type { CompetitorsView } from "@/modules/competitors";
+import { namedAs, type CompetitorsView } from "@/modules/competitors";
 import type { OverviewView } from "@/modules/overview";
 
 // Share links and the read-only report (B-59, MVP_SPEC 8.3, D-12). Pure apart from the token source.
@@ -17,11 +17,12 @@ export const isShareToken = (token: string): boolean => SHARE_TOKEN.test(token);
 export const sharePath = (token: string): string => `/r/${token}`;
 
 export type ReportView = {
-  agency: { name: string; hasLogo: boolean };
+  /** isTest: test mode (D-61), so the report says its answers are samples. */
+  agency: { name: string; hasLogo: boolean; isTest?: boolean };
   businessName: string;
-  /** "Aug 31 to Sep 29, 2026": the 30 days the score covers. */
-  period: string;
-  preparedOn: string;
+  /** When the report was made and how many days the score covers; shown in the viewer's time zone. */
+  preparedAt: string;
+  windowDays: number;
   score: Omit<NonNullable<OverviewView["score"]>, "details"> | null;
   models: OverviewView["models"];
   trend: OverviewView["trend"];
@@ -31,29 +32,12 @@ export type ReportView = {
   summary: string[];
 };
 
-const DAY_MS = 86_400_000;
-
-function day(date: Date, withYear: boolean): string {
-  return date.toLocaleDateString("en-US", {
-    day: "numeric",
-    month: "short",
-    ...(withYear && { year: "numeric" }),
-    timeZone: "UTC",
-  });
-}
-
-export function reportPeriod(now: Date, windowDays: number): string {
-  const from = new Date(now.getTime() - (windowDays - 1) * DAY_MS);
-  const sameYear = from.getUTCFullYear() === now.getUTCFullYear();
-  return `${day(from, !sameYear)} to ${day(now, true)}`;
-}
-
 /**
  * Only what the report shows: no database ids, place ids, method panel or plan limits, since every
  * field here ends up in a public page's HTML.
  */
 export function reportView(input: {
-  agency: { name: string; hasLogo: boolean };
+  agency: { name: string; hasLogo: boolean; isTest?: boolean };
   businessName: string;
   now: Date;
   windowDays: number;
@@ -68,19 +52,21 @@ export function reportView(input: {
     sentence: overview.score.sentence,
     firstResults: overview.score.firstResults,
     change: overview.score.change,
+    coverage: overview.score.coverage ?? null,
   };
   return {
     agency: input.agency,
     businessName: input.businessName,
-    period: reportPeriod(now, input.windowDays),
-    preparedOn: day(now, true),
+    preparedAt: now.toISOString(),
+    windowDays: input.windowDays,
     score,
     models: overview.models,
     trend: overview.trend,
     competitors: {
       leaderboard: competitors.leaderboard,
       margin: competitors.margin,
-      signals: competitors.signals,
+      // A shared report is public: the competitor's database id never goes in it; a website the user added does.
+      signals: competitors.signals.map((row) => ({ name: row.name, isYou: row.isYou, status: row.status, signals: row.signals, savedSite: row.savedSite ?? null })),
       count: competitors.count,
       hasScore: competitors.hasScore,
     },
@@ -94,6 +80,9 @@ export function reportView(input: {
     }),
   };
 }
+
+// Scores closer than this read as level; further apart they are named even when the margin can't separate them.
+const LEVEL_POINTS = 10;
 
 const inTen = (score: number) => {
   const n = Math.round(score / 10);
@@ -123,8 +112,18 @@ export function reportSummary(input: {
   const top = input.leaderboard
     .filter((r) => !r.isYou && r.score !== null && r.standing !== null)
     .sort((a, b) => b.score! - a.score!)[0];
-  if (top?.standing === "behind") lines.push(`AI recommended ${top.name} more often, in ${inTen(top.score!)} questions.`);
-  else if (top?.standing === "about_same") lines.push(`${top.name}, the competitor AI recommended most, was about level with ${name}.`);
+  // A branch whose score is its chain's is named as the chain AI named.
+  const them = top ? namedAs(top) : "";
+  if (top?.standing === "behind") lines.push(`AI recommended ${them} more often, in ${inTen(top.score!)} questions.`);
+  else if (top?.standing === "about_same") {
+    // Within the margin, but 27 against 8 never reads as "level" (BUG-111): the numbers are given, with the reason.
+    const apart = Math.abs(Math.round(top.score!) - Math.round(score)) >= LEVEL_POINTS;
+    lines.push(
+      apart
+        ? `AI recommended ${them}, the competitor it named most, in ${inTen(top.score!)} questions and ${name} in ${inTen(score)}. There aren't enough answers yet to say that gap will hold.`
+        : `${them}, the competitor AI recommended most, was about level with ${name}.`,
+    );
+  }
   else if (top?.standing === "ahead") lines.push(`AI recommended ${name} more often than every competitor tracked here.`);
 
   if (input.firstFix) lines.push(`First fix: ${input.firstFix.replace(/[.!?]$/, "")}.`);

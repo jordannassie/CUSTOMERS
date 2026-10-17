@@ -15,9 +15,11 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { appFetch } from "@/lib/session-expired";
+import type { ActionResult } from "@/modules/auth";
 
-export function SuggestFeatureDialog({ businessId, triggerClassName }: { businessId: string; triggerClassName: string }) {
+export type SuggestFeatureAction = (input: { title: string; description: string; businessId: string; pageContext: string }) => Promise<ActionResult<null>>;
+
+export function SuggestFeatureDialog({ businessId, triggerClassName, suggest }: { businessId: string; triggerClassName: string; suggest: SuggestFeatureAction }) {
   const [open, setOpen] = useState(false);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -35,14 +37,9 @@ export function SuggestFeatureDialog({ businessId, triggerClassName }: { busines
     setSending(true);
     setError(null);
     try {
-      const res = await appFetch("/api/geo/feature-requests", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title, description, businessId, pageContext: window.location.pathname }),
-      });
-      const data = (await res.json().catch(() => ({}))) as { error?: string };
-      if (!res.ok) {
-        setError(data.error ?? "Your idea wasn't sent. Try again in a moment.");
+      const result = await suggest({ title, description, businessId, pageContext: window.location.pathname });
+      if (!result.ok) {
+        setError(result.error);
         return;
       }
       setOpen(false);

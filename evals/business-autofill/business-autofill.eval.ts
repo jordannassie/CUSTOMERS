@@ -39,10 +39,10 @@ describe("business auto-fill grader", () => {
 
   it("flags a value the label says no source states as invented, and a different value as wrong", () => {
     const [coffee, blocked] = examples;
-    const graded = gradeCase(blocked, { ...EMPTY_DETAILS, ...blocked.expected, industry: "other", services: ["SEO"] });
-    expect(graded.invented).toEqual(["industry", "services"]);
+    const graded = gradeCase(blocked, { ...EMPTY_DETAILS, ...blocked.expected, description: "A digital agency.", services: ["SEO"] });
+    expect(graded.invented).toEqual(["description", "services"]);
 
-    const wrong = gradeCase(coffee, { ...coffee.expected, city: "Chicago", phone: "" });
+    const wrong = gradeCase(coffee, { ...coffee.expected, area: "", city: "Chicago", phone: "" });
     expect(wrong).toMatchObject({ invented: [], wrong: ["city"], missed: ["phone"], schemaOk: true });
   });
 
@@ -55,7 +55,7 @@ describe("business auto-fill grader", () => {
 
   it("keeps API errors out of the scores and counts them separately", () => {
     const [coffee, blocked] = examples;
-    const result = score([gradeCase(coffee, { ...coffee.expected }), apiErrorCase(blocked, "firecrawl returned 503")]);
+    const result = score([gradeCase(coffee, { ...coffee.expected, area: "" }), apiErrorCase(blocked, "firecrawl returned 503")]);
     expect(result).toMatchObject({ total: 2, scored: 1, apiErrors: 1, schemaRate: 1, inventedFields: 0 });
   });
 

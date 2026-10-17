@@ -3,7 +3,7 @@ export { logAdminAction } from "./dal";
 export type { AdminActionDetails, AdminTarget } from "./schema";
 export { listBusinesses, type AdminBusinessRow } from "./businesses/dal";
 export { loadBusinessDetail, type AdminBusinessDetail, type AdminScan, type ResultRow } from "./businesses/detail/dal";
-export { runScanNow } from "./businesses/actions";
+export { restoreBusiness, runScanNow } from "./businesses/actions";
 export { ADMIN_SCAN_PRIORITY, type ScanState } from "./businesses/service";
 export { listScanJobs, SCAN_LIST_LIMIT, type AdminScanRow, type AdminScanList } from "./scans/dal";
 export { retryScan } from "./scans/actions";
@@ -29,4 +29,6 @@ export { aiCostShare, type MonthChange, type Revenue } from "./overview/service"
 export { resolveAlert } from "./alerts/actions";
 export { handleAlertsRequest } from "./alerts/cron";
 export { ALERT_KINDS, type AlertKind } from "./alerts/schema";
-export type { OpenAlert } from "./alerts/service";
+export { alertWording, type OpenAlert } from "./alerts/service";
+export { loadLibraryGaps } from "./library-gaps/dal";
+export { LIBRARY_GAPS_SHOWN, type LibraryGap } from "./library-gaps/service";

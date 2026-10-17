@@ -9,10 +9,17 @@ export type Limit = { max: number; windowMs: number };
 
 const HOUR = 60 * 60 * 1000;
 
-// Per client IP, for endpoints anyone can call without logging in (SEC-07).
+// Per client IP for endpoints anyone can call without logging in, per user for signed-in ones (SEC-07).
 export const LIMITS = {
   compare: { max: 6, windowMs: HOUR },
   contact: { max: 5, windowMs: HOUR },
+  feature_request: { max: 10, windowMs: HOUR },
+  // Each auto-fill reads a website and Google and asks an AI model, all paid for (onboarding).
+  autofill: { max: 20, windowMs: HOUR },
+  // Each export opens the share page in a hosted browser, which is slow and paid for (reports).
+  pdf_export: { max: 10, windowMs: HOUR },
+  // Each competitor lookup is a paid Google Places search (onboarding and Competitors).
+  competitor_lookup: { max: 30, windowMs: HOUR },
 } satisfies Record<string, Limit>;
 
 export type Bucket = keyof typeof LIMITS;
@@ -37,30 +44,37 @@ export function memoryStore(): RateLimitStore {
   };
 }
 
-// Keys hold a hash, never the raw IP.
+// Keys hold a hash, never the raw IP or user id.
 export function rateLimitKey(bucket: Bucket, ip: string): string {
   return `${bucket}:${createHash("sha256").update(ip).digest("hex").slice(0, 32)}`;
 }
 
+/** "limited": over this bucket's limit. "unavailable": the count could not be read, so the request is refused too. */
+export type RateLimitResult = "allowed" | "limited" | "unavailable";
+
 export function createLimiter(store: RateLimitStore) {
-  return async function allowRequest(bucket: Bucket, ip: string, now = Date.now()): Promise<boolean> {
+  return async function checkRateLimit(bucket: Bucket, ip: string, now = Date.now()): Promise<RateLimitResult> {
     const { max, windowMs } = LIMITS[bucket];
     try {
-      return (await store.hit(rateLimitKey(bucket, ip), windowMs, now)) <= max;
+      return (await store.hit(rateLimitKey(bucket, ip), windowMs, now)) <= max ? "allowed" : "limited";
     } catch (error) {
-      // Fail open: a database hiccup should not block the contact form or the compare check.
-      console.error(`[rate-limit] ${bucket} store failed, allowing the request`, error);
-      return true;
+      // Fail closed (SEC-07): with the store down, no limit holds, so an endless burst would get through. Callers
+      // say to try again in a few minutes, not that the visitor did too much (2026-10-14).
+      console.error(`[rate-limit] ${bucket} store failed, refusing the request`, error);
+      return "unavailable";
     }
   };
 }
 
-/** Netlify sets x-nf-client-connection-ip itself; x-forwarded-for can carry values the client made up. */
+/**
+ * Netlify sets x-nf-client-connection-ip itself. In x-forwarded-for only the last entry is added by the proxy in
+ * front of us; the ones before it are whatever the client sent, so a client could pick a new address per request.
+ */
 export function clientIp(headers: Headers): string {
   return (
     headers.get("x-nf-client-connection-ip")?.trim() ||
     headers.get("x-real-ip")?.trim() ||
-    headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+    headers.get("x-forwarded-for")?.split(",").at(-1)?.trim() ||
     "unknown"
   );
 }

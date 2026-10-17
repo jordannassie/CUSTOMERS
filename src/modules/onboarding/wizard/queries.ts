@@ -1,10 +1,13 @@
 import "server-only";
 import { getCurrentAgency, requireUser } from "@/modules/auth";
-import { canAddBusiness } from "@/modules/entitlements";
-import type { TrialOffer } from "@/modules/billing";
+import { canAddBusiness, canFinishDraft } from "@/modules/entitlements";
+import { previewSetupAddOn, type SetupAddOn, type TrialOffer } from "@/modules/billing";
 import { awaitingTrialCredits, loadCardStep } from "./card/dal";
-import { loadDetailsStep, loadWizardState, type DetailsStep, type WizardContext } from "./dal";
-import { loadModelsStep, loadQuestionsStep, selectedPlan, type ModelsStep, type QuestionsStep } from "./questions/dal";
+import { loadWebsiteStep, loadWizardState, type WebsiteStepDefaults, type WizardContext } from "./dal";
+import { loadDetailsStep, type DetailsStep } from "./details/dal";
+import { draftPlanId, loadSetupPlans, type SetupPlanOption } from "./plan/dal";
+import { loadModelsStep, loadQuestionsStep, type ModelsStep, type QuestionsStep } from "./questions/dal";
+import type { PlanId } from "./steps";
 
 // For the wizard pages: each redirects to login (then back to `next`) when signed out.
 
@@ -13,13 +16,35 @@ export async function getWizardState(next: string): Promise<WizardContext> {
   return loadWizardState(user.id);
 }
 
-/** Why a new business cannot be added (trial limit), or null. */
+/** Why a new business cannot be started (trial limit, set-up businesses only), or null. */
 export async function getAddBusinessBlock(next: string): Promise<string | null> {
   await requireUser({ next });
   const agency = await getCurrentAgency();
   if (!agency) return null;
   const allowed = await canAddBusiness(agency.id);
   return allowed.allowed ? null : allowed.reason;
+}
+
+/** Why the draft cannot be finished yet (a trial with 2 set-up businesses already, D-16), or null. */
+export async function getFinishBlock(next: string): Promise<string | null> {
+  await requireUser({ next });
+  const agency = await getCurrentAgency();
+  if (!agency) return null;
+  const allowed = await canFinishDraft(agency.id);
+  return allowed.allowed ? null : allowed.reason;
+}
+
+/** What finishing setup adds to the agency's subscription (BUG-071), or null when nothing is added. */
+export async function getSetupAddOn(businessId: string, next: string): Promise<SetupAddOn | null> {
+  await requireUser({ next });
+  const agency = await getCurrentAgency();
+  return agency ? previewSetupAddOn(agency.id, businessId) : null;
+}
+
+/** The draft's saved website, or name and city, so going Back to the website step shows what was entered. */
+export async function getWebsiteStep(businessId: string, next: string): Promise<WebsiteStepDefaults | null> {
+  const user = await requireUser({ next });
+  return loadWebsiteStep(user.id, businessId);
 }
 
 export async function getDetailsStep(businessId: string, next: string): Promise<DetailsStep | null> {
@@ -34,12 +59,19 @@ export async function getQuestionsStep(businessId: string, next: string): Promis
 
 export async function getModelsStep(businessId: string, next: string): Promise<ModelsStep | null> {
   const user = await requireUser({ next });
-  return loadModelsStep(user.id, businessId, await selectedPlan(user.id));
+  return loadModelsStep(user.id, businessId, await draftPlanId(user.id, businessId));
 }
 
-export async function getCardStep(businessId: string, next: string): Promise<{ offer: TrialOffer | null } | null> {
+/** The plans the draft can be set up on and the one it is on now (BUG-244). */
+export async function getSetupPlans(businessId: string, next: string): Promise<{ plans: SetupPlanOption[]; planId: PlanId }> {
   const user = await requireUser({ next });
-  return loadCardStep(user.id, businessId);
+  const [plans, planId] = await Promise.all([loadSetupPlans(), draftPlanId(user.id, businessId)]);
+  return { plans, planId };
+}
+
+export async function getCardStep(businessId: string, next: string): Promise<{ offer: TrialOffer | null; started: boolean } | null> {
+  const user = await requireUser({ next });
+  return loadCardStep(user, businessId);
 }
 
 /** Whether the first scan must wait for the trial credits to land (F-48). */

@@ -63,8 +63,8 @@ describe("trial ending", () => {
     await h.deliver(fx.event("customer.subscription.trial_will_end", sub));
 
     expect(mail.sent).toHaveLength(1);
-    expect(mail.sent[0].subject).toBe("Your free trial ends on October 2");
-    expect(mail.sent[0].text).toContain("On October 2 we'll charge $298 to your card");
+    expect(mail.sent[0].subject).toBe("Your free trial ends on October 2 (UTC)");
+    expect(mail.sent[0].text).toContain("On October 2 (UTC) we'll charge $298 to your card");
     expect(await sentRows(`trial_ending:${sub.id}:${trialEnd * 1000}`)).toEqual([{ type: "trial_ending", status: "sent" }]);
   });
 });
@@ -75,6 +75,7 @@ describe("payment failed", () => {
     const mail = fakeSender();
     const h = harness(mail.send);
     const subId = fx.id("sub");
+    h.subscriptions.set(subId, fx.subscription({ id: subId, customer: a.customer, agencyId: a.agencyId, status: "past_due", items: [{ product: "cd_plan_starter", periodEnd: fx.nowSeconds() + 30 * DAY }] }));
     const lines = [fx.line({ product: "cd_plan_starter", amount: 14900, subscriptionId: subId, start: fx.nowSeconds(), end: fx.nowSeconds() + 30 * DAY })];
     const invoice = fx.invoice({ customer: a.customer, subscriptionId: subId, agencyId: a.agencyId, billingReason: "subscription_cycle", lines, status: "open" });
 

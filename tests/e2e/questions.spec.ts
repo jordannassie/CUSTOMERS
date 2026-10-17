@@ -129,6 +129,9 @@ test("each question shows how often each AI recommended the business, and the cr
   await expect(best.locator('[data-model="perplexity"]')).toContainText("Appeared in 0 of the last 1 check");
   await expect(best.locator('[data-model="anthropic"]')).toContainText("Not checked yet");
   await expect(questionRow(page, "oat milk latte")).toContainText("Added by you");
+  // The user's own questions keep their results but are left out of the score (BUG-129).
+  await expect(questionRow(page, "oat milk latte")).toContainText("Not counted in your score");
+  await expect(best).not.toContainText("Not counted in your score");
 
   await expect(page.getByTestId("active-count")).toHaveText("2 of 25");
   // 2 questions x 3 models x 4.3 weekly scans (MVP_SPEC 4.3).
@@ -180,15 +183,20 @@ test("add, pause, resume and remove a question", async ({ page }) => {
   await expect(page.getByTestId("active-count")).toHaveText("1 of 25");
 });
 
-test("edit a question's wording", async ({ page }) => {
+test("edit a suggested question: saved as a new question, the old one paused (M2)", async ({ page }) => {
   await seed(page, [{ prompt: "What is the best coffee shop in Orange?" }]);
   await openMenu(page, questionRow(page, "best coffee shop"));
   await page.getByRole("menuitem", { name: "Edit" }).click();
   await page.getByRole("textbox", { name: "Question", exact: true }).fill("What is the best coffee shop near Orange Circle?");
+  await expect(page.getByText("Editing makes this a new question. The old one is paused and keeps its results.")).toBeVisible();
   await page.getByRole("button", { name: "Save", exact: true }).click();
-  const edited = questionRow(page, "near Orange Circle?");
+  const confirm = page.getByRole("alertdialog", { name: "Save as a new question?" });
+  await confirm.getByRole("button", { name: "Save as new question" }).click();
+  const edited = page.getByTestId("active-questions").getByTestId("question-row").filter({ hasText: "near Orange Circle?" });
   await expect(edited).toBeVisible(ACTION);
   await expect(edited).toContainText("Added by you");
+  await expect(edited).toContainText("Not counted in your score");
+  await expect(page.getByTestId("paused-questions")).toContainText("What is the best coffee shop in Orange?");
 });
 
 test("at 25 active questions: the limit message, and no way to add or resume", async ({ page }) => {

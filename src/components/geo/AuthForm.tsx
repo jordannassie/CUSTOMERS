@@ -17,6 +17,8 @@ interface AuthFormProps {
   notice?: string;
   // The page's ?error= value; read on the server so the notice is in the first render.
   errorParam?: string;
+  /** A confirmation link that did not work, shown as an error on first render. */
+  linkError?: string;
 }
 
 const GoogleIcon = () => (
@@ -37,7 +39,7 @@ function nextFromUrl() {
   return safeNextPath(params.get("next"), fallback);
 }
 
-export default function AuthForm({ defaultMode = "login", errorParam = "", notice }: AuthFormProps) {
+export default function AuthForm({ defaultMode = "login", errorParam = "", notice, linkError }: AuthFormProps) {
   const router = useRouter();
   const oauthFailed = errorParam.includes("oauth") || errorParam.includes("callback");
   const [mode, setMode] = useState<"login" | "signup">(defaultMode);
@@ -45,7 +47,7 @@ export default function AuthForm({ defaultMode = "login", errorParam = "", notic
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState<"google" | "email" | null>(null);
   const [googleFailed, setGoogleFailed] = useState(oauthFailed);
-  const [error, setError] = useState<string | null>(oauthFailed ? "google_failed" : null);
+  const [error, setError] = useState<string | null>(oauthFailed ? "google_failed" : (linkError ?? null));
   const [message, setMessage] = useState<string | null>(notice ?? null);
   const [passwordError, setPasswordError] = useState<string | null>(null);
   // Which fields the form alert is about, so they are marked invalid and point at it.
@@ -113,7 +115,7 @@ export default function AuthForm({ defaultMode = "login", errorParam = "", notic
         email,
         password,
         options: {
-          emailRedirectTo: `${siteBase}/auth/callback?next=${encodeURIComponent(nextFromUrl())}`,
+          emailRedirectTo: `${siteBase}/auth/callback?from=signup&next=${encodeURIComponent(nextFromUrl())}`,
         },
       });
       setLoading(null);
@@ -144,7 +146,11 @@ export default function AuthForm({ defaultMode = "login", errorParam = "", notic
     setLoading(null);
     if (loginError) {
       const msg = loginError.message.toLowerCase();
-      if (msg.includes("invalid") || msg.includes("credentials") || msg.includes("password") || msg.includes("email")) {
+      // Checked first: "Email not confirmed" would otherwise read as a wrong password.
+      if (loginError.code === "email_not_confirmed" || msg.includes("not confirmed")) {
+        setError("Confirm your email first. Open the link we sent you, then log in.");
+        setInvalid("email");
+      } else if (msg.includes("invalid") || msg.includes("credentials") || msg.includes("password") || msg.includes("email")) {
         setError("Email or password is incorrect.");
         setInvalid("both");
       } else if (msg.includes("not found") || msg.includes("no user")) {

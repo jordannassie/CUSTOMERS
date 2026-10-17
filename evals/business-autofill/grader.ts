@@ -60,7 +60,11 @@ export function loadDataset(path: URL = DATASET_PATH): AutofillCase[] | null {
 }
 
 // What the form may receive: the pass level is 100% of outputs matching this.
-const detailsSchema = labelSchema.extend({ services: z.array(z.string().min(1)).max(12) }).strict();
+// industryText: Google's name for a type outside the list, with industry "other" (BUG-123).
+// area: the listing's neighborhood, from Google only (never the model), so it is not labelled or graded.
+const detailsSchema = labelSchema
+  .extend({ services: z.array(z.string().min(1)).max(12), industryText: z.string().min(1).optional(), area: z.string().optional() })
+  .strict();
 
 export function schemaOk(details: unknown): boolean {
   return detailsSchema.safeParse(details).success;

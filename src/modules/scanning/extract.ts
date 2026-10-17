@@ -1,13 +1,13 @@
 import "server-only";
-// "Also recommended by AI" (MVP_SPEC 5.2, D-74): Claude Haiku lists every business an answer names.
-// The list is stored with the shared cached answer, so a cache hit reuses it for free; matching it
-// to one business and its competitors is done per business in extract-match.ts.
-import Anthropic from "@anthropic-ai/sdk";
+// "Also recommended by AI" (MVP_SPEC 5.2, D-74): Claude Haiku lists every business an answer names, and OpenAI
+// answers the same prompt and schema when Claude fails (D-84). The list is stored with the shared cached answer,
+// so a cache hit reuses it for free; matching it to one business and its competitors is done per business in
+// extract-match.ts.
+import type Anthropic from "@anthropic-ai/sdk";
 import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
 import { z } from "zod";
-import { classify } from "./providers/anthropic";
-import { checkCostUsd } from "./providers/pricing";
-import { ProviderError, TIMEOUT_MS, withRetries, type Attempt, type RequestDeps } from "./providers/request";
+import { aiCostUsd, runJob, type AiClients, type AiProvider } from "@/modules/ai";
+import { ProviderError, TIMEOUT_MS } from "./providers/request";
 import type { CheckUsage } from "./providers/types";
 import { coreName } from "./mention-text";
 import {
@@ -32,10 +32,15 @@ export type Extraction = {
   names: ExtractedName[];
   usage: CheckUsage;
   costUsd: number;
+  /** Who answered: Claude, or the ChatGPT backup when Claude failed (D-84). Left out means Claude, no backup. */
+  provider?: AiProvider;
+  fellBack?: boolean;
+  primaryError?: string | null;
 };
 
 export type ExtractNames = (answer: string) => Promise<Extraction>;
 
+/** The Message Batches request for one answer (scheduled scans, D-74). */
 export function extractionRequest(answer: string) {
   return {
     model: EXTRACT_MODEL,
@@ -46,20 +51,34 @@ export function extractionRequest(answer: string) {
   };
 }
 
-export function createNameExtractor(apiKey: string, deps: RequestDeps = {}): ExtractNames {
-  const timeoutMs = deps.timeoutMs ?? TIMEOUT_MS;
-  // Retries run through withRetries so every Anthropic call shares one policy (REL-01).
-  const client = new Anthropic({ apiKey, fetch: deps.fetch, maxRetries: 0, timeout: timeoutMs });
+/** The same request for the live path, through the shared Claude-then-OpenAI runner. */
+export function extractionJob(answer: string) {
+  return {
+    task: "extract_names",
+    model: EXTRACT_MODEL,
+    maxTokens: EXTRACT_MAX_TOKENS,
+    system: EXTRACT_NAMES_SYSTEM,
+    user: extractNamesUserMessage(answer),
+    schema: extractNamesOutput,
+    timeoutMs: TIMEOUT_MS,
+  };
+}
 
+/** One answer at a time; a failure (both providers down) throws, and the check keeps its text-rule mentions. */
+export function createNameExtractor(ai: AiClients): ExtractNames {
   return async (answer) => {
-    const message = await withRetries(async (attempt): Promise<Attempt<Anthropic.Message>> => {
-      try {
-        return { ok: true, value: await client.messages.create(extractionRequest(answer)) };
-      } catch (err) {
-        return classify(err, attempt, timeoutMs);
-      }
-    }, deps);
-    return toExtraction(message, { batch: false });
+    const result = await runJob(ai, extractionJob(answer));
+    const usage: CheckUsage = { ...result.usage, searchCalls: 0 };
+    return {
+      promptVersion: EXTRACT_NAMES_VERSION,
+      model: result.model,
+      names: orderedNames(result.output.businesses.map((b) => b.name)),
+      usage,
+      costUsd: result.costUsd,
+      provider: result.provider,
+      fellBack: result.fellBack,
+      primaryError: result.primaryError,
+    };
   };
 }
 
@@ -98,7 +117,7 @@ export function toExtraction(message: Anthropic.Message, opts: { batch: boolean 
     outputTokens: message.usage.output_tokens,
     searchCalls: 0,
   };
-  const fullPrice = checkCostUsd(EXTRACT_MODEL, usage);
+  const fullPrice = aiCostUsd(message.model, usage);
   return {
     promptVersion: EXTRACT_NAMES_VERSION,
     model: message.model,
@@ -106,6 +125,9 @@ export function toExtraction(message: Anthropic.Message, opts: { batch: boolean 
     usage,
     // The Message Batches API bills half price (D-74).
     costUsd: opts.batch ? Math.round(fullPrice * 500_000) / 1_000_000 : fullPrice,
+    provider: "anthropic",
+    fellBack: false,
+    primaryError: null,
   };
 }
 

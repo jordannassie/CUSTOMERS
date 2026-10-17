@@ -23,7 +23,8 @@ export type PlanChangeStripe = {
 export function stripePlanChangeClient(stripe: Stripe): PlanChangeStripe {
   return {
     retrieveSubscription: (id) => stripe.subscriptions.retrieve(id),
-    retrieveSchedule: (id) => stripe.subscriptionSchedules.retrieve(id),
+    // Prices expanded, so the billing page can tell a pending plan by its product (BUG-103).
+    retrieveSchedule: (id) => stripe.subscriptionSchedules.retrieve(id, { expand: ["phases.items.price"] }),
     createScheduleFromSubscription: (subscriptionId, idempotencyKey) =>
       stripe.subscriptionSchedules.create({ from_subscription: subscriptionId }, { idempotencyKey }),
     updateSchedule: (id, params, idempotencyKey) => stripe.subscriptionSchedules.update(id, params, { idempotencyKey }),

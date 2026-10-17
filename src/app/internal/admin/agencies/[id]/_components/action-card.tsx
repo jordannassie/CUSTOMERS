@@ -58,7 +58,10 @@ export default function ActionCard(props: Props) {
     const reason = String(form.get("reason") ?? "").trim();
     setMessage(null);
     startTransition(async () => {
-      const result = await run(form, reason);
+      // A thrown action (a server error) would otherwise leave the form open with no message (A4).
+      const result = await run(form, reason).catch(
+        (): Outcome => ({ ok: false, status: 500, error: "Something went wrong, so this may not have been saved. Refresh the page and check." }),
+      );
       if (result.ok) {
         close();
         setMessage({ tone: "ok", text: successText });

@@ -4,8 +4,13 @@ import { A, B, C, plansByProduct, RENEWAL, setup } from "./scenario.test-helpers
 import type { FakeStripe } from "./fake-stripe";
 
 // Deleting a business ends its plan item at period end (B-77, MVP_SPEC 23), against the in-memory Stripe.
-const loaded = vi.hoisted(() => ({ ctx: null as PlanChangeContext | null, stripe: null as FakeStripe | null }));
-vi.mock("./dal", () => ({ loadPlanChangeData: async () => ({ context: loaded.ctx, plansByProduct }) }));
+const loaded = vi.hoisted(() => ({ ctx: null as PlanChangeContext | null, stripe: null as FakeStripe | null, canceledRows: [] as string[] }));
+vi.mock("./dal", () => ({
+  loadPlanChangeData: async () => ({ context: loaded.ctx, plansByProduct }),
+  cancelBusinessPlanRow: async (_agencyId: string, businessId: string) => {
+    loaded.canceledRows.push(businessId);
+  },
+}));
 vi.mock("../account/access", () => ({
   billingAccess: async () => ({ mode: "fixture", context: loaded.ctx, stripe: loaded.stripe }),
 }));
@@ -23,6 +28,7 @@ const now = (s: ReturnType<typeof setup>) => new Date(s.stripe.clock * 1000);
 beforeEach(() => {
   loaded.ctx = null;
   loaded.stripe = null;
+  loaded.canceledRows = [];
 });
 
 describe("endBusinessPlan", () => {
@@ -57,10 +63,86 @@ describe("endBusinessPlan", () => {
     loaded.ctx = { ...s.ctx, subscriptionId: null };
     expect(await endBusinessPlan("agency-1", A, now(s))).toEqual({ endsAt: null });
     expect(s.stripe.calls).toHaveLength(0);
+    expect(loaded.canceledRows).toEqual([A]);
+  });
+
+  it("lets the business go when Stripe has no such subscription, but not when Stripe is down (2026-10-14)", async () => {
+    const s = use(setup());
+    const missing = Object.assign(new Error("No such subscription: 'sub_local_sim_abdul'"), { type: "StripeInvalidRequestError", code: "resource_missing", statusCode: 404 });
+    vi.spyOn(s.stripe, "retrieveSubscription").mockRejectedValueOnce(missing);
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    expect(await endBusinessPlan("agency-1", A, now(s))).toEqual({ endsAt: null });
+    expect(loaded.canceledRows).toEqual([A]);
+
+    const down = Object.assign(new Error("connection reset"), { type: "StripeConnectionError" });
+    vi.spyOn(s.stripe, "retrieveSubscription").mockRejectedValueOnce(down);
+    await expect(endBusinessPlan("agency-1", A, now(s))).rejects.toThrow("connection reset");
+    expect(loaded.canceledRows).toEqual([A]);
+  });
+
+  it("cancels the business's own row when Stripe says the plan already ended", async () => {
+    const s = use(setup());
+    s.stripe.status = "canceled";
+    expect(await endBusinessPlan("agency-1", A, now(s))).toEqual({ endsAt: null });
+    expect(loaded.canceledRows).toEqual([A]);
+  });
+
+  it("leaves the row to the webhook when Stripe still has a plan to end", async () => {
+    const s = use(setup());
+    await endBusinessPlan("agency-1", A, now(s));
+    expect(loaded.canceledRows).toEqual([]);
   });
 
   it("refuses a business from another agency", async () => {
     const s = use(setup());
     await expect(endBusinessPlan("agency-1", "00000000-0000-4000-8000-0000000000ff", now(s))).rejects.toMatchObject({ status: 404 });
+  });
+});
+
+// 2026-10-15: a business deleted during a trial was still listed at $149 a month until the trial end.
+describe("endBusinessPlan during a trial", () => {
+  const ids = (s: ReturnType<typeof setup>) => s.stripe.items.map((i) => i.metadata.business_id);
+
+  it("takes the business off the plan at once, with nothing charged now or at the trial end", async () => {
+    const s = use(setup({ status: "trialing" }));
+    expect(await endBusinessPlan("agency-1", A, now(s))).toEqual({ endsAt: null, removedNow: true });
+    expect(ids(s)).toEqual([B]);
+    expect(s.stripe.invoices).toHaveLength(0);
+
+    s.stripe.advanceTo(RENEWAL + 60);
+    const firstBill = s.stripe.invoices.at(-1)!;
+    expect(firstBill.amount_due).toBe(14900);
+  });
+
+  it("takes it out of every schedule phase, keeping another business's scheduled change", async () => {
+    const s = use(setup({ a: "price_pro", status: "trialing" }));
+    await s.change({ kind: "add", businessId: C, planId: "starter" });
+    await s.change({ kind: "downgrade", businessId: A, planId: "starter" });
+
+    await endBusinessPlan("agency-1", B, now(s));
+    expect(ids(s).sort()).toEqual([A, C].sort());
+    const phases = s.stripe.schedule!.phases;
+    expect(phases.map((p) => p.items.map((i) => i.metadata.business_id).sort())).toEqual([[A, C].sort(), [A, C].sort()]);
+    expect(JSON.stringify(s.stripe.calls.at(-1)!.params)).toContain("trial_end");
+
+    s.stripe.advanceTo(RENEWAL + 60);
+    expect(s.stripe.invoices.at(-1)!.amount_due).toBe(14900 * 2);
+  });
+
+  it("ends the plan at the trial end when every other business was already coming off", async () => {
+    const s = use(setup({ status: "trialing" }));
+    await s.change({ kind: "remove", businessId: B });
+    await endBusinessPlan("agency-1", A, now(s));
+    expect(ids(s)).toEqual([B]);
+    expect(s.stripe.schedule!.endBehavior).toBe("cancel");
+    s.stripe.advanceTo(RENEWAL + 60);
+    expect(s.stripe.status).toBe("canceled");
+  });
+
+  it("still cancels at the trial end when it is the only business, which is never charged either", async () => {
+    const s = use(setup({ b: null, status: "trialing" }));
+    const result = await endBusinessPlan("agency-1", A, now(s));
+    expect(result.removedNow).toBeUndefined();
+    expect(s.stripe.subscription().cancel_at_period_end).toBe(true);
   });
 });

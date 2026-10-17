@@ -23,17 +23,20 @@ vi.mock("@/modules/questions/dal", () => ({
   deleteQuestion: writes,
 }));
 vi.mock("@/modules/settings/dal", () => ({
+  // The saved industry and names, read before a profile save to see whether to rebuild questions or recount.
+  businessBefore: vi.fn(async () => ({ industry: "", name: "Plumbing", aliases: [], domain: null, phone: null, city: null, region: null, area: null })),
   updateBusinessProfile: writes,
   updateScanSettings: writes,
   updateAgencyName: writes,
   saveAgencyLogo: writes,
 }));
 vi.mock("@/modules/competitors/dal", () => ({ trackCompetitorByName: writes }));
+vi.mock("@/modules/competitors/aliases/dal", () => ({ saveCompetitorAliases: writes, getCompetitorAliases: vi.fn() }));
 vi.mock("@/modules/onboarding/dal", () => ({ saveCompetitors: writes, lookupCompetitor: writes, runBusinessAutofill: writes }));
 
 const questions = await import("@/modules/questions");
 const settings = await import("@/modules/settings");
-const { trackCompetitor } = await import("@/modules/competitors");
+const { saveCompetitorAliases, trackCompetitor } = await import("@/modules/competitors");
 const { saveCompetitorList } = await import("@/modules/onboarding");
 
 const businessId = "7b0c4b4e-8a59-4a4f-9a8e-2f1d1b2c3d4e";
@@ -46,6 +49,7 @@ const calls = () => [
   settings.saveScanSettings({ businessId, models: ["openai"], frequency: "weekly" }),
   settings.saveBusinessProfile({ businessId, name: "Plumbing", industry: "", services: [], city: "", region: "", phone: "", website: "" }),
   trackCompetitor({ businessId, name: "Rival Plumbing" }),
+  saveCompetitorAliases({ businessId, competitors: [] }),
   saveCompetitorList({ businessId, competitors: [] }),
 ];
 

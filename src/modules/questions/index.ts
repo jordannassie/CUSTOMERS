@@ -1,5 +1,6 @@
 // The only file other modules may import from (eslint-plugin-boundaries).
-export { addQuestion, editQuestion, removeQuestion, setQuestionActive } from "./actions";
+export { addQuestion, editQuestion, getQuestionAnswers, removeQuestion, setQuestionActive } from "./actions";
+export type { QuestionAnswer } from "./answers";
 export { getQuestionsPage } from "./dal";
 export {
   atLimit,

@@ -41,7 +41,7 @@ export async function loadUsageCostSince(from: Date, includeTest: boolean, now: 
     readAll((a, b) =>
       db
         .from("credit_transactions")
-        .select("agency_id, source_id, delta, created_at")
+        .select("agency_id, source_id, delta, created_at, from_test_agency")
         .eq("kind", "capture")
         .gte("created_at", fromIso)
         .lte("created_at", toIso)
@@ -51,7 +51,7 @@ export async function loadUsageCostSince(from: Date, includeTest: boolean, now: 
     readAll((a, b) =>
       db
         .from("usage_events")
-        .select("account_user_id, business_id, usage_type, provider, cached, estimated_cost_usd, created_at")
+        .select("account_user_id, business_id, usage_type, provider, cached, estimated_cost_usd, created_at, metadata")
         .gte("created_at", fromIso)
         .lte("created_at", toIso)
         .order("id")
@@ -65,12 +65,17 @@ export async function loadUsageCostSince(from: Date, includeTest: boolean, now: 
   const keep = (agencyId: string | null) => includeTest || !(agencyId && agencies.get(agencyId)?.isTest);
 
   const captures: Capture[] = captureRows
+    // A purged test agency's ledger rows have no agency left but keep that it was a test one (migration 060).
+    .filter((r) => includeTest || !r.from_test_agency)
     .map((r) => ({ agencyId: r.agency_id, checkId: r.source_id, credits: -r.delta, createdAt: r.created_at }))
     .filter((c) => keep(c.agencyId));
   const usage: UsageRow[] = usageRows
+    // A purged account's rows have no user or business left (migration 059, BUG-160): they count under "Deleted
+    // accounts", except a test agency's, which stay out like its other costs.
+    .filter((r) => includeTest || !deletedTestAccount(r.metadata))
     .map((r) => ({
       // usage_events has no agency column: the business's agency, else the agency the user owns.
-      agencyId: (r.business_id && agencyOfBusiness.get(r.business_id)) || agencyOfOwner.get(r.account_user_id) || null,
+      agencyId: (r.business_id && agencyOfBusiness.get(r.business_id)) || (r.account_user_id && agencyOfOwner.get(r.account_user_id)) || null,
       usageType: r.usage_type,
       provider: r.provider,
       cached: r.cached,
@@ -90,6 +95,11 @@ export async function loadUsageCostSince(from: Date, includeTest: boolean, now: 
     usage,
     agencies,
   });
+}
+
+/** True for a cost row anonymised when a test agency was purged (migration 059). */
+export function deletedTestAccount(metadata: unknown): boolean {
+  return typeof metadata === "object" && metadata !== null && (metadata as Record<string, unknown>).testAccount === true;
 }
 
 async function readAll<T>(

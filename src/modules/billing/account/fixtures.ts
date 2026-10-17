@@ -7,6 +7,7 @@ import type { PlanChangeContext } from "../plan-change/planner";
 import { createWebhookStore } from "../webhooks/dal";
 import { sendBillingEmail } from "../webhooks/emails";
 import { dispatchEvent, type WebhookDeps } from "../webhooks/handlers";
+import { syncFromStripe, type StripeSync } from "../webhooks/sync";
 import { loadBillingRows } from "./dal";
 import type { PortalClient } from "./access";
 
@@ -52,13 +53,24 @@ async function seed(context: PlanChangeContext, subscriptionId: string): Promise
   });
 }
 
+/** The in-memory subscription with its latest invoice, as Stripe returns it. */
+const withLatestInvoice = (fake: FakeStripe): Stripe.Subscription => ({ ...fake.subscription(), latest_invoice: fake.invoices.at(-1)?.id ?? null });
+
 function webhookDeps(fake: FakeStripe): WebhookDeps {
   return {
     store: createWebhookStore(),
     stripe: {
-      retrieveSubscription: async () => fake.subscription(),
+      retrieveSubscription: async () => withLatestInvoice(fake),
       listSubscriptionItems: async () => fake.subscription().items.data,
       listInvoiceLines: async (id) => fake.invoices.find((i) => i.id === id)?.lines.data ?? [],
+      retrieveInvoice: async (id) => {
+        const invoice = fake.invoices.find((i) => i.id === id);
+        if (!invoice) throw new Error(`no fixture invoice ${id}`);
+        return invoice;
+      },
+      checkoutBusinessIds: async () => new Map(),
+      tagItem: async () => {},
+      checkoutSessionForPaymentIntent: async () => null,
     },
     sendEmail: sendBillingEmail,
     now: () => new Date(),
@@ -103,6 +115,13 @@ export async function fixturePlanChangeStripe(context: PlanChangeContext): Promi
     releaseSchedule: (id, key) => change(() => f.releaseSchedule(id, key)),
     updateSubscription: (id, params, key) => change(() => f.updateSubscription(id, params, key)),
   };
+}
+
+/** The sync a live agency gets (webhooks/sync.ts), on the agency's in-memory subscription. */
+export async function fixtureSync(context: PlanChangeContext): Promise<(subscriptionId: string) => Promise<StripeSync>> {
+  await fixturePlanChangeStripe(context);
+  const fake = store.get(context.subscriptionId ?? `none_${context.agencyId}`)!;
+  return (subscriptionId) => syncFromStripe(webhookDeps(fake), subscriptionId);
 }
 
 export const fixturePortal: PortalClient = {

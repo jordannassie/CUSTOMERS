@@ -2,9 +2,12 @@
 
 import { after } from "next/server";
 import { authFailure, requireAgency, type ActionResult } from "@/modules/auth";
+import { getBalance } from "@/modules/credits";
 import { REASONS, canStartScan } from "@/modules/entitlements";
-import { businessAgencyId, insertManualJob, latestJob, postToWorker, runWorkerInProcess, workerTimeBudgetMs } from "./dal";
-import { businessIdInput } from "./schema";
+import { businessAgencyId, insertManualJob, lastDoneScanAt, latestJob, postToWorker, runWorkerInProcess, scanCost, workerTimeBudgetMs } from "./dal";
+import { overdraftNeeded, scanCreditCheck, type StartScanResult } from "./overdraft";
+import { recentScanNeeded, scannedRecently } from "./recent-scan";
+import { businessIdInput, startScanInput } from "./schema";
 import { scanStatusView, type ScanStatus } from "./service";
 import { runWorker } from "./worker";
 
@@ -25,17 +28,29 @@ async function ownBusiness(input: unknown): Promise<ActionResult<{ agencyId: str
   return { ok: true, data: { agencyId, businessId } };
 }
 
-/** Run scan (MVP_SPEC 6.4): queue a high-priority job and start the worker without waiting for the schedule. */
-export async function startScan(input: unknown): Promise<ActionResult<ScanStatus>> {
+/**
+ * Run scan (MVP_SPEC 6.4): queue a high-priority job and start the worker without waiting for the schedule.
+ * A scan that costs more than the balance (D-54) is not queued until the user confirms with `confirmOverdraft`, and
+ * one within 24 hours of the last scan not until they confirm with `confirmRecent` (2026-10-15).
+ */
+export async function startScan(input: unknown): Promise<StartScanResult> {
   const owned = await ownBusiness(input);
   if (!owned.ok) return owned;
   const { agencyId, businessId } = owned.data;
+  const parsed = startScanInput.safeParse(input);
+  if (!parsed.success) return { ok: false, status: 400, error: "We couldn't start the scan. Try again." };
 
   const allowed = await canStartScan(agencyId, businessId);
   if (!allowed.allowed) {
     const status = allowed.reason === REASONS.scanAlreadyQueued ? 409 : 403;
     return { ok: false, status, error: allowed.reason };
   }
+  const [balance, cost, lastDone] = await Promise.all([getBalance(agencyId), scanCost(businessId), lastDoneScanAt(businessId)]);
+  const credits = scanCreditCheck(balance.balance ?? 0, cost);
+  if (credits.kind === "refuse") return { ok: false, status: 403, error: REASONS.outOfCredits };
+  // Asked before the overdraft question: a user who decides not to scan again never needs that one.
+  if (scannedRecently(lastDone) && !parsed.data.confirmRecent) return recentScanNeeded(cost);
+  if (credits.kind === "warn" && !parsed.data.confirmOverdraft) return overdraftNeeded(credits);
   // Two clicks can both pass the check above; the one-active-job index lets only one insert through.
   if (!(await insertManualJob(agencyId, businessId))) {
     return { ok: false, status: 409, error: REASONS.scanAlreadyQueued };
@@ -69,5 +84,7 @@ async function startWorker(): Promise<void> {
     console.error(`Run scan: could not start the worker: ${error instanceof Error ? error.message : error}`);
     return;
   }
-  if (runWorkerInProcess()) after(() => runWorker(workerTimeBudgetMs()).then(() => undefined));
+  if (runWorkerInProcess()) return after(() => runWorker(workerTimeBudgetMs()).then(() => undefined));
+  // Only the every-minute schedule can run the job now; without it the scan never starts (the screen says so).
+  console.warn("Run scan: no worker to start. Set WORKER_URL and WORKER_SECRET (or WORKER_IN_PROCESS in local dev).");
 }

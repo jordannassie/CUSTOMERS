@@ -2,8 +2,10 @@
 // saved checks, the business's own site facts and live Google signals. Google values go in only as
 // comparisons and placeholder names, never as numbers (D-73).
 import { z } from "zod";
-import { compareCount, compareRating, openDays, type Compare, type RatingCompare } from "./compare";
+import { compareCount, compareRating, openDays, sideOf, type GoogleSide } from "./compare";
 import { PLACE_FIELDS, placeholderFor, type PlaceField } from "./placeholders";
+import { citedSites, type CitedSite } from "./sites";
+import { yourWebsite, type YourWebsite } from "./your-website";
 
 export type Signals = {
   rating: number | null;
@@ -20,6 +22,8 @@ export type CheckRow = {
   citations: unknown;
 };
 
+export type { CitedSite };
+
 export type ExplainSources = {
   business: {
     name: string;
@@ -33,6 +37,8 @@ export type ExplainSources = {
     placesId: string | null;
   };
   competitors: { id: string; name: string; placesId: string | null }[];
+  /** The AIs this scan asked (visibility_runs.provider); one with no saved checks could not be checked. */
+  models?: string[];
   checks: CheckRow[];
   alsoNamed: { name: string; answers: number }[];
   siteFacts: unknown;
@@ -55,23 +61,20 @@ export type ExplainInput = {
     answers: number;
     answersNamingYou: number;
     byAssistant: { assistant: string; answers: number; answersNamingYou: number }[];
+    /** Asked, but every check failed: no answers to count (BUG-077). */
+    assistantsNotChecked: string[];
   };
   questions: { question: string; answers: number; answersNamingYou: number; competitorsNamed: string[] }[];
   competitors: {
     key: string;
     name: string;
     answersNamingThem: number;
-    google: { reviewCount: Compare; rating: RatingCompare; openDays: Compare; sameCategory: boolean | null } | null;
+    /** Who is ahead on each Google value, from the owner's side (BUG-099). */
+    google: { reviewCount: GoogleSide; rating: GoogleSide; openDays: GoogleSide; sameCategory: boolean | null } | null;
   }[];
   alsoNamedByAI: { name: string; answers: number }[];
-  citations: { yourSiteCitedIn: number | null; sites: { domain: string; answers: number; answersWithoutYou: number }[] };
-  yourWebsite: {
-    pagesRead: string[];
-    pagesNotFound: string[];
-    hasPhone: boolean;
-    hasAddress: boolean;
-    servicesListed: string[];
-  } | null;
+  citations: { yourSiteCitedIn: number | null; sites: CitedSite[] };
+  yourWebsite: YourWebsite | null;
   placeholders: string[];
 };
 
@@ -86,12 +89,10 @@ const MAX_COMPETITORS = 5;
 const MAX_QUESTIONS = 8;
 const MAX_SITES = 8;
 
-const mentions = z.array(z.object({ name: z.string(), mentioned: z.boolean() }));
+// A scan saves only the named competitors, as { name, position } (scanning/check.ts); older rows may carry
+// `mentioned`. An item counts as named unless it says `mentioned: false` (as questions/answers.ts reads it).
+const mentions = z.array(z.object({ name: z.string(), mentioned: z.boolean().optional() }));
 const citations = z.array(z.object({ url: z.string() }));
-const siteFacts = z.object({
-  pages: z.array(z.object({ path: z.string(), status: z.string() })),
-  facts: z.object({ phone: z.string(), address: z.string(), services: z.array(z.string()) }),
-});
 
 const key = (s: string) => s.trim().toLowerCase();
 
@@ -105,7 +106,7 @@ export function domainOf(url: string): string | null {
 
 function namedIn(check: CheckRow): Set<string> {
   const parsed = mentions.safeParse(check.competitorsMentioned);
-  return new Set(parsed.success ? parsed.data.filter((m) => m.mentioned).map((m) => key(m.name)) : []);
+  return new Set(parsed.success ? parsed.data.filter((m) => m.mentioned !== false).map((m) => key(m.name)) : []);
 }
 
 function citedDomains(check: CheckRow): Set<string> {
@@ -149,9 +150,9 @@ export function buildExplainInput(src: ExplainSources): BuiltInput {
       answersNamingThem: c.answers,
       google: theirs
         ? {
-            reviewCount: compareCount(theirs.reviewCount, you?.reviewCount ?? null),
-            rating: compareRating(theirs.rating, you?.rating ?? null),
-            openDays: compareCount(openDays(theirs.hours), you ? openDays(you.hours) : null, 0),
+            reviewCount: sideOf(compareCount(theirs.reviewCount, you?.reviewCount ?? null)),
+            rating: sideOf(compareRating(theirs.rating, you?.rating ?? null)),
+            openDays: sideOf(compareCount(openDays(theirs.hours), you ? openDays(you.hours) : null, 0)),
             sameCategory: you ? theirs.categories.some((t) => you.categories.some((y) => key(t) === key(y))) : null,
           }
         : null,
@@ -173,17 +174,6 @@ export function buildExplainInput(src: ExplainSources): BuiltInput {
     .map(([question, q]) => ({ question, answers: q.answers, answersNamingYou: q.named, competitorsNamed: [...q.competitors] }));
 
   const ownDomain = business.domain ? domainOf(`https://${business.domain.replace(/^https?:\/\//, "")}`) : null;
-  const sites = new Map<string, { answers: number; answersWithoutYou: number }>();
-  citedSets.forEach((set, i) => {
-    for (const d of set) {
-      if (d === ownDomain) continue;
-      const s = sites.get(d) ?? { answers: 0, answersWithoutYou: 0 };
-      s.answers += 1;
-      if (!checks[i].businessMentioned) s.answersWithoutYou += 1;
-      sites.set(d, s);
-    }
-  });
-
   const assistants = new Map<string, { answers: number; named: number }>();
   for (const check of checks) {
     const a = assistants.get(check.provider) ?? { answers: 0, named: 0 };
@@ -192,7 +182,6 @@ export function buildExplainInput(src: ExplainSources): BuiltInput {
     assistants.set(check.provider, a);
   }
 
-  const facts = siteFacts.safeParse(src.siteFacts);
   return {
     keys,
     input: {
@@ -210,26 +199,19 @@ export function buildExplainInput(src: ExplainSources): BuiltInput {
         answers: checks.length,
         answersNamingYou: checks.filter((c) => c.businessMentioned).length,
         byAssistant: [...assistants].map(([p, a]) => ({ assistant: ASSISTANTS[p] ?? p, answers: a.answers, answersNamingYou: a.named })),
+        assistantsNotChecked: (src.models ?? []).filter((p) => !assistants.has(p)).map((p) => ASSISTANTS[p] ?? p),
       },
       questions,
       competitors,
       alsoNamedByAI: src.alsoNamed.slice(0, 5),
       citations: {
         yourSiteCitedIn: ownDomain ? citedSets.filter((s) => s.has(ownDomain)).length : null,
-        sites: [...sites]
-          .sort((a, b) => b[1].answers - a[1].answers || a[0].localeCompare(b[0]))
-          .slice(0, MAX_SITES)
-          .map(([domain, s]) => ({ domain, ...s })),
+        sites: citedSites(citedSets, checks.map((c) => c.businessMentioned), ownDomain, [
+          ...src.competitors.map((c) => c.name),
+          ...src.alsoNamed.map((a) => a.name),
+        ]).slice(0, MAX_SITES),
       },
-      yourWebsite: facts.success
-        ? {
-            pagesRead: facts.data.pages.filter((p) => p.status === "ok").map((p) => p.path),
-            pagesNotFound: facts.data.pages.filter((p) => p.status === "missing").map((p) => p.path),
-            hasPhone: facts.data.facts.phone.trim() !== "",
-            hasAddress: facts.data.facts.address.trim() !== "",
-            servicesListed: facts.data.facts.services,
-          }
-        : null,
+      yourWebsite: yourWebsite(src.siteFacts),
       placeholders,
     },
   };

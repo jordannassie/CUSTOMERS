@@ -22,7 +22,7 @@ const TREND: OverviewView["trend"] = {
   }),
   change: { direction: "up", text: "Up 9 points since Sep 20" },
   summary: null,
-  caption: "Each dot is one scan. The shaded band is how far the score could be off.",
+  caption: "Each dot is a day with a scan. The shaded band is how far the score could be off.",
 };
 
 const MODELS: OverviewView["models"] = [

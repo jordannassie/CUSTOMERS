@@ -6,7 +6,7 @@ import { AlertTriangle, Info, PauseCircle, type LucideIcon } from "lucide-react"
 import { cn } from "cn";
 
 export type AppBanner = {
-  kind: "suspended" | "past_due" | "out_of_credits" | "trial" | "ended";
+  kind: "test_mode" | "suspended" | "past_due" | "out_of_credits" | "low_credits" | "trial" | "ended";
   tone: "danger" | "warning" | "info";
   message: string;
   action: { label: string; href: string } | null;
@@ -36,7 +36,7 @@ export function AppBanners({ banners: all }: { banners: AppBanner[] }) {
   const banners = all.filter((b) => !(b.kind === "past_due" && b.action?.href === pathname));
   if (banners.length === 0) return null;
   return (
-    <div className="flex flex-col gap-2 px-4 pt-4 sm:px-8 sm:pt-6" data-testid="app-banners">
+    <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-2 px-4 pt-4 sm:px-8 sm:pt-6" data-testid="app-banners">
       {groupByTone(banners).map((group) => (
         <div key={group[0].kind} className={cn("flex flex-col divide-y rounded-md border", TONE[group[0].tone].box)}>
           {group.map((banner) => {

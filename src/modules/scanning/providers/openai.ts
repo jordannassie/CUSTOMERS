@@ -3,6 +3,7 @@ import "server-only";
 // (MVP_SPEC 5.1, D-67, D-68). The API key is passed in; only a dal.ts reads secrets.
 import { z } from "zod";
 import { CHECK_MODELS } from "./models";
+import { knownLocation } from "./location";
 import { checkCostUsd } from "./pricing";
 import { ProviderError, postJson, type RequestDeps } from "./request";
 import { cleanUrl } from "./urls";
@@ -73,7 +74,7 @@ export function requestBody({ question, location, model }: CheckInput) {
     tools: [
       {
         type: "web_search",
-        user_location: { type: "approximate", city: location.city, region: location.region, country: location.country },
+        user_location: { type: "approximate", ...knownLocation(location) },
       },
     ],
     max_output_tokens: MAX_OUTPUT_TOKENS,

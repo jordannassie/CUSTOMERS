@@ -7,8 +7,10 @@ import { cacheKey, checkWithCache, recordCheckUsage, type CheckAnswer } from "./
 import { readStoredExtraction, toStoredExtraction, type ExtractNames, type StoredExtraction } from "./extract";
 import { matchNames } from "./extract-match";
 import { storeExtraction } from "./extract-store";
+import { mergeMentions } from "./mention-merge";
 import { detectMentions, type MentionTarget } from "./mentions";
 import { CHECK_MODELS } from "./providers/models";
+import { ProviderError, retriedInside } from "./providers/request";
 import type { CheckInput, CheckLocation, ProviderId, RunCheck } from "./providers/types";
 import { insertExtractionUsage, recordProviderError, saveCheckResult } from "./runs/dal";
 
@@ -27,7 +29,7 @@ export type CheckContext = {
   extractNames: ExtractNames | null;
 };
 
-export type CheckOutcome = { ok: true } | { ok: false; error: string };
+export type CheckOutcome = { ok: true } | { ok: false; error: string; reason: string };
 
 /** Same job, question and model always give the same id, so a retried job can never charge a check twice. */
 export function checkIdFor(jobId: string, promptId: string, provider: ProviderId): string {
@@ -37,12 +39,14 @@ export function checkIdFor(jobId: string, promptId: string, provider: ProviderId
 }
 
 export async function runOneCheck(task: CheckTask, ctx: CheckContext): Promise<CheckOutcome> {
-  if (!ctx.runner) return { ok: false, error: `${task.provider} is not set up (no API key)` };
+  if (!ctx.runner) {
+    return { ok: false, error: `${task.provider} is not set up (no API key)`, reason: "not set up (no API key)" };
+  }
   const input: CheckInput = { question: task.question, location: ctx.location, model: CHECK_MODELS[task.provider] };
 
   let answer: CheckAnswer;
   try {
-    answer = ctx.isTest ? await recordedAnswer(input, ctx.runner) : await checkWithCache(input, ctx.runner);
+    answer = await answerWithOneRetry(input, ctx);
     if (!ctx.isTest) {
       await recordCheckUsage({ accountUserId: ctx.ownerUserId, businessId: ctx.businessId, input, answer });
     }
@@ -51,11 +55,13 @@ export async function runOneCheck(task: CheckTask, ctx: CheckContext): Promise<C
     // Recorded answers are not provider calls, so test agencies never count toward the error spike alert (B-69).
     if (!ctx.isTest) await recordProviderError(task.provider, message);
     // A failed check is never charged (D-53), whatever the reason.
-    return { ok: false, error: `${task.provider}: ${message}` };
+    return { ok: false, error: `${task.provider}: ${message}`, reason: message };
   }
 
-  const mentions = detectMentions(answer.answerText, ctx.business, ctx.competitors);
   const extraction = await namesFor(input, answer, ctx);
+  const matched = extraction ? matchNames(extraction.names, ctx.business, ctx.competitors) : null;
+  const detected = detectMentions(answer.answerText, ctx.business, ctx.competitors);
+  const mentions = mergeMentions(answer.answerText, detected, matched);
 
   await saveCheckResult({
     id: task.checkId,
@@ -72,17 +78,26 @@ export async function runOneCheck(task: CheckTask, ctx: CheckContext): Promise<C
       .filter((c) => c.mentioned)
       .map((c) => ({ name: c.name, position: c.position })),
     citations: answer.citations,
-    extractedNames: extraction
-      ? ({
-          promptVersion: extraction.promptVersion,
-          names: matchNames(extraction.names, ctx.business, ctx.competitors),
-        } as Json)
-      : null,
+    extractedNames: extraction ? ({ promptVersion: extraction.promptVersion, names: matched } as Json) : null,
     cached: answer.cached,
     costUsd: answer.costUsd,
     latencyMs: answer.latencyMs,
+    isSample: ctx.isTest,
   });
   return { ok: true };
+}
+
+// A timeout or an unfinished search often clears in seconds; one more try beats failing the check (BUG-083). Rate
+// limits, server and network errors were already tried again inside the provider call (withRetries), so they are not
+// wrapped in a second round. A check that still fails is not charged (D-53).
+async function answerWithOneRetry(input: CheckInput, ctx: CheckContext): Promise<CheckAnswer> {
+  const ask = () => (ctx.isTest ? recordedAnswer(input, ctx.runner!) : checkWithCache(input, ctx.runner!));
+  try {
+    return await ask();
+  } catch (err) {
+    if (!(err instanceof ProviderError) || !err.retryable || retriedInside(err.kind)) throw err;
+    return ask();
+  }
 }
 
 async function recordedAnswer(input: CheckInput, runner: RunCheck): Promise<CheckAnswer> {
@@ -105,10 +120,14 @@ async function namesFor(input: CheckInput, answer: CheckAnswer, ctx: CheckContex
         inputTokens: extraction.usage.inputTokens,
         outputTokens: extraction.usage.outputTokens,
         costUsd: extraction.costUsd,
+        provider: extraction.provider,
+        fellBack: extraction.fellBack,
+        primaryError: extraction.primaryError,
       });
     }
     return toStoredExtraction(extraction);
   } catch {
+    // Both Claude and the ChatGPT backup failed; the AI reporter already logged why to provider_errors (D-84).
     return null;
   }
 }

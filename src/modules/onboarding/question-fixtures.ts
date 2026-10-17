@@ -42,6 +42,21 @@ export const COFFEE_BUSINESS: QuestionBusiness = {
   region: "IL",
 };
 
+/** A coffee shop that offers everything the fixture library asks about, so more than 12 templates fit it. */
+export const COFFEE_FULL_BUSINESS: QuestionBusiness = {
+  ...COFFEE_BUSINESS,
+  services: [
+    ...COFFEE_BUSINESS.services,
+    "cold brew",
+    "vegan food",
+    "bubble tea",
+    "drive-through",
+    "wifi and laptop workspace",
+    "loyalty program",
+    "coffee roasting",
+  ],
+};
+
 /** What a good pick for COFFEE_BUSINESS looks like: its own services and hours, a mix of intents. */
 export const COFFEE_GOOD_PICK = [2, 6, 3, 1, 4, 5, 11, 12, 9, 7, 13, 14];
 
@@ -77,6 +92,8 @@ export function fakeQuestionClients(
     library?: Record<string, LibraryEntry[]>;
     pick?: number[] | Error;
     write?: { template: string; intent: Intent }[] | Error;
+    /** Questions another business of the same kind in the same city already has. */
+    shared?: { text: string; intent: Intent }[];
   } = {},
 ): { clients: QuestionClients; calls: FakeModelCalls } {
   const calls: FakeModelCalls = { pick: 0, write: 0 };
@@ -95,5 +112,8 @@ export function fakeQuestionClients(
       return answer(opts.write, "write");
     },
   };
-  return { clients: { loadLibrary: async (industry) => opts.library?.[industry] ?? [], model }, calls };
+  return {
+    clients: { loadLibrary: async (industry) => opts.library?.[industry] ?? [], model, loadShared: async () => opts.shared ?? [] },
+    calls,
+  };
 }

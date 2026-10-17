@@ -18,9 +18,9 @@ describe("jobUpdateFor", () => {
     expect(update).toEqual({ status: "done", creditsCharged: 36, error: null });
   });
 
-  it("fails a skipped scan straight away with its reason", () => {
+  it("ends a skipped scan straight away as skipped, with its reason, not as a failure (B5)", () => {
     const update = jobUpdateFor({ status: "skipped", reason: "You're out of credits." }, job(1), NOW);
-    expect(update).toEqual({ status: "failed", error: "You're out of credits." });
+    expect(update).toEqual({ status: "skipped", error: "You're out of credits." });
   });
 
   it("retries after 5 minutes times the attempts, then fails on the third", () => {
@@ -34,6 +34,22 @@ describe("jobUpdateFor", () => {
       runAfter: new Date("2026-09-27T12:10:00Z"),
     });
     expect(jobUpdateFor(allFailed, job(3), NOW)).toEqual({ status: "failed", error: "Every check failed: openai returned 503" });
+  });
+
+  it("fails a test scan with no sample answers at once, since a retry finds none either (BUG-072)", () => {
+    const none = { ...allFailed, errors: ["openai: No sample answers for this kind of business", "anthropic: No sample answers for this kind of business"] };
+    expect(jobUpdateFor(none, job(1), NOW)).toMatchObject({ status: "failed" });
+    // One model with a real outage among them still retries.
+    expect(jobUpdateFor({ ...none, errors: [...none.errors, "perplexity: returned 503"] }, job(1), NOW)).toMatchObject({ status: "queued" });
+  });
+
+  it("also fails at once when the other models have no recordings at all, so the job never sits queued", () => {
+    const mixed = { ...allFailed, errors: ["openai: No sample answers for this kind of business", "perplexity: No recorded perplexity answers"] };
+    const update = jobUpdateFor(mixed, job(1), NOW);
+    expect(update).toMatchObject({ status: "failed" });
+    expect(update.error).toContain("No sample answers for this kind of business");
+    // With no sample answers error at all, an empty fixtures folder still retries as before.
+    expect(jobUpdateFor({ ...allFailed, errors: ["openai: No recorded openai answers"] }, job(1), NOW)).toMatchObject({ status: "queued" });
   });
 });
 
@@ -67,7 +83,7 @@ describe("runWorker", () => {
     const queue = Array.from({ length: 23 }, (_, i) => (i === 4 ? "bad-4" : `job-${i}`));
     const { deps, finished, maxRunning } = fakeDeps(queue);
     const summary = await runWorker(600_000, deps);
-    expect(summary).toEqual({ claimed: 23, done: 22, retrying: 1, failed: 0, lost: 0, stoppedForTime: false });
+    expect(summary).toEqual({ claimed: 23, done: 22, retrying: 1, failed: 0, skipped: 0, lost: 0, stoppedForTime: false });
     expect(deps.claim).toHaveBeenCalledWith(10);
     expect(maxRunning()).toBe(10);
     expect(finished.find((f) => f.job.id === "bad-4")?.update).toMatchObject({ status: "queued", error: "database went away" });

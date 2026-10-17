@@ -49,4 +49,8 @@ export const creditsOf = (stripe: FakeStripe, index: number) => {
   const inv = stripe.invoices[index];
   return planInvoiceGrants(inv, inv.lines.data, plansByProduct, new Date(stripe.clock * 1000));
 };
-export const priceOf = (stripe: FakeStripe, business: string) => stripe.items.find((i) => i.metadata.business_id === business)?.price;
+/** The product of a business's item: each business has a price of its own (BUG-103), so the plan is told by product. */
+export const planOf = (stripe: FakeStripe, business: string) => {
+  const price = stripe.items.find((i) => i.metadata.business_id === business)?.price;
+  return price ? stripe.prices[price].product : undefined;
+};

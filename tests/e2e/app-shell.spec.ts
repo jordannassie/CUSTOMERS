@@ -4,6 +4,9 @@ import { parseEnv } from "node:util";
 import { createClient } from "@supabase/supabase-js";
 import { expect, test, type Page } from "@playwright/test";
 
+// Failed in full local runs and passed alone (BUG-068: shared test data and auth under load): one retry here only.
+test.describe.configure({ retries: 1 });
+
 // B-48 against the local Supabase stack only: the dev server must run with .env.test.local
 // (see the PR), and every test seeds its own agency so a reset by another session cannot break it.
 const local = existsSync(".env.test.local") ? parseEnv(readFileSync(".env.test.local", "utf8")) : {};
@@ -95,12 +98,12 @@ test.afterAll(async () => {
   for (const id of userIds.splice(0)) await db.auth.admin.deleteUser(id);
 });
 
-test("six menu items navigate, and switching business keeps the page", async ({ page }) => {
+test("seven menu items navigate, and switching business keeps the page", async ({ page }) => {
   await logIn(page, { status: "active", grant: 1200, spend: 620, days: 12 });
 
   let nav = await openNav(page);
   const links = nav.getByRole("navigation", { name: "Main" }).getByRole("link");
-  await expect(links).toHaveText(["Overview", "Competitors", "Opportunities", "Questions", "Sources", "Settings"]);
+  await expect(links).toHaveText(["Overview", "Competitors", "Opportunities", "Questions", "Sources", "Billing", "Settings"]);
   await expect(links.filter({ hasText: "Competitors" })).toHaveAttribute("aria-current", "page");
   await expect(page.getByText("Find anything")).toHaveCount(0);
 
@@ -124,7 +127,10 @@ test("usage widget: normal plan", async ({ page }) => {
   await expect(widget).toContainText("620 of 1,200 credits used");
   await expect(widget).toContainText("Renews in 12 days");
   await expect(widget.getByRole("link", { name: "Buy credits" })).toHaveCount(0);
-  await expect(page.getByTestId("app-banners")).toHaveCount(0);
+  // E2E agencies are test agencies, so the test mode banner always shows (D-61); no other banner may.
+  const banners = page.getByTestId("app-banners").locator("[data-kind]");
+  await expect(banners).toHaveCount(1);
+  await expect(banners).toHaveAttribute("data-kind", "test_mode");
 });
 
 test("usage widget: trial", async ({ page }) => {

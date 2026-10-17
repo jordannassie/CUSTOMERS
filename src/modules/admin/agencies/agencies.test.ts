@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-import { grantCredits } from "@/modules/credits";
+import { grantCredits, grantTrialCredits } from "@/modules/credits";
 import { createAgencyWithBusiness, deleteTestUsers, service, signInAs, type TestSession } from "../admin.test-helpers";
 import type { Database } from "@/types/database.types";
 import type { AdminStripeClient } from "./stripe";
@@ -25,7 +25,13 @@ const DAY = 86_400_000;
 let agency: Awaited<ReturnType<typeof createAgencyWithBusiness>>;
 
 function fakeStripe(overrides: Partial<AdminStripeClient> = {}): AdminStripeClient & { extendTrial: ReturnType<typeof vi.fn> } {
-  return { mode: "stripe", extendTrial: vi.fn(async () => {}), revenueSince: vi.fn(async () => 0), ...overrides } as never;
+  return {
+    mode: "stripe",
+    extendTrial: vi.fn(async () => {}),
+    revenueSince: vi.fn(async () => 0),
+    subscriptionStatus: vi.fn(async () => null),
+    ...overrides,
+  } as never;
 }
 
 async function setAgency(fields: Database["public"]["Tables"]["agencies"]["Update"]) {
@@ -124,6 +130,22 @@ describe("agency actions (B-65)", () => {
     expect(await auditRows("agency.extend_trial")).toMatchObject([{ details: { reason: REASON, days: 7 } }]);
   });
 
+  it("moves the trial credits' expiry with the trial (A3)", async () => {
+    const end = new Date(Date.now() + 2 * DAY);
+    await setAgency({ status: "trialing", trial_ends_at: end.toISOString(), stripe_subscription_id: `sub_${randomUUID()}` });
+    const grantId = await grantTrialCredits({ agencyId: agency.agencyId, sourceId: `il_${randomUUID()}`, amount: 100, expiresAt: end });
+    stripe.client = fakeStripe();
+
+    expect((await actions.extendTrial({ agencyId: agency.agencyId, days: 2, reason: REASON })).ok).toBe(true);
+    const expected = new Date(end.getTime() + 2 * DAY).toISOString();
+    const { data: grant } = await service.from("credit_grants").select("expires_at, remaining").eq("id", grantId!).single().throwOnError();
+    expect(new Date(grant.expires_at!).toISOString()).toBe(expected);
+    expect(grant.remaining).toBe(100);
+    expect(await auditRows("agency.extend_trial")).toMatchObject([
+      { details: { reason: REASON, days: 2, trial_grant_id: grantId, trial_grant_expires_at: expected } },
+    ]);
+  });
+
   it("changes nothing when Stripe is not connected or refuses", async () => {
     const end = new Date(Date.now() + 2 * DAY).toISOString();
     await setAgency({ status: "trialing", trial_ends_at: end, stripe_subscription_id: `sub_${randomUUID()}` });
@@ -145,6 +167,38 @@ describe("agency actions (B-65)", () => {
 
     expect(await auditRows("agency.suspend")).toMatchObject([{ details: { reason: REASON, previous_status: "past_due" } }]);
     expect(await auditRows("agency.unsuspend")).toMatchObject([{ details: { reason: "Paid by phone", new_status: "past_due" } }]);
+  });
+
+  it("unsuspends to the status Stripe has now, since webhooks were not saved while suspended", async () => {
+    await setAgency({ status: "active", stripe_subscription_id: `sub_${randomUUID()}` });
+    expect((await actions.suspendAgency({ agencyId: agency.agencyId, reason: REASON })).ok).toBe(true);
+    const subscriptionStatus = vi.fn(async () => "canceled" as const);
+    stripe.client = fakeStripe({ subscriptionStatus });
+    expect((await actions.unsuspendAgency({ agencyId: agency.agencyId, reason: "Paid by phone" })).ok).toBe(true);
+    expect((await readAgency()).status).toBe("canceled");
+    expect(subscriptionStatus).toHaveBeenCalledTimes(1);
+    expect(await auditRows("agency.unsuspend")).toMatchObject([{ details: { new_status: "canceled", status_from_stripe: true } }]);
+  });
+
+  it("keeps the agency suspended when Stripe cannot be reached", async () => {
+    await setAgency({ status: "active", stripe_subscription_id: `sub_${randomUUID()}` });
+    expect((await actions.suspendAgency({ agencyId: agency.agencyId, reason: REASON })).ok).toBe(true);
+    stripe.client = fakeStripe({ subscriptionStatus: vi.fn(async () => Promise.reject(new Error("connection reset"))) });
+    expect(await actions.unsuspendAgency({ agencyId: agency.agencyId, reason: "Paid by phone" })).toMatchObject({ ok: false, status: 502 });
+    expect((await readAgency()).status).toBe("suspended");
+    expect(await auditRows("agency.unsuspend")).toHaveLength(0);
+  });
+
+  it("falls back to the status from suspend time when Stripe is not connected or has nothing to go on", async () => {
+    await setAgency({ status: "past_due", stripe_subscription_id: `sub_${randomUUID()}` });
+    expect((await actions.suspendAgency({ agencyId: agency.agencyId, reason: REASON })).ok).toBe(true);
+    expect((await actions.unsuspendAgency({ agencyId: agency.agencyId, reason: "Paid by phone" })).ok).toBe(true);
+    expect((await readAgency()).status).toBe("past_due");
+
+    expect((await actions.suspendAgency({ agencyId: agency.agencyId, reason: REASON })).ok).toBe(true);
+    stripe.client = fakeStripe();
+    expect((await actions.unsuspendAgency({ agencyId: agency.agencyId, reason: "Paid by phone" })).ok).toBe(true);
+    expect((await readAgency()).status).toBe("past_due");
   });
 
   it("restores a deleted account before its purge date, and not after", async () => {

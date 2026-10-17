@@ -6,12 +6,14 @@ const supabaseUrl = "https://abc.supabase.co";
 describe("security headers", () => {
   it("sends HSTS, nosniff, referrer policy and blocks framing", () => {
     const headers = Object.fromEntries(securityHeaders({ supabaseUrl, isDev: false }).map((h) => [h.key, h.value]));
-    expect(headers["Strict-Transport-Security"]).toMatch(/max-age=\d{8}/);
+    expect(headers["Strict-Transport-Security"]).toMatch(/max-age=\d{8}; includeSubDomains/);
     expect(headers["X-Content-Type-Options"]).toBe("nosniff");
     expect(headers["Referrer-Policy"]).toBe("strict-origin-when-cross-origin");
     expect(headers["X-Frame-Options"]).toBe("DENY");
+    // The full policy is enforced (SEC-04), not only reported.
+    expect(headers["Content-Security-Policy"]).toBe(contentSecurityPolicy({ supabaseUrl, isDev: false }));
     expect(headers["Content-Security-Policy"]).toContain("frame-ancestors 'none'");
-    expect(headers["Content-Security-Policy-Report-Only"]).toBeDefined();
+    expect(headers["Content-Security-Policy-Report-Only"]).toBeUndefined();
   });
 
   it("allows Stripe Elements and our Supabase project, and eval only in dev", () => {

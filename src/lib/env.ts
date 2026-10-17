@@ -1,7 +1,8 @@
 import { createEnv } from "@t3-oss/env-nextjs";
 import { z } from "zod";
 
-const optional = z.string().min(1).optional();
+// Trimmed, so a key pasted with a trailing space still works (BUG-082: a space broke the Browserless token).
+const optional = z.string().trim().min(1).optional();
 const flag = z.enum(["true", "false"]).optional();
 
 // The only file that reads process.env (MVP_SPEC 18.1). Required values fail the build when missing.
@@ -13,6 +14,11 @@ export const env = createEnv({
     OPENAI_API_KEY: optional,
     OPENAI_NEWS_MODEL: z.string().min(1).default("gpt-4o"),
     ANTHROPIC_API_KEY: optional,
+    // Background AI jobs (auto-fill, questions, name extraction, explanations, question library) run on Claude and
+    // fall back to OpenAI when Claude fails. "false" turns the backup off. FAST stands in for Haiku, SMART for Sonnet.
+    AI_FALLBACK_ENABLED: flag,
+    AI_FALLBACK_MODEL_FAST: z.string().trim().min(1).default("gpt-4.1-mini"),
+    AI_FALLBACK_MODEL_SMART: z.string().trim().min(1).default("gpt-4.1"),
     PERPLEXITY_API_KEY: optional,
     GOOGLE_PLACES_API_KEY: optional,
     // Dev and Playwright only: the competitor step answers from hand-built fixtures, never Google.
@@ -27,8 +33,6 @@ export const env = createEnv({
     // Local Chrome for the chromium renderer on a laptop; unset uses the @sparticuz/chromium build (Linux only).
     CHROMIUM_PATH: optional,
     // Search Intelligence stays on hold until D-06 is decided.
-    DATAFORSEO_USERNAME: optional,
-    DATAFORSEO_PASSWORD: optional,
 
     STRIPE_SECRET_KEY: optional,
     STRIPE_WEBHOOK_SECRET: optional,
@@ -58,9 +62,8 @@ export const env = createEnv({
     // until then (MVP_SPEC 23). 30 until a lawyer confirms the legal deadlines (D-77).
     DELETION_WAIT_DAYS: z.coerce.number().int().min(1).max(365).default(30),
 
-    BILLING_ENABLED: flag,
-    BETA_FREE_ACCESS: flag,
-    TRIAL_ENABLED: flag,
+    // Where AI listed the business ("named 2nd") on the Overview. Off until Jordan decides (D-63: stored, not shown).
+    SHOW_POSITION: flag,
   },
   client: {
     NEXT_PUBLIC_SUPABASE_URL: z.url(),
@@ -75,6 +78,9 @@ export const env = createEnv({
     OPENAI_API_KEY: process.env.OPENAI_API_KEY,
     OPENAI_NEWS_MODEL: process.env.OPENAI_NEWS_MODEL,
     ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY,
+    AI_FALLBACK_ENABLED: process.env.AI_FALLBACK_ENABLED,
+    AI_FALLBACK_MODEL_FAST: process.env.AI_FALLBACK_MODEL_FAST,
+    AI_FALLBACK_MODEL_SMART: process.env.AI_FALLBACK_MODEL_SMART,
     PERPLEXITY_API_KEY: process.env.PERPLEXITY_API_KEY,
     GOOGLE_PLACES_API_KEY: process.env.GOOGLE_PLACES_API_KEY,
     PLACES_FIXTURES: process.env.PLACES_FIXTURES,
@@ -84,8 +90,6 @@ export const env = createEnv({
     PDF_RENDERER: process.env.PDF_RENDERER,
     BROWSERLESS_URL: process.env.BROWSERLESS_URL,
     CHROMIUM_PATH: process.env.CHROMIUM_PATH,
-    DATAFORSEO_USERNAME: process.env.DATAFORSEO_USERNAME,
-    DATAFORSEO_PASSWORD: process.env.DATAFORSEO_PASSWORD,
     STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY,
     STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET,
     STRIPE_CHECKOUT_FIXTURES: process.env.STRIPE_CHECKOUT_FIXTURES,
@@ -102,9 +106,7 @@ export const env = createEnv({
     ADMIN_EMAILS: process.env.ADMIN_EMAILS,
     ALERT_DAILY_COST_USD: process.env.ALERT_DAILY_COST_USD,
     DELETION_WAIT_DAYS: process.env.DELETION_WAIT_DAYS,
-    BILLING_ENABLED: process.env.BILLING_ENABLED,
-    BETA_FREE_ACCESS: process.env.BETA_FREE_ACCESS,
-    TRIAL_ENABLED: process.env.TRIAL_ENABLED,
+    SHOW_POSITION: process.env.SHOW_POSITION,
     NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
     NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
     NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL,

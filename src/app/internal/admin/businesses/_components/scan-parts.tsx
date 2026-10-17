@@ -8,6 +8,7 @@ const STATE: Record<ScanState, { label: string; variant: "good" | "mid" | "low" 
   running: { label: "Scanning", variant: "mid" },
   done: { label: "Done", variant: "good" },
   failed: { label: "Failed", variant: "low" },
+  skipped: { label: "Skipped", variant: "tint" },
 };
 
 export function DeletedBadge() {
@@ -60,5 +61,6 @@ export function formatDate(iso: string, withTime = false): string {
     ...(withTime && { hour: "numeric", minute: "2-digit" }),
     timeZone: "UTC",
   });
-  return withTime ? `${text} UTC` : text;
+  // Admin dates are UTC, and always say so (BUG-070).
+  return `${text} UTC`;
 }

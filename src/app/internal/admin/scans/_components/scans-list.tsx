@@ -10,6 +10,7 @@ const BASE = "/internal/admin/scans";
 const FILTERS: { status: ScanStatus | undefined; label: string }[] = [
   { status: undefined, label: "All" },
   { status: "failed", label: STATUS.failed.label },
+  { status: "skipped", label: STATUS.skipped.label },
   { status: "running", label: STATUS.running.label },
   { status: "queued", label: STATUS.queued.label },
   { status: "done", label: STATUS.done.label },
@@ -97,7 +98,7 @@ export default function ScansList({ list, status }: { list: AdminScanList; statu
                       )}
                     </TableCell>
                     <TableCell className="text-right">
-                      {row.status === "failed" && <RetryButton jobId={row.id} businessName={row.businessName} retry={retryScan} />}
+                      {(row.status === "failed" || row.status === "skipped") && <RetryButton jobId={row.id} businessName={row.businessName} retry={retryScan} />}
                     </TableCell>
                   </TableRow>
                 ))}
@@ -121,7 +122,7 @@ export default function ScansList({ list, status }: { list: AdminScanList; statu
                 {row.error && <p className="text-[13px] text-low-text">{row.error}</p>}
                 <div className="flex items-center justify-between gap-3">
                   <span className="tabular text-[12px] text-text-hint">{when(row.createdAt)} UTC</span>
-                  {row.status === "failed" && <RetryButton jobId={row.id} businessName={row.businessName} retry={retryScan} />}
+                  {(row.status === "failed" || row.status === "skipped") && <RetryButton jobId={row.id} businessName={row.businessName} retry={retryScan} />}
                 </div>
               </li>
             ))}
@@ -143,12 +144,12 @@ function BusinessCell({ row }: { row: AdminScanRow }) {
     <div className="min-w-0">
       <Link
         href={`/internal/admin/businesses/${row.businessId}`}
-        className="block truncate text-[14px] font-medium hover:text-primary hover:underline"
+        className="block truncate text-[14px] font-medium hover:text-primary hover:underline" title={row.businessName}
       >
         {row.businessName}
       </Link>
       <p className="flex items-center gap-1.5 truncate text-[12px] text-muted-foreground">
-        <span className="truncate">{row.agencyName || "No agency"}</span>
+        <span className="truncate" title={row.agencyName || "No agency"}>{row.agencyName || "No agency"}</span>
         {row.isTest && <Badge variant="outline">Test</Badge>}
         {row.attempts > 1 && <span className="tabular whitespace-nowrap">{row.attempts} tries</span>}
       </p>
