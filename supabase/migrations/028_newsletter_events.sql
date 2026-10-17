@@ -3,7 +3,7 @@
 
 create table if not exists public.newsletter_events (
   id uuid primary key default gen_random_uuid(),
-  event text not null check (event in ('impression', 'click')),
+  event text not null check (event in ('impression', 'click', 'confirmed')),
   placement text not null check (placement in ('homepage', 'directory', 'detail', 'footer', 'nav')),
   created_at timestamptz not null default now()
 );

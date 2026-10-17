@@ -4,6 +4,18 @@ export type NewsletterPlacement = (typeof PLACEMENTS)[number];
 
 export const BEEHIIV_SIGNUP_URL = "https://customersdirect.beehiiv.com/?modal=signup";
 
+export const BEEHIIV_LOADER_SRC = "https://subscribe-forms.beehiiv.com/v3/loader.js";
+
+export const BEEHIIV_FORM_ID = "06ca54a8-f420-4152-91af-72299f2e3b4f";
+
+const FORM_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+export function resolveEmbed(input?: { src?: string | null; formId?: string | null }): { src: string; formId: string } {
+  const src = isAllowedEmbedSrc(input?.src) ? input.src : BEEHIIV_LOADER_SRC;
+  const formId = input?.formId && FORM_ID.test(input.formId) ? input.formId : BEEHIIV_FORM_ID;
+  return { src, formId };
+}
+
 export function isPlacement(value: string): value is NewsletterPlacement {
   return (PLACEMENTS as readonly string[]).includes(value);
 }

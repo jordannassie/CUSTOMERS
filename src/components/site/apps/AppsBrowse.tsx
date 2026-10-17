@@ -89,7 +89,7 @@ function PopularStrip({ apps }: { apps: DirectoryApp[] }) {
   );
 }
 
-export function AppsBrowse({ query, result, ratings = {}, embedSrc = null }: { query: DirectoryQuery; result: DirectoryResult; ratings?: Record<string, NativeSummary>; embedSrc?: string | null }) {
+export function AppsBrowse({ query, result, ratings = {}, embedSrc = null, formId = null }: { query: DirectoryQuery; result: DirectoryResult; ratings?: Record<string, NativeSummary>; embedSrc?: string | null; formId?: string | null }) {
   const pills = [{ id: "all", label: "All" }, ...APP_CATEGORIES.map((category) => ({ id: category.id, label: category.label }))];
   return (
     <div className="mx-auto max-w-[1360px] px-4 pb-16 pt-28 sm:pt-32">
@@ -117,7 +117,7 @@ export function AppsBrowse({ query, result, ratings = {}, embedSrc = null }: { q
       </div>
 
       <FeaturedBanner />
-      <NewsletterSignup placement="directory" variant="compact" embedSrc={embedSrc} embed />
+      <NewsletterSignup placement="directory" variant="compact" embedSrc={embedSrc} formId={formId} embed />
 
       <div className="mt-6 lg:grid lg:grid-cols-[188px_minmax(0,1fr)] lg:gap-6">
         <CategoryLinks query={query} className="hidden lg:block" />

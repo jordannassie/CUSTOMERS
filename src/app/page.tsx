@@ -41,7 +41,7 @@ export default async function Home() {
     <>
       <SiteHeader />
       <main>
-        <HomepagePlatform ratings={ratings} embedSrc={env.NEXT_PUBLIC_BEEHIIV_EMBED_SRC} />
+        <HomepagePlatform ratings={ratings} embedSrc={env.NEXT_PUBLIC_BEEHIIV_EMBED_SRC} formId={env.NEXT_PUBLIC_BEEHIIV_FORM_ID} />
       </main>
       <SiteFooter />
       <ChatWidget />

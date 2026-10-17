@@ -4,7 +4,7 @@ import { recordNewsletterEvent } from "@/modules/newsletter/dal";
 import { PLACEMENTS } from "@/modules/newsletter/signup";
 
 const impressionSchema = z.object({
-  event: z.literal("impression"),
+  event: z.enum(["impression", "confirmed"]),
   placement: z.enum(PLACEMENTS),
 });
 
