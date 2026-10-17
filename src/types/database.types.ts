@@ -1740,6 +1740,147 @@ export type Database = {
         }
         Relationships: []
       }
+      app_reviews: {
+        Row: {
+          company: string | null
+          cons: string
+          created_at: string
+          experienced: boolean
+          id: string
+          industry: string | null
+          job_role: string | null
+          pros: string
+          published_at: string | null
+          rating: number
+          recommendation: string
+          slug: string
+          status: string
+          title: string
+          updated_at: string
+          use_case: string
+          user_id: string
+        }
+        Insert: {
+          company?: string | null
+          cons: string
+          created_at?: string
+          experienced?: boolean
+          id?: string
+          industry?: string | null
+          job_role?: string | null
+          pros: string
+          published_at?: string | null
+          rating: number
+          recommendation: string
+          slug: string
+          status?: string
+          title: string
+          updated_at?: string
+          use_case: string
+          user_id: string
+        }
+        Update: {
+          company?: string | null
+          cons?: string
+          created_at?: string
+          experienced?: boolean
+          id?: string
+          industry?: string | null
+          job_role?: string | null
+          pros?: string
+          published_at?: string | null
+          rating?: number
+          recommendation?: string
+          slug?: string
+          status?: string
+          title?: string
+          updated_at?: string
+          use_case?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      app_review_reports: {
+        Row: {
+          created_at: string
+          details: string | null
+          id: string
+          reason: string
+          reporter_id: string
+          review_id: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          details?: string | null
+          id?: string
+          reason: string
+          reporter_id: string
+          review_id: string
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          details?: string | null
+          id?: string
+          reason?: string
+          reporter_id?: string
+          review_id?: string
+          status?: string
+        }
+        Relationships: []
+      }
+      app_review_votes: {
+        Row: {
+          created_at: string
+          helpful: boolean
+          review_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          helpful: boolean
+          review_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          helpful?: boolean
+          review_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      app_review_moderation_events: {
+        Row: {
+          action: string
+          actor_id: string | null
+          created_at: string
+          id: string
+          note: string | null
+          review_id: string
+          snapshot: Json
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          created_at?: string
+          id?: string
+          note?: string | null
+          review_id: string
+          snapshot?: Json
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          created_at?: string
+          id?: string
+          note?: string | null
+          review_id?: string
+          snapshot?: Json
+        }
+        Relationships: []
+      }
       video_ad_orders: {
         Row: {
           amount_cents: number

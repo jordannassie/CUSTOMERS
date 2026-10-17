@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Search } from "lucide-react";
 import { logoUrl, DIRECTORY_CATALOG } from "@/modules/apps-directory/catalog";
 import { APP_CATEGORIES, type DirectoryApp } from "@/modules/apps-directory/types";
+import type { NativeSummary } from "@/modules/apps-directory/review-types";
 import { appsHref, type DirectoryQuery, type DirectoryResult } from "@/modules/apps-directory/service";
 import { AppCard } from "./AppCard";
 
@@ -31,12 +32,12 @@ function CategoryLinks({ query, className }: { query: DirectoryQuery; className?
   );
 }
 
-function AppGrid({ apps, badge }: { apps: DirectoryApp[]; badge?: boolean }) {
+function AppGrid({ apps, ratings, badge }: { apps: DirectoryApp[]; ratings: Record<string, NativeSummary>; badge?: boolean }) {
   if (apps.length === 0) return null;
   return (
     <div className="grid grid-cols-1 gap-3 min-[480px]:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5">
       {apps.map((app) => (
-        <AppCard key={app.slug} app={app} source="directory" badge={badge && app.topPick} />
+        <AppCard key={app.slug} app={app} source="directory" badge={badge && app.topPick} native={ratings[app.slug]} />
       ))}
     </div>
   );
@@ -87,7 +88,7 @@ function PopularStrip({ apps }: { apps: DirectoryApp[] }) {
   );
 }
 
-export function AppsBrowse({ query, result }: { query: DirectoryQuery; result: DirectoryResult }) {
+export function AppsBrowse({ query, result, ratings = {} }: { query: DirectoryQuery; result: DirectoryResult; ratings?: Record<string, NativeSummary> }) {
   const pills = [{ id: "all", label: "All" }, ...APP_CATEGORIES.map((category) => ({ id: category.id, label: category.label }))];
   return (
     <div className="mx-auto max-w-[1360px] px-4 pb-16 pt-28 sm:pt-32">
@@ -131,7 +132,7 @@ export function AppsBrowse({ query, result }: { query: DirectoryQuery; result: D
               {result.featured.length > 0 ? (
                 <section className="mb-8">
                   <h2 className="mb-3 text-[18px] font-semibold text-[#171717]">Featured Apps</h2>
-                  <AppGrid apps={result.featured} badge />
+                  <AppGrid apps={result.featured} ratings={ratings} badge />
                 </section>
               ) : null}
               <PopularStrip apps={result.popular} />
@@ -144,7 +145,7 @@ export function AppsBrowse({ query, result }: { query: DirectoryQuery; result: D
                       <Link href={appsHref({ ...query, sort: "provider", page: 1 })} className={query.sort === "provider" ? "font-semibold text-[#0866F5]" : "text-[#777773]"}>Provider</Link>
                     </div>
                   </div>
-                  <AppGrid apps={result.pageItems} />
+                  <AppGrid apps={result.pageItems} ratings={ratings} />
                   <div className="mt-5 flex items-center justify-between text-[14px]">
                     {result.page > 1 ? <Link href={appsHref({ ...query, page: result.page - 1 })} className="font-semibold text-[#0866F5]">Previous</Link> : <span />}
                     <span className="text-[#777773]">Page {result.page} of {result.pageCount}</span>

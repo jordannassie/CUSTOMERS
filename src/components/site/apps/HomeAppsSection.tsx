@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Search } from "lucide-react";
 import { DIRECTORY_CATALOG, HOME_FEATURED_SLUGS } from "@/modules/apps-directory/catalog";
 import type { DirectoryApp } from "@/modules/apps-directory/types";
+import type { NativeSummary } from "@/modules/apps-directory/review-types";
 import { AppCard } from "./AppCard";
 
 const PILLS = [
@@ -14,7 +15,7 @@ const PILLS = [
   { label: "Productivity", href: "/apps?category=productivity" },
 ];
 
-export function HomeAppsSection() {
+export function HomeAppsSection({ ratings = {} }: { ratings?: Record<string, NativeSummary> }) {
   const featured = HOME_FEATURED_SLUGS.map((slug) => DIRECTORY_CATALOG.find((app) => app.slug === slug)).filter((app): app is DirectoryApp => Boolean(app));
   return (
     <section id="ai-apps" className="border-b border-[#EEEEEA] bg-[#FAFAF8] px-4 py-12 sm:py-14">
@@ -55,7 +56,7 @@ export function HomeAppsSection() {
         <h3 className="mb-3 mt-6 text-[16px] font-semibold text-[#171717]">Featured AI Tools</h3>
         <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
           {featured.map((app) => (
-            <AppCard key={app.slug} app={app} source="homepage" badge={app.topPick} layout="home" />
+            <AppCard key={app.slug} app={app} source="homepage" badge={app.topPick} layout="home" native={ratings[app.slug]} />
           ))}
         </div>
       </div>

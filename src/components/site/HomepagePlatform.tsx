@@ -5,6 +5,7 @@ import Link from "next/link";
 import AgencyWorkspaceDemo from "@/components/site/AgencyWorkspaceDemo";
 import HomeHero from "@/components/site/HomeHero";
 import { HomeAppsSection } from "@/components/site/apps/HomeAppsSection";
+import type { NativeSummary } from "@/modules/apps-directory/review-types";
 import StartAiBusinessHomeSection from "@/components/site/StartAiBusinessHomeSection";
 import { PlatformIcon } from "@/components/PlatformIcon";
 import {
@@ -1512,11 +1513,11 @@ function HeroVideoSection() {
 
 // ─── Main export ──────────────────────────────────────────────────────────
 
-export default function HomepagePlatform() {
+export default function HomepagePlatform({ ratings = {} }: { ratings?: Record<string, NativeSummary> }) {
   return (
     <>
       <HeroSection />
-      <HomeAppsSection />
+      <HomeAppsSection ratings={ratings} />
       <HeroVideoSection />
       <BannerRotationSection />
       <ShopperImageSection />
