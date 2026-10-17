@@ -6,6 +6,7 @@ import { DIRECTORY_CATALOG } from "@/modules/apps-directory/catalog";
 import { listDirectoryOverrides } from "@/modules/apps-directory/dal";
 import { directorySearchSchema } from "@/modules/apps-directory/schema";
 import { mergeCatalog, queryDirectory } from "@/modules/apps-directory/service";
+import { listNativeSummaries } from "@/modules/apps-directory/review-dal";
 
 const TITLE = "AI Apps Directory";
 const DESCRIPTION = "Search AI tools, apps, and software for marketing, sales, support, and everyday work.";
@@ -39,6 +40,7 @@ export default async function AppsPage({ searchParams }: { searchParams: SearchP
   const overrides = await listDirectoryOverrides();
   const apps = mergeCatalog(DIRECTORY_CATALOG, overrides.apps);
   const result = queryDirectory(apps, query);
+  const ratings = await listNativeSummaries();
   const itemList = {
     "@context": "https://schema.org",
     "@type": "ItemList",
@@ -57,7 +59,7 @@ export default async function AppsPage({ searchParams }: { searchParams: SearchP
       <SiteHeader />
       <main className="min-h-screen bg-[#FAFAF8]">
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(itemList) }} />
-        <AppsBrowse query={query} result={result} />
+        <AppsBrowse query={query} result={result} ratings={ratings} />
       </main>
       <SiteFooter />
     </>

@@ -2,17 +2,20 @@ import Link from "next/link";
 import { AppRating } from "@/components/site/apps/AppRating";
 import { logoUrl } from "@/modules/apps-directory/catalog";
 import { categoryLabel, type AppSource, type DirectoryApp } from "@/modules/apps-directory/types";
+import type { NativeSummary } from "@/modules/apps-directory/review-types";
 
 export function AppCard({
   app,
   source,
   badge = false,
   layout = "directory",
+  native,
 }: {
   app: DirectoryApp;
   source: AppSource;
   badge?: boolean;
   layout?: "home" | "directory";
+  native?: NativeSummary;
 }) {
   const home = layout === "home";
   const categories = app.categories.map(categoryLabel);
@@ -45,7 +48,7 @@ export function AppCard({
       <p className={`line-clamp-1 font-medium text-[#0866F5] ${home ? "mt-1 w-full text-[10px]" : "mt-2 text-[11px]"}`}>
         {home ? categories[0] : categories.join(" · ")}
       </p>
-      <AppRating app={app} source={source} compact={home} />
+      <AppRating app={app} source={source} compact={home} native={native} />
       <a
         href={`/apps/go/${app.slug}/${source}`}
         className={`relative z-10 inline-flex w-full items-center justify-center gap-1 rounded-xl bg-[#0866F5] font-semibold text-white transition hover:bg-[#0757D4] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0866F5] focus-visible:ring-offset-2 ${home ? "mt-2 h-8 text-[12px]" : "mt-3 h-9 text-[13px]"}`}

@@ -2,6 +2,7 @@ import SiteHeader from "@/components/site/SiteHeader";
 import SiteFooter from "@/components/site/SiteFooter";
 import HomepagePlatform from "@/components/site/HomepagePlatform";
 import ChatWidget from "@/components/ChatWidget";
+import { listNativeSummaries } from "@/modules/apps-directory/review-dal";
 
 const homeTitle = "Customers.Direct — AI sends customers directly to your business";
 const homeDescription =
@@ -31,12 +32,15 @@ export const metadata = {
   },
 };
 
-export default function Home() {
+export const revalidate = 300;
+
+export default async function Home() {
+  const ratings = await listNativeSummaries();
   return (
     <>
       <SiteHeader />
       <main>
-        <HomepagePlatform />
+        <HomepagePlatform ratings={ratings} />
       </main>
       <SiteFooter />
       <ChatWidget />

@@ -1,6 +1,7 @@
 import { isAllowedReviewUrl } from "@/modules/apps-directory/schema";
 import { formatReviewCount, hasVerifiedRating, ratingStars, reviewSourceLabel } from "@/modules/apps-directory/rating";
 import type { AppSource, DirectoryApp } from "@/modules/apps-directory/types";
+import type { NativeSummary } from "@/modules/apps-directory/review-types";
 import { Star } from "lucide-react";
 
 function StarMark({ fill }: { fill: number }) {
@@ -14,40 +15,52 @@ function StarMark({ fill }: { fill: number }) {
   );
 }
 
+function ScoreLine({ rating, count, label, compact }: { rating: number; count: number | null; label: string; compact: boolean }) {
+  return (
+    <p className={`flex flex-wrap items-center gap-1 text-[#777773] ${compact ? "justify-center text-[10px]" : "text-[12px]"}`}>
+      <span className="inline-flex items-center gap-0.5" aria-hidden="true">
+        {ratingStars(rating, 5).map((fill, index) => (
+          <StarMark key={index} fill={fill} />
+        ))}
+      </span>
+      <span className="font-semibold text-[#171717]">{rating.toFixed(1)}/5</span>
+      {count !== null ? <span>({formatReviewCount(count)})</span> : null}
+      <span aria-hidden="true">·</span>
+      <span>{label}</span>
+    </p>
+  );
+}
+
 export function AppRating({
   app,
   source,
   link = true,
   compact = false,
+  native,
+  showEmpty = false,
 }: {
   app: DirectoryApp;
   source: AppSource;
   link?: boolean;
   compact?: boolean;
+  native?: NativeSummary;
+  showEmpty?: boolean;
 }) {
-  const rated = hasVerifiedRating(app);
+  const nativeCount = native?.count ?? 0;
+  const nativeRated = nativeCount > 0 && typeof native?.average === "number";
+  const licensed = hasVerifiedRating(app);
   const reviews = isAllowedReviewUrl(app.reviewUrl);
-  if (!rated && !reviews) return null;
-  const scale = app.ratingScale > 0 ? app.ratingScale : 5;
-  const count = rated && typeof app.reviewCount === "number" ? formatReviewCount(app.reviewCount) : null;
-  const label = rated && app.reviewSource ? reviewSourceLabel(app.reviewSource) : null;
+  const sourceLabel = app.reviewSource ? reviewSourceLabel(app.reviewSource) : "External";
+  if (!nativeRated && !licensed && !reviews && !showEmpty) return null;
 
   return (
     <div className={compact ? "mt-1 flex w-full flex-col items-center" : "mt-2"}>
-      {rated && app.rating !== null && label ? (
-        <p className={`flex flex-wrap items-center gap-1 text-[#777773] ${compact ? "justify-center text-[10px]" : "text-[12px]"}`}>
-          <span className="inline-flex items-center gap-0.5" aria-hidden="true">
-            {ratingStars(app.rating, scale).map((fill, index) => (
-              <StarMark key={index} fill={fill} />
-            ))}
-          </span>
-          <span className="font-semibold text-[#171717]">
-            {app.rating.toFixed(1)}/{scale}
-          </span>
-          {count ? <span>({count})</span> : null}
-          <span aria-hidden="true">·</span>
-          <span>{label}</span>
-        </p>
+      {nativeRated && native?.average !== null && native?.average !== undefined ? (
+        <ScoreLine rating={native.average} count={nativeCount} label="Customers.Direct" compact={compact} />
+      ) : null}
+      {showEmpty && !nativeRated ? <p className="text-[13px] text-[#777773]">Not yet rated</p> : null}
+      {licensed && app.rating !== null && app.reviewSource ? (
+        <ScoreLine rating={app.rating} count={app.reviewCount} label={reviewSourceLabel(app.reviewSource)} compact={compact} />
       ) : null}
       {link && reviews ? (
         <a
@@ -56,7 +69,7 @@ export function AppRating({
           rel="noopener noreferrer"
           className={`relative z-10 inline-flex font-semibold text-[#0866F5] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0866F5] ${compact ? "mt-1 text-[11px]" : "mt-1 text-[12px]"}`}
         >
-          Read Reviews <span aria-hidden="true">↗</span>
+          {sourceLabel} reviews <span aria-hidden="true">↗</span>
         </a>
       ) : null}
     </div>
