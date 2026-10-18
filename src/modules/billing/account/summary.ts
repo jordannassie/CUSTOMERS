@@ -38,6 +38,8 @@ export type BillingView = {
   notOnPlan: { id: string; name: string }[];
   nextCharge: { at: string; amountCents: number } | null;
   cancelAt: string | null;
+  /** After the trial: when a move to a cheaper plan happens (the renewal, D-57). Null in a trial, where it is at once. */
+  renewsAt: string | null;
   /** Buttons that change the plan only show when a change can go through. */
   canChange: boolean;
 };
@@ -105,6 +107,7 @@ export function buildBillingView(rows: BillingRows, stripe: StripeSnapshot | Exc
     notOnPlan,
     nextCharge: ends && !cancelling && snapshot?.upcoming ? { at: ends, amountCents: snapshot.upcoming.amount_due } : null,
     cancelAt: cancelling ? ends : null,
+    renewsAt: ends && !trialing ? ends : null,
     canChange: !!snapshot && !ended,
   };
 }

@@ -1,5 +1,5 @@
 import type Stripe from "stripe";
-import { buildPhases, itemSpec, phasesOf, previewItemsFor, timingOf, type CheckedChange } from "./planner";
+import { buildPhases, isTrialing, itemSpec, phasesOf, previewItemsFor, timingOf, type CheckedChange } from "./planner";
 
 // The schedule phases a change writes, and the invoice preview that prices it.
 
@@ -20,7 +20,7 @@ export function previewParams(
 ): Stripe.InvoiceCreatePreviewParams | null {
   const kind = checked.change.kind;
   if (kind === "cancel" || kind === "keep" || kind === "keepBusiness") return null;
-  const proration_behavior = timingOf(kind) === "now" ? "always_invoice" : "none";
+  const proration_behavior = timingOf(kind, isTrialing(sub)) === "now" ? "always_invoice" : "none";
   if (schedule) {
     return { schedule: schedule.id, schedule_details: { phases: schedulePhases(sub, schedule, checked), proration_behavior } };
   }

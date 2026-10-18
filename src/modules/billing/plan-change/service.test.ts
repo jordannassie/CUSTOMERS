@@ -65,7 +65,12 @@ describe("upgrade mid-month", () => {
     const { stripe, change } = setup({ status: "trialing" });
     const { preview, done } = await change({ kind: "upgrade", businessId: A, planId: "pro" });
     expect(preview.headline).toBe("You pay nothing today. You're still on your free trial.");
-    expect(preview.details).toEqual(["From October 1, 2026, Acme Plumbing will cost $249 a month on Pro."]);
+    // BUG-245: the first bill after the trial, Pro for Acme and Starter for the other business.
+    expect(preview.details).toEqual([
+      "From October 1, 2026, Acme Plumbing will cost $249 a month on Pro.",
+      "Your first bill on October 1, 2026 will be $398.",
+      "You can switch plans again any time before then.",
+    ]);
     // B2: no payment to wait for during a trial.
     expect(done.message).toBe("Acme Plumbing is now on Pro. You won't be charged until your trial ends on October 1, 2026.");
     expect(preview).toMatchObject({ amountCents: 0, extraCredits: 0 });
@@ -94,19 +99,53 @@ describe("add a business mid-month", () => {
   });
 });
 
+describe("plan switch during a trial (2026-10-17)", () => {
+  it("moves a business down now, with the first bill after the trial, and back up again", async () => {
+    const { stripe, change } = setup({ a: "price_pro", status: "trialing" });
+    const down = await change({ kind: "downgrade", businessId: A, planId: "starter" });
+    expect(down.preview.timing).toBe("now");
+    expect(down.preview.headline).toBe("You pay nothing today. You're still on your free trial.");
+    expect(down.preview.details).toEqual([
+      "From October 1, 2026, Acme Plumbing will cost $149 a month on Starter.",
+      "Your first bill on October 1, 2026 will be $298.",
+      "You can switch plans again any time before then.",
+    ]);
+    expect(down.done.message).toBe("Acme Plumbing is now on Starter. You won't be charged until your trial ends on October 1, 2026.");
+    expect(planOf(stripe, A)).toBe("cd_plan_starter");
+    expect(stripe.schedule).toBeNull();
+
+    const up = await change({ kind: "upgrade", businessId: A, planId: "pro" });
+    expect(up.preview.details[1]).toBe("Your first bill on October 1, 2026 will be $398.");
+    expect(planOf(stripe, A)).toBe("cd_plan_pro");
+    expect(stripe.invoices.filter((i) => i.amount_due > 0)).toHaveLength(0);
+
+    // The trial ends on whatever plan the business is on then.
+    stripe.advanceTo(RENEWAL + 60);
+    expect(stripe.invoices.at(-1)!.amount_due).toBe(39800);
+  });
+
+  it("says the first bill, not $0, when a business comes off during a trial (BUG-245)", async () => {
+    const { change } = setup({ a: "price_pro", status: "trialing" });
+    const { preview } = await change({ kind: "remove", businessId: B });
+    expect(preview.details).toContain("Your first bill on October 1, 2026 will be $249.");
+    expect(preview.details.join(" ")).not.toContain("$0");
+  });
+});
+
 describe("downgrade at renewal", () => {
   it("keeps the plan until the period ends, then renews at the lower price with no refund", async () => {
     const { stripe, change } = setup({ a: "price_pro" });
     const { preview, done } = await change({ kind: "downgrade", businessId: A, planId: "starter" });
 
-    expect(preview.headline).toBe("Takes effect on October 1, 2026. No refund.");
+    expect(preview.headline).toBe("Acme Plumbing moves to Starter on October 1, 2026, when your plan renews.");
     expect(preview.details).toEqual([
-      "From then, Acme Plumbing is on Starter at $149 a month.",
+      "Until then it stays on its current plan. There's no refund for this month.",
+      "From October 1, 2026 it costs $149 a month.",
       "Your next bill will be $298.",
       "Credits you already have stay until they expire.",
     ]);
     expect(preview.amountCents).toBe(29800);
-    expect(done.message).toBe("Acme Plumbing moves to Starter on October 1, 2026.");
+    expect(done.message).toBe("Acme Plumbing stays on its current plan until October 1, 2026, then moves to Starter.");
 
     expect(planOf(stripe, A)).toBe("cd_plan_pro");
     expect(stripe.invoices).toHaveLength(0);

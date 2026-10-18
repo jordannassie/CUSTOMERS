@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { A, B, RENEWAL, planOf, setup } from "./scenario.test-helpers";
+import { A, B, C, RENEWAL, planOf, setup } from "./scenario.test-helpers";
 import { previewPlanChange } from "./service";
 
 // B1: a scheduled downgrade or removal can be taken back before it happens. Same in-memory Stripe as service.test.ts.
@@ -45,7 +45,9 @@ describe("keep a business on its plan", () => {
 
   it("works during a trial, and the trial end stays on the schedule", async () => {
     const { stripe, change } = setup({ a: "price_pro", status: "trialing" });
-    await change({ kind: "downgrade", businessId: A, planId: "starter" });
+    // A trial downgrade happens now (2026-10-17), so a second removal keeps something scheduled.
+    await change({ kind: "add", businessId: C, planId: "starter" });
+    await change({ kind: "remove", businessId: C });
     await change({ kind: "remove", businessId: B });
     await change({ kind: "keepBusiness", businessId: B });
     const update = stripe.calls.filter((c) => c.method === "updateSchedule").at(-1)!;

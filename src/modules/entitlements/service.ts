@@ -10,6 +10,11 @@ export type AgencyFacts = {
   businessCount: number;
   /** agency_credit_balance.balance: unexpired grants minus holds minus overdraft. */
   balance: number;
+  /**
+   * Still "trialing" after the trial end date: Stripe has not confirmed the first payment (its webhook is late or
+   * never came). Nothing is spent until it does, top-ups included (2026-10-17).
+   */
+  trialOver: boolean;
 };
 
 export type BusinessFacts = {
@@ -44,6 +49,7 @@ export const REASONS = {
   readOnly: "Your plan has ended, so your account is read-only. Contact us to start it again.",
   paused: "Your account is paused. Contact support to turn it back on.",
   offPlan: "This business is off your plan.",
+  trialOver: "Your free trial has ended. Scans start again once your first payment goes through.",
 } as const;
 
 const allow: Entitlement = { allowed: true, reason: REASONS.ok };
@@ -58,7 +64,7 @@ function statusBlock(status: string): Entitlement | null {
 
 /** Top-up credits are spendable only with an active plan or trial (MVP_SPEC 4.2, D-57, F-20). */
 export function canSpendTopUps(agency: AgencyFacts): Entitlement {
-  return statusBlock(agency.status) ?? allow;
+  return statusBlock(agency.status) ?? (agency.trialOver ? deny(REASONS.trialOver) : allow);
 }
 
 /**
@@ -124,4 +130,26 @@ export function maxQuestions(business: BusinessFacts): LimitEntitlement {
 /** Whether one more competitor fits the business's plan (plans.max_competitors). */
 export function maxCompetitors(business: BusinessFacts): LimitEntitlement {
   return limitCheck(business.maxCompetitors, business.competitorCount, "competitors", business.planName);
+}
+
+export type PlanLimits = { name: string; maxQuestions: number | null; maxCompetitors: number | null };
+
+const count = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
+
+/**
+ * Whether a business already fits a smaller plan's limits before it moves there. A trial switch happens at once
+ * (billing timingOf), so a business tracking more than the plan allows is asked to remove some first.
+ */
+export function fitsPlan(business: BusinessFacts, plan: PlanLimits): Entitlement {
+  const over = (limit: number | null, used: number, what: string, page: string) =>
+    limit !== null && used > limit
+      ? deny(
+          `${plan.name} tracks up to ${count(limit, what)} per business and this one has ${used}. Remove ${count(used - limit, what)} on the ${page} page, then move it to ${plan.name}.`,
+        )
+      : null;
+  return (
+    over(plan.maxCompetitors, business.competitorCount, "competitor", "Competitors") ??
+    over(plan.maxQuestions, business.activeQuestionCount, "question", "Questions") ??
+    allow
+  );
 }

@@ -57,6 +57,8 @@ export type AutofillRun = {
   siteFacts: SiteFacts | null;
   /** The website matches listings in several cities: one brand with several locations (businesses.is_chain). */
   chain: boolean;
+  /** The logo the home page names (site-logo.ts); null without a website or when it names none. */
+  logoUrl: string | null;
   /** What went wrong along the way, for the server log and provider_errors (B7). Empty on a clean run. */
   problems: AutofillProblem[];
 };
@@ -185,6 +187,7 @@ export async function autofill(request: AutofillRequest, clients: AutofillClient
     }),
     placeId: place?.placeId ?? null,
     chain,
+    logoUrl: pages.find((p) => p.path === "/")?.logo ?? null,
     // Saved even when nothing was readable, so advice can tell "blocks AI readers" from "no website" (BUG-087).
     siteFacts:
       site || (pages.length > 0 && readable.length === 0)
@@ -227,6 +230,7 @@ async function autofillWithoutWebsite(
     placeId: null,
     siteFacts: null,
     chain: false,
+    logoUrl: null,
     problems,
   };
 }

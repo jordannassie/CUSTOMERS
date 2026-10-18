@@ -115,7 +115,7 @@ describe("usageWidget", () => {
   it("says renews tomorrow and trial ends today at the edges", () => {
     expect(usageWidget(usage({}), { ...active, periodEndsAt: inDays(0.5) }, now).details).toEqual(["Renews tomorrow"]);
     expect(
-      usageWidget(usage({ balance: 10, periodCredits: 100 }), { ...trial, trialEndsAt: inDays(-1) }, now).headline,
+      usageWidget(usage({ balance: 10, periodCredits: 100 }), { ...trial, trialEndsAt: inDays(0) }, now).headline,
     ).toBe("Trial ends today, 10 of 100 credits left");
   });
 });

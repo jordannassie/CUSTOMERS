@@ -1,7 +1,7 @@
 import "server-only";
 import { getBalance } from "@/modules/credits";
 import { createServiceClient } from "@/lib/supabase/service";
-import type { AgencyFacts, BusinessFacts } from "./service";
+import type { AgencyFacts, BusinessFacts, PlanLimits } from "./service";
 
 // Loads the facts the rules need. Callers check the user may see this agency or business first.
 
@@ -31,7 +31,7 @@ function countOf(what: string, result: Result<unknown>): number {
 export async function loadAgencyFacts(agencyId: string): Promise<AgencyFacts> {
   const db = createServiceClient();
   const [agency, businesses, balance] = await Promise.all([
-    db.from("agencies").select("id, status").eq("id", agencyId).single(),
+    db.from("agencies").select("id, status, trial_ends_at").eq("id", agencyId).single(),
     // D-16: only set-up businesses count. A draft still being set up never blocks finishing it or starting it again.
     db
       .from("businesses")
@@ -47,6 +47,7 @@ export async function loadAgencyFacts(agencyId: string): Promise<AgencyFacts> {
     status: row.status,
     businessCount: countOf("business count", businesses),
     balance: balance.balance ?? 0,
+    trialOver: row.status === "trialing" && row.trial_ends_at !== null && Date.parse(row.trial_ends_at) < Date.now(),
   };
 }
 
@@ -96,4 +97,9 @@ async function setupPlan(business: { status: string; owner_user_id: string; requ
   if (error) throw new Error(`Could not load the chosen plan: ${error.message}`);
   const chosen = data.user?.app_metadata?.selected_plan;
   return typeof chosen === "string" && SELECTABLE_PLANS.has(chosen) ? chosen : null;
+}
+
+export async function loadPlanLimits(planId: string): Promise<PlanLimits> {
+  const plan = found("plan", await createServiceClient().from("plans").select("name, max_questions, max_competitors").eq("id", planId).single());
+  return { name: plan.name, maxQuestions: plan.max_questions, maxCompetitors: plan.max_competitors };
 }

@@ -4,7 +4,8 @@ import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 
 const ROOT = join(import.meta.dirname, "..");
-const AUTH_CALL = /\brequire(User|Agency|Admin)\s*\(/;
+// activeUser (src/modules/onboarding/guard.ts) calls requireUser() first, then refuses a paused agency.
+const AUTH_CALL = /\b(require(User|Agency|Admin)|activeUser)\s*\(/;
 
 // Reachable without a login on purpose. Each entry says how it protects itself.
 const PUBLIC: Record<string, string> = {

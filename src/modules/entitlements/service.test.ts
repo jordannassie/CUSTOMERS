@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  fitsPlan,
   canAddBusiness,
   canFinishDraft,
   canEditTracking,
@@ -17,6 +18,7 @@ const agency = (over: Partial<AgencyFacts> = {}): AgencyFacts => ({
   status: "active",
   businessCount: 1,
   balance: 100,
+  trialOver: false,
   ...over,
 });
 
@@ -184,5 +186,33 @@ describe("maxCompetitors", () => {
 
   it("has no limit when the plan sets none", () => {
     expect(maxCompetitors(business({ maxCompetitors: null, competitorCount: 99 })).limit).toBeNull();
+  });
+});
+
+describe("fitsPlan", () => {
+  const starter = { name: "Starter", maxCompetitors: 5, maxQuestions: 25 };
+  it("allows a business inside the smaller plan's limits", () => {
+    expect(fitsPlan(business({ competitorCount: 5, activeQuestionCount: 25 }), starter).allowed).toBe(true);
+    expect(fitsPlan(business({ competitorCount: 40 }), { name: "Custom", maxCompetitors: null, maxQuestions: null }).allowed).toBe(true);
+  });
+  it("says what to remove first", () => {
+    expect(fitsPlan(business({ competitorCount: 8 }), starter)).toEqual({
+      allowed: false,
+      reason: "Starter tracks up to 5 competitors per business and this one has 8. Remove 3 competitors on the Competitors page, then move it to Starter.",
+    });
+    expect(fitsPlan(business({ competitorCount: 6 }), starter).reason).toContain("Remove 1 competitor on");
+    expect(fitsPlan(business({ competitorCount: 2, activeQuestionCount: 26 }), starter).reason).toContain("Remove 1 question on the Questions page");
+  });
+});
+
+describe("a trial past its end date with no payment confirmed", () => {
+  it("refuses scans and top-up spending, even with credits left", () => {
+    const over = agency({ status: "trialing", balance: 330, trialOver: true });
+    expect(canStartScan(over, business())).toEqual({ allowed: false, reason: REASONS.trialOver });
+    expect(canSpendTopUps(over).allowed).toBe(false);
+    expect(canStartScan(agency({ status: "trialing", balance: 330 }), business()).allowed).toBe(true);
+  });
+  it("still allows edits, which spend nothing", () => {
+    expect(canEditTracking(agency({ status: "trialing", trialOver: true })).allowed).toBe(true);
   });
 });

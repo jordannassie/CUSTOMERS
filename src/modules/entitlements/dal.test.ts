@@ -71,6 +71,7 @@ describe("entitlements against the database", () => {
       status: "trialing",
       businessCount: 2,
       balance: 40,
+      trialOver: false,
     });
   });
 

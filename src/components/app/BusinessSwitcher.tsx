@@ -2,6 +2,7 @@
 
 import { Suspense, use, useState, useTransition } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { ArrowDown, ArrowUp, Check, ChevronsUpDown, CircleDashed, Loader2, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "cn";
@@ -20,6 +21,8 @@ export type SwitcherDraft = { label: string; href: string };
 
 // Every "Add a business" link: the open draft continues, else a new business starts (ADD_BUSINESS_PATH).
 const ADD_BUSINESS_HREF = "/onboarding?add=1";
+// Switching opens the other business's Overview, so no page is left showing the business it was opened for.
+const OVERVIEW_HREF = "/dashboard";
 export type SwitchBusinessAction = (
   input: { businessId: string },
 ) => Promise<{ ok: true } | { ok: false; error: string }>;
@@ -141,6 +144,7 @@ export function BusinessSwitcher({
   /** Loaded after the frame, so the page never waits for every client's score. */
   scores?: Promise<SwitcherScores | null>;
 }) {
+  const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [target, setTarget] = useState<string | null>(null);
   const active = businesses.find((b) => b.id === activeBusinessId) ?? businesses[0];
@@ -150,8 +154,10 @@ export function BusinessSwitcher({
     setTarget(id);
     startTransition(async () => {
       const result = await switchBusiness({ businessId: id });
-      if (result.ok) onSwitched?.();
-      else toast.error(result.error);
+      if (result.ok) {
+        onSwitched?.();
+        router.push(OVERVIEW_HREF);
+      } else toast.error(result.error);
       setTarget(null);
     });
   }

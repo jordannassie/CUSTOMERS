@@ -36,8 +36,14 @@ export type ItemSpec = { price?: string; price_data?: PlanPriceData; quantity: n
 
 export type Timing = "now" | "period_end";
 
-export const timingOf = (kind: PlanChange["kind"]): Timing =>
-  kind === "upgrade" || kind === "add" ? "now" : "period_end";
+/**
+ * Upgrades and adds happen now, downgrades and removals at the period end (D-57). During a trial nothing has been paid,
+ * so a plan switch either way happens now, and the trial ends on whatever plan the business is on then (2026-10-17).
+ */
+export const timingOf = (kind: PlanChange["kind"], trialing = false): Timing =>
+  kind === "upgrade" || kind === "add" || (trialing && kind === "downgrade") ? "now" : "period_end";
+
+export const isTrialing = (sub: Pick<Stripe.Subscription, "status">) => sub.status === "trialing";
 
 export class PlanChangeError extends Error {
   constructor(
@@ -111,7 +117,7 @@ export function checkChange(ctx: PlanChangeContext, sub: Stripe.Subscription, ch
     throw refused(409, "Your plan is set to end. Keep your plan first, then make this change.");
   }
   if (change.kind === "cancel") return { change, business: null, item: null, plan: null };
-  if (timingOf(change.kind) === "now" && (ctx.agencyStatus === "past_due" || sub.status === "past_due")) {
+  if (timingOf(change.kind, isTrialing(sub)) === "now" && (ctx.agencyStatus === "past_due" || sub.status === "past_due")) {
     throw refused(402, "Your last payment didn't go through. Update your card first, then try again.");
   }
 
@@ -213,7 +219,7 @@ export function buildPhases(
   next: ItemSpec[] | null,
   checked: CheckedChange,
 ): Stripe.SubscriptionScheduleUpdateParams.Phase[] {
-  const now = timingOf(checked.change.kind) === "now";
+  const now = timingOf(checked.change.kind, isTrialing(sub)) === "now";
   const trialEnd = sub.status === "trialing" && sub.trial_end ? { trial_end: sub.trial_end } : {};
   const currentItems = now ? applyToItems(current.items, checked) : current.items;
   const nextItems = next ? applyToItems(next, checked) : now ? null : applyToItems(current.items, checked);
@@ -226,18 +232,17 @@ export function buildPhases(
   return phases;
 }
 
-/** Items for a direct subscription update (no schedule): the one item that changes now. */
+/** Items for a direct subscription update (no schedule): the one item that changes now (a downgrade only in a trial). */
 export function subscriptionItemsFor(checked: CheckedChange): Stripe.SubscriptionUpdateParams.Item[] {
   const { change, item, plan, business } = checked;
   if (change.kind === "add") return [{ price_data: planPriceData(plan!), quantity: 1, metadata: { business_id: business!.id } }];
-  if (change.kind === "upgrade") return [{ id: item!.id, price_data: planPriceData(plan!) }];
+  if (change.kind === "upgrade" || change.kind === "downgrade") return [{ id: item!.id, price_data: planPriceData(plan!) }];
   throw new Error(`${change.kind} is not a change made now`);
 }
 
 /** The change in the preview's item shape. For period-end changes the preview is the next renewal bill. */
 export function previewItemsFor(checked: CheckedChange): Stripe.InvoiceCreatePreviewParams.SubscriptionDetails.Item[] {
-  const { change, item, plan } = checked;
-  if (change.kind === "downgrade") return [{ id: item!.id, price_data: planPriceData(plan!) }];
+  const { change, item } = checked;
   if (change.kind === "remove") return [{ id: item!.id, deleted: true }];
   return subscriptionItemsFor(checked);
 }

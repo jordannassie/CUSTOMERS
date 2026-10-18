@@ -7,6 +7,7 @@ import "server-only";
 import { z } from "zod";
 import { postJson, SOURCE_TIMEOUT_MS, type HttpDeps } from "./http";
 import { footerText } from "./page-contact";
+import { logoFromHtml } from "./site-logo";
 import { FIRST_PAGES, followPages, type FollowPage, type PageKind } from "./site-pages";
 
 export const FIRECRAWL_SCRAPE_URL = "https://api.firecrawl.dev/v2/scrape";
@@ -27,6 +28,8 @@ export type PageResult = {
   kind?: PageKind;
   /** On the home page: the pages to read next, from its links. */
   follow?: FollowPage[];
+  /** On the home page: the logo it names, for the business switcher (site-logo.ts). */
+  logo?: string | null;
   /** Firecrawl itself refused (429, 402, 5xx), after one more try: the website was never asked (2026-10-14). */
   readerDown?: boolean;
 };
@@ -125,7 +128,7 @@ export function toPage(path: string, body: unknown, domain?: string): PageResult
   }
   if (statusCode >= 400) return { path, status: "failed", markdown: "", title };
   const footer = footerText(parsed.data.data.rawHtml);
-  const follow = domain ? { follow: followPages(parsed.data.data.rawHtml, domain) } : {};
+  const follow = domain ? { follow: followPages(parsed.data.data.rawHtml, domain), logo: logoFromHtml(parsed.data.data.rawHtml, domain) } : {};
   // Next to no text and no footer: nothing was really read, so advice must not say what the site lacks (BUG-138).
   if (markdown.length < MIN_PAGE_CHARS && !footer) return { path, status: "failed", markdown: "", title };
   return { path, status: "ok", markdown, title, description, footer, ...follow };

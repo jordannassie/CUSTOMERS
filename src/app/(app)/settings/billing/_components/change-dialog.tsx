@@ -16,7 +16,8 @@ import { usePlanChange, type ChangeAction, type Preview } from "./use-plan-chang
 export type { ChangeAction } from "./use-plan-change";
 
 type Props = {
-  label: string;
+  /** May hold a date in the viewer's zone (LocalDate), so it is a node. */
+  label: React.ReactNode;
   title: string;
   confirmLabel: string;
   action: ChangeAction;

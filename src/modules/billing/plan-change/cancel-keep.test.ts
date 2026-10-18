@@ -127,13 +127,14 @@ describe("cancel with a scheduled removal, then keep the plan", () => {
 });
 
 describe("cancel and keep during a trial", () => {
-  it("keeps the trial end on the schedule each time, and the downgrade starts when the trial ends", async () => {
+  it("keeps the trial end on the schedule each time, and the removal happens when the trial ends", async () => {
     const { stripe, change } = setup({ a: "price_pro", status: "trialing" });
-    await change({ kind: "downgrade", businessId: A, planId: "starter" });
+    // A trial downgrade happens now (2026-10-17); a removal is still scheduled for the trial end.
+    await change({ kind: "remove", businessId: B });
     const cancel = await change({ kind: "cancel" });
     expect(cancel.preview.headline).toMatch(/^Your free trial keeps going until \w+ \d+, \d{4}\. Your card won't be charged\.$/);
     expect(cancel.preview.details.slice(-2)).toEqual([
-      "Your change to Starter for Acme Plumbing is also canceled.",
+      "Your change to take Bay Dental off your plan is also canceled.",
       "If you keep your plan, this change comes back.",
     ]);
     await change({ kind: "keep" });
@@ -147,8 +148,9 @@ describe("cancel and keep during a trial", () => {
 
     stripe.advanceTo(RENEWAL + 60);
     expect(stripe.status).toBe("active");
-    expect(planOf(stripe, A)).toBe("cd_plan_starter");
-    expect(lastInvoice(stripe).amount_due).toBe(29800);
+    expect(stripe.items.map((i) => i.metadata.business_id)).toEqual([A]);
+    expect(planOf(stripe, A)).toBe("cd_plan_pro");
+    expect(lastInvoice(stripe).amount_due).toBe(24900);
   });
 });
 

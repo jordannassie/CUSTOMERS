@@ -26,6 +26,8 @@ export type CopyInput = {
   scheduled?: ScheduledNote[];
   /** Credits left now, for a cancel or a removal: plan or trial credits, and top-ups. Unknown when absent. */
   credits?: { plan: number; topup: number };
+  /** During a trial: the first bill after it, with this change made (trial-bill.ts, BUG-245). */
+  firstBillCents?: number | null;
 };
 
 /** What stops on the end date of a cancel or a removal, listed under the heading. */
@@ -77,30 +79,38 @@ const perMonth = (cents: number | null) => (cents === null ? "" : `${formatUsd(c
 export function previewCopy(input: CopyInput): Copy {
   const date = formatDate(input.effectiveAt, input.timeZone);
   const business = input.businessName ?? "this business";
-  const noRefund = `Takes effect on ${date}. No refund.`;
   const creditsStay = "Credits you already have stay until they expire.";
+  // During a trial Stripe's own preview is the trial's $0 invoice, so the bill comes from the plan prices (BUG-245).
+  const nextBill = (cents: number) => `Your next bill will be ${formatUsd(cents)}.`;
+  const firstBill = input.firstBillCents != null ? [`Your first bill on ${date} will be ${formatUsd(input.firstBillCents)}.`] : [];
+  const trialSwitch = (): Copy => ({
+    headline: "You pay nothing today. You're still on your free trial.",
+    details: [
+      `From ${date}, ${business} will cost ${perMonth(input.planPriceCents)} on ${input.planName}.`,
+      ...firstBill,
+      "You can switch plans again any time before then.",
+    ],
+  });
 
   switch (input.change.kind) {
     case "upgrade":
     case "add": {
       const cost = `${business} will cost ${perMonth(input.planPriceCents)} on ${input.planName}.`;
-      if (input.trialing) {
-        return {
-          headline: "You pay nothing today. You're still on your free trial.",
-          details: [`From ${date}, ${cost}`],
-        };
-      }
+      if (input.trialing) return trialSwitch();
       return {
         headline: `You'll pay ${formatUsd(input.amountCents)} today and get ${formatCount(input.extraCredits)} extra credits now.`,
         details: ["The credits appear as soon as the payment goes through.", cost],
       };
     }
     case "downgrade":
+      // In a trial the switch happens now (timingOf), and nothing has been paid to refund.
+      if (input.trialing) return trialSwitch();
       return {
-        headline: noRefund,
+        headline: `${business} moves to ${input.planName} on ${date}, when your plan renews.`,
         details: [
-          `From then, ${business} is on ${input.planName} at ${perMonth(input.planPriceCents)}.`,
-          `Your next bill will be ${formatUsd(input.amountCents)}.`,
+          "Until then it stays on its current plan. There's no refund for this month.",
+          `From ${date} it costs ${perMonth(input.planPriceCents)}.`,
+          nextBill(input.amountCents),
           creditsStay,
         ],
       };
@@ -112,7 +122,7 @@ export function previewCopy(input: CopyInput): Copy {
           : `${business} stays on your plan until ${date}. No refund.`,
         details: [
           `After that, scans for ${business} stop. Its results stay visible.`,
-          `Your next bill will be ${formatUsd(input.amountCents)}.`,
+          ...(input.trialing && firstBill.length ? firstBill : [nextBill(input.amountCents)]),
           creditsStay,
           `You can keep ${business} on your plan any time before ${date}.`,
         ],
@@ -164,7 +174,8 @@ export function doneCopy(
       if (input.trialing) return `${business} is on your plan. ${notCharged}`;
       return `${business} is on your plan. Its credits appear once the payment goes through.`;
     case "downgrade":
-      return `${business} moves to ${input.planName} on ${date}.`;
+      if (input.trialing) return `${business} is now on ${input.planName}. ${notCharged}`;
+      return `${business} stays on its current plan until ${date}, then moves to ${input.planName}.`;
     case "remove":
       return `${business} comes off your plan on ${date}.`;
     case "keepBusiness":

@@ -8,6 +8,7 @@ import {
   checkChange,
   currentItems,
   idempotencyKey,
+  isTrialing,
   periodEnd,
   PlanChangeError,
   scheduleIdOf,
@@ -21,6 +22,7 @@ import {
 import { previewParams, schedulePhases } from "./preview-params";
 import { phasesOnOnePrice, phasesWithoutPending, refuseWhileLeaving } from "./pending";
 import { changeNowAroundSchedule } from "./schedule-now";
+import { trialBillCents } from "./trial-bill";
 
 // Previews and applies plan changes (MVP_SPEC 11.5, D-57). Changes made now invoice the proration at once;
 // credits for it are granted by the invoice.paid webhook (B-42), never here. Period-end changes go on a
@@ -102,8 +104,8 @@ export async function previewPlanChange(
   checkAgainstSchedule(loaded, checked);
   const now = deps.now();
   const previewedAt = seconds(now);
-  const timing = timingOf(change.kind);
-  const trialing = loaded.sub.status === "trialing";
+  const trialing = isTrialing(loaded.sub);
+  const timing = timingOf(change.kind, trialing);
 
   const params = previewParams(loaded, checked, previewedAt);
   const invoice = params ? await deps.stripe.previewInvoice(params) : null;
@@ -127,6 +129,7 @@ export async function previewPlanChange(
       timeZone: deps.timeZone,
       scheduled: scheduledNotes(ctx, loaded, change.kind),
       credits: deps.credits,
+      firstBillCents: trialing && checked.business ? trialBillCents(ctx, loaded.sub, loaded.schedule, checked) : null,
     }),
     timing,
     effectiveAt: new Date(at * 1000).toISOString(),
@@ -151,7 +154,7 @@ export async function applyPlanChange(
   const checked = checkChange(ctx, sub, change);
   checkAgainstSchedule(loaded, checked);
   const key = idempotencyKey(ctx.agencyId, change, previewedAt);
-  const timing = timingOf(change.kind);
+  const timing = timingOf(change.kind, isTrialing(sub));
   const scheduled = scheduledNotes(ctx, loaded, change.kind);
 
   if (change.kind === "cancel" || change.kind === "keep") {

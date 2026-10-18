@@ -1,5 +1,5 @@
 import "server-only";
-import { loadAgencyFacts, loadBusinessFacts } from "./dal";
+import { loadAgencyFacts, loadBusinessFacts, loadPlanLimits } from "./dal";
 import * as rules from "./service";
 import type { Entitlement, LimitEntitlement } from "./service";
 
@@ -43,6 +43,12 @@ export async function maxQuestions(businessId: string): Promise<LimitEntitlement
 
 export async function maxCompetitors(businessId: string): Promise<LimitEntitlement> {
   return rules.maxCompetitors(await loadBusinessFacts(businessId));
+}
+
+/** Before a business moves to a smaller plan: refused while it tracks more competitors or questions than that plan has. */
+export async function fitsPlan(businessId: string, planId: string): Promise<Entitlement> {
+  const [business, plan] = await Promise.all([loadBusinessFacts(businessId), loadPlanLimits(planId)]);
+  return rules.fitsPlan(business, plan);
 }
 
 export { canEditTracking, REASONS, TRIAL_MAX_BUSINESSES, type Entitlement, type LimitEntitlement } from "./service";

@@ -161,10 +161,10 @@ export async function runBusinessAutofill(
   // business_site_facts has no write policy for signed-in users, so writes use the service role
   // after the ownership check above.
   const service = createServiceClient();
-  // Whether it is a chain is saved every time: another website typed in later may be a single shop (step 2).
+  // Whether it is a chain, and the logo, are saved every time: another website typed in later may be another shop.
   const { error: placeError } = await service
     .from("businesses")
-    .update({ is_chain: run.chain, ...(run.placeId ? { places_id: run.placeId } : {}) })
+    .update({ is_chain: run.chain, logo_url: run.logoUrl, ...(run.placeId ? { places_id: run.placeId } : {}) })
     .eq("id", businessId);
   // The listing found for this website is another business's in the agency already (migration 067).
   const duplicate = duplicateBusiness(placeError);

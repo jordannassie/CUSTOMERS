@@ -72,6 +72,11 @@ export function isTrial(account: AccountState): boolean {
   return account.status === "trialing" && account.trialEndsAt !== null;
 }
 
+/** The trial end date has passed but Stripe has not confirmed the first payment yet: scans are paused (entitlements). */
+export function trialOver(account: AccountState, now: Date): boolean {
+  return isTrial(account) && account.trialEndsAt!.getTime() < now.getTime();
+}
+
 /**
  * Splits what can still be spent into this period's plan credits and the rest (top-ups, or admin and
  * promo grants). Plan credits expire first so they are spent first, and credits held for a running scan
@@ -95,7 +100,9 @@ export function usageWidget(usage: UsageNumbers, account: AccountState, now: Dat
   const paymentFailed = PAYMENT_FAILED_STATUSES.includes(account.status);
 
   let headline: string;
-  if (isTrial(account)) {
+  if (trialOver(account, now)) {
+    headline = "Trial ended, waiting for your first payment";
+  } else if (isTrial(account)) {
     headline = `${trialText(daysUntil(account.trialEndsAt!, now))}, ${count(plan)} of ${count(periodCredits)} credits left`;
   } else if (hasPlan) {
     headline = `${count(periodUsed)} of ${count(periodCredits)} credits used`;
@@ -106,7 +113,7 @@ export function usageWidget(usage: UsageNumbers, account: AccountState, now: Dat
   }
 
   if (balance < 0) details.unshift(`${plural(-balance, "credit")} over`);
-  else if (balance === 0) details.unshift("No credits left");
+  else if (balance === 0 && !trialOver(account, now)) details.unshift("No credits left");
   // The headline counts plan credits only, so anything else is listed on its own line.
   if (topup > 0) details.push(`${hasPlan ? "Plus" : "Includes"} ${plural(topup, "top-up credit")}`);
   if (other > 0 && hasPlan) details.push(`Plus ${plural(other, "extra credit")}`);
@@ -116,8 +123,8 @@ export function usageWidget(usage: UsageNumbers, account: AccountState, now: Dat
     headline,
     percentUsed,
     details,
-    // A failed payment comes first: buying credits does not help while scans are paused.
-    showBuyCredits: empty && !paymentFailed,
+    // A failed payment comes first: buying credits does not help while scans are paused. Nor after the trial ends.
+    showBuyCredits: empty && !paymentFailed && !trialOver(account, now),
     paymentFailed: paymentFailed ? { text: "Payment failed. Update your card", href: BILLING_HREF } : null,
   };
 }
@@ -189,6 +196,17 @@ function accountBanners(usage: UsageNumbers, account: AccountState, now: Date, t
       message: "Your last payment didn't go through. Update your card to keep your scans running.",
       action: { label: "Update card", href: BILLING_HREF },
     });
+  }
+
+  // Past the trial end with no payment confirmed: scans are paused for that reason, not for credits (entitlements).
+  if (trialOver(account, now)) {
+    banners.push({
+      kind: "trial",
+      tone: "warning",
+      message: `Your free trial ended on ${formatDate(account.trialEndsAt!, timeZone)}. Scans are paused until your first payment goes through.`,
+      action: { label: "Check billing", href: BILLING_HREF },
+    });
+    return banners;
   }
 
   // A trial that has never been granted a credit (its end date may not be saved yet) is waiting for the first

@@ -117,16 +117,17 @@ describe("endBusinessPlan during a trial", () => {
   it("takes it out of every schedule phase, keeping another business's scheduled change", async () => {
     const s = use(setup({ a: "price_pro", status: "trialing" }));
     await s.change({ kind: "add", businessId: C, planId: "starter" });
-    await s.change({ kind: "downgrade", businessId: A, planId: "starter" });
+    // A trial downgrade happens now (2026-10-17); a removal is still scheduled for the trial end.
+    await s.change({ kind: "remove", businessId: C });
 
     await endBusinessPlan("agency-1", B, now(s));
     expect(ids(s).sort()).toEqual([A, C].sort());
     const phases = s.stripe.schedule!.phases;
-    expect(phases.map((p) => p.items.map((i) => i.metadata.business_id).sort())).toEqual([[A, C].sort(), [A, C].sort()]);
+    expect(phases.map((p) => p.items.map((i) => i.metadata.business_id).sort())).toEqual([[A, C].sort(), [A]]);
     expect(JSON.stringify(s.stripe.calls.at(-1)!.params)).toContain("trial_end");
 
     s.stripe.advanceTo(RENEWAL + 60);
-    expect(s.stripe.invoices.at(-1)!.amount_due).toBe(14900 * 2);
+    expect(s.stripe.invoices.at(-1)!.amount_due).toBe(24900);
   });
 
   it("ends the plan at the trial end when every other business was already coming off", async () => {

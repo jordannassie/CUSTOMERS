@@ -3,7 +3,7 @@
 import { viewerTimeZone } from "@/lib/viewer-time-zone";
 import { authFailure, requireAgency, type ActionResult } from "@/modules/auth";
 import { getBalance } from "@/modules/credits";
-import { canAddBusiness } from "@/modules/entitlements";
+import { canAddBusiness, fitsPlan } from "@/modules/entitlements";
 import { billingAccess } from "../account/access";
 import { loadPlanChangeData, raiseScheduleLost, saveCancelReason } from "./dal";
 import { PlanChangeError, type PlanChange } from "./planner";
@@ -61,6 +61,11 @@ async function run(
 ): Promise<PlanChangeResult> {
   try {
     const data = await loadPlanChangeData(agencyId);
+    // Only this agency's businesses are in the data, so another agency's business is never read here.
+    if (change.kind === "downgrade" && data.context.businesses.some((b) => b.id === change.businessId)) {
+      const fits = await fitsPlan(change.businessId, change.planId);
+      if (!fits.allowed) return { ok: false, status: 409, error: fits.reason };
+    }
     const access = await billingAccess(data);
     if (!access) return unavailable;
     const { context, stripe } = access;
@@ -119,7 +124,7 @@ export async function addBusiness(input: unknown): Promise<PlanChangeResult> {
   return run(agency, { kind: "add", businessId, planId }, previewedAt);
 }
 
-/** Moves a business to a cheaper plan at the end of the billing period. */
+/** Moves a business to a cheaper plan: at the end of the billing period, or now during a trial. */
 export async function downgradeBusiness(input: unknown): Promise<PlanChangeResult> {
   const agency = await agencyId();
   if (typeof agency !== "string") return agency;

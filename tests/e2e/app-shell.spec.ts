@@ -98,7 +98,7 @@ test.afterAll(async () => {
   for (const id of userIds.splice(0)) await db.auth.admin.deleteUser(id);
 });
 
-test("seven menu items navigate, and switching business keeps the page", async ({ page }) => {
+test("seven menu items navigate, and switching business opens its Overview", async ({ page }) => {
   await logIn(page, { status: "active", grant: 1200, spend: 620, days: 12 });
 
   let nav = await openNav(page);
@@ -116,8 +116,8 @@ test("seven menu items navigate, and switching business keeps the page", async (
   await expect(switcher).toContainText("Riverbend Dental");
   await switcher.click();
   await page.getByRole("menuitem", { name: "Northside Plumbing" }).click();
+  await page.waitForURL((url) => url.pathname === "/dashboard");
   await expect(page.getByTestId("business-switcher").first()).toContainText("Northside Plumbing");
-  expect(new URL(page.url()).pathname).toBe("/opportunities");
 });
 
 test("usage widget: normal plan", async ({ page }) => {
