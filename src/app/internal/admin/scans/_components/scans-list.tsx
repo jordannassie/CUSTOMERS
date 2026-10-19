@@ -49,7 +49,7 @@ export default function ScansList({ list, status }: { list: AdminScanList; statu
                   {["Business", "Status", "Models", "Credits", "Real cost", "Duration", "Started", "Error", ""].map((h, i) => (
                     <TableHead
                       key={h || i}
-                      className={cn("text-[12px] font-medium text-muted-foreground", (h === "Credits" || h === "Real cost" || h === "Duration") && "text-right")}
+                      className={cn("px-2 text-[12px] font-medium text-muted-foreground", (h === "Credits" || h === "Real cost" || h === "Duration") && "text-right")}
                     >
                       {h}
                     </TableHead>
@@ -59,20 +59,20 @@ export default function ScansList({ list, status }: { list: AdminScanList; statu
               <TableBody>
                 {rows.map((row) => (
                   <TableRow key={row.id} data-job={row.id} data-status={row.status} className={cn(row.status === "failed" && "bg-low-bg/40")}>
-                    <TableCell className="max-w-[200px]">
+                    <TableCell className="px-2 max-w-[200px]">
                       <BusinessCell row={row} />
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="px-2">
                       <ScanStatusBadge status={row.status} />
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="px-2">
                       <ModelList models={row.models} className="flex-nowrap" />
                     </TableCell>
-                    <TableCell className="tabular text-right">{row.creditsCharged}</TableCell>
-                    <TableCell className="tabular text-right">{money(row.costUsd) || <Dash />}</TableCell>
-                    <TableCell className="tabular text-right">{formatDuration(row.durationMs) || <Dash />}</TableCell>
-                    <TableCell className="tabular whitespace-nowrap text-muted-foreground">{formatDate(row.createdAt, true)}</TableCell>
-                    <TableCell className="max-w-[240px]">
+                    <TableCell className="px-2 tabular text-right">{row.creditsCharged}</TableCell>
+                    <TableCell className="px-2 tabular text-right">{money(row.costUsd) || <Dash />}</TableCell>
+                    <TableCell className="px-2 tabular text-right">{formatDuration(row.durationMs) || <Dash />}</TableCell>
+                    <TableCell className="px-2 tabular whitespace-nowrap text-muted-foreground">{formatDate(row.createdAt, true)}</TableCell>
+                    <TableCell className="px-2 max-w-[240px]">
                       {row.error ? (
                         <p title={row.error} className="line-clamp-2 whitespace-normal text-low-text">
                           {row.error}
@@ -81,7 +81,7 @@ export default function ScansList({ list, status }: { list: AdminScanList; statu
                         <Dash />
                       )}
                     </TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="px-2 text-right">
                       {canRetry(row) && <Retry row={row} />}
                     </TableCell>
                   </TableRow>
