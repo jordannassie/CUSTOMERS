@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { AdminAgencyDetail } from "@/modules/admin";
-import { DeletedBadge, deletedNote, formatDate } from "../../../businesses/_components/scan-parts";
+import { DeletedBadge, deletedNote } from "../../../businesses/_components/scan-parts";
+import { formatDate } from "../../../_components/format";
 import Section, { Empty } from "../../../businesses/[id]/_components/section";
 import { credits, planStatusLabel } from "../../_components/agency-parts";
 
@@ -17,10 +18,28 @@ const ACTIONS: Record<string, string> = {
 const KINDS: Record<string, string> = {
   grant: "Credits granted",
   expire: "Credits expired",
-  admin_adjust: "Admin change",
+  admin_adjust: "Admin",
   overdraft_settle: "Overdraft paid back",
   refund: "Refunded top-up",
 };
+
+// Where granted credits came from (credit_grants.source), shown instead of "Credits granted".
+const SOURCES: Record<string, string> = {
+  trial: "Trial",
+  plan: "Plan",
+  topup: "Top-up",
+  admin: "Admin",
+  promo: "Promo",
+  refund: "Refund",
+};
+
+/** "Trial", "Plan", "Top-up" or "Admin" for a grant; "Trial credits expired" for an expiry; else what the row did. */
+export function ledgerLabel(row: { kind: string; source: string | null }): string {
+  const source = row.source ? SOURCES[row.source] : undefined;
+  if (row.kind === "grant" && source) return source;
+  if (row.kind === "expire" && source) return `${source} credits expired`;
+  return KINDS[row.kind] ?? row.kind;
+}
 
 export function Businesses({ rows }: { rows: AdminAgencyDetail["businesses"] }) {
   const deleted = rows.filter((b) => b.deleted).length;
@@ -65,7 +84,7 @@ export function CreditHistory({ rows }: { rows: AdminAgencyDetail["ledger"] }) {
           {rows.map((l) => (
             <li key={l.id} className="flex items-start justify-between gap-3 px-4 py-3">
               <span className="min-w-0">
-                <span className="block font-medium">{KINDS[l.kind] ?? l.kind}</span>
+                <span className="block font-medium">{ledgerLabel(l)}</span>
                 {l.note && <span className="block break-words text-muted-foreground">{l.note}</span>}
                 <span className="block text-text-hint">
                   {formatDate(l.createdAt, true)}

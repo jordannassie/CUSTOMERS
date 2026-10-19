@@ -61,8 +61,17 @@ beforeAll(async () => {
 afterAll(deleteTestUsers);
 
 describe("admin Scans (B-67)", () => {
-  it("lists a failed job with its business, models and error", async () => {
+  it("lists a failed job with its business, models, error and what a retry would charge", async () => {
     await signInAs(session, "scans-admin", { admin: true });
+    // Two active questions and one switched off: a retry asks 2 questions of 3 models.
+    await service
+      .from("tracked_prompts")
+      .insert([
+        { business_id: agency.businessId, prompt: "best coffee in Testville", active: true },
+        { business_id: agency.businessId, prompt: "coffee near me", active: true },
+        { business_id: agency.businessId, prompt: "cheap coffee", active: false },
+      ])
+      .throwOnError();
     const { jobId } = await failedJob();
     const list = await listScanJobs("failed");
     const row = list.rows.find((r) => r.id === jobId);
@@ -74,6 +83,7 @@ describe("admin Scans (B-67)", () => {
       models: ["openai", "anthropic", "perplexity"],
       creditsCharged: 0,
       error: "Every check failed: timeout",
+      scanCredits: 6,
     });
     expect(list.rows.every((r) => r.status === "failed")).toBe(true);
     expect(list.counts.failed).toBeGreaterThanOrEqual(1);

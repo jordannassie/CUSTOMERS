@@ -6,7 +6,7 @@ import { createServiceClient } from "@/lib/supabase/service";
 import { adminEmails, requireAdmin } from "@/modules/auth";
 import { createLogEmailClient, sendEmail } from "@/modules/email";
 import type { Database } from "@/types/database.types";
-import type { NotifyDeps, OpenAlert } from "./service";
+import { serviceAlertChanges, type NotifyDeps, type OpenAlert, type ServiceCheck } from "./service";
 
 // system_alerts has RLS with no policies, so every read and write here uses the service role (B-69).
 type Db = SupabaseClient<Database>;
@@ -46,6 +46,31 @@ export async function markAlertResolved(alertId: string): Promise<{ kind: string
     .maybeSingle();
   if (error) throw new Error(`Could not resolve the alert: ${error.message}`);
   return data;
+}
+
+/**
+ * Opens an alert for each service the Settings check found broken and closes the alerts of those it found working
+ * (serviceAlertChanges). A failed write is logged, never thrown: the Settings page still shows the live result.
+ * Returns how many services have an open alert from this check.
+ */
+export async function syncServiceAlerts(services: ServiceCheck[], db: Db = createServiceClient()): Promise<number> {
+  await requireAdmin();
+  const { raise, resolve } = serviceAlertChanges(services);
+  const results = await Promise.all([
+    ...raise.map((a) =>
+      db.rpc("raise_system_alert", {
+        p_kind: a.kind,
+        p_severity: a.severity,
+        p_message: a.message,
+        p_details: { service: a.serviceId, source: "settings" },
+      }),
+    ),
+    resolve.length > 0
+      ? db.from("system_alerts").update({ resolved_at: new Date().toISOString() }).in("kind", resolve).is("resolved_at", null)
+      : null,
+  ]);
+  for (const r of results) if (r?.error) console.error(`Could not sync the service check alerts: ${r.error.message}`);
+  return raise.length;
 }
 
 // The functions below run from the pg_cron call (no signed-in user); the route checks the worker secret first.

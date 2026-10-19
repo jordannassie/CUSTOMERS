@@ -19,12 +19,18 @@ const listClass = "divide-y divide-border rounded-md border border-border bg-sur
 
 // MVP_SPEC 5.3: industries with no question library get questions Claude writes; these are candidates for one.
 // "Other" labels are counted however they were typed, so the most used can become real industries (2026-10-16).
-export default function LibraryGaps({ rows }: { rows: LibraryGap[] }) {
+export default function LibraryGaps({ loaded, rows }: { loaded: boolean; rows: LibraryGap[] }) {
   const shown = rows.slice(0, LIBRARY_GAPS_SHOWN);
   const rest = rows.slice(LIBRARY_GAPS_SHOWN);
   return (
     <Section title="Industries with no question library">
-      {rows.length === 0 ? (
+      {/* An empty library would list every industry; one note says what is actually wrong. */}
+      {!loaded ? (
+        <Empty>
+          Question library not loaded yet. It has no active questions, so every business gets questions Claude writes. Run
+          the question library seed to load it.
+        </Empty>
+      ) : rows.length === 0 ? (
         <Empty>Every business&apos;s industry has a question library.</Empty>
       ) : (
         <div className="flex flex-col gap-2">

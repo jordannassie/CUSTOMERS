@@ -24,7 +24,18 @@ export const reasonInput = base;
 
 export const markTestInput = base.extend({ isTest: z.boolean() });
 
-export const AGENCY_FILTERS = ["trialing", "active", "past_due", "canceled", "suspended", "deleted", "test"] as const;
+// Display statuses (service.ts displayStatus), so "On trial" counts only trials that are still running.
+export const AGENCY_FILTERS = [
+  "trialing",
+  "trial_ended",
+  "signup_unfinished",
+  "active",
+  "past_due",
+  "canceled",
+  "suspended",
+  "deleted",
+  "test",
+] as const;
 export type AgencyFilter = (typeof AGENCY_FILTERS)[number];
 
 // An unknown ?status= shows every agency rather than an error page.

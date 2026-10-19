@@ -4,6 +4,9 @@ type Variant = "good" | "mid" | "low" | "tint" | "secondary";
 
 export const STATUS: Record<string, { label: string; variant: Variant }> = {
   trialing: { label: "On trial", variant: "tint" },
+  // Display statuses (modules/admin displayStatus): a trial that never reached Stripe, or one past its end.
+  trial_ended: { label: "Trial ended", variant: "mid" },
+  signup_unfinished: { label: "Signup not finished", variant: "secondary" },
   active: { label: "Paying", variant: "good" },
   past_due: { label: "Payment failed", variant: "low" },
   canceled: { label: "Canceled", variant: "secondary" },
@@ -31,17 +34,4 @@ export function StatusBadge({ status }: { status: string }) {
   return <Badge variant={s.variant}>{s.label}</Badge>;
 }
 
-export function TestBadge() {
-  return <Badge variant="secondary">Test</Badge>;
-}
-
 export const credits = (n: number) => n.toLocaleString("en-US");
-
-export function usd(value: number): string {
-  return value.toLocaleString("en-US", {
-    style: "currency",
-    currency: "USD",
-    minimumFractionDigits: value > 0 && value < 10 ? 2 : 0,
-    maximumFractionDigits: value < 10 ? 2 : 0,
-  });
-}

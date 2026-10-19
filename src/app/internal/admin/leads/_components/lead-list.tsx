@@ -2,18 +2,21 @@ import { ChevronLeft, ChevronRight, Inbox } from "lucide-react";
 import { cn } from "cn";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { INTEREST_LABELS, statusLabel, statusVariant, type Lead } from "./lead-types";
+import AdminEmpty from "../../_components/admin-empty";
+import { INTEREST_LABELS, formatDate, statusLabel, statusVariant, type Lead } from "./lead-types";
 
 export function LeadListEmpty({ filtered }: { filtered: boolean }) {
   return (
-    <div className="flex flex-1 flex-col items-center justify-center px-6 py-20 text-center">
-      <div className="mb-3 flex size-10 items-center justify-center rounded-md bg-muted text-text-hint">
-        <Inbox aria-hidden className="size-5" />
-      </div>
-      <p className="text-[14px] font-medium text-foreground">No leads found</p>
-      <p className="mt-1 text-[13px] text-muted-foreground">
-        {filtered ? "Try adjusting your filters." : "Contact submissions will appear here."}
-      </p>
+    <div className="flex flex-1 items-center justify-center p-4">
+      {filtered ? (
+        <AdminEmpty icon={Inbox} title="No leads match these filters" className="w-full border-0">
+          Clear the search or pick All in each filter to see every lead.
+        </AdminEmpty>
+      ) : (
+        <AdminEmpty icon={Inbox} title="No leads yet" className="w-full border-0">
+          A lead shows up here as soon as someone sends the contact form, the chat widget or the agency page form.
+        </AdminEmpty>
+      )}
     </div>
   );
 }
@@ -75,7 +78,7 @@ export function LeadRows({
               <div className="flex shrink-0 flex-col items-end gap-1">
                 <Badge variant="secondary">{INTEREST_LABELS[lead.topic] ?? lead.topic}</Badge>
                 <span className="text-[12px] text-text-hint">
-                  {new Date(lead.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                  {formatDate(lead.created_at, true)}
                 </span>
                 <Badge variant={statusVariant(lead.status)}>{statusLabel(lead.status)}</Badge>
               </div>

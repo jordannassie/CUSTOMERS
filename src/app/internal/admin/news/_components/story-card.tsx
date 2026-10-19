@@ -71,14 +71,14 @@ export function StoryCard({ story, writingId, weekday, onWritePost }: {
         <span className="text-[12px] font-medium text-muted-foreground">{story.sourceName}</span>
         <div className="flex flex-wrap items-center gap-2">
           {story.sourceUrl && (
-            <Button asChild variant="outline" className="text-[13px]">
+            <Button asChild variant="outline" size="sm">
               <a href={story.sourceUrl} target="_blank" rel="noreferrer">
                 View source
                 <ExternalLink aria-hidden="true" />
               </a>
             </Button>
           )}
-          <Button type="button" disabled={!!writingId} onClick={() => onWritePost(story)} className="text-[13px]">
+          <Button type="button" size="sm" disabled={!!writingId} onClick={() => onWritePost(story)}>
             {isWriting ? <Loader2 className="animate-spin" aria-hidden="true" /> : <Pencil aria-hidden="true" />}
             {isWriting ? "Writing…" : "Write LinkedIn post"}
           </Button>

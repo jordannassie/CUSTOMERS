@@ -1,8 +1,9 @@
 import Link from "next/link";
 import type { AdminOverview } from "@/modules/admin";
 import Section, { Empty } from "../businesses/[id]/_components/section";
-import { formatDate } from "../businesses/_components/scan-parts";
-import { StatusBadge, TestBadge } from "../agencies/_components/agency-parts";
+import { formatDate } from "../_components/format";
+import { TestBadge } from "../_components/badges";
+import { StatusBadge } from "../agencies/_components/agency-parts";
 
 const list = "divide-y divide-border rounded-md border border-border bg-surface text-[13px]";
 
@@ -50,7 +51,7 @@ export function FailedScans({ rows }: { rows: AdminOverview["recentFailedScans"]
     <div className="flex min-w-0 flex-col gap-2">
       <Section title="Recent failed scans">
         {rows.length === 0 ? (
-          <Empty>No failed scans. Nothing to retry.</Empty>
+          <Empty>No failed scans for real agencies. Nothing to retry.</Empty>
         ) : (
           <ul className={list}>
             {rows.map((j) => (
@@ -68,7 +69,7 @@ export function FailedScans({ rows }: { rows: AdminOverview["recentFailedScans"]
           </ul>
         )}
       </Section>
-      <ViewAll href="/internal/admin/scans?status=failed">Retry failed scans</ViewAll>
+      <ViewAll href="/internal/admin/scans?status=failed">See failed scans</ViewAll>
     </div>
   );
 }

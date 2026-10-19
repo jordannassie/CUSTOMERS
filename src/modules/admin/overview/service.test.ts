@@ -30,7 +30,8 @@ describe("percentChange and countChange", () => {
   it("words the change plainly", () => {
     expect(percentChange(112, 100).text).toBe("Up 12% on the same days last month");
     expect(percentChange(50, 100)).toEqual({ direction: "down", text: "Down 50% on the same days last month" });
-    expect(percentChange(5, 0).text).toBe("None by this day last month");
+    expect(percentChange(5, 0)).toEqual({ direction: "same", text: "New this month" });
+    expect(percentChange(0, 0)).toEqual({ direction: "same", text: "None last month either" });
     expect(percentChange(2357, 10).text).toBe("About 236 times the same days last month");
     expect(countChange(12, 9, new Date("2026-10-01T00:00:00Z"))).toEqual({ direction: "up", text: "Up 3 since Oct 1" });
     expect(countChange(9, 9, new Date("2026-10-01T00:00:00Z")).text).toBe("No change since Oct 1");

@@ -1,5 +1,6 @@
 import "server-only";
 import { createServiceClient } from "@/lib/supabase/service";
+import { requireAdmin } from "@/modules/auth";
 import { getBalance } from "@/modules/credits";
 import { allRows, emailsOf, readCaptures, unique } from "../dal";
 import { isActive, startOfMonthUtc, sumBy, toScanState, type ScanState } from "../service";
@@ -27,6 +28,14 @@ export type AdminScan = {
 };
 
 export type AdminBusinessDetail = Awaited<ReturnType<typeof loadBusinessDetail>>;
+
+/** Just the name, for the page title ("Joe's Coffee | Admin"). Null for an unknown id. */
+export async function loadBusinessName(id: string): Promise<string | null> {
+  await requireAdmin();
+  const { data, error } = await createServiceClient().from("businesses").select("name").eq("id", id).maybeSingle();
+  if (error) throw new Error(`Admin business: could not load the business name: ${error.message}`);
+  return data?.name ?? null;
+}
 
 export async function loadBusinessDetail(id: string, now = new Date()) {
   const db = createServiceClient();
@@ -157,6 +166,8 @@ export async function loadBusinessDetail(id: string, now = new Date()) {
 export type ResultRow = {
   question: string;
   mentioned: Partial<Record<string, boolean>>;
+  /** The saved answer per model, null when the check kept no text. */
+  answers: Partial<Record<string, string | null>>;
 };
 
 /** Per-question, per-model answers of the newest finished scan (B-26 results). */
@@ -166,7 +177,7 @@ async function latestResults(jobId: string | undefined, runOfJob: Map<string, { 
   const rows = await allRows("check results", (from, to) =>
     createServiceClient()
       .from("visibility_results")
-      .select("id, question, provider, business_mentioned, created_at")
+      .select("id, question, provider, business_mentioned, answer_text, created_at")
       .eq("run_id", runId)
       .order("created_at")
       .order("id")
@@ -175,8 +186,9 @@ async function latestResults(jobId: string | undefined, runOfJob: Map<string, { 
   const byQuestion = new Map<string, ResultRow>();
   for (const r of rows) {
     const question = r.question ?? "Question not recorded";
-    const row = byQuestion.get(question) ?? { question, mentioned: {} };
+    const row = byQuestion.get(question) ?? { question, mentioned: {}, answers: {} };
     row.mentioned[r.provider] = r.business_mentioned;
+    row.answers[r.provider] = r.answer_text;
     byQuestion.set(question, row);
   }
   return { at: rows[0]?.created_at ?? null, rows: [...byQuestion.values()] };

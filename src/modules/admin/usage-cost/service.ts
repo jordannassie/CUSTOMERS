@@ -2,7 +2,8 @@
 // from usage_events, and whether each model still earns more per check than it costs (D-23).
 
 const DAY = 24 * 60 * 60 * 1000;
-export const PERIODS = [7, 30, 90] as const;
+// "month" is this calendar month (UTC), the same stretch the Overview reports, so both pages show the same numbers.
+export const PERIODS = ["month", 7, 30, 90] as const;
 export type PeriodDays = (typeof PERIODS)[number];
 
 // Below this margin a model is flagged, matching the about 70% D-23 plans for (F-38).
@@ -52,8 +53,9 @@ export type UsageCostReport = {
 
 export const isCheck = (u: UsageRow) => u.usageType === "ai_visibility_check";
 
-/** UTC midnight `days - 1` days before now, so the period includes today. */
+/** UTC midnight `days - 1` days before now, so the period includes today; "month" starts on the 1st. */
 export function periodStart(now: Date, days: PeriodDays): Date {
+  if (days === "month") return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
   const today = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
   return new Date(today - (days - 1) * DAY);
 }

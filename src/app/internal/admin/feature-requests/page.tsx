@@ -1,10 +1,17 @@
 import { requireAdmin } from "@/modules/auth";
 import { listFeatureRequests } from "@/modules/feedback";
+import AdminPageHeader from "../_components/page-header";
 import FeatureRequestsClient from "./FeatureRequestsClient";
+import { featureFilter } from "./_components/request-parts";
 
 export const metadata = { title: "Feature requests" };
 
-export default async function AdminFeatureRequestsPage() {
+// listFeatureRequests (modules/feedback) returns the newest 200; a full list means older ones were left out.
+const LIST_CAP = 200;
+
+type Props = { searchParams: Promise<{ status?: string | string[] }> };
+
+export default async function AdminFeatureRequestsPage({ searchParams }: Props) {
   await requireAdmin({ next: "/internal/admin/feature-requests" });
 
   const result = await listFeatureRequests();
@@ -14,9 +21,7 @@ export default async function AdminFeatureRequestsPage() {
   if (fetchError) {
     return (
       <div className="mx-auto flex max-w-2xl flex-col gap-6 px-4 py-8 sm:px-6">
-        <header>
-          <h1 className="text-[24px] font-semibold tracking-[-0.02em]">Feature requests</h1>
-        </header>
+        <AdminPageHeader title="Feature requests" subtitle="Ideas people sent with Suggest a feature in the app." />
         <div className="rounded-md border border-border bg-mid-bg p-4 text-mid-text sm:p-6">
           <p className="mb-2 text-[14px] font-semibold">Table not yet created on production</p>
           <p className="mb-4 text-[13px]">
@@ -54,23 +59,15 @@ create policy "feature_requests_select_own" on public.feature_requests
     );
   }
 
-  const enriched = "requests" in result ? result.requests : [];
-
-  const newCount = enriched.filter((r) => r.status === "new").length;
+  const requests = "requests" in result ? result.requests : [];
 
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-8 sm:px-6">
-      <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <h1 className="text-[24px] font-semibold tracking-[-0.02em]">Feature requests</h1>
-          <p className="mt-1 text-[14px] text-muted-foreground">Suggestions from users</p>
-        </div>
-        <p className="text-[13px] text-muted-foreground">
-          {enriched.length} total, {newCount} new
-        </p>
-      </header>
-
-      <FeatureRequestsClient requests={enriched} />
+      <FeatureRequestsClient
+        requests={requests}
+        filter={featureFilter((await searchParams).status)}
+        capped={requests.length >= LIST_CAP ? LIST_CAP : null}
+      />
     </div>
   );
 }

@@ -6,6 +6,7 @@ import { cn } from "cn";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { appFetch } from "@/lib/session-expired";
+import AdminPageHeader from "../_components/page-header";
 import { LeadDetail } from "./_components/lead-detail";
 import { LeadListEmpty, LeadListError, LeadPagination, LeadRows } from "./_components/lead-list";
 import { LeadsFilters } from "./_components/leads-filters";
@@ -131,18 +132,21 @@ export default function LeadsClient() {
 
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-8 sm:px-6">
-      <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <div className="flex items-center gap-3">
-            <h1 className="text-[24px] font-semibold tracking-[-0.02em]">Leads</h1>
-            {total > 0 && <Badge variant="secondary">{total.toLocaleString()} total</Badge>}
-          </div>
-        </div>
-        <Button type="button" variant="outline" onClick={() => fetchLeads()} disabled={loading}>
-          <RefreshCw aria-hidden className={cn("size-4", loading && "motion-safe:animate-spin")} />
-          Refresh
-        </Button>
-      </header>
+      <AdminPageHeader
+        title={
+          <>
+            Leads
+            {total > 0 && <Badge variant="secondary">{total.toLocaleString("en-US")} total</Badge>}
+          </>
+        }
+        subtitle="Messages people sent from the contact page, the chat widget and the agency page. Open one to reply or change its status."
+        actions={
+          <Button type="button" variant="outline" onClick={() => fetchLeads()} disabled={loading}>
+            <RefreshCw aria-hidden className={cn("size-4", loading && "motion-safe:animate-spin")} />
+            Refresh
+          </Button>
+        }
+      />
 
       <LeadsFilters
         search={search}

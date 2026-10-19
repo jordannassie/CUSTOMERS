@@ -2,12 +2,12 @@ import { Suspense } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ChevronLeft } from "lucide-react";
-import { Skeleton } from "@/components/ui/skeleton";
 import {
   adjustCredits,
   adminStripeConnected,
   extendTrial,
   loadAgencyDetail,
+  loadAgencyName,
   markAgencyTest,
   MAX_CREDIT_CHANGE,
   MAX_TRIAL_DAYS,
@@ -16,12 +16,22 @@ import {
   unsuspendAgency,
 } from "@/modules/admin";
 import { requireAdmin } from "@/modules/auth";
-import { formatDate } from "../../businesses/_components/scan-parts";
-import { StatusBadge, TestBadge, credits } from "../_components/agency-parts";
+import { formatDate } from "../../_components/format";
+import { TestBadge } from "../../_components/badges";
+import AdminPageHeader from "../../_components/page-header";
+import { DetailSkeleton } from "../../_components/skeletons";
+import { StatGrid, StatTile } from "../../_components/stat";
+import { StatusBadge, credits } from "../_components/agency-parts";
 import AgencyActions from "./_components/agency-actions";
 import { AuditLog, Businesses, CancelReasons, CreditHistory } from "./_components/history";
 
-export const metadata = { title: "Agency" };
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+// "Acme Agency | Admin" through the admin title template, so open tabs say which agency they are.
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  return { title: (UUID.test(id) && (await loadAgencyName(id))) || "Agency" };
+}
 
 const ACTIONS = { adjustCredits, extendTrial, suspendAgency, unsuspendAgency, restoreAgency, markAgencyTest };
 
@@ -38,14 +48,12 @@ export default async function AdminAgencyPage({ params }: { params: Promise<{ id
         <ChevronLeft aria-hidden className="size-4" />
         Agencies
       </Link>
-      <Suspense fallback={<DetailSkeleton />}>
+      <Suspense fallback={<DetailSkeleton label="Loading agency" />}>
         <Detail id={id} />
       </Suspense>
     </div>
   );
 }
-
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 async function Detail({ id }: { id: string }) {
   const detail = UUID.test(id) ? await loadAgencyDetail(id) : null;
@@ -54,40 +62,47 @@ async function Detail({ id }: { id: string }) {
 
   return (
     <>
-      <header className="min-w-0">
-        <h1 className="flex flex-wrap items-center gap-2 text-[24px] font-semibold tracking-[-0.02em]">
-          <span className="break-words">{agency.name}</span>
-          <StatusBadge status={agency.status} />
-          {agency.isTest && <TestBadge />}
-        </h1>
-        <p className="mt-1 text-[14px] break-words text-muted-foreground">
-          {detail.ownerEmail ?? "Owner email unknown"}, signed up {formatDate(agency.createdAt)}
-        </p>
-        {agency.restoreUntil && (
-          <p className="mt-2 text-[14px] text-low-text">
-            {agency.canRestore
-              ? `Deleted. Can be restored until ${formatDate(agency.restoreUntil)}.`
-              : "Deleted more than 30 days ago."}
-          </p>
-        )}
-      </header>
+      <AdminPageHeader
+        title={
+          <>
+            <span className="min-w-0 break-words">{agency.name}</span>
+            <StatusBadge status={agency.displayStatus} />
+            {agency.isTest && <TestBadge />}
+          </>
+        }
+        subtitle={
+          <>
+            <p>
+              {detail.ownerEmail ?? "Owner email unknown"}, signed up {formatDate(agency.createdAt)}
+            </p>
+            {agency.restoreUntil && (
+              <p className="mt-2 text-low-text">
+                {agency.canRestore
+                  ? `Deleted. Can be restored until ${formatDate(agency.restoreUntil)}.`
+                  : "Deleted more than 30 days ago."}
+              </p>
+            )}
+          </>
+        }
+      />
 
-      <dl className="grid grid-cols-2 gap-px overflow-hidden rounded-md border border-border bg-border lg:grid-cols-4">
-        <Stat label="Plan credits left">{credits(balance.plan)}</Stat>
-        <Stat label="Top-up credits left">{credits(balance.topup)}</Stat>
-        <Stat label="Overdrawn">
-          <span className={balance.overdraft > 0 ? "text-low-text" : undefined}>{credits(balance.overdraft)}</span>
-        </Stat>
-        <Stat label={agency.status === "trialing" ? "Trial ends" : "Renews"}>
-          {agency.status === "trialing"
-            ? agency.trialEndsAt ? formatDate(agency.trialEndsAt) : "Not set"
-            : agency.status === "deleted"
-              ? "No, account deleted"
-              : agency.status === "canceled"
-                ? "No, plan ended"
-                : agency.currentPeriodEnd ? formatDate(agency.currentPeriodEnd) : "Not set"}
-        </Stat>
-      </dl>
+      <StatGrid>
+        <StatTile label="Plan credits left" value={credits(balance.plan)} />
+        <StatTile label="Top-up credits left" value={credits(balance.topup)} />
+        <StatTile label="Overdrawn" value={credits(balance.overdraft)} tone={balance.overdraft > 0 ? "bad" : undefined} />
+        <StatTile
+          label={agency.displayStatus === "trial_ended" ? "Trial ended" : agency.status === "trialing" ? "Trial ends" : "Renews"}
+          value={
+            agency.status === "trialing"
+              ? agency.trialEndsAt ? formatDate(agency.trialEndsAt) : "Not set"
+              : agency.status === "deleted"
+                ? "No, account deleted"
+                : agency.status === "canceled"
+                  ? "No, plan ended"
+                  : agency.currentPeriodEnd ? formatDate(agency.currentPeriodEnd) : "Not set"
+          }
+        />
+      </StatGrid>
 
       <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start">
         <div className="flex min-w-0 flex-col gap-8">
@@ -111,27 +126,5 @@ async function Detail({ id }: { id: string }) {
         </aside>
       </div>
     </>
-  );
-}
-
-function Stat({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div className="flex flex-col gap-1 bg-surface px-4 py-3">
-      <dt className="text-[12px] text-muted-foreground">{label}</dt>
-      <dd className="text-[18px] font-semibold tabular-nums">{children}</dd>
-    </div>
-  );
-}
-
-function DetailSkeleton() {
-  return (
-    <div className="flex flex-col gap-8" aria-busy aria-label="Loading agency">
-      <Skeleton className="h-10 w-72" />
-      <Skeleton className="h-20 rounded-md" />
-      <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_360px]">
-        <Skeleton className="h-80 rounded-md" />
-        <Skeleton className="h-80 rounded-md" />
-      </div>
-    </div>
   );
 }

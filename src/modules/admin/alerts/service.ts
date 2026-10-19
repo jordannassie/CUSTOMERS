@@ -95,3 +95,35 @@ function alertEmail(alert: OpenAlert, to: string): SendEmailInput {
       }),
   };
 }
+
+// Settings checks every service live (modules/system-status). A failing one opens an alert of its own kind, so it
+// shows on the Overview and admins get the usual email; the next check that passes closes it again.
+const SERVICE_CHECK_PREFIX = "service_check:";
+
+export const serviceCheckKind = (serviceId: string) => `${SERVICE_CHECK_PREFIX}${serviceId}`;
+export const isServiceCheckKind = (kind: string) => kind.startsWith(SERVICE_CHECK_PREFIX);
+
+export type ServiceCheck = { id: string; name: string; group: string; state: string; detail: string };
+export type ServiceAlertChanges = {
+  raise: { kind: string; severity: "warning" | "critical"; message: string; serviceId: string }[];
+  resolve: string[];
+};
+
+/**
+ * "error" opens (or refreshes) the service's alert and "ok" closes it. Unknown (a timeout, a rate limit) and not set
+ * up leave it as it is, so one slow answer does not open or close anything. Data services only warn: scans, payments
+ * and background jobs stop without the others.
+ */
+export function serviceAlertChanges(services: ServiceCheck[]): ServiceAlertChanges {
+  return {
+    raise: services
+      .filter((s) => s.state === "error")
+      .map((s) => ({
+        kind: serviceCheckKind(s.id),
+        severity: s.group === "data" ? "warning" : "critical",
+        message: `${s.name} is not working. ${s.detail.trim().replace(/([^.])$/, "$1.")} Found by the Settings check.`,
+        serviceId: s.id,
+      })),
+    resolve: services.filter((s) => s.state === "ok").map((s) => serviceCheckKind(s.id)),
+  };
+}

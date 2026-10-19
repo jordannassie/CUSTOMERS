@@ -41,3 +41,16 @@ export function planMix(plans: string[]): string {
     .map(([plan, n]) => `${n} ${plan}`)
     .join(", ");
 }
+
+// What admin shows for an agency's status. Two trials are not real trials: a signup that never reached Stripe
+// checkout (no subscription, no trial end), and a trial whose end has passed while Stripe has not moved it on.
+// Only a trialing agency can be either; deleted, suspended and the rest show as they are.
+export function displayStatus(
+  a: { status: string; hasSubscription: boolean; trialEndsAt: string | null },
+  now = new Date(),
+): string {
+  if (a.status !== "trialing") return a.status;
+  if (!a.hasSubscription && !a.trialEndsAt) return "signup_unfinished";
+  if (a.trialEndsAt && new Date(a.trialEndsAt) <= now) return "trial_ended";
+  return a.status;
+}

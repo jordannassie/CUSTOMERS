@@ -36,11 +36,14 @@ describe("loadLibraryGaps (2026-10-16)", () => {
   it("counts the Other labels of live, real businesses, most used first", async () => {
     calls.businesses = [{ industry: "Florist" }, { industry: "florists" }, { industry: "IT consultant" }, { industry: "plumber" }, { industry: "Consultant" }, { industry: null }];
     calls.library = [{ industry: "plumber" }];
-    expect(await loadLibraryGaps()).toEqual([
-      { label: "Florist", listed: false, businesses: 2, vague: false },
-      { label: "Consultant", listed: false, businesses: 1, vague: true },
-      { label: "IT consultant", listed: false, businesses: 1, vague: false },
-    ]);
+    expect(await loadLibraryGaps()).toEqual({
+      loaded: true,
+      gaps: [
+        { label: "Florist", listed: false, businesses: 2, vague: false },
+        { label: "Consultant", listed: false, businesses: 1, vague: true },
+        { label: "IT consultant", listed: false, businesses: 1, vague: false },
+      ],
+    });
     expect(calls.admin).toBe(1);
     // Read only: deleted businesses and test agencies left out, active templates only.
     expect(calls.ops).toEqual([
@@ -50,5 +53,11 @@ describe("loadLibraryGaps (2026-10-16)", () => {
       "question_library.select(industry)",
       "question_library.eq(active,true)",
     ]);
+  });
+
+  it("says the library is not loaded instead of listing every industry when it has no active templates", async () => {
+    calls.businesses = [{ industry: "plumber" }, { industry: "Florist" }];
+    calls.library = [];
+    expect(await loadLibraryGaps()).toEqual({ loaded: false, gaps: [] });
   });
 });

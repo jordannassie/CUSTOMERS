@@ -1,16 +1,22 @@
 import Link from "next/link";
 import { Building2 } from "lucide-react";
-import { cn } from "cn";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import type { AdminAgencyList, AdminAgencyRow, AgencyFilter } from "@/modules/admin";
-import { formatDate } from "../../businesses/_components/scan-parts";
-import { STATUS, StatusBadge, TestBadge, credits } from "./agency-parts";
+import { ADMIN_PAGE_SIZE, type AdminAgencyList, type AdminAgencyRow, type AgencyFilter } from "@/modules/admin";
+import { formatDate } from "../../_components/format";
+import AdminEmpty from "../../_components/admin-empty";
+import FilterTabs from "../../_components/filter-tabs";
+import Pagination, { pageHref } from "../../_components/pagination";
+import SearchBox from "../../_components/search-box";
+import { TestBadge } from "../../_components/badges";
+import { STATUS, StatusBadge, credits } from "./agency-parts";
 
 const BASE = "/internal/admin/agencies";
 const href = (id: string) => `${BASE}/${id}`;
 const FILTERS: { status: AgencyFilter | undefined; label: string }[] = [
   { status: undefined, label: "All" },
   { status: "trialing", label: STATUS.trialing.label },
+  { status: "trial_ended", label: STATUS.trial_ended.label },
+  { status: "signup_unfinished", label: STATUS.signup_unfinished.label },
   { status: "active", label: STATUS.active.label },
   { status: "past_due", label: STATUS.past_due.label },
   { status: "canceled", label: STATUS.canceled.label },
@@ -19,57 +25,44 @@ const FILTERS: { status: AgencyFilter | undefined; label: string }[] = [
   { status: "test", label: "Test" },
 ];
 
-export default function AgenciesList({ list, status }: { list: AdminAgencyList; status: AgencyFilter | undefined }) {
+// The first column stays put while the rest of the table scrolls sideways.
+const STICKY = "sticky left-0 z-10 bg-surface";
+
+export default function AgenciesList({ list, status, search }: { list: AdminAgencyList; status: AgencyFilter | undefined; search: string }) {
   const { rows, counts } = list;
+  const params = { status, q: search || undefined };
   return (
     <div className="flex flex-col gap-4">
-      {/* Wraps on phones instead of scrolling, so no filter is ever hidden off the edge. */}
-      <nav aria-label="Filter by status">
-        <ul className="flex w-fit max-w-full flex-wrap gap-1 rounded-md border border-border bg-muted p-1">
-          {FILTERS.map((f) => {
-            const active = f.status === status;
-            const count = f.status ? counts[f.status] : counts.all;
-            return (
-              <li key={f.label}>
-                <Link
-                  href={f.status ? `${BASE}?status=${f.status}` : BASE}
-                  aria-current={active ? "page" : undefined}
-                  className={cn(
-                    "flex items-center gap-2 rounded-sm px-3 py-1.5 text-[13px] font-medium whitespace-nowrap transition-colors duration-150 ease-out focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
-                    active ? "bg-surface text-foreground shadow-xs" : "text-muted-foreground hover:text-foreground",
-                  )}
-                >
-                  {f.label}
-                  <span
-                    className={cn(
-                      "tabular-nums text-[12px]",
-                      f.status === "past_due" && count > 0 ? "font-semibold text-low-text" : "text-text-hint",
-                    )}
-                  >
-                    {count}
-                  </span>
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
-      </nav>
+      <SearchBox id="agencies-search" label="Search" placeholder="Agency name or owner email" />
+      <FilterTabs
+        label="Filter by status"
+        active={status ?? "all"}
+        tabs={FILTERS.map((f) => ({
+          key: f.status ?? "all",
+          label: f.label,
+          href: pageHref(BASE, { status: f.status, q: search || undefined }, 1),
+          count: f.status ? counts[f.status] : counts.all,
+          alert: f.status === "past_due",
+        }))}
+      />
 
       {rows.length === 0 ? (
-        <div className="flex flex-col items-center gap-2 rounded-md border border-border bg-surface px-6 py-12 text-center">
-          <Building2 aria-hidden className="size-6 text-text-hint" />
-          <p className="text-[15px] font-medium">{status ? "No agencies here" : "No agencies yet"}</p>
-          <p className="max-w-sm text-[14px] text-muted-foreground">
-            {status ? "Pick another filter to see the rest." : "An agency shows up here as soon as someone signs up."}
-          </p>
-        </div>
+        search || status ? (
+          <AdminEmpty icon={Building2} title={search ? "No agencies match this search" : "No agencies match this filter"}>
+            {search ? "Check the spelling, or search part of the name or email." : "Pick another filter to see the rest."}
+          </AdminEmpty>
+        ) : (
+          <AdminEmpty icon={Building2} title="No agencies yet">
+            An agency shows up here as soon as someone signs up.
+          </AdminEmpty>
+        )
       ) : (
         <>
           <div className="hidden rounded-md border border-border bg-surface md:block">
             <Table className="text-[13px]">
               <TableHeader>
                 <TableRow>
-                  <TableHead>Agency</TableHead>
+                  <TableHead className={`${STICKY} bg-muted`}>Agency</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Businesses</TableHead>
                   <TableHead className="text-right">Credits (plan / top-up)</TableHead>
@@ -80,7 +73,7 @@ export default function AgenciesList({ list, status }: { list: AdminAgencyList; 
               <TableBody>
                 {rows.map((r) => (
                   <TableRow key={r.id}>
-                    <TableCell className="max-w-[260px] min-w-44 whitespace-normal">
+                    <TableCell className={`${STICKY} max-w-[260px] min-w-44 whitespace-normal`}>
                       <span className="flex items-start gap-2">
                         <Link href={href(r.id)} className="line-clamp-2 min-w-0 break-words font-medium text-primary hover:underline" title={r.name}>
                           {r.name}
@@ -99,7 +92,7 @@ export default function AgenciesList({ list, status }: { list: AdminAgencyList; 
                     <TableCell className="text-right">
                       <CreditsCell row={r} />
                     </TableCell>
-                    <TableCell>{r.trialEndsAt ? formatDate(r.trialEndsAt) : <span className="text-text-hint">None</span>}</TableCell>
+                    <TableCell>{trialEnd(r) ?? <span className="text-text-hint">None</span>}</TableCell>
                     <TableCell className="text-muted-foreground">{formatDate(r.createdAt)}</TableCell>
                   </TableRow>
                 ))}
@@ -119,28 +112,34 @@ export default function AgenciesList({ list, status }: { list: AdminAgencyList; 
                       </span>
                       <span className="block truncate text-text-hint" title={r.ownerEmail ?? "Owner email unknown"}>{r.ownerEmail ?? "Owner email unknown"}</span>
                     </span>
-                    <StatusBadge status={r.status} />
+                    <StatusBadge status={r.displayStatus} />
                   </span>
                   <span className="text-muted-foreground">
                     {r.businesses} {r.businesses === 1 ? "business" : "businesses"}
                     {r.planMix && ` (${r.planMix})`}, {credits(r.credits.plan)} plan and {credits(r.credits.topup)} top-up
                     credits
-                    {r.trialEndsAt && r.status === "trialing" && `, trial ends ${formatDate(r.trialEndsAt)}`}
+                    {trialEnd(r) && `, trial ${r.displayStatus === "trial_ended" ? "ended" : "ends"} ${formatDate(r.trialEndsAt!)}`}
                   </span>
                 </Link>
               </li>
             ))}
           </ul>
+          <Pagination base={BASE} params={params} page={list.page} pages={list.pages} total={list.total} pageSize={ADMIN_PAGE_SIZE} noun="agencies" />
         </>
       )}
     </div>
   );
 }
 
+/** The trial end, for an agency still on a trial (the same rule on phones and desktop). */
+function trialEnd(row: AdminAgencyRow): string | null {
+  return row.status === "trialing" && row.trialEndsAt ? formatDate(row.trialEndsAt) : null;
+}
+
 function StatusCell({ row }: { row: AdminAgencyRow }) {
   return (
     <span className="flex flex-col items-start gap-0.5">
-      <StatusBadge status={row.status} />
+      <StatusBadge status={row.displayStatus} />
       {row.restoreUntil ? (
         <span className="text-text-hint">Restorable until {formatDate(row.restoreUntil)}</span>
       ) : (

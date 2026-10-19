@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { aiCostShare, type Revenue } from "@/modules/admin";
-import { usd } from "../agencies/_components/agency-parts";
+import { money } from "../_components/format";
+import { STAT_LABEL, STAT_VALUE } from "../_components/stat";
 import Sparkline from "./sparkline";
 
 /** Revenue and real AI cost side by side, with the cost drawn as a share of what customers paid. */
@@ -30,10 +31,10 @@ export default function MoneyPanel({
       <div className="rounded-md border border-border bg-surface">
         <div className="grid gap-px bg-border sm:grid-cols-2">
           <div className="flex flex-col gap-1 bg-surface px-5 py-5">
-            <p className="text-[13px] text-muted-foreground">Revenue this month, from Stripe</p>
+            <p className={STAT_LABEL}>Revenue this month, from Stripe</p>
             {revenueUsd !== null ? (
               <>
-                <p className="text-[32px] leading-none font-semibold tracking-[-0.03em] tabular-nums">{usd(revenueUsd)}</p>
+                <p className={STAT_VALUE}>{money(revenueUsd)}</p>
                 {revenueChange && <p className="text-[13px] text-text-hint">{revenueChange}</p>}
               </>
             ) : (
@@ -52,13 +53,13 @@ export default function MoneyPanel({
             </p>
           </div>
           <div className="flex flex-col gap-1 bg-surface px-5 py-5">
-            <p className="text-[13px] text-muted-foreground">Real AI cost this month</p>
-            <p className="text-[32px] leading-none font-semibold tracking-[-0.03em] tabular-nums">{usd(aiCostUsd)}</p>
+            <p className={STAT_LABEL}>Real AI cost this month</p>
+            <p className={STAT_VALUE}>{money(aiCostUsd)}</p>
             {aiCostChange && <p className="text-[13px] text-text-hint">{aiCostChange}</p>}
-            {aiCostSpark && <Sparkline points={aiCostSpark} label="Real AI cost per day" format={usd} />}
+            {aiCostSpark && <Sparkline points={aiCostSpark} label="Real AI cost per day" format={money} />}
             <p className="text-[13px] text-text-hint">
               What OpenAI, Anthropic and Perplexity charged us.{" "}
-              <Link href="/internal/admin/usage" className="text-primary hover:underline">
+              <Link href="/internal/admin/usage?days=month" className="text-primary hover:underline">
                 See by model
               </Link>
             </p>
@@ -82,7 +83,7 @@ export default function MoneyPanel({
             {share === null
               ? "No revenue to compare with yet, so there is no margin to show."
               : share >= 1
-                ? `AI costs more than we take in: ${usd(aiCostUsd)} against ${usd(revenueUsd!)}.`
+                ? `AI costs more than we take in: ${money(aiCostUsd)} against ${money(revenueUsd!)}.`
                 : costShareText(share)}
           </p>
         </div>

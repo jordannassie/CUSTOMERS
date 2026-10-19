@@ -7,12 +7,17 @@ export function durationMs(startedAt: string | null, finishedAt: string | null):
   return ms >= 0 ? ms : null;
 }
 
+/** "45s", "3m 26s", "2h 5m", "2d 15h": the two largest units, so a stuck job never reads as "1501m 3s". */
 export function formatDuration(ms: number | null): string {
   if (ms === null) return "";
-  if (ms < 1000) return `${ms} ms`;
   const seconds = Math.round(ms / 1000);
+  if (seconds < 1) return "Under 1s";
   if (seconds < 60) return `${seconds}s`;
-  return `${Math.floor(seconds / 60)}m ${seconds % 60}s`;
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes}m ${seconds % 60}s`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ${minutes % 60}m`;
+  return `${Math.floor(hours / 24)}d ${hours % 24}h`;
 }
 
 /** Models a job asked for: the run records them as "openai,anthropic"; before a run exists, the business's. */

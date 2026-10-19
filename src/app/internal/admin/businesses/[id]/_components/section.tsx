@@ -1,3 +1,5 @@
+import AdminEmpty from "../../../_components/admin-empty";
+
 export default function Section({
   title,
   note,
@@ -21,10 +23,7 @@ export default function Section({
   );
 }
 
+/** A section with nothing in it: the admin empty state without a title. */
 export function Empty({ children }: { children: React.ReactNode }) {
-  return (
-    <p className="rounded-md border border-dashed border-border px-4 py-6 text-center text-[14px] text-muted-foreground">
-      {children}
-    </p>
-  );
+  return <AdminEmpty>{children}</AdminEmpty>;
 }

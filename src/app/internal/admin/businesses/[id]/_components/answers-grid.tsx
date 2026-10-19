@@ -1,7 +1,8 @@
-import { Check, Minus } from "lucide-react";
 import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import type { AdminBusinessDetail } from "@/modules/admin";
-import { formatDate, modelLabel } from "../../_components/scan-parts";
+import { modelLabel } from "../../_components/scan-parts";
+import { formatDate } from "../../../_components/format";
+import AnswerCell from "./answer-cell";
 import Section, { Empty } from "./section";
 
 type Results = NonNullable<AdminBusinessDetail>["results"];
@@ -22,7 +23,7 @@ export default function AnswersGrid({ results, models }: { results: Results; mod
   const columns = ORDER.filter((m) => asked.has(m) || models.includes(m));
 
   return (
-    <Section title="Latest answers" note={results.at ? `Scan of ${formatDate(results.at, true)}` : undefined}>
+    <Section title="Latest answers" note={results.at ? `Scan of ${formatDate(results.at, true)}. Click Named or Not named to read the answer.` : undefined}>
       <div className="rounded-md border border-border bg-surface">
         <Table className="text-[13px]">
           <TableHeader>
@@ -41,7 +42,7 @@ export default function AnswersGrid({ results, models }: { results: Results; mod
                 <TableCell className="min-w-[200px] whitespace-normal wrap-anywhere">{r.question}</TableCell>
                 {columns.map((m) => (
                   <TableCell key={m} className="text-center">
-                    <Mark value={r.mentioned[m]} />
+                    <AnswerCell value={r.mentioned[m]} question={r.question} model={modelLabel(m)} answer={r.answers[m]} />
                   </TableCell>
                 ))}
               </TableRow>
@@ -64,20 +65,5 @@ export default function AnswersGrid({ results, models }: { results: Results; mod
         </Table>
       </div>
     </Section>
-  );
-}
-
-function Mark({ value }: { value: boolean | undefined }) {
-  if (value === undefined) return <span className="text-text-hint">Not asked</span>;
-  return value ? (
-    <span className="inline-flex items-center gap-1 text-good-text">
-      <Check aria-hidden className="size-4" />
-      Named
-    </span>
-  ) : (
-    <span className="inline-flex items-center gap-1 text-muted-foreground">
-      <Minus aria-hidden className="size-4" />
-      Not named
-    </span>
   );
 }

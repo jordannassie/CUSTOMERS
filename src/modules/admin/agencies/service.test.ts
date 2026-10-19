@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { aiCostShare } from "../overview/service";
 import { adjustCreditsInput, extendTrialInput } from "./schema";
-import { canRestore, extendedTrialEnd, planMix, restoreDeadline, statusAfterUnsuspend } from "./service";
+import { canRestore, displayStatus, extendedTrialEnd, planMix, restoreDeadline, statusAfterUnsuspend } from "./service";
 
 const NOW = new Date("2026-09-29T12:00:00Z");
 const daysAgo = (n: number) => new Date(NOW.getTime() - n * 86_400_000).toISOString();
@@ -73,5 +73,23 @@ describe("aiCostShare", () => {
     expect(aiCostShare(12, { state: "ok", cents: 10_000, mode: "stripe" })).toBeCloseTo(0.12);
     expect(aiCostShare(12, { state: "ok", cents: 0, mode: "stripe" })).toBeNull();
     expect(aiCostShare(12, { state: "not_connected" })).toBeNull();
+  });
+});
+
+describe("displayStatus (admin status wording)", () => {
+  const trial = { status: "trialing", hasSubscription: true, trialEndsAt: daysAhead(3) };
+  it("keeps a running trial and every non-trial status as it is", () => {
+    expect(displayStatus(trial, NOW)).toBe("trialing");
+    expect(displayStatus({ ...trial, trialEndsAt: null }, NOW)).toBe("trialing");
+    for (const status of ["active", "past_due", "canceled", "suspended", "deleted"]) {
+      expect(displayStatus({ status, hasSubscription: false, trialEndsAt: null }, NOW)).toBe(status);
+    }
+  });
+  it("calls a trial with no subscription and no trial end an unfinished signup", () => {
+    expect(displayStatus({ status: "trialing", hasSubscription: false, trialEndsAt: null }, NOW)).toBe("signup_unfinished");
+  });
+  it("calls a trial whose end has passed ended, with or without a subscription", () => {
+    expect(displayStatus({ ...trial, trialEndsAt: daysAgo(1) }, NOW)).toBe("trial_ended");
+    expect(displayStatus({ ...trial, hasSubscription: false, trialEndsAt: daysAgo(1) }, NOW)).toBe("trial_ended");
   });
 });

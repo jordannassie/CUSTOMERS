@@ -226,7 +226,9 @@ describe("agency actions (B-65)", () => {
 
   it("lists the agency with owner, businesses and balance, and shows actions in its history", async () => {
     await actions.adjustCredits({ agencyId: agency.agencyId, delta: 30, reason: REASON, requestId: randomUUID() });
-    const { rows } = await listAgencies("test");
+    const name = `Agency Actions ${randomUUID()}`;
+    await setAgency({ name });
+    const { rows } = await listAgencies({ filter: "test", search: name });
     const row = rows.find((r) => r.id === agency.agencyId);
     expect(row).toMatchObject({ businesses: 1, isTest: true, credits: { plan: 30 } });
     expect(row?.ownerEmail).toMatch(/@example\.test$/);

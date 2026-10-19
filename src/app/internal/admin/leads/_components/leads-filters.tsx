@@ -1,8 +1,8 @@
+import { Check } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Select } from "@/components/ui/select";
-import { cn } from "cn";
 import { INTEREST_LABELS, SOURCE_LABELS, STATUS_OPTIONS } from "./lead-types";
 
 // Radix Select has no "" value, so "All ..." is this one in the list and "" everywhere else (the URL, the filter).
@@ -96,13 +96,15 @@ export function LeadsFilters({
         options={STATUS_OPTIONS.map((o) => [o.value, o.label])}
         onChange={(v) => onFilter("status", v)}
       />
+      {/* Filled while on, so it reads as switched on at a glance, not as one more outline button. */}
       <Button
         type="button"
-        variant="outline"
+        variant={unread ? "default" : "outline"}
         aria-pressed={unread}
         onClick={onToggleUnread}
-        className={cn("col-span-2 justify-self-start sm:col-span-1", unread && "border-primary/30 bg-primary-tint text-primary-hover")}
+        className="col-span-2 justify-self-start sm:col-span-1"
       >
+        {unread && <Check aria-hidden />}
         Unread only
       </Button>
     </div>

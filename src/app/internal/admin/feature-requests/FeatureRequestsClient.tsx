@@ -2,20 +2,39 @@
 
 import { useState } from "react";
 import { Inbox } from "lucide-react";
-import { cn } from "cn";
+import { toast } from "sonner";
 import { appFetch } from "@/lib/session-expired";
+import AdminEmpty from "../_components/admin-empty";
+import FilterTabs, { replaceQuery } from "../_components/filter-tabs";
+import AdminPageHeader from "../_components/page-header";
 import { RequestRow } from "./_components/request-row";
-import { STATUS_LABELS, type FeatureRequest, type Status } from "./_components/request-parts";
+import { FEATURE_FILTERS, STATUS_LABELS, type FeatureFilter, type FeatureRequest, type Status } from "./_components/request-parts";
 
-const FILTERS = ["all", "new", "reviewing", "planned", "shipped", "declined"] as const;
+const BASE = "/internal/admin/feature-requests";
 
-export default function FeatureRequestsClient({ requests: initial }: { requests: FeatureRequest[] }) {
+export default function FeatureRequestsClient({
+  requests: initial,
+  filter: initialFilter,
+  capped,
+}: {
+  requests: FeatureRequest[];
+  filter: FeatureFilter;
+  /** The list holds the newest `capped` requests only, so older ones are not shown. */
+  capped: number | null;
+}) {
   const [requests, setRequests] = useState<FeatureRequest[]>(initial);
   const [expanded, setExpanded] = useState<string | null>(null);
   const [updating, setUpdating] = useState<string | null>(null);
-  const [filter, setFilter] = useState<Status | "all">("all");
+  const [filter, setFilter] = useState<FeatureFilter>(initialFilter);
 
   const filtered = filter === "all" ? requests : requests.filter((r) => r.status === filter);
+  // From the list as it is now, so the counts move as soon as a status is saved.
+  const newCount = requests.filter((r) => r.status === "new").length;
+
+  function selectFilter(next: string) {
+    setFilter(next as FeatureFilter);
+    replaceQuery("status", next === "all" ? null : next);
+  }
 
   async function updateStatus(id: string, status: Status) {
     setUpdating(id);
@@ -25,60 +44,71 @@ export default function FeatureRequestsClient({ requests: initial }: { requests:
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status }),
       });
-      if (res.ok) {
-        setRequests((prev) => prev.map((r) => (r.id === id ? { ...r, status } : r)));
-      }
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      setRequests((prev) => prev.map((r) => (r.id === id ? { ...r, status } : r)));
+    } catch {
+      toast.error("The status was not saved, so it is still what it was. Try again.");
     } finally {
       setUpdating(null);
     }
   }
 
   return (
-    <div className="flex flex-col gap-4">
-      <nav aria-label="Filter by status">
-        <ul className="flex w-fit max-w-full flex-wrap gap-1 rounded-md border border-border bg-muted p-1">
-          {FILTERS.map((s) => {
-            const active = filter === s;
-            const count = s === "all" ? requests.length : requests.filter((r) => r.status === s).length;
-            return (
-              <li key={s}>
-                <button
-                  type="button"
-                  aria-pressed={active}
-                  onClick={() => setFilter(s)}
-                  className={cn(
-                    "flex items-center gap-2 rounded-sm px-3 py-1.5 text-[13px] font-medium whitespace-nowrap transition-colors duration-150 ease-out focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
-                    active ? "bg-surface text-foreground shadow-xs" : "text-muted-foreground hover:text-foreground",
-                  )}
-                >
-                  {s === "all" ? "All" : STATUS_LABELS[s]}
-                  <span className="tabular-nums text-[12px] text-text-hint">{count}</span>
-                </button>
-              </li>
-            );
-          })}
-        </ul>
-      </nav>
+    <>
+      <AdminPageHeader
+        title="Feature requests"
+        subtitle="Ideas people sent with Suggest a feature in the app. Open one to read it and set where it stands."
+        actions={
+          <p className="text-[13px] text-muted-foreground" data-testid="feature-request-counts">
+            {requests.length} total, {newCount} new
+          </p>
+        }
+      />
 
-      {filtered.length === 0 ? (
-        <div className="flex flex-col items-center gap-2 rounded-md border border-border bg-surface px-6 py-12 text-center">
-          <Inbox aria-hidden className="size-6 text-text-hint" />
-          <p className="text-[15px] font-medium">No feature requests yet.</p>
-        </div>
-      ) : (
-        <ul className="flex flex-col divide-y divide-border overflow-hidden rounded-md border border-border bg-surface">
-          {filtered.map((req) => (
-            <RequestRow
-              key={req.id}
-              req={req}
-              expanded={expanded === req.id}
-              saving={updating === req.id}
-              onToggle={() => setExpanded(expanded === req.id ? null : req.id)}
-              onStatus={(s) => updateStatus(req.id, s)}
-            />
-          ))}
-        </ul>
-      )}
-    </div>
+      <div className="flex flex-col gap-4">
+        <FilterTabs
+          label="Filter by status"
+          active={filter}
+          onSelect={selectFilter}
+          tabs={FEATURE_FILTERS.map((s) => ({
+            key: s,
+            label: s === "all" ? "All" : STATUS_LABELS[s],
+            href: s === "all" ? BASE : `${BASE}?status=${s}`,
+            count: s === "all" ? requests.length : requests.filter((r) => r.status === s).length,
+          }))}
+        />
+
+        {capped !== null && (
+          <p className="text-[13px] text-muted-foreground" data-testid="feature-request-cap">
+            Showing the newest {capped} requests. Older ones are not listed or counted here.
+          </p>
+        )}
+
+        {filtered.length === 0 ? (
+          requests.length === 0 ? (
+            <AdminEmpty icon={Inbox} title="No feature requests yet">
+              A request shows up here as soon as someone sends one with Suggest a feature.
+            </AdminEmpty>
+          ) : (
+            <AdminEmpty icon={Inbox} title="No requests match this filter">
+              Pick All to see every request.
+            </AdminEmpty>
+          )
+        ) : (
+          <ul className="flex flex-col divide-y divide-border overflow-hidden rounded-md border border-border bg-surface">
+            {filtered.map((req) => (
+              <RequestRow
+                key={req.id}
+                req={req}
+                expanded={expanded === req.id}
+                saving={updating === req.id}
+                onToggle={() => setExpanded(expanded === req.id ? null : req.id)}
+                onStatus={(s) => updateStatus(req.id, s)}
+              />
+            ))}
+          </ul>
+        )}
+      </div>
+    </>
   );
 }

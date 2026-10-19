@@ -1,7 +1,8 @@
 import { INDUSTRY_LABELS, isIndustry } from "@/lib/industries";
 import type { AdminBusinessDetail } from "@/modules/admin";
 import { agencyStatusLabel, planStatusLabel } from "../../../agencies/_components/agency-parts";
-import { ModelList, deletedNote, formatDate, frequencyLabel } from "../../_components/scan-parts";
+import { ModelList, deletedNote, frequencyLabel } from "../../_components/scan-parts";
+import { formatDate } from "../../../_components/format";
 import Section from "./section";
 
 const STATUS: Record<string, string> = {
