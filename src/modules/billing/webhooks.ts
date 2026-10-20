@@ -1,6 +1,7 @@
 import "server-only";
 import Stripe from "stripe";
 import { env } from "@/lib/env";
+import { recordVideoAdCheckout } from "@/modules/video-ads";
 import { getStripe } from "./stripe";
 import { createWebhookStore } from "./webhooks/dal";
 import { sendBillingEmail } from "./webhooks/emails";
@@ -33,7 +34,13 @@ function stripeReader(): StripeReader {
 }
 
 function defaultDeps(): WebhookDeps {
-  return { store: createWebhookStore(), stripe: stripeReader(), sendEmail: sendBillingEmail, now: () => new Date() };
+  return {
+    store: createWebhookStore(),
+    stripe: stripeReader(),
+    sendEmail: sendBillingEmail,
+    now: () => new Date(),
+    recordVideoAd: recordVideoAdCheckout,
+  };
 }
 
 /**

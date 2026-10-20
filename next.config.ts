@@ -5,13 +5,12 @@ import { securityHeaders } from "./src/lib/security-headers";
 
 const supabaseUrl = new URL(env.NEXT_PUBLIC_SUPABASE_URL);
 
-// Products cut from the MVP (D-04); old links and search results land on the homepage.
+// Products cut from the MVP (D-04). /ads is the AI video ads sales page and is not in this list.
 const CUT_PAGES = [
   "/ai-employee",
   "/ai-phone",
   "/dm-ads",
   "/customer-acquisition",
-  "/ads",
   "/call-bar",
   "/sales",
   "/home-2",
@@ -92,6 +91,12 @@ const nextConfig: NextConfig = {
         hostname: supabaseUrl.hostname,
         port: supabaseUrl.port,
         pathname: "/storage/v1/object/public/**",
+      },
+      // Public site images (Mr. Direct, launch kit) are kept in the live project's storage, so previews show them too.
+      {
+        protocol: "https",
+        hostname: "wsxusvapciexemfvtadm.supabase.co",
+        pathname: "/storage/v1/object/public/STORAGE/images/**",
       },
     ],
   },

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { MrDirectAvatar } from "@/components/site/MrDirectAvatar";
 import { Logo } from "./Logo";
 import { MobileMenu } from "./MobileMenu";
 import { LOGIN_HREF, NAV_LINKS, TRIAL_HREF, TRIAL_LABEL } from "./nav";
@@ -10,7 +11,7 @@ export default function Header() {
       <div className="mx-auto flex h-16 max-w-[1120px] items-center gap-8 px-4 sm:px-6">
         <Logo priority />
 
-        <nav aria-label="Main" className="hidden flex-1 md:block">
+        <nav aria-label="Main" className="hidden flex-1 lg:block">
           <ul className="flex items-center gap-1">
             {NAV_LINKS.map(({ label, href }) => (
               <li key={href}>
@@ -25,7 +26,15 @@ export default function Header() {
           </ul>
         </nav>
 
-        <div className="ml-auto hidden items-center gap-2 md:flex">
+        <div className="ml-auto hidden items-center gap-2 lg:flex">
+          <Link
+            href="/contact"
+            aria-label="Talk to Mr. Direct"
+            title="Talk to Mr. Direct"
+            className="shrink-0 rounded-full focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
+          >
+            <MrDirectAvatar alt="" className="size-9 border border-border" />
+          </Link>
           <Button asChild variant="ghost">
             <Link href={LOGIN_HREF}>Log in</Link>
           </Button>
@@ -34,7 +43,7 @@ export default function Header() {
           </Button>
         </div>
 
-        <div className="ml-auto md:hidden">
+        <div className="ml-auto lg:hidden">
           <MobileMenu />
         </div>
       </div>

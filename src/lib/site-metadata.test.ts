@@ -9,7 +9,7 @@ describe("sitemap", () => {
   it("lists only the kept public pages", () => {
     const urls = sitemapEntries(new Date(0)).map((entry) => entry.url);
     expect(urls).toEqual(
-      ["/", "/pricing", "/agency", "/compare", "/contact", "/privacy", "/terms"].map((path) => `${SITE_URL}${path}`),
+      ["/", "/pricing", "/agency", "/start-ai-business", "/compare", "/contact", "/ads", "/apps", "/privacy", "/terms"].map((path) => `${SITE_URL}${path}`),
     );
   });
 });

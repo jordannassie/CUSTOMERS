@@ -71,6 +71,9 @@ export const env = createEnv({
     NEXT_PUBLIC_SITE_URL: z.url().optional(),
     NEXT_PUBLIC_APP_URL: z.url().optional(),
     NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: z.string().min(1).optional(),
+    NEXT_PUBLIC_LAUNCH_KIT_PAYMENT_LINK: z.url().optional(),
+    NEXT_PUBLIC_BEEHIIV_EMBED_SRC: z.url().optional(),
+    NEXT_PUBLIC_BEEHIIV_FORM_ID: z.uuid().optional(),
   },
   runtimeEnv: {
     NODE_ENV: process.env.NODE_ENV,
@@ -112,6 +115,9 @@ export const env = createEnv({
     NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL,
     NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
     NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY,
+    NEXT_PUBLIC_LAUNCH_KIT_PAYMENT_LINK: process.env.NEXT_PUBLIC_LAUNCH_KIT_PAYMENT_LINK,
+    NEXT_PUBLIC_BEEHIIV_EMBED_SRC: process.env.NEXT_PUBLIC_BEEHIIV_EMBED_SRC,
+    NEXT_PUBLIC_BEEHIIV_FORM_ID: process.env.NEXT_PUBLIC_BEEHIIV_FORM_ID,
   },
   emptyStringAsUndefined: true,
 });

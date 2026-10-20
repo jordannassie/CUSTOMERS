@@ -1,9 +1,9 @@
 "use client";
 
 import React, { useState, useEffect, useCallback, Suspense } from "react";
-import Image from "next/image";
-import { BarChart3, Building2, Calendar, Check, ChevronLeft, MessageCircle, MessageSquare, RotateCcw, X } from "lucide-react";
+import { BarChart3, Building2, Calendar, Check, ChevronLeft, MessageSquare, RotateCcw, X } from "lucide-react";
 import ContactForm, { type InterestValue } from "@/components/site/ContactForm";
+import { MrDirectAvatar } from "@/components/site/MrDirectAvatar";
 
 type Stage = "opening" | "form" | "done";
 
@@ -14,7 +14,8 @@ const CHAT_CHOICES: { value: InterestValue; label: string; icon: React.ReactNode
   { value: "other",         label: "Other",          icon: <MessageSquare className="size-[18px]" aria-hidden="true" /> },
 ];
 
-const JORDAN_PHOTO = "/images/people/jordan.jpg";
+// The chat speaks as Mr. Direct, the site's guide (merged from main).
+const GREETING = "Hi! I'm Mr. Direct. How can I help you today?";
 
 // Below this width the page content reaches the launcher's corner (UI-002).
 const WIDE_QUERY = "(min-width: 1400px)";
@@ -110,7 +111,7 @@ export default function ChatWidget() {
           role="button"
           aria-label="Open chat"
         >
-          Hi! What can we help you with?
+          {GREETING}
           <div className="absolute -bottom-[5px] right-6 size-2.5 rotate-45 border-r border-b border-border bg-surface" />
         </div>
       )}
@@ -118,10 +119,14 @@ export default function ChatWidget() {
       {showLauncher && (
         <button
           onClick={handleToggle}
-          aria-label={open ? "Close chat" : "Chat with us"}
+          aria-label={open ? "Close chat" : "Chat with Mr. Direct"}
           className={`fixed right-4 bottom-4 z-50 inline-flex h-11 items-center gap-2 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground shadow-float transition-colors duration-150 ease-out hover:bg-primary-hover focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:ring-offset-2 sm:right-6 sm:bottom-6 ${enter}`}
         >
-          {open ? <X className="size-5" aria-hidden="true" /> : <MessageCircle className="size-5" aria-hidden="true" />}
+          {open ? (
+            <X className="size-5" aria-hidden="true" />
+          ) : (
+            <MrDirectAvatar alt="" className="-ml-2 size-8 border-2 border-primary-foreground" />
+          )}
           Chat
           {unread && <span className="size-2 rounded-full bg-primary-foreground" aria-hidden="true" />}
         </button>
@@ -130,7 +135,7 @@ export default function ChatWidget() {
       {open && (
         <div
           role="dialog"
-          aria-label="Chat with Customers.Direct"
+          aria-label="Chat with Mr. Direct"
           className={[
             "fixed z-50 flex flex-col overflow-hidden border border-border bg-surface shadow-float",
             "inset-x-0 bottom-0 max-h-[min(90dvh,90vh)] rounded-t-md",
@@ -139,16 +144,10 @@ export default function ChatWidget() {
           ].join(" ")}
         >
           <div className="flex shrink-0 items-center gap-3 border-b border-border px-4 py-3">
-            <Image
-              src={JORDAN_PHOTO}
-              alt="Jordan at Customers.Direct"
-              width={40}
-              height={40}
-              className="size-10 shrink-0 rounded-full border border-border bg-muted object-cover"
-            />
+            <MrDirectAvatar alt="" className="size-10 shrink-0 border border-border bg-muted" />
             <div className="min-w-0 flex-1">
-              <p className="text-sm leading-tight font-semibold text-foreground">Customers.Direct</p>
-              <p className="text-xs text-muted-foreground">We typically respond within 24 hours</p>
+              <p className="text-sm leading-tight font-semibold text-foreground">Mr. Direct</p>
+              <p className="text-xs text-muted-foreground">Customers.Direct team, replies within 24 hours</p>
             </div>
             {stage !== "opening" && (
               <button onClick={reset} aria-label="Start over" title="Start over" className={iconButton}>
@@ -164,16 +163,9 @@ export default function ChatWidget() {
             {stage === "opening" && (
               <div className="flex flex-col gap-4 px-4 py-6">
                 <div className="flex items-start gap-3">
-                  <Image
-                    src={JORDAN_PHOTO}
-                    alt=""
-                    aria-hidden="true"
-                    width={32}
-                    height={32}
-                    className="size-8 shrink-0 rounded-full bg-muted object-cover"
-                  />
+                  <MrDirectAvatar alt="" className="size-8 shrink-0 bg-muted" />
                   <div className="max-w-[85%] rounded-md bg-muted px-4 py-2.5 text-sm leading-relaxed text-foreground">
-                    Hi! What can we help you with?
+                    {GREETING}
                   </div>
                 </div>
 

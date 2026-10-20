@@ -52,6 +52,7 @@ const TERM_ALLOW: Record<string, string> = {
   "src/app/api/internal/admin/news/search/route.ts": "LinkedIn studio AI prompt, kept untouched until Jordan answers (D-07)",
   "src/app/internal/admin/news/_components/news-config.ts": "LinkedIn studio, kept untouched until Jordan answers (D-07)",
   "src/app/internal/admin/news/_components/output-panel.tsx": "LinkedIn studio, kept untouched until Jordan answers (D-07)",
+  "src/modules/video-ads/portfolio.ts": "a storage folder name inside a video URL, never shown",
 };
 
 function walk(dir: string): string[] {

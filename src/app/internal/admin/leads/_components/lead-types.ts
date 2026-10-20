@@ -52,6 +52,7 @@ export const SOURCE_LABELS: Record<string, string> = {
   agency: "Agency page",
   other: "Other",
   ads_page: "Ads page (legacy)",
+  video_ad: "AI video ads",
 };
 
 export const STATUS_OPTIONS: { value: string; label: string; variant: StatusVariant }[] = [

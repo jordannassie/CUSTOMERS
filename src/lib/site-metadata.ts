@@ -8,8 +8,12 @@ export const PUBLIC_PAGES: { path: string; changeFrequency: "weekly" | "monthly"
   { path: "/", changeFrequency: "weekly", priority: 1 },
   { path: "/pricing", changeFrequency: "weekly", priority: 0.9 },
   { path: "/agency", changeFrequency: "monthly", priority: 0.8 },
+  { path: "/start-ai-business", changeFrequency: "weekly", priority: 0.85 },
   { path: "/compare", changeFrequency: "monthly", priority: 0.7 },
   { path: "/contact", changeFrequency: "yearly", priority: 0.5 },
+  // Merged from main: AI video ads and the AI apps directory (each app's page is added in app/sitemap.ts).
+  { path: "/ads", changeFrequency: "weekly", priority: 0.9 },
+  { path: "/apps", changeFrequency: "weekly", priority: 0.8 },
   { path: "/privacy", changeFrequency: "yearly", priority: 0.3 },
   { path: "/terms", changeFrequency: "yearly", priority: 0.3 },
 ];

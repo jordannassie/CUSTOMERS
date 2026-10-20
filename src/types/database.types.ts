@@ -1949,6 +1949,333 @@ export type Database = {
           },
         ]
       }
+      directory_apps: {
+        Row: {
+          active: boolean
+          affiliate_url: string | null
+          categories: string[]
+          description: string
+          featured: boolean
+          name: string
+          popular: boolean
+          provider: string
+          slug: string
+          top_pick: boolean
+          updated_at: string
+          website_url: string
+        }
+        Insert: {
+          active?: boolean
+          affiliate_url?: string | null
+          categories: string[]
+          description: string
+          featured?: boolean
+          name: string
+          popular?: boolean
+          provider: string
+          slug: string
+          top_pick?: boolean
+          updated_at?: string
+          website_url: string
+        }
+        Update: {
+          active?: boolean
+          affiliate_url?: string | null
+          categories?: string[]
+          description?: string
+          featured?: boolean
+          name?: string
+          popular?: boolean
+          provider?: string
+          slug?: string
+          top_pick?: boolean
+          updated_at?: string
+          website_url?: string
+        }
+        Relationships: []
+      }
+      directory_clicks: {
+        Row: {
+          created_at: string
+          destination: string
+          id: string
+          slug: string
+          source: string
+          utm_campaign: string | null
+          utm_medium: string | null
+          utm_source: string | null
+        }
+        Insert: {
+          created_at?: string
+          destination: string
+          id?: string
+          slug: string
+          source: string
+          utm_campaign?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+        }
+        Update: {
+          created_at?: string
+          destination?: string
+          id?: string
+          slug?: string
+          source?: string
+          utm_campaign?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+        }
+        Relationships: []
+      }
+      app_reviews: {
+        Row: {
+          company: string | null
+          cons: string
+          created_at: string
+          experienced: boolean
+          id: string
+          industry: string | null
+          job_role: string | null
+          pros: string
+          published_at: string | null
+          rating: number
+          recommendation: string
+          slug: string
+          status: string
+          title: string
+          updated_at: string
+          use_case: string
+          user_id: string
+        }
+        Insert: {
+          company?: string | null
+          cons: string
+          created_at?: string
+          experienced: boolean
+          id?: string
+          industry?: string | null
+          job_role?: string | null
+          pros: string
+          published_at?: string | null
+          rating: number
+          recommendation: string
+          slug: string
+          status?: string
+          title: string
+          updated_at?: string
+          use_case: string
+          user_id: string
+        }
+        Update: {
+          company?: string | null
+          cons?: string
+          created_at?: string
+          experienced?: boolean
+          id?: string
+          industry?: string | null
+          job_role?: string | null
+          pros?: string
+          published_at?: string | null
+          rating?: number
+          recommendation?: string
+          slug?: string
+          status?: string
+          title?: string
+          updated_at?: string
+          use_case?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      app_review_reports: {
+        Row: {
+          created_at: string
+          details: string | null
+          id: string
+          reason: string
+          reporter_id: string
+          review_id: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          details?: string | null
+          id?: string
+          reason: string
+          reporter_id: string
+          review_id: string
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          details?: string | null
+          id?: string
+          reason?: string
+          reporter_id?: string
+          review_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "app_review_reports_review_id_fkey"
+            columns: ["review_id"]
+            isOneToOne: false
+            referencedRelation: "app_reviews"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      app_review_votes: {
+        Row: {
+          created_at: string
+          helpful: boolean
+          review_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          helpful: boolean
+          review_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          helpful?: boolean
+          review_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "app_review_votes_review_id_fkey"
+            columns: ["review_id"]
+            isOneToOne: false
+            referencedRelation: "app_reviews"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      app_review_moderation_events: {
+        Row: {
+          action: string
+          actor_id: string | null
+          created_at: string
+          id: string
+          note: string | null
+          review_id: string
+          snapshot: Json
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          created_at?: string
+          id?: string
+          note?: string | null
+          review_id: string
+          snapshot?: Json
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          created_at?: string
+          id?: string
+          note?: string | null
+          review_id?: string
+          snapshot?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "app_review_moderation_events_review_id_fkey"
+            columns: ["review_id"]
+            isOneToOne: false
+            referencedRelation: "app_reviews"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      newsletter_events: {
+        Row: {
+          created_at: string
+          event: string
+          id: string
+          placement: string
+        }
+        Insert: {
+          created_at?: string
+          event: string
+          id?: string
+          placement: string
+        }
+        Update: {
+          created_at?: string
+          event?: string
+          id?: string
+          placement?: string
+        }
+        Relationships: []
+      }
+      video_ad_orders: {
+        Row: {
+          amount_cents: number
+          asset_url: string | null
+          audience: string | null
+          brief_submitted_at: string | null
+          business_name: string | null
+          created_at: string
+          creative_instructions: string | null
+          currency: string
+          customer_name: string | null
+          email: string | null
+          id: string
+          package_id: string
+          product: string | null
+          status: string
+          stripe_checkout_session_id: string
+          stripe_payment_intent_id: string | null
+          updated_at: string
+          website_url: string | null
+        }
+        Insert: {
+          amount_cents: number
+          asset_url?: string | null
+          audience?: string | null
+          brief_submitted_at?: string | null
+          business_name?: string | null
+          created_at?: string
+          creative_instructions?: string | null
+          currency?: string
+          customer_name?: string | null
+          email?: string | null
+          id?: string
+          package_id: string
+          product?: string | null
+          status?: string
+          stripe_checkout_session_id: string
+          stripe_payment_intent_id?: string | null
+          updated_at?: string
+          website_url?: string | null
+        }
+        Update: {
+          amount_cents?: number
+          asset_url?: string | null
+          audience?: string | null
+          brief_submitted_at?: string | null
+          business_name?: string | null
+          created_at?: string
+          creative_instructions?: string | null
+          currency?: string
+          customer_name?: string | null
+          email?: string | null
+          id?: string
+          package_id?: string
+          product?: string | null
+          status?: string
+          stripe_checkout_session_id?: string
+          stripe_payment_intent_id?: string | null
+          updated_at?: string
+          website_url?: string | null
+        }
+        Relationships: []
+      }
       visibility_results: {
         Row: {
           answer_text: string | null

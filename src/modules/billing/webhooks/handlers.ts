@@ -22,7 +22,17 @@ export type StripeReader = {
   checkoutSessionForPaymentIntent(paymentIntentId: string): Promise<Stripe.Checkout.Session | null>;
 };
 
-export type WebhookDeps = { store: WebhookStore; stripe: StripeReader; sendEmail: SendBillingEmail; now: () => Date };
+export type WebhookDeps = {
+  store: WebhookStore;
+  stripe: StripeReader;
+  sendEmail: SendBillingEmail;
+  now: () => Date;
+  /** Saves a paid one-time video ad order (/ads). Without it, video ad events are ignored. */
+  recordVideoAd?: (session: Stripe.Checkout.Session) => Promise<void>;
+};
+
+/** A one-time video ad from /ads. It never touches credits, plans or the agency, whatever else the session says. */
+export const isVideoAdSession = (session: Pick<Stripe.Checkout.Session, "metadata">) => session.metadata?.kind === "video_ad";
 
 const idOf = (ref: string | { id: string } | null | undefined) => (typeof ref === "string" ? ref : ref?.id ?? null);
 const iso = (seconds: number | null | undefined) => (seconds ? new Date(seconds * 1000).toISOString() : null);
@@ -198,6 +208,11 @@ export async function dispatchEvent(deps: WebhookDeps, event: Stripe.Event): Pro
   switch (event.type) {
     case "checkout.session.completed":
     case "checkout.session.async_payment_succeeded":
+      if (isVideoAdSession(event.data.object)) {
+        if (!deps.recordVideoAd) return "ignored";
+        await deps.recordVideoAd(event.data.object);
+        return "handled";
+      }
       await checkoutCompleted(deps, event.data.object);
       return "handled";
     case "invoice.paid":

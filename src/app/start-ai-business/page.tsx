@@ -1,0 +1,41 @@
+import type { Metadata } from "next";
+import Header from "@/components/marketing/Header";
+import Footer from "@/components/marketing/Footer";
+import LaunchKitHero from "@/components/site/launch-kit/LaunchKitHero";
+import LaunchKitWhatYouGet from "@/components/site/launch-kit/LaunchKitWhatYouGet";
+import LaunchKitBottom from "@/components/site/launch-kit/LaunchKitBottom";
+import { launchKitIntroVideoExists } from "@/components/site/launch-kit/LaunchKitVideo";
+import { LAUNCH_KIT_AD_IMAGE } from "@/config/launch-kit-assets";
+
+const title = "Get the AI Business Launch Kit for $97 | Customers.Direct";
+const description =
+  "One-time $97 kit with training, scripts, templates, and a first-client plan to help local businesses get found in ChatGPT and AI search.";
+
+export const metadata: Metadata = {
+  title,
+  description,
+  alternates: { canonical: "/start-ai-business" },
+  openGraph: {
+    type: "website",
+    title,
+    description,
+    url: "https://customers.direct/start-ai-business",
+    images: [{ url: LAUNCH_KIT_AD_IMAGE }],
+  },
+};
+
+export default function StartAiBusinessPage() {
+  const hasVideo = launchKitIntroVideoExists();
+
+  return (
+    <div className="min-h-screen bg-white">
+      <Header />
+      <main>
+        <LaunchKitHero hasVideo={hasVideo} />
+        <LaunchKitWhatYouGet />
+        <LaunchKitBottom />
+      </main>
+      <Footer />
+    </div>
+  );
+}

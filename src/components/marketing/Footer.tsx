@@ -28,6 +28,14 @@ const COLUMNS = [
     ],
   },
   {
+    heading: "Resources",
+    links: [
+      { label: "AI apps", href: "/apps" },
+      { label: "AI newsletter", href: "/#newsletter" },
+      { label: "Start an AI business", href: "/start-ai-business" },
+    ],
+  },
+  {
     heading: "Account",
     links: [
       { label: "Log in", href: "/login" },
@@ -50,7 +58,7 @@ export default function Footer({ showGoogleAttribution = false }: { showGoogleAt
   return (
     <footer className="border-t border-border bg-surface">
       <div className="mx-auto max-w-[1120px] px-4 py-12 sm:px-6 sm:py-16">
-        <div className="grid gap-10 md:grid-cols-[1.4fr_repeat(3,1fr)]">
+        <div className="grid gap-10 md:grid-cols-[1.4fr_repeat(4,1fr)]">
           <div className="flex flex-col gap-4">
             <Logo className="h-8 w-auto" />
             <p className="max-w-xs text-sm text-muted-foreground">
@@ -69,7 +77,7 @@ export default function Footer({ showGoogleAttribution = false }: { showGoogleAt
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-8 sm:grid-cols-3 md:contents">
+          <div className="grid grid-cols-2 gap-8 sm:grid-cols-4 md:contents">
             {COLUMNS.map(({ heading, links }) => (
               <nav key={heading} aria-label={heading}>
                 <h2 className="text-[13px] font-semibold">{heading}</h2>

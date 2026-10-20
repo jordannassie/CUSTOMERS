@@ -163,4 +163,16 @@ Live has 001 to 020 (Baseline above) and none of the files below. Go-live applie
 - `069_scan_schedule_and_reuse.sql` (H1, M3: new functions `next_scheduled_scan_run` (the first 02:00 UTC enqueue-due-scans run after a time), `queue_skipped_scans(agency)` (after a top-up, queues the agency's scans that did not run for lack of credits, with the enqueue_due_scans filters and its go-live switch, never a business with a finished scan in the last 20 hours) and `scan_jobs_reused_answers` (per scan job, checks answered from the shared cache, for the scan history); redefines `scan_job_settle_failure` so a scan skipped for lack of credits is due again at the next 02:00 run instead of a full cycle later. Apply with the app version that has the 20-hour answer cache and 02:00-aligned next scan dates. Then run `npm run db:types` and check the diff only adds those three functions)
 
 - `070_topup_refunds_and_renewal_grace.sql` (credit_transactions kind `refund`; new credit functions `refund_topup_grant` (Stripe `charge.refunded` for a top-up: removes the refunded share of what is left, audit row `stripe.topup_refund`, alert `topup_refund_unrecovered` for spent credits) and `end_previous_period_grants` (a paid new period ends the previous period's plan and trial grants, which now run 6 hours past their period end); redefines `low_credit_agencies` so the email's renewal date comes from `agencies.current_period_end`. Additive; apply with the app version that calls them. New functions added to `database.types.ts` by hand)
+
+From `main` (video ads, app directory, app reviews, newsletter). On `main` they were numbered 024 to 029, which clash with ours, so they were renamed when `main` was merged; their SQL is unchanged. Every new table enables RLS. Only `app_reviews` and its child tables have policies (owner and public read); the rest are service role only.
+
+- `071_video_ad_orders.sql` (was 024; new table `video_ad_orders`, one-time video ad orders saved by the Stripe webhook)
+- `072_app_directory.sql` (was 025; new tables `directory_apps`, `directory_clicks`)
+- `073_app_review_clicks.sql` (was 026; widens the `directory_clicks` source and destination checks)
+- `074_native_app_reviews.sql` (was 027; new tables `app_reviews`, `app_review_reports`, `app_review_votes`, `app_review_moderation_events` and their policies. Its `create policy` statements have no `drop policy if exists`, so it fails if run twice)
+- `075_newsletter_events.sql` (was 028; new table `newsletter_events`)
+- `076_newsletter_confirmed.sql` (was 029; widens the `newsletter_events` event check)
+
+On live these may already exist from main; if live's history records 024-029 for main's files, run migration repair --status reverted 024-029 before db push. If main's tables and policies are already on live, check they match these files and mark them applied (`supabase migration repair --status applied 071 072 073 074 075 076`) instead of running them, because 074 cannot run twice.
+
 Any file added after 043 joins this list.

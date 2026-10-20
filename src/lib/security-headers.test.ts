@@ -24,4 +24,12 @@ describe("security headers", () => {
     expect(csp).not.toContain("unsafe-eval");
     expect(contentSecurityPolicy({ supabaseUrl, isDev: true })).toContain("'unsafe-eval'");
   });
+
+  it("allows the Beehiiv newsletter form and the /ads videos, nothing wider", () => {
+    const csp = contentSecurityPolicy({ supabaseUrl, isDev: false });
+    expect(csp).toMatch(/script-src [^;]*https:\/\/\*\.beehiiv\.com/);
+    expect(csp).toMatch(/frame-src [^;]*https:\/\/\*\.beehiiv\.com/);
+    expect(csp).toContain("media-src 'self' https://abc.supabase.co https://wsxusvapciexemfvtadm.supabase.co");
+    expect(csp).not.toMatch(/(script|frame)-src [^;]*https:(?!\/\/)/);
+  });
 });

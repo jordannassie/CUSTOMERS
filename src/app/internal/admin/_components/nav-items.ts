@@ -1,9 +1,12 @@
 import {
+  AppWindow,
   Building2,
+  Clapperboard,
   Coins,
   Inbox,
   LayoutDashboard,
   Lightbulb,
+  MessageSquareText,
   Newspaper,
   ScanSearch,
   Settings,
@@ -34,6 +37,10 @@ export const EXTRA_ITEMS: AdminNavItem[] = [
   { label: "Leads", href: `${BASE}/leads`, icon: Inbox },
   { label: "Feature requests", href: `${BASE}/feature-requests`, icon: Lightbulb },
   { label: "LinkedIn studio", href: `${BASE}/news`, icon: Newspaper },
+  // Public site extras merged from main: the /apps directory, its reviews and /ads orders.
+  { label: "Apps", href: `${BASE}/apps`, icon: AppWindow },
+  { label: "Reviews", href: `${BASE}/reviews`, icon: MessageSquareText },
+  { label: "Video ads", href: `${BASE}/video-ads`, icon: Clapperboard },
 ];
 
 function matches(pathname: string, href: string): boolean {
