@@ -2,6 +2,9 @@ import { expect, test } from "@playwright/test";
 
 // B-74: sitemap, robots, one title and link preview per public page, and the contact form's spam trap.
 const PUBLIC_PAGES = ["/", "/pricing", "/agency", "/compare", "/contact", "/privacy", "/terms"];
+// The sitemap also lists the pages merged from main, then one page per app in the AI apps directory.
+const SITEMAP_PAGES = ["/", "/pricing", "/agency", "/start-ai-business", "/compare", "/contact", "/ads", "/apps", "/privacy", "/terms"];
+const APP_PAGE = /^\/apps\/[a-z0-9-]+$/;
 
 test.describe("desktop only", () => {
   test.skip(({ isMobile }) => isMobile, "Same output on every screen size.");
@@ -9,7 +12,8 @@ test.describe("desktop only", () => {
   test("sitemap lists the public pages and robots blocks the app", async ({ request }) => {
     const sitemap = await (await request.get("/sitemap.xml")).text();
     const urls = [...sitemap.matchAll(/<loc>(.*?)<\/loc>/g)].map((match) => new URL(match[1]).pathname);
-    expect(urls).toEqual(PUBLIC_PAGES);
+    expect(urls.filter((path) => !APP_PAGE.test(path))).toEqual(SITEMAP_PAGES);
+    expect(urls.filter((path) => APP_PAGE.test(path))).toContain("/apps/chatgpt");
 
     const robots = await (await request.get("/robots.txt")).text();
     for (const path of ["/dashboard", "/sources", "/competitors", "/questions", "/opportunities", "/onboarding", "/internal", "/r/", "/api/"]) {
