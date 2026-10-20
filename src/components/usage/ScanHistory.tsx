@@ -14,7 +14,7 @@ const STATUS = {
 
 const statusOf = (s: string) => STATUS[s as keyof typeof STATUS] ?? STATUS.queued;
 
-/** Checks answered from the shared answer cache (H1): the same answer as a recent scan, still 1 credit each. */
+/** Checks answered from the shared answer cache (H1): free since 2026-10-20 (D-24), charged before, so no price here. */
 function Reused({ n }: { n: number }) {
   if (n === 0) return null;
   return (
@@ -32,8 +32,8 @@ export function ScanHistory({ scans }: { scans: UsageReport["scans"] }) {
           Scan history
         </h2>
         <p className="mt-3 text-sm text-muted-foreground">
-          Each check a model answers costs 1 credit, including answers reused from a recent scan. Checks that fail are
-          never charged.
+          Each new answer costs 1 credit. Answers reused from a recent scan are free, and checks that fail are never
+          charged.
         </p>
       </div>
       {scans.length === 0 ? (

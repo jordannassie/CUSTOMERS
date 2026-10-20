@@ -12,8 +12,8 @@ import {
 } from "@/components/ui/dialog";
 
 /**
- * Asked before a Run scan within 24 hours of the last scan (2026-10-15, D-54): the answers mostly repeat and each
- * check still uses a credit. `message` is the server's own wording, with the real credit count.
+ * Asked before a Run scan within 20 hours of the last scan (2026-10-15, D-24): the answers mostly repeat, and the
+ * reused ones are free. `message` is the server's own wording.
  */
 export function RecentScanDialog({
   message,

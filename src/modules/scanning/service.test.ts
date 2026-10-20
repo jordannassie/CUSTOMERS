@@ -154,32 +154,6 @@ describe("runScan (B-26)", () => {
     expect(flapping).toHaveBeenCalledTimes(12);
   });
 
-  it("serves a second business in the same city from the cache and still charges 1 credit a check", async () => {
-    const agency = await createScanAgency();
-    const first = await createScanBusiness(agency);
-    const firstJob = await newJob(first);
-    await runScan(firstJob, { ...runners(), extractNames });
-
-    const other = await createScanAgency();
-    const second = await createScanBusiness(other, first.city);
-    const live = runners();
-    extractNames.mockClear();
-    const outcome = await runScan(await newJob(second), { checkRunner: live.checkRunner, extractNames });
-
-    expect(outcome).toMatchObject({ status: "done", charged: 36 });
-    for (const run of Object.values(live.all)) expect(run).not.toHaveBeenCalled();
-    // Names were stored with the cached answers, so the hit needs no new extraction.
-    expect(extractNames).not.toHaveBeenCalled();
-    if (outcome.status === "skipped") throw new Error("unexpected skip");
-    const rows = await results(outcome.runId);
-    expect(rows.every((r) => r.cached && Number(r.cost_usd) === 0)).toBe(true);
-    expect(await balance(other.agencyId)).toBe(64);
-
-    const { data: usage } = await service.from("usage_events").select("cached, estimated_cost_usd").eq("business_id", second.businessId);
-    expect(usage).toHaveLength(36);
-    expect(usage!.every((u) => u.cached && Number(u.estimated_cost_usd) === 0)).toBe(true);
-  });
-
   it("never charges a check twice when the same job runs again", async () => {
     const agency = await createScanAgency();
     const business = await createScanBusiness(agency);

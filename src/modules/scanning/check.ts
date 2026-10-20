@@ -1,6 +1,6 @@
 import "server-only";
 // One check inside a scan (MVP_SPEC 5.2): answer (cache or model), mentions, names, saved result.
-// Charging is left to the scan, which captures a credit only for a check that returns ok.
+// Charging is left to the scan, which captures a credit only for a check that returns ok with a new answer.
 import { createHash } from "node:crypto";
 import type { Json } from "@/types/database.types";
 import { cacheKey, checkWithCache, recordCheckUsage, type CheckAnswer } from "./cache";
@@ -29,7 +29,8 @@ export type CheckContext = {
   extractNames: ExtractNames | null;
 };
 
-export type CheckOutcome = { ok: true } | { ok: false; error: string; reason: string };
+/** `cached`: the answer came from the shared answer cache, so the check is free (D-24, 2026-10-20). */
+export type CheckOutcome = { ok: true; cached: boolean } | { ok: false; error: string; reason: string };
 
 /** Same job, question and model always give the same id, so a retried job can never charge a check twice. */
 export function checkIdFor(jobId: string, promptId: string, provider: ProviderId): string {
@@ -84,7 +85,7 @@ export async function runOneCheck(task: CheckTask, ctx: CheckContext): Promise<C
     latencyMs: answer.latencyMs,
     isSample: ctx.isTest,
   });
-  return { ok: true };
+  return { ok: true, cached: answer.cached };
 }
 
 // A timeout or an unfinished search often clears in seconds; one more try beats failing the check (BUG-083). Rate

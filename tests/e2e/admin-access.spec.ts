@@ -34,6 +34,18 @@ async function createUser(email: string) {
   return password;
 }
 
+// The fixed admin email may be left from an earlier run that stopped early. Every page is searched: with more than
+// one page of users the first page alone missed it, and creating the admin failed (BUG-036).
+async function deleteStaleUser(email: string) {
+  for (let page = 1; ; page++) {
+    const { data, error } = await db.auth.admin.listUsers({ page, perPage: 1000 });
+    if (error) throw error;
+    const stale = data.users.find((u) => u.email === email);
+    if (stale) return void (await db.auth.admin.deleteUser(stale.id));
+    if (data.users.length < 1000) return;
+  }
+}
+
 async function logIn(page: Page, email: string, password: string) {
   await page.goto("/login");
   await page.locator("#email").fill(email);
@@ -79,9 +91,7 @@ test("a signed-in user whose account is gone lands on login once, not in a loop"
 test("an admin sees the admin overview", async ({ page }, testInfo) => {
   const adminEmail = `e2e-admin-${testInfo.project.name}@example.test`;
   test.skip(!adminEmails.includes(adminEmail), `Skipped: add ${adminEmail} to ADMIN_EMAILS for the dev server and this run.`);
-  const { data } = await db.auth.admin.listUsers({ perPage: 1000 });
-  const stale = data.users.find((u) => u.email === adminEmail);
-  if (stale) await db.auth.admin.deleteUser(stale.id);
+  await deleteStaleUser(adminEmail);
 
   await logIn(page, adminEmail, await createUser(adminEmail));
   await page.goto("/internal/admin");

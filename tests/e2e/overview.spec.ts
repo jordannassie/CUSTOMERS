@@ -241,7 +241,7 @@ test("Run scan short of credits: a warning first, and nothing starts until Run s
   expect(await jobs()).toBe(1);
 });
 
-test("Run scan again the same day: asks first, with the credits it still uses (2026-10-15, D-54)", async ({ page }) => {
+test("Run scan again within 20 hours: asks first and says reused answers are free (2026-10-15, D-24)", async ({ page }) => {
   const business = await seedBusiness(page);
   await page.getByRole("button", { name: "Run first scan" }).click();
   await expect(page.getByTestId("score-summary")).toBeVisible({ timeout: 60_000 });
@@ -253,7 +253,7 @@ test("Run scan again the same day: asks first, with the credits it still uses (2
   const dialog = page.getByTestId("recent-scan-dialog");
   await expect(dialog.getByRole("heading", { name: "Scan again?" })).toBeVisible();
   await expect(dialog.getByTestId("recent-scan-message")).toHaveText(
-    "You scanned in the last 24 hours. Most answers will be the same as the last scan and still use 9 credits.",
+    "You scanned in the last 20 hours, so most answers will be the same as last time. Reused answers don't use credits.",
   );
   await dialog.getByRole("button", { name: "Not now" }).click();
   await expect(dialog).toHaveCount(0);

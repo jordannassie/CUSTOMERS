@@ -24,7 +24,7 @@ export type UsageReport = {
   byBusiness: { id: string | null; name: string; credits: number }[];
   byModel: { model: ModelKey; label: string; credits: number }[];
   forecast: Omit<Forecast, "endsAt" | "runsOutAt"> & { endsAt: string; runsOutAt: string | null };
-  /** `reused`: checks answered from the shared cache (H1); each still used a credit. */
+  /** `reused`: checks answered from the shared cache (H1); free (D-24, 2026-10-20). */
   scans: { id: string; businessName: string; status: string; at: string; credits: number; reused: number }[];
 };
 

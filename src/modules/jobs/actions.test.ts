@@ -108,7 +108,7 @@ describe("startScan", () => {
     expect(await jobsFor(businessId)).toEqual([{ status: "queued", priority: 100 }]);
   });
 
-  it("asks before scanning again within 24 hours of the last scan, and queues once confirmed (2026-10-15)", async () => {
+  it("asks before scanning again within 20 hours of the last scan, and queues once confirmed (2026-10-15, D-24)", async () => {
     const { agencyId, businessId } = await signedInBusiness(100);
     const prompts = ["One?", "Two?"].map((prompt) => ({ business_id: businessId, prompt }));
     await service.from("tracked_prompts").insert(prompts).throwOnError();
@@ -118,7 +118,7 @@ describe("startScan", () => {
     expect(await startScan({ businessId })).toEqual({
       ok: false,
       status: 428,
-      error: "You scanned in the last 24 hours. Most answers will be the same as the last scan and still use 6 credits.",
+      error: "You scanned in the last 20 hours, so most answers will be the same as last time. Reused answers don't use credits.",
       recentScan: { cost: 6 },
     });
     expect(await jobsFor(businessId)).toEqual([{ status: "done", priority: 0 }]);

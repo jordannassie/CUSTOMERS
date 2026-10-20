@@ -45,7 +45,7 @@ export function RunScanButton({
   const [pending, startTransition] = useTransition();
   // The server's warning when the scan costs more than the balance (D-54); the scan waits for a confirm.
   const [overdraft, setOverdraft] = useState<string | null>(null);
-  // Asked first when the business was scanned in the last 24 hours (2026-10-15); a yes carries into the overdraft one.
+  // Asked first when the business was scanned in the last 20 hours (2026-10-15, D-24); a yes carries into the overdraft one.
   const [recent, setRecent] = useState<string | null>(null);
   const [recentConfirmed, setRecentConfirmed] = useState(false);
 

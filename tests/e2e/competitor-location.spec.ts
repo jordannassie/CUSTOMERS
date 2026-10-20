@@ -82,6 +82,14 @@ test("moving from Austin to Dallas removes the Austin pick and says so once", as
   await visible(page, "Continue").click();
   await at(page, "competitors");
   await expect(page.getByTestId("competitors-moved")).toHaveCount(0);
+  // BUG-090: one visible Continue at every width, never the phone bar's and the desktop one together.
+  const start = page.viewportSize()!;
+  const widths = info.project.name === "mobile" ? [start.width] : [1440, 1024, 900, 768, 640];
+  for (const width of widths) {
+    await page.setViewportSize({ width, height: start.height });
+    await expect(page.getByRole("button", { name: "Continue", exact: true }).filter({ visible: true }), `${width}px`).toHaveCount(1);
+  }
+  await page.setViewportSize(start);
 
   // One business in Austin and one in Dallas from Google, and one added by name.
   await find(page, "Austin Bean");

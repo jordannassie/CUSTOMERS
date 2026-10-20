@@ -1,6 +1,7 @@
 import "server-only";
 // Run a scan (B-26, MVP_SPEC 5.2, 4.2, D-53, D-54): hold the credits, run every question on every
-// chosen model, charge 1 credit per successful check, then return the rest of the hold.
+// chosen model, charge 1 credit per successful check with a new answer, then return the rest of the hold. An answer
+// reused from the shared cache is free for now (D-24, changed 2026-10-20 at the owner's request).
 import { placeLabel } from "@/lib/place-label";
 import { captureCredits, holdCredits, InsufficientCreditsError, isHoldOpen, releaseHold } from "@/modules/credits";
 import { canRunScanJob, REASONS } from "@/modules/entitlements";
@@ -92,7 +93,8 @@ export async function runScan(jobId: string, overrides: Partial<ScanDeps> = {}):
   const failures: ProviderFailures = {};
   let lastBeat = ctx.now().getTime();
   await forEachLimited(tasks, CHECKS_AT_ONCE, async (task) => {
-    const outcome = saved.has(task.checkId) ? { ok: true as const } : await runOneCheck(task, ctx.forProvider(task.provider));
+    const savedCached = saved.get(task.checkId);
+    const outcome = savedCached !== undefined ? { ok: true as const, cached: savedCached } : await runOneCheck(task, ctx.forProvider(task.provider));
     // Tell the reset job this scan is alive, so a long one is not taken for a dead worker and run twice (B4).
     if (ctx.now().getTime() - lastBeat >= HEARTBEAT_MS) {
       lastBeat = ctx.now().getTime();
@@ -104,6 +106,8 @@ export async function runScan(jobId: string, overrides: Partial<ScanDeps> = {}):
       failures[task.provider] = { failed: (seen?.failed ?? 0) + 1, reason: seen?.reason ?? outcome.reason };
       return;
     }
+    // A reused answer costs nothing: its held credit goes back with the rest of the hold (D-24).
+    if (outcome.cached) return;
     // Capture right after each check, so a scan cut off halfway has charged exactly what it saved.
     await capture.add(task.checkId);
   });

@@ -116,9 +116,9 @@ export async function findOrCreateRun(params: {
 }
 
 /** Check ids already saved for this run, so a retried job does not ask them again. */
-export async function listSavedCheckIds(runId: string): Promise<Set<string>> {
-  const rows = must("load saved checks", await createServiceClient().from("visibility_results").select("id").eq("run_id", runId));
-  return new Set(rows.map((r) => r.id));
+export async function listSavedCheckIds(runId: string): Promise<Map<string, boolean>> {
+  const rows = must("load saved checks", await createServiceClient().from("visibility_results").select("id, cached").eq("run_id", runId));
+  return new Map(rows.map((r) => [r.id, r.cached])); // Whether each answer came from the cache: free (D-24).
 }
 
 export type CheckResultRow = {

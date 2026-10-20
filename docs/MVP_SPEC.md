@@ -153,7 +153,7 @@ Rules for the extraction prompt:
 
 **Hold, charge, release (D-53)**
 1. Scan start: the worker calls `hold_credits(agency_id, questions × models, scan_job_id)`.
-2. Each successful check (including cache hits): `capture_credit(hold_id, check_id)` turns 1 held credit into a charge.
+2. Each successful check with a new answer: `capture_credit(hold_id, check_id)` turns 1 held credit into a charge. A cache hit is not charged; its held credit goes back at scan end (D-24, 2026-10-20).
 3. A check that still fails after its retries: its credit is released, never charged.
 4. Scan end: `release_hold(hold_id)` returns anything left.
 
@@ -248,12 +248,12 @@ Every active question is scanned.
 ### 5.4 Answer cache (D-24)
 
 - Key: hash of `model + normalized question text + city/state`.
-- Lifetime: 20 hours (D-24, changed from 24 on 2026-10-16), shorter than the gap between two scheduled scans: the next scheduled scan is the 02:00 run at least 20 hours after the last one, so it is never served the business's own last answers. A manual rescan inside 20 hours reuses them, still at 1 credit each, after the "Scan again?" warning; the Questions page marks them "Reused answer" and Scan history counts them.
+- Lifetime: 20 hours (D-24, changed from 24 on 2026-10-16), shorter than the gap between two scheduled scans: the next scheduled scan is the 02:00 run at least 20 hours after the last one, so it is never served the business's own last answers. A manual rescan inside 20 hours reuses them, free (D-24, 2026-10-20), after the "Scan again?" warning; the Questions page marks them "Reused answer" and Scan history counts them.
 - Shared across all businesses and agencies (the answer to "best dentist in Orange, CA" is the same for everyone). Library questions (5.3) are worded identically for every business in the same industry and city, so they hit the cache; custom questions rarely do.
 - All due scans start in the same 02:00 run (6.2), so businesses sharing questions are scanned within the same 24 hours.
 - Margins in section 15 assume no cache savings; the cache is a bonus.
 - Mentions are detected per business on the cached answer, so each business gets its own result.
-- The user is charged 1 credit either way; `usage_events` records our cost as 0 for cache hits.
+- A cache hit costs the user nothing (D-24, 2026-10-20); `usage_events` records our cost as 0 for cache hits.
 
 ### 5.5 Mention detection
 
@@ -277,7 +277,7 @@ Based on research into how AEO tools and independent studies measure AI visibili
 - Position in lists is still stored (5.5) for later research, never shown as a rank. Behind `SHOW_POSITION` (off by default, for Jordan to decide), the Overview's per-question table shows "named 2nd" or "named, not in a list" and an average place, never called a rank.
 
 **Confidence (D-64)**
-- Margin of error is computed per question cluster (questions differ in difficulty), from **unique answers**: a cached answer reused for several businesses counts once for confidence, even though each business is charged.
+- Margin of error is computed per question cluster (questions differ in difficulty), from **unique answers**: a cached answer reused for several businesses counts once for confidence.
 - Labels: **Early estimate** (under 50 unique answers), **Good confidence** (50 to 200), **High confidence** (over 200). Trial accounts will usually show "First results. Accuracy improves with every scan."
 - Rough guide at 12 questions × 3 models: weekly about ±8 points, daily about ±3, monthly about ±16.
 
@@ -337,7 +337,7 @@ Based on research into how AEO tools and independent studies measure AI visibili
 ### 6.4 Manual scan
 
 - "Run scan" inserts a job with high priority and calls the worker immediately (no wait for the next minute).
-- Within 24 hours of the last finished scan, "Run scan" asks first: "You scanned in the last 24 hours. Most answers will be the same as the last scan and still use X credits." (2026-10-15, wording 2026-10-16; charging unchanged until D-54 is decided).
+- Within 20 hours of the last finished scan (the answer cache's age, D-24), "Run scan" asks first: "You scanned in the last 20 hours, so most answers will be the same as last time. Reused answers don't use credits." Reused answers are free (D-24, 2026-10-20).
 - Dashboard polls the job and shows "Scanning…" until `done` or `failed`.
 - No daily cap beyond credits, but only one queued or running job per business at a time.
 
