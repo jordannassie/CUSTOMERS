@@ -5,10 +5,12 @@ import { AccountForm } from "@/components/settings/AccountForm";
 import { AgencyForm } from "@/components/settings/AgencyForm";
 import { BusinessProfileForm } from "@/components/settings/BusinessProfileForm";
 import { DangerZone } from "@/components/settings/DangerZone";
+import { EmailSettingsForm } from "@/components/settings/EmailSettingsForm";
 import { ScanSettingsForm } from "@/components/settings/ScanSettingsForm";
 import { Panel, SettingsSection } from "@/components/settings/SettingsSection";
 import { Button } from "@/components/ui/button";
 import { changeEmail, changePassword, deleteAccount, deleteBusiness, getAccountView } from "@/modules/account";
+import { getMyEmailPreferences, saveEmailPreferences } from "@/modules/email";
 import { BILLING_HREF } from "@/modules/workspace";
 import { getSettings, saveAgencyName, saveBusinessProfile, saveScanSettings, uploadAgencyLogo } from "@/modules/settings";
 import { PageHeader } from "@/components/app/PageHeader";
@@ -23,6 +25,8 @@ export default async function SettingsPage() {
     getSettings({ next: "/settings" }),
     getAccountView({ next: "/settings" }),
   ]);
+  // Only an agency has email settings: the weekly report goes to its owner (EMAIL-01).
+  const emails = agency ? await getMyEmailPreferences() : null;
 
   return (
     <PageContainer>
@@ -72,6 +76,16 @@ export default async function SettingsPage() {
       {agency && (
         <SettingsSection id="agency" title="Agency" description="Your agency name and logo appear on PDF reports and share links.">
           <AgencyForm name={agency.name} logoUrl={agency.logoUrl} saveName={saveAgencyName} uploadLogo={uploadAgencyLogo} />
+        </SettingsSection>
+      )}
+
+      {emails && (
+        <SettingsSection
+          id="emails"
+          title="Emails"
+          description="Emails about your login, billing and credits always come, since they need your attention. The weekly report is up to you."
+        >
+          <EmailSettingsForm weeklyReport={emails.weeklyReport} save={saveEmailPreferences} />
         </SettingsSection>
       )}
 

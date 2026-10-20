@@ -11,7 +11,7 @@ Every box below was checked against the code on branch `mvp-bugs-fixes` on 2026-
 | Status | Tasks |
 |---|---|
 | Done | SEC-02 to SEC-07, SEC-09, CORE-01 to CORE-06, REL-01 to REL-06, REL-08, BILL-01, BILL-03, BILL-04, ACC-01 to ACC-04, ACC-06, GROW-02 to GROW-04, OPS-01, OPS-03 to OPS-06, CLEAN-01 to CLEAN-03 |
-| Partly done | SEC-01 (key rotation not recorded), SEC-08 (`exec_sql` to check in the hosted projects), EMAIL-01 (no weekly report switch in Settings; sending domain not set up), OPS-02 (no `seed.sql`) |
+| Partly done | SEC-01 (key rotation not recorded), SEC-08 (`exec_sql` to check in the hosted projects), EMAIL-01 (sending domain not set up), OPS-02 (no `seed.sql`) |
 | Waiting on a decision | BILL-02 sales tax (Jordan's Stripe tax registration) |
 | After the MVP | REL-07 error tracking, GROW-01 analytics, ACC-05 cookie consent, NICE-01 team members |
 | Not started | NICE-02 help center, NICE-03 guided tour |
@@ -398,7 +398,7 @@ Do all of these before setting `BETA_FREE_ACCESS=false`. (2026-10-15: that flag 
 ## P1: Email
 
 ### EMAIL-01 Transactional email
-- [ ] Partly done (2026-10-15): Resend in `src/modules/email/` sends the 5 emails decided in D-37 (welcome, trial ending, payment failed, low credits, weekly report), with a signed one-click unsubscribe on the weekly report. **Left:** (1) Settings has no switch for the weekly report: `saveEmailPreferences` exists but no screen calls it, so a user who unsubscribes cannot turn it back on; (2) the sending domain and `EMAIL_FROM` are not set up, so no email has gone to a real inbox. "Scan finished" and "subscription canceled" emails were left out by D-37.
+- [ ] Partly done (2026-10-15): Resend in `src/modules/email/` sends the 5 emails decided in D-37 (welcome, trial ending, payment failed, low credits, weekly report), with a signed one-click unsubscribe on the weekly report. Settings, Emails has a Weekly report switch since 2026-10-20 (`EmailSettingsForm`, settings-emails.spec.ts), so a user who unsubscribed can turn it back on. **Left:** the sending domain and `EMAIL_FROM` are not set up, so no email has gone to a real inbox. "Scan finished" and "subscription canceled" emails were left out by D-37.
 
 **Problem:** No email provider in the codebase. Users get no emails from the app itself (Supabase auth emails only).
 

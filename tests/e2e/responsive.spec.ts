@@ -232,6 +232,9 @@ async function shot(page: Page, width: number, name: string, fullPage = true) {
 
 for (const width of WIDTHS) {
   test(`long names and menus fit at ${width}px`, async ({ page }) => {
+    // About ten pages, admin included, each compiled on its first visit by the dev server: 90 s ran out in full runs
+    // (BUG-068).
+    test.setTimeout(240_000);
     await page.setViewportSize({ width, height: 800 });
     await page.goto("/login?next=/dashboard");
     await page.locator("#email").fill(EMAIL);

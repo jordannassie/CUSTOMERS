@@ -83,7 +83,7 @@ The AI, Places and Firecrawl keys in use are the developer's. Before launch, **J
 | Item | Now | Plan | Who, size |
 |---|---|---|---|
 | Same-day rescan (BUG-199) | Fixed 2026-10-20: reused answers are free for now (D-24 changed at the owner's request); "Scan again?" still asks within 20 hours | Revisit the charging rule later | Owner, later |
-| Weekly report switch (EMAIL-01) | Every owner gets it; only the email's unsubscribe link stops it | A switch in Settings, Notifications | Dev, half a day |
+| Weekly report switch (EMAIL-01) | Done 2026-10-20: Settings, Emails has a Weekly report switch that saves at once | | |
 | Question quality (B-32, B-33) | Falls back to a general set for some industries | A person reviews about 40 templates per industry; then the picking eval runs | Developer or Jordan, 1 to 2 days |
 | Evals (B-24, B-25, B-34, B-51, B-75) | The code exists; no labelled data, so no baseline | Label 150 to 200 answers for mention detection and 30 to 50 businesses for auto-fill | People, 2 to 3 days |
 | Calibration (B-76) | Not done | Compare 20 of our answers with the real ChatGPT, Claude and Perplexity apps | Developer, half a day |
