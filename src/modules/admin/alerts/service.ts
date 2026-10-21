@@ -57,8 +57,14 @@ export async function notifyAdmins(deps: NotifyDeps): Promise<NotifySummary> {
     }
     let delivered = false;
     for (const to of deps.recipients) {
-      const result = await deps.send(alertEmail(alert, to));
-      if (result.status === "sent" || (result.status === "skipped" && result.reason === "duplicate")) delivered = true;
+      // A send that throws (email not set up yet, provider down) counts as failed; the alert stays open and
+      // unemailed for the next run, and the check itself still answers 200.
+      try {
+        const result = await deps.send(alertEmail(alert, to));
+        if (result.status === "sent" || (result.status === "skipped" && result.reason === "duplicate")) delivered = true;
+      } catch (error) {
+        console.error("[admin/alerts] alert email not sent", alert.kind, error instanceof Error ? error.message : String(error));
+      }
     }
     if (delivered) {
       await deps.markEmailed(alert.id, now);

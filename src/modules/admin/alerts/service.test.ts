@@ -1,5 +1,26 @@
-import { describe, expect, it } from "vitest";
-import { alertWording, isServiceCheckKind, serviceAlertChanges } from "./service";
+import { describe, expect, it, vi } from "vitest";
+import { alertWording, isServiceCheckKind, notifyAdmins, serviceAlertChanges, type NotifyDeps } from "./service";
+
+// Before email is set up (no EMAIL_FROM or Resend key), sending throws. The alerts check must still finish.
+describe("notifyAdmins when email can't be sent", () => {
+  it("counts the alert as failed, keeps it unemailed and does not throw", async () => {
+    const markEmailed = vi.fn(async () => {});
+    const deps: NotifyDeps = {
+      unemailed: async () => [
+        { id: "a1", kind: "stuck_jobs", severity: "warning", message: "2 scans are stuck.", createdAt: "2026-10-21T07:00:00Z", lastSeenAt: "2026-10-21T07:00:00Z" },
+      ],
+      emailedSince: async () => false,
+      markEmailed,
+      send: async () => {
+        throw new Error("Email is not configured. Set EMAIL_FROM.");
+      },
+      recipients: ["admin@example.com"],
+      now: () => new Date("2026-10-21T07:00:00Z"),
+    };
+    await expect(notifyAdmins(deps)).resolves.toEqual({ emailed: 0, held: 0, failed: 1 });
+    expect(markEmailed).not.toHaveBeenCalled();
+  });
+});
 
 // BUG-161: "36 Stripe webhook events failed in the last hour" still showed three days later.
 describe("alertWording", () => {
