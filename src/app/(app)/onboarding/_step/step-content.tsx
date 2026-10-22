@@ -150,7 +150,7 @@ export async function StepContent({ step, state, plan, returned }: Props) {
       />
     );
   }
-  const [m, setup, addOn, blocked] = await Promise.all([
+  const [m, setup, addOnState, blocked] = await Promise.all([
     getModelsStep(draftId, next),
     getSetupPlans(draftId, next),
     // Only when setup finishes here: on the card step the checkout bills the business.
@@ -160,6 +160,9 @@ export async function StepContent({ step, state, plan, returned }: Props) {
   if (!m) redirect(stepPath("website"));
   // A trial with 2 set-up businesses already: the draft stays saved until the plan starts (D-16).
   if (blocked) return <UpgradeNote reason={blocked} hasBusinesses={state.hasFinishedBusiness} draftSaved />;
+  // The price check failed: the step still loads and says so, and Finish waits for Try again (BUG-252).
+  const addOn = addOnState && "unavailable" in addOnState ? null : addOnState;
+  const addOnError = addOnState && "unavailable" in addOnState ? addOnState.unavailable : null;
   // The plan finishing bills: Billing's add-on plan when the business joins a running subscription, else the draft's.
   const planId = addOn?.planId ?? setup.planId;
   const current = setup.plans.find((p) => p.id === planId);
@@ -173,6 +176,7 @@ export async function StepContent({ step, state, plan, returned }: Props) {
       planChoice={setup.plans.length > 1 ? { plans: setup.plans, currentId: planId, choose: chooseSetupPlan } : null}
       finishLabel={state.needsCard ? "Continue" : "Finish setup"}
       addOn={addOn}
+      addOnError={addOnError}
       save={saveModelsStep}
     />
   );

@@ -1,7 +1,7 @@
 import "server-only";
 import { getCurrentAgency, requireUser } from "@/modules/auth";
 import { canAddBusiness, canFinishDraft } from "@/modules/entitlements";
-import { previewSetupAddOn, type SetupAddOn, type TrialOffer } from "@/modules/billing";
+import { PlanChangeError, previewSetupAddOn, type SetupAddOn, type TrialOffer } from "@/modules/billing";
 import { awaitingTrialCredits, loadCardStep } from "./card/dal";
 import { loadWebsiteStep, loadWizardState, type WebsiteStepDefaults, type WizardContext } from "./dal";
 import { loadDetailsStep, type DetailsStep } from "./details/dal";
@@ -34,11 +34,25 @@ export async function getFinishBlock(next: string): Promise<string | null> {
   return allowed.allowed ? null : allowed.reason;
 }
 
+/** The price could not be checked: the models step still loads, says why, and waits for Try again (BUG-252). */
+export type SetupAddOnUnavailable = { unavailable: string };
+
+export const ADD_ON_UNAVAILABLE = "We couldn't check the price of adding this business. Nothing was charged. Try again in a minute.";
+
 /** What finishing setup adds to the agency's subscription (BUG-071), or null when nothing is added. */
-export async function getSetupAddOn(businessId: string, next: string): Promise<SetupAddOn | null> {
+export async function getSetupAddOn(businessId: string, next: string): Promise<SetupAddOn | SetupAddOnUnavailable | null> {
   await requireUser({ next });
   const agency = await getCurrentAgency();
-  return agency ? previewSetupAddOn(agency.id, businessId) : null;
+  if (!agency) return null;
+  try {
+    return await previewSetupAddOn(agency.id, businessId);
+  } catch (error) {
+    // A Stripe refusal or a plan-change rule used to blank the whole step ("This step didn't load"), BUG-252.
+    if (error instanceof PlanChangeError) return { unavailable: error.message };
+    const e = error as { type?: string; code?: string; statusCode?: number; message?: string };
+    console.error("[onboarding/models] setup add-on preview failed", { agencyId: agency.id, businessId, type: e?.type, code: e?.code, statusCode: e?.statusCode, message: e?.message });
+    return { unavailable: ADD_ON_UNAVAILABLE };
+  }
 }
 
 /** The draft's saved website, or name and city, so going Back to the website step shows what was entered. */

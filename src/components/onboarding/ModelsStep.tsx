@@ -8,6 +8,7 @@ import { setupAddOnText, type SetupAddOnCopy } from "@/modules/billing/plan-chan
 import { estimateMonthlyCredits } from "@/modules/credits/estimate";
 import { FREQUENCIES, type Frequency, type ModelId } from "@/modules/settings/schema";
 import { FREQUENCY_LABELS, MODELS, untickWarning } from "@/modules/settings/service";
+import { Button } from "@/components/ui/button";
 import { SetupPlan, type SetupPlanChoice } from "./SetupPlan";
 import { StepActions, StepError } from "./StepBits";
 
@@ -25,6 +26,8 @@ type Props = {
   finishLabel: string;
   /** Finishing adds this business to the agency's subscription at this price (BUG-071, D-57). */
   addOn?: AddOn | null;
+  /** The add-on price could not be checked (BUG-252): shown with Try again, and Finish waits for it. */
+  addOnError?: string | null;
   /** The plan picker for this business (BUG-244); `currentId` is the plan finishing bills. */
   planChoice?: { plans: SetupPlanChoice[]; currentId: string; choose: React.ComponentProps<typeof SetupPlan>["choose"] } | null;
   save: (input: {
@@ -38,7 +41,7 @@ type Props = {
 type AddOn = SetupAddOnCopy & { planId: string; previewedAt: number };
 
 // MVP_SPEC 3.1 step 7 and 4.3: the estimate follows every tick and switch at once, before anything is saved.
-export function ModelsStep({ businessId, models, frequency, activeQuestions, plan, finishLabel, addOn = null, planChoice = null, save }: Props) {
+export function ModelsStep({ businessId, models, frequency, activeQuestions, plan, finishLabel, addOn = null, addOnError = null, planChoice = null, save }: Props) {
   const router = useRouter();
   const [chosen, setChosen] = useState<ModelId[]>(models);
   const [often, setOften] = useState<Frequency>(frequency);
@@ -154,12 +157,20 @@ export function ModelsStep({ businessId, models, frequency, activeQuestions, pla
           {setupAddOnText(addOn)}
         </p>
       ) : null}
+      {addOnError && (
+        <div role="alert" data-testid="add-on-error" className="flex flex-wrap items-center justify-between gap-3 rounded-md bg-low-bg px-4 py-3 text-[13px] text-low-text">
+          <span>{addOnError}</span>
+          <Button type="button" size="sm" variant="outline" onClick={() => router.refresh()}>
+            Try again
+          </Button>
+        </div>
+      )}
       <StepError message={error} />
       <StepActions
         backHref="/onboarding/questions"
         pending={pending}
         label={finishLabel}
-        disabled={chosen.length === 0}
+        disabled={chosen.length === 0 || addOnError !== null}
         phoneSummary={
           <p data-testid="credit-estimate-phone" className="text-[13px] leading-tight text-muted-foreground">
             <span className="block text-base font-semibold tabular-nums text-foreground">{count(credits)}</span>
