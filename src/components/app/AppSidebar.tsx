@@ -5,8 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { LogOut, ShieldCheck } from "lucide-react";
 import { cn } from "cn";
-import type { SwitcherScores } from "@/modules/workspace";
-import { BusinessSwitcher, type SwitchBusinessAction, type SwitcherBusiness, type SwitcherDraft } from "./BusinessSwitcher";
+import { BusinessSwitcher, type SwitchBusinessAction, type SwitcherBusiness, type SwitcherDraft, type SwitcherScoresAction } from "./BusinessSwitcher";
 import { APP_NAV, isNavActive, setupLabel } from "./nav";
 import { SuggestFeatureDialog, type SuggestFeatureAction } from "./SuggestFeatureDialog";
 import { UsageWidget, type UsageWidgetProps } from "./UsageWidget";
@@ -15,7 +14,7 @@ export type AppSidebarProps = {
   businesses: SwitcherBusiness[];
   activeBusinessId: string;
   switchBusiness: SwitchBusinessAction;
-  switcherScores?: Promise<SwitcherScores | null>;
+  switcherScores?: SwitcherScoresAction;
   usage: UsageWidgetProps | null;
   isAdmin: boolean;
   /** The business being set up, shown instead of the switcher on setup pages (BUG-092). */
@@ -63,7 +62,7 @@ export function AppSidebar({
           activeBusinessId={activeBusinessId}
           switchBusiness={switchBusiness}
           onSwitched={onNavigate}
-          scores={switcherScores}
+          loadScores={switcherScores}
           draft={draft}
         />
       )}

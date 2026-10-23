@@ -9,11 +9,11 @@ import { suggestFeature } from "@/modules/feedback";
 import { draftLabel, draftStep, stepPath } from "@/modules/onboarding";
 import {
   BUY_CREDITS_HREF,
-  getSwitcherScores,
   getWorkspace,
   pickBanners,
   shortBalance,
   switchBusiness,
+  switcherScores,
   usageWidget,
 } from "@/modules/workspace";
 
@@ -39,10 +39,6 @@ async function AppFrame({ children }: { children: React.ReactNode }) {
 
   const now = new Date();
   const { usage, account } = workspace;
-  // Not awaited: the switcher fills in each client's score when it arrives (DB-011).
-  const switcherScores = getSwitcherScores(
-    workspace.businesses.filter((b) => b.status !== "onboarding").map((b) => b.id),
-  ).catch(() => null);
   // An unfinished draft is never lost: the switcher links back to the step where it stopped.
   const draft = workspace.businesses.find((b) => b.status === "onboarding");
   const widget = usage && account ? { ...usageWidget(usage, account, now), buyCreditsHref: BUY_CREDITS_HREF } : null;

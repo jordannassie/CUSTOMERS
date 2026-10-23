@@ -26,6 +26,8 @@ const OVERVIEW_HREF = "/dashboard";
 export type SwitchBusinessAction = (
   input: { businessId: string },
 ) => Promise<{ ok: true } | { ok: false; error: string }>;
+/** The scores, asked for when the switcher opens so no page load waits on (or pays for) every business's score. */
+export type SwitcherScoresAction = () => Promise<{ ok: true; data: SwitcherScores | null } | { ok: false; error: string }>;
 
 function BusinessMark({ name, logoUrl }: { name: string; logoUrl: string | null }) {
   const [failed, setFailed] = useState(false);
@@ -132,7 +134,7 @@ export function BusinessSwitcher({
   activeBusinessId,
   switchBusiness,
   onSwitched,
-  scores,
+  loadScores,
   draft = null,
 }: {
   businesses: SwitcherBusiness[];
@@ -141,13 +143,22 @@ export function BusinessSwitcher({
   draft?: SwitcherDraft | null;
   switchBusiness: SwitchBusinessAction;
   onSwitched?: () => void;
-  /** Loaded after the frame, so the page never waits for every client's score. */
-  scores?: Promise<SwitcherScores | null>;
+  /** Asked for on the first open for the current business; until it answers the list shows without scores. */
+  loadScores?: SwitcherScoresAction;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [target, setTarget] = useState<string | null>(null);
+  const [scores, setScores] = useState<{ forId: string; promise: Promise<SwitcherScores | null> } | null>(null);
   const active = businesses.find((b) => b.id === activeBusinessId) ?? businesses[0];
+
+  function onOpenChange(open: boolean) {
+    if (!open || !loadScores || scores?.forId === active.id) return;
+    const promise = loadScores()
+      .then((r) => (r.ok ? r.data : null))
+      .catch(() => null);
+    setScores({ forId: active.id, promise });
+  }
 
   function choose(id: string) {
     if (id === active.id) return;
@@ -165,7 +176,7 @@ export function BusinessSwitcher({
   const items: ItemsProps = { businesses, activeId: active.id, pending, target, choose };
 
   return (
-    <DropdownMenu>
+    <DropdownMenu onOpenChange={onOpenChange}>
       <DropdownMenuTrigger
         className="flex w-full items-center gap-2.5 rounded-md border border-border bg-surface px-2.5 py-2 text-left outline-none transition-colors hover:border-input focus-visible:ring-3 focus-visible:ring-ring/50"
         aria-label={`Business: ${active.name}. Switch business`}
@@ -189,7 +200,7 @@ export function BusinessSwitcher({
       <DropdownMenuContent align="start" className="w-[min(20rem,calc(100vw-2rem))]">
         {scores ? (
           <Suspense fallback={<Items {...items} scores={null} />}>
-            <ScoredItems {...items} scores={scores} />
+            <ScoredItems {...items} scores={scores.promise} />
           </Suspense>
         ) : (
           <Items {...items} scores={null} />
