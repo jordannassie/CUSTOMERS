@@ -4,7 +4,6 @@ import { cache } from "react";
 import { requestNow } from "@/lib/request-now";
 import { requireAgency } from "@/modules/auth";
 import { createServiceClient } from "@/lib/supabase/service";
-import type { OwnChain } from "../branch";
 import { loadChains, loadOwnChain } from "../chains/dal";
 import type { ProviderId } from "../providers/types";
 import {
@@ -13,21 +12,20 @@ import {
   competitorScores,
   trendSeries,
   visibilityScore,
-  type CompetitorScore,
   type ScoreCheck,
-  type TrendPoint,
-  type VisibilityScore,
 } from "../scoring";
+import { competitorCharts } from "../charts";
 import {
   competitorWeeklyChange,
   modelWeeklyChanges,
   monthlyChange,
   scoreHistory,
   weeklyChange,
-  type Change,
-  type ScanPoint,
 } from "../scoring-periods";
-import { ownQuestionsResult, splitByQuestion, type OwnQuestionsResult } from "./counted";
+import { ownQuestionsResult, splitByQuestion } from "./counted";
+import type { ScoreReport } from "./report";
+
+export type { ScoreReport } from "./report";
 import { questionAppearances, questionAppearancesByModel, type ModelAppearance } from "./questions";
 
 // 30-day score aggregates (B-30 step 2) from the visibility_checks_30d view (migration 032). Only answers to active
@@ -36,42 +34,6 @@ const PAGE = 1000;
 const LAST_CHECKS_PER_QUESTION = 10;
 const DAY_MS = 86_400_000;
 
-export type ScoreReport = VisibilityScore & {
-  /** The business's chosen models, in the order it saved them. */
-  models: ProviderId[];
-  trend: TrendPoint[];
-  /** The 30-day score at each scan over the `historyDays` asked for, oldest first (DB-002). */
-  history: ScanPoint[];
-  /** The 30-day score now against the 30-day score a week ago, only outside the margin (D-64). */
-  change: Change | null;
-  /** Each model's 30-day score against a week ago, only where it is bigger than the margin (DB-013). */
-  modelChanges: Partial<Record<ProviderId, Change>>;
-  /** The 30-day score against 30 days ago; null unless `historyDays` reaches 30 (DB-012). */
-  monthChange: Change | null;
-  /** The oldest check in the window; a competitor added after it was not looked for on every check (F-53). */
-  firstCheckedAt: Date | null;
-  lastCheckedAt: Date | null;
-  competitors: {
-    name: string;
-    score: number;
-    standing: CompetitorScore["standing"];
-    /** Weekly change in how often AI named it, only outside the margin (DB-013). */
-    change: Change | null;
-    /** "Bennu Coffee" for a tracked "Bennu Coffee on Congress" when most answers named only the chain (branch.ts). */
-    chain?: string | null;
-  }[];
-  /** Every active question, suggested or the user's own: each one is checked and charged on every scan. */
-  questions: {
-    id: string;
-    question: string;
-    appeared: number;
-    checks: number;
-  }[];
-  /** The user's own active questions over the window, kept out of the score; null when they have no answers. */
-  ownQuestions: OwnQuestionsResult | null;
-  /** A business that is one branch: its chain's mentions, shown apart from the score (step 7). */
-  ownChain: OwnChain | null;
-};
 
 /** The signed-in agency's score for one of its businesses; null when it is not theirs. */
 export async function getScoreReport(businessId: string, options: { next?: string } = {}): Promise<ScoreReport | null> {
@@ -98,6 +60,8 @@ const olderChecks = cache((businessId: string, fromMs: number, toMs: number) =>
 export type ReportOptions = {
   /** Days before the 30-day window to read as well, for comparisons with earlier periods. */
   historyDays?: number;
+  /** Also build the Competitors page charts from the same checks. */
+  charts?: boolean;
 };
 
 // Callers check the user may see this agency first.
@@ -168,6 +132,7 @@ export async function loadScoreReport(
     })),
     ownQuestions: ownQuestionsResult(split.own, opts),
     ownChain,
+    ...(options.charts ? { charts: competitorCharts(all, b.name, competitors.data!.map((c) => c.name), opts) } : {}),
   };
 }
 
