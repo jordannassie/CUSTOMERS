@@ -73,5 +73,5 @@ export function ShareOfVoiceChart({ view }: { view: CompetitorChartsView }) {
 function SliceTooltip({ active, payload }: { active?: boolean; payload?: { payload: Slice }[] }) {
   const s = payload?.[0]?.payload;
   if (!active || !s) return null;
-  return <SeriesTooltip title="Share of voice" rows={[{ ...s, value: Math.round(s.share) }]} unit="%" />;
+  return <SeriesTooltip title="Share of AI picks" rows={[{ ...s, value: Math.round(s.share) }]} unit="%" />;
 }
