@@ -5,6 +5,7 @@ import {
   overviewView,
   ownQuestionsText,
   scanFailuresFrom,
+  scanSkipsFrom,
   scoreSentence,
   scoreTone,
   topOpportunities,
@@ -98,9 +99,9 @@ describe("overviewView", () => {
 
   it("lists every chosen model, with no score for one that has no checks yet", () => {
     expect(overviewView(report(), []).models).toEqual([
-      { id: "openai", label: "ChatGPT", score: 75, notChecked: false, change: null },
-      { id: "anthropic", label: "Claude", score: null, notChecked: false, change: null },
-      { id: "perplexity", label: "Perplexity", score: 48, notChecked: false, change: null },
+      { id: "openai", label: "ChatGPT", score: 75, notChecked: false, skipped: false, change: null },
+      { id: "anthropic", label: "Claude", score: null, notChecked: false, skipped: false, change: null },
+      { id: "perplexity", label: "Perplexity", score: 48, notChecked: false, skipped: false, change: null },
     ]);
   });
 
@@ -144,6 +145,29 @@ describe("overviewView", () => {
     it("has no coverage line when every chosen AI has a score", () => {
       const all = report({ byModel: [...report().byModel, { model: "anthropic", estimate: estimate(20) }] });
       expect(overviewView(all, []).score?.coverage).toBeNull();
+    });
+
+    it("says Claude was skipped, not that it couldn't be checked, when the scan left it out", () => {
+      const view = overviewView(report({ questions: twelve }), [], { lastScanFailures: { anthropic: 12 }, lastScanSkipped: ["anthropic"] });
+      expect(view.models.find((m) => m.id === "anthropic")).toMatchObject({ score: null, skipped: true });
+      expect(view.score?.coverage).toBe("Based on ChatGPT and Perplexity. Claude was skipped because it's unavailable.");
+      expect(view.score?.details.models).toContainEqual({ id: "anthropic", label: "Claude", value: "Skipped, unavailable" });
+      expect(view.scanNotice).toBe("In the last scan, Claude was skipped because it's unavailable. Skipped checks use no credits.");
+    });
+
+    it("names a skipped AI and a failing one apart", () => {
+      const view = overviewView(report({ questions: twelve }), [], { lastScanFailures: { anthropic: 12, openai: 2 }, lastScanSkipped: ["anthropic"] });
+      expect(view.scanNotice).toBe(
+        "In the last scan, Claude was skipped because it's unavailable, and ChatGPT couldn't answer some questions. We'll try again in the next scan. Failed checks are never charged.",
+      );
+    });
+
+    it("reads skipped checks from the run row", () => {
+      const row = { anthropic: { failed: 2, skipped: 10, reason: "Claude unavailable, skipped" }, openai: { failed: 0 } };
+      expect(scanFailuresFrom(row)).toEqual({ anthropic: 12 });
+      expect(scanSkipsFrom(row)).toEqual(["anthropic"]);
+      expect(scanSkipsFrom({ anthropic: { failed: 12 } })).toEqual([]);
+      expect(scanSkipsFrom(null)).toEqual([]);
     });
 
     it("reads failed counts from the run row", () => {

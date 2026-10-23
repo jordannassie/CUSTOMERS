@@ -4,7 +4,7 @@ import { requestNow } from "@/lib/request-now";
 import { requireAgency } from "@/modules/auth";
 import { loadQuestionTrends, loadScoreReport, type QuestionTrends } from "@/modules/scanning";
 import { createServiceClient } from "@/lib/supabase/service";
-import { overviewView, scanFailuresFrom, type Impact, type OverviewView } from "./service";
+import { overviewView, scanFailuresFrom, scanSkipsFrom, type Impact, type OverviewView } from "./service";
 import { HISTORY_DAYS } from "./trend";
 
 // Legacy statuses: "in_progress" is still something to do, "resolved" and "dismissed" are not.
@@ -58,6 +58,11 @@ export async function loadOverview(agencyId: string, businessId: string, now: Da
   return overviewView(
     report,
     opportunities.data.map((o) => ({ id: o.id, title: o.title, impact: o.impact as Impact, createdAt: o.created_at })),
-    { nextScanAt, now, lastScanFailures: scanFailuresFrom(lastRun.data?.failed_by_provider) },
+    {
+      nextScanAt,
+      now,
+      lastScanFailures: scanFailuresFrom(lastRun.data?.failed_by_provider),
+      lastScanSkipped: scanSkipsFrom(lastRun.data?.failed_by_provider),
+    },
   );
 }

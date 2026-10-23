@@ -11,6 +11,7 @@ export const ALERT_KINDS = [
   "daily_ai_cost",
   "anthropic_credit",
   "ai_fallback",
+  "claude_unavailable",
 ] as const;
 export type AlertKind = (typeof ALERT_KINDS)[number];
 

@@ -4,6 +4,7 @@ import "server-only";
 import { createHash } from "node:crypto";
 import type { Json } from "@/types/database.types";
 import { cacheKey, checkWithCache, recordCheckUsage, type CheckAnswer } from "./cache";
+import { outageReason, type OutageReason } from "./claude-outage/outage";
 import { readStoredExtraction, toStoredExtraction, type ExtractNames, type StoredExtraction } from "./extract";
 import { matchNames } from "./extract-match";
 import { storeExtraction } from "./extract-store";
@@ -29,8 +30,11 @@ export type CheckContext = {
   extractNames: ExtractNames | null;
 };
 
-/** `cached`: the answer came from the shared answer cache, so the check is free (D-24, 2026-10-20). */
-export type CheckOutcome = { ok: true; cached: boolean } | { ok: false; error: string; reason: string };
+/**
+ * `cached`: the answer came from the shared answer cache, so the check is free (D-24, 2026-10-20).
+ * `outage`: Claude failed for a reason every other Claude check would share (a rejected key, no credit).
+ */
+export type CheckOutcome = { ok: true; cached: boolean } | { ok: false; error: string; reason: string; outage?: OutageReason };
 
 /** Same job, question and model always give the same id, so a retried job can never charge a check twice. */
 export function checkIdFor(jobId: string, promptId: string, provider: ProviderId): string {
@@ -56,7 +60,8 @@ export async function runOneCheck(task: CheckTask, ctx: CheckContext): Promise<C
     // Recorded answers are not provider calls, so test agencies never count toward the error spike alert (B-69).
     if (!ctx.isTest) await recordProviderError(task.provider, message);
     // A failed check is never charged (D-53), whatever the reason.
-    return { ok: false, error: `${task.provider}: ${message}`, reason: message };
+    const outage = outageReason(err);
+    return { ok: false, error: `${task.provider}: ${message}`, reason: message, ...(outage ? { outage } : {}) };
   }
 
   const extraction = await namesFor(input, answer, ctx);

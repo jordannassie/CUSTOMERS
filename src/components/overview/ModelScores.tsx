@@ -8,8 +8,10 @@ const BAR: Record<OverviewView["models"][number]["id"], string> = {
   perplexity: "bg-perplexity",
 };
 
-// BUG-074: an AI that failed every check says so, instead of looking like it has never been asked.
+// BUG-074: an AI that failed every check says so, instead of looking like it has never been asked. One left out of
+// the scan because it was unavailable says that instead.
 function emptyLabel(m: OverviewView["models"][number]): string {
+  if (m.skipped) return "Skipped, unavailable";
   return m.notChecked ? "Couldn't be checked" : "No checks yet";
 }
 
