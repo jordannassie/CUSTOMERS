@@ -37,6 +37,8 @@ export type AiReporter = {
   /** Every failed attempt, with whether the backup is taking over. */
   failure?: (task: string, failure: AiFailure, fellBack: boolean) => Promise<void> | void;
   success?: (result: AiSuccess) => Promise<void> | void;
+  /** Claude marked unavailable by any server instance (a scan or another job); null when it is not. */
+  claudeOutage?: () => Promise<AiFailure | null>;
 };
 
 export type RunStructuredInput<S extends z.ZodType> = {
@@ -67,7 +69,15 @@ export async function runStructured<S extends z.ZodType>(input: RunStructuredInp
   const backup = input.backup?.openai ? input.backup : null;
   let primaryFailure: AiFailure | null = null;
 
-  const skipped = breaker.isOpen("anthropic", now());
+  let skipped = breaker.isOpen("anthropic", now());
+  // A rejected key or an empty account seen elsewhere skips Claude here too, instead of failing once per instance.
+  if (!skipped.open && backup && input.report?.claudeOutage) {
+    const shared = await input.report.claudeOutage().catch(() => null);
+    if (shared) {
+      breaker.trip(shared, now());
+      skipped = { open: true, reason: shared };
+    }
+  }
   if (skipped.open && backup) {
     primaryFailure = { ...skipped.reason, message: `skipped while Claude is down (${skipped.reason.kind})` };
   } else if (!input.primary.anthropic) {

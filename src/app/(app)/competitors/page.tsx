@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import Link from "next/link";
 import { SampleDataBadge } from "@/components/app/SampleDataBadge";
 import { notFound, redirect } from "next/navigation";
@@ -6,8 +7,9 @@ import { AlsoRecommended } from "@/components/competitors/AlsoRecommended";
 import { Leaderboard } from "@/components/competitors/Leaderboard";
 import { SignalsTable } from "@/components/competitors/SignalsTable";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { answersText, getCompetitorsPage, saveCompetitorWebsite, trackCompetitor } from "@/modules/competitors";
+import { answersText, getCompetitorsPage, saveCompetitorWebsite, trackCompetitor, type SignalRow } from "@/modules/competitors";
 import { getWorkspace } from "@/modules/workspace";
 import { PageHeader } from "@/components/app/PageHeader";
 
@@ -22,8 +24,9 @@ export default async function CompetitorsPage() {
   const business = workspace.businesses.find((b) => b.id === workspace.activeBusinessId);
   if (!business || business.status === "onboarding") redirect("/dashboard");
 
-  const view = await getCompetitorsPage(business.id, PATH);
-  if (!view) notFound();
+  const page = await getCompetitorsPage(business.id, PATH);
+  if (!page) notFound();
+  const { view } = page;
   const tracked = view.limit === null ? `${view.count} tracked` : `${view.count} of ${view.limit} tracked`;
 
   return (
@@ -99,10 +102,27 @@ export default async function CompetitorsPage() {
           {view.count === 0 ? (
             <Empty text="Add competitors to compare your Google reviews, ratings and hours with theirs." />
           ) : (
-            <SignalsTable rows={view.signals} pickBranch={view.pickBranch} edit={{ businessId: business.id, save: saveCompetitorWebsite }} />
+            // Google answers last: the rest of the page shows without waiting for them.
+            <Suspense fallback={<SignalsLoading rows={view.count + 1} />}>
+              <GoogleSignals rows={page.signals} pickBranch={view.pickBranch} businessId={business.id} />
+            </Suspense>
           )}
         </CardContent>
       </Card>
+    </div>
+  );
+}
+
+async function GoogleSignals({ rows, pickBranch, businessId }: { rows: Promise<SignalRow[]>; pickBranch: boolean; businessId: string }) {
+  return <SignalsTable rows={await rows} pickBranch={pickBranch} edit={{ businessId, save: saveCompetitorWebsite }} />;
+}
+
+function SignalsLoading({ rows }: { rows: number }) {
+  return (
+    <div className="flex flex-col gap-3" aria-busy="true" aria-label="Loading Google ratings and hours" data-testid="signals-loading">
+      {Array.from({ length: Math.min(rows, 6) }, (_, i) => (
+        <Skeleton key={i} className="h-9 w-full" />
+      ))}
     </div>
   );
 }
