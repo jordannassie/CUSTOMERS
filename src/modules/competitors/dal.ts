@@ -12,6 +12,7 @@ import { loadAlsoRecommended, loadScoreReport, recountAfterNamesChange } from "@
 import { fixtureSignals } from "./place-fixtures";
 import { createPlaceSignals, PlacesUnavailable, type FetchSignals } from "./places";
 import { pickedInstead, type PickedInstead } from "./picked";
+import { competitorChartsView } from "./charts";
 import { competitorsView, signalRows, type CompetitorsView, type SignalResult, type SignalRow } from "./service";
 
 // Fixture mode is refused in production so a stray flag can never show made-up businesses to users.
@@ -59,7 +60,7 @@ export async function getCompetitorsPage(
   next: string,
 ): Promise<{ view: CompetitorsView; signals: Promise<SignalRow[]> } | null> {
   const { agency } = await requireAgency({ next });
-  const base = await loadCompetitorsBase(agency.id, businessId, requestNow());
+  const base = await loadCompetitorsBase(agency.id, businessId, requestNow(), { charts: true });
   return base && { view: base.view, signals: base.signals(signalsForRequest) };
 }
 
@@ -79,10 +80,11 @@ async function loadCompetitorsBase(
   agencyId: string,
   businessId: string,
   now: Date,
+  { charts = false }: { charts?: boolean } = {},
 ): Promise<{ view: CompetitorsView; signals: (fetchSignals: FetchSignals) => Promise<SignalRow[]> } | null> {
   const db = createServiceClient();
   const [report, also, business, rows, limit] = await Promise.all([
-    loadScoreReport(agencyId, businessId, now),
+    loadScoreReport(agencyId, businessId, now, { charts }),
     loadAlsoRecommended(agencyId, businessId, now),
     db.from("businesses").select("name, places_id, is_chain").eq("id", businessId).eq("agency_id", agencyId).maybeSingle(),
     db
@@ -106,6 +108,12 @@ async function loadCompetitorsBase(
   }));
   const you = { name: business.data.name, placesId: business.data.places_id, chain: business.data.is_chain };
   const view = competitorsView({ business: you, report, competitors, signals: new Map(), also, limit: limit.limit });
+  if (charts) {
+    // The leaderboard's rule: a competitor added after the last scan was never looked for, so it has no score yet.
+    const last = report.lastCheckedAt?.getTime() ?? null;
+    const scored = new Set(competitors.filter((c) => last !== null && c.countedFrom.getTime() <= last).map((c) => c.name));
+    view.charts = competitorChartsView(report, scored);
+  }
 
   const signals = async (fetchSignals: FetchSignals): Promise<SignalRow[]> => {
     const placeIds = [...new Set([you.placesId, ...competitors.map((c) => c.placesId)].filter((id) => id !== null))];

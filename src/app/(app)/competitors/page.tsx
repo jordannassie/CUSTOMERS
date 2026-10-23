@@ -4,6 +4,7 @@ import { SampleDataBadge } from "@/components/app/SampleDataBadge";
 import { notFound, redirect } from "next/navigation";
 import { Settings2 } from "lucide-react";
 import { AlsoRecommended } from "@/components/competitors/AlsoRecommended";
+import { ShareAndModelCards, VisibilityTrendCard } from "@/components/competitors/charts/CompetitorCharts";
 import { Leaderboard } from "@/components/competitors/Leaderboard";
 import { SignalsTable } from "@/components/competitors/SignalsTable";
 import { Button } from "@/components/ui/button";
@@ -27,6 +28,8 @@ export default async function CompetitorsPage() {
   const page = await getCompetitorsPage(business.id, PATH);
   if (!page) notFound();
   const { view } = page;
+  // The charts need a score and at least one competitor to compare with.
+  const charts = view.charts && view.count > 0 && view.hasScore ? view.charts : null;
   const tracked = view.limit === null ? `${view.count} tracked` : `${view.count} of ${view.limit} tracked`;
 
   return (
@@ -53,28 +56,31 @@ export default async function CompetitorsPage() {
         }
       />
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Who AI recommends most</CardTitle>
-            <CardDescription>Share of customer questions where each business was recommended.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {view.count === 0 ? (
-              <Empty
-                text="Add the businesses you compete with to see who AI recommends more often."
-                action={{ href: MANAGE, label: "Add competitors" }}
-              />
-            ) : !view.hasScore ? (
-              <Empty
-                text="Scores appear after your first scan. Run one from the Overview. Results take about a minute."
-                action={{ href: "/dashboard", label: "Go to Overview" }}
-              />
-            ) : (
-              <Leaderboard view={view} />
-            )}
-          </CardContent>
-        </Card>
+      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
+        <div className="flex min-w-0 flex-col gap-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Who AI recommends most</CardTitle>
+              <CardDescription>Share of customer questions where each business was recommended.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {view.count === 0 ? (
+                <Empty
+                  text="Add the businesses you compete with to see who AI recommends more often."
+                  action={{ href: MANAGE, label: "Add competitors" }}
+                />
+              ) : !view.hasScore ? (
+                <Empty
+                  text="Scores appear after your first scan. Run one from the Overview. Results take about a minute."
+                  action={{ href: "/dashboard", label: "Go to Overview" }}
+                />
+              ) : (
+                <Leaderboard view={view} />
+              )}
+            </CardContent>
+          </Card>
+          {charts ? <VisibilityTrendCard charts={charts} /> : null}
+        </div>
 
         <Card>
           <CardHeader>
@@ -92,6 +98,8 @@ export default async function CompetitorsPage() {
           </CardContent>
         </Card>
       </div>
+
+      {charts ? <ShareAndModelCards charts={charts} /> : null}
 
       <Card>
         <CardHeader>

@@ -1,6 +1,7 @@
 import { pointsChange, type PointsChange } from "@/modules/overview";
 import type { AlsoRecommendedList, ScoreReport, Standing } from "@/modules/scanning";
 import { mergeChains, type ChainOf } from "./chain";
+import type { CompetitorChartsView } from "./charts";
 import type { PlaceSignals } from "./places";
 
 // What the Competitors page shows (B-50, MVP_SPEC 7.1, 8.1, D-64). Pure, so every state is unit tested.
@@ -51,6 +52,8 @@ export type CompetitorsView = {
   limit: number | null;
   /** A chain with no branch picked on Google yet: your row links to "Pick your branch on Google" (step 6d). */
   pickBranch: boolean;
+  /** The page's charts (charts.ts); only the Competitors page asks for them. */
+  charts?: CompetitorChartsView | null;
 };
 
 /**

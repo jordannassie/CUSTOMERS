@@ -20,3 +20,4 @@ export {
   type LeaderRow,
   type SignalRow,
 } from "./service";
+export { MAX_COMPETITORS, type ChartSeries, type CompetitorChartsView } from "./charts";
