@@ -1,0 +1,25 @@
+{
+  "synthetic": true,
+  "provider": "openai",
+  "question": "Who is the best plumber in Austin, TX?",
+  "answerText": "Here are some well reviewed options in Austin, TX:\n\n1. **Hill Country Plumbing**: strong local reviews and friendly staff.\n2. **Zilker Pipe Works**: convenient hours and easy parking.\n3. **Longhorn Leak Repair**: consistent quality mentioned in many reviews.\n\nCheck current hours before you go.",
+  "citations": [
+    {
+      "url": "https://hillcountryplumbing.example/",
+      "title": "Hill Country Plumbing"
+    },
+    {
+      "url": "https://zilkerpipeworks.example/",
+      "title": "Zilker Pipe Works"
+    },
+    {
+      "url": "https://www.yelp.com/search?find_desc=plumber&find_loc=Austin%2C%20TX",
+      "title": "Top plumber in Austin, TX"
+    }
+  ],
+  "names": [
+    "Hill Country Plumbing",
+    "Zilker Pipe Works",
+    "Longhorn Leak Repair"
+  ]
+}

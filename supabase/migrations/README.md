@@ -16,7 +16,7 @@ Every schema change is a new SQL file in this folder, applied by the Supabase CL
 
 | Task | Command |
 |---|---|
-| Rebuild the local database from these files | `supabase db reset --local` (or `npm test`, which does it first) |
+| Rebuild the local database from these files | `npm test`, which does it when they changed. A branch that changes migrations gets its own stack, so `source scripts/test-db-env.sh && supabase db reset --local` there resets only that one; never reset the shared stack by hand |
 | Link the CLI to a project | `supabase link --project-ref <ref>` (dev `whjdcjoojylajtyjywhx`, live `wsxusvapciexemfvtadm`) |
 | Check local matches the linked project | `npm run db:drift` |
 | Apply new files to the linked project | back up, then `supabase db push` |
@@ -40,3 +40,139 @@ supabase migration repair --linked --status applied 001 002 003 004 005 006 007 
 ```
 
 `015` is marked applied even though live never ran it; `020` puts live's own trigger functions back, so the result is the same.
+
+## Scan schedules (B-28, MVP_SPEC 6.2)
+
+Migration `029` enables `pg_cron` and `pg_net` and adds these jobs (UTC). Check them with `select jobname, schedule, command from cron.job;` or, from the app, `rpc('cron_job_status')` (service role only, `030`).
+
+| Job | When | Runs |
+|---|---|---|
+| `enqueue-due-scans` | 02:00 daily | `enqueue_due_scans(false)`: a queued job for each business due today whose agency has credits and is not past due, canceled, suspended or deleted |
+| `call-scan-worker` | every minute | `call_scan_worker()`: pg_net POST to the worker with `x-worker-secret`, only when a job is waiting |
+| `reset-stuck-jobs` | every 10 minutes | `reset_stuck_jobs()` (B-27) |
+| `expire-grants` | 01:00 daily | `expire_grants()` (B-13) |
+| `purge-cron-history` | 03:30 daily | deletes pg_cron run history older than 14 days |
+| `check-system-alerts` | every 15 minutes | `run_system_alerts()` (B-69, `037`): runs `check_system_alerts()`, then POSTs to the app's alerts URL, which adds the daily AI cost check and emails the admins |
+| `email-low-credits` | every 30 minutes | `run_email_job('low_credits')` (B-62, `038`): POSTs to the app's email jobs URL, which emails agencies whose credits are 80% used, at 0 or below 0 (`low_credit_agencies()`), once per level per period |
+| `purge-deleted-accounts` | 03:45 daily | `run_account_purge()` (B-77, `042`): `purge_deleted_accounts()` removes deleted accounts and businesses past their `purge_after` (the app sets it from `DELETION_WAIT_DAYS`, default 30), anonymising `credit_transactions` and `email_log`; then POSTs job `account_purged` to the email jobs URL, which removes logo files and sends the last email |
+| `purge-rate-limit-hits` | hourly at :15 | deletes `rate_limit_hits` rows older than a day (SEC-07, `039`) |
+| `email-weekly-report` | Mondays, every 15 minutes from 13:00 to 17:45 UTC | `run_email_job('weekly_report')` (B-62, `038`): each call sends for a few seconds; later calls pick up agencies not emailed yet |
+
+### Worker URL and secret (Vault, set by hand per project)
+
+The URL and secret are never in a migration. Until they are set, `call_scan_worker()` sends nothing. Run once in the SQL editor of each project, with the same secret as that host's `WORKER_SECRET` env var:
+
+```sql
+select vault.create_secret('https://<host>/.netlify/functions/scan-worker-background', 'scan_worker_url');
+select vault.create_secret('<WORKER_SECRET value>', 'scan_worker_secret');
+```
+
+Alert emails (B-69) need the app's alerts endpoint; it uses the same secret. Without it alerts are still stored and shown on the admin Overview, but no email goes out and the daily AI cost check does not run:
+
+```sql
+select vault.create_secret('https://<host>/api/alerts/check', 'system_alerts_url');
+```
+
+Scheduled emails (B-62) need the app's email jobs endpoint, with the same secret. Without it no low credit or weekly report email goes out:
+
+```sql
+select vault.create_secret('https://<host>/api/email/jobs', 'email_jobs_url');
+```
+
+To change one later: `select vault.update_secret((select id from vault.secrets where name = 'scan_worker_url'), '<new value>');`
+
+Check the calls: `select id, status_code, left(content, 200), created from net._http_response order by created desc limit 5;`
+
+Production (and customers-dev) values to fill in, all four at once. Replace `<host>` with the site's domain (for example the Netlify URL of that deploy) and `<WORKER_SECRET>` with the value of that host's `WORKER_SECRET` env var. Never paste a real secret into this file or a migration.
+
+| Secret | Value |
+|---|---|
+| `scan_worker_url` | `https://<host>/.netlify/functions/scan-worker-background` |
+| `scan_worker_secret` | `<WORKER_SECRET>` |
+| `system_alerts_url` | `https://<host>/api/alerts/check` |
+| `email_jobs_url` | `https://<host>/api/email/jobs` |
+
+Then check that each one is set without printing it: `select name, decrypted_secret <> '' as is_set from vault.decrypted_secrets where name in ('scan_worker_url','scan_worker_secret','system_alerts_url','email_jobs_url');`
+
+### Local Supabase (Docker)
+
+`npm run vault:local` (`scripts/dev/setup-local-vault.sh` and `.sql`) sets the same four secrets in the local Docker database only. It refuses when the env file's Supabase URL is not `127.0.0.1` or `localhost`. The values point at `npm run dev` on port 3000 through `host.docker.internal`; the scan worker URL is the dev-only route `/api/dev/scan-worker` (404 on a production build), and the secret is `WORKER_SECRET` from `.env.local` (or `.env`). Run it again after `supabase db reset`.
+
+### Before go-live
+
+- The worker URL points at the `mvp` staging deploy (`https://mvp--<netlify-site>.netlify.app/.netlify/functions/scan-worker-background`).
+- The daily enqueue passes `false`, so only `is_test` agencies are scanned. Real customers are never scanned or charged by unreleased code.
+
+### Go-live switch (B-80)
+
+1. Point the URL at production: `select vault.update_secret((select id from vault.secrets where name = 'scan_worker_url'), 'https://<production domain>/.netlify/functions/scan-worker-background');`
+2. Let the daily enqueue include real agencies: `select cron.schedule('enqueue-due-scans', '0 2 * * *', 'select public.enqueue_due_scans(true)');`
+3. Check: `select command from cron.job where jobname = 'enqueue-due-scans';` shows `(true)`.
+
+## Pending for live
+
+Live has 001 to 020 (Baseline above) and none of the files below. Go-live applies all of them in order with `supabase db push`, after a backup and the history repair (`docs/launch/RUNBOOK.md` steps 2 to 4). customers-dev was unreachable while most of these were written (F-24), so check it with `supabase migration list --linked` before applying there. Notes say what else each one needs.
+
+- `021_core_tables.sql` (B-11)
+- `022_credit_tables.sql` (B-12)
+- `023_credit_functions.sql` (B-13)
+- `024_legacy_data_columns.sql` (B-14)
+- `025_backfill_existing_data.sql` (B-14; moves existing users onto agencies. Save the counts before and compare after with `npm run verify:migration`)
+- `026_answer_cache_fields.sql` (B-23)
+- `027_scan_check_results.sql` (B-26)
+- `028_scan_job_worker.sql` (B-27)
+- `029_scan_schedules.sql` (B-28; then set the `scan_worker_url` and `scan_worker_secret` Vault secrets above)
+- `030_cron_job_status.sql`
+- `031_scan_frequency_next_scan.sql`
+- `032_visibility_checks_30d.sql`
+- `033_retry_scan_job.sql`
+- `034_topup_packs.sql` (B-40; then run the Stripe catalog sync for that project, see `src/modules/billing/README.md`)
+- `035_email_log.sql` (B-61; then run `npm run db:types` against that project and check the diff is empty)
+- `036_agency_deleted_at.sql` (B-65, B-77)
+- `037_system_alerts.sql` (B-69; then set the `system_alerts_url` Vault secret above and `ALERT_DAILY_COST_USD` on the host)
+- `038_email_jobs.sql` (B-62; then set the `email_jobs_url` Vault secret above)
+- `039_rate_limit_hits.sql` (SEC-07; shared per-IP counts for the contact form and the public compare check)
+- `040_save_first_questions.sql` (E2E-0929)
+- `041_capture_credits.sql` (E2E-0929)
+- `042_account_deletion.sql` (B-77; adds the `purge-deleted-accounts` cron job. `DELETION_WAIT_DAYS` on the host sets the wait, default 30)
+- `043_trial_rules.sql` (B-45)
+- `044_sample_checks_and_failures.sql` (BUG-074, BUG-075; marks old recorded test answers as samples and recreates `visibility_checks_30d`. Then run `npm run db:types` and check the diff only adds `is_sample`, `failed_by_provider` and `visibility_results_counted`)
+- `045_job_settings_status.sql` (BUG-108; `job_settings_status()` for the admin status page: whether the worker, alerts and email jobs Vault secrets are set and whether scheduled scans include real accounts. Yes/no only, never a value)
+- `046_competitor_checked_from.sql` (BUG-122; `business_competitors.checked_from`. Then run `RECOUNT=1 npm run scans:recount` once, so saved answers are checked with the current matching rules)
+- `047_owner_tables_read_only.sql` (SEC-10; owner tables read only to users, writes through server code. Apply together with the app version that writes them with the service role)
+- `048_extend_trial_grant.sql` (A3; `extend_trial_grant()`, so the admin "Extend trial" action moves the open trial grant's expiry with the trial. Then run `npm run db:types`)
+- `049_requested_plan_id.sql` (a plan chosen on `/settings/billing/plans/new-business` before setting up a later business; read once by the add-to-plan step, then ignored. Then run `npm run db:types`)
+- `050_scan_job_safety.sql` (fix list Step 2: failed jobs release their credit hold, `release_orphan_holds()` sweep and its cron job, deleted or off-plan businesses are never scheduled, a retry grows its hold, stuck means 20 minutes without a heartbeat, `skipped` scan status. Apply together with the app version that calls `fail_scan_job` and `set_next_scan_at`. Then run `npm run db:types`)
+- `051_revoke_truncate.sql` (fix list B8: `anon` and `authenticated` lose TRUNCATE on every public table and on tables made later; no app change)
+- `052_business_area.sql` (`businesses.primary_area`, the optional neighborhood or area set on the details step or in Settings, max 80 characters; area-level questions use it. Then run `npm run db:types`)
+
+- `053_low_credit_remaining.sql`, `054_question_stopped_at.sql`, `055_competitor_aliases.sql` (see each file's header; then run `npm run db:types`)
+- `056_webhook_event_claim.sql` (BUG-151: `stripe_webhook_events.claimed_at`; apply with the app version that claims events)
+- `057_business_is_chain.sql` (`businesses.is_chain`, saved at auto-fill)
+- `058_provider_error_counts.sql` (`provider_errors.kind` and `occurrences`, `record_provider_error()`; `check_system_alerts` sums occurrences)
+- `059_keep_ai_costs_after_deletion.sql` (BUG-160: `usage_events.account_user_id` becomes nullable and SET NULL; changes an existing foreign key, so not purely additive; approved 2026-10-14)
+- `060_ledger_test_agency_flag.sql` (BUG-184: `credit_transactions.from_test_agency`)
+- `061_run_explained_at.sql` (`visibility_runs.explained_at`; the pages say "Working out your fixes" until it is set)
+- `062_cancel_reasons.sql` (new table `cancel_reasons`, service role only: the optional reason from the "Before you cancel" dialog, shown on the admin agency page)
+- `063_resolve_quiet_alerts.sql` (new function `resolve_quiet_system_alerts`, called by `run_system_alerts`: closes stuck_jobs, failed_scans, ai_fallback, provider_errors and negative_balances alerts not seen for an hour)
+- `064_report_shares_for_pdf.sql` (`report_shares.for_pdf`: PDF export links are their own rows, never handed out by Share or the weekly email; apply with the app version that writes it)
+- `065_purge_files_and_quiet_paid_alert.sql` (redefines `purge_deleted_accounts`: after 7 days `account_purges` rows lose the address and name but stay until the logo files are removed; redefines `resolve_quiet_system_alerts` to also close paid_not_active)
+- `066_end_trial_grant.sql` (new credit function `end_trial_grant`: a trial that ends early ends its trial grant too, removing what is left with an expire ledger row)
+- `067_business_duplicates.sql` (trigger `businesses_refuse_duplicates`: in one agency no two live businesses with the same website (unless the other is a chain) or Google listing, and one setup draft; checks only the row written, so existing copies stay until `npm run dev:dedupe-businesses` (local) or a person removes them. Also `businesses.create_key` with a unique index per owner, and `businesses.questions_updated_at`. Apply with the app version that maps the refusal to "This business is already in your account". Then run `npm run db:types` and check the diff only adds those two columns)
+- `068_competitor_location.sql` (`businesses.location_changed_at`, `competitors_removed`, `competitors_removed_from`: after the city, region or country changes, Google competitors elsewhere are removed (checked live, D-73), the competitor list says "We removed N competitors from <old city>" once and flags competitors added by name; all three clear when the list is saved. Additive; apply with the app version that writes them. Then run `npm run db:types` and check the diff only adds those three columns)
+- `069_scan_schedule_and_reuse.sql` (H1, M3: new functions `next_scheduled_scan_run` (the first 02:00 UTC enqueue-due-scans run after a time), `queue_skipped_scans(agency)` (after a top-up, queues the agency's scans that did not run for lack of credits, with the enqueue_due_scans filters and its go-live switch, never a business with a finished scan in the last 20 hours) and `scan_jobs_reused_answers` (per scan job, checks answered from the shared cache, for the scan history); redefines `scan_job_settle_failure` so a scan skipped for lack of credits is due again at the next 02:00 run instead of a full cycle later. Apply with the app version that has the 20-hour answer cache and 02:00-aligned next scan dates. Then run `npm run db:types` and check the diff only adds those three functions)
+
+- `070_topup_refunds_and_renewal_grace.sql` (credit_transactions kind `refund`; new credit functions `refund_topup_grant` (Stripe `charge.refunded` for a top-up: removes the refunded share of what is left, audit row `stripe.topup_refund`, alert `topup_refund_unrecovered` for spent credits) and `end_previous_period_grants` (a paid new period ends the previous period's plan and trial grants, which now run 6 hours past their period end); redefines `low_credit_agencies` so the email's renewal date comes from `agencies.current_period_end`. Additive; apply with the app version that calls them. New functions added to `database.types.ts` by hand)
+
+From `main` (video ads, app directory, app reviews, newsletter). On `main` they were numbered 024 to 029, which clash with ours, so they were renamed when `main` was merged; their SQL is unchanged. Every new table enables RLS. Only `app_reviews` and its child tables have policies (owner and public read); the rest are service role only.
+
+- `071_video_ad_orders.sql` (was 024; new table `video_ad_orders`, one-time video ad orders saved by the Stripe webhook)
+- `072_app_directory.sql` (was 025; new tables `directory_apps`, `directory_clicks`)
+- `073_app_review_clicks.sql` (was 026; widens the `directory_clicks` source and destination checks)
+- `074_native_app_reviews.sql` (was 027; new tables `app_reviews`, `app_review_reports`, `app_review_votes`, `app_review_moderation_events` and their policies. Its `create policy` statements have no `drop policy if exists`, so it fails if run twice)
+- `075_newsletter_events.sql` (was 028; new table `newsletter_events`)
+- `076_newsletter_confirmed.sql` (was 029; widens the `newsletter_events` event check)
+
+On live these may already exist from main; if live's history records 024-029 for main's files, run migration repair --status reverted 024-029 before db push. If main's tables and policies are already on live, check they match these files and mark them applied (`supabase migration repair --status applied 071 072 073 074 075 076`) instead of running them, because 074 cannot run twice.
+
+Any file added after 043 joins this list.

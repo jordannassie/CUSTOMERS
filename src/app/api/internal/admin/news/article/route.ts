@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireAdmin } from "@/lib/admin/require";
+import { authErrorResponse, requireAdmin } from "@/modules/auth";
 import { env } from "@/lib/env";
 
 export const maxDuration = 90;
@@ -94,7 +94,7 @@ function classifyOpenAIError(status: number, body: string): string {
 
 export async function POST(request: NextRequest) {
   try { await requireAdmin(); }
-  catch { return NextResponse.json({ error: "Unauthorized" }, { status: 401 }); }
+  catch (error) { return authErrorResponse(error); }
 
   const apiKey = env.OPENAI_API_KEY;
   if (!apiKey) {

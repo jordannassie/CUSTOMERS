@@ -34,6 +34,27 @@ export type Database = {
   }
   public: {
     Tables: {
+      account_purges: {
+        Row: {
+          agency_id: string
+          agency_name: string
+          owner_email: string | null
+          purged_at: string
+        }
+        Insert: {
+          agency_id: string
+          agency_name: string
+          owner_email?: string | null
+          purged_at?: string
+        }
+        Update: {
+          agency_id?: string
+          agency_name?: string
+          owner_email?: string | null
+          purged_at?: string
+        }
+        Relationships: []
+      }
       admin_audit_log: {
         Row: {
           action: string
@@ -66,46 +87,58 @@ export type Database = {
       }
       agencies: {
         Row: {
+          cancel_at: string | null
           created_at: string
           credit_overdraft: number
           current_period_end: string | null
+          deleted_at: string | null
           id: string
           is_test: boolean
           logo_url: string | null
           name: string
           owner_user_id: string
+          purge_after: string | null
           status: string
           stripe_customer_id: string | null
           stripe_subscription_id: string | null
           trial_ends_at: string | null
+          weekly_report_emails: boolean
         }
         Insert: {
+          cancel_at?: string | null
           created_at?: string
           credit_overdraft?: number
           current_period_end?: string | null
+          deleted_at?: string | null
           id?: string
           is_test?: boolean
           logo_url?: string | null
           name: string
           owner_user_id: string
+          purge_after?: string | null
           status?: string
           stripe_customer_id?: string | null
           stripe_subscription_id?: string | null
           trial_ends_at?: string | null
+          weekly_report_emails?: boolean
         }
         Update: {
+          cancel_at?: string | null
           created_at?: string
           credit_overdraft?: number
           current_period_end?: string | null
+          deleted_at?: string | null
           id?: string
           is_test?: boolean
           logo_url?: string | null
           name?: string
           owner_user_id?: string
+          purge_after?: string | null
           status?: string
           stripe_customer_id?: string | null
           stripe_subscription_id?: string | null
           trial_ends_at?: string | null
+          weekly_report_emails?: boolean
         }
         Relationships: []
       }
@@ -245,7 +278,9 @@ export type Database = {
           answer: string
           cache_key: string
           citations: Json
+          cost_usd: number
           created_at: string
+          extracted_names: Json | null
           location: string
           model: string
           question: string
@@ -254,7 +289,9 @@ export type Database = {
           answer: string
           cache_key: string
           citations?: Json
+          cost_usd?: number
           created_at?: string
+          extracted_names?: Json | null
           location: string
           model: string
           question: string
@@ -263,7 +300,9 @@ export type Database = {
           answer?: string
           cache_key?: string
           citations?: Json
+          cost_usd?: number
           created_at?: string
+          extracted_names?: Json | null
           location?: string
           model?: string
           question?: string
@@ -371,8 +410,10 @@ export type Database = {
       }
       business_competitors: {
         Row: {
+          aliases: string[]
           business_id: string
           category: string | null
+          checked_from: string | null
           city: string | null
           confirmed: boolean
           country: string | null
@@ -391,8 +432,10 @@ export type Database = {
           source: string | null
         }
         Insert: {
+          aliases?: string[]
           business_id: string
           category?: string | null
+          checked_from?: string | null
           city?: string | null
           confirmed?: boolean
           country?: string | null
@@ -411,8 +454,10 @@ export type Database = {
           source?: string | null
         }
         Update: {
+          aliases?: string[]
           business_id?: string
           category?: string | null
+          checked_from?: string | null
           city?: string | null
           confirmed?: boolean
           country?: string | null
@@ -529,13 +574,19 @@ export type Database = {
         Row: {
           agency_id: string | null
           aliases: string[]
+          competitors_removed: number | null
+          competitors_removed_from: string[] | null
+          create_key: string | null
           created_at: string
+          deleted_at: string | null
           description: string | null
           domain: string | null
           has_website: boolean | null
           id: string
           industry: string | null
+          is_chain: boolean
           language: string
+          location_changed_at: string | null
           logo_url: string | null
           models: string[]
           name: string
@@ -544,10 +595,14 @@ export type Database = {
           owner_user_id: string
           phone: string | null
           places_id: string | null
+          primary_area: string | null
           primary_city: string | null
           primary_country: string | null
           primary_region: string | null
+          purge_after: string | null
+          questions_updated_at: string | null
           reach_type: string | null
+          requested_plan_id: string | null
           scan_frequency: string
           services: string[]
           status: string
@@ -556,13 +611,19 @@ export type Database = {
         Insert: {
           agency_id?: string | null
           aliases?: string[]
+          competitors_removed?: number | null
+          competitors_removed_from?: string[] | null
+          create_key?: string | null
           created_at?: string
+          deleted_at?: string | null
           description?: string | null
           domain?: string | null
           has_website?: boolean | null
           id?: string
           industry?: string | null
+          is_chain?: boolean
           language?: string
+          location_changed_at?: string | null
           logo_url?: string | null
           models?: string[]
           name: string
@@ -571,10 +632,14 @@ export type Database = {
           owner_user_id: string
           phone?: string | null
           places_id?: string | null
+          primary_area?: string | null
           primary_city?: string | null
           primary_country?: string | null
           primary_region?: string | null
+          purge_after?: string | null
+          questions_updated_at?: string | null
           reach_type?: string | null
+          requested_plan_id?: string | null
           scan_frequency?: string
           services?: string[]
           status?: string
@@ -583,13 +648,19 @@ export type Database = {
         Update: {
           agency_id?: string | null
           aliases?: string[]
+          competitors_removed?: number | null
+          competitors_removed_from?: string[] | null
+          create_key?: string | null
           created_at?: string
+          deleted_at?: string | null
           description?: string | null
           domain?: string | null
           has_website?: boolean | null
           id?: string
           industry?: string | null
+          is_chain?: boolean
           language?: string
+          location_changed_at?: string | null
           logo_url?: string | null
           models?: string[]
           name?: string
@@ -598,10 +669,14 @@ export type Database = {
           owner_user_id?: string
           phone?: string | null
           places_id?: string | null
+          primary_area?: string | null
           primary_city?: string | null
           primary_country?: string | null
           primary_region?: string | null
+          purge_after?: string | null
+          questions_updated_at?: string | null
           reach_type?: string | null
+          requested_plan_id?: string | null
           scan_frequency?: string
           services?: string[]
           status?: string
@@ -621,6 +696,62 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "agency_credit_balance"
             referencedColumns: ["agency_id"]
+          },
+          {
+            foreignKeyName: "businesses_requested_plan_id_fkey"
+            columns: ["requested_plan_id"]
+            isOneToOne: false
+            referencedRelation: "plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cancel_reasons: {
+        Row: {
+          agency_id: string
+          business_id: string | null
+          created_at: string
+          id: string
+          kind: string
+          reason: string
+        }
+        Insert: {
+          agency_id: string
+          business_id?: string | null
+          created_at?: string
+          id?: string
+          kind: string
+          reason: string
+        }
+        Update: {
+          agency_id?: string
+          business_id?: string | null
+          created_at?: string
+          id?: string
+          kind?: string
+          reason?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cancel_reasons_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cancel_reasons_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agency_credit_balance"
+            referencedColumns: ["agency_id"]
+          },
+          {
+            foreignKeyName: "cancel_reasons_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -803,6 +934,7 @@ export type Database = {
           agency_id: string | null
           created_at: string
           delta: number
+          from_test_agency: boolean
           grant_id: string | null
           hold_id: string | null
           id: string
@@ -816,6 +948,7 @@ export type Database = {
           agency_id?: string | null
           created_at?: string
           delta: number
+          from_test_agency?: boolean
           grant_id?: string | null
           hold_id?: string | null
           id?: string
@@ -829,6 +962,7 @@ export type Database = {
           agency_id?: string | null
           created_at?: string
           delta?: number
+          from_test_agency?: boolean
           grant_id?: string | null
           hold_id?: string | null
           id?: string
@@ -930,6 +1064,57 @@ export type Database = {
           website?: string
         }
         Relationships: []
+      }
+      email_log: {
+        Row: {
+          agency_id: string | null
+          error: string | null
+          id: string
+          idempotency_key: string | null
+          provider_id: string | null
+          sent_at: string
+          status: string
+          to_email: string
+          type: string
+        }
+        Insert: {
+          agency_id?: string | null
+          error?: string | null
+          id?: string
+          idempotency_key?: string | null
+          provider_id?: string | null
+          sent_at?: string
+          status: string
+          to_email: string
+          type: string
+        }
+        Update: {
+          agency_id?: string | null
+          error?: string | null
+          id?: string
+          idempotency_key?: string | null
+          provider_id?: string | null
+          sent_at?: string
+          status?: string
+          to_email?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_log_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_log_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agency_credit_balance"
+            referencedColumns: ["agency_id"]
+          },
+        ]
       }
       feature_requests: {
         Row: {
@@ -1038,6 +1223,7 @@ export type Database = {
           name: string
           price_cents: number | null
           stripe_price_id: string | null
+          stripe_product_id: string | null
         }
         Insert: {
           active?: boolean
@@ -1048,6 +1234,7 @@ export type Database = {
           name: string
           price_cents?: number | null
           stripe_price_id?: string | null
+          stripe_product_id?: string | null
         }
         Update: {
           active?: boolean
@@ -1058,6 +1245,7 @@ export type Database = {
           name?: string
           price_cents?: number | null
           stripe_price_id?: string | null
+          stripe_product_id?: string | null
         }
         Relationships: []
       }
@@ -1221,6 +1409,33 @@ export type Database = {
           },
         ]
       }
+      provider_errors: {
+        Row: {
+          created_at: string
+          id: string
+          kind: string | null
+          message: string | null
+          occurrences: number
+          provider: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          kind?: string | null
+          message?: string | null
+          occurrences?: number
+          provider: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          kind?: string | null
+          message?: string | null
+          occurrences?: number
+          provider?: string
+        }
+        Relationships: []
+      }
       question_library: {
         Row: {
           active: boolean
@@ -1254,10 +1469,29 @@ export type Database = {
         }
         Relationships: []
       }
+      rate_limit_hits: {
+        Row: {
+          count: number
+          key: string
+          window_start: string
+        }
+        Insert: {
+          count?: number
+          key: string
+          window_start: string
+        }
+        Update: {
+          count?: number
+          key?: string
+          window_start?: string
+        }
+        Relationships: []
+      }
       report_shares: {
         Row: {
           business_id: string
           created_at: string
+          for_pdf: boolean
           id: string
           revoked_at: string | null
           token: string
@@ -1265,6 +1499,7 @@ export type Database = {
         Insert: {
           business_id: string
           created_at?: string
+          for_pdf?: boolean
           id?: string
           revoked_at?: string | null
           token: string
@@ -1272,6 +1507,7 @@ export type Database = {
         Update: {
           business_id?: string
           created_at?: string
+          for_pdf?: boolean
           id?: string
           revoked_at?: string | null
           token?: string
@@ -1463,6 +1699,7 @@ export type Database = {
       }
       stripe_webhook_events: {
         Row: {
+          claimed_at: string | null
           error: string | null
           event_type: string
           id: string
@@ -1470,6 +1707,7 @@ export type Database = {
           stripe_event_id: string
         }
         Insert: {
+          claimed_at?: string | null
           error?: string | null
           event_type: string
           id?: string
@@ -1477,6 +1715,7 @@ export type Database = {
           stripe_event_id: string
         }
         Update: {
+          claimed_at?: string | null
           error?: string | null
           event_type?: string
           id?: string
@@ -1536,6 +1775,7 @@ export type Database = {
           emailed_at: string | null
           id: string
           kind: string
+          last_seen_at: string
           message: string
           resolved_at: string | null
           severity: string
@@ -1546,6 +1786,7 @@ export type Database = {
           emailed_at?: string | null
           id?: string
           kind: string
+          last_seen_at?: string
           message: string
           resolved_at?: string | null
           severity?: string
@@ -1556,9 +1797,43 @@ export type Database = {
           emailed_at?: string | null
           id?: string
           kind?: string
+          last_seen_at?: string
           message?: string
           resolved_at?: string | null
           severity?: string
+        }
+        Relationships: []
+      }
+      topup_packs: {
+        Row: {
+          active: boolean
+          credits: number
+          id: string
+          name: string
+          price_cents: number
+          sort_order: number
+          stripe_price_id: string | null
+          stripe_product_id: string | null
+        }
+        Insert: {
+          active?: boolean
+          credits: number
+          id: string
+          name: string
+          price_cents: number
+          sort_order?: number
+          stripe_price_id?: string | null
+          stripe_product_id?: string | null
+        }
+        Update: {
+          active?: boolean
+          credits?: number
+          id?: string
+          name?: string
+          price_cents?: number
+          sort_order?: number
+          stripe_price_id?: string | null
+          stripe_product_id?: string | null
         }
         Relationships: []
       }
@@ -1570,8 +1845,11 @@ export type Database = {
           category: string | null
           created_at: string
           id: string
+          inactive_since: string | null
           location: string | null
           prompt: string
+          removed_at: string | null
+          source: string
         }
         Insert: {
           active?: boolean
@@ -1580,8 +1858,11 @@ export type Database = {
           category?: string | null
           created_at?: string
           id?: string
+          inactive_since?: string | null
           location?: string | null
           prompt: string
+          removed_at?: string | null
+          source?: string
         }
         Update: {
           active?: boolean
@@ -1590,8 +1871,11 @@ export type Database = {
           category?: string | null
           created_at?: string
           id?: string
+          inactive_since?: string | null
           location?: string | null
           prompt?: string
+          removed_at?: string | null
+          source?: string
         }
         Relationships: [
           {
@@ -1605,8 +1889,9 @@ export type Database = {
       }
       usage_events: {
         Row: {
-          account_user_id: string
+          account_user_id: string | null
           business_id: string | null
+          cached: boolean
           created_at: string
           estimated_cost_usd: number
           id: string
@@ -1621,8 +1906,9 @@ export type Database = {
           visibility_run_id: string | null
         }
         Insert: {
-          account_user_id: string
+          account_user_id?: string | null
           business_id?: string | null
+          cached?: boolean
           created_at?: string
           estimated_cost_usd?: number
           id?: string
@@ -1637,8 +1923,9 @@ export type Database = {
           visibility_run_id?: string | null
         }
         Update: {
-          account_user_id?: string
+          account_user_id?: string | null
           business_id?: string | null
+          cached?: boolean
           created_at?: string
           estimated_cost_usd?: number
           id?: string
@@ -1764,7 +2051,7 @@ export type Database = {
           company?: string | null
           cons: string
           created_at?: string
-          experienced?: boolean
+          experienced: boolean
           id?: string
           industry?: string | null
           job_role?: string | null
@@ -1828,7 +2115,15 @@ export type Database = {
           review_id?: string
           status?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "app_review_reports_review_id_fkey"
+            columns: ["review_id"]
+            isOneToOne: false
+            referencedRelation: "app_reviews"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       app_review_votes: {
         Row: {
@@ -1849,7 +2144,15 @@ export type Database = {
           review_id?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "app_review_votes_review_id_fkey"
+            columns: ["review_id"]
+            isOneToOne: false
+            referencedRelation: "app_reviews"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       app_review_moderation_events: {
         Row: {
@@ -1879,7 +2182,15 @@ export type Database = {
           review_id?: string
           snapshot?: Json
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "app_review_moderation_events_review_id_fkey"
+            columns: ["review_id"]
+            isOneToOne: false
+            referencedRelation: "app_reviews"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       newsletter_events: {
         Row: {
@@ -1967,45 +2278,69 @@ export type Database = {
       }
       visibility_results: {
         Row: {
+          answer_text: string | null
           business_id: string
           business_mentioned: boolean
+          cached: boolean
           cited_sources: Json
           competitors_mentioned: Json
+          cost_usd: number | null
           created_at: string
+          extracted_names: Json | null
           id: string
+          is_sample: boolean
+          latency_ms: number | null
           mention_position: number | null
           methodology: string | null
+          model: string | null
           provider: string
+          question: string | null
           raw_response: Json | null
           run_id: string
           sentiment: string | null
           tracked_prompt_id: string | null
         }
         Insert: {
+          answer_text?: string | null
           business_id: string
           business_mentioned?: boolean
+          cached?: boolean
           cited_sources?: Json
           competitors_mentioned?: Json
+          cost_usd?: number | null
           created_at?: string
+          extracted_names?: Json | null
           id?: string
+          is_sample?: boolean
+          latency_ms?: number | null
           mention_position?: number | null
           methodology?: string | null
+          model?: string | null
           provider: string
+          question?: string | null
           raw_response?: Json | null
           run_id: string
           sentiment?: string | null
           tracked_prompt_id?: string | null
         }
         Update: {
+          answer_text?: string | null
           business_id?: string
           business_mentioned?: boolean
+          cached?: boolean
           cited_sources?: Json
           competitors_mentioned?: Json
+          cost_usd?: number | null
           created_at?: string
+          extracted_names?: Json | null
           id?: string
+          is_sample?: boolean
+          latency_ms?: number | null
           mention_position?: number | null
           methodology?: string | null
+          model?: string | null
           provider?: string
+          question?: string | null
           raw_response?: Json | null
           run_id?: string
           sentiment?: string | null
@@ -2038,31 +2373,46 @@ export type Database = {
       visibility_runs: {
         Row: {
           business_id: string
+          checks_failed: number | null
+          checks_total: number | null
           completed_at: string | null
           created_at: string
           error: string | null
+          explained_at: string | null
+          failed_by_provider: Json | null
           id: string
           provider: string
+          scan_job_id: string | null
           started_at: string
           status: string
         }
         Insert: {
           business_id: string
+          checks_failed?: number | null
+          checks_total?: number | null
           completed_at?: string | null
           created_at?: string
           error?: string | null
+          explained_at?: string | null
+          failed_by_provider?: Json | null
           id?: string
           provider: string
+          scan_job_id?: string | null
           started_at?: string
           status?: string
         }
         Update: {
           business_id?: string
+          checks_failed?: number | null
+          checks_total?: number | null
           completed_at?: string | null
           created_at?: string
           error?: string | null
+          explained_at?: string | null
+          failed_by_provider?: Json | null
           id?: string
           provider?: string
+          scan_job_id?: string | null
           started_at?: string
           status?: string
         }
@@ -2072,6 +2422,13 @@ export type Database = {
             columns: ["business_id"]
             isOneToOne: false
             referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "visibility_runs_scan_job_id_fkey"
+            columns: ["scan_job_id"]
+            isOneToOne: false
+            referencedRelation: "scan_jobs"
             referencedColumns: ["id"]
           },
         ]
@@ -2133,6 +2490,144 @@ export type Database = {
         }
         Relationships: []
       }
+      visibility_checks_30d: {
+        Row: {
+          answer_key: string | null
+          business_id: string | null
+          business_mentioned: boolean | null
+          cached: boolean | null
+          checked_at: string | null
+          competitors: string[] | null
+          id: string | null
+          provider: string | null
+          question_id: string | null
+        }
+        Insert: {
+          answer_key?: never
+          business_id?: string | null
+          business_mentioned?: boolean | null
+          cached?: boolean | null
+          checked_at?: string | null
+          competitors?: never
+          id?: string | null
+          provider?: string | null
+          question_id?: never
+        }
+        Update: {
+          answer_key?: never
+          business_id?: string | null
+          business_mentioned?: boolean | null
+          cached?: boolean | null
+          checked_at?: string | null
+          competitors?: never
+          id?: string | null
+          provider?: string | null
+          question_id?: never
+        }
+        Relationships: [
+          {
+            foreignKeyName: "visibility_results_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      visibility_results_counted: {
+        Row: {
+          answer_text: string | null
+          business_id: string | null
+          business_mentioned: boolean | null
+          cached: boolean | null
+          cited_sources: Json | null
+          competitors_mentioned: Json | null
+          cost_usd: number | null
+          created_at: string | null
+          extracted_names: Json | null
+          id: string | null
+          is_sample: boolean | null
+          latency_ms: number | null
+          mention_position: number | null
+          methodology: string | null
+          model: string | null
+          provider: string | null
+          question: string | null
+          raw_response: Json | null
+          run_id: string | null
+          sentiment: string | null
+          tracked_prompt_id: string | null
+        }
+        Insert: {
+          answer_text?: string | null
+          business_id?: string | null
+          business_mentioned?: boolean | null
+          cached?: boolean | null
+          cited_sources?: Json | null
+          competitors_mentioned?: Json | null
+          cost_usd?: number | null
+          created_at?: string | null
+          extracted_names?: Json | null
+          id?: string | null
+          is_sample?: boolean | null
+          latency_ms?: number | null
+          mention_position?: number | null
+          methodology?: string | null
+          model?: string | null
+          provider?: string | null
+          question?: string | null
+          raw_response?: Json | null
+          run_id?: string | null
+          sentiment?: string | null
+          tracked_prompt_id?: string | null
+        }
+        Update: {
+          answer_text?: string | null
+          business_id?: string | null
+          business_mentioned?: boolean | null
+          cached?: boolean | null
+          cited_sources?: Json | null
+          competitors_mentioned?: Json | null
+          cost_usd?: number | null
+          created_at?: string | null
+          extracted_names?: Json | null
+          id?: string | null
+          is_sample?: boolean | null
+          latency_ms?: number | null
+          mention_position?: number | null
+          methodology?: string | null
+          model?: string | null
+          provider?: string | null
+          question?: string | null
+          raw_response?: Json | null
+          run_id?: string | null
+          sentiment?: string | null
+          tracked_prompt_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "visibility_results_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "visibility_results_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "visibility_runs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "visibility_results_tracked_prompt_id_fkey"
+            columns: ["tracked_prompt_id"]
+            isOneToOne: false
+            referencedRelation: "tracked_prompts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       admin_adjust_credits: {
@@ -2145,9 +2640,47 @@ export type Database = {
         }
         Returns: string
       }
+      call_scan_worker: { Args: never; Returns: number }
       capture_credit: {
         Args: { p_check_id: string; p_hold_id: string }
         Returns: boolean
+      }
+      capture_credits: {
+        Args: { p_check_ids: string[]; p_hold_id: string }
+        Returns: number
+      }
+      check_system_alerts: {
+        Args: {
+          p_daily_cost_limit_usd?: number
+          p_failed_scan_share?: number
+          p_provider_error_count?: number
+          p_stuck_minutes?: number
+        }
+        Returns: string[]
+      }
+      claim_scan_jobs: {
+        Args: { p_limit: number }
+        Returns: {
+          agency_id: string
+          attempts: number
+          business_id: string
+          created_at: string
+          credits_charged: number
+          error: string | null
+          finished_at: string | null
+          hold_id: string | null
+          id: string
+          locked_at: string | null
+          priority: number
+          run_after: string
+          status: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "scan_jobs"
+          isOneToOne: false
+          isSetofReturn: true
+        }
       }
       credit_add_grant: {
         Args: {
@@ -2163,7 +2696,39 @@ export type Database = {
         Returns: string
       }
       credit_lock_agency: { Args: { p_agency_id: string }; Returns: number }
+      cron_job_status: {
+        Args: never
+        Returns: {
+          active: boolean
+          job_name: string
+          last_message: string
+          last_run_at: string
+          last_status: string
+          schedule: string
+        }[]
+      }
+      enqueue_due_scans: { Args: { p_include_real?: boolean }; Returns: number }
+      end_previous_period_grants: {
+        Args: {
+          p_agency_id: string
+          p_grace_seconds: number
+          p_period_start: string
+        }
+        Returns: number
+      }
+      end_trial_grant: {
+        Args: { p_agency_id: string; p_trial_end: string }
+        Returns: number
+      }
       expire_grants: { Args: never; Returns: number }
+      extend_trial_grant: {
+        Args: { p_agency_id: string; p_expires_at: string }
+        Returns: string
+      }
+      fail_scan_job: {
+        Args: { p_attempts: number; p_error: string; p_job_id: string; p_skipped: boolean }
+        Returns: boolean
+      }
       grant_credits: {
         Args: {
           p_agency_id: string
@@ -2174,11 +2739,131 @@ export type Database = {
         }
         Returns: string
       }
+      grant_trial_credits: {
+        Args: {
+          p_agency_id: string
+          p_amount: number
+          p_expires_at: string
+          p_source_id: string
+        }
+        Returns: string
+      }
       hold_credits: {
         Args: { p_agency_id: string; p_amount: number; p_scan_job_id: string }
         Returns: string
       }
+      job_settings_status: {
+        Args: never
+        Returns: {
+          alerts_url_set: boolean
+          email_jobs_url_set: boolean
+          scheduled_scans_include_real: boolean
+          worker_secret_set: boolean
+          worker_url_set: boolean
+        }[]
+      }
+      low_credit_agencies: {
+        Args: never
+        Returns: {
+          agency_id: string
+          balance: number
+          level: string
+          period_end: string
+          total: number
+          used: number
+        }[]
+      }
+      next_scheduled_scan_run: { Args: { p_after: string }; Returns: string }
+      purge_deleted_accounts: {
+        Args: never
+        Returns: {
+          accounts: number
+          businesses: number
+        }[]
+      }
+      queue_skipped_scans: { Args: { p_agency_id: string }; Returns: number }
+      raise_system_alert: {
+        Args: {
+          p_details: Json
+          p_kind: string
+          p_message: string
+          p_severity: string
+        }
+        Returns: string
+      }
+      rate_limit_hit: {
+        Args: { p_key: string; p_window_start: string }
+        Returns: number
+      }
+      record_provider_error: {
+        Args: { p_kind: string; p_message: string; p_provider: string }
+        Returns: undefined
+      }
+      refund_topup_grant: {
+        Args: {
+          p_agency_id: string
+          p_charge_cents: number
+          p_charge_id: string
+          p_refund_id: string
+          p_refunded_cents: number
+          p_source_id: string
+        }
+        Returns: Json
+      }
       release_hold: { Args: { p_hold_id: string }; Returns: number }
+      release_orphan_holds: { Args: never; Returns: number }
+      requeue_scan_job: {
+        Args: {
+          p_attempts: number
+          p_error: string
+          p_job_id: string
+          p_run_after: string
+        }
+        Returns: boolean
+      }
+      reset_stuck_jobs: { Args: never; Returns: number }
+      resolve_quiet_system_alerts: { Args: { p_quiet?: unknown }; Returns: number }
+      retry_scan_job: { Args: { p_job_id: string }; Returns: string }
+      run_account_purge: { Args: never; Returns: number }
+      run_email_job: { Args: { p_job: string }; Returns: number }
+      run_system_alerts: { Args: never; Returns: number }
+      save_first_questions: {
+        Args: {
+          p_business_id: string
+          p_owner_user_id: string
+          p_questions: Json
+        }
+        Returns: {
+          id: string
+          prompt: string
+        }[]
+      }
+      scan_job_business_on_plan: { Args: { p_business_id: string }; Returns: boolean }
+      scan_job_settle_failure: { Args: { p_job_id: string; p_skipped: boolean }; Returns: undefined }
+      scan_jobs_reused_answers: {
+        Args: { p_job_ids: string[] }
+        Returns: {
+          reused: number
+          scan_job_id: string
+        }[]
+      }
+      set_next_scan_at: { Args: { p_at: string; p_business_id: string }; Returns: boolean }
+      soft_delete_agency: {
+        Args: { p_agency_id: string; p_purge_after: string }
+        Returns: boolean
+      }
+      soft_delete_business: {
+        Args: {
+          p_agency_id: string
+          p_business_id: string
+          p_purge_after: string
+        }
+        Returns: boolean
+      }
+      stop_scans: {
+        Args: { p_agency_id: string; p_business_id?: string }
+        Returns: number
+      }
     }
     Enums: {
       [_ in never]: never

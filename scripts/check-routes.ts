@@ -6,8 +6,14 @@ export {};
 const base = (process.argv[2] ?? "http://localhost:3000").replace(/\/$/, "");
 
 // Public pages must return 200; signed-in areas may redirect to /login instead.
-const KEPT_PUBLIC = ["/", "/pricing", "/agency", "/start-ai-business", "/compare", "/contact", "/ads", "/ads/brief", "/apps", "/login", "/signup", "/privacy", "/terms", "/forgot-password", "/sitemap.xml", "/robots.txt"];
-const KEPT_PRIVATE = ["/dashboard", "/dashboard/visibility", "/dashboard/reports", "/dashboard/seo", "/internal/admin", "/internal/admin/news"];
+const KEPT_PUBLIC = [
+  "/", "/pricing", "/agency", "/compare", "/contact", "/login", "/signup", "/privacy", "/terms", "/forgot-password", "/sitemap.xml", "/robots.txt",
+  // Merged from main: AI video ads, the AI apps directory and the launch kit page.
+  "/start-ai-business", "/ads", "/ads/brief", "/apps", "/apps/chatgpt",
+];
+const KEPT_PRIVATE = ["/dashboard", "/settings", "/internal/admin", "/internal/admin/news"];
+// Redirects that must keep working: the newsletter signup link (merged from main) goes on to Beehiiv.
+const KEPT_REDIRECTS: Record<string, string> = { "/newsletter/go/homepage": "https://customersdirect.beehiiv.com/" };
 
 const REMOVED: Record<string, string> = {
   "/ai-employee": "/",
@@ -24,6 +30,11 @@ const REMOVED: Record<string, string> = {
   "/admin/prospecting": "/internal/admin",
   "/dashboard/direct-agent": "/dashboard",
   "/dashboard/agent-readiness": "/dashboard",
+  "/dashboard/visibility": "/dashboard",
+  "/dashboard/reports": "/dashboard",
+  "/dashboard/settings": "/settings",
+  "/dashboard/prompts": "/questions",
+  "/dashboard/seo": "/dashboard",
 };
 
 async function head(path: string) {
@@ -47,6 +58,11 @@ for (const path of KEPT_PRIVATE) {
   const { status, location } = await head(path);
   const ok = status === 200 || (status >= 300 && status < 400 && location?.startsWith("/login") === true);
   report(ok, `${path} -> ${status}${location ? ` ${location}` : ""}`);
+}
+
+for (const [path, target] of Object.entries(KEPT_REDIRECTS)) {
+  const { status, location } = await head(path);
+  report(status >= 300 && status < 400 && location?.startsWith(target) === true, `${path} -> ${status} ${location ?? ""} (want ${target})`);
 }
 
 for (const [path, target] of Object.entries(REMOVED)) {

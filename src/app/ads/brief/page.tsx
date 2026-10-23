@@ -1,7 +1,9 @@
+import { Suspense } from "react";
+import { PublicPageSkeleton } from "@/components/site/PublicPageSkeleton";
 import type { Metadata } from "next";
 import Link from "next/link";
-import SiteHeader from "@/components/site/SiteHeader";
-import SiteFooter from "@/components/site/SiteFooter";
+import Header from "@/components/marketing/Header";
+import Footer from "@/components/marketing/Footer";
 import { BriefForm } from "@/components/site/video-ads/BriefForm";
 import { getOrderBySession, recordPaidOrder } from "@/modules/video-ads/dal";
 import { briefTokensMatch, checkoutSessionIdSchema } from "@/modules/video-ads/schema";
@@ -24,7 +26,7 @@ function Notice({ title, body }: { title: string; body: string }) {
   );
 }
 
-export default async function VideoAdBriefPage({
+async function VideoAdBriefPageContent({
   searchParams,
 }: {
   searchParams: Promise<{ session_id?: string; token?: string }>;
@@ -95,11 +97,23 @@ export default async function VideoAdBriefPage({
 
   return (
     <>
-      <SiteHeader />
+      <Header />
       <main className="min-h-screen bg-[#FAFAF8] px-4 pb-20 pt-28 sm:px-6">
         <div className="mx-auto max-w-xl">{body}</div>
       </main>
-      <SiteFooter />
+      <Footer />
     </>
+  );
+}
+
+
+// Reads the request (search params, the signed-in user), so it streams inside Suspense (Cache Components).
+export default function VideoAdBriefPage(props: {
+  searchParams: Promise<{ session_id?: string; token?: string }>;
+}) {
+  return (
+    <Suspense fallback={<PublicPageSkeleton />}>
+      <VideoAdBriefPageContent {...props} />
+    </Suspense>
   );
 }

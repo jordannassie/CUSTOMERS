@@ -1,12 +1,14 @@
+import { Suspense } from "react";
+import { PublicPageSkeleton } from "@/components/site/PublicPageSkeleton";
 import type { Metadata } from "next";
-import SiteHeader from "@/components/site/SiteHeader";
-import SiteFooter from "@/components/site/SiteFooter";
+import Header from "@/components/marketing/Header";
+import Footer from "@/components/marketing/Footer";
 import { AppsBrowse } from "@/components/site/apps/AppsBrowse";
 import { DIRECTORY_CATALOG } from "@/modules/apps-directory/catalog";
 import { listDirectoryOverrides } from "@/modules/apps-directory/dal";
 import { directorySearchSchema } from "@/modules/apps-directory/schema";
 import { mergeCatalog, queryDirectory } from "@/modules/apps-directory/service";
-import { listNativeSummaries } from "@/modules/apps-directory/review-dal";
+import { listNativeSummaries } from "@/modules/apps-directory/reviews/dal";
 import { env } from "@/lib/env";
 
 const TITLE = "AI Apps Directory";
@@ -29,7 +31,7 @@ function first(value: string | string[] | undefined): string | undefined {
   return Array.isArray(value) ? value[0] : value;
 }
 
-export default async function AppsPage({ searchParams }: { searchParams: SearchParams }) {
+async function AppsPageContent({ searchParams }: { searchParams: SearchParams }) {
   const raw = await searchParams;
   const parsed = directorySearchSchema.safeParse({
     q: first(raw.q),
@@ -57,12 +59,22 @@ export default async function AppsPage({ searchParams }: { searchParams: SearchP
 
   return (
     <>
-      <SiteHeader />
+      <Header />
       <main className="min-h-screen bg-[#FAFAF8]">
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(itemList) }} />
         <AppsBrowse query={query} result={result} ratings={ratings} embedSrc={env.NEXT_PUBLIC_BEEHIIV_EMBED_SRC} formId={env.NEXT_PUBLIC_BEEHIIV_FORM_ID} />
       </main>
-      <SiteFooter />
+      <Footer />
     </>
+  );
+}
+
+
+// Reads the request (search params, the signed-in user), so it streams inside Suspense (Cache Components).
+export default function AppsPage(props: { searchParams: SearchParams }) {
+  return (
+    <Suspense fallback={<PublicPageSkeleton />}>
+      <AppsPageContent {...props} />
+    </Suspense>
   );
 }

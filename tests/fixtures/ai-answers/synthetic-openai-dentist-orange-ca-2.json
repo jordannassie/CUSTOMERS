@@ -1,0 +1,24 @@
+{
+  "synthetic": true,
+  "provider": "openai",
+  "question": "Where can I find an emergency dentist open today in Orange, CA?",
+  "answerText": "Here are some well reviewed options in Orange, CA:\n\n1. **Tustin Street Smiles**: strong local reviews and friendly staff.\n2. **Orange Circle Dental**: convenient hours and easy parking.\n\nCheck current hours before you go.",
+  "citations": [
+    {
+      "url": "https://tustinstreetsmiles.example/",
+      "title": "Tustin Street Smiles"
+    },
+    {
+      "url": "https://orangecircledental.example/",
+      "title": "Orange Circle Dental"
+    },
+    {
+      "url": "https://www.yelp.com/search?find_desc=dentist&find_loc=Orange%2C%20CA",
+      "title": "Top dentist in Orange, CA"
+    }
+  ],
+  "names": [
+    "Tustin Street Smiles",
+    "Orange Circle Dental"
+  ]
+}

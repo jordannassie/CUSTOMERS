@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { randomBytes } from "node:crypto";
-import { requireStripe } from "@/lib/stripe";
+import { getStripe } from "@/modules/billing";
 import { env } from "@/lib/env";
 import { getVideoAdPackage } from "@/modules/video-ads/packages";
 import { packageIdSchema } from "@/modules/video-ads/schema";
@@ -34,9 +34,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Choose Starter, Growth, or Scale." }, { status: 400 });
   }
 
-  let stripe: ReturnType<typeof requireStripe>;
+  let stripe: ReturnType<typeof getStripe>;
   try {
-    stripe = requireStripe();
+    stripe = getStripe();
   } catch {
     return NextResponse.json(
       { error: "Online checkout is not connected yet. You have not been charged.", configured: false },
@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
         },
       ],
       success_url: `${base}/ads/brief?session_id={CHECKOUT_SESSION_ID}&token=${token}`,
-      cancel_url: `${base}/ads?checkout=cancelled`,
+      cancel_url: `${base}/ads?checkout=canceled`,
       metadata: {
         kind: "video_ad",
         package_id: pack.id,

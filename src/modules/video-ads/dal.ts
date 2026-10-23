@@ -124,7 +124,7 @@ export async function recordPaidOrder(input: {
   let leadSaved = false;
   if (input.email) {
     const pack = getVideoAdPackage(input.packageId);
-    leadSaved = await mirrorLead({
+    leadSaved = await mirrorLead(createServiceClient(), {
       sessionId: input.sessionId,
       name: input.customerName ?? "Video ad customer",
       email: input.email,
@@ -182,7 +182,7 @@ export async function saveBrief(input: {
     console.error("[video-ads] save brief:", error.message);
   }
 
-  const leadSaved = await mirrorLead({
+  const leadSaved = await mirrorLead(createServiceClient(), {
     sessionId: input.sessionId,
     name: input.brief.customerName,
     email: input.brief.email,

@@ -125,7 +125,7 @@ Phase 3 · M · Depends on: B-13, B-20 to B-25 · Blocked by Jordan: no · MVP_S
 
 **Build**
 1. `src/modules/scanning/service.ts`:
-   - `runScan(jobId)`: loads the business, its active questions and chosen models; calls `hold_credits(questions × models)`; runs checks 4 to 6 at a time; for each result: cache, mention detection, name extraction, `capture_credit`; failed checks after retries are not captured; finally `release_hold`.
+   - `runScan(jobId)`: loads the business, its active questions and chosen models; checks `canStartScan` from `src/modules/entitlements` (skip the job with its reason if not allowed, so top-ups are never spent without a plan or trial, F-20); calls `hold_credits(questions × models)`; runs checks 4 to 6 at a time; for each result: cache, mention detection, name extraction, `capture_credit`; failed checks after retries are not captured; finally `release_hold`.
    - Writes `visibility_runs` and per-check results with model, mentioned, position, citations, cost, cached flag.
 2. `is_test` agencies use recorded answers from `tests/fixtures/ai-answers/` instead of live calls (B-31).
 3. Sets `businesses.next_scan_at` from the frequency when done.

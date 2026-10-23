@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import SiteHeader from "@/components/site/SiteHeader";
-import SiteFooter from "@/components/site/SiteFooter";
+import Header from "@/components/marketing/Header";
+import Footer from "@/components/marketing/Footer";
 import LaunchKitHero from "@/components/site/launch-kit/LaunchKitHero";
 import LaunchKitWhatYouGet from "@/components/site/launch-kit/LaunchKitWhatYouGet";
 import LaunchKitBottom from "@/components/site/launch-kit/LaunchKitBottom";
@@ -29,13 +29,13 @@ export default function StartAiBusinessPage() {
 
   return (
     <div className="min-h-screen bg-white">
-      <SiteHeader />
+      <Header />
       <main>
         <LaunchKitHero hasVideo={hasVideo} />
         <LaunchKitWhatYouGet />
         <LaunchKitBottom />
       </main>
-      <SiteFooter />
+      <Footer />
     </div>
   );
 }

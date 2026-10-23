@@ -1,13 +1,20 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { NextResponse, type NextRequest } from "next/server";
+import type { EmailOtpType } from "@supabase/supabase-js";
+import { z } from "zod";
 import { env } from "@/lib/env";
+import { safeNextPath } from "@/lib/safe-next";
+
+// Email links built from {{ .TokenHash }} (a template change on the hosted project) work on any device, since they
+// need no code verifier cookie from the browser that asked for them (ACC-04).
+const otpType = z.enum(["signup", "invite", "magiclink", "recovery", "email_change", "email"]);
 
 /**
  * OAuth / magic-link callback.
  *
  * Uses `next/headers` cookies() for reading (recommended for Route Handlers in
- * Next.js App Router — more reliable than request.cookies on Netlify serverless
+ * Next.js App Router; more reliable than request.cookies on Netlify serverless
  * because it handles chunked cookies and avoids header-size truncation).
  *
  * Writes Set-Cookie headers directly onto the redirect response so the
@@ -24,25 +31,36 @@ export async function GET(request: NextRequest) {
     env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ??
     (forwardedHost ? `${forwardedProto}://${forwardedHost}` : new URL(request.url).origin);
 
+  // The signup confirmation email links here too (from=signup); its failures are not Google's, so the login page
+  // must not say "Google sign-in failed" for them.
+  const fromSignup = searchParams.get("from") === "signup";
+
   // Supabase sends error_code / error when the provider-side exchange fails
   const providerError = searchParams.get("error_code") ?? searchParams.get("error");
   if (providerError) {
     console.error("[auth/callback] provider error:", providerError);
-    return NextResponse.redirect(`${baseUrl}/login?error=oauth_provider_error`);
+    // An expired or already used confirmation link: the user needs a new email, not a Google retry.
+    return NextResponse.redirect(`${baseUrl}/login?error=${fromSignup ? "signup_link_invalid" : "oauth_provider_error"}`);
   }
 
-  if (!code) {
+  // Determine where to redirect after a successful login
+  const safePath = safeNextPath(searchParams.get("next"));
+
+  const tokenHash = searchParams.get("token_hash");
+  const type = otpType.safeParse(searchParams.get("type"));
+
+  if (!code && !(tokenHash && type.success)) {
+    // The first of the two email change links only confirms one address; Supabase sends a message, not a code.
+    if (searchParams.get("message")) return NextResponse.redirect(`${baseUrl}${safePath}`);
     console.error("[auth/callback] no code in request");
     return NextResponse.redirect(`${baseUrl}/login?error=missing_oauth_code`);
   }
 
-  // Determine where to redirect after a successful login
-  const next     = searchParams.get("next") ?? "/dashboard";
-  const safePath = next.startsWith("/") ? next : "/dashboard";
-
   // Build both responses up-front so we can attach cookies to whichever we return
   const successResponse = NextResponse.redirect(`${baseUrl}${safePath}`);
-  const errorResponse   = NextResponse.redirect(`${baseUrl}/login?error=oauth_callback_failed`);
+  // A confirmation link opened in another browser than the one that signed up: Supabase has already confirmed the
+  // email, but the session cannot be made here (PKCE), so the user just needs to log in.
+  const errorResponse = NextResponse.redirect(`${baseUrl}/login?error=${fromSignup ? "signup_confirmed" : "oauth_callback_failed"}`);
 
   // Read cookies via next/headers (canonical for App Router Route Handlers)
   const cookieStore = await cookies();
@@ -69,7 +87,9 @@ export async function GET(request: NextRequest) {
     }
   );
 
-  const { error } = await supabase.auth.exchangeCodeForSession(code);
+  const { error } = code
+    ? await supabase.auth.exchangeCodeForSession(code)
+    : await supabase.auth.verifyOtp({ token_hash: tokenHash!, type: type.data as EmailOtpType });
 
   if (error) {
     console.error("[auth/callback] exchangeCodeForSession failed:", error.message);

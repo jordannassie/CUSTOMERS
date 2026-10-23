@@ -1,7 +1,9 @@
+import { Suspense } from "react";
+import { PublicPageSkeleton } from "@/components/site/PublicPageSkeleton";
 import type { Metadata } from "next";
-import SiteHeader from "@/components/site/SiteHeader";
-import SiteFooter from "@/components/site/SiteFooter";
-import { stripeEnabled } from "@/lib/stripe";
+import Header from "@/components/marketing/Header";
+import Footer from "@/components/marketing/Footer";
+import { isStripeConfigured } from "@/modules/billing";
 import { AdsHero } from "@/components/site/video-ads/AdsHero";
 import { AdsPortfolio } from "@/components/site/video-ads/AdsPortfolio";
 import { AdsPricing } from "@/components/site/video-ads/AdsPricing";
@@ -57,27 +59,39 @@ const jsonLd = {
   })),
 };
 
-export default async function AdsPage({
+async function AdsPageContent({
   searchParams,
 }: {
   searchParams: Promise<{ checkout?: string }>;
 }) {
   const params = await searchParams;
-  const checkoutReady = stripeEnabled;
+  const checkoutReady = isStripeConfigured();
 
   return (
     <>
-      <SiteHeader />
+      <Header />
       <main className="bg-[#FAFAF8] text-[#171717]">
-        <AdsHero checkoutReady={checkoutReady} cancelled={params.checkout === "cancelled"} />
+        <AdsHero checkoutReady={checkoutReady} canceled={params.checkout === "canceled"} />
         <AdsPortfolio />
         <AdsPricing checkoutReady={checkoutReady} />
         <AdsSteps />
         <AdsFaq />
         <AdsFinalCta checkoutReady={checkoutReady} />
       </main>
-      <SiteFooter />
+      <Footer />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
     </>
+  );
+}
+
+
+// Reads the request (search params, the signed-in user), so it streams inside Suspense (Cache Components).
+export default function AdsPage(props: {
+  searchParams: Promise<{ checkout?: string }>;
+}) {
+  return (
+    <Suspense fallback={<PublicPageSkeleton />}>
+      <AdsPageContent {...props} />
+    </Suspense>
   );
 }

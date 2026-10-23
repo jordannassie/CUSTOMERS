@@ -22,6 +22,12 @@ const NO_GET_SESSION = {
   selector: "CallExpression[callee.object.property.name='auth'][callee.property.name='getSession']",
   message: "getSession() reads an unverified cookie; use getUser() or getClaims() for trust decisions.",
 };
+// A browser's own select list opens past the screen edge in a narrow window (BUG-188, BUG-189): our Select in
+// src/components/ui/select.tsx keeps it on screen. Only src/components/ui may use a raw <select> (2026-10-16).
+const NO_NATIVE_SELECT = {
+  selector: "JSXOpeningElement[name.name='select']",
+  message: "Use Select from src/components/ui/select.tsx; its list stays on screen at 360px.",
+};
 const NO_SELECT_STAR = {
   // Head-only counts (select("*", { count, head: true })) return no rows, so they are allowed.
   selector:
@@ -34,11 +40,10 @@ const NO_SELECT_STAR = {
 const LEGACY_SELECT_STAR = [
   "src/app/api/geo/businesses/route.ts",
   "src/app/api/geo/seo/route.ts",
-  "src/app/dashboard/billing/page.tsx",
-  "src/app/dashboard/seo/page.tsx",
+  "src/app/(app)/dashboard/billing/page.tsx",
+  "src/app/(app)/dashboard/seo/page.tsx",
   "src/app/internal/admin/accounts/page.tsx",
   "src/app/internal/admin/billing/page.tsx",
-  "src/app/internal/admin/businesses/[[]id]/page.tsx",
   "src/lib/billing/accounts.ts",
   "src/lib/geo/dashboard-aggregator.ts",
   "src/lib/geo/dashboard-data.ts",
@@ -49,8 +54,41 @@ const LEGACY_SUPABASE_IN_COMPONENTS = [
   "src/components/geo/ResetPasswordForm.tsx",
 ];
 
-const CLIENT_LIBRARIES = ["@supabase/*", "stripe", "@stripe/*", "openai", "@anthropic-ai/sdk"];
-const CLIENT_WRAPPERS = ["src/lib/supabase/**", "src/lib/stripe.ts", "src/lib/geo/providers/**"];
+const LEGACY_SERVICE_CLIENT = [
+  "src/app/api/contact/route.ts",
+  "src/app/api/geo/feature-requests/route.ts",
+  "src/app/api/internal/admin/feature-requests/[[]id]/route.ts",
+  "src/app/api/internal/admin/leads/route.ts",
+  "src/app/api/stripe/add-business/route.ts",
+  "src/app/api/stripe/cancel-business/route.ts",
+  "src/app/api/stripe/change-plan/route.ts",
+  "src/app/api/stripe/invoices/route.ts",
+  "src/app/api/stripe/portal/route.ts",
+  "src/app/api/stripe/webhook/route.ts",
+  "src/app/(app)/dashboard/billing/page.tsx",
+  "src/app/internal/admin/accounts/page.tsx",
+  "src/app/internal/admin/billing/page.tsx",
+  "src/app/internal/admin/feature-requests/page.tsx",
+  "src/app/internal/admin/page.tsx",
+  "src/app/internal/admin/users/page.tsx",
+  "src/lib/admin/require.ts",
+  "src/lib/billing/accounts.ts",
+  "src/lib/billing/entitlements.ts",
+  "src/lib/billing/usage.ts",
+];
+
+// The service role key skips RLS, so only a module's dal.ts may create that client (B-15).
+const NO_SERVICE_CLIENT = {
+  paths: [{ name: "@/lib/supabase/service", message: "The service role client is only for dal.ts files." }],
+};
+
+const CLIENT_LIBRARIES = ["@supabase/*", "stripe", "@stripe/*", "openai", "@anthropic-ai/sdk", "resend"];
+const CLIENT_WRAPPERS = [
+  "src/lib/supabase/**",
+  "src/lib/stripe.ts",
+  "src/lib/geo/providers/**",
+  "src/modules/scanning/providers/**",
+];
 
 const dependencyPolicies = [
   // Components never talk to Supabase, Stripe or AI providers, or to a module's data layer.
@@ -66,7 +104,7 @@ const dependencyPolicies = [
     from: { element: { type: "component" } },
     disallow: { to: { element: { type: "module", fileInternalPath: "**/dal.ts" } } },
   },
-  // Modules use each other only through their index.ts.
+  // Modules use each other only through index.ts, or server.ts for server-only code such as the scan worker.
   {
     from: { element: { type: "module" } },
     disallow: {
@@ -74,7 +112,7 @@ const dependencyPolicies = [
         element: {
           type: "module",
           captured: { moduleName: "!{{ from.element.captured.moduleName }}" },
-          fileInternalPath: "!index.ts",
+          fileInternalPath: "!{index,server}.ts",
         },
       },
     },
@@ -107,8 +145,9 @@ const eslintConfig = defineConfig([
     },
     rules: {
       "boundaries/dependencies": ["error", dependencyOptions],
-      "no-restricted-syntax": ["error", NO_PROCESS_ENV, NO_GET_SESSION],
+      "no-restricted-syntax": ["error", NO_PROCESS_ENV, NO_GET_SESSION, NO_NATIVE_SELECT],
       "local/no-select-star": ["error", NO_SELECT_STAR],
+      "no-restricted-imports": ["error", NO_SERVICE_CLIENT],
     },
   },
   {
@@ -116,8 +155,21 @@ const eslintConfig = defineConfig([
     rules: { "no-restricted-syntax": ["error", NO_GET_SESSION] },
   },
   {
+    // The shared controls themselves (select.tsx, country-select.tsx) may build on a raw <select>.
+    files: ["src/components/ui/**/*.tsx"],
+    rules: { "no-restricted-syntax": ["error", NO_PROCESS_ENV, NO_GET_SESSION] },
+  },
+  {
     files: ["src/**/dal.ts"],
-    rules: { "local/no-select-star": "off" },
+    rules: { "local/no-select-star": "off", "no-restricted-imports": "off" },
+  },
+  {
+    files: ["src/**/*.test.ts", "src/**/*.test-helpers.ts"],
+    rules: { "no-restricted-imports": "off" },
+  },
+  {
+    files: LEGACY_SERVICE_CLIENT,
+    rules: { "no-restricted-imports": ["warn", NO_SERVICE_CLIENT] },
   },
   {
     files: LEGACY_SELECT_STAR,

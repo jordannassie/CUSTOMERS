@@ -1,0 +1,25 @@
+{
+  "synthetic": true,
+  "provider": "perplexity",
+  "question": "Where can I find an emergency dentist open today in Austin, TX?",
+  "answerText": "Top dentist picks in Austin, TX:\n- Bright Smile Austin [1]\n- Capitol Family Dentistry [2]\n- Lakeline Dental Care [3]\n\nThese are based on local directory listings and reviews.",
+  "citations": [
+    {
+      "url": "https://brightsmileaustin.example/",
+      "title": "Bright Smile Austin"
+    },
+    {
+      "url": "https://capitolfamilydentistry.example/",
+      "title": "Capitol Family Dentistry"
+    },
+    {
+      "url": "https://www.yelp.com/search?find_desc=dentist&find_loc=Austin%2C%20TX",
+      "title": "Top dentist in Austin, TX"
+    }
+  ],
+  "names": [
+    "Bright Smile Austin",
+    "Capitol Family Dentistry",
+    "Lakeline Dental Care"
+  ]
+}

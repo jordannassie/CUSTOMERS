@@ -5,7 +5,7 @@ import type { Database } from "@/types/database.types";
 
 /**
  * Creates a Supabase client using the service role key.
- * Server-side ONLY — never import from client components.
+ * Server-side ONLY, never import from client components.
  */
 export function createServiceClient() {
   return createClient<Database>(

@@ -1,0 +1,98 @@
+{
+  "id": "8f2c1a7e-4b3d-4e9a-9c51-2d6f0b7e1a93",
+  "object": "response",
+  "created_at": 1790467200,
+  "status": "completed",
+  "model": "perplexity/sonar",
+  "output": [
+    {
+      "type": "search_results",
+      "queries": [
+        "best coffee shop Orange CA"
+      ],
+      "results": [
+        {
+          "id": 1,
+          "url": "https://www.yelp.com/biz/contra-coffee-and-tea-orange",
+          "title": "CONTRA COFFEE & TEA - Orange CA - Yelp",
+          "snippet": "Nitro coffee, loose-leaf teas and pastries on N Glassell St in Old Towne Orange.",
+          "date": "2026-08-14",
+          "last_updated": "2026-09-20",
+          "source": "web"
+        },
+        {
+          "id": 2,
+          "url": "https://www.portolacoffeeroasters.com/",
+          "title": "Portola Coffee Roasters",
+          "snippet": "Specialty coffee roaster serving pour-over and espresso in Orange County.",
+          "date": "2025-11-02",
+          "last_updated": "2026-09-01",
+          "source": "web"
+        },
+        {
+          "id": 3,
+          "url": "https://www.tripadvisor.com/Restaurants-g32837-c8-Orange_California.html",
+          "title": "THE 10 BEST Cafés in Orange - Tripadvisor",
+          "snippet": "Best coffee and tea in Orange, California: see traveler reviews of cafés in Orange.",
+          "date": "2026-07-30",
+          "last_updated": "2026-09-18",
+          "source": "web"
+        },
+        {
+          "id": 4,
+          "url": "https://www.orangecountycoffeeguide.com/orange",
+          "title": "Orange Coffee Guide",
+          "snippet": "A local guide to independent cafés in the city of Orange.",
+          "date": "2025-05-10",
+          "last_updated": "2026-02-11",
+          "source": "web"
+        }
+      ]
+    },
+    {
+      "type": "message",
+      "id": "msg_5a0e3c9b71d24f86",
+      "status": "completed",
+      "role": "assistant",
+      "content": [
+        {
+          "type": "output_text",
+          "text": "Here are some of the best coffee shops in Orange, CA:\n\n1. **Contra Coffee & Tea** on Glassell Street, known for its nitro coffee and loose-leaf teas[1].\n2. **Portola Coffee Roasters** at The Market Place, a specialty roaster with pour-over and espresso[2].\n3. **Kaffe Brewing** near Old Towne Orange, a local favorite for cold brew[3][1].\n\nOld Towne Orange has the densest cluster of independent cafes if you want to try several in one trip[3].",
+          "annotations": [
+            {
+              "type": "url_citation",
+              "start_index": 148,
+              "end_index": 151,
+              "url": "https://www.yelp.com/biz/contra-coffee-and-tea-orange",
+              "title": "CONTRA COFFEE & TEA - Orange CA - Yelp"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "usage": {
+    "input_tokens": 6200,
+    "output_tokens": 380,
+    "total_tokens": 6580,
+    "input_tokens_details": {
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0
+    },
+    "tool_calls_details": {
+      "search_web": {
+        "invocation": 1
+      }
+    },
+    "cost": {
+      "currency": "USD",
+      "input_cost": 0.00155,
+      "output_cost": 0.00095,
+      "cache_creation_cost": 0,
+      "cache_read_cost": 0,
+      "tool_calls_cost": 0.0025,
+      "total_cost": 0.005
+    }
+  },
+  "error": null
+}

@@ -1,0 +1,24 @@
+{
+  "synthetic": true,
+  "provider": "perplexity",
+  "question": "Which plumber in Austin, TX can fix a leak today?",
+  "answerText": "Top plumber picks in Austin, TX:\n- Zilker Pipe Works [1]\n- Longhorn Leak Repair [2]\n\nThese are based on local directory listings and reviews.",
+  "citations": [
+    {
+      "url": "https://zilkerpipeworks.example/",
+      "title": "Zilker Pipe Works"
+    },
+    {
+      "url": "https://longhornleakrepair.example/",
+      "title": "Longhorn Leak Repair"
+    },
+    {
+      "url": "https://www.yelp.com/search?find_desc=plumber&find_loc=Austin%2C%20TX",
+      "title": "Top plumber in Austin, TX"
+    }
+  ],
+  "names": [
+    "Zilker Pipe Works",
+    "Longhorn Leak Repair"
+  ]
+}

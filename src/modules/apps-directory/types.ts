@@ -1,6 +1,6 @@
 export const APP_CATEGORIES = [
   { id: "ai-tools", label: "AI Tools" },
-  { id: "ai-search", label: "AI Search (AEO)" },
+  { id: "ai-search", label: "AI search" },
   { id: "marketing", label: "Marketing" },
   { id: "sales", label: "Sales" },
   { id: "crm", label: "CRM" },

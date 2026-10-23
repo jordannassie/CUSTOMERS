@@ -1,82 +1,120 @@
 import { createEnv } from "@t3-oss/env-nextjs";
 import { z } from "zod";
 
-const optional = z.string().min(1).optional();
+// Trimmed, so a key pasted with a trailing space still works (BUG-082: a space broke the Browserless token).
+const optional = z.string().trim().min(1).optional();
 const flag = z.enum(["true", "false"]).optional();
 
 // The only file that reads process.env (MVP_SPEC 18.1). Required values fail the build when missing.
 export const env = createEnv({
   server: {
+    NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
     SUPABASE_SERVICE_ROLE_KEY: z.string().min(1),
 
     OPENAI_API_KEY: optional,
     OPENAI_NEWS_MODEL: z.string().min(1).default("gpt-4o"),
     ANTHROPIC_API_KEY: optional,
+    // Background AI jobs (auto-fill, questions, name extraction, explanations, question library) run on Claude and
+    // fall back to OpenAI when Claude fails. "false" turns the backup off. FAST stands in for Haiku, SMART for Sonnet.
+    AI_FALLBACK_ENABLED: flag,
+    AI_FALLBACK_MODEL_FAST: z.string().trim().min(1).default("gpt-4.1-mini"),
+    AI_FALLBACK_MODEL_SMART: z.string().trim().min(1).default("gpt-4.1"),
     PERPLEXITY_API_KEY: optional,
     GOOGLE_PLACES_API_KEY: optional,
+    // Dev and Playwright only: the competitor step answers from hand-built fixtures, never Google.
+    PLACES_FIXTURES: flag,
+    // Dev and Playwright only: auto-fill and question picking answer from fixtures, never Firecrawl, Google or Claude.
+    ONBOARDING_FIXTURES: flag,
     FIRECRAWL_API_KEY: optional,
     BROWSERLESS_API_KEY: optional,
+    // PDF export (B-60, D-71): hosted Chrome, or our own Chromium when Browserless is down or for local checks.
+    PDF_RENDERER: z.enum(["browserless", "chromium"]).default("browserless"),
+    BROWSERLESS_URL: z.url().default("https://production-sfo.browserless.io"),
+    // Local Chrome for the chromium renderer on a laptop; unset uses the @sparticuz/chromium build (Linux only).
+    CHROMIUM_PATH: optional,
     // Search Intelligence stays on hold until D-06 is decided.
-    DATAFORSEO_USERNAME: optional,
-    DATAFORSEO_PASSWORD: optional,
 
     STRIPE_SECRET_KEY: optional,
     STRIPE_WEBHOOK_SECRET: optional,
+    // Dev and Playwright only: the card step and top-ups make a fake Checkout Session and card form, never Stripe.
+    STRIPE_CHECKOUT_FIXTURES: flag,
     STRIPE_PRICE_STARTER_MONTHLY: optional,
     STRIPE_PRICE_GROWTH_MONTHLY: optional,
     STRIPE_PRICE_PRO_MONTHLY: optional,
 
     RESEND_API_KEY: optional,
     EMAIL_FROM: optional,
+    // Signs unsubscribe links (B-61). Changing it breaks the links in emails already sent.
+    EMAIL_UNSUBSCRIBE_SECRET: z.string().min(32).optional(),
 
-    GEO_CRON_SECRET: optional,
     WORKER_SECRET: optional,
+    // 600 on a Netlify background function (15-minute limit), 240 on Vercel (D-41, MVP_SPEC 6.3).
+    WORKER_TIME_BUDGET_SECONDS: z.coerce.number().int().positive().default(600),
+    // Run scan (B-29) posts here to start the worker at once; unset leaves the job to the every-minute schedule.
+    WORKER_URL: z.url().optional(),
+    // Local dev only: with no WORKER_URL, run the worker inside the dev server after Run scan.
+    WORKER_IN_PROCESS: flag,
 
     ADMIN_EMAILS: optional,
-    ADMIN_USER_IDS: optional,
+    // Admins get an alert when real AI cost for the UTC day passes this (B-69). Unset turns that check off.
+    ALERT_DAILY_COST_USD: z.coerce.number().positive().optional(),
+    // Days between deleting an account or business and removing its data for good; admins can restore an account
+    // until then (MVP_SPEC 23). 30 until a lawyer confirms the legal deadlines (D-77).
+    DELETION_WAIT_DAYS: z.coerce.number().int().min(1).max(365).default(30),
 
-    BILLING_ENABLED: flag,
-    BETA_FREE_ACCESS: flag,
-    TRIAL_ENABLED: flag,
+    // Where AI listed the business ("named 2nd") on the Overview. Off until Jordan decides (D-63: stored, not shown).
+    SHOW_POSITION: flag,
   },
   client: {
     NEXT_PUBLIC_SUPABASE_URL: z.url(),
     NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().min(1),
     NEXT_PUBLIC_SITE_URL: z.url().optional(),
     NEXT_PUBLIC_APP_URL: z.url().optional(),
+    NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: z.string().min(1).optional(),
     NEXT_PUBLIC_LAUNCH_KIT_PAYMENT_LINK: z.url().optional(),
     NEXT_PUBLIC_BEEHIIV_EMBED_SRC: z.url().optional(),
     NEXT_PUBLIC_BEEHIIV_FORM_ID: z.uuid().optional(),
   },
   runtimeEnv: {
+    NODE_ENV: process.env.NODE_ENV,
     SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
     OPENAI_API_KEY: process.env.OPENAI_API_KEY,
     OPENAI_NEWS_MODEL: process.env.OPENAI_NEWS_MODEL,
     ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY,
+    AI_FALLBACK_ENABLED: process.env.AI_FALLBACK_ENABLED,
+    AI_FALLBACK_MODEL_FAST: process.env.AI_FALLBACK_MODEL_FAST,
+    AI_FALLBACK_MODEL_SMART: process.env.AI_FALLBACK_MODEL_SMART,
     PERPLEXITY_API_KEY: process.env.PERPLEXITY_API_KEY,
     GOOGLE_PLACES_API_KEY: process.env.GOOGLE_PLACES_API_KEY,
+    PLACES_FIXTURES: process.env.PLACES_FIXTURES,
+    ONBOARDING_FIXTURES: process.env.ONBOARDING_FIXTURES,
     FIRECRAWL_API_KEY: process.env.FIRECRAWL_API_KEY,
     BROWSERLESS_API_KEY: process.env.BROWSERLESS_API_KEY,
-    DATAFORSEO_USERNAME: process.env.DATAFORSEO_USERNAME,
-    DATAFORSEO_PASSWORD: process.env.DATAFORSEO_PASSWORD,
+    PDF_RENDERER: process.env.PDF_RENDERER,
+    BROWSERLESS_URL: process.env.BROWSERLESS_URL,
+    CHROMIUM_PATH: process.env.CHROMIUM_PATH,
     STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY,
     STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET,
+    STRIPE_CHECKOUT_FIXTURES: process.env.STRIPE_CHECKOUT_FIXTURES,
     STRIPE_PRICE_STARTER_MONTHLY: process.env.STRIPE_PRICE_STARTER_MONTHLY,
     STRIPE_PRICE_GROWTH_MONTHLY: process.env.STRIPE_PRICE_GROWTH_MONTHLY,
     STRIPE_PRICE_PRO_MONTHLY: process.env.STRIPE_PRICE_PRO_MONTHLY,
     RESEND_API_KEY: process.env.RESEND_API_KEY,
     EMAIL_FROM: process.env.EMAIL_FROM,
-    GEO_CRON_SECRET: process.env.GEO_CRON_SECRET,
+    EMAIL_UNSUBSCRIBE_SECRET: process.env.EMAIL_UNSUBSCRIBE_SECRET,
     WORKER_SECRET: process.env.WORKER_SECRET,
+    WORKER_TIME_BUDGET_SECONDS: process.env.WORKER_TIME_BUDGET_SECONDS,
+    WORKER_URL: process.env.WORKER_URL,
+    WORKER_IN_PROCESS: process.env.WORKER_IN_PROCESS,
     ADMIN_EMAILS: process.env.ADMIN_EMAILS,
-    ADMIN_USER_IDS: process.env.ADMIN_USER_IDS,
-    BILLING_ENABLED: process.env.BILLING_ENABLED,
-    BETA_FREE_ACCESS: process.env.BETA_FREE_ACCESS,
-    TRIAL_ENABLED: process.env.TRIAL_ENABLED,
+    ALERT_DAILY_COST_USD: process.env.ALERT_DAILY_COST_USD,
+    DELETION_WAIT_DAYS: process.env.DELETION_WAIT_DAYS,
+    SHOW_POSITION: process.env.SHOW_POSITION,
     NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
     NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
     NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL,
     NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
+    NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY,
     NEXT_PUBLIC_LAUNCH_KIT_PAYMENT_LINK: process.env.NEXT_PUBLIC_LAUNCH_KIT_PAYMENT_LINK,
     NEXT_PUBLIC_BEEHIIV_EMBED_SRC: process.env.NEXT_PUBLIC_BEEHIIV_EMBED_SRC,
     NEXT_PUBLIC_BEEHIIV_FORM_ID: process.env.NEXT_PUBLIC_BEEHIIV_FORM_ID,
