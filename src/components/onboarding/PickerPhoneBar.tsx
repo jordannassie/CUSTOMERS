@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { BackIcon } from "./LinkPending";
 
 /**
  * The competitor picker's bar on a phone, where the list sits below the fold: Back (in the wizard), the count, the
@@ -38,7 +39,7 @@ export function PickerPhoneBar({
             <Button asChild variant="ghost" size="sm" className="-ml-2">
               {/* Setup pages can't be prefetched (instant = false); Manage competitors' Back still is. */}
               <Link href={backHref} prefetch={backHref.startsWith("/onboarding/") ? false : undefined}>
-                <ArrowLeft aria-hidden />
+                <BackIcon />
                 Back
               </Link>
             </Button>

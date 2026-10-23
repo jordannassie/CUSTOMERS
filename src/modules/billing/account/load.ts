@@ -14,11 +14,22 @@ import type { BillingView } from "./summary";
  */
 export async function loadBillingPage(agencyId: string, { repair = true } = {}): Promise<BillingView | "resynced"> {
   const [rows, data] = await Promise.all([loadBillingRows(agencyId), loadPlanChangeData(agencyId)]);
-  const access = rows.agency.subscriptionId ? await billingAccess(data) : null;
+  const access = rows.agency.subscriptionId ? onceEachSubscription(await billingAccess(data)) : null;
   if (repair && access && rows.agency.subscriptionId && (await resynced(access, rows.agency.subscriptionId, data.context.businesses))) {
     return "resynced";
   }
   return billingView({ rows, access });
+}
+
+// The re-sync check and the page both read the subscription: one Stripe call per page load, not two (2026-10-23).
+function onceEachSubscription(access: BillingAccess | null): BillingAccess | null {
+  if (!access) return null;
+  const read = new Map<string, ReturnType<BillingAccess["stripe"]["retrieveSubscription"]>>();
+  const retrieveSubscription = (id: string) => {
+    if (!read.has(id)) read.set(id, access.stripe.retrieveSubscription(id));
+    return read.get(id)!;
+  };
+  return { ...access, stripe: { ...access.stripe, retrieveSubscription } };
 }
 
 /**

@@ -1,8 +1,9 @@
 import Image from "next/image";
 import Link from "next/link";
-import { Check, LogOut } from "lucide-react";
+import { LogOut } from "lucide-react";
 import { cn } from "cn";
 import { stepPath, type StepSlug } from "@/modules/onboarding/wizard/steps";
+import { DoneStepIcon } from "./LinkPending";
 
 export type FrameStep = { slug: StepSlug; label: string; state: "done" | "current" | "todo" };
 
@@ -107,7 +108,7 @@ function StepLink({ step, number }: { step: FrameStep; number: number }) {
           step.state === "todo" && "border-input text-text-hint",
         )}
       >
-        {step.state === "done" ? <Check aria-hidden className="size-3.5" /> : number}
+        {step.state === "done" ? <DoneStepIcon className="size-3.5" /> : number}
       </span>
       <span className={cn("text-sm", step.state === "current" ? "font-medium" : step.state === "todo" ? "text-text-hint" : "")}>
         {step.label}

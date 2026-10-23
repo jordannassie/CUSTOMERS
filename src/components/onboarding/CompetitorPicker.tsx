@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Loader2, MapPin, X } from "lucide-react";
+import { Loader2, MapPin, X } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "cn";
 import type { ActionResult } from "@/modules/auth";
@@ -15,6 +15,7 @@ import { FullName, withBrand, type BrandedPick } from "./PickedBrand";
 import { PickerPhoneBar } from "./PickerPhoneBar";
 import { GoogleAttribution, PlaceRating } from "./PlaceBits";
 import { SuggestionRow } from "./SuggestionRow";
+import { BackIcon } from "./LinkPending";
 
 type Picked = BrandedPick & { live: CompetitorCandidate | null; checkNear?: string | null };
 
@@ -217,7 +218,7 @@ export function CompetitorPicker(props: CompetitorPickerProps) {
           <Button asChild variant="ghost" className="-ml-4">
             {/* Setup pages can't be prefetched (instant = false); Manage competitors' Back still is. */}
             <Link href={backHref} prefetch={backHref.startsWith("/onboarding/") ? false : undefined}>
-              <ArrowLeft aria-hidden />
+              <BackIcon />
               Back
             </Link>
           </Button>

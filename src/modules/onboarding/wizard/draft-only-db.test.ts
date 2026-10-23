@@ -102,7 +102,7 @@ describe("wizard saves", () => {
 });
 
 describe("the draft's name in the sidebar (O2)", () => {
-  it("is the website until the details step saves the name, then the name, and the app frame refreshes", async () => {
+  it("is the website until the details step saves the name, then the name, and the app frame refreshes when it shows", async () => {
     const userId = await signUp();
     const id = await draft(userId);
     const label = async () => draftLabel((await service.from("businesses").select("name, domain").eq("id", id).single().throwOnError()).data);
@@ -111,9 +111,19 @@ describe("the draft's name in the sidebar (O2)", () => {
     vi.mocked(refresh).mockClear();
     expect(await actions.saveDetailsStep({ ...details(id), name: "" })).toMatchObject({ ok: false, status: 400 });
     expect(refresh).not.toHaveBeenCalled();
+    // The first business: setup hides the app frame, so a refresh would only render the step being left again.
+    expect(await actions.saveDetailsStep(details(id))).toEqual({ ok: true, data: null });
+    expect(refresh).not.toHaveBeenCalled();
+    expect(await label()).toBe("Finish setting up Sunrise Coffee");
+
+    // With a set-up business the switcher shows during setup and names the draft, so the frame refreshes.
+    const agency = (await service.from("agencies").select("id").eq("owner_user_id", userId).single().throwOnError()).data;
+    await service
+      .from("businesses")
+      .insert({ owner_user_id: userId, agency_id: agency.id, name: "Done Bakery", domain: `done-${randomUUID().slice(0, 8)}.example`, primary_city: "Springfield", status: "active" })
+      .throwOnError();
     expect(await actions.saveDetailsStep(details(id))).toEqual({ ok: true, data: null });
     expect(refresh).toHaveBeenCalledTimes(1);
-    expect(await label()).toBe("Finish setting up Sunrise Coffee");
   });
 });
 

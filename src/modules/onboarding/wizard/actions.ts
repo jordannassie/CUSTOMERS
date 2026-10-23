@@ -29,7 +29,7 @@ import {
   websiteStepInput,
 } from "./schema";
 import { FIRST_SCAN_PATH, stepPath } from "./steps";
-import { loadWizardState } from "./dal";
+import { hasFinishedBusiness, loadWizardState } from "./dal";
 
 // Every onboarding step saves through one of these (MVP_SPEC 3.1). Each checks the session itself, and refuses a
 // suspended or deleted agency. The step saves change only the user's draft: a live business is edited in the app.
@@ -94,8 +94,9 @@ export async function saveDetailsStep(input: unknown): Promise<ActionResult<null
     return { ok: false, status: 400, error: vague ? OTHER_LABEL_HINT : "Add your business name, industry and city." };
   }
   if (!(await saveDetails(user, parsed.data))) return notFound;
-  // The sidebar and the switcher name the draft: from now on by the name just saved, not its website (O2).
-  refresh();
+  // The switcher names the draft by the name just saved, not its website (O2). It only shows during setup when the
+  // user already has a set-up business; otherwise the refresh re-rendered the step being left, for nothing (2026-10-23).
+  if (await hasFinishedBusiness(user)) refresh();
   return { ok: true, data: null };
 }
 

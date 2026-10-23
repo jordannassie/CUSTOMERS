@@ -12,6 +12,18 @@ import { needsCard, nextStepNumber, type PlanId, type StepSlug, type WizardState
 
 export type WizardContext = WizardState & { agencyName: string | null; agencyLogoUrl: string | null };
 
+/** True once the user has a set-up business: only then does setup show inside the app frame and its switcher. */
+export async function hasFinishedBusiness(userId: string): Promise<boolean> {
+  const supabase = await createClient();
+  const { count, error } = await supabase
+    .from("businesses")
+    .select("id", { count: "exact", head: true })
+    .eq("owner_user_id", userId)
+    .neq("status", "onboarding");
+  if (error) throw new Error(`Could not load businesses: ${error.message}`);
+  return (count ?? 0) > 0;
+}
+
 // Drafts are matched on owner_user_id, like the workspace, so the wizard and the app frame agree.
 export async function loadWizardState(userId: string): Promise<WizardContext> {
   const supabase = await createClient();
