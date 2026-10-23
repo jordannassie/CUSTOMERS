@@ -14,7 +14,7 @@ describe("trendView", () => {
     expect(view.summary).toBeNull();
     expect(view.points[0]).toEqual({ date: "2026-09-02", label: "Sep 2", score: 53, margin: 8, band: [45, 61] });
     expect(view.change).toEqual({ direction: "up", text: "Up 9 points since Sep 2" });
-    expect(view.caption).toBe("Each dot is one scan. The shaded band is how far the score could be off. Next scan Oct 8.");
+    expect(view.caption).toBe("Each dot is a day with a scan. The shaded band is how far the score could be off. Next scan Oct 8.");
   });
 
   it("keeps the band inside 0 to 100", () => {
@@ -27,9 +27,9 @@ describe("trendView", () => {
 
   it("says one scan in words, with the next scan, and leaves out a next scan that is not coming (DB-001)", () => {
     expect(trendView({ history: [scan("2026-10-01", 66.7)], nextScanAt: new Date("2026-10-08T00:00:00Z"), now: NOW }).summary).toBe(
-      "1 scan in the last 90 days: 67. Next scan Oct 8.",
+      "Scanned on 1 day in the last 90 days, score 67. Next scan Oct 8.",
     );
-    expect(trendView({ history: [scan("2026-10-01", 0)], nextScanAt: null, now: NOW }).summary).toBe("1 scan in the last 90 days: 0.");
+    expect(trendView({ history: [scan("2026-10-01", 0)], nextScanAt: null, now: NOW }).summary).toBe("Scanned on 1 day in the last 90 days, score 0.");
   });
 });
 

@@ -12,7 +12,7 @@ import {
   type ActionResult,
   type SessionUser,
 } from "@/modules/auth";
-import { endBusinessPlan, PlanChangeError, type BusinessPlanEnd } from "@/modules/billing";
+import { endBusinessPlan, isMissingInStripe, PlanChangeError, type BusinessPlanEnd } from "@/modules/billing";
 import {
   deletionWaitDays,
   hasPasswordSignIn,
@@ -29,7 +29,7 @@ import {
 import { accountDeletedEmail, businessDeletedEmail } from "./emails";
 import { changeEmailInput, changePasswordInput, deleteAccountInput, deleteBusinessInput } from "./schema";
 import { sendSafely } from "./send";
-import { authUpdateError, confirmsName, purgeDate } from "./service";
+import { accountCancelKey, authUpdateError, confirmsName, purgeDate } from "./service";
 import { accountStripeClient } from "./stripe";
 
 // Account management (B-77, MVP_SPEC 23, ACC-01 to ACC-04). Each action checks auth and input itself.
@@ -141,7 +141,7 @@ export async function deleteBusiness(input: unknown): Promise<ActionResult<{ pur
     }
     if (user.email) {
       await sendSafely(
-        businessDeletedEmail({ to: user.email, agencyId: agency.id, businessId, businessName: name, planEndsAt: plan.endsAt, purgeAt }),
+        businessDeletedEmail({ to: user.email, agencyId: agency.id, businessId, businessName: name, planEndsAt: plan.endsAt, removedNow: plan.removedNow, purgeAt }),
       );
     }
     refresh();
@@ -166,10 +166,13 @@ export async function deleteAccount(input: unknown): Promise<ActionResult<{ redi
       const stripe = accountStripeClient();
       if (!stripe) return STRIPE_DOWN;
       try {
-        await stripe.cancelNow(target.subscriptionId, `account-delete:${agency.id}`);
+        await stripe.cancelNow(target.subscriptionId, accountCancelKey(agency.id, target.subscriptionId));
       } catch (error) {
-        console.error("[account] subscription cancel failed", error);
-        return STRIPE_DOWN;
+        // Stripe has no such subscription: nothing to cancel, so the account can go (2026-10-14).
+        if (!isMissingInStripe(error)) {
+          console.error("[account] subscription cancel failed", error);
+          return STRIPE_DOWN;
+        }
       }
     }
 

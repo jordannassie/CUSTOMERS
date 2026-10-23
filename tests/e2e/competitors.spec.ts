@@ -71,6 +71,17 @@ async function seed(page: Page, { competitors, answers, scanDaysAgo = [1 / 24] }
       )
       .throwOnError();
   }
+  // One suggested question for every answer: only suggested questions count in the score (BUG-129).
+  const question = answers.length
+    ? (
+        await db
+          .from("tracked_prompts")
+          .insert({ business_id: business.id, prompt: "Best coffee shop in Springfield, IL?", source: "library" })
+          .select("id")
+          .single()
+          .throwOnError()
+      ).data
+    : null;
   for (const daysAgo of answers.length ? scanDaysAgo : []) {
     const { data: run } = await db
       .from("visibility_runs")
@@ -87,6 +98,7 @@ async function seed(page: Page, { competitors, answers, scanDaysAgo = [1 / 24] }
           MODELS.map((provider) => ({
             run_id: run.id,
             business_id: business.id,
+            tracked_prompt_id: question!.id,
             provider,
             created_at: new Date(Date.now() - daysAgo * DAY).toISOString(),
             business_mentioned: names.includes("Sunrise Coffee Bar"),
@@ -115,6 +127,17 @@ async function seed(page: Page, { competitors, answers, scanDaysAgo = [1 / 24] }
 
 test.afterAll(async () => {
   for (const id of userIds.splice(0)) await db.auth.admin.deleteUser(id);
+});
+
+test("a tracked branch that answers never name shows as its chain (BUG-132)", async ({ page }) => {
+  // The saved answers never say "Congress": AI named the chain, so the number belongs to the chain.
+  await seed(page, {
+    competitors: [{ name: "Bean House on Congress", places_id: null }],
+    answers: [["Bean House on Congress"], ["Bean House on Congress"], ["Sunrise Coffee Bar"]],
+  });
+  const board = page.getByTestId("leaderboard");
+  await expect(board.getByRole("listitem").first()).toContainText("Bean House (all locations)");
+  await expect(board.getByTestId("chain-note")).toHaveText("You track Bean House on Congress");
 });
 
 test("leaderboard, Google side by side, and tracking a business AI keeps naming", async ({ page }) => {
@@ -146,7 +169,8 @@ test("leaderboard, Google side by side, and tracking a business AI keeps naming"
   await expect(also.getByRole("listitem")).toHaveText([/Blue Door Coffee\s*Named in 9 of 15 answers/, /Kiln Coffee Co\s*Named in 3 of 15 answers/]);
   await page.getByRole("button", { name: "Track Blue Door Coffee" }).click();
   await expect(page.getByText("Blue Door Coffee added to your competitors")).toBeVisible(ACTION);
-  await expect(board.getByRole("listitem").last()).toHaveText(/Blue Door Coffee\s*Checked from your next scan/, ACTION);
+  // Saved answers are checked for it at once (BUG-122): 9 of the 15 answers named it.
+  await expect(board.getByRole("listitem").filter({ hasText: "Blue Door Coffee" })).toHaveText(/Blue Door Coffee\s*60/, ACTION);
   await expect(also.getByRole("listitem")).toHaveText([/Kiln Coffee Co/]);
   await expect(page.getByTestId("tracked-count")).toHaveText("3 of 5 tracked");
 
@@ -159,7 +183,8 @@ test("leaderboard, Google side by side, and tracking a business AI keeps naming"
     .throwOnError();
   expect(data).toEqual([
     { name: "Bean House", places_id: "ChIJ-fixture-bean-house", source: "confirmed_place", formatted_address: null, category: null, phone: null, domain: null, city: null },
-    { name: "Blue Door Coffee", places_id: null, source: "manual", formatted_address: null, category: null, phone: null, domain: null, city: null },
+    // Tracking a business AI named looks up its listing and keeps only the place id (step 9c, 2026-10-13).
+    { name: "Blue Door Coffee", places_id: "ChIJ-fixture-blue-door", source: "manual", formatted_address: null, category: null, phone: null, domain: null, city: null },
     { name: "The Daily Grind", places_id: "ChIJ-fixture-daily-grind", source: "confirmed_place", formatted_address: null, category: null, phone: null, domain: null, city: null },
   ]);
 });
@@ -206,6 +231,26 @@ test("no competitors and no scans: each section says what to do next", async ({ 
   await page.getByRole("link", { name: "Back to competitors" }).click();
   await expect(page.getByTestId("tracked-count")).toHaveText("1 of 5 tracked", ACTION);
   await expect(page.getByText("Scores appear after your first scan.", { exact: false })).toBeVisible();
+});
+
+test("a Google page-title name is added on its brand, with the long name kept as another name (2026-10-15)", async ({ page }) => {
+  const businessId = await seed(page, { competitors: [], answers: [] });
+  await page.goto("/competitors/manage");
+  await expect(page.getByRole("heading", { level: 1, name: "Manage competitors" })).toBeVisible({ timeout: 60_000 });
+  await page.getByLabel("Competitor name").fill("BeRejuved");
+  await page.getByRole("button", { name: "Find" }).click();
+  await page.getByRole("button", { name: "Add BeRejuved Medical Spa & Wellness Studio - NYC" }).click();
+
+  const picked = page.getByRole("list", { name: "Picked competitors" });
+  await expect(picked.getByText("BeRejuved Medical Spa & Wellness Studio", { exact: true })).toBeVisible();
+  await expect(picked.getByTestId("google-full-name")).toContainText("Google: BeRejuved Medical Spa & Wellness Studio - NYC");
+  // A long name in the list never widens the page on a phone (2026-10-15).
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(page.viewportSize()!.width);
+  await page.getByRole("button", { name: "Save competitors" }).filter({ visible: true }).click();
+  await expect(page.getByText("1 competitor saved")).toBeVisible(ACTION);
+
+  const { data } = await db.from("business_competitors").select("name, aliases").eq("business_id", businessId).throwOnError();
+  expect(data).toEqual([{ name: "BeRejuved Medical Spa & Wellness Studio", aliases: ["BeRejuved Medical Spa & Wellness Studio - NYC"] }]);
 });
 
 test("the old address sends people to the new page", async ({ page }) => {

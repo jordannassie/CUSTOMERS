@@ -27,7 +27,7 @@ const userIds: string[] = [];
 
 type Business = { id: string; prompts: string[] };
 
-async function seedBusiness(page: Page): Promise<Business> {
+async function seedBusiness(page: Page, credits = 200): Promise<Business> {
   const email = `e2e-overview-${randomUUID()}@example.test`;
   const password = `pw-${randomUUID()}`;
   const { data: user, error } = await db.auth.admin.createUser({ email, password, email_confirm: true });
@@ -59,14 +59,15 @@ async function seedBusiness(page: Page): Promise<Business> {
     .throwOnError();
   const { data: prompts } = await db
     .from("tracked_prompts")
-    .insert(QUESTIONS.map((prompt) => ({ business_id: business.id, prompt })))
+    // Suggested questions: only these count in the score (BUG-129).
+    .insert(QUESTIONS.map((prompt) => ({ business_id: business.id, prompt, source: "library" })))
     .select("id")
     .throwOnError();
   const { error: grantError } = await db.rpc("grant_credits", {
     p_agency_id: agency.id,
     p_source: "admin",
     p_source_id: `e2e-${randomUUID()}`,
-    p_amount: 200,
+    p_amount: credits,
     p_expires_at: null,
   });
   if (grantError) throw grantError;
@@ -155,7 +156,29 @@ test("first scan: score, early label, first results note, no arrow", async ({ pa
   await expect(panel).toContainText("36");
   await expect(panel).toContainText(/ChatGPT\s*75, plus or minus \d+ points/);
   await expect(panel.getByRole("heading", { name: "How we check" })).toBeVisible();
+  // BUG-129: the score covers suggested questions only.
+  await expect(panel).toContainText("Answers to suggested questions only.");
   await expect(panel.getByRole("heading", { name: "Tested against the real apps" })).toHaveCount(0);
+  // No questions of the user's own, so no line about them.
+  await expect(page.getByTestId("own-questions")).toHaveCount(0);
+});
+
+test("the user's own questions and paused questions are left out of the score (BUG-129)", async ({ page }) => {
+  const business = await seedBusiness(page);
+  const { data: own } = await db
+    .from("tracked_prompts")
+    .insert({ business_id: business.id, prompt: "Which cafe in Orange, CA sells our house blend?", source: "custom" })
+    .select("id")
+    .single()
+    .throwOnError();
+  await db.from("tracked_prompts").update({ active: false }).eq("id", business.prompts[2]).throwOnError();
+  // Questions in turn: two suggested, one paused suggested, one of the user's own. Only the paused one and, for
+  // ChatGPT, the user's own question name the business, so the score is 0 and the own line says 3 of 9.
+  await seedChecks({ id: business.id, prompts: [...business.prompts, own.id] }, 1, (m, q) => q % 4 === 2 || (q % 4 === 3 && m === 0));
+  await page.reload();
+
+  await expect(page.getByTestId("score-value")).toHaveText("0");
+  await expect(page.getByTestId("own-questions")).toHaveText("Your own questions: named in 3 of 9 answers. Not part of the score.");
 });
 
 test("30 days of history: high confidence, a real rise and the top 3 fixes", async ({ page }) => {
@@ -196,6 +219,50 @@ test("Run scan: the score appears when the scan finishes, without a reload", asy
   // Export PDF (B-60) sits with Share in the page header's actions.
   const actions = page.getByRole("button", { name: "Share" }).locator("..");
   await expect(actions.getByRole("button", { name: "Export PDF" })).toBeVisible();
+});
+
+test("Run scan short of credits: a warning first, and nothing starts until Run scan anyway (D-54)", async ({ page }) => {
+  const business = await seedBusiness(page, 5);
+  await page.getByRole("button", { name: "Run first scan" }).click();
+  const dialog = page.getByTestId("overdraft-dialog");
+  await expect(dialog.getByRole("heading", { name: "This scan needs more credits than you have" })).toBeVisible();
+  await expect(dialog.getByTestId("overdraft-message")).toHaveText(
+    "This scan uses 9 credits and you have 5. It will still finish, and the 4 extra credits come out of your next renewal or top-up.",
+  );
+  await expect(dialog.getByRole("link", { name: "Buy credits" })).toHaveAttribute("href", "/settings/credits");
+  const jobs = async () => (await db.from("scan_jobs").select("id").eq("business_id", business.id)).data?.length ?? 0;
+  await dialog.getByRole("button", { name: "Cancel" }).click();
+  await expect(dialog).toHaveCount(0);
+  expect(await jobs()).toBe(0);
+
+  await page.getByRole("button", { name: "Run first scan" }).click();
+  await dialog.getByRole("button", { name: "Run scan anyway" }).click();
+  await expect(page.getByTestId("score-summary")).toBeVisible({ timeout: 60_000 });
+  expect(await jobs()).toBe(1);
+});
+
+test("Run scan again within 20 hours: asks first and says reused answers are free (2026-10-15, D-24)", async ({ page }) => {
+  const business = await seedBusiness(page);
+  await page.getByRole("button", { name: "Run first scan" }).click();
+  await expect(page.getByTestId("score-summary")).toBeVisible({ timeout: 60_000 });
+  const jobs = async () => (await db.from("scan_jobs").select("id").eq("business_id", business.id)).data?.length ?? 0;
+  expect(await jobs()).toBe(1);
+
+  const run = page.getByRole("button", { name: "Run scan" }).first();
+  await run.click();
+  const dialog = page.getByTestId("recent-scan-dialog");
+  await expect(dialog.getByRole("heading", { name: "Scan again?" })).toBeVisible();
+  await expect(dialog.getByTestId("recent-scan-message")).toHaveText(
+    "You scanned in the last 20 hours, so most answers will be the same as last time. Reused answers don't use credits.",
+  );
+  await dialog.getByRole("button", { name: "Not now" }).click();
+  await expect(dialog).toHaveCount(0);
+  expect(await jobs()).toBe(1);
+
+  await run.click();
+  await dialog.getByRole("button", { name: "Scan again" }).click();
+  await expect(page.getByRole("button", { name: /Scanning/ }).first()).toBeVisible();
+  await expect.poll(jobs).toBe(2);
 });
 
 test("old Visibility and Reports bookmarks land on the Overview (B-58)", async ({ page }) => {

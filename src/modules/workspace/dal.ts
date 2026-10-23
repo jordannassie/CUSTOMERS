@@ -1,4 +1,5 @@
 import "server-only";
+import { cache } from "react";
 import { redirect } from "next/navigation";
 import { requestNow } from "@/lib/request-now";
 import { createClient } from "@/lib/supabase/server";
@@ -22,6 +23,8 @@ export type WorkspaceBusiness = {
   domain: string | null;
   logoUrl: string | null;
   status: string;
+  /** Where a draft (status "onboarding") stopped in setup, for the switcher's "Finish setting up" link. */
+  onboardingStep: number | null;
 };
 
 export type Workspace = {
@@ -35,15 +38,22 @@ export type Workspace = {
 
 // Businesses are matched on owner_user_id, like getPrimaryBusiness, so the frame and the pages agree.
 export async function getWorkspace(options: GuardOptions = {}): Promise<Workspace> {
-  const user = await requireUser(options);
+  await requireUser(options);
   const agency = await getCurrentAgency();
   if (agency && isAgencyPaused(agency.status) && options.next !== undefined) redirect(blockedPathFor(agency.status));
+  return loadWorkspace();
+}
 
+// Read once per request: the app frame and the page both ask for it, and each call cost five queries (2026-10-23).
+// The sign-in check and the paused-account redirect above still run on every call.
+const loadWorkspace = cache(async (): Promise<Workspace> => {
+  const user = await requireUser();
+  const agency = await getCurrentAgency();
   const supabase = await createClient();
   const [businesses, profile, agencyDates, isAdmin, usage] = await Promise.all([
     supabase
       .from("businesses")
-      .select("id, name, domain, logo_url, status")
+      .select("id, name, domain, logo_url, status, onboarding_step")
       .eq("owner_user_id", user.id)
       .order("created_at", { ascending: false }),
     supabase.from("profiles").select("active_business_id").eq("id", user.id).maybeSingle(),
@@ -63,6 +73,7 @@ export async function getWorkspace(options: GuardOptions = {}): Promise<Workspac
     domain: b.domain,
     logoUrl: b.logo_url,
     status: b.status,
+    onboardingStep: b.onboarding_step,
   }));
   const wanted = profile.data?.active_business_id;
   const active = list.find((b) => b.id === wanted) ?? list[0] ?? null;
@@ -79,11 +90,12 @@ export async function getWorkspace(options: GuardOptions = {}): Promise<Workspac
             trialEndsAt: dates.trial_ends_at ? new Date(dates.trial_ends_at) : null,
             periodEndsAt: dates.current_period_end ? new Date(dates.current_period_end) : null,
             cancelAt: dates.cancel_at ? new Date(dates.cancel_at) : null,
+            isTest: agency.isTest,
           }
         : null,
     usage,
   };
-}
+});
 
 /** Score, weekly change and last scan per business for the switcher (DB-011). Null when the user has no agency. */
 export async function getSwitcherScores(businessIds: string[]): Promise<SwitcherScores | null> {
@@ -96,6 +108,23 @@ export async function getSwitcherScores(businessIds: string[]): Promise<Switcher
     if (report) byId[businessIds[i]] = switcherScore(report, scoreTone);
   });
   return { order: dropFirst(businessIds, byId), byId };
+}
+
+/**
+ * The switcher's scores for the signed-in user's set-up businesses, loaded when the switcher opens: building a score
+ * report for every business on every page load made about five queries per business (2026-10-23).
+ */
+export async function loadSwitcherScores(): Promise<SwitcherScores | null> {
+  const user = await requireUser();
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("businesses")
+    .select("id")
+    .eq("owner_user_id", user.id)
+    .neq("status", "onboarding")
+    .order("created_at", { ascending: false });
+  if (error) throw new Error(`Could not load businesses: ${error.message}`);
+  return getSwitcherScores(data.map((b) => b.id));
 }
 
 /** False when the business is not the user's. */

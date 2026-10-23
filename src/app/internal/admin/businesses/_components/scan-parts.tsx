@@ -1,14 +1,7 @@
 import { Badge } from "@/components/ui/badge";
-import type { ScanState } from "@/modules/admin";
 import { MODEL_LABELS, type ModelKey } from "@/modules/usage";
 import { cn } from "cn";
-
-const STATE: Record<ScanState, { label: string; variant: "good" | "mid" | "low" | "tint" }> = {
-  queued: { label: "Queued", variant: "tint" },
-  running: { label: "Scanning", variant: "mid" },
-  done: { label: "Done", variant: "good" },
-  failed: { label: "Failed", variant: "low" },
-};
+import { formatDate } from "../../_components/format";
 
 export function DeletedBadge() {
   return <Badge variant="low">Deleted</Badge>;
@@ -19,10 +12,6 @@ export function deletedNote(deletedAt: string, purgeAfter: string | null, short 
   if (!purgeAfter) return `Deleted ${formatDate(deletedAt)}`;
   if (short) return `Removed for good ${formatDate(purgeAfter)}`;
   return `Deleted ${formatDate(deletedAt)}, removed for good ${formatDate(purgeAfter)}`;
-}
-
-export function ScanBadge({ state }: { state: ScanState }) {
-  return <Badge variant={STATE[state].variant}>{STATE[state].label}</Badge>;
 }
 
 const MODEL_DOT: Record<string, string> = { openai: "bg-chatgpt", anthropic: "bg-claude", perplexity: "bg-perplexity" };
@@ -49,16 +38,4 @@ const FREQUENCY: Record<string, string> = { daily: "Daily", weekly: "Weekly", mo
 
 export function frequencyLabel(frequency: string): string {
   return FREQUENCY[frequency] ?? frequency;
-}
-
-// UTC, so every admin reads the same time whatever the server's zone.
-export function formatDate(iso: string, withTime = false): string {
-  const text = new Date(iso).toLocaleString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-    ...(withTime && { hour: "numeric", minute: "2-digit" }),
-    timeZone: "UTC",
-  });
-  return withTime ? `${text} UTC` : text;
 }

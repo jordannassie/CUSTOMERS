@@ -4,20 +4,25 @@ import { useEffect, useRef, useState, useTransition } from "react";
 import { Loader2, RotateCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { ActionResult } from "@/modules/auth";
-import type { ScanStatus } from "@/modules/jobs";
+import type { ScanStatus, StartScanResult } from "@/modules/jobs";
+import { needsOverdraftConfirm } from "@/modules/jobs/overdraft";
 import {
   CREDITS_LATE,
   FIRST_SCAN_FAILED,
+  FIRST_SCAN_STALLED,
   creditsWaitNext,
   firstScanPhase,
+  firstScanCopy,
   firstScanProblem,
   type FirstScanPhase,
 } from "@/modules/onboarding/first-scan";
 import type { FirstScanSummary, ModelProgress } from "@/modules/onboarding";
 import { FirstScanResult } from "./FirstScanResult";
+import { OverdraftNotice } from "./OverdraftNotice";
 import { ScanProgressList } from "./ScanProgressList";
 
 type ScanAction = (input: unknown) => Promise<ActionResult<ScanStatus>>;
+type StartAction = (input: unknown) => Promise<StartScanResult>;
 type CreditsCheck = () => Promise<ActionResult<{ waiting: boolean }>>;
 type ProgressAction = (input: unknown) => Promise<ActionResult<ModelProgress[]>>;
 type SummaryAction = (input: unknown) => Promise<ActionResult<FirstScanSummary>>;
@@ -33,7 +38,7 @@ type Props = {
   initial: ScanStatus | null;
   /** The subscription is linked but invoice.paid has not granted the trial credits yet (F-48). */
   awaitingCredits: boolean;
-  start: ScanAction;
+  start: StartAction;
   getStatus: ScanAction;
   checkCredits: CreditsCheck;
   getProgress: ProgressAction;
@@ -56,6 +61,7 @@ export function FirstScan(props: Props) {
   // Bumped after each poll that changes nothing, so the next one is scheduled.
   const [polls, setPolls] = useState(0);
   const [retrying, setRetrying] = useState(initial?.retrying ?? false);
+  const [stalledJob, setStalledJob] = useState(initial?.stalled ?? false);
   const [progress, setProgress] = useState<Map<string, ModelProgress> | null>(null);
   const [summary, setSummary] = useState<FirstScanSummary | null>(null);
   const started = useRef(false);
@@ -66,12 +72,18 @@ export function FirstScan(props: Props) {
     setPhase("failed");
   }
 
-  function run() {
+  // `confirmOverdraft` once the user has seen that the scan costs more than the balance (D-54).
+  function run(confirmOverdraft = false) {
     setProblem(null);
     setPhase("scanning");
     startTransition(async () => {
-      const result = await start({ businessId }).catch(() => null);
+      // The first scan never asks "Scan again?" (that is for Run scan within 24 hours of a finished scan).
+      const result = await start({ businessId, confirmRecent: true, ...(confirmOverdraft ? { confirmOverdraft } : {}) }).catch(() => null);
       if (!result) return fail(NO_CONNECTION);
+      if (needsOverdraftConfirm(result)) {
+        setProblem(result.error);
+        return setPhase("confirm");
+      }
       // 409: a scan is already on its way (a second tab, or a double start), so just wait for it.
       if (!result.ok && result.status !== 409) return fail(result.error);
     });
@@ -116,7 +128,10 @@ export function FirstScan(props: Props) {
       if (saved?.ok) setProgress(new Map(saved.data.map((m) => [m.id, m])));
       // A dropped poll just tries again; the scan itself carries on.
       const next = result?.ok ? firstScanPhase(result.data) : "scanning";
-      if (result?.ok) setRetrying(result.data.retrying);
+      if (result?.ok) {
+        setRetrying(result.data.retrying);
+        setStalledJob(result.data.stalled);
+      }
       if (next === "scanning") return setPolls((n) => n + 1);
       if (next === "done") return setPhase("done");
       fail(next === "failed" && result?.ok ? firstScanProblem(result.data) : FIRST_SCAN_FAILED);
@@ -147,32 +162,20 @@ export function FirstScan(props: Props) {
   const waiting = phase === "credits" || creditsLate;
   // The worker holds the scan for a later try, so nothing is being asked right now (UI-012).
   const paused = phase === "scanning" && retrying;
+  // No worker picked the scan up (or it died): stop the moving bars and say so, but keep polling in case it starts.
+  const stalled = phase === "scanning" && !retrying && stalledJob;
+  const anyAnswers = !!progress && [...progress.values()].some((m) => m.done > 0);
   const asked = questions > 0 ? `${questions} ${questions === 1 ? "question" : "questions"}` : "the questions";
-  const names = listOf(models.map((m) => m.label));
+  // Stopped before any AI answered (out of credits, say): nothing ran, so nothing "didn't finish".
+  const notRun = failed && !creditsLate && !anyAnswers;
+  const view = creditsLate ? "credits-late" : notRun ? "not-run" : failed ? "failed" : waiting ? "credits" : stalled ? "stalled" : phase;
+  const copy = firstScanCopy(view, { business: businessName, models: models.map((m) => m.label), asked });
 
   return (
     <div className="mx-auto flex w-full max-w-xl flex-col gap-8 px-5 py-10 sm:px-8 sm:py-16">
       <header className="flex flex-col gap-2">
-        <h1 className="text-2xl font-semibold tracking-[-0.02em] sm:text-[32px] sm:leading-tight">
-          {creditsLate
-            ? "Your trial credits aren't in yet"
-            : failed
-              ? "Your first scan didn't finish"
-              : waiting
-                ? "Getting your first scan ready"
-                : phase === "done"
-                  ? "Your first scan is done"
-                  : "Running your first scan"}
-        </h1>
-        <p className="text-[15px] leading-relaxed text-muted-foreground">
-          {waiting
-            ? `We start checking ${businessName} as soon as your trial credits are in your account.`
-            : failed
-              ? `We couldn't finish checking ${businessName}.`
-              : phase === "done"
-                ? `We asked ${names} ${asked} your customers ask and looked for ${businessName} in every answer.`
-                : `We're asking ${names} ${asked} your customers ask, and looking for ${businessName} in every answer.`}
-        </p>
+        <h1 className="text-2xl font-semibold tracking-[-0.02em] sm:text-[32px] sm:leading-tight">{copy.heading}</h1>
+        <p className="text-[15px] leading-relaxed text-muted-foreground">{copy.intro}</p>
       </header>
 
       {summary ? (
@@ -182,7 +185,15 @@ export function FirstScan(props: Props) {
         <ScanProgressList
           models={models}
           progress={progress}
-          state={phase === "done" ? "done" : waiting ? "waiting" : failed || paused ? "stopped" : "running"}
+          state={
+            phase === "done"
+              ? "done"
+              : waiting || phase === "confirm" || notRun || (stalled && !anyAnswers)
+                ? "waiting"
+                : failed || paused || stalled
+                  ? "stopped"
+                  : "running"
+          }
           asking={questions > 0 ? `Asking ${asked}…` : "Asking…"}
         />
 
@@ -193,12 +204,14 @@ export function FirstScan(props: Props) {
                 {problem}
               </p>
               <div>
-                <Button onClick={creditsLate ? waitForCredits : run} disabled={pending} className="min-w-32">
+                <Button onClick={creditsLate ? waitForCredits : () => run()} disabled={pending} className="min-w-32">
                   {pending ? <Loader2 aria-hidden className="animate-spin" /> : <RotateCw aria-hidden />}
                   Try again
                 </Button>
               </div>
             </>
+          ) : phase === "confirm" ? (
+            <OverdraftNotice message={problem ?? ""} pending={pending} onConfirm={() => run(true)} />
           ) : waiting ? (
             <p className="flex items-center gap-2 text-sm text-muted-foreground" data-testid="first-scan-credits">
               <Loader2 aria-hidden className="size-4 animate-spin" />
@@ -206,10 +219,15 @@ export function FirstScan(props: Props) {
             </p>
           ) : phase === "done" ? (
             <p className="text-sm text-muted-foreground">Getting your results…</p>
-          ) : paused ? (
+          ) : paused || stalled ? (
             <>
-              <p className="rounded-md bg-mid-bg px-3 py-2 text-[13px] text-mid-text" data-testid="first-scan-retrying">
-                The scan hit a problem, so we&apos;ll try again in a few minutes. You can leave this page. Your score shows on the dashboard when it&apos;s done.
+              <p
+                className="rounded-md bg-mid-bg px-3 py-2 text-[13px] text-mid-text"
+                data-testid={stalled ? "first-scan-stalled" : "first-scan-retrying"}
+              >
+                {stalled
+                  ? FIRST_SCAN_STALLED
+                  : "The scan hit a problem, so we'll try again in a few minutes. You can leave this page. Your score shows on the dashboard when it's done."}
               </p>
               <div>
                 {/* A full load, for the same reason as the redirect in the summary effect. */}
@@ -228,9 +246,4 @@ export function FirstScan(props: Props) {
       )}
     </div>
   );
-}
-
-function listOf(items: string[]): string {
-  if (items.length <= 1) return items[0] ?? "AI";
-  return `${items.slice(0, -1).join(", ")} and ${items.at(-1)}`;
 }

@@ -15,29 +15,29 @@ export function BalanceSummary({ balance }: { balance: UsageReport["balance"] })
       </h2>
       <p
         data-testid="balance-total"
-        className={cn("mt-1 text-[32px] font-semibold leading-tight tracking-[-0.02em] tabular-nums", over && "text-low-text")}
+        className={cn("mt-3 text-[32px] font-semibold leading-tight tracking-[-0.02em] tabular-nums", over && "text-low-text")}
       >
         {over ? `${count(-balance.total)} over` : count(balance.total)}
       </p>
 
       {pool > 0 && (
-        <div className="mt-4 flex h-2 overflow-hidden rounded-[2px] bg-muted" aria-hidden>
+        <div className="mt-3 flex h-2 overflow-hidden rounded-[2px] bg-muted" aria-hidden>
           <div className="bg-primary" style={{ width: `${planShare}%` }} />
           <div className="bg-primary/35" style={{ width: `${100 - planShare}%` }} />
         </div>
       )}
 
-      <dl className="mt-4 grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
+      <dl className="mt-3 grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
         <Line label="Plan credits" value={balance.plan} swatch="bg-primary" testId="balance-plan" />
         <Line label="Top-up credits" value={balance.topup} swatch="bg-primary/35" testId="balance-topup" />
         {balance.held > 0 && <Line label="Held for running scans" value={balance.held} />}
         {balance.overdraft > 0 && <Line label="Used past zero" value={balance.overdraft} />}
       </dl>
-      <p className="mt-4 text-xs text-muted-foreground">
+      <p className="mt-3 text-xs text-muted-foreground">
         Plan credits are used first and reset at renewal. Top-up credits never expire.
       </p>
       {over && (
-        <p className="mt-2 text-xs font-medium text-low-text">
+        <p className="mt-3 text-xs font-medium text-low-text">
           Your next top-up or renewal pays back the {credits(-balance.total)} first.
         </p>
       )}

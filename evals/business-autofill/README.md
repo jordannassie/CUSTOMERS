@@ -24,6 +24,20 @@ The AI suite is skipped while `dataset.v1.jsonl` does not exist, or while `ANTHR
 
 Name and address match when one contains the other (Google adds ", USA"); phone numbers compare digits; other fields compare letters and digits only. Description is graded only on empty versus filled.
 
+## Per-field accuracy (`fields.v1.jsonl`, 2026-10-15)
+
+A second, smaller set: about 15 real businesses across all 10 industries plus a few "other", each with the expected
+name, industry, city, whether a phone number is shown, and 3 or more services the site names. Labelled only from each
+business's own website (D-73 keeps Google content out of the repo); the rows are a draft until a person checks them
+(principle 6), as their `labelledBy` says. `fields.ts` grades five fields (a page title as the name is wrong, services
+must share a word with ones the site names, at least 3), and `fields.ai.eval.ts` prints and saves accuracy per field.
+No pass level until a person has checked the labels and the first baseline.
+
+```bash
+npx vitest run --project evals evals/business-autofill/fields.eval.ts       # grader checks on fixtures, free
+npx vitest run --project evals-ai evals/business-autofill/fields.ai.eval.ts # real Firecrawl, Places and Claude, paid
+```
+
 ## Dataset format
 
 One JSON object per line in `dataset.v1.jsonl`. `dataset.v1.jsonl.example` shows three made-up rows on `.example` domains; they carry `"example": true`, which the loader refuses in the real dataset. The fast suite runs those three rows through the real flow with fixture sources.

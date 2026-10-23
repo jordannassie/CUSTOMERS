@@ -1,3 +1,4 @@
+import { utcDate } from "@/lib/time-zone";
 import type { LowCreditsLevel, WeeklyBusiness } from "@/modules/email";
 import type { OverviewView } from "@/modules/overview";
 
@@ -76,8 +77,7 @@ export function weeklyReportSubject(businesses: WeeklyBusiness[]): string {
   return `Your weekly report: ${changed} of ${businesses.length} businesses moved`;
 }
 
-const RENEWAL = new Intl.DateTimeFormat("en-US", { month: "long", day: "numeric", timeZone: "UTC" });
-
+/** "October 2 (UTC)": an email does not know the reader's zone, so it says which one it uses (BUG-070). */
 export function renewalDate(periodEnd: Date | null): string | null {
-  return periodEnd ? RENEWAL.format(periodEnd) : null;
+  return periodEnd ? utcDate(periodEnd) : null;
 }

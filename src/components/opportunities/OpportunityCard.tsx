@@ -40,7 +40,7 @@ export function OpportunityCard({
           <Badge variant={impact.variant}>{impact.label}</Badge>
         </div>
         <div className="flex w-full min-w-0 flex-1 flex-col gap-0.5">
-          <h2 className="text-[15px] font-semibold tracking-[-0.01em]">
+          <h2 className="text-base font-semibold tracking-[-0.02em]">
             {/* The whole row opens the fix; the copy button sits above this layer. */}
             <button
               type="button"

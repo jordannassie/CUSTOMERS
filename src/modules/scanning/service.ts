@@ -1,14 +1,22 @@
 import "server-only";
 // Run a scan (B-26, MVP_SPEC 5.2, 4.2, D-53, D-54): hold the credits, run every question on every
-// chosen model, charge 1 credit per successful check, then return the rest of the hold.
+// chosen model, charge 1 credit per successful check with a new answer, then return the rest of the hold. An answer
+// reused from the shared cache is free for now (D-24, changed 2026-10-20 at the owner's request).
+import { placeLabel } from "@/lib/place-label";
 import { captureCredits, holdCredits, InsufficientCreditsError, isHoldOpen, releaseHold } from "@/modules/credits";
 import { canRunScanJob, REASONS } from "@/modules/entitlements";
 import { captureBatcher } from "./capture-batch";
-import { checkIdFor, runOneCheck, type CheckContext, type CheckTask } from "./check";
+import { forEachLimited, summarise } from "./run-limited";
+import { checkIdFor, runOneCheck, type CheckContext, type CheckOutcome, type CheckTask } from "./check";
+import { claudeGate } from "./claude-outage/gate";
+import { CLAUDE_SKIPPED, claudeMode, type OutageStore } from "./claude-outage/outage";
+import { liveOutageStore } from "./claude-outage/dal";
 import type { ExtractNames } from "./extract";
-import type { MentionTarget } from "./mentions";
-import type { CheckLocation, ProviderId, RunCheck } from "./providers/types";
+import { mentionTargets } from "./recount/service";
+import type { CheckLocation, ProviderFailures, ProviderId, RunCheck } from "./providers/types";
+import { countryCode } from "./country";
 import { loadRecordedAnswers, recordedAnswers, RECORDED_ANSWERS_DIR } from "./recorded";
+import { nextScanAt } from "./schedule";
 import {
   finishRun,
   findOrCreateRun,
@@ -18,14 +26,15 @@ import {
   loadScanJob,
   loadScanTarget,
   setNextScanAt,
+  touchScanJob,
   type ScanTargetRow,
 } from "./runs/dal";
 
 // MVP_SPEC 5.2: 4 to 6 checks at a time per scan.
 export const CHECKS_AT_ONCE = 5;
 
-const DAY_MS = 24 * 60 * 60 * 1000;
-const FREQUENCY_DAYS: Record<string, number> = { daily: 1, weekly: 7, monthly: 30 };
+// A running scan refreshes its job at most this often, as its checks finish (B4).
+const HEARTBEAT_MS = 60 * 1000;
 const PROVIDERS: ProviderId[] = ["openai", "anthropic", "perplexity"];
 
 /** The skip reason when a job's hold is already closed: an earlier run finished it. */
@@ -37,6 +46,8 @@ export type ScanDeps = {
   extractNames: ExtractNames | null;
   recordedDir: string;
   now: () => Date;
+  /** Where the Claude outage is kept (an open admin alert); tests pass one in memory. */
+  claudeOutage: OutageStore;
 };
 
 export type ScanOutcome =
@@ -48,6 +59,8 @@ export type ScanOutcome =
       failed: number;
       charged: number;
       released: number;
+      /** Claude checks left out because Claude is unavailable: never held at the start, never charged. */
+      skipped: number;
       errors: string[];
     };
 
@@ -68,7 +81,15 @@ export async function runScan(jobId: string, overrides: Partial<ScanDeps> = {}):
     if (!allowed.allowed) return { status: "skipped", reason: allowed.reason };
   }
 
-  const tasks = checkTasks(jobId, target);
+  // While Claude is unavailable (a rejected key, no credit), its checks are left out before the hold (claude-outage/outage.ts).
+  const outageStore = overrides.claudeOutage ?? liveOutageStore;
+  const askClaude = !target.isTest && target.business.models.includes("anthropic");
+  const mode = askClaude ? claudeMode(await outageStore.read(), (overrides.now ?? (() => new Date()))()) : "use";
+  const allTasks = checkTasks(jobId, target);
+  const tasks = mode === "skip" ? allTasks.filter((t) => t.provider !== "anthropic") : allTasks;
+  const skippedAtStart = allTasks.length - tasks.length;
+  // Only Claude chosen and Claude out: nothing to hold. A retried job goes on, so its open hold is still released.
+  if (tasks.length === 0 && !job.holdId) return { status: "skipped", reason: CLAUDE_SKIPPED };
   let holdId: string;
   try {
     holdId = await holdCredits(job.agencyId, tasks.length, jobId);
@@ -85,27 +106,62 @@ export async function runScan(jobId: string, overrides: Partial<ScanDeps> = {}):
 
   const capture = captureBatcher((checkIds) => captureCredits(holdId, checkIds));
   const errors: string[] = [];
-  await forEachLimited(tasks, CHECKS_AT_ONCE, async (task) => {
-    const outcome = saved.has(task.checkId) ? { ok: true as const } : await runOneCheck(task, ctx.forProvider(task.provider));
+  const failures: ProviderFailures = {};
+  const gate = claudeGate(outageStore, mode);
+  let lastBeat = ctx.now().getTime();
+  const runTask = async (task: CheckTask) => {
+    if (gate.skip(task)) return;
+    const savedCached = saved.get(task.checkId);
+    const outcome: CheckOutcome =
+      savedCached !== undefined ? { ok: true, cached: savedCached } : await runOneCheck(task, ctx.forProvider(task.provider));
+    await gate.after(task, outcome, savedCached === undefined);
+    // Tell the reset job this scan is alive, so a long one is not taken for a dead worker and run twice (B4).
+    if (ctx.now().getTime() - lastBeat >= HEARTBEAT_MS) {
+      lastBeat = ctx.now().getTime();
+      await touchScanJob(jobId).catch((err) => console.error(`scan ${jobId}: could not refresh the job: ${err instanceof Error ? err.message : err}`));
+    }
     if (!outcome.ok) {
       errors.push(outcome.error);
+      const seen = failures[task.provider];
+      failures[task.provider] = { failed: (seen?.failed ?? 0) + 1, reason: seen?.reason ?? outcome.reason };
       return;
     }
+    // A reused answer costs nothing: its held credit goes back with the rest of the hold (D-24).
+    if (outcome.cached) return;
     // Capture right after each check, so a scan cut off halfway has charged exactly what it saved.
     await capture.add(task.checkId);
-  });
+  };
+  // After the outage window one Claude check goes first, alone, so a key that still fails costs one call (probe).
+  const probed = new Set<string>();
+  for (const task of tasks.filter((t) => t.provider === "anthropic")) {
+    if (!gate.probing()) break;
+    probed.add(task.checkId);
+    await runTask(task);
+  }
+  await forEachLimited(
+    tasks.filter((t) => !probed.has(t.checkId)),
+    CHECKS_AT_ONCE,
+    runTask,
+  );
   const charged = capture.charged();
+  const skipped = skippedAtStart + gate.skipped();
+  if (skipped > 0) failures.anthropic = { failed: failures.anthropic?.failed ?? 0, reason: CLAUDE_SKIPPED, skipped };
 
-  const released = await releaseHold(holdId);
-  const allFailed = errors.length === tasks.length;
+  // The run is finished and the next scan set before the hold closes. If either write fails, the worker retries a
+  // job whose hold is still open, so the retry re-uses the saved checks, charges none twice and finishes the run.
+  // Closing the hold first left the run "running" and the due date in the past for good.
+  const attempted = tasks.length - gate.skipped();
+  const allFailed = attempted === 0 || errors.length === attempted;
   await finishRun(run.id, {
     status: allFailed ? "failed" : "completed",
     checksTotal: tasks.length,
     checksFailed: errors.length,
     error: errors.length > 0 ? summarise(errors) : null,
+    failedByProvider: errors.length > 0 || skipped > 0 ? failures : null,
   });
   // A scan with no result keeps its due date, so the next scheduled run tries again.
   if (!allFailed) await setNextScanAt(job.businessId, nextScanAt(target.business.scanFrequency, ctx.now()));
+  const released = await releaseHold(holdId);
 
   return {
     status: allFailed ? "failed" : "done",
@@ -114,11 +170,13 @@ export async function runScan(jobId: string, overrides: Partial<ScanDeps> = {}):
     failed: errors.length,
     charged,
     released,
+    skipped,
     errors,
   };
 }
 
 function scanBlocker({ business, questions }: ScanTargetRow): string | null {
+  if (business.deletedAt) return "This business was deleted.";
   if (business.status === "paused") return "This business is paused.";
   if (!business.city) return "Add the business city before scanning.";
   if (questions.length === 0) return "This business has no active questions.";
@@ -144,7 +202,7 @@ async function checkContext(target: ScanTargetRow, runId: string, overrides: Par
   let extractNames = overrides.extractNames !== undefined ? overrides.extractNames : liveNameExtractor();
   if (isTest) {
     // Test agencies never reach a live model, whatever was passed in (D-61).
-    const recorded = recordedAnswers(await loadRecordedAnswers(overrides.recordedDir ?? RECORDED_ANSWERS_DIR));
+    const recorded = recordedAnswers(await loadRecordedAnswers(overrides.recordedDir ?? RECORDED_ANSWERS_DIR), business.industry);
     checkRunner = recorded.runCheck;
     extractNames = recorded.extractNames;
   }
@@ -153,17 +211,7 @@ async function checkContext(target: ScanTargetRow, runId: string, overrides: Par
     runId,
     businessId: business.id,
     ownerUserId: business.ownerUserId,
-    business: {
-      name: business.name,
-      aliases: business.aliases,
-      website: business.domain,
-      city: business.city,
-      phone: business.phone,
-      hasWebsite: business.hasWebsite ?? Boolean(business.domain),
-    },
-    competitors: competitors.map(
-      (c): MentionTarget => ({ name: c.name, website: c.domain, phone: c.phone, city: c.city ?? business.city }),
-    ),
+    ...mentionTargets(business, competitors),
     location: locationOf(business),
     isTest,
     extractNames,
@@ -179,65 +227,22 @@ async function checkContext(target: ScanTargetRow, runId: string, overrides: Par
 export function withCity(question: string, city: string, region: string | null): string {
   const text = question.trim();
   if (text.toLowerCase().includes(city.toLowerCase())) return text;
-  const place = region ? `${city}, ${region}` : city;
+  const place = placeLabel(city, region);
   return `${text.replace(/[?.!\s]+$/, "")} in ${place}?`;
-}
-
-const COUNTRY_CODES: Record<string, string> = {
-  "united states": "US",
-  "united states of america": "US",
-  usa: "US",
-  "u s": "US",
-  "u s a": "US",
-  canada: "CA",
-  "united kingdom": "GB",
-  uk: "GB",
-  australia: "AU",
-};
-
-/** The providers want an ISO country code; businesses store whatever onboarding saved. */
-export function countryCode(country: string | null): string {
-  const text = (country ?? "").trim();
-  if (/^[a-z]{2}$/i.test(text)) return text.toUpperCase();
-  const key = text.toLowerCase().replace(/[^a-z ]+/g, " ").replace(/\s+/g, " ").trim();
-  return COUNTRY_CODES[key] ?? "US";
 }
 
 function locationOf(business: ScanTargetRow["business"]): CheckLocation {
   return { city: business.city ?? "", region: business.region ?? "", country: countryCode(business.country) };
 }
 
-export function nextScanAt(frequency: string, from: Date): Date {
-  return new Date(from.getTime() + (FREQUENCY_DAYS[frequency] ?? 7) * DAY_MS);
-}
+// On a 02:00 run far enough out that the next scan never reuses this one's cached answers (H1, schedule.ts).
+export { nextScanAt };
 
 function isProvider(model: string): model is ProviderId {
   return (PROVIDERS as string[]).includes(model);
 }
 
-function summarise(errors: string[]): string {
-  const counts = new Map<string, number>();
-  for (const e of errors) counts.set(e, (counts.get(e) ?? 0) + 1);
-  return [...counts]
-    .map(([e, n]) => (n > 1 ? `${e} (${n} checks)` : e))
-    .join("; ")
-    .slice(0, 1000);
-}
-
-// After a failure no new item starts, and the error is thrown only once the running ones end: the worker must
-// not requeue a job whose checks are still running.
-async function forEachLimited<T>(items: T[], limit: number, fn: (item: T) => Promise<void>): Promise<void> {
-  let next = 0;
-  const failures: unknown[] = [];
-  const worker = async () => {
-    while (failures.length === 0 && next < items.length) {
-      try {
-        await fn(items[next++]);
-      } catch (error) {
-        failures.push(error);
-      }
-    }
-  };
-  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker));
-  if (failures.length > 0) throw failures[0];
+/** Credits a scan holds, counted like checkTasks: each active question on each chosen AI model (D-54). */
+export function scanCheckCount(activeQuestions: number, models: string[]): number {
+  return activeQuestions * models.filter(isProvider).length;
 }

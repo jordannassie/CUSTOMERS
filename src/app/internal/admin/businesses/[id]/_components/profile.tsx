@@ -1,7 +1,8 @@
 import { INDUSTRY_LABELS, isIndustry } from "@/lib/industries";
 import type { AdminBusinessDetail } from "@/modules/admin";
 import { agencyStatusLabel, planStatusLabel } from "../../../agencies/_components/agency-parts";
-import { ModelList, deletedNote, formatDate, frequencyLabel } from "../../_components/scan-parts";
+import { ModelList, deletedNote, frequencyLabel } from "../../_components/scan-parts";
+import { formatDate } from "../../../_components/format";
 import Section from "./section";
 
 const STATUS: Record<string, string> = {
@@ -16,7 +17,8 @@ const industryLabel = (value: string) => (isIndustry(value) ? INDUSTRY_LABELS[va
 
 export default function Profile({ detail }: { detail: NonNullable<AdminBusinessDetail> }) {
   const { business: b, plan, agency } = detail;
-  const location = [b.primary_city, b.primary_region, b.primary_country].filter(Boolean).join(", ");
+  // The neighborhood or area leads when set: "East Austin, Austin, TX, US". A row of its own would leave the grid uneven.
+  const location = [b.primary_area, b.primary_city, b.primary_region, b.primary_country].filter(Boolean).join(", ");
 
   const rows: [string, React.ReactNode][] = [
     ["Website", b.domain ?? "No website"],
@@ -42,14 +44,14 @@ export default function Profile({ detail }: { detail: NonNullable<AdminBusinessD
 
   return (
     <Section title="Profile">
-      <dl className="grid rounded-md border border-border bg-surface px-4 py-1 text-[14px] sm:grid-cols-2 sm:gap-x-8">
+      <dl className="grid grid-cols-1 rounded-md border border-border bg-surface px-4 py-1 text-[14px] sm:grid-cols-2 sm:gap-x-8">
         {rows.map(([label, value]) => (
           <div
             key={label}
             className="flex gap-4 border-b border-border py-2.5 last:border-b-0 sm:[&:nth-last-child(2)]:border-b-0"
           >
             <dt className="w-32 shrink-0 text-muted-foreground">{label}</dt>
-            <dd className="min-w-0 break-words">{value}</dd>
+            <dd className="min-w-0 wrap-anywhere">{value}</dd>
           </div>
         ))}
       </dl>

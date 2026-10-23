@@ -13,6 +13,8 @@ const check = (provider: string, costUsd: number, cached = false, agencyId = "a1
 describe("usage and cost rules (B-67)", () => {
   it("starts the period at UTC midnight so it includes today", () => {
     expect(periodStart(new Date("2026-09-27T15:30:00Z"), 7).toISOString()).toBe("2026-09-21T00:00:00.000Z");
+    // This month, the Overview's stretch.
+    expect(periodStart(new Date("2026-09-27T15:30:00Z"), "month").toISOString()).toBe("2026-09-01T00:00:00.000Z");
   });
 
   it("uses the cheapest active plan's credit price and ignores plans with no price", () => {

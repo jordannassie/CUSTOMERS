@@ -68,6 +68,50 @@ describe("createAnthropicCheck", () => {
     });
   });
 
+  describe("location Claude's web search refuses (BUG-073)", () => {
+    const sent = (fetch: ReturnType<typeof setup>["fetch"], call: number) => JSON.parse(String(fetch.mock.calls[call][1]?.body));
+    const refused = (message: string) => json({ type: "error", error: { type: "invalid_request_error", message } }, 400);
+
+    it("leaves out empty fields instead of sending them blank", async () => {
+      const { fetch, run } = setup(json(recorded));
+      await run({ ...input, location: { city: "Islamabad", region: "", country: "" } });
+      expect(sent(fetch, 0).tools[0].user_location).toEqual({ type: "approximate", city: "Islamabad" });
+    });
+
+    it("asks again without the location when the country is not supported, and remembers it", async () => {
+      const pk = { ...input, location: { city: "Rawalpindi", region: "Islamabad Capital Territory", country: "PK" } };
+      const { fetch, run } = setup(
+        refused("tools.0.web_search_20250305: Country code PK is not supported."),
+        json(recorded),
+        json(recorded),
+      );
+
+      expect((await run(pk)).answerText).toContain("Portola Coffee Roasters");
+      expect(sent(fetch, 0).tools[0].user_location).toMatchObject({ country: "PK" });
+      expect(sent(fetch, 1).tools[0]).not.toHaveProperty("user_location");
+
+      await run(pk);
+      expect(fetch).toHaveBeenCalledTimes(3);
+      expect(sent(fetch, 2).tools[0]).not.toHaveProperty("user_location");
+    });
+
+    it("asks again without the location when a field is refused", async () => {
+      const { fetch, run } = setup(
+        refused("tools.0.web_search_20250305.user_location.region: String should have at least 1 character"),
+        json(recorded),
+      );
+      await run({ ...input, location: { city: "Lahore", region: "Punjab", country: "ZZ" } });
+      expect(sent(fetch, 1).tools[0]).not.toHaveProperty("user_location");
+    });
+
+    it("does not retry other 400 errors", async () => {
+      const { fetch, run } = setup(refused("messages.0.content: too long"));
+      const err = await failure(run(input));
+      expect(err).toMatchObject({ kind: "client", status: 400 });
+      expect(fetch).toHaveBeenCalledTimes(1);
+    });
+  });
+
   it("returns the answer after the last search, usage and real cost", async () => {
     const { run } = setup(json(recorded));
     const result = await run(input);

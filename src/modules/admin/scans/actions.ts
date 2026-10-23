@@ -7,8 +7,9 @@ import { logAdminAction } from "../dal";
 import { retryScanInput } from "./schema";
 
 const REFUSED = {
-  not_failed: { status: 409, error: "This scan is no longer failed, so there is nothing to retry." },
+  not_failed: { status: 409, error: "This scan did not fail or skip, or has already been retried, so there is nothing to retry." },
   business_busy: { status: 409, error: "This business already has a scan waiting or running." },
+  business_deleted: { status: 409, error: "This business was deleted, so its scan can't be retried." },
 } as const;
 
 /** "Retry" on a failed scan: the worker picks it up again on its next run, and the audit log records who asked. */

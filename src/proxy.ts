@@ -45,7 +45,10 @@ export async function proxy(request: NextRequest) {
   // getClaims() only checks the token; a deleted user still has a valid one, and pages send them to
   // /login, so bouncing them back from here looped (BUG-020). Only these pages pay for the extra call.
   if (signedIn && AUTH_PAGES.includes(pathname) && (await supabase.auth.getUser()).data.user) {
-    const target = new URL(safeNextPath(request.nextUrl.searchParams.get("next")), request.url);
+    // A plan button on the pricing page, clicked while signed in, goes to Choose plan (BUG-079).
+    const plan = request.nextUrl.searchParams.get("plan");
+    const fallback = plan && /^[a-z0-9_]{1,64}$/.test(plan) ? `/settings/billing/plans?plan=${plan}` : undefined;
+    const target = new URL(safeNextPath(request.nextUrl.searchParams.get("next"), fallback), request.url);
     return redirectKeepingCookies(target, response);
   }
 

@@ -1,4 +1,5 @@
 import "server-only";
+import { checkPaidNotActive } from "@/modules/billing";
 import { createNotifyDeps, isAlertSecret, runAlertChecks } from "./dal";
 import { notifyAdmins, type NotifyDeps } from "./service";
 
@@ -12,6 +13,8 @@ export async function handleAlertsRequest(req: Request, deps?: NotifyDeps): Prom
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
   const opened = await runAlertChecks();
+  // Needs Stripe, so it runs here rather than in pg_cron (2026-10-15). A failure never stops the emails.
+  await checkPaidNotActive().catch((error) => console.error("[admin/alerts] paid_not_active check failed", error instanceof Error ? error.message : String(error)));
   const emails = await notifyAdmins(deps ?? createNotifyDeps());
   return Response.json({ opened: opened.length, ...emails });
 }

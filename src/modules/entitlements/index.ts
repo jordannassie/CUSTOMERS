@@ -1,5 +1,5 @@
 import "server-only";
-import { loadAgencyFacts, loadBusinessFacts } from "./dal";
+import { loadAgencyFacts, loadBusinessFacts, loadPlanLimits } from "./dal";
 import * as rules from "./service";
 import type { Entitlement, LimitEntitlement } from "./service";
 
@@ -7,13 +7,18 @@ import type { Entitlement, LimitEntitlement } from "./service";
 // data calls one of these after its auth guard, and shows `reason` when `allowed` is false.
 
 /**
- * `alreadySaved`: the business already has a row (a finished onboarding draft being put on the plan, B-44),
- * so it is in the count and must not be counted twice.
+ * Only set-up businesses count (D-16): the agency's draft never blocks it. `alreadySaved`: the business is a set-up one
+ * being put on the plan (B-44), so it is in the count and must not be counted twice.
  */
 export async function canAddBusiness(agencyId: string, options: { alreadySaved?: boolean } = {}): Promise<Entitlement> {
   const facts = await loadAgencyFacts(agencyId);
   const businessCount = options.alreadySaved ? Math.max(0, facts.businessCount - 1) : facts.businessCount;
   return rules.canAddBusiness({ ...facts, businessCount });
+}
+
+/** Call before setup finishes a draft: a trial with 2 set-up businesses cannot turn a third one on. */
+export async function canFinishDraft(agencyId: string): Promise<Entitlement> {
+  return rules.canFinishDraft(await loadAgencyFacts(agencyId));
 }
 
 /** Call before queueing a scan (B-29) and again in the worker right before holdCredits (B-26, F-20). */
@@ -38,6 +43,12 @@ export async function maxQuestions(businessId: string): Promise<LimitEntitlement
 
 export async function maxCompetitors(businessId: string): Promise<LimitEntitlement> {
   return rules.maxCompetitors(await loadBusinessFacts(businessId));
+}
+
+/** Before a business moves to a smaller plan: refused while it tracks more competitors or questions than that plan has. */
+export async function fitsPlan(businessId: string, planId: string): Promise<Entitlement> {
+  const [business, plan] = await Promise.all([loadBusinessFacts(businessId), loadPlanLimits(planId)]);
+  return rules.fitsPlan(business, plan);
 }
 
 export { canEditTracking, REASONS, TRIAL_MAX_BUSINESSES, type Entitlement, type LimitEntitlement } from "./service";

@@ -13,3 +13,17 @@ export const adminActionInput = z.object({
 export type AdminActionInput = z.input<typeof adminActionInput>;
 export type AdminTarget = AdminActionInput["target"];
 export type AdminActionDetails = NonNullable<AdminActionInput["details"]>;
+
+// Admin list pages (Agencies, Businesses): 50 rows a page, a page number and a search box in the URL.
+export const ADMIN_PAGE_SIZE = 50;
+
+export const pageParam = z.coerce.number().int().min(1).max(10_000).catch(1);
+
+/**
+ * The search box text, safe inside a PostgREST `or` filter: commas, brackets, quotes and wildcards would change the
+ * filter itself, so they become spaces. Anything that is not a string is no search.
+ */
+export const searchParam = z
+  .string()
+  .catch("")
+  .transform((s) => s.replace(/[,()%*\\"]/g, " ").replace(/\s+/g, " ").trim().slice(0, 100));

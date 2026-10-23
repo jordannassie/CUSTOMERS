@@ -2,6 +2,6 @@
 import { databaseStore } from "./dal";
 import { createLimiter } from "./service";
 
-export { clientIp, LIMITS, type Bucket } from "./service";
+export { clientIp, LIMITS, type Bucket, type RateLimitResult } from "./service";
 
-export const allowRequest = createLimiter(databaseStore());
+export const checkRateLimit = createLimiter(databaseStore());

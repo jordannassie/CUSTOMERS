@@ -4,7 +4,8 @@ import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 
 const ROOT = join(import.meta.dirname, "..");
-const AUTH_CALL = /\brequire(User|Agency|Admin)\s*\(/;
+// activeUser (src/modules/onboarding/guard.ts) calls requireUser() first, then refuses a paused agency.
+const AUTH_CALL = /\b(require(User|Agency|Admin)|activeUser)\s*\(/;
 
 // Reachable without a login on purpose. Each entry says how it protects itself.
 const PUBLIC: Record<string, string> = {
@@ -17,6 +18,7 @@ const PUBLIC: Record<string, string> = {
   "src/app/r/[token]/logo/route.ts": "share link logo; the token is the access check (B-59)",
   "src/app/api/alerts/check/route.ts": "pg_cron call, worker secret header (B-69)",
   "src/app/api/email/jobs/route.ts": "pg_cron call, worker secret header (B-62)",
+  "src/app/api/dev/scan-worker/route.ts": "local pg_cron call, worker secret header; 404 in production (BUG-167)",
 };
 
 function walk(dir: string): string[] {

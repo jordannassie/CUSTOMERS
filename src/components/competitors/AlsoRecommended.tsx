@@ -56,7 +56,7 @@ export function AlsoRecommended({ businessId, names, answers, track, manageHref 
         {names.map((n) => (
           <li key={n.name} className="flex items-center gap-3 py-3 first:pt-0 last:pb-0">
             <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-              <span className="truncate text-sm font-medium">{n.name}</span>
+              <span className="truncate text-sm font-medium" title={n.name}>{n.name}</span>
               <span className="text-xs tabular-nums text-muted-foreground">{n.text}</span>
               <span className="h-1 overflow-hidden rounded-xs bg-muted" aria-hidden>
                 <span className="block h-full rounded-xs bg-competitor-2" style={{ width: `${(100 * n.answers) / top}%` }} />
@@ -66,6 +66,7 @@ export function AlsoRecommended({ businessId, names, answers, track, manageHref 
               type="button"
               variant="outline"
               size="sm"
+              className="shrink-0"
               disabled={pending}
               onClick={() => onTrack(n.name)}
               aria-label={`Track ${n.name}`}

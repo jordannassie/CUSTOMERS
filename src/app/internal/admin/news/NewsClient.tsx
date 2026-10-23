@@ -2,11 +2,13 @@
 
 import { useState, useRef, useCallback } from "react";
 import { AlertTriangle, Loader2, Newspaper, Search } from "lucide-react";
-import { cn } from "cn";
 import type { NewsStory } from "@/app/api/internal/admin/news/search/route";
 import type { GeneratedArticle } from "@/app/api/internal/admin/news/article/route";
 import { Button } from "@/components/ui/button";
 import { appFetch } from "@/lib/session-expired";
+import AdminEmpty from "../_components/admin-empty";
+import FilterTabs, { replaceQuery } from "../_components/filter-tabs";
+import AdminPageHeader from "../_components/page-header";
 import { PERIOD_OPTIONS, WEEKDAYS, getTodayWeekday, type Period, type Weekday } from "./_components/news-config";
 import { OutputPanel } from "./_components/output-panel";
 import { StoryCard } from "./_components/story-card";
@@ -21,10 +23,10 @@ function ErrorBox({ message }: { message: string }) {
   );
 }
 
-export default function NewsClient() {
+export default function NewsClient({ initialPeriod }: { initialPeriod: Period }) {
   const [weekday, setWeekday] = useState<Weekday>(getTodayWeekday);
   const [todayKey] = useState<Weekday>(getTodayWeekday);
-  const [period, setPeriod] = useState<Period>("24h");
+  const [period, setPeriod] = useState<Period>(initialPeriod);
   const [searching, setSearching] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
   const [stories, setStories] = useState<NewsStory[]>([]);
@@ -52,6 +54,7 @@ export default function NewsClient() {
   function handlePeriodChange(p: Period) {
     if (searching || !!writingId) return;
     setPeriod(p);
+    replaceQuery("period", p === "24h" ? null : p);
     clearResults();
   }
 
@@ -120,41 +123,25 @@ export default function NewsClient() {
 
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-8 sm:px-6">
-      <header>
-        <h1 className="text-[24px] font-semibold tracking-[-0.02em]">Agency LinkedIn studio</h1>
-        <p className="mt-1 text-[14px] text-muted-foreground">
-          Turn AI search news into LinkedIn posts that help agencies win and serve clients.
-        </p>
-      </header>
+      <AdminPageHeader
+        title="LinkedIn studio"
+        subtitle="Turn AI search news into LinkedIn posts that help agencies win and serve clients."
+      />
 
       <WeekdayCards selected={weekday} today={todayKey} onChange={handleWeekdayChange} disabled={isBusy} />
 
       <div className="flex flex-wrap items-center gap-3">
-        <div
-          role="group"
-          aria-label="Time range"
-          className="flex w-fit max-w-full flex-wrap gap-1 rounded-md border border-border bg-muted p-1"
-        >
-          {PERIOD_OPTIONS.map((opt) => {
-            const active = period === opt.value;
-            return (
-              <button
-                key={opt.value}
-                type="button"
-                onClick={() => handlePeriodChange(opt.value)}
-                disabled={isBusy}
-                aria-pressed={active}
-                className={cn(
-                  "min-h-9 rounded-sm px-3 py-1.5 text-[13px] font-medium whitespace-nowrap transition-colors duration-150 ease-out",
-                  "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:opacity-50",
-                  active ? "bg-surface text-foreground shadow-xs" : "text-muted-foreground hover:text-foreground",
-                )}
-              >
-                {opt.label}
-              </button>
-            );
-          })}
-        </div>
+        <FilterTabs
+          label="Time range"
+          active={period}
+          disabled={isBusy}
+          onSelect={(key) => handlePeriodChange(key as Period)}
+          tabs={PERIOD_OPTIONS.map((opt) => ({
+            key: opt.value,
+            label: opt.label,
+            href: opt.value === "24h" ? "/internal/admin/news" : `/internal/admin/news?period=${opt.value}`,
+          }))}
+        />
 
         <Button type="button" onClick={handleSearch} disabled={isBusy}>
           {searching ? <Loader2 className="animate-spin" aria-hidden="true" /> : <Search aria-hidden="true" />}
@@ -185,14 +172,9 @@ export default function NewsClient() {
       {searchError && !searching && <ErrorBox message={searchError} />}
 
       {!searching && !searchError && stories.length === 0 && (
-        <div className="flex flex-col items-center gap-2 rounded-md border border-border bg-surface px-6 py-12 text-center">
-          <Newspaper className="size-5 text-text-hint" aria-hidden="true" />
-          <p className="text-[15px] font-semibold">No stories yet</p>
-          <p className="max-w-sm text-[13px] text-muted-foreground">
-            Select a weekday angle above, then click &ldquo;Find agency news&rdquo; to surface relevant stories for your
-            LinkedIn post.
-          </p>
-        </div>
+        <AdminEmpty icon={Newspaper} title="No stories yet">
+          Pick a weekday angle above, then Find agency news to see stories for your LinkedIn post.
+        </AdminEmpty>
       )}
 
       {stories.length > 0 && !searching && (

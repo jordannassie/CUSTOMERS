@@ -45,7 +45,7 @@ await sendEmail({
 
 ## Preferences and unsubscribe
 
-- `agencies.weekly_report_emails` (default on). Signed-in users change it with the `saveEmailPreferences` action; a Settings toggle can call it.
+- `agencies.weekly_report_emails` (default on). Signed-in users change it with the Weekly report switch in Settings, Emails (`EmailSettingsForm`, `saveEmailPreferences`).
 - `/email/unsubscribe?token=...` (public page): checks the token and asks for a button press, so mail scanners that open links do not unsubscribe anyone.
 - `POST /api/email/unsubscribe` (public route, the token is the proof): the page's button (redirects back with `done=1`) and mail apps' one-click POST (returns 200).
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { checkLogo, LOGO_MAX_BYTES, normalizeWebsite, parseServices } from "./service";
+import { aliasesProblem, aliasExample, checkLogo, LOGO_MAX_BYTES, matchingChanged, normalizeWebsite, parseServices, refusesOtherLabel } from "./service";
 
 const bytes = (...values: number[]) => new Uint8Array(values);
 const text = (s: string) => new TextEncoder().encode(s);
@@ -52,5 +52,60 @@ describe("checkLogo", () => {
     expect(checkLogo(0, png)).toMatchObject({ ok: false, error: expect.stringContaining("Choose an image") });
     expect(checkLogo(LOGO_MAX_BYTES + 1, png)).toMatchObject({ ok: false, error: expect.stringContaining("too big") });
     expect(checkLogo(LOGO_MAX_BYTES, png).ok).toBe(true);
+  });
+});
+
+describe("other names", () => {
+  it("allows up to 10, each 2 to 120 characters", () => {
+    expect(aliasesProblem([])).toBeUndefined();
+    expect(aliasesProblem(Array.from({ length: 10 }, (_, i) => `Name ${i}`))).toBeUndefined();
+    expect(aliasesProblem(Array.from({ length: 11 }, (_, i) => `Name ${i}`))).toBe("Add up to 10 other names.");
+    expect(aliasesProblem(["KFC", "K"])).toBe("Each other name needs at least 2 characters.");
+    expect(aliasesProblem(["x".repeat(121)])).toBe("Keep each other name under 120 characters.");
+  });
+
+  const before = { name: "Book Woman", aliases: ["BookWoman", "Old Name"], domain: "ebookwoman.com", phone: "(512) 472-2785", city: "Austin", area: null };
+
+  it("sees a change to the name or the list, not to its order or case", () => {
+    expect(matchingChanged(before, { ...before, aliases: ["old name", "BookWoman"] })).toBe(false);
+    expect(matchingChanged(before, { ...before, aliases: ["BookWoman"] })).toBe(true);
+    expect(matchingChanged(before, { ...before, name: "BookWoman Austin" })).toBe(true);
+  });
+
+  it("sees a new website, phone, city or area, not the same ones written another way", () => {
+    expect(matchingChanged(before, { ...before, domain: "bookwoman.com" })).toBe(true);
+    expect(matchingChanged(before, { ...before, domain: null })).toBe(true);
+    expect(matchingChanged(before, { ...before, phone: "512-555-0100" })).toBe(true);
+    expect(matchingChanged(before, { ...before, city: "Round Rock" })).toBe(true);
+    expect(matchingChanged(before, { ...before, area: "North Loop" })).toBe(true);
+    expect(matchingChanged(before, { ...before, phone: "512.472.2785", city: "austin ", domain: "EBOOKWOMAN.com" })).toBe(false);
+  });
+});
+
+describe("aliasExample", () => {
+  it("takes the first letter of each word of the business's name", () => {
+    expect(aliasExample("Kentucky Fried Chicken")).toBe("For example: KFC");
+    expect(aliasExample("Book Woman")).toBe("For example: BW");
+    expect(aliasExample("Magic Plumbing Heating & Cooling")).toBe("For example: MPHC");
+    expect(aliasExample("Mr. Rooter Plumbing")).toBe("For example: MRP");
+    expect(aliasExample("Sunrise Coffee Co. LLC")).toBe("For example: SC");
+    expect(aliasExample("  advanced  plumbing-drain ")).toBe("For example: APD");
+  });
+
+  it("suggests an old name when there is no short form", () => {
+    expect(aliasExample("Cheezious")).toBe("For example: an old name or another spelling");
+    expect(aliasExample("")).toBe("For example: an old name or another spelling");
+  });
+});
+
+
+// 2026-10-16: questions are written from an "Other" label, so a vague new one is refused; an old one can stay.
+describe("refusesOtherLabel", () => {
+  it("refuses a change to a vague label only", () => {
+    expect(refusesOtherLabel("Plumber", "Consultant")).toBe(true);
+    expect(refusesOtherLabel(null, "Store")).toBe(true);
+    expect(refusesOtherLabel("Plumber", "IT consultant")).toBe(false);
+    expect(refusesOtherLabel("Store", "Store")).toBe(false);
+    expect(refusesOtherLabel("Plumber", "plumber")).toBe(false);
   });
 });

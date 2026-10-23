@@ -4,6 +4,7 @@ import "server-only";
 import { createServiceClient } from "@/lib/supabase/service";
 import { requireAgency } from "@/modules/auth";
 import { getLiveOpportunities } from "@/modules/insights";
+import { findBranches, needsBranch, showClaimStep, type BranchSearch } from "@/modules/onboarding/server";
 import { CHECKLIST_PREFIX, CHECKLIST_TITLES, checklist, checklistKeyOf, missingBasics, type ChecklistItem, type ChecklistKey } from "./checklist";
 import { toDbStatus, toItems, type OpportunityItem, type Status } from "./service";
 
@@ -11,6 +12,8 @@ export type OpportunitiesPage = {
   items: OpportunityItem[];
   /** Null when the business has its basics; the checklist is only for those missing some (MVP_SPEC 7.3). */
   checklist: { missing: string[]; items: ChecklistItem[] } | null;
+  /** "Pick your branch on Google" for a chain with no listing yet, with Google's first results (step 6d). */
+  branch: BranchSearch | null;
 };
 
 /** The page for one of the signed-in agency's businesses; null when it is not theirs. */
@@ -19,7 +22,7 @@ export async function getOpportunitiesPage(businessId: string): Promise<Opportun
   const [{ data: b, error }, live] = await Promise.all([
     createServiceClient()
       .from("businesses")
-      .select("name, primary_city, primary_region, industry, services, phone, domain, has_website, places_id")
+      .select("name, primary_city, primary_region, industry, services, phone, domain, has_website, places_id, is_chain")
       .eq("id", businessId)
       .eq("agency_id", agency.id)
       .maybeSingle(),
@@ -36,6 +39,10 @@ export async function getOpportunitiesPage(businessId: string): Promise<Opportun
     return key === null;
   });
 
+  // A chain has a branch to pick, not a profile to claim, unless Google lists no branch of it (step 6d).
+  const own = { chain: b.is_chain, placesId: b.places_id };
+  const search = needsBranch(own) ? await findBranches(agency.id, businessId) : null;
+  const branchPending = needsBranch(own) && !showClaimStep(own, search);
   const business = {
     name: b.name,
     city: b.primary_city,
@@ -46,11 +53,13 @@ export async function getOpportunitiesPage(businessId: string): Promise<Opportun
     domain: b.domain,
     hasWebsite: b.has_website,
     placesId: b.places_id,
+    branchPending,
   };
   const missing = missingBasics(business);
   return {
     items: toItems(fixes),
     checklist: missing.length > 0 ? { missing, items: checklist(business, ticked) } : null,
+    branch: branchPending ? search : null,
   };
 }
 

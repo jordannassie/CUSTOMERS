@@ -5,12 +5,15 @@ import { AccountForm } from "@/components/settings/AccountForm";
 import { AgencyForm } from "@/components/settings/AgencyForm";
 import { BusinessProfileForm } from "@/components/settings/BusinessProfileForm";
 import { DangerZone } from "@/components/settings/DangerZone";
+import { EmailSettingsForm } from "@/components/settings/EmailSettingsForm";
 import { ScanSettingsForm } from "@/components/settings/ScanSettingsForm";
 import { Panel, SettingsSection } from "@/components/settings/SettingsSection";
 import { Button } from "@/components/ui/button";
 import { changeEmail, changePassword, deleteAccount, deleteBusiness, getAccountView } from "@/modules/account";
+import { getMyEmailPreferences, saveEmailPreferences } from "@/modules/email";
 import { BILLING_HREF } from "@/modules/workspace";
 import { getSettings, saveAgencyName, saveBusinessProfile, saveScanSettings, uploadAgencyLogo } from "@/modules/settings";
+import { PageHeader } from "@/components/app/PageHeader";
 
 export const metadata = { title: "Settings", robots: { index: false } };
 
@@ -22,15 +25,14 @@ export default async function SettingsPage() {
     getSettings({ next: "/settings" }),
     getAccountView({ next: "/settings" }),
   ]);
+  // Only an agency has email settings: the weekly report goes to its owner (EMAIL-01).
+  const emails = agency ? await getMyEmailPreferences() : null;
 
   return (
     <PageContainer>
-      <header className="mb-8">
-        <h1 className="text-2xl font-semibold tracking-[-0.02em]">Settings</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          {business ? `${business.name} and your account, in one place.` : "Your account, in one place."}
-        </p>
-      </header>
+      <div className="mb-6">
+        <PageHeader title="Settings" description={business ? `${business.name} and your account, in one place.` : "Your account, in one place."} />
+      </div>
 
       {business ? (
         <>
@@ -65,7 +67,7 @@ export default async function SettingsPage() {
             <Building2 className="size-5 text-muted-foreground" aria-hidden="true" />
             <p className="text-sm">Add a business to set its profile and AI checks here.</p>
             <Button asChild size="sm">
-              <Link href="/dashboard/add-business">Add a business</Link>
+              <Link href="/onboarding?add=1">Add a business</Link>
             </Button>
           </Panel>
         </SettingsSection>
@@ -74,6 +76,16 @@ export default async function SettingsPage() {
       {agency && (
         <SettingsSection id="agency" title="Agency" description="Your agency name and logo appear on PDF reports and share links.">
           <AgencyForm name={agency.name} logoUrl={agency.logoUrl} saveName={saveAgencyName} uploadLogo={uploadAgencyLogo} />
+        </SettingsSection>
+      )}
+
+      {emails && (
+        <SettingsSection
+          id="emails"
+          title="Emails"
+          description="Emails about your login, billing and credits always come, since they need your attention. The weekly report is up to you."
+        >
+          <EmailSettingsForm weeklyReport={emails.weeklyReport} save={saveEmailPreferences} />
         </SettingsSection>
       )}
 
@@ -105,6 +117,7 @@ export default async function SettingsPage() {
             business={business && { id: business.id, name: business.name }}
             agencyName={account.agencyName}
             waitDays={account.waitDays}
+            trialing={account.trialing}
             deleteBusiness={deleteBusiness}
             deleteAccount={deleteAccount}
           />

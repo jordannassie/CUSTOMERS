@@ -8,6 +8,13 @@ const BAR: Record<OverviewView["models"][number]["id"], string> = {
   perplexity: "bg-perplexity",
 };
 
+// BUG-074: an AI that failed every check says so, instead of looking like it has never been asked. One left out of
+// the scan because it was unavailable says that instead.
+function emptyLabel(m: OverviewView["models"][number]): string {
+  if (m.skipped) return "Skipped, unavailable";
+  return m.notChecked ? "Couldn't be checked" : "No checks yet";
+}
+
 /** On phones, the per-model scores as one row under the score, so they show in the first screen (DB-015). */
 export function ModelScoresRow({ models, className }: { models: OverviewView["models"]; className?: string }) {
   return (
@@ -19,7 +26,7 @@ export function ModelScoresRow({ models, className }: { models: OverviewView["mo
             {m.label}
           </dt>
           <dd className="flex flex-wrap items-baseline gap-x-1.5 text-base font-semibold tabular-nums">
-            {m.score === null ? <span className="text-xs font-normal text-text-hint">No checks yet</span> : m.score}
+            {m.score === null ? <span className="text-xs font-normal text-text-hint">{emptyLabel(m)}</span> : m.score}
             {m.change && <PointsChange change={m.change} />}
           </dd>
         </div>
@@ -42,7 +49,7 @@ export function ModelScores({ models }: { models: OverviewView["models"] }) {
             <span className="flex items-baseline gap-2">
               {m.change && <PointsChange change={m.change} />}
               <span className="font-semibold tabular-nums">
-                {m.score === null ? <span className="font-normal text-text-hint">No checks yet</span> : m.score}
+                {m.score === null ? <span className="font-normal text-text-hint">{emptyLabel(m)}</span> : m.score}
               </span>
             </span>
           </div>

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { cn } from "cn";
 import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
 import { CopyButton } from "./copy-button";
 import { LINKEDIN_LIMIT } from "./news-config";
 
@@ -22,16 +23,13 @@ export function LinkedInPostEditor({ initialPost }: { initialPost: string }) {
         </div>
         <CopyButton label="Copy LinkedIn post" getText={() => text} />
       </div>
-      <textarea
+      <Textarea
         value={text}
         onChange={(e) => setText(e.target.value)}
         rows={14}
         aria-label="Editable LinkedIn post"
-        className={cn(
-          "w-full resize-y rounded-md border bg-surface px-4 py-3 font-[inherit] text-[14px] leading-relaxed text-foreground",
-          "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
-          isOver ? "border-low-text" : "border-input",
-        )}
+        aria-invalid={isOver || undefined}
+        className="resize-y px-4 py-3 text-[14px] leading-relaxed md:text-[14px]"
       />
       <p className="text-[12px] italic text-muted-foreground">
         Review all facts and source attributions before posting. AI-generated content may contain errors.

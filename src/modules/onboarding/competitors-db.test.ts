@@ -185,6 +185,7 @@ describe("saving competitors", () => {
     const kept = rows.find((r) => r.name === bean.name)!;
     expect(kept).toMatchObject({ id: legacy.data.id, places_id: bean.placeId, formatted_address: null, phone: null, category: null });
   });
+
 });
 
 describe("loading the step", () => {

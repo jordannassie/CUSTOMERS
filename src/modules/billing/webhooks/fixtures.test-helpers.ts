@@ -42,6 +42,7 @@ export function subscription(input: {
   status: Stripe.Subscription.Status;
   trialEnd?: number | null;
   cancelAtPeriodEnd?: boolean;
+  latestInvoice?: string;
   items: ItemInput[];
 }): Stripe.Subscription {
   const subId = input.id ?? id("sub");
@@ -52,6 +53,7 @@ export function subscription(input: {
     status: input.status,
     cancel_at_period_end: input.cancelAtPeriodEnd ?? false,
     trial_end: input.trialEnd ?? null,
+    latest_invoice: input.latestInvoice ?? null,
     metadata: input.agencyId ? { agency_id: input.agencyId } : {},
     items: {
       object: "list",
@@ -93,3 +95,21 @@ export function checkoutSession(input: {
 }
 
 export { DAY };
+
+/** A charge after a refund: `refunded` is Stripe's amount_refunded, the total refunded so far. */
+export function charge(input: { paymentIntent: string | null; amount: number; refunded: number; refundId?: string; customer?: string }): Stripe.Charge {
+  return {
+    id: id("ch"),
+    object: "charge",
+    amount: input.amount,
+    amount_refunded: input.refunded,
+    refunded: input.refunded >= input.amount,
+    currency: "usd",
+    customer: input.customer ?? null,
+    payment_intent: input.paymentIntent,
+    metadata: {},
+    refunds: input.refundId
+      ? { object: "list", has_more: false, url: "/v1/refunds", data: [{ id: input.refundId, object: "refund", amount: input.refunded }] }
+      : undefined,
+  } as unknown as Stripe.Charge;
+}

@@ -1,4 +1,5 @@
 import { notFound, redirect } from "next/navigation";
+import { SampleDataBadge } from "@/components/app/SampleDataBadge";
 import { PageContainer } from "@/components/app/PageContainer";
 import { AddQuestionForm } from "@/components/questions/AddQuestionForm";
 import { CreditSummary } from "@/components/questions/CreditSummary";
@@ -7,17 +8,19 @@ import {
   addQuestion,
   atLimit,
   editQuestion,
+  getQuestionAnswers,
   getQuestionsPage,
   limitText,
   removeQuestion,
   setQuestionActive,
 } from "@/modules/questions";
 import { getWorkspace } from "@/modules/workspace";
+import { PageHeader } from "@/components/app/PageHeader";
 
 export const metadata = { title: "Questions", robots: { index: false } };
 
 const PATH = "/questions";
-const actions = { edit: editQuestion, setActive: setQuestionActive, remove: removeQuestion };
+const actions = { edit: editQuestion, setActive: setQuestionActive, remove: removeQuestion, answers: getQuestionAnswers };
 
 // B-53, MVP_SPEC 5.3 and 8.1: the questions we ask AI for this business, and how often each one recommended it.
 export default async function QuestionsPage() {
@@ -34,19 +37,25 @@ export default async function QuestionsPage() {
   return (
     <PageContainer>
       <div className="flex flex-col gap-6">
-        <header className="flex max-w-[680px] flex-col gap-1.5">
-          <h1 className="text-2xl font-semibold tracking-[-0.02em]">Questions</h1>
-          <p className="text-sm text-muted-foreground">
-            The customer questions we ask {asked} for you on every scan. Each bar shows the last checks from the past
-            30 days, filled in where AI recommended you.
-          </p>
-        </header>
+        <PageHeader
+          title={
+            <>
+              Questions <SampleDataBadge show={workspace.account?.isTest} />
+            </>
+          }
+          description={
+            <>
+              The customer questions we ask {asked} for you on every scan. Each bar shows the last checks from the past 30
+              days, filled in where AI recommended you.
+            </>
+          }
+        />
 
         <CreditSummary view={view} />
 
         <AddQuestionForm
           businessId={view.businessId}
-          city={view.city}
+          example={view.example}
           activeCount={view.active.length}
           models={view.models.length}
           frequency={view.frequency}
@@ -56,8 +65,8 @@ export default async function QuestionsPage() {
 
         {view.active.length === 0 ? (
           <div data-testid="no-questions" className="rounded-md border border-border bg-surface p-5">
-            <h2 className="text-base font-semibold">No active questions</h2>
-            <p className="mt-1 text-sm text-muted-foreground">
+            <h2 className="text-base font-semibold tracking-[-0.02em]">No active questions</h2>
+            <p className="mt-3 text-sm text-muted-foreground">
               Scans check nothing until you add a question{view.paused.length > 0 ? " or resume a paused one" : ""}.
             </p>
           </div>
@@ -77,7 +86,7 @@ export default async function QuestionsPage() {
           <QuestionList
             testId="paused-questions"
             title="Paused"
-            description="Not checked and no credits used. Past results stay until they are 30 days old."
+            description="Not checked and no credits used. Paused questions stop counting in your score. Their past results stay here until they are 30 days old."
             questions={view.paused}
             view={view}
             limitMessage={limitMessage}

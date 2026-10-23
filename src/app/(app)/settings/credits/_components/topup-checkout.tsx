@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import dynamic from "next/dynamic";
+import { StripeFormLoading } from "@/app/(app)/_stripe/form-loading";
 import { cn } from "cn";
 import { Button } from "@/components/ui/button";
 import type { ActionResult } from "@/modules/auth";
@@ -10,7 +11,7 @@ import type { TopUpStatus, TopupFormMode, TopupOffer } from "@/modules/billing";
 import { FixtureTopupForm } from "./fixture-topup-form";
 import { TopupProgress } from "./topup-progress";
 
-const StripeTopupForm = dynamic(() => import("./stripe-topup-form"), { ssr: false });
+const StripeTopupForm = dynamic(() => import("./stripe-topup-form"), { ssr: false, loading: StripeFormLoading });
 
 export type BuyAction = (input: { packId: string }) => Promise<ActionResult<{ sessionId: string; clientSecret: string }>>;
 export type StatusAction = (input: { sessionId: string }) => Promise<ActionResult<TopUpStatus>>;

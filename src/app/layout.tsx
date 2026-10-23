@@ -4,6 +4,8 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { DEV_MEASURE_GUARD } from "@/lib/dev/measure-guard";
+import { env } from "@/lib/env";
 import { SITE_NAME, SITE_URL } from "@/lib/site-metadata";
 
 const geistSans = Geist({
@@ -51,6 +53,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <head>
+        {env.NODE_ENV === "development" && <script dangerouslySetInnerHTML={{ __html: DEV_MEASURE_GUARD }} />}
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}

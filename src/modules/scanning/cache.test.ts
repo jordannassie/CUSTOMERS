@@ -79,7 +79,7 @@ describe("answer cache (B-23)", () => {
     });
   });
 
-  it("hits just inside 24 hours", async () => {
+  it("hits just inside the 20-hour window", async () => {
     const input = question();
     const run = stubRun();
     await checkWithCache(input, run);
@@ -89,7 +89,7 @@ describe("answer cache (B-23)", () => {
     expect(run).toHaveBeenCalledTimes(1);
   });
 
-  it("misses after 24 hours and replaces the old answer", async () => {
+  it("misses after 20 hours and replaces the old answer", async () => {
     const input = question();
     await checkWithCache(input, stubRun("Old answer."));
     await ageEntry(input, CACHE_TTL_MS + 60_000);

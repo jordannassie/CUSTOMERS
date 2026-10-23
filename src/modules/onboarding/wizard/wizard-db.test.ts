@@ -11,6 +11,7 @@ const service = createServiceClient();
 const userIds: string[] = [];
 let session: SupabaseClient | null = null;
 
+vi.mock("next/cache", () => ({ refresh: vi.fn() }));
 vi.mock("@/lib/supabase/server", () => ({
   createClient: async () =>
     session ?? createSupabaseClient(env.NEXT_PUBLIC_SUPABASE_URL, env.NEXT_PUBLIC_SUPABASE_ANON_KEY, { auth: { persistSession: false } }),
@@ -87,7 +88,7 @@ describe("website step", () => {
     expect(second.businessId).toBe(first.businessId);
     const drafts = await service.from("businesses").select("id").eq("owner_user_id", userId);
     expect(drafts.data).toHaveLength(1);
-    expect(first.autofill.details).toMatchObject({ name: "Sunrise Coffee Bar & Roastery", phone: "(217) 555-0142", industry: "coffee_shop" });
+    expect(first.autofill?.details).toMatchObject({ name: "Sunrise Coffee Bar & Roastery", phone: "(217) 555-0142", industry: "coffee_shop" });
 
     const row = await business(first.businessId);
     expect(row).toMatchObject({ name: COFFEE_DOMAIN, phone: null, primary_city: null, places_id: COFFEE_PLACE.placeId, onboarding_step: 4 });
@@ -97,6 +98,27 @@ describe("website step", () => {
   it("needs the agency first", async () => {
     const userId = await signUp(false);
     expect(await startBusiness(userId, { domain: COFFEE_DOMAIN }, coffee())).toMatchObject({ ok: false, status: 409 });
+  });
+
+  it("saves a plan chosen on the new-business plan picker, only on the new business row", async () => {
+    const userId = await signUp();
+    const first = await startBusiness(userId, { domain: COFFEE_DOMAIN }, coffee());
+    if (!first.ok) throw new Error("website step failed");
+    let row = await service.from("businesses").select("requested_plan_id").eq("id", first.businessId).single();
+    expect(row.data?.requested_plan_id).toBeNull();
+
+    // Returning to the same draft never sets it, even when a plan is somehow passed.
+    await startBusiness(userId, { domain: COFFEE_DOMAIN }, coffee(), "pro");
+    row = await service.from("businesses").select("requested_plan_id").eq("id", first.businessId).single();
+    expect(row.data?.requested_plan_id).toBeNull();
+  });
+
+  it("sets requested_plan_id on a brand new business when a plan was chosen", async () => {
+    const userId = await signUp();
+    const started = await startBusiness(userId, { domain: "orange-florist.example" }, fakeClients().clients, "pro");
+    if (!started.ok) throw new Error("website step failed");
+    const row = await service.from("businesses").select("requested_plan_id").eq("id", started.businessId).single();
+    expect(row.data?.requested_plan_id).toBe("pro");
   });
 
   it("stops a trial agency at 2 businesses", async () => {
@@ -150,8 +172,11 @@ describe("details, questions and models steps", () => {
     expect(await saveQuestions(userId, id, tooMany)).toMatchObject({ ok: false, status: 403 });
     const edited = [...step.questions.slice(1), "Which florist in Orange delivers on Sundays?"];
     expect(await saveQuestions(userId, id, edited)).toEqual({ ok: true, count: 12 });
-    const kept = await service.from("tracked_prompts").select("prompt, source").eq("business_id", id);
+    // The dropped question is removed, not deleted, so any answers it had stay for past scores (step 9e).
+    const kept = await service.from("tracked_prompts").select("prompt, source").eq("business_id", id).is("removed_at", null);
     expect(kept.data).toHaveLength(12);
+    const removed = await service.from("tracked_prompts").select("prompt, active").eq("business_id", id).not("removed_at", "is", null);
+    expect(removed.data).toEqual([{ prompt: step.questions[0], active: false }]);
     expect(kept.data).toContainEqual({ prompt: "Which florist in Orange delivers on Sundays?", source: "custom" });
     expect(kept.data).toContainEqual({ prompt: step.questions[1], source: "library" });
 

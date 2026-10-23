@@ -1,29 +1,17 @@
 import "server-only";
+import { providerErrorKind } from "@/lib/provider-error-kind";
 import { env } from "@/lib/env";
+import { liveAiClients, type UsageContext } from "@/modules/ai/server";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
-import { maxCompetitors } from "@/modules/entitlements";
 import { INTENTS, type Intent } from "@/modules/question-library";
 import type { Json } from "@/types/database.types";
-import { autofill, type AutofillClients, type AutofillRequest } from "./autofill";
+import { autofill, type AutofillClients, type AutofillRequest, type AutofillRun } from "./autofill";
+import { DuplicateBusinessError, duplicateBusiness } from "./duplicates";
 import { createBusinessExtractor, ExtractError } from "./extract";
 import { createFirecrawlScraper } from "./firecrawl";
-import { fixturePlaces } from "./competitor-fixtures";
 import { fixtureAutofillClients, fixtureQuestionModel } from "./dev-fixtures";
-import { createCompetitorPlaces, type CompetitorCandidate, type CompetitorPlaces } from "./competitor-places";
-import {
-  CLEARED_PLACES_COLUMNS,
-  COMPETITOR_NOTES,
-  MAX_LOOKUP_RESULTS,
-  competitorFields,
-  discoverCompetitors,
-  limitMessage,
-  lookupQuery,
-  planSave,
-  type BusinessForSearch,
-  type ConfirmedCompetitor,
-} from "./competitors";
-import { createPlacesSearch, PlacesError } from "./places";
+import { createPlaceLookup, createPlacesSearch, type PlaceCandidate } from "./places";
 import { createQuestionModel } from "./question-model";
 import type { LibraryEntry } from "./question-rules";
 import type { QuestionClients } from "./questions";
@@ -31,20 +19,37 @@ import type { AutofillResult } from "./schema";
 
 // Fixture modes are refused in production so a stray flag can never show made-up data to users.
 // PLACES_FIXTURES covers the competitor step, ONBOARDING_FIXTURES auto-fill and question picking.
-const onboardingFixtures = () => env.ONBOARDING_FIXTURES === "true" && env.NODE_ENV !== "production";
+export const onboardingFixtures = () => env.ONBOARDING_FIXTURES === "true" && env.NODE_ENV !== "production";
 
-// A missing key turns that source off; auto-fill then works with whatever is left.
-export function liveAutofillClients(): AutofillClients {
+// A missing key turns that source off; auto-fill then works with whatever is left. Claude reads the site, with
+// OpenAI as the backup (D-84); the usage context charges the cost record to the user's business.
+export function liveAutofillClients(usage?: UsageContext): AutofillClients {
   if (onboardingFixtures()) return fixtureAutofillClients;
+  const ai = liveAiClients(usage);
   return {
     scrape: env.FIRECRAWL_API_KEY ? createFirecrawlScraper(env.FIRECRAWL_API_KEY) : async () => [],
     searchPlaces: env.GOOGLE_PLACES_API_KEY ? createPlacesSearch(env.GOOGLE_PLACES_API_KEY) : async () => [],
-    extract: env.ANTHROPIC_API_KEY
-      ? createBusinessExtractor(env.ANTHROPIC_API_KEY)
-      : async () => {
-          throw new ExtractError("ANTHROPIC_API_KEY is not set", false);
-        },
+    extract:
+      ai.anthropic || ai.openai
+        ? createBusinessExtractor(ai)
+        : async () => {
+            throw new ExtractError("Neither ANTHROPIC_API_KEY nor OPENAI_API_KEY is set", false);
+          },
   };
+}
+
+/**
+ * The business's Google listing, fetched live by place_id; null when there is none or Places fails (BUG-139). When
+ * the lookup fails (its daily quota is separate from search's and runs out first), the search auto-fill used finds
+ * it again by the website's domain.
+ */
+export async function liveListing(placeId: string | null, domain: string | null): Promise<PlaceCandidate | null> {
+  if (!placeId || onboardingFixtures() || !env.GOOGLE_PLACES_API_KEY) return null;
+  const key = env.GOOGLE_PLACES_API_KEY;
+  const byId = await createPlaceLookup(key)(placeId).catch(() => undefined);
+  if (byId !== undefined || !domain) return byId ?? null;
+  const found = await createPlacesSearch(key)(domain).catch((): PlaceCandidate[] => []);
+  return found.find((p) => p.placeId === placeId) ?? null;
 }
 
 /** Active templates of the newest library version for one industry (question_library is service role only). */
@@ -62,25 +67,82 @@ export async function loadQuestionLibrary(industry: string): Promise<LibraryEntr
     .map((row) => ({ id: row.id, template: row.template, tags: row.tags, intent: row.intent as Intent }));
 }
 
+/**
+ * The set another business of this kind in this city already has (BUG-116): its suggested questions (not the
+ * owner's own), oldest business first. Questions never name a business, so sharing them is like the library.
+ */
+export async function loadSharedQuestions(industry: string, city: string, region: string | null): Promise<{ text: string; intent: Intent }[]> {
+  const db = createServiceClient();
+  // Exact matches ignoring case: % and _ in what the user typed are not wildcards.
+  const exact = (v: string) => v.trim().replace(/[%_\\]/g, "\\$&");
+  // Set-up businesses only: a draft's questions are not settled yet, and a deleted one's are not shared.
+  let peers = db
+    .from("businesses")
+    .select("id")
+    .ilike("industry", exact(industry))
+    .ilike("primary_city", exact(city))
+    .is("deleted_at", null)
+    .neq("status", "onboarding");
+  if (region) peers = peers.ilike("primary_region", exact(region));
+  const { data: businesses, error } = await peers.order("created_at").limit(5);
+  if (error) throw new Error(`Could not load businesses for shared questions: ${error.message}`);
+  for (const b of businesses) {
+    const { data, error: readError } = await db
+      .from("tracked_prompts")
+      .select("prompt, buyer_intent")
+      .eq("business_id", b.id)
+      .eq("source", "library")
+      // The questions it asks now: never ones it paused or removed.
+      .eq("active", true)
+      .is("removed_at", null)
+      .order("created_at");
+    if (readError) throw new Error(`Could not load shared questions: ${readError.message}`);
+    const set = data.filter((q) => INTENTS.includes(q.buyer_intent as Intent)).map((q) => ({ text: q.prompt, intent: q.buyer_intent as Intent }));
+    if (set.length >= 6) return set;
+  }
+  return [];
+}
+
 // Without a key every model call fails, so the template engine fallback runs (MVP_SPEC 5.3).
-export function liveQuestionClients(): QuestionClients {
+export function liveQuestionClients(usage?: UsageContext): QuestionClients {
   const missing = async (): Promise<never> => {
-    throw new Error("ANTHROPIC_API_KEY is not set");
+    throw new Error("Neither ANTHROPIC_API_KEY nor OPENAI_API_KEY is set");
   };
-  const model = env.ANTHROPIC_API_KEY ? createQuestionModel(env.ANTHROPIC_API_KEY) : { pick: missing, write: missing };
-  return { loadLibrary: loadQuestionLibrary, model: onboardingFixtures() ? fixtureQuestionModel : model };
+  const ai = liveAiClients(usage && { ...usage, usageType: "prompt_generation" });
+  const model = ai.anthropic || ai.openai ? createQuestionModel(ai) : { pick: missing, write: missing };
+  const placeTypes = async (placeId: string) => {
+    const place = await liveListing(placeId, null);
+    return place ? { primaryType: place.primaryType, types: place.types } : null;
+  };
+  return { loadLibrary: loadQuestionLibrary, loadShared: loadSharedQuestions, model: onboardingFixtures() ? fixtureQuestionModel : model, placeTypes };
+}
+
+/** Why a source gave nothing (B7): the server log, and provider_errors for the error spike alert. Never throws. */
+async function recordAutofillProblems(request: AutofillRequest, problems: AutofillRun["problems"]): Promise<void> {
+  if (problems.length === 0) return;
+  const what = "domain" in request ? request.domain : `${request.name}, ${request.city}`;
+  for (const p of problems) console.warn(`auto-fill for ${what}: ${p.provider}: ${p.message}`);
+  if (onboardingFixtures()) return;
+  // One row per provider and kind of failure an hour, with a count (migration 058).
+  for (const p of problems) {
+    const message = `Auto-fill: ${p.message}`.slice(0, 500);
+    const { error } = await createServiceClient().rpc("record_provider_error", { p_provider: p.provider, p_kind: providerErrorKind(message), p_message: message });
+    if (error) console.error(`Could not record the auto-fill error: ${error.message}`);
+  }
 }
 
 /**
  * Runs auto-fill for one of the user's businesses. Returns null when the business is not theirs.
  * Stores only place_id from Places and the site's own facts (D-73); the form values go back to
- * the screen and are saved only when the user confirms them (B-36).
+ * the screen and are saved only when the user confirms them (B-36). With no website, no place_id
+ * is saved here: the user picks their listing first (confirmBusinessPlace). Drafts only: a live business's listing and
+ * chain flag are never rewritten by setup.
  */
 export async function runBusinessAutofill(
   userId: string,
   businessId: string,
   request: AutofillRequest,
-  clients: AutofillClients = liveAutofillClients(),
+  clients: AutofillClients = liveAutofillClients({ accountUserId: userId, businessId }),
 ): Promise<AutofillResult | null> {
   const supabase = await createClient();
   const { data: business, error } = await supabase
@@ -88,19 +150,26 @@ export async function runBusinessAutofill(
     .select("id")
     .eq("id", businessId)
     .eq("owner_user_id", userId)
+    .eq("status", "onboarding")
     .maybeSingle();
   if (error) throw new Error(`Could not load business: ${error.message}`);
   if (!business) return null;
 
   const run = await autofill(request, clients);
+  await recordAutofillProblems(request, run.problems);
 
   // business_site_facts has no write policy for signed-in users, so writes use the service role
   // after the ownership check above.
   const service = createServiceClient();
-  if (run.placeId) {
-    const { error: placeError } = await service.from("businesses").update({ places_id: run.placeId }).eq("id", businessId);
-    if (placeError) throw new Error(`Could not save place_id: ${placeError.message}`);
-  }
+  // Whether it is a chain, and the logo, are saved every time: another website typed in later may be another shop.
+  const { error: placeError } = await service
+    .from("businesses")
+    .update({ is_chain: run.chain, logo_url: run.logoUrl, ...(run.placeId ? { places_id: run.placeId } : {}) })
+    .eq("id", businessId);
+  // The listing found for this website is another business's in the agency already (migration 067).
+  const duplicate = duplicateBusiness(placeError);
+  if (duplicate) throw new DuplicateBusinessError(duplicate);
+  if (placeError) throw new Error(`Could not save place_id: ${placeError.message}`);
   if (run.siteFacts) {
     const { error: factsError } = await service
       .from("business_site_facts")
@@ -110,140 +179,39 @@ export async function runBusinessAutofill(
   return run.result;
 }
 
-export function liveCompetitorPlaces(): CompetitorPlaces {
-  if (env.PLACES_FIXTURES === "true" && env.NODE_ENV !== "production") return fixturePlaces;
-  if (env.GOOGLE_PLACES_API_KEY) return createCompetitorPlaces(env.GOOGLE_PLACES_API_KEY);
-  return {
-    search: async () => {
-      throw new PlacesError("GOOGLE_PLACES_API_KEY is not set");
-    },
-    details: async () => null,
-  };
-}
-
-async function ownBusinessForSearch(userId: string, businessId: string): Promise<BusinessForSearch | null> {
+/**
+ * "Is one of these your business?" (MVP_SPEC 3.3): saves the listing the user picked, or clears it for
+ * "None of these". Only place_id is kept (D-73). False when it is not the user's draft without a website.
+ */
+export async function saveBusinessPlace(userId: string, businessId: string, placeId: string | null): Promise<boolean | "duplicate"> {
   const supabase = await createClient();
-  const { data, error } = await supabase
+  const { data: business, error } = await supabase
     .from("businesses")
-    .select("name, industry, services, primary_city, primary_region, places_id")
+    .select("id")
     .eq("id", businessId)
     .eq("owner_user_id", userId)
+    .eq("status", "onboarding")
     .maybeSingle();
   if (error) throw new Error(`Could not load business: ${error.message}`);
-  if (!data) return null;
-  return {
-    name: data.name,
-    industry: data.industry,
-    services: data.services,
-    city: data.primary_city,
-    region: data.primary_region,
-    placesId: data.places_id,
-  };
+  // A draft with no website, or one whose website turned us away and so got the same list (2026-10-16).
+  if (!business) return false;
+  const { error: placeError } = await createServiceClient()
+    .from("businesses")
+    .update({ places_id: placeId })
+    .eq("id", businessId)
+    .eq("owner_user_id", userId);
+  // The picked listing is another business's in the agency already (migration 067).
+  if (duplicateBusiness(placeError)) return "duplicate";
+  if (placeError) throw new Error(`Could not save place_id: ${placeError.message}`);
+  return true;
 }
 
-async function competitorLimit(businessId: string): Promise<number | null> {
-  return (await maxCompetitors(businessId)).limit;
-}
-
-/** A saved competitor: the user's name and place id from the database, Places values fetched live. */
-export type SavedCompetitor = { name: string; placesId: string | null; live: CompetitorCandidate | null };
-
-export type CompetitorStep = {
-  businessName: string;
-  /** Null when the plan sets no limit. */
-  limit: number | null;
-  saved: SavedCompetitor[];
-  suggestions: CompetitorCandidate[];
-  note: string | null;
-};
-
-/** Everything the competitor step shows. Null when the business is not the user's. */
-export async function loadCompetitorStep(
-  userId: string,
-  businessId: string,
-  places: CompetitorPlaces = liveCompetitorPlaces(),
-): Promise<CompetitorStep | null> {
-  const business = await ownBusinessForSearch(userId, businessId);
-  if (!business) return null;
-
-  const supabase = await createClient();
-  const { data: rows, error } = await supabase
-    .from("business_competitors")
-    .select("name, places_id, place_id")
-    .eq("business_id", businessId)
-    .order("created_at");
-  if (error) throw new Error(`Could not load competitors: ${error.message}`);
-
-  const [found, saved, limit] = await Promise.all([
-    discoverCompetitors(business, places),
-    Promise.all(
-      rows.map(async (row): Promise<SavedCompetitor> => {
-        // place_id is where older code kept the id; it moves to places_id on the next save.
-        const placesId = row.places_id ?? row.place_id;
-        const live = placesId ? await places.details(placesId).catch(() => null) : null;
-        return { name: row.name, placesId, live };
-      }),
-    ),
-    competitorLimit(businessId),
-  ]);
-  return { businessName: business.name, limit, saved, ...found };
-}
-
-/** "Add by name" with a Places lookup near the business. Null when the business is not the user's. */
-export async function lookupCompetitor(
-  userId: string,
-  businessId: string,
-  name: string,
-  places: CompetitorPlaces = liveCompetitorPlaces(),
-): Promise<{ matches: CompetitorCandidate[]; note: string | null } | null> {
-  const business = await ownBusinessForSearch(userId, businessId);
-  if (!business) return null;
-  try {
-    const matches = await places.search(lookupQuery(name, business), MAX_LOOKUP_RESULTS);
-    return { matches, note: null };
-  } catch {
-    return { matches: [], note: COMPETITOR_NOTES.unavailable };
-  }
-}
-
-export type SaveCompetitorsResult = { ok: true; count: number } | { ok: false; status: 403 | 404 | 409; error: string };
-
-/**
- * Replaces the business's competitor list with the user's confirmed one. Writes only the name the
- * user confirmed and the place id; Places ratings, reviews and addresses are never stored (D-73).
- */
-export async function saveCompetitors(
-  userId: string,
-  businessId: string,
-  list: ConfirmedCompetitor[],
-): Promise<SaveCompetitorsResult> {
-  if (!(await ownBusinessForSearch(userId, businessId))) return { ok: false, status: 404, error: "Business not found." };
-  const limit = await competitorLimit(businessId);
-  if (limit !== null && list.length > limit) return { ok: false, status: 403, error: limitMessage(limit) };
-
-  // RLS (business_competitors_owner_all) limits these writes to the owner's own business.
-  const supabase = await createClient();
-  const existing = await supabase.from("business_competitors").select("id, name").eq("business_id", businessId);
-  if (existing.error) throw new Error(`Could not load competitors: ${existing.error.message}`);
-  const plan = planSave(existing.data, list);
-
-  if (plan.remove.length) {
-    const { error } = await supabase.from("business_competitors").delete().in("id", plan.remove);
-    if (error) throw new Error(`Could not remove competitors: ${error.message}`);
-  }
-  for (const { id, competitor } of plan.keep) {
-    const { error } = await supabase
-      .from("business_competitors")
-      .update({ ...competitorFields(competitor), ...CLEARED_PLACES_COLUMNS })
-      .eq("id", id);
-    if (error) throw new Error(`Could not update a competitor: ${error.message}`);
-  }
-  if (plan.add.length) {
-    const { error } = await supabase.from("business_competitors").insert(plan.add.map((c) => ({ business_id: businessId, ...competitorFields(c) })));
-    if (error) {
-      if (error.code === "23505") return { ok: false, status: 409, error: "That list changed in another tab. Reload and try again." };
-      throw new Error(`Could not add competitors: ${error.message}`);
-    }
-  }
-  return { ok: true, count: list.length };
-}
+export {
+  liveCompetitorPlaces,
+  loadCompetitorStep,
+  lookupCompetitor,
+  saveCompetitors,
+  type CompetitorStep,
+  type SavedCompetitor,
+  type SaveCompetitorsResult,
+} from "./competitor-step/dal";

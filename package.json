@@ -37,9 +37,17 @@
     "question-library:generate": "vitest run --reporter=verbose --project question-library scripts/generate-question-library.ts",
     "question-library:validate": "vitest run --reporter=verbose --project question-library scripts/validate-question-library.ts",
     "question-library:seed": "vitest run --reporter=verbose --project question-library scripts/seed-question-library.ts",
+    "question-library:tag": "vitest run --reporter=verbose --project question-library scripts/tag-question-library.ts",
     "seed:test-agency": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/seed-test-agency.ts",
     "stripe:catalog-sync": "vitest run --project dev scripts/dev/stripe-catalog-sync.dev.ts",
-    "stripe:catalog-check": "vitest run --project dev scripts/dev/stripe-catalog-check.dev.ts"
+    "stripe:catalog-check": "vitest run --project dev scripts/dev/stripe-catalog-check.dev.ts",
+    "vault:local": "bash scripts/dev/setup-local-vault.sh",
+    "alerts:resolve-stale": "bash scripts/dev/resolve-stale-alerts.sh",
+    "scans:recount": "vitest run --project dev scripts/dev/recount-saved-answers.dev.ts",
+    "questions:clean": "vitest run --project dev scripts/dev/clean-reused-questions.dev.ts",
+    "dev:clean-test-data": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/dev/clean-test-data.ts",
+    "dev:dedupe-businesses": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/dev/dedupe-businesses.ts",
+    "dev:sync-agency": "vitest run --project dev scripts/dev/sync-agency.dev.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.128.0",
@@ -53,6 +61,7 @@
     "cn": "^0.4.0",
     "lucide-react": "^1.31.0",
     "next": "16.3.0",
+    "openai": "7.23.0",
     "playwright-core": "^1.63.0",
     "radix-ui": "^1.6.7",
     "react": "19.2.8",

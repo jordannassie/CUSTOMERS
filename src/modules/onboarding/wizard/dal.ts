@@ -3,13 +3,26 @@ import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { canAddBusiness } from "@/modules/entitlements";
 import type { AutofillClients, AutofillRequest } from "../autofill";
-import { liveAutofillClients, runBusinessAutofill } from "../dal";
-import { isIndustry } from "@/lib/industries";
-import type { AutofillResult, BusinessDetails } from "../schema";
+import { runBusinessAutofill } from "../dal";
+import { DUPLICATE_BUSINESS_TEXT, DuplicateBusinessError, duplicateBusiness } from "../duplicates";
+import { autofillDone, insertDraft, websiteTaken } from "./draft/dal";
+import { restartIfAnotherBusiness } from "./restart/dal";
+import type { AutofillResult } from "../schema";
 import { needsCard, nextStepNumber, type PlanId, type StepSlug, type WizardState } from "./steps";
-import type { DetailsStepInput } from "./schema";
 
 export type WizardContext = WizardState & { agencyName: string | null; agencyLogoUrl: string | null };
+
+/** True once the user has a set-up business: only then does setup show inside the app frame and its switcher. */
+export async function hasFinishedBusiness(userId: string): Promise<boolean> {
+  const supabase = await createClient();
+  const { count, error } = await supabase
+    .from("businesses")
+    .select("id", { count: "exact", head: true })
+    .eq("owner_user_id", userId)
+    .neq("status", "onboarding");
+  if (error) throw new Error(`Could not load businesses: ${error.message}`);
+  return (count ?? 0) > 0;
+}
 
 // Drafts are matched on owner_user_id, like the workspace, so the wizard and the app frame agree.
 export async function loadWizardState(userId: string): Promise<WizardContext> {
@@ -21,6 +34,7 @@ export async function loadWizardState(userId: string): Promise<WizardContext> {
       .select("id, onboarding_step")
       .eq("owner_user_id", userId)
       .eq("status", "onboarding")
+      .is("deleted_at", null)
       .order("created_at", { ascending: false })
       .limit(1),
     supabase.from("businesses").select("id", { count: "exact", head: true }).eq("owner_user_id", userId).neq("status", "onboarding"),
@@ -62,61 +76,95 @@ export async function saveAgency(userId: string, name: string, plan: PlanId | nu
 }
 
 export type StartBusinessResult =
-  | { ok: true; businessId: string; autofill: AutofillResult }
+  /** autofill is null when it already ran for this draft as it is: the details step refills from what is saved. */
+  | { ok: true; businessId: string; autofill: AutofillResult | null }
   | { ok: false; status: 403 | 409; error: string };
 
 /**
- * Step 3: reuses the user's one draft business (no duplicates on return) or creates it, then runs auto-fill.
- * Only what the user typed is saved here; auto-fill values come back to pre-fill the form (D-73).
+ * Step 3: reuses the agency's one draft business (no duplicates on return, a double submit or a second tab) or creates
+ * it, then runs auto-fill when the draft is new or now another business. Only what the user typed is saved here;
+ * auto-fill values come back to pre-fill the form (D-73).
  */
 export async function startBusiness(
   userId: string,
   request: AutofillRequest,
-  clients: AutofillClients = liveAutofillClients(),
+  /** Left out in the app, so auto-fill builds live clients that charge usage to this business. */
+  clients?: AutofillClients,
+  /** Chosen on the new-business plan picker, for a business after the first; ignored for a returning draft. */
+  plan: PlanId | null = null,
+  /** The browser's key for this attempt (migration 067): sent twice, it finds the same draft. */
+  createKey: string | null = null,
+  /** "Try again" after the website and Google both failed: auto-fill runs once more for the same website. */
+  retry = false,
 ): Promise<StartBusinessResult> {
   const supabase = await createClient();
   const agency = await supabase.from("agencies").select("id").eq("owner_user_id", userId).maybeSingle();
   if (agency.error) throw new Error(`Could not load agency: ${agency.error.message}`);
   if (!agency.data) return { ok: false, status: 409, error: "Add your agency name first." };
+  const agencyId = agency.data.id;
 
   const typed =
     "domain" in request
       ? { domain: request.domain, has_website: true }
       : { domain: null, has_website: false, name: request.name, primary_city: request.city };
   const state = await loadWizardState(userId);
-  let businessId: string;
-  if (state.draft) {
-    businessId = state.draft.id;
-    // A new website means the old Places match may be wrong; auto-fill sets it again when it finds one.
-    const { error } = await supabase
-      .from("businesses")
-      .update({ ...typed, places_id: null, onboarding_step: nextStepNumber(state.draft.step, "website") })
-      .eq("id", businessId)
-      .eq("owner_user_id", userId);
-    if (error) throw new Error(`Could not update business: ${error.message}`);
-  } else {
-    const allowed = await canAddBusiness(agency.data.id);
+  let draft = state.draft;
+  if (!draft) {
+    const allowed = await canAddBusiness(agencyId);
     if (!allowed.allowed) return { ok: false, status: 403, error: allowed.reason };
-    const { data, error } = await supabase
-      .from("businesses")
-      .insert({
-        name: "domain" in request ? request.domain : request.name,
-        ...typed,
-        owner_user_id: userId,
-        agency_id: agency.data.id,
-        status: "onboarding",
-        onboarding_step: nextStepNumber(null, "website"),
-      })
-      .select("id")
-      .single();
-    if (error) throw new Error(`Could not create business: ${error.message}`);
-    businessId = data.id;
-    if (state.hasFinishedBusiness) await keepActiveBusiness(userId);
+    const created = await insertDraft({
+      userId,
+      agencyId,
+      name: "domain" in request ? request.domain : request.name,
+      domain: typed.domain,
+      hasWebsite: typed.has_website,
+      city: "city" in request ? request.city : null,
+      step: nextStepNumber(null, "website"),
+      plan,
+      createKey,
+    });
+    if (created.kind === "duplicate") return { ok: false, status: 409, error: DUPLICATE_BUSINESS_TEXT };
+    if (created.kind === "created") {
+      if (state.hasFinishedBusiness) await keepActiveBusiness(userId);
+      return withAutofill(userId, created.id, request, clients);
+    }
+    // This attempt, or another tab, made the draft a moment ago: carry on with that one.
+    draft = (await loadWizardState(userId)).draft;
+    if (!draft) return { ok: false, status: 409, error: DUPLICATE_BUSINESS_TEXT };
   }
 
-  const autofill = await runBusinessAutofill(userId, businessId, request, clients);
-  if (!autofill) throw new Error("The draft business vanished during auto-fill");
-  return { ok: true, businessId, autofill };
+  const businessId = draft.id;
+  if (typed.domain && (await websiteTaken(agencyId, typed.domain, businessId))) return { ok: false, status: 409, error: DUPLICATE_BUSINESS_TEXT };
+  // Another business clears the old one's details and Google listing and saves the new name and city. The same
+  // business entered again (Back from the details step) keeps its confirmed name, city, listing and progress.
+  const restarted = await restartIfAnotherBusiness(userId, businessId, request);
+  const { error } = await createServiceClient()
+    .from("businesses")
+    .update({
+      domain: typed.domain,
+      has_website: typed.has_website,
+      ...(restarted ? {} : { onboarding_step: nextStepNumber(draft.step, "website") }),
+    })
+    .eq("id", businessId)
+    .eq("owner_user_id", userId)
+    .eq("status", "onboarding");
+  if (duplicateBusiness(error)) return { ok: false, status: 409, error: DUPLICATE_BUSINESS_TEXT };
+  if (error) throw new Error(`Could not update business: ${error.message}`);
+  // The same business sent again: no second AI or Firecrawl call for what auto-fill already found.
+  if (!restarted && !retry && (await autofillDone(businessId))) return { ok: true, businessId, autofill: null };
+  return withAutofill(userId, businessId, request, clients);
+}
+
+async function withAutofill(userId: string, businessId: string, request: AutofillRequest, clients?: AutofillClients): Promise<StartBusinessResult> {
+  try {
+    const autofill = await runBusinessAutofill(userId, businessId, request, clients);
+    if (!autofill) throw new Error("The draft business vanished during auto-fill");
+    return { ok: true, businessId, autofill };
+  } catch (error) {
+    // Google's listing for this website is another business's already (migration 067).
+    if (error instanceof DuplicateBusinessError) return { ok: false, status: 409, error: DUPLICATE_BUSINESS_TEXT };
+    throw error;
+  }
 }
 
 // With no active business saved, the app falls back to the newest one, which would now be the draft
@@ -140,96 +188,57 @@ async function keepActiveBusiness(userId: string): Promise<void> {
   if (error) throw new Error(`Could not save the active business: ${error.message}`);
 }
 
-export type DetailsStep = {
-  businessId: string;
-  domain: string | null;
-  hasWebsite: boolean;
-  /** Saved values once confirmed, else the business's own site facts; the screen adds the fresh auto-fill. */
-  details: BusinessDetails;
-  /** The user's own words for their trade when the industry is "other". */
-  industryText: string;
-  confirmed: boolean;
-};
-
-export async function loadDetailsStep(userId: string, businessId: string): Promise<DetailsStep | null> {
-  const supabase = await createClient();
-  const { data: b, error } = await supabase
-    .from("businesses")
-    .select("name, domain, has_website, industry, description, services, primary_city, primary_region, primary_country, phone, onboarding_step")
-    .eq("id", businessId)
-    .eq("owner_user_id", userId)
-    .maybeSingle();
-  if (error) throw new Error(`Could not load business: ${error.message}`);
-  if (!b) return null;
-
-  const confirmed = (b.onboarding_step ?? 0) > 4;
-  const saved: BusinessDetails = {
-    // Before confirming, the name is only the typed domain, so it is not offered as the name.
-    name: confirmed || !b.has_website ? b.name : "",
-    industry: (b.industry && isIndustry(b.industry) ? b.industry : b.industry ? "other" : "") as BusinessDetails["industry"],
-    description: b.description ?? "",
-    services: b.services,
-    city: b.primary_city ?? "",
-    state: b.primary_region ?? "",
-    country: b.primary_country ?? "",
-    phone: b.phone ?? "",
-    address: "",
-  };
-  let details = saved;
-  if (!confirmed && b.has_website) {
-    const facts = await supabase.from("business_site_facts").select("data").eq("business_id", businessId).maybeSingle();
-    const f = (facts.data?.data as { facts?: Partial<BusinessDetails> } | null)?.facts;
-    if (f) {
-      const found = Object.keys(saved).filter((k) => f[k as keyof BusinessDetails]).map((k) => [k, f[k as keyof BusinessDetails]]);
-      details = { ...saved, ...Object.fromEntries(found) };
-    }
-  }
-  const industryText = b.industry && !isIndustry(b.industry) ? b.industry : "";
-  return { businessId, domain: b.domain, hasWebsite: b.has_website !== false, details, industryText, confirmed };
-}
-
-/** Step 4: saves what the user confirmed about their own business. False when it is not theirs. */
-export async function saveDetails(userId: string, input: DetailsStepInput): Promise<boolean> {
-  const current = await ownStep(userId, input.businessId);
-  if (current === undefined) return false;
-  const supabase = await createClient();
-  const { error } = await supabase
-    .from("businesses")
-    .update({
-      name: input.name,
-      industry: input.industry,
-      description: input.description || null,
-      services: input.services,
-      primary_city: input.city,
-      primary_region: input.state || null,
-      primary_country: input.country || null,
-      phone: input.phone || null,
-      onboarding_step: nextStepNumber(current, "details"),
-    })
-    .eq("id", input.businessId)
-    .eq("owner_user_id", userId);
-  if (error) throw new Error(`Could not save business details: ${error.message}`);
-  return true;
-}
-
 /** The business's onboarding_step, null when unset, undefined when it is not the user's. */
 export async function ownStep(userId: string, businessId: string): Promise<number | null | undefined> {
+  return stepOf(userId, businessId, false);
+}
+
+/**
+ * Like ownStep, but only for the user's draft (status "onboarding"). The wizard's saves use this: once setup finishes
+ * the business is live, and its details, competitors, questions and checks change in the app, where an ended plan is
+ * read-only. Setup's last save (the models step, or the card step's finish) is what moves it out of "onboarding".
+ */
+export async function ownDraftStep(userId: string, businessId: string): Promise<number | null | undefined> {
+  return stepOf(userId, businessId, true);
+}
+
+async function stepOf(userId: string, businessId: string, draftOnly: boolean): Promise<number | null | undefined> {
   const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("businesses")
-    .select("onboarding_step")
-    .eq("id", businessId)
-    .eq("owner_user_id", userId)
-    .maybeSingle();
+  let query = supabase.from("businesses").select("onboarding_step").eq("id", businessId).eq("owner_user_id", userId);
+  if (draftOnly) query = query.eq("status", "onboarding");
+  const { data, error } = await query.maybeSingle();
   if (error) throw new Error(`Could not load business: ${error.message}`);
   return data ? data.onboarding_step : undefined;
 }
 
-export async function advanceStep(userId: string, businessId: string, saved: StepSlug): Promise<boolean> {
-  const current = await ownStep(userId, businessId);
-  if (current === undefined) return false;
+/** True when the business is the user's draft, still being set up. */
+export async function isOwnDraft(userId: string, businessId: string): Promise<boolean> {
+  return (await ownDraftStep(userId, businessId)) !== undefined;
+}
+
+/** What the website step starts from when the user comes back to it: the draft as saved, with no Places call. */
+export type WebsiteStepDefaults = { domain: string; hasWebsite: boolean; name: string; city: string };
+
+export async function loadWebsiteStep(userId: string, businessId: string): Promise<WebsiteStepDefaults | null> {
   const supabase = await createClient();
-  const { error } = await supabase
+  const { data, error } = await supabase
+    .from("businesses")
+    .select("domain, has_website, name, primary_city")
+    .eq("id", businessId)
+    .eq("owner_user_id", userId)
+    .eq("status", "onboarding")
+    .maybeSingle();
+  if (error) throw new Error(`Could not load business: ${error.message}`);
+  if (!data) return null;
+  const hasWebsite = data.has_website !== false;
+  // With a website the name is the typed domain until the details step, so only a no-website draft offers it.
+  return { domain: data.domain ?? "", hasWebsite, name: hasWebsite ? "" : data.name, city: hasWebsite ? "" : (data.primary_city ?? "") };
+}
+
+export async function advanceStep(userId: string, businessId: string, saved: StepSlug): Promise<boolean> {
+  const current = await ownDraftStep(userId, businessId);
+  if (current === undefined) return false;
+  const { error } = await createServiceClient()
     .from("businesses")
     .update({ onboarding_step: nextStepNumber(current, saved) })
     .eq("id", businessId)

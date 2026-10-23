@@ -80,7 +80,8 @@ export function DeleteDialog({ name, openLabel, title, steps, confirmLabel, pend
 
             <ol className="flex flex-col" aria-label="What happens">
               {steps.map((step, i) => (
-                <li key={step.when} className="relative flex gap-3 pb-4 last:pb-0">
+                // Two steps can share a time ("Now" twice during a trial), so the key is the whole step.
+                <li key={`${step.when}: ${step.what}`} className="relative flex gap-3 pb-4 last:pb-0">
                   {i < steps.length - 1 && <span className="absolute top-3 left-[5px] h-full w-px bg-border" aria-hidden="true" />}
                   <span
                     className={cn(

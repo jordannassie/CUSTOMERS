@@ -20,3 +20,13 @@ LIVE_AI_CALL=1 npm run record:ai-answers
 ```
 
 It writes `recorded-*.json` files, skips answers already recorded (so a stopped run can resume), and removes the synthetic files once every answer is recorded. The `names` in a recorded file come from the name extractor (Claude Haiku); read through them before committing.
+
+## Restaurant and coffee shop answers for Islamabad (BUG-072)
+
+A test restaurant has no recordings of its own trade, so it gets the closest answer of any trade (a plumber's, for example). The food set records 51 real answers: 9 restaurant and 8 coffee shop questions in Islamabad, on all three models. About $0.75 at the average cost per check seen locally (ChatGPT $0.014, Claude $0.022, Perplexity $0.004, plus $0.0008 to pull out the names), at most about $1.50:
+
+```
+LIVE_AI_CALL=1 RECORD_SET=food npm run record:ai-answers
+```
+
+It writes `recorded-{model}-restaurant-islamabad-{n}.json` and `recorded-{model}-coffee-islamabad-{n}.json`; test scans then match a restaurant or coffee shop in Islamabad to its own trade and city first (`scanning/recorded.ts`). It does not remove the synthetic files.

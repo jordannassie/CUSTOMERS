@@ -1,5 +1,9 @@
-import PageLoading from "@/components/PageLoading";
+import { PageSkeleton, ReportSkeleton } from "./_components/skeletons";
 
 export default function AdminLoading() {
-  return <PageLoading />;
+  return (
+    <PageSkeleton label="Loading overview">
+      <ReportSkeleton />
+    </PageSkeleton>
+  );
 }

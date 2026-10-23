@@ -1,3 +1,4 @@
+import { INDUSTRY_LABELS, isIndustry } from "@/lib/industries";
 import type { ScanFrequency } from "@/modules/credits";
 import type { ModelAppearance, ProviderId } from "@/modules/scanning";
 
@@ -6,15 +7,19 @@ import type { ModelAppearance, ProviderId } from "@/modules/scanning";
 export const MODEL_LABELS: Record<ProviderId, string> = { openai: "ChatGPT", anthropic: "Claude", perplexity: "Perplexity" };
 export const FREQUENCY_WORDS: Record<ScanFrequency, string> = { daily: "daily", weekly: "weekly", monthly: "monthly" };
 
-export type QuestionRecord = { id: string; prompt: string; active: boolean; source: string };
+/** `own`: the user wrote or edited it, so it is checked and charged but left out of the score (BUG-129). */
+export type QuestionRecord = { id: string; prompt: string; active: boolean; own: boolean };
 
 export type QuestionResult = { model: ProviderId; label: string; appeared: number; checks: number };
 
+/** `custom`: the user's own question, labelled as not counted in the score (BUG-129). */
 export type QuestionRow = { id: string; text: string; active: boolean; custom: boolean; results: QuestionResult[] };
 
 export type QuestionsView = {
   businessId: string;
   city: string | null;
+  /** The example under "Add your own question": one our own question rules keep (step 6c). */
+  example: string;
   models: { id: ProviderId; label: string }[];
   frequency: ScanFrequency;
   active: QuestionRow[];
@@ -23,9 +28,22 @@ export type QuestionsView = {
   limit: number | null;
 };
 
+// The kind of business as a customer would say it; the labels with a note in brackets get a plain word.
+const EXAMPLE_NOUNS: Partial<Record<string, string>> = { hvac: "heating and air conditioning company", salon: "salon", other: "business" };
+
+/**
+ * "Which coffee shop in Austin, TX do locals recommend most?" Never about opening hours, the time it is asked or
+ * "near me": those questions are dropped from our own sets (BUG-130), so the example must not suggest one (step 6c).
+ */
+export function exampleQuestion(city: string | null, industry: string | null): string {
+  const noun = EXAMPLE_NOUNS[industry ?? "other"] ?? (industry && isIndustry(industry) ? INDUSTRY_LABELS[industry].toLowerCase() : "business");
+  return `Which ${noun} in ${city ?? "my city"} do locals recommend most?`;
+}
+
 export function questionsView(input: {
   businessId: string;
   city: string | null;
+  industry?: string | null;
   models: ProviderId[];
   frequency: ScanFrequency;
   questions: QuestionRecord[];
@@ -38,7 +56,7 @@ export function questionsView(input: {
       id: q.id,
       text: q.prompt,
       active: q.active,
-      custom: q.source === "custom",
+      custom: q.own,
       results: input.models.map((model) => {
         const r = seen.find((a) => a.model === model);
         return { model, label: MODEL_LABELS[model], appeared: r?.appeared ?? 0, checks: r?.checks ?? 0 };
@@ -48,6 +66,7 @@ export function questionsView(input: {
   return {
     businessId: input.businessId,
     city: input.city,
+    example: exampleQuestion(input.city, input.industry ?? null),
     models: input.models.map((id) => ({ id, label: MODEL_LABELS[id] })),
     frequency: input.frequency,
     active: rows.filter((r) => r.active),
@@ -77,4 +96,21 @@ export function atLimit(activeCount: number, limit: number | null): boolean {
 
 export function limitText(limit: number): string {
   return `You have ${limit} active questions, the most your plan allows. Pause or remove one to add another.`;
+}
+
+/**
+ * Editing rewrites the question in place only while it is the user's own with no answers yet. Otherwise the old
+ * answers belong to the old wording, so the edit saves a new question and pauses the old one (M2).
+ */
+export function editMakesNewQuestion(q: { custom: boolean; answered: boolean }): boolean {
+  return !q.custom || q.answered;
+}
+
+/** The Questions page only knows the last 30 days of checks, which is what it shows the user. */
+export const rowHasAnswers = (row: Pick<QuestionRow, "results">) => row.results.some((r) => r.checks > 0);
+
+export function newQuestionWarning(active: boolean): string {
+  return active
+    ? "Editing makes this a new question. The old one is paused and keeps its results."
+    : "Editing makes this a new question. The old one stays paused and keeps its results.";
 }

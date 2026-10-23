@@ -2,11 +2,22 @@
 
 import { useEffect, useId, useRef, useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
+import { FieldMessage, useFieldErrors, type FieldErrors } from "@/components/ui/field-errors";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import type { ActionResult } from "@/modules/auth";
 import { cn } from "cn";
 
 export type Outcome = ActionResult<unknown>;
+
+/** What a card's own fields need to show their error under them (UI-036). */
+export type CardFields = {
+  props: (key: string, hintId?: string) => { "aria-invalid"?: boolean; "aria-describedby"?: string };
+  message: (key: string) => React.ReactNode;
+  clear: (key: string) => void;
+};
+
+export const MIN_REASON = 3;
 
 type Props = {
   title: string;
@@ -18,7 +29,9 @@ type Props = {
   destructive?: boolean;
   // Why the action cannot run right now; shown instead of the button.
   blocked?: string | null;
-  children?: React.ReactNode;
+  children?: React.ReactNode | ((fields: CardFields) => React.ReactNode);
+  /** Checks the card's own fields before it runs, in form order; the reason is always checked. */
+  validate?: (form: FormData) => FieldErrors<string>;
   // Controlled by the list, so only one action form is open at a time.
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -27,7 +40,7 @@ type Props = {
 
 /** One agency action: opens a short form that always asks for a reason, then reports what happened. */
 export default function ActionCard(props: Props) {
-  const { title, note, openLabel, submitLabel, pendingLabel, successText, destructive, blocked, children, run } = props;
+  const { title, note, openLabel, submitLabel, pendingLabel, successText, destructive, blocked, children, run, validate } = props;
   const { open, onOpenChange: setOpen } = props;
   const [pending, startTransition] = useTransition();
   const formRef = useRef<HTMLFormElement>(null);
@@ -38,6 +51,12 @@ export default function ActionCard(props: Props) {
   const [message, setMessage] = useState<{ tone: "ok" | "error"; text: string } | null>(null);
   const reasonId = useId();
   const headingId = useId();
+  const errors = useFieldErrors<string>(reasonId);
+  const fields: CardFields = {
+    props: errors.fieldProps,
+    message: (key) => <FieldMessage id={errors.idOf(key)} message={errors.errors[key]} />,
+    clear: errors.clear,
+  };
 
   // Opening moves focus into the form; closing it puts focus back on the open button.
   useEffect(() => {
@@ -49,6 +68,7 @@ export default function ActionCard(props: Props) {
 
   function close() {
     returnFocus.current = true;
+    errors.show({});
     setOpen(false);
   }
 
@@ -57,8 +77,17 @@ export default function ActionCard(props: Props) {
     const form = new FormData(event.currentTarget);
     const reason = String(form.get("reason") ?? "").trim();
     setMessage(null);
+    // Our own messages under each field instead of the browser's popups (noValidate).
+    const problems = {
+      ...validate?.(form),
+      reason: reason.length < MIN_REASON ? `Give a reason of at least ${MIN_REASON} characters.` : undefined,
+    };
+    if (errors.show(problems)) return;
     startTransition(async () => {
-      const result = await run(form, reason);
+      // A thrown action (a server error) would otherwise leave the form open with no message (A4).
+      const result = await run(form, reason).catch(
+        (): Outcome => ({ ok: false, status: 500, error: "Something went wrong, so this may not have been saved. Refresh the page and check." }),
+      );
       if (result.ok) {
         close();
         setMessage({ tone: "ok", text: successText });
@@ -82,6 +111,7 @@ export default function ActionCard(props: Props) {
       ) : open ? (
         <form
           ref={formRef}
+          noValidate
           onSubmit={submit}
           onKeyDown={(e) => {
             if (e.key === "Escape" && !pending) {
@@ -91,19 +121,19 @@ export default function ActionCard(props: Props) {
           }}
           className="flex flex-col gap-3"
         >
-          {children}
+          {typeof children === "function" ? children(fields) : children}
           <div className="flex flex-col gap-1.5">
             <Label htmlFor={reasonId}>Reason</Label>
-            <textarea
+            <Textarea
               id={reasonId}
               name="reason"
-              required
-              minLength={3}
               maxLength={500}
               rows={2}
               placeholder="Saved in the audit log with your name"
-              className="w-full rounded-lg border border-input bg-surface px-3 py-2 text-[14px] outline-none placeholder:text-text-hint focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+              onChange={() => errors.clear("reason")}
+              {...errors.fieldProps("reason")}
             />
+            {fields.message("reason")}
           </div>
           <div className="flex flex-wrap gap-2">
             <Button type="submit" variant={destructive ? "destructive" : "default"} disabled={pending}>

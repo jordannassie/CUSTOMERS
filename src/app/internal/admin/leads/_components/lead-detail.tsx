@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Check, Copy, X } from "lucide-react";
+import { toast } from "sonner";
 import { cn } from "cn";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -15,11 +16,13 @@ function CopyButton({ text, label }: { text: string; label: string }) {
       await navigator.clipboard.writeText(text);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
-    } catch { /* ignore */ }
+    } catch {
+      toast.error("Copy didn't work. Select the email and copy it yourself.");
+    }
   }
   return (
-    <Button type="button" variant="ghost" size="xs" onClick={handleCopy} title={copied ? "Copied!" : `Copy ${label}`}>
-      {copied ? <Check aria-hidden className="size-3" /> : <Copy aria-hidden className="size-3" />}
+    <Button type="button" variant="ghost" size="sm" onClick={handleCopy} title={copied ? "Copied" : `Copy ${label}`}>
+      {copied ? <Check aria-hidden /> : <Copy aria-hidden />}
       {copied ? "Copied" : label}
     </Button>
   );
@@ -53,11 +56,13 @@ export function LeadDetail({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id: lead.id, ...payload }),
       });
-      if (res.ok) {
-        if (payload.mark_read) onUpdate(lead.id, { read_at: new Date().toISOString() });
-        if (payload.mark_unread) onUpdate(lead.id, { read_at: null });
-        if (payload.status) onUpdate(lead.id, { status: payload.status as string });
-      }
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      if (payload.mark_read) onUpdate(lead.id, { read_at: new Date().toISOString() });
+      if (payload.mark_unread) onUpdate(lead.id, { read_at: null });
+      if (payload.status) onUpdate(lead.id, { status: payload.status as string });
+    } catch {
+      // The lead keeps what it showed before, so the screen never claims a change that was not saved.
+      toast.error(payload.status ? "The status was not saved. Try again." : "That change was not saved. Try again.");
     } finally {
       setSaving(false);
     }
@@ -99,11 +104,11 @@ export function LeadDetail({
         </div>
 
         <div className="grid grid-cols-2 gap-4">
-          <Field label="Received">{formatDate(lead.created_at)}</Field>
+          <Field label="Received">{formatDate(lead.created_at, true)}</Field>
           <Field label="Source">{SOURCE_LABELS[lead.source ?? ""] ?? lead.source ?? "-"}</Field>
           {lead.page_path && (
             <Field label="Page" className="col-span-2">
-              <span className="block truncate">{lead.page_path}</span>
+              <span className="block truncate" title={lead.page_path}>{lead.page_path}</span>
             </Field>
           )}
         </div>

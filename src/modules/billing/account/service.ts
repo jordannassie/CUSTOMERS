@@ -1,6 +1,7 @@
 import type { ActionResult } from "@/modules/auth";
 import type { PlanChangeStripe } from "../plan-change/client";
-import { scheduleIdOf, type PlanChangeContext } from "../plan-change/planner";
+import { isCancelling, scheduleIdOf, type PlanChangeContext } from "../plan-change/planner";
+import { isMissingInStripe } from "../stripe-missing";
 import type { BillingRows } from "./dal";
 import type { PortalClient } from "./access";
 import { buildBillingView, type BillingView } from "./summary";
@@ -19,19 +20,22 @@ export async function billingView({ rows, access }: BillingPageDeps): Promise<Bi
   if (!subscriptionId) return buildBillingView(rows, "none");
   if (!access) return buildBillingView(rows, "unavailable");
   try {
-    const { stripe, context } = access;
+    const { stripe } = access;
     const sub = await stripe.retrieveSubscription(subscriptionId);
     const scheduleId = scheduleIdOf(sub);
     const found = scheduleId ? await stripe.retrieveSchedule(scheduleId) : null;
     const schedule = found?.status === "active" ? found : null;
     // A plan set to end has no next bill, and Stripe refuses to preview one.
     const upcoming =
-      sub.cancel_at_period_end || sub.status === "canceled"
+      isCancelling(sub) || sub.status === "canceled"
         ? null
         : await stripe.previewInvoice(schedule ? { schedule: schedule.id } : { subscription: sub.id });
-    const planOfPrice = new Map(context.plans.flatMap((p) => (p.stripePriceId ? [[p.stripePriceId, p.id] as const] : [])));
-    return buildBillingView(rows, { sub, schedule, upcoming, planOfPrice });
+    return buildBillingView(rows, { sub, schedule, upcoming });
   } catch (error) {
+    if (isMissingInStripe(error)) {
+      console.warn("[billing/account] subscription not in Stripe:", subscriptionId);
+      return buildBillingView(rows, "missing");
+    }
     const e = error as { type?: string; message?: string };
     console.error("[billing/account] could not load the subscription", e?.type ?? e?.message);
     return buildBillingView(rows, "error");

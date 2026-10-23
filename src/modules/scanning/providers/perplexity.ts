@@ -5,6 +5,7 @@ import "server-only";
 // reads secrets.
 import { z } from "zod";
 import { CHECK_MODELS } from "./models";
+import { knownLocation } from "./location";
 import { checkCostUsd } from "./pricing";
 import { ProviderError, postJson, type RequestDeps } from "./request";
 import { cleanUrl } from "./urls";
@@ -82,7 +83,7 @@ export function requestBody({ question, location, model }: CheckInput) {
     tools: [
       {
         type: "web_search",
-        user_location: { country: location.country, region: location.region, city: location.city },
+        user_location: knownLocation(location),
       },
     ],
     max_output_tokens: MAX_OUTPUT_TOKENS,

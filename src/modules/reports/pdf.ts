@@ -46,12 +46,31 @@ export function isOwnReportUrl(url: string, origin: string): boolean {
   }
 }
 
+/** A site on this machine or a private network: hosted Chrome can't open it (BUG-109). */
+export function isLocalOrigin(origin: string): boolean {
+  const host = new URL(origin).hostname.replace(/^\[|\]$/g, "");
+  return (
+    host === "localhost" ||
+    host.endsWith(".localhost") ||
+    host === "::1" ||
+    /^127\./.test(host) ||
+    /^10\./.test(host) ||
+    /^192\.168\./.test(host) ||
+    /^172\.(1[6-9]|2\d|3[01])\./.test(host)
+  );
+}
+
 /** The share page at `url` as PDF bytes. Throws PdfError when it cannot be made in time. */
 export async function renderPdf(url: string, title: string): Promise<Uint8Array> {
-  if (!isOwnReportUrl(url, siteOrigin())) throw new PdfError("Only our own share pages can be printed");
+  const origin = siteOrigin();
+  if (!isOwnReportUrl(url, origin)) throw new PdfError("Only our own share pages can be printed");
   const signal = AbortSignal.timeout(PDF_TIMEOUT_MS);
+  // Locally, Browserless can't reach the page, so it is printed in this machine's Chromium instead.
+  const local = isLocalOrigin(origin);
   try {
-    return env.PDF_RENDERER === "chromium" ? await withChromium(url, title, signal) : await withBrowserless(url, title, signal);
+    return env.PDF_RENDERER === "chromium" || local
+      ? await withChromium(url, title, signal, local)
+      : await withBrowserless(url, title, signal);
   } catch (error) {
     if (error instanceof PdfError) throw error;
     const reason = error instanceof Error ? error.message.split("\n")[0].replace(/\/r\/[\w-]+/g, "/r/<token>") : "unknown";
@@ -61,7 +80,8 @@ export async function renderPdf(url: string, title: string): Promise<Uint8Array>
 
 async function withBrowserless(url: string, title: string, signal: AbortSignal): Promise<Uint8Array> {
   if (!env.BROWSERLESS_API_KEY) throw new PdfError("BROWSERLESS_API_KEY is not set");
-  const endpoint = new URL("/pdf", env.BROWSERLESS_URL);
+  // Keeps any path in BROWSERLESS_URL; new URL("/pdf", base) would drop it and Browserless answers 404 (BUG-082).
+  const endpoint = new URL(`${env.BROWSERLESS_URL.replace(/\/+$/, "")}/pdf`);
   endpoint.searchParams.set("token", env.BROWSERLESS_API_KEY);
   const response = await fetch(endpoint, {
     method: "POST",
@@ -69,7 +89,9 @@ async function withBrowserless(url: string, title: string, signal: AbortSignal):
     body: JSON.stringify({
       url,
       options: printOptions(title),
-      gotoOptions: { waitUntil: "networkidle2", timeout: PDF_TIMEOUT_MS },
+      // "load" (images and fonts in) plus the ready marker (charts drawn) is the whole page; waiting for the network to
+      // go quiet added 0.5 to 2 seconds per PDF for the same file (2026-10-23).
+      gotoOptions: { waitUntil: "load", timeout: PDF_TIMEOUT_MS },
       waitForSelector: { selector: READY, timeout: PDF_TIMEOUT_MS },
     }),
     signal,
@@ -79,21 +101,23 @@ async function withBrowserless(url: string, title: string, signal: AbortSignal):
   return new Uint8Array(await response.arrayBuffer());
 }
 
-async function chromiumBinary(): Promise<{ executablePath: string; args?: string[] }> {
+async function chromiumBinary(local: boolean): Promise<{ executablePath?: string; args?: string[] }> {
   if (env.CHROMIUM_PATH) return { executablePath: env.CHROMIUM_PATH };
+  // The Chromium Playwright installs for the tests (npx playwright install chromium).
+  if (local) return {};
   const { default: serverless } = await import("@sparticuz/chromium");
   return { executablePath: await serverless.executablePath(), args: serverless.args };
 }
 
-async function withChromium(url: string, title: string, signal: AbortSignal): Promise<Uint8Array> {
+async function withChromium(url: string, title: string, signal: AbortSignal, local: boolean): Promise<Uint8Array> {
   const { chromium } = await import("playwright-core");
-  const browser = await chromium.launch({ ...(await chromiumBinary()), timeout: PDF_TIMEOUT_MS });
+  const browser = await chromium.launch({ ...(await chromiumBinary(local)), timeout: PDF_TIMEOUT_MS });
   const closed = () => browser.close().catch(() => {});
   signal.addEventListener("abort", closed, { once: true });
   try {
     const page = await browser.newPage();
     page.setDefaultTimeout(PDF_TIMEOUT_MS);
-    await page.goto(url, { waitUntil: "networkidle" });
+    await page.goto(url, { waitUntil: "load" });
     await page.waitForSelector(READY, { state: "attached" });
     return new Uint8Array(await page.pdf(printOptions(title)));
   } finally {

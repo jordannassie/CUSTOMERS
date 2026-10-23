@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { buildExplainInput } from "./facts";
 import { COFFEE_SOURCES } from "./fixtures";
-import type { ExplainReason } from "./prompts/explain.v1";
+import type { ExplainReason } from "./prompts/explain.v2";
 import { reasonIssues } from "./validate";
 
 const { input } = buildExplainInput(COFFEE_SOURCES);

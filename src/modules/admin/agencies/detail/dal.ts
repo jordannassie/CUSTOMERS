@@ -2,7 +2,7 @@ import "server-only";
 import { requireAdmin } from "@/modules/auth";
 import { createServiceClient } from "@/lib/supabase/service";
 import { emailsOf, unique } from "../../businesses/dal";
-import { canRestore, restoreDeadline } from "../service";
+import { canRestore, displayStatus, restoreDeadline } from "../service";
 
 const HISTORY = 20;
 
@@ -11,6 +11,8 @@ export type AdminAgencyDetail = {
     id: string;
     name: string;
     status: string;
+    /** The status as admin shows it (service.ts displayStatus). */
+    displayStatus: string;
     isTest: boolean;
     trialEndsAt: string | null;
     currentPeriodEnd: string | null;
@@ -30,12 +32,23 @@ export type AdminAgencyDetail = {
     planStatus: string | null;
     deleted: { at: string; purgeAfter: string | null } | null;
   }[];
-  ledger: { id: string; delta: number; kind: string; note: string | null; by: string | null; createdAt: string }[];
+  /** source is the grant's (trial, plan, topup, admin, promo, refund) for grants and expiries, else null. */
+  ledger: { id: string; delta: number; kind: string; source: string | null; note: string | null; by: string | null; createdAt: string }[];
   audit: { id: string; action: string; reason: string | null; by: string | null; createdAt: string }[];
+  /** Reasons given in the "Before you cancel" dialog (migration 062), newest first. */
+  cancelReasons: { id: string; kind: string; reason: string; business: string | null; createdAt: string }[];
 };
 
 function fail(what: string, error: { message: string }): never {
   throw new Error(`Admin agency: could not load ${what}: ${error.message}`);
+}
+
+/** Just the name, for the page title ("Acme Agency | Admin"). Null for an unknown id. */
+export async function loadAgencyName(agencyId: string): Promise<string | null> {
+  await requireAdmin();
+  const { data, error } = await createServiceClient().from("agencies").select("name").eq("id", agencyId).maybeSingle();
+  if (error) fail("the agency name", error);
+  return data?.name ?? null;
 }
 
 export async function loadAgencyDetail(agencyId: string, now = new Date()): Promise<AdminAgencyDetail | null> {
@@ -51,7 +64,7 @@ export async function loadAgencyDetail(agencyId: string, now = new Date()): Prom
   if (error) fail("the agency", error);
   if (!a) return null;
 
-  const [balance, businesses, ledger, audit] = await Promise.all([
+  const [balance, businesses, ledger, audit, reasons] = await Promise.all([
     db
       .from("agency_credit_balance")
       .select("plan_remaining, topup_remaining, held, balance, overdraft")
@@ -64,7 +77,7 @@ export async function loadAgencyDetail(agencyId: string, now = new Date()): Prom
       .order("created_at"),
     db
       .from("credit_transactions")
-      .select("id, delta, kind, note, admin_user_id, created_at")
+      .select("id, delta, kind, note, admin_user_id, created_at, credit_grants(source)")
       .eq("agency_id", agencyId)
       // Scan spending has its own pages; this list is grants, expiries and admin changes.
       .not("kind", "in", "(capture,release)")
@@ -77,11 +90,18 @@ export async function loadAgencyDetail(agencyId: string, now = new Date()): Prom
       .eq("target_id", agencyId)
       .order("created_at", { ascending: false })
       .limit(HISTORY),
+    db
+      .from("cancel_reasons")
+      .select("id, kind, reason, created_at, businesses(name)")
+      .eq("agency_id", agencyId)
+      .order("created_at", { ascending: false })
+      .limit(HISTORY),
   ]);
   if (balance.error) fail("the balance", balance.error);
   if (businesses.error) fail("businesses", businesses.error);
   if (ledger.error) fail("the credit history", ledger.error);
   if (audit.error) fail("the audit log", audit.error);
+  if (reasons.error) fail("the cancel reasons", reasons.error);
 
   const emails = await emailsOf(
     unique([a.owner_user_id, ...ledger.data.map((l) => l.admin_user_id), ...audit.data.map((l) => l.admin_user_id)]),
@@ -93,6 +113,7 @@ export async function loadAgencyDetail(agencyId: string, now = new Date()): Prom
       id: a.id,
       name: a.name,
       status: a.status,
+      displayStatus: displayStatus({ status: a.status, hasSubscription: a.stripe_subscription_id !== null, trialEndsAt: a.trial_ends_at }, now),
       isTest: a.is_test,
       trialEndsAt: a.trial_ends_at,
       currentPeriodEnd: a.current_period_end,
@@ -122,6 +143,7 @@ export async function loadAgencyDetail(agencyId: string, now = new Date()): Prom
       id: l.id,
       delta: l.delta,
       kind: l.kind,
+      source: l.credit_grants?.source ?? null,
       note: l.note,
       by: l.admin_user_id ? (emails.get(l.admin_user_id) ?? "Removed admin") : null,
       createdAt: l.created_at,
@@ -136,5 +158,12 @@ export async function loadAgencyDetail(agencyId: string, now = new Date()): Prom
         createdAt: l.created_at,
       };
     }),
+    cancelReasons: reasons.data.map((r) => ({
+      id: r.id,
+      kind: r.kind,
+      reason: r.reason,
+      business: r.businesses?.name ?? null,
+      createdAt: r.created_at,
+    })),
   };
 }

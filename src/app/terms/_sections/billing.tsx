@@ -70,7 +70,7 @@ export function BillingTerms({ trialDays, trialCredits, trialBusinesses }: Props
         <Bullets>
           <li>
             A credit pays for one check: one question asked to one AI assistant (ChatGPT, Claude or Perplexity). If we
-            reuse an answer from the last 24 hours, it still costs 1 credit.
+            reuse an answer from the last 20 hours, it does not use a credit.
           </li>
           <li>
             Each plan adds credits every month. Credits from all businesses on your account go into one shared balance.

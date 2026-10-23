@@ -1,6 +1,6 @@
 import { randomBytes, randomUUID } from "node:crypto";
 import { afterAll, describe, expect, it, vi } from "vitest";
-import { captureCredit, releaseHold } from "@/modules/credits";
+import { captureCredit, grantCredits, releaseHold } from "@/modules/credits";
 import { addBusiness, createAgency, deleteTestUsers, fakeMail, grantPlan, service, spend } from "./notifications.test-helpers";
 
 // B-62 against the local database `npm test` rebuilds: low credits, the weekly report and the welcome email,
@@ -70,6 +70,18 @@ describe("low credits", () => {
     );
   });
 
+  it("stays quiet when the period's plan credits are used but plenty is still left (step 9d)", async () => {
+    const a = await createAgency();
+    const business = await addBusiness(a, "Plenty Left Plumbing");
+    await grantPlan(a.agencyId, 100);
+    await spend(a, business, 85, 85);
+    // 85 of 100 plan credits used, but a 500 credit top-up is still there: 515 to spend.
+    await grantCredits({ agencyId: a.agencyId, source: "topup", sourceId: `ch_${randomUUID()}`, amount: 500, expiresAt: null });
+    const mail = fakeMail();
+    expect(await runLowCredits(deps([a.agencyId], mail.send))).toMatchObject({ sent: 0 });
+    expect(await listLowCreditAgencies().then((rows) => rows.filter((r) => r.agencyId === a.agencyId))).toEqual([]);
+  });
+
   it("leaves out agencies that never had credits and agencies that are not paying", async () => {
     const setup = await createAgency({ status: "trialing" });
     const pastDue = await createAgency({ status: "past_due" });
@@ -83,7 +95,7 @@ describe("low credits", () => {
 
 describe("weekly report", () => {
   it("sends each agency one summary a week with scores, new fixes and a share link", async () => {
-    const a = await createAgency();
+    const a = await createAgency({ isTest: false });
     const scored = await addBusiness(a, "Sunrise Coffee Bar", { scored: true });
     await addBusiness(a, "Brand New Bakery");
     const mail = fakeMail();
@@ -105,12 +117,12 @@ describe("weekly report", () => {
   });
 
   it("never turns a share link back on, skips agencies with no scores, and respects unsubscribes", async () => {
-    const revoked = await createAgency();
+    const revoked = await createAgency({ isTest: false });
     const business = await addBusiness(revoked, "Closed Link Dental", { scored: true });
     await service.from("report_shares").insert({ business_id: business, token: randomBytes(32).toString("base64url"), revoked_at: new Date().toISOString() }).throwOnError();
-    const empty = await createAgency();
+    const empty = await createAgency({ isTest: false });
     await addBusiness(empty, "No Scans Yet Roofing");
-    const unsubscribed = await createAgency({ weeklyReport: false });
+    const unsubscribed = await createAgency({ weeklyReport: false, isTest: false });
     await addBusiness(unsubscribed, "Quiet Florist", { scored: true });
     const mail = fakeMail();
 
@@ -150,5 +162,15 @@ describe("email job route", () => {
     const none = liveJobDeps({ lowCreditAgencies: async () => [] });
     const ok = await handleEmailJobRequest(post({ job: "low_credits" }, workerSecret.value), none);
     expect(await ok.json()).toEqual({ job: "low_credits", sent: 0, skipped: 0, failed: 0, remaining: 0 });
+  });
+});
+
+describe("weekly report in test mode (D-61)", () => {
+  it("is never sent to a test agency, whose scores are sample data", async () => {
+    const test = await createAgency({ isTest: true });
+    await addBusiness(test, "Sample Coffee", { scored: true });
+    const mail = fakeMail();
+    expect((await listWeeklyReportAgencies()).some((a) => a.id === test.agencyId)).toBe(false);
+    expect(await runWeeklyReport(deps([test.agencyId], mail.send))).toMatchObject({ sent: 0 });
   });
 });

@@ -24,7 +24,8 @@ export type UsageReport = {
   byBusiness: { id: string | null; name: string; credits: number }[];
   byModel: { model: ModelKey; label: string; credits: number }[];
   forecast: Omit<Forecast, "endsAt" | "runsOutAt"> & { endsAt: string; runsOutAt: string | null };
-  scans: { id: string; businessName: string; status: string; at: string; credits: number }[];
+  /** `reused`: checks answered from the shared cache (H1); free (D-24, 2026-10-20). */
+  scans: { id: string; businessName: string; status: string; at: string; credits: number; reused: number }[];
 };
 
 /** The signed-in agency's usage. Pages pass next so a signed-out visitor goes to login. */
@@ -54,11 +55,12 @@ export async function loadUsageReport(agencyId: string, now: Date): Promise<Usag
   const businesses = businessRows.data!;
   const names = new Map(businesses.map((b) => [b.id, b.name]));
 
-  const [jobBusiness, providers, questionCounts, historyCaptures] = await Promise.all([
+  const [jobBusiness, providers, questionCounts, historyCaptures, reused] = await Promise.all([
     businessOfHolds(unique(monthCaptures.map((c) => c.holdId))),
     providerOfChecks(unique(monthCaptures.map((c) => c.checkId))),
     activeQuestionCounts(businesses.map((b) => b.id)),
     readCaptures(agencyId, { holdIds: unique(recentJobs.data!.map((j) => j.hold_id)) }),
+    reusedAnswers(recentJobs.data!.map((j) => j.id)),
   ]);
 
   const byBusiness = totalsBy(monthCaptures, (c) => (c.holdId && jobBusiness.get(c.holdId)) || "", (c) => c.credits);
@@ -107,6 +109,7 @@ export async function loadUsageReport(agencyId: string, now: Date): Promise<Usag
       status: j.status,
       at: j.finished_at ?? j.created_at,
       credits: (j.hold_id && perHold.get(j.hold_id)) || 0,
+      reused: reused.get(j.id) ?? 0,
     })),
   };
 }
@@ -137,6 +140,14 @@ async function providerOfChecks(checkIds: string[]): Promise<Map<string, string>
     return data;
   });
   return new Map(rows.map((r) => [r.id, r.provider]));
+}
+
+// Per scan job, the checks answered from the shared answer cache (scan_jobs_reused_answers, migration 069).
+async function reusedAnswers(jobIds: string[]): Promise<Map<string, number>> {
+  if (jobIds.length === 0) return new Map();
+  const { data, error } = await createServiceClient().rpc("scan_jobs_reused_answers", { p_job_ids: jobIds });
+  if (error) throw new Error(`Usage: ${error.message}`);
+  return new Map(data.map((r) => [r.scan_job_id, r.reused]));
 }
 
 async function activeQuestionCounts(businessIds: string[]): Promise<Map<string, number>> {

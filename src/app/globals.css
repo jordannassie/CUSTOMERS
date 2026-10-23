@@ -167,6 +167,8 @@
   }
   body {
     @apply bg-background text-foreground;
+    /* A long business name, domain or email breaks onto the next line instead of running off a phone screen. */
+    overflow-wrap: break-word;
   }
   button:not(:disabled),
   [role="button"]:not(:disabled) {

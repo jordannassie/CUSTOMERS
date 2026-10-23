@@ -67,11 +67,19 @@ async function seed(page: Page) {
     .select("id")
     .single()
     .throwOnError();
+  // One suggested question for every answer: only suggested questions count in the score (BUG-129).
+  const { data: question } = await db
+    .from("tracked_prompts")
+    .insert({ business_id: business.id, prompt: "Best coffee shop in Springfield, IL?", source: "library" })
+    .select("id")
+    .single()
+    .throwOnError();
   const rows = [0, 1].flatMap((day) =>
     MODELS.flatMap((provider, m) =>
       Array.from({ length: 6 }, (_, q) => ({
         run_id: run.id,
         business_id: business.id,
+        tracked_prompt_id: question.id,
         provider,
         created_at: new Date(Date.now() - day * 86_400_000 - 3_600_000).toISOString(),
         business_mentioned: (q + m) % 2 === 0,
@@ -130,13 +138,13 @@ test("Share gives a link the client opens without a login, and turning it off st
   await page.getByTestId("confirm-revoke").click();
   await expect(page.getByTestId("create-link")).toBeVisible(ACTION);
   expect((await reader.reload())?.status()).toBe(404);
-  await expect(reader.getByText("This report link is no longer active.")).toBeVisible();
+  await expect(reader.getByText("This report is not available.")).toBeVisible();
   await client.close();
 });
 
 test("an unknown link shows the inactive page", async ({ page }) => {
   expect((await page.goto(`/r/${"A".repeat(43)}`))?.status()).toBe(404);
-  await expect(page.getByText("This report link is no longer active.")).toBeVisible({ timeout: 60_000 });
+  await expect(page.getByText("This report is not available.")).toBeVisible({ timeout: 60_000 });
   // The page's own tag and the one Next adds to every 404.
   for (const meta of await page.locator('meta[name="robots"]').all()) await expect(meta).toHaveAttribute("content", /noindex/);
 });

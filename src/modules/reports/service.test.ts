@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { isShareToken, logoType, newShareToken, reportPeriod, storagePath, reportSummary } from "./service";
+import { reportPeriod } from "@/lib/report-dates";
+import { isShareToken, logoType, newShareToken, storagePath, reportSummary } from "./service";
 import type { LeaderRow } from "@/modules/competitors";
 
 describe("newShareToken", () => {
@@ -25,6 +26,10 @@ describe("reportPeriod", () => {
   it("names the 30 days the score covers", () => {
     expect(reportPeriod(new Date("2026-09-29T12:00:00Z"), 30)).toBe("Aug 31 to Sep 29, 2026");
     expect(reportPeriod(new Date("2026-01-10T12:00:00Z"), 30)).toBe("Dec 12, 2025 to Jan 10, 2026");
+  });
+
+  it("uses the viewer's time zone: an evening in Las Vegas is not tomorrow", () => {
+    expect(reportPeriod(new Date("2026-10-09T04:30:00Z"), 30, "America/Los_Angeles")).toBe("Sep 9 to Oct 8, 2026");
   });
 });
 
@@ -86,6 +91,18 @@ describe("reportSummary", () => {
   it("never claims a lead inside the margin", () => {
     const summary = reportSummary({ ...base, leaderboard: [row("Casco Bay", 66, "about_same")] });
     expect(summary[1]).toBe("Casco Bay, the competitor AI recommended most, was about level with Harbor Dental.");
+  });
+
+  it("gives both numbers instead of 'about level' when they are far apart but the margin can't separate them (BUG-111)", () => {
+    const summary = reportSummary({ ...base, score: 8, leaderboard: [row("Kingdom Plumbing", 27, "about_same")] });
+    expect(summary[1]).toBe(
+      "AI recommended Kingdom Plumbing, the competitor it named most, in about 3 of 10 questions and Harbor Dental in about 1 of 10. There aren't enough answers yet to say that gap will hold.",
+    );
+  });
+
+  it("names the chain when a tracked branch's answers named only the chain", () => {
+    const branch = { ...row("Bennu Coffee on Congress", 81, "behind"), chain: { brand: "Bennu Coffee", tracked: ["Bennu Coffee on Congress"] } };
+    expect(reportSummary({ ...base, leaderboard: [branch] })[1]).toBe("AI recommended Bennu Coffee more often, in about 8 of 10 questions.");
   });
 
   it("skips competitors still collecting and says nothing before a score", () => {

@@ -2,7 +2,8 @@ import "server-only";
 // Scan job worker (B-27, MVP_SPEC 6.3, D-42): claims queued jobs, runs them in parallel, and marks each
 // done, queued again with backoff, or failed. The host entry point only checks the secret and calls this.
 import { explainAfterScan } from "@/modules/insights/server";
-import { ALREADY_FINISHED, runScan, type ScanOutcome } from "@/modules/scanning";
+import { refreshStaleSiteFacts } from "@/modules/onboarding/server";
+import { ALREADY_FINISHED, isMissingSample, NO_SAMPLE_ANSWERS, runScan, type ScanOutcome } from "@/modules/scanning";
 import { claimScanJobs, finishJob, isWorkerSecret, workerTimeBudgetMs, type ClaimedJob, type JobUpdate } from "./dal";
 
 export const CLAIM_LIMIT = 10;
@@ -25,6 +26,8 @@ export type WorkerSummary = {
   done: number;
   retrying: number;
   failed: number;
+  /** Scans that had nothing to scan (B5). */
+  skipped: number;
   /** Jobs that another worker took over (reset as stuck) before this one finished them. */
   lost: number;
   stoppedForTime: boolean;
@@ -35,7 +38,11 @@ const liveDeps: WorkerDeps = {
   run: (jobId) => runScan(jobId),
   finish: finishJob,
   now: () => new Date(),
-  explain: explainAfterScan,
+  // Advice reads the website facts, so stale ones are refreshed first; a failed refresh keeps the old facts.
+  explain: async (runId: string) => {
+    await refreshStaleSiteFacts(runId).catch((err) => console.error(`scan worker: site refresh for run ${runId} failed: ${errorText(err)}`));
+    return explainAfterScan(runId);
+  },
 };
 
 /** How a job ends after one attempt. A thrown error is treated like a scan where every check failed. */
@@ -46,17 +53,25 @@ export function jobUpdateFor(outcome: ScanOutcome | { status: "error"; error: st
   if (outcome.status === "skipped") {
     // An earlier attempt finished the scan but died before saving the job.
     if (outcome.reason === ALREADY_FINISHED) return { status: "done", creditsCharged: job.creditsCharged, error: null };
-    // Nothing was held; trying again minutes later would not change a missing plan or a paused business.
-    return { status: "failed", error: outcome.reason };
+    // Nothing was held; trying again minutes later would not change a missing plan or a paused business. It is
+    // not a failure either (B5): alerts ignore it and the business's next scan moves on.
+    return { status: "skipped", error: outcome.reason };
   }
   const error = outcome.status === "error" ? outcome.error : failedChecksError(outcome.errors);
-  if (job.attempts >= MAX_ATTEMPTS) return { status: "failed", error };
+  // A test business with no sample answers of its trade and city gets none on a retry either (BUG-072): it fails
+  // at once, so the screen says why instead of "trying again" and the stuck jobs alert does not keep it open. That
+  // holds when other models have no recordings at all; a real outage among the errors still retries.
+  const noSamples =
+    outcome.status === "failed" &&
+    outcome.errors.some((e) => e.includes(NO_SAMPLE_ANSWERS)) &&
+    outcome.errors.every(isMissingSample);
+  if (noSamples || job.attempts >= MAX_ATTEMPTS) return { status: "failed", error };
   return { status: "queued", runAfter: new Date(now.getTime() + RETRY_STEP_MS * job.attempts), error };
 }
 
 export async function runWorker(budgetMs: number, deps: WorkerDeps = liveDeps): Promise<WorkerSummary> {
   const started = deps.now().getTime();
-  const summary: WorkerSummary = { claimed: 0, done: 0, retrying: 0, failed: 0, lost: 0, stoppedForTime: false };
+  const summary: WorkerSummary = { claimed: 0, done: 0, retrying: 0, failed: 0, skipped: 0, lost: 0, stoppedForTime: false };
 
   while (true) {
     if (deps.now().getTime() - started >= budgetMs * CLAIM_CUTOFF) {
@@ -72,7 +87,7 @@ export async function runWorker(budgetMs: number, deps: WorkerDeps = liveDeps): 
   return summary;
 }
 
-async function runJob(job: ClaimedJob, deps: WorkerDeps): Promise<"done" | "retrying" | "failed" | "lost"> {
+async function runJob(job: ClaimedJob, deps: WorkerDeps): Promise<"done" | "retrying" | "failed" | "skipped" | "lost"> {
   let outcome: ScanOutcome | { status: "error"; error: string };
   try {
     outcome = await deps.run(job.id);

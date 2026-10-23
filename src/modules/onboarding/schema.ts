@@ -36,11 +36,15 @@ export function toDomain(raw: string): string | null {
 export type BusinessDetails = {
   name: string;
   industry: (typeof INDUSTRIES)[number] | "";
+  /** With industry "other": what Google calls the business, "Bookstore" (BUG-123). */
+  industryText?: string;
   description: string;
   services: string[];
   city: string;
   state: string;
   country: string;
+  /** Neighborhood or area, "East Austin". From Google only as a pre-fill; saved once the user confirms. */
+  area: string;
   phone: string;
   address: string;
 };
@@ -51,10 +55,40 @@ export type AutofillResult = {
   filledFrom: { website: boolean; google: boolean };
   /** A friendly line shown above the form, or null when everything went normally. */
   note: string | null;
+  /** Google and the website name different kinds of business: the industry field asks the user to check. */
+  industryCheck?: { google: string; website: string };
+  /**
+   * No website (MVP_SPEC 3.3): the Google listings the user picks theirs from. Until they pick one, the form
+   * keeps only what they typed and no place_id is saved. Shown live, never stored (D-73).
+   */
+  choices?: PlaceChoice[];
+  /** Said above the listings when the website could not be read (2026-10-16); the no-website picker has its own. */
+  pickNote?: string;
+  /** Neither the website nor Google answered: the website step offers "Try again" (2026-10-16). */
+  retry?: boolean;
+  /**
+   * Something failed on the way (the website blocked us or did not load, Google or our reader or AI was down), so a
+   * second run may find more: the note says what, and the details step offers "Try again" (O1).
+   */
+  failed?: boolean;
+};
+
+/** One Google listing offered as "is this your business?", with what the form gets if the user picks it. */
+export type PlaceChoice = {
+  placeId: string;
+  name: string;
+  address: string | null;
+  autofill: AutofillResult;
 };
 
 // Place ids are opaque but URL-safe; anything else would change the Places request path.
 export const placeIdPattern = /^[A-Za-z0-9_-]{10,300}$/;
+
+/** The user's answer to "Is one of these your business?": a listing's place_id, or null for none of them. */
+export const pickPlaceInput = z.object({
+  businessId: z.uuid(),
+  placeId: z.string().regex(placeIdPattern).nullable(),
+});
 
 const competitorName = z.string().trim().min(1).max(120);
 
@@ -67,6 +101,13 @@ export const saveCompetitorsInput = z.object({
   businessId: z.uuid(),
   // The plan limit is checked in the action; this only stops absurd payloads.
   competitors: z
-    .array(z.object({ name: competitorName, placesId: z.string().regex(placeIdPattern).nullable() }))
+    .array(
+      z.object({
+        name: competitorName,
+        placesId: z.string().regex(placeIdPattern).nullable(),
+        // The long Google name when the user took the short brand instead (2026-10-15).
+        aliases: z.array(z.string().trim().min(2).max(120)).max(10).optional(),
+      }),
+    )
     .max(50),
 });

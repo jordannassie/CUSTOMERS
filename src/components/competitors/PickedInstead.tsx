@@ -34,6 +34,11 @@ export function PickedInstead({ picked }: { picked: Picked | "none-tracked" }) {
             <p className="text-[15px] font-medium" data-testid="picked-sentence">
               {picked.sentence}
             </p>
+            {picked.untracked && (
+              <p className="-mt-3 max-w-prose text-sm text-muted-foreground" data-testid="picked-untracked">
+                {picked.untracked}
+              </p>
+            )}
             {picked.notNamed ? (
               <div>
                 <Button asChild size="sm">

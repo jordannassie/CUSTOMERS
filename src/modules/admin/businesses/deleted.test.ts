@@ -19,7 +19,7 @@ vi.mock("@/lib/env", async (importOriginal) => {
   };
 });
 
-const { listBusinesses } = await import("./dal");
+const { listBusinesses } = await import("./list/dal");
 const { loadBusinessDetail } = await import("./detail/dal");
 const { runScanNow } = await import("./actions");
 
@@ -93,7 +93,10 @@ describe("admin businesses: deleted ones", () => {
       status: 409,
       error: "This business was deleted, so it can't be scanned.",
     });
-    const rows = await listBusinesses();
+    // The owner's email is unique to this run, so the search finds this file's businesses only.
+    const list = await listBusinesses({ search: ownerEmail });
+    const rows = list.rows;
+    expect(list.deleted).toBeGreaterThanOrEqual(1);
     expect(rows.find((r) => r.id === deletedId)?.deleted).toEqual({
       at: expect.stringMatching(/^2026-10-01T12:00:00/),
       purgeAfter: expect.stringMatching(/^2026-10-31T12:00:00/),

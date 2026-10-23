@@ -3,7 +3,7 @@
 exports[`methodPanel > reads the same as the approved wording 1`] = `
 {
   "calibration": null,
-  "intro": "Your score is how often AI recommended you when we asked the questions your customers ask, over the last 30 days.",
+  "intro": "Your score is how often AI recommended you when we asked the suggested questions on your Questions page, over the last 30 days.",
   "models": [
     {
       "id": "openai",
@@ -28,6 +28,7 @@ exports[`methodPanel > reads the same as the approved wording 1`] = `
       "value": "Last 30 days",
     },
     {
+      "hint": "Answers to suggested questions only.",
       "label": "Answers checked",
       "value": "1,080",
     },
@@ -50,6 +51,7 @@ exports[`methodPanel > reads the same as the approved wording 1`] = `
       "heading": "How we check",
       "paragraphs": [
         "We ask ChatGPT, Claude and Perplexity the questions on your Questions page, the same way a customer would.",
+        "Your score counts the suggested questions you track now. Questions you added yourself, paused questions and removed questions are left out. We still check your own questions and show their results on their own.",
         "Each AI searches the web for its answer, and we tell it your city so it answers like it would for someone near you.",
         "We count an answer when it names your business. Where you appear in a list does not change your score.",
         "We use each AI's direct connection for software (its API), not the chat apps. Answers in the apps can be a little different.",

@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { describe, expect, it, vi } from "vitest";
+import { fakeAiClients } from "@/modules/ai";
 import { cacheKey, checkWithCache, readCachedAnswer } from "./cache";
 import { createNameExtractor, readStoredExtraction } from "./extract";
 import { storeExtraction } from "./extract-store";
@@ -29,7 +30,7 @@ describe("storeExtraction", () => {
     expect(first.extractedNames).toBeNull();
 
     const fetch = vi.fn<typeof globalThis.fetch>(async () => Response.json(recorded));
-    const extraction = await createNameExtractor("sk-ant-test", { fetch })(first.answerText);
+    const extraction = await createNameExtractor(fakeAiClients(fetch))(first.answerText);
     await storeExtraction(cacheKey(input), extraction);
 
     const hit = await readCachedAnswer(input);

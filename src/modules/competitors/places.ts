@@ -34,7 +34,11 @@ export type PlaceSignals = {
 export type FetchSignals = (placeId: string) => Promise<PlaceSignals | null>;
 
 export class PlacesUnavailable extends Error {
-  constructor(message: string) {
+  constructor(
+    message: string,
+    /** Google's request limit was reached (429): trying again soon won't help. */
+    readonly limited = false,
+  ) {
     super(message);
     this.name = "PlacesUnavailable";
   }
@@ -74,22 +78,31 @@ export function toSignals(body: unknown): PlaceSignals {
   };
 }
 
-export function createPlaceSignals(apiKey: string, doFetch: typeof fetch = fetch): FetchSignals {
+// A busy (429) or failing (5xx) Google gets one more try after this pause (2026-10-14).
+const RETRY_DELAY_MS = 800;
+
+export function createPlaceSignals(apiKey: string, doFetch: typeof fetch = fetch, retryDelayMs = RETRY_DELAY_MS): FetchSignals {
   return async (placeId) => {
     if (!PLACE_ID.test(placeId)) return null;
-    let res: Response;
-    try {
-      res = await doFetch(`${PLACES_DETAILS_URL}/${placeId}`, {
+    const once = () =>
+      doFetch(`${PLACES_DETAILS_URL}/${placeId}`, {
         headers: { "X-Goog-Api-Key": apiKey, "X-Goog-FieldMask": SIGNALS_FIELD_MASK },
         signal: AbortSignal.timeout(TIMEOUT_MS),
         // Places content may not be cached (MVP_SPEC 26), so never let the fetch cache keep it.
         cache: "no-store",
       });
+    let res: Response;
+    try {
+      res = await once();
+      if (res.status === 429 || res.status >= 500) {
+        await new Promise((r) => setTimeout(r, retryDelayMs));
+        res = await once();
+      }
     } catch (err) {
       throw new PlacesUnavailable(err instanceof Error ? err.message : "Places could not be reached");
     }
     if (res.status === 404) return null;
-    if (!res.ok) throw new PlacesUnavailable(`Places returned ${res.status}`);
+    if (!res.ok) throw new PlacesUnavailable(`Places returned ${res.status}`, res.status === 429);
     return toSignals(await res.json().catch(() => null));
   };
 }

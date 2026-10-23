@@ -43,7 +43,8 @@ export async function createScanBusiness(
       owner_user_id: agency.ownerUserId,
       agency_id: agency.agencyId,
       name: "Bean There Coffee",
-      domain: "beanthere.example",
+      // Its own website: migration 067 refuses two live businesses with one website in an agency.
+      domain: `beanthere-${randomUUID().slice(0, 8)}.example`,
       primary_city: city,
       primary_region: "CA",
       primary_country: "United States",
@@ -54,7 +55,8 @@ export async function createScanBusiness(
     .single();
   if (error) throw error;
   const questions = Array.from({ length: 12 }, (_, i) => `Question ${i + 1}: best coffee shop in ${city}?`);
-  const prompts = await service.from("tracked_prompts").insert(questions.map((prompt) => ({ business_id: business.id, prompt })));
+  // Suggested questions, the only ones the score counts (BUG-129).
+  const prompts = await service.from("tracked_prompts").insert(questions.map((prompt) => ({ business_id: business.id, prompt, source: "library" })));
   if (prompts.error) throw prompts.error;
   const rivals = await service.from("business_competitors").insert({ business_id: business.id, name: "Rival Roasters", city });
   if (rivals.error) throw rivals.error;

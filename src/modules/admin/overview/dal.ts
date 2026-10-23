@@ -3,6 +3,7 @@ import { requireAdmin } from "@/modules/auth";
 import { createServiceClient } from "@/lib/supabase/service";
 import { emailsOf } from "../businesses/dal";
 import { adminStripeClient, type AdminStripeClient } from "../agencies/stripe";
+import { displayStatus } from "../agencies/service";
 import { loadUsageCostSince } from "../usage-cost/dal";
 import { listOpenAlerts } from "../alerts/dal";
 import type { OpenAlert } from "../alerts/service";
@@ -18,6 +19,7 @@ export type AdminOverview = {
   revenue: Revenue;
   creditsUsed: number;
   aiCostUsd: number;
+  /** status is the display status (agencies/service.ts displayStatus). */
   recentSignups: { id: string; name: string; ownerEmail: string | null; status: string; isTest: boolean; createdAt: string }[];
   recentFailedScans: { id: string; businessId: string; businessName: string; agencyName: string; error: string | null; at: string }[];
   openAlerts: OpenAlert[];
@@ -46,7 +48,13 @@ export async function loadOverview(now = new Date(), stripe: AdminStripeClient |
 
   const [agencies, trials, paying, usage, revenue, signups, failed, openAlerts, history] = await Promise.all([
     db.from("agencies").select("id", { count: "exact", head: true }).eq("is_test", false).neq("status", "deleted"),
-    db.from("agencies").select("id", { count: "exact", head: true }).eq("is_test", false).eq("status", "trialing"),
+    // Running trials only: an unfinished signup (no subscription, no trial end) and an ended trial are left out.
+    db
+      .from("agencies")
+      .select("id", { count: "exact", head: true })
+      .eq("is_test", false)
+      .eq("status", "trialing")
+      .or(`trial_ends_at.gt.${now.toISOString()},and(trial_ends_at.is.null,stripe_subscription_id.not.is.null)`),
     db
       .from("business_subscriptions")
       .select("business_id, agencies!inner(is_test)", { count: "exact", head: true })
@@ -56,13 +64,15 @@ export async function loadOverview(now = new Date(), stripe: AdminStripeClient |
     revenueSince(stripe, monthStart),
     db
       .from("agencies")
-      .select("id, name, owner_user_id, status, is_test, created_at")
+      .select("id, name, owner_user_id, status, is_test, trial_ends_at, stripe_subscription_id, created_at")
       .order("created_at", { ascending: false })
       .limit(RECENT),
     db
       .from("scan_jobs")
-      .select("id, business_id, error, created_at, finished_at, businesses(name), agencies(name)")
+      // Test agencies are left out here like everywhere else on the Overview.
+      .select("id, business_id, error, created_at, finished_at, businesses(name), agencies!inner(name, is_test)")
       .eq("status", "failed")
+      .eq("agencies.is_test", false)
       .order("created_at", { ascending: false })
       .limit(RECENT),
     listOpenAlerts(db),
@@ -87,7 +97,7 @@ export async function loadOverview(now = new Date(), stripe: AdminStripeClient |
       id: a.id,
       name: a.name,
       ownerEmail: emails.get(a.owner_user_id) ?? null,
-      status: a.status,
+      status: displayStatus({ status: a.status, hasSubscription: a.stripe_subscription_id !== null, trialEndsAt: a.trial_ends_at }, now),
       isTest: a.is_test,
       createdAt: a.created_at,
     })),

@@ -19,3 +19,12 @@ export function compareRating(theirs: number | null, yours: number | null): Rati
   if (Math.abs(theirs - yours) < 0.1) return "about_same";
   return theirs > yours ? "higher" : "lower";
 }
+
+/** Who is ahead on one Google value, said from the owner's side so it cannot be read backwards (BUG-099). */
+export type GoogleSide = "they_are_ahead" | "you_are_ahead" | "about_same" | "unknown";
+
+export function sideOf(compare: Compare | RatingCompare): GoogleSide {
+  if (compare === "more" || compare === "higher") return "they_are_ahead";
+  if (compare === "fewer" || compare === "lower") return "you_are_ahead";
+  return compare;
+}

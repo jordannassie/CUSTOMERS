@@ -17,6 +17,8 @@ interface AuthFormProps {
   notice?: string;
   // The page's ?error= value; read on the server so the notice is in the first render.
   errorParam?: string;
+  /** A confirmation link that did not work, shown as an error on first render. */
+  linkError?: string;
 }
 
 const GoogleIcon = () => (
@@ -30,14 +32,15 @@ const GoogleIcon = () => (
 
 // The page the visitor asked for before being sent to log in (BUG-009). A plan picked on the pricing
 // page (?plan=) is carried into onboarding, which keeps it for the card step (MVP_SPEC 3.1 step 0).
-function nextFromUrl() {
+// A new account goes straight to setup: /dashboard only redirected there, one more server trip (2026-10-23).
+function nextFromUrl(signup = false) {
   const params = new URLSearchParams(window.location.search);
   const plan = params.get("plan");
-  const fallback = plan === "starter" || plan === "pro" ? `/onboarding?plan=${plan}` : undefined;
+  const fallback = plan === "starter" || plan === "pro" ? `/onboarding?plan=${plan}` : signup ? "/onboarding" : undefined;
   return safeNextPath(params.get("next"), fallback);
 }
 
-export default function AuthForm({ defaultMode = "login", errorParam = "", notice }: AuthFormProps) {
+export default function AuthForm({ defaultMode = "login", errorParam = "", notice, linkError }: AuthFormProps) {
   const router = useRouter();
   const oauthFailed = errorParam.includes("oauth") || errorParam.includes("callback");
   const [mode, setMode] = useState<"login" | "signup">(defaultMode);
@@ -45,7 +48,7 @@ export default function AuthForm({ defaultMode = "login", errorParam = "", notic
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState<"google" | "email" | null>(null);
   const [googleFailed, setGoogleFailed] = useState(oauthFailed);
-  const [error, setError] = useState<string | null>(oauthFailed ? "google_failed" : null);
+  const [error, setError] = useState<string | null>(oauthFailed ? "google_failed" : (linkError ?? null));
   const [message, setMessage] = useState<string | null>(notice ?? null);
   const [passwordError, setPasswordError] = useState<string | null>(null);
   // Which fields the form alert is about, so they are marked invalid and point at it.
@@ -113,7 +116,7 @@ export default function AuthForm({ defaultMode = "login", errorParam = "", notic
         email,
         password,
         options: {
-          emailRedirectTo: `${siteBase}/auth/callback?next=${encodeURIComponent(nextFromUrl())}`,
+          emailRedirectTo: `${siteBase}/auth/callback?from=signup&next=${encodeURIComponent(nextFromUrl(true))}`,
         },
       });
       setLoading(null);
@@ -130,10 +133,10 @@ export default function AuthForm({ defaultMode = "login", errorParam = "", notic
         }
         return;
       }
-      // With email confirmation off, signUp already returns a session.
+      // With email confirmation off, signUp already returns a session. One navigation: the page it opens is read
+      // with the new session's cookie, so a refresh after it only fetched the same page again.
       if (data.session) {
-        router.push(nextFromUrl());
-        router.refresh();
+        router.push(nextFromUrl(true));
         return;
       }
       setMessage("Check your email to confirm your account.");
@@ -144,7 +147,11 @@ export default function AuthForm({ defaultMode = "login", errorParam = "", notic
     setLoading(null);
     if (loginError) {
       const msg = loginError.message.toLowerCase();
-      if (msg.includes("invalid") || msg.includes("credentials") || msg.includes("password") || msg.includes("email")) {
+      // Checked first: "Email not confirmed" would otherwise read as a wrong password.
+      if (loginError.code === "email_not_confirmed" || msg.includes("not confirmed")) {
+        setError("Confirm your email first. Open the link we sent you, then log in.");
+        setInvalid("email");
+      } else if (msg.includes("invalid") || msg.includes("credentials") || msg.includes("password") || msg.includes("email")) {
         setError("Email or password is incorrect.");
         setInvalid("both");
       } else if (msg.includes("not found") || msg.includes("no user")) {
@@ -156,7 +163,6 @@ export default function AuthForm({ defaultMode = "login", errorParam = "", notic
       return;
     }
     router.push(nextFromUrl());
-    router.refresh();
   }
 
   const alertId = "auth-alert";
@@ -207,7 +213,7 @@ export default function AuthForm({ defaultMode = "login", errorParam = "", notic
                     Retry with Google
                   </button>{" "}
                   or{" "}
-                  <Link href="/contact?topic=support" className="font-semibold underline hover:no-underline">
+                  <Link href="/contact?topic=support" prefetch={false} className="font-semibold underline hover:no-underline">
                     contact support
                   </Link>.
                 </p>
@@ -254,7 +260,7 @@ export default function AuthForm({ defaultMode = "login", errorParam = "", notic
               aria-describedby={passwordInvalid ? alertId : undefined}
               aside={
                 !isSignup && (
-                  <Link href="/forgot-password" className={authLinkClass}>
+                  <Link href="/forgot-password" prefetch={false} className={authLinkClass}>
                     Forgot password?
                   </Link>
                 )
@@ -276,7 +282,8 @@ export default function AuthForm({ defaultMode = "login", errorParam = "", notic
 
           <p className="mt-5 text-center text-[13px] text-muted-foreground">
             Having trouble signing in?{" "}
-            <Link href="/contact?topic=support" className="font-medium text-foreground underline underline-offset-4 hover:text-primary">
+            {/* No prefetch on the login and signup pages: each view rendered these pages on the server for nothing. */}
+            <Link href="/contact?topic=support" prefetch={false} className="font-medium text-foreground underline underline-offset-4 hover:text-primary">
               Contact support
             </Link>
           </p>

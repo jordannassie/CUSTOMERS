@@ -1,8 +1,4 @@
-export function money(value: number | null): string {
-  if (value === null) return "";
-  // Per-check costs are fractions of a cent.
-  return `$${value.toFixed(value !== 0 && Math.abs(value) < 1 ? 4 : 2)}`;
-}
+export { money } from "../../_components/format";
 
 export function percent(value: number | null): string {
   return value === null ? "" : `${Math.round(value * 100)}%`;

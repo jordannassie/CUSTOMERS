@@ -87,7 +87,7 @@ Marks: `[x]` works, `[!]` bug (logged in `docs/BUGS.md`), `[-]` cannot be checke
 ## 6. Reports and emails (phase 7)
 
 - [x] Share: link opens in a private window with the agency logo, no login. (agency name shown; no logo was uploaded)
-- [x] Turning the link off: "This report link is no longer active."
+- [x] Turning the link off: "This report is not available."
 - [-] Export PDF downloads within a few seconds and matches the share page. Needs BROWSERLESS_API_KEY, blank here on purpose. Failure shows "PDF could not be created. Try again, or use Print, Save as PDF." Check on staging.
 - [x] Trial ending, payment failed and low credits emails each arrive once and read clearly (triggered by hand). (all 6 templates rendered in the email preview: plain, no long dashes, banned words or emoji; "arrives once" is covered by unit tests. The logo loads from customers.direct and 404s until mvp is live.)
 - [x] Monday summary email arrives with scores and a link (job run by hand). (rendered in the preview; the job itself runs on pg_cron, production rehearsal)
