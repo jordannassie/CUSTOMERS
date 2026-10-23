@@ -213,7 +213,7 @@ export default function AuthForm({ defaultMode = "login", errorParam = "", notic
                     Retry with Google
                   </button>{" "}
                   or{" "}
-                  <Link href="/contact?topic=support" className="font-semibold underline hover:no-underline">
+                  <Link href="/contact?topic=support" prefetch={false} className="font-semibold underline hover:no-underline">
                     contact support
                   </Link>.
                 </p>
@@ -260,7 +260,7 @@ export default function AuthForm({ defaultMode = "login", errorParam = "", notic
               aria-describedby={passwordInvalid ? alertId : undefined}
               aside={
                 !isSignup && (
-                  <Link href="/forgot-password" className={authLinkClass}>
+                  <Link href="/forgot-password" prefetch={false} className={authLinkClass}>
                     Forgot password?
                   </Link>
                 )
@@ -282,7 +282,8 @@ export default function AuthForm({ defaultMode = "login", errorParam = "", notic
 
           <p className="mt-5 text-center text-[13px] text-muted-foreground">
             Having trouble signing in?{" "}
-            <Link href="/contact?topic=support" className="font-medium text-foreground underline underline-offset-4 hover:text-primary">
+            {/* No prefetch on the login and signup pages: each view rendered these pages on the server for nothing. */}
+            <Link href="/contact?topic=support" prefetch={false} className="font-medium text-foreground underline underline-offset-4 hover:text-primary">
               Contact support
             </Link>
           </p>

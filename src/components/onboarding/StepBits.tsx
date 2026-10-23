@@ -34,7 +34,8 @@ export function StepActions({ backHref, onBack, pending, label = "Continue", dis
       {backHref ? (
         // sm:-ml-4: the arrow lines up with the step's left edge instead of sitting inside the button's padding.
         <Button asChild variant="ghost" className={cn("sm:-ml-4", phoneSummary && "max-sm:hidden")}>
-          <Link href={backHref}>
+          {/* Setup pages can't be prefetched (instant = false): a prefetch only got a 404. */}
+          <Link href={backHref} prefetch={false}>
             <ArrowLeft aria-hidden />
             Back
           </Link>

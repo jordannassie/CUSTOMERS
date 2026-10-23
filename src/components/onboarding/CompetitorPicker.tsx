@@ -215,7 +215,8 @@ export function CompetitorPicker(props: CompetitorPickerProps) {
       {backHref ? (
         <div className="hidden items-center justify-between gap-3 lg:col-span-2 lg:flex">
           <Button asChild variant="ghost" className="-ml-4">
-            <Link href={backHref}>
+            {/* Setup pages can't be prefetched (instant = false); Manage competitors' Back still is. */}
+            <Link href={backHref} prefetch={backHref.startsWith("/onboarding/") ? false : undefined}>
               <ArrowLeft aria-hidden />
               Back
             </Link>

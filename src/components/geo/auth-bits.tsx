@@ -9,7 +9,8 @@ const LOGO = "/images/logos/logo-black.png";
 export function AuthLogo() {
   return (
     <div className="mb-8 text-center">
-      <Link href="/" aria-label="Customers.Direct home" className="inline-block rounded-sm focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none">
+      {/* No prefetch: every login and signup view rendered the whole home page on the server, often twice. */}
+      <Link href="/" prefetch={false} aria-label="Customers.Direct home" className="inline-block rounded-sm focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none">
         <Image src={LOGO} alt="Customers.Direct" width={148} height={36} priority unoptimized className="mx-auto h-14 w-auto" />
       </Link>
     </div>

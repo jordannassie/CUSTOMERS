@@ -36,7 +36,8 @@ export function PickerPhoneBar({
         <div className="flex min-w-0 items-center gap-1">
           {backHref ? (
             <Button asChild variant="ghost" size="sm" className="-ml-2">
-              <Link href={backHref}>
+              {/* Setup pages can't be prefetched (instant = false); Manage competitors' Back still is. */}
+              <Link href={backHref} prefetch={backHref.startsWith("/onboarding/") ? false : undefined}>
                 <ArrowLeft aria-hidden />
                 Back
               </Link>
