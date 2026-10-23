@@ -19,7 +19,7 @@ export type MethodInput = {
   margin: number;
   checks: number;
   uniqueAnswers: number;
-  models: { id: ProviderId; label: string; score: number | null; margin: number | null; notChecked?: boolean }[];
+  models: { id: ProviderId; label: string; score: number | null; margin: number | null; notChecked?: boolean; skipped?: boolean }[];
 };
 
 export type MethodPanel = {
@@ -59,7 +59,14 @@ export function methodPanel(input: MethodInput, calibration: Calibration | null)
     models: input.models.map((m) => ({
       id: m.id,
       label: m.label,
-      value: m.score !== null ? `${m.score}, plus or minus ${points(m.margin ?? 0)}` : m.notChecked ? "Couldn't be checked" : "No checks yet",
+      value:
+        m.score !== null
+          ? `${m.score}, plus or minus ${points(m.margin ?? 0)}`
+          : m.skipped
+            ? "Skipped, unavailable"
+            : m.notChecked
+              ? "Couldn't be checked"
+              : "No checks yet",
     })),
     modelsNote: "Your overall score is the average of these, each counted equally.",
     sections: [

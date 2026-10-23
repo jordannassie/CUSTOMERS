@@ -26,6 +26,30 @@ export function alertWording(alert: Pick<OpenAlert, "kind" | "message" | "lastSe
   return { message: stale ? alert.message.replace(/\bin the last hour\b/g, "in one hour") : alert.message, stale };
 }
 
+// Raised by scans when Anthropic rejects the key or the account has no credit (modules/scanning/claude-outage).
+export const CLAUDE_UNAVAILABLE = "claude_unavailable";
+const ANTHROPIC_ONLY_ERRORS = /^Errors in the (last|one) hour from Anthropic \(\d+\)\.$/;
+
+/**
+ * While "Claude unavailable" is open it is the one Claude alert on the Overview: the backup notice, the credit alert,
+ * the Settings check of the Anthropic key and a provider error count that only names Anthropic say the same thing, so
+ * they are left out of the list. The one left keeps the most serious severity among them.
+ */
+export function foldClaudeAlerts(alerts: OpenAlert[]): OpenAlert[] {
+  const claude = alerts.find((a) => a.kind === CLAUDE_UNAVAILABLE);
+  if (!claude) return alerts;
+  const folded = alerts.filter(
+    (a) =>
+      a.kind === "ai_fallback" ||
+      a.kind === "anthropic_credit" ||
+      a.kind === `service_check:anthropic` ||
+      (a.kind === "provider_errors" && ANTHROPIC_ONLY_ERRORS.test(a.message)),
+  );
+  const rank = { critical: 0, warning: 1, info: 2 } as const;
+  const severity = [claude, ...folded].reduce((s, a) => (rank[a.severity] < rank[s] ? a.severity : s), claude.severity);
+  return alerts.filter((a) => !folded.includes(a)).map((a) => (a === claude ? { ...a, severity } : a));
+}
+
 export type NotifyDeps = {
   /** Open alerts no admin has been emailed about yet. */
   unemailed: () => Promise<OpenAlert[]>;

@@ -24,6 +24,7 @@ const KIND_LABEL: Record<string, string> = {
   daily_ai_cost: "AI cost",
   anthropic_credit: "Anthropic out of credit",
   ai_fallback: "ChatGPT backup in use",
+  claude_unavailable: "Claude unavailable",
   paid_not_active: "Paid but still on trial",
   schedule_lost: "Scheduled change lost",
   topup_refund_unrecovered: "Refunded credits not taken back",

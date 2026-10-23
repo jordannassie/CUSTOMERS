@@ -88,7 +88,7 @@ describe("claim_scan_jobs", () => {
     // A stand-in scan: this test is about claiming, and 6 real scans at once overload the local API.
     const scan = async (): Promise<ScanOutcome> => {
       await new Promise((r) => setTimeout(r, 20));
-      return { status: "done", runId: "stand-in", checks: 36, failed: 0, charged: 36, released: 0, errors: [] };
+      return { status: "done", runId: "stand-in", checks: 36, failed: 0, charged: 36, released: 0, skipped: 0, errors: [] };
     };
     const lock = { chain: Promise.resolve() as Promise<unknown> };
     const [a, b] = [workerDeps(jobs, scan, lock), workerDeps(jobs, scan, lock)];

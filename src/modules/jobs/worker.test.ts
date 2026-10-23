@@ -5,8 +5,8 @@ import { handleWorkerRequest, jobUpdateFor, runWorker, type WorkerDeps } from ".
 
 const NOW = new Date("2026-09-27T12:00:00Z");
 const job = (attempts: number, creditsCharged = 0): ClaimedJob => ({ id: `job-${attempts}`, attempts, creditsCharged });
-const done = (charged: number): ScanOutcome => ({ status: "done", runId: "r", checks: 36, failed: 0, charged, released: 36 - charged, errors: [] });
-const allFailed: ScanOutcome = { status: "failed", runId: "r", checks: 2, failed: 2, charged: 0, released: 2, errors: ["openai returned 503", "openai returned 503"] };
+const done = (charged: number): ScanOutcome => ({ status: "done", runId: "r", checks: 36, failed: 0, charged, released: 36 - charged, skipped: 0, errors: [] });
+const allFailed: ScanOutcome = { status: "failed", runId: "r", checks: 2, failed: 2, charged: 0, released: 2, skipped: 0, errors: ["openai returned 503", "openai returned 503"] };
 
 describe("jobUpdateFor", () => {
   it("marks a finished scan done and adds what earlier attempts charged", () => {

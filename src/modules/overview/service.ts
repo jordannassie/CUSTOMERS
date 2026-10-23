@@ -7,16 +7,14 @@ import {
   type ProviderId,
   type ScoreReport,
 } from "@/modules/scanning";
-import { CALIBRATION, listNames, methodPanel, type Calibration, type MethodPanel } from "./method";
+import { coverageText, MODEL_LABELS, scanNoticeText, type ScanFailures } from "./coverage";
+import { CALIBRATION, methodPanel, type Calibration, type MethodPanel } from "./method";
 import { trendView, type TrendView } from "./trend";
+
+export { coverageText, MODEL_LABELS, scanFailuresFrom, scanNoticeText, scanSkipsFrom, type ScanFailures } from "./coverage";
 
 // What the Overview shows (B-49, MVP_SPEC 5.6, 8.1). Pure, so every state is unit tested.
 
-export const MODEL_LABELS: Record<ProviderId, string> = {
-  openai: "ChatGPT",
-  anthropic: "Claude",
-  perplexity: "Perplexity",
-};
 
 const CONFIDENCE_LABELS: Record<Confidence, string> = {
   early: "Early estimate",
@@ -52,8 +50,11 @@ export type OverviewView = {
     coverage?: string | null;
     details: MethodPanel;
   } | null;
-  /** notChecked: no checks in the window and every check failed in the last scan, so "Couldn't be checked". */
-  models: { id: ProviderId; label: string; score: number | null; notChecked?: boolean; change: PointsChange | null }[];
+  /**
+   * notChecked: no checks in the window and every check failed in the last scan, so "Couldn't be checked".
+   * skipped: the last scan left this AI out because it was unavailable (a rejected key or no credit).
+   */
+  models: { id: ProviderId; label: string; score: number | null; notChecked?: boolean; skipped?: boolean; change: PointsChange | null }[];
   /** A scan that finished with some AIs failing: which ones, and that failed checks cost nothing (BUG-074). */
   scanNotice: string | null;
   trend: TrendView;
@@ -104,45 +105,6 @@ export function ownQuestionsText(result: OwnQuestionsResult | null): string | nu
   return `Your own questions: named in ${result.named} of ${answers}. Not part of the score.`;
 }
 
-/** Failed checks per AI in the latest finished scan. */
-export type ScanFailures = Partial<Record<ProviderId, number>>;
-
-/** visibility_runs.failed_by_provider ({"anthropic": {"failed": 12, "reason": "..."}}) as counts per AI. */
-export function scanFailuresFrom(value: unknown): ScanFailures | null {
-  if (!value || typeof value !== "object") return null;
-  const failures: ScanFailures = {};
-  for (const id of Object.keys(MODEL_LABELS) as ProviderId[]) {
-    const failed = (value as Record<string, { failed?: unknown } | undefined>)[id]?.failed;
-    if (typeof failed === "number" && failed > 0) failures[id] = failed;
-  }
-  return failures;
-}
-
-/** Says which AIs the score rests on when a chosen one has no checks. */
-export function coverageText(models: { label: string; score: number | null; notChecked: boolean }[]): string | null {
-  const scored = models.filter((m) => m.score !== null).map((m) => m.label);
-  const missing = models.filter((m) => m.score === null);
-  if (missing.length === 0 || scored.length === 0) return null;
-  const failed = missing.filter((m) => m.notChecked).map((m) => m.label);
-  const waiting = missing.filter((m) => !m.notChecked).map((m) => m.label);
-  const parts = [`Based on ${listNames(scored)}.`];
-  if (failed.length > 0) parts.push(`${listNames(failed)} couldn't be checked.`);
-  if (waiting.length > 0) parts.push(`${listNames(waiting)} ${waiting.length === 1 ? "has" : "have"} no checks yet.`);
-  return parts.join(" ");
-}
-
-export function scanNoticeText(models: ProviderId[], failures: ScanFailures | null, questions: number): string | null {
-  const failed = models.filter((id) => (failures?.[id] ?? 0) > 0);
-  if (failed.length === 0) return null;
-  const all = failed.filter((id) => (failures?.[id] ?? 0) >= questions).map((id) => MODEL_LABELS[id]);
-  const some = failed.filter((id) => (failures?.[id] ?? 0) < questions).map((id) => MODEL_LABELS[id]);
-  const parts = [
-    all.length > 0 ? `${listNames(all)} couldn't be checked` : null,
-    some.length > 0 ? `${listNames(some)} couldn't answer some questions` : null,
-  ].filter(Boolean);
-  return `In the last scan, ${parts.join(", and ")}. We'll try again in the next scan. Failed checks are never charged.`;
-}
-
 /** Most important first, then newest; the Overview shows three. */
 export function topOpportunities(opportunities: Opportunity[], count = 3): OverviewView["opportunities"] {
   return [...opportunities]
@@ -157,9 +119,16 @@ export const MIN_MODEL_ANSWERS = 3;
 export function overviewView(
   report: ScoreReport,
   opportunities: Opportunity[],
-  options: { nextScanAt?: Date | null; now?: Date; calibration?: Calibration | null; lastScanFailures?: ScanFailures | null } = {},
+  options: {
+    nextScanAt?: Date | null;
+    now?: Date;
+    calibration?: Calibration | null;
+    lastScanFailures?: ScanFailures | null;
+    /** AIs the last scan left out because they were unavailable (scanSkipsFrom). */
+    lastScanSkipped?: ProviderId[];
+  } = {},
 ): OverviewView {
-  const { nextScanAt = null, now = new Date(), calibration = CALIBRATION, lastScanFailures = null } = options;
+  const { nextScanAt = null, now = new Date(), calibration = CALIBRATION, lastScanFailures = null, lastScanSkipped = [] } = options;
   const { overall } = report;
   const scannedDays = report.trend.filter((p) => p.checks > 0).length;
   const byModel = new Map(report.byModel.map((m) => [m.model, m.estimate]));
@@ -175,6 +144,7 @@ export function overviewView(
       score: estimate ? Math.round(estimate.score) : null,
       margin: estimate ? Math.round(estimate.margin) : null,
       notChecked: !estimate && failed > 0,
+      skipped: !estimate && lastScanSkipped.includes(id),
     };
   });
   return {
@@ -198,14 +168,15 @@ export function overviewView(
         calibration,
       ),
     },
-    models: models.map(({ id, label, score, notChecked }) => ({
+    models: models.map(({ id, label, score, notChecked, skipped }) => ({
       id,
       label,
       score,
       notChecked,
+      skipped,
       change: pointsChange(report.modelChanges[id]),
     })),
-    scanNotice: scanNoticeText(report.models, lastScanFailures, report.questions.length),
+    scanNotice: scanNoticeText(report.models, lastScanFailures, report.questions.length, lastScanSkipped),
     trend: trendView({ history: report.history, nextScanAt, now }),
     opportunities: topOpportunities(opportunities),
     lastCheckedAt: report.lastCheckedAt?.toISOString() ?? null,

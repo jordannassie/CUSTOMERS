@@ -6,7 +6,7 @@ import { createServiceClient } from "@/lib/supabase/service";
 import { adminEmails, requireAdmin } from "@/modules/auth";
 import { createLogEmailClient, sendEmail } from "@/modules/email";
 import type { Database } from "@/types/database.types";
-import { serviceAlertChanges, type NotifyDeps, type OpenAlert, type ServiceCheck } from "./service";
+import { foldClaudeAlerts, serviceAlertChanges, type NotifyDeps, type OpenAlert, type ServiceCheck } from "./service";
 
 // system_alerts has RLS with no policies, so every read and write here uses the service role (B-69).
 type Db = SupabaseClient<Database>;
@@ -31,7 +31,7 @@ export async function listOpenAlerts(db: Db = createServiceClient()): Promise<Op
     .limit(50);
   if (error) throw new Error(`Could not load open alerts: ${error.message}`);
   const rank = { critical: 0, warning: 1, info: 2 };
-  return data.map(toOpenAlert).sort((a, b) => rank[a.severity] - rank[b.severity]);
+  return foldClaudeAlerts(data.map(toOpenAlert)).sort((a, b) => rank[a.severity] - rank[b.severity]);
 }
 
 /** Marks an open alert resolved. Null when it does not exist or was already resolved. */

@@ -6,7 +6,11 @@ import { placeLabel } from "@/lib/place-label";
 import { captureCredits, holdCredits, InsufficientCreditsError, isHoldOpen, releaseHold } from "@/modules/credits";
 import { canRunScanJob, REASONS } from "@/modules/entitlements";
 import { captureBatcher } from "./capture-batch";
-import { checkIdFor, runOneCheck, type CheckContext, type CheckTask } from "./check";
+import { forEachLimited, summarise } from "./run-limited";
+import { checkIdFor, runOneCheck, type CheckContext, type CheckOutcome, type CheckTask } from "./check";
+import { claudeGate } from "./claude-outage/gate";
+import { CLAUDE_SKIPPED, claudeMode, type OutageStore } from "./claude-outage/outage";
+import { liveOutageStore } from "./claude-outage/dal";
 import type { ExtractNames } from "./extract";
 import { mentionTargets } from "./recount/service";
 import type { CheckLocation, ProviderFailures, ProviderId, RunCheck } from "./providers/types";
@@ -42,6 +46,8 @@ export type ScanDeps = {
   extractNames: ExtractNames | null;
   recordedDir: string;
   now: () => Date;
+  /** Where the Claude outage is kept (an open admin alert); tests pass one in memory. */
+  claudeOutage: OutageStore;
 };
 
 export type ScanOutcome =
@@ -53,6 +59,8 @@ export type ScanOutcome =
       failed: number;
       charged: number;
       released: number;
+      /** Claude checks left out because Claude is unavailable: never held at the start, never charged. */
+      skipped: number;
       errors: string[];
     };
 
@@ -73,7 +81,15 @@ export async function runScan(jobId: string, overrides: Partial<ScanDeps> = {}):
     if (!allowed.allowed) return { status: "skipped", reason: allowed.reason };
   }
 
-  const tasks = checkTasks(jobId, target);
+  // While Claude is unavailable (a rejected key, no credit), its checks are left out before the hold (claude-outage/outage.ts).
+  const outageStore = overrides.claudeOutage ?? liveOutageStore;
+  const askClaude = !target.isTest && target.business.models.includes("anthropic");
+  const mode = askClaude ? claudeMode(await outageStore.read(), (overrides.now ?? (() => new Date()))()) : "use";
+  const allTasks = checkTasks(jobId, target);
+  const tasks = mode === "skip" ? allTasks.filter((t) => t.provider !== "anthropic") : allTasks;
+  const skippedAtStart = allTasks.length - tasks.length;
+  // Only Claude chosen and Claude out: nothing to hold. A retried job goes on, so its open hold is still released.
+  if (tasks.length === 0 && !job.holdId) return { status: "skipped", reason: CLAUDE_SKIPPED };
   let holdId: string;
   try {
     holdId = await holdCredits(job.agencyId, tasks.length, jobId);
@@ -91,10 +107,14 @@ export async function runScan(jobId: string, overrides: Partial<ScanDeps> = {}):
   const capture = captureBatcher((checkIds) => captureCredits(holdId, checkIds));
   const errors: string[] = [];
   const failures: ProviderFailures = {};
+  const gate = claudeGate(outageStore, mode);
   let lastBeat = ctx.now().getTime();
-  await forEachLimited(tasks, CHECKS_AT_ONCE, async (task) => {
+  const runTask = async (task: CheckTask) => {
+    if (gate.skip(task)) return;
     const savedCached = saved.get(task.checkId);
-    const outcome = savedCached !== undefined ? { ok: true as const, cached: savedCached } : await runOneCheck(task, ctx.forProvider(task.provider));
+    const outcome: CheckOutcome =
+      savedCached !== undefined ? { ok: true, cached: savedCached } : await runOneCheck(task, ctx.forProvider(task.provider));
+    await gate.after(task, outcome, savedCached === undefined);
     // Tell the reset job this scan is alive, so a long one is not taken for a dead worker and run twice (B4).
     if (ctx.now().getTime() - lastBeat >= HEARTBEAT_MS) {
       lastBeat = ctx.now().getTime();
@@ -110,19 +130,34 @@ export async function runScan(jobId: string, overrides: Partial<ScanDeps> = {}):
     if (outcome.cached) return;
     // Capture right after each check, so a scan cut off halfway has charged exactly what it saved.
     await capture.add(task.checkId);
-  });
+  };
+  // After the outage window one Claude check goes first, alone, so a key that still fails costs one call (probe).
+  const probed = new Set<string>();
+  for (const task of tasks.filter((t) => t.provider === "anthropic")) {
+    if (!gate.probing()) break;
+    probed.add(task.checkId);
+    await runTask(task);
+  }
+  await forEachLimited(
+    tasks.filter((t) => !probed.has(t.checkId)),
+    CHECKS_AT_ONCE,
+    runTask,
+  );
   const charged = capture.charged();
+  const skipped = skippedAtStart + gate.skipped();
+  if (skipped > 0) failures.anthropic = { failed: failures.anthropic?.failed ?? 0, reason: CLAUDE_SKIPPED, skipped };
 
   // The run is finished and the next scan set before the hold closes. If either write fails, the worker retries a
   // job whose hold is still open, so the retry re-uses the saved checks, charges none twice and finishes the run.
   // Closing the hold first left the run "running" and the due date in the past for good.
-  const allFailed = errors.length === tasks.length;
+  const attempted = tasks.length - gate.skipped();
+  const allFailed = attempted === 0 || errors.length === attempted;
   await finishRun(run.id, {
     status: allFailed ? "failed" : "completed",
     checksTotal: tasks.length,
     checksFailed: errors.length,
     error: errors.length > 0 ? summarise(errors) : null,
-    failedByProvider: errors.length > 0 ? failures : null,
+    failedByProvider: errors.length > 0 || skipped > 0 ? failures : null,
   });
   // A scan with no result keeps its due date, so the next scheduled run tries again.
   if (!allFailed) await setNextScanAt(job.businessId, nextScanAt(target.business.scanFrequency, ctx.now()));
@@ -135,6 +170,7 @@ export async function runScan(jobId: string, overrides: Partial<ScanDeps> = {}):
     failed: errors.length,
     charged,
     released,
+    skipped,
     errors,
   };
 }
@@ -209,31 +245,4 @@ function isProvider(model: string): model is ProviderId {
 /** Credits a scan holds, counted like checkTasks: each active question on each chosen AI model (D-54). */
 export function scanCheckCount(activeQuestions: number, models: string[]): number {
   return activeQuestions * models.filter(isProvider).length;
-}
-
-function summarise(errors: string[]): string {
-  const counts = new Map<string, number>();
-  for (const e of errors) counts.set(e, (counts.get(e) ?? 0) + 1);
-  return [...counts]
-    .map(([e, n]) => (n > 1 ? `${e} (${n} checks)` : e))
-    .join("; ")
-    .slice(0, 1000);
-}
-
-// After a failure no new item starts, and the error is thrown only once the running ones end: the worker must
-// not requeue a job whose checks are still running.
-async function forEachLimited<T>(items: T[], limit: number, fn: (item: T) => Promise<void>): Promise<void> {
-  let next = 0;
-  const failures: unknown[] = [];
-  const worker = async () => {
-    while (failures.length === 0 && next < items.length) {
-      try {
-        await fn(items[next++]);
-      } catch (error) {
-        failures.push(error);
-      }
-    }
-  };
-  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker));
-  if (failures.length > 0) throw failures[0];
 }

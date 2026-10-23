@@ -1,5 +1,13 @@
 import { describe, expect, it, vi } from "vitest";
-import { alertWording, isServiceCheckKind, notifyAdmins, serviceAlertChanges, type NotifyDeps } from "./service";
+import {
+  alertWording,
+  foldClaudeAlerts,
+  isServiceCheckKind,
+  notifyAdmins,
+  serviceAlertChanges,
+  type NotifyDeps,
+  type OpenAlert,
+} from "./service";
 
 // Before email is set up (no EMAIL_FROM or Resend key), sending throws. The alerts check must still finish.
 describe("notifyAdmins when email can't be sent", () => {
@@ -68,5 +76,45 @@ describe("serviceAlertChanges (Settings checks open and close alerts)", () => {
     expect(changes).toEqual({ raise: [], resolve: ["service_check:openai"] });
     expect(isServiceCheckKind("service_check:openai")).toBe(true);
     expect(isServiceCheckKind("failed_scans")).toBe(false);
+  });
+});
+
+describe("foldClaudeAlerts (one Claude alert while it is unavailable)", () => {
+  const alert = (kind: string, message = kind): OpenAlert => ({
+    id: kind,
+    kind,
+    severity: "warning",
+    message,
+    createdAt: "2026-10-23T07:00:00Z",
+    lastSeenAt: "2026-10-23T07:30:00Z",
+  });
+  const others = [
+    alert("ai_fallback", "Claude unavailable, using ChatGPT backup."),
+    alert("anthropic_credit"),
+    alert("provider_errors", "Errors in the last hour from Anthropic (26)."),
+    alert("webhook_failures"),
+  ];
+
+  it("keeps only the Claude unavailable alert for Claude, and every other alert", () => {
+    const kinds = foldClaudeAlerts([alert("claude_unavailable"), ...others]).map((a) => a.kind);
+    expect(kinds).toEqual(["claude_unavailable", "webhook_failures"]);
+  });
+
+  it("folds the Settings check of the Anthropic key in, keeping its urgency", () => {
+    const keyCheck = { ...alert("service_check:anthropic", "Anthropic (Claude) is not working. The key was rejected (401)."), severity: "critical" as const };
+    const folded = foldClaudeAlerts([alert("claude_unavailable"), keyCheck, alert("service_check:openai")]);
+    expect(folded.map((a) => [a.kind, a.severity])).toEqual([
+      ["claude_unavailable", "critical"],
+      ["service_check:openai", "warning"],
+    ]);
+  });
+
+  it("keeps a provider error count that names another provider too", () => {
+    const mixed = alert("provider_errors", "Errors in the last hour from Anthropic (26), Google Places (6).");
+    expect(foldClaudeAlerts([alert("claude_unavailable"), mixed]).map((a) => a.kind)).toEqual(["claude_unavailable", "provider_errors"]);
+  });
+
+  it("changes nothing while Claude is not marked unavailable", () => {
+    expect(foldClaudeAlerts(others)).toEqual(others);
   });
 });
