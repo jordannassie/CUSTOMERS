@@ -19,7 +19,7 @@ export function TrialSummary({ offer }: { offer: CardOffer }) {
         <p className="text-sm font-medium">
           {offer.planName} plan, 1 business{" "}
           {/* The plan is picked on the step before (BUG-244). */}
-          <Link href="/onboarding/models" className="ml-1 text-[13px] font-medium text-primary underline-offset-2 hover:underline">
+          <Link href="/onboarding/models" prefetch={false} className="ml-1 text-[13px] font-medium text-primary underline-offset-2 hover:underline">
             Change plan
           </Link>
         </p>

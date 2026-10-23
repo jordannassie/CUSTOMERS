@@ -117,7 +117,8 @@ function StepLink({ step, number }: { step: FrameStep; number: number }) {
   const row = "flex items-center gap-3 rounded-md px-2 py-2";
   if (step.state === "done") {
     return (
-      <Link href={stepPath(step.slug)} className={cn(row, "transition-colors duration-150 ease-out hover:bg-background")}>
+      // Setup pages render in full before they stream (instant = false): a prefetch of one only got a 404.
+      <Link href={stepPath(step.slug)} prefetch={false} className={cn(row, "transition-colors duration-150 ease-out hover:bg-background")}>
         {body}
         <span className="sr-only">(done, edit)</span>
       </Link>
