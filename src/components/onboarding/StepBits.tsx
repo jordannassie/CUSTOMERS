@@ -4,6 +4,7 @@ import { ArrowLeft, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { FieldMessage } from "@/components/ui/field-errors";
 import { Label } from "@/components/ui/label";
+import { BackIcon } from "./LinkPending";
 
 export function StepError({ message }: { message: string | null }) {
   if (!message) return null;
@@ -36,7 +37,7 @@ export function StepActions({ backHref, onBack, pending, label = "Continue", dis
         <Button asChild variant="ghost" className={cn("sm:-ml-4", phoneSummary && "max-sm:hidden")}>
           {/* Setup pages can't be prefetched (instant = false): a prefetch only got a 404. */}
           <Link href={backHref} prefetch={false}>
-            <ArrowLeft aria-hidden />
+            <BackIcon />
             Back
           </Link>
         </Button>
