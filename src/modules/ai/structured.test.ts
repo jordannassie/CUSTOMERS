@@ -111,4 +111,38 @@ describe("runStructured", () => {
     await runJob(fakeAiClients(fetch), { ...job, model: "claude-sonnet-5" });
     expect(calls.openai[0]).toMatchObject({ model: "gpt-4.1" });
   });
+
+  describe("with Claude marked unavailable elsewhere (BUG-253)", () => {
+    const outage = { provider: "anthropic" as const, model: "", kind: "auth" as const, status: null, message: "Claude unavailable" };
+
+    it("goes straight to the backup without asking Claude or logging a new failure", async () => {
+      const { fetch, calls } = providerFetch({ anthropic: [claudeOk()], openai: [openaiOk()] });
+      const failure = vi.fn();
+      const breaker = createBreaker();
+      const ai = { ...fakeAiClients(fetch, { breaker }), report: { failure, claudeOutage: async () => outage } };
+      const result = await runJob(ai, job);
+
+      expect(result).toMatchObject({ provider: "openai", fellBack: true });
+      expect(calls.anthropic).toHaveLength(0);
+      expect(failure).not.toHaveBeenCalled();
+      // Kept in this instance too, so the next job skips Claude without asking again.
+      expect(breaker.isOpen("anthropic", Date.now()).open).toBe(true);
+    });
+
+    it("asks Claude as usual when no outage is open, or when the outage can't be read", async () => {
+      for (const claudeOutage of [async () => null, async () => Promise.reject(new Error("db down"))]) {
+        const { fetch, calls } = providerFetch({ anthropic: [claudeOk()], openai: [openaiOk()] });
+        const result = await runJob({ ...fakeAiClients(fetch), report: { claudeOutage } }, job);
+        expect(result.provider).toBe("anthropic");
+        expect(calls.anthropic).toHaveLength(1);
+      }
+    });
+
+    it("still asks Claude when there is no backup to go to", async () => {
+      const { fetch, calls } = providerFetch({ anthropic: [claudeOk()], openai: [openaiOk()] });
+      const ai = { ...fakeAiClients(fetch, { fallbackEnabled: false }), report: { claudeOutage: async () => outage } };
+      expect((await runJob(ai, job)).provider).toBe("anthropic");
+      expect(calls.anthropic).toHaveLength(1);
+    });
+  });
 });

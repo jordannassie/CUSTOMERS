@@ -1,10 +1,11 @@
 // Claude out of service for scans. A rejected API key or an empty Anthropic account fails every Claude check the same
 // way, so after one such failure scans leave Claude out for a while instead of sending, holding and logging a check
 // per question that cannot work. Rate limits, timeouts and server errors pass on their own and never count. Pure.
+import { CLAUDE_OUTAGE_MINUTES as AI_CLAUDE_OUTAGE_MINUTES, claudeOutageMessage } from "@/modules/ai";
 import { ProviderError } from "../providers/request";
 
 /** How long scans leave Claude out after its last auth or credit failure; the next scan then tries it once. */
-export const CLAUDE_OUTAGE_MINUTES = 30;
+export const CLAUDE_OUTAGE_MINUTES = AI_CLAUDE_OUTAGE_MINUTES;
 
 export type OutageReason = "auth" | "credit";
 
@@ -37,14 +38,8 @@ export function claudeMode(outage: ClaudeOutage | null, now: Date): ClaudeMode {
   return now.getTime() - outage.lastSeenAt.getTime() < CLAUDE_OUTAGE_MINUTES * 60_000 ? "skip" : "probe";
 }
 
-/** The admin alert text: what is wrong, what scans do meanwhile, and what fixes it. */
-export function outageMessage(reason: OutageReason): string {
-  const cause =
-    reason === "auth"
-      ? "Anthropic rejected the API key. Set a working ANTHROPIC_API_KEY."
-      : "The Anthropic account is out of credit. Top it up at console.anthropic.com (Plans & Billing).";
-  return `Claude unavailable: ${cause} Scans run on ChatGPT and Perplexity, and background jobs use the ChatGPT backup, until Claude works again.`;
-}
+/** The admin alert text: what is wrong, what scans do meanwhile, and what fixes it. Shared with background jobs. */
+export const outageMessage = (reason: OutageReason): string => claudeOutageMessage(reason);
 
 /** Why a scan left Claude out, as the job and run record it. */
 export const CLAUDE_SKIPPED = "Claude unavailable, skipped";

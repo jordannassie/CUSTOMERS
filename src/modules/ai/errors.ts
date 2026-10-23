@@ -88,6 +88,21 @@ export function shouldFallBack(kind: AiFailureKind): boolean {
 
 const MINUTE = 60_000;
 
+/**
+ * How long Claude stays out after its last rejected key or credit error, for scans and background jobs alike. The
+ * outage is the open "claude_unavailable" admin alert, so every server instance sees it (BUG-253).
+ */
+export const CLAUDE_OUTAGE_MINUTES = 30;
+
+/** The admin alert text: what is wrong, what runs meanwhile, and what fixes it. */
+export function claudeOutageMessage(reason: "auth" | "credit"): string {
+  const cause =
+    reason === "auth"
+      ? "Anthropic rejected the API key. Set a working ANTHROPIC_API_KEY."
+      : "The Anthropic account is out of credit. Top it up at console.anthropic.com (Plans & Billing).";
+  return `Claude unavailable: ${cause} Scans run on ChatGPT and Perplexity, and background jobs use the ChatGPT backup, until Claude works again.`;
+}
+
 /** How long to skip the primary after this failure, or 0 to keep trying it. */
 export function breakerMs(kind: AiFailureKind): number {
   if (kind === "credit" || kind === "auth") return 15 * MINUTE;

@@ -32,10 +32,11 @@ const GoogleIcon = () => (
 
 // The page the visitor asked for before being sent to log in (BUG-009). A plan picked on the pricing
 // page (?plan=) is carried into onboarding, which keeps it for the card step (MVP_SPEC 3.1 step 0).
-function nextFromUrl() {
+// A new account goes straight to setup: /dashboard only redirected there, one more server trip (2026-10-23).
+function nextFromUrl(signup = false) {
   const params = new URLSearchParams(window.location.search);
   const plan = params.get("plan");
-  const fallback = plan === "starter" || plan === "pro" ? `/onboarding?plan=${plan}` : undefined;
+  const fallback = plan === "starter" || plan === "pro" ? `/onboarding?plan=${plan}` : signup ? "/onboarding" : undefined;
   return safeNextPath(params.get("next"), fallback);
 }
 
@@ -115,7 +116,7 @@ export default function AuthForm({ defaultMode = "login", errorParam = "", notic
         email,
         password,
         options: {
-          emailRedirectTo: `${siteBase}/auth/callback?from=signup&next=${encodeURIComponent(nextFromUrl())}`,
+          emailRedirectTo: `${siteBase}/auth/callback?from=signup&next=${encodeURIComponent(nextFromUrl(true))}`,
         },
       });
       setLoading(null);
@@ -132,10 +133,10 @@ export default function AuthForm({ defaultMode = "login", errorParam = "", notic
         }
         return;
       }
-      // With email confirmation off, signUp already returns a session.
+      // With email confirmation off, signUp already returns a session. One navigation: the page it opens is read
+      // with the new session's cookie, so a refresh after it only fetched the same page again.
       if (data.session) {
-        router.push(nextFromUrl());
-        router.refresh();
+        router.push(nextFromUrl(true));
         return;
       }
       setMessage("Check your email to confirm your account.");
@@ -162,7 +163,6 @@ export default function AuthForm({ defaultMode = "login", errorParam = "", notic
       return;
     }
     router.push(nextFromUrl());
-    router.refresh();
   }
 
   const alertId = "auth-alert";

@@ -89,7 +89,9 @@ async function withBrowserless(url: string, title: string, signal: AbortSignal):
     body: JSON.stringify({
       url,
       options: printOptions(title),
-      gotoOptions: { waitUntil: "networkidle2", timeout: PDF_TIMEOUT_MS },
+      // "load" (images and fonts in) plus the ready marker (charts drawn) is the whole page; waiting for the network to
+      // go quiet added 0.5 to 2 seconds per PDF for the same file (2026-10-23).
+      gotoOptions: { waitUntil: "load", timeout: PDF_TIMEOUT_MS },
       waitForSelector: { selector: READY, timeout: PDF_TIMEOUT_MS },
     }),
     signal,
@@ -115,7 +117,7 @@ async function withChromium(url: string, title: string, signal: AbortSignal, loc
   try {
     const page = await browser.newPage();
     page.setDefaultTimeout(PDF_TIMEOUT_MS);
-    await page.goto(url, { waitUntil: "networkidle" });
+    await page.goto(url, { waitUntil: "load" });
     await page.waitForSelector(READY, { state: "attached" });
     return new Uint8Array(await page.pdf(printOptions(title)));
   } finally {
