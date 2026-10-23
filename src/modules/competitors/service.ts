@@ -131,16 +131,25 @@ export function competitorsView(input: {
     hasScore: overall !== null,
     margin: overall ? Math.round(overall.margin) : null,
     leaderboard,
-    signals: [
-      signalRow(business.name, true, business.placesId, signals),
-      ...competitors.map((c) => ({ ...signalRow(c.name, false, c.placesId, signals), competitorId: c.id ?? null, savedSite: c.domain ?? null })),
-    ],
+    signals: signalRows(business, competitors, signals),
     also: also.names,
     answers: also.answers,
     count: competitors.length,
     limit,
     pickBranch: !!business.chain && !business.placesId,
   };
+}
+
+/** "Side by side on Google": your row, then each competitor's, from the live Places answers by place id. */
+export function signalRows(
+  business: { name: string; placesId: string | null },
+  competitors: CompetitorRow[],
+  signals: Map<string, SignalResult>,
+): SignalRow[] {
+  return [
+    signalRow(business.name, true, business.placesId, signals),
+    ...competitors.map((c) => ({ ...signalRow(c.name, false, c.placesId, signals), competitorId: c.id ?? null, savedSite: c.domain ?? null })),
+  ];
 }
 
 function signalRow(name: string, isYou: boolean, placesId: string | null, signals: Map<string, SignalResult>): SignalRow {

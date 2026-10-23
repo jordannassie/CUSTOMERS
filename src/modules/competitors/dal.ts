@@ -12,7 +12,7 @@ import { loadAlsoRecommended, loadScoreReport, recountAfterNamesChange } from "@
 import { fixtureSignals } from "./place-fixtures";
 import { createPlaceSignals, PlacesUnavailable, type FetchSignals } from "./places";
 import { pickedInstead, type PickedInstead } from "./picked";
-import { competitorsView, type CompetitorsView, type SignalResult } from "./service";
+import { competitorsView, signalRows, type CompetitorsView, type SignalResult, type SignalRow } from "./service";
 
 // Fixture mode is refused in production so a stray flag can never show made-up businesses to users.
 function liveSignals(): FetchSignals {
@@ -50,19 +50,36 @@ function countedFrom(r: { created_at: string; checked_from: string | null }): Da
 /** Live Google signals for one place id; kept in memory for the request only (D-73). */
 export const fetchPlaceSignals: FetchSignals = (placeId) => signalsForRequest(placeId);
 
-/** The Competitors page for one of the signed-in agency's businesses; null when it is not theirs. */
-export async function getCompetitorsPage(businessId: string, next: string): Promise<CompetitorsView | null> {
+/**
+ * The Competitors page for one of the signed-in agency's businesses; null when it is not theirs. The Google table
+ * comes apart, as a promise: its live Places lookups (one per business) no longer hold up the rest of the page.
+ */
+export async function getCompetitorsPage(
+  businessId: string,
+  next: string,
+): Promise<{ view: CompetitorsView; signals: Promise<SignalRow[]> } | null> {
   const { agency } = await requireAgency({ next });
-  return loadCompetitorsPage(agency.id, businessId, requestNow(), signalsForRequest);
+  const base = await loadCompetitorsBase(agency.id, businessId, requestNow());
+  return base && { view: base.view, signals: base.signals(signalsForRequest) };
 }
 
-// Callers check the user may see this agency first. Reads only; nothing from Places is written (D-73).
+// Callers check the user may see this agency first. Reads only; nothing from Places is written (D-73). The shared
+// report and its PDF wait for the Google table too, so the printed page is complete.
 export async function loadCompetitorsPage(
   agencyId: string,
   businessId: string,
   now: Date,
   fetchSignals: FetchSignals,
 ): Promise<CompetitorsView | null> {
+  const base = await loadCompetitorsBase(agencyId, businessId, now);
+  return base && { ...base.view, signals: await base.signals(fetchSignals) };
+}
+
+async function loadCompetitorsBase(
+  agencyId: string,
+  businessId: string,
+  now: Date,
+): Promise<{ view: CompetitorsView; signals: (fetchSignals: FetchSignals) => Promise<SignalRow[]> } | null> {
   const db = createServiceClient();
   const [report, also, business, rows, limit] = await Promise.all([
     loadScoreReport(agencyId, businessId, now),
@@ -87,22 +104,20 @@ export async function loadCompetitorsPage(
     placesId: r.places_id ?? r.place_id,
     countedFrom: countedFrom(r),
   }));
-  const placeIds = [...new Set([business.data.places_id, ...competitors.map((c) => c.placesId)].filter((id) => id !== null))];
-  const results = await Promise.all(
-    placeIds.map(async (id): Promise<[string, SignalResult]> => [
-      id,
-      await fetchSignals(id).catch((e) => (e instanceof PlacesUnavailable && e.limited ? ("limited" as const) : ("error" as const))),
-    ]),
-  );
+  const you = { name: business.data.name, placesId: business.data.places_id, chain: business.data.is_chain };
+  const view = competitorsView({ business: you, report, competitors, signals: new Map(), also, limit: limit.limit });
 
-  return competitorsView({
-    business: { name: business.data.name, placesId: business.data.places_id, chain: business.data.is_chain },
-    report,
-    competitors,
-    signals: new Map(results),
-    also,
-    limit: limit.limit,
-  });
+  const signals = async (fetchSignals: FetchSignals): Promise<SignalRow[]> => {
+    const placeIds = [...new Set([you.placesId, ...competitors.map((c) => c.placesId)].filter((id) => id !== null))];
+    const results = await Promise.all(
+      placeIds.map(async (id): Promise<[string, SignalResult]> => [
+        id,
+        await fetchSignals(id).catch((e) => (e instanceof PlacesUnavailable && e.limited ? ("limited" as const) : ("error" as const))),
+      ]),
+    );
+    return signalRows(you, competitors, new Map(results));
+  };
+  return { view, signals };
 }
 
 export type TrackResult = { ok: true } | { ok: false; status: 403 | 404; error: string };
@@ -124,10 +139,12 @@ export async function trackCompetitorByName(userId: string, businessId: string, 
   if (error) throw new Error(`Could not load business: ${error.message}`);
   if (!business) return { ok: false, status: 404, error: "Business not found." };
 
-  const existing = await supabase.from("business_competitors").select("name").eq("business_id", businessId);
+  const [existing, { limit }] = await Promise.all([
+    supabase.from("business_competitors").select("name").eq("business_id", businessId),
+    maxCompetitors(businessId),
+  ]);
   if (existing.error) throw new Error(`Could not load competitors: ${existing.error.message}`);
   if (existing.data.some((c) => c.name.trim().toLowerCase() === name.toLowerCase())) return { ok: true };
-  const { limit } = await maxCompetitors(businessId);
   if (limit !== null && existing.data.length >= limit) {
     return { ok: false, status: 403, error: `${limitMessage(limit)} Remove one to track another.` };
   }
