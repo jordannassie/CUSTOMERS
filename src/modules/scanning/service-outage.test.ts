@@ -17,7 +17,12 @@ import {
 
 // Claude out of service (claude-outage/outage.ts): after a rejected key or an empty account, scans leave Claude out for
 // a while, hold and charge nothing for it, and try it once when the window is over. Local database, mocked providers,
-// and the outage kept in memory, so these tests never open the shared admin alert other scan tests read.
+// and the outage kept in memory, so these tests never open the shared admin alert other scan tests read. The provider
+// error log is mocked too: a credit error written there makes the Settings status show Anthropic out of credit for
+// every other test running at the same time.
+const recordProviderError = vi.hoisted(() => vi.fn(async () => {}));
+vi.mock("./runs/dal", async (importOriginal) => ({ ...(await importOriginal<typeof import("./runs/dal")>()), recordProviderError }));
+
 afterAll(deleteScanUsers);
 
 let aiAttempts: string[];
@@ -26,6 +31,7 @@ beforeEach(() => {
 });
 afterEach(() => {
   vi.restoreAllMocks();
+  recordProviderError.mockClear();
   expect(aiAttempts).toEqual([]);
 });
 
@@ -97,6 +103,8 @@ describe("runScan when Claude is out of service", () => {
     // Only the checks already running when the first one failed reached Claude.
     expect(claude.mock.calls.length).toBeLessThanOrEqual(CHECKS_AT_ONCE);
     expect(outcome.skipped).toBe(12 - claude.mock.calls.length);
+    // One provider error per Claude call that ran, none for the skipped ones.
+    expect(recordProviderError).toHaveBeenCalledTimes(claude.mock.calls.length);
     expect(outcome).toMatchObject({ status: "done", checks: 36, failed: claude.mock.calls.length, charged: 24 });
     expect((await runFailures(outcome.runId)).anthropic).toMatchObject({ skipped: outcome.skipped });
   });
@@ -130,6 +138,7 @@ describe("runScan when Claude is out of service", () => {
     expect((await runFailures(outcome.runId)).anthropic).toMatchObject({ failed: 0, skipped: 12 });
     // Skipped checks are not provider errors: nothing new is logged for them.
     expect(store.mark).not.toHaveBeenCalled();
+    expect(recordProviderError).not.toHaveBeenCalled();
   });
 
   it("tries Claude again once the window has passed, and brings it back when it answers", async () => {
