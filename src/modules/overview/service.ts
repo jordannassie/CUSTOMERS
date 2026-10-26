@@ -160,6 +160,7 @@ export function overviewView(
         {
           windowDays: SCORE_WINDOW_DAYS,
           label: CONFIDENCE_LABELS[overall.confidence],
+          confidence: overall.confidence,
           margin: Math.round(overall.margin),
           checks: overall.checks,
           uniqueAnswers: overall.uniqueAnswers,

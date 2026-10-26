@@ -19,7 +19,7 @@ export type OpportunitiesPage = {
 /** The page for one of the signed-in agency's businesses; null when it is not theirs. */
 export async function getOpportunitiesPage(businessId: string): Promise<OpportunitiesPage | null> {
   const { agency } = await requireAgency({ next: "/opportunities" });
-  const [{ data: b, error }, live] = await Promise.all([
+  const [{ data: b, error }, live, rivals] = await Promise.all([
     createServiceClient()
       .from("businesses")
       .select("name, primary_city, primary_region, industry, services, phone, domain, has_website, places_id, is_chain")
@@ -28,7 +28,10 @@ export async function getOpportunitiesPage(businessId: string): Promise<Opportun
       .maybeSingle(),
     // Checks the agency itself, so it can run alongside the business read.
     getLiveOpportunities(businessId),
+    // Names only, to say which competitor a fix is about.
+    createServiceClient().from("business_competitors").select("name").eq("business_id", businessId).order("created_at"),
   ]);
+  if (rivals.error) throw new Error(`Opportunities: could not read competitors: ${rivals.error.message}`);
   if (error) throw new Error(`Opportunities: could not read the business: ${error.message}`);
   if (!b || !live) return null;
 
@@ -57,7 +60,7 @@ export async function getOpportunitiesPage(businessId: string): Promise<Opportun
   };
   const missing = missingBasics(business);
   return {
-    items: toItems(fixes),
+    items: toItems(fixes, b ? rivals.data.map((c) => c.name) : []),
     checklist: missing.length > 0 ? { missing, items: checklist(business, ticked) } : null,
     branch: branchPending ? search : null,
   };

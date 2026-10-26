@@ -20,7 +20,7 @@ export function ShareOfVoiceChart({ view }: { view: CompetitorChartsView }) {
   const config = Object.fromEntries(view.share.map((s) => [s.key, { label: s.name, color: s.color }])) satisfies ChartConfig;
   const slices = view.share.filter((s) => s.mentions > 0);
   return (
-    <figure className="m-0 flex flex-col items-center gap-4 sm:flex-row sm:items-center" data-testid="share-of-voice-chart">
+    <figure className="m-0 flex w-full flex-col items-center gap-6 sm:flex-row sm:items-center" data-testid="share-of-voice-chart">
       <div className="relative size-40 shrink-0">
         <ChartContainer config={config} className="aspect-square size-40" aria-hidden="true">
           <PieChart>
@@ -63,7 +63,7 @@ export function ShareOfVoiceChart({ view }: { view: CompetitorChartsView }) {
           ))}
         </ul>
         <p className="mt-3 text-xs text-text-hint">
-          Out of {view.mentions} {view.mentions === 1 ? "time" : "times"} AI named one of these businesses in the last 30 days.
+          Out of {view.mentions} {view.mentions === 1 ? "mention" : "mentions"} in the last 30 days.
         </p>
       </figcaption>
     </figure>

@@ -5,12 +5,13 @@ import { notFound, redirect } from "next/navigation";
 import { Settings2 } from "lucide-react";
 import { AlsoRecommended } from "@/components/competitors/AlsoRecommended";
 import { ShareAndModelCards, VisibilityTrendCard } from "@/components/competitors/charts/CompetitorCharts";
-import { Leaderboard } from "@/components/competitors/Leaderboard";
+import { Leaderboard, type WhyWrap } from "@/components/competitors/Leaderboard";
 import { SignalsTable } from "@/components/competitors/SignalsTable";
+import { WhySheet } from "@/components/competitors/WhySheet";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { answersText, getCompetitorsPage, saveCompetitorWebsite, trackCompetitor, type SignalRow } from "@/modules/competitors";
+import { answersText, getCompetitorsPage, rowName, trackedNote, saveCompetitorWebsite, trackCompetitor, type SignalRow } from "@/modules/competitors";
 import { getWorkspace } from "@/modules/workspace";
 import { PageHeader } from "@/components/app/PageHeader";
 
@@ -20,7 +21,9 @@ const PATH = "/competitors";
 const MANAGE = "/competitors/manage";
 
 // B-50, MVP_SPEC 8.1: who AI picks more, how you compare on Google, and who else AI names.
-export default async function CompetitorsPage() {
+export default async function CompetitorsPage({ searchParams }: { searchParams: Promise<{ why?: string }> }) {
+  // "See why" on the Overview opens this competitor's panel.
+  const open = (await searchParams).why;
   const workspace = await getWorkspace({ next: PATH });
   const business = workspace.businesses.find((b) => b.id === workspace.activeBusinessId);
   if (!business || business.status === "onboarding") redirect("/dashboard");
@@ -30,6 +33,20 @@ export default async function CompetitorsPage() {
   const { view } = page;
   // The charts need a score and at least one competitor to compare with.
   const charts = view.charts && view.count > 0 && view.hasScore ? view.charts : null;
+  // "See why" for each competitor compared over the whole 30 days: one still collecting was not looked for in the older
+  // answers, so its counts would be unfair. A chain row opens under the chain's name, with the branches you track.
+  const why = new Map(
+    view.leaderboard.flatMap((row) => {
+      const panel = !row.isYou && row.standing !== null ? page.why.find((p) => p.trackedName === row.name) : undefined;
+      if (!panel) return [];
+      const wrap: WhyWrap = (trigger) => (
+        <WhySheet panel={panel} title={rowName(row)} note={trackedNote(row)} standing={row.standing} signals={page.signals} defaultOpen={open === panel.competitorId}>
+          {trigger}
+        </WhySheet>
+      );
+      return [[row.name, wrap] as const];
+    }),
+  );
   const tracked = view.limit === null ? `${view.count} tracked` : `${view.count} of ${view.limit} tracked`;
 
   return (
@@ -56,12 +73,14 @@ export default async function CompetitorsPage() {
         }
       />
 
-      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
+      {/* The leaderboard and the trend on the left, "Also recommended" on the right, both columns the same height: the
+          trend chart grows into any space left, and the right card stretches, so no gap is left under either side. */}
+      <div className="grid items-stretch gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
         <div className="flex min-w-0 flex-col gap-6">
           <Card>
             <CardHeader>
               <CardTitle className="text-base">Who AI recommends most</CardTitle>
-              <CardDescription>Share of customer questions where each business was recommended.</CardDescription>
+              <CardDescription>{why.size > 0 ? "Select a competitor to see why they're ahead or behind." : "Share of customer questions where each business was named."}</CardDescription>
             </CardHeader>
             <CardContent>
               {view.count === 0 ? (
@@ -75,11 +94,11 @@ export default async function CompetitorsPage() {
                   action={{ href: "/dashboard", label: "Go to Overview" }}
                 />
               ) : (
-                <Leaderboard view={view} />
+                <Leaderboard view={view} why={why} />
               )}
             </CardContent>
           </Card>
-          {charts ? <VisibilityTrendCard charts={charts} /> : null}
+          {charts ? <VisibilityTrendCard charts={charts} grow /> : null}
         </div>
 
         <Card>
@@ -104,7 +123,6 @@ export default async function CompetitorsPage() {
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Side by side on Google</CardTitle>
-          <CardDescription>What customers and AI see about each business on Google.</CardDescription>
         </CardHeader>
         <CardContent>
           {view.count === 0 ? (

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { fixHref } from "@/lib/fix-where";
 import { Badge } from "@/components/ui/badge";
 import type { OverviewView } from "@/modules/overview";
 import { WaitForFixes, type CheckFixesAction } from "@/components/opportunities/WaitForFixes";
@@ -41,7 +42,8 @@ export function TopOpportunities({
           <div className="flex shrink-0 sm:w-28">
             <Badge variant={IMPACT[o.impact].variant}>{IMPACT[o.impact].label}</Badge>
           </div>
-          <Link href={OPPORTUNITIES_HREF} className="text-sm font-medium hover:text-primary hover:underline">
+          {/* Opens this fix on the Opportunities page, already expanded. */}
+          <Link href={fixHref(o.id)} className="text-sm font-medium hover:text-primary hover:underline">
             {o.title}
           </Link>
         </li>

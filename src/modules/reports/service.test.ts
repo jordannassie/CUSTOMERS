@@ -105,6 +105,19 @@ describe("reportSummary", () => {
     expect(reportSummary({ ...base, leaderboard: [branch] })[1]).toBe("AI recommended Bennu Coffee more often, in about 8 of 10 questions.");
   });
 
+  it("adds the likely reason the Overview shows, before the first fix", () => {
+    const summary = reportSummary({
+      ...base,
+      leaderboard: [row("Casco Bay", 81, "behind")],
+      firstFix: "Get listed on Yelp",
+      reason: "A likely reason Casco Bay is ahead of you: AI used yelp.com in 9 answers that named Casco Bay and not you.",
+    });
+    expect(summary.slice(-2)).toEqual([
+      "A likely reason Casco Bay is ahead of you: AI used yelp.com in 9 answers that named Casco Bay and not you.",
+      "First fix: Get listed on Yelp.",
+    ]);
+  });
+
   it("skips competitors still collecting and says nothing before a score", () => {
     expect(reportSummary({ ...base, leaderboard: [row("New Dental", 90, null)] })).toHaveLength(1);
     expect(reportSummary({ ...base, score: null })).toEqual([]);

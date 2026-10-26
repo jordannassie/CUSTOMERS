@@ -15,7 +15,12 @@ import { PageHeader } from "@/components/app/PageHeader";
 export const metadata = { title: "Opportunities", robots: { index: false } };
 
 // B-52, MVP_SPEC 8.1: every fix step, most important first, with status and a "Copy for Claude" prompt.
-export default async function OpportunitiesPage() {
+// A fix id from another page's link (?fix=); anything else is ignored.
+const FIX_ID = /^[0-9a-f-]{36}$/i;
+
+export default async function OpportunitiesPage({ searchParams }: { searchParams: Promise<{ fix?: string }> }) {
+  const fix = (await searchParams).fix;
+  const openId = fix && FIX_ID.test(fix) ? fix : null;
   const workspace = await getWorkspace({ next: "/opportunities" });
   const business = workspace.businesses.find((b) => b.id === workspace.activeBusinessId);
   if (!business || business.status === "onboarding") redirect("/dashboard");
@@ -85,7 +90,13 @@ export default async function OpportunitiesPage() {
             </section>
           )
         ) : (
-          <OpportunityList key={`list-${business.id}`} businessId={business.id} initialItems={view.items} setStatus={setOpportunityStatus} />
+          <OpportunityList
+            key={`list-${business.id}-${openId ?? ""}`}
+            businessId={business.id}
+            initialItems={view.items}
+            setStatus={setOpportunityStatus}
+            openId={openId}
+          />
         )}
       </div>
     </PageContainer>

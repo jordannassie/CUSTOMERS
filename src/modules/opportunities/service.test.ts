@@ -50,6 +50,8 @@ describe("opportunities service", () => {
       steps: [],
       claudePrompt: "Write a page.",
       usesGoogle: false,
+      where: "website",
+      about: [],
     });
   });
 });

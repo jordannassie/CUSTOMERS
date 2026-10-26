@@ -21,9 +21,10 @@ export function VisibilityTrendChart({ view }: { view: CompetitorChartsView }) {
   const config = Object.fromEntries(series.map((s) => [s.key, { label: s.name, color: s.color }])) satisfies ChartConfig;
   const summary = series.map((s) => `${s.name} ${latest[s.key] ?? "no checks"}`).join(", ");
   return (
-    <figure className="m-0 flex flex-col gap-3" data-testid="competitor-trend-chart">
+    // Grows with its card, so it fills the space beside a long "Also recommended" list (never under 224px).
+    <figure className="m-0 flex h-full flex-col gap-3" data-testid="competitor-trend-chart">
       <SeriesLegend series={series} />
-      <ChartContainer config={config} className="aspect-auto h-56 w-full" aria-hidden="true">
+      <ChartContainer config={config} className="aspect-auto min-h-56 w-full flex-1" aria-hidden="true">
         <LineChart data={timeline} margin={{ top: 8, right: 16, bottom: 0, left: -20 }}>
           <CartesianGrid vertical={false} />
           <XAxis dataKey="label" tickLine={false} axisLine={false} tickMargin={8} interval="preserveStartEnd" minTickGap={24} />

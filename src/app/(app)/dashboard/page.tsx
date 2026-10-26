@@ -11,6 +11,7 @@ import { ScoreSummary } from "@/components/overview/ScoreSummary";
 import { OPPORTUNITIES_HREF, TopOpportunities } from "@/components/overview/TopOpportunities";
 import { QuestionTrends } from "@/components/overview/QuestionTrends";
 import { TrendChart } from "@/components/overview/TrendChart";
+import { WhyBehind } from "@/components/overview/WhyBehind";
 import { getPickedInstead } from "@/modules/competitors";
 import { getScanStatus, startScan } from "@/modules/jobs";
 import { checkFixes, getFixesState } from "@/modules/insights";
@@ -148,6 +149,7 @@ export default async function OverviewPage() {
       </div>
 
       {score && picked && <PickedInstead picked={picked} />}
+      {score && picked && typeof picked === "object" && picked.why && <WhyBehind why={picked.why} />}
 
       <Card>
         <CardHeader>

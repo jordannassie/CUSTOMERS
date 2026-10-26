@@ -28,7 +28,7 @@ export function ModelComparisonChart({ view }: { view: CompetitorChartsView }) {
       </ChartContainer>
       <figcaption className="text-xs text-text-hint">
         <span className="sr-only">{summary}. </span>
-        Share of each AI&apos;s answers in the last 30 days that recommended each business. An AI with no checks shows no bar.
+        Share of each AI&apos;s answers that named each business, last 30 days.
       </figcaption>
     </figure>
   );

@@ -14,6 +14,8 @@ import { createPlaceSignals, PlacesUnavailable, type FetchSignals } from "./plac
 import { pickedInstead, type PickedInstead } from "./picked";
 import { competitorChartsView } from "./charts";
 import { competitorsView, signalRows, type CompetitorsView, type SignalResult, type SignalRow } from "./service";
+import { loadWhyPanels } from "./why/dal";
+import { whyCard, type WhyPanel } from "./why/service";
 
 // Fixture mode is refused in production so a stray flag can never show made-up businesses to users.
 function liveSignals(): FetchSignals {
@@ -58,10 +60,14 @@ export const fetchPlaceSignals: FetchSignals = (placeId) => signalsForRequest(pl
 export async function getCompetitorsPage(
   businessId: string,
   next: string,
-): Promise<{ view: CompetitorsView; signals: Promise<SignalRow[]> } | null> {
+): Promise<{ view: CompetitorsView; signals: Promise<SignalRow[]>; why: WhyPanel[] } | null> {
   const { agency } = await requireAgency({ next });
-  const base = await loadCompetitorsBase(agency.id, businessId, requestNow(), { charts: true });
-  return base && { view: base.view, signals: base.signals(signalsForRequest) };
+  const now = requestNow();
+  const base = await loadCompetitorsBase(agency.id, businessId, now, { charts: true });
+  if (!base) return null;
+  // "See why" reads only saved answers (already read for this request) and fixes; a chain row's panel uses its name.
+  const why = await loadWhyPanels(agency.id, businessId, now, chainNames(base.view.leaderboard));
+  return { view: base.view, signals: base.signals(signalsForRequest), why };
 }
 
 // Callers check the user may see this agency first. Reads only; nothing from Places is written (D-73). The shared
@@ -174,12 +180,19 @@ export async function trackCompetitorByName(userId: string, businessId: string, 
  */
 export async function getPickedInstead(businessId: string): Promise<PickedInstead | null | "none-tracked"> {
   const { agency } = await requireAgency({ next: "/dashboard" });
+  return loadPicked(agency.id, businessId, requestNow());
+}
+
+/**
+ * The same without a signed-in user, for the shared report and the weekly email: callers check the agency first.
+ * Reads saved answers and fixes only; no Google call (D-73).
+ */
+export async function loadPicked(agencyId: string, businessId: string, now: Date): Promise<PickedInstead | null | "none-tracked"> {
   const db = createServiceClient();
-  const now = requestNow();
   const [report, also, business, rows] = await Promise.all([
-    loadScoreReport(agency.id, businessId, now),
-    loadAlsoRecommended(agency.id, businessId, now),
-    db.from("businesses").select("name, places_id").eq("id", businessId).eq("agency_id", agency.id).maybeSingle(),
+    loadScoreReport(agencyId, businessId, now),
+    loadAlsoRecommended(agencyId, businessId, now),
+    db.from("businesses").select("name, places_id").eq("id", businessId).eq("agency_id", agencyId).maybeSingle(),
     db.from("business_competitors").select("name, places_id, place_id, created_at, checked_from").eq("business_id", businessId).order("created_at"),
   ]);
   for (const r of [business, rows]) if (r.error) throw new Error(`Competitors: ${r.error.message}`);
@@ -193,5 +206,13 @@ export async function getPickedInstead(businessId: string): Promise<PickedInstea
     also,
     limit: null,
   });
-  return pickedInstead(view);
+  const picked = pickedInstead(view);
+  if (!picked) return picked;
+  const panels = await loadWhyPanels(agencyId, businessId, now, chainNames(view.leaderboard));
+  return { ...picked, why: whyCard(view.leaderboard, panels) };
+}
+
+/** Each tracked name on a chain row, to the chain AI named ("Bennu Coffee on Congress" to "Bennu Coffee"). */
+function chainNames(rows: CompetitorsView["leaderboard"]): Map<string, string> {
+  return new Map(rows.flatMap((r) => (r.chain ? r.chain.tracked.map((t) => [t, r.chain!.brand] as const) : [])));
 }

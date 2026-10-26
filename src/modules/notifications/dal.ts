@@ -3,6 +3,7 @@ import { timingSafeEqual } from "node:crypto";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { env } from "@/lib/env";
 import { createServiceClient } from "@/lib/supabase/service";
+import { loadPicked, whySentence } from "@/modules/competitors";
 import { loadOverview } from "@/modules/overview";
 import { shareForEmail } from "@/modules/reports";
 import type { WeeklyBusiness } from "@/modules/email";
@@ -93,13 +94,21 @@ export async function weeklyBusinesses(agencyId: string, now: Date, db: Db = cre
 
   const businesses: WeeklyBusiness[] = [];
   for (const business of data) {
-    const [overview, opportunities] = await Promise.all([
+    const [overview, opportunities, picked] = await Promise.all([
       loadOverview(agencyId, business.id, now),
       newOpportunities(db, business.id, now),
+      // Saved answers only, never Google values (D-73): the same likely reason the Overview and report show.
+      loadPicked(agencyId, business.id, now),
     ]);
     const share = overview?.score ? await shareForEmail(agencyId, business.id) : null;
     businesses.push(
-      weeklyBusiness({ name: business.name, overview, newOpportunities: opportunities, reportPath: share?.path ?? "/dashboard" }),
+      weeklyBusiness({
+        name: business.name,
+        overview,
+        newOpportunities: opportunities,
+        reportPath: share?.path ?? "/dashboard",
+        reason: picked && typeof picked === "object" ? whySentence(picked.why) : null,
+      }),
     );
   }
   return businesses;

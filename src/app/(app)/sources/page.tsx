@@ -34,8 +34,8 @@ export default async function SourcesPage() {
           }
           description={
             <>
-              Websites AI cited in the last 30 days when answering customer questions{where}. Being listed on these sites
-              makes it easier for AI to recommend you.
+              Websites AI used in the last 30 days to answer customer questions{where}. Being listed on them helps AI
+              recommend you.
             </>
           }
         />
@@ -66,9 +66,9 @@ export default async function SourcesPage() {
               </Card>
               <Card className="lg:order-1">
                 <CardHeader>
-                  <CardTitle className="text-base">Websites AI cited</CardTitle>
+                  <CardTitle className="text-base">Websites AI used</CardTitle>
                   <p className="text-sm text-muted-foreground">
-                    Out of {sources.answers} AI {sources.answers === 1 ? "answer" : "answers"}, most cited first.
+                    Out of {sources.answers} {sources.answers === 1 ? "answer" : "answers"}.
                   </p>
                 </CardHeader>
                 <CardContent>

@@ -28,7 +28,7 @@ export type ReportView = {
   trend: OverviewView["trend"];
   competitors: Pick<CompetitorsView, "leaderboard" | "margin" | "signals" | "count" | "hasScore">;
   opportunities: { title: string; impact: OverviewView["opportunities"][number]["impact"] }[];
-  /** 2 or 3 plain sentences from the numbers above, no AI (DB-012). */
+  /** 2 to 4 plain sentences from the numbers above and the saved answers, no AI (DB-012). */
   summary: string[];
 };
 
@@ -43,6 +43,8 @@ export function reportView(input: {
   windowDays: number;
   overview: OverviewView;
   competitors: CompetitorsView;
+  /** The likely reason line shared with the Overview card and the weekly email (competitors whySentence). */
+  reason?: string | null;
 }): ReportView {
   const { overview, competitors, now } = input;
   const score = overview.score && {
@@ -77,6 +79,7 @@ export function reportView(input: {
       monthChange: overview.monthChange,
       leaderboard: competitors.leaderboard,
       firstFix: overview.opportunities[0]?.title ?? null,
+      reason: input.reason ?? null,
     }),
   };
 }
@@ -96,6 +99,8 @@ export function reportSummary(input: {
   monthChange: OverviewView["monthChange"];
   leaderboard: CompetitorsView["leaderboard"];
   firstFix: string | null;
+  /** "A likely reason Bean House is ahead of you: ...", from saved answers only. */
+  reason?: string | null;
 }): string[] {
   const { businessName: name, score, monthChange } = input;
   if (score === null) return [];
@@ -126,6 +131,7 @@ export function reportSummary(input: {
   }
   else if (top?.standing === "ahead") lines.push(`AI recommended ${name} more often than every competitor tracked here.`);
 
+  if (input.reason) lines.push(input.reason);
   if (input.firstFix) lines.push(`First fix: ${input.firstFix.replace(/[.!?]$/, "")}.`);
   return lines;
 }

@@ -17,6 +17,8 @@ const FIXES: OpportunityItem[] = [
     claudePrompt:
       "Write a short, friendly message Bean House, a coffee shop in Orange, CA, can send to regulars asking for a Google review. Keep it under 60 words.",
     usesGoogle: false,
+    where: "website",
+    about: [],
   },
   {
     id: "oat-milk",
@@ -29,6 +31,8 @@ const FIXES: OpportunityItem[] = [
     claudePrompt:
       "Write a short, friendly menu page for Bean House, a coffee shop in Orange, CA. List our oat milk and other plant milk drinks with one line each, and add opening hours and address at the end.",
     usesGoogle: false,
+    where: "website",
+    about: [],
   },
 ];
 

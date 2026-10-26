@@ -49,6 +49,8 @@ export function weeklyBusiness(input: {
   newOpportunities: NewOpportunity[];
   /** The share page path (/r/...), or the dashboard when the agency turned the business's link off. */
   reportPath: string;
+  /** The likely reason line shared with the Overview and the report (competitors whySentence). */
+  reason?: string | null;
 }): WeeklyBusiness {
   const score = input.overview?.score ?? null;
   const sorted = [...input.newOpportunities].sort(
@@ -58,6 +60,7 @@ export function weeklyBusiness(input: {
     name: input.name,
     score: score?.value ?? null,
     sentence: score?.sentence ?? null,
+    reason: score ? (input.reason ?? null) : null,
     change: score?.change ?? null,
     newOpportunities: sorted.slice(0, MAX_NEW_OPPORTUNITIES).map((o) => o.title),
     moreOpportunities: Math.max(0, sorted.length - MAX_NEW_OPPORTUNITIES),
