@@ -32,10 +32,11 @@ const CHECKS: Check[] = [
     key: "businessSchema",
     title: "Their website has business details for AI",
     youTitle: "Your website has business details for AI",
-    detail: "Structured data in the page code says what and where the business is.",
+    detail: "Website info for AI in the page code says what the business is and where.",
     weight: 3,
-    action: "Add LocalBusiness structured data (JSON-LD) to your home page: name, address, phone, hours and services.",
-    match: ["structured data", "schema", "json-ld"],
+    action: "Add website info for AI to your home page code: your name, address, phone, hours and services. Your web designer or site builder can add it.",
+    // Saved fixes about this name it in the words of their own category.
+    match: ["schema", "json-ld", "website info for ai", "markup"],
   },
   {
     key: "faq",
