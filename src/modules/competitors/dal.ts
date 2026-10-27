@@ -16,6 +16,9 @@ import { competitorChartsView } from "./charts";
 import { competitorsView, signalRows, type CompetitorsView, type SignalResult, type SignalRow } from "./service";
 import { buildWhyPanels, loadWhyInputs } from "./why/dal";
 import { whyCard, type WhyPanel } from "./why/service";
+import { leaderTable } from "./table";
+import { overviewCompete, type OverviewCompete } from "./overview";
+import { colorOrder } from "@/lib/series-colors";
 
 // Fixture mode is refused in production so a stray flag can never show made-up businesses to users.
 function liveSignals(): FetchSignals {
@@ -61,7 +64,7 @@ export const fetchPlaceSignals: FetchSignals = (placeId) => signalsForRequest(pl
 export async function getCompetitorsPage(
   businessId: string,
   next: string,
-): Promise<{ view: CompetitorsView; signals: Promise<SignalRow[]>; why: WhyPanel[] } | null> {
+): Promise<{ view: CompetitorsView; loadSignals: () => Promise<SignalRow[]>; why: WhyPanel[]; table: ReturnType<typeof leaderTable> } | null> {
   const { agency } = await requireAgency({ next });
   const now = requestNow();
   // The page's reads and the "See why" reads start together (2026-10-27: they used to run one after the other).
@@ -69,7 +72,8 @@ export async function getCompetitorsPage(
   if (!base) return null;
   // "See why" reads only saved answers (already read for this request) and fixes; a chain row's panel uses its name.
   const why = inputs ? buildWhyPanels(inputs, chainNames(base.view.leaderboard)) : [];
-  return { view: base.view, signals: base.signals(signalsForRequest), why };
+  // Google is asked only when the page calls loadSignals: when the owner pressed "Show Google details" (2026-10-27).
+  return { view: base.view, loadSignals: () => base.signals(signalsForRequest), why, table: leaderTable(base.view, base.report, why) };
 }
 
 // Callers check the user may see this agency first. Reads only; nothing from Places is written (D-73). The shared
@@ -88,7 +92,7 @@ export async function loadCompetitorsBase(
   agencyId: string,
   businessId: string,
   now: Date,
-  { charts = false }: { charts?: boolean } = {},
+  { charts = false, chartDays }: { charts?: boolean; chartDays?: number } = {},
 ): Promise<{
   view: CompetitorsView;
   report: ScoreReport;
@@ -96,7 +100,7 @@ export async function loadCompetitorsBase(
 } | null> {
   const db = createServiceClient();
   const [report, also, business, rows, limit] = await Promise.all([
-    loadScoreReport(agencyId, businessId, now, { charts }),
+    loadScoreReport(agencyId, businessId, now, chartDays ? { charts, chartDays, historyDays: 2 * chartDays } : { charts }),
     loadAlsoRecommended(agencyId, businessId, now),
     db.from("businesses").select("name, places_id, is_chain").eq("id", businessId).eq("agency_id", agencyId).maybeSingle(),
     db
@@ -124,7 +128,7 @@ export async function loadCompetitorsBase(
     // The leaderboard's rule: a competitor added after the last scan was never looked for, so it has no score yet.
     const last = report.lastCheckedAt?.getTime() ?? null;
     const scored = new Set(competitors.filter((c) => last !== null && c.countedFrom.getTime() <= last).map((c) => c.name));
-    view.charts = competitorChartsView(report, scored);
+    view.charts = competitorChartsView(report, scored, colorOrder(view.leaderboard));
   }
 
   // `onlyCompetitorId`: the comparison page asks Google about you and that one competitor only.
@@ -224,4 +228,11 @@ export async function loadPicked(agencyId: string, businessId: string, now: Date
 /** Each tracked name on a chain row, to the chain AI named ("Bennu Coffee on Congress" to "Bennu Coffee"). */
 export function chainNames(rows: CompetitorsView["leaderboard"]): Map<string, string> {
   return new Map(rows.flatMap((r) => (r.chain ? r.chain.tracked.map((t) => [t, r.chain!.brand] as const) : [])));
+}
+
+/** The Overview's competitor blocks (dashboard redesign) over the last `days` days; null when not the agency's. */
+export async function getOverviewCompete(businessId: string, days: number): Promise<OverviewCompete | null> {
+  const { agency } = await requireAgency({ next: "/dashboard" });
+  const base = await loadCompetitorsBase(agency.id, businessId, requestNow(), { charts: true, chartDays: days });
+  return base ? overviewCompete(base.view, base.report) : null;
 }

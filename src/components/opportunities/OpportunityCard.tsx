@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import type { Impact, OpportunityItem, Status } from "@/modules/opportunities";
 import { CopyButton } from "./CopyButton";
+import { compareHref } from "@/lib/compare-href";
 
 const IMPACT: Record<Impact, { label: string; variant: "low" | "mid" | "secondary" }> = {
   high: { label: "High impact", variant: "low" },
@@ -67,7 +68,7 @@ export function OpportunityCard({
               {item.about.map((c, i) => (
                 <span key={c.id}>
                   {i > 0 && ", "}
-                  <Link href={`/competitors/${c.id}`} className="text-primary hover:underline">
+                  <Link href={compareHref(c.id)} className="text-primary hover:underline">
                     {c.name}
                   </Link>
                 </span>

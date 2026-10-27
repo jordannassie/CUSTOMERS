@@ -1,6 +1,8 @@
 import { randomBytes } from "node:crypto";
 import { namedAs, type CompetitorsView } from "@/modules/competitors";
 import type { OverviewView } from "@/modules/overview";
+import type { ReportDocument } from "./document";
+import type { SectionId } from "./sections";
 
 // Share links and the read-only report (B-59, MVP_SPEC 8.3, D-12). Pure apart from the token source.
 
@@ -16,73 +18,15 @@ export const isShareToken = (token: string): boolean => SHARE_TOKEN.test(token);
 
 export const sharePath = (token: string): string => `/r/${token}`;
 
+/** The report as a page shows it: the agency's name and logo now, the document, and the sections to leave out. */
 export type ReportView = {
   /** isTest: test mode (D-61), so the report says its answers are samples. */
   agency: { name: string; hasLogo: boolean; isTest?: boolean };
-  businessName: string;
-  /** When the report was made and how many days the score covers; shown in the viewer's time zone. */
-  preparedAt: string;
-  windowDays: number;
-  score: Omit<NonNullable<OverviewView["score"]>, "details"> | null;
-  models: OverviewView["models"];
-  trend: OverviewView["trend"];
-  competitors: Pick<CompetitorsView, "leaderboard" | "margin" | "signals" | "count" | "hasScore">;
-  opportunities: { title: string; impact: OverviewView["opportunities"][number]["impact"] }[];
-  /** 2 to 4 plain sentences from the numbers above and the saved answers, no AI (DB-012). */
-  summary: string[];
+  document: ReportDocument;
+  hidden: SectionId[];
+  /** A snapshot is dated when it was saved; the live report is worked out on read. */
+  kind: "live" | "snapshot";
 };
-
-/**
- * Only what the report shows: no database ids, place ids, method panel or plan limits, since every
- * field here ends up in a public page's HTML.
- */
-export function reportView(input: {
-  agency: { name: string; hasLogo: boolean; isTest?: boolean };
-  businessName: string;
-  now: Date;
-  windowDays: number;
-  overview: OverviewView;
-  competitors: CompetitorsView;
-  /** The likely reason line shared with the Overview card and the weekly email (competitors whySentence). */
-  reason?: string | null;
-}): ReportView {
-  const { overview, competitors, now } = input;
-  const score = overview.score && {
-    value: overview.score.value,
-    tone: overview.score.tone,
-    label: overview.score.label,
-    sentence: overview.score.sentence,
-    firstResults: overview.score.firstResults,
-    change: overview.score.change,
-    coverage: overview.score.coverage ?? null,
-  };
-  return {
-    agency: input.agency,
-    businessName: input.businessName,
-    preparedAt: now.toISOString(),
-    windowDays: input.windowDays,
-    score,
-    models: overview.models,
-    trend: overview.trend,
-    competitors: {
-      leaderboard: competitors.leaderboard,
-      margin: competitors.margin,
-      // A shared report is public: the competitor's database id never goes in it; a website the user added does.
-      signals: competitors.signals.map((row) => ({ name: row.name, isYou: row.isYou, status: row.status, signals: row.signals, savedSite: row.savedSite ?? null })),
-      count: competitors.count,
-      hasScore: competitors.hasScore,
-    },
-    opportunities: overview.opportunities.map(({ title, impact }) => ({ title, impact })),
-    summary: reportSummary({
-      businessName: input.businessName,
-      score: overview.score?.value ?? null,
-      monthChange: overview.monthChange,
-      leaderboard: competitors.leaderboard,
-      firstFix: overview.opportunities[0]?.title ?? null,
-      reason: input.reason ?? null,
-    }),
-  };
-}
 
 // Scores closer than this read as level; further apart they are named even when the margin can't separate them.
 const LEVEL_POINTS = 10;

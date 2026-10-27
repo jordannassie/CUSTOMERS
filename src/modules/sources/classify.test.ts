@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { SOURCE_TYPE_LABELS, hostOf, isOwnSite, sourceType } from "./classify";
+import { SOURCE_TYPE_LABELS, SUB_KIND_LABELS, canBeBusinessSite, hostOf, isOwnSite, sourceType, subKind } from "./classify";
 
 const OWN = "beantherecoffee.example";
 
@@ -75,5 +75,75 @@ describe("sourceType", () => {
       "News",
       "Business sites",
     ]);
+  });
+});
+
+describe("subKind", () => {
+  it.each([
+    ["beantherecoffee.example", "own"],
+    ["foodpanda.pk", "delivery"],
+    ["doordash.com", "delivery"],
+    ["ubereats.com", "delivery"],
+    ["zomato.com", "delivery"],
+    ["facebook.com", "social"],
+    ["tiktok.com", "social"],
+    ["m.youtube.com", "social"],
+    ["yelp.com", "reviews"],
+    ["tripadvisor.com", "reviews"],
+    ["reddit.com", "reviews"],
+    ["google.com", "directory"],
+    ["yellowpages.com", "directory"],
+    ["la.eater.com", "food_guide"],
+    ["theinfatuation.com", "food_guide"],
+    ["guide.michelin.com", "food_guide"],
+    ["thecookbook.pk", "food_guide"],
+    ["foodiespakistan.pk", "food_guide"],
+    ["in.trip.com", "travel_guide"],
+    ["lonelyplanet.com", "travel_guide"],
+    ["wanderlog.com", "travel_guide"],
+    ["visitorange.com", "travel_guide"],
+    ["patch.com", "news"],
+    ["ocregister.com", "news"],
+    ["dailygrindcoffee.com", "business"],
+    ["portolacoffee.com", "business"],
+  ] as const)("%s is %s", (host, kind) => {
+    expect(subKind(host, OWN)).toBe(kind);
+  });
+
+  it("makes a competitor's site a competitor site, before any name pattern", () => {
+    expect(subKind("dailygrindcoffee.com", OWN, true)).toBe("competitor");
+    expect(subKind("foodiepizza.com", OWN, true)).toBe("competitor");
+  });
+
+  it("never makes a listing or social site a competitor site", () => {
+    expect(subKind("yelp.com", OWN, true)).toBe("reviews");
+    expect(subKind("facebook.com", OWN, true)).toBe("social");
+    expect(subKind("foodpanda.pk", OWN, true)).toBe("delivery");
+  });
+
+  it("uses plain wording for every kind (MVP_SPEC 8.4)", () => {
+    expect(Object.values(SUB_KIND_LABELS)).toEqual([
+      "Your website",
+      "Delivery app",
+      "Competitor site",
+      "Food guide",
+      "Social",
+      "Reviews",
+      "Directory",
+      "Travel guide",
+      "News",
+      "Business site",
+    ]);
+  });
+});
+
+describe("canBeBusinessSite", () => {
+  it("is true only for sites that could be another business's own website", () => {
+    expect(canBeBusinessSite("dailygrindcoffee.com", OWN)).toBe(true);
+    expect(canBeBusinessSite("thecookbook.pk", OWN)).toBe(true);
+    expect(canBeBusinessSite("yelp.com", OWN)).toBe(false);
+    expect(canBeBusinessSite("foodpanda.pk", OWN)).toBe(false);
+    expect(canBeBusinessSite("in.trip.com", OWN)).toBe(false);
+    expect(canBeBusinessSite("beantherecoffee.example", OWN)).toBe(false);
   });
 });

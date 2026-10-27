@@ -99,7 +99,7 @@ export async function loadWhyPanels(agencyId: string, businessId: string, now: D
 
 /** "Check competitor websites" on Opportunities (B-91): each tracked competitor and where its website check stands. */
 export async function getWebsiteChecks(businessId: string): Promise<{ competitorId: string; name: string; website: WebsiteView }[]> {
-  const { agency } = await requireAgency({ next: "/opportunities" });
+  const { agency } = await requireAgency({ next: "/actions" });
   const panels = await loadWhyPanels(agency.id, businessId, requestNow());
   return panels.map((p) => ({ competitorId: p.competitorId, name: p.trackedName, website: p.website }));
 }

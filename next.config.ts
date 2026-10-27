@@ -74,7 +74,15 @@ const nextConfig: NextConfig = {
       // These used to be pages that only called redirect(). A redirect thrown while rendering trips a React dev
       // timing bug ("cannot have a negative time stamp"), and a config redirect never renders anything.
       { source: "/dashboard/citations", destination: "/sources", permanent: true },
-      { source: "/dashboard/opportunities", destination: "/opportunities", permanent: true },
+      { source: "/dashboard/opportunities", destination: "/actions", permanent: true },
+      // Dashboard redesign (D-86): Opportunities is now Actions, and one competitor's page is Compare. Query strings
+      // (?fix=<id>, ?tab=websites) carry over; Compare maps the old tab names.
+      { source: "/opportunities", destination: "/actions", permanent: false },
+      {
+        source: "/competitors/:id([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})",
+        destination: "/competitors/compare?with=:id",
+        permanent: false,
+      },
       // Adding another business runs the wizard's business steps; the website step checks the trial limit.
       { source: "/dashboard/add-business", destination: "/onboarding/website", permanent: false },
       {

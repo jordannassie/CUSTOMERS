@@ -2,12 +2,9 @@
 
 import { useEffect, useState, type ReactNode } from "react";
 import { cn } from "cn";
-import { COMPARE_TABS, isCompareTab, type CompareTab } from "./tabs";
+import { COMPARE_TABS, toCompareTab, type CompareTab } from "./tabs";
 
-const tabFromUrl = (): CompareTab => {
-  const tab = new URLSearchParams(window.location.search).get("tab");
-  return isCompareTab(tab) ? tab : "why";
-};
+const tabFromUrl = (): CompareTab => toCompareTab(new URLSearchParams(window.location.search).get("tab"));
 
 /**
  * The comparison's tabs (B-93). Every tab is rendered once on the server, so switching is instant: no new request
@@ -17,15 +14,23 @@ export function CompareTabs({ initial, panels }: { initial: CompareTab; panels: 
   const [active, setActive] = useState<CompareTab>(initial);
 
   useEffect(() => {
+    // An old link (?tab=websites, from before the redesign) gets the new tab name in the address, without a reload.
+    const url = new URL(window.location.href);
+    const asked = url.searchParams.get("tab");
+    if (asked !== null && asked !== (initial === "summary" ? null : initial)) {
+      if (initial === "summary") url.searchParams.delete("tab");
+      else url.searchParams.set("tab", initial);
+      window.history.replaceState(null, "", url);
+    }
     const onBack = () => setActive(tabFromUrl());
     window.addEventListener("popstate", onBack);
     return () => window.removeEventListener("popstate", onBack);
-  }, []);
+  }, [initial]);
 
   function open(tab: CompareTab) {
     if (tab === active) return;
     const url = new URL(window.location.href);
-    if (tab === "why") url.searchParams.delete("tab");
+    if (tab === "summary") url.searchParams.delete("tab");
     else url.searchParams.set("tab", tab);
     window.history.pushState(null, "", url);
     setActive(tab);

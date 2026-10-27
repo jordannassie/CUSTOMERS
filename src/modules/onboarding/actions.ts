@@ -10,6 +10,7 @@ import { activeUser, autofillLimit, competitorLookupLimit } from "./guard";
 import { websiteExists } from "./website/dal";
 import { websiteNotFoundText } from "./website/domain-check";
 import { autofillInput, competitorLookupInput, pickPlaceInput, saveCompetitorsInput, toDomain, type AutofillResult } from "./schema";
+import { forDisplay, nearestBranches } from "./branches";
 
 // Onboarding step 3 to 4 (MVP_SPEC 3.1, 3.2): fills the details form. Provider failures come back
 // as an empty form with a note, never as an error. Paid for (AI and Places), so a suspended or deleted agency is
@@ -82,7 +83,9 @@ export async function lookupCompetitorByName(
   if (limited) return limited;
   const result = await lookupCompetitor(userId, parsed.data.businessId, parsed.data.name);
   if (!result) return { ok: false, status: 404, error: "Business not found." };
-  return { ok: true, data: result };
+  // One branch per chain near the business, and no location or website sent to the screen (branches.ts, D-73).
+  const { country, ...rest } = result;
+  return { ok: true, data: { ...rest, matches: forDisplay(nearestBranches(result.matches), country) } };
 }
 
 // Saves the ticked and added competitors: the user's names and place ids only (D-73).

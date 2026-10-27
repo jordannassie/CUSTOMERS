@@ -1,14 +1,20 @@
 import "server-only";
-// The comparison page, "Bean House vs you" (/competitors/[id]): one competitor against the business, every fact once.
-// Reads what the Competitors page reads; Google is asked only about the two businesses on the page, live (D-73).
+// The Compare page (dashboard redesign, 2026-10-27): you against any tracked competitor, every fact once, each reason
+// with its fix. Reads what the Competitors page reads; Google is asked only about the two businesses shown, live (D-73).
+import { compareHref } from "@/lib/compare-href";
+import { colorOrder, competitorColor } from "@/lib/series-colors";
 import { requestNow } from "@/lib/request-now";
+import { hostOf } from "@/lib/site-type";
 import { requireAgency } from "@/modules/auth";
-import { chainNames, fetchPlaceSignals, loadCompetitorsBase } from "../dal";
+import { pairTimeline, type PairPoint } from "../charts";
 import { rowName, trackedNote } from "../chain";
+import { chainNames, fetchPlaceSignals, loadCompetitorsBase } from "../dal";
 import type { LeaderRow, SignalRow } from "../service";
 import { buildWhyPanels, loadWhyInputs } from "../why/dal";
 import type { WhyPanel } from "../why/service";
-import { pairTimeline, type PairPoint } from "../charts";
+import { leadCards, reasonCards, type LeadCard, type ReasonCard } from "./cards";
+
+export type CompareOption = { id: string; name: string; score: number | null; standing: LeaderRow["standing"]; color: string };
 
 export type Comparison = {
   businessId: string;
@@ -20,16 +26,41 @@ export type Comparison = {
   standing: LeaderRow["standing"];
   /** Added partway through the 30 days, so it is not compared yet. */
   collecting: boolean;
+  /** Their color, the same as on the Overview and Competitors charts. */
+  color: string;
+  /** 30-day scores (D-63) and the margin on yours (D-64). */
+  scores: { you: number | null; them: number | null; margin: number | null };
   panel: WhyPanel;
+  cards: ReasonCard[];
+  leads: LeadCard[];
   /** You and them at each scan, for the trend. */
   trend: PairPoint[];
-  /** Live Google values for the two of you, for this view only. */
-  signals: Promise<SignalRow[]>;
+  /** Asks Google for the two of you, for this view only: called only after "Show Google details" (2026-10-27). */
+  loadSignals: () => Promise<SignalRow[]>;
 };
 
-/** Null when the business or the competitor is not the signed-in agency's. */
-export async function getComparison(businessId: string, competitorId: string): Promise<Comparison | null> {
-  const { agency } = await requireAgency({ next: `/competitors/${competitorId}` });
+export type ComparePage = {
+  businessId: string;
+  businessName: string;
+  options: CompareOption[];
+  /** Businesses AI named that you don't track, for "+ Any business AI named". */
+  also: { name: string; answers: number }[];
+  /** Null when no competitor is tracked yet. */
+  selected: Comparison | null;
+};
+
+const rowFor = (leaderboard: LeaderRow[], tracked: string) =>
+  leaderboard.find((r) => !r.isYou && (r.name === tracked || r.chain?.tracked.includes(tracked))) ?? null;
+
+/** The competitor furthest ahead of you, else the strongest one: what an owner most wants to see first. */
+function defaultPick(options: CompareOption[]): string | null {
+  const ahead = options.filter((o) => o.standing === "behind").sort((a, b) => (b.score ?? -1) - (a.score ?? -1));
+  return (ahead[0] ?? [...options].sort((a, b) => (b.score ?? -1) - (a.score ?? -1))[0])?.id ?? null;
+}
+
+/** Null when the business is not the signed-in agency's. `competitorId` null or unknown picks the default. */
+export async function getComparePage(businessId: string, competitorId: string | null): Promise<ComparePage | null> {
+  const { agency } = await requireAgency({ next: compareHref(competitorId) });
   const now = requestNow();
   // Both sets of reads start together.
   const [base, inputs] = await Promise.all([
@@ -37,22 +68,50 @@ export async function getComparison(businessId: string, competitorId: string): P
     loadWhyInputs(agency.id, businessId, now.getTime()),
   ]);
   if (!base || !inputs) return null;
-  const panels = buildWhyPanels(inputs, chainNames(base.view.leaderboard));
-  const panel = panels.find((p) => p.competitorId === competitorId);
-  if (!panel) return null;
-  // A branch merged into its chain's row is found by the tracked names that row stands for.
-  const row = base.view.leaderboard.find((r) => !r.isYou && (r.name === panel.trackedName || r.chain?.tracked.includes(panel.trackedName))) ?? null;
-  // Only the two places on this page are looked up, live, for this view only (D-73).
-  const signals = base.signals(fetchPlaceSignals, competitorId);
+  const { view } = base;
+  const panels = buildWhyPanels(inputs, chainNames(view.leaderboard));
+  const order = colorOrder(view.leaderboard);
+  const options = panels.map((p) => {
+    const row = rowFor(view.leaderboard, p.trackedName);
+    return {
+      id: p.competitorId,
+      name: row ? rowName(row) : p.why.name,
+      score: row?.score ?? null,
+      standing: row?.standing ?? null,
+      color: competitorColor(order, row?.name ?? p.trackedName),
+    };
+  });
+  const pick = options.some((o) => o.id === competitorId) ? competitorId : defaultPick(options);
+  const panel = panels.find((p) => p.competitorId === pick);
+  const page = { businessId, businessName: view.businessName, options, also: view.also };
+  if (!panel) return { ...page, selected: null };
+
+  const row = rowFor(view.leaderboard, panel.trackedName);
+  const you = view.leaderboard.find((r) => r.isYou) ?? null;
+  const ownDomain = inputs.data.you.domain ? hostOf(inputs.data.you.domain) : null;
   return {
-    businessId,
-    businessName: base.view.businessName,
-    title: row ? rowName(row) : panel.why.name,
-    note: row ? trackedNote(row) : null,
-    standing: row?.standing ?? null,
-    collecting: row?.collecting ?? false,
-    panel,
-    trend: pairTimeline(base.report, row?.name ?? panel.trackedName),
-    signals,
+    ...page,
+    selected: {
+      businessId,
+      businessName: view.businessName,
+      title: row ? rowName(row) : panel.why.name,
+      note: row ? trackedNote(row) : null,
+      standing: row?.standing ?? null,
+      collecting: row?.collecting ?? false,
+      color: competitorColor(order, row?.name ?? panel.trackedName),
+      scores: { you: you?.score ?? null, them: row?.score ?? null, margin: view.margin },
+      panel,
+      cards: reasonCards(panel.why.allReasons, { id: panel.competitorId, name: panel.why.name }, ownDomain),
+      leads: leadCards(panel.why.allLeads),
+      trend: pairTimeline(base.report, row?.name ?? panel.trackedName),
+      // Only the two places on this page are looked up, live, for this view only (D-73).
+      loadSignals: () => base.signals(fetchPlaceSignals, panel.competitorId),
+    },
   };
+}
+
+/** The old single-competitor read, kept for callers that have one id. */
+export async function getComparison(businessId: string, competitorId: string): Promise<Comparison | null> {
+  const page = await getComparePage(businessId, competitorId);
+  return page?.selected && page.selected.panel.competitorId === competitorId ? page.selected : null;
 }

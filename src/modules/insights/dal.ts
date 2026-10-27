@@ -14,8 +14,11 @@ import { fillOpportunity, hasPlaceValues, liveLookup, referencedCompetitors, usa
 import { templateWriter } from "./template-writer";
 import { createExplanationWriter } from "./writer";
 
-/** An opportunity with Google values filled in; usesGoogle means the text shows some, so attribution is due. */
-export type LiveOpportunity = Opportunity & { usesGoogle: boolean };
+/**
+ * An opportunity with Google values filled in. usesGoogle: the text shows some, so attribution is due. googleValues:
+ * its text has Google values to show, filled or not (a page that skipped Google offers "Show Google numbers").
+ */
+export type LiveOpportunity = Opportunity & { usesGoogle: boolean; googleValues: boolean };
 
 /** Live Google signals for a place id; null when Google has no such place. */
 type FetchSignals = (placeId: string) => Promise<Signals | null>;
@@ -145,12 +148,16 @@ async function recordUsage(explanation: Explanation, ownerUserId: string, busine
   if (error) throw new Error(`Insights: could not record usage: ${error.message}`);
 }
 
-/** Opportunities for one of the signed-in agency's businesses, with Google values filled in live. */
+/**
+ * Opportunities for one of the signed-in agency's businesses, with Google values filled in live. `google: false`
+ * asks Google nothing: sentences that need its values are left out (2026-10-27, Places calls only on request).
+ */
 export async function getLiveOpportunities(
   businessId: string,
   fetchSignals: FetchSignals = fetchPlaceSignals,
+  { google = true }: { google?: boolean } = {},
 ): Promise<LiveOpportunity[] | null> {
-  const { agency } = await requireAgency({ next: "/opportunities" });
+  const { agency } = await requireAgency({ next: "/actions" });
   const db = createServiceClient();
   const business = await db.from("businesses").select("places_id").eq("id", businessId).eq("agency_id", agency.id).maybeSingle();
   if (business.error) throw new Error(`Insights: could not load the business: ${business.error.message}`);
@@ -161,7 +168,7 @@ export async function getLiveOpportunities(
     await db
       .from("opportunities")
       .select(
-        "id, business_id, title, description, evidence, impact, category, affected_url, status, recommended_action, claude_prompt, created_at, updated_at",
+        "id, business_id, title, description, evidence, impact, category, affected_url, status, recommended_action, claude_prompt, created_at, updated_at, where_to_apply, source, evidence_data, due_date, completed_at, assignee_id",
       )
       .eq("business_id", businessId)
       .order("created_at", { ascending: false }),
@@ -174,7 +181,7 @@ export async function getLiveOpportunities(
       : [];
   const placeOf = new Map(competitors.map((c) => [c.id, c.places_id ?? c.place_id]));
   const businessPlace = usesBusinessValues(rows) ? business.data.places_id : null;
-  const signals = await signalsFor([businessPlace, ...placeOf.values()], fetchSignals);
+  const signals = google ? await signalsFor([businessPlace, ...placeOf.values()], fetchSignals) : new Map();
   const lookup = liveLookup(businessPlace, placeOf, signals);
-  return rows.map((row) => ({ ...fillOpportunity(row, lookup), usesGoogle: hasPlaceValues(row) }));
+  return rows.map((row) => ({ ...fillOpportunity(row, lookup), usesGoogle: google && hasPlaceValues(row), googleValues: hasPlaceValues(row) }));
 }

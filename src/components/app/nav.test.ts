@@ -16,6 +16,16 @@ describe("isNavActive (BUG-094)", () => {
   });
 });
 
+describe("isNavActive (redesign)", () => {
+  it("gives Compare its own highlight, not Competitors'", () => {
+    expect(active("/competitors/compare")).toEqual(["Compare"]);
+    expect(active("/competitors")).toEqual(["Competitors"]);
+    expect(active("/competitors/manage")).toEqual(["Competitors"]);
+    expect(active("/actions")).toEqual(["Actions"]);
+    expect(active("/reports")).toEqual(["Reports"]);
+  });
+});
+
 describe("setupLabel (step 6b)", () => {
   it("names the business being scanned during the first scan, not 'A new business'", () => {
     expect(setupLabel("/onboarding/first-scan", null, "Tim Hortons")).toBe("Tim Hortons");

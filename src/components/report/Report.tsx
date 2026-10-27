@@ -1,33 +1,50 @@
-import { Leaderboard } from "@/components/competitors/Leaderboard";
-import { SignalsTable } from "@/components/competitors/SignalsTable";
+import { PauseCircle } from "lucide-react";
 import { TEST_MODE_MESSAGE } from "@/lib/test-mode";
-import { ModelScores } from "@/components/overview/ModelScores";
-import { ScoreSummary } from "@/components/overview/ScoreSummary";
-import { TrendChart } from "@/components/overview/TrendChart";
+import { sectionNumbers, visibleSections, type ReportDocument, type ReportView, type SectionId } from "@/modules/reports";
 import { PreparedOn, ReportPeriod } from "./ReportDates";
-import { Badge } from "@/components/ui/badge";
-import { matchedNone } from "@/modules/competitors";
-import type { ReportView } from "@/modules/reports";
+import { ActionsSection, MethodSection } from "./ReportPlan";
 import { ReportReady } from "./ReportReady";
+import { ModelsSection, SummarySection } from "./ReportSummary";
+import { CompetitorsSection, QuestionsSection, SourcesSection } from "./ReportTables";
 
-const IMPACT = {
-  high: { label: "High impact", variant: "low" },
-  medium: { label: "Medium impact", variant: "mid" },
-  low: { label: "Low impact", variant: "secondary" },
-} as const;
+type SectionProps = { doc: ReportDocument; number: number };
 
-/** The read-only client report (B-59, MVP_SPEC 8.3). Same content on screen, in print and in the PDF (B-60). */
+// The fixed order (dashboard redesign, 7. Reports); visibleSections keeps it whatever the agency hides.
+const SECTION: Record<SectionId, (props: SectionProps) => React.ReactNode> = {
+  summary: SummarySection,
+  models: ModelsSection,
+  competitors: CompetitorsSection,
+  questions: QuestionsSection,
+  sources: SourcesSection,
+  actions: ActionsSection,
+  method: MethodSection,
+};
+
+function toolList(doc: ReportDocument): string {
+  const names = doc.models.rows.map((m) => m.label);
+  return names.length <= 1 ? (names[0] ?? "AI tools") : `${names.slice(0, -1).join(", ")} and ${names.at(-1)}`;
+}
+
+/**
+ * The client report as a document (B-59, 7. Reports). The same component on the Reports page, the share link and the
+ * PDF, so all three show the same sections in the same order and leave out the same hidden ones.
+ */
 export function Report({ report, logoSrc }: { report: ReportView; logoSrc: string | null }) {
-  const { score, competitors } = report;
+  const doc = report.document;
+  const sections = visibleSections(report.hidden);
+  const numbers = sectionNumbers(report.hidden);
+  const scanned = doc.lastScanAt !== null;
+  const facts = [doc.domain, doc.place, `${doc.questionCount} customer ${doc.questionCount === 1 ? "question" : "questions"} asked to ${toolList(doc)}`];
+
   return (
-    <article className="report mx-auto flex w-full max-w-[880px] flex-col gap-10 px-4 py-8 sm:px-8 sm:py-12">
+    <article className="report mx-auto flex w-full max-w-[880px] flex-col gap-10 px-4 py-8 sm:px-8 sm:py-12" data-testid="report">
       {report.agency.isTest ? (
         // Test mode (D-61): the report and its share link say the answers are samples, on screen and in the PDF.
         <p role="note" className="rounded-md border border-mid/30 bg-mid-bg px-4 py-3 text-sm font-medium text-mid-text" data-testid="report-test-mode">
           {TEST_MODE_MESSAGE}
         </p>
       ) : null}
-      <header className="flex flex-col gap-8">
+      <header className="flex flex-col gap-6">
         <div className="flex flex-col items-start gap-2 border-b border-border pb-5 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
           <div className="flex min-w-0 items-center gap-3">
             {logoSrc && (
@@ -38,102 +55,47 @@ export function Report({ report, logoSrc }: { report: ReportView; logoSrc: strin
               {report.agency.name}
             </span>
           </div>
-          <span className="shrink-0 text-[13px] text-muted-foreground">
-            Prepared <PreparedOn iso={report.preparedAt} />
+          <span className="shrink-0 text-[13px] text-muted-foreground" data-testid="report-prepared">
+            {report.kind === "snapshot" ? "Snapshot saved " : "Prepared "}
+            <PreparedOn iso={doc.preparedAt} />
           </span>
         </div>
         <div className="flex flex-col gap-2">
-          <h1 className="text-[32px] leading-tight font-semibold tracking-[-0.02em] text-balance break-words">{report.businessName}</h1>
-          <p className="text-[15px] text-muted-foreground" data-testid="report-period">
-            How often AI recommends this business, <ReportPeriod iso={report.preparedAt} windowDays={report.windowDays} />
+          <p className="text-xs font-semibold text-primary" data-testid="report-period">
+            AI visibility report, <ReportPeriod iso={doc.preparedAt} windowDays={doc.windowDays} />
           </p>
+          <h1 className="text-[32px] leading-tight font-semibold tracking-[-0.02em] text-balance break-words">{doc.businessName}</h1>
+          <p className="text-[15px] break-words text-muted-foreground">{facts.filter(Boolean).join(" · ")}</p>
         </div>
       </header>
 
-      {report.summary.length > 0 && (
-        <section aria-label="Summary" className="report-section rounded-md border border-border bg-surface px-5 py-4" data-testid="report-summary">
-          <ul className="flex flex-col gap-1.5 text-[15px] leading-relaxed">
-            {report.summary.map((line) => (
-              <li key={line}>{line}</li>
-            ))}
-          </ul>
+      {doc.paused && (
+        <p role="note" className="flex items-start gap-2 rounded-md border border-border bg-muted px-4 py-3 text-sm" data-testid="report-paused">
+          <PauseCircle aria-hidden className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+          Scans are paused for this business, so this report shows the answers saved before the pause.
+        </p>
+      )}
+
+      {scanned ? (
+        sections.map((id) => {
+          const Section = SECTION[id];
+          return <Section key={id} doc={doc} number={numbers[id]!} />;
+        })
+      ) : (
+        <section className="report-section flex flex-col gap-2" data-testid="report-no-scans">
+          <h2 className="text-xl font-semibold tracking-[-0.02em]">No results yet</h2>
+          <p className="max-w-prose text-sm text-muted-foreground">
+            {doc.paused
+              ? "Scans are paused, so there are no answers to report on. The report fills in after the first scan."
+              : "The first scan has not finished, so there is nothing to report yet. The report fills in after it."}
+          </p>
         </section>
       )}
 
-      <Section title="Visibility score, last 30 days">
-        {score ? (
-          <div className="flex flex-col gap-8">
-            <ScoreSummary score={score} animate={false} />
-            <div className="grid gap-8 md:grid-cols-[minmax(0,1fr)_260px] print:grid-cols-[minmax(0,1fr)_220px]">
-              <TrendChart trend={report.trend} heading="h3" />
-              <div className="flex flex-col gap-3">
-                <h3 className="text-sm font-medium">Score by AI</h3>
-                <ModelScores models={report.models} />
-              </div>
-            </div>
-          </div>
-        ) : (
-          <p className="text-sm text-muted-foreground" data-testid="no-score">
-            No score yet. The first scan has not finished, so there is nothing to show for these 30 days.
-          </p>
-        )}
-      </Section>
-
-      {competitors.count > 0 && (
-        <>
-          <Section title="Who AI recommends most" note="Share of customer questions where each business was recommended.">
-            {competitors.hasScore ? (
-              <Leaderboard view={competitors} />
-            ) : (
-              <p className="text-sm text-muted-foreground">Competitor scores appear after the first scan.</p>
-            )}
-          </Section>
-          {/* A table of blanks tells a client nothing, so it is left out (DB-016). */}
-          {!matchedNone(competitors.signals) && (
-            <Section title="Side by side on Google" note="What customers and AI see about each business on Google.">
-              <SignalsTable rows={competitors.signals} />
-            </Section>
-          )}
-        </>
-      )}
-
-      <Section title="What to fix first">
-        {report.opportunities.length > 0 ? (
-          <ol className="flex flex-col divide-y divide-border" data-testid="report-opportunities">
-            {report.opportunities.map((o, i) => (
-              <li key={`${i}-${o.title}`} className="flex flex-col items-start gap-1.5 py-3 first:pt-0 last:pb-0 sm:flex-row sm:items-center sm:gap-3">
-                {/* A fixed column so every title starts at the same x, whatever the badge says. */}
-                <div className="flex shrink-0 sm:w-28">
-                  <Badge variant={IMPACT[o.impact].variant}>{IMPACT[o.impact].label}</Badge>
-                </div>
-                <span className="text-sm font-medium">{o.title}</span>
-              </li>
-            ))}
-          </ol>
-        ) : (
-          <p className="text-sm text-muted-foreground">Nothing to fix right now.</p>
-        )}
-      </Section>
-
       <footer className="border-t border-border pt-5 text-xs text-text-hint">
-        <p className="max-w-prose">
-          Scores come from asking ChatGPT, Claude and Perplexity the questions local customers ask, with web search and
-          the business location. Answers in the apps themselves can differ. No one can guarantee AI recommendations.
-        </p>
+        <p className="max-w-prose">Scores show how often AI named each business over the last 30 days. No one can guarantee AI recommendations.</p>
       </footer>
       <ReportReady />
     </article>
-  );
-}
-
-function Section({ title, note, children }: { title: string; note?: string; children: React.ReactNode }) {
-  return (
-    <section className="report-section flex flex-col gap-5">
-      <div className="flex flex-col gap-1">
-        <h2 className="text-lg font-semibold tracking-[-0.02em]">{title}</h2>
-        {note && <p className="text-sm text-muted-foreground">{note}</p>}
-      </div>
-      {children}
-    </section>
   );
 }

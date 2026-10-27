@@ -964,6 +964,7 @@ D-73. Quoted from the Google Maps Platform Terms (cloud.google.com/maps-platform
 
 **How we comply**
 - Store only `place_id` for businesses and competitors. Fetch ratings, review counts, hours and categories live when shown, with attribution.
+- Ask Google only when the owner asks to see its values ("Show Google details", "Show Google numbers"), once for that view (D-87). No cache of any length.
 - Onboarding: Places only pre-fills the form; the saved record is the user's confirmation of their own business.
 - Competitor list: names are confirmed by the user; `place_id` kept for live lookups.
 - Explanations: Claude writes placeholders; live Places values are filled in at display time, never stored.

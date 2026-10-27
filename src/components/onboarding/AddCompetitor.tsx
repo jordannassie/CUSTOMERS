@@ -93,7 +93,11 @@ export function AddCompetitor({ businessId, lookup, isPicked, onAdd }: Props) {
                     <li key={m.placeId} className="flex items-center gap-3 px-4 py-3">
                       <span className="min-w-0 flex-1">
                         <span className="block truncate text-sm font-medium" title={m.name}>{m.name}</span>
-                        {m.address ? <span className="block truncate text-[13px] text-muted-foreground" title={m.address}>{m.address}</span> : null}
+                        {m.address || m.distance ? (
+                          <span className="block truncate text-[13px] text-muted-foreground" title={m.address ?? undefined}>
+                            {[m.distance, m.address].filter(Boolean).join(" · ")}
+                          </span>
+                        ) : null}
                       </span>
                       <PlaceRating rating={m.rating} reviewCount={m.reviewCount} />
                       <Button

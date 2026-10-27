@@ -2,10 +2,13 @@
 // what gets saved. Places values are only shown; a saved competitor is the user's name plus a place id.
 import { businessKind } from "./business-kind";
 import { isIndustry, type Industry } from "@/lib/industries";
+import { FAR_M, forDisplay, nearestBranches, sameChain, withDistance } from "./branches";
 import type { CompetitorCandidate, CompetitorPlaces, Origin } from "./competitor-places";
 
 export const MAX_SUGGESTIONS = 10;
 export const MAX_LOOKUP_RESULTS = 5;
+/** Google's most per search: room for the extra branches of chains that are left out (branches.ts). */
+const SEARCH_PAGE = 20;
 
 // What a customer would type into Google Maps. "other" has no good term, so the first service is used.
 export const SEARCH_TERMS: Record<Industry, string | null> = {
@@ -29,6 +32,8 @@ export type BusinessForSearch = {
   city: string | null;
   region: string | null;
   placesId: string | null;
+  /** ISO code, for "0.5 mi away" or "800 m away". */
+  country?: string | null;
 };
 
 export const COMPETITOR_NOTES = {
@@ -119,11 +124,12 @@ export async function discoverCompetitors(b: BusinessForSearch, places: Competit
     // Near the business and of its own Google type (BUG-085); a fast food place with no listing of its own keeps to
     // fast food places. One extra result covers the business itself.
     const orType = kindForSearch(b, origin).takeaway ? "fast_food_restaurant" : null;
-    found = sameTypeFirst(await places.search(query, MAX_SUGGESTIONS + 1, origin, true, orType), origin?.primaryType ?? orType);
+    found = sameTypeFirst(await places.search(query, SEARCH_PAGE, origin, true, orType), origin?.primaryType ?? orType);
   } catch {
     return { suggestions: [], note: COMPETITOR_NOTES.unavailable };
   }
-  const suggestions = withoutOwnBusiness(found, b, MAX_SUGGESTIONS);
+  // One branch per chain: the nearest, plus any in the business's own neighbourhood; none from another area.
+  const suggestions = forDisplay(withoutOwnBusiness(nearestBranches(withDistance(found, origin)), b, MAX_SUGGESTIONS), b.country);
   return { suggestions, note: suggestions.length ? null : COMPETITOR_NOTES.noneFound };
 }
 
@@ -224,6 +230,11 @@ export function competitorInsertRow(businessId: string, c: ConfirmedCompetitor) 
  * near miss is never saved as that business (step 9c).
  */
 export function matchingPlace(name: string, candidates: CompetitorCandidate[]): CompetitorCandidate | null {
+  // Never a branch from another area (branches.ts); the nearest of several branches is picked below.
+  return matchIn(name, candidates.filter((c) => typeof c.distanceM !== "number" || c.distanceM <= FAR_M));
+}
+
+function matchIn(name: string, candidates: CompetitorCandidate[]): CompetitorCandidate | null {
   const want = name.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").trim();
   if (want.replace(/ /g, "").length < 4) return null;
   const plainName = (c: CompetitorCandidate) => c.name.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").trim();
@@ -231,5 +242,8 @@ export function matchingPlace(name: string, candidates: CompetitorCandidate[]): 
   if (exact) return exact;
   // A longer or shorter form only when it is the one result that fits: two "Canopy ..." places are a guess.
   const close = candidates.filter((c) => plainName(c).startsWith(`${want} `) || want.startsWith(`${plainName(c)} `));
-  return close.length === 1 ? close[0] : null;
+  if (close.length === 1) return close[0];
+  // Several branches of the one chain AI named: the nearest one (2026-10-27).
+  const measured = close.filter((c) => typeof c.distanceM === "number").sort((a, b) => a.distanceM! - b.distanceM!);
+  return measured.length > 0 && close.every((c) => sameChain(c, close[0])) ? measured[0] : null;
 }

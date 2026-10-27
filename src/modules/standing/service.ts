@@ -2,6 +2,8 @@
 // scans already saved: where they beat you (questions, AI tools), likely reasons with where to fix them, and where
 // you lead. Ahead or behind itself is the leaderboard's call (scoring.ts compareWithCompetitor), never made here.
 import { hostOf } from "@/lib/site-type";
+import { assistantFacts } from "./assistant-facts";
+import { domainRows, type DomainRow } from "./domains";
 import { namedIn, type StandingCheck } from "./checks";
 import { googleFacts, siteFacts, theirSite, websiteFacts, type Fact, type GoogleValues } from "./reasons";
 import { websiteChecks, websiteGaps, serviceGaps, type TheirWebsite, type YourSite } from "./website";
@@ -17,6 +19,10 @@ export type CompetitorWhy = Tally & {
   name: string;
   /** Their own website when we know it: the one the user typed, or a cited site with their name. */
   site: string | null;
+  /** Every question with answers, in the order they are tracked (Compare's Questions tab). */
+  allQuestions: QuestionTally[];
+  /** Each site the answers used, with who it named (Compare's "Where AI looked"). */
+  domains: DomainRow[];
   /** Questions where AI named them more often than you, biggest gap first. */
   questionsTheyWin: QuestionTally[];
   questionsYouWin: QuestionTally[];
@@ -135,6 +141,7 @@ export function competitorWhy(input: WhyInput): CompetitorWhy {
     ...google.behind,
     ...(input.you.site ? websiteGaps(name, input.theirWebsite ?? null, input.you.site, won) : []),
     ...onSite.behind,
+    ...assistantFacts(checks, tracked, name, assistants, site),
   ].sort((a, b) => b.weight - a.weight);
   const allLeads = [...youLead].sort((a, b) => b.weight - a.weight);
   const sources = sourceBreakdown(checks, tracked, input.you.domain, site);
@@ -165,6 +172,8 @@ export function competitorWhy(input: WhyInput): CompetitorWhy {
     theirPages: pagesUsed(checks, site),
     yourPages: pagesUsed(checks, input.you.domain ? hostOf(input.you.domain) : null),
     ...tally(checks, tracked),
+    allQuestions: questions,
+    domains: domainRows(checks, tracked),
     questionsTheyWin: won,
     questionsYouWin,
     assistantsTheyWin: assistants.filter((a) => gap(a) > 0).sort(byGap),

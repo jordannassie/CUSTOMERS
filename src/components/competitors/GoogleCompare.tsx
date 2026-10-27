@@ -2,13 +2,24 @@ import { cn } from "cn";
 import { GoogleAttribution } from "@/components/onboarding/PlaceBits";
 import { openDays } from "@/lib/google-compare";
 import type { SignalRow } from "@/modules/competitors";
+import { RetryButton } from "@/components/app/RetryButton";
 
 /** Them and you on Google, the leader of each line in bold green. Live values for this view only (D-73). */
 export async function GoogleTable({ name, competitorId, signals }: { name: string; competitorId: string; signals: Promise<SignalRow[]> }) {
   const rows = await signals;
   const theirs = rows.find((r) => r.competitorId === competitorId)?.signals ?? null;
   const yours = rows.find((r) => r.isYou)?.signals ?? null;
-  if (!theirs || !yours) return <p className="text-muted-foreground">{"Google details aren't available for both of you right now."}</p>;
+  if (!theirs || !yours) {
+    const failed = rows.some((r) => (r.isYou || r.competitorId === competitorId) && (r.status === "error" || r.status === "limited"));
+    return (
+      <div className="flex flex-col items-start gap-2" data-testid="google-unavailable">
+        <p className="text-sm text-muted-foreground">
+          {failed ? "Google details could not be loaded just now." : "Google details aren't available for both of you. A business needs a Google listing linked."}
+        </p>
+        {failed && <RetryButton />}
+      </div>
+    );
+  }
   const theirDays = openDays(theirs.hours);
   const yourDays = openDays(yours.hours);
   const days = (n: number | null) => (n === null ? "Not listed" : `${n} a week`);

@@ -14,7 +14,8 @@ import {
 
 // Scores over time: one point per scan and changes between periods (D-63, D-64). Pure, over saved checks.
 
-export type ScanPoint = { date: string; score: number; margin: number };
+/** `score`: the 30-day score as it stood at that scan (D-63). `hit`: that scan's own share of answers naming you. */
+export type ScanPoint = { date: string; score: number; margin: number; hit?: number | null };
 
 /**
  * The 30-day score as it stood at each scan over the last `days` days, oldest first (DB-002). A UTC day's checks are
@@ -29,7 +30,8 @@ export function scoreHistory(
   return [...byDay.keys()].sort().flatMap((date) => {
     const at = new Date(Math.max(...byDay.get(date)!.map((c) => c.checkedAt.getTime())));
     const { overall } = visibilityScore(checks, { now: at, models: opts.models });
-    return overall ? [{ date, score: overall.score, margin: overall.margin }] : [];
+    const own = estimateFor(byDay.get(date)!, opts.models, (c) => c.mentioned).overall;
+    return overall ? [{ date, score: overall.score, margin: overall.margin, hit: own?.score ?? null }] : [];
   });
 }
 

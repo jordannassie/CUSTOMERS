@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { existsSync, readFileSync } from "node:fs";
 import { parseEnv } from "node:util";
 import { createClient } from "@supabase/supabase-js";
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Locator, type Page, type TestInfo } from "@playwright/test";
 
 // B-50 against the local Supabase stack, with the dev server on .env.test.local values and PLACES_FIXTURES=true,
 // so Google values come from made-up fixtures and no real Places or AI call is made. Each test seeds an is_test agency.
@@ -125,6 +125,16 @@ async function seed(page: Page, { competitors, answers, scanDaysAgo = [1 / 24] }
   return business.id;
 }
 
+/** Where every screenshot of a test run goes when E2E_SHOTS_DIR is set (layout reviews only). */
+async function shot(page: Page, info: TestInfo, name: string) {
+  if (process.env.E2E_SHOTS_DIR) await page.screenshot({ path: `${process.env.E2E_SHOTS_DIR}/${name}-${info.project.name}.png`, fullPage: true });
+}
+
+// The leaderboard table's cells (dashboard redesign): the business name, its score and its status, one per row.
+const names = (board: Locator) => board.getByTestId("leader-row").locator("td:nth-child(2) > span:first-child");
+const scores = (board: Locator) => board.getByTestId("leader-row").locator("td:nth-child(3)");
+const statuses = (board: Locator) => board.getByTestId("leader-row").locator("td:nth-last-child(2)");
+
 test.afterAll(async () => {
   for (const id of userIds.splice(0)) await db.auth.admin.deleteUser(id);
 });
@@ -136,17 +146,18 @@ test("a tracked branch that answers never name shows as its chain (BUG-132)", as
     answers: [["Bean House on Congress"], ["Bean House on Congress"], ["Sunrise Coffee Bar"]],
   });
   const board = page.getByTestId("leaderboard");
-  await expect(board.getByRole("listitem").first()).toContainText("Bean House (all locations)");
+  await expect(board.getByTestId("leader-row").first()).toContainText("Bean House (all locations)");
   await expect(board.getByTestId("chain-note")).toHaveText("You track Bean House on Congress");
-  // The chain row opens its "See why" panel too, under the chain's name.
-  await board.getByTestId("see-why").first().click();
-  const sheet = page.getByTestId("why-sheet");
-  await expect(sheet.getByRole("heading", { name: "Bean House (all locations)" })).toBeVisible();
-  await expect(sheet.getByTestId("why-chain-note")).toContainText("You track Bean House on Congress");
-  await expect(sheet.getByTestId("why-versus")).toContainText("Bean House");
+  // The chain row opens Compare too, under the chain's name.
+  await board.getByTestId("leader-row").first().getByTestId("compare-link").click();
+  await page.waitForURL((url) => url.pathname === "/competitors/compare" && url.searchParams.has("with"), { timeout: 60_000 });
+  const compare = page.getByTestId("compare-page");
+  await expect(compare.getByRole("heading", { level: 2, name: "You vs Bean House (all locations)" })).toBeVisible({ timeout: 60_000 });
+  await expect(compare.getByTestId("why-chain-note")).toContainText("You track Bean House on Congress");
+  await expect(compare.getByTestId("why-versus")).toContainText("Bean House");
 });
 
-test("leaderboard, Google side by side, and tracking a business AI keeps naming", async ({ page }) => {
+test("leaderboard, Google side by side, and tracking a business AI keeps naming", async ({ page }, info) => {
   const businessId = await seed(page, {
     competitors: [
       { name: "Bean House", places_id: "ChIJ-fixture-bean-house" },
@@ -163,9 +174,22 @@ test("leaderboard, Google side by side, and tracking a business AI keeps naming"
   });
 
   const board = page.getByTestId("leaderboard");
-  await expect(board.getByRole("listitem")).toHaveText([/Bean House\s*(See why)?\s*80\s*You're behind/, /Sunrise Coffee Bar \(you\)\s*20/, /The Daily Grind\s*(See why)?\s*20\s*About the same/]);
-  await expect(page.getByTestId("tracked-count")).toHaveText("2 of 5 tracked");
+  await expect(names(board)).toHaveText(["Bean House", "Sunrise Coffee Bar (you)", "The Daily Grind"]);
+  await expect(scores(board)).toHaveText(["80", "20", "20"]);
+  await expect(statuses(board)).toHaveText(["You're behind", "", "About the same"]);
+  // Each competitor opens on Compare; your own row has no link.
+  await expect(board.getByTestId("leader-row").nth(0).getByTestId("compare-link")).toHaveAttribute("href", /^\/competitors\/compare\?with=[0-9a-f-]{36}$/);
+  await expect(board.getByTestId("leader-row").nth(1).getByTestId("compare-link")).toHaveCount(0);
+  await expect(page.getByTestId("tracked-count")).toHaveText("(2 of 5)");
+  // The wide table scrolls inside its card: the page itself is never wider than the screen, at 390px too.
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
+  await expect(page.getByTestId("kpi-leader")).toContainText("Bean House");
 
+  // Google is asked only when the owner presses "Show Google details" (2026-10-27).
+  await expect(page.getByTestId("signals-highlight")).toHaveCount(0);
+  await expect(page.getByTestId("show-google")).toBeVisible();
+  await page.getByTestId("show-google-button").click();
+  await page.waitForURL((url) => url.pathname === "/competitors" && url.searchParams.get("google") === "1");
   await expect(page.getByTestId("signals-highlight")).toHaveText(
     "Bean House: 320 Google reviews, 4.7 stars. You: 12 reviews, 4.2 stars",
   );
@@ -173,12 +197,13 @@ test("leaderboard, Google side by side, and tracking a business AI keeps naming"
 
   const also = page.getByTestId("also-recommended");
   await expect(also.getByRole("listitem")).toHaveText([/Blue Door Coffee\s*Named in 9 of 15 answers/, /Kiln Coffee Co\s*Named in 3 of 15 answers/]);
+  await shot(page, info, "competitors");
   await page.getByRole("button", { name: "Track Blue Door Coffee" }).click();
   await expect(page.getByText("Blue Door Coffee added to your competitors")).toBeVisible(ACTION);
   // Saved answers are checked for it at once (BUG-122): 9 of the 15 answers named it.
-  await expect(board.getByRole("listitem").filter({ hasText: "Blue Door Coffee" })).toHaveText(/Blue Door Coffee\s*(See why)?\s*60/, ACTION);
+  await expect(board.getByTestId("leader-row").filter({ hasText: "Blue Door Coffee" }).locator("td:nth-child(3)")).toHaveText("60", ACTION);
   await expect(also.getByRole("listitem")).toHaveText([/Kiln Coffee Co/]);
-  await expect(page.getByTestId("tracked-count")).toHaveText("3 of 5 tracked");
+  await expect(page.getByTestId("tracked-count")).toHaveText("(3 of 5)");
 
   // D-73: the saved list is names and place ids only, and loading the page stored nothing from Places.
   const { data } = await db
@@ -214,14 +239,11 @@ test("a competitor added partway through the 30 days is still collecting, with n
 
   // Blue Door was only looked for in the second scan, so 3 of 10 answers, not 3 of 5.
   const board = page.getByTestId("leaderboard");
-  await expect(board.getByRole("listitem")).toHaveText([
-    /Bean House\s*(See why)?\s*80\s*You're behind/,
-    /Sunrise Coffee Bar \(you\)\s*20/,
-    /Blue Door Coffee\s*30\s*New, still collecting/,
-  ]);
+  await expect(names(board)).toHaveText(["Bean House", "Sunrise Coffee Bar (you)", "Blue Door Coffee"]);
+  await expect(scores(board)).toHaveText(["80", "20", "30"]);
+  await expect(statuses(board)).toHaveText(["You're behind", "", "New, still collecting"]);
   await expect(board.getByTestId("standing")).toHaveCount(1);
-  // "See why" only for a competitor compared over the whole window.
-  await expect(board.getByTestId("see-why")).toHaveCount(1);
+  await expect(board.getByTestId("collecting")).toHaveCount(1);
   await expect(page.getByTestId("collecting-note")).toBeVisible();
 });
 
@@ -237,7 +259,7 @@ test("no competitors and no scans: each section says what to do next", async ({ 
   await page.getByRole("button", { name: "Save competitors" }).filter({ visible: true }).click();
   await expect(page.getByText("1 competitor saved")).toBeVisible(ACTION);
   await page.getByRole("link", { name: "Back to competitors" }).click();
-  await expect(page.getByTestId("tracked-count")).toHaveText("1 of 5 tracked", ACTION);
+  await expect(page.getByTestId("tracked-count")).toHaveText("(1 of 5)", ACTION);
   await expect(page.getByText("Scores appear after your first scan.", { exact: false })).toBeVisible();
 });
 

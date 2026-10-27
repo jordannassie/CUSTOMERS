@@ -20,7 +20,8 @@ vi.mock("@/lib/supabase/server", () => ({
 vi.mock("./pdf", async (original) => ({ ...(await original<typeof import("./pdf")>()), renderPdf }));
 
 const { createShareLink, exportPdf } = await import("./actions");
-const { isShareLinkActive, shareForEmail } = await import("./dal");
+const { shareForEmail } = await import("./dal");
+const { isShareLinkActive } = await import("./public/dal");
 
 const FRIENDLY = "PDF could not be created. Try again, or use Print, Save as PDF.";
 

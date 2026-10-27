@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { existsSync, readFileSync } from "node:fs";
 import { parseEnv } from "node:util";
 import { createClient } from "@supabase/supabase-js";
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page, type TestInfo } from "@playwright/test";
 
 // B-49 against the local Supabase stack only, with the dev server on .env.test.local values and
 // WORKER_IN_PROCESS=true. Each test seeds its own is_test agency, so scans use recorded answers (D-61).
@@ -87,6 +87,7 @@ async function seedChecks(
   business: Business,
   days: number,
   mentioned: (model: number, question: number, day: number) => boolean,
+  rivals: (model: number, question: number, day: number) => string[] = () => [],
 ) {
   const { data: run } = await db
     .from("visibility_runs")
@@ -103,7 +104,7 @@ async function seedChecks(
         provider,
         created_at: new Date(Date.now() - day * DAY - HOUR).toISOString(),
         business_mentioned: mentioned(m, q, day),
-        competitors_mentioned: [],
+        competitors_mentioned: rivals(m, q, day).map((name) => ({ name, position: 1 })),
         cached: false,
         answer_text: `${provider} answer ${q} on day ${day}`,
       })),
@@ -114,6 +115,15 @@ async function seedChecks(
   }
 }
 
+/** Where every screenshot of a test run goes when E2E_SHOTS_DIR is set (layout reviews only). */
+async function shot(page: Page, info: TestInfo, name: string) {
+  if (process.env.E2E_SHOTS_DIR) await page.screenshot({ path: `${process.env.E2E_SHOTS_DIR}/${name}-${info.project.name}.png`, fullPage: true });
+}
+
+// The header's meta line (D-86): "Orange, CA · 3 customer questions · ChatGPT, Claude, Perplexity · Last scan Oct 27".
+const META = "Orange, CA · 3 customer questions · ChatGPT, Claude, Perplexity";
+const shortDay = (ms: number) => new Date(ms).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+
 test.afterAll(async () => {
   for (const id of userIds.splice(0)) await db.auth.admin.deleteUser(id);
 });
@@ -121,18 +131,21 @@ test.afterAll(async () => {
 test("no scans yet: an invitation to run the first scan", async ({ page }) => {
   await seedBusiness(page);
   await expect(page.getByTestId("no-score")).toContainText("No score yet");
-  await expect(page.getByTestId("last-scan")).toHaveText("No scans yet");
-  await expect(page.getByTestId("model-scores")).toContainText("ChatGPT");
-  await expect(page.getByTestId("model-scores").getByText("No checks yet")).toHaveCount(3);
+  await expect(page.getByTestId("last-scan")).toHaveText(`${META} · No scans yet`);
+  // No score yet, so no score by AI tool, no KPI strip and no range to pick.
+  await expect(page.getByTestId("tool-scores")).toHaveCount(0);
+  await expect(page.getByTestId("score-summary")).toHaveCount(0);
+  await expect(page.getByTestId("range")).toHaveCount(0);
   // DB-009: the first scan starts from the empty card, with its cost; there is nothing to share or export yet.
   await expect(page.getByTestId("no-score").getByRole("button", { name: "Run first scan" })).toBeEnabled();
   await expect(page.getByTestId("scan-cost")).toHaveText(/^Takes about a minute and uses about \d+ credits?\.$/);
-  await expect(page.getByRole("button", { name: "Share" })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "Share" })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "View report" })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Export PDF" })).toHaveCount(0);
   for (const card of REMOVED_CARDS) await expect(page.getByText(card)).toHaveCount(0);
 });
 
-test("first scan: score, early label, first results note, no arrow", async ({ page }) => {
+test("first scan: score, early label, first results note, no arrow", async ({ page }, info) => {
   const business = await seedBusiness(page);
   // ChatGPT 9 of 12, Claude 6 of 12, Perplexity 7 of 12: 61 overall.
   const hits = [9, 6, 7];
@@ -146,9 +159,10 @@ test("first scan: score, early label, first results note, no arrow", async ({ pa
   );
   await expect(page.getByText("First results. Accuracy improves with every scan.")).toBeVisible();
   await expect(page.getByTestId("score-change")).toHaveCount(0);
-  await expect(page.getByTestId("model-scores")).toContainText(/ChatGPT\s*75/);
-  await expect(page.getByTestId("model-scores")).toContainText(/Claude\s*50/);
-  await expect(page.getByTestId("last-scan")).toHaveText("Last scan 1 hour ago");
+  const tools = page.getByTestId("tool-scores").getByTestId("model-score");
+  await expect(tools).toHaveText([/ChatGPT\s*75/, /Claude\s*50/, /Perplexity\s*58/]);
+  await expect(page.getByTestId("last-scan")).toHaveText(`${META} · Last scan ${shortDay(Date.now() - HOUR)}`);
+  await shot(page, info, "overview-first-scan");
 
   await page.getByRole("button", { name: "How is this calculated?" }).click();
   const panel = page.getByRole("dialog", { name: "How your score is calculated" });
@@ -204,10 +218,12 @@ test("30 days of history: high confidence, a real rise and the top 3 fixes", asy
   await expect(page.getByTestId("confidence-label")).toHaveText("High confidence");
   await expect(page.getByTestId("score-change")).toContainText(/^Up \d+ points on last week$/);
   await expect(page.getByText("First results. Accuracy improves with every scan.")).toHaveCount(0);
-  const fixes = page.getByTestId("top-opportunities").getByRole("link");
+  // Top actions: the three most important open fixes, each opening that fix on Actions.
+  const fixes = page.getByTestId("top-opportunities").getByRole("listitem").getByRole("link");
   await expect(fixes).toHaveCount(3);
   await expect(fixes.nth(2)).toHaveText("Answer common questions on your site");
-  await expect(page.getByRole("link", { name: "See all opportunities" })).toHaveAttribute("href", "/opportunities");
+  await expect(fixes.nth(2)).toHaveAttribute("href", /^\/actions\?fix=[0-9a-f-]{36}$/);
+  await expect(page.getByRole("link", { name: "All 4 actions" })).toHaveAttribute("href", "/actions");
   for (const card of REMOVED_CARDS) await expect(page.getByText(card)).toHaveCount(0);
 });
 
@@ -218,11 +234,10 @@ test("Run scan: the score appears when the scan finishes, without a reload", asy
   await expect(page.getByRole("button", { name: /Scanning/ })).toBeVisible();
   await expect(page.getByTestId("score-summary")).toBeVisible({ timeout: 60_000 });
   await expect(page.getByTestId("no-score")).toHaveCount(0);
-  await expect(page.getByTestId("last-scan")).toHaveText(/^Last scan /);
-  await expect(page.getByRole("button", { name: "Share" })).toBeVisible();
-  // Export PDF (B-60) sits with Share in the page header's actions.
-  const actions = page.getByRole("button", { name: "Share" }).locator("..");
-  await expect(actions.getByRole("button", { name: "Export PDF" })).toBeVisible();
+  await expect(page.getByTestId("last-scan")).toHaveText(/ · Last scan [A-Z][a-z]{2} \d{1,2}$/);
+  // The report and its share link live on Reports (D-86); the Overview header links there.
+  await expect(page.getByRole("link", { name: "View report" })).toHaveAttribute("href", "/reports");
+  await expect(page.getByRole("link", { name: "Share" })).toHaveAttribute("href", "/reports?share=1");
 });
 
 test("Run scan short of credits: a warning first, and nothing starts until Run scan anyway (D-54)", async ({ page }) => {
@@ -276,4 +291,35 @@ test("old Visibility and Reports bookmarks land on the Overview (B-58)", async (
     await expect(page, path).toHaveURL((url) => url.pathname === "/dashboard");
     await expect(page.getByRole("heading", { level: 1, name: "Bean There Coffee" })).toBeVisible();
   }
+});
+
+test("the chart draws every business in its own color, with its name and latest number", async ({ page }, info) => {
+  const business = await seedBusiness(page);
+  const rivals = ["Bean House", "Blue Door Coffee", "The Daily Grind"];
+  await db
+    .from("business_competitors")
+    .insert(rivals.map((name) => ({ business_id: business.id, name, created_at: new Date(Date.now() - 40 * DAY).toISOString() })))
+    .throwOnError();
+  // A different mix each day, so every line moves: Bean House leads, the others trail.
+  await seedChecks(
+    business,
+    10,
+    (m, q, day) => (q + m) % (2 + (day % 3)) === 0,
+    (m, q, day) => rivals.filter((_, i) => (q + m + day * (i + 1)) % (i + 2 + (day % 2)) === 0),
+  );
+  await page.reload();
+
+  const chart = page.getByTestId("scan-chart");
+  await expect(chart.getByTestId("scan-line")).toHaveCount(4, { timeout: 60_000 });
+  await expect(chart.getByTestId("scan-line").first()).toContainText("You");
+  await expect(chart.getByTestId("scan-line").filter({ hasText: "Bean House" })).toHaveCount(1);
+  // Five drawn lines: you, three competitors and your dashed 30-day score.
+  await expect(chart.locator("path.recharts-curve.recharts-line-curve")).toHaveCount(5);
+  // A name hides its line and shows it again.
+  await chart.getByTestId("scan-line").filter({ hasText: "Blue Door Coffee" }).click();
+  await expect(chart.locator("path.recharts-curve.recharts-line-curve")).toHaveCount(4);
+  await chart.getByTestId("scan-line").filter({ hasText: "Blue Door Coffee" }).click();
+  await expect(chart.locator("path.recharts-curve.recharts-line-curve")).toHaveCount(5);
+  await expect(page.getByTestId("where-you-stand")).toContainText("Bean House");
+  await shot(page, info, "overview-chart");
 });

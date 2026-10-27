@@ -30,13 +30,19 @@ describe("competitorCharts", () => {
     expect(charts.names).toEqual(["Bean There", "Rival Roasters", "Daily Grind"]);
   });
 
-  it("has one point per scan day, and the last one is the leaderboard score", () => {
+  it("has one point per scan day, and the last 30-day reference is the leaderboard score", () => {
     expect(charts.timeline.map((p) => p.date)).toEqual([day(8).toISOString().slice(0, 10), day(1).toISOString().slice(0, 10)]);
-    const last = charts.timeline.at(-1)!.scores;
+    const last = charts.timeline.at(-1)!.rolling;
     expect(last[0]).toBeCloseTo(visibilityScore(checks, opts).overall!.score);
     const rivals = competitorScores(checks, ["Rival Roasters", "Daily Grind"], opts);
     expect(last[1]).toBeCloseTo(rivals[0].estimate.score);
     expect(last[2]).toBeCloseTo(rivals[1].estimate.score);
+  });
+
+  it("plots each scan's own hit rate: only that day's answers", () => {
+    const day1 = checks.filter((c) => c.checkedAt.toISOString().slice(0, 10) === day(1).toISOString().slice(0, 10));
+    const own = day1.filter((c) => c.mentioned).length / day1.length;
+    expect(charts.timeline.at(-1)!.scores[0]).toBeCloseTo(100 * own);
   });
 
   it("counts each business's mentions in the window, with shares adding up to 100", () => {

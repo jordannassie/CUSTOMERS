@@ -12,7 +12,7 @@ test.describe("desktop only", () => {
     expect(urls).toEqual(PUBLIC_PAGES);
 
     const robots = await (await request.get("/robots.txt")).text();
-    for (const path of ["/dashboard", "/sources", "/competitors", "/questions", "/opportunities", "/onboarding", "/internal", "/r/", "/api/"]) {
+    for (const path of ["/dashboard", "/sources", "/competitors", "/questions", "/opportunities", "/actions", "/reports", "/onboarding", "/internal", "/r/", "/api/"]) {
       expect(robots).toContain(`Disallow: ${path}\n`);
     }
     expect(robots).toContain("Sitemap: https://customers.direct/sitemap.xml");

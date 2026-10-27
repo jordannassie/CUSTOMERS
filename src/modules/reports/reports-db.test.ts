@@ -2,14 +2,12 @@ import { randomUUID } from "node:crypto";
 import { createClient as createSupabaseClient, type SupabaseClient } from "@supabase/supabase-js";
 import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { env } from "@/lib/env";
-import { createServiceClient } from "@/lib/supabase/service";
+import { createOwner, deleteTestUsers, service, tokenOf } from "./reports.test-helpers";
 
 // B-59 against the local database: creating and turning off share links, and what the public report holds.
 // Google values from the made-up fixtures, never a real Places call (D-73).
 vi.hoisted(() => vi.stubEnv("PLACES_FIXTURES", "true"));
 
-const service = createServiceClient();
-const userIds: string[] = [];
 let session: SupabaseClient | null = null;
 
 vi.mock("@/lib/supabase/server", () => ({
@@ -19,89 +17,14 @@ vi.mock("@/lib/supabase/server", () => ({
 }));
 
 const { createShareLink, revokeShareLink } = await import("./actions");
-const { getSharedReport, isShareLinkActive } = await import("./dal");
+const { getSharedReport, isShareLinkActive } = await import("./public/dal");
 
 const UUID = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
-
-async function createOwner() {
-  const email = `vitest-reports-${randomUUID()}@example.test`;
-  const password = `pw-${randomUUID()}`;
-  const { data, error } = await service.auth.admin.createUser({ email, password, email_confirm: true });
-  if (error || !data.user) throw error ?? new Error("no user");
-  userIds.push(data.user.id);
-  const { data: agency } = await service
-    .from("agencies")
-    .insert({ owner_user_id: data.user.id, name: "Northside Marketing", is_test: true, status: "active" })
-    .select("id")
-    .single()
-    .throwOnError();
-  const { data: business } = await service
-    .from("businesses")
-    .insert({
-      owner_user_id: data.user.id,
-      agency_id: agency.id,
-      name: "Sunrise Coffee Bar",
-      status: "active",
-      industry: "coffee_shop",
-      primary_city: "Springfield",
-      primary_region: "IL",
-      places_id: "ChIJ-fixture-sunrise-coffee",
-      models: ["openai", "anthropic", "perplexity"],
-    })
-    .select("id")
-    .single()
-    .throwOnError();
-  await service
-    .from("business_competitors")
-    .insert({ business_id: business.id, name: "Bean House", places_id: "ChIJ-fixture-bean-house", source: "confirmed_place", confirmed: true, created_at: new Date(Date.now() - 2 * 86_400_000).toISOString() })
-    .throwOnError();
-  await service
-    .from("opportunities")
-    .insert({ business_id: business.id, title: "Add your opening hours to your website", impact: "high", status: "open", category: "local_presence" })
-    .throwOnError();
-  const { data: run } = await service
-    .from("visibility_runs")
-    .insert({ business_id: business.id, provider: "scan", status: "completed" })
-    .select("id")
-    .single()
-    .throwOnError();
-  // Only answers to suggested questions count in the score (BUG-129).
-  const { data: question } = await service
-    .from("tracked_prompts")
-    .insert({ business_id: business.id, prompt: "Best coffee shop in Springfield, IL?", source: "library" })
-    .select("id")
-    .single()
-    .throwOnError();
-  await service
-    .from("visibility_results")
-    .insert(
-      [0, 1, 2].map((i) => ({
-        run_id: run.id,
-        business_id: business.id,
-        tracked_prompt_id: question.id,
-        provider: ["openai", "anthropic", "perplexity"][i],
-        created_at: new Date(Date.now() - 3_600_000).toISOString(),
-        business_mentioned: i !== 1,
-        competitors_mentioned: [{ name: "Bean House", position: 1 }],
-        cached: false,
-        answer_text: `answer ${i}`,
-      })),
-    )
-    .throwOnError();
-  const client = createSupabaseClient(env.NEXT_PUBLIC_SUPABASE_URL, env.NEXT_PUBLIC_SUPABASE_ANON_KEY, { auth: { persistSession: false } });
-  const signIn = await client.auth.signInWithPassword({ email, password });
-  if (signIn.error) throw signIn.error;
-  return { agencyId: agency.id, businessId: business.id, userId: data.user.id, client };
-}
-
-const tokenOf = (path: string) => path.replace(/^\/r\//, "");
 
 beforeEach(() => {
   session = null;
 });
-afterAll(async () => {
-  for (const id of userIds.splice(0)) await service.auth.admin.deleteUser(id);
-});
+afterAll(deleteTestUsers);
 
 describe("share links", () => {
   it("need a session", async () => {
@@ -119,10 +42,13 @@ describe("share links", () => {
     expect(tokenOf(first.data.path)).toMatch(/^[A-Za-z0-9_-]{43}$/);
 
     const report = await getSharedReport(tokenOf(first.data.path));
-    expect(report).toMatchObject({ businessName: "Sunrise Coffee Bar", agency: { name: "Northside Marketing", hasLogo: false } });
-    expect(report!.score?.value).toBe(67);
-    expect(report!.opportunities).toEqual([{ title: "Add your opening hours to your website", impact: "high" }]);
-    expect(report!.competitors.signals.find((s) => s.name === "Bean House")?.signals).toMatchObject({ reviewCount: 320 });
+    expect(report).toMatchObject({ kind: "live", hidden: [], agency: { name: "Northside Marketing", hasLogo: false } });
+    expect(report!.document.businessName).toBe("Sunrise Coffee Bar");
+    expect(report!.document.summary.score?.value).toBe(67);
+    expect(report!.document.actions.rows).toMatchObject([{ title: "Add your opening hours to your website", impact: "high" }]);
+    expect(report!.document.competitors.rows.map((r) => r.name)).toContain("Bean House");
+    // The fixture's live Google values (320 reviews, 4.7 stars) never go into the report (D-73).
+    expect(JSON.stringify(report)).not.toMatch(/reviewCount|rating|320 (Google )?reviews|4\.7 stars/i);
 
     expect(await revokeShareLink({ id: first.data.id })).toEqual({ ok: true, data: null });
     expect(await getSharedReport(tokenOf(first.data.path))).toBeNull();

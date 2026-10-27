@@ -161,13 +161,25 @@ export function isRealChange(a: Pick<Estimate, "score" | "margin">, b: Pick<Esti
   return Math.abs(a.score - b.score) > Math.hypot(a.margin, b.margin);
 }
 
-/** Where you stand against a competitor: "ahead" means you are mentioned more, by more than the margin. */
-export function compareWithCompetitor(
-  you: Pick<Estimate, "score" | "margin">,
-  them: Pick<Estimate, "score" | "margin">,
-): Standing {
-  if (!isRealChange(you, them)) return "about_same";
-  return you.score > them.score ? "ahead" : "behind";
+export type Status = "behind" | "same" | "ahead";
+
+/**
+ * The one rule for every ahead or behind label (redesign brief, 2026-10-27): a gap counts when it is larger than your
+ * score's margin. Before, it had to beat both margins combined, so a 13 point gap with a 11 point margin read "About
+ * the same".
+ */
+export function compareStatus(you: number, them: number, margin: number): Status {
+  const diff = them - you;
+  if (diff > margin) return "behind";
+  if (-diff > margin) return "ahead";
+  return "same";
+}
+
+const STANDING: Record<Status, Standing> = { behind: "behind", ahead: "ahead", same: "about_same" };
+
+/** Where you stand against a competitor: "ahead" means you are mentioned more, by more than your margin. */
+export function compareWithCompetitor(you: Pick<Estimate, "score" | "margin">, them: Pick<Estimate, "score"> & { margin?: number }): Standing {
+  return STANDING[compareStatus(you.score, them.score, you.margin)];
 }
 
 export type CompetitorScore = {

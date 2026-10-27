@@ -26,6 +26,15 @@ export type Fact = {
   action?: string;
   match?: string[];
   fixId?: string;
+  /**
+   * key: stable across scans, shared with Actions ("site:yelp.com"), so "Add to Actions" finds a fix already added.
+   * answers: how many answers the fact rests on ("Based on 9 answers"); basis says what else it rests on.
+   */
+  key?: string;
+  answers?: number;
+  basis?: "answers" | "website" | "google";
+  /** For an AI tool's reason: the tool, so a card can say "ChatGPT and Claude used it most" when merged. */
+  assistant?: string;
 };
 
 /** Google values for one business, fetched live for this page view and never stored (D-73). */
@@ -66,6 +75,8 @@ export function websiteFacts(
       action: "Let AI tools read your website: open your robots.txt and bot protection settings and allow GPTBot, ClaudeBot and PerplexityBot.",
       match: ["robots", "gptbot", "claudebot", "perplexitybot", "crawler", "bot protection"],
       text: "Your website turned our reader away, so AI tools may not be able to read it either.",
+      key: "web:blocked",
+      basis: "website",
       where: "website",
       weight: 4,
     });
@@ -80,6 +91,9 @@ export function websiteFacts(
       text: `AI used ${possessive(them.name)} website (${them.site}) in ${answers(usedTheirs)}.${yours} AI tools read business websites to answer these questions.`,
       where: "website",
       weight: 1.5 * (usedTheirs - usedYours),
+      key: "web:quoted",
+      answers: usedTheirs,
+      basis: "answers",
     });
   } else if (you.domain && usedYours >= MIN_ANSWERS && usedYours > usedTheirs) {
     ahead.push({
@@ -111,6 +125,9 @@ export function siteFacts(checks: StandingCheck[], tracked: string, name = track
         text: `AI used ${host} in ${answers(n)} that named ${name} and not you. Check your listing there.`,
         where: "other_places",
         weight: n,
+        key: `site:${host}`,
+        answers: n,
+        basis: "answers",
       });
     } else if (type === "news") {
       facts.push({
@@ -121,6 +138,9 @@ export function siteFacts(checks: StandingCheck[], tracked: string, name = track
         text: `AI used articles on ${host} in ${answers(n)} that named ${name} and not you.`,
         where: "other_places",
         weight: 0.8 * n,
+        key: `site:${host}`,
+        answers: n,
+        basis: "answers",
       });
     }
     if (facts.length === MAX_SITES) break;
@@ -147,6 +167,8 @@ export function googleFacts(name: string, theirs: GoogleValues | null, yours: Go
         weight: 3,
         action: "Ask happy customers for a Google review: send them your review link after each job.",
         match: ["review"],
+        key: "google:reviews",
+        basis: "google",
       });
     else ahead.push({ title: "You have more Google reviews", detail: `${y} vs their ${t}`, text, where: "google_listing", weight: 3 });
   }
@@ -164,6 +186,8 @@ export function googleFacts(name: string, theirs: GoogleValues | null, yours: Go
         weight: 2,
         action: "Reply to every Google review and fix what low ratings mention; new good reviews lift the rating over time.",
         match: ["rating", "review"],
+        key: "google:rating",
+        basis: "google",
       });
     else ahead.push({ title: "Your Google rating is higher", detail: `${y} vs their ${t}`, text, where: "google_listing", weight: 2 });
   }
@@ -181,6 +205,8 @@ export function googleFacts(name: string, theirs: GoogleValues | null, yours: Go
         weight: 1.5,
         action: "Check your opening hours on your Google listing are complete, including weekends and holidays.",
         match: ["hours", "open days", "opening"],
+        key: "google:hours",
+        basis: "google",
       });
     else ahead.push({ title: "You're open more days", detail: `${yourDays} days vs their ${theirDays}`, text, where: "google_listing", weight: 1.5 });
   }
@@ -193,6 +219,8 @@ export function googleFacts(name: string, theirs: GoogleValues | null, yours: Go
       detail: `Theirs: ${theirType}. Yours: ${yourType}.`,
       action: `Check your Google categories: add "${theirType}" as a category if it describes what you do.`,
       match: ["category"],
+      key: "google:category",
+      basis: "google",
       text: `Google lists ${name} as "${theirType}" and you as "${yourType}". AI may match the question to their category.`,
       where: "google_listing",
       weight: 2,

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { ProviderId } from "./providers/types";
 import {
+  compareStatus,
   compareWithCompetitor,
   competitorScores,
   confidenceLabel,
@@ -140,6 +141,9 @@ describe("competitor comparison", () => {
     expect(compareWithCompetitor({ score: 70, margin: 5 }, { score: 50, margin: 5 })).toBe("ahead");
     expect(compareWithCompetitor({ score: 50, margin: 5 }, { score: 70, margin: 5 })).toBe("behind");
     expect(compareWithCompetitor({ score: 55, margin: 5 }, { score: 50, margin: 5 })).toBe("about_same");
+    // The brief's case: 13 points behind with an 11 point margin is behind (it read "About the same" before).
+    expect(compareWithCompetitor({ score: 15, margin: 11 }, { score: 28, margin: 11 })).toBe("behind");
+    expect(compareWithCompetitor({ score: 15, margin: 11 }, { score: 26, margin: 11 })).toBe("about_same");
   });
 
   it("scores each competitor on the same checks", () => {
@@ -217,5 +221,14 @@ describe("weeklyChange", () => {
     expect(weeklyChange([...week(20, 40, 8 * 24), ...week(22, 40, 24)], { now: NOW, models: MODELS })).toBeNull();
     expect(weeklyChange(week(30, 40, 24), { now: NOW, models: MODELS })).toBeNull();
     expect(weeklyChange([], { now: NOW, models: MODELS })).toBeNull();
+  });
+});
+
+describe("compareStatus", () => {
+  it("counts a gap only when it is larger than the margin", () => {
+    expect(compareStatus(15, 28, 11)).toBe("behind");
+    expect(compareStatus(28, 15, 11)).toBe("ahead");
+    expect(compareStatus(15, 26, 11)).toBe("same");
+    expect(compareStatus(20, 20, 0)).toBe("same");
   });
 });

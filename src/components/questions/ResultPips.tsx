@@ -4,7 +4,7 @@ import type { ProviderId } from "@/modules/scanning";
 
 const FILL: Record<ProviderId, string> = { openai: "bg-chatgpt", anthropic: "bg-claude", perplexity: "bg-perplexity" };
 
-/** One pip per recent check, filled when AI recommended the business in it. */
+/** One square per recent check, oldest first, filled when AI recommended the business in it. */
 export function ResultPips({ result }: { result: QuestionResult }) {
   const text = resultText(result);
   return (
@@ -17,9 +17,9 @@ export function ResultPips({ result }: { result: QuestionResult }) {
         <span className="text-[13px] text-text-hint">Not checked yet</span>
       ) : (
         <>
-          <span className="flex gap-[3px]" aria-hidden="true">
-            {Array.from({ length: result.checks }, (_, i) => (
-              <span key={i} className={cn("h-2.5 w-2 rounded-xs", i < result.appeared ? FILL[result.model] : "bg-border")} />
+          <span className="flex flex-wrap gap-[3px]" aria-hidden="true">
+            {result.pips.map((named, i) => (
+              <span key={i} className={cn("h-2.5 w-2 rounded-xs", named ? FILL[result.model] : "bg-border")} />
             ))}
           </span>
           <span className="text-[13px] tabular-nums">

@@ -2,24 +2,31 @@ import "server-only";
 import { requireAgency } from "@/modules/auth";
 import type { ScanFrequency } from "@/modules/credits";
 import { maxQuestions } from "@/modules/entitlements";
-import { CHECK_MODELS, isOwnQuestion, loadQuestionResults, type ProviderId } from "@/modules/scanning";
+import { CHECK_MODELS, isOwnQuestion, type ProviderId } from "@/modules/scanning";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { questionSummaries, loadStanding } from "@/modules/standing";
 import { latestAnswers, type QuestionAnswer } from "./answers";
+import { focusMatches } from "./focus";
+import { questionHistory, TREND_LOOKBACK_DAYS } from "./history";
+import { readFixTexts, readHistory } from "./reads/dal";
 import { editMakesNewQuestion, questionsView, sameQuestion, tidyQuestion, type QuestionsView } from "./service";
+import { fixForSites } from "./skipped";
+
+/** From the page's link: only the questions whose answers used this site, or named this business and not you. */
+export type QuestionsFocus = { site?: string | null; named?: string | null };
 
 const FREQUENCIES: readonly string[] = ["daily", "weekly", "monthly"] satisfies ScanFrequency[];
 const isModel = (m: string): m is ProviderId => m in CHECK_MODELS;
 
 /** The Questions page for one of the signed-in agency's businesses; null when it is not theirs. */
-export async function getQuestionsPage(businessId: string, next: string): Promise<QuestionsView | null> {
+export async function getQuestionsPage(businessId: string, next: string, focus: QuestionsFocus = {}): Promise<QuestionsView | null> {
   const { agency } = await requireAgency({ next });
-  return loadQuestionsPage(agency.id, businessId, new Date());
+  return loadQuestionsPage(agency.id, businessId, new Date(), focus);
 }
 
 // Callers check the user may see this agency first.
-export async function loadQuestionsPage(agencyId: string, businessId: string, now: Date): Promise<QuestionsView | null> {
+export async function loadQuestionsPage(agencyId: string, businessId: string, now: Date, focus: QuestionsFocus = {}): Promise<QuestionsView | null> {
   const db = createServiceClient();
   const [business, questions] = await Promise.all([
     db
@@ -29,19 +36,27 @@ export async function loadQuestionsPage(agencyId: string, businessId: string, no
       .eq("agency_id", agencyId)
       .maybeSingle(),
     // A removed question is kept for past scores (step 9e) but never listed again.
-    db.from("tracked_prompts").select("id, prompt, active, source").eq("business_id", businessId).is("removed_at", null).order("created_at").order("id"),
+    db
+      .from("tracked_prompts")
+      .select("id, prompt, active, source, category")
+      .eq("business_id", businessId)
+      .is("removed_at", null)
+      .order("created_at")
+      .order("id"),
   ]);
   for (const r of [business, questions]) if (r.error) throw new Error(`Questions: ${r.error.message}`);
   if (!business.data) return null;
 
   const models = business.data.models.filter(isModel);
-  const [results, limit, standing] = await Promise.all([
-    loadQuestionResults(businessId, models, now),
+  const [history, limit, standing] = await Promise.all([
+    // The pips, the 30-day rate and the change since the scan before, from the same saved checks as the score.
+    readHistory(businessId, now, TREND_LOOKBACK_DAYS),
     maxQuestions(businessId),
     // Saved answers only: who AI named on each question and the sites it used without you.
     loadStanding(agencyId, businessId, now),
   ]);
-  const summaries = standing ? questionSummaries([...standing.checks, ...standing.ownChecks], standing.you.domain, standing.competitors) : undefined;
+  const answered = standing ? [...standing.checks, ...standing.ownChecks] : [];
+  const summaries = standing ? questionSummaries(answered, standing.you.domain, standing.competitors) : undefined;
   return questionsView({
     businessId,
     businessName: business.data.name,
@@ -49,10 +64,11 @@ export async function loadQuestionsPage(agencyId: string, businessId: string, no
     industry: business.data.industry,
     models,
     frequency: FREQUENCIES.includes(business.data.scan_frequency) ? (business.data.scan_frequency as ScanFrequency) : "weekly",
-    questions: questions.data!.map(({ source, ...q }) => ({ ...q, own: isOwnQuestion(source) })),
-    results,
+    questions: questions.data!.map(({ source, category, ...q }) => ({ ...q, own: isOwnQuestion(source), topic: category })),
+    history: questionHistory(history, { now, models }),
     limit: limit.limit,
     summaries,
+    matching: focusMatches(answered, focus),
   });
 }
 
@@ -62,9 +78,10 @@ const ANSWER_ROWS = 30;
 /** The latest answer per model for one question (BUG-089); null when the question is not this agency's. */
 export async function loadQuestionAnswers(agencyId: string, businessId: string, questionId: string): Promise<QuestionAnswer[] | null> {
   const db = createServiceClient();
-  const [business, question] = await Promise.all([
+  const [business, question, fixes] = await Promise.all([
     db.from("businesses").select("models").eq("id", businessId).eq("agency_id", agencyId).maybeSingle(),
     db.from("tracked_prompts").select("id").eq("id", questionId).eq("business_id", businessId).maybeSingle(),
+    readFixTexts(businessId),
   ]);
   for (const r of [business, question]) if (r.error) throw new Error(`Questions: ${r.error.message}`);
   if (!business.data || !question.data) return null;
@@ -87,7 +104,11 @@ export async function loadQuestionAnswers(agencyId: string, businessId: string, 
     extracted_names: r.extracted_names,
     cited_sources: r.cited_sources,
   }));
-  return latestAnswers(rows, business.data.models.filter(isModel));
+  // "Why you were skipped" links the saved fix that names a site the answer used, if there is one.
+  return latestAnswers(rows, business.data.models.filter(isModel)).map((a) => ({
+    ...a,
+    fix: a.namedYou ? null : fixForSites(fixes, a.sites.map((s) => s.host)),
+  }));
 }
 
 type ChangeFailure = { ok: false; status: 400 | 403 | 404; error: string };
@@ -110,7 +131,7 @@ async function ownedQuestions(agencyId: string, businessId: string) {
   if (!business) return null;
   const { data: questions, error: readError } = await supabase
     .from("tracked_prompts")
-    .select("id, prompt, active, source")
+    .select("id, prompt, active, source, category")
     .eq("business_id", businessId)
     .is("removed_at", null);
   if (readError) throw new Error(`Questions: could not load questions: ${readError.message}`);
@@ -151,22 +172,37 @@ async function hasAnswers(questionId: string): Promise<boolean> {
  * the old wording, so they stay with it (and a paused suggested question keeps counting in past scores, step 9e).
  * The new one takes the old one's place, active or paused, so the active count and the plan limit do not change.
  */
-export async function updateQuestionText(agencyId: string, businessId: string, questionId: string, text: string): Promise<EditResult> {
+export async function updateQuestionText(
+  agencyId: string,
+  businessId: string,
+  questionId: string,
+  text: string,
+  /** The topic tag; undefined keeps the saved one, null clears it. */
+  topic?: string | null,
+): Promise<EditResult> {
   const owned = await ownedQuestions(agencyId, businessId);
   const question = owned?.questions.find((q) => q.id === questionId);
   if (!owned || !question) return notFound;
   const prompt = tidyQuestion(text);
-  if (question.prompt === prompt) return { ok: true, newQuestion: false };
+  const category = topic === undefined ? question.category : topic;
+  if (question.prompt === prompt) {
+    // Only the topic changed: a tag, not the question, so it never starts a new one.
+    if (category !== question.category) {
+      const { error } = await createServiceClient().from("tracked_prompts").update({ category }).eq("id", questionId).eq("business_id", businessId);
+      if (error) throw new Error(`Questions: could not save the topic: ${error.message}`);
+    }
+    return { ok: true, newQuestion: false };
+  }
   if (owned.questions.some((q) => q.id !== questionId && sameQuestion(q.prompt, prompt))) return duplicate;
   const db = createServiceClient();
   if (!editMakesNewQuestion({ custom: isOwnQuestion(question.source), answered: await hasAnswers(questionId) })) {
-    const { error } = await db.from("tracked_prompts").update({ prompt, source: "custom" }).eq("id", questionId).eq("business_id", businessId);
+    const { error } = await db.from("tracked_prompts").update({ prompt, source: "custom", category }).eq("id", questionId).eq("business_id", businessId);
     if (error) throw new Error(`Questions: could not save the question: ${error.message}`);
     return { ok: true, newQuestion: false };
   }
   const { data: added, error } = await db
     .from("tracked_prompts")
-    .insert({ business_id: businessId, prompt, source: "custom", active: question.active })
+    .insert({ business_id: businessId, prompt, source: "custom", active: question.active, category })
     .select("id")
     .single();
   if (error) throw new Error(`Questions: could not add the new question: ${error.message}`);

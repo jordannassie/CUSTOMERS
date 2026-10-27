@@ -23,7 +23,7 @@ export function whereOf(fix: { category: string | null; claudePrompt: string | n
 export const fixAnchor = (where: Where) => `fix-${where}`;
 
 /** One fix on the Opportunities page, opened and scrolled to: /opportunities?fix=<id>. */
-export const fixHref = (id: string) => `/opportunities?fix=${encodeURIComponent(id)}`;
+export const fixHref = (id: string) => `/actions?fix=${encodeURIComponent(id)}`;
 
 /** The id of a fix card on the Opportunities page. */
 export const fixCardId = (id: string) => `fix-card-${id}`;

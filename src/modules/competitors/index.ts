@@ -1,7 +1,8 @@
 // The only file other modules may import from (eslint-plugin-boundaries).
 export { checkCompetitorWebsite, saveCompetitorAliases, saveCompetitorWebsite, trackCompetitor } from "./actions";
 export { getCompetitorAliases, type CompetitorNames } from "./aliases/dal";
-export { fetchPlaceSignals, getCompetitorsPage, getPickedInstead, loadCompetitorsPage, loadPicked } from "./dal";
+export { fetchPlaceSignals, getCompetitorsPage, getOverviewCompete, getPickedInstead, loadCompetitorsPage, loadPicked } from "./dal";
+export { modelLabel, type OverviewCompete } from "./overview";
 export type { PickedInstead } from "./picked";
 export { namedAs, rowName, trackedNote, type ChainOf } from "./chain";
 export type { FetchSignals, PlaceSignals } from "./places";
@@ -23,4 +24,6 @@ export {
 export { MAX_COMPETITORS, type ChartSeries, type CompetitorChartsView, type PairPoint } from "./charts";
 export { standingSentence, whySentence, type ClaimRow, type CompareRow, type ServiceChip, type FixLink, type WebsiteView, type WhyCard, type WhyPanel } from "./why/service";
 export { getWebsiteChecks } from "./why/dal";
-export { getComparison, type Comparison } from "./compare/dal";
+export { getComparePage, getComparison, type CompareOption, type ComparePage, type Comparison } from "./compare/dal";
+export type { LeadCard, ReasonCard } from "./compare/cards";
+export { SPARK_SCANS, TABLE_MODELS, type TableKpis, type TableRow } from "./table";

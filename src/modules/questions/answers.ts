@@ -1,6 +1,7 @@
 import { hostOf } from "@/lib/site-type";
 import type { ProviderId } from "@/modules/scanning";
 import { MODEL_LABELS } from "./service";
+import type { MatchedFix } from "./skipped";
 
 // "See the answers" on the Questions page (BUG-089): what each AI said the last time it was asked, and whether
 // that answer named the business. Pure, so every case is unit tested. Only the fields the dialog shows leave here.
@@ -34,6 +35,8 @@ export type QuestionAnswer = {
   text: string;
   /** The answer came from the answer cache, so this scan did not ask the AI again (2026-10-16). */
   reused: boolean;
+  /** Only when it did not name you: a saved fix about one of the sites it used. */
+  fix?: MatchedFix | null;
 };
 
 // Long enough for any normal answer; a runaway one is cut so the dialog stays light.

@@ -1,61 +1,54 @@
 import Link from "next/link";
-import { CircleCheck, CircleAlert, Globe } from "lucide-react";
-import { answersText, type SourcesView } from "@/modules/sources";
+import { CircleAlert, Globe } from "lucide-react";
 
-/** Whether AI cited the business's own website; the first thing an owner asks on this page. */
-export function OwnSiteStatus({ ownSite, answers }: { ownSite: SourcesView["ownSite"]; answers: number }) {
-  if (!ownSite.host) {
+type Props = { host: string | null; cited: number; toolLabel: string | null };
+
+/**
+ * The alert when AI never used the business's own website in the window, or the note when we don't have the
+ * website yet. When the site was used, the KPI strip already says how often.
+ */
+export function OwnSiteStatus({ host, cited, toolLabel }: Props) {
+  if (!host) {
     return (
-      <Status icon={<Globe className="size-5 text-text-hint" />} testId="own-site" tone="muted">
-        <p className="font-medium">We don&apos;t have your website yet.</p>
-        <p className="text-muted-foreground">
-          <Link href="/settings" className="text-primary hover:underline">
-            Add it in Settings
-          </Link>{" "}
-          so we can check whether AI cites it.
+      <div className="flex gap-3 rounded-md border border-border bg-surface px-4 py-3.5 text-sm" data-testid="own-site">
+        <Globe className="mt-px size-5 shrink-0 text-text-hint" aria-hidden="true" />
+        <p>
+          <span className="font-medium">We don&apos;t have your website yet.</span>{" "}
+          <span className="text-muted-foreground">
+            <Link href="/settings" className="text-primary hover:underline">
+              Add it in Settings
+            </Link>{" "}
+            so we can check whether AI uses it.
+          </span>
         </p>
-      </Status>
+      </div>
     );
   }
-  if (ownSite.answers > 0) {
-    return (
-      <Status icon={<CircleCheck className="size-5 text-good" />} testId="own-site" tone="good">
-        <p className="font-medium">
-          AI cited your website ({ownSite.host}) in {answersText(ownSite.answers, answers)}.
+  if (cited > 0) return null;
+  return (
+    <div
+      role="status"
+      className="flex flex-col gap-3 rounded-md border border-mid/30 bg-mid-bg px-4 py-3.5 text-sm sm:flex-row sm:items-center sm:justify-between"
+      data-testid="own-site"
+    >
+      <div className="flex gap-3">
+        <CircleAlert className="mt-px size-5 shrink-0 text-mid" aria-hidden="true" />
+        <p>
+          <span className="font-medium">
+            {toolLabel ?? "AI"} never used your website ({host}) in the last 30 days.
+          </span>{" "}
+          <span className="text-muted-foreground">
+            It relied on the sites below, so being listed on them is the quickest way to show up.
+          </span>
         </p>
-        <p className="text-muted-foreground">Keeping your hours, services and location up to date there helps it stay that way.</p>
-      </Status>
-    );
-  }
-  return (
-    <Status icon={<CircleAlert className="size-5 text-mid" />} testId="own-site" tone="mid">
-      <p className="font-medium">AI did not cite your website ({ownSite.host}) in the last 30 days.</p>
-      <p className="text-muted-foreground">
-        AI relied on the sites below instead. Being listed on them is the quickest way to show up.
-      </p>
-    </Status>
-  );
-}
-
-const TONES = { good: "border-good/30 bg-good-bg", mid: "border-mid/30 bg-mid-bg", muted: "border-border bg-surface" };
-
-function Status({
-  icon,
-  tone,
-  testId,
-  children,
-}: {
-  icon: React.ReactNode;
-  tone: keyof typeof TONES;
-  testId: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className={`flex gap-3 rounded-md border px-4 py-3.5 text-sm ${TONES[tone]}`} data-testid={testId}>
-      <span className="mt-px shrink-0" aria-hidden="true">
-        {icon}
-      </span>
-      <div className="flex flex-col gap-0.5">{children}</div>
+      </div>
+      <Link
+        href="/actions"
+        className="ml-8 shrink-0 text-sm font-medium whitespace-nowrap text-primary hover:underline sm:ml-0"
+        data-testid="website-fixes"
+      >
+        See website fixes
+      </Link>
     </div>
   );
 }

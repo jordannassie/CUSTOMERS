@@ -48,7 +48,7 @@ const share = (n: number, of: number) => (of > 0 ? Math.round((100 * n) / of) : 
  * them (grey, square) per AI, joined by a line as long as the gap. The line is green where you lead and amber where they
  * do, and both numbers are written beside their dots, so neither color nor shape is the only cue.
  */
-export function ByAi({ name, assistants }: { name: string; assistants: Assistant[] }) {
+export function ByAi({ name, assistants, color = "var(--cd-competitor-1)" }: { name: string; assistants: Assistant[]; color?: string }) {
   return (
     <figure className="m-0 flex flex-col gap-3" data-testid="by-ai">
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
@@ -57,13 +57,13 @@ export function ByAi({ name, assistants }: { name: string; assistants: Assistant
           You
         </span>
         <span className="flex min-w-0 items-center gap-1.5">
-          <span className="size-2.5 rounded-[2px] bg-competitor-1" aria-hidden="true" />
+          <span className="size-2.5 rounded-[2px]" style={{ background: color }} aria-hidden="true" />
           <span className="truncate">{name}</span>
         </span>
       </div>
       <ul className="flex flex-col gap-1">
         {assistants.map((a) => (
-          <Dumbbell key={a.provider} a={a} name={name} />
+          <Dumbbell key={a.provider} a={a} name={name} color={color} />
         ))}
       </ul>
       <div className="grid grid-cols-[6.5rem_minmax(0,1fr)] gap-3 text-[11px] tabular-nums text-text-hint" aria-hidden="true">
@@ -79,7 +79,7 @@ export function ByAi({ name, assistants }: { name: string; assistants: Assistant
   );
 }
 
-function Dumbbell({ a, name }: { a: Assistant; name: string }) {
+function Dumbbell({ a, name, color }: { a: Assistant; name: string; color: string }) {
   const you = share(a.you, a.answers);
   const them = share(a.them, a.answers);
   const lo = Math.min(you, them);
@@ -106,22 +106,37 @@ function Dumbbell({ a, name }: { a: Assistant; name: string }) {
           className={cn("absolute top-1/2 h-1 -translate-y-1/2 rounded-xs", you > them ? "bg-good-text/60" : you < them ? "bg-mid-text/60" : "bg-border")}
           style={{ left: `${lo}%`, width: `${hi - lo}%` }}
         />
-        <Mark at={them} value={them} square below={close && them <= you} />
+        <Mark at={them} value={them} square color={color} below={close && them <= you} />
         <Mark at={you} value={you} below={close && you < them} you />
       </span>
     </li>
   );
 }
 
-function Mark({ at, value, you = false, square = false, below = false }: { at: number; value: number; you?: boolean; square?: boolean; below?: boolean }) {
+function Mark({
+  at,
+  value,
+  you = false,
+  square = false,
+  below = false,
+  color,
+}: {
+  at: number;
+  value: number;
+  you?: boolean;
+  square?: boolean;
+  below?: boolean;
+  color?: string;
+}) {
   return (
     <span className="absolute top-1/2 -translate-x-1/2 -translate-y-1/2" style={{ left: `${at}%` }}>
       <span
         className={cn(
           "block size-3 ring-2 ring-card",
-          square ? "rounded-[2px] bg-competitor-1" : "rounded-full bg-primary",
+          square ? "rounded-[2px]" : "rounded-full bg-primary",
           you && "relative z-10",
         )}
+        style={square ? { background: color } : undefined}
       />
       <span
         className={cn(

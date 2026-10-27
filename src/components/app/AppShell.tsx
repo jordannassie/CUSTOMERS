@@ -24,7 +24,7 @@ export function AppShell({ banners, creditsShort, children, ...sidebar }: AppShe
   return (
     <div className="flex min-h-dvh bg-background">
       <SkipLink />
-      <aside className="sticky top-0 hidden h-dvh w-60 shrink-0 overflow-y-auto border-r border-border bg-muted lg:block">
+      <aside className="scroll-quiet sticky top-0 hidden h-dvh w-60 shrink-0 overflow-y-auto border-r border-border bg-muted lg:block">
         <AppSidebar {...sidebar} />
       </aside>
 
@@ -36,7 +36,7 @@ export function AppShell({ banners, creditsShort, children, ...sidebar }: AppShe
                 <Menu className="size-5" aria-hidden="true" />
               </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="w-72 gap-0 overflow-y-auto bg-muted p-0">
+            <SheetContent side="left" className="scroll-quiet w-72 gap-0 overflow-y-auto bg-muted p-0">
               <SheetTitle className="sr-only">Menu</SheetTitle>
               <SheetDescription className="sr-only">Pages, business switcher and credits</SheetDescription>
               <AppSidebar {...sidebar} onNavigate={() => setMenuOpen(false)} />

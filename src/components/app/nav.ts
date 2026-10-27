@@ -1,20 +1,59 @@
-import { CreditCard, LayoutDashboard, Lightbulb, Link2, MessageCircleQuestion, Settings, Users, type LucideIcon } from "lucide-react";
+import {
+  CreditCard,
+  FileText,
+  GitCompareArrows,
+  LayoutDashboard,
+  Link2,
+  ListChecks,
+  MessageCircleQuestion,
+  Settings,
+  Users,
+  type LucideIcon,
+} from "lucide-react";
 
 export type NavItem = { label: string; href: string; icon: LucideIcon; alsoActiveOn?: string[]; notActiveOn?: string[] };
+export type NavGroup = { label: string | null; items: NavItem[] };
 
 // Billing pages sit under /settings but have their own sidebar item (BUG-094).
 const BILLING_PATHS = ["/settings/billing", "/settings/credits", "/settings/usage"];
 
-// D-31. Hrefs point at the current pages; B-51 moves Opportunities.
-export const APP_NAV: NavItem[] = [
-  { label: "Overview", href: "/dashboard", icon: LayoutDashboard },
-  { label: "Competitors", href: "/competitors", icon: Users },
-  { label: "Opportunities", href: "/opportunities", icon: Lightbulb },
-  { label: "Questions", href: "/questions", icon: MessageCircleQuestion },
-  { label: "Sources", href: "/sources", icon: Link2 },
-  { label: "Billing", href: "/settings/billing", icon: CreditCard, alsoActiveOn: BILLING_PATHS.slice(1) },
-  { label: "Settings", href: "/settings", icon: Settings, notActiveOn: BILLING_PATHS },
+/** The comparison page. /compare is the public readiness check, so it lives under Competitors with its own item. */
+export const COMPARE_PATH = "/competitors/compare";
+
+// Grouped sidebar (dashboard redesign, 2026-10-27; order the user's): how you compete, what to do, what AI sees, the account.
+export const APP_NAV_GROUPS: NavGroup[] = [
+  { label: null, items: [{ label: "Overview", href: "/dashboard", icon: LayoutDashboard }] },
+  {
+    label: "Compete",
+    items: [
+      { label: "Competitors", href: "/competitors", icon: Users, notActiveOn: [COMPARE_PATH] },
+      { label: "Compare", href: COMPARE_PATH, icon: GitCompareArrows },
+    ],
+  },
+  {
+    label: "Improve",
+    items: [
+      { label: "Actions", href: "/actions", icon: ListChecks },
+      { label: "Reports", href: "/reports", icon: FileText },
+    ],
+  },
+  {
+    label: "Visibility",
+    items: [
+      { label: "Questions", href: "/questions", icon: MessageCircleQuestion },
+      { label: "Sources", href: "/sources", icon: Link2 },
+    ],
+  },
+  {
+    label: "Account",
+    items: [
+      { label: "Billing", href: "/settings/billing", icon: CreditCard, alsoActiveOn: BILLING_PATHS.slice(1) },
+      { label: "Settings", href: "/settings", icon: Settings, notActiveOn: BILLING_PATHS },
+    ],
+  },
 ];
+
+export const APP_NAV: NavItem[] = APP_NAV_GROUPS.flatMap((g) => g.items);
 
 const under = (pathname: string, path: string) => pathname === path || pathname.startsWith(`${path}/`);
 

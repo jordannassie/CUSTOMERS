@@ -16,8 +16,8 @@ function report(overrides: Partial<ScoreReport> = {}): ScoreReport {
     charts: {
       names,
       timeline: [
-        { date: "2026-10-16", scores: [35.4, 12, 55, 30, 4, 0] },
-        { date: "2026-10-22", scores: [40.2, 10, 60, 30, 5, 0] },
+        { date: "2026-10-16", scores: [35.4, 12, 55, 30, 4, 0], rolling: [20, 11, 50, 31, 4, 0] },
+        { date: "2026-10-22", scores: [40.2, 10, 60, 30, 5, 0], rolling: [22.6, 11, 52, 30, 4, 0] },
       ],
       share: [10, 2, 15, 7, 1, 0].map((mentions) => ({ mentions, share: 0 })),
       byModel: [{ model: "openai", scores: [50, 10, 70, 30, 5, 0] }, { model: "anthropic", scores: [null, null, null, null, null, null] }],
@@ -30,12 +30,12 @@ const scored = new Set(["A", "B", "C", "D"]);
 describe("competitorChartsView", () => {
   const view = competitorChartsView(report(), scored)!;
 
-  it("shows you in blue and the three strongest competitors in the greys, strongest darkest", () => {
+  it("shows you in blue and the three strongest competitors each in its own color, strongest first", () => {
     expect(view.series).toEqual([
       { key: "s0", name: "You Co", isYou: true, color: "var(--chart-1)" },
-      { key: "s1", name: "B", isYou: false, color: "var(--chart-2)" },
-      { key: "s2", name: "C", isYou: false, color: "var(--chart-3)" },
-      { key: "s3", name: "A", isYou: false, color: "var(--chart-4)" },
+      { key: "s1", name: "B", isYou: false, color: "var(--cd-series-2)" },
+      { key: "s2", name: "C", isYou: false, color: "var(--cd-series-3)" },
+      { key: "s3", name: "A", isYou: false, color: "var(--cd-series-4)" },
     ]);
     expect(view.hidden).toBe(1);
   });
@@ -44,10 +44,10 @@ describe("competitorChartsView", () => {
     expect(view.series.map((s) => s.name)).not.toContain("Late");
   });
 
-  it("rounds the lines and labels each scan", () => {
+  it("rounds each scan's own rate and its 30-day reference, and labels each scan", () => {
     expect(view.timeline).toEqual([
-      { date: "2026-10-16", label: "Oct 16", s0: 35, s1: 55, s2: 30, s3: 12 },
-      { date: "2026-10-22", label: "Oct 22", s0: 40, s1: 60, s2: 30, s3: 10 },
+      { date: "2026-10-16", label: "Oct 16", s0: 35, s1: 55, s2: 30, s3: 12, rs0: 20, rs1: 50, rs2: 31, rs3: 11 },
+      { date: "2026-10-22", label: "Oct 22", s0: 40, s1: 60, s2: 30, s3: 10, rs0: 23, rs1: 52, rs2: 30, rs3: 11 },
     ]);
   });
 
@@ -72,5 +72,17 @@ describe("competitorChartsView", () => {
   it("is null without chart data or before the first score", () => {
     expect(competitorChartsView(report({ charts: undefined }), scored)).toBeNull();
     expect(competitorChartsView(report({ overall: null }), scored)).toBeNull();
+  });
+});
+
+describe("colors follow the leaderboard", () => {
+  it("gives each competitor the color of its place on the leaderboard, on every page", () => {
+    const ordered = competitorChartsView(report(), scored, ["A", "B", "C", "D"])!;
+    expect(ordered.series.map((x) => [x.name, x.color])).toEqual([
+      ["You Co", "var(--chart-1)"],
+      ["A", "var(--cd-series-2)"],
+      ["B", "var(--cd-series-3)"],
+      ["C", "var(--cd-series-4)"],
+    ]);
   });
 });

@@ -215,7 +215,7 @@ describe("loading the step", () => {
     const owner = await createOwner();
     session = owner.client;
     const { places, calls } = fakeCompetitorPlaces();
-    expect(await lookupCompetitor(owner.userId, owner.businessId, "Blue Door", places)).toEqual({ matches: LOOKUP_CANDIDATES, note: null });
+    expect(await lookupCompetitor(owner.userId, owner.businessId, "Blue Door", places)).toEqual({ matches: LOOKUP_CANDIDATES, note: null, country: null });
     expect(calls.search).toEqual(["Blue Door in Springfield, IL"]);
 
     const down = fakeCompetitorPlaces(new Error("timeout"));

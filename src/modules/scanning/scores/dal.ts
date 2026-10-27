@@ -62,6 +62,8 @@ export type ReportOptions = {
   historyDays?: number;
   /** Also build the Competitors page charts from the same checks. */
   charts?: boolean;
+  /** Days the chart timeline and period counts cover (30 by default); historyDays should reach twice this. */
+  chartDays?: number;
 };
 
 // Callers check the user may see this agency first.
@@ -132,7 +134,7 @@ export async function loadScoreReport(
     })),
     ownQuestions: ownQuestionsResult(split.own, opts),
     ownChain,
-    ...(options.charts ? { charts: competitorCharts(all, b.name, competitors.data!.map((c) => c.name), opts) } : {}),
+    ...(options.charts ? { charts: competitorCharts(all, b.name, competitors.data!.map((c) => c.name), { ...opts, days: options.chartDays }) } : {}),
   };
 }
 

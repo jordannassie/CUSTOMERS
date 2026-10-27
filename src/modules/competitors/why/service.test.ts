@@ -41,6 +41,8 @@ describe("whyCard", () => {
       answers: 6,
       them: 5,
       you: 0,
+      allQuestions: [],
+      domains: [],
       questionsTheyWin: [{ questionId: "q1", question: "best tire shop in Dallas", answers: 6, them: 5, you: 0 }],
       questionsYouWin: [],
       assistantsTheyWin: [],

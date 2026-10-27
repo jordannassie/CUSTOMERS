@@ -51,7 +51,8 @@ export async function saveExplanation(businessId: string, runId: string, explana
     if (error) throw new Error(`Insights: could not save opportunities: ${error.message}`);
   }
   if (removeIds.length > 0) {
-    const { error } = await db.from("opportunities").delete().in("id", removeIds).eq("status", "open");
+    // Only fixes a scan wrote and nobody has taken up yet: ones added from Compare or Sources stay (migration 078).
+    const { error } = await db.from("opportunities").delete().in("id", removeIds).eq("status", "open").eq("source", "scan");
     if (error) throw new Error(`Insights: could not replace old opportunities: ${error.message}`);
   }
   return "saved";
@@ -97,7 +98,7 @@ export async function agencyFixesState(agencyId: string, businessId: string): Pr
 }
 
 /** For the Opportunities page and the Overview: null when the business is not the signed-in agency's. */
-export async function getFixesState(businessId: string, next = "/opportunities"): Promise<FixesState | null> {
+export async function getFixesState(businessId: string, next = "/actions"): Promise<FixesState | null> {
   const { agency } = await requireAgency({ next });
   return agencyFixesState(agency.id, businessId);
 }

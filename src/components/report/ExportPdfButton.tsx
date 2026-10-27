@@ -19,13 +19,26 @@ function save({ fileName, base64 }: PdfFile) {
   setTimeout(() => URL.revokeObjectURL(url), 10_000);
 }
 
-/** Export PDF (B-60): the share page as a PDF the agency can attach to an email. */
-export function ExportPdfButton({ businessId, exportPdf }: { businessId: string; exportPdf: ExportAction }) {
+/**
+ * Export PDF (B-60): the share page as a PDF the agency can attach to an email. `reportId` prints a saved snapshot
+ * instead of the live report.
+ */
+export function ExportPdfButton({
+  businessId,
+  exportPdf,
+  reportId = null,
+  label = "Export PDF",
+}: {
+  businessId: string;
+  exportPdf: ExportAction;
+  reportId?: string | null;
+  label?: string;
+}) {
   const [pending, startTransition] = useTransition();
 
   function run() {
     startTransition(async () => {
-      const result = await exportPdf({ businessId }).catch(() => null);
+      const result = await exportPdf({ businessId, reportId }).catch(() => null);
       if (!result?.ok) {
         toast.error(result?.error ?? FAILED);
         return;
@@ -38,7 +51,7 @@ export function ExportPdfButton({ businessId, exportPdf }: { businessId: string;
   return (
     <Button variant="outline" disabled={pending} onClick={run} aria-busy={pending} data-testid="export-pdf">
       {pending ? <Loader2 aria-hidden className="animate-spin" /> : <FileDown aria-hidden />}
-      {pending ? "Creating PDF…" : "Export PDF"}
+      {pending ? "Creating PDF…" : label}
     </Button>
   );
 }

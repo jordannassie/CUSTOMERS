@@ -17,8 +17,9 @@ export type OpportunitiesPage = {
 };
 
 /** The page for one of the signed-in agency's businesses; null when it is not theirs. */
-export async function getOpportunitiesPage(businessId: string): Promise<OpportunitiesPage | null> {
-  const { agency } = await requireAgency({ next: "/opportunities" });
+/** `google`: ask Google for the values in fix texts; off unless the owner asked to see them (Places calls on request). */
+export async function getOpportunitiesPage(businessId: string, { google = false }: { google?: boolean } = {}): Promise<OpportunitiesPage | null> {
+  const { agency } = await requireAgency({ next: "/actions" });
   const [{ data: b, error }, live, rivals] = await Promise.all([
     createServiceClient()
       .from("businesses")
@@ -27,7 +28,7 @@ export async function getOpportunitiesPage(businessId: string): Promise<Opportun
       .eq("agency_id", agency.id)
       .maybeSingle(),
     // Checks the agency itself, so it can run alongside the business read.
-    getLiveOpportunities(businessId),
+    getLiveOpportunities(businessId, undefined, { google }),
     // Ids and names only, to say which competitor a fix is about and link to its comparison.
     createServiceClient().from("business_competitors").select("id, name").eq("business_id", businessId).order("created_at"),
   ]);

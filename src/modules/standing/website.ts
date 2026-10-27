@@ -58,6 +58,8 @@ export function websiteGaps(name: string, theirs: TheirWebsite | null, yours: Yo
     text: `${possessive(name)} website lists ${service.name}, and the services on your website don't include it.`,
     where: "website",
     weight: won ? 6 : 3.5,
+    key: `web:service:${service.name.toLowerCase()}`,
+    basis: "website" as const,
   }));
   if (theirs.hasPhone && yours.hasPhone === false) {
     facts.push({
@@ -65,6 +67,8 @@ export function websiteGaps(name: string, theirs: TheirWebsite | null, yours: Yo
       detail: "We didn't find one on yours.",
       action: "Show your phone number on every page of your website, for example in the footer.",
       match: ["phone"],
+      key: "web:phone",
+      basis: "website",
       text: `${possessive(name)} website shows a phone number, and we didn't find one on yours.`,
       where: "website",
       weight: 2,
@@ -76,6 +80,8 @@ export function websiteGaps(name: string, theirs: TheirWebsite | null, yours: Yo
       detail: "We didn't find one on yours.",
       action: "Show your full address on your website, for example on the contact page and in the footer.",
       match: ["address"],
+      key: "web:address",
+      basis: "website",
       text: `${possessive(name)} website shows an address, and we didn't find one on yours.`,
       where: "website",
       weight: 1.5,

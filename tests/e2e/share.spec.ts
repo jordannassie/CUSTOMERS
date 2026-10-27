@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { existsSync, readFileSync } from "node:fs";
 import { parseEnv } from "node:util";
 import { createClient } from "@supabase/supabase-js";
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page, type TestInfo } from "@playwright/test";
 
 // B-59 against the local Supabase stack, with the dev server on .env.test.local values and PLACES_FIXTURES=true,
 // so Google values come from made-up fixtures. Each test seeds an is_test agency (D-61).
@@ -17,6 +17,11 @@ const MODELS = ["openai", "anthropic", "perplexity"] as const;
 const UUID = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
 const ACTION = { timeout: 30_000 };
 const userIds: string[] = [];
+
+/** Where every screenshot of a test run goes when E2E_SHOTS_DIR is set (layout reviews only). */
+async function shot(page: Page, info: TestInfo, name: string) {
+  if (process.env.E2E_SHOTS_DIR) await page.screenshot({ path: `${process.env.E2E_SHOTS_DIR}/${name}-${info.project.name}.png`, fullPage: true });
+}
 
 async function seed(page: Page) {
   const email = `e2e-share-${randomUUID()}@example.test`;
@@ -104,11 +109,21 @@ test.afterAll(async () => {
   for (const id of userIds.splice(0)) await db.auth.admin.deleteUser(id);
 });
 
-test("Share gives a link the client opens without a login, and turning it off stops it", async ({ page, browser }) => {
+const SECTION_ORDER = ["summary", "models", "competitors", "questions", "sources", "actions", "method"].map((id) => `report-section-${id}`);
+const sectionIds = (page: Page) => page.locator('[data-testid^="report-section-"]').evaluateAll((els) => els.map((e) => e.getAttribute("data-testid")));
+
+test("Share link gives a link the client opens without a login, and turning it off stops it", async ({ page, browser }, info) => {
   const owner = await seed(page);
+  await page.goto("/reports");
+  await expect(page.getByRole("heading", { level: 1, name: "Reports" })).toBeVisible({ timeout: 60_000 });
+  // The report document on the page, in the fixed order (7. Reports).
+  expect(await sectionIds(page)).toEqual(SECTION_ORDER);
+  await shot(page, info, "reports");
   await page.getByTestId("share-button").click();
+  await expect(page.getByTestId("share-panel")).toContainText("Read-only link is off");
   await page.getByTestId("create-link").click();
   await expect(page.getByTestId("share-url")).toHaveValue(/^http:\/\/localhost:\d+\/r\/[A-Za-z0-9_-]{43}$/, ACTION);
+  await expect(page.getByTestId("share-panel")).toContainText("Read-only link is on");
   const link = await page.getByTestId("share-url").inputValue();
 
   const client = await browser.newContext();
@@ -117,15 +132,19 @@ test("Share gives a link the client opens without a login, and turning it off st
   expect(response!.headers()["x-robots-tag"]).toContain("noindex");
   await expect(reader.getByRole("heading", { level: 1, name: "Sunrise Coffee Bar" })).toBeVisible({ timeout: 60_000 });
   await expect(reader.getByTestId("agency-name")).toHaveText("Northside Marketing");
-  await expect(reader.getByTestId("score-sentence")).toBeVisible();
+  // The same 7 sections in the same order as the page and the PDF.
+  expect(await sectionIds(reader)).toEqual(SECTION_ORDER);
   // DB-012: plain sentences built from the numbers lead the report.
   await expect(reader.getByTestId("report-summary")).toContainText("Over the last 30 days, AI recommended Sunrise Coffee Bar");
-  await expect(reader.getByTestId("leaderboard")).toContainText("Bean House");
-  await expect(reader.getByText("Bean House: 320 Google reviews, 4.7 stars")).toBeVisible();
-  await expect(reader.getByRole("img", { name: "Google Maps" })).toBeVisible();
+  await expect(reader.getByTestId("fact-rank")).toContainText("of 2");
+  await expect(reader.getByTestId("report-section-competitors")).toContainText("Bean House");
   await expect(reader.getByTestId("report-opportunities")).toContainText("Add your opening hours to your website");
+  // No Google values in the report (D-73): the fixture's 320 reviews and 4.7 stars never show.
+  await expect(reader.getByTestId("report")).not.toContainText("320");
+  await expect(reader.getByTestId("report")).not.toContainText("4.7");
   await expect(reader.locator("[data-report-ready]")).toBeAttached({ timeout: 10_000 });
   await expect(reader.locator('meta[name="robots"]')).toHaveAttribute("content", /noindex/);
+  // The report only, never the dashboard: no links into the app.
   await expect(reader.locator('a[href^="/"]')).toHaveCount(0);
 
   // The full HTML, flight data included, holds no database ids or the owner's email.
@@ -139,6 +158,40 @@ test("Share gives a link the client opens without a login, and turning it off st
   await expect(page.getByTestId("create-link")).toBeVisible(ACTION);
   expect((await reader.reload())?.status()).toBe(404);
   await expect(reader.getByText("This report is not available.")).toBeVisible();
+  await client.close();
+});
+
+test("hidden sections leave the page and the link; a snapshot link keeps its numbers", async ({ page, browser }) => {
+  const owner = await seed(page);
+  // The Overview's Share opens the panel straight away.
+  await page.goto("/reports?share=1");
+  await expect(page.getByTestId("share-panel")).toBeVisible({ timeout: 60_000 });
+
+  await page.getByRole("switch", { name: "Competitors" }).click();
+  await expect(page.getByTestId("report-section-competitors")).toHaveCount(0, ACTION);
+  await page.getByTestId("create-link").click();
+  const live = await page.getByTestId("share-url").inputValue();
+
+  await page.getByTestId("save-snapshot").click();
+  await page.waitForURL(/\/reports\?report=[0-9a-f-]{36}$/, ACTION);
+  await expect(page.getByTestId("saved-report")).toHaveCount(2);
+  await expect(page.getByTestId("report-prepared")).toContainText("Snapshot saved");
+  await page.getByTestId("share-button").click();
+  await page.getByTestId("create-link").click();
+  const frozen = await page.getByTestId("share-url").inputValue();
+  expect(frozen).not.toBe(live);
+  // textContent, as toHaveText reads it: innerText puts line breaks between the tile's lines.
+  const score = (await page.getByTestId("fact-score").textContent())!;
+
+  // New answers that never name the business: the live link moves, the snapshot link does not.
+  await db.from("visibility_results").update({ business_mentioned: false }).eq("business_id", owner.businessId).throwOnError();
+  const client = await browser.newContext();
+  const reader = await client.newPage();
+  await reader.goto(frozen);
+  await expect(reader.getByTestId("fact-score")).toHaveText(score, { timeout: 60_000 });
+  await expect(reader.getByTestId("report-section-competitors")).toHaveCount(0);
+  await reader.goto(live);
+  await expect(reader.getByTestId("fact-score")).not.toHaveText(score, { timeout: 60_000 });
   await client.close();
 });
 

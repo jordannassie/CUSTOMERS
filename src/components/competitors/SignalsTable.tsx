@@ -15,7 +15,7 @@ const STATUS_NOTE = {
 } as const;
 const NOT_REFRESHED = "Google details could not be refreshed. Try again later.";
 // A chain's site matches branches in several cities, so no listing was picked for it: the owner picks theirs (step 6d).
-const PICK_BRANCH = "/opportunities#pick-branch";
+const PICK_BRANCH = "/actions#pick-branch";
 
 /** Google Places values side by side (MVP_SPEC 7.1). Shown live, never stored (D-73). */
 /** "Add website" needs both; the PDF report passes neither and shows the saved websites only. */
