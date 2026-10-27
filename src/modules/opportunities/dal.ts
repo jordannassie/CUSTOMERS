@@ -28,8 +28,8 @@ export async function getOpportunitiesPage(businessId: string): Promise<Opportun
       .maybeSingle(),
     // Checks the agency itself, so it can run alongside the business read.
     getLiveOpportunities(businessId),
-    // Names only, to say which competitor a fix is about.
-    createServiceClient().from("business_competitors").select("name").eq("business_id", businessId).order("created_at"),
+    // Ids and names only, to say which competitor a fix is about and link to its comparison.
+    createServiceClient().from("business_competitors").select("id, name").eq("business_id", businessId).order("created_at"),
   ]);
   if (rivals.error) throw new Error(`Opportunities: could not read competitors: ${rivals.error.message}`);
   if (error) throw new Error(`Opportunities: could not read the business: ${error.message}`);
@@ -60,7 +60,7 @@ export async function getOpportunitiesPage(businessId: string): Promise<Opportun
   };
   const missing = missingBasics(business);
   return {
-    items: toItems(fixes, b ? rivals.data.map((c) => c.name) : []),
+    items: toItems(fixes, b ? rivals.data.map((c) => ({ id: c.id, name: c.name })) : []),
     checklist: missing.length > 0 ? { missing, items: checklist(business, ticked) } : null,
     branch: branchPending ? search : null,
   };

@@ -1,6 +1,7 @@
 "use client";
 
 import { useId, useState } from "react";
+import Link from "next/link";
 import { Check, ChevronDown, RotateCcw, X } from "lucide-react";
 import { cn } from "cn";
 import { fixCardId } from "@/modules/opportunities/where";
@@ -60,8 +61,17 @@ export function OpportunityCard({
           </h2>
           {finding && !open && <p className="line-clamp-2 text-[13px] text-muted-foreground sm:line-clamp-1">{finding}</p>}
           {item.about.length > 0 && (
-            <p className="text-xs text-text-hint" data-testid="fix-about">
-              About {item.about.join(", ")}
+            // Above the row's open-and-close layer, so each name opens its comparison page.
+            <p className="relative z-10 text-xs text-text-hint" data-testid="fix-about">
+              About{" "}
+              {item.about.map((c, i) => (
+                <span key={c.id}>
+                  {i > 0 && ", "}
+                  <Link href={`/competitors/${c.id}`} className="text-primary hover:underline">
+                    {c.name}
+                  </Link>
+                </span>
+              ))}
             </p>
           )}
         </div>

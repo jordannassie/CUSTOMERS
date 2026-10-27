@@ -5,7 +5,8 @@ import { authFailure, requireAgency, type ActionResult } from "@/modules/auth";
 import { canEditTracking } from "@/modules/entitlements";
 import { saveCompetitorAliases as saveAliases } from "./aliases/dal";
 import { trackCompetitorByName } from "./dal";
-import { competitorAliasesInput, competitorWebsiteInput, trackCompetitorInput } from "./schema";
+import { checkWebsiteInput, competitorAliasesInput, competitorWebsiteInput, trackCompetitorInput } from "./schema";
+import { checkWebsite } from "./site/dal";
 import { websiteDomain } from "./service";
 import { saveCompetitorWebsite as saveWebsite } from "./website/dal";
 
@@ -68,4 +69,26 @@ export async function saveCompetitorWebsite(input: unknown): Promise<ActionResul
   if (!result.ok) return result;
   refresh();
   return { ok: true, data: { domain: result.domain } };
+}
+
+// "Check their website" in the See why panel and on Opportunities (B-91): reads a competitor's site once, for everyone.
+export async function checkCompetitorWebsite(
+  input: unknown,
+): Promise<ActionResult<{ status: "read" | "blocked" | "unreachable" | "reading"; reused: boolean }>> {
+  let ids: { user: { id: string }; agency: { id: string; isTest: boolean } };
+  try {
+    const { user, agency } = await requireAgency();
+    const edit = canEditTracking(agency);
+    if (!edit.allowed) return { ok: false, status: 403, error: edit.reason };
+    ids = { user: { id: user.id }, agency: { id: agency.id, isTest: agency.isTest } };
+  } catch (error) {
+    return authFailure(error);
+  }
+  const parsed = checkWebsiteInput.safeParse(input);
+  if (!parsed.success) return { ok: false, status: 400, error: "Add their website first." };
+
+  const result = await checkWebsite(ids.user, ids.agency, parsed.data);
+  if (!result.ok) return result;
+  refresh();
+  return { ok: true, data: { status: result.status, reused: result.reused } };
 }

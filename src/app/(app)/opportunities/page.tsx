@@ -1,11 +1,13 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { PageContainer } from "@/components/app/PageContainer";
+import { CompetitorWebsites } from "@/components/opportunities/CompetitorWebsites";
 import { GetFoundChecklist } from "@/components/opportunities/GetFoundChecklist";
 import { OpportunityList } from "@/components/opportunities/OpportunityList";
 import { PickBranch } from "@/components/opportunities/PickBranch";
 import { WaitForFixes } from "@/components/opportunities/WaitForFixes";
 import { Button } from "@/components/ui/button";
+import { getWebsiteChecks } from "@/modules/competitors";
 import { checkFixes, getFixesState } from "@/modules/insights";
 import { pickBranch, searchBranches } from "@/modules/onboarding";
 import { getOpportunitiesPage, setChecklistItem, setOpportunityStatus } from "@/modules/opportunities";
@@ -25,7 +27,7 @@ export default async function OpportunitiesPage({ searchParams }: { searchParams
   const business = workspace.businesses.find((b) => b.id === workspace.activeBusinessId);
   if (!business || business.status === "onboarding") redirect("/dashboard");
 
-  const [view, fixes] = await Promise.all([getOpportunitiesPage(business.id), getFixesState(business.id)]);
+  const [view, fixes, websites] = await Promise.all([getOpportunitiesPage(business.id), getFixesState(business.id), getWebsiteChecks(business.id)]);
   if (!view || !fixes) notFound();
   const toDo = view.items.filter((o) => o.status === "open").length;
 
@@ -98,6 +100,8 @@ export default async function OpportunitiesPage({ searchParams }: { searchParams
             openId={openId}
           />
         )}
+
+        <CompetitorWebsites competitors={websites} />
       </div>
     </PageContainer>
   );

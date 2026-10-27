@@ -14,6 +14,8 @@ export type StandingCheck = {
   extracted: unknown;
   /** Hosts of the sites the answer cited, each once. */
   sites: string[];
+  /** The cited addresses themselves, each once, for which pages of a site AI used. */
+  urls?: string[];
 };
 
 export type StandingRow = {
@@ -33,9 +35,12 @@ export function toCheck(row: StandingRow): StandingCheck {
   const named = mentions.safeParse(row.competitors_mentioned);
   const cited = citations.safeParse(row.cited_sources);
   const sites = new Set<string>();
+  const urls = new Set<string>();
   for (const c of cited.success ? cited.data : []) {
     const host = hostOf(c.url);
-    if (host) sites.add(host);
+    if (!host) continue;
+    sites.add(host);
+    urls.add(c.url);
   }
   return {
     provider: row.provider,
@@ -44,6 +49,7 @@ export function toCheck(row: StandingRow): StandingCheck {
     competitors: named.success ? named.data.filter((m) => m.mentioned !== false).map((m) => m.name) : [],
     extracted: row.extracted_names,
     sites: [...sites],
+    urls: [...urls],
   };
 }
 

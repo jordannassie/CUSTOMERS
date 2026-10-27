@@ -1,8 +1,11 @@
 // Why AI names a competitor more or less than you (Phase A of the "why you are behind" plan). Pure, over answers the
 // scans already saved: where they beat you (questions, AI tools), likely reasons with where to fix them, and where
 // you lead. Ahead or behind itself is the leaderboard's call (scoring.ts compareWithCompetitor), never made here.
+import { hostOf } from "@/lib/site-type";
 import { namedIn, type StandingCheck } from "./checks";
 import { googleFacts, siteFacts, theirSite, websiteFacts, type Fact, type GoogleValues } from "./reasons";
+import { websiteChecks, websiteGaps, serviceGaps, type TheirWebsite, type YourSite } from "./website";
+import { listingsArea, pagesUsed, quotesArea, sourceBreakdown, websiteArea, type Area, type SourceRow } from "./gap";
 
 export type { Fact, GoogleValues, Where } from "./reasons";
 
@@ -25,6 +28,16 @@ export type CompetitorWhy = Tally & {
   reasons: Fact[];
   /** Where you are ahead of them. */
   youLead: Fact[];
+  /** Every likely reason and every lead, not only the top few (the comparison page). */
+  allReasons: Fact[];
+  allLeads: Fact[];
+  /** The score's answers split by the kind of site AI used, biggest gap first (the facts behind the score). */
+  sources: SourceRow[];
+  /** Who leads in each place AI looks; the Google area is added by the page that has live Google values. */
+  areas: Area[];
+  /** Pages of their site, and of yours, that AI used in these answers. */
+  theirPages: { path: string; answers: number }[];
+  yourPages: { path: string; answers: number }[];
 };
 
 export type WhyInput = {
@@ -32,16 +45,18 @@ export type WhyInput = {
   checks: StandingCheck[];
   /** Question id to its wording now. */
   questions: Map<string, string>;
-  you: { domain: string | null; websiteBlocked: boolean };
+  you: { domain: string | null; websiteBlocked: boolean; site?: YourSite };
   /** name: the tracked name the saved answers are counted under. label: the name AI used, for a chain's branch the
    * chain ("Bennu Coffee" for "Bennu Coffee on Congress"); every sentence and site match uses it. */
   competitor: { name: string; domain: string | null; label?: string };
+  /** What their own website says, when the owner checked it (website_facts, B-91). */
+  theirWebsite?: TheirWebsite | null;
   /** Live Google values for this page view, when the page has them (Competitors page only). */
   google?: { theirs: GoogleValues | null; yours: GoogleValues | null };
 };
 
 export const ASSISTANTS: Record<string, string> = { openai: "ChatGPT", anthropic: "Claude", perplexity: "Perplexity" };
-const MAX_REASONS = 3;
+const MAX_REASONS = 5;
 const MAX_LEADS = 2;
 
 function tally(checks: StandingCheck[], name: string): Tally {
@@ -64,6 +79,8 @@ export function questionTallies(checks: StandingCheck[], questions: Map<string, 
   });
 }
 
+const questionsTheyWin = (questions: QuestionTally[]) => questions.filter((q) => gap(q) > 0).sort(byGap);
+
 const of = (t: Tally, n: number) => `${n} of ${t.answers}`;
 
 export function competitorWhy(input: WhyInput): CompetitorWhy {
@@ -82,6 +99,8 @@ export function competitorWhy(input: WhyInput): CompetitorWhy {
   const site = theirSite(checks, name, competitor.domain);
   const web = websiteFacts(checks, { name, site }, { domain: input.you.domain, blocked: input.you.websiteBlocked });
   const google = googleFacts(name, input.google?.theirs ?? null, input.google?.yours ?? null);
+  const won = questionsTheyWin(questions);
+  const onSite = input.you.site ? websiteChecks(input.theirWebsite ?? null, input.you.site, won) : { behind: [], ahead: [] };
 
   const questionsYouWin = questions.filter((q) => gap(q) < 0).sort(byGap);
   const assistantsYouWin = assistants.filter((a) => gap(a) < 0).sort(byGap);
@@ -106,18 +125,54 @@ export function competitorWhy(input: WhyInput): CompetitorWhy {
     })),
     ...web.ahead,
     ...google.ahead,
+    ...onSite.ahead,
+  ];
+
+  // Every reason and lead, strongest first: the panel shows the top few, the comparison page all of them.
+  const allReasons = [
+    ...web.behind,
+    ...siteFacts(checks, tracked, name),
+    ...google.behind,
+    ...(input.you.site ? websiteGaps(name, input.theirWebsite ?? null, input.you.site, won) : []),
+    ...onSite.behind,
+  ].sort((a, b) => b.weight - a.weight);
+  const allLeads = [...youLead].sort((a, b) => b.weight - a.weight);
+  const sources = sourceBreakdown(checks, tracked, input.you.domain, site);
+  const count = (key: SourceRow["key"]) => sources.find((r) => r.key === key)?.answers ?? 0;
+  const theirs = input.theirWebsite;
+  const yours = input.you.site;
+  const bothRead = theirs?.status === "read" && theirs.signals && yours?.read && yours.signals;
+  const areas: Area[] = [
+    listingsArea(sources),
+    quotesArea(count("their_site"), count("your_site"), site, !!input.you.domain),
+    websiteArea(
+      bothRead
+        ? {
+            theirs: theirs.signals!,
+            yours: yours.signals!,
+            servicesOnlyThem: serviceGaps(theirs, yours).length,
+            claimsOnlyThem: (theirs.claims ?? []).filter((c) => !(yours.claims ?? []).some((y) => y.key === c.key)).length,
+          }
+        : null,
+    ),
   ];
 
   return {
     name,
     site,
+    sources,
+    areas,
+    theirPages: pagesUsed(checks, site),
+    yourPages: pagesUsed(checks, input.you.domain ? hostOf(input.you.domain) : null),
     ...tally(checks, tracked),
-    questionsTheyWin: questions.filter((q) => gap(q) > 0).sort(byGap),
+    questionsTheyWin: won,
     questionsYouWin,
     assistantsTheyWin: assistants.filter((a) => gap(a) > 0).sort(byGap),
     assistants,
-    reasons: [...web.behind, ...siteFacts(checks, tracked, name), ...google.behind].sort((a, b) => b.weight - a.weight).slice(0, MAX_REASONS),
-    youLead: youLead.sort((a, b) => b.weight - a.weight).slice(0, MAX_LEADS),
+    reasons: allReasons.slice(0, MAX_REASONS),
+    youLead: allLeads.slice(0, MAX_LEADS),
+    allReasons,
+    allLeads,
   };
 }
 

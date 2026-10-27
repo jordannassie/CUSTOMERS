@@ -90,9 +90,15 @@ Phase 11 · S · Depends on: B-85, B-89 · Blocked by Jordan: no · MVP_SPEC 8.2
 ---
 
 ### B-91 Check competitor websites, on request (Phase B)
-- [ ] Done
+- [ ] Done (built in the working tree on `mvp-bugs-fixes`; migration 071 applied to local dev and the test database, not live)
 
-Phase 11 · L · Depends on: B-86 · Blocked by Jordan: needs a DECISIONS entry and an MVP_SPEC 7.1 change (competitor sites read on request) · Branch: `task/B-91-competitor-sites` → `mvp`
+Phase 11 · L · Depends on: B-86 · Blocked by Jordan: no (D-85, MVP_SPEC 7.1 updated) · Branch: `task/B-91-competitor-sites` → `mvp`
+
+As built: no job queue. One check runs inside the request, like auto-fill at setup (Firecrawl about 25 seconds plus the AI), so the scan worker is unchanged. The address must be the typed one or a cited one (`allowedDomain`); test accounts read only fixtures; rate limit `site_check` 20 an hour per user. Services are kept only when a page says them (`evidenceFor`).
+
+Step 1 (2026-10-26): the same read also keeps, per site, what the pages show AI tools (`onboarding/competitor-site/signals.ts`: business details in the page code, FAQ, reviews, opening hours, a form, word count) and which AI crawlers robots.txt turns away (`robots.ts`). The business's own site is read the same way in the same check, so both sides are compared on the same checks (`standing/site-signals.ts`, the "Them / You" table). No AI, no extra cost apart from one robots.txt fetch.
+
+Step 2 (2026-10-26): claims questions often ask about (24/7, emergency, free estimates, prices, years in business and others, `src/lib/site-claims.ts`), each with its page and quote, plus the site's words. For each question they win, the reason says what the question asks that their site says and yours doesn't. Saved data is version 2; version 1 rows are read again.
 
 **Build**
 1. A card on Opportunities and a button in the "See why" panel. The website is the one the user typed or one matched from AI citations; nothing from Google is saved (D-73).
@@ -108,3 +114,29 @@ Phase 11 · L · Depends on: B-86 · Blocked by Jordan: needs a DECISIONS entry 
 Phase 11 · M · Depends on: B-91, B-51 eval labelled · Blocked by Jordan: no · MVP_SPEC 7.2, 25 · Branch: `task/B-92-explain-v3` → `mvp`
 
 - Changes the "why competitors win" prompt, so its eval must have people-labelled cases first (MVP_SPEC 25).
+
+Read once (2026-10-26): a site is read once and kept; the panel and the Opportunities card both show "checked" with no
+second read anywhere. The row is claimed before reading (insert only), so two clicks at once never read twice; a failed
+read frees the claim; a claim left more than 10 minutes by a check that never finished can be taken over.
+
+Where the gap comes from (2026-10-26): at the top of the See why panel, who leads in each place AI looks (review sites,
+AI quoting each website, Google listing, the websites), the score's own answers split by where AI looked (answers,
+named them, named you), and the pages of their site AI used (`standing/gap.ts`, `GapBreakdown.tsx`).
+
+---
+
+### B-93 Comparison page: "Bean House vs you"
+- [ ] Done (built in the working tree on `mvp-bugs-fixes`, not committed yet)
+
+Phase 11 · M · Depends on: B-86, B-91 · Blocked by Jordan: no · MVP_SPEC 8.1, D-73, D-85 · Branch: `task/B-93-compare-page` → `mvp`
+
+**Why:** the See why panel had grown to about 3 screens on a laptop and 7 on a phone, with each fact shown 3 or 4 times.
+
+**Build**
+1. `/competitors/[id]`: a summary (the two bars and who leads in each place AI looks), then tabs with their own address (`?tab=`): Why they're ahead (every reason, grouped by where you fix it, and where you lead), AI answers (answers by where AI looked, questions each of you wins, by AI, pages used), Websites (the only "Check their website" button; services with quotes, a service picked compares it with yours; what each site says; what each shows AI tools), Google, Fixes.
+2. The panel keeps the bars, who leads where, the top 3 reasons, the website status and "Open full comparison".
+3. Links: the Overview card, "About ..." on fixes, tracked competitors on Questions, and the Opportunities website list (status only, no button) all open the page.
+4. Quotes: the best-reading sentence is kept over a menu label or a page title, and quotes are tidied for display.
+
+**What the user sees**
+- One page per competitor with every fact once, a short panel for the glance, and the website check in one place.

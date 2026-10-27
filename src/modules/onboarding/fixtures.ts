@@ -121,3 +121,48 @@ export function fakeClients(opts: FakeOptions = {}) {
   };
   return { clients, calls };
 }
+
+// A competitor's site for "Check their website" (B-91): it lists catering and beans to go, which Sunrise doesn't.
+export const BEAN_DOMAIN = "beanhouse.example";
+
+export const BEAN_PAGES: PageResult[] = [
+  {
+    path: "/",
+    status: "ok",
+    title: "Bean House | Springfield coffee shop",
+    markdown:
+      "# Bean House\n\nSpringfield's coffee shop for espresso drinks and fresh coffee beans to go. Roasting since 2009.\n\n" +
+      "## Hours\n\nMonday to Sunday, 7am to 7pm\n\n## What our customers say\n\n\"Best espresso in town.\" Dana R.\n\n" +
+      "## FAQ\n\nDo you cater offices? Yes, with free quotes for teams of any size.",
+    // The page's HTML also carries LocalBusiness structured data.
+    signals: { businessSchema: true, contactForm: false, reviews: true, faq: true, hours: true },
+  },
+  {
+    path: "/services",
+    status: "ok",
+    title: "Services | Bean House",
+    kind: "services",
+    markdown: "## What we do\n\n- Office catering for teams of 10 to 200\n- Coffee beans to go, roasted weekly\n- Espresso drinks",
+  },
+  { path: "/about", status: "missing", title: null, markdown: "" },
+  {
+    path: "/contact",
+    status: "ok",
+    title: "Contact | Bean House",
+    markdown: "## Find us\n\n44 Elm St, Springfield, IL 62701\n\nCall (217) 555-0199",
+    signals: { businessSchema: false, contactForm: true, reviews: false, faq: false, hours: false },
+  },
+];
+
+export const BEAN_SITE_OUTPUT: AutofillOutput = {
+  name: "Bean House",
+  industry: "coffee_shop",
+  description: "A Springfield coffee shop with espresso drinks, office catering and coffee beans to go.",
+  services: ["office catering", "coffee beans to go", "espresso drinks"],
+  city: "Springfield",
+  state: "IL",
+  country: "US",
+  phone: "(217) 555-0199",
+  address: "44 Elm St, Springfield, IL 62701",
+  confidence: "high",
+};

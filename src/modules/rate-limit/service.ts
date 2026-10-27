@@ -20,6 +20,8 @@ export const LIMITS = {
   pdf_export: { max: 10, windowMs: HOUR },
   // Each competitor lookup is a paid Google Places search (onboarding and Competitors).
   competitor_lookup: { max: 30, windowMs: HOUR },
+  // Each website check reads a competitor's pages and asks an AI model, both paid for (Competitors, B-91).
+  site_check: { max: 20, windowMs: HOUR },
 } satisfies Record<string, Limit>;
 
 export type Bucket = keyof typeof LIMITS;

@@ -4,7 +4,8 @@ import { z } from "zod";
 import { isOwnSite } from "@/lib/site-type";
 import { nameKey, type StandingCheck } from "./checks";
 
-export type Named = { name: string; answers: number; tracked: boolean };
+/** competitorId: set for a tracked competitor, to link it to its comparison page. */
+export type Named = { name: string; answers: number; tracked: boolean; competitorId?: string };
 export type SiteUse = { host: string; answers: number };
 
 export type QuestionSummary = {
@@ -30,7 +31,12 @@ function top<T extends { answers: number }>(counts: Map<string, T>, max: number,
   return [...counts.values()].sort((a, b) => b.answers - a.answers || key(a).localeCompare(key(b))).slice(0, max);
 }
 
-export function questionSummaries(checks: StandingCheck[], ownDomain: string | null): Map<string, QuestionSummary> {
+export function questionSummaries(
+  checks: StandingCheck[],
+  ownDomain: string | null,
+  competitors: { id: string; name: string }[] = [],
+): Map<string, QuestionSummary> {
+  const idOf = new Map(competitors.map((c) => [nameKey(c.name), c.id]));
   const groups = new Map<string, StandingCheck[]>();
   for (const c of checks) groups.set(c.questionId, [...(groups.get(c.questionId) ?? []), c]);
   const out = new Map<string, QuestionSummary>();
@@ -43,7 +49,7 @@ export function questionSummaries(checks: StandingCheck[], ownDomain: string | n
         const k = nameKey(name);
         if (!k || seen.has(k)) return;
         seen.add(k);
-        const n = named.get(k) ?? { name, answers: 0, tracked };
+        const n = named.get(k) ?? { name, answers: 0, tracked, ...(tracked && idOf.has(k) ? { competitorId: idOf.get(k)! } : {}) };
         n.answers += 1;
         named.set(k, n);
       };

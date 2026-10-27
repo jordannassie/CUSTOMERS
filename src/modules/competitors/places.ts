@@ -38,6 +38,8 @@ export class PlacesUnavailable extends Error {
     message: string,
     /** Google's request limit was reached (429): trying again soon won't help. */
     readonly limited = false,
+    /** Not asked at all: lookups are paused after a refusal, which was already recorded. */
+    readonly paused = false,
   ) {
     super(message);
     this.name = "PlacesUnavailable";
@@ -80,10 +82,26 @@ export function toSignals(body: unknown): PlaceSignals {
 
 // A busy (429) or failing (5xx) Google gets one more try after this pause (2026-10-14).
 const RETRY_DELAY_MS = 800;
+// Still refused after the retry: its request limit is used up, so no lookup is tried for a while. Every page used to
+// wait for a refusal and a retry per business while the limit was spent (2026-10-27). Only this status is kept, in
+// memory, never any Google content (D-73).
+export const LIMITED_PAUSE_MS = 10 * 60 * 1000;
+let limitedUntil = 0;
 
-export function createPlaceSignals(apiKey: string, doFetch: typeof fetch = fetch, retryDelayMs = RETRY_DELAY_MS): FetchSignals {
+/** For tests: forget a pause. */
+export function resetPlacesPause(): void {
+  limitedUntil = 0;
+}
+
+export function createPlaceSignals(
+  apiKey: string,
+  doFetch: typeof fetch = fetch,
+  retryDelayMs = RETRY_DELAY_MS,
+  now: () => number = Date.now,
+): FetchSignals {
   return async (placeId) => {
     if (!PLACE_ID.test(placeId)) return null;
+    if (now() < limitedUntil) throw new PlacesUnavailable("Places request limit reached; paused", true, true);
     const once = () =>
       doFetch(`${PLACES_DETAILS_URL}/${placeId}`, {
         headers: { "X-Goog-Api-Key": apiKey, "X-Goog-FieldMask": SIGNALS_FIELD_MASK },
@@ -102,6 +120,7 @@ export function createPlaceSignals(apiKey: string, doFetch: typeof fetch = fetch
       throw new PlacesUnavailable(err instanceof Error ? err.message : "Places could not be reached");
     }
     if (res.status === 404) return null;
+    if (res.status === 429) limitedUntil = now() + LIMITED_PAUSE_MS;
     if (!res.ok) throw new PlacesUnavailable(`Places returned ${res.status}`, res.status === 429);
     return toSignals(await res.json().catch(() => null));
   };

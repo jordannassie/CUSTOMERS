@@ -8,13 +8,13 @@ import { createServiceClient } from "@/lib/supabase/service";
 import { requireAgency } from "@/modules/auth";
 import { maxCompetitors } from "@/modules/entitlements";
 import { limitMessage, placeIdForName } from "@/modules/onboarding/server";
-import { loadAlsoRecommended, loadScoreReport, recountAfterNamesChange } from "@/modules/scanning";
+import { loadAlsoRecommended, loadScoreReport, recountAfterNamesChange, type ScoreReport } from "@/modules/scanning";
 import { fixtureSignals } from "./place-fixtures";
 import { createPlaceSignals, PlacesUnavailable, type FetchSignals } from "./places";
 import { pickedInstead, type PickedInstead } from "./picked";
 import { competitorChartsView } from "./charts";
 import { competitorsView, signalRows, type CompetitorsView, type SignalResult, type SignalRow } from "./service";
-import { loadWhyPanels } from "./why/dal";
+import { buildWhyPanels, loadWhyInputs } from "./why/dal";
 import { whyCard, type WhyPanel } from "./why/service";
 
 // Fixture mode is refused in production so a stray flag can never show made-up businesses to users.
@@ -32,7 +32,8 @@ const signalsForRequest = cache(async (placeId: string) => {
     return await liveSignals()(placeId);
   } catch (err) {
     // Feeds the provider error spike alert (MVP_SPEC 22); a missing key is a setup gap, not a Google outage.
-    if (env.GOOGLE_PLACES_API_KEY) await recordPlacesError(err);
+    // A paused lookup asked nothing; the refusal that started the pause was recorded already.
+    if (env.GOOGLE_PLACES_API_KEY && !(err instanceof PlacesUnavailable && err.paused)) await recordPlacesError(err);
     throw err;
   }
 });
@@ -63,10 +64,11 @@ export async function getCompetitorsPage(
 ): Promise<{ view: CompetitorsView; signals: Promise<SignalRow[]>; why: WhyPanel[] } | null> {
   const { agency } = await requireAgency({ next });
   const now = requestNow();
-  const base = await loadCompetitorsBase(agency.id, businessId, now, { charts: true });
+  // The page's reads and the "See why" reads start together (2026-10-27: they used to run one after the other).
+  const [base, inputs] = await Promise.all([loadCompetitorsBase(agency.id, businessId, now, { charts: true }), loadWhyInputs(agency.id, businessId, now.getTime())]);
   if (!base) return null;
   // "See why" reads only saved answers (already read for this request) and fixes; a chain row's panel uses its name.
-  const why = await loadWhyPanels(agency.id, businessId, now, chainNames(base.view.leaderboard));
+  const why = inputs ? buildWhyPanels(inputs, chainNames(base.view.leaderboard)) : [];
   return { view: base.view, signals: base.signals(signalsForRequest), why };
 }
 
@@ -82,12 +84,16 @@ export async function loadCompetitorsPage(
   return base && { ...base.view, signals: await base.signals(fetchSignals) };
 }
 
-async function loadCompetitorsBase(
+export async function loadCompetitorsBase(
   agencyId: string,
   businessId: string,
   now: Date,
   { charts = false }: { charts?: boolean } = {},
-): Promise<{ view: CompetitorsView; signals: (fetchSignals: FetchSignals) => Promise<SignalRow[]> } | null> {
+): Promise<{
+  view: CompetitorsView;
+  report: ScoreReport;
+  signals: (fetchSignals: FetchSignals, onlyCompetitorId?: string) => Promise<SignalRow[]>;
+} | null> {
   const db = createServiceClient();
   const [report, also, business, rows, limit] = await Promise.all([
     loadScoreReport(agencyId, businessId, now, { charts }),
@@ -121,17 +127,19 @@ async function loadCompetitorsBase(
     view.charts = competitorChartsView(report, scored);
   }
 
-  const signals = async (fetchSignals: FetchSignals): Promise<SignalRow[]> => {
-    const placeIds = [...new Set([you.placesId, ...competitors.map((c) => c.placesId)].filter((id) => id !== null))];
+  // `onlyCompetitorId`: the comparison page asks Google about you and that one competitor only.
+  const signals = async (fetchSignals: FetchSignals, onlyCompetitorId?: string): Promise<SignalRow[]> => {
+    const shown = onlyCompetitorId ? competitors.filter((c) => c.id === onlyCompetitorId) : competitors;
+    const placeIds = [...new Set([you.placesId, ...shown.map((c) => c.placesId)].filter((id) => id !== null))];
     const results = await Promise.all(
       placeIds.map(async (id): Promise<[string, SignalResult]> => [
         id,
         await fetchSignals(id).catch((e) => (e instanceof PlacesUnavailable && e.limited ? ("limited" as const) : ("error" as const))),
       ]),
     );
-    return signalRows(you, competitors, new Map(results));
+    return signalRows(you, shown, new Map(results));
   };
-  return { view, signals };
+  return { view, report, signals };
 }
 
 export type TrackResult = { ok: true } | { ok: false; status: 403 | 404; error: string };
@@ -189,11 +197,12 @@ export async function getPickedInstead(businessId: string): Promise<PickedInstea
  */
 export async function loadPicked(agencyId: string, businessId: string, now: Date): Promise<PickedInstead | null | "none-tracked"> {
   const db = createServiceClient();
-  const [report, also, business, rows] = await Promise.all([
+  const [report, also, business, rows, inputs] = await Promise.all([
     loadScoreReport(agencyId, businessId, now),
     loadAlsoRecommended(agencyId, businessId, now),
     db.from("businesses").select("name, places_id").eq("id", businessId).eq("agency_id", agencyId).maybeSingle(),
     db.from("business_competitors").select("name, places_id, place_id, created_at, checked_from").eq("business_id", businessId).order("created_at"),
+    loadWhyInputs(agencyId, businessId, now.getTime()),
   ]);
   for (const r of [business, rows]) if (r.error) throw new Error(`Competitors: ${r.error.message}`);
   if (!report || !also || !business.data) return null;
@@ -208,11 +217,11 @@ export async function loadPicked(agencyId: string, businessId: string, now: Date
   });
   const picked = pickedInstead(view);
   if (!picked) return picked;
-  const panels = await loadWhyPanels(agencyId, businessId, now, chainNames(view.leaderboard));
+  const panels = inputs ? buildWhyPanels(inputs, chainNames(view.leaderboard)) : [];
   return { ...picked, why: whyCard(view.leaderboard, panels) };
 }
 
 /** Each tracked name on a chain row, to the chain AI named ("Bennu Coffee on Congress" to "Bennu Coffee"). */
-function chainNames(rows: CompetitorsView["leaderboard"]): Map<string, string> {
+export function chainNames(rows: CompetitorsView["leaderboard"]): Map<string, string> {
   return new Map(rows.flatMap((r) => (r.chain ? r.chain.tracked.map((t) => [t, r.chain!.brand] as const) : [])));
 }

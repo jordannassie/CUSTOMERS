@@ -44,8 +44,8 @@ export type OpportunityItem = {
   usesGoogle: boolean;
   /** Where the owner makes this fix (where.ts). */
   where: Where;
-  /** Tracked competitors the fix is about. */
-  about: string[];
+  /** Tracked competitors the fix is about, to link each to its comparison page. */
+  about: { id: string; name: string }[];
 };
 
 const IMPACT_ORDER: Record<Impact, number> = { high: 0, medium: 1, low: 2 };
@@ -63,8 +63,9 @@ export function splitSteps(text: string | null): string[] {
     .filter(Boolean);
 }
 
-/** Most important first, then newest. `competitors`: tracked names, to say which ones a fix is about. */
-export function toItems(rows: OpportunityRow[], competitors: string[] = []): OpportunityItem[] {
+/** Most important first, then newest. `competitors`: tracked ones, to say which a fix is about. */
+export function toItems(rows: OpportunityRow[], competitors: { id: string; name: string }[] = []): OpportunityItem[] {
+  const names = competitors.map((c) => c.name);
   return [...rows]
     .sort(
       (a, b) =>
@@ -81,7 +82,7 @@ export function toItems(rows: OpportunityRow[], competitors: string[] = []): Opp
       claudePrompt: clean(row.claude_prompt),
       usesGoogle: row.usesGoogle,
       where: whereOf({ category: row.category ?? null, claudePrompt: clean(row.claude_prompt), text: textOf(row) }),
-      about: competitorsIn(textOf(row), competitors),
+      about: competitorsIn(textOf(row), names).map((name) => competitors.find((c) => c.name === name)!),
     }));
 }
 

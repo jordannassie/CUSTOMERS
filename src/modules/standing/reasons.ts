@@ -13,12 +13,27 @@ export { WHERE_TEXT, type Where } from "./where";
  * title and detail: the short form screens show ("More Google reviews", "320 vs your 12"). text: the same fact as one
  * full sentence, for the report, its PDF and the weekly email.
  */
-export type Fact = { title: string; detail: string; text: string; where: Where | null; weight: number };
+/**
+ * action: the one step to take, said plainly ("Claim or update your listing on yelp.com"). match: the words a saved fix
+ * must contain to be the fix for this reason (the site, the service, the topic); fixId: that saved fix, when there is one.
+ */
+export type Fact = {
+  title: string;
+  detail: string;
+  text: string;
+  where: Where | null;
+  weight: number;
+  action?: string;
+  match?: string[];
+  fixId?: string;
+};
 
 /** Google values for one business, fetched live for this page view and never stored (D-73). */
 export type GoogleValues = { rating: number | null; reviewCount: number | null; hours: string[] | null; categories: string[] };
 
 const MIN_ANSWERS = 2;
+/** "yelp" from "yelp.com", "m.yelp.co.uk": the name a fix would use for the site. */
+const brandOf = (host: string) => host.replace(/^(www|m)\./, "").split(".")[0];
 const MAX_SITES = 2;
 const count = (n: number) => n.toLocaleString("en-US");
 /** "Bean Tires' website", "Joe's website". */
@@ -48,6 +63,8 @@ export function websiteFacts(
     behind.push({
       title: "Your website blocks readers",
       detail: "AI tools may not be able to read it either.",
+      action: "Let AI tools read your website: open your robots.txt and bot protection settings and allow GPTBot, ClaudeBot and PerplexityBot.",
+      match: ["robots", "gptbot", "claudebot", "perplexitybot", "crawler", "bot protection"],
       text: "Your website turned our reader away, so AI tools may not be able to read it either.",
       where: "website",
       weight: 4,
@@ -57,6 +74,8 @@ export function websiteFacts(
     const yours = you.domain ? ` It used yours in ${answers(usedYours)}.` : "";
     behind.push({
       title: "AI quotes their website more",
+      action: "Give each service its own clear page on your website that answers what customers ask, so AI has something of yours to quote.",
+      match: ["service page", "services page", "dedicated page", "landing page", "own page"],
       detail: you.domain ? `${them.site} in ${answers(usedTheirs)}, yours in ${count(usedYours)}.` : `${them.site} in ${answers(usedTheirs)}.`,
       text: `AI used ${possessive(them.name)} website (${them.site}) in ${answers(usedTheirs)}.${yours} AI tools read business websites to answer these questions.`,
       where: "website",
@@ -86,7 +105,9 @@ export function siteFacts(checks: StandingCheck[], tracked: string, name = track
     if (type === "reviews" || type === "directories") {
       facts.push({
         title: `AI used ${host} when it picked them`,
-        detail: `${answers(n)} without you. Check your listing there.`,
+        detail: `${answers(n)} without you.`,
+        action: `Claim or update your listing on ${host}: same name, address, phone and website as everywhere else.`,
+        match: [host, brandOf(host)],
         text: `AI used ${host} in ${answers(n)} that named ${name} and not you. Check your listing there.`,
         where: "other_places",
         weight: n,
@@ -95,6 +116,8 @@ export function siteFacts(checks: StandingCheck[], tracked: string, name = track
       facts.push({
         title: `AI cited articles on ${host}`,
         detail: `${answers(n)} named them and not you.`,
+        action: `Get a mention on ${host}: local news often runs a story or an expert quote from a local business.`,
+        match: [host, brandOf(host)],
         text: `AI used articles on ${host} in ${answers(n)} that named ${name} and not you.`,
         where: "other_places",
         weight: 0.8 * n,
@@ -115,7 +138,16 @@ export function googleFacts(name: string, theirs: GoogleValues | null, yours: Go
     const t = count(theirs.reviewCount!);
     const y = count(yours.reviewCount!);
     const text = `${name} has ${t} Google reviews, you have ${y}.`;
-    if (reviews === "they_are_ahead") behind.push({ title: "More Google reviews", detail: `${t} vs your ${y}`, text, where: "google_listing", weight: 3 });
+    if (reviews === "they_are_ahead")
+      behind.push({
+        title: "More Google reviews",
+        detail: `${t} vs your ${y}`,
+        text,
+        where: "google_listing",
+        weight: 3,
+        action: "Ask happy customers for a Google review: send them your review link after each job.",
+        match: ["review"],
+      });
     else ahead.push({ title: "You have more Google reviews", detail: `${y} vs their ${t}`, text, where: "google_listing", weight: 3 });
   }
   const rating = sideOf(compareRating(theirs.rating, yours.rating));
@@ -123,7 +155,16 @@ export function googleFacts(name: string, theirs: GoogleValues | null, yours: Go
     const t = theirs.rating!.toFixed(1);
     const y = yours.rating!.toFixed(1);
     const text = `${name} is rated ${t} on Google, you are rated ${y}.`;
-    if (rating === "they_are_ahead") behind.push({ title: "Higher Google rating", detail: `${t} vs your ${y}`, text, where: "google_listing", weight: 2 });
+    if (rating === "they_are_ahead")
+      behind.push({
+        title: "Higher Google rating",
+        detail: `${t} vs your ${y}`,
+        text,
+        where: "google_listing",
+        weight: 2,
+        action: "Reply to every Google review and fix what low ratings mention; new good reviews lift the rating over time.",
+        match: ["rating", "review"],
+      });
     else ahead.push({ title: "Your Google rating is higher", detail: `${y} vs their ${t}`, text, where: "google_listing", weight: 2 });
   }
   const theirDays = openDays(theirs.hours);
@@ -131,7 +172,16 @@ export function googleFacts(name: string, theirs: GoogleValues | null, yours: Go
   const days = sideOf(compareCount(theirDays, yourDays, 0));
   if (days !== "about_same" && days !== "unknown") {
     const text = `Google shows ${name} open ${theirDays} days a week, and you ${yourDays}.`;
-    if (days === "they_are_ahead") behind.push({ title: "Open more days on Google", detail: `${theirDays} days vs your ${yourDays}`, text, where: "google_listing", weight: 1.5 });
+    if (days === "they_are_ahead")
+      behind.push({
+        title: "Open more days on Google",
+        detail: `${theirDays} days vs your ${yourDays}`,
+        text,
+        where: "google_listing",
+        weight: 1.5,
+        action: "Check your opening hours on your Google listing are complete, including weekends and holidays.",
+        match: ["hours", "open days", "opening"],
+      });
     else ahead.push({ title: "You're open more days", detail: `${yourDays} days vs their ${theirDays}`, text, where: "google_listing", weight: 1.5 });
   }
   const theirType = theirs.categories[0];
@@ -141,6 +191,8 @@ export function googleFacts(name: string, theirs: GoogleValues | null, yours: Go
     behind.push({
       title: "Different Google category",
       detail: `Theirs: ${theirType}. Yours: ${yourType}.`,
+      action: `Check your Google categories: add "${theirType}" as a category if it describes what you do.`,
+      match: ["category"],
       text: `Google lists ${name} as "${theirType}" and you as "${yourType}". AI may match the question to their category.`,
       where: "google_listing",
       weight: 2,

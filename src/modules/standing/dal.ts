@@ -18,7 +18,7 @@ export type StandingData = {
   ownChecks: StandingCheck[];
   /** Active question id to its wording now. */
   questions: Map<string, string>;
-  you: { name: string; domain: string | null; websiteBlocked: boolean };
+  you: { name: string; domain: string | null; websiteBlocked: boolean; site: { read: boolean; services: string[]; hasPhone: boolean | null; hasAddress: boolean | null } };
   competitors: { id: string; name: string; domain: string | null }[];
 };
 
@@ -68,7 +68,17 @@ const load = cache(async (agencyId: string, businessId: string, nowMs: number): 
     checks: scored,
     ownChecks: own,
     questions: new Map(tracked.filter((q) => q.active).map((q) => [q.id, q.prompt])),
-    you: { name: b.name, domain: b.domain, websiteBlocked: website?.readStatus === "blocked" },
+    you: {
+      name: b.name,
+      domain: b.domain,
+      websiteBlocked: website?.readStatus === "blocked",
+      site: {
+        read: website?.readStatus === "read",
+        services: website?.servicesListed ?? [],
+        hasPhone: website?.hasPhone ?? null,
+        hasAddress: website?.hasAddress ?? null,
+      },
+    },
     competitors: must("competitors", competitors)!.map((c) => ({ id: c.id, name: c.name, domain: c.domain })),
   };
 });

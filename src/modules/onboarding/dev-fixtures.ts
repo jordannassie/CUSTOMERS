@@ -3,7 +3,19 @@
 import type { Intent } from "@/modules/question-library";
 import type { AutofillClients } from "./autofill";
 import type { PageResult } from "./firecrawl";
-import { BLOCKED_DOMAIN, BLOCKED_PAGES, BLOCKED_PLACE, COFFEE_DOMAIN, COFFEE_PAGES, COFFEE_PLACE, COFFEE_SITE_OUTPUT, OTHER_PLACE } from "./fixtures";
+import {
+  BEAN_DOMAIN,
+  BEAN_PAGES,
+  BEAN_SITE_OUTPUT,
+  BLOCKED_DOMAIN,
+  BLOCKED_PAGES,
+  BLOCKED_PLACE,
+  COFFEE_DOMAIN,
+  COFFEE_PAGES,
+  COFFEE_PLACE,
+  COFFEE_SITE_OUTPUT,
+  OTHER_PLACE,
+} from "./fixtures";
 import { ExtractError } from "./extract";
 import type { QuestionModel } from "./question-model";
 import { QUESTION_COUNT } from "./prompts/pick-questions.v8";
@@ -22,6 +34,7 @@ const SITES: Record<string, PageResult[]> = {
   [BLOCKED_DOMAIN]: BLOCKED_PAGES,
   [BLOCKED_PICK_DOMAIN]: BLOCKED_PAGES,
   [BLOCKED_DOWN_DOMAIN]: BLOCKED_PAGES,
+  [BEAN_DOMAIN]: BEAN_PAGES,
 };
 
 // Any other domain finds nothing, which shows the empty form with its friendly note.
@@ -39,6 +52,7 @@ export const fixtureAutofillClients: AutofillClients = {
   },
   extract: async ({ domain }) => {
     if (domain === COFFEE_DOMAIN) return COFFEE_SITE_OUTPUT;
+    if (domain === BEAN_DOMAIN) return BEAN_SITE_OUTPUT;
     throw new ExtractError("no fixture for this domain", false);
   },
 };

@@ -2150,6 +2150,24 @@ export type Database = {
           },
         ]
       }
+      website_facts: {
+        Row: {
+          data: Json
+          domain: string
+          fetched_at: string
+        }
+        Insert: {
+          data: Json
+          domain: string
+          fetched_at?: string
+        }
+        Update: {
+          data?: Json
+          domain?: string
+          fetched_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       agency_credit_balance: {

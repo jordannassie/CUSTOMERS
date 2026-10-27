@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { fixesAbout, openWhere, standingSentence, whyCard, whySentence } from "./service";
+import { claimRows, compareRows, fixesAbout, openFixRefs, serviceChips, standingSentence, whyCard, whySentence, withFixes } from "./service";
 
 const why = { name: "Bean Tires", answers: 40, them: 12, you: 5 };
 const id = "11111111-2222-3333-4444-555555555555";
@@ -33,7 +33,8 @@ describe("whyCard", () => {
     competitorId,
     trackedName: name,
     fixes: [],
-    openFixes: ["website" as const],
+    fixRefs: [],
+    website: { domain: null, status: null, checkedAt: null, checked: false, checking: false, services: [], claims: [], compare: null },
     why: {
       name,
       site: null,
@@ -44,8 +45,14 @@ describe("whyCard", () => {
       questionsYouWin: [],
       assistantsTheyWin: [],
       assistants: [],
+      sources: [],
+      areas: [],
+      theirPages: [],
+      yourPages: [],
       reasons: [{ title: "Reason one", detail: "", text: "Reason one.", where: "website" as const, weight: 3 }],
       youLead: [{ title: "You lead", detail: "", text: "You lead.", where: null, weight: 2 }],
+      allReasons: [],
+      allLeads: [],
       ...over,
     },
   });
@@ -54,7 +61,7 @@ describe("whyCard", () => {
   it("picks the competitor furthest ahead, from the leaderboard's standing", () => {
     const rows = [{ name: "A", isYou: false, score: 60, standing: "behind" as const }, { name: "B", isYou: false, score: 40, standing: "behind" as const }, you];
     const card = whyCard(rows, [panel("b", "B"), panel("a", "A")]);
-    expect(card).toMatchObject({ competitorId: "a", side: "behind", facts: [{ text: "Reason one." }], openFixes: ["website"] });
+    expect(card).toMatchObject({ competitorId: "a", side: "behind", facts: [{ text: "Reason one." }] });
     expect(card!.question).toBe('On "best tire shop in Dallas", AI named A in 5 of 6 answers and you in 0.');
   });
 
@@ -70,7 +77,7 @@ describe("whyCard", () => {
 });
 
 describe("whySentence", () => {
-  const card = (side: "behind" | "ahead", text: string) => ({ competitorId: "a", name: "Bean House", side, question: null, facts: [{ title: text, detail: "", text, where: null, weight: 1 }], openFixes: [] });
+  const card = (side: "behind" | "ahead", text: string) => ({ competitorId: "a", name: "Bean House", side, question: null, facts: [{ title: text, detail: "", text, where: null, weight: 1 }] });
 
   it("gives the first likely reason in one sentence, keeping names capitalised", () => {
     expect(whySentence(card("behind", "AI used yelp.com in 9 answers that named Bean House and not you. Check your listing there."))).toBe(
@@ -90,8 +97,9 @@ describe("whySentence", () => {
   });
 });
 
-describe("openWhere", () => {
-  const fix = (over: Partial<Parameters<typeof openWhere>[0][number]>) => ({
+describe("openFixRefs", () => {
+  const fix = (over: Partial<Parameters<typeof openFixRefs>[0][number]>) => ({
+    id: "f",
     title: "",
     description: null,
     evidence: null,
@@ -101,14 +109,80 @@ describe("openWhere", () => {
     ...over,
   });
 
-  it("lists each Opportunities group that has a fix to do, by the same rule as the page", () => {
-    expect(
-      openWhere([
-        fix({ title: "Ask for Google reviews", category: "reviews_reputation" }),
-        fix({ title: "Add a menu page", claude_prompt: "Draft it." }),
-        fix({ title: "More Google reviews", category: "reviews_reputation" }),
-      ]).sort(),
-    ).toEqual(["google_listing", "website"]);
-    expect(openWhere([])).toEqual([]);
+  it("places each fix by the same rule as the Opportunities page", () => {
+    const refs = openFixRefs([
+      fix({ id: "g", title: "Ask for Google reviews", category: "reviews_reputation" }),
+      fix({ id: "m", title: "Add a menu page", claude_prompt: "Draft it." }),
+    ]);
+    expect(refs.map((r) => [r.id, r.where])).toEqual([["g", "google_listing"], ["m", "website"]]);
+    expect(openFixRefs([])).toEqual([]);
+  });
+
+  it("ties each reason to the fix about it, not the first fix in its group", () => {
+    const refs = openFixRefs([
+      fix({ id: "menu", title: "Add a menu page", claude_prompt: "Draft it." }),
+      fix({ id: "faq", title: "Add an FAQ section", claude_prompt: "Draft it." }),
+    ]);
+    const reason = { title: "Their website answers common questions", detail: "", text: "x", where: "website" as const, weight: 2, match: ["faq"] };
+    const other = { ...reason, text: "y", match: ["parking"] };
+    const why = withFixes({ reasons: [reason, other], allReasons: [reason, other] } as never, refs);
+    expect(why.reasons.map((r) => r.fixId ?? null)).toEqual(["faq", null]);
+    expect(why.allReasons[0].fixId).toBe("faq");
+  });
+});
+
+describe("serviceChips", () => {
+  const theirs = { status: "read" as const, services: [{ name: "office catering", page: "/services" }, { name: "espresso drinks", page: "/" }], hasPhone: true, hasAddress: true };
+  it("marks what only they list, and marks nothing when your site wasn't read", () => {
+    expect(serviceChips(theirs, { read: true, services: ["Espresso"], hasPhone: true, hasAddress: true })).toEqual([
+      { name: "office catering", onlyThem: true, page: "/services", quote: null, yours: false },
+      { name: "espresso drinks", onlyThem: false, page: "/", quote: null, yours: { name: "Espresso", page: null, quote: null } },
+    ]);
+    expect(serviceChips(theirs, { read: false, services: [], hasPhone: null, hasAddress: null }).some((c) => c.onlyThem)).toBe(false);
+  });
+
+  it("gives your own words when a check read your site, or says your pages mention it outside your services", () => {
+    const yours = { read: true, services: ["espresso drinks"], hasPhone: null, hasAddress: null, words: ["office", "catering"] };
+    const chips = serviceChips(theirs, yours, [{ name: "espresso drinks", page: "/menu", quote: "Espresso drinks all day." }]);
+    expect(chips[1].yours).toEqual({ name: "espresso drinks", page: "/menu", quote: "Espresso drinks all day." });
+    expect(chips[0].yours).toBe("mentioned");
+    expect(serviceChips(theirs, { read: false, services: [], hasPhone: null, hasAddress: null })[0].yours).toBeNull();
+  });
+});
+
+describe("compareRows", () => {
+  const signals = { businessSchema: true, contactForm: false, reviews: true, faq: true, hours: false, words: 900, aiBlocked: [] };
+  const theirs = { status: "read" as const, services: [], hasPhone: true, hasAddress: true, signals };
+  it("puts each check side by side, and leaves your column empty until your site was read the same way", () => {
+    const rows = compareRows(theirs, { read: true, services: [], hasPhone: true, hasAddress: true, signals: { ...signals, aiBlocked: ["GPTBot"], faq: false, words: 120 } })!;
+    expect(rows[0]).toEqual({ label: "Lets AI tools read it", them: true, you: false });
+    expect(rows.find((r) => r.label === "FAQ section")).toEqual({ label: "FAQ section", them: true, you: false });
+    expect(rows.at(-1)).toEqual({ label: "Words on the pages we read", them: 900, you: 120 });
+    expect(compareRows(theirs, { read: true, services: [], hasPhone: null, hasAddress: null })!.every((r) => r.you === null)).toBe(true);
+    expect(compareRows({ ...theirs, signals: null }, { read: false, services: [], hasPhone: null, hasAddress: null })).toBeNull();
+  });
+});
+
+describe("claimRows", () => {
+  const claim = (key: string, label: string, quote: string) => ({ key, label, page: "/", quote });
+  const theirs = {
+    status: "read" as const,
+    services: [],
+    hasPhone: null,
+    hasAddress: null,
+    claims: [claim("years", "years in business", "Roasting since 2009."), claim("free_estimates", "free estimates", "Free quotes for teams.")],
+  };
+
+  it("lists every claim either site makes, in a fixed order, with each side's words", () => {
+    const yours = { read: true, services: [], hasPhone: null, hasAddress: null, claims: [claim("prices", "prices", "Lattes from $4.")] };
+    expect(claimRows(theirs, yours)).toEqual([
+      { key: "free_estimates", label: "free estimates", them: { page: "/", quote: "Free quotes for teams." }, you: false },
+      { key: "prices", label: "prices", them: false, you: { page: "/", quote: "Lattes from $4." } },
+      { key: "years", label: "years in business", them: { page: "/", quote: "Roasting since 2009." }, you: false },
+    ]);
+  });
+
+  it("says we can't tell for you when your site wasn't read the same way", () => {
+    expect(claimRows(theirs, { read: true, services: [], hasPhone: null, hasAddress: null }).every((r) => r.you === null)).toBe(true);
   });
 });

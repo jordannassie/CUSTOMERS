@@ -41,7 +41,7 @@ export async function loadQuestionsPage(agencyId: string, businessId: string, no
     // Saved answers only: who AI named on each question and the sites it used without you.
     loadStanding(agencyId, businessId, now),
   ]);
-  const summaries = standing ? questionSummaries([...standing.checks, ...standing.ownChecks], standing.you.domain) : undefined;
+  const summaries = standing ? questionSummaries([...standing.checks, ...standing.ownChecks], standing.you.domain, standing.competitors) : undefined;
   return questionsView({
     businessId,
     businessName: business.data.name,

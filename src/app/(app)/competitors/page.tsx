@@ -40,7 +40,14 @@ export default async function CompetitorsPage({ searchParams }: { searchParams: 
       const panel = !row.isYou && row.standing !== null ? page.why.find((p) => p.trackedName === row.name) : undefined;
       if (!panel) return [];
       const wrap: WhyWrap = (trigger) => (
-        <WhySheet panel={panel} title={rowName(row)} note={trackedNote(row)} standing={row.standing} signals={page.signals} defaultOpen={open === panel.competitorId}>
+        <WhySheet
+          panel={panel}
+          title={rowName(row)}
+          note={trackedNote(row)}
+          standing={row.standing}
+          signals={page.signals}
+          defaultOpen={open === panel.competitorId}
+        >
           {trigger}
         </WhySheet>
       );

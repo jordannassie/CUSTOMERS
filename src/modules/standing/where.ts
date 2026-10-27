@@ -9,9 +9,3 @@ export const WHERE_TEXT: Record<Where, string> = {
   other_places: "Other places AI looks",
 };
 
-/** "Fix on your website", under each likely reason. */
-export const FIX_TEXT: Record<Where, string> = {
-  website: "Fix on your website",
-  google_listing: "Fix on your Google listing",
-  other_places: "Fix on the sites AI uses",
-};

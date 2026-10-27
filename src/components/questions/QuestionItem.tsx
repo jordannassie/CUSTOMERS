@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import Link from "next/link";
 import { Loader2, MessageSquareText, MoreHorizontal, Pause, Pencil, Play, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "cn";
@@ -94,7 +95,16 @@ export function QuestionItem({ businessId, businessName, question, activeCount, 
         {question.active && !editing && question.summary && question.summary.answers > 0 && (
           <div className="flex flex-col items-start gap-1.5" data-testid="question-summary">
             {question.summary.named.length > 0 && (
-              <Chips label="AI named" items={question.summary.named.map((n) => ({ key: n.name, text: n.name, count: n.answers, quiet: !n.tracked }))} />
+              <Chips
+                label="AI named"
+                items={question.summary.named.map((n) => ({
+                  key: n.name,
+                  text: n.name,
+                  count: n.answers,
+                  quiet: !n.tracked,
+                  href: n.competitorId ? `/competitors/${n.competitorId}` : undefined,
+                }))}
+              />
             )}
             {question.summary.you < question.summary.answers && question.summary.sitesWithoutYou.length > 0 && (
               <Chips label="Sites used without you" items={question.summary.sitesWithoutYou.map((s) => ({ key: s.host, text: s.host, count: s.answers, quiet: true }))} />
@@ -197,22 +207,33 @@ export function QuestionItem({ businessId, businessName, question, activeCount, 
 }
 
 /** "AI named [Bean House 12] [Blue Door 6]": who was named, or which sites were used, with how many answers. */
-function Chips({ label, items }: { label: string; items: { key: string; text: string; count: number; quiet: boolean }[] }) {
+function Chips({ label, items }: { label: string; items: { key: string; text: string; count: number; quiet: boolean; href?: string }[] }) {
   return (
     <div className="flex flex-wrap items-center gap-1.5 text-xs">
       <span className="text-muted-foreground">{label}</span>
-      {items.map((i) => (
-        <span
-          key={i.key}
-          className={cn(
-            "inline-flex items-center gap-1 rounded-xs px-1.5 py-0.5",
-            i.quiet ? "border border-border text-muted-foreground" : "bg-muted text-foreground",
-          )}
-        >
-          {i.text}
-          <span className="tabular-nums text-text-hint">{i.count}</span>
-        </span>
-      ))}
+      {items.map((i) => {
+        const className = cn(
+          "inline-flex items-center gap-1 rounded-xs px-1.5 py-0.5",
+          i.quiet ? "border border-border text-muted-foreground" : "bg-muted text-foreground",
+          i.href && "hover:bg-primary-tint hover:text-primary",
+        );
+        const body = (
+          <>
+            {i.text}
+            <span className="tabular-nums text-text-hint">{i.count}</span>
+          </>
+        );
+        // A tracked competitor opens its comparison page.
+        return i.href ? (
+          <Link key={i.key} href={i.href} className={className}>
+            {body}
+          </Link>
+        ) : (
+          <span key={i.key} className={className}>
+            {body}
+          </span>
+        );
+      })}
     </div>
   );
 }
