@@ -1,6 +1,6 @@
 import "server-only";
 // "Check their website" (B-91, D-85): a competitor's site is read once and kept, for every business that tracks it
-// (website_facts, migration 071). Before reading, a check claims the row (insert only), so two clicks at once, in two
+// (website_facts, migration 077). Before reading, a check claims the row (insert only), so two clicks at once, in two
 // tabs or from the panel and the Opportunities card, never read the same site twice. A read that fails frees the claim.
 // Only an address the user typed or the AI answers cited is read. Nothing from Google is read or kept (D-73).
 import { env } from "@/lib/env";
@@ -13,10 +13,18 @@ import { allowedDomain, canTakeOver, READING, siteState, type SavedSite, type Si
 
 type Db = ReturnType<typeof createServiceClient>;
 
+/** PostgREST and Postgres codes for "no such table". */
+const MISSING_TABLE = new Set(["PGRST205", "42P01"]);
+
 async function loadStates(db: Db, domains: string[]): Promise<Map<string, SiteState & { fetchedAt: string }>> {
   const unique = [...new Set(domains)];
   if (unique.length === 0) return new Map();
   const { data, error } = await db.from("website_facts").select("domain, data, fetched_at").in("domain", unique);
+  // A database without migration 077 yet (a preview, say): the pages still load, with no website checks shown.
+  if (error && MISSING_TABLE.has(error.code ?? "")) {
+    console.error("[competitors/site] website_facts is missing: apply migration 077", { code: error.code });
+    return new Map();
+  }
   if (error) throw new Error(`Competitor websites: could not load: ${error.message}`);
   return new Map(data.map((r) => [r.domain, { ...siteState(r), fetchedAt: r.fetched_at }] as const));
 }

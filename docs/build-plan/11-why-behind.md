@@ -90,7 +90,7 @@ Phase 11 · S · Depends on: B-85, B-89 · Blocked by Jordan: no · MVP_SPEC 8.2
 ---
 
 ### B-91 Check competitor websites, on request (Phase B)
-- [ ] Done (built in the working tree on `mvp-bugs-fixes`; migration 071 applied to local dev and the test database, not live)
+- [ ] Done (built in the working tree on `mvp-bugs-fixes`; migration 077 (first numbered 071; renumbered after release/go-live took 071 to 076) applied to local dev and the test database, not live)
 
 Phase 11 · L · Depends on: B-86 · Blocked by Jordan: no (D-85, MVP_SPEC 7.1 updated) · Branch: `task/B-91-competitor-sites` → `mvp`
 

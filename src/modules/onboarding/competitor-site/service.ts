@@ -11,7 +11,7 @@ import { pageSignals, siteSignals, type SiteSignals } from "./signals";
 
 export type SiteService = { name: string; page: string | null; quote: string | null };
 
-/** What a competitor's website says. Stored in website_facts.data, one row per domain (migration 071). */
+/** What a competitor's website says. Stored in website_facts.data, one row per domain (migration 077). */
 export type CompetitorSiteFacts = {
   version: 2;
   promptVersion: string;

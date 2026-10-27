@@ -1,4 +1,4 @@
--- Migration 071: what competitors' own websites say (B-91, Phase B of "why you are behind"). Additive only (D-43).
+-- Migration 077: what competitors' own websites say (B-91, Phase B of "why you are behind"). Additive only (D-43).
 --
 -- One row per website domain, read when an owner asks ("Check their website"), at most once in 30 days, and shared by
 -- every business that tracks the same competitor: a site is public, so a second agency never pays to read it again.
