@@ -1,6 +1,7 @@
 import { namedMost, namedMostSentence } from "@/modules/scanning";
 import { namedAs } from "./chain";
 import type { CompetitorsView, LeaderRow } from "./service";
+import type { WhyCard } from "./why/service";
 
 // "Who AI picked instead" on the Overview (DB-004): the top three and you. Never a rank (D-63), and a gap inside the
 // margin is never called a lead (D-64), nor "about as often" when the numbers are far apart (BUG-111).
@@ -21,6 +22,8 @@ export type PickedInstead = {
    * business you don't track was named more than every competitor you do, in the first scan screen's words (step 6a).
    */
   untracked: string | null;
+  /** Why the competitor furthest ahead is ahead, from saved answers (why/service.ts); added by the loader. */
+  why?: WhyCard | null;
 };
 
 const inTen = (score: number) => {

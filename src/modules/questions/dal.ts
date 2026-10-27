@@ -5,6 +5,7 @@ import { maxQuestions } from "@/modules/entitlements";
 import { CHECK_MODELS, isOwnQuestion, loadQuestionResults, type ProviderId } from "@/modules/scanning";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
+import { questionSummaries, loadStanding } from "@/modules/standing";
 import { latestAnswers, type QuestionAnswer } from "./answers";
 import { editMakesNewQuestion, questionsView, sameQuestion, tidyQuestion, type QuestionsView } from "./service";
 
@@ -23,7 +24,7 @@ export async function loadQuestionsPage(agencyId: string, businessId: string, no
   const [business, questions] = await Promise.all([
     db
       .from("businesses")
-      .select("id, models, scan_frequency, primary_city, industry")
+      .select("id, name, models, scan_frequency, primary_city, industry")
       .eq("id", businessId)
       .eq("agency_id", agencyId)
       .maybeSingle(),
@@ -34,9 +35,16 @@ export async function loadQuestionsPage(agencyId: string, businessId: string, no
   if (!business.data) return null;
 
   const models = business.data.models.filter(isModel);
-  const [results, limit] = await Promise.all([loadQuestionResults(businessId, models, now), maxQuestions(businessId)]);
+  const [results, limit, standing] = await Promise.all([
+    loadQuestionResults(businessId, models, now),
+    maxQuestions(businessId),
+    // Saved answers only: who AI named on each question and the sites it used without you.
+    loadStanding(agencyId, businessId, now),
+  ]);
+  const summaries = standing ? questionSummaries([...standing.checks, ...standing.ownChecks], standing.you.domain, standing.competitors) : undefined;
   return questionsView({
     businessId,
+    businessName: business.data.name,
     city: business.data.primary_city,
     industry: business.data.industry,
     models,
@@ -44,6 +52,7 @@ export async function loadQuestionsPage(agencyId: string, businessId: string, no
     questions: questions.data!.map(({ source, ...q }) => ({ ...q, own: isOwnQuestion(source) })),
     results,
     limit: limit.limit,
+    summaries,
   });
 }
 
@@ -62,7 +71,7 @@ export async function loadQuestionAnswers(agencyId: string, businessId: string, 
   // The rows that count: never sample answers once the agency is real (migration 044).
   const { data, error } = await db
     .from("visibility_results_counted")
-    .select("provider, created_at, business_mentioned, competitors_mentioned, answer_text, cached")
+    .select("provider, created_at, business_mentioned, competitors_mentioned, answer_text, cached, extracted_names, cited_sources")
     .eq("business_id", businessId)
     .eq("tracked_prompt_id", questionId)
     .order("created_at", { ascending: false })
@@ -75,6 +84,8 @@ export async function loadQuestionAnswers(agencyId: string, businessId: string, 
     competitors_mentioned: r.competitors_mentioned,
     answer_text: r.answer_text,
     cached: r.cached,
+    extracted_names: r.extracted_names,
+    cited_sources: r.cited_sources,
   }));
   return latestAnswers(rows, business.data.models.filter(isModel));
 }

@@ -1,13 +1,33 @@
 import { cn } from "cn";
 import type { ChartSeries } from "@/modules/competitors";
 
-/** The names behind the colors, so no series is told apart by color alone. */
-export function SeriesLegend({ series, className }: { series: Pick<ChartSeries, "key" | "name" | "isYou" | "color">[]; className?: string }) {
+// You solid; competitors solid, dashed, dotted: the greys are close, so the line style tells them apart too.
+const DASHES = [undefined, undefined, "6 4", "2 3"];
+
+/** The line style of the series at this position (you first). */
+export const lineDash = (index: number) => DASHES[index];
+
+/** The names behind the colors, so no series is told apart by color alone. `dashes`: show each line's style. */
+export function SeriesLegend({
+  series,
+  className,
+  dashes = false,
+}: {
+  series: Pick<ChartSeries, "key" | "name" | "isYou" | "color">[];
+  className?: string;
+  dashes?: boolean;
+}) {
   return (
     <ul className={cn("flex flex-wrap gap-x-4 gap-y-1.5 text-xs text-muted-foreground", className)} data-testid="chart-legend">
-      {series.map((s) => (
+      {series.map((s, i) => (
         <li key={s.key} className="flex min-w-0 items-center gap-1.5">
-          <span className={cn("shrink-0 rounded-full", s.isYou ? "size-2.5" : "size-2")} style={{ background: s.color }} aria-hidden="true" />
+          {dashes ? (
+            <svg width="18" height="6" className="shrink-0" aria-hidden="true">
+              <line x1="1" y1="3" x2="17" y2="3" stroke={s.color} strokeWidth={s.isYou ? 2.5 : 2} strokeDasharray={lineDash(i)} strokeLinecap="round" />
+            </svg>
+          ) : (
+            <span className={cn("shrink-0 rounded-full", s.isYou ? "size-2.5" : "size-2")} style={{ background: s.color }} aria-hidden="true" />
+          )}
           <span className={cn("truncate", s.isYou && "font-medium text-foreground")}>
             {s.name}
             {s.isYou ? " (you)" : ""}

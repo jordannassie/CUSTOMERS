@@ -23,6 +23,7 @@ export function QuestionList({ title, description, testId, questions, view, limi
   const grid = `${GRID[view.models.length] ?? GRID[3]} lg:items-start lg:gap-x-6`;
   const shared = {
     businessId: view.businessId,
+    businessName: view.businessName,
     activeCount: view.active.length,
     models: view.models.length,
     frequency: view.frequency,

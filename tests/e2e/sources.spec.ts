@@ -101,7 +101,7 @@ test("first scan with no citations: says so and what happens next", async ({ pag
   await expect(page.getByTestId("site-list")).toHaveCount(0);
 });
 
-test("cited sites: most cited first, with type, how often, which AI and the own site", async ({ page }) => {
+test("cited sites: most cited first, with type, how often and the own site", async ({ page }) => {
   const businessId = await seedBusiness(page);
   await seedChecks(businessId, [
     { provider: "openai", urls: ["https://www.yelp.com/biz/bean-there", "https://patch.com/california/orange/coffee"] },
@@ -112,7 +112,7 @@ test("cited sites: most cited first, with type, how often, which AI and the own 
   ]);
   await page.reload();
 
-  await expect(page.getByText("Websites AI cited in the last 30 days when answering customer questions in Orange, CA.")).toBeVisible();
+  await expect(page.getByText("Websites AI used in the last 30 days to answer customer questions in Orange, CA.")).toBeVisible();
   await expect(page.getByTestId("own-site")).toContainText("AI cited your website (beantherecoffee.example) in 1 of 5 answers.");
 
   const rows = page.getByTestId("site-row");
@@ -120,7 +120,8 @@ test("cited sites: most cited first, with type, how often, which AI and the own 
   await expect(rows.first()).toContainText("yelp.com");
   await expect(rows.first()).toContainText("Reviews and forums");
   await expect(rows.first().getByTestId("site-count")).toHaveText("3 of 5 answers");
-  await expect(rows.first().getByRole("list", { name: "Cited by" })).toHaveText(/ChatGPT\s*Claude\s*Perplexity/);
+  // Which AI cited a site is left out (2026-10-26): it never changes what the owner does about it.
+  await expect(rows.first()).not.toContainText("ChatGPT");
   await expect(rows.filter({ hasText: "yellowpages.com" })).toContainText("Directories");
   await expect(rows.filter({ hasText: "patch.com" })).toContainText("News");
   await expect(rows.filter({ hasText: "dailygrindcoffee.example" })).toContainText("Business sites");

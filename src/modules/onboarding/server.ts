@@ -14,3 +14,5 @@ export { needsBranch, showClaimStep, type BranchSearch } from "./branch/service"
 export { DUPLICATE_BUSINESS_TEXT, duplicateBusiness } from "./duplicates";
 // A new city, region or country in Settings removes competitors picked for the old place (2026-10-16).
 export { keepCompetitorsNear, savedLocation } from "./competitor-location/dal";
+export { readCompetitorWebsite } from "./competitor-site/dal";
+export type { CompetitorSiteFacts, SiteService } from "./competitor-site/service";

@@ -1,6 +1,7 @@
 import { INDUSTRY_LABELS, isIndustry } from "@/lib/industries";
 import type { ScanFrequency } from "@/modules/credits";
 import type { ModelAppearance, ProviderId } from "@/modules/scanning";
+import type { QuestionSummary } from "@/modules/standing";
 
 // What the Questions page shows (B-53, MVP_SPEC 5.3, 8.1). Pure, so every state is unit tested.
 
@@ -13,10 +14,19 @@ export type QuestionRecord = { id: string; prompt: string; active: boolean; own:
 export type QuestionResult = { model: ProviderId; label: string; appeared: number; checks: number };
 
 /** `custom`: the user's own question, labelled as not counted in the score (BUG-129). */
-export type QuestionRow = { id: string; text: string; active: boolean; custom: boolean; results: QuestionResult[] };
+export type QuestionRow = {
+  id: string;
+  text: string;
+  active: boolean;
+  custom: boolean;
+  results: QuestionResult[];
+  /** Who AI named on this question over 30 days, and the sites it used without you; null before any answer. */
+  summary?: QuestionSummary | null;
+};
 
 export type QuestionsView = {
   businessId: string;
+  businessName: string;
   city: string | null;
   /** The example under "Add your own question": one our own question rules keep (step 6c). */
   example: string;
@@ -42,6 +52,7 @@ export function exampleQuestion(city: string | null, industry: string | null): s
 
 export function questionsView(input: {
   businessId: string;
+  businessName?: string;
   city: string | null;
   industry?: string | null;
   models: ProviderId[];
@@ -49,6 +60,7 @@ export function questionsView(input: {
   questions: QuestionRecord[];
   results: Map<string, ModelAppearance[]>;
   limit: number | null;
+  summaries?: Map<string, QuestionSummary>;
 }): QuestionsView {
   const rows = input.questions.map((q): QuestionRow => {
     const seen = input.results.get(q.id) ?? [];
@@ -57,6 +69,7 @@ export function questionsView(input: {
       text: q.prompt,
       active: q.active,
       custom: q.own,
+      summary: input.summaries?.get(q.id) ?? null,
       results: input.models.map((model) => {
         const r = seen.find((a) => a.model === model);
         return { model, label: MODEL_LABELS[model], appeared: r?.appeared ?? 0, checks: r?.checks ?? 0 };
@@ -65,6 +78,7 @@ export function questionsView(input: {
   });
   return {
     businessId: input.businessId,
+    businessName: input.businessName ?? "",
     city: input.city,
     example: exampleQuestion(input.city, input.industry ?? null),
     models: input.models.map((id) => ({ id, label: MODEL_LABELS[id] })),

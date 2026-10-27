@@ -1,8 +1,10 @@
 "use client";
 
 import { useId, useState } from "react";
+import Link from "next/link";
 import { Check, ChevronDown, RotateCcw, X } from "lucide-react";
 import { cn } from "cn";
+import { fixCardId } from "@/modules/opportunities/where";
 import { GoogleAttribution } from "@/components/onboarding/PlaceBits";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -33,7 +35,12 @@ export function OpportunityCard({
   const finding = (item.evidence ?? item.whyItMatters)?.split("\n")[0] ?? null;
 
   return (
-    <article className="rounded-md border border-border bg-surface" data-testid="opportunity" data-status={item.status}>
+    <article
+      id={fixCardId(item.id)}
+      className="scroll-mt-20 rounded-md border border-border bg-surface lg:scroll-mt-8"
+      data-testid="opportunity"
+      data-status={item.status}
+    >
       <header className="relative flex flex-col items-start gap-2 px-4 py-3.5 sm:flex-row sm:items-center sm:gap-3 sm:px-5">
         {/* A fixed column so every title starts at the same x, whatever the badge says. */}
         <div className="flex shrink-0 sm:w-28">
@@ -53,6 +60,20 @@ export function OpportunityCard({
             </button>
           </h2>
           {finding && !open && <p className="line-clamp-2 text-[13px] text-muted-foreground sm:line-clamp-1">{finding}</p>}
+          {item.about.length > 0 && (
+            // Above the row's open-and-close layer, so each name opens its comparison page.
+            <p className="relative z-10 text-xs text-text-hint" data-testid="fix-about">
+              About{" "}
+              {item.about.map((c, i) => (
+                <span key={c.id}>
+                  {i > 0 && ", "}
+                  <Link href={`/competitors/${c.id}`} className="text-primary hover:underline">
+                    {c.name}
+                  </Link>
+                </span>
+              ))}
+            </p>
+          )}
         </div>
         {item.claudePrompt && (
           <div className="relative z-10">

@@ -1,4 +1,5 @@
 // Pure rules for the Opportunities page (MVP_SPEC 8.1): statuses, order and the shape the screen needs.
+import { competitorsIn, whereOf, type Where } from "./where";
 
 export const STATUSES = ["open", "done", "dismissed"] as const;
 export type Status = (typeof STATUSES)[number];
@@ -28,6 +29,7 @@ export type OpportunityRow = {
   claude_prompt: string | null;
   created_at: string;
   usesGoogle: boolean;
+  category?: string | null;
 };
 
 export type OpportunityItem = {
@@ -40,6 +42,10 @@ export type OpportunityItem = {
   steps: string[];
   claudePrompt: string | null;
   usesGoogle: boolean;
+  /** Where the owner makes this fix (where.ts). */
+  where: Where;
+  /** Tracked competitors the fix is about, to link each to its comparison page. */
+  about: { id: string; name: string }[];
 };
 
 const IMPACT_ORDER: Record<Impact, number> = { high: 0, medium: 1, low: 2 };
@@ -57,8 +63,9 @@ export function splitSteps(text: string | null): string[] {
     .filter(Boolean);
 }
 
-/** Most important first, then newest. */
-export function toItems(rows: OpportunityRow[]): OpportunityItem[] {
+/** Most important first, then newest. `competitors`: tracked ones, to say which a fix is about. */
+export function toItems(rows: OpportunityRow[], competitors: { id: string; name: string }[] = []): OpportunityItem[] {
+  const names = competitors.map((c) => c.name);
   return [...rows]
     .sort(
       (a, b) =>
@@ -74,5 +81,11 @@ export function toItems(rows: OpportunityRow[]): OpportunityItem[] {
       steps: splitSteps(row.recommended_action),
       claudePrompt: clean(row.claude_prompt),
       usesGoogle: row.usesGoogle,
+      where: whereOf({ category: row.category ?? null, claudePrompt: clean(row.claude_prompt), text: textOf(row) }),
+      about: competitorsIn(textOf(row), names).map((name) => competitors.find((c) => c.name === name)!),
     }));
+}
+
+function textOf(row: OpportunityRow): string {
+  return [row.title, row.description, row.evidence, row.recommended_action].filter(Boolean).join("\n");
 }

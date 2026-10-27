@@ -66,3 +66,19 @@ export function sourceType(host: string, ownDomain: string | null): SourceType {
   if (inList(host, NEWS) || NEWS_NAME.test(host.split(".").slice(0, -1).join("."))) return "news";
   return "business";
 }
+
+/** Who owns a cited business website (shared with insights/sites.ts, BUG-100). */
+const compact = (text: string) => text.toLowerCase().normalize("NFKD").replace(/[^a-z0-9]/g, "");
+
+/** The business whose own website this is, when its name matches the domain: abacusplumbing.com is Abacus Plumbing's. */
+export function siteOwner(domain: string, names: string[]): string | null {
+  const label = compact(domain.split(".").slice(0, -1).join(""));
+  if (label.length < 4) return null;
+  for (const name of names) {
+    // "Abacus Plumbing, Air Conditioning & Electrical" starts with abacusplumbing.
+    const want = compact(name);
+    if (want.length < 4) continue;
+    if (label === want || (label.length >= 6 && (want.startsWith(label) || label.startsWith(want)))) return name;
+  }
+  return null;
+}

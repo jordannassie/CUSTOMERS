@@ -65,3 +65,14 @@ export function competitorChartsView(report: ScoreReport, scored: ReadonlySet<st
     byModel: charts.byModel.map((m) => ({ model: MODEL_LABELS[m.model], ...values(m.scores) })),
   };
 }
+
+/** You against one competitor at each scan (the comparison page): the 30-day score as it stood then. */
+export type PairPoint = { label: string; you: number | null; them: number | null };
+
+export function pairTimeline(report: ScoreReport, competitor: string): PairPoint[] {
+  const charts = report.charts;
+  if (!charts) return [];
+  const at = charts.names.indexOf(competitor);
+  if (at < 1) return [];
+  return charts.timeline.map((p) => ({ label: dayLabel(p.date), you: round(p.scores[0]), them: round(p.scores[at]) }));
+}

@@ -93,7 +93,7 @@ describe("overviewView", () => {
       firstResults: true,
       change: null,
     });
-    expect(view.score?.details.numbers).toContainEqual({ label: "Margin of error", value: "Plus or minus 10 points" });
+    expect(view.score?.details.accuracy.margin).toBe("Give or take 10 points");
     expect(view.score?.details.calibration).toBeNull();
   });
 
@@ -112,7 +112,7 @@ describe("overviewView", () => {
       const view = overviewView(report({ questions: twelve }), [], { lastScanFailures: { anthropic: 12 } });
       expect(view.models.find((m) => m.id === "anthropic")).toMatchObject({ score: null, notChecked: true });
       expect(view.score?.coverage).toBe("Based on ChatGPT and Perplexity. Claude couldn't be checked.");
-      expect(view.score?.details.models).toContainEqual({ id: "anthropic", label: "Claude", value: "Couldn't be checked" });
+      expect(view.score?.details.models).toContainEqual({ id: "anthropic", label: "Claude", score: null, value: "Not checked" });
       expect(view.scanNotice).toBe(
         "In the last scan, Claude couldn't be checked. We'll try again in the next scan. Failed checks are never charged.",
       );
@@ -151,7 +151,7 @@ describe("overviewView", () => {
       const view = overviewView(report({ questions: twelve }), [], { lastScanFailures: { anthropic: 12 }, lastScanSkipped: ["anthropic"] });
       expect(view.models.find((m) => m.id === "anthropic")).toMatchObject({ score: null, skipped: true });
       expect(view.score?.coverage).toBe("Based on ChatGPT and Perplexity. Claude was skipped because it's unavailable.");
-      expect(view.score?.details.models).toContainEqual({ id: "anthropic", label: "Claude", value: "Skipped, unavailable" });
+      expect(view.score?.details.models).toContainEqual({ id: "anthropic", label: "Claude", score: null, value: "Skipped" });
       expect(view.scanNotice).toBe("In the last scan, Claude was skipped because it's unavailable. Skipped checks use no credits.");
     });
 
@@ -207,10 +207,8 @@ describe("overviewView", () => {
 
   it("says the score covers suggested questions only (BUG-129)", () => {
     const details = overviewView(report(), []).score!.details;
-    expect(details.intro).toContain("suggested questions");
-    expect(details.sections[0].paragraphs).toContain(
-      "Your score counts the suggested questions you track now. Questions you added yourself, paused questions and removed questions are left out. We still check your own questions and show their results on their own.",
-    );
+    expect(details.steps).toContainEqual({ icon: "questions", title: "Suggested questions only", detail: "Questions you add yourself are tracked on their own." });
+    expect(details.numbers).toContainEqual(expect.objectContaining({ label: "Answers checked", hint: "Answers to suggested questions only." }));
   });
 
   it("has no score before the first scan", () => {

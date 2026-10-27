@@ -1,10 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { ActionResult } from "@/modules/auth";
 import type { OpportunityItem, Status } from "@/modules/opportunities";
+// Plain label files, safe in the browser; the module indexes also export server code.
+import { Globe, Link2, MapPin } from "lucide-react";
+import { byWhere, fixAnchor, fixCardId, type Where } from "@/modules/opportunities/where";
+import { WHERE_TEXT } from "@/modules/standing/where";
 import { OpportunityCard } from "./OpportunityCard";
 
 type SetStatus = (input: { businessId: string; opportunityId: string; status: Status }) => Promise<ActionResult<{ status: Status }>>;
@@ -28,12 +32,23 @@ export function OpportunityList({
   businessId,
   initialItems,
   setStatus,
+  openId = null,
 }: {
   businessId: string;
   initialItems: OpportunityItem[];
   setStatus: SetStatus;
+  /** A fix picked on another page (/opportunities?fix=<id>): it opens instead of the first one, in its own tab. */
+  openId?: string | null;
 }) {
   const [items, setItems] = useState(initialItems);
+  // Read once, from the list the page arrived with, so changing a status later never moves which card is open.
+  const [target] = useState(() => initialItems.find((o) => o.id === openId) ?? null);
+
+  // A picked fix, or a "Fix on ..." group (/opportunities#fix-website), is scrolled into view.
+  useEffect(() => {
+    const id = target ? fixCardId(target.id) : window.location.hash.slice(1);
+    if (target || id.startsWith("fix-")) document.getElementById(id)?.scrollIntoView({ block: "start" });
+  }, [target]);
   const [busyId, setBusyId] = useState<string | null>(null);
 
   async function change(item: OpportunityItem, status: Status) {
@@ -53,7 +68,7 @@ export function OpportunityList({
   }
 
   return (
-    <Tabs defaultValue="open" className="gap-4">
+    <Tabs defaultValue={target?.status ?? "open"} className="gap-4">
       <TabsList className="w-full sm:w-fit">
         {TABS.map((tab) => (
           <TabsTrigger key={tab.status} value={tab.status} className="px-3" data-testid={`tab-${tab.status}`}>
@@ -71,19 +86,46 @@ export function OpportunityList({
                 {tab.empty}
               </p>
             ) : (
-              shown.map((item, i) => (
-                <OpportunityCard
-                  key={item.id}
-                  item={item}
-                  busy={busyId === item.id}
-                  onStatus={(s) => change(item, s)}
-                  defaultOpen={i === 0}
-                />
+              byWhere(shown).map((group, g) => (
+                // scroll-mt leaves room above the group when a "Fix on ..." link opens it, under the phone's top bar too.
+                <section
+                  key={group.where}
+                  id={tab.status === "open" ? fixAnchor(group.where) : undefined}
+                  className="flex scroll-mt-20 flex-col gap-3 lg:scroll-mt-8"
+                  data-testid={`group-${group.where}`}
+                >
+                  <header className={g === 0 ? "flex items-center gap-2" : "mt-3 flex items-center gap-2"}>
+                    <GroupIcon where={group.where} />
+                    <h2 className="text-sm font-semibold">{WHERE_TEXT[group.where]}</h2>
+                    <span className="rounded-xs bg-muted px-1.5 text-xs tabular-nums text-muted-foreground">{group.items.length}</span>
+                  </header>
+                  {group.items.map((item, i) => (
+                    <OpportunityCard
+                      key={item.id}
+                      item={item}
+                      busy={busyId === item.id}
+                      onStatus={(s) => change(item, s)}
+                      // The picked fix opens on its own; otherwise the first card of the first group, as before.
+                      defaultOpen={target && target.status === tab.status ? item.id === target.id : g === 0 && i === 0}
+                    />
+                  ))}
+                </section>
               ))
             )}
           </TabsContent>
         );
       })}
     </Tabs>
+  );
+}
+
+const GROUP_ICON: Record<Where, typeof Globe> = { website: Globe, google_listing: MapPin, other_places: Link2 };
+
+function GroupIcon({ where }: { where: Where }) {
+  const Icon = GROUP_ICON[where];
+  return (
+    <span className="flex size-6 items-center justify-center rounded-md bg-primary-tint text-primary" aria-hidden="true">
+      <Icon className="size-3.5" />
+    </span>
   );
 }

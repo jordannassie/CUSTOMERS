@@ -9,6 +9,8 @@ export type WeeklyBusiness = {
   score: number | null;
   /** "AI recommended you in about 6 of 10 customer questions this month." */
   sentence: string | null;
+  /** "A likely reason Bean House is ahead of you: ...", from saved answers; null when there is none. */
+  reason?: string | null;
   /** Only changes bigger than the margin of error, e.g. "Up 8 points on last week". */
   change: { direction: "up" | "down"; text: string } | null;
   /** Things to fix found in the last 7 days, most important first. */
@@ -43,6 +45,7 @@ function BusinessBlock({ business }: { business: WeeklyBusiness }) {
             <span style={{ color: colors.textSecondary, fontSize: "14px", fontWeight: 400 }}> out of 100</span>
           </Text>
           {business.sentence ? <Text style={{ ...small, color: colors.text }}>{business.sentence}</Text> : null}
+          {business.reason ? <Text style={{ ...small, color: colors.text }}>{business.reason}</Text> : null}
           <Text style={{ ...small, color: change ? colors.text : colors.textSecondary, fontWeight: change ? 600 : 400 }}>
             {change ? change.text : "No real change on last week."}
           </Text>

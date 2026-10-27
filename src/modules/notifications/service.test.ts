@@ -59,6 +59,7 @@ describe("weeklyBusiness", () => {
       name: "Bean There Coffee",
       score: 64,
       sentence: "AI recommended you in about 6 of 10 customer questions this month.",
+      reason: null,
       change: { direction: "up", text: "Up 8 points on last week" },
       newOpportunities: ["High newer", "High older", "Medium"],
       moreOpportunities: 1,
@@ -69,6 +70,10 @@ describe("weeklyBusiness", () => {
 
   it("has no change when the Overview has none, and nothing to report without a score", () => {
     const steady = weeklyBusiness({ name: "A", overview: score(null), newOpportunities: [], reportPath: "/r/a" });
+    // The likely reason goes out only with a score, so an unscored business never gets one.
+    const reason = "A likely reason Bean House is ahead of you: AI used yelp.com in 9 answers that named Bean House and not you.";
+    expect(weeklyBusiness({ name: "A", overview: score(null), newOpportunities: [], reportPath: "/r/a", reason }).reason).toBe(reason);
+    expect(weeklyBusiness({ name: "B", overview: null, newOpportunities: [], reportPath: "/dashboard", reason }).reason).toBeNull();
     const unscored = weeklyBusiness({ name: "B", overview: null, newOpportunities: [], reportPath: "/dashboard" });
     expect(steady.change).toBeNull();
     expect(unscored).toMatchObject({ score: null, sentence: null, change: null });

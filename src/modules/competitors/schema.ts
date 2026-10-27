@@ -18,3 +18,10 @@ export const competitorWebsiteInput = z.object({
   competitorId: z.uuid(),
   website: z.string().trim().max(200),
 });
+
+// "Check their website" (B-91): the domain is checked again on the server against the typed or cited ones.
+export const checkWebsiteInput = z.object({
+  businessId: z.string().uuid(),
+  competitorId: z.string().uuid(),
+  domain: z.string().trim().min(4).max(253),
+});

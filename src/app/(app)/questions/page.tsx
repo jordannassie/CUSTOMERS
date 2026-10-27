@@ -45,8 +45,7 @@ export default async function QuestionsPage() {
           }
           description={
             <>
-              The customer questions we ask {asked} for you on every scan. Each bar shows the last checks from the past 30
-              days, filled in where AI recommended you.
+              The questions we ask {asked} for you on every scan. Filled bars are checks where AI recommended you.
             </>
           }
         />

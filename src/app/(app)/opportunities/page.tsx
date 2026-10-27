@@ -1,11 +1,13 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { PageContainer } from "@/components/app/PageContainer";
+import { CompetitorWebsites } from "@/components/opportunities/CompetitorWebsites";
 import { GetFoundChecklist } from "@/components/opportunities/GetFoundChecklist";
 import { OpportunityList } from "@/components/opportunities/OpportunityList";
 import { PickBranch } from "@/components/opportunities/PickBranch";
 import { WaitForFixes } from "@/components/opportunities/WaitForFixes";
 import { Button } from "@/components/ui/button";
+import { getWebsiteChecks } from "@/modules/competitors";
 import { checkFixes, getFixesState } from "@/modules/insights";
 import { pickBranch, searchBranches } from "@/modules/onboarding";
 import { getOpportunitiesPage, setChecklistItem, setOpportunityStatus } from "@/modules/opportunities";
@@ -15,12 +17,17 @@ import { PageHeader } from "@/components/app/PageHeader";
 export const metadata = { title: "Opportunities", robots: { index: false } };
 
 // B-52, MVP_SPEC 8.1: every fix step, most important first, with status and a "Copy for Claude" prompt.
-export default async function OpportunitiesPage() {
+// A fix id from another page's link (?fix=); anything else is ignored.
+const FIX_ID = /^[0-9a-f-]{36}$/i;
+
+export default async function OpportunitiesPage({ searchParams }: { searchParams: Promise<{ fix?: string }> }) {
+  const fix = (await searchParams).fix;
+  const openId = fix && FIX_ID.test(fix) ? fix : null;
   const workspace = await getWorkspace({ next: "/opportunities" });
   const business = workspace.businesses.find((b) => b.id === workspace.activeBusinessId);
   if (!business || business.status === "onboarding") redirect("/dashboard");
 
-  const [view, fixes] = await Promise.all([getOpportunitiesPage(business.id), getFixesState(business.id)]);
+  const [view, fixes, websites] = await Promise.all([getOpportunitiesPage(business.id), getFixesState(business.id), getWebsiteChecks(business.id)]);
   if (!view || !fixes) notFound();
   const toDo = view.items.filter((o) => o.status === "open").length;
 
@@ -85,8 +92,16 @@ export default async function OpportunitiesPage() {
             </section>
           )
         ) : (
-          <OpportunityList key={`list-${business.id}`} businessId={business.id} initialItems={view.items} setStatus={setOpportunityStatus} />
+          <OpportunityList
+            key={`list-${business.id}-${openId ?? ""}`}
+            businessId={business.id}
+            initialItems={view.items}
+            setStatus={setOpportunityStatus}
+            openId={openId}
+          />
         )}
+
+        <CompetitorWebsites competitors={websites} />
       </div>
     </PageContainer>
   );

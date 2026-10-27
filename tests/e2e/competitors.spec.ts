@@ -138,6 +138,12 @@ test("a tracked branch that answers never name shows as its chain (BUG-132)", as
   const board = page.getByTestId("leaderboard");
   await expect(board.getByRole("listitem").first()).toContainText("Bean House (all locations)");
   await expect(board.getByTestId("chain-note")).toHaveText("You track Bean House on Congress");
+  // The chain row opens its "See why" panel too, under the chain's name.
+  await board.getByTestId("see-why").first().click();
+  const sheet = page.getByTestId("why-sheet");
+  await expect(sheet.getByRole("heading", { name: "Bean House (all locations)" })).toBeVisible();
+  await expect(sheet.getByTestId("why-chain-note")).toContainText("You track Bean House on Congress");
+  await expect(sheet.getByTestId("why-versus")).toContainText("Bean House");
 });
 
 test("leaderboard, Google side by side, and tracking a business AI keeps naming", async ({ page }) => {
@@ -157,7 +163,7 @@ test("leaderboard, Google side by side, and tracking a business AI keeps naming"
   });
 
   const board = page.getByTestId("leaderboard");
-  await expect(board.getByRole("listitem")).toHaveText([/Bean House\s*80\s*You're behind/, /Sunrise Coffee Bar \(you\)\s*20/, /The Daily Grind\s*20\s*About the same/]);
+  await expect(board.getByRole("listitem")).toHaveText([/Bean House\s*(See why)?\s*80\s*You're behind/, /Sunrise Coffee Bar \(you\)\s*20/, /The Daily Grind\s*(See why)?\s*20\s*About the same/]);
   await expect(page.getByTestId("tracked-count")).toHaveText("2 of 5 tracked");
 
   await expect(page.getByTestId("signals-highlight")).toHaveText(
@@ -170,7 +176,7 @@ test("leaderboard, Google side by side, and tracking a business AI keeps naming"
   await page.getByRole("button", { name: "Track Blue Door Coffee" }).click();
   await expect(page.getByText("Blue Door Coffee added to your competitors")).toBeVisible(ACTION);
   // Saved answers are checked for it at once (BUG-122): 9 of the 15 answers named it.
-  await expect(board.getByRole("listitem").filter({ hasText: "Blue Door Coffee" })).toHaveText(/Blue Door Coffee\s*60/, ACTION);
+  await expect(board.getByRole("listitem").filter({ hasText: "Blue Door Coffee" })).toHaveText(/Blue Door Coffee\s*(See why)?\s*60/, ACTION);
   await expect(also.getByRole("listitem")).toHaveText([/Kiln Coffee Co/]);
   await expect(page.getByTestId("tracked-count")).toHaveText("3 of 5 tracked");
 
@@ -209,11 +215,13 @@ test("a competitor added partway through the 30 days is still collecting, with n
   // Blue Door was only looked for in the second scan, so 3 of 10 answers, not 3 of 5.
   const board = page.getByTestId("leaderboard");
   await expect(board.getByRole("listitem")).toHaveText([
-    /Bean House\s*80\s*You're behind/,
+    /Bean House\s*(See why)?\s*80\s*You're behind/,
     /Sunrise Coffee Bar \(you\)\s*20/,
     /Blue Door Coffee\s*30\s*New, still collecting/,
   ]);
   await expect(board.getByTestId("standing")).toHaveCount(1);
+  // "See why" only for a competitor compared over the whole window.
+  await expect(board.getByTestId("see-why")).toHaveCount(1);
   await expect(page.getByTestId("collecting-note")).toBeVisible();
 });
 

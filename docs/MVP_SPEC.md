@@ -352,7 +352,7 @@ Based on research into how AEO tools and independent studies measure AI visibili
 | Google rating, review count, categories, website, hours | Google Places (business and each competitor), fetched live when a page or report is shown; only `place_id` is stored (D-73) | Live |
 | Who AI named instead of the business | Scan answers, including businesses not on the competitor list | Every scan |
 | Sources AI cited | Citations from Perplexity and web-search answers | Every scan |
-| Website facts (services pages, contact info, structured data) | Firecrawl (business only, not competitors, to save cost) | At onboarding and monthly |
+| Website facts (services pages, contact info, structured data) | Firecrawl: the business's own site; a competitor's own site only when the owner asks ("Check their website", D-85) | Business: at onboarding and monthly. Competitor: on request, once per site and kept, shared |
 
 Google attribution is shown wherever Places data appears (section 26).
 
@@ -606,6 +606,9 @@ ai_answer_cache
 
 business_site_facts            -- Firecrawl facts about the business's own site only
   business_id, data jsonb, fetched_at
+
+website_facts                  -- a website read on request, once and kept, shared by every business (D-85)
+  domain, data jsonb, fetched_at
 
 competitors (existing business_competitors, add)
   places_id   -- the only Google Places value we store (D-73)

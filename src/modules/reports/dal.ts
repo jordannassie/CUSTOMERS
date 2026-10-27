@@ -5,7 +5,7 @@ import { providerErrorKind } from "@/lib/provider-error-kind";
 import { env } from "@/lib/env";
 import { createServiceClient } from "@/lib/supabase/service";
 import { requireAgency } from "@/modules/auth";
-import { fetchPlaceSignals, loadCompetitorsPage } from "@/modules/competitors";
+import { fetchPlaceSignals, loadCompetitorsPage, loadPicked, whySentence } from "@/modules/competitors";
 import { loadOverview } from "@/modules/overview";
 import { SCORE_WINDOW_DAYS } from "@/modules/scanning";
 import { isShareToken, logoType, newShareToken, reportView, sharePath, storagePath, type ReportView } from "./service";
@@ -185,9 +185,11 @@ export async function getSharedReport(token: string): Promise<ReportView | null>
   const shared = await sharedBusiness(token);
   if (!shared) return null;
   const now = new Date();
-  const [overview, competitors] = await Promise.all([
+  const [overview, competitors, picked] = await Promise.all([
     loadOverview(shared.agencyId, shared.businessId, now),
     loadCompetitorsPage(shared.agencyId, shared.businessId, now, fetchPlaceSignals),
+    // Saved answers only: the same likely reason the Overview shows (no Google values in the summary, D-73).
+    loadPicked(shared.agencyId, shared.businessId, now),
   ]);
   if (!overview || !competitors) return null;
   return reportView({
@@ -197,6 +199,7 @@ export async function getSharedReport(token: string): Promise<ReportView | null>
     windowDays: SCORE_WINDOW_DAYS,
     overview,
     competitors,
+    reason: picked && typeof picked === "object" ? whySentence(picked.why) : null,
   });
 }
 

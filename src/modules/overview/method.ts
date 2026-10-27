@@ -16,80 +16,77 @@ export const CALIBRATION: Calibration | null = null;
 export type MethodInput = {
   windowDays: number;
   label: string;
+  /** The confidence level behind `label` (D-64): under 50 different answers early, 50 to 200 good, over 200 high. */
+  confidence: "early" | "good" | "high";
   margin: number;
   checks: number;
   uniqueAnswers: number;
   models: { id: ProviderId; label: string; score: number | null; margin: number | null; notChecked?: boolean; skipped?: boolean }[];
 };
 
+export type MethodStep = { icon: "ask" | "search" | "count" | "questions"; title: string; detail: string };
+
 export type MethodPanel = {
   title: string;
   intro: string;
-  numbers: { label: string; value: string; hint?: string }[];
-  models: { id: ProviderId; label: string; value: string }[];
+  /** Per AI: the score, or why there is none. */
+  models: { id: ProviderId; label: string; score: number | null; value: string }[];
   modelsNote: string;
-  sections: { heading: string; paragraphs: string[] }[];
+  numbers: { label: string; value: string; hint?: string }[];
+  steps: MethodStep[];
+  /** How sure the score is (D-64), said as how it improves rather than as a warning. */
+  accuracy: { level: MethodInput["confidence"]; label: string; margin: string; note: string };
   calibration: { heading: string; paragraphs: string[]; agreement: { label: string; value: string }[] } | null;
 };
 
 const count = (n: number) => n.toLocaleString("en-US");
 const points = (n: number) => `${n} ${n === 1 ? "point" : "points"}`;
+// The confidence bands (D-64): different answers needed for each level.
+const GOOD_FROM = 50;
+const HIGH_FROM = 201;
 
 /** "ChatGPT, Claude and Perplexity". */
 export function listNames(names: string[]): string {
   return names.length < 2 ? (names[0] ?? "") : `${names.slice(0, -1).join(", ")} and ${names.at(-1)}`;
 }
 
+function accuracyNote(confidence: MethodInput["confidence"], unique: number): string {
+  if (confidence === "high") return `Based on ${count(unique)} different answers.`;
+  const next = confidence === "early" ? { at: GOOD_FROM, label: "good" } : { at: HIGH_FROM, label: "high" };
+  const more = Math.max(1, next.at - unique);
+  return `Gets sharper with every scan: ${count(more)} more different ${more === 1 ? "answer" : "answers"} for ${next.label} confidence.`;
+}
+
 export function methodPanel(input: MethodInput, calibration: Calibration | null): MethodPanel {
   const aiNames = listNames(input.models.map((m) => m.label));
   return {
     title: "How your score is calculated",
-    intro: `Your score is how often AI recommended you when we asked the suggested questions on your Questions page, over the last ${input.windowDays} days.`,
-    numbers: [
-      { label: "Time covered", value: `Last ${input.windowDays} days` },
-      { label: "Answers checked", value: count(input.checks), hint: "Answers to suggested questions only." },
-      {
-        label: "Different answers",
-        value: count(input.uniqueAnswers),
-        hint: "An answer we reused for more than one business counts once here.",
-      },
-      { label: "Margin of error", value: `Plus or minus ${points(input.margin)}` },
-      { label: "Confidence", value: input.label },
-    ],
+    intro: `How often AI recommended you over the last ${input.windowDays} days.`,
     models: input.models.map((m) => ({
       id: m.id,
       label: m.label,
-      value:
-        m.score !== null
-          ? `${m.score}, plus or minus ${points(m.margin ?? 0)}`
-          : m.skipped
-            ? "Skipped, unavailable"
-            : m.notChecked
-              ? "Couldn't be checked"
-              : "No checks yet",
+      score: m.score,
+      value: m.score !== null ? String(m.score) : m.skipped ? "Skipped" : m.notChecked ? "Not checked" : "No checks yet",
     })),
-    modelsNote: "Your overall score is the average of these, each counted equally.",
-    sections: [
-      {
-        heading: "How we check",
-        paragraphs: [
-          `We ask ${aiNames} the questions on your Questions page, the same way a customer would.`,
-          // BUG-129: questions the user writes could raise the score at will, so only suggested ones count.
-          "Your score counts the suggested questions you track now. Questions you added yourself, paused questions and removed questions are left out. We still check your own questions and show their results on their own.",
-          "Each AI searches the web for its answer, and we tell it your city so it answers like it would for someone near you.",
-          "We count an answer when it names your business. Where you appear in a list does not change your score.",
-          "We use each AI's direct connection for software (its API), not the chat apps. Answers in the apps can be a little different.",
-        ],
-      },
-      {
-        heading: "Why there is a margin of error",
-        paragraphs: [
-          "AI gives slightly different answers each time it is asked, so every score is an estimate. The more different answers we have, the smaller the margin.",
-          "We only show an arrow up or down, or say a competitor is ahead of you, when the change is bigger than the margin.",
-          "Early estimate means fewer than 50 different answers. Good confidence means 50 to 200. High confidence means more than 200.",
-        ],
-      },
+    modelsNote: "Your score is the average of these.",
+    numbers: [
+      { label: "Time covered", value: `Last ${input.windowDays} days` },
+      { label: "Answers checked", value: count(input.checks), hint: "Answers to suggested questions only." },
+      { label: "Different answers", value: count(input.uniqueAnswers) },
     ],
+    steps: [
+      { icon: "ask", title: "We ask your customer questions", detail: `${aiNames}, the same way a customer would.` },
+      { icon: "search", title: "Each AI searches the web from your city", detail: "So it answers like it would for someone near you." },
+      { icon: "count", title: "We count every answer that names you", detail: "Where you appear in a list doesn't change your score." },
+      // BUG-129: questions the user writes could raise the score at will, so only suggested ones count.
+      { icon: "questions", title: "Suggested questions only", detail: "Questions you add yourself are tracked on their own." },
+    ],
+    accuracy: {
+      level: input.confidence,
+      label: input.label,
+      margin: `Give or take ${points(input.margin)}`,
+      note: accuracyNote(input.confidence, input.uniqueAnswers),
+    },
     calibration: calibration && calibrationSection(calibration, input.models),
   };
 }

@@ -3,3 +3,4 @@ export { setChecklistItem, setOpportunityStatus } from "./actions";
 export { getOpportunitiesPage, type OpportunitiesPage } from "./dal";
 export type { ChecklistItem, ChecklistKey } from "./checklist";
 export type { Impact, OpportunityItem, Status } from "./service";
+export { WHERE_ORDER, type Where } from "./where";

@@ -26,6 +26,24 @@ describe("latestAnswers", () => {
     expect(answers[1].competitors).toEqual(["Pure Plumbing & Air"]);
   });
 
+  it("lists the other businesses it named and the websites it used, each once", () => {
+    const [a] = latestAnswers(
+      [
+        {
+          ...row("openai", "2026-10-09T09:00:00Z", false, "Answer.", [{ name: "Bean Tires", position: 1 }]),
+          extracted_names: { names: [{ name: "Bean Tires", matches: "competitor" }, { name: "Discount Tire", matches: null }, { name: "Joe's", matches: "business" }] },
+          cited_sources: [{ url: "https://www.yelp.com/biz/a", title: null }, { url: "https://yelp.com/b" }, { url: "javascript:alert(1)" }, { url: "https://bbb.org/x" }],
+        },
+      ],
+      ["openai"],
+    );
+    expect(a.others).toEqual(["Discount Tire"]);
+    expect(a.sites).toEqual([
+      { host: "yelp.com", url: "https://www.yelp.com/biz/a" },
+      { host: "bbb.org", url: "https://bbb.org/x" },
+    ]);
+  });
+
   it("marks an answer served from the answer cache as reused (2026-10-16)", () => {
     const answers = latestAnswers(
       [{ ...row("openai", "2026-10-09T09:00:00Z", false, "Cached."), cached: true }, row("perplexity", "2026-10-09T09:00:00Z", true, "Asked again.")],

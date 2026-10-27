@@ -154,10 +154,14 @@ test("first scan: score, early label, first results note, no arrow", async ({ pa
   const panel = page.getByRole("dialog", { name: "How your score is calculated" });
   await expect(panel).toContainText("Last 30 days");
   await expect(panel).toContainText("36");
-  await expect(panel).toContainText(/ChatGPT\s*75, plus or minus \d+ points/);
+  await expect(panel).toContainText(/ChatGPT\s*75/);
   await expect(panel.getByRole("heading", { name: "How we check" })).toBeVisible();
   // BUG-129: the score covers suggested questions only.
   await expect(panel).toContainText("Answers to suggested questions only.");
+  await expect(panel).toContainText("Suggested questions only");
+  // D-64: how sure the score is, said as how it improves.
+  await expect(panel.getByTestId("score-accuracy")).toContainText(/Early estimate\s*Give or take \d+ points/);
+  await expect(panel.getByTestId("score-accuracy")).toContainText("Gets sharper with every scan");
   await expect(panel.getByRole("heading", { name: "Tested against the real apps" })).toHaveCount(0);
   // No questions of the user's own, so no line about them.
   await expect(page.getByTestId("own-questions")).toHaveCount(0);
