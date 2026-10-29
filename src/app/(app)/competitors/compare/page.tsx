@@ -50,8 +50,8 @@ export default async function ComparePage({ searchParams }: { searchParams: Prom
   const page = await getComparePage(business.id, competitorId);
   if (!page) redirect("/competitors");
   const data = page.selected;
-  // Google is asked about the two of you only after "Show Google details" (?google=1), once for the summary and the
-  // Google tab together (2026-10-27).
+  // Google is asked about the two of you only after "Show Google details" (?google=1), on the Google tab: its table and
+  // the Google reasons with their fixes (2026-10-27; no longer repeated on the Summary tab).
   const signals = data && params.google === "1" ? data.loadSignals() : null;
   const askGoogle = (t: string) => `${compareHref(data?.panel.competitorId, t)}&google=1`;
   // Once their website is checked, the button opens it; before, it goes to the Website tab to check it.
@@ -132,23 +132,6 @@ export default async function ComparePage({ searchParams }: { searchParams: Prom
                         answers={data.panel.why.answers}
                         standing={data.collecting ? null : data.standing}
                       />
-                      {signals ? (
-                        <Suspense fallback={<Skeleton className="h-28 w-full" />}>
-                          {/* One listing's Google values: the tracked branch's name, never "(all locations)". */}
-                          <GoogleReasons
-                            name={data.branch}
-                            competitorId={data.panel.competitorId}
-                            businessId={business.id}
-                            signals={signals}
-                            states={googleStates}
-                            add={addToActions}
-                            move={moveActionTo}
-                            fixes={data.panel.fixRefs}
-                          />
-                        </Suspense>
-                      ) : (
-                        <ShowGoogle href={askGoogle("summary")} text="Google reasons too: reviews, rating, opening days and category, live from Google." />
-                      )}
                     </section>
                     {/* When you lead, where you are ahead comes first. */}
                     <section className={cn("flex flex-col gap-3", data.standing === "ahead" && "order-first")}>
@@ -164,11 +147,30 @@ export default async function ComparePage({ searchParams }: { searchParams: Prom
                   <WebsitesTab panel={data.panel} businessId={business.id} actions={{ check: checkCompetitorWebsite, save: saveCompetitorWebsite }} />
                 ),
                 google: (
-                  <div className="max-w-xl" data-testid="tab-google">
+                  <div data-testid="tab-google">
                     {signals ? (
-                      <Suspense fallback={<Skeleton className="h-40 w-full" />}>
-                        <GoogleTable name={data.branch} competitorId={data.panel.competitorId} signals={signals} />
-                      </Suspense>
+                      <div className="flex flex-col gap-6">
+                        {/* The table stays narrow so the two columns sit close; the fix cards below use the full width. */}
+                        <div className="max-w-xl">
+                          <Suspense fallback={<Skeleton className="h-40 w-full" />}>
+                            <GoogleTable name={data.branch} competitorId={data.panel.competitorId} signals={signals} />
+                          </Suspense>
+                        </div>
+                        {/* Where they beat you on Google, each with its fix: only here, not again on the Summary tab. */}
+                        <Suspense fallback={null}>
+                          {/* One listing's Google values: the tracked branch's name, never "(all locations)". */}
+                          <GoogleReasons
+                            name={data.branch}
+                            competitorId={data.panel.competitorId}
+                            businessId={business.id}
+                            signals={signals}
+                            states={googleStates}
+                            add={addToActions}
+                            move={moveActionTo}
+                            fixes={data.panel.fixRefs}
+                          />
+                        </Suspense>
+                      </div>
                     ) : (
                       <ShowGoogle href={askGoogle("google")} text="Your Google listing next to theirs: reviews, rating, opening days and category, live from Google." />
                     )}

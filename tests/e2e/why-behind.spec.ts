@@ -296,12 +296,17 @@ test("Competitors names the leader's top reason, and Compare shows every fact wi
   await expect(yelp.getByTestId("fix-action")).toContainText("Claim or update your listing on yelp.com");
   await expect(yelp.getByTestId("fix-where")).toHaveText("Where: yelp.com");
   await expect(reasons.filter({ hasText: "AI quotes their website more" })).toHaveCount(1);
-  // Google reasons wait for "Show Google details" (2026-10-27): Google is asked only on request, for this view.
+  // Google lives on the Google tab only (2026-10-29): nothing about Google on this one.
   await expect(reasons.filter({ hasText: "More Google reviews" })).toHaveCount(0);
-  await compare.getByTestId("tab-summary").getByTestId("show-google-button").click();
+  await expect(compare.getByTestId("tab-summary").getByTestId("show-google")).toHaveCount(0);
+  await shot(page, info, "compare-summary");
+  // Google reasons wait for "Show Google details" (2026-10-27): Google is asked only on request, for this view.
+  await compare.getByTestId("compare-tab-google").click();
+  await compare.getByTestId("tab-google").getByTestId("show-google-button").click();
   await page.waitForURL((url) => url.searchParams.get("google") === "1");
   // They show Google's live values (D-73), and what Add to Actions saves leaves them out.
-  const reviews = reasons.filter({ hasText: "More Google reviews" });
+  const googleReasons = compare.getByTestId("tab-google").getByTestId("reason-card");
+  const reviews = googleReasons.filter({ hasText: "More Google reviews" });
   await expect(reviews).toContainText("320", { timeout: 60_000 });
   await expect(reviews.getByTestId("reason-basis")).toHaveText("Based on Google's listing");
   // The reviews reason has a scan fix already ("Ask your customers for Google reviews"): it moves that fix, no copy.
@@ -312,12 +317,12 @@ test("Competitors names the leader's top reason, and Compare shows every fact wi
   expect(moved.data!.status).toBe("todo");
   expect((await db.from("opportunities").select("id").eq("business_id", businessId).eq("dedupe_key", "google:reviews")).data).toEqual([]);
   // A Google reason with no saved fix adds one, and what it saves leaves Google's values out.
-  const hours = reasons.filter({ hasText: "Open more days on Google" });
+  const hours = googleReasons.filter({ hasText: "Open more days on Google" });
   await hours.getByTestId("add-to-actions").click();
   await expect(hours.getByTestId("in-actions")).toHaveText("In Actions · To do");
   const saved = await db.from("opportunities").select("evidence, recommended_action").eq("business_id", businessId).eq("dedupe_key", "google:hours").single().throwOnError();
   expect(`${saved.data!.evidence} ${saved.data!.recommended_action}`).not.toMatch(/\b[67]\b|320|4\.7/);
-  await shot(page, info, "compare-summary");
+  await shot(page, info, "compare-google");
 
   // Questions: each question, how many answers named each of you, and who won it.
   await compare.getByTestId("compare-tab-questions").click();
@@ -671,28 +676,29 @@ test("Why you were skipped adds a site's fix that isn't in Actions yet, then ope
   await shot(page, info, "actions-picked-from-questions");
 });
 
-// "Show Google details" always answers on the Summary tab: the button goes, so an empty space read as nothing happening.
-test("Show Google details on Compare says when they are not ahead on Google, and when Google can't be compared", async ({ page }) => {
+// Google is compared on the Google tab only (2026-10-29); the table says when Google can't be compared.
+test("Show Google details on Compare lives on the Google tab: the table, and a message when Google can't be compared", async ({ page }) => {
   const businessId = await seed(page, "/competitors");
   const grind = await competitorId(businessId, "The Daily Grind");
   // Your listing has more reviews than The Daily Grind's, with the same rating and opening days (place-fixtures.ts).
   await db.from("businesses").update({ places_id: "ChIJ-fixture-blue-door" }).eq("id", businessId).throwOnError();
   await page.goto(`/competitors/compare?with=${grind}`);
-  const summary = page.getByTestId("tab-summary");
-  await summary.getByTestId("show-google-button").click();
+  await expect(page.getByTestId("tab-summary").getByTestId("show-google")).toHaveCount(0);
+  await page.getByTestId("compare-tab-google").click();
+  const tab = page.getByTestId("tab-google");
+  await tab.getByTestId("show-google-button").click();
   await page.waitForURL((url) => url.searchParams.get("google") === "1");
-  const none = summary.getByTestId("google-reasons-none");
-  await expect(none).toContainText("The Daily Grind isn't ahead of you on Google.", { timeout: 60_000 });
-  await expect(none).toContainText("You have more Google reviews: 402 vs their 211.");
-  await expect(none.getByTestId("google-attribution")).toBeVisible();
-  await expect(summary.getByTestId("show-google-button")).toHaveCount(0);
+  await expect(tab.getByTestId("why-google")).toContainText(/Reviews\s*211\s*402/, { timeout: 60_000 });
+  // They are not ahead on any Google line, so no Google reasons under the table.
+  await expect(tab.getByTestId("google-reasons")).toHaveCount(0);
+  await expect(tab.getByTestId("show-google-button")).toHaveCount(0);
 
   // With no Google listing linked for you, it says so instead of showing nothing.
   await db.from("businesses").update({ places_id: null }).eq("id", businessId).throwOnError();
-  await page.goto(`/competitors/compare?with=${grind}`);
-  await summary.getByTestId("show-google-button").click();
+  await page.goto(`/competitors/compare?with=${grind}&tab=google`);
+  await tab.getByTestId("show-google-button").click();
   await page.waitForURL((url) => url.searchParams.get("google") === "1");
-  await expect(summary.getByTestId("google-reasons-unavailable")).toHaveText(
+  await expect(tab.getByTestId("google-unavailable")).toContainText(
     "Google details aren't available for both of you. A business needs a Google listing linked.",
     { timeout: 60_000 },
   );
