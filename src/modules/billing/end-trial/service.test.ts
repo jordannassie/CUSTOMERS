@@ -114,17 +114,89 @@ describe("start my plan now", () => {
     expect(offer.lines.at(-1)).toBe("Changes you scheduled for the end of your trial happen today.");
 
     await endTrialNow(s.ctx, ATTEMPT, s.deps);
+    // The removal's own schedule edit, then the schedule is released untouched and one update does the rest (BUG-282).
     expect(s.stripe.calls.map((c) => c.method).filter((m) => m.startsWith("update") || m.startsWith("release"))).toEqual([
-      "updateSchedule",
       "updateSchedule",
       "releaseSchedule",
       "updateSubscription",
     ]);
+    expect(updates(s)[0].params).toEqual({
+      items: [{ id: `si_${B}`, deleted: true }],
+      proration_behavior: "none",
+      trial_end: "now",
+      payment_behavior: "error_if_incomplete",
+    });
     expect(s.stripe.schedule?.status).toBe("released");
     expect(planOf(s.stripe, A)).toBe("cd_plan_starter");
     expect(planOf(s.stripe, B)).toBeUndefined();
     expect(s.stripe.subscription().status).toBe("active");
     expect(s.stripe.invoices.map((i) => i.amount_paid)).toEqual([14900]);
+  });
+
+  it("with a removal scheduled, a declined card changes nothing and the removal is scheduled again (BUG-282)", async () => {
+    const s = trial();
+    await s.change({ kind: "remove", businessId: B });
+    const itemsBefore = s.stripe.subscription().items.data.map((i) => i.id);
+    const alerts: string[] = [];
+    s.stripe.declineNextCharge = true;
+
+    await expect(endTrialNow(s.ctx, ATTEMPT, { ...s.deps, onScheduleLost: async (m) => void alerts.push(m) })).rejects.toMatchObject({
+      type: "StripeCardError",
+      statusCode: 402,
+    });
+
+    const sub = s.stripe.subscription();
+    expect(sub.status).toBe("trialing");
+    expect(sub.items.data.map((i) => i.id)).toEqual(itemsBefore);
+    expect([planOf(s.stripe, A), planOf(s.stripe, B)]).toEqual(["cd_plan_starter", "cd_plan_starter"]);
+    expect(s.stripe.invoices).toEqual([]);
+    // A new schedule, with B still leaving at the trial end and the trial kept on the current phase.
+    expect(s.stripe.schedule?.status).toBe("active");
+    expect(sub.schedule).toBe(s.stripe.schedule!.id);
+    expect(s.stripe.schedule!.phases.map((p) => p.items.map((i) => i.metadata.business_id))).toEqual([[A, B], [A]]);
+    const restore = s.stripe.calls.find((c) => c.key === `end-trial:agency-1:${ATTEMPT}:restore:schedule`);
+    expect(restore?.params).toMatchObject({ end_behavior: "release", phases: [{ trial_end: sub.trial_end }, {}] });
+    expect(alerts).toEqual([]);
+
+    // A new try with a good card then starts the plan with the removal.
+    await endTrialNow(s.ctx, RETRY, s.deps);
+    expect(planOf(s.stripe, B)).toBeUndefined();
+    expect(s.stripe.invoices.map((i) => i.amount_paid)).toEqual([14900]);
+  });
+
+  it("after another Stripe error, schedules the removal again only if the trial is still running", async () => {
+    const failed = trial();
+    await failed.change({ kind: "remove", businessId: B });
+    vi.spyOn(failed.stripe, "updateSubscription").mockRejectedValue(Object.assign(new Error("timeout"), { type: "StripeConnectionError" }));
+    await expect(endTrialNow(failed.ctx, ATTEMPT, failed.deps)).rejects.toMatchObject({ type: "StripeConnectionError" });
+    expect(failed.stripe.schedule?.status).toBe("active");
+
+    // The update went through on Stripe, but the answer was lost: the removal already happened, so nothing goes back.
+    const applied = trial();
+    await applied.change({ kind: "remove", businessId: B });
+    const real = applied.stripe.updateSubscription.bind(applied.stripe);
+    applied.stripe.updateSubscription = async (id, params, key) => {
+      await real(id, params, key);
+      throw Object.assign(new Error("timeout"), { type: "StripeConnectionError" });
+    };
+    await expect(endTrialNow(applied.ctx, ATTEMPT, applied.deps)).rejects.toMatchObject({ type: "StripeConnectionError" });
+    expect(applied.stripe.schedule?.status).toBe("released");
+    expect(planOf(applied.stripe, B)).toBeUndefined();
+  });
+
+  it("raises an admin alert when the removal can't be scheduled again after a decline", async () => {
+    const s = trial();
+    await s.change({ kind: "remove", businessId: B });
+    s.stripe.declineNextCharge = true;
+    s.stripe.createScheduleFromSubscription = async () => {
+      throw new Error("Stripe down");
+    };
+    const alerts: string[] = [];
+    const deps = { ...s.deps, onScheduleLost: async (m: string) => void alerts.push(m) };
+    await expect(endTrialNow(s.ctx, ATTEMPT, deps)).rejects.toMatchObject({ statusCode: 402 });
+    expect(alerts).toHaveLength(1);
+    expect(alerts[0]).toContain(`only these businesses stay on the plan: ${A}`);
+    expect(planOf(s.stripe, B)).toBe("cd_plan_starter");
   });
 });
 

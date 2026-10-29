@@ -1,9 +1,17 @@
 import type { NextConfig } from "next";
+// First: fills the site URLs from Netlify's build variables when unset, and fails a live build without one (BUG-283).
+import { BUILD_URLS } from "./src/lib/build-urls";
 // Validates environment variables at build time; a missing required one stops the build.
 import { env } from "./src/lib/env";
 import { securityHeaders } from "./src/lib/security-headers";
 
 const supabaseUrl = new URL(env.NEXT_PUBLIC_SUPABASE_URL);
+
+// A production build with no address would send people to a wrong one, or none, from links in emails, login and
+// Stripe pages (BUG-283), so it stops here. On Netlify BUILD_URLS has already filled it from the site URL.
+if (env.NODE_ENV === "production" && !env.NEXT_PUBLIC_APP_URL && !env.NEXT_PUBLIC_SITE_URL) {
+  throw new Error("NEXT_PUBLIC_SITE_URL is not set. A production build needs the site's address; on Netlify it comes from the site URL.");
+}
 
 // Products cut from the MVP (D-04). /ads is the AI video ads sales page and is not in this list.
 const CUT_PAGES = [
@@ -19,6 +27,9 @@ const CUT_PAGES = [
 
 const nextConfig: NextConfig = {
   cacheComponents: true,
+  // Inlined as process.env.NEXT_PUBLIC_SITE_URL / _APP_URL in server, edge and browser code alike, so the values
+  // filled in above reach env.ts everywhere. Unset keys are left out, and Next then inlines nothing for them.
+  env: BUILD_URLS,
   // Dev logs are kept by every worker session, so nothing secret goes in them (BUG-I).
   logging: {
     // Server Function arguments include passwords (change email, change password).

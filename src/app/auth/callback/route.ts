@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { NextResponse, type NextRequest } from "next/server";
 import type { EmailOtpType } from "@supabase/supabase-js";
 import { z } from "zod";
+import { appUrl } from "@/lib/app-url";
 import { env } from "@/lib/env";
 import { safeNextPath } from "@/lib/safe-next";
 import { callbackFailurePath, callbackFlow, type CallbackStage } from "@/modules/auth";
@@ -25,12 +26,9 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const code = searchParams.get("code");
 
-  // On Netlify the internal request.url host ≠ the public-facing domain.
-  const forwardedHost  = request.headers.get("x-forwarded-host");
-  const forwardedProto = request.headers.get("x-forwarded-proto") ?? "https";
-  const baseUrl =
-    env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ??
-    (forwardedHost ? `${forwardedProto}://${forwardedHost}` : new URL(request.url).origin);
+  // The configured address: on Netlify the internal request.url host is not the public one, and a forwarded host
+  // header can be changed by whoever sends the request (BUG-283).
+  const baseUrl = appUrl();
 
   // Signup confirmation, password reset and email change links come here too. Each failure gets its own wording, so
   // none of them says "Google sign-in failed", and a cancelled Google sign-in says so (callbackFlow).

@@ -5,13 +5,13 @@ import { createHash } from "node:crypto";
 import type { Json } from "@/types/database.types";
 import { cacheKey, checkWithCache, recordCheckUsage, type CheckAnswer } from "./cache";
 import { outageReason, type OutageReason } from "./claude-outage/outage";
-import { readStoredExtraction, toStoredExtraction, type ExtractNames, type StoredExtraction } from "./extract";
+import { readStoredExtraction, toStoredExtraction, type Extraction, type ExtractNames, type StoredExtraction } from "./extract";
 import { matchNames } from "./extract-match";
 import { storeExtraction } from "./extract-store";
 import { mergeMentions } from "./mention-merge";
 import { detectMentions, type MentionTarget } from "./mentions";
 import { CHECK_MODELS } from "./providers/models";
-import { ProviderError, retriedInside } from "./providers/request";
+import { ProviderError, retriedInside, type ProviderErrorKind } from "./providers/request";
 import type { CheckInput, CheckLocation, ProviderId, RunCheck } from "./providers/types";
 import { insertExtractionUsage, recordProviderError, saveCheckResult } from "./runs/dal";
 
@@ -33,8 +33,11 @@ export type CheckContext = {
 /**
  * `cached`: the answer came from the shared answer cache, so the check is free (D-24, 2026-10-20).
  * `outage`: Claude failed for a reason every other Claude check would share (a rejected key, no credit).
+ * `kind`: how the provider call failed, when it was a provider error (a server error, a timeout).
  */
-export type CheckOutcome = { ok: true; cached: boolean } | { ok: false; error: string; reason: string; outage?: OutageReason };
+export type CheckOutcome =
+  | { ok: true; cached: boolean }
+  | { ok: false; error: string; reason: string; outage?: OutageReason; kind?: ProviderErrorKind };
 
 /** Same job, question and model always give the same id, so a retried job can never charge a check twice. */
 export function checkIdFor(jobId: string, promptId: string, provider: ProviderId): string {
@@ -49,20 +52,23 @@ export async function runOneCheck(task: CheckTask, ctx: CheckContext): Promise<C
   }
   const input: CheckInput = { question: task.question, location: ctx.location, model: CHECK_MODELS[task.provider] };
 
+  // Only the provider call can fail the check as an AI failure: the answer cache already turns its own database
+  // errors into a miss or an uncached answer (cache.ts), so a database error is never logged as the AI's (BUG-281).
   let answer: CheckAnswer;
   try {
     answer = await answerWithOneRetry(input, ctx);
-    if (!ctx.isTest) {
-      await recordCheckUsage({ accountUserId: ctx.ownerUserId, businessId: ctx.businessId, input, answer });
-    }
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     // Recorded answers are not provider calls, so test agencies never count toward the error spike alert (B-69).
     if (!ctx.isTest) await recordProviderError(task.provider, message);
     // A failed check is never charged (D-53), whatever the reason.
     const outage = outageReason(err);
-    return { ok: false, error: `${task.provider}: ${message}`, reason: message, ...(outage ? { outage } : {}) };
+    const kind = err instanceof ProviderError ? err.kind : undefined;
+    return { ok: false, error: `${task.provider}: ${message}`, reason: message, ...(outage ? { outage } : {}), ...(kind ? { kind } : {}) };
   }
+  // Outside the try: a database error here throws out of the scan like saveCheckResult's, and the worker runs the job
+  // again. The answer is normally cached by then, so the retry asks no model.
+  if (!ctx.isTest) await recordCheckUsage({ accountUserId: ctx.ownerUserId, businessId: ctx.businessId, input, answer });
 
   const extraction = await namesFor(input, answer, ctx);
   const matched = extraction ? matchNames(extraction.names, ctx.business, ctx.competitors) : null;
@@ -115,26 +121,34 @@ async function recordedAnswer(input: CheckInput, runner: RunCheck): Promise<Chec
 async function namesFor(input: CheckInput, answer: CheckAnswer, ctx: CheckContext): Promise<StoredExtraction | null> {
   const stored = readStoredExtraction(answer.extractedNames);
   if (stored || !ctx.extractNames) return stored;
+  let extraction: Extraction;
   try {
-    const extraction = await ctx.extractNames(answer.answerText);
-    if (!ctx.isTest) {
-      // Onto the answer it came from only: a newer answer under the same key keeps its own names (or none yet).
-      if (answer.cachedAt) await storeExtraction(cacheKey(input), answer.cachedAt, extraction);
-      await insertExtractionUsage({
-        accountUserId: ctx.ownerUserId,
-        businessId: ctx.businessId,
-        model: extraction.model,
-        inputTokens: extraction.usage.inputTokens,
-        outputTokens: extraction.usage.outputTokens,
-        costUsd: extraction.costUsd,
-        provider: extraction.provider,
-        fellBack: extraction.fellBack,
-        primaryError: extraction.primaryError,
-      });
-    }
-    return toStoredExtraction(extraction);
+    extraction = await ctx.extractNames(answer.answerText);
   } catch {
     // Both Claude and the ChatGPT backup failed; the AI reporter already logged why to provider_errors (D-84).
     return null;
   }
+  if (!ctx.isTest) {
+    // Onto the answer it came from only: a newer answer under the same key keeps its own names (or none yet).
+    // A database error keeps the names for this check; the next check on this answer extracts them again.
+    if (answer.cachedAt) {
+      await storeExtraction(cacheKey(input), answer.cachedAt, extraction).catch((err) =>
+        console.error(`check ${ctx.runId}: could not save the names on the cached answer: ${errorText(err)}`),
+      );
+    }
+    await insertExtractionUsage({
+      accountUserId: ctx.ownerUserId,
+      businessId: ctx.businessId,
+      model: extraction.model,
+      inputTokens: extraction.usage.inputTokens,
+      outputTokens: extraction.usage.outputTokens,
+      costUsd: extraction.costUsd,
+      provider: extraction.provider,
+      fellBack: extraction.fellBack,
+      primaryError: extraction.primaryError,
+    }).catch((err) => console.error(`check ${ctx.runId}: could not record the name extraction cost: ${errorText(err)}`));
+  }
+  return toStoredExtraction(extraction);
 }
+
+const errorText = (err: unknown) => (err instanceof Error ? err.message : String(err));

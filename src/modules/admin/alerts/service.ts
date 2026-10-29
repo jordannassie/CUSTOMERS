@@ -26,7 +26,8 @@ export function alertWording(alert: Pick<OpenAlert, "kind" | "message" | "lastSe
   return { message: stale ? alert.message.replace(/\bin the last hour\b/g, "in one hour") : alert.message, stale };
 }
 
-// Raised by scans when Anthropic rejects the key or the account has no credit (modules/scanning/claude-outage).
+// Raised by scans when Anthropic rejects the key, the account has no credit, or every Claude check in a scan failed
+// with server errors or timeouts (modules/scanning/claude-outage).
 export const CLAUDE_UNAVAILABLE = "claude_unavailable";
 const ANTHROPIC_ONLY_ERRORS = /^Errors in the (last|one) hour from Anthropic \(\d+\)\.$/;
 

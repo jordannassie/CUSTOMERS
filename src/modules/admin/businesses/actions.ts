@@ -2,7 +2,7 @@
 
 import { refresh } from "next/cache";
 import { authFailure, requireAdmin, type ActionResult } from "@/modules/auth";
-import { logAdminAction } from "../dal";
+import { auditedChange, changed, unchanged } from "../dal";
 import { enqueueScan } from "./dal";
 import { restoreDeletedBusiness, type RestoreRefusal } from "./restore/dal";
 import { restoreBusinessInput, runScanInput } from "./schema";
@@ -21,7 +21,7 @@ const REFUSED = {
   },
 } as const;
 
-/** "Run scan now" for support: queues a high-priority job and records who asked. */
+/** "Run scan now" for support: queues a high-priority job, with who asked written down first (BUG-278). */
 export async function runScanNow(input: unknown): Promise<ActionResult<{ jobId: string }>> {
   try {
     await requireAdmin();
@@ -32,12 +32,23 @@ export async function runScanNow(input: unknown): Promise<ActionResult<{ jobId: 
   const parsed = runScanInput.safeParse(input);
   if (!parsed.success) return { ok: false, status: 400, error: "Pick a business from the list." };
 
-  const result = await enqueueScan(parsed.data.businessId);
-  if (!result.ok) return { ok: false, ...REFUSED[result.reason] };
-
-  await logAdminAction("business.run_scan", { type: "business", id: parsed.data.businessId }, { job_id: result.jobId });
-  refresh();
-  return { ok: true, data: { jobId: result.jobId } };
+  const { businessId } = parsed.data;
+  try {
+    const result = await auditedChange<ActionResult<{ jobId: string }>>(
+      "business.run_scan",
+      { type: "business", id: businessId },
+      {},
+      async () => {
+        const queued = await enqueueScan(businessId);
+        if (!queued.ok) return unchanged({ ok: false, ...REFUSED[queued.reason] }, queued.reason);
+        return changed({ ok: true, data: { jobId: queued.jobId } }, { job_id: queued.jobId });
+      },
+    );
+    if (result.ok) refresh();
+    return result;
+  } catch (error) {
+    return authFailure(error);
+  }
 }
 
 const NOT_RESTORED: Record<RestoreRefusal, { status: number; error: string }> = {
@@ -58,12 +69,21 @@ export async function restoreBusiness(input: unknown): Promise<ActionResult<null
   const parsed = restoreBusinessInput.safeParse(input);
   if (!parsed.success) return { ok: false, status: 400, error: "Give a reason of at least 3 characters." };
 
-  const result = await restoreDeletedBusiness(parsed.data.businessId);
-  if (!result.ok) return { ok: false, ...NOT_RESTORED[result.reason] };
-  await logAdminAction("business.restore", { type: "business", id: parsed.data.businessId }, {
-    reason: parsed.data.reason,
-    deleted_at: result.deletedAt,
-  });
-  refresh();
-  return { ok: true, data: null };
+  const { businessId, reason } = parsed.data;
+  try {
+    const result = await auditedChange<ActionResult<null>>(
+      "business.restore",
+      { type: "business", id: businessId },
+      { reason },
+      async () => {
+        const restored = await restoreDeletedBusiness(businessId);
+        if (!restored.ok) return unchanged({ ok: false, ...NOT_RESTORED[restored.reason] }, restored.reason);
+        return changed({ ok: true, data: null }, { deleted_at: restored.deletedAt });
+      },
+    );
+    if (result.ok) refresh();
+    return result;
+  } catch (error) {
+    return authFailure(error);
+  }
 }

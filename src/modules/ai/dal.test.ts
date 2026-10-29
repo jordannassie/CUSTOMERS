@@ -34,7 +34,7 @@ function memoryOutage(initial: ClaudeOutageRow | null = null) {
   let open = initial;
   const hooks = {
     read: vi.fn(async () => open),
-    mark: vi.fn(async (reason: "auth" | "credit") => {
+    mark: vi.fn(async (reason: NonNullable<ClaudeOutageRow["reason"]>) => {
       open = { since: new Date(), lastSeenAt: new Date(), reason };
     }),
     clear: vi.fn(async () => {

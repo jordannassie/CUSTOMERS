@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { logAdminAction } from "@/modules/admin";
-import { authErrorResponse, requireAdmin } from "@/modules/auth";
+import { auditedChange, changed, unchanged } from "@/modules/admin";
+import { AuthError, authErrorResponse, requireAdmin } from "@/modules/auth";
 import { countUnreadLeads, leadsQuery, leadUpdateInput, listLeads, updateLead } from "@/modules/feedback";
 
 // GET /api/internal/admin/leads?page&search&interest&source&status&unread=1&count=1
@@ -22,6 +22,8 @@ export async function GET(req: NextRequest) {
   return NextResponse.json(page);
 }
 
+type LeadUpdate = Awaited<ReturnType<typeof updateLead>>;
+
 // PATCH /api/internal/admin/leads with { id, status?, mark_read?, mark_unread? }
 export async function PATCH(req: NextRequest) {
   try {
@@ -34,12 +36,25 @@ export async function PATCH(req: NextRequest) {
   if (!parsed.success) return NextResponse.json({ error: "id required." }, { status: 400 });
   const { id, status, mark_read: markRead, mark_unread: markUnread } = parsed.data;
 
-  const result = await updateLead(id, { status, markRead, markUnread });
-  if (!result.ok) {
-    return result.reason === "nothing"
-      ? NextResponse.json({ error: "Nothing to update." }, { status: 400 })
-      : NextResponse.json({ error: "Update failed." }, { status: 500 });
+  // Checked here too, so a request with nothing to change writes no history row.
+  if (!status && !markRead && !markUnread) return NextResponse.json({ error: "Nothing to update." }, { status: 400 });
+
+  try {
+    // The history row is written before the change (BUG-278); it ends with the fields that were saved.
+    const requested = { ...(status && { status }), ...(markRead && { mark_read: true }), ...(markUnread && { mark_unread: true }) };
+    const result = await auditedChange<LeadUpdate>("lead.update", { type: "lead", id }, requested, async () => {
+      const updated = await updateLead(id, { status, markRead, markUnread });
+      return updated.ok ? changed(updated, updated.updates) : unchanged(updated, updated.reason);
+    });
+    if (!result.ok) {
+      return result.reason === "nothing"
+        ? NextResponse.json({ error: "Nothing to update." }, { status: 400 })
+        : NextResponse.json({ error: "Update failed." }, { status: 500 });
+    }
+  } catch (error) {
+    if (error instanceof AuthError) return authErrorResponse(error);
+    console.error("[admin/leads] audited update failed:", error instanceof Error ? error.message : error);
+    return NextResponse.json({ error: "Update failed." }, { status: 500 });
   }
-  await logAdminAction("lead.update", { type: "lead", id }, result.updates);
   return NextResponse.json({ success: true });
 }

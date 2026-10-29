@@ -55,6 +55,8 @@ beforeAll(async () => {
   });
   const { error } = await current.auth.signInWithPassword({ email: adminEmail, password });
   if (error) throw error;
+  // A signed-in admin with a confirmed email (createUser confirms it), as requireAdmin() asks.
+  adminEnv.emails = adminEmail;
 
   agencyId = (
     await must(
@@ -194,8 +196,10 @@ describe("admin businesses (B-66)", () => {
     expect(await loadBusinessDetail(randomUUID())).toBeNull();
   });
 
-  it("refuses a non-admin and queues nothing", async () => {
+  it("refuses a non-admin the list, the detail and a scan, and queues nothing (BUG-286)", async () => {
     adminEnv.emails = "someone-else@example.test";
+    await expect(listBusinesses({ search: ownerEmail })).rejects.toMatchObject({ reason: "forbidden", status: 403 });
+    await expect(loadBusinessDetail(businessId)).rejects.toMatchObject({ reason: "forbidden", status: 403 });
     expect(await runScanNow({ businessId })).toMatchObject({ ok: false, status: 403 });
     const { count } = await service
       .from("scan_jobs")
@@ -216,9 +220,9 @@ describe("admin businesses (B-66)", () => {
     expect(job).toEqual({ status: "queued", priority: 101, agency_id: agencyId });
 
     const log = await must(
-      service.from("admin_audit_log").select("action, target_type, details").eq("target_id", businessId),
+      service.from("admin_audit_log").select("action, target_type, details, outcome").eq("target_id", businessId),
     );
-    expect(log).toEqual([{ action: "business.run_scan", target_type: "business", details: { job_id: jobId } }]);
+    expect(log).toEqual([{ action: "business.run_scan", target_type: "business", details: { job_id: jobId }, outcome: "done" }]);
 
     expect(await runScanNow({ businessId })).toMatchObject({ ok: false, status: 409 });
     const { count } = await service

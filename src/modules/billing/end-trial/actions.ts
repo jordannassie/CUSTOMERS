@@ -3,7 +3,7 @@
 import { authFailure, requireAgency, type ActionResult } from "@/modules/auth";
 import { canAddBusiness } from "@/modules/entitlements";
 import { billingAccess } from "../account/access";
-import { loadPlanChangeData } from "../plan-change/dal";
+import { loadPlanChangeData, raiseScheduleLost } from "../plan-change/dal";
 import { PlanChangeError } from "../plan-change/planner";
 import { startPlanNowInput } from "./schema";
 import { DECLINED, endTrialNow, type PlanNowDone } from "./service";
@@ -47,7 +47,7 @@ export async function startPlanNow(input: unknown): Promise<ActionResult<PlanNow
     const data = await loadPlanChangeData(agency);
     const access = await billingAccess(data);
     if (!access) return unavailable;
-    const deps = { stripe: access.stripe, plansByProduct: data.plansByProduct, now: () => new Date(), sync: access.sync };
+    const deps = { stripe: access.stripe, plansByProduct: data.plansByProduct, now: () => new Date(), sync: access.sync, onScheduleLost: raiseScheduleLost };
     return { ok: true, data: await endTrialNow(access.context, parsed.data.attemptId, deps) };
   } catch (error) {
     if (error instanceof PlanChangeError) return { ok: false, status: error.status, error: error.message };

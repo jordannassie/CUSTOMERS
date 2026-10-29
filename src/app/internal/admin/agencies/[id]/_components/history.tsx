@@ -15,6 +15,12 @@ const ACTIONS: Record<string, string> = {
   "stripe.topup_refund": "Top-up refunded in Stripe",
 };
 
+// Shown next to an admin action that did not end as done (BUG-278).
+const OUTCOME_NOTES: Record<string, string> = {
+  started: "Result not confirmed",
+  failed: "Did not go through",
+};
+
 const KINDS: Record<string, string> = {
   grant: "Credits granted",
   expire: "Credits expired",
@@ -112,7 +118,10 @@ export function AuditLog({ rows }: { rows: AdminAgencyDetail["audit"] }) {
         <ul className="divide-y divide-border rounded-md border border-border bg-surface text-[13px]">
           {rows.map((a) => (
             <li key={a.id} className="flex flex-col gap-0.5 px-4 py-3">
-              <span className="font-medium">{ACTIONS[a.action] ?? a.action}</span>
+              <span className="flex flex-wrap items-baseline gap-x-2">
+                <span className="font-medium">{ACTIONS[a.action] ?? a.action}</span>
+                {OUTCOME_NOTES[a.outcome] && <span className="text-text-hint">{OUTCOME_NOTES[a.outcome]}</span>}
+              </span>
               {a.reason && <span className="break-words text-muted-foreground">{a.reason}</span>}
               <span className="text-text-hint">
                 {a.by ?? (a.action.startsWith("stripe.") ? "Stripe" : "Unknown admin")}, {formatDate(a.createdAt, true)}

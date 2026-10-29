@@ -1,8 +1,7 @@
 "use server";
 
 import { refresh } from "next/cache";
-import { headers } from "next/headers";
-import { env } from "@/lib/env";
+import { appUrl } from "@/lib/app-url";
 import { OTHER_LABEL_HINT } from "@/lib/other-label";
 import { authFailure, getCurrentAgency, type ActionResult } from "@/modules/auth";
 import { addBusinessAtSetup } from "@/modules/billing";
@@ -174,7 +173,8 @@ export async function startCardStep(input: unknown): Promise<ActionResult<{ clie
   if (!("id" in user)) return user;
   const parsed = businessOnly.safeParse(input);
   if (!parsed.success) return notFound;
-  const returnUrl = `${await appOrigin()}${stepPath("card")}?session_id={CHECKOUT_SESSION_ID}`;
+  // The configured address, never the request's host (BUG-283).
+  const returnUrl = `${appUrl()}${stepPath("card")}?session_id={CHECKOUT_SESSION_ID}`;
   const result = await startCardCheckout(user, parsed.data.businessId, returnUrl);
   return result.ok ? { ok: true, data: { clientSecret: result.clientSecret } } : result;
 }
@@ -195,12 +195,4 @@ export async function checkTrialCredits(): Promise<ActionResult<{ waiting: boole
   const user = await userId();
   if (typeof user !== "string") return user;
   return { ok: true, data: { waiting: await awaitingTrialCredits(user) } };
-}
-
-async function appOrigin(): Promise<string> {
-  if (env.NEXT_PUBLIC_APP_URL) return env.NEXT_PUBLIC_APP_URL.replace(/\/$/, "");
-  const h = await headers();
-  const host = h.get("x-forwarded-host") ?? h.get("host");
-  const proto = h.get("x-forwarded-proto") ?? (host?.startsWith("localhost") ? "http" : "https");
-  return `${proto}://${host}`;
 }

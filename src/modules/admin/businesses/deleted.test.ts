@@ -54,6 +54,8 @@ beforeAll(async () => {
   });
   const { error } = await current.auth.signInWithPassword({ email: adminEmail, password });
   if (error) throw error;
+  // A signed-in admin with a confirmed email (createUser confirms it), as requireAdmin() asks.
+  adminEnv.emails = adminEmail;
   agencyId = (
     await must(
       service.from("agencies").insert({ owner_user_id: ownerId, name: "Admin delete test agency", is_test: true }).select("id").single(),
@@ -130,5 +132,12 @@ describe("admin businesses: deleted ones", () => {
       .select("id", { count: "exact", head: true })
       .in("business_id", [deletedId, liveId]);
     expect(count).toBe(0);
+  });
+
+  it("refuses a non-admin the list and the detail (BUG-286)", async () => {
+    adminEnv.emails = "someone-else@example.test";
+    await expect(listBusinesses({ search: ownerEmail })).rejects.toMatchObject({ reason: "forbidden", status: 403 });
+    await expect(loadBusinessDetail(businessId)).rejects.toMatchObject({ reason: "forbidden", status: 403 });
+    adminEnv.emails = adminEmail;
   });
 });

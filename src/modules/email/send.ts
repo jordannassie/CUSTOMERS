@@ -2,7 +2,7 @@ import "server-only";
 import type { ReactElement } from "react";
 import { createEmailStore, getEmailSettings, type EmailSettings, type EmailStore } from "./dal";
 import { renderEmail } from "./render";
-import { getEmailClient, type EmailClient } from "./resend";
+import { EmailProviderError, getEmailClient, type EmailClient } from "./resend";
 import { UNSUBSCRIBE_TOPICS, type EmailType, type UnsubscribeTopic } from "./schema";
 import { signUnsubscribeToken, unsubscribeUrl } from "./service";
 
@@ -76,6 +76,14 @@ export async function sendEmail(input: SendEmailInput, deps: Partial<SendEmailDe
       { idempotencyKey: input.idempotencyKey },
     ));
   } catch (error) {
+    // Resend keeps a key for 24 hours (409). Used before with another body: that email went out, but our sent row
+    // was not saved, so it is saved now. Still in flight: the other request sends it and logs it.
+    const code = error instanceof EmailProviderError ? error.code : null;
+    if (code === "invalid_idempotent_request") {
+      await store.record({ ...log, status: "sent", error: "already sent under this key (Resend 409)" });
+      return { status: "skipped", reason: "duplicate" };
+    }
+    if (code === "concurrent_idempotent_requests") return { status: "skipped", reason: "duplicate" };
     const message = error instanceof Error ? error.message : String(error);
     await store.record({ ...log, status: "failed", error: message });
     return { status: "failed", error: message };

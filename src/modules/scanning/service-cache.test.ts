@@ -10,6 +10,7 @@ import {
   deleteScanUsers,
   extractNames,
   failingRunner,
+  memoryOutage,
   newJob,
   service,
 } from "./service.test-helpers";
@@ -36,7 +37,7 @@ function runners(overrides: Partial<Record<ProviderId, RunCheck>> = {}) {
     perplexity: answeringRunner("perplexity"),
     ...overrides,
   };
-  return { all, checkRunner: (p: ProviderId) => all[p] };
+  return { all, checkRunner: (p: ProviderId) => all[p], claudeOutage: memoryOutage().store };
 }
 
 async function results(runId: string) {
@@ -80,7 +81,7 @@ describe("runScan with cached answers", () => {
     const other = await createScanAgency();
     const second = await createScanBusiness(other, first.city);
     const live = runners();
-    const outcome = await runScan(await newJob(second), { checkRunner: live.checkRunner, extractNames });
+    const outcome = await runScan(await newJob(second), { checkRunner: live.checkRunner, claudeOutage: live.claudeOutage, extractNames });
 
     expect(outcome).toMatchObject({ status: "done", checks: 36, failed: 0, charged: 12, released: 24 });
     expect(live.all.anthropic).toHaveBeenCalledTimes(12);

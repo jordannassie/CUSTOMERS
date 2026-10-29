@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/browser";
-import { env } from "@/lib/env";
+import { appUrl } from "@/lib/app-url";
 import { safeNextPath } from "@/lib/safe-next";
 import { loginNotice } from "@/modules/auth/callback";
 import { AuthAlert, AuthCard, AuthField, AuthLogo, authLinkClass } from "./auth-bits";
@@ -84,12 +84,9 @@ export default function AuthForm({ defaultMode = "login", errorParam = "", notic
     setLoading("google");
     const supabase = createClient();
     const next = nextFromUrl();
-    // Always use the canonical production URL so the OAuth redirect URI
-    // matches what is registered in Google Cloud Console / Supabase,
-    // and so the PKCE code-verifier cookie is on the correct domain.
-    const siteBase =
-      env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ??
-      window.location.origin;
+    // The configured address, so the OAuth redirect URI matches what is registered in Google Cloud Console and
+    // Supabase, and the PKCE code-verifier cookie is on the right domain. The page's own address only in development.
+    const siteBase = appUrl();
     const callbackUrl = `${siteBase}/auth/callback?next=${encodeURIComponent(next)}`;
     const { error: oauthError } = await supabase.auth.signInWithOAuth({
       provider: "google",
@@ -116,9 +113,7 @@ export default function AuthForm({ defaultMode = "login", errorParam = "", notic
     const supabase = createClient();
 
     if (isSignup) {
-      const siteBase =
-        env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ??
-        window.location.origin;
+      const siteBase = appUrl();
       const { data, error: signupError } = await supabase.auth.signUp({
         email,
         password,

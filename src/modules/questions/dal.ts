@@ -10,8 +10,12 @@ import { questionSummaries, loadStanding } from "@/modules/standing";
 import { focusMatches } from "./focus";
 import { readFocusAnswers } from "./focus-answers/dal";
 import { questionHistory, TREND_LOOKBACK_DAYS } from "./history";
+import { addUnderLimit, resumeUnderLimit } from "./limit/dal";
 import { placeOf, readHistory, readLastScan } from "./reads/dal";
+import { duplicate, notFound, type ChangeFailure, type ChangeResult } from "./results";
 import { editMakesNewQuestion, questionsView, sameQuestion, tidyQuestion, type QuestionsView } from "./service";
+
+export type { ChangeResult } from "./results";
 
 /** From the page's link: only the questions whose answers used this site, or named this business and not you. */
 export type QuestionsFocus = { site?: string | null; named?: string | null; ai?: string | null };
@@ -91,12 +95,6 @@ export async function loadQuestionsPage(agencyId: string, businessId: string, no
   });
 }
 
-type ChangeFailure = { ok: false; status: 400 | 403 | 404; error: string };
-export type ChangeResult = { ok: true } | ChangeFailure;
-
-const notFound: ChangeFailure = { ok: false, status: 404, error: "We could not find that question. Refresh the page and try again." };
-const duplicate: ChangeFailure = { ok: false, status: 400, error: "You already track this question." };
-
 // The writes below take the agency from the action's auth guard and check the business is the agency's. Users can't
 // write tracked_prompts themselves (migration 047, SEC-10), so the writes use the service role, scoped to the business.
 async function ownedQuestions(agencyId: string, businessId: string) {
@@ -118,21 +116,13 @@ async function ownedQuestions(agencyId: string, businessId: string) {
   return { supabase, questions };
 }
 
-async function roomForOneMore(businessId: string): Promise<ChangeResult | null> {
-  const limit = await maxQuestions(businessId);
-  return limit.allowed ? null : { ok: false, status: 403, error: limit.reason };
-}
-
 export async function insertQuestion(agencyId: string, businessId: string, text: string): Promise<ChangeResult> {
   const owned = await ownedQuestions(agencyId, businessId);
   if (!owned) return notFound;
   const prompt = tidyQuestion(text);
+  // The quick first pass; the locked write in SQL catches a second click with the same text (BUG-279).
   if (owned.questions.some((q) => sameQuestion(q.prompt, prompt))) return duplicate;
-  const full = await roomForOneMore(businessId);
-  if (full) return full;
-  const { error } = await createServiceClient().from("tracked_prompts").insert({ business_id: businessId, prompt, source: "custom", active: true });
-  if (error) throw new Error(`Questions: could not add the question: ${error.message}`);
-  return { ok: true };
+  return addUnderLimit(agencyId, businessId, prompt);
 }
 
 export type EditResult = { ok: true; newQuestion: boolean } | ChangeFailure;
@@ -201,12 +191,10 @@ export async function updateQuestionActive(agencyId: string, businessId: string,
   const question = owned?.questions.find((q) => q.id === questionId);
   if (!owned || !question) return notFound;
   if (question.active === active) return { ok: true };
-  if (active) {
-    const full = await roomForOneMore(businessId);
-    if (full) return full;
-  }
+  // Resuming counts against the plan, under the business lock (BUG-279). Pausing never does.
+  if (active) return resumeUnderLimit(agencyId, businessId, questionId);
   const { error } = await createServiceClient().from("tracked_prompts").update({ active }).eq("id", questionId).eq("business_id", businessId);
-  if (error) throw new Error(`Questions: could not ${active ? "resume" : "pause"} the question: ${error.message}`);
+  if (error) throw new Error(`Questions: could not pause the question: ${error.message}`);
   return { ok: true };
 }
 

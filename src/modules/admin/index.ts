@@ -1,5 +1,5 @@
 // The only file other modules may import from (eslint-plugin-boundaries).
-export { logAdminAction } from "./dal";
+export { auditedChange, changed, PartialChangeError, unchanged, type AuditedResult } from "./dal";
 export type { AdminActionDetails, AdminTarget } from "./schema";
 export { ADMIN_PAGE_SIZE, pageParam, searchParam } from "./schema";
 export { listBusinesses, type AdminBusinessList, type AdminBusinessRow } from "./businesses/list/dal";

@@ -48,7 +48,10 @@ export type CheckAnswer = {
   /** Null on a cache hit, since no call was made. */
   usage: CheckUsage | null;
   latencyMs: number;
-  /** The cached row's created_at, so extracted names go onto this answer and not a newer one; unset when not cached. */
+  /**
+   * The cached row's created_at, so extracted names go onto this answer and not a newer one; unset when not cached
+   * (a test agency's recorded answer, or a cache write that failed).
+   */
   cachedAt?: string;
 };
 
@@ -68,9 +71,16 @@ export async function readCachedAnswer(input: CheckInput): Promise<CheckAnswer |
   };
 }
 
-/** Returns the cached answer when one is younger than CACHE_TTL_MS, else calls the model and caches its answer. */
+/**
+ * Returns the cached answer when one is younger than CACHE_TTL_MS, else calls the model and caches its answer. The
+ * cache only saves calls: a failed read asks the model, and a failed write still returns the answer, uncached. Only
+ * the model call can throw, so a database error is never taken for the AI's (BUG-281).
+ */
 export async function checkWithCache(input: CheckInput, run: RunCheck): Promise<CheckAnswer> {
-  const hit = await readCachedAnswer(input);
+  const hit = await readCachedAnswer(input).catch((err) => {
+    console.error(`answer cache: could not read it, asking the model: ${errorText(err)}`);
+    return null;
+  });
   if (hit) return hit;
 
   const result = await run(input);
@@ -82,6 +92,9 @@ export async function checkWithCache(input: CheckInput, run: RunCheck): Promise<
     answer: result.answerText,
     citations: result.citations,
     costUsd: result.costUsd,
+  }).catch((err) => {
+    console.error(`answer cache: could not save the answer, using it uncached: ${errorText(err)}`);
+    return undefined;
   });
   return {
     answerText: result.answerText,
@@ -95,6 +108,8 @@ export async function checkWithCache(input: CheckInput, run: RunCheck): Promise<
     cachedAt,
   };
 }
+
+const errorText = (err: unknown) => (err instanceof Error ? err.message : String(err));
 
 function providerOf(model: CheckInput["model"]): ProviderId {
   const entry = Object.entries(CHECK_MODELS).find(([, pinned]) => pinned === model);

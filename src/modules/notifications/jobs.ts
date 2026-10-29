@@ -5,15 +5,26 @@ import { findEmailKeyStates, recordUnsentEmail, sendEmail, type SendEmailInput, 
 import {
   isEmailJobSecret,
   listLowCreditAgencies,
+  listSentLowCredits,
   listWeeklyReportAgencies,
   ownerEmail,
   ownerOf,
   weeklyBusinesses,
   type ReportAgency,
+  type SentLowCredits,
 } from "./dal";
 import { lowCreditsEmail, weeklyReportEmail } from "./emails";
 import { emailJobInput, type EmailJob } from "./schema";
-import { hasSomethingToReport, lowCreditsKey, OutOfTime, weeklyReportKey, type LowCreditAgency, type ReportedBusiness } from "./service";
+import {
+  hasSomethingToReport,
+  lowCreditsGroup,
+  lowCreditsKey,
+  lowCreditsKeyGroup,
+  OutOfTime,
+  weeklyReportKey,
+  type LowCreditAgency,
+  type ReportedBusiness,
+} from "./service";
 
 // pg_cron asks for one job at a time (run_email_job, migration 038). Netlify ends a request after about 10
 // seconds, so each run stops starting new agencies after TIME_BUDGET_MS, and stops work inside an agency (between
@@ -28,6 +39,8 @@ type UnsentEmail = Parameters<typeof recordUnsentEmail>[0];
 
 export type JobDeps = {
   lowCreditAgencies: () => Promise<LowCreditAgency[]>;
+  /** Low credits emails sent to these agencies since `since`, whatever their key. */
+  sentLowCredits: (agencyIds: string[], since: Date) => Promise<SentLowCredits[]>;
   reportAgencies: () => Promise<ReportAgency[]>;
   /** Throws OutOfTime once `outOfTime` says so, between businesses. */
   businesses: (agencyId: string, now: Date, outOfTime: () => boolean) => Promise<ReportedBusiness[]>;
@@ -96,10 +109,29 @@ async function runTasks(tasks: Task[], deps: JobDeps, build: Build): Promise<Job
 
 const errorText = (error: unknown) => (error instanceof Error ? error.message : String(error));
 
-/** The most serious level each agency is at now, once per level per credit period. */
+/**
+ * Agencies already sent the email at the same level group since their period started, under any key (BUG-280). The
+ * key format changed on deploy (period end to period key, empty and negative to zero), so the key alone would send
+ * one more email to an agency that is low now.
+ */
+async function emailedThisPeriod(agencies: LowCreditAgency[], deps: JobDeps): Promise<Set<LowCreditAgency>> {
+  const started = agencies.filter((a) => a.periodStartedAt);
+  if (started.length === 0) return new Set();
+  const since = new Date(Math.min(...started.map((a) => a.periodStartedAt!.getTime())));
+  const sent = await deps.sentLowCredits([...new Set(started.map((a) => a.agencyId))], since);
+  return new Set(
+    started.filter((a) =>
+      sent.some((s) => s.agencyId === a.agencyId && s.sentAt >= a.periodStartedAt! && lowCreditsKeyGroup(s.idempotencyKey) === lowCreditsGroup(a.level)),
+    ),
+  );
+}
+
+/** The most serious level each agency is at now, once per level group per credit period. */
 export async function runLowCredits(deps: JobDeps): Promise<JobSummary> {
   const now = deps.now();
-  const agencies = new Map((await deps.lowCreditAgencies()).map((a) => [lowCreditsKey(a, now), a]));
+  const listed = await deps.lowCreditAgencies();
+  const emailed = await emailedThisPeriod(listed, deps);
+  const agencies = new Map(listed.filter((a) => !emailed.has(a)).map((a) => [lowCreditsKey(a, now), a]));
   const tasks = [...agencies].map(([key, a]) => ({ key, type: "low_credits" as const, agencyId: a.agencyId, ownerUserId: null }));
   return runTasks(tasks, deps, async (task, to) => lowCreditsEmail({ to, agency: agencies.get(task.key)!, now }));
 }
@@ -122,6 +154,7 @@ export async function runWeeklyReport(deps: JobDeps): Promise<JobSummary> {
 export function liveJobDeps(overrides: Partial<JobDeps> = {}): JobDeps {
   return {
     lowCreditAgencies: () => listLowCreditAgencies(),
+    sentLowCredits: (agencyIds, since) => listSentLowCredits(agencyIds, since),
     reportAgencies: () => listWeeklyReportAgencies(),
     businesses: (agencyId, now, outOfTime) => weeklyBusinesses(agencyId, now, outOfTime),
     ownerEmail: (ownerUserId) => ownerEmail(ownerUserId),

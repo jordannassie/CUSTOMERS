@@ -28,7 +28,7 @@ function deps(mine: string[], send: ReturnType<typeof fakeMail>["send"]) {
 }
 
 describe("low credits", () => {
-  it("sends at 80% used, at 0 and below 0, each once per period", async () => {
+  it("sends at 80% used and when the credits run out, each once per period (BUG-280)", async () => {
     const a = await createAgency();
     const business = await addBusiness(a, "Low Credit Plumbing");
     const periodEnd = await grantPlan(a.agencyId, 100);
@@ -49,13 +49,11 @@ describe("low credits", () => {
     expect(await run()).toMatchObject({ sent: 1 });
     expect(mail.sent[1].subject).toBe("You're out of credits");
 
-    // The scan finishes past the end of the balance (D-54).
+    // The scan finishes past the end of the balance (D-54): already told it ran out, so no second email.
     for (let i = 0; i < 5; i++) await captureCredit(hold, randomUUID());
     await releaseHold(hold);
-    expect(await run()).toMatchObject({ sent: 1 });
     expect(await run()).toMatchObject({ sent: 0 });
-    expect(mail.sent[2].subject).toBe("Your credit balance is below zero");
-    expect(mail.sent[2].text).toContain("your balance is now -5");
+    expect(mail.sent).toHaveLength(2);
 
     const { data: log } = await service
       .from("email_log")
@@ -66,8 +64,25 @@ describe("low credits", () => {
       .throwOnError();
     const period = periodEnd.toISOString();
     expect(log.map((r) => r.idempotency_key)).toEqual(
-      ["low", "empty", "negative"].map((level) => `low_credits:${a.agencyId}:${period}:${level}`),
+      ["low", "zero"].map((level) => `low_credits:${a.agencyId}:${period}:${level}`),
     );
+  });
+
+  it("sends the below-zero wording when the balance goes straight past zero, and keeps the key when the renewal date moves", async () => {
+    const a = await createAgency();
+    const business = await addBusiness(a, "Overdrawn Plumbing");
+    const periodKey = await grantPlan(a.agencyId, 10);
+    // One scan holds 12 with 10 left and finishes past the end of the balance (D-54).
+    await spend(a, business, 12, 12);
+    const mail = fakeMail();
+    expect(await runLowCredits(deps([a.agencyId], mail.send))).toMatchObject({ sent: 1 });
+    expect(mail.sent[0].subject).toBe("Your credit balance is below zero");
+    // The webhook sets a renewal date that differs from the grant's expiry: same period, same key, no new email.
+    await service.from("agencies").update({ current_period_end: new Date(periodKey.getTime() + 86_400_000).toISOString() }).eq("id", a.agencyId).throwOnError();
+    const [listed] = (await listLowCreditAgencies()).filter((r) => r.agencyId === a.agencyId);
+    expect(listed.periodKey?.toISOString()).toBe(periodKey.toISOString());
+    expect(listed.periodEnd?.toISOString()).not.toBe(periodKey.toISOString());
+    expect(await runLowCredits(deps([a.agencyId], mail.send))).toMatchObject({ sent: 0 });
   });
 
   it("stays quiet when the period's plan credits are used but plenty is still left (step 9d)", async () => {

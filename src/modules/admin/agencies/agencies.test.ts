@@ -53,10 +53,10 @@ async function readAgency() {
 async function auditRows(action: string) {
   const { data, error } = await service
     .from("admin_audit_log")
-    .select("action, admin_user_id, details")
+    .select("action, admin_user_id, details, outcome")
     .eq("target_type", "agency")
     .eq("target_id", agency.agencyId)
-    .eq("action", action);
+    .eq("action", action).order("created_at");
   if (error) throw error;
   return data;
 }
@@ -128,7 +128,7 @@ describe("agency actions (B-65)", () => {
     const expected = new Date(new Date(end).getTime() + 7 * DAY);
     expect(stripe.client.extendTrial).toHaveBeenCalledWith(expect.stringMatching(/^sub_/), expected);
     expect(new Date((await readAgency()).trial_ends_at!).getTime()).toBe(expected.getTime());
-    expect(await auditRows("agency.extend_trial")).toMatchObject([{ details: { reason: REASON, days: 7 } }]);
+    expect(await auditRows("agency.extend_trial")).toMatchObject([{ details: { reason: REASON, days: 7 }, outcome: "done" }]);
   });
 
   it("moves the trial credits' expiry with the trial, keeping the 6-hour grace (A3, M6)", async () => {
@@ -156,17 +156,26 @@ describe("agency actions (B-65)", () => {
     expect(await actions.extendTrial({ agencyId: agency.agencyId, days: 7, reason: REASON })).toMatchObject({ ok: false, status: 502 });
 
     expect(new Date((await readAgency()).trial_ends_at!).getTime()).toBe(new Date(end).getTime());
-    expect(await auditRows("agency.extend_trial")).toHaveLength(0);
+    // Not connected stops before the history row; a refusal is recorded as a change that did not go through (BUG-278).
+    expect(await auditRows("agency.extend_trial")).toMatchObject([
+      { outcome: "failed", details: { reason: REASON, error: expect.stringContaining("No such subscription") } },
+    ]);
   });
 
   it("suspends and unsuspends back to the status it had", async () => {
     await setAgency({ status: "past_due" });
     expect((await actions.suspendAgency({ agencyId: agency.agencyId, reason: REASON })).ok).toBe(true);
     expect((await readAgency()).status).toBe("suspended");
+    // A later suspend that did not go through is not the status to go back to (BUG-278).
+    const failed = { action: "agency.suspend", target_type: "agency", target_id: agency.agencyId, outcome: "failed" };
+    await service.from("admin_audit_log").insert({ ...failed, details: { previous_status: "active" } }).throwOnError();
     expect((await actions.unsuspendAgency({ agencyId: agency.agencyId, reason: "Paid by phone" })).ok).toBe(true);
     expect((await readAgency()).status).toBe("past_due");
 
-    expect(await auditRows("agency.suspend")).toMatchObject([{ details: { reason: REASON, previous_status: "past_due" } }]);
+    expect(await auditRows("agency.suspend")).toMatchObject([
+      { details: { reason: REASON, previous_status: "past_due" }, outcome: "done" },
+      { outcome: "failed" },
+    ]);
     expect(await auditRows("agency.unsuspend")).toMatchObject([{ details: { reason: "Paid by phone", new_status: "past_due" } }]);
   });
 
@@ -235,7 +244,7 @@ describe("agency actions (B-65)", () => {
     expect(row?.ownerEmail).toMatch(/@example\.test$/);
 
     const detail = await loadAgencyDetail(agency.agencyId);
-    expect(detail?.audit[0]).toMatchObject({ action: "agency.adjust_credits", reason: REASON });
+    expect(detail?.audit[0]).toMatchObject({ action: "agency.adjust_credits", reason: REASON, outcome: "done" });
     expect(detail?.ledger[0]).toMatchObject({ delta: 30, kind: "admin_adjust", note: REASON });
   });
 });

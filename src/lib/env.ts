@@ -7,8 +7,13 @@ const flag = z.enum(["true", "false"]).optional();
 
 // The only file that reads process.env (MVP_SPEC 18.1). Required values fail the build when missing.
 export const env = createEnv({
-  server: {
+  // Shared, so client code can tell development from production (app-url.ts). Next inlines it in the browser.
+  shared: {
     NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
+  },
+  server: {
+    // Set by next dev and next start to the port they listen on; app-url.ts uses it in development only.
+    PORT: z.coerce.number().int().positive().optional(),
     SUPABASE_SERVICE_ROLE_KEY: z.string().min(1),
 
     OPENAI_API_KEY: optional,
@@ -65,6 +70,8 @@ export const env = createEnv({
   client: {
     NEXT_PUBLIC_SUPABASE_URL: z.url(),
     NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().min(1),
+    // The app's address for login, email and Stripe links (app-url.ts). Optional here, but a production build
+    // stops without one (next.config.ts); on Netlify next.config.ts fills both from the site URL (BUG-283).
     NEXT_PUBLIC_SITE_URL: z.url().optional(),
     NEXT_PUBLIC_APP_URL: z.url().optional(),
     NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: z.string().min(1).optional(),
@@ -74,6 +81,7 @@ export const env = createEnv({
   },
   runtimeEnv: {
     NODE_ENV: process.env.NODE_ENV,
+    PORT: process.env.PORT,
     SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
     OPENAI_API_KEY: process.env.OPENAI_API_KEY,
     OPENAI_NEWS_MODEL: process.env.OPENAI_NEWS_MODEL,
@@ -115,3 +123,4 @@ export const env = createEnv({
   },
   emptyStringAsUndefined: true,
 });
+

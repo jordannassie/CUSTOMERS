@@ -2,11 +2,12 @@ import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from "vites
 import { getBalance } from "@/modules/credits";
 import { CHECKS_AT_ONCE, runScan } from "./service";
 import { CLAUDE_OUTAGE_MINUTES, type ClaudeOutage, type OutageReason, type OutageStore } from "./claude-outage/outage";
-import { ProviderError } from "./providers/request";
+import { ProviderError, type ProviderErrorKind } from "./providers/request";
 import type { ProviderId, RunCheck } from "./providers/types";
 import {
   answeringRunner,
   blockAiHosts,
+  failingRunner,
   createScanAgency,
   createScanBusiness,
   deleteScanUsers,
@@ -53,13 +54,13 @@ function memoryStore(outage: ClaudeOutage | null = null) {
 }
 
 const minutesAgo = (m: number) => new Date(NOW.getTime() - m * 60_000);
-const openOutage = (lastSeenMinutesAgo: number): ClaudeOutage => ({
+const openOutage = (lastSeenMinutesAgo: number, reason: OutageReason = "auth"): ClaudeOutage => ({
   since: minutesAgo(lastSeenMinutesAgo + 60),
   lastSeenAt: minutesAgo(lastSeenMinutesAgo),
-  reason: "auth",
+  reason,
 });
 
-function claudeFails(status: number, message: string, kind: "client" | "rate_limit" = "client") {
+function claudeFails(status: number | null, message: string, kind: ProviderErrorKind = "client") {
   return vi.fn<RunCheck>(async () => {
     throw new ProviderError({ provider: "anthropic", kind, status, attempts: 1, message });
   });
@@ -70,11 +71,18 @@ function deps(anthropic: RunCheck, store: OutageStore) {
   return { checkRunner: (p: ProviderId) => all[p], extractNames, claudeOutage: store, now: () => NOW };
 }
 
-async function scan(anthropic: RunCheck, store: OutageStore) {
+async function scan(anthropic: RunCheck, store: OutageStore, opts: { claudeOnly?: boolean; others?: RunCheck } = {}) {
   const agency = await createScanAgency();
   const business = await createScanBusiness(agency);
+  if (opts.claudeOnly) {
+    const { error } = await service.from("businesses").update({ models: ["anthropic"] }).eq("id", business.businessId);
+    if (error) throw error;
+  }
   const jobId = await newJob(business);
-  const outcome = await runScan(jobId, deps(anthropic, store));
+  const base = deps(anthropic, store);
+  const others = opts.others;
+  const checkRunner = others ? (p: ProviderId) => (p === "anthropic" ? anthropic : others) : base.checkRunner;
+  const outcome = await runScan(jobId, { ...base, checkRunner });
   if (outcome.status === "skipped") throw new Error(`unexpected skip: ${outcome.reason}`);
   return { outcome, agencyId: agency.agencyId, jobId };
 }
@@ -116,14 +124,49 @@ describe("runScan when Claude is out of service", () => {
     expect(store.mark.mock.calls[0][0]).toBe("credit");
   });
 
-  it("does not mark Claude unavailable for a rate limit", async () => {
+  it("asks every Claude check through a rate limit, then marks Claude down once all of them failed (BUG-285)", async () => {
     const { store } = memoryStore();
     const claude = claudeFails(429, "anthropic returned 429: rate_limit_error", "rate_limit");
     const { outcome } = await scan(claude, store);
 
-    expect(store.mark).not.toHaveBeenCalled();
+    // One failed check never switches Claude off; only the whole scan's Claude checks failing does.
     expect(claude).toHaveBeenCalledTimes(12);
-    expect(outcome).toMatchObject({ failed: 12, skipped: 0, charged: 24 });
+    expect(store.mark).toHaveBeenCalledTimes(1);
+    expect(store.mark).toHaveBeenCalledWith("down", "anthropic returned 429: rate_limit_error");
+    expect(outcome).toMatchObject({ status: "done", failed: 12, skipped: 0, charged: 24, outage: false });
+  });
+
+  it("does not mark Claude down when some Claude checks answer", async () => {
+    const { store } = memoryStore();
+    const answers = answeringRunner("anthropic");
+    let calls = 0;
+    const someFail = vi.fn<RunCheck>(async (input) => {
+      if (++calls % 2 === 0) return answers(input);
+      throw new ProviderError({ provider: "anthropic", kind: "server", status: 529, attempts: 3, message: "anthropic returned 529" });
+    });
+    const { outcome } = await scan(someFail, store);
+
+    expect(store.mark).not.toHaveBeenCalled();
+    expect(outcome).toMatchObject({ status: "done", failed: 6, skipped: 0 });
+  });
+
+  it("fails a Claude-only scan as an outage when Claude is not answering, so the worker does not retry it", async () => {
+    const { store } = memoryStore();
+    const claude = claudeFails(null, "anthropic did not answer within 30000 ms", "timeout");
+    const { outcome } = await scan(claude, store, { claudeOnly: true });
+
+    expect(outcome).toMatchObject({ status: "failed", checks: 12, failed: 12, charged: 0, outage: true });
+    expect(store.mark).toHaveBeenCalledWith("down", "anthropic did not answer within 30000 ms");
+  });
+
+  it("is not an outage when a check failed for another reason", async () => {
+    const { store } = memoryStore();
+    const badRequest: RunCheck = async () => {
+      throw new ProviderError({ provider: "openai", kind: "client", status: 400, attempts: 1, message: "openai returned 400" });
+    };
+    const { outcome } = await scan(failingRunner("anthropic"), store, { others: badRequest });
+
+    expect(outcome).toMatchObject({ status: "failed", failed: 36, outage: false });
   });
 
   it("holds and charges nothing for Claude while it is unavailable", async () => {
@@ -161,5 +204,26 @@ describe("runScan when Claude is out of service", () => {
     expect(store.mark).toHaveBeenCalledTimes(1);
     expect(store.clear).not.toHaveBeenCalled();
     expect(outcome).toMatchObject({ failed: 1, skipped: 11, charged: 24 });
+  });
+
+  it("keeps Claude out, and the outage open, when the probe finds it still not answering", async () => {
+    const { store, state } = memoryStore(openOutage(CLAUDE_OUTAGE_MINUTES + 1));
+    const claude = claudeFails(529, "anthropic returned 529: overloaded_error", "server");
+    const { outcome } = await scan(claude, store);
+
+    expect(claude).toHaveBeenCalledTimes(1);
+    // The window starts again, with the reason the outage was opened for.
+    expect(store.mark).toHaveBeenCalledTimes(1);
+    expect(store.mark).toHaveBeenCalledWith("auth", "anthropic returned 529: overloaded_error");
+    expect(state.outage?.lastSeenAt).toEqual(NOW);
+    expect(outcome).toMatchObject({ status: "done", failed: 1, skipped: 11, charged: 24 });
+  });
+
+  it("probes a Claude that was down and brings it back when it answers", async () => {
+    const { store, state } = memoryStore(openOutage(CLAUDE_OUTAGE_MINUTES + 1, "down"));
+    const { outcome } = await scan(answeringRunner("anthropic"), store);
+
+    expect(state.outage).toBeNull();
+    expect(outcome).toMatchObject({ status: "done", charged: 36, skipped: 0 });
   });
 });

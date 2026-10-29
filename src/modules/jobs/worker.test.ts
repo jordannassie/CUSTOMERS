@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import type { ScanOutcome } from "@/modules/scanning";
 import type { ClaimedJob, JobUpdate } from "./dal";
+import { NOT_ANSWERING_TEXT } from "./service";
 import { EXPLAIN_RESERVE_MS, handleWorkerRequest, jobUpdateFor, runWorker, SWEEP_LIMIT, type WorkerDeps } from "./worker";
 
 const NOW = new Date("2026-09-27T12:00:00Z");
@@ -34,6 +35,16 @@ describe("jobUpdateFor", () => {
       runAfter: new Date("2026-09-27T12:10:00Z"),
     });
     expect(jobUpdateFor(allFailed, job(3), NOW)).toEqual({ status: "failed", error: "Every check failed: openai returned 503" });
+  });
+
+  it("fails at once, without a retry, when the AI tools were not answering (BUG-285)", () => {
+    const update = jobUpdateFor({ ...allFailed, outage: true }, job(1), NOW);
+    expect(update).toEqual({ status: "failed", error: `${NOT_ANSWERING_TEXT} openai returned 503` });
+    // Every Claude check left out while Claude is down: nothing ran, and a retry minutes later would skip it again.
+    const claudeOut = { ...allFailed, checks: 0, failed: 0, skipped: 12, errors: [], outage: true };
+    expect(jobUpdateFor(claudeOut, job(1), NOW)).toEqual({ status: "failed", error: NOT_ANSWERING_TEXT });
+    // Any other failure still retries.
+    expect(jobUpdateFor({ ...allFailed, outage: false }, job(1), NOW)).toMatchObject({ status: "queued" });
   });
 
   it("fails a test scan with no sample answers at once, since a retry finds none either (BUG-072)", () => {

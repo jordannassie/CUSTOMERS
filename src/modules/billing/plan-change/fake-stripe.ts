@@ -49,14 +49,8 @@ export class FakeStripe implements PlanChangeStripe {
     const end = opts.periodEnd ?? monthAfter(opts.periodStart);
     if (this.status === "trialing") this.trialEnd = end;
     const ownPrice = seededPrices(this.prices);
-    this.items = opts.items.map((i) => ({
-      id: i.itemId ?? `si_${i.businessId}`,
-      price: ownPrice(i.price),
-      quantity: 1,
-      metadata: { business_id: i.businessId },
-      start: opts.periodStart,
-      end,
-    }));
+    const start = opts.periodStart;
+    this.items = opts.items.map((i) => ({ id: i.itemId ?? `si_${i.businessId}`, price: ownPrice(i.price), quantity: 1, metadata: { business_id: i.businessId }, start, end }));
   }
 
   // IDs are unique across fakes: the database keeps item IDs unique, and parallel Playwright tests each run a fake.
@@ -195,9 +189,16 @@ export class FakeStripe implements PlanChangeStripe {
   async updateSubscription(_id: string, params: Stripe.SubscriptionUpdateParams, key: string) {
     this.calls.push({ method: "updateSubscription", params, key });
     return this.once(key, () => {
-      if (params.cancel_at_period_end !== undefined) this.cancelAtPeriodEnd = params.cancel_at_period_end;
-      if (params.items) this.changeNow(this.withItemParams(params.items), params.proration_date ?? this.clock);
-      if (params.trial_end === "now" && this.status === "trialing") this.endTrialNow(params.payment_behavior === "error_if_incomplete");
+      // Stripe applies an update in full or not at all: a declined card thrown below undoes the item changes too.
+      const before = { items: this.items, status: this.status, trialEnd: this.trialEnd, cancelAtPeriodEnd: this.cancelAtPeriodEnd, invoices: [...this.invoices] };
+      try {
+        if (params.cancel_at_period_end !== undefined) this.cancelAtPeriodEnd = params.cancel_at_period_end;
+        if (params.items) this.changeNow(this.withItemParams(params.items), params.proration_date ?? this.clock);
+        if (params.trial_end === "now" && this.status === "trialing") this.endTrialNow(params.payment_behavior === "error_if_incomplete");
+      } catch (error) {
+        Object.assign(this, before);
+        throw error;
+      }
       return this.subscription();
     });
   }

@@ -231,7 +231,7 @@ export async function ownerEmail(ownerUserId: string): Promise<string | null> {
   return data.user?.email ?? null;
 }
 
-/** The status recorded by the latest suspend, so unsuspend can put it back. */
+/** The status recorded by the latest suspend that did not fail (BUG-278), so unsuspend can put it back. */
 export async function statusBeforeSuspend(agencyId: string): Promise<unknown> {
   const { data, error } = await createServiceClient()
     .from("admin_audit_log")
@@ -239,6 +239,8 @@ export async function statusBeforeSuspend(agencyId: string): Promise<unknown> {
     .eq("target_type", "agency")
     .eq("target_id", agencyId)
     .eq("action", "agency.suspend")
+    // A 'started' row may have changed the status, so it counts; a 'failed' one did not.
+    .neq("outcome", "failed")
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();

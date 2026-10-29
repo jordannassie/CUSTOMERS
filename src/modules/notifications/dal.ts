@@ -27,9 +27,13 @@ export async function ownerEmail(ownerUserId: string, db: Db = createServiceClie
 
 const LEVELS = new Set(["low", "empty", "negative"]);
 
+// The generated types say string, but a left join and an agency without plan credits give null.
+const dateOrNull = (value: string | null) => (value ? new Date(value) : null);
+
+/** low_credit_alerts (migration 086): low_credit_agencies plus a period key that does not move inside a period. */
 export async function listLowCreditAgencies(db: Db = createServiceClient()): Promise<LowCreditAgency[]> {
-  const { data, error } = await db.rpc("low_credit_agencies");
-  if (error) throw new Error(`low_credit_agencies failed: ${error.message}`);
+  const { data, error } = await db.rpc("low_credit_alerts");
+  if (error) throw new Error(`low_credit_alerts failed: ${error.message}`);
   return data
     .filter((row) => LEVELS.has(row.level))
     .map((row) => ({
@@ -38,8 +42,28 @@ export async function listLowCreditAgencies(db: Db = createServiceClient()): Pro
       used: row.used,
       total: row.total,
       balance: row.balance,
-      periodEnd: row.period_end ? new Date(row.period_end) : null,
+      periodEnd: dateOrNull(row.period_end),
+      periodKey: dateOrNull(row.period_key),
+      periodStartedAt: dateOrNull(row.period_started_at),
     }));
+}
+
+export type SentLowCredits = { agencyId: string; idempotencyKey: string; sentAt: Date };
+
+/** The low credits emails these agencies were sent since `since`, under any key format (BUG-280). */
+export async function listSentLowCredits(agencyIds: string[], since: Date, db: Db = createServiceClient()): Promise<SentLowCredits[]> {
+  if (agencyIds.length === 0) return [];
+  const { data, error } = await db
+    .from("email_log")
+    .select("agency_id, idempotency_key, sent_at")
+    .eq("type", "low_credits")
+    .eq("status", "sent")
+    .in("agency_id", agencyIds)
+    .gte("sent_at", since.toISOString());
+  if (error) throw new Error(`email_log lookup failed: ${error.message}`);
+  return data.flatMap((row) =>
+    row.agency_id && row.idempotency_key ? [{ agencyId: row.agency_id, idempotencyKey: row.idempotency_key, sentAt: new Date(row.sent_at) }] : [],
+  );
 }
 
 export type ReportAgency = { id: string; ownerUserId: string };

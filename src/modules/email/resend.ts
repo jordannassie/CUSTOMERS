@@ -16,12 +16,23 @@ export type EmailClient = {
   send(email: OutgoingEmail, options: { idempotencyKey?: string }): Promise<{ id: string }>;
 };
 
+/** A provider refusal, with Resend's error name (for example "invalid_idempotent_request") as its code. */
+export class EmailProviderError extends Error {
+  constructor(
+    message: string,
+    readonly code: string | null,
+  ) {
+    super(message);
+    this.name = "EmailProviderError";
+  }
+}
+
 export function createResendClient(apiKey: string): EmailClient {
   const resend = new Resend(apiKey);
   return {
     async send(email, { idempotencyKey }) {
       const { data, error } = await resend.emails.send(email, idempotencyKey ? { idempotencyKey } : undefined);
-      if (error || !data) throw new Error(`Resend: ${error?.message ?? "no email id returned"}`);
+      if (error || !data) throw new EmailProviderError(`Resend: ${error?.message ?? "no email id returned"}`, error?.name ?? null);
       return { id: data.id };
     },
   };

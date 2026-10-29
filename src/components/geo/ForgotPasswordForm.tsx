@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { Loader2, ArrowLeft, CheckCircle } from "lucide-react";
 import { createClient } from "@/lib/supabase/browser";
-import { env } from "@/lib/env";
+import { appUrl } from "@/lib/app-url";
 import { Button } from "@/components/ui/button";
 import { AuthAlert, AuthCard, AuthField, AuthLogo } from "./auth-bits";
 
@@ -20,8 +20,8 @@ export default function ForgotPasswordForm() {
     setError(null);
 
     const supabase = createClient();
-    // The site URL, like signup and Google sign-in, so the link opens on the address Supabase allows.
-    const siteBase = env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ?? window.location.origin;
+    // The configured address, like signup and Google sign-in, so the link opens on the address Supabase allows.
+    const siteBase = appUrl();
     const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
       // Through the callback, so the code is swapped for a session on the server (ACC-04).
       redirectTo: `${siteBase}/auth/callback?next=/reset-password`,
