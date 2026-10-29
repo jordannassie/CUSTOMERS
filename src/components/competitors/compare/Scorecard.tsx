@@ -1,12 +1,12 @@
 import { cn } from "cn";
 import type { Comparison } from "@/modules/competitors";
-import { ByAi } from "./Versus";
+import { ByAi } from "./ByAi";
 
 const of = (n: number, total: number) => `${n} of ${total} answers`;
 
 /**
  * Head to head (dashboard redesign): both 30-day scores, how many answers named each, the gap against the margin
- * of error on your score (D-64), and each AI tool as a dumbbell.
+ * of error on your score (D-64), and each AI tool as grouped bars.
  */
 export function Scorecard({ data }: { data: Comparison }) {
   const { why } = data.panel;
