@@ -14,6 +14,7 @@ import {
   extractNames,
   failingRunner,
   finishJob,
+  memoryOutage,
   newJob,
   recordedDir,
   service,
@@ -40,7 +41,7 @@ function runners(overrides: Partial<Record<ProviderId, RunCheck>> = {}) {
     perplexity: answeringRunner("perplexity"),
     ...overrides,
   };
-  return { all, checkRunner: (p: ProviderId) => all[p] };
+  return { all, checkRunner: (p: ProviderId) => all[p], claudeOutage: memoryOutage().store };
 }
 
 async function results(runId: string) {
@@ -81,9 +82,13 @@ describe("runScan (B-26)", () => {
     const business = await createScanBusiness(agency);
     const job = await newJob(business);
 
-    const outcome = await runScan(job, { ...runners({ anthropic: failingRunner("anthropic") }), extractNames });
+    const deps = runners({ anthropic: failingRunner("anthropic") });
+    const outcome = await runScan(job, { ...deps, extractNames });
 
-    expect(outcome).toMatchObject({ status: "done", checks: 36, failed: 12, charged: 24, released: 12 });
+    expect(outcome).toMatchObject({ status: "done", checks: 36, failed: 12, charged: 24, released: 12, outage: false });
+    // Every Claude check failed with a server error: other scans leave Claude out for a while (BUG-285).
+    expect(deps.claudeOutage.mark).toHaveBeenCalledTimes(1);
+    expect(deps.claudeOutage.mark).toHaveBeenCalledWith("down", "anthropic returned 503");
     expect(await balance(agency.agencyId)).toBe(76);
     if (outcome.status === "skipped") throw new Error("unexpected skip");
     const rows = await results(outcome.runId);
@@ -171,9 +176,10 @@ describe("runScan (B-26)", () => {
     const business = await createScanBusiness(agency);
     const failing = (p: ProviderId) => failingRunner(p);
 
-    const outcome = await runScan(await newJob(business), { checkRunner: failing, extractNames });
+    const outcome = await runScan(await newJob(business), { checkRunner: failing, extractNames, claudeOutage: memoryOutage().store });
 
-    expect(outcome).toMatchObject({ status: "failed", checks: 36, failed: 36, charged: 0, released: 36 });
+    // Every check failed because the AI tools were not answering: the worker does not retry it (BUG-285).
+    expect(outcome).toMatchObject({ status: "failed", checks: 36, failed: 36, charged: 0, released: 36, outage: true });
     expect(await balance(agency.agencyId)).toBe(100);
     const { data: biz } = await service.from("businesses").select("next_scan_at").eq("id", business.businessId).single();
     expect(biz!.next_scan_at).toBeNull();

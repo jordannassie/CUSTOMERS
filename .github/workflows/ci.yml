@@ -71,7 +71,10 @@ jobs:
           cache: npm
       - run: bash scripts/scan-payload.sh
       - run: npm ci --ignore-scripts
+      # A production build needs the app's address (BUG-283); on Netlify it comes from the site URL.
       - run: npm run build
+        env:
+          NEXT_PUBLIC_SITE_URL: http://localhost:3000
 
   e2e:
     name: Smoke tests

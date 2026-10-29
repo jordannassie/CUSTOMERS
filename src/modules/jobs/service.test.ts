@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { NO_SAMPLE_ANSWERS_TEXT, STALLED_QUEUED_MINUTES, STALLED_RUNNING_MINUTES, scanStatusView } from "./service";
+import { NO_SAMPLE_ANSWERS_TEXT, NOT_ANSWERING_TEXT, STALLED_QUEUED_MINUTES, STALLED_RUNNING_MINUTES, scanStatusView } from "./service";
 
 const ok = { allowed: true, reason: "" };
 const broke = { allowed: false, reason: "You're out of credits. Buy a top-up or upgrade." };
@@ -49,6 +49,13 @@ describe("scanStatusView", () => {
     expect(failed.failedReason).toBe(NO_SAMPLE_ANSWERS_TEXT);
     expect(NO_SAMPLE_ANSWERS_TEXT).toMatch(/^No sample answers for this kind of business\./);
     expect(scanStatusView({ status: "failed", finishedAt: at, error: "Every check failed: openai timeout" }, ok).failedReason).toBeNull();
+  });
+
+  it("says the AI tools were not answering, and that the next scheduled scan tries again (BUG-285)", () => {
+    const error = `${NOT_ANSWERING_TEXT} anthropic: anthropic returned 529: overloaded`;
+    const failed = scanStatusView({ status: "failed", finishedAt: "2026-10-29T12:00:00Z", error }, ok);
+    expect(failed.failedReason).toBe(NOT_ANSWERING_TEXT);
+    expect(NOT_ANSWERING_TEXT).not.toMatch(/[–—]/);
   });
 
   describe("stalled", () => {

@@ -12,8 +12,9 @@ type Phases = Stripe.SubscriptionScheduleUpdateParams.Phase[];
 
 const bidOf = (i: ItemSpec) => i.metadata.business_id;
 
-function phasesFrom(start: number, end: number, current: ItemSpec[], next: ItemSpec[] | null): Phases {
-  const phases: Phases = [{ items: current, start_date: start, end_date: end }];
+/** The current phase and the pending one. `trialEnd` keeps a trial running on the current phase (end-trial/service.ts). */
+export function phasesFrom(start: number, end: number, current: ItemSpec[], next: ItemSpec[] | null, trialEnd?: number): Phases {
+  const phases: Phases = [{ items: current, start_date: start, end_date: end, ...(trialEnd ? { trial_end: trialEnd } : {}) }];
   if (next) phases.push({ items: next, duration: { interval: "month", interval_count: 1 }, proration_behavior: "none" });
   return phases;
 }
@@ -29,7 +30,7 @@ export function nextWithChange(next: ItemSpec[], now: ItemSpec[], businessId: st
  * Makes the schedule again from the subscription, trying once more on a failure. A schedule made on the first try is
  * reused, since Stripe allows one per subscription. False when both tries failed.
  */
-async function scheduleAgain(
+export async function scheduleAgain(
   stripe: PlanChangeStripe,
   subscriptionId: string,
   key: string,

@@ -27,13 +27,13 @@ Required, or the build fails:
 | `NEXT_PUBLIC_SUPABASE_URL` | Supabase project address (also allowed in the security headers) | Supabase, live project settings |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Public key for signed-in pages | Supabase, live project API keys |
 | `SUPABASE_SERVICE_ROLE_KEY` | Server key for the worker, webhooks and admin | Supabase, live project API keys |
+| `NEXT_PUBLIC_SITE_URL` | Address used for login, email and Stripe links (`https://<domain>`). If unset, Netlify's site address fills it at build time: the primary domain on the live site, the deploy's address on previews. A live build without an https address fails (BUG-283) | Our domain, or Netlify's primary domain |
+| `NEXT_PUBLIC_APP_URL` | Same, and wins over `NEXT_PUBLIC_SITE_URL`: Stripe return pages, email links and the PDF (F-49). Same value, filled the same way | Our domain, or Netlify's primary domain |
 
 Needed in production (the build passes without them, but a feature breaks):
 
 | Name | What it is for | Comes from |
 |---|---|---|
-| `NEXT_PUBLIC_SITE_URL` | Address used for login and email links (`https://<domain>`) | Our domain |
-| `NEXT_PUBLIC_APP_URL` | Address used for Stripe return pages, email links and the PDF (F-49). Same value | Our domain |
 | `OPENAI_API_KEY` | ChatGPT checks, admin news | OpenAI |
 | `ANTHROPIC_API_KEY` | Claude checks, explanations | Anthropic |
 | `PERPLEXITY_API_KEY` | Perplexity checks | Perplexity |

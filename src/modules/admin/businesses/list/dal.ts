@@ -1,10 +1,11 @@
 import "server-only";
 import { createServiceClient } from "@/lib/supabase/service";
+import { requireAdmin } from "@/modules/auth";
 import { ADMIN_PAGE_SIZE } from "../../schema";
 import { allRows, emailsOf, inChunks, inList, readCaptures, unique, userIdsByEmail } from "../dal";
 import { firstBy, startOfMonthUtc, sumBy, toScanState, type ScanState } from "../service";
 
-// The admin Businesses list (B-66), 50 a page with a search box. Callers run requireAdmin() first.
+// The admin Businesses list (B-66), 50 a page with a search box. It checks admin access itself (BUG-286).
 
 function fail(what: string, error: { message: string }): never {
   throw new Error(`Admin businesses: could not load ${what}: ${error.message}`);
@@ -54,6 +55,7 @@ export async function listBusinesses(
   { search = "", page = 1 }: { search?: string; page?: number } = {},
   now = new Date(),
 ): Promise<AdminBusinessList> {
+  await requireAdmin();
   const db = createServiceClient();
   const condition = await searchCondition(search);
   const scoped = <Q extends { or: (filters: string) => Q }>(query: Q) => (condition ? query.or(condition) : query);

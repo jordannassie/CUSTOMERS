@@ -7,7 +7,7 @@ import { env } from "@/lib/env";
 import { createServiceClient } from "@/lib/supabase/service";
 import type { Json } from "@/types/database.types";
 import { createAiClients, type AiClients } from "./clients";
-import { CLAUDE_OUTAGE_MINUTES, claudeOutageMessage, describeFailure, type AiFailure } from "./errors";
+import { CLAUDE_OUTAGE_MINUTES, claudeOutageMessage, describeFailure, type AiFailure, type AiFailureKind, type ClaudeOutageReason } from "./errors";
 import type { AiReporter, AiSuccess } from "./structured";
 
 export const ALERT_ANTHROPIC_CREDIT = "anthropic_credit";
@@ -38,7 +38,7 @@ export function liveAiClients(usage?: UsageContext): AiClients {
 /** Where the shared Claude outage is read and written; tests pass one in memory, so no shared alert opens. */
 export type OutageHooks = {
   read: () => Promise<ClaudeOutageRow | null>;
-  mark: (reason: "auth" | "credit", detail: string) => Promise<void>;
+  mark: (reason: ClaudeOutageReason, detail: string) => Promise<void>;
   clear: () => Promise<void>;
 };
 const liveOutage: OutageHooks = { read: () => readClaudeOutage(), mark: (r, d) => markClaudeOutage(r, d), clear: () => clearClaudeOutage() };
@@ -55,14 +55,18 @@ export function liveReporter(usage?: UsageContext, outage: OutageHooks = liveOut
     claudeOutage: async () => {
       const open = await outage.read();
       if (!open?.reason || Date.now() - open.lastSeenAt.getTime() >= CLAUDE_OUTAGE_MINUTES * 60_000) return null;
-      return { provider: "anthropic", model: "", kind: open.reason, status: null, message: "Claude unavailable" };
+      return { provider: "anthropic", model: "", kind: OUTAGE_KIND[open.reason], status: null, message: "Claude unavailable" };
     },
   };
 }
 
 // --- The Claude outage, shared by scans and background jobs: the open "claude_unavailable" admin alert (BUG-253).
 
-export type ClaudeOutageRow = { since: Date; lastSeenAt: Date; reason: "auth" | "credit" | null };
+export type ClaudeOutageRow = { since: Date; lastSeenAt: Date; reason: ClaudeOutageReason | null };
+
+const OUTAGE_REASONS: ClaudeOutageReason[] = ["auth", "credit", "down"];
+// Claude not answering a whole scan (BUG-285) reads as a server failure here: background jobs use the backup meanwhile.
+const OUTAGE_KIND: Record<ClaudeOutageReason, AiFailureKind> = { auth: "auth", credit: "credit", down: "server" };
 
 // Each server instance reads it at most once a minute; its own marks and clears update this copy at once.
 let known: { at: number; outage: ClaudeOutageRow | null } | null = null;
@@ -84,14 +88,14 @@ export async function readClaudeOutage(fresh = false): Promise<ClaudeOutageRow |
   }
   const reason = (data?.details as { reason?: unknown } | null)?.reason;
   const outage: ClaudeOutageRow | null = data
-    ? { since: new Date(data.created_at), lastSeenAt: new Date(data.last_seen_at), reason: reason === "auth" || reason === "credit" ? reason : null }
+    ? { since: new Date(data.created_at), lastSeenAt: new Date(data.last_seen_at), reason: OUTAGE_REASONS.find((r) => r === reason) ?? null }
     : null;
   known = { at: Date.now(), outage };
   return outage;
 }
 
 /** Opens the outage, or moves its last seen time on. */
-export async function markClaudeOutage(reason: "auth" | "credit", detail: string): Promise<void> {
+export async function markClaudeOutage(reason: ClaudeOutageReason, detail: string): Promise<void> {
   const { error } = await createServiceClient().rpc("raise_system_alert", {
     p_kind: ALERT_CLAUDE_UNAVAILABLE,
     p_severity: "warning",

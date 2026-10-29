@@ -2,7 +2,18 @@
 // function (the -background suffix). Runs after next build, as part of npm run build.
 import { build } from "esbuild";
 
+// The site URLs the app build filled from Netlify's build variables (src/lib/build-urls.ts, BUG-283), baked in the
+// same way, so the worker's emails link to the same address when they are not set on Netlify. next build has already
+// failed a live build without an https address. Same rule as build-urls.ts, repeated here since this file is plain JS.
+const netlifyUrl = process.env.CONTEXT === "production" ? process.env.URL : process.env.DEPLOY_PRIME_URL;
+const define = {};
+for (const key of ["NEXT_PUBLIC_SITE_URL", "NEXT_PUBLIC_APP_URL"]) {
+  const url = process.env[key]?.trim() || (process.env.CONTEXT ? netlifyUrl?.trim() : undefined);
+  if (url) define[`process.env.${key}`] = JSON.stringify(url);
+}
+
 await build({
+  define,
   entryPoints: ["netlify/worker/scan-worker-background.ts"],
   outfile: ".netlify/v1/functions/scan-worker-background.mjs",
   bundle: true,

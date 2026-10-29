@@ -5,6 +5,7 @@ import path from "node:path";
 import { vi } from "vitest";
 import { createServiceClient } from "@/lib/supabase/service";
 import { grantCredits } from "@/modules/credits";
+import type { ClaudeOutage, OutageReason, OutageStore } from "./claude-outage/outage";
 import { CHECK_MODELS } from "./providers/models";
 import { ProviderError } from "./providers/request";
 import type { CheckResult, ProviderId, RunCheck } from "./providers/types";
@@ -77,7 +78,26 @@ export async function finishJob(jobId: string) {
   await service.from("scan_jobs").update({ status: "done" }).eq("id", jobId);
 }
 
-export const ANSWER = "Top picks:\n1. Bean There Coffee (beanthere.example)\n2. Rival Roasters\n3. Daily Grind";
+/**
+ * The Claude outage kept in memory. A scan where every Claude check fails marks Claude down (BUG-285): with the live
+ * store that opens the shared alert, and every other scan test running at the same time leaves Claude out.
+ */
+export function memoryOutage(outage: ClaudeOutage | null = null) {
+  const state = { outage };
+  const store = {
+    read: vi.fn(async () => state.outage),
+    mark: vi.fn(async (reason: OutageReason) => {
+      const now = new Date();
+      state.outage = { since: state.outage?.since ?? now, lastSeenAt: now, reason };
+    }),
+    clear: vi.fn(async () => {
+      state.outage = null;
+    }),
+  } satisfies OutageStore;
+  return { store, state };
+}
+
+export const ANSWER ="Top picks:\n1. Bean There Coffee (beanthere.example)\n2. Rival Roasters\n3. Daily Grind";
 
 /** A provider that answers every question, counting its calls. */
 export function answeringRunner(provider: ProviderId) {

@@ -2,20 +2,20 @@ import "server-only";
 // Run a scan (B-26, MVP_SPEC 5.2, 4.2, D-53, D-54): hold the credits, run every question on every
 // chosen model, charge 1 credit per successful check with a new answer, then return the rest of the hold. An answer
 // reused from the shared cache is free for now (D-24, changed 2026-10-20 at the owner's request).
-import { placeLabel } from "@/lib/place-label";
 import { captureCredits, holdCredits, InsufficientCreditsError, isHoldOpen, releaseHold } from "@/modules/credits";
 import { canRunScanJob, REASONS } from "@/modules/entitlements";
 import { captureBatcher } from "./capture-batch";
 import { forEachLimited, summarise } from "./run-limited";
-import { checkIdFor, runOneCheck, type CheckContext, type CheckOutcome, type CheckTask } from "./check";
+import { runOneCheck, type CheckContext, type CheckOutcome, type CheckTask } from "./check";
+import { providerDown } from "./providers/request";
 import { claudeGate } from "./claude-outage/gate";
 import { CLAUDE_SKIPPED, claudeMode, type OutageStore } from "./claude-outage/outage";
 import { liveOutageStore } from "./claude-outage/dal";
 import type { ExtractNames } from "./extract";
 import { mentionTargets } from "./recount/service";
-import type { CheckLocation, ProviderFailures, ProviderId, RunCheck } from "./providers/types";
-import { countryCode } from "./country";
+import type { ProviderFailures, ProviderId, RunCheck } from "./providers/types";
 import { loadRecordedAnswers, recordedAnswers, RECORDED_ANSWERS_DIR } from "./recorded";
+import { checkTasks, isProvider, locationOf, PROVIDERS, scanBlocker } from "./scan-tasks";
 import { nextScanAt } from "./schedule";
 import {
   finishRun,
@@ -35,7 +35,6 @@ export const CHECKS_AT_ONCE = 5;
 
 // A running scan refreshes its job at most this often, as its checks finish (B4).
 const HEARTBEAT_MS = 60 * 1000;
-const PROVIDERS: ProviderId[] = ["openai", "anthropic", "perplexity"];
 
 /** The skip reason when a job's hold is already closed: an earlier run finished it. */
 export const ALREADY_FINISHED = "This scan already finished.";
@@ -62,6 +61,8 @@ export type ScanOutcome =
       /** Claude checks left out because Claude is unavailable: never held at the start, never charged. */
       skipped: number;
       errors: string[];
+      /** Failed because the AI tools were not answering (BUG-285): every check that ran failed that way. */
+      outage?: boolean;
     };
 
 /**
@@ -81,10 +82,11 @@ export async function runScan(jobId: string, overrides: Partial<ScanDeps> = {}):
     if (!allowed.allowed) return { status: "skipped", reason: allowed.reason };
   }
 
-  // While Claude is unavailable (a rejected key, no credit), its checks are left out before the hold (claude-outage/outage.ts).
+  // While Claude is unavailable (a rejected key, no credit, not answering), its checks are left out before the hold (claude-outage/outage.ts).
   const outageStore = overrides.claudeOutage ?? liveOutageStore;
   const askClaude = !target.isTest && target.business.models.includes("anthropic");
-  const mode = askClaude ? claudeMode(await outageStore.read(), (overrides.now ?? (() => new Date()))()) : "use";
+  const openOutage = askClaude ? await outageStore.read() : null;
+  const mode = claudeMode(openOutage, (overrides.now ?? (() => new Date()))());
   const allTasks = checkTasks(jobId, target);
   const tasks = mode === "skip" ? allTasks.filter((t) => t.provider !== "anthropic") : allTasks;
   const skippedAtStart = allTasks.length - tasks.length;
@@ -107,7 +109,8 @@ export async function runScan(jobId: string, overrides: Partial<ScanDeps> = {}):
   const capture = captureBatcher((checkIds) => captureCredits(holdId, checkIds));
   const errors: string[] = [];
   const failures: ProviderFailures = {};
-  const gate = claudeGate(outageStore, mode);
+  const gate = claudeGate(outageStore, mode, openOutage?.reason ?? null);
+  let notAnswering = 0;
   let lastBeat = ctx.now().getTime();
   const runTask = async (task: CheckTask) => {
     if (gate.skip(task)) return;
@@ -122,6 +125,7 @@ export async function runScan(jobId: string, overrides: Partial<ScanDeps> = {}):
     }
     if (!outcome.ok) {
       errors.push(outcome.error);
+      if (outcome.outage || (outcome.kind && providerDown(outcome.kind))) notAnswering++;
       const seen = failures[task.provider];
       failures[task.provider] = { failed: (seen?.failed ?? 0) + 1, reason: seen?.reason ?? outcome.reason };
       return;
@@ -143,6 +147,7 @@ export async function runScan(jobId: string, overrides: Partial<ScanDeps> = {}):
     CHECKS_AT_ONCE,
     runTask,
   );
+  if (askClaude) await gate.finish();
   const charged = capture.charged();
   const skipped = skippedAtStart + gate.skipped();
   if (skipped > 0) failures.anthropic = { failed: failures.anthropic?.failed ?? 0, reason: CLAUDE_SKIPPED, skipped };
@@ -172,28 +177,9 @@ export async function runScan(jobId: string, overrides: Partial<ScanDeps> = {}):
     released,
     skipped,
     errors,
+    // Nothing worked because the AI tools were not answering (or Claude was left out): the worker does not retry it.
+    outage: allFailed && notAnswering === errors.length,
   };
-}
-
-function scanBlocker({ business, questions }: ScanTargetRow): string | null {
-  if (business.deletedAt) return "This business was deleted.";
-  if (business.status === "paused") return "This business is paused.";
-  if (!business.city) return "Add the business city before scanning.";
-  if (questions.length === 0) return "This business has no active questions.";
-  if (!business.models.some(isProvider)) return "Choose at least one AI model to check.";
-  return null;
-}
-
-function checkTasks(jobId: string, { business, questions }: ScanTargetRow): CheckTask[] {
-  const models = business.models.filter(isProvider);
-  return questions.flatMap((q) =>
-    models.map((provider) => ({
-      checkId: checkIdFor(jobId, q.id, provider),
-      promptId: q.id,
-      provider,
-      question: withCity(q.prompt, business.city!, business.region),
-    })),
-  );
 }
 
 async function checkContext(target: ScanTargetRow, runId: string, overrides: Partial<ScanDeps>) {
@@ -223,26 +209,7 @@ async function checkContext(target: ScanTargetRow, runId: string, overrides: Par
   };
 }
 
-/** MVP_SPEC 5.2 step 1: every question names the business city. */
-export function withCity(question: string, city: string, region: string | null): string {
-  const text = question.trim();
-  if (text.toLowerCase().includes(city.toLowerCase())) return text;
-  const place = placeLabel(city, region);
-  return `${text.replace(/[?.!\s]+$/, "")} in ${place}?`;
-}
-
-function locationOf(business: ScanTargetRow["business"]): CheckLocation {
-  return { city: business.city ?? "", region: business.region ?? "", country: countryCode(business.country) };
-}
+export { scanCheckCount, withCity } from "./scan-tasks";
 
 // On a 02:00 run far enough out that the next scan never reuses this one's cached answers (H1, schedule.ts).
 export { nextScanAt };
-
-function isProvider(model: string): model is ProviderId {
-  return (PROVIDERS as string[]).includes(model);
-}
-
-/** Credits a scan holds, counted like checkTasks: each active question on each chosen AI model (D-54). */
-export function scanCheckCount(activeQuestions: number, models: string[]): number {
-  return activeQuestions * models.filter(isProvider).length;
-}

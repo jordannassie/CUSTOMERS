@@ -25,6 +25,7 @@ describe("outageReason", () => {
     expect(outageReason(error(400, CREDIT_ERROR))).toBe("credit");
   });
 
+  // One of these says nothing about the next call: only a whole scan of them marks Claude down (gate.ts, BUG-285).
   it("does not count rate limits, timeouts, server errors or other bad requests", () => {
     expect(outageReason(error(429, "anthropic returned 429: rate_limit_error", "rate_limit"))).toBeNull();
     expect(outageReason(error(null, "anthropic did not answer within 30000 ms", "timeout"))).toBeNull();
@@ -61,5 +62,12 @@ describe("outageMessage", () => {
     expect(outageMessage("auth")).toContain("rejected the API key");
     expect(outageMessage("credit")).toContain("out of credit");
     expect(outageMessage("auth")).toContain("Scans run on ChatGPT and Perplexity");
+  });
+
+  it("says plainly when Claude is not answering, and when scans try it again (BUG-285)", () => {
+    const text = outageMessage("down");
+    expect(text).toContain("Claude is not answering (server errors or timeouts)");
+    expect(text).toContain(`try it again after ${CLAUDE_OUTAGE_MINUTES} minutes`);
+    expect(text).not.toMatch(/[–—]/);
   });
 });

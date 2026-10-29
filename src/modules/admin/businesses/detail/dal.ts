@@ -5,7 +5,7 @@ import { getBalance } from "@/modules/credits";
 import { allRows, emailsOf, readCaptures, unique } from "../dal";
 import { isActive, startOfMonthUtc, sumBy, toScanState, type ScanState } from "../service";
 
-// Everything about one business for the admin detail page (B-66); callers run requireAdmin() first.
+// Everything about one business for the admin detail page (B-66). Each read checks admin access itself (BUG-286).
 
 const HISTORY_LIMIT = 20;
 
@@ -38,6 +38,7 @@ export async function loadBusinessName(id: string): Promise<string | null> {
 }
 
 export async function loadBusinessDetail(id: string, now = new Date()) {
+  await requireAdmin();
   const db = createServiceClient();
   const { data: business, error } = await db
     .from("businesses")

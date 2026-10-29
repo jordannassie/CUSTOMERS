@@ -2,9 +2,11 @@ import type Stripe from "stripe";
 import { formatCount, formatUsd } from "../format";
 import type { PlanChangeStripe } from "../plan-change/client";
 import { formatDate } from "../plan-change/copy";
-import { itemSpec, phasesOf, PlanChangeError, scheduleIdOf, type PlanChangeContext } from "../plan-change/planner";
+import { currentItems, itemSpec, phasesOf, PlanChangeError, scheduleIdOf, type ItemSpec, type PlanChangeContext } from "../plan-change/planner";
+import { phasesFrom, scheduleAgain } from "../plan-change/schedule-now";
 import type { PlanCredits } from "../webhooks/credits";
 import type { StripeSync } from "../webhooks/sync";
+import { itemsToMatchPhase } from "./phase-items";
 
 // Start the paid plan before the trial ends (D-16, MVP_SPEC 4.4): a trial covers 2 businesses, so a 3rd needs the
 // plan to start. Stripe ends the trial now, restarts the billing period today and charges the full month at once.
@@ -19,6 +21,8 @@ export type EndTrialDeps = {
   timeZone?: string;
   /** Applies the subscription and its paid invoice from Stripe like the webhooks (webhooks/sync.ts). */
   sync?: (subscriptionId: string) => Promise<StripeSync>;
+  /** Admin alert when a declined card left the scheduled change lost (plan-change/dal.ts raiseScheduleLost). */
+  onScheduleLost?: (message: string) => Promise<void>;
 };
 
 export type PlanNowOffer = {
@@ -119,10 +123,11 @@ async function synced(sub: Stripe.Subscription, deps: EndTrialDeps): Promise<boo
 const inFlight = new Map<string, Promise<PlanNowDone>>();
 
 /**
- * Ends the trial now. With a change scheduled for the trial end (a downgrade or removal, D-57), the schedule's
- * pending items are put in place first, still free during the trial, and the schedule is released: Stripe refuses
- * a new trial end on a subscription a schedule controls (A4). The trial then ends with payment_behavior
- * error_if_incomplete, so a declined card changes nothing and the trial goes on.
+ * Ends the trial now. Stripe refuses a new trial end on a subscription a schedule controls (A4), so a schedule is
+ * released first, with nothing on the subscription changed yet. Then one subscription update ends the trial and, with
+ * a change scheduled for the trial end (a downgrade or removal, D-57), puts the scheduled items in place too. It uses
+ * payment_behavior error_if_incomplete, so Stripe applies all of it or none of it: a declined card changes nothing,
+ * the schedule is made again as it was, and the trial goes on (BUG-282).
  * `attemptId` is new for each try, so a double click charges once and a retry after a decline is a new request.
  * When Stripe already shows the trial ended, nothing is charged again: it only syncs.
  */
@@ -135,6 +140,30 @@ export async function endTrialNow(ctx: PlanChangeContext, attemptId: string, dep
   return attempt;
 }
 
+const isDecline = (error: unknown) => {
+  const e = error as { type?: string; statusCode?: number } | null;
+  return e?.type === "StripeCardError" || e?.statusCode === 402;
+};
+
+/** True while Stripe still shows the trial; when Stripe can't be read either, true, so the schedule is tried again. */
+async function stillTrialing(subscriptionId: string, deps: EndTrialDeps): Promise<boolean> {
+  const now = await deps.stripe.retrieveSubscription(subscriptionId).catch(() => null);
+  return !now || now.status === "trialing";
+}
+
+/** The schedule as it was, so a declined card can put it back. */
+type Saved = { current: ItemSpec[]; next: ItemSpec[]; endBehavior: Stripe.SubscriptionSchedule.EndBehavior; trialEnd: number };
+
+async function restore(ctx: PlanChangeContext, sub: Stripe.Subscription, saved: Saved, key: string, deps: EndTrialDeps) {
+  const restored = await scheduleAgain(deps.stripe, sub.id, `${key}:restore`, saved.endBehavior, (start, end) =>
+    phasesFrom(start, end, saved.current, saved.next, saved.trialEnd),
+  );
+  if (restored) return;
+  const staying = saved.next.map((i) => i.metadata.business_id).join(", ") || "none";
+  const message = `A scheduled plan change on Stripe subscription ${sub.id} (agency ${ctx.agencyId}) was lost after a declined card on "Start my plan now". Put it back in Stripe: at the trial end only these businesses stay on the plan: ${staying}.`;
+  await deps.onScheduleLost?.(message).catch((error) => console.error("[billing/end-trial] could not raise the alert", error));
+}
+
 async function endTrial(ctx: PlanChangeContext, key: string, deps: EndTrialDeps): Promise<PlanNowDone> {
   const loaded = await load(ctx, deps);
   const { sub, schedule } = loaded;
@@ -142,28 +171,34 @@ async function endTrial(ctx: PlanChangeContext, key: string, deps: EndTrialDeps)
   if (sub.status === "active" && !endsWithoutPlan(loaded)) return { alreadyActive: true, started: await synced(sub, deps) };
   refuseUnlessTrialing(loaded);
 
+  let saved: Saved | null = null;
   if (schedule) {
     const { current, next } = phasesOf(schedule);
     if (next) {
-      await deps.stripe.updateSchedule(
-        schedule.id,
-        {
-          end_behavior: "release",
-          proration_behavior: "none",
-          phases: [{ items: next.items.map(itemSpec), start_date: current.start_date, end_date: current.end_date, trial_end: sub.trial_end ?? current.end_date }],
-        },
-        `${key}:schedule`,
-      );
+      const trialEnd = sub.trial_end ?? current.end_date;
+      saved = { current: current.items.map(itemSpec), next: next.items.map(itemSpec), endBehavior: schedule.end_behavior, trialEnd };
     }
     await deps.stripe.releaseSchedule(schedule.id, `${key}:release`);
   }
 
-  const updated = await deps.stripe.updateSubscription(
-    sub.id,
-    { trial_end: "now", payment_behavior: "error_if_incomplete" },
-    `${key}:subscription`,
-  );
+  const specs = currentItems(ctx, sub);
+  const live = sub.items.data.map((item, i) => ({ id: item.id, spec: specs[i] }));
+  const params: Stripe.SubscriptionUpdateParams = saved
+    ? { items: itemsToMatchPhase(live, saved.next), proration_behavior: "none", trial_end: "now", payment_behavior: "error_if_incomplete" }
+    : { trial_end: "now", payment_behavior: "error_if_incomplete" };
+  let updated: Stripe.Subscription;
+  try {
+    updated = await deps.stripe.updateSubscription(sub.id, params, `${key}:subscription`);
+  } catch (error) {
+    // A declined card changed nothing (the action maps it to DECLINED). After any other error Stripe may still have
+    // applied the update, so the schedule goes back only while the trial is still running.
+    if (saved && (isDecline(error) || (await stillTrialing(sub.id, deps)))) await restore(ctx, sub, saved, key, deps);
+    throw error;
+  }
   // error_if_incomplete answers a decline with a 402; anything else that is not active means it was not paid.
-  if (updated.status !== "active") throw new PlanChangeError(402, DECLINED);
+  if (updated.status !== "active") {
+    if (saved) await restore(ctx, sub, saved, key, deps);
+    throw new PlanChangeError(402, DECLINED);
+  }
   return { alreadyActive: false, started: await synced(updated, deps) };
 }

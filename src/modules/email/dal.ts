@@ -1,5 +1,6 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { appUrl } from "@/lib/app-url";
 import { env } from "@/lib/env";
 import { createServiceClient } from "@/lib/supabase/service";
 import { requireAgency } from "@/modules/auth";
@@ -13,9 +14,8 @@ export type EmailSettings = { from: string; baseUrl: string; unsubscribeSecret: 
 
 export function getEmailSettings(): EmailSettings {
   if (!env.EMAIL_FROM) throw new Error("Email is not configured. Set EMAIL_FROM.");
-  const baseUrl = env.NEXT_PUBLIC_APP_URL ?? env.NEXT_PUBLIC_SITE_URL;
-  if (!baseUrl) throw new Error("Set NEXT_PUBLIC_APP_URL so emails can link back to the app.");
-  return { from: env.EMAIL_FROM, baseUrl, unsubscribeSecret: env.EMAIL_UNSUBSCRIBE_SECRET ?? null };
+  // The configured address, the same one Stripe and login links use (BUG-283); throws when none is set.
+  return { from: env.EMAIL_FROM, baseUrl: appUrl(), unsubscribeSecret: env.EMAIL_UNSUBSCRIBE_SECRET ?? null };
 }
 
 /** The agency and topic behind an unsubscribe link, or null for a bad, forged or unconfigured token. */

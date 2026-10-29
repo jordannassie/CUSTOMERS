@@ -6,6 +6,8 @@ import { canRestore, displayStatus, restoreDeadline } from "../service";
 
 const HISTORY = 20;
 
+export type AuditOutcome = "started" | "done" | "failed";
+
 export type AdminAgencyDetail = {
   agency: {
     id: string;
@@ -34,7 +36,8 @@ export type AdminAgencyDetail = {
   }[];
   /** source is the grant's (trial, plan, topup, admin, promo, refund) for grants and expiries, else null. */
   ledger: { id: string; delta: number; kind: string; source: string | null; note: string | null; by: string | null; createdAt: string }[];
-  audit: { id: string; action: string; reason: string | null; by: string | null; createdAt: string }[];
+  /** outcome (BUG-278): 'started' when the result was never confirmed, 'failed' when the change did not happen. */
+  audit: { id: string; action: string; reason: string | null; by: string | null; createdAt: string; outcome: AuditOutcome }[];
   /** Reasons given in the "Before you cancel" dialog (migration 062), newest first. */
   cancelReasons: { id: string; kind: string; reason: string; business: string | null; createdAt: string }[];
 };
@@ -85,7 +88,7 @@ export async function loadAgencyDetail(agencyId: string, now = new Date()): Prom
       .limit(HISTORY),
     db
       .from("admin_audit_log")
-      .select("id, action, details, admin_user_id, created_at")
+      .select("id, action, details, admin_user_id, created_at, outcome")
       .eq("target_type", "agency")
       .eq("target_id", agencyId)
       .order("created_at", { ascending: false })
@@ -156,6 +159,7 @@ export async function loadAgencyDetail(agencyId: string, now = new Date()): Prom
         reason: typeof details.reason === "string" ? details.reason : null,
         by: l.admin_user_id ? (emails.get(l.admin_user_id) ?? "Removed admin") : null,
         createdAt: l.created_at,
+        outcome: l.outcome === "started" || l.outcome === "failed" ? l.outcome : "done",
       };
     }),
     cancelReasons: reasons.data.map((r) => ({

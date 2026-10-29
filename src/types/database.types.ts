@@ -61,7 +61,9 @@ export type Database = {
           admin_user_id: string | null
           created_at: string
           details: Json
+          finished_at: string | null
           id: string
+          outcome: string
           target_id: string | null
           target_type: string
         }
@@ -70,7 +72,9 @@ export type Database = {
           admin_user_id?: string | null
           created_at?: string
           details?: Json
+          finished_at?: string | null
           id?: string
+          outcome?: string
           target_id?: string | null
           target_type: string
         }
@@ -79,7 +83,9 @@ export type Database = {
           admin_user_id?: string | null
           created_at?: string
           details?: Json
+          finished_at?: string | null
           id?: string
+          outcome?: string
           target_id?: string | null
           target_type?: string
         }
@@ -2469,6 +2475,15 @@ export type Database = {
       }
     }
     Functions: {
+      add_tracked_question: {
+        Args: {
+          p_agency_id: string
+          p_business_id: string
+          p_max?: number
+          p_prompt: string
+        }
+        Returns: string
+      }
       admin_adjust_credits: {
         Args: {
           p_admin_user_id: string
@@ -2612,6 +2627,19 @@ export type Database = {
           used: number
         }[]
       }
+      low_credit_alerts: {
+        Args: never
+        Returns: {
+          agency_id: string
+          balance: number
+          level: string
+          period_end: string
+          period_key: string
+          period_started_at: string
+          total: number
+          used: number
+        }[]
+      }
       next_scheduled_scan_run: { Args: { p_after: string }; Returns: string }
       purge_deleted_accounts: {
         Args: never
@@ -2662,6 +2690,15 @@ export type Database = {
       }
       reset_stuck_jobs: { Args: never; Returns: number }
       resolve_quiet_system_alerts: { Args: { p_quiet?: unknown }; Returns: number }
+      resume_tracked_question: {
+        Args: {
+          p_agency_id: string
+          p_business_id: string
+          p_max?: number
+          p_question_id: string
+        }
+        Returns: undefined
+      }
       retry_scan_job: { Args: { p_job_id: string }; Returns: string }
       run_account_purge: { Args: never; Returns: number }
       run_email_job: { Args: { p_job: string }; Returns: number }

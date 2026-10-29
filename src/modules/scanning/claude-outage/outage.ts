@@ -1,13 +1,15 @@
 // Claude out of service for scans. A rejected API key or an empty Anthropic account fails every Claude check the same
 // way, so after one such failure scans leave Claude out for a while instead of sending, holding and logging a check
-// per question that cannot work. Rate limits, timeouts and server errors pass on their own and never count. Pure.
+// per question that cannot work. A single rate limit, timeout or server error passes on its own and never counts;
+// only a scan in which every Claude check failed that way marks Claude "down" (gate.ts, BUG-285). Pure.
 import { CLAUDE_OUTAGE_MINUTES as AI_CLAUDE_OUTAGE_MINUTES, claudeOutageMessage } from "@/modules/ai";
 import { ProviderError } from "../providers/request";
 
-/** How long scans leave Claude out after its last auth or credit failure; the next scan then tries it once. */
+/** How long scans leave Claude out after its last auth, credit or "down" failure; the next scan then tries it once. */
 export const CLAUDE_OUTAGE_MINUTES = AI_CLAUDE_OUTAGE_MINUTES;
 
-export type OutageReason = "auth" | "credit";
+/** "down": every Claude check in a scan failed with a server error, timeout, network error or rate limit. */
+export type OutageReason = "auth" | "credit" | "down";
 
 /** The open outage: when it started, and when a Claude check last failed for that reason. */
 export type ClaudeOutage = { since: Date; lastSeenAt: Date; reason: OutageReason | null };
@@ -25,7 +27,10 @@ export type OutageStore = {
 // Anthropic answers 400 "Your credit balance is too low ... Plans & Billing" for an empty account.
 const CREDIT = /credit balance|plans\s*&\s*billing|billing/i;
 
-/** "auth" for a rejected or unpermitted key (401, 403), "credit" for an empty account, null for anything else. */
+/**
+ * "auth" for a rejected or unpermitted key (401, 403), "credit" for an empty account, null for anything else. Never
+ * "down": one server error or timeout says nothing about the next call, so "down" comes only from a whole scan (gate.ts).
+ */
 export function outageReason(err: unknown): OutageReason | null {
   if (!(err instanceof ProviderError) || err.provider !== "anthropic" || err.kind !== "client") return null;
   if (err.status === 401 || err.status === 403) return "auth";

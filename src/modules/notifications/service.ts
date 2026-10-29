@@ -10,15 +10,31 @@ export type LowCreditAgency = {
   used: number;
   total: number;
   balance: number;
+  /** The renewal date the email shows. It can move inside one period, so the key never uses it (BUG-280). */
   periodEnd: Date | null;
+  /** The expiry of the newest plan or trial grant: the same all through one credit period. */
+  periodKey: Date | null;
+  /** When that period's credits were granted; no low credits email at the same level since then. */
+  periodStartedAt: Date | null;
 };
 
 const DAY_MS = 86_400_000;
 
-/** Once per level per credit period. Without plan credits the calendar month stands in for the period. */
-export function lowCreditsKey(agency: Pick<LowCreditAgency, "agencyId" | "level" | "periodEnd">, now: Date): string {
-  const period = agency.periodEnd ? agency.periodEnd.toISOString() : now.toISOString().slice(0, 7);
-  return `low_credits:${agency.agencyId}:${period}:${agency.level}`;
+/** "zero" covers at zero and below: one email when the credits run out, not a second one below zero. */
+export type LowCreditsGroup = "low" | "zero";
+
+export const lowCreditsGroup = (level: string): LowCreditsGroup => (level === "low" ? "low" : "zero");
+
+/** Once per level group per credit period. Without plan credits the calendar month stands in for the period. */
+export function lowCreditsKey(agency: Pick<LowCreditAgency, "agencyId" | "level" | "periodKey">, now: Date): string {
+  const period = agency.periodKey ? agency.periodKey.toISOString() : now.toISOString().slice(0, 7);
+  return `low_credits:${agency.agencyId}:${period}:${lowCreditsGroup(agency.level)}`;
+}
+
+/** The level group a stored key was sent for: old keys end in low, empty or negative, new ones in low or zero. */
+export function lowCreditsKeyGroup(key: string): LowCreditsGroup | null {
+  const level = key.slice(key.lastIndexOf(":") + 1);
+  return ["low", "empty", "negative", "zero"].includes(level) ? lowCreditsGroup(level) : null;
 }
 
 /** The Monday (UTC) of the week `now` falls in, as YYYY-MM-DD. */

@@ -48,7 +48,7 @@ async function readJob(jobId: string) {
 }
 
 async function auditRows(jobId: string) {
-  const { data, error } = await service.from("admin_audit_log").select("action, target_type, admin_user_id").eq("target_id", jobId);
+  const { data, error } = await service.from("admin_audit_log").select("action, target_type, admin_user_id, outcome").eq("target_id", jobId).order("created_at");
   if (error) throw error;
   return data;
 }
@@ -100,11 +100,11 @@ describe("admin Scans (B-67)", () => {
     // hold_credits would otherwise hand the closed hold back and the scan would skip as already finished.
     const { data: hold } = await service.from("credit_holds").select("scan_job_id").eq("id", holdId).single();
     expect(hold?.scan_job_id).toBeNull();
-    expect(await auditRows(jobId)).toEqual([{ action: "scan_job.retry", target_type: "scan_job", admin_user_id: admin.id }]);
+    expect(await auditRows(jobId)).toEqual([{ action: "scan_job.retry", target_type: "scan_job", admin_user_id: admin.id, outcome: "done" }]);
 
-    // A second click finds nothing to retry and logs nothing.
+    // A second click finds nothing to retry; its history row says it did not go through (BUG-278).
     expect(await retryScan({ jobId })).toMatchObject({ ok: false, status: 409 });
-    expect(await auditRows(jobId)).toHaveLength(1);
+    expect((await auditRows(jobId)).map((r) => r.outcome)).toEqual(["done", "failed"]);
 
     // D-55: while that job waits, another failed job of the same business cannot be queued too.
     const second = await failedJob();

@@ -4,11 +4,13 @@ import {
   aiToolNames,
   hasSomethingToReport,
   lowCreditsKey,
+  lowCreditsKeyGroup,
   MAX_FIXES,
   weekOf,
   weeklyBusiness,
   weeklyReportKey,
   weeklyReportSubject,
+  type LowCreditAgency,
 } from "./service";
 
 const AGENCY = "7f3c2a9e-2d4b-4c1a-9a6e-1b2c3d4e5f60";
@@ -21,14 +23,29 @@ describe("keys", () => {
     expect(weeklyReportKey(AGENCY, new Date("2026-09-30T10:00:00Z"))).toBe(`weekly_report:${AGENCY}:2026-09-28`);
   });
 
-  it("keys low credits by level and period, so each level sends once per period", () => {
+  it("keys low credits by level group and period key, so each group sends once per period", () => {
     const now = new Date("2026-09-29T10:00:00Z");
-    const periodEnd = new Date("2026-10-02T00:00:00Z");
-    const low = lowCreditsKey({ agencyId: AGENCY, level: "low", periodEnd }, now);
+    const periodKey = new Date("2026-10-02T00:00:00Z");
+    const agency = { agencyId: AGENCY, level: "low" as const, periodKey, periodEnd: periodKey, used: 85, total: 100, balance: 15, periodStartedAt: null };
+    const low = lowCreditsKey(agency, now);
     expect(low).toBe(`low_credits:${AGENCY}:2026-10-02T00:00:00.000Z:low`);
-    expect(lowCreditsKey({ agencyId: AGENCY, level: "empty", periodEnd }, now)).not.toBe(low);
-    expect(lowCreditsKey({ agencyId: AGENCY, level: "low", periodEnd: new Date("2026-11-02T00:00:00Z") }, now)).not.toBe(low);
-    expect(lowCreditsKey({ agencyId: AGENCY, level: "empty", periodEnd: null }, now)).toBe(`low_credits:${AGENCY}:2026-09:empty`);
+    // The renewal date the email shows can move inside one period (BUG-280); the key does not.
+    const renewalPassed: LowCreditAgency = { ...agency, periodEnd: new Date("2026-09-28T00:00:00Z") };
+    const noRenewalDate: LowCreditAgency = { ...agency, periodEnd: null };
+    expect(lowCreditsKey(renewalPassed, now)).toBe(low);
+    expect(lowCreditsKey(noRenewalDate, now)).toBe(low);
+    // At zero and below zero are one email.
+    const zero = lowCreditsKey({ ...agency, level: "empty" }, now);
+    expect(zero).toBe(`low_credits:${AGENCY}:2026-10-02T00:00:00.000Z:zero`);
+    expect(lowCreditsKey({ ...agency, level: "negative" }, now)).toBe(zero);
+    expect(lowCreditsKey({ ...agency, periodKey: new Date("2026-11-02T00:00:00Z") }, now)).not.toBe(low);
+    expect(lowCreditsKey({ ...agency, level: "negative", periodKey: null }, now)).toBe(`low_credits:${AGENCY}:2026-09:zero`);
+  });
+
+  it("reads the level group from old and new keys", () => {
+    expect(lowCreditsKeyGroup(`low_credits:${AGENCY}:2026-10-02T00:00:00.000Z:low`)).toBe("low");
+    for (const level of ["empty", "negative", "zero"]) expect(lowCreditsKeyGroup(`low_credits:${AGENCY}:2026-10:${level}`)).toBe("zero");
+    expect(lowCreditsKeyGroup("weekly_report:x:2026-10-05")).toBeNull();
   });
 });
 

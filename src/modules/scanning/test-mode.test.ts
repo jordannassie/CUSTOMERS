@@ -9,7 +9,7 @@ import { createPerplexityCheck } from "./providers/perplexity";
 import type { ProviderId } from "./providers/types";
 import { loadRecordedAnswers } from "./recorded";
 import { runScan } from "./service";
-import { blockAiHosts, createScanAgency, deleteScanUsers, finishJob, newJob, service } from "./service.test-helpers";
+import { blockAiHosts, createScanAgency, deleteScanUsers, finishJob, memoryOutage, newJob, service } from "./service.test-helpers";
 
 // B-31 engineering check: a test agency scan makes zero calls to OpenAI, Anthropic or Perplexity.
 // The real adapters get fake keys, so a scan that skipped test mode would reach the blocked hosts.
@@ -96,10 +96,15 @@ describe("test mode (B-31, D-61)", () => {
     const business = await seedBusiness(agency, { ...seed.businesses[0], questions: seed.businesses[0].questions.slice(0, 1) });
     const job = await newJob(business);
 
-    const outcome = await runScan(job, liveWithFakeKeys);
+    // Every blocked Claude call fails, which marks Claude down (BUG-285): kept in memory, not in the shared alert
+    // other scan tests read.
+    const claudeOutage = memoryOutage().store;
+    const outcome = await runScan(job, { ...liveWithFakeKeys, claudeOutage });
     await finishJob(job);
 
-    expect(outcome).toMatchObject({ status: "failed", checks: 3, failed: 3, charged: 0 });
+    // Blocked hosts read as AI tools not answering, so the worker would not retry this scan.
+    expect(outcome).toMatchObject({ status: "failed", checks: 3, failed: 3, charged: 0, outage: true });
+    expect(claudeOutage.mark).toHaveBeenCalledWith("down", "anthropic request failed");
     const hosts = new Set(aiAttempts.map((url) => new URL(url).hostname));
     expect([...hosts].sort()).toEqual(["api.anthropic.com", "api.openai.com", "api.perplexity.ai"]);
     expect((await getBalance(agency.agencyId)).balance).toBe(10);

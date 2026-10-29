@@ -73,7 +73,7 @@ These are the commands from Supabase's backup and restore guide. The data dump i
 
 ## Weekly copy of logos
 
-The `business-logos` bucket holds agency and business logos. The `STORAGE` bucket is from the old app; copy it too until we know it is empty.
+The `business-logos` bucket holds agency and business logos. The `STORAGE` bucket is from the old app; copy it too until we know it is empty. Every bucket's privacy, size and file types are set by `supabase/migrations/087_storage_buckets.sql`, not in the dashboard.
 
 1. **Jordan**: in the Supabase dashboard, Storage, S3 configuration, turn on S3 access and create an access key. The key can read and change every bucket and skips row level security, so it goes in the password manager and is used only for this copy.
 2. **Dev**, once a week (Monday) and before every migration:

@@ -2,7 +2,7 @@ import { createElement } from "react";
 import { describe, expect, it, vi } from "vitest";
 import type { EmailLogRow, EmailStore } from "./dal";
 import { testSecret } from "./email.test-helpers";
-import type { EmailClient } from "./resend";
+import { EmailProviderError, type EmailClient } from "./resend";
 import { sendEmail, type SendEmailDeps, type SendEmailInput } from "./send";
 import { verifyUnsubscribeToken } from "./service";
 import NoticeEmail from "./templates/notice";
@@ -11,11 +11,11 @@ import NoticeEmail from "./templates/notice";
 const SECRET = testSecret();
 const AGENCY = "7f3c2a9e-2d4b-4c1a-9a6e-1b2c3d4e5f60";
 
-function setup({ fail, optedOut }: { fail?: string; optedOut?: boolean } = {}) {
+function setup({ fail, optedOut }: { fail?: string | Error; optedOut?: boolean } = {}) {
   const rows: EmailLogRow[] = [];
   const client: EmailClient = {
     send: vi.fn(async () => {
-      if (fail) throw new Error(fail);
+      if (fail) throw typeof fail === "string" ? new Error(fail) : fail;
       return { id: `re_${rows.length + 1}` };
     }),
   };
@@ -78,6 +78,21 @@ describe("sendEmail", () => {
     expect(result).toEqual({ status: "failed", error: "Resend: domain not verified" });
     expect(failing.rows[0]).toMatchObject({ status: "failed", error: "Resend: domain not verified", idempotencyKey: "k1" });
     expect(await failing.deps.store.hasSent("k1")).toBe(false);
+  });
+
+  it("logs a key Resend says was already used as sent, and skips it (BUG-280)", async () => {
+    const used = setup({ fail: new EmailProviderError("Resend: key already used", "invalid_idempotent_request") });
+    const result = await sendEmail(input({ idempotencyKey: "low_credits:a:p:low" }), used.deps);
+    expect(result).toEqual({ status: "skipped", reason: "duplicate" });
+    expect(used.rows).toEqual([expect.objectContaining({ status: "sent", idempotencyKey: "low_credits:a:p:low" })]);
+    expect(used.rows[0].providerId).toBeUndefined();
+    expect(await used.deps.store.hasSent("low_credits:a:p:low")).toBe(true);
+  });
+
+  it("skips a key Resend is still sending, without logging it", async () => {
+    const busy = setup({ fail: new EmailProviderError("Resend: in progress", "concurrent_idempotent_requests") });
+    expect(await sendEmail(input({ idempotencyKey: "k2" }), busy.deps)).toEqual({ status: "skipped", reason: "duplicate" });
+    expect(busy.rows).toEqual([]);
   });
 
   it("adds a signed unsubscribe link and one-click headers to the weekly report", async () => {

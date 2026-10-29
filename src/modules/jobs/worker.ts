@@ -5,6 +5,7 @@ import { claimExplanation, explainAfterScan, runsToSweep, unexplainedRunOfJob } 
 import { refreshStaleSiteFacts } from "@/modules/onboarding/server";
 import { ALREADY_FINISHED, isMissingSample, NO_SAMPLE_ANSWERS, runScan, type ScanOutcome } from "@/modules/scanning";
 import { claimScanJobs, finishJob, isWorkerSecret, workerTimeBudgetMs, type ClaimedJob, type JobUpdate } from "./dal";
+import { NOT_ANSWERING_TEXT } from "./service";
 
 export const CLAIM_LIMIT = 10;
 export const MAX_ATTEMPTS = 3;
@@ -72,6 +73,10 @@ export function jobUpdateFor(outcome: ScanOutcome | { status: "error"; error: st
     // not a failure either (B5): alerts ignore it and the business's next scan moves on.
     return { status: "skipped", error: outcome.reason };
   }
+  // The AI tools were not answering (server errors, timeouts, rate limits, or Claude down), each call already tried
+  // again inside: a retry minutes later would fail the same way and spend calls (BUG-285). The business keeps its due
+  // date, so the next daily scan tries again, and an admin can still retry the job.
+  if (outcome.status === "failed" && outcome.outage) return { status: "failed", error: notAnsweringError(outcome.errors) };
   const error = outcome.status === "error" ? outcome.error : failedChecksError(outcome.errors);
   // A test business with no sample answers of its trade and city gets none on a retry either (BUG-072): it fails
   // at once, so the screen says why instead of "trying again" and the stuck jobs alert does not keep it open. That
@@ -202,6 +207,12 @@ export async function handleWorkerRequest(req: Request, deps?: WorkerDeps): Prom
 function failedChecksError(errors: string[]): string {
   const unique = [...new Set(errors)];
   return `Every check failed: ${unique.join("; ")}`.slice(0, 1000);
+}
+
+/** The screen's wording first (scanStatusView reads it), then each distinct error for admins. */
+function notAnsweringError(errors: string[]): string {
+  const unique = [...new Set(errors)];
+  return (unique.length > 0 ? `${NOT_ANSWERING_TEXT} ${unique.join("; ")}` : NOT_ANSWERING_TEXT).slice(0, 1000);
 }
 
 function errorText(err: unknown): string {

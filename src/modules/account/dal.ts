@@ -1,6 +1,6 @@
 import "server-only";
 import { createClient as createPlainClient } from "@supabase/supabase-js";
-import { headers } from "next/headers";
+import { appUrl } from "@/lib/app-url";
 import { env } from "@/lib/env";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
@@ -67,15 +67,6 @@ export async function checkPassword(email: string, password: string): Promise<"o
   return "ok";
 }
 
-async function origin(): Promise<string> {
-  const configured = env.NEXT_PUBLIC_APP_URL ?? env.NEXT_PUBLIC_SITE_URL;
-  if (configured) return configured.replace(/\/$/, "");
-  const h = await headers();
-  const host = h.get("x-forwarded-host") ?? h.get("host");
-  const proto = h.get("x-forwarded-proto") ?? (host?.startsWith("localhost") ? "http" : "https");
-  return `${proto}://${host}`;
-}
-
 export type AuthUpdate = { ok: true } | { ok: false; code: string | undefined; message: string };
 
 /** Supabase emails a link to the new address (and the old one, with secure email change on); the change waits for it. */
@@ -83,7 +74,8 @@ export async function updateEmail(email: string): Promise<AuthUpdate> {
   const supabase = await createClient();
   const { error } = await supabase.auth.updateUser(
     { email },
-    { emailRedirectTo: `${await origin()}/auth/callback?next=/settings%23account` },
+    // The configured address, never the request's host (BUG-283).
+    { emailRedirectTo: `${appUrl()}/auth/callback?next=/settings%23account` },
   );
   return error ? { ok: false, code: error.code, message: error.message } : { ok: true };
 }

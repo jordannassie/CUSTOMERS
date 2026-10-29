@@ -28,6 +28,10 @@ export type ScanStatus = {
 /** Test mode with no sample answers of the business's own trade and city (BUG-072, D-61). */
 export const NO_SAMPLE_ANSWERS_TEXT = `${NO_SAMPLE_ANSWERS}. Test mode only has sample answers for some trades and cities, so this scan could not run.`;
 
+/** Every check failed because the AI tools were not answering: the job is not retried (BUG-285, worker.ts). */
+export const NOT_ANSWERING_TEXT =
+  "The AI tools were not answering, so this scan could not finish. No credits were used. The next scheduled scan will try again.";
+
 type JobView = Pick<LatestJob, "status" | "finishedAt"> & Partial<Pick<LatestJob, "error" | "runAfter" | "lockedAt">>;
 
 export function scanStatusView(
@@ -45,8 +49,14 @@ export function scanStatusView(
     lastResult: finished,
     lastFinishedAt: finished ? job!.finishedAt : null,
     blockedReason: scanning || canStart.allowed ? null : canStart.reason,
-    failedReason: finished === "failed" && job?.error?.includes(NO_SAMPLE_ANSWERS) ? NO_SAMPLE_ANSWERS_TEXT : null,
+    failedReason: finished === "failed" ? failedReason(job?.error) : null,
   };
+}
+
+function failedReason(error: string | null | undefined): string | null {
+  if (error?.includes(NO_SAMPLE_ANSWERS)) return NO_SAMPLE_ANSWERS_TEXT;
+  if (error?.startsWith(NOT_ANSWERING_TEXT)) return NOT_ANSWERING_TEXT;
+  return null;
 }
 
 function isStalled(job: JobView, now: Date): boolean {

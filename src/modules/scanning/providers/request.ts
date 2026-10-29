@@ -57,6 +57,14 @@ export function retriedInside(kind: ProviderErrorKind): boolean {
   return kind === "rate_limit" || kind === "server" || kind === "network";
 }
 
+/**
+ * The provider is not answering now (server errors, timeouts, network errors, rate limits), already tried again
+ * inside the call. A scan where every check failed this way is not retried minutes later (BUG-285).
+ */
+export function providerDown(kind: ProviderErrorKind): boolean {
+  return kind === "server" || kind === "timeout" || kind === "network" || kind === "rate_limit";
+}
+
 /** Runs one provider call with the shared retry policy; adapters only classify each attempt. */
 export async function withRetries<T>(
   run: (attempt: number) => Promise<Attempt<T>>,
