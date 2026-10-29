@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const SCAN_STATUSES = ["failed", "running", "queued", "done"] as const;
+export const SCAN_STATUSES = ["failed", "skipped", "running", "queued", "done"] as const;
 export type ScanStatus = (typeof SCAN_STATUSES)[number];
 
 // An unknown ?status= shows every job rather than an error page.

@@ -1,6 +1,7 @@
 import "server-only";
 import { requireAdmin } from "@/modules/auth";
 import { createServiceClient } from "@/lib/supabase/service";
+import { allRows, inChunks } from "../businesses/dal";
 import { SCAN_STATUSES, type ScanStatus } from "./schema";
 import { durationMs, jobModels, sumBy } from "./service";
 
@@ -14,6 +15,7 @@ export type AdminScanRow = {
   status: ScanStatus;
   businessId: string;
   businessName: string;
+  agencyId: string | null;
   agencyName: string;
   isTest: boolean;
   models: string[];
@@ -23,6 +25,8 @@ export type AdminScanRow = {
   createdAt: string;
   attempts: number;
   error: string | null;
+  /** What running it again charges: the business's active questions times its models (one credit per check). */
+  scanCredits: number;
 };
 
 export type AdminScanList = {
@@ -38,7 +42,7 @@ export async function listScanJobs(status: ScanStatus | undefined): Promise<Admi
   let query = db
     .from("scan_jobs")
     .select(
-      "id, status, business_id, attempts, credits_charged, error, created_at, locked_at, finished_at, businesses(name, models), agencies(name, is_test)",
+      "id, status, business_id, agency_id, attempts, credits_charged, error, created_at, locked_at, finished_at, businesses(name, models), agencies(name, is_test)",
     )
     .order("created_at", { ascending: false })
     .limit(SCAN_LIST_LIMIT);
@@ -47,7 +51,10 @@ export async function listScanJobs(status: ScanStatus | undefined): Promise<Admi
   const [jobs, counts] = await Promise.all([query, countByStatus()]);
   if (jobs.error) throw new Error(`Scans: ${jobs.error.message}`);
 
-  const runs = await runsOfJobs(jobs.data.map((j) => j.id));
+  const [runs, questions] = await Promise.all([
+    runsOfJobs(jobs.data.map((j) => j.id)),
+    activeQuestions([...new Set(jobs.data.map((j) => j.business_id))]),
+  ]);
   const cost = await costOfRuns(runs.map((r) => r.id));
   const runByJob = new Map(runs.map((r) => [r.scan_job_id!, r]));
 
@@ -58,6 +65,7 @@ export async function listScanJobs(status: ScanStatus | undefined): Promise<Admi
       status: j.status as ScanStatus,
       businessId: j.business_id,
       businessName: j.businesses?.name ?? "Deleted business",
+      agencyId: j.agencies ? j.agency_id : null,
       agencyName: j.agencies?.name ?? "",
       isTest: j.agencies?.is_test ?? false,
       models: jobModels(run?.provider ?? null, j.businesses?.models ?? []),
@@ -68,6 +76,7 @@ export async function listScanJobs(status: ScanStatus | undefined): Promise<Admi
       createdAt: j.created_at,
       attempts: j.attempts,
       error: j.error,
+      scanCredits: (questions.get(j.business_id) ?? 0) * (j.businesses?.models.length ?? 0),
     };
   });
   return { rows, counts };
@@ -85,6 +94,25 @@ async function countByStatus(): Promise<AdminScanList["counts"]> {
     counts[s] = count ?? 0;
     counts.all += count ?? 0;
   });
+  return counts;
+}
+
+/** Active questions per business: a scan asks each one once per model. */
+async function activeQuestions(businessIds: string[]): Promise<Map<string, number>> {
+  const rows = await inChunks(businessIds, (chunk) =>
+    allRows("questions", (from, to) =>
+      createServiceClient()
+        .from("tracked_prompts")
+        .select("id, business_id")
+        .in("business_id", chunk)
+        .eq("active", true)
+        .is("removed_at", null)
+        .order("id")
+        .range(from, to),
+    ),
+  );
+  const counts = new Map<string, number>();
+  for (const r of rows) counts.set(r.business_id, (counts.get(r.business_id) ?? 0) + 1);
   return counts;
 }
 

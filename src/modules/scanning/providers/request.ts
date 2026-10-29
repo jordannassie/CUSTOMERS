@@ -1,8 +1,11 @@
-// Shared HTTP call for every provider (MVP_SPEC 5.2, REL-01): 30-second timeout per attempt,
+// Shared HTTP call for every provider (MVP_SPEC 5.2, REL-01): 30-second timeout per attempt (60 for OpenAI, BUG-083),
 // 2 retries with backoff on 429, 5xx and network errors, typed errors.
 import type { ProviderId } from "./types";
 
 export const TIMEOUT_MS = 30_000;
+
+/** ChatGPT's web search answers often take longer than 30 seconds, so it gets 60 (BUG-083). */
+export const PROVIDER_TIMEOUT_MS: Record<ProviderId, number> = { openai: 60_000, anthropic: TIMEOUT_MS, perplexity: TIMEOUT_MS };
 export const MAX_RETRIES = 2;
 const BASE_DELAY_MS = 1_000;
 const MAX_DELAY_MS = 10_000;
@@ -46,6 +49,22 @@ const defaultSleep = (ms: number) => new Promise<void>((resolve) => setTimeout(r
 
 export type Attempt<T> = { ok: true; value: T } | { ok: false; error: ProviderError; retryAfterMs?: number | null };
 
+/**
+ * The errors withRetries already tried again (up to MAX_RETRIES times): a caller must not wrap another round of
+ * them, or one flapping provider costs 3 x 2 billable calls for one check.
+ */
+export function retriedInside(kind: ProviderErrorKind): boolean {
+  return kind === "rate_limit" || kind === "server" || kind === "network";
+}
+
+/**
+ * The provider is not answering now (server errors, timeouts, network errors, rate limits), already tried again
+ * inside the call. A scan where every check failed this way is not retried minutes later (BUG-285).
+ */
+export function providerDown(kind: ProviderErrorKind): boolean {
+  return kind === "server" || kind === "timeout" || kind === "network" || kind === "rate_limit";
+}
+
 /** Runs one provider call with the shared retry policy; adapters only classify each attempt. */
 export async function withRetries<T>(
   run: (attempt: number) => Promise<Attempt<T>>,
@@ -58,8 +77,7 @@ export async function withRetries<T>(
     const { error } = result;
     // A timed-out attempt already used the full 30 seconds; retrying here would stall the scan,
     // so it goes back to the job layer as retryable instead.
-    const retryHere = error.kind === "rate_limit" || error.kind === "server" || error.kind === "network";
-    if (!retryHere || attempt > MAX_RETRIES) throw error;
+    if (!retriedInside(error.kind) || attempt > MAX_RETRIES) throw error;
     await sleep(result.retryAfterMs ?? backoffMs(attempt));
   }
 }

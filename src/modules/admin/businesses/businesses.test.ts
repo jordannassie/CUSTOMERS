@@ -20,7 +20,7 @@ vi.mock("@/lib/env", async (importOriginal) => {
   };
 });
 
-const { listBusinesses } = await import("./dal");
+const { listBusinesses } = await import("./list/dal");
 const { loadBusinessDetail } = await import("./detail/dal");
 const { runScanNow } = await import("./actions");
 
@@ -55,6 +55,8 @@ beforeAll(async () => {
   });
   const { error } = await current.auth.signInWithPassword({ email: adminEmail, password });
   if (error) throw error;
+  // A signed-in admin with a confirmed email (createUser confirms it), as requireAdmin() asks.
+  adminEnv.emails = adminEmail;
 
   agencyId = (
     await must(
@@ -121,6 +123,7 @@ beforeAll(async () => {
           provider: "openai",
           question: "best plumber in Testburg",
           business_mentioned: true,
+          answer_text: "Admin Test Plumbing is the best plumber in Testburg.",
         },
         {
           run_id: run.id,
@@ -148,7 +151,10 @@ afterAll(async () => {
 
 describe("admin businesses (B-66)", () => {
   it("lists the business with its agency, models, last scan and credits this month", async () => {
-    const row = (await listBusinesses()).find((b) => b.id === businessId);
+    // The owner's email is unique to this run, so the search finds this business only.
+    const list = await listBusinesses({ search: ownerEmail });
+    expect(list).toMatchObject({ total: 1, page: 1, pages: 1, scanning: null });
+    const row = list.rows.find((b) => b.id === businessId);
     expect(row).toMatchObject({
       name: "Admin Test Plumbing",
       agency: { name: "Admin test agency", ownerEmail, isTest: true },
@@ -157,7 +163,15 @@ describe("admin businesses (B-66)", () => {
       models: ["openai", "anthropic"],
       lastScan: { state: "done" },
       creditsThisMonth: 2,
+      // Inserted with the default status, so it is still a setup draft.
+      draft: true,
+      deleted: null,
     });
+    await must(service.from("businesses").update({ status: "active" }).eq("id", businessId).select("id"));
+    expect((await listBusinesses({ search: ownerEmail })).rows.find((b) => b.id === businessId)?.draft).toBe(false);
+    // Found by its agency's name and its own name too, in any case.
+    expect((await listBusinesses({ search: "ADMIN TEST AGENCY" })).rows.map((b) => b.id)).toContain(businessId);
+    expect((await listBusinesses({ search: "admin test plumbing" })).rows.map((b) => b.id)).toContain(businessId);
   });
 
   it("shows one business with its answers, scan history and credits", async () => {
@@ -167,14 +181,25 @@ describe("admin businesses (B-66)", () => {
       questions: [{ prompt: "best plumber in Testburg", active: true }],
       credits: { thisMonth: 2, allTime: 2 },
       activeScan: false,
-      results: { rows: [{ question: "best plumber in Testburg", mentioned: { openai: true, anthropic: false } }] },
+      results: {
+        rows: [
+          {
+            question: "best plumber in Testburg",
+            mentioned: { openai: true, anthropic: false },
+            // The saved answers, shown when the admin clicks a Named or Not named cell.
+            answers: { openai: "Admin Test Plumbing is the best plumber in Testburg.", anthropic: null },
+          },
+        ],
+      },
     });
     expect(detail!.scans[0]).toMatchObject({ state: "done", checks: 2, checksFailed: 0, credits: 2 });
     expect(await loadBusinessDetail(randomUUID())).toBeNull();
   });
 
-  it("refuses a non-admin and queues nothing", async () => {
+  it("refuses a non-admin the list, the detail and a scan, and queues nothing (BUG-286)", async () => {
     adminEnv.emails = "someone-else@example.test";
+    await expect(listBusinesses({ search: ownerEmail })).rejects.toMatchObject({ reason: "forbidden", status: 403 });
+    await expect(loadBusinessDetail(businessId)).rejects.toMatchObject({ reason: "forbidden", status: 403 });
     expect(await runScanNow({ businessId })).toMatchObject({ ok: false, status: 403 });
     const { count } = await service
       .from("scan_jobs")
@@ -195,9 +220,9 @@ describe("admin businesses (B-66)", () => {
     expect(job).toEqual({ status: "queued", priority: 101, agency_id: agencyId });
 
     const log = await must(
-      service.from("admin_audit_log").select("action, target_type, details").eq("target_id", businessId),
+      service.from("admin_audit_log").select("action, target_type, details, outcome").eq("target_id", businessId),
     );
-    expect(log).toEqual([{ action: "business.run_scan", target_type: "business", details: { job_id: jobId } }]);
+    expect(log).toEqual([{ action: "business.run_scan", target_type: "business", details: { job_id: jobId }, outcome: "done" }]);
 
     expect(await runScanNow({ businessId })).toMatchObject({ ok: false, status: 409 });
     const { count } = await service

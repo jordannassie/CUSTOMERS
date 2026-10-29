@@ -2,6 +2,14 @@ import { Badge } from "@/components/ui/badge";
 
 export type Status = "new" | "reviewing" | "planned" | "shipped" | "declined";
 
+export const FEATURE_FILTERS = ["all", "new", "reviewing", "planned", "shipped", "declined"] as const;
+export type FeatureFilter = (typeof FEATURE_FILTERS)[number];
+
+/** ?status= from the URL; anything unknown shows every request. */
+export function featureFilter(value: unknown): FeatureFilter {
+  return FEATURE_FILTERS.find((f) => f === value) ?? "all";
+}
+
 export interface FeatureRequest {
   id: string;
   userId: string;
@@ -31,9 +39,7 @@ const STATUS_VARIANTS: Record<Status, "tint" | "mid" | "secondary" | "good"> = {
   declined: "secondary",
 };
 
-export function fmt(iso: string) {
-  return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
-}
+export { formatDate } from "../../_components/format";
 
 export function StatusBadge({ status }: { status: string }) {
   const s = (status in STATUS_LABELS ? status : "new") as Status;

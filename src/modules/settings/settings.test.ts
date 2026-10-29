@@ -41,6 +41,12 @@ vi.mock("@/lib/supabase/server", () => ({
     createSupabaseClient(env.NEXT_PUBLIC_SUPABASE_URL, env.NEXT_PUBLIC_SUPABASE_ANON_KEY, { auth: { persistSession: false } }),
 }));
 vi.mock("next/cache", () => ({ refresh: vi.fn() }));
+// A new industry rebuilds the questions (BUG-134); the rebuild itself is tested in onboarding, never a model call here.
+const rebuild = vi.hoisted(() => vi.fn(async () => ({ rebuilt: true, added: 12, retired: 12 })));
+vi.mock("@/modules/onboarding/server", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/modules/onboarding/server")>()),
+  rebuildQuestionsForIndustry: rebuild,
+}));
 
 const { saveAgencyName, saveBusinessProfile, saveScanSettings, uploadAgencyLogo } = await import("./actions");
 const { getSettings } = await import("./dal");
@@ -61,6 +67,7 @@ const profile = (businessId: string) => ({
   services: ["Drain cleaning", "Water heaters"],
   city: "Austin",
   region: "TX",
+  area: " East Austin ",
   phone: "(512) 555-0100",
   website: "https://www.Northside-Plumbing.com/contact",
 });
@@ -93,6 +100,10 @@ describe("settings actions", () => {
     expect(before.agency).toEqual({ name: "Settings test", logoUrl: null });
 
     expect(await saveBusinessProfile(profile(seed.businessId))).toEqual({ ok: true, data: null });
+    // The seed's industry was not Plumber, so the questions were rebuilt once; saving it again changes nothing.
+    expect(rebuild).toHaveBeenCalledExactlyOnceWith(seed.businessId);
+    expect(await saveBusinessProfile(profile(seed.businessId))).toEqual({ ok: true, data: null });
+    expect(rebuild).toHaveBeenCalledOnce();
     expect(await saveScanSettings({ businessId: seed.businessId, models: ["perplexity"], frequency: "daily" })).toEqual({
       ok: true,
       data: null,
@@ -101,7 +112,7 @@ describe("settings actions", () => {
 
     const { data } = await service
       .from("businesses")
-      .select("name, industry, services, primary_city, primary_region, phone, domain, models, scan_frequency")
+      .select("name, industry, services, primary_city, primary_region, primary_area, phone, domain, models, scan_frequency")
       .eq("id", seed.businessId)
       .single();
     expect(data).toEqual({
@@ -110,6 +121,7 @@ describe("settings actions", () => {
       services: ["Drain cleaning", "Water heaters"],
       primary_city: "Austin",
       primary_region: "TX",
+      primary_area: "East Austin",
       phone: "(512) 555-0100",
       domain: "www.northside-plumbing.com",
       models: ["perplexity"],
@@ -119,12 +131,83 @@ describe("settings actions", () => {
     expect(agency.data?.name).toBe("Blue Door Marketing");
   });
 
+  it("checks saved answers again when the website changes, and keeps has_website in step with it", async () => {
+    const seed = await createAgency();
+    await signIn(seed);
+    const { data: run } = await service.from("visibility_runs").insert({ business_id: seed.businessId, provider: "openai", status: "completed" }).select("id").single().throwOnError();
+    const resultId = randomUUID();
+    await service
+      .from("visibility_results")
+      .insert({ id: resultId, run_id: run.id, business_id: seed.businessId, provider: "openai", business_mentioned: false, competitors_mentioned: [], answer_text: "For drains, try www.northside-plumbing.com in Austin." })
+      .throwOnError();
+    const counted = async () => (await service.from("visibility_results").select("business_mentioned").eq("id", resultId).single().throwOnError()).data.business_mentioned;
+    const flags = async () => (await service.from("businesses").select("has_website").eq("id", seed.businessId).single().throwOnError()).data.has_website;
+
+    // The new website is in the answer: it counts at once.
+    expect(await saveBusinessProfile(profile(seed.businessId))).toEqual({ ok: true, data: null });
+    expect(await counted()).toBe(true);
+    expect(await flags()).toBe(true);
+
+    // No website any more: the answer no longer counts, and the stricter no-website rules apply (D-08).
+    expect(await saveBusinessProfile({ ...profile(seed.businessId), website: "" })).toEqual({ ok: true, data: null });
+    expect(await counted()).toBe(false);
+    expect(await flags()).toBe(false);
+  });
+
+  it("rebuilds the suggested questions for a new city, region or area, not for other changes", async () => {
+    const seed = await createAgency();
+    await signIn(seed);
+    expect(await saveBusinessProfile(profile(seed.businessId))).toEqual({ ok: true, data: null });
+    rebuild.mockClear();
+
+    expect(await saveBusinessProfile({ ...profile(seed.businessId), phone: "(512) 555-0199", services: ["Leak repair"] })).toEqual({ ok: true, data: null });
+    expect(rebuild).not.toHaveBeenCalled();
+    expect(await saveBusinessProfile({ ...profile(seed.businessId), city: "Dallas" })).toEqual({ ok: true, data: null });
+    expect(rebuild).toHaveBeenCalledExactlyOnceWith(seed.businessId);
+    expect(await saveBusinessProfile({ ...profile(seed.businessId), city: "Dallas", region: "OK" })).toEqual({ ok: true, data: null });
+    expect(await saveBusinessProfile({ ...profile(seed.businessId), city: "Dallas", region: "OK", area: "Uptown" })).toEqual({ ok: true, data: null });
+    expect(rebuild).toHaveBeenCalledTimes(3);
+  });
+
+  it("forgets what was read from the old website when it changes, so the new one is read", async () => {
+    const seed = await createAgency();
+    await signIn(seed);
+    const facts = () => service.from("business_site_facts").select("business_id").eq("business_id", seed.businessId);
+    const listing = async () =>
+      (await service.from("businesses").select("places_id, is_chain").eq("id", seed.businessId).single().throwOnError()).data;
+    const readOldSite = async () => {
+      await service.from("businesses").update({ places_id: "ChIJ-northside", is_chain: true }).eq("id", seed.businessId).throwOnError();
+      await service.from("business_site_facts").upsert({ business_id: seed.businessId, data: { domain: "northside.example" } }).throwOnError();
+    };
+
+    // The same site in other words (case, www.) keeps everything.
+    await readOldSite();
+    expect(await saveBusinessProfile({ ...profile(seed.businessId), website: "WWW.Northside.example" })).toEqual({ ok: true, data: null });
+    expect((await facts()).data).toHaveLength(1);
+    expect(await listing()).toEqual({ places_id: "ChIJ-northside", is_chain: true });
+
+    // Another site: its facts, listing and chain flag are found again from the new website.
+    expect(await saveBusinessProfile(profile(seed.businessId))).toEqual({ ok: true, data: null });
+    expect((await facts()).data).toEqual([]);
+    expect(await listing()).toEqual({ places_id: null, is_chain: false });
+
+    // No website left: the old site's facts go, but the listing stays, since nothing could find it again.
+    await readOldSite();
+    expect(await saveBusinessProfile({ ...profile(seed.businessId), website: "" })).toEqual({ ok: true, data: null });
+    expect((await facts()).data).toEqual([]);
+    expect(await listing()).toEqual({ places_id: "ChIJ-northside", is_chain: true });
+  });
+
   it("reject bad input", async () => {
     const seed = await createAgency();
     await signIn(seed);
     expect(await saveBusinessProfile({ ...profile(seed.businessId), name: " " })).toMatchObject({ status: 400 });
     expect(await saveBusinessProfile({ ...profile(seed.businessId), website: "not a site" })).toMatchObject({ status: 400 });
-    expect(await saveBusinessProfile({ ...profile(seed.businessId), phone: "<script>" })).toMatchObject({ status: 400 });
+    // The refusal names its field, so the form marks it (not "Check the highlighted details" with nothing marked).
+    expect(await saveBusinessProfile({ ...profile(seed.businessId), phone: "<script>" })).toMatchObject({ status: 400, field: "phone" });
+    const services = Array.from({ length: 21 }, (_, i) => `Service ${i}`);
+    expect(await saveBusinessProfile({ ...profile(seed.businessId), services })).toMatchObject({ status: 400, field: "services" });
+    expect(await saveBusinessProfile({ ...profile(seed.businessId), area: "x".repeat(81) })).toMatchObject({ status: 400 });
     expect(await saveScanSettings({ businessId: seed.businessId, models: [], frequency: "weekly" })).toMatchObject({ status: 400 });
     expect(await saveScanSettings({ businessId: seed.businessId, models: ["gemini"], frequency: "weekly" })).toMatchObject({
       status: 400,

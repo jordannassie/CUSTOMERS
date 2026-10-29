@@ -1,17 +1,20 @@
 import "server-only";
 import { safeFetch } from "@/lib/net/safe-fetch";
+import { failureOf, type SiteFailure } from "./failure";
 import { extractSignals, type Signals } from "./signals";
 import { isSafePublicUrl, normalizeUrl } from "./url";
 
-/** Reads the public home page only; returns null when the site cannot be reached. */
-export async function readSite(rawUrl: string): Promise<Signals | null> {
+export type SiteRead = { signals: Signals; failure: null } | { signals: null; failure: SiteFailure };
+
+/** Reads the public home page only, and says why when it cannot (BUG-096). */
+export async function readSite(rawUrl: string): Promise<SiteRead> {
   const url = normalizeUrl(rawUrl);
-  if (!isSafePublicUrl(url)) return null;
+  if (!isSafePublicUrl(url)) return { signals: null, failure: "unreachable" };
   try {
     const res = await safeFetch(url, { timeoutMs: 9_000 });
-    if (!res.ok || !res.text) return null;
-    return extractSignals(res.text);
+    const failure = failureOf(res.status, res.text);
+    return failure ? { signals: null, failure } : { signals: extractSignals(res.text), failure: null };
   } catch {
-    return null;
+    return { signals: null, failure: "unreachable" };
   }
 }

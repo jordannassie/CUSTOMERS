@@ -100,11 +100,16 @@ for (const b of seed.businesses) {
   );
   must(
     `add questions for ${b.name}`,
-    await db.from("tracked_prompts").insert(b.questions.map((prompt) => ({ business_id: business.id, prompt }))).select("id"),
+    // Suggested questions, the only ones the score counts (BUG-129).
+    await db.from("tracked_prompts").insert(b.questions.map((prompt) => ({ business_id: business.id, prompt, source: "library" }))).select("id"),
   );
   must(
     `add competitors for ${b.name}`,
-    await db.from("business_competitors").insert(b.competitors.map((c) => ({ business_id: business.id, ...c, city: b.city }))).select("id"),
+    // Every row lists the same columns: in one insert, a column one row lacks is sent as null for it.
+    await db
+      .from("business_competitors")
+      .insert(b.competitors.map((c) => ({ business_id: business.id, name: c.name, domain: c.domain ?? null, city: b.city })))
+      .select("id"),
   );
   console.log(`${b.name} (${b.city}, ${b.region}): ${business.id}, ${b.questions.length} questions, ${b.competitors.length} competitors`);
 }

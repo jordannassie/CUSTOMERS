@@ -20,7 +20,8 @@ export function Credits({ plans, packs }: { plans: PublicPlan[]; packs: PublicPa
           <H2 className="max-w-[18ch]">1 credit is 1 question asked to 1 AI</H2>
           <Lead>
             Each check asks ChatGPT, Claude or Perplexity one of your customer questions, with web search and your
-            location. It costs 1 credit whichever AI answers. If a check fails on our side, you are not charged.
+            location. Each new answer uses 1 credit, whichever AI gives it. Answers reused from a recent scan are free, and
+            if a check fails on our side, you are not charged.
           </Lead>
           <p className="text-[15px] text-muted-foreground">
             Every business on your account adds its monthly credits to one shared pool, so a busy client can use what a

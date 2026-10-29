@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { cn } from "cn";
 import { Badge } from "@/components/ui/badge";
 import type { ServiceStatus, StatusState, SystemStatus } from "@/modules/system-status";
@@ -24,7 +25,7 @@ function summary(services: ServiceStatus[]): string {
   return `${working} of ${services.length} services working`;
 }
 
-export default function StatusView({ status }: { status: SystemStatus }) {
+export default function StatusView({ status, openAlerts = 0 }: { status: SystemStatus; openAlerts?: number }) {
   const { services } = status;
   const hasBroken = services.some((s) => s.state === "error");
   const checkedAt = new Date(status.checkedAt).toLocaleTimeString("en-US", {
@@ -45,6 +46,15 @@ export default function StatusView({ status }: { status: SystemStatus }) {
             <p className="mt-1 text-[13px] text-muted-foreground">
               Checked live at <span className="tabular">{checkedAt}</span> UTC. Nothing here is cached.
             </p>
+            {openAlerts > 0 && (
+              <p className="mt-1 text-[13px] text-muted-foreground" data-testid="service-alerts-note">
+                {openAlerts === 1 ? "An alert is open" : `${openAlerts} alerts are open`} on the{" "}
+                <Link href="/internal/admin" className="text-primary hover:underline">
+                  Overview
+                </Link>{" "}
+                until the check passes again.
+              </p>
+            )}
           </div>
           <RecheckButton />
         </div>

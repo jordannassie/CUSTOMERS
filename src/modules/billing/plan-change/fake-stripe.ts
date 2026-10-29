@@ -1,18 +1,9 @@
 import type Stripe from "stripe";
-import { invoice, line } from "../stripe-objects";
+import { invoice } from "../stripe-objects";
 import type { PlanChangeStripe } from "./client";
 import type { ItemSpec } from "./planner";
-import {
-  monthAfter,
-  PRICES,
-  prorationLines,
-  scheduleObject,
-  subscriptionObject,
-  type FakeSchedule,
-  type Item,
-  type Phase,
-  type PriceTable,
-} from "./fake-stripe-objects";
+import { endsPlan, mergedMetadata, monthAfter, noUpcomingInvoice, PRICES, pricedSpec, prorationLines, renewalInvoice, scheduleObject, seededPrices, subscriptionObject, uniquePrices } from "./fake-stripe-objects";
+import type { FakeSchedule, Item, Phase, Priced, PriceTable } from "./fake-stripe-objects";
 
 export { at, PRICES, type PriceTable } from "./fake-stripe-objects";
 
@@ -50,31 +41,28 @@ export class FakeStripe implements PlanChangeStripe {
     ids?: { subscription: string; customer: string; agency: string };
   }) {
     this.clock = opts.now;
-    this.prices = opts.prices ?? PRICES;
+    this.prices = { ...(opts.prices ?? PRICES) };
     this.subscriptionId = opts.ids?.subscription ?? "sub_fake";
     this.customerId = opts.ids?.customer ?? "cus_fake";
     this.agencyId = opts.ids?.agency ?? null;
     this.status = opts.status ?? "active";
     const end = opts.periodEnd ?? monthAfter(opts.periodStart);
     if (this.status === "trialing") this.trialEnd = end;
-    this.items = opts.items.map((i) => ({
-      id: i.itemId ?? `si_${i.businessId}`,
-      price: i.price,
-      quantity: 1,
-      metadata: { business_id: i.businessId },
-      start: opts.periodStart,
-      end,
-    }));
+    const ownPrice = seededPrices(this.prices);
+    const start = opts.periodStart;
+    this.items = opts.items.map((i) => ({ id: i.itemId ?? `si_${i.businessId}`, price: ownPrice(i.price), quantity: 1, metadata: { business_id: i.businessId }, start, end }));
   }
 
-  private id = (prefix: string) => `${prefix}_fake${this.nextId++}`;
+  // IDs are unique across fakes: the database keeps item IDs unique, and parallel Playwright tests each run a fake.
+  private tag = crypto.randomUUID().slice(0, 8);
+  private id = (prefix: string) => `${prefix}_fake${this.tag}_${this.nextId++}`;
 
   subscription(): Stripe.Subscription {
     return subscriptionObject(this);
   }
 
   scheduleObject(): Stripe.SubscriptionSchedule {
-    return scheduleObject(this.schedule!, this.clock);
+    return scheduleObject(this.schedule!, this.clock, this.prices);
   }
 
   private once<T>(key: string, run: () => T): T {
@@ -87,38 +75,49 @@ export class FakeStripe implements PlanChangeStripe {
   private periodEnd = () => Math.min(...this.items.map((i) => i.end));
   private periodStart = () => Math.min(...this.items.map((i) => i.start));
 
-  private specs = (): ItemSpec[] => this.items.map((i) => ({ price: i.price, quantity: i.quantity, metadata: { ...i.metadata } }));
+  private specs = (): Priced[] => this.items.map((i) => ({ price: i.price, quantity: i.quantity, metadata: { ...i.metadata } }));
 
-  private renewalInvoice(items: ItemSpec[], start: number): Stripe.Invoice {
-    const end = monthAfter(start);
-    return invoice({
-      customer: this.customerId,
-      subscriptionId: this.subscriptionId,
-      billingReason: "subscription_cycle",
-      lines: items.map((i) =>
-        line({ product: this.prices[i.price].product, amount: this.prices[i.price].unitAmount, subscriptionId: this.subscriptionId, start, end }),
-      ),
-      status: "open",
-    });
-  }
+  private priced = (spec: ItemSpec | Stripe.SubscriptionUpdateParams.Item): Priced => pricedSpec(spec, this.prices, () => this.id("price_inline"));
 
-  private prorationInvoice(to: ItemSpec[], date: number): Stripe.Invoice {
+  private pricedAll = (items: unknown): Priced[] => uniquePrices((items as ItemSpec[]).map((i) => this.priced(i)));
+
+  private renewalInvoice = (items: Priced[], start: number): Stripe.Invoice => renewalInvoice(this, items, start);
+
+  private prorationInvoice(to: Priced[], date: number): Stripe.Invoice {
     const lines = this.status === "trialing" ? [] : prorationLines(this, this.specs(), to, date);
     return invoice({ customer: this.customerId, subscriptionId: this.subscriptionId, billingReason: "subscription_update", lines, status: "open" });
   }
 
-  /** Moves the subscription to `to` now, charging the proration like payment_behavior error_if_incomplete. */
-  private changeNow(to: ItemSpec[], date: number) {
+  /** Moves the subscription to `to` now, charging the proration. A declined card changes nothing with error_if_incomplete;
+   * without it (a schedule update has none) Stripe applies the change, leaves the invoice open and goes past due. */
+  private changeNow(to: Priced[], date: number, errorIfIncomplete = true) {
     const bill = this.prorationInvoice(to, date);
-    if (bill.amount_due > 0 && this.declineNextCharge) {
+    const declined = bill.amount_due > 0 && this.declineNextCharge;
+    if (declined) {
       this.declineNextCharge = false;
-      throw Object.assign(new Error("Your card was declined."), { type: "StripeCardError", statusCode: 402 });
+      if (errorIfIncomplete) throw Object.assign(new Error("Your card was declined."), { type: "StripeCardError", statusCode: 402 });
+      this.status = "past_due";
     }
-    if (bill.lines.data.length > 0) this.invoices.push({ ...bill, status: "paid", amount_paid: bill.amount_due });
+    if (bill.lines.data.length > 0) this.invoices.push(declined ? bill : { ...bill, status: "paid", amount_paid: bill.amount_due });
     this.setItems(to);
   }
 
-  private setItems(to: ItemSpec[]) {
+  /** trial_end "now": the period restarts today and the whole first month is invoiced at once. */
+  private endTrialNow(errorIfIncomplete: boolean) {
+    const bill = this.renewalInvoice(this.specs(), this.clock);
+    const declined = bill.amount_due > 0 && this.declineNextCharge;
+    if (declined) {
+      this.declineNextCharge = false;
+      if (errorIfIncomplete) throw Object.assign(new Error("Your card was declined."), { type: "StripeCardError", statusCode: 402 });
+    }
+    this.trialEnd = this.clock;
+    this.status = declined ? "past_due" : "active";
+    this.items = this.items.map((i) => ({ ...i, start: this.clock, end: monthAfter(this.clock) }));
+    this.invoices.push(declined ? bill : { ...bill, status: "paid", amount_paid: bill.amount_due });
+  }
+
+  private setItems(to: Priced[]) {
+    uniquePrices(to);
     const start = this.periodStart();
     const end = this.periodEnd();
     this.items = to.map((spec) => {
@@ -127,13 +126,15 @@ export class FakeStripe implements PlanChangeStripe {
     });
   }
 
-  private withItemParams(params: Stripe.SubscriptionUpdateParams.Item[]): ItemSpec[] {
+  private withItemParams(params: Stripe.SubscriptionUpdateParams.Item[]): Priced[] {
     let specs = this.specs();
     for (const p of params) {
       const target = this.items.find((i) => i.id === p.id);
       if (p.deleted) specs = specs.filter((s) => s.metadata.business_id !== target?.metadata.business_id);
-      else if (target) specs = specs.map((s) => (s.metadata.business_id === target.metadata.business_id ? { ...s, price: p.price! } : s));
-      else specs.push({ price: p.price!, quantity: p.quantity ?? 1, metadata: { ...(p.metadata as Record<string, string>) } });
+      else if (target) {
+        const price = this.priced({ ...p, metadata: {} }).price;
+        specs = specs.map((s) => (s.metadata.business_id === target.metadata.business_id ? { ...s, price } : s));
+      } else specs.push(this.priced(p));
     }
     return specs;
   }
@@ -165,11 +166,14 @@ export class FakeStripe implements PlanChangeStripe {
     this.calls.push({ method: "updateSchedule", params, key });
     return this.once(key, () => {
       const [first, second] = params.phases!;
-      const current: Phase = { start: first.start_date as number, end: first.end_date as number, items: first.items as ItemSpec[] };
+      const current: Phase = { start: first.start_date as number, end: first.end_date as number, items: this.pricedAll(first.items) };
       const phases = [current];
-      if (second) phases.push({ start: current.end, end: monthAfter(current.end), items: second.items as ItemSpec[] });
-      if (params.proration_behavior === "always_invoice") this.changeNow(current.items, this.clock);
-      this.schedule = { ...this.schedule!, phases, endBehavior: params.end_behavior ?? this.schedule!.endBehavior };
+      if (second) phases.push({ start: current.end, end: monthAfter(current.end), items: this.pricedAll(second.items) });
+      if (params.proration_behavior === "always_invoice") this.changeNow(current.items, this.clock, false);
+      // Stripe puts a changed current phase in place at once; with no proration nothing is billed.
+      else if (params.proration_behavior === "none") this.setItems(current.items);
+      const metadata = mergedMetadata(this.schedule!.metadata, params.metadata);
+      this.schedule = { ...this.schedule!, phases, endBehavior: params.end_behavior ?? this.schedule!.endBehavior, metadata };
       return this.scheduleObject();
     });
   }
@@ -185,8 +189,16 @@ export class FakeStripe implements PlanChangeStripe {
   async updateSubscription(_id: string, params: Stripe.SubscriptionUpdateParams, key: string) {
     this.calls.push({ method: "updateSubscription", params, key });
     return this.once(key, () => {
-      if (params.cancel_at_period_end !== undefined) this.cancelAtPeriodEnd = params.cancel_at_period_end;
-      if (params.items) this.changeNow(this.withItemParams(params.items), params.proration_date ?? this.clock);
+      // Stripe applies an update in full or not at all: a declined card thrown below undoes the item changes too.
+      const before = { items: this.items, status: this.status, trialEnd: this.trialEnd, cancelAtPeriodEnd: this.cancelAtPeriodEnd, invoices: [...this.invoices] };
+      try {
+        if (params.cancel_at_period_end !== undefined) this.cancelAtPeriodEnd = params.cancel_at_period_end;
+        if (params.items) this.changeNow(this.withItemParams(params.items), params.proration_date ?? this.clock);
+        if (params.trial_end === "now" && this.status === "trialing") this.endTrialNow(params.payment_behavior === "error_if_incomplete");
+      } catch (error) {
+        Object.assign(this, before);
+        throw error;
+      }
       return this.subscription();
     });
   }
@@ -194,6 +206,7 @@ export class FakeStripe implements PlanChangeStripe {
   async previewInvoice(params: Stripe.InvoiceCreatePreviewParams) {
     this.calls.push({ method: "previewInvoice", params });
     if (!params.schedule_details && !params.subscription_details) {
+      if (this.subscription().cancel_at !== null) throw noUpcomingInvoice();
       // The upcoming renewal: the next phase's items when a change is pending.
       const next = this.schedule?.status === "active" ? this.schedule.phases.find((p) => p.start >= this.periodEnd()) : undefined;
       return this.renewalInvoice(next?.items ?? this.specs(), this.periodEnd());
@@ -201,9 +214,9 @@ export class FakeStripe implements PlanChangeStripe {
     if (params.schedule_details) {
       const [first, second] = params.schedule_details.phases!;
       if (params.schedule_details.proration_behavior === "always_invoice") {
-        return this.prorationInvoice(first.items as ItemSpec[], this.clock);
+        return this.prorationInvoice(this.pricedAll(first.items), this.clock);
       }
-      return this.renewalInvoice((second ?? first).items as ItemSpec[], this.periodEnd());
+      return this.renewalInvoice(this.pricedAll((second ?? first).items), this.periodEnd());
     }
     const details = params.subscription_details!;
     const to = this.withItemParams(details.items as Stripe.SubscriptionUpdateParams.Item[]);
@@ -216,7 +229,7 @@ export class FakeStripe implements PlanChangeStripe {
     while (this.status !== "canceled" && this.periodEnd() <= time) {
       const boundary = this.periodEnd();
       this.clock = boundary;
-      if (this.cancelAtPeriodEnd) {
+      if (this.cancelAtPeriodEnd || endsPlan(this.schedule, boundary)) {
         this.status = "canceled";
         break;
       }

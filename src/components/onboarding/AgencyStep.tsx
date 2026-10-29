@@ -95,7 +95,7 @@ export function AgencyStep({ defaultName, logoUrl, plan, save, uploadLogo }: Pro
           <div className="min-w-0 flex-1">
             {file ? (
               <p className="flex items-center gap-2 text-sm">
-                <span className="truncate">{file.name}</span>
+                <span className="truncate" title={file.name}>{file.name}</span>
                 <Button type="button" variant="ghost" size="icon-sm" onClick={() => setFile(null)} aria-label="Remove logo">
                   <X aria-hidden />
                 </Button>

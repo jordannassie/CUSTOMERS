@@ -10,7 +10,7 @@ export type Probe = {
   name: string;
   group: ServiceStatus["group"];
   /** The cheapest read-only call that proves the key works; none of these spend credits. */
-  request: (key: string) => RequestSpec;
+  request: (key: string, deps: ProbeDeps) => RequestSpec;
   /** A non-2xx answer that still proves the key is valid. */
   acceptsError?: (status: number, body: string) => boolean;
 };
@@ -38,11 +38,9 @@ export const PROBES: Probe[] = [
     id: "perplexity",
     name: "Perplexity",
     group: "ai",
-    // Perplexity has no models list; listing async requests is read-only and free.
-    request: (key) => ({
-      url: "https://api.perplexity.ai/async/chat/completions",
-      headers: { authorization: `Bearer ${key}` },
-    }),
+    // The Agent API's models list: free and read-only, and the same API scans use. The old async Sonar endpoint
+    // was retired on 2026-09-27 and answers 403 even to a good key (BUG-081).
+    request: (key) => ({ url: "https://api.perplexity.ai/v1/models", headers: { authorization: `Bearer ${key}` } }),
   },
   {
     id: "google_places",
@@ -63,12 +61,6 @@ export const PROBES: Probe[] = [
     }),
   },
   {
-    id: "browserless",
-    name: "Browserless",
-    group: "data",
-    request: (key) => ({ url: `https://production-sfo.browserless.io/pressure?token=${encodeURIComponent(key)}` }),
-  },
-  {
     id: "resend",
     name: "Resend (email)",
     group: "data",
@@ -80,19 +72,20 @@ export const PROBES: Probe[] = [
     id: "stripe",
     name: "Stripe",
     group: "payments",
-    request: (key) => ({ url: "https://api.stripe.com/v1/balance", headers: { authorization: `Bearer ${key}` } }),
+    // Prices Read is already on the app key (billing README); /v1/balance needed Balance Read just for this check.
+    request: (key) => ({ url: "https://api.stripe.com/v1/prices?limit=1", headers: { authorization: `Bearer ${key}` } }),
   },
 ];
 
 export type ProbeDeps = { fetch?: typeof fetch; timeoutMs?: number };
 
-type ProbeResult = Pick<ServiceStatus, "state" | "detail">;
+export type ProbeResult = Pick<ServiceStatus, "state" | "detail">;
 
 export async function runProbe(probe: Probe, key: string | undefined, deps: ProbeDeps = {}): Promise<ProbeResult> {
   if (!key) return { state: "not_configured", detail: "No key is set." };
 
   const doFetch = deps.fetch ?? fetch;
-  const { url, headers } = probe.request(key);
+  const { url, headers } = probe.request(key, deps);
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), deps.timeoutMs ?? PROBE_TIMEOUT_MS);
 
@@ -144,4 +137,25 @@ export function timeAgo(then: Date, now: Date): string {
   const hours = Math.round(minutes / 60);
   if (hours < 48) return `${hours} h ago`;
   return `${Math.round(hours / 24)} days ago`;
+}
+
+/** How recent a credit error must be to mark the provider out of credit; a top-up clears it within the hour. */
+export const OUT_OF_CREDIT_WINDOW_MINUTES = 60;
+
+const OUT_OF_CREDIT_DETAIL: Record<string, string> = {
+  anthropic:
+    "Out of credit. Claude checks can't run and background jobs use the ChatGPT backup. Top up at console.anthropic.com (Plans & Billing).",
+  openai: "Out of credit. ChatGPT checks and the backup for background jobs can't run. Top up at platform.openai.com (Billing).",
+};
+
+/**
+ * The key probes only list models, which still works with an empty account, so an account out of credit looks fine
+ * there. Recent credit errors from real calls (provider_errors) override the probe for that provider (D-84).
+ */
+export function withCreditStatus(services: ServiceStatus[], outOfCredit: ReadonlySet<string>): ServiceStatus[] {
+  return services.map((s) =>
+    outOfCredit.has(s.id) && s.state !== "not_configured"
+      ? { ...s, state: "error", detail: OUT_OF_CREDIT_DETAIL[s.id] ?? "Out of credit. Top up the account." }
+      : s,
+  );
 }

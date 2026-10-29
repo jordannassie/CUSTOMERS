@@ -40,7 +40,7 @@ Rules:
 - One blue only. `#3B82F6` and `#0866F5` are removed.
 - The bright status colours (`good`, `mid`, `low`) are for fills, rings, dots and bars. Status **text** uses the `-text` shade on its `-bg`.
 - Model colours never colour text; labels stay `text`.
-- Charts: the business is always `primary`, competitors are greys. Nothing else competes with the blue.
+- Charts: the business is always `primary`, competitors are greys. Nothing else competes with the blue. Changed by the user, 2026-10-27: each competitor has its own hue (`series-2` to `series-5`: orange, aqua, violet, pink) on the Overview, the Competitors charts and Compare, by its place on the leaderboard so it keeps one color everywhere (`src/lib/series-colors.ts`). Validated as a categorical set; the business names always sit beside them. Past the fourth competitor, and "Other competitors", stay grey. The By AI model heat map stays one blue (it shows amounts, not businesses).
 
 ## Typography
 
@@ -54,6 +54,11 @@ Rules:
 
 - **Corners**: 4px on buttons, inputs, cards, chips, menus and dialogs. 3px on badges. 2px on progress bars. Round only for score rings, avatars and colour dots.
 - **Spacing**: 4px grid (4, 8, 12, 16, 20, 24, 32, 48, 64, 88).
+- **Rhythm** (the same on a phone and a desktop):
+  - Page header: use `PageHeader` (`src/components/app/PageHeader.tsx`). Title, description and any line under them are 12px apart; the page's content starts 24px below.
+  - Cards and panels: 20px padding. Title 16px, weight 600, -0.02em (the shadcn `CardTitle` default). Title, description and the first content under them are 12px apart (the `Card` default), and so is every following line or button row.
+  - 24px between bigger blocks inside a card (a list, a table, a chart), between cards on a page, and between onboarding form field groups. Repeated items in a list of cards are 12px apart.
+  - Kept tight on purpose: a list row's name and its detail line (0 to 4px), a label above its field (8px), a chart and its axis labels.
 - **Shadows**: none on cards (border only). A soft shadow only on floating layers: menus, popovers, dialogs, toasts.
 - **Layout**: content max width 1120px on marketing pages; dashboard uses a 240px sidebar and fluid content.
 

@@ -8,7 +8,7 @@ export default function Header() {
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-background">
       <div className="mx-auto flex h-16 max-w-[1120px] items-center gap-8 px-4 sm:px-6">
-        <Logo priority />
+        <Logo preload />
 
         <nav aria-label="Main" className="hidden flex-1 md:block">
           <ul className="flex items-center gap-1">

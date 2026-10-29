@@ -9,7 +9,8 @@ const allowed = { allowed: true, reason: "" };
 describe("topupSessionParams", () => {
   it("is a one-time payment on the Payment Element with the webhook's top-up metadata", () => {
     const params = topupSessionParams(input);
-    const metadata = { agency_id: "agency-1", kind: "topup", topup_pack_id: "topup_500" };
+    const metadata = { agency_id: "agency-1", kind: "topup", topup_pack_id: "topup_500", credits: "500" };
+    expect(params.metadata).toEqual(metadata);
     expect(params).toMatchObject({
       mode: "payment",
       ui_mode: "elements",

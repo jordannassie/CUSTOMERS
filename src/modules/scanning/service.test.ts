@@ -1,8 +1,10 @@
 import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { getBalance } from "@/modules/credits";
 import { REASONS } from "@/modules/entitlements";
+import { ProviderError } from "./providers/request";
 import type { ProviderId, RunCheck } from "./providers/types";
-import { countryCode, nextScanAt, runScan, withCity } from "./service";
+import { countryCode } from "./country";
+import { nextScanAt, runScan, withCity } from "./service";
 import {
   answeringRunner,
   blockAiHosts,
@@ -12,6 +14,7 @@ import {
   extractNames,
   failingRunner,
   finishJob,
+  memoryOutage,
   newJob,
   recordedDir,
   service,
@@ -38,13 +41,13 @@ function runners(overrides: Partial<Record<ProviderId, RunCheck>> = {}) {
     perplexity: answeringRunner("perplexity"),
     ...overrides,
   };
-  return { all, checkRunner: (p: ProviderId) => all[p] };
+  return { all, checkRunner: (p: ProviderId) => all[p], claudeOutage: memoryOutage().store };
 }
 
 async function results(runId: string) {
   const { data } = await service
     .from("visibility_results")
-    .select("provider, model, business_mentioned, mention_position, competitors_mentioned, cached, cost_usd, extracted_names")
+    .select("provider, model, business_mentioned, mention_position, competitors_mentioned, cached, cost_usd, extracted_names, is_sample")
     .eq("run_id", runId);
   return data!;
 }
@@ -64,6 +67,11 @@ describe("runScan (B-26)", () => {
     for (const run of Object.values(live.all)) expect(run).not.toHaveBeenCalled();
     const { data: scan } = await service.from("scan_jobs").select("credits_charged").eq("id", job).single();
     expect(scan!.credits_charged).toBe(36);
+    // Recorded answers are marked, so they stop counting once the agency is real (BUG-075).
+    if (outcome.status === "skipped") throw new Error("unexpected skip");
+    const saved = await results(outcome.runId);
+    expect(saved.length).toBe(36);
+    expect(saved.every((r) => r.is_sample)).toBe(true);
     // Recorded answers stay out of the shared cache.
     const { count } = await service.from("ai_answer_cache").select("cache_key", { count: "exact", head: true }).ilike("question", `%${business.city}%`);
     expect(count).toBe(0);
@@ -74,14 +82,19 @@ describe("runScan (B-26)", () => {
     const business = await createScanBusiness(agency);
     const job = await newJob(business);
 
-    const outcome = await runScan(job, { ...runners({ anthropic: failingRunner("anthropic") }), extractNames });
+    const deps = runners({ anthropic: failingRunner("anthropic") });
+    const outcome = await runScan(job, { ...deps, extractNames });
 
-    expect(outcome).toMatchObject({ status: "done", checks: 36, failed: 12, charged: 24, released: 12 });
+    expect(outcome).toMatchObject({ status: "done", checks: 36, failed: 12, charged: 24, released: 12, outage: false });
+    // Every Claude check failed with a server error: other scans leave Claude out for a while (BUG-285).
+    expect(deps.claudeOutage.mark).toHaveBeenCalledTimes(1);
+    expect(deps.claudeOutage.mark).toHaveBeenCalledWith("down", "anthropic returned 503");
     expect(await balance(agency.agencyId)).toBe(76);
     if (outcome.status === "skipped") throw new Error("unexpected skip");
     const rows = await results(outcome.runId);
     expect(rows).toHaveLength(24);
     expect(rows.every((r) => r.provider !== "anthropic")).toBe(true);
+    expect(rows.every((r) => !r.is_sample)).toBe(true);
     expect(rows[0]).toMatchObject({ business_mentioned: true, mention_position: 1, cached: false });
     expect(rows[0].competitors_mentioned).toEqual([{ name: "Rival Roasters", position: 2 }]);
     expect(rows[0].extracted_names).toMatchObject({
@@ -92,40 +105,58 @@ describe("runScan (B-26)", () => {
       ],
     });
 
-    const { data: run } = await service.from("visibility_runs").select("status, checks_total, checks_failed, error").eq("id", outcome.runId).single();
+    const { data: run } = await service
+      .from("visibility_runs")
+      .select("status, checks_total, checks_failed, error, failed_by_provider")
+      .eq("id", outcome.runId)
+      .single();
     expect(run).toMatchObject({ status: "completed", checks_total: 36, checks_failed: 12 });
     expect(run!.error).toContain("anthropic returned 503 (12 checks)");
+    // Which AI failed, for "Claude couldn't be checked" on the Overview (BUG-074).
+    expect(run!.failed_by_provider).toEqual({ anthropic: { failed: 12, reason: expect.stringContaining("503") } });
 
     const { data: biz } = await service.from("businesses").select("next_scan_at").eq("id", business.businessId).single();
-    const days = (new Date(biz!.next_scan_at!).getTime() - Date.now()) / 86_400_000;
-    expect(days).toBeGreaterThan(6.9);
+    const next = new Date(biz!.next_scan_at!);
+    const days = (next.getTime() - Date.now()) / 86_400_000;
+    expect(days).toBeGreaterThan(6);
     expect(days).toBeLessThan(7.1);
+    expect(next.getUTCHours()).toBe(2); // the 02:00 UTC run a week on (H1)
   });
 
-  it("serves a second business in the same city from the cache and still charges 1 credit a check", async () => {
+  it("tries a timed out check once more instead of failing it (BUG-083)", async () => {
     const agency = await createScanAgency();
-    const first = await createScanBusiness(agency);
-    const firstJob = await newJob(first);
-    await runScan(firstJob, { ...runners(), extractNames });
+    const business = await createScanBusiness(agency);
+    const job = await newJob(business);
+    // ChatGPT times out the first time it gets each question, then answers.
+    const answers = answeringRunner("openai");
+    const seen = new Set<string>();
+    const slowOnce = vi.fn<RunCheck>(async (input) => {
+      if (!seen.has(input.question)) {
+        seen.add(input.question);
+        throw new ProviderError({ provider: "openai", kind: "timeout", attempts: 1, message: "openai did not answer within 60000 ms" });
+      }
+      return answers(input);
+    });
 
-    const other = await createScanAgency();
-    const second = await createScanBusiness(other, first.city);
-    const live = runners();
-    extractNames.mockClear();
-    const outcome = await runScan(await newJob(second), { checkRunner: live.checkRunner, extractNames });
+    const outcome = await runScan(job, { ...runners({ openai: slowOnce }), extractNames });
 
-    expect(outcome).toMatchObject({ status: "done", charged: 36 });
-    for (const run of Object.values(live.all)) expect(run).not.toHaveBeenCalled();
-    // Names were stored with the cached answers, so the hit needs no new extraction.
-    expect(extractNames).not.toHaveBeenCalled();
-    if (outcome.status === "skipped") throw new Error("unexpected skip");
-    const rows = await results(outcome.runId);
-    expect(rows.every((r) => r.cached && Number(r.cost_usd) === 0)).toBe(true);
-    expect(await balance(other.agencyId)).toBe(64);
+    expect(outcome).toMatchObject({ status: "done", checks: 36, failed: 0, charged: 36 });
+    expect(slowOnce).toHaveBeenCalledTimes(24);
+  });
 
-    const { data: usage } = await service.from("usage_events").select("cached, estimated_cost_usd").eq("business_id", second.businessId);
-    expect(usage).toHaveLength(36);
-    expect(usage!.every((u) => u.cached && Number(u.estimated_cost_usd) === 0)).toBe(true);
+  it("does not wrap a second round around errors the provider call already retried", async () => {
+    const agency = await createScanAgency();
+    const business = await createScanBusiness(agency);
+    const job = await newJob(business);
+    // Claude keeps failing with a server error after its own retries (attempts: 3): the check fails once, uncharged.
+    const flapping = vi.fn<RunCheck>(async () => {
+      throw new ProviderError({ provider: "anthropic", kind: "server", attempts: 3, message: "anthropic returned 529: overloaded" });
+    });
+
+    const outcome = await runScan(job, { ...runners({ anthropic: flapping }), extractNames });
+
+    expect(outcome).toMatchObject({ checks: 36, failed: 12, charged: 24 });
+    expect(flapping).toHaveBeenCalledTimes(12);
   });
 
   it("never charges a check twice when the same job runs again", async () => {
@@ -145,9 +176,10 @@ describe("runScan (B-26)", () => {
     const business = await createScanBusiness(agency);
     const failing = (p: ProviderId) => failingRunner(p);
 
-    const outcome = await runScan(await newJob(business), { checkRunner: failing, extractNames });
+    const outcome = await runScan(await newJob(business), { checkRunner: failing, extractNames, claudeOutage: memoryOutage().store });
 
-    expect(outcome).toMatchObject({ status: "failed", checks: 36, failed: 36, charged: 0, released: 36 });
+    // Every check failed because the AI tools were not answering: the worker does not retry it (BUG-285).
+    expect(outcome).toMatchObject({ status: "failed", checks: 36, failed: 36, charged: 0, released: 36, outage: true });
     expect(await balance(agency.agencyId)).toBe(100);
     const { data: biz } = await service.from("businesses").select("next_scan_at").eq("id", business.businessId).single();
     expect(biz!.next_scan_at).toBeNull();
@@ -173,12 +205,21 @@ describe("scan helpers", () => {
   it("adds the city to a question that lacks it", () => {
     expect(withCity("What is the best dentist?", "Orange", "CA")).toBe("What is the best dentist in Orange, CA?");
     expect(withCity("Best dentist in Orange?", "Orange", "CA")).toBe("Best dentist in Orange?");
+    expect(withCity("Best pizza delivery?", "Rawalpindi", "Punjab")).toBe("Best pizza delivery in Rawalpindi?");
   });
 
   it("turns saved country names into ISO codes", () => {
     expect(countryCode("United States")).toBe("US");
     expect(countryCode("ca")).toBe("CA");
-    expect(countryCode(null)).toBe("US");
+    expect(countryCode("Pakistan")).toBe("PK");
+    expect(countryCode("United Kingdom")).toBe("GB");
+    expect(countryCode("pk")).toBe("PK");
+  });
+
+  it("leaves an unknown country out instead of guessing the US (BUG-073)", () => {
+    expect(countryCode(null)).toBe("");
+    expect(countryCode("")).toBe("");
+    expect(countryCode("Atlantis")).toBe("");
   });
 
   it("sets the next scan from the frequency", () => {

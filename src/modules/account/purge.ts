@@ -5,7 +5,8 @@ import { accountPurgedEmail } from "./emails";
 
 // After pg_cron purges accounts (purge_deleted_accounts, migration 042) it calls the email jobs route with
 // job "account_purged". SQL cannot remove Storage files safely, so this removes the logo files and sends the
-// last email, then forgets the address. Anything that fails stays for the next run.
+// last email, then forgets the address. Anything that fails stays for the next run. After 7 days the SQL job clears
+// the address (migration 065), so only the file removal is left and the row stays until that succeeds.
 
 export type PurgeFollowUpSummary = { sent: number; skipped: number; failed: number; remaining: number };
 

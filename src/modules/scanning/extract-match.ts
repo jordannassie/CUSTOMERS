@@ -1,8 +1,9 @@
 // Matches extracted names to one business and its tracked competitors (MVP_SPEC 5.2, D-74).
 // Runs per business on the shared extraction, so a cache hit needs no new AI call.
+import { namesBranch } from "./branch";
 import type { ExtractedName } from "./extract";
 import type { MentionTarget } from "./mentions";
-import { coreName, domainOf, findDomain, findPhrase, isGenericName } from "./mention-text";
+import { brandForms, coreName, domainOf, findDomain, findName, isGenericName } from "./mention-text";
 
 export type MatchedName = ExtractedName & {
   matches: "business" | "competitor" | null;
@@ -27,16 +28,25 @@ export function alsoRecommended(matched: MatchedName[]): MatchedName[] {
 export function isSameBusiness(extractedName: string, target: MentionTarget): boolean {
   const got = coreName(extractedName);
   if (!got) return false;
+  // A branch (step 7): "Bennu Coffee" alone is the chain. Its full name, an alias, or the chain's name with its place
+  // or area counts; the place alone does not ("Houndstooth Coffee - Congress Ave", "East Austin Coffee House").
+  if (target.branch) {
+    const { brand, places } = target.branch;
+    return (
+      [target.name, ...(target.aliases ?? [])].some((known) => coreName(known) === got) ||
+      places.some((place) => namesBranch(extractedName, target.name, { brand, place }))
+    );
+  }
   const domain = domainOf(target.website);
   if (domain && findDomain(extractedName, domain).length > 0) return true;
 
-  for (const known of [target.name, ...(target.aliases ?? [])]) {
+  for (const known of [target.name, ...brandForms(target), ...(target.aliases ?? [])]) {
     const want = coreName(known);
     if (!want) continue;
     if (got === want) return true;
     // "Ace Plumbing of Orange" is Ace Plumbing, but a generic "Ace" alone would match too much.
-    if (!isGenericName(want) && findPhrase(got, want).length > 0) return true;
-    if (!isGenericName(got) && findPhrase(want, got).length > 0) return true;
+    if (!isGenericName(want) && findName(got, want).length > 0) return true;
+    if (!isGenericName(got) && findName(want, got).length > 0) return true;
   }
   return false;
 }

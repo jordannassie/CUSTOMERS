@@ -14,7 +14,8 @@ export type QuestionAction = (input: unknown) => Promise<ActionResult<null>>;
 
 type Props = {
   businessId: string;
-  city: string | null;
+  /** From the Questions page view: a question our own rules keep (step 6c). */
+  example: string;
   activeCount: number;
   models: number;
   frequency: ScanFrequency;
@@ -22,14 +23,13 @@ type Props = {
   add: QuestionAction;
 };
 
-export function AddQuestionForm({ businessId, city, activeCount, models, frequency, limitMessage, add }: Props) {
+export function AddQuestionForm({ businessId, example, activeCount, models, frequency, limitMessage, add }: Props) {
   const [text, setText] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const full = limitMessage !== null;
   const now = monthlyCredits(activeCount, models, frequency);
   const after = monthlyCredits(activeCount + 1, models, frequency);
-  const example = `Which places in ${city ?? "my city"} are open late on weekends?`;
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -45,12 +45,13 @@ export function AddQuestionForm({ businessId, city, activeCount, models, frequen
 
   return (
     <form onSubmit={submit} aria-label="Add a question" className="flex flex-col gap-3 rounded-md border border-border bg-surface p-5">
-      <div className="flex flex-col gap-1">
+      <div className="flex flex-col gap-3">
         <label htmlFor="new-question" className="text-sm font-medium">
           Add your own question
         </label>
         <p id="new-question-hint" className="text-[13px] text-muted-foreground">
-          Write it the way a customer would ask, and include your city. For example: {example}
+          Write it the way a customer would ask, and include your city. For example: {example} We check your own
+          questions on every scan and show their results here, but they don&apos;t count in your score.
         </p>
       </div>
       <div className="flex flex-col gap-2 sm:flex-row">

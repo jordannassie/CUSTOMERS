@@ -4,7 +4,7 @@
 // One above the app's Run scan (100): the job row has no source column, so the value is what marks an admin scan.
 export const ADMIN_SCAN_PRIORITY = 101;
 
-export type ScanState = "queued" | "running" | "done" | "failed";
+export type ScanState = "queued" | "running" | "done" | "failed" | "skipped";
 
 // Jobs (scan_jobs) and older runs without a job (visibility_runs) use different words for the same states.
 const STATE_OF: Record<string, ScanState> = {
@@ -14,6 +14,7 @@ const STATE_OF: Record<string, ScanState> = {
   done: "done",
   completed: "done",
   failed: "failed",
+  skipped: "skipped",
 };
 
 export function toScanState(status: string): ScanState {

@@ -1,18 +1,35 @@
-// Prepares a business's questions at onboarding (MVP_SPEC 5.3, D-62). The library and the model are
-// injected, so tests and evals run the same flow with fixtures. A model failure never reaches the
-// user: the old template engine fills in.
+// Prepares a business's questions at onboarding (MVP_SPEC 5.3, D-62). The library and the model are injected, so tests
+// and evals run the same flow with fixtures. A model failure never reaches the user: the old template engine fills in.
+import { tidyPlace } from "./question-style";
 import { INDUSTRY_LABELS, isIndustry, type LibraryIndustry } from "@/lib/industries";
+import { SEARCH_TERMS } from "./competitors";
+import type { Intent } from "@/modules/question-library";
 import type { QuestionModel } from "./question-model";
-import { PICK_MODEL, PICK_PROMPT_VERSION, QUESTION_COUNT, type PickBusiness } from "./prompts/pick-questions.v1";
+import { PICK_MODEL, PICK_PROMPT_VERSION, QUESTION_COUNT, type PickBusiness } from "./prompts/pick-questions.v8";
 import {
   balancePicks,
   cityLabel,
   fallbackQuestions,
   fillCity,
+  fitsBusiness,
+  isFairQuestion,
+  KIND_WORDS,
   isUsableTemplate,
+  mixesServices,
+  namesUnofferedTerm,
+  type FitContext,
   type LibraryEntry,
   type PreparedQuestion,
 } from "./question-rules";
+import { kindWithoutNames, namesOwnBusiness } from "./question-kind";
+import { businessKind, type BusinessKind } from "./business-kind";
+import { withKindQuestions } from "./kind-questions";
+import { withArea } from "./question-area";
+import { sharedQuestions, withShared } from "./shared-questions";
+import { describeFit, fitOtherQuestions, type FitReport } from "./other-fit";
+import { isVagueOtherLabel } from "@/lib/other-label";
+
+export { AREA_QUESTIONS, areaLabel } from "./question-area";
 
 export type QuestionBusiness = {
   /** One of INDUSTRIES; anything else (or "other") has no library. */
@@ -23,10 +40,33 @@ export type QuestionBusiness = {
   description: string;
   city: string;
   region: string | null;
+  /** Neighbourhood or area of the city ("East Austin"): some questions ask about it too. */
+  area?: string | null;
+  /** Its own name, other names, website and competitors' names: never sent to the writer or kept in a question. */
+  name?: string;
+  aliases?: string[];
+  domain?: string | null;
+  competitors?: string[];
+  /** Google's types for its listing, read live and never stored (D-73): "fast_food_restaurant" makes it fast food. */
+  primaryType?: string | null;
+  types?: string[];
+  /** Several locations under one brand (businesses.is_chain): some questions ask about chains. */
+  chain?: boolean;
 };
 
 export type LoadLibrary = (industry: LibraryIndustry) => Promise<LibraryEntry[]>;
-export type QuestionClients = { loadLibrary: LoadLibrary; model: QuestionModel };
+/** Questions already chosen for another business of this industry in this city, oldest set first. */
+export type LoadShared = (industry: string, city: string, region: string | null) => Promise<{ text: string; intent: Intent }[]>;
+/** Google's types for a listing, read live (never stored, D-73); null when Google can't say. */
+export type LoadPlaceTypes = (placeId: string) => Promise<{ primaryType: string | null; types: string[] } | null>;
+export type QuestionClients = { loadLibrary: LoadLibrary; model: QuestionModel; loadShared?: LoadShared; placeTypes?: LoadPlaceTypes };
+
+/** The listing's types for the kind of business; nothing when there is no listing or Google fails. */
+export async function placeTypesOf(placeId: string | null, clients: QuestionClients) {
+  if (!placeId || !clients.placeTypes) return {};
+  const found = await clients.placeTypes(placeId).catch(() => null);
+  return found ? { primaryType: found.primaryType, types: found.types } : {};
+}
 
 export type QuestionSet = {
   questions: PreparedQuestion[];
@@ -38,6 +78,8 @@ export type QuestionSet = {
   model: string | null;
   /** Why the model's answer was not used, for logs only. */
   error: string | null;
+  /** The fit check on an "Other" business's written questions (other-fit.ts), when one ran. */
+  fit?: FitReport;
 };
 
 function libraryIndustry(industry: string | null): LibraryIndustry | null {
@@ -49,22 +91,77 @@ function industryLabel(b: QuestionBusiness): string {
   return known ? INDUSTRY_LABELS[known] : b.industryText?.trim() || "local business";
 }
 
-export async function prepareQuestions(business: QuestionBusiness, clients: QuestionClients): Promise<QuestionSet> {
-  if (!business.city.trim()) throw new Error("A city is required to prepare questions");
+/** What the business is, as a customer would say it: "HVAC contractor", "sportswear store". */
+function industryNoun(b: QuestionBusiness): string {
+  const known = libraryIndustry(b.industry);
+  return (known ? SEARCH_TERMS[known] : null) ?? (b.industryText?.trim() || "local business");
+}
+
+export async function prepareQuestions(given: QuestionBusiness, clients: QuestionClients): Promise<QuestionSet> {
+  if (!given.city.trim()) throw new Error("A city is required to prepare questions");
+  // The user's own words for an unlisted trade may hold the business's name or a brand; only the kind is kept.
+  const business = { ...given, industryText: kindWithoutNames(given) };
+  const kind = kindOf(business);
+  const set = await fitChecked(await citySet(business, kind, clients), business, kind, clients.model);
+  // Fast food never gets sit-down questions; product and chain questions come from its kind (business-kind.ts).
+  const plain = fallbackQuestions(kind.noun, business.city, business.region);
+  const fitted = withKindQuestions(set.questions, kind, cityLabel(business.city, business.region), plain, business.services);
+  // Every path (library, written, reused from a neighbour, plain) writes the place as a person would.
+  const questions = withArea(fitted, business).map((q) => ({ ...q, text: tidyPlace(q.text, business.city, business.region) }));
+  return { ...set, questions };
+}
+
+function kindOf(b: QuestionBusiness): BusinessKind {
+  return businessKind({ industry: b.industry, noun: industryNoun(b), services: b.services, primaryType: b.primaryType, types: b.types, chain: b.chain });
+}
+
+function pickInput(business: QuestionBusiness, kind: BusinessKind): PickBusiness {
+  return { industry: industryLabel(business), kind: kind.label, services: business.services, description: business.description };
+}
+
+/**
+ * An "Other" business's written questions come from its label alone, so some drift to another trade (a sportswear
+ * store got gym questions). One cheap call checks them and the misfits are replaced (other-fit.ts, 2026-10-16).
+ */
+async function fitChecked(set: QuestionSet, business: QuestionBusiness, kind: BusinessKind, model: QuestionModel): Promise<QuestionSet> {
+  const type = business.industryText?.trim() ?? "";
+  if (!model.fit || set.source !== "written" || libraryIndustry(business.industry) || isVagueOtherLabel(type)) return set;
+  const { questions, report } = await fitOtherQuestions(set.questions, {
+    check: model.fit,
+    business: { type, services: business.services, city: cityLabel(business.city, business.region) },
+    writeMore: () => written(pickInput(business, kind), business, model),
+    plain: fallbackQuestions(industryNoun(business), business.city, business.region),
+    services: business.services,
+  });
+  console.info(describeFit(type, report));
+  return { ...set, questions, fit: report };
+}
+
+async function citySet(business: QuestionBusiness, kind: BusinessKind, clients: QuestionClients): Promise<QuestionSet> {
   const city = cityLabel(business.city, business.region);
-  const input: PickBusiness = { industry: industryLabel(business), services: business.services, description: business.description };
+  const input = pickInput(business, kind);
   const known = libraryIndustry(business.industry);
   const library = known ? await clients.loadLibrary(known) : [];
   const base = { promptVersion: PICK_PROMPT_VERSION, model: PICK_MODEL, error: null };
 
+  // No library for this industry yet: another business of the same kind in the same city already has a set, so
+  // this one gets its general questions too. Two bookstores in Austin got two unrelated sets before, and their
+  // results could not be compared (BUG-116). Anything specific to the other business is left behind (A8).
+  const shared = library.length === 0 ? await sharedQuestions(business, clients) : [];
+  if (shared.length >= QUESTION_COUNT) {
+    return { questions: shared.slice(0, QUESTION_COUNT), source: "written", libraryCandidate: true, promptVersion: PICK_PROMPT_VERSION, model: null, error: null };
+  }
+
   try {
     if (library.length > 0) {
-      return { ...base, ...(await fromLibrary(input, library, city, clients.model)), source: "library", libraryCandidate: false };
+      return { ...base, ...(await fromLibrary(input, business, library, city, clients.model)), source: "library", libraryCandidate: false };
     }
-    return { ...base, questions: await written(input, business, clients.model), source: "written", libraryCandidate: true };
+    // One more try before the plain fallback: a failed call made one business's set unlike its neighbours'.
+    const questions = await written(input, business, clients.model).catch(() => written(input, business, clients.model));
+    return { ...base, questions: withShared(shared, questions, business.services), source: "written", libraryCandidate: true };
   } catch (err) {
     return {
-      questions: fallbackQuestions(input.industry, business.city, business.region),
+      questions: withShared(shared, fallbackQuestions(industryNoun(business), business.city, business.region), business.services),
       source: "fallback",
       libraryCandidate: library.length === 0,
       promptVersion: PICK_PROMPT_VERSION,
@@ -74,28 +171,80 @@ export async function prepareQuestions(business: QuestionBusiness, clients: Ques
   }
 }
 
-async function fromLibrary(input: PickBusiness, library: LibraryEntry[], city: string, model: QuestionModel) {
+/** What the fit filter checks a library template against (question-rules.ts fitsBusiness). */
+function fitContext(business: QuestionBusiness): FitContext {
+  const known = libraryIndustry(business.industry);
+  return {
+    kind: `${industryLabel(business)} ${industryNoun(business)} ${known ? KIND_WORDS[known] : ""}`,
+    city: business.city,
+    region: business.region,
+    services: business.services,
+    description: business.description,
+  };
+}
+
+async function fromLibrary(input: PickBusiness, business: QuestionBusiness, library: LibraryEntry[], city: string, model: QuestionModel) {
   const toQuestion = (e: LibraryEntry): PreparedQuestion => ({ text: fillCity(e.template, city), intent: e.intent, templateId: e.id });
-  // A library this small leaves nothing to choose, so no call is made.
-  if (library.length <= QUESTION_COUNT) return { questions: library.map(toQuestion), model: null };
-  const numbers = await model.pick({
-    business: input,
-    templates: library.map((e, i) => ({ number: i + 1, template: e.template, tags: e.tags, intent: e.intent })),
+  // Only templates that fit this business, checked in code before and after the model: a fried chicken restaurant
+  // never gets the library's sushi, steak or wine questions, whatever the model picks. Fair questions only, as for
+  // written ones.
+  const ctx = { ...fitContext(business), takeaway: kindOf(business).takeaway };
+  const fit = library.filter((e) => isUsableTemplate(e.template) && isFairQuestion(e.template) && fitsBusiness(e, ctx));
+  let picked: LibraryEntry[];
+  let asked = false;
+  // A list this short leaves nothing to choose, so no call is made.
+  if (fit.length <= QUESTION_COUNT) picked = fit;
+  else {
+    asked = true;
+    // Only fitting templates are shown, under their library numbers; the answer is checked against the fit list too.
+    const numbers = await model.pick({
+      business: input,
+      templates: fit.map((e) => ({ number: library.indexOf(e) + 1, template: e.template, tags: e.tags, intent: e.intent })),
+    });
+    const fits = new Set(fit);
+    const chosen = numbers.filter((n) => n >= 1 && n <= library.length && fits.has(library[n - 1])).map((n) => library[n - 1]);
+    // Fewer than half usable means the answer ignored the list; the fallback is safer than guessing.
+    if (new Set(chosen).size < QUESTION_COUNT / 2) throw new Error(`Claude picked ${new Set(chosen).size} usable templates`);
+    picked = balancePicks(chosen, fit, input.services);
+  }
+  const questions = picked.map(toQuestion);
+  if (questions.length >= QUESTION_COUNT) return { questions, ...(asked ? {} : { model: null }) };
+  // Never padded with templates that do not fit: written questions (v4 rules) fill the rest, then plain ones.
+  const filled = await topUp(questions, input, business, model);
+  return { questions: filled.questions, ...(asked || filled.wrote ? {} : { model: null }) };
+}
+
+async function topUp(have: PreparedQuestion[], input: PickBusiness, business: QuestionBusiness, model: QuestionModel) {
+  let wrote = true;
+  const extra = await written(input, business, model).catch(() => {
+    wrote = false;
+    return fallbackQuestions(industryNoun(business), business.city, business.region);
   });
-  const chosen = numbers.filter((n) => n >= 1 && n <= library.length).map((n) => library[n - 1]);
-  // Fewer than half usable means the answer ignored the list; the fallback is safer than guessing.
-  if (new Set(chosen).size < QUESTION_COUNT / 2) throw new Error(`Claude picked ${new Set(chosen).size} usable templates`);
-  return { questions: balancePicks(chosen, library, input.services).map(toQuestion) };
+  const entry = (q: PreparedQuestion) => ({ template: q.text, tags: [] as string[], intent: q.intent, question: q });
+  return { questions: balancePicks(have.map(entry), extra.map(entry), []).map((e) => e.question), wrote };
 }
 
 async function written(input: PickBusiness, business: QuestionBusiness, model: QuestionModel): Promise<PreparedQuestion[]> {
   const city = cityLabel(business.city, business.region);
+  // Candidates are written from the industry alone (prompt v3); the business's services only choose among them,
+  // like picking from a library, so no question exists only because this business listed it (BUG-130).
   const drafts = (await model.write({ business: input }))
-    .filter((q) => isUsableTemplate(q.template))
+    .filter(
+      (q) =>
+        isUsableTemplate(q.template) &&
+        isFairQuestion(q.template) &&
+        !namesOwnBusiness(q.template, business) &&
+        !mixesServices(q.template, input.services) &&
+        !namesUnofferedTerm(q.template, input.services, input.description),
+    )
     .map((q) => ({ template: fillCity(q.template, city), tags: [] as string[], intent: q.intent }));
-  const kept = balancePicks(drafts, drafts, input.services);
+  const kept = balancePicks([], drafts, input.services);
   if (kept.length < QUESTION_COUNT / 2) throw new Error(`Claude wrote ${kept.length} usable questions`);
-  // A few unusable drafts are topped up from the template engine rather than asking again.
-  const extra = fallbackQuestions(input.industry, business.city, business.region).map((q) => ({ template: q.text, tags: [], intent: q.intent }));
+  // A few unusable drafts are topped up with plain questions rather than asking again.
+  const extra = fallbackQuestions(industryNoun(business), business.city, business.region).map((q) => ({
+    template: q.text,
+    tags: [],
+    intent: q.intent,
+  }));
   return balancePicks(kept, extra, []).map((q) => ({ text: q.template, intent: q.intent, templateId: null }));
 }

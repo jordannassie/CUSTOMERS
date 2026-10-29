@@ -14,11 +14,13 @@ type Props = {
   business: { id: string; name: string } | null;
   agencyName: string | null;
   waitDays: number;
+  /** On a free trial the business leaves the plan at once, so there is no billing period to wait for. */
+  trialing?: boolean;
   deleteBusiness: DeleteBusinessAction;
   deleteAccount: DeleteAccountAction;
 };
 
-export function DangerZone({ business, agencyName, waitDays, deleteBusiness, deleteAccount }: Props) {
+export function DangerZone({ business, agencyName, waitDays, trialing = false, deleteBusiness, deleteAccount }: Props) {
   const router = useRouter();
   const removedOn = longDate(purgeDate(new Date(), waitDays));
 
@@ -37,10 +39,12 @@ export function DangerZone({ business, agencyName, waitDays, deleteBusiness, del
             pendingLabel="Deleting…"
             steps={[
               { when: "Now", what: "AI checks stop, its share links stop working and it leaves your dashboard." },
-              {
-                when: "End of this billing period",
-                what: "Its plan ends and you are not charged for it again. There is no refund for the days left.",
-              },
+              trialing
+                ? { when: "Now", what: "It leaves your trial now and you won't be charged for it." }
+                : {
+                    when: "End of this billing period",
+                    what: "Its plan ends and you are not charged for it again. There is no refund for the days left.",
+                  },
               { when: removedOn, what: "Its questions, results and reports are removed for good. Until then, contact us to undo this." },
             ]}
             run={async (confirmName) => {

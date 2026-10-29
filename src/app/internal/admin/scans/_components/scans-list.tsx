@@ -1,18 +1,23 @@
 import Link from "next/link";
+import { ScanSearch } from "lucide-react";
 import { cn } from "cn";
-import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatDuration, retryScan, SCAN_LIST_LIMIT, type AdminScanList, type AdminScanRow, type ScanStatus } from "@/modules/admin";
+import AdminEmpty from "../../_components/admin-empty";
+import { SCAN_STATUS, ScanStatusBadge, TestBadge } from "../../_components/badges";
+import FilterTabs from "../../_components/filter-tabs";
 import RetryButton from "./retry-button";
-import { ModelList, STATUS, StatusBadge, usd, when } from "./scan-parts";
+import { formatDate, money } from "../../_components/format";
+import { ModelList } from "./scan-parts";
 
 const BASE = "/internal/admin/scans";
 const FILTERS: { status: ScanStatus | undefined; label: string }[] = [
   { status: undefined, label: "All" },
-  { status: "failed", label: STATUS.failed.label },
-  { status: "running", label: STATUS.running.label },
-  { status: "queued", label: STATUS.queued.label },
-  { status: "done", label: STATUS.done.label },
+  { status: "failed", label: SCAN_STATUS.failed.label },
+  { status: "skipped", label: SCAN_STATUS.skipped.label },
+  { status: "running", label: SCAN_STATUS.running.label },
+  { status: "queued", label: SCAN_STATUS.queued.label },
+  { status: "done", label: SCAN_STATUS.done.label },
 ];
 
 export default function ScansList({ list, status }: { list: AdminScanList; status: ScanStatus | undefined }) {
@@ -21,37 +26,17 @@ export default function ScansList({ list, status }: { list: AdminScanList; statu
 
   return (
     <div className="flex flex-col gap-4">
-      {/* Wraps on phones instead of scrolling, so no filter is ever hidden off the edge. */}
-      <nav aria-label="Filter by status">
-        <ul className="flex w-fit max-w-full flex-wrap gap-1 rounded-md border border-border bg-muted p-1">
-          {FILTERS.map((f) => {
-            const active = f.status === status;
-            const count = f.status ? counts[f.status] : counts.all;
-            return (
-              <li key={f.label}>
-                <Link
-                  href={f.status ? `${BASE}?status=${f.status}` : BASE}
-                  aria-current={active ? "page" : undefined}
-                  className={cn(
-                    "flex items-center gap-2 rounded-sm px-3 py-1.5 text-[13px] font-medium transition-colors duration-150 ease-out focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
-                    active ? "bg-surface text-foreground shadow-xs" : "text-muted-foreground hover:text-foreground",
-                  )}
-                >
-                  {f.label}
-                  <span
-                    className={cn(
-                      "tabular text-[12px]",
-                      f.status === "failed" && count > 0 ? "font-semibold text-low-text" : "text-text-hint",
-                    )}
-                  >
-                    {count}
-                  </span>
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
-      </nav>
+      <FilterTabs
+        label="Filter by status"
+        active={status ?? "all"}
+        tabs={FILTERS.map((f) => ({
+          key: f.status ?? "all",
+          label: f.label,
+          href: f.status ? `${BASE}?status=${f.status}` : BASE,
+          count: f.status ? counts[f.status] : counts.all,
+          alert: f.status === "failed",
+        }))}
+      />
 
       {rows.length === 0 ? (
         <Empty status={status} />
@@ -64,7 +49,7 @@ export default function ScansList({ list, status }: { list: AdminScanList; statu
                   {["Business", "Status", "Models", "Credits", "Real cost", "Duration", "Started", "Error", ""].map((h, i) => (
                     <TableHead
                       key={h || i}
-                      className={cn("text-[12px] font-medium text-muted-foreground", (h === "Credits" || h === "Real cost" || h === "Duration") && "text-right")}
+                      className={cn("px-2 text-[12px] font-medium text-muted-foreground", (h === "Credits" || h === "Real cost" || h === "Duration") && "text-right")}
                     >
                       {h}
                     </TableHead>
@@ -74,20 +59,20 @@ export default function ScansList({ list, status }: { list: AdminScanList; statu
               <TableBody>
                 {rows.map((row) => (
                   <TableRow key={row.id} data-job={row.id} data-status={row.status} className={cn(row.status === "failed" && "bg-low-bg/40")}>
-                    <TableCell className="max-w-[200px]">
+                    <TableCell className="px-2 max-w-[200px]">
                       <BusinessCell row={row} />
                     </TableCell>
-                    <TableCell>
-                      <StatusBadge status={row.status} />
+                    <TableCell className="px-2">
+                      <ScanStatusBadge status={row.status} />
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="px-2">
                       <ModelList models={row.models} className="flex-nowrap" />
                     </TableCell>
-                    <TableCell className="tabular text-right">{row.creditsCharged}</TableCell>
-                    <TableCell className="tabular text-right">{usd(row.costUsd) || <Dash />}</TableCell>
-                    <TableCell className="tabular text-right">{formatDuration(row.durationMs) || <Dash />}</TableCell>
-                    <TableCell className="tabular whitespace-nowrap text-muted-foreground">{when(row.createdAt)}</TableCell>
-                    <TableCell className="max-w-[240px]">
+                    <TableCell className="px-2 tabular text-right">{row.creditsCharged}</TableCell>
+                    <TableCell className="px-2 tabular text-right">{money(row.costUsd) || <Dash />}</TableCell>
+                    <TableCell className="px-2 tabular text-right">{formatDuration(row.durationMs) || <Dash />}</TableCell>
+                    <TableCell className="px-2 tabular whitespace-nowrap text-muted-foreground">{formatDate(row.createdAt, true)}</TableCell>
+                    <TableCell className="px-2 max-w-[240px]">
                       {row.error ? (
                         <p title={row.error} className="line-clamp-2 whitespace-normal text-low-text">
                           {row.error}
@@ -96,8 +81,8 @@ export default function ScansList({ list, status }: { list: AdminScanList; statu
                         <Dash />
                       )}
                     </TableCell>
-                    <TableCell className="text-right">
-                      {row.status === "failed" && <RetryButton jobId={row.id} businessName={row.businessName} retry={retryScan} />}
+                    <TableCell className="px-2 text-right">
+                      {canRetry(row) && <Retry row={row} />}
                     </TableCell>
                   </TableRow>
                 ))}
@@ -110,18 +95,18 @@ export default function ScansList({ list, status }: { list: AdminScanList; statu
               <li key={row.id} data-job={row.id} data-status={row.status} className="flex flex-col gap-3 p-4">
                 <div className="flex items-start justify-between gap-3">
                   <BusinessCell row={row} />
-                  <StatusBadge status={row.status} />
+                  <ScanStatusBadge status={row.status} />
                 </div>
                 <ModelList models={row.models} className="text-[13px]" />
                 <dl className="grid grid-cols-3 gap-2 text-[13px]">
                   <Stat label="Credits" value={String(row.creditsCharged)} />
-                  <Stat label="Real cost" value={usd(row.costUsd)} />
+                  <Stat label="Real cost" value={money(row.costUsd)} />
                   <Stat label="Duration" value={formatDuration(row.durationMs)} />
                 </dl>
                 {row.error && <p className="text-[13px] text-low-text">{row.error}</p>}
                 <div className="flex items-center justify-between gap-3">
-                  <span className="tabular text-[12px] text-text-hint">{when(row.createdAt)} UTC</span>
-                  {row.status === "failed" && <RetryButton jobId={row.id} businessName={row.businessName} retry={retryScan} />}
+                  <span className="tabular text-[12px] text-text-hint">{formatDate(row.createdAt, true)}</span>
+                  {canRetry(row) && <Retry row={row} />}
                 </div>
               </li>
             ))}
@@ -138,18 +123,31 @@ export default function ScansList({ list, status }: { list: AdminScanList; statu
   );
 }
 
+const canRetry = (row: AdminScanRow) => row.status === "failed" || row.status === "skipped";
+
+function Retry({ row }: { row: AdminScanRow }) {
+  return <RetryButton jobId={row.id} businessName={row.businessName} credits={row.scanCredits} agencyName={row.agencyName} retry={retryScan} />;
+}
+
 function BusinessCell({ row }: { row: AdminScanRow }) {
   return (
     <div className="min-w-0">
       <Link
         href={`/internal/admin/businesses/${row.businessId}`}
-        className="block truncate text-[14px] font-medium hover:text-primary hover:underline"
+        className="block truncate text-[14px] font-medium text-primary hover:underline"
+        title={row.businessName}
       >
         {row.businessName}
       </Link>
       <p className="flex items-center gap-1.5 truncate text-[12px] text-muted-foreground">
-        <span className="truncate">{row.agencyName || "No agency"}</span>
-        {row.isTest && <Badge variant="outline">Test</Badge>}
+        {row.agencyId ? (
+          <Link href={`/internal/admin/agencies/${row.agencyId}`} className="truncate hover:text-primary hover:underline" title={row.agencyName}>
+            {row.agencyName}
+          </Link>
+        ) : (
+          <span className="truncate">No agency</span>
+        )}
+        {row.isTest && <TestBadge />}
         {row.attempts > 1 && <span className="tabular whitespace-nowrap">{row.attempts} tries</span>}
       </p>
     </div>
@@ -174,14 +172,16 @@ function Dash() {
 }
 
 function Empty({ status }: { status: ScanStatus | undefined }) {
+  if (!status) {
+    return (
+      <AdminEmpty icon={ScanSearch} title="No scans yet">
+        Scans show up here as soon as a business is queued for one.
+      </AdminEmpty>
+    );
+  }
   return (
-    <div className="rounded-md border border-dashed border-border bg-surface px-6 py-12 text-center">
-      <p className="text-[15px] font-medium">{status === "failed" ? "No failed scans" : "No scans here yet"}</p>
-      <p className="mt-1 text-[13px] text-muted-foreground">
-        {status === "failed"
-          ? "Every scan finished or is still on its way."
-          : "Scans show up here as soon as a business is queued for one."}
-      </p>
-    </div>
+    <AdminEmpty icon={ScanSearch} title={`No ${SCAN_STATUS[status].label.toLowerCase()} scans`}>
+      {status === "failed" ? "Every scan finished or is still on its way." : "Nothing matches this filter. Pick All to see every scan."}
+    </AdminEmpty>
   );
 }

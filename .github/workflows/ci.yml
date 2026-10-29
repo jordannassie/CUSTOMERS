@@ -71,7 +71,10 @@ jobs:
           cache: npm
       - run: bash scripts/scan-payload.sh
       - run: npm ci --ignore-scripts
+      # A production build needs the app's address (BUG-283); on Netlify it comes from the site URL.
       - run: npm run build
+        env:
+          NEXT_PUBLIC_SITE_URL: http://localhost:3000
 
   e2e:
     name: Smoke tests
@@ -93,7 +96,7 @@ jobs:
       # The dev server Playwright starts must use the local stack, not the placeholder env above.
       - env:
           # The admin access spec signs in as these, one per project (tests/e2e/admin-access.spec.ts).
-          ADMIN_EMAILS: e2e-admin-desktop@example.test,e2e-admin-mobile@example.test
+          ADMIN_EMAILS: e2e-admin-desktop@example.test,e2e-admin-mobile@example.test,e2e-admin-responsive@example.test
           # Run scan starts the worker inside the dev server; CI has no WORKER_URL (tests/e2e/overview.spec.ts).
           WORKER_IN_PROCESS: "true"
           # Made-up Google Places answers for the competitor pages; never a real Places call (tests/e2e/competitors.spec.ts).

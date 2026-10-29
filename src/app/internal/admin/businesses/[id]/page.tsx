@@ -2,18 +2,28 @@ import { Suspense } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ChevronLeft } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
-import { loadBusinessDetail, runScanNow } from "@/modules/admin";
+import { loadBusinessDetail, loadBusinessName, runScanNow, restoreBusiness } from "@/modules/admin";
 import { requireAdmin } from "@/modules/auth";
-import { DeletedBadge, ScanBadge, formatDate } from "../_components/scan-parts";
+import { ScanStatusBadge, TestBadge } from "../../_components/badges";
+import AdminPageHeader from "../../_components/page-header";
+import { DetailSkeleton } from "../../_components/skeletons";
+import { StatGrid, StatTile } from "../../_components/stat";
+import { DeletedBadge } from "../_components/scan-parts";
+import { formatDate } from "../../_components/format";
 import AnswersGrid from "./_components/answers-grid";
 import { Competitors, Opportunities, Questions } from "./_components/lists";
 import Profile from "./_components/profile";
+import RestoreBusiness from "./_components/restore-business";
 import RunScanButton from "./_components/run-scan-button";
 import ScanHistory from "./_components/scan-history";
 
-export const metadata = { title: "Business" };
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+// "Joe's Coffee | Admin" through the admin title template, so open tabs say which business they are.
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  return { title: (UUID.test(id) && (await loadBusinessName(id))) || "Business" };
+}
 
 export default async function AdminBusinessPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -28,14 +38,12 @@ export default async function AdminBusinessPage({ params }: { params: Promise<{ 
         <ChevronLeft aria-hidden className="size-4" />
         Businesses
       </Link>
-      <Suspense fallback={<DetailSkeleton />}>
+      <Suspense fallback={<DetailSkeleton label="Loading business" />}>
         <Detail id={id} />
       </Suspense>
     </div>
   );
 }
-
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 async function Detail({ id }: { id: string }) {
   const detail = UUID.test(id) ? await loadBusinessDetail(id) : null;
@@ -45,60 +53,72 @@ async function Detail({ id }: { id: string }) {
 
   return (
     <>
-      <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div className="min-w-0">
-          <h1 className="flex flex-wrap items-center gap-2 text-[24px] font-semibold tracking-[-0.02em]">
-            <span className="break-words">{business.name}</span>
+      <AdminPageHeader
+        title={
+          <>
+            <span className="min-w-0 break-words">{business.name}</span>
             {business.deleted_at && <DeletedBadge />}
-            {agency?.isTest && <Badge variant="secondary">Test</Badge>}
-          </h1>
-          <p className="mt-1 text-[14px] break-words text-muted-foreground">
-            {agency ? agency.name : "No agency"}
+            {agency?.isTest && <TestBadge />}
+          </>
+        }
+        subtitle={
+          <p>
+            {agency ? (
+              <Link href={`/internal/admin/agencies/${agency.id}`} className="text-primary hover:underline">
+                {agency.name}
+              </Link>
+            ) : (
+              "No agency"
+            )}
             {detail.ownerEmail && `, ${detail.ownerEmail}`}
           </p>
-        </div>
-        <RunScanButton
+        }
+        actions={
+          <RunScanButton
+            businessId={business.id}
+            active={detail.activeScan}
+            blocked={
+              business.deleted_at
+                ? "This business was deleted, so it can't be scanned."
+                : agency === null
+                  ? "No agency, so there are no credits to scan with."
+                  : null
+            }
+            credits={detail.questions.filter((q) => q.active).length * business.models.length}
+            agencyName={agency?.name ?? null}
+            runScanNow={runScanNow}
+          />
+        }
+      />
+
+      {business.deleted_at && (
+        <RestoreBusiness
           businessId={business.id}
-          active={detail.activeScan}
           blocked={
-            business.deleted_at
-              ? "This business was deleted, so it can't be scanned."
-              : agency === null
-                ? "No agency, so there are no credits to scan with."
+            agency?.status === "deleted"
+              ? "The whole account was deleted. Restore the account first."
+              : !business.purge_after || new Date(business.purge_after) <= new Date()
+                ? "The waiting period has passed, so this business can no longer be restored."
                 : null
           }
-          runScanNow={runScanNow}
+          restoreBusiness={restoreBusiness}
         />
-      </header>
+      )}
 
-      <dl className="grid grid-cols-2 gap-px overflow-hidden rounded-md border border-border bg-border lg:grid-cols-4">
-        <Stat label="Last scan">
-          {last ? (
-            <span className="flex flex-col items-start gap-1">
-              <ScanBadge state={last.state} />
-              <span className="text-[13px] font-normal text-muted-foreground">{formatDate(last.startedAt, true)}</span>
-            </span>
-          ) : (
-            "Never"
-          )}
-        </Stat>
-        <Stat label="Credits used this month">{credits.thisMonth.toLocaleString("en-US")}</Stat>
-        <Stat label="Credits used in total">{credits.allTime.toLocaleString("en-US")}</Stat>
-        <Stat label="Agency balance">
-          {balance ? (
-            <span className="flex flex-col">
-              {balance.total.toLocaleString("en-US")}
-              {balance.held > 0 && (
-                <span className="text-[13px] font-normal text-muted-foreground">
-                  {balance.held.toLocaleString("en-US")} held for a scan
-                </span>
-              )}
-            </span>
-          ) : (
-            "No agency"
-          )}
-        </Stat>
-      </dl>
+      <StatGrid>
+        <StatTile
+          label="Last scan"
+          value={last ? <ScanStatusBadge status={last.state} /> : "Never"}
+          note={last ? formatDate(last.startedAt, true) : undefined}
+        />
+        <StatTile label="Credits used this month" value={credits.thisMonth.toLocaleString("en-US")} />
+        <StatTile label="Credits used in total" value={credits.allTime.toLocaleString("en-US")} />
+        <StatTile
+          label="Agency balance"
+          value={balance ? balance.total.toLocaleString("en-US") : "No agency"}
+          note={balance && balance.held > 0 ? `${balance.held.toLocaleString("en-US")} held for a scan` : undefined}
+        />
+      </StatGrid>
 
       <Profile detail={detail} />
       <AnswersGrid results={detail.results} models={business.models} />
@@ -109,25 +129,5 @@ async function Detail({ id }: { id: string }) {
       </div>
       <Opportunities opportunities={detail.opportunities} />
     </>
-  );
-}
-
-function Stat({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div className="flex flex-col gap-1 bg-surface px-4 py-3">
-      <dt className="text-[13px] text-muted-foreground">{label}</dt>
-      <dd className="text-[20px] font-semibold tabular-nums">{children}</dd>
-    </div>
-  );
-}
-
-function DetailSkeleton() {
-  return (
-    <div className="flex flex-col gap-8" aria-busy aria-label="Loading business">
-      <Skeleton className="h-14 w-72" />
-      <Skeleton className="h-[84px] rounded-md" />
-      <Skeleton className="h-[220px] rounded-md" />
-      <Skeleton className="h-[260px] rounded-md" />
-    </div>
   );
 }

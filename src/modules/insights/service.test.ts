@@ -14,16 +14,40 @@ const draft = (title: string): OpportunityDraft => ({
 });
 
 describe("insights service", () => {
-  it("replaces open opportunities and does not bring back ones the user dismissed or finished", () => {
+  const row = (id: string, title: string, status = "open", source = "scan", affected_url: string | null = null) => ({ id, title, status, source, affected_url });
+
+  it("rewrites open scan fixes in place, adds new ones, removes the rest, and never brings back ones the user dismissed or finished", () => {
     const plan = planSave(
       [
-        { id: "a", title: "Old open one", status: "open" },
-        { id: "b", title: "Get more reviews", status: "dismissed" },
-        { id: "c", title: "Fix your hours", status: "resolved" },
+        row("a", "Old open one"),
+        row("b", "Get more reviews", "dismissed"),
+        row("c", "Fix your hours", "resolved"),
+        row("d", "Add a menu page"),
       ],
-      [draft("Get more reviews"), draft("Add an FAQ"), draft("add an faq")],
+      [draft("Get more reviews"), draft("Add an FAQ"), draft("add an faq"), draft("Add a Menu Page ")],
     );
-    expect(plan).toEqual({ insert: [draft("Add an FAQ")], removeIds: ["a"] });
+    expect(plan).toEqual({ insert: [draft("Add an FAQ")], update: [{ id: "d", draft: draft("Add a Menu Page ") }], removeIds: ["a"] });
+  });
+
+  it("matches a stored title the writer reworded as 'questions we track'", () => {
+    const plan = planSave([row("a", "Named in 3 questions we track")], [draft("Named in 3 sample questions we tracked")]);
+    expect(plan).toEqual({ insert: [], update: [{ id: "a", draft: draft("Named in 3 sample questions we tracked") }], removeIds: [] });
+  });
+
+  it("leaves fixes from Compare, Sources or by hand, accepted fixes and checklist items alone", () => {
+    const existing = [
+      row("cmp", "List on Yelp", "open", "comparison"),
+      row("todo", "Add an FAQ", "todo"),
+      row("chk", "Get your first 10 reviews", "resolved", "scan", "checklist:reviews"),
+      row("gone", "Old open one"),
+    ];
+    const plan = planSave(existing, [draft("List on Yelp"), draft("Add an FAQ"), draft("Get your first 10 reviews")]);
+    expect(plan).toEqual({ insert: [], update: [], removeIds: ["gone"] });
+  });
+
+  it("removes a duplicate open scan fix when the same title was already taken up", () => {
+    const plan = planSave([row("todo", "Add an FAQ", "todo"), row("dup", "Add an FAQ")], [draft("Add an FAQ")]);
+    expect(plan).toEqual({ insert: [], update: [], removeIds: ["dup"] });
   });
 
   it("fills stored placeholders from live Google values", () => {

@@ -61,7 +61,9 @@ export type Database = {
           admin_user_id: string | null
           created_at: string
           details: Json
+          finished_at: string | null
           id: string
+          outcome: string
           target_id: string | null
           target_type: string
         }
@@ -70,7 +72,9 @@ export type Database = {
           admin_user_id?: string | null
           created_at?: string
           details?: Json
+          finished_at?: string | null
           id?: string
+          outcome?: string
           target_id?: string | null
           target_type: string
         }
@@ -79,7 +83,9 @@ export type Database = {
           admin_user_id?: string | null
           created_at?: string
           details?: Json
+          finished_at?: string | null
           id?: string
+          outcome?: string
           target_id?: string | null
           target_type?: string
         }
@@ -98,6 +104,7 @@ export type Database = {
           name: string
           owner_user_id: string
           purge_after: string | null
+          report_branding: Json
           status: string
           stripe_customer_id: string | null
           stripe_subscription_id: string | null
@@ -116,6 +123,7 @@ export type Database = {
           name: string
           owner_user_id: string
           purge_after?: string | null
+          report_branding?: Json
           status?: string
           stripe_customer_id?: string | null
           stripe_subscription_id?: string | null
@@ -134,6 +142,7 @@ export type Database = {
           name?: string
           owner_user_id?: string
           purge_after?: string | null
+          report_branding?: Json
           status?: string
           stripe_customer_id?: string | null
           stripe_subscription_id?: string | null
@@ -410,8 +419,10 @@ export type Database = {
       }
       business_competitors: {
         Row: {
+          aliases: string[]
           business_id: string
           category: string | null
+          checked_from: string | null
           city: string | null
           confirmed: boolean
           country: string | null
@@ -430,8 +441,10 @@ export type Database = {
           source: string | null
         }
         Insert: {
+          aliases?: string[]
           business_id: string
           category?: string | null
+          checked_from?: string | null
           city?: string | null
           confirmed?: boolean
           country?: string | null
@@ -450,8 +463,10 @@ export type Database = {
           source?: string | null
         }
         Update: {
+          aliases?: string[]
           business_id?: string
           category?: string | null
+          checked_from?: string | null
           city?: string | null
           confirmed?: boolean
           country?: string | null
@@ -512,6 +527,7 @@ export type Database = {
           created_at: string
           current_period_end: string | null
           plan_id: string
+          price_cents: number | null
           status: string
           stripe_subscription_item_id: string | null
         }
@@ -521,6 +537,7 @@ export type Database = {
           created_at?: string
           current_period_end?: string | null
           plan_id: string
+          price_cents?: number | null
           status?: string
           stripe_subscription_item_id?: string | null
         }
@@ -530,6 +547,7 @@ export type Database = {
           created_at?: string
           current_period_end?: string | null
           plan_id?: string
+          price_cents?: number | null
           status?: string
           stripe_subscription_item_id?: string | null
         }
@@ -568,6 +586,9 @@ export type Database = {
         Row: {
           agency_id: string | null
           aliases: string[]
+          competitors_removed: number | null
+          competitors_removed_from: string[] | null
+          create_key: string | null
           created_at: string
           deleted_at: string | null
           description: string | null
@@ -575,7 +596,9 @@ export type Database = {
           has_website: boolean | null
           id: string
           industry: string | null
+          is_chain: boolean
           language: string
+          location_changed_at: string | null
           logo_url: string | null
           models: string[]
           name: string
@@ -584,11 +607,15 @@ export type Database = {
           owner_user_id: string
           phone: string | null
           places_id: string | null
+          primary_area: string | null
           primary_city: string | null
           primary_country: string | null
           primary_region: string | null
           purge_after: string | null
+          questions_updated_at: string | null
           reach_type: string | null
+          report_settings: Json
+          requested_plan_id: string | null
           scan_frequency: string
           services: string[]
           status: string
@@ -597,6 +624,9 @@ export type Database = {
         Insert: {
           agency_id?: string | null
           aliases?: string[]
+          competitors_removed?: number | null
+          competitors_removed_from?: string[] | null
+          create_key?: string | null
           created_at?: string
           deleted_at?: string | null
           description?: string | null
@@ -604,7 +634,9 @@ export type Database = {
           has_website?: boolean | null
           id?: string
           industry?: string | null
+          is_chain?: boolean
           language?: string
+          location_changed_at?: string | null
           logo_url?: string | null
           models?: string[]
           name: string
@@ -613,11 +645,15 @@ export type Database = {
           owner_user_id: string
           phone?: string | null
           places_id?: string | null
+          primary_area?: string | null
           primary_city?: string | null
           primary_country?: string | null
           primary_region?: string | null
           purge_after?: string | null
+          questions_updated_at?: string | null
           reach_type?: string | null
+          report_settings?: Json
+          requested_plan_id?: string | null
           scan_frequency?: string
           services?: string[]
           status?: string
@@ -626,6 +662,9 @@ export type Database = {
         Update: {
           agency_id?: string | null
           aliases?: string[]
+          competitors_removed?: number | null
+          competitors_removed_from?: string[] | null
+          create_key?: string | null
           created_at?: string
           deleted_at?: string | null
           description?: string | null
@@ -633,7 +672,9 @@ export type Database = {
           has_website?: boolean | null
           id?: string
           industry?: string | null
+          is_chain?: boolean
           language?: string
+          location_changed_at?: string | null
           logo_url?: string | null
           models?: string[]
           name?: string
@@ -642,11 +683,15 @@ export type Database = {
           owner_user_id?: string
           phone?: string | null
           places_id?: string | null
+          primary_area?: string | null
           primary_city?: string | null
           primary_country?: string | null
           primary_region?: string | null
           purge_after?: string | null
+          questions_updated_at?: string | null
           reach_type?: string | null
+          report_settings?: Json
+          requested_plan_id?: string | null
           scan_frequency?: string
           services?: string[]
           status?: string
@@ -666,6 +711,62 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "agency_credit_balance"
             referencedColumns: ["agency_id"]
+          },
+          {
+            foreignKeyName: "businesses_requested_plan_id_fkey"
+            columns: ["requested_plan_id"]
+            isOneToOne: false
+            referencedRelation: "plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cancel_reasons: {
+        Row: {
+          agency_id: string
+          business_id: string | null
+          created_at: string
+          id: string
+          kind: string
+          reason: string
+        }
+        Insert: {
+          agency_id: string
+          business_id?: string | null
+          created_at?: string
+          id?: string
+          kind: string
+          reason: string
+        }
+        Update: {
+          agency_id?: string
+          business_id?: string | null
+          created_at?: string
+          id?: string
+          kind?: string
+          reason?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cancel_reasons_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cancel_reasons_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agency_credit_balance"
+            referencedColumns: ["agency_id"]
+          },
+          {
+            foreignKeyName: "cancel_reasons_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -848,6 +949,7 @@ export type Database = {
           agency_id: string | null
           created_at: string
           delta: number
+          from_test_agency: boolean
           grant_id: string | null
           hold_id: string | null
           id: string
@@ -861,6 +963,7 @@ export type Database = {
           agency_id?: string | null
           created_at?: string
           delta: number
+          from_test_agency?: boolean
           grant_id?: string | null
           hold_id?: string | null
           id?: string
@@ -874,6 +977,7 @@ export type Database = {
           agency_id?: string | null
           created_at?: string
           delta?: number
+          from_test_agency?: boolean
           grant_id?: string | null
           hold_id?: string | null
           id?: string
@@ -1071,48 +1175,69 @@ export type Database = {
       opportunities: {
         Row: {
           affected_url: string | null
+          assignee_id: string | null
           business_id: string
           category: string
           claude_prompt: string | null
+          completed_at: string | null
           created_at: string
+          dedupe_key: string | null
           description: string | null
+          due_date: string | null
           evidence: string | null
+          evidence_data: Json
           id: string
           impact: string
           recommended_action: string | null
+          source: string
           status: string
           title: string
           updated_at: string
+          where_to_apply: string | null
         }
         Insert: {
           affected_url?: string | null
+          assignee_id?: string | null
           business_id: string
           category: string
           claude_prompt?: string | null
+          completed_at?: string | null
           created_at?: string
+          dedupe_key?: string | null
           description?: string | null
+          due_date?: string | null
           evidence?: string | null
+          evidence_data?: Json
           id?: string
           impact?: string
           recommended_action?: string | null
+          source?: string
           status?: string
           title: string
           updated_at?: string
+          where_to_apply?: string | null
         }
         Update: {
           affected_url?: string | null
+          assignee_id?: string | null
           business_id?: string
           category?: string
           claude_prompt?: string | null
+          completed_at?: string | null
           created_at?: string
+          dedupe_key?: string | null
           description?: string | null
+          due_date?: string | null
           evidence?: string | null
+          evidence_data?: Json
           id?: string
           impact?: string
           recommended_action?: string | null
+          source?: string
           status?: string
           title?: string
           updated_at?: string
+          where_to_apply?: string | null
         }
         Relationships: [
           {
@@ -1159,6 +1284,64 @@ export type Database = {
           stripe_product_id?: string | null
         }
         Relationships: []
+      }
+      price_changes: {
+        Row: {
+          agency_id: string
+          batch: string
+          business_id: string
+          created_at: string
+          from_cents: number
+          id: string
+          plan_id: string
+          starts_at: string
+          to_cents: number
+        }
+        Insert: {
+          agency_id: string
+          batch: string
+          business_id: string
+          created_at?: string
+          from_cents: number
+          id?: string
+          plan_id: string
+          starts_at: string
+          to_cents: number
+        }
+        Update: {
+          agency_id?: string
+          batch?: string
+          business_id?: string
+          created_at?: string
+          from_cents?: number
+          id?: string
+          plan_id?: string
+          starts_at?: string
+          to_cents?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "price_changes_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "price_changes_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "price_changes_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "plans"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
@@ -1324,19 +1507,25 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          kind: string | null
           message: string | null
+          occurrences: number
           provider: string
         }
         Insert: {
           created_at?: string
           id?: string
+          kind?: string | null
           message?: string | null
+          occurrences?: number
           provider: string
         }
         Update: {
           created_at?: string
           id?: string
+          kind?: string | null
           message?: string | null
+          occurrences?: number
           provider?: string
         }
         Relationships: []
@@ -1396,27 +1585,90 @@ export type Database = {
         Row: {
           business_id: string
           created_at: string
+          for_pdf: boolean
           id: string
+          report_id: string | null
           revoked_at: string | null
           token: string
         }
         Insert: {
           business_id: string
           created_at?: string
+          for_pdf?: boolean
           id?: string
+          report_id?: string | null
           revoked_at?: string | null
           token: string
         }
         Update: {
           business_id?: string
           created_at?: string
+          for_pdf?: boolean
           id?: string
+          report_id?: string | null
           revoked_at?: string | null
           token?: string
         }
         Relationships: [
           {
             foreignKeyName: "report_shares_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "report_shares_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      reports: {
+        Row: {
+          branding: Json
+          business_id: string
+          created_at: string
+          id: string
+          pdf_path: string | null
+          period_end: string
+          period_start: string
+          saved: boolean
+          sections: Json
+          snapshot: Json
+          title: string
+        }
+        Insert: {
+          branding?: Json
+          business_id: string
+          created_at?: string
+          id?: string
+          pdf_path?: string | null
+          period_end: string
+          period_start: string
+          saved?: boolean
+          sections?: Json
+          snapshot: Json
+          title: string
+        }
+        Update: {
+          branding?: Json
+          business_id?: string
+          created_at?: string
+          id?: string
+          pdf_path?: string | null
+          period_end?: string
+          period_start?: string
+          saved?: boolean
+          sections?: Json
+          snapshot?: Json
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reports_business_id_fkey"
             columns: ["business_id"]
             isOneToOne: false
             referencedRelation: "businesses"
@@ -1601,6 +1853,7 @@ export type Database = {
       }
       stripe_webhook_events: {
         Row: {
+          claimed_at: string | null
           error: string | null
           event_type: string
           id: string
@@ -1608,6 +1861,7 @@ export type Database = {
           stripe_event_id: string
         }
         Insert: {
+          claimed_at?: string | null
           error?: string | null
           event_type: string
           id?: string
@@ -1615,6 +1869,7 @@ export type Database = {
           stripe_event_id: string
         }
         Update: {
+          claimed_at?: string | null
           error?: string | null
           event_type?: string
           id?: string
@@ -1744,8 +1999,10 @@ export type Database = {
           category: string | null
           created_at: string
           id: string
+          inactive_since: string | null
           location: string | null
           prompt: string
+          removed_at: string | null
           source: string
         }
         Insert: {
@@ -1755,8 +2012,10 @@ export type Database = {
           category?: string | null
           created_at?: string
           id?: string
+          inactive_since?: string | null
           location?: string | null
           prompt: string
+          removed_at?: string | null
           source?: string
         }
         Update: {
@@ -1766,8 +2025,10 @@ export type Database = {
           category?: string | null
           created_at?: string
           id?: string
+          inactive_since?: string | null
           location?: string | null
           prompt?: string
+          removed_at?: string | null
           source?: string
         }
         Relationships: [
@@ -1782,7 +2043,7 @@ export type Database = {
       }
       usage_events: {
         Row: {
-          account_user_id: string
+          account_user_id: string | null
           business_id: string | null
           cached: boolean
           created_at: string
@@ -1799,7 +2060,7 @@ export type Database = {
           visibility_run_id: string | null
         }
         Insert: {
-          account_user_id: string
+          account_user_id?: string | null
           business_id?: string | null
           cached?: boolean
           created_at?: string
@@ -1816,7 +2077,7 @@ export type Database = {
           visibility_run_id?: string | null
         }
         Update: {
-          account_user_id?: string
+          account_user_id?: string | null
           business_id?: string | null
           cached?: boolean
           created_at?: string
@@ -1854,6 +2115,7 @@ export type Database = {
           created_at: string
           extracted_names: Json | null
           id: string
+          is_sample: boolean
           latency_ms: number | null
           mention_position: number | null
           methodology: string | null
@@ -1876,6 +2138,7 @@ export type Database = {
           created_at?: string
           extracted_names?: Json | null
           id?: string
+          is_sample?: boolean
           latency_ms?: number | null
           mention_position?: number | null
           methodology?: string | null
@@ -1898,6 +2161,7 @@ export type Database = {
           created_at?: string
           extracted_names?: Json | null
           id?: string
+          is_sample?: boolean
           latency_ms?: number | null
           mention_position?: number | null
           methodology?: string | null
@@ -1941,6 +2205,8 @@ export type Database = {
           completed_at: string | null
           created_at: string
           error: string | null
+          explained_at: string | null
+          failed_by_provider: Json | null
           id: string
           provider: string
           scan_job_id: string | null
@@ -1954,6 +2220,8 @@ export type Database = {
           completed_at?: string | null
           created_at?: string
           error?: string | null
+          explained_at?: string | null
+          failed_by_provider?: Json | null
           id?: string
           provider: string
           scan_job_id?: string | null
@@ -1967,6 +2235,8 @@ export type Database = {
           completed_at?: string | null
           created_at?: string
           error?: string | null
+          explained_at?: string | null
+          failed_by_provider?: Json | null
           id?: string
           provider?: string
           scan_job_id?: string | null
@@ -2034,6 +2304,24 @@ export type Database = {
           },
         ]
       }
+      website_facts: {
+        Row: {
+          data: Json
+          domain: string
+          fetched_at: string
+        }
+        Insert: {
+          data: Json
+          domain: string
+          fetched_at?: string
+        }
+        Update: {
+          data?: Json
+          domain?: string
+          fetched_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       agency_credit_balance: {
@@ -2091,8 +2379,111 @@ export type Database = {
           },
         ]
       }
+      visibility_results_counted: {
+        Row: {
+          answer_text: string | null
+          business_id: string | null
+          business_mentioned: boolean | null
+          cached: boolean | null
+          cited_sources: Json | null
+          competitors_mentioned: Json | null
+          cost_usd: number | null
+          created_at: string | null
+          extracted_names: Json | null
+          id: string | null
+          is_sample: boolean | null
+          latency_ms: number | null
+          mention_position: number | null
+          methodology: string | null
+          model: string | null
+          provider: string | null
+          question: string | null
+          raw_response: Json | null
+          run_id: string | null
+          sentiment: string | null
+          tracked_prompt_id: string | null
+        }
+        Insert: {
+          answer_text?: string | null
+          business_id?: string | null
+          business_mentioned?: boolean | null
+          cached?: boolean | null
+          cited_sources?: Json | null
+          competitors_mentioned?: Json | null
+          cost_usd?: number | null
+          created_at?: string | null
+          extracted_names?: Json | null
+          id?: string | null
+          is_sample?: boolean | null
+          latency_ms?: number | null
+          mention_position?: number | null
+          methodology?: string | null
+          model?: string | null
+          provider?: string | null
+          question?: string | null
+          raw_response?: Json | null
+          run_id?: string | null
+          sentiment?: string | null
+          tracked_prompt_id?: string | null
+        }
+        Update: {
+          answer_text?: string | null
+          business_id?: string | null
+          business_mentioned?: boolean | null
+          cached?: boolean | null
+          cited_sources?: Json | null
+          competitors_mentioned?: Json | null
+          cost_usd?: number | null
+          created_at?: string | null
+          extracted_names?: Json | null
+          id?: string | null
+          is_sample?: boolean | null
+          latency_ms?: number | null
+          mention_position?: number | null
+          methodology?: string | null
+          model?: string | null
+          provider?: string | null
+          question?: string | null
+          raw_response?: Json | null
+          run_id?: string | null
+          sentiment?: string | null
+          tracked_prompt_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "visibility_results_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "visibility_results_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "visibility_runs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "visibility_results_tracked_prompt_id_fkey"
+            columns: ["tracked_prompt_id"]
+            isOneToOne: false
+            referencedRelation: "tracked_prompts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
+      add_tracked_question: {
+        Args: {
+          p_agency_id: string
+          p_business_id: string
+          p_max?: number
+          p_prompt: string
+        }
+        Returns: string
+      }
       admin_adjust_credits: {
         Args: {
           p_admin_user_id: string
@@ -2171,7 +2562,27 @@ export type Database = {
         }[]
       }
       enqueue_due_scans: { Args: { p_include_real?: boolean }; Returns: number }
+      end_previous_period_grants: {
+        Args: {
+          p_agency_id: string
+          p_grace_seconds: number
+          p_period_start: string
+        }
+        Returns: number
+      }
+      end_trial_grant: {
+        Args: { p_agency_id: string; p_trial_end: string }
+        Returns: number
+      }
       expire_grants: { Args: never; Returns: number }
+      extend_trial_grant: {
+        Args: { p_agency_id: string; p_expires_at: string }
+        Returns: string
+      }
+      fail_scan_job: {
+        Args: { p_attempts: number; p_error: string; p_job_id: string; p_skipped: boolean }
+        Returns: boolean
+      }
       grant_credits: {
         Args: {
           p_agency_id: string
@@ -2195,6 +2606,16 @@ export type Database = {
         Args: { p_agency_id: string; p_amount: number; p_scan_job_id: string }
         Returns: string
       }
+      job_settings_status: {
+        Args: never
+        Returns: {
+          alerts_url_set: boolean
+          email_jobs_url_set: boolean
+          scheduled_scans_include_real: boolean
+          worker_secret_set: boolean
+          worker_url_set: boolean
+        }[]
+      }
       low_credit_agencies: {
         Args: never
         Returns: {
@@ -2206,6 +2627,20 @@ export type Database = {
           used: number
         }[]
       }
+      low_credit_alerts: {
+        Args: never
+        Returns: {
+          agency_id: string
+          balance: number
+          level: string
+          period_end: string
+          period_key: string
+          period_started_at: string
+          total: number
+          used: number
+        }[]
+      }
+      next_scheduled_scan_run: { Args: { p_after: string }; Returns: string }
       purge_deleted_accounts: {
         Args: never
         Returns: {
@@ -2213,6 +2648,7 @@ export type Database = {
           businesses: number
         }[]
       }
+      queue_skipped_scans: { Args: { p_agency_id: string }; Returns: number }
       raise_system_alert: {
         Args: {
           p_details: Json
@@ -2226,7 +2662,23 @@ export type Database = {
         Args: { p_key: string; p_window_start: string }
         Returns: number
       }
+      record_provider_error: {
+        Args: { p_kind: string; p_message: string; p_provider: string }
+        Returns: undefined
+      }
+      refund_topup_grant: {
+        Args: {
+          p_agency_id: string
+          p_charge_cents: number
+          p_charge_id: string
+          p_refund_id: string
+          p_refunded_cents: number
+          p_source_id: string
+        }
+        Returns: Json
+      }
       release_hold: { Args: { p_hold_id: string }; Returns: number }
+      release_orphan_holds: { Args: never; Returns: number }
       requeue_scan_job: {
         Args: {
           p_attempts: number
@@ -2237,6 +2689,16 @@ export type Database = {
         Returns: boolean
       }
       reset_stuck_jobs: { Args: never; Returns: number }
+      resolve_quiet_system_alerts: { Args: { p_quiet?: unknown }; Returns: number }
+      resume_tracked_question: {
+        Args: {
+          p_agency_id: string
+          p_business_id: string
+          p_max?: number
+          p_question_id: string
+        }
+        Returns: undefined
+      }
       retry_scan_job: { Args: { p_job_id: string }; Returns: string }
       run_account_purge: { Args: never; Returns: number }
       run_email_job: { Args: { p_job: string }; Returns: number }
@@ -2252,6 +2714,16 @@ export type Database = {
           prompt: string
         }[]
       }
+      scan_job_business_on_plan: { Args: { p_business_id: string }; Returns: boolean }
+      scan_job_settle_failure: { Args: { p_job_id: string; p_skipped: boolean }; Returns: undefined }
+      scan_jobs_reused_answers: {
+        Args: { p_job_ids: string[] }
+        Returns: {
+          reused: number
+          scan_job_id: string
+        }[]
+      }
+      set_next_scan_at: { Args: { p_at: string; p_business_id: string }; Returns: boolean }
       soft_delete_agency: {
         Args: { p_agency_id: string; p_purge_after: string }
         Returns: boolean

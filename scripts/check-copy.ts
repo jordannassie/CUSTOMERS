@@ -30,11 +30,22 @@ const SPEC_TERMS = [
 const DASH_ALLOW: Record<string, string> = {
   "src/app/api/internal/admin/news/article/route.ts": "LinkedIn studio AI prompt, kept untouched until Jordan answers (D-07)",
   "src/app/api/internal/admin/news/search/route.ts": "LinkedIn studio AI prompt, kept untouched until Jordan answers (D-07)",
+  "src/modules/scanning/mention-text.ts": "matches the dashes AI answers put in business titles",
+  "src/modules/scanning/mentions-brand-forms.test.ts": "real AI answers quoted as test input",
+  "src/modules/onboarding/title-brand.ts": "matches the dashes Google puts between a brand and its tagline",
+  "src/modules/onboarding/title-brand.test.ts": "Google names with those dashes, as test input",
+  "src/modules/onboarding/autofill-safety.ts": "matches the dashes in page titles",
+  "src/modules/onboarding/competitor-location/service.test.ts": "asserts the notes have no long dash",
+  "src/modules/billing/plan-change/copy.test.ts": "asserts the sentences have no long dash",
+  "src/modules/jobs/overdraft.test.ts": "asserts the warning has no long dash",
 };
 const WORD_ALLOW: Record<string, string> = {
   "src/modules/insights/validate.ts": "the banned word list that rejects AI-written reasons",
-  "src/modules/insights/prompts/explain.v1.ts": "tells the model which words to avoid",
+  "src/modules/insights/prompts/explain.v2.ts": "tells the model which words to avoid",
+  "src/modules/reports/v2/wording/validate.ts": "the banned word list that rejects AI-written report fixes",
+  "src/modules/reports/prompts/fix-wording.v1.ts": "tells the model which words to avoid",
   "src/modules/sources/classify.ts": "Seamless is a food delivery site name",
+  "src/lib/site-type.ts": "Seamless is a food delivery site name",
 };
 // One spelling in the product (BUG-J): US English, as in "canceled", which Stripe and the app already use.
 const SPELLING = /\b(cancell(?:ed|ing))\b/i;

@@ -18,9 +18,9 @@ function rows(status = "active", subscriptionId: string | null = "sub_fake"): Bi
       { id: "pro", name: "Pro", priceCents: 24900, monthlyCredits: 2500 },
     ],
     businesses: [
-      { id: A, name: "Acme Plumbing", planId: "pro", itemId: `si_${A}` },
-      { id: B, name: "Bay Dental", planId: "starter", itemId: `si_${B}` },
-      { id: C, name: "Corner Bakery", planId: null, itemId: null },
+      { id: A, name: "Acme Plumbing", planId: "pro", itemId: `si_${A}`, deleted: false },
+      { id: B, name: "Bay Dental", planId: "starter", itemId: `si_${B}`, deleted: false },
+      { id: C, name: "Corner Bakery", planId: null, itemId: null, deleted: false },
     ],
   };
 }
@@ -38,6 +38,33 @@ describe("billingView", () => {
     expect(view.nextCharge).toEqual({ at: iso(RENEWAL), amountCents: 24900 + 14900 });
     expect(view.canChange).toBe(true);
     expect(view.cancelAt).toBeNull();
+  });
+
+  it("shows what each business is charged, and the plan's new price from the renewal when it pays an older one (D-93)", async () => {
+    const { stripe, ctx } = setup({ a: "price_pro" });
+    const raised = rows();
+    raised.plans = raised.plans.map((p) => (p.id === "starter" ? { ...p, priceCents: 16900 } : p));
+    const view = await billingView({ rows: raised, access: { context: ctx, stripe } });
+    expect(view.onPlan.map((b) => [b.name, b.priceCents, b.newPrice])).toEqual([
+      ["Acme Plumbing", 24900, null],
+      ["Bay Dental", 14900, { cents: 16900, at: iso(RENEWAL) }],
+    ]);
+    // Without Stripe, the price the webhook saved.
+    raised.businesses = raised.businesses.map((b) => (b.id === B ? { ...b, priceCents: 15900 } : b));
+    const offline = await billingView({ rows: raised, access: null });
+    expect(offline.onPlan.find((b) => b.id === B)?.priceCents).toBe(15900);
+  });
+
+  it("never offers a deleted business, and marks one whose item runs to the period end (BUG-120)", async () => {
+    const { stripe, ctx } = setup({ a: "price_pro" });
+    const base = rows();
+    base.businesses = base.businesses.map((b) => (b.id === C || b.id === B ? { ...b, deleted: true } : b));
+    const view = await billingView({ rows: base, access: { context: ctx, stripe } });
+    expect(view.notOnPlan).toEqual([]);
+    expect(view.onPlan.map((b) => [b.name, b.deleted])).toEqual([
+      ["Acme Plumbing", false],
+      ["Bay Dental", true],
+    ]);
   });
 
   it("shows a pending downgrade and removal, and the smaller next charge", async () => {
@@ -79,6 +106,11 @@ describe("billingView", () => {
     expect(view.stripe).toBe("error");
     expect(view.canChange).toBe(false);
     expect(view.onPlan).toHaveLength(2);
+
+    // A subscription Stripe does not have is not an outage: "missing", not "refresh to try again" (2026-10-14).
+    const gone = { retrieveSubscription: () => Promise.reject(Object.assign(new Error("No such subscription"), { type: "StripeInvalidRequestError", code: "resource_missing", statusCode: 404 })) };
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    expect((await billingView({ rows: rows(), access: { context: ctx, stripe: gone as unknown as PlanChangeStripe } })).stripe).toBe("missing");
   });
 
   it("a past due plan keeps its lines; an ended one can't be changed", async () => {
@@ -112,5 +144,34 @@ describe("portalUrl", () => {
       ok: false,
       status: 502,
     });
+  });
+});
+
+// 2026-10-15: a business deleted during a trial was listed at $149 a month.
+describe("a business deleted during a trial", () => {
+  const deletedB = (base: BillingRows) => ({ ...base, businesses: base.businesses.map((b) => (b.id === B ? { ...b, deleted: true } : b)) });
+
+  it("is not listed once Stripe has taken its item off, even before the webhook updates our row", async () => {
+    const { stripe, ctx } = setup({ a: "price_pro", status: "trialing" });
+    await stripe.updateSubscription(stripe.subscriptionId, { items: [{ id: `si_${B}`, deleted: true }], proration_behavior: "none" }, "k");
+    const view = await billingView({ rows: deletedB(rows("trialing")), access: { context: ctx, stripe } });
+    expect(view.onPlan.map((b) => b.name)).toEqual(["Acme Plumbing"]);
+  });
+
+  it("shows as removed and not charged, with no pending change, while its item is still there", async () => {
+    const { stripe, ctx, change } = setup({ status: "trialing" });
+    await change({ kind: "remove", businessId: B });
+    const view = await billingView({ rows: deletedB(rows("trialing")), access: { context: ctx, stripe } });
+    expect(view.onPlan.map((b) => [b.name, b.notCharged, b.pending])).toEqual([
+      ["Acme Plumbing", false, null],
+      ["Bay Dental", true, null],
+    ]);
+  });
+
+  it("on a paid plan, still shows the item running to the period end", async () => {
+    const { stripe, ctx, change } = setup();
+    await change({ kind: "remove", businessId: B });
+    const view = await billingView({ rows: deletedB(rows()), access: { context: ctx, stripe } });
+    expect(view.onPlan.find((b) => b.id === B)).toMatchObject({ deleted: true, notCharged: false, pending: { kind: "remove" } });
   });
 });

@@ -102,6 +102,9 @@ async function seedChecks(businessId: string, questionId: string, mentions: Part
 }
 
 const questionRow = (page: Page, text: string) => page.getByTestId("question-row").filter({ hasText: text });
+// The header has its own "Add question" button that goes to the form, so the form's button is found inside it.
+const addForm = (page: Page) => page.getByRole("form", { name: "Add a question" });
+const showPaused = (page: Page) => page.getByTestId("show-paused").filter({ hasText: "Show paused" }).click();
 
 /** Opens a question's menu once any toast has closed; on a phone a toast covers the rows above it. */
 async function openMenu(page: Page, row: Locator) {
@@ -129,11 +132,20 @@ test("each question shows how often each AI recommended the business, and the cr
   await expect(best.locator('[data-model="perplexity"]')).toContainText("Appeared in 0 of the last 1 check");
   await expect(best.locator('[data-model="anthropic"]')).toContainText("Not checked yet");
   await expect(questionRow(page, "oat milk latte")).toContainText("Added by you");
+  // The user's own questions keep their results but are left out of the score (BUG-129).
+  await expect(questionRow(page, "oat milk latte")).toContainText("Not counted in your score");
+  await expect(best).not.toContainText("Not counted in your score");
 
   await expect(page.getByTestId("active-count")).toHaveText("2 of 25");
   // 2 questions x 3 models x 4.3 weekly scans (MVP_SPEC 4.3).
   await expect(page.getByTestId("credit-estimate")).toContainText("About 26 credits a month");
   await expect(page.getByTestId("add-effect")).toHaveText("About 13 more credits a month: 26 now, about 39 with this question.");
+  // Named share over 30 days, and the four filters with their counts.
+  // 3 of 5 answers named the business.
+  await expect(best.getByTestId("question-named")).toContainText("60%");
+  await expect(page.getByTestId("kpi-named")).toContainText("1 of 2");
+  await expect(page.getByRole("radio", { name: "Named you (1)" })).toBeVisible();
+  await expect(page.getByTestId("showing-count")).toHaveText("Showing 2 of 2 active questions");
   if (test.info().project.name === "desktop") {
     await expect(page.getByRole("link", { name: "Questions", exact: true })).toHaveAttribute("aria-current", "page");
   }
@@ -143,7 +155,7 @@ test("add, pause, resume and remove a question", async ({ page }) => {
   await seed(page, [{ prompt: "What is the best coffee shop in Orange?" }]);
 
   await page.getByLabel("Add your own question").fill("  which cafe in orange has the best cold brew ");
-  await page.getByRole("button", { name: "Add question" }).click();
+  await addForm(page).getByRole("button", { name: "Add question" }).click();
   // The toast closes after a few seconds, so it is checked first.
   await expect(page.getByText("Question added. About 13 more credits a month.")).toBeVisible(ACTION);
   const added = questionRow(page, "Which cafe in orange has the best cold brew?");
@@ -154,12 +166,15 @@ test("add, pause, resume and remove a question", async ({ page }) => {
 
   // The same question again is refused.
   await page.getByLabel("Add your own question").fill("Which cafe in Orange has the best cold brew");
-  await page.getByRole("button", { name: "Add question" }).click();
+  await addForm(page).getByRole("button", { name: "Add question" }).click();
   await expect(page.getByRole("alert").filter({ hasText: "You already track this question." })).toBeVisible(ACTION);
   await page.getByLabel("Add your own question").fill("");
 
   await openMenu(page, added);
   await page.getByRole("menuitem", { name: "Pause" }).click();
+  await expect(page.getByTestId("active-questions")).not.toContainText("cold brew", ACTION);
+  // Paused questions show only when asked for, from the list's footer.
+  await showPaused(page);
   await expect(page.getByTestId("paused-questions").getByTestId("question-row")).toContainText("cold brew", ACTION);
   await expect(page.getByTestId("active-questions")).not.toContainText("cold brew");
   await expect(page.getByTestId("active-count")).toHaveText("1 of 25");
@@ -180,15 +195,21 @@ test("add, pause, resume and remove a question", async ({ page }) => {
   await expect(page.getByTestId("active-count")).toHaveText("1 of 25");
 });
 
-test("edit a question's wording", async ({ page }) => {
+test("edit a suggested question: saved as a new question, the old one paused (M2)", async ({ page }) => {
   await seed(page, [{ prompt: "What is the best coffee shop in Orange?" }]);
   await openMenu(page, questionRow(page, "best coffee shop"));
   await page.getByRole("menuitem", { name: "Edit" }).click();
   await page.getByRole("textbox", { name: "Question", exact: true }).fill("What is the best coffee shop near Orange Circle?");
+  await expect(page.getByText("Editing makes this a new question. The old one is paused and keeps its results.")).toBeVisible();
   await page.getByRole("button", { name: "Save", exact: true }).click();
-  const edited = questionRow(page, "near Orange Circle?");
+  const confirm = page.getByRole("alertdialog", { name: "Save as a new question?" });
+  await confirm.getByRole("button", { name: "Save as new question" }).click();
+  const edited = page.getByTestId("active-questions").getByTestId("question-row").filter({ hasText: "near Orange Circle?" });
   await expect(edited).toBeVisible(ACTION);
   await expect(edited).toContainText("Added by you");
+  await expect(edited).toContainText("Not counted in your score");
+  await showPaused(page);
+  await expect(page.getByTestId("paused-questions")).toContainText("What is the best coffee shop in Orange?");
 });
 
 test("at 25 active questions: the limit message, and no way to add or resume", async ({ page }) => {
@@ -201,8 +222,9 @@ test("at 25 active questions: the limit message, and no way to add or resume", a
     "You have 25 active questions, the most your plan allows. Pause or remove one to add another.",
   );
   await expect(page.getByLabel("Add your own question")).toBeDisabled();
-  await expect(page.getByRole("button", { name: "Add question" })).toBeDisabled();
+  await expect(addForm(page).getByRole("button", { name: "Add question" })).toBeDisabled();
 
+  await showPaused(page);
   const paused = page.getByTestId("paused-questions").getByTestId("question-row");
   await openMenu(page, paused);
   await expect(page.getByRole("menuitem", { name: "Resume" })).toBeDisabled();
@@ -214,6 +236,69 @@ test("at 25 active questions: the limit message, and no way to add or resume", a
   await expect(page.getByTestId("active-count")).toHaveText("24 of 25", ACTION);
   await expect(page.getByTestId("question-limit")).toHaveCount(0);
   await expect(page.getByLabel("Add your own question")).toBeEnabled();
+});
+
+test("a topic tags a question and filters the list", async ({ page }) => {
+  await seed(page, [{ prompt: "What is the best coffee shop in Orange?" }, { prompt: "Which cafe in Orange has fast pickup?" }]);
+  await openMenu(page, questionRow(page, "fast pickup"));
+  await page.getByRole("menuitem", { name: "Edit" }).click();
+  await page.getByRole("textbox", { name: "Topic" }).fill("Pickup");
+  // Only the topic changed, so it is saved in place, never as a new question.
+  await expect(page.getByText("Editing makes this a new question.")).toHaveCount(0);
+  await page.getByRole("button", { name: "Save", exact: true }).click();
+  await expect(questionRow(page, "fast pickup").getByTestId("question-topic")).toHaveText("Pickup", ACTION);
+
+  await page.getByRole("group", { name: "Topic" }).getByRole("button", { name: "Pickup" }).click();
+  await expect(page.getByTestId("active-questions").getByTestId("question-row")).toHaveCount(1);
+  await expect(page.getByTestId("showing-count")).toHaveText("Showing 1 of 2 active questions");
+});
+
+test("a question opens in place with each AI's answer, and a link can open it or narrow the list", async ({ page }) => {
+  const { businessId, questionIds } = await seed(page, [
+    { prompt: "What is the best coffee shop in Orange?" },
+    { prompt: "Which cafe in Orange has fast pickup?" },
+  ]);
+  await seedChecks(businessId, questionIds[0], { openai: [false], anthropic: [true] });
+  await db
+    .from("visibility_results")
+    .update({
+      cited_sources: [{ url: "https://www.yelp.com/biz/bean-house" }],
+      competitors_mentioned: [{ name: "Bean House", position: 1 }],
+      answer_text: "1. Bean House - great espresso (https://www.google.com/maps/place/Bean+House).",
+    })
+    .eq("tracked_prompt_id", questionIds[0])
+    .eq("provider", "openai")
+    .throwOnError();
+  await page.reload();
+
+  const row = questionRow(page, "best coffee shop");
+  // exact: the row's options menu is named "Options for: <question>".
+  await row.getByRole("button", { name: "What is the best coffee shop in Orange?", exact: true }).click();
+  const details = row.getByTestId("question-details");
+  await expect(details.getByRole("tab")).toHaveCount(2, ACTION);
+  await expect(details.getByRole("tab", { name: /ChatGPT\s*not named/ })).toBeVisible();
+  await expect(details.getByRole("tab", { name: /Claude\s*named you/ })).toBeVisible();
+  const answer = details.getByRole("tabpanel");
+  await expect(answer.getByTestId("answer-named")).toContainText("Bean House");
+  await expect(answer).not.toContainText("https://");
+  await expect(answer.getByTestId("answer-sites")).toContainText("yelp.com");
+  await expect(answer.getByTestId("why-skipped")).toContainText("ChatGPT used yelp.com here");
+
+  await page.goto(`/questions?q=${questionIds[0]}`);
+  await expect(questionRow(page, "best coffee shop").getByTestId("question-details")).toBeVisible({ timeout: 60_000 });
+
+  await page.goto("/questions?site=yelp.com");
+  await expect(page.getByTestId("site-filter")).toHaveText(/Answers that used yelp.com/, { timeout: 60_000 });
+  await expect(page.getByTestId("question-row")).toHaveCount(1);
+  await page.getByTestId("site-filter").click();
+  await expect(page.getByTestId("question-row")).toHaveCount(2, ACTION);
+
+  // A link that matches nothing: Clear filters also clears the link, back to every question.
+  await page.goto("/questions?site=nowhere.example");
+  await expect(page.getByTestId("no-matches")).toBeVisible({ timeout: 60_000 });
+  await page.getByTestId("no-matches").getByRole("button", { name: "Clear filters" }).click();
+  await page.waitForURL((url) => url.pathname === "/questions" && url.search === "");
+  await expect(page.getByTestId("question-row")).toHaveCount(2, ACTION);
 });
 
 test("the old address opens the Questions page", async ({ page }) => {

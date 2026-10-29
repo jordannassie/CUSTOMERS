@@ -18,10 +18,12 @@ type Props = {
   answers: number;
   track: TrackAction;
   manageHref: string;
+  /** "grid": a card per business (the Competitors page, dashboard redesign); "list" elsewhere. */
+  layout?: "list" | "grid";
 };
 
 // Businesses AI keeps naming that the user does not track (MVP_SPEC 8.1, D-74), one click to track each.
-export function AlsoRecommended({ businessId, names, answers, track, manageHref }: Props) {
+export function AlsoRecommended({ businessId, names, answers, track, manageHref, layout = "list" }: Props) {
   const router = useRouter();
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<{ text: string; limit: boolean } | null>(null);
@@ -52,11 +54,17 @@ export function AlsoRecommended({ businessId, names, answers, track, manageHref 
   const top = names[0].answers;
   return (
     <div className="flex flex-col gap-3">
-      <ul className="flex flex-col divide-y divide-border" data-testid="also-recommended">
+      <ul
+        className={layout === "grid" ? "grid gap-3 sm:grid-cols-2 lg:grid-cols-3" : "flex flex-col divide-y divide-border"}
+        data-testid="also-recommended"
+      >
         {names.map((n) => (
-          <li key={n.name} className="flex items-center gap-3 py-3 first:pt-0 last:pb-0">
+          <li
+            key={n.name}
+            className={layout === "grid" ? "flex items-center gap-3 rounded-md border border-border bg-surface p-3" : "flex items-center gap-3 py-3 first:pt-0 last:pb-0"}
+          >
             <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-              <span className="truncate text-sm font-medium">{n.name}</span>
+              <span className="truncate text-sm font-medium" title={n.name}>{n.name}</span>
               <span className="text-xs tabular-nums text-muted-foreground">{n.text}</span>
               <span className="h-1 overflow-hidden rounded-xs bg-muted" aria-hidden>
                 <span className="block h-full rounded-xs bg-competitor-2" style={{ width: `${(100 * n.answers) / top}%` }} />
@@ -66,6 +74,7 @@ export function AlsoRecommended({ businessId, names, answers, track, manageHref 
               type="button"
               variant="outline"
               size="sm"
+              className="shrink-0"
               disabled={pending}
               onClick={() => onTrack(n.name)}
               aria-label={`Track ${n.name}`}

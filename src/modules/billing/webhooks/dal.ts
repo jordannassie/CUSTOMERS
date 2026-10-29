@@ -1,21 +1,27 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createServiceClient } from "@/lib/supabase/service";
-import { grantCredits, grantTrialCredits } from "@/modules/credits";
+import { endPreviousPeriodGrants, endTrialGrant, grantCredits, grantTrialCredits, hasTrialGrantAfter, refundTopupGrant } from "@/modules/credits";
 import type { Database } from "@/types/database.types";
 import { productIdFor } from "../catalog";
 import type { PlanCredits } from "./credits";
+import { queueSkippedScans } from "@/modules/jobs/server";
 
 // Database reads and writes for the Stripe webhook (B-42), all as the service role.
-// Credits change only through grant_credits (via the credits module), never by updating balances here.
+// Credits change only through the credit SQL functions (via the credits module), never by updating balances here.
 
 type Db = SupabaseClient<Database>;
 
 export type AgencyStatus = "trialing" | "active" | "past_due" | "canceled";
 export type ItemStatus = AgencyStatus;
-export type WebhookAgency = { id: string; ownerUserId: string; status: string };
-export type BusinessItem = { businessId: string | null; itemId: string; planId: string; periodEnd: string | null };
-export type EventState = "new" | "failed" | "done";
+/** `subscriptionId`: the subscription the agency is linked to, so events for another one (a duplicate) are ignored. */
+export type WebhookAgency = { id: string; ownerUserId: string; status: string; subscriptionId: string | null };
+export type BusinessItem = { businessId: string | null; itemId: string; planId: string; periodEnd: string | null; priceCents?: number | null };
+/** claimed: this delivery runs the handler; done: already handled; busy: another delivery is running it now. */
+export type EventClaim = "claimed" | "done" | "busy";
+
+// A claim older than this was left by a crash or a timeout, and another delivery may take it over.
+export const STALE_CLAIM_MS = 5 * 60_000;
 
 // Set by an admin; Stripe events never overwrite them.
 const ADMIN_STATUSES = ["suspended", "deleted"];
@@ -24,23 +30,39 @@ export type WebhookStore = ReturnType<typeof createWebhookStore>;
 
 export function createWebhookStore(db: Db = createServiceClient()) {
   return {
-    /** "done" blocks a replay; "failed" (an earlier attempt threw) is processed again. */
-    async eventState(eventId: string): Promise<EventState> {
-      const { data, error } = await db
-        .from("stripe_webhook_events")
-        .select("error")
-        .eq("stripe_event_id", eventId)
-        .maybeSingle();
+    /**
+     * Claims the event for this delivery before any handler runs (migration 056): the insert on the unique
+     * stripe_event_id is atomic, so of two deliveries at once only one runs it. A finished event is "done"; one that
+     * failed earlier, or whose claim went stale, is claimed again with a conditional update.
+     */
+    async claimEvent(eventId: string, eventType: string, now: Date): Promise<EventClaim> {
+      const at = now.toISOString();
+      const inserted = await db.from("stripe_webhook_events").insert({ stripe_event_id: eventId, event_type: eventType, claimed_at: at, processed_at: at });
+      if (!inserted.error) return "claimed";
+      if (inserted.error.code !== "23505") throw new Error(`stripe_webhook_events claim failed: ${inserted.error.message}`);
+
+      const { data, error } = await db.from("stripe_webhook_events").select("error, claimed_at").eq("stripe_event_id", eventId).single();
       if (error) throw new Error(`stripe_webhook_events read failed: ${error.message}`);
-      if (!data) return "new";
-      return data.error === null ? "done" : "failed";
+      if (data.claimed_at === null && data.error === null) return "done";
+      const stale = new Date(now.getTime() - STALE_CLAIM_MS).toISOString();
+      if (data.claimed_at !== null && Date.parse(data.claimed_at) > Date.parse(stale)) return "busy";
+      // Failed earlier, or a stale claim: take it over, unless another delivery just did.
+      const retake = await db
+        .from("stripe_webhook_events")
+        .update({ claimed_at: at })
+        .eq("stripe_event_id", eventId)
+        .or(`and(claimed_at.is.null,error.not.is.null),claimed_at.lt.${stale}`)
+        .select("id");
+      if (retake.error) throw new Error(`stripe_webhook_events claim failed: ${retake.error.message}`);
+      return retake.data.length > 0 ? "claimed" : "busy";
     },
 
     async recordEvent(eventId: string, eventType: string, failure: string | null): Promise<void> {
       const { error } = await db
         .from("stripe_webhook_events")
         .upsert(
-          { stripe_event_id: eventId, event_type: eventType, error: failure, processed_at: new Date().toISOString() },
+          // Finished, handled or failed: the claim is released, so a retry of a failure can claim it again.
+          { stripe_event_id: eventId, event_type: eventType, error: failure, processed_at: new Date().toISOString(), claimed_at: null },
           { onConflict: "stripe_event_id" },
         );
       if (error) throw new Error(`stripe_webhook_events write failed: ${error.message}`);
@@ -48,7 +70,7 @@ export function createWebhookStore(db: Db = createServiceClient()) {
 
     /** By our agency ID from metadata first, then by the Stripe customer the agency is linked to. */
     async findAgency(ref: { agencyId?: string | null; customerId?: string | null }): Promise<WebhookAgency | null> {
-      const query = db.from("agencies").select("id, owner_user_id, status");
+      const query = db.from("agencies").select("id, owner_user_id, status, stripe_subscription_id");
       const { data, error } = ref.agencyId
         ? await query.eq("id", ref.agencyId).maybeSingle()
         : ref.customerId
@@ -56,7 +78,7 @@ export function createWebhookStore(db: Db = createServiceClient()) {
           : { data: null, error: null };
       if (error) throw new Error(`agency lookup failed: ${error.message}`);
       if (!data && ref.agencyId && ref.customerId) return this.findAgency({ customerId: ref.customerId });
-      return data ? { id: data.id, ownerUserId: data.owner_user_id, status: data.status } : null;
+      return data ? { id: data.id, ownerUserId: data.owner_user_id, status: data.status, subscriptionId: data.stripe_subscription_id } : null;
     },
 
     async linkStripe(agencyId: string, ids: { customerId: string | null; subscriptionId: string | null }): Promise<void> {
@@ -114,6 +136,12 @@ export function createWebhookStore(db: Db = createServiceClient()) {
 
     grant: grantCredits,
     grantTrial: grantTrialCredits,
+    /** After a top-up: the scans skipped for lack of credits run now, not at the next 02:00 (M3, migration 069). */
+    queueSkippedScans,
+    endTrialGrant,
+    hasTrialGrantAfter,
+    endPreviousPeriodGrants,
+    refundTopupGrant,
 
     /**
      * Makes business_subscriptions match the subscription's items. Items name their business in metadata;
@@ -126,7 +154,14 @@ export function createWebhookStore(db: Db = createServiceClient()) {
       const ownedIds = new Set(owned.map((b) => b.id));
 
       for (const item of items) {
-        const row = { plan_id: item.planId, status, current_period_end: item.periodEnd, stripe_subscription_item_id: item.itemId };
+        const row = {
+          plan_id: item.planId,
+          status,
+          current_period_end: item.periodEnd,
+          stripe_subscription_item_id: item.itemId,
+          // Left as it is when the price is not known (an item Stripe sent without one).
+          ...(item.priceCents == null ? {} : { price_cents: item.priceCents }),
+        };
         if (item.businessId && ownedIds.has(item.businessId)) {
           const { error } = await db
             .from("business_subscriptions")

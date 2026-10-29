@@ -12,7 +12,7 @@ export async function deleteTestUsers() {
   for (const id of userIds.splice(0)) await service.auth.admin.deleteUser(id);
 }
 
-export async function createAgency(opts: { status?: string; weeklyReport?: boolean } = {}) {
+export async function createAgency(opts: { status?: string; weeklyReport?: boolean; isTest?: boolean } = {}) {
   const email = `vitest-notify-${randomUUID()}@example.test`;
   const { data: user, error } = await service.auth.admin.createUser({ email, email_confirm: true });
   if (error || !user.user) throw error ?? new Error("no user");
@@ -22,7 +22,7 @@ export async function createAgency(opts: { status?: string; weeklyReport?: boole
     .insert({
       owner_user_id: user.user.id,
       name: "Notify test",
-      is_test: true,
+      is_test: opts.isTest ?? true,
       status: opts.status ?? "active",
       weekly_report_emails: opts.weeklyReport ?? true,
     })
@@ -46,12 +46,20 @@ export async function addBusiness(agency: { agencyId: string; ownerId: string },
       .select("id")
       .single()
       .throwOnError();
+    // Only answers to suggested questions count in the score (BUG-129).
+    const { data: question } = await service
+      .from("tracked_prompts")
+      .insert({ business_id: business.id, prompt: `Best coffee shop near ${name}?`, source: "library" })
+      .select("id")
+      .single()
+      .throwOnError();
     await service
       .from("visibility_results")
       .insert(
         ["openai", "anthropic", "perplexity"].map((provider, i) => ({
           run_id: run.id,
           business_id: business.id,
+          tracked_prompt_id: question.id,
           provider,
           created_at: new Date(Date.now() - 3_600_000).toISOString(),
           business_mentioned: i !== 1,

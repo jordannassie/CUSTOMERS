@@ -81,13 +81,21 @@ describe("admin layout guard (B-64)", () => {
     expect(readFileSync(join(process.cwd(), "src/app/internal/admin/layout.tsx"), "utf8")).not.toMatch(/<Suspense/);
   });
 
-  // BUG-019: a page awaiting data with no boundary of its own logs "uncached data" on every visit.
-  it("every admin page has its own loading boundary or its own Suspense", () => {
+  // BUG-019: a page awaiting data with no boundary of its own logs "uncached data" on every visit. Each page also
+  // gets a skeleton of its own shape, not the shared spinner (2026-10-19).
+  it("every admin page has its own loading skeleton", () => {
     const root = join(process.cwd(), "src/app/internal/admin");
     const pages = readdirSync(root, { recursive: true, encoding: "utf8" }).filter((f) => f.endsWith("page.tsx"));
     for (const page of pages) {
-      const ownBoundary = existsSync(join(root, dirname(page), "loading.tsx"));
-      expect(ownBoundary || readFileSync(join(root, page), "utf8").includes("<Suspense"), page).toBe(true);
+      const loading = join(root, dirname(page), "loading.tsx");
+      expect(existsSync(loading), page).toBe(true);
+      expect(readFileSync(loading, "utf8"), page).toMatch(/Skeleton/);
     }
+  });
+
+  it("has a not-found page inside the admin layout, reached by any unknown admin address", () => {
+    const root = join(process.cwd(), "src/app/internal/admin");
+    expect(readFileSync(join(root, "not-found.tsx"), "utf8")).toMatch(/AdminNotFound/);
+    expect(readFileSync(join(root, "[...missing]/page.tsx"), "utf8")).toMatch(/notFound\(\)/);
   });
 });

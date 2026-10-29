@@ -1,9 +1,10 @@
 // Code checks on each reason Claude writes (MVP_SPEC 7.2, 25): only given facts and placeholders,
 // the right shape, and the writing guide. A reason with any issue is dropped before it is stored;
 // the eval grader runs the same checks.
+import { comparisonIssues, DOMAIN, listingIssues, websiteIssues, siteClaimIssues } from "./claims";
 import type { ExplainInput } from "./facts";
 import { bracesIn, stripPlaceholders } from "./placeholders";
-import type { ExplainReason } from "./prompts/explain.v1";
+import type { ExplainReason } from "./prompts/explain.v2";
 
 // docs/design/WRITING.md: words that read as AI-written or salesy.
 export const BANNED_WORDS = [
@@ -34,7 +35,6 @@ export const BANNED_WORDS = [
 // Step and prompt text may count things ("ask your last 10 customers"); larger numbers must be facts.
 const SMALL_NUMBER = 12;
 const NUMBER = /\d+(?:[.,]\d+)*/g;
-const DOMAIN = /\b(?:[a-z0-9-]+\.)+(?:com|net|org|io|co|us|biz|info|app|dev|example)\b/gi;
 const LONG_DASH = /[\u2013\u2014]/;
 const EMOJI = /\p{Extended_Pictographic}/u;
 
@@ -93,6 +93,25 @@ export function writingIssues(text: string): string[] {
   return issues;
 }
 
+// docs/design/WRITING.md: never promise results we cannot control. Checked on what the owner reads (title, evidence,
+// why it matters, steps), not the Claude prompt, which may rightly say "don't promise #1 rankings".
+const PROMISES: [RegExp, string][] = [
+  // Only a guaranteed result: a business's own satisfaction guarantee or warranty is an honest thing to point out.
+  [
+    /\bguarantee(d|s|ing)?\s+(that\s+)?(you\s+)?((more|new)\s+(customers|clients|leads|calls|bookings|sales|business|traffic|visits|mentions|recommendations)|(the\s+)?results?|(a\s+)?(higher|better|top|first)\s+(rank|ranking|spot|place|position|placement)|(to\s+)?(rank|ranking|rankings|#1|number one)|(to\s+)?(be|get|appear|show up)\s+(recommended|named|mentioned|listed|first|on top))(?!\w)/i,
+    "guarantee",
+  ],
+  [/\bresults?\s+(are\s+)?guaranteed\b/i, "guarantee"],
+  [/\bwill rank\b/i, "will rank"],
+  [/(^|\s)#1\b/, "#1"],
+  [/\brank(s|ed)? first\b/i, "rank first"],
+  [/\btop spot\b/i, "top spot"],
+];
+
+export function promiseIssues(text: string): string[] {
+  return [...new Set(PROMISES.filter(([pattern]) => pattern.test(text)).map(([, word]) => `promises a result: ${word}`))];
+}
+
 export function reasonIssues(reason: ExplainReason, input: ExplainInput): string[] {
   const issues: string[] = [];
   const facts = factNumbers(input);
@@ -117,6 +136,11 @@ export function reasonIssues(reason: ExplainReason, input: ExplainInput): string
     const domain = d.toLowerCase().replace(/^www\./, "");
     if (!domains.has(domain)) issues.push(`website not in the facts: ${d}`);
   }
+  const claimed = [reason.title, reason.evidence, reason.why_it_matters, ...steps];
+  issues.push(...comparisonIssues(claimed, input), ...listingIssues(claimed, input), ...websiteIssues(claimed, input));
+  // Only what the reason states as found; advice such as "add a page for each service" stays allowed.
+  issues.push(...siteClaimIssues([reason.title, reason.evidence, reason.why_it_matters], input));
   issues.push(...writingIssues(all));
+  issues.push(...promiseIssues([reason.title, reason.evidence, reason.why_it_matters, ...steps].join("\n")));
   return [...new Set(issues)];
 }

@@ -5,6 +5,7 @@ import path from "node:path";
 import { vi } from "vitest";
 import { createServiceClient } from "@/lib/supabase/service";
 import { grantCredits } from "@/modules/credits";
+import type { ClaudeOutage, OutageReason, OutageStore } from "./claude-outage/outage";
 import { CHECK_MODELS } from "./providers/models";
 import { ProviderError } from "./providers/request";
 import type { CheckResult, ProviderId, RunCheck } from "./providers/types";
@@ -43,7 +44,8 @@ export async function createScanBusiness(
       owner_user_id: agency.ownerUserId,
       agency_id: agency.agencyId,
       name: "Bean There Coffee",
-      domain: "beanthere.example",
+      // Its own website: migration 067 refuses two live businesses with one website in an agency.
+      domain: `beanthere-${randomUUID().slice(0, 8)}.example`,
       primary_city: city,
       primary_region: "CA",
       primary_country: "United States",
@@ -54,7 +56,8 @@ export async function createScanBusiness(
     .single();
   if (error) throw error;
   const questions = Array.from({ length: 12 }, (_, i) => `Question ${i + 1}: best coffee shop in ${city}?`);
-  const prompts = await service.from("tracked_prompts").insert(questions.map((prompt) => ({ business_id: business.id, prompt })));
+  // Suggested questions, the only ones the score counts (BUG-129).
+  const prompts = await service.from("tracked_prompts").insert(questions.map((prompt) => ({ business_id: business.id, prompt, source: "library" })));
   if (prompts.error) throw prompts.error;
   const rivals = await service.from("business_competitors").insert({ business_id: business.id, name: "Rival Roasters", city });
   if (rivals.error) throw rivals.error;
@@ -75,7 +78,26 @@ export async function finishJob(jobId: string) {
   await service.from("scan_jobs").update({ status: "done" }).eq("id", jobId);
 }
 
-export const ANSWER = "Top picks:\n1. Bean There Coffee (beanthere.example)\n2. Rival Roasters\n3. Daily Grind";
+/**
+ * The Claude outage kept in memory. A scan where every Claude check fails marks Claude down (BUG-285): with the live
+ * store that opens the shared alert, and every other scan test running at the same time leaves Claude out.
+ */
+export function memoryOutage(outage: ClaudeOutage | null = null) {
+  const state = { outage };
+  const store = {
+    read: vi.fn(async () => state.outage),
+    mark: vi.fn(async (reason: OutageReason) => {
+      const now = new Date();
+      state.outage = { since: state.outage?.since ?? now, lastSeenAt: now, reason };
+    }),
+    clear: vi.fn(async () => {
+      state.outage = null;
+    }),
+  } satisfies OutageStore;
+  return { store, state };
+}
+
+export const ANSWER ="Top picks:\n1. Bean There Coffee (beanthere.example)\n2. Rival Roasters\n3. Daily Grind";
 
 /** A provider that answers every question, counting its calls. */
 export function answeringRunner(provider: ProviderId) {

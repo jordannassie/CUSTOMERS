@@ -9,7 +9,6 @@ vi.mock("@/lib/env", async (importOriginal) => {
     PERPLEXITY_API_KEY: "pplx-fake",
     GOOGLE_PLACES_API_KEY: "fake-places",
     FIRECRAWL_API_KEY: "fc-fake",
-    BROWSERLESS_API_KEY: undefined,
     RESEND_API_KEY: "re_fake",
     STRIPE_SECRET_KEY: "sk_test_fake",
   };
@@ -54,7 +53,7 @@ describe("getSystemStatus", () => {
     expect(state(second, "anthropic")).toBe("ok");
   });
 
-  it("lists every service from the task, with Stripe mode and blank keys as not configured", async () => {
+  it("lists every service from the task, with Stripe mode", async () => {
     const status = await getSystemStatus({ fetch: fetchWith(allWorking) });
 
     expect(status.services.map((s) => s.id)).toEqual([
@@ -63,16 +62,18 @@ describe("getSystemStatus", () => {
       "perplexity",
       "google_places",
       "firecrawl",
-      "browserless",
       "resend",
       "stripe",
       "worker",
       "schedules",
+      "job_settings",
     ]);
     expect(status.services.find((s) => s.id === "stripe")?.mode).toBe("sandbox");
-    expect(status.services.find((s) => s.id === "browserless")?.state).toBe("not_configured");
     // Reads the local scan queue; its state depends on what other tests left there.
     expect(status.services.find((s) => s.id === "worker")?.detail).not.toMatch(/Could not read/);
+    // BUG-108: the real schedules and worker settings, read from the database.
+    expect(status.services.find((s) => s.id === "schedules")?.detail).toMatch(/jobs scheduled/);
+    expect(status.services.find((s) => s.id === "job_settings")?.detail).not.toMatch(/Could not read/);
   });
 
   it("refuses non-admins before calling any service", async () => {

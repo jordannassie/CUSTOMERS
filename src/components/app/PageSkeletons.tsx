@@ -5,7 +5,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 function Frame({ children }: { children: React.ReactNode }) {
   return (
-    <div role="status" aria-label="Loading" className="mx-auto flex w-full max-w-[1200px] flex-col gap-6 p-5 sm:p-8">
+    <div role="status" aria-label="Loading" className="mx-auto flex w-full max-w-[1200px] flex-col gap-6 px-4 py-5 sm:p-8">
       {children}
     </div>
   );
@@ -253,6 +253,22 @@ export function BuyCreditsSkeleton() {
           <Skeleton className="h-28" />
           <Skeleton className="h-28" />
         </div>
+        <Skeleton className="h-9 w-44" />
+      </div>
+    </Frame>
+  );
+}
+
+export function ChoosePlanSkeleton() {
+  return (
+    <Frame>
+      <Header />
+      <div className="flex max-w-[760px] flex-col gap-4">
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Skeleton className="h-44" />
+          <Skeleton className="h-44" />
+        </div>
+        <Skeleton className="h-4 w-3/4" />
         <Skeleton className="h-9 w-44" />
       </div>
     </Frame>

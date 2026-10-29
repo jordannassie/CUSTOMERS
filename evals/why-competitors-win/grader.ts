@@ -5,7 +5,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { z } from "zod";
 import type { ExplainInput } from "@/modules/insights/facts";
-import { explainOutput, MAX_REASONS, MIN_REASONS, type ExplainOutput } from "@/modules/insights/prompts/explain.v1";
+import { explainOutput, MAX_REASONS, MIN_REASONS, type ExplainOutput } from "@/modules/insights/prompts/explain.v2";
 import { reasonIssues } from "@/modules/insights/validate";
 import type { Judge } from "../shared/judge";
 

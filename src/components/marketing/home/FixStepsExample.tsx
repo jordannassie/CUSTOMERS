@@ -17,6 +17,8 @@ const FIXES: OpportunityItem[] = [
     claudePrompt:
       "Write a short, friendly message Bean House, a coffee shop in Orange, CA, can send to regulars asking for a Google review. Keep it under 60 words.",
     usesGoogle: false,
+    where: "website",
+    about: [],
   },
   {
     id: "oat-milk",
@@ -29,17 +31,19 @@ const FIXES: OpportunityItem[] = [
     claudePrompt:
       "Write a short, friendly menu page for Bean House, a coffee shop in Orange, CA. List our oat milk and other plant milk drinks with one line each, and add opening hours and address at the end.",
     usesGoogle: false,
+    where: "website",
+    about: [],
   },
 ];
 
-/** The Opportunities screen (B-51) with the real fix cards; status changes stay in the browser. */
+/** The Actions screen (B-51, named Actions since D-86) with the real fix cards; status changes stay in the browser. */
 export function FixStepsExample() {
   const [items, setItems] = useState(FIXES);
   const setStatus = (id: string, status: Status) =>
     setItems((all) => all.map((o) => (o.id === id ? { ...o, status } : o)));
 
   return (
-    <ProductFrame page="Opportunities">
+    <ProductFrame page="Actions">
       <div className="grid items-start gap-3 sm:gap-6 lg:grid-cols-2">
         {items.map((item) => (
           <OpportunityCard key={item.id} item={item} busy={false} onStatus={(s) => setStatus(item.id, s)} />

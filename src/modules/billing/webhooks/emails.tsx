@@ -1,25 +1,14 @@
+import { utcDate } from "@/lib/time-zone";
 import type Stripe from "stripe";
 import { PaymentFailedEmail, sendEmail, TrialEndingEmail, type SendEmailInput, type SendEmailResult } from "@/modules/email";
 import { formatUsd } from "../format";
+import { firstChargeCents } from "../plan-change/trial-bill";
 
 // The two billing emails the webhook sends (MVP_SPEC 10, B-62).
 
 export type SendBillingEmail = (input: SendEmailInput) => Promise<SendEmailResult>;
 
 export const sendBillingEmail: SendBillingEmail = (input) => sendEmail(input);
-
-const DATE = new Intl.DateTimeFormat("en-US", { month: "long", day: "numeric", timeZone: "UTC" });
-
-/** What the first charge after the trial will be: every item's price times its quantity. Null when a price is unknown. */
-export function trialChargeCents(sub: Stripe.Subscription): number | null {
-  let total = 0;
-  for (const item of sub.items.data) {
-    const { unit_amount: unit, currency } = item.price;
-    if (unit === null || unit === undefined || (currency && currency !== "usd")) return null;
-    total += unit * (item.quantity ?? 1);
-  }
-  return sub.items.data.length > 0 ? total : null;
-}
 
 export function paymentFailedEmail(input: { to: string; agencyId: string; invoice: Stripe.Invoice }): SendEmailInput {
   const { amount_due: due, currency } = input.invoice;
@@ -35,11 +24,19 @@ export function paymentFailedEmail(input: { to: string; agencyId: string; invoic
   };
 }
 
-export function trialEndingEmail(input: { to: string; agencyId: string; subscription: Stripe.Subscription }): SendEmailInput {
+export function trialEndingEmail(input: {
+  to: string;
+  agencyId: string;
+  subscription: Stripe.Subscription;
+  /** The subscription's schedule, when it has one: a pending change sets the first charge. */
+  schedule?: Stripe.SubscriptionSchedule | null;
+}): SendEmailInput {
   const sub = input.subscription;
   const trialEnd = new Date(sub.trial_end! * 1000);
-  const date = DATE.format(trialEnd);
-  const cents = trialChargeCents(sub);
+  // The reader's zone is unknown in an email, so the date is UTC and says so (BUG-070).
+  const date = utcDate(trialEnd);
+  // A business coming off at the trial end is not in the first charge (BUG-245, the same rule as the Billing dialog).
+  const cents = firstChargeCents(sub, input.schedule ?? null);
   return {
     type: "trial_ending",
     to: input.to,

@@ -13,8 +13,11 @@ export type BillingRows = {
     customerId: string | null;
   };
   plans: { id: string; name: string; priceCents: number; monthlyCredits: number }[];
-  /** Set up businesses, oldest first. planId is null when the business is not on the plan. */
-  businesses: { id: string; name: string; planId: string | null; itemId: string | null }[];
+  /**
+   * Set up businesses, oldest first. planId is null when the business is not on the plan. A deleted business is
+   * here only while its item runs to the period end (MVP_SPEC 11.5), never as one to add.
+   */
+  businesses: { id: string; name: string; planId: string | null; itemId: string | null; deleted: boolean; priceCents?: number | null }[];
 };
 
 export async function loadBillingRows(agencyId: string): Promise<BillingRows> {
@@ -26,10 +29,10 @@ export async function loadBillingRows(agencyId: string): Promise<BillingRows> {
       .eq("id", agencyId)
       .single(),
     db.from("plans").select("id, name, price_cents, monthly_credits").eq("active", true).not("price_cents", "is", null).order("price_cents"),
-    db.from("businesses").select("id, name").eq("agency_id", agencyId).neq("status", "onboarding").order("created_at"),
+    db.from("businesses").select("id, name, deleted_at").eq("agency_id", agencyId).neq("status", "onboarding").order("created_at"),
     db
       .from("business_subscriptions")
-      .select("business_id, plan_id, stripe_subscription_item_id")
+      .select("business_id, plan_id, stripe_subscription_item_id, price_cents")
       .eq("agency_id", agencyId)
       .neq("status", "canceled"),
   ]);
@@ -48,12 +51,18 @@ export async function loadBillingRows(agencyId: string): Promise<BillingRows> {
       customerId: agency.data.stripe_customer_id,
     },
     plans: plans.data.map((p) => ({ id: p.id, name: p.name, priceCents: p.price_cents ?? 0, monthlyCredits: p.monthly_credits ?? 0 })),
-    businesses: businesses.data.map((b) => ({
-      id: b.id,
-      name: b.name,
-      planId: itemOf.get(b.id)?.plan_id ?? null,
-      itemId: itemOf.get(b.id)?.stripe_subscription_item_id ?? null,
-    })),
+    // BUG-120: a deleted business was offered "Add on Starter", so someone could pay for a business they deleted.
+    businesses: businesses.data
+      .filter((b) => b.deleted_at === null || itemOf.has(b.id))
+      .map((b) => ({
+        id: b.id,
+        name: b.name,
+        planId: itemOf.get(b.id)?.plan_id ?? null,
+        itemId: itemOf.get(b.id)?.stripe_subscription_item_id ?? null,
+        deleted: b.deleted_at !== null,
+        // What Stripe charges for it (the webhook saves it); Stripe's own item wins when the page can read it.
+        priceCents: itemOf.get(b.id)?.price_cents ?? null,
+      })),
   };
 }
 

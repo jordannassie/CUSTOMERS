@@ -1,5 +1,6 @@
+import Link from "next/link";
 import { cn } from "cn";
-import { Badge } from "@/components/ui/badge";
+import { TestBadge } from "../../_components/badges";
 import type { UsageCostReport } from "@/modules/admin";
 import { count, money, percent } from "./format";
 
@@ -30,8 +31,14 @@ export default function ByAgency({ agencies }: { agencies: UsageCostReport["byAg
                 <tr key={a.id ?? "none"} data-agency={a.id ?? ""}>
                   <td className="px-4 py-2.5 sm:px-5">
                     <span className="flex flex-wrap items-center gap-x-2 gap-y-1 font-medium">
-                      {a.name}
-                      {a.isTest && <Badge variant="outline">Test</Badge>}
+                      {a.id ? (
+                        <Link href={`/internal/admin/agencies/${a.id}`} className="text-primary hover:underline">
+                          {a.name}
+                        </Link>
+                      ) : (
+                        a.name
+                      )}
+                      {a.isTest && <TestBadge />}
                     </span>
                   </td>
                   <td className="tabular px-2 py-2.5 text-right sm:px-3">{count(a.credits)}</td>

@@ -9,7 +9,7 @@ Email foundation (B-61, MVP_SPEC 10, D-37, D-72): React Email templates sent thr
 | Welcome | `welcome.tsx` | Onboarding step 2, when the agency is created (`notifications/welcome.ts`) | `welcome:<agency>` |
 | Trial ending | `trial-ending.tsx` | Stripe `customer.subscription.trial_will_end` (`billing/webhooks/emails.tsx`) | `trial_ending:<subscription>:<trial end>` |
 | Payment failed | `payment-failed.tsx` | Stripe `invoice.payment_failed` (`billing/webhooks/emails.tsx`) | `payment_failed:<invoice>` |
-| Low credits | `low-credits.tsx` | pg_cron every 30 minutes (`notifications/jobs.ts`, `low_credit_agencies()` in migration 038) | `low_credits:<agency>:<period end>:<low, empty or negative>` |
+| Low credits | `low-credits.tsx` | pg_cron every 30 minutes (`notifications/jobs.ts`, `low_credit_alerts()` in migration 086) | `low_credits:<agency>:<period key>:<low or zero>` (zero covers empty and below zero; also skipped when the same group was already sent since the period started, BUG-280) |
 | Weekly report | `weekly-report.tsx` | pg_cron on Mondays (`notifications/jobs.ts`) | `weekly_report:<agency>:<Monday>` |
 
 Deletion emails (B-77, MVP_SPEC 23), all `notice.tsx` built in `account/emails.tsx`: `business_deleted:<business>`, `account_deleted:<agency>`, `account_restored:<agency>:<time>` (admin restore), `account_purged:<agency>` (after the purge job, `account/purge.ts`).
@@ -45,7 +45,7 @@ await sendEmail({
 
 ## Preferences and unsubscribe
 
-- `agencies.weekly_report_emails` (default on). Signed-in users change it with the `saveEmailPreferences` action; a Settings toggle can call it.
+- `agencies.weekly_report_emails` (default on). Signed-in users change it with the Weekly report switch in Settings, Emails (`EmailSettingsForm`, `saveEmailPreferences`).
 - `/email/unsubscribe?token=...` (public page): checks the token and asks for a button press, so mail scanners that open links do not unsubscribe anyone.
 - `POST /api/email/unsubscribe` (public route, the token is the proof): the page's button (redirects back with `done=1`) and mail apps' one-click POST (returns 200).
 

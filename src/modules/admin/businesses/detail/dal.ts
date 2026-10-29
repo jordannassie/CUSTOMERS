@@ -1,10 +1,11 @@
 import "server-only";
 import { createServiceClient } from "@/lib/supabase/service";
+import { requireAdmin } from "@/modules/auth";
 import { getBalance } from "@/modules/credits";
 import { allRows, emailsOf, readCaptures, unique } from "../dal";
 import { isActive, startOfMonthUtc, sumBy, toScanState, type ScanState } from "../service";
 
-// Everything about one business for the admin detail page (B-66); callers run requireAdmin() first.
+// Everything about one business for the admin detail page (B-66). Each read checks admin access itself (BUG-286).
 
 const HISTORY_LIMIT = 20;
 
@@ -28,12 +29,21 @@ export type AdminScan = {
 
 export type AdminBusinessDetail = Awaited<ReturnType<typeof loadBusinessDetail>>;
 
+/** Just the name, for the page title ("Joe's Coffee | Admin"). Null for an unknown id. */
+export async function loadBusinessName(id: string): Promise<string | null> {
+  await requireAdmin();
+  const { data, error } = await createServiceClient().from("businesses").select("name").eq("id", id).maybeSingle();
+  if (error) throw new Error(`Admin business: could not load the business name: ${error.message}`);
+  return data?.name ?? null;
+}
+
 export async function loadBusinessDetail(id: string, now = new Date()) {
+  await requireAdmin();
   const db = createServiceClient();
   const { data: business, error } = await db
     .from("businesses")
     .select(
-      "id, name, domain, phone, primary_city, primary_region, primary_country, industry, status, agency_id, owner_user_id, scan_frequency, models, next_scan_at, services, aliases, created_at, deleted_at, purge_after",
+      "id, name, domain, phone, primary_city, primary_region, primary_country, primary_area, industry, status, agency_id, owner_user_id, scan_frequency, models, next_scan_at, services, aliases, created_at, deleted_at, purge_after",
     )
     .eq("id", id)
     .maybeSingle();
@@ -50,7 +60,7 @@ export async function loadBusinessDetail(id: string, now = new Date()) {
       : Promise.resolve({ data: null, error: null }),
     db.from("business_subscriptions").select("status, plans(name)").eq("business_id", id).maybeSingle(),
     db.from("business_competitors").select("id, name, domain, city").eq("business_id", id).order("created_at"),
-    db.from("tracked_prompts").select("id, prompt, active").eq("business_id", id).order("created_at"),
+    db.from("tracked_prompts").select("id, prompt, active").eq("business_id", id).is("removed_at", null).order("created_at"),
     allRows("scan jobs", (from, to) =>
       db
         .from("scan_jobs")
@@ -157,6 +167,8 @@ export async function loadBusinessDetail(id: string, now = new Date()) {
 export type ResultRow = {
   question: string;
   mentioned: Partial<Record<string, boolean>>;
+  /** The saved answer per model, null when the check kept no text. */
+  answers: Partial<Record<string, string | null>>;
 };
 
 /** Per-question, per-model answers of the newest finished scan (B-26 results). */
@@ -166,7 +178,7 @@ async function latestResults(jobId: string | undefined, runOfJob: Map<string, { 
   const rows = await allRows("check results", (from, to) =>
     createServiceClient()
       .from("visibility_results")
-      .select("id, question, provider, business_mentioned, created_at")
+      .select("id, question, provider, business_mentioned, answer_text, created_at")
       .eq("run_id", runId)
       .order("created_at")
       .order("id")
@@ -175,8 +187,9 @@ async function latestResults(jobId: string | undefined, runOfJob: Map<string, { 
   const byQuestion = new Map<string, ResultRow>();
   for (const r of rows) {
     const question = r.question ?? "Question not recorded";
-    const row = byQuestion.get(question) ?? { question, mentioned: {} };
+    const row = byQuestion.get(question) ?? { question, mentioned: {}, answers: {} };
     row.mentioned[r.provider] = r.business_mentioned;
+    row.answers[r.provider] = r.answer_text;
     byQuestion.set(question, row);
   }
   return { at: rows[0]?.created_at ?? null, rows: [...byQuestion.values()] };

@@ -1,4 +1,5 @@
-// Pure rules for the Opportunities page (MVP_SPEC 8.1): statuses, order and the shape the screen needs.
+// Pure rules for fixes (MVP_SPEC 8.1): the old three statuses, the steps, and the card shape OpportunityCard shows.
+import type { Where } from "./where";
 
 export const STATUSES = ["open", "done", "dismissed"] as const;
 export type Status = (typeof STATUSES)[number];
@@ -17,19 +18,6 @@ export function fromDbStatus(status: string): Status {
   return "open";
 }
 
-export type OpportunityRow = {
-  id: string;
-  title: string;
-  impact: string;
-  status: string;
-  description: string | null;
-  evidence: string | null;
-  recommended_action: string | null;
-  claude_prompt: string | null;
-  created_at: string;
-  usesGoogle: boolean;
-};
-
 export type OpportunityItem = {
   id: string;
   title: string;
@@ -40,13 +28,11 @@ export type OpportunityItem = {
   steps: string[];
   claudePrompt: string | null;
   usesGoogle: boolean;
+  /** Where the owner makes this fix (where.ts). */
+  where: Where;
+  /** Tracked competitors the fix is about, to link each to its comparison page. */
+  about: { id: string; name: string }[];
 };
-
-const IMPACT_ORDER: Record<Impact, number> = { high: 0, medium: 1, low: 2 };
-
-const toImpact = (impact: string): Impact => (impact === "high" || impact === "low" ? impact : "medium");
-
-const clean = (text: string | null) => (text?.trim() ? text.trim() : null);
 
 /** Steps are stored as "1. Do this" lines; older rows hold one paragraph, which becomes one step. */
 export function splitSteps(text: string | null): string[] {
@@ -55,24 +41,4 @@ export function splitSteps(text: string | null): string[] {
     .split("\n")
     .map((line) => line.replace(/^\s*\d+[.)]\s+/, "").trim())
     .filter(Boolean);
-}
-
-/** Most important first, then newest. */
-export function toItems(rows: OpportunityRow[]): OpportunityItem[] {
-  return [...rows]
-    .sort(
-      (a, b) =>
-        IMPACT_ORDER[toImpact(a.impact)] - IMPACT_ORDER[toImpact(b.impact)] || b.created_at.localeCompare(a.created_at),
-    )
-    .map((row) => ({
-      id: row.id,
-      title: row.title,
-      impact: toImpact(row.impact),
-      status: fromDbStatus(row.status),
-      evidence: clean(row.evidence),
-      whyItMatters: clean(row.description),
-      steps: splitSteps(row.recommended_action),
-      claudePrompt: clean(row.claude_prompt),
-      usesGoogle: row.usesGoogle,
-    }));
 }

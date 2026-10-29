@@ -29,7 +29,7 @@ function deps(overrides: Partial<BuyTopUpDeps> = {}): BuyTopUpDeps {
   return {
     client: fakeClient().client,
     loadPacks: async () => packs,
-    canSpendTopUps: async () => ({ allowed: true, reason: "" }),
+    canBuyTopUps: async () => ({ allowed: true, reason: "" }),
     customerId: async () => "cus_1",
     ...overrides,
   };
@@ -46,10 +46,21 @@ describe("buyTopUp", () => {
   it("is blocked when the plan is cancelled, and never reaches Stripe", async () => {
     const { client, created } = fakeClient();
     const canceled = { allowed: false, reason: REASONS.canceled };
-    expect(await buyTopUp(deps({ client, canSpendTopUps: async () => canceled }), input)).toEqual({
+    expect(await buyTopUp(deps({ client, canBuyTopUps: async () => canceled }), input)).toEqual({
       ok: false,
       status: 403,
       error: REASONS.canceled,
+    });
+    expect(created).toEqual([]);
+  });
+
+  it("is blocked before setup has started the trial, so no Stripe customer is made (F-43)", async () => {
+    const { client, created } = fakeClient();
+    const setup = { allowed: false, reason: REASONS.setupUnfinished };
+    expect(await buyTopUp(deps({ client, canBuyTopUps: async () => setup, customerId: async () => null }), input)).toEqual({
+      ok: false,
+      status: 403,
+      error: REASONS.setupUnfinished,
     });
     expect(created).toEqual([]);
   });

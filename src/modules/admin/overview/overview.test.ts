@@ -40,6 +40,7 @@ const { loadOverview } = await import("./dal");
 const stripeWith = (revenueSince: AdminStripeClient["revenueSince"]): AdminStripeClient => ({
   mode: "stripe",
   extendTrial: async () => {},
+  subscriptionStatus: async () => null,
   revenueSince,
 });
 
@@ -65,42 +66,63 @@ describe("admin overview (B-65)", () => {
     expect(overview.revenue).toEqual({ state: "ok", cents: 123_400, mode: "stripe" });
   });
 
-  it("counts a real trial but no test agency, lists recent signups and failed scans newest first, and open alerts", async () => {
-    const owner = await createUser("overview-real");
-    const { data: real, error } = await service
-      .from("agencies")
-      .insert({ owner_user_id: owner.id, name: "Overview Real", status: "trialing", is_test: false })
-      .select("id")
-      .single();
-    if (error) throw error;
+  it("counts a running real trial but no test agency, unfinished signup or ended trial, and lists recent signups and real failed scans", async () => {
+    const day = 86_400_000;
+    const insertAgency = async (name: string, fields: { trial_ends_at: string | null; stripe_subscription_id: string | null }) => {
+      const owner = await createUser("overview-real");
+      const { data, error } = await service
+        .from("agencies")
+        .insert({ owner_user_id: owner.id, name, status: "trialing", is_test: false, ...fields })
+        .select("id")
+        .single();
+      if (error) throw error;
+      return data.id;
+    };
+    const real = await insertAgency("Overview Real", { trial_ends_at: new Date(Date.now() + 5 * day).toISOString(), stripe_subscription_id: "sub_overview_real" });
+    const unfinished = await insertAgency("Overview Unfinished", { trial_ends_at: null, stripe_subscription_id: null });
+    const ended = await insertAgency("Overview Ended", { trial_ends_at: new Date(Date.now() - day).toISOString(), stripe_subscription_id: "sub_overview_ended" });
     const test = await createAgencyWithBusiness("Overview Test");
-    const { data: failed, error: jobError } = await service
-      .from("scan_jobs")
-      .insert({
-        agency_id: test.agencyId,
-        business_id: test.businessId,
-        priority: -1_000_000,
-        status: "failed",
-        error: "Every check failed: timeout",
-        finished_at: new Date().toISOString(),
-      })
-      .select("id")
-      .single();
-    if (jobError) throw jobError;
+    const realWithBusiness = await createAgencyWithBusiness("Overview Real Scans");
+    await service.from("agencies").update({ is_test: false, status: "active" }).eq("id", realWithBusiness.agencyId);
+    const failedJob = async (a: { agencyId: string; businessId: string }) => {
+      const { data, error } = await service
+        .from("scan_jobs")
+        .insert({
+          agency_id: a.agencyId,
+          business_id: a.businessId,
+          priority: -1_000_000,
+          status: "failed",
+          error: "Every check failed: timeout",
+          finished_at: new Date().toISOString(),
+        })
+        .select("id")
+        .single();
+      if (error) throw error;
+      return data.id;
+    };
+    await failedJob(test);
+    const realFailed = await failedJob(realWithBusiness);
 
-    scope.agencyIds = [real.id, test.agencyId];
+    scope.agencyIds = [real, unfinished, ended, test.agencyId, realWithBusiness.agencyId];
     const overview = await loadOverview(new Date(), null).finally(() => {
       scope.agencyIds = null;
     });
-    expect(overview).toMatchObject({ agencies: 1, activeTrials: 1, payingBusinesses: 0 });
-    expect(overview.recentSignups.map((a) => a.id)).toEqual([test.agencyId, real.id]);
+    expect(overview).toMatchObject({ agencies: 4, activeTrials: 1, payingBusinesses: 0 });
+    expect(overview.recentSignups.map((a) => [a.id, a.status])).toEqual([
+      [realWithBusiness.agencyId, "active"],
+      [test.agencyId, "active"],
+      [ended, "trial_ended"],
+      [unfinished, "signup_unfinished"],
+      [real, "trialing"],
+    ]);
+    // The test agency's failed scan is left out.
     expect(overview.recentFailedScans).toEqual([
-      expect.objectContaining({ id: failed.id, businessId: test.businessId, error: "Every check failed: timeout" }),
+      expect.objectContaining({ id: realFailed, businessId: realWithBusiness.businessId, error: "Every check failed: timeout" }),
     ]);
     // Alert tests run at the same time, so only the shape is checked here (B-69 covers the content).
     for (const a of overview.openAlerts) expect(["info", "warning", "critical"]).toContain(a.severity);
 
-    await service.from("agencies").delete().eq("id", real.id);
+    await service.from("agencies").delete().in("id", [real, unfinished, ended]);
   });
 
   it("refuses non-admins", async () => {

@@ -60,10 +60,13 @@ test("marketing pages make no removed claims", async ({ page }) => {
     const text = await page.locator("main").innerText();
     expect(text).not.toMatch(/Gemini|Google AI|ChatGPT Ads|14-day|[\u2013\u2014]/);
   }
-  await expect(page.getByLabel("What is it about?").locator("option")).toHaveText([
+  // The topic list is our own Select (2026-10-16), so its options show once it is open.
+  await page.getByLabel("What is it about?").click();
+  await expect(page.getByRole("option")).toHaveText([
     "Checking my business in AI answers",
     "Using it for my agency's clients",
     "Booking a demo call",
+    "Help with my account",
     "Something else",
   ]);
 });

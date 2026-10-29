@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { describe, expect, it, vi } from "vitest";
+import { fakeAiClients } from "@/modules/ai";
 import { cacheKey, checkWithCache, readCachedAnswer } from "./cache";
 import { createNameExtractor, readStoredExtraction } from "./extract";
 import { storeExtraction } from "./extract-store";
@@ -29,12 +30,16 @@ describe("storeExtraction", () => {
     expect(first.extractedNames).toBeNull();
 
     const fetch = vi.fn<typeof globalThis.fetch>(async () => Response.json(recorded));
-    const extraction = await createNameExtractor("sk-ant-test", { fetch })(first.answerText);
-    await storeExtraction(cacheKey(input), extraction);
+    const extraction = await createNameExtractor(fakeAiClients(fetch))(first.answerText);
+    await storeExtraction(cacheKey(input), first.cachedAt!, extraction);
 
     const hit = await readCachedAnswer(input);
     expect(hit?.cached).toBe(true);
     expect(readStoredExtraction(hit?.extractedNames)?.names).toEqual(extraction.names);
     expect(fetch).toHaveBeenCalledOnce();
+
+    // Names from an answer a newer one has since replaced under the same key are not written onto the newer one.
+    await storeExtraction(cacheKey(input), "2000-01-01T00:00:00.000Z", { ...extraction, names: [] });
+    expect(readStoredExtraction((await readCachedAnswer(input))?.extractedNames)?.names).toEqual(extraction.names);
   });
 });

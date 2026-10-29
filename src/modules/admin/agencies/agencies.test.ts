@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-import { grantCredits } from "@/modules/credits";
+import { grantCredits, grantTrialCredits } from "@/modules/credits";
 import { createAgencyWithBusiness, deleteTestUsers, service, signInAs, type TestSession } from "../admin.test-helpers";
 import type { Database } from "@/types/database.types";
 import type { AdminStripeClient } from "./stripe";
@@ -22,10 +22,17 @@ const { loadAgencyDetail } = await import("./detail/dal");
 
 const REASON = "Support ticket 42";
 const DAY = 86_400_000;
+const GRACE = 6 * 60 * 60 * 1000;
 let agency: Awaited<ReturnType<typeof createAgencyWithBusiness>>;
 
 function fakeStripe(overrides: Partial<AdminStripeClient> = {}): AdminStripeClient & { extendTrial: ReturnType<typeof vi.fn> } {
-  return { mode: "stripe", extendTrial: vi.fn(async () => {}), revenueSince: vi.fn(async () => 0), ...overrides } as never;
+  return {
+    mode: "stripe",
+    extendTrial: vi.fn(async () => {}),
+    revenueSince: vi.fn(async () => 0),
+    subscriptionStatus: vi.fn(async () => null),
+    ...overrides,
+  } as never;
 }
 
 async function setAgency(fields: Database["public"]["Tables"]["agencies"]["Update"]) {
@@ -46,10 +53,10 @@ async function readAgency() {
 async function auditRows(action: string) {
   const { data, error } = await service
     .from("admin_audit_log")
-    .select("action, admin_user_id, details")
+    .select("action, admin_user_id, details, outcome")
     .eq("target_type", "agency")
     .eq("target_id", agency.agencyId)
-    .eq("action", action);
+    .eq("action", action).order("created_at");
   if (error) throw error;
   return data;
 }
@@ -121,7 +128,23 @@ describe("agency actions (B-65)", () => {
     const expected = new Date(new Date(end).getTime() + 7 * DAY);
     expect(stripe.client.extendTrial).toHaveBeenCalledWith(expect.stringMatching(/^sub_/), expected);
     expect(new Date((await readAgency()).trial_ends_at!).getTime()).toBe(expected.getTime());
-    expect(await auditRows("agency.extend_trial")).toMatchObject([{ details: { reason: REASON, days: 7 } }]);
+    expect(await auditRows("agency.extend_trial")).toMatchObject([{ details: { reason: REASON, days: 7 }, outcome: "done" }]);
+  });
+
+  it("moves the trial credits' expiry with the trial, keeping the 6-hour grace (A3, M6)", async () => {
+    const end = new Date(Date.now() + 2 * DAY);
+    await setAgency({ status: "trialing", trial_ends_at: end.toISOString(), stripe_subscription_id: `sub_${randomUUID()}` });
+    const grantId = await grantTrialCredits({ agencyId: agency.agencyId, sourceId: `il_${randomUUID()}`, amount: 100, expiresAt: new Date(end.getTime() + GRACE) });
+    stripe.client = fakeStripe();
+
+    expect((await actions.extendTrial({ agencyId: agency.agencyId, days: 2, reason: REASON })).ok).toBe(true);
+    const expected = new Date(end.getTime() + 2 * DAY + GRACE).toISOString();
+    const { data: grant } = await service.from("credit_grants").select("expires_at, remaining").eq("id", grantId!).single().throwOnError();
+    expect(new Date(grant.expires_at!).toISOString()).toBe(expected);
+    expect(grant.remaining).toBe(100);
+    expect(await auditRows("agency.extend_trial")).toMatchObject([
+      { details: { reason: REASON, days: 2, trial_grant_id: grantId, trial_grant_expires_at: expected } },
+    ]);
   });
 
   it("changes nothing when Stripe is not connected or refuses", async () => {
@@ -133,18 +156,59 @@ describe("agency actions (B-65)", () => {
     expect(await actions.extendTrial({ agencyId: agency.agencyId, days: 7, reason: REASON })).toMatchObject({ ok: false, status: 502 });
 
     expect(new Date((await readAgency()).trial_ends_at!).getTime()).toBe(new Date(end).getTime());
-    expect(await auditRows("agency.extend_trial")).toHaveLength(0);
+    // Not connected stops before the history row; a refusal is recorded as a change that did not go through (BUG-278).
+    expect(await auditRows("agency.extend_trial")).toMatchObject([
+      { outcome: "failed", details: { reason: REASON, error: expect.stringContaining("No such subscription") } },
+    ]);
   });
 
   it("suspends and unsuspends back to the status it had", async () => {
     await setAgency({ status: "past_due" });
     expect((await actions.suspendAgency({ agencyId: agency.agencyId, reason: REASON })).ok).toBe(true);
     expect((await readAgency()).status).toBe("suspended");
+    // A later suspend that did not go through is not the status to go back to (BUG-278).
+    const failed = { action: "agency.suspend", target_type: "agency", target_id: agency.agencyId, outcome: "failed" };
+    await service.from("admin_audit_log").insert({ ...failed, details: { previous_status: "active" } }).throwOnError();
     expect((await actions.unsuspendAgency({ agencyId: agency.agencyId, reason: "Paid by phone" })).ok).toBe(true);
     expect((await readAgency()).status).toBe("past_due");
 
-    expect(await auditRows("agency.suspend")).toMatchObject([{ details: { reason: REASON, previous_status: "past_due" } }]);
+    expect(await auditRows("agency.suspend")).toMatchObject([
+      { details: { reason: REASON, previous_status: "past_due" }, outcome: "done" },
+      { outcome: "failed" },
+    ]);
     expect(await auditRows("agency.unsuspend")).toMatchObject([{ details: { reason: "Paid by phone", new_status: "past_due" } }]);
+  });
+
+  it("unsuspends to the status Stripe has now, since webhooks were not saved while suspended", async () => {
+    await setAgency({ status: "active", stripe_subscription_id: `sub_${randomUUID()}` });
+    expect((await actions.suspendAgency({ agencyId: agency.agencyId, reason: REASON })).ok).toBe(true);
+    const subscriptionStatus = vi.fn(async () => "canceled" as const);
+    stripe.client = fakeStripe({ subscriptionStatus });
+    expect((await actions.unsuspendAgency({ agencyId: agency.agencyId, reason: "Paid by phone" })).ok).toBe(true);
+    expect((await readAgency()).status).toBe("canceled");
+    expect(subscriptionStatus).toHaveBeenCalledTimes(1);
+    expect(await auditRows("agency.unsuspend")).toMatchObject([{ details: { new_status: "canceled", status_from_stripe: true } }]);
+  });
+
+  it("keeps the agency suspended when Stripe cannot be reached", async () => {
+    await setAgency({ status: "active", stripe_subscription_id: `sub_${randomUUID()}` });
+    expect((await actions.suspendAgency({ agencyId: agency.agencyId, reason: REASON })).ok).toBe(true);
+    stripe.client = fakeStripe({ subscriptionStatus: vi.fn(async () => Promise.reject(new Error("connection reset"))) });
+    expect(await actions.unsuspendAgency({ agencyId: agency.agencyId, reason: "Paid by phone" })).toMatchObject({ ok: false, status: 502 });
+    expect((await readAgency()).status).toBe("suspended");
+    expect(await auditRows("agency.unsuspend")).toHaveLength(0);
+  });
+
+  it("falls back to the status from suspend time when Stripe is not connected or has nothing to go on", async () => {
+    await setAgency({ status: "past_due", stripe_subscription_id: `sub_${randomUUID()}` });
+    expect((await actions.suspendAgency({ agencyId: agency.agencyId, reason: REASON })).ok).toBe(true);
+    expect((await actions.unsuspendAgency({ agencyId: agency.agencyId, reason: "Paid by phone" })).ok).toBe(true);
+    expect((await readAgency()).status).toBe("past_due");
+
+    expect((await actions.suspendAgency({ agencyId: agency.agencyId, reason: REASON })).ok).toBe(true);
+    stripe.client = fakeStripe();
+    expect((await actions.unsuspendAgency({ agencyId: agency.agencyId, reason: "Paid by phone" })).ok).toBe(true);
+    expect((await readAgency()).status).toBe("past_due");
   });
 
   it("restores a deleted account before its purge date, and not after", async () => {
@@ -172,13 +236,15 @@ describe("agency actions (B-65)", () => {
 
   it("lists the agency with owner, businesses and balance, and shows actions in its history", async () => {
     await actions.adjustCredits({ agencyId: agency.agencyId, delta: 30, reason: REASON, requestId: randomUUID() });
-    const { rows } = await listAgencies("test");
+    const name = `Agency Actions ${randomUUID()}`;
+    await setAgency({ name });
+    const { rows } = await listAgencies({ filter: "test", search: name });
     const row = rows.find((r) => r.id === agency.agencyId);
     expect(row).toMatchObject({ businesses: 1, isTest: true, credits: { plan: 30 } });
     expect(row?.ownerEmail).toMatch(/@example\.test$/);
 
     const detail = await loadAgencyDetail(agency.agencyId);
-    expect(detail?.audit[0]).toMatchObject({ action: "agency.adjust_credits", reason: REASON });
+    expect(detail?.audit[0]).toMatchObject({ action: "agency.adjust_credits", reason: REASON, outcome: "done" });
     expect(detail?.ledger[0]).toMatchObject({ delta: 30, kind: "admin_adjust", note: REASON });
   });
 });

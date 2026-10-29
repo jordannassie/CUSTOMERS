@@ -19,7 +19,7 @@ vi.mock("@/lib/env", async (importOriginal) => {
   };
 });
 
-const { listBusinesses } = await import("./dal");
+const { listBusinesses } = await import("./list/dal");
 const { loadBusinessDetail } = await import("./detail/dal");
 const { runScanNow } = await import("./actions");
 
@@ -54,6 +54,8 @@ beforeAll(async () => {
   });
   const { error } = await current.auth.signInWithPassword({ email: adminEmail, password });
   if (error) throw error;
+  // A signed-in admin with a confirmed email (createUser confirms it), as requireAdmin() asks.
+  adminEnv.emails = adminEmail;
   agencyId = (
     await must(
       service.from("agencies").insert({ owner_user_id: ownerId, name: "Admin delete test agency", is_test: true }).select("id").single(),
@@ -93,7 +95,10 @@ describe("admin businesses: deleted ones", () => {
       status: 409,
       error: "This business was deleted, so it can't be scanned.",
     });
-    const rows = await listBusinesses();
+    // The owner's email is unique to this run, so the search finds this file's businesses only.
+    const list = await listBusinesses({ search: ownerEmail });
+    const rows = list.rows;
+    expect(list.deleted).toBeGreaterThanOrEqual(1);
     expect(rows.find((r) => r.id === deletedId)?.deleted).toEqual({
       at: expect.stringMatching(/^2026-10-01T12:00:00/),
       purgeAfter: expect.stringMatching(/^2026-10-31T12:00:00/),
@@ -127,5 +132,12 @@ describe("admin businesses: deleted ones", () => {
       .select("id", { count: "exact", head: true })
       .in("business_id", [deletedId, liveId]);
     expect(count).toBe(0);
+  });
+
+  it("refuses a non-admin the list and the detail (BUG-286)", async () => {
+    adminEnv.emails = "someone-else@example.test";
+    await expect(listBusinesses({ search: ownerEmail })).rejects.toMatchObject({ reason: "forbidden", status: 403 });
+    await expect(loadBusinessDetail(businessId)).rejects.toMatchObject({ reason: "forbidden", status: 403 });
+    adminEnv.emails = adminEmail;
   });
 });

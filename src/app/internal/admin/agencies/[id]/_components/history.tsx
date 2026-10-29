@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { AdminAgencyDetail } from "@/modules/admin";
-import { DeletedBadge, deletedNote, formatDate } from "../../../businesses/_components/scan-parts";
+import { DeletedBadge, deletedNote } from "../../../businesses/_components/scan-parts";
+import { formatDate } from "../../../_components/format";
 import Section, { Empty } from "../../../businesses/[id]/_components/section";
 import { credits, planStatusLabel } from "../../_components/agency-parts";
 
@@ -11,14 +12,40 @@ const ACTIONS: Record<string, string> = {
   "agency.unsuspend": "Unsuspended",
   "agency.restore": "Restored account",
   "agency.mark_test": "Changed test flag",
+  "stripe.topup_refund": "Top-up refunded in Stripe",
+};
+
+// Shown next to an admin action that did not end as done (BUG-278).
+const OUTCOME_NOTES: Record<string, string> = {
+  started: "Result not confirmed",
+  failed: "Did not go through",
 };
 
 const KINDS: Record<string, string> = {
   grant: "Credits granted",
   expire: "Credits expired",
-  admin_adjust: "Admin change",
+  admin_adjust: "Admin",
   overdraft_settle: "Overdraft paid back",
+  refund: "Refunded top-up",
 };
+
+// Where granted credits came from (credit_grants.source), shown instead of "Credits granted".
+const SOURCES: Record<string, string> = {
+  trial: "Trial",
+  plan: "Plan",
+  topup: "Top-up",
+  admin: "Admin",
+  promo: "Promo",
+  refund: "Refund",
+};
+
+/** "Trial", "Plan", "Top-up" or "Admin" for a grant; "Trial credits expired" for an expiry; else what the row did. */
+export function ledgerLabel(row: { kind: string; source: string | null }): string {
+  const source = row.source ? SOURCES[row.source] : undefined;
+  if (row.kind === "grant" && source) return source;
+  if (row.kind === "expire" && source) return `${source} credits expired`;
+  return KINDS[row.kind] ?? row.kind;
+}
 
 export function Businesses({ rows }: { rows: AdminAgencyDetail["businesses"] }) {
   const deleted = rows.filter((b) => b.deleted).length;
@@ -32,7 +59,7 @@ export function Businesses({ rows }: { rows: AdminAgencyDetail["businesses"] }) 
             <li key={b.id} className="flex items-start justify-between gap-3 px-4 py-3">
               <span className="min-w-0">
                 <span className="flex items-center gap-2">
-                  <Link href={`/internal/admin/businesses/${b.id}`} className="truncate font-medium text-primary hover:underline">
+                  <Link href={`/internal/admin/businesses/${b.id}`} className="truncate font-medium text-primary hover:underline" title={b.name}>
                     {b.name}
                   </Link>
                   {b.deleted && <DeletedBadge />}
@@ -63,7 +90,7 @@ export function CreditHistory({ rows }: { rows: AdminAgencyDetail["ledger"] }) {
           {rows.map((l) => (
             <li key={l.id} className="flex items-start justify-between gap-3 px-4 py-3">
               <span className="min-w-0">
-                <span className="block font-medium">{KINDS[l.kind] ?? l.kind}</span>
+                <span className="block font-medium">{ledgerLabel(l)}</span>
                 {l.note && <span className="block break-words text-muted-foreground">{l.note}</span>}
                 <span className="block text-text-hint">
                   {formatDate(l.createdAt, true)}
@@ -91,11 +118,44 @@ export function AuditLog({ rows }: { rows: AdminAgencyDetail["audit"] }) {
         <ul className="divide-y divide-border rounded-md border border-border bg-surface text-[13px]">
           {rows.map((a) => (
             <li key={a.id} className="flex flex-col gap-0.5 px-4 py-3">
-              <span className="font-medium">{ACTIONS[a.action] ?? a.action}</span>
+              <span className="flex flex-wrap items-baseline gap-x-2">
+                <span className="font-medium">{ACTIONS[a.action] ?? a.action}</span>
+                {OUTCOME_NOTES[a.outcome] && <span className="text-text-hint">{OUTCOME_NOTES[a.outcome]}</span>}
+              </span>
               {a.reason && <span className="break-words text-muted-foreground">{a.reason}</span>}
               <span className="text-text-hint">
-                {a.by ?? "Unknown admin"}, {formatDate(a.createdAt, true)}
+                {a.by ?? (a.action.startsWith("stripe.") ? "Stripe" : "Unknown admin")}, {formatDate(a.createdAt, true)}
               </span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </Section>
+  );
+}
+
+const CANCEL_REASONS: Record<string, string> = {
+  too_expensive: "Too expensive",
+  not_useful: "Not useful enough",
+  just_testing: "Just testing",
+  other: "Other",
+};
+
+/** Optional reasons from the owner's "Before you cancel" dialog (migration 062). */
+export function CancelReasons({ rows }: { rows: AdminAgencyDetail["cancelReasons"] }) {
+  return (
+    <Section title="Cancel reasons" note="Given by the owner when canceling, latest 20">
+      {rows.length === 0 ? (
+        <Empty>No reason given yet.</Empty>
+      ) : (
+        <ul className="divide-y divide-border rounded-md border border-border bg-surface text-[13px]" data-testid="cancel-reasons">
+          {rows.map((r) => (
+            <li key={r.id} className="flex flex-col gap-0.5 px-4 py-3">
+              <span className="font-medium">{CANCEL_REASONS[r.reason] ?? r.reason}</span>
+              <span className="break-words text-muted-foreground">
+                {r.kind === "remove" ? `Removed ${r.business ?? "a business"} from the plan` : "Canceled the plan"}
+              </span>
+              <span className="text-text-hint">{formatDate(r.createdAt, true)}</span>
             </li>
           ))}
         </ul>

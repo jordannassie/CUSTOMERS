@@ -9,8 +9,8 @@ const baseURL = `http://localhost:${port}`;
 // The dev server must use this worktree's local stack (written by npm test), not .env.local and the remote dev
 // database (BUG-034). Env passed to next dev wins over its .env files.
 const testDb = existsSync(".env.test.local") ? parseEnv(readFileSync(".env.test.local", "utf8")) : {};
-// One admin per project for tests/e2e/admin-access.spec.ts, which reads the same list.
-const adminEmails = process.env.ADMIN_EMAILS ?? "e2e-admin-desktop@example.test,e2e-admin-mobile@example.test";
+// One admin per project for tests/e2e/admin-access.spec.ts, and one for responsive.spec.ts, which read the same list.
+const adminEmails = process.env.ADMIN_EMAILS ?? "e2e-admin-desktop@example.test,e2e-admin-mobile@example.test,e2e-admin-responsive@example.test";
 process.env.ADMIN_EMAILS = adminEmails;
 
 export default defineConfig({
@@ -20,6 +20,9 @@ export default defineConfig({
   timeout: 90_000,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,
+  // Every test signs in and writes to the one local database; with a worker per core the local auth calls timed out
+  // and 7 specs failed that pass alone (BUG-068). E2E_WORKERS raises or lowers it; CI keeps Playwright's default.
+  workers: process.env.CI ? undefined : Number(process.env.E2E_WORKERS ?? 2),
   reporter: process.env.CI ? "github" : "list",
   use: { baseURL, trace: "retain-on-failure" },
   // Screen sizes from MVP_SPEC 21: every UI change is checked at 1440px and 390px.

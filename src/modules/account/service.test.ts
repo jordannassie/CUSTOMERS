@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { changeEmailInput, changePasswordInput, deleteAccountInput } from "./schema";
-import { authUpdateError, confirmsName, longDate, purgeDate } from "./service";
+import { accountCancelKey, authUpdateError, confirmsName, longDate, purgeDate } from "./service";
 
 describe("confirmsName", () => {
   it("needs the exact name, forgiving only spaces", () => {
@@ -46,5 +46,12 @@ describe("authUpdateError", () => {
     expect(authUpdateError("email_exists", "x")).toBe("Another account already uses that email.");
     expect(authUpdateError("something_new", "Try again.")).toBe("Try again.");
     expect(authUpdateError(undefined, "Try again.")).toBe("Try again.");
+  });
+});
+
+describe("accountCancelKey", () => {
+  it("differs per subscription, so a second delete after a restore cancels the new one", () => {
+    expect(accountCancelKey("agency-1", "sub_old")).toBe("account-delete:agency-1:sub_old");
+    expect(accountCancelKey("agency-1", "sub_new")).not.toBe(accountCancelKey("agency-1", "sub_old"));
   });
 });

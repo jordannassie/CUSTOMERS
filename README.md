@@ -114,6 +114,16 @@ The 3 fixture flags only work outside production: the code ignores them when `NO
 - The seeded businesses start part way through setup, so the first login opens setup at "Business details". Click Continue to the end; the fixtures fill every step and no card is asked for. Then Run scan on the Overview finishes in a second from recorded answers and uses 1 test credit per answer.
 - Admin: http://localhost:3000/internal/admin opens for any email in `ADMIN_EMAILS`. To see what a normal user sees, restart the server without that email in the list.
 
+### 5. Real Stripe test mode (optional)
+
+The fixture card form above makes no Stripe call. To run the real Checkout, webhooks and emails against your Stripe sandbox:
+
+1. Check the key in your env file starts with `sk_test_` or `rk_test_`. Never use live keys locally.
+2. In a second terminal: `stripe listen --forward-to localhost:3000/api/stripe/webhook`. It prints a `whsec_...` signing secret.
+3. Start the dev server without `STRIPE_CHECKOUT_FIXTURES` and with that secret: `STRIPE_WEBHOOK_SECRET=whsec_... npm run dev -- -p 3000`.
+4. Pay with `4242 4242 4242 4242` (any future date, any CVC). Events show in the `stripe listen` terminal and in `stripe_webhook_events`; emails land in Mailpit.
+5. Simulate other events with the CLI, for example `stripe trigger invoice.payment_failed`.
+
 ## Checks, tests and evals
 
 ```bash
@@ -132,6 +142,8 @@ npm run build               # production build plus the worker bundle
 
 - Tests read only `.env.test.local`, never `.env.local`, so they cannot reach a shared database or spend AI credits.
 - `npm run test:e2e` starts its dev server with `.env.test.local`, the fixture flags, `WORKER_IN_PROCESS=true` and 2 test admins in `ADMIN_EMAILS` (`playwright.config.ts`). Next runs one dev server per folder, so stop the one from "Run it locally" first; otherwise the run fails with "Another next dev server is already running". Name a spec to run one file: `npm run test:e2e -- tests/e2e/overview.spec.ts`.
+- Workers (BUG-068, BUG-069): unit tests use 4 workers and Playwright 2 locally, because more at once overloaded the one local database and a few tests failed that pass alone. Raise or lower them with `TEST_MAX_WORKERS=6 npm test` or `E2E_WORKERS=1 npm run test:e2e`. CI keeps Playwright's default and retries every spec once.
+- Known flaky tests get one retry only where they were seen to fail under load: `scan-load.test.ts` and `admin/alerts/actions.test.ts` (unit), and `app-shell`, `billing`, `topup` and `settings` specs (e2e). If one still fails, run it alone (`npx vitest run src/modules/scanning/scan-load.test.ts`, or `npm run test:e2e -- tests/e2e/billing.spec.ts --workers=1`) before treating it as a real bug.
 - `npm run dev`, `npm run build` and `npm run scan` run the malware scanner first. If it reports a payload, stop and tell the team; never run flagged code.
 
 ## Test database (INFRA-02)

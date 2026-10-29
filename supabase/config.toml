@@ -229,7 +229,9 @@ double_confirm_changes = true
 # On (ACC-04, B-77). The hosted projects need the same switch in the dashboard: Auth, Providers, Email.
 enable_confirmations = true
 # If enabled, users will need to reauthenticate or have logged in recently to change their password.
-secure_password_change = false
+# On: Settings asks for a code when the sign-in is old, and /reset-password only opens from a fresh reset link.
+# The hosted projects need the same switch in the dashboard: Auth, Providers, Email, Secure password change.
+secure_password_change = true
 # Controls the minimum amount of time that must pass before sending another signup confirmation or password reset email.
 max_frequency = "1s"
 # Number of characters used in the email OTP.

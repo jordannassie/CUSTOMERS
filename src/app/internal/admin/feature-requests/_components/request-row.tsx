@@ -1,7 +1,7 @@
 import { ChevronDown } from "lucide-react";
 import { cn } from "cn";
 import { Button } from "@/components/ui/button";
-import { STATUS_LABELS, StatusBadge, fmt, type FeatureRequest, type Status } from "./request-parts";
+import { STATUS_LABELS, StatusBadge, formatDate, type FeatureRequest, type Status } from "./request-parts";
 
 interface Props {
   req: FeatureRequest;
@@ -22,16 +22,16 @@ export function RequestRow({ req, expanded, saving, onToggle, onStatus }: Props)
         onClick={onToggle}
         className="flex w-full items-start gap-3 px-4 py-3 text-left transition-colors duration-150 ease-out hover:bg-muted focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring"
       >
-        <span className="grid min-w-0 flex-1 gap-1 md:grid-cols-[1fr_180px_110px] md:items-center md:gap-3">
+        <span className="grid min-w-0 flex-1 gap-1 md:grid-cols-[1fr_180px_190px] md:items-center md:gap-3">
           <span className="min-w-0">
-            <span className="block truncate text-[14px] font-medium">{req.title}</span>
+            <span className="block truncate text-[14px] font-medium" title={req.title}>{req.title}</span>
             <span className="block truncate text-[13px] text-text-hint">
               {req.email}
               {req.businessName && `, ${req.businessName}`}
             </span>
           </span>
-          <span className="truncate text-[13px] text-text-hint">{req.pageContext ?? "-"}</span>
-          <span className="text-[13px] text-text-hint">{fmt(req.createdAt)}</span>
+          <span className="truncate text-[13px] text-text-hint" title={req.pageContext ?? "-"}>{req.pageContext ?? "-"}</span>
+          <span className="text-[13px] text-text-hint">{formatDate(req.createdAt, true)}</span>
         </span>
         {/* Fixed width so the date column lines up whatever the badge says. */}
         <span className="flex shrink-0 items-center justify-end gap-3 md:w-32">
@@ -55,7 +55,7 @@ export function RequestRow({ req, expanded, saving, onToggle, onStatus }: Props)
             <Meta label="User" value={req.email} />
             {req.businessName && <Meta label="Business" value={req.businessName} />}
             {req.pageContext && <Meta label="Page" value={req.pageContext} />}
-            <Meta label="Submitted" value={fmt(req.createdAt)} />
+            <Meta label="Submitted" value={formatDate(req.createdAt, true)} />
           </div>
 
           <div className="flex flex-wrap items-center gap-2">

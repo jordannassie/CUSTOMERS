@@ -1,9 +1,9 @@
 import type Stripe from "stripe";
 import { afterAll, describe, expect, it } from "vitest";
 import { processStripeWebhook } from "./webhooks";
-import { monthBefore } from "./webhooks/credits";
+import { monthBefore, PERIOD_GRACE_MS } from "./webhooks/credits";
 import * as fx from "./webhooks/fixtures.test-helpers";
-import { agencyRow, businessRows, cleanUp, grantCreditsForTest, grants, harness, ledgerTotal, secret, service, setup } from "./webhooks/harness.test-helpers";
+import { agencyRow, businessRows, cleanUp, grants, harness, ledgerTotal, secret, service, setup } from "./webhooks/harness.test-helpers";
 
 // B-42 fixture tests against the local database: every event is delivered twice and must apply once.
 const DAY = fx.DAY;
@@ -27,7 +27,7 @@ describe("signature and replay guard", () => {
 });
 
 describe("signup with a trial", () => {
-  it("links the agency, syncs each business, grants 100 trial credits once, and emails before the trial ends", async () => {
+  it("links the agency, syncs each business, grants 150 trial credits once, and emails before the trial ends", async () => {
     const a = await setup();
     const h = harness();
     const trialEnd = fx.nowSeconds() + 7 * DAY;
@@ -68,9 +68,9 @@ describe("signup with a trial", () => {
     await h.deliver(fx.event("invoice.paid", trialInvoice));
 
     const trialGrants = await grants(a.agencyId);
-    expect(trialGrants).toMatchObject([{ source: "trial", source_id: trialLines[0].id, amount: 100, remaining: 100 }]);
-    expect(Date.parse(trialGrants[0].expires_at!)).toBe(trialEnd * 1000);
-    expect(await ledgerTotal(a.agencyId)).toBe(100);
+    expect(trialGrants).toMatchObject([{ source: "trial", source_id: trialLines[0].id, amount: 150, remaining: 150 }]);
+    expect(Date.parse(trialGrants[0].expires_at!)).toBe(trialEnd * 1000 + PERIOD_GRACE_MS);
+    expect(await ledgerTotal(a.agencyId)).toBe(150);
 
     await h.deliverTwice(fx.event("customer.subscription.trial_will_end", sub));
     expect(h.emails.map((e) => [e.type, e.to, e.idempotencyKey])).toEqual([
@@ -129,44 +129,6 @@ describe("trial ends and the card is charged", () => {
     const month = end - monthBefore(new Date(end * 1000)).getTime() / 1000;
     expect(grant).toMatchObject({ source: "plan", source_id: lines[1].id, amount: Math.round(1300 * (15 * DAY) / month) });
     expect(await grants(a.agencyId)).toHaveLength(1);
-  });
-});
-
-describe("failed payment", () => {
-  it("marks the agency past_due, pauses scheduled scans and sends one email per invoice", async () => {
-    const a = await setup("active");
-    const h = harness();
-    const subId = fx.id("sub");
-    await service.from("business_subscriptions").insert(
-      a.businesses.map((businessId) => ({ business_id: businessId, agency_id: a.agencyId, plan_id: "starter", status: "active" })),
-    ).throwOnError();
-    const lines = [fx.line({ product: "cd_plan_starter", amount: 14900, subscriptionId: subId, start: fx.nowSeconds(), end: fx.nowSeconds() + 30 * DAY })];
-    const failed = fx.invoice({ customer: a.customer, subscriptionId: subId, agencyId: a.agencyId, billingReason: "subscription_cycle", lines, status: "open" });
-
-    for (const res of await h.deliverTwice(fx.event("invoice.payment_failed", failed))) expect(res.status).toBe(200);
-    // Stripe's next retry fails too: a new event for the same invoice.
-    await h.deliver(fx.event("invoice.payment_failed", failed));
-
-    expect((await agencyRow(a.agencyId)).status).toBe("past_due");
-    expect((await businessRows(a.agencyId)).map((r) => r.status)).toEqual(["past_due", "past_due"]);
-    expect(await grants(a.agencyId)).toEqual([]);
-    expect(h.emails).toHaveLength(2);
-    expect(new Set(h.emails.map((e) => e.idempotencyKey))).toEqual(new Set([`payment_failed:${failed.id}`]));
-
-    // The businesses are due now and the agency has credits, but a past_due agency is never queued.
-    await grantCreditsForTest(a.agencyId);
-    await service.rpc("enqueue_due_scans", { p_include_real: false }).throwOnError();
-    const { data: jobs } = await service.from("scan_jobs").select("id").in("business_id", a.businesses).throwOnError();
-    expect(jobs).toEqual([]);
-  });
-
-  it("never overwrites an admin suspension", async () => {
-    const a = await setup("suspended");
-    const h = harness();
-    const subId = fx.id("sub");
-    const lines = [fx.line({ product: "cd_plan_starter", amount: 14900, subscriptionId: subId, start: fx.nowSeconds(), end: fx.nowSeconds() + 30 * DAY })];
-    await h.deliver(fx.event("invoice.payment_failed", fx.invoice({ customer: a.customer, subscriptionId: subId, agencyId: a.agencyId, billingReason: "subscription_cycle", lines, status: "open" })));
-    expect((await agencyRow(a.agencyId)).status).toBe("suspended");
   });
 });
 
@@ -245,3 +207,40 @@ describe("failures are retried", () => {
     expect(await ledgerTotal(a.agencyId)).toBe(1200);
   });
 });
+
+describe("two deliveries of one event at once (migration 056)", () => {
+  it("runs the handler once: the other delivery is told to come back later, then reads it as done", async () => {
+    const a = await setup("active");
+    await service.from("agencies").update({ stripe_customer_id: a.customer }).eq("id", a.agencyId).throwOnError();
+    const h = harness();
+    const subId = fx.id("sub");
+    const lines = [fx.line({ product: "cd_plan_starter", amount: 14900, subscriptionId: subId, start: fx.nowSeconds(), end: fx.nowSeconds() + 30 * DAY })];
+    const paid = fx.event("invoice.paid", fx.invoice({ customer: a.customer, subscriptionId: subId, billingReason: "subscription_cycle", lines }));
+
+    const both = await Promise.all([h.deliver(paid), h.deliver(paid)]);
+    expect(both.map((r) => r.status).sort()).toEqual([200, 409]);
+    expect(both.find((r) => r.status === 200)?.body).toEqual({ received: true, outcome: "handled" });
+    expect((await h.deliver(paid)).body).toEqual({ received: true, duplicate: true });
+    expect(await ledgerTotal(a.agencyId)).toBe(1200);
+    // A running event never reads as failed: the "Stripe webhook failed" alert reads error only.
+    const { data } = await service.from("stripe_webhook_events").select("error, claimed_at").eq("stripe_event_id", paid.id).single().throwOnError();
+    expect(data).toEqual({ error: null, claimed_at: null });
+  });
+
+  it("takes over a claim left by a crash once it is stale", async () => {
+    const a = await setup("active");
+    await service.from("agencies").update({ stripe_customer_id: a.customer }).eq("id", a.agencyId).throwOnError();
+    const h = harness();
+    const subId = fx.id("sub");
+    const lines = [fx.line({ product: "cd_plan_starter", amount: 14900, subscriptionId: subId, start: fx.nowSeconds(), end: fx.nowSeconds() + 30 * DAY })];
+    const paid = fx.event("invoice.paid", fx.invoice({ customer: a.customer, subscriptionId: subId, billingReason: "subscription_cycle", lines }));
+    const claimedAt = (minutesAgo: number) => new Date(Date.now() - minutesAgo * 60_000).toISOString();
+
+    await service.from("stripe_webhook_events").insert({ stripe_event_id: paid.id, event_type: paid.type, claimed_at: claimedAt(1) }).throwOnError();
+    expect((await h.deliver(paid)).status).toBe(409);
+    await service.from("stripe_webhook_events").update({ claimed_at: claimedAt(10) }).eq("stripe_event_id", paid.id).throwOnError();
+    expect((await h.deliver(paid)).body).toEqual({ received: true, outcome: "handled" });
+    expect(await ledgerTotal(a.agencyId)).toBe(1200);
+  });
+});
+

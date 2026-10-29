@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { explain, type WriteExplanation } from "./explain";
+import { explain, ruleDrafts, type WriteExplanation } from "./explain";
 import { BEAN_HOUSE_ID, COFFEE_PLACES_NUMBERS, COFFEE_SOURCES, PLUMBER_SOURCES } from "./fixtures";
-import type { ExplainReason } from "./prompts/explain.v1";
+import type { ExplainReason } from "./prompts/explain.v2";
 import { templateWriter } from "./template-writer";
 
 const storedText = (d: { title: string; description: string; evidence: string; recommended_action: string; claude_prompt: string | null }) =>
@@ -87,5 +87,40 @@ describe("explain", () => {
     expect(result.source).toBe("ai");
     expect(result.drafts.map((d) => d.category)).toContain("local_presence");
     for (const d of result.drafts) expect(storedText(d)).not.toMatch(/\{/);
+  });
+
+  it("reads competitors in the shape a scan saves them, { name, position }, with no mentioned field", async () => {
+    // Each check below is what scanning/check.ts writes: only the named competitors, no `mentioned`.
+    const saved = COFFEE_SOURCES.checks.map((c) => ({
+      ...c,
+      competitorsMentioned: (c.competitorsMentioned as { name: string; position: number }[]).map(({ name, position }) => ({ name, position })),
+    }));
+    for (const c of saved) for (const m of c.competitorsMentioned) expect(Object.keys(m).sort()).toEqual(["name", "position"]);
+    const sources = { ...COFFEE_SOURCES, checks: saved };
+    const rules = await explain(sources, null);
+    expect(rules.drafts.map((d) => d.title)).toContain("AI assistants pick Bean House more often than you");
+    expect(rules.drafts.find((d) => d.category === "competitor_gap")?.evidence).toContain('"Bean House" in 5 of the same 6 answers');
+    const written = await explain(sources, templateWriter);
+    expect(written.drafts[0].evidence).toContain("Bean House was named in 5 of 6 AI answers.");
+  });
+
+  it("still leaves out a competitor an older row marks as not mentioned", async () => {
+    const old = PLUMBER_SOURCES.checks.map((c, i) => ({ ...c, competitorsMentioned: [{ name: "Fast Pipes", mentioned: i === 0 }] }));
+    const { drafts } = await explain({ ...PLUMBER_SOURCES, checks: old }, null);
+    expect(drafts.find((d) => d.category === "competitor_gap")?.evidence).toContain('"Fast Pipes" in 1 of the same 3 answers');
+  });
+
+  it("rules use what we know about the website: no website steps without one, no guess about an unread site", () => {
+    const none = ruleDrafts(PLUMBER_SOURCES);
+    expect(none.length).toBeGreaterThan(0);
+    for (const d of none) expect(d.claude_prompt).toBeNull();
+    expect(none.find((d) => d.category === "entity_consistency")?.evidence).toBe("There is no business description on file.");
+    const noDescription = { ...COFFEE_SOURCES, business: { ...COFFEE_SOURCES.business, description: null } };
+    expect(ruleDrafts(noDescription).find((d) => d.category === "entity_consistency")?.evidence).toBe(
+      "There is no business description on file, and our check of your website didn't find one either.",
+    );
+    const blocked = { ...noDescription, siteFacts: { pages: [{ path: "/", status: "blocked" }] } };
+    expect(ruleDrafts(blocked).find((d) => d.category === "entity_consistency")?.evidence).toBe("There is no business description on file.");
+    expect(ruleDrafts(blocked).some((d) => d.claude_prompt)).toBe(true);
   });
 });

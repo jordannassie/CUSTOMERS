@@ -1,17 +1,13 @@
-import { randomUUID } from "node:crypto";
 import { createClient as createSupabaseClient, type SupabaseClient } from "@supabase/supabase-js";
 import { afterAll, describe, expect, it, vi } from "vitest";
 import { env } from "@/lib/env";
-import { createServiceClient } from "@/lib/supabase/service";
-import type { Signals } from "./facts";
-import { COFFEE_CHECKS, COFFEE_PLACES_NUMBERS, COFFEE_SIGNALS, COFFEE_SOURCES } from "./fixtures";
+import { COFFEE_PLACES_NUMBERS } from "./fixtures";
+import { addRun, deleteTestUsers, fixtureSignals, opportunities, seed, service } from "./insights.test-helpers";
 import { templateWriter } from "./template-writer";
 
 // B-51 against the local database: after a scan the reasons are stored as opportunities with
 // placeholders only (D-73), a new scan replaces the open ones, and the page fills values in live.
 
-const service = createServiceClient();
-const userIds: string[] = [];
 let session: SupabaseClient | null = null;
 
 vi.mock("@/lib/supabase/server", () => ({
@@ -20,88 +16,13 @@ vi.mock("@/lib/supabase/server", () => ({
     createSupabaseClient(env.NEXT_PUBLIC_SUPABASE_URL, env.NEXT_PUBLIC_SUPABASE_ANON_KEY, { auth: { persistSession: false } }),
 }));
 
+// Google Places itself: a test agency's scan must never call it (D-61).
+const fetchPlaceSignals = vi.hoisted(() => vi.fn(async () => null));
+vi.mock("@/modules/competitors/server", async (original) => ({ ...(await original<object>()), fetchPlaceSignals }));
+
 const { explainAfterScan, getLiveOpportunities } = await import("./dal");
 
-const fixtureSignals = async (placeId: string): Promise<Signals | null> => COFFEE_SIGNALS.get(placeId) ?? null;
-const TEXT = "title, description, evidence, recommended_action, claude_prompt, status";
-
-async function seed(isTest: boolean) {
-  const email = `vitest-insights-${randomUUID()}@example.test`;
-  const password = `pw-${randomUUID()}`;
-  const { data, error } = await service.auth.admin.createUser({ email, password, email_confirm: true });
-  if (error || !data.user) throw error ?? new Error("no user");
-  userIds.push(data.user.id);
-  const { data: agency } = await service
-    .from("agencies")
-    .insert({ owner_user_id: data.user.id, name: "Insights test", is_test: isTest })
-    .select("id")
-    .single()
-    .throwOnError();
-  const b = COFFEE_SOURCES.business;
-  const { data: business } = await service
-    .from("businesses")
-    .insert({
-      owner_user_id: data.user.id,
-      agency_id: agency.id,
-      name: b.name,
-      status: "active",
-      industry: b.industry,
-      domain: b.domain,
-      has_website: true,
-      primary_city: b.city,
-      primary_region: b.region,
-      places_id: b.placesId,
-      services: b.services,
-      models: ["openai", "anthropic", "perplexity"],
-    })
-    .select("id")
-    .single()
-    .throwOnError();
-  const { data: competitors } = await service
-    .from("business_competitors")
-    .insert(
-      COFFEE_SOURCES.competitors.map((c) => ({ business_id: business.id, name: c.name, places_id: c.placesId, source: "confirmed_place", confirmed: true })),
-    )
-    .select("id, name")
-    .throwOnError();
-  await service.from("business_site_facts").insert({ business_id: business.id, data: COFFEE_SOURCES.siteFacts as never }).throwOnError();
-  const client = createSupabaseClient(env.NEXT_PUBLIC_SUPABASE_URL, env.NEXT_PUBLIC_SUPABASE_ANON_KEY, { auth: { persistSession: false } });
-  const signIn = await client.auth.signInWithPassword({ email, password });
-  if (signIn.error) throw signIn.error;
-  return { userId: data.user.id, businessId: business.id, competitors, client };
-}
-
-async function addRun(businessId: string): Promise<string> {
-  const { data: run } = await service
-    .from("visibility_runs")
-    .insert({ business_id: businessId, provider: "openai,anthropic,perplexity", status: "completed" })
-    .select("id")
-    .single()
-    .throwOnError();
-  await service
-    .from("visibility_results")
-    .insert(
-      COFFEE_CHECKS.map((c, i) => ({
-        run_id: run.id,
-        business_id: businessId,
-        provider: c.provider,
-        question: c.question,
-        answer_text: `answer ${i}`,
-        business_mentioned: c.businessMentioned,
-        competitors_mentioned: c.competitorsMentioned as never,
-        cited_sources: c.citations as never,
-      })),
-    )
-    .throwOnError();
-  return run.id;
-}
-
-const opportunities = async (businessId: string) =>
-  (await service.from("opportunities").select(TEXT).eq("business_id", businessId).order("created_at").throwOnError()).data!;
-
-afterAll(async () => {
-  for (const id of userIds) await service.auth.admin.deleteUser(id);
-});
+afterAll(deleteTestUsers);
 
 describe("explainAfterScan", () => {
   it("stores 3 to 5 reasons with placeholders and never a Google value (D-73)", async () => {
@@ -126,6 +47,13 @@ describe("explainAfterScan", () => {
     expect(live).not.toHaveBeenCalled();
   });
 
+  it("never asks Google Places for a test agency's scan (D-61)", async () => {
+    const { businessId } = await seed(true);
+    fetchPlaceSignals.mockClear();
+    expect((await explainAfterScan(await addRun(businessId))).drafts.length).toBeGreaterThan(0);
+    expect(fetchPlaceSignals).not.toHaveBeenCalled();
+  });
+
   it("replaces open reasons on the next scan and keeps the ones the user dismissed", async () => {
     const { businessId } = await seed(true);
     await explainAfterScan(await addRun(businessId), { fetchSignals: fixtureSignals });
@@ -148,6 +76,66 @@ describe("explainAfterScan", () => {
     expect(write).toHaveBeenCalledTimes(1);
     const { data } = await service.from("usage_events").select("model, estimated_cost_usd").eq("business_id", businessId).throwOnError();
     expect(data).toEqual([{ model: "claude-sonnet-5", estimated_cost_usd: 0.04 }]);
+  });
+});
+
+// 2026-10-14, Car4Tune: a scan and a rescan two minutes apart explained in parallel, the AI reasons failed the checks,
+// and the business was left with 1 fix and no record of why.
+describe("explaining two scans close together", () => {
+  const explainedAt = async (runId: string) => (await service.from("visibility_runs").select("explained_at").eq("id", runId).single().throwOnError()).data.explained_at;
+  const finish = (runId: string, at: Date) => service.from("visibility_runs").update({ completed_at: at.toISOString() }).eq("id", runId).throwOnError();
+
+  it("never lets the older scan, explained last, replace the newer scan's fixes, and marks both explained", async () => {
+    const { businessId } = await seed(true);
+    const [older, newer] = [await addRun(businessId), await addRun(businessId)];
+    await finish(older, new Date(Date.now() - 60_000));
+    await finish(newer, new Date());
+    expect((await explainAfterScan(newer, { fetchSignals: fixtureSignals })).saved).toBe("saved");
+    const fromNewer = await opportunities(businessId);
+    expect((await explainAfterScan(older, { fetchSignals: fixtureSignals })).saved).toBe("superseded");
+    expect(await opportunities(businessId)).toEqual(fromNewer);
+    expect(await explainedAt(older)).not.toBeNull();
+    expect(await explainedAt(newer)).not.toBeNull();
+  });
+
+  it("keeps the earlier fixes when the rules stand in, logs why to provider_errors and records the cost", async () => {
+    const { businessId } = await seed(false);
+    const ai = vi.fn(async (input: Parameters<typeof templateWriter>[0]) => ({ ...(await templateWriter(input)), model: "claude-sonnet-5", usage: { inputTokens: 1_000, outputTokens: 500 } }));
+    await explainAfterScan(await addRun(businessId), { fetchSignals: fixtureSignals, write: ai });
+    const before = await opportunities(businessId);
+    expect(before.length).toBeGreaterThanOrEqual(3);
+
+    // The writer answers, but none of its reasons passes the checks.
+    const empty = vi.fn(async (input: Parameters<typeof templateWriter>[0]) => ({
+      ...(await templateWriter(input)),
+      output: { reasons: [] },
+      model: "claude-sonnet-5",
+      usage: { inputTokens: 2_000, outputTokens: 700 },
+    }));
+    const result = await explainAfterScan(await addRun(businessId), { fetchSignals: fixtureSignals, write: empty });
+    expect(result.source).toBe("rules");
+    const after = await opportunities(businessId);
+    expect(after.length).toBeGreaterThanOrEqual(before.length);
+    expect(after.map((o) => o.title)).toEqual(expect.arrayContaining(before.map((o) => o.title)));
+
+    const { data: logged } = await service.from("provider_errors").select("message").like("message", "Why competitors win fell back to the fixed rules: only 0 of 0%").throwOnError();
+    expect(logged!.length).toBeGreaterThan(0);
+    const { data: usage } = await service.from("usage_events").select("input_tokens").eq("business_id", businessId).order("created_at").throwOnError();
+    expect(usage!.map((u) => u.input_tokens)).toEqual([1_000, 2_000]);
+  });
+
+  it("marks the run explained even when explaining fails, so the pages stop waiting", async () => {
+    const { businessId } = await seed(true);
+    const run = await addRun(businessId);
+    await expect(
+      explainAfterScan(run, {
+        fetchSignals: fixtureSignals,
+        now: () => {
+          throw new Error("clock broke");
+        },
+      }),
+    ).rejects.toThrow("clock broke");
+    expect(await explainedAt(run)).not.toBeNull();
   });
 });
 

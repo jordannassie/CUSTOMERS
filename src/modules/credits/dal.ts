@@ -20,7 +20,7 @@ export class InsufficientCreditsError extends Error {
   }
 }
 
-function fail(fn: string, error: PostgrestError): never {
+export function fail(fn: string, error: PostgrestError): never {
   if (error.message === "insufficient_credits") throw new InsufficientCreditsError();
   throw new Error(`${fn} failed: ${error.message}`);
 }
@@ -104,6 +104,29 @@ export async function grantTrialCredits(input: { agencyId: string; sourceId: str
     p_expires_at: input.expiresAt.toISOString(),
   });
   if (error) fail("grant_trial_credits", error);
+  return data;
+}
+
+/** Moves the open trial grant's expiry to a later trial end (A3). Returns its ID, or null when none is left. */
+export async function extendTrialGrant(agencyId: string, expiresAt: Date): Promise<string | null> {
+  const { data, error } = await createServiceClient().rpc("extend_trial_grant", {
+    p_agency_id: agencyId,
+    p_expires_at: expiresAt.toISOString(),
+  });
+  if (error) fail("extend_trial_grant", error);
+  return data;
+}
+
+/**
+ * Ends the open trial grant at the real trial end when the trial ended early ("Start my plan now", 2026-10-16), and
+ * removes what is left when that is already past. Never lengthens a grant. Returns the credits removed.
+ */
+export async function endTrialGrant(agencyId: string, trialEnd: Date): Promise<number> {
+  const { data, error } = await createServiceClient().rpc("end_trial_grant", {
+    p_agency_id: agencyId,
+    p_trial_end: trialEnd.toISOString(),
+  });
+  if (error) fail("end_trial_grant", error);
   return data;
 }
 

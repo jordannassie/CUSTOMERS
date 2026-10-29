@@ -4,21 +4,29 @@ import { stripePlanChangeClient, type PlanChangeStripe } from "../plan-change/cl
 import type { PlanChangeData } from "../plan-change/dal";
 import type { PlanChangeContext } from "../plan-change/planner";
 import { topupFixtures } from "../topup/client";
-import { fixturePlanChangeStripe, fixturePortal, withFixturePrices } from "./fixtures";
+import { syncSubscriptionFromStripe } from "../webhooks";
+import type { StripeSync } from "../webhooks/sync";
+import { fixturePlanChangeStripe, fixturePortal, fixtureSync, withFixturePrices } from "./fixtures";
 
 // Which Stripe the billing page and plan changes talk to: the real client, or with STRIPE_CHECKOUT_FIXTURES
 // (never in production) an in-memory one, so dev and Playwright make no Stripe calls.
 
-export type BillingAccess = { mode: "stripe" | "fixture"; context: PlanChangeContext; stripe: PlanChangeStripe };
+export type BillingAccess = {
+  mode: "stripe" | "fixture";
+  context: PlanChangeContext;
+  stripe: PlanChangeStripe;
+  /** Applies the subscription and its latest paid invoice the way the webhooks do (A1, 2026-10-15). */
+  sync: (subscriptionId: string) => Promise<StripeSync>;
+};
 
 /** Null when Stripe is not set up, so the page can say changes are unavailable instead of failing. */
 export async function billingAccess(data: PlanChangeData): Promise<BillingAccess | null> {
   if (topupFixtures()) {
     const context = withFixturePrices(data.context);
-    return { mode: "fixture", context, stripe: await fixturePlanChangeStripe(context) };
+    return { mode: "fixture", context, stripe: await fixturePlanChangeStripe(context), sync: await fixtureSync(context) };
   }
   if (!isStripeConfigured()) return null;
-  return { mode: "stripe", context: data.context, stripe: stripePlanChangeClient(getStripe()) };
+  return { mode: "stripe", context: data.context, stripe: stripePlanChangeClient(getStripe()), sync: syncSubscriptionFromStripe };
 }
 
 /** The one call "Manage card and invoices" makes. Injected, so tests and Playwright never reach Stripe. */

@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
+  fitsPlan,
   canAddBusiness,
+  canBuyTopUps,
+  canFinishDraft,
   canEditTracking,
   canSpendTopUps,
   canStartScan,
@@ -16,6 +19,8 @@ const agency = (over: Partial<AgencyFacts> = {}): AgencyFacts => ({
   status: "active",
   businessCount: 1,
   balance: 100,
+  trialOver: false,
+  planStarted: true,
   ...over,
 });
 
@@ -28,6 +33,7 @@ const business = (over: Partial<BusinessFacts> = {}): BusinessFacts => ({
   activeQuestionCount: 0,
   competitorCount: 0,
   hasOpenScan: false,
+  onPlan: true,
   ...over,
 });
 
@@ -59,6 +65,28 @@ describe("canSpendTopUps", () => {
   });
 });
 
+describe("canBuyTopUps", () => {
+  it("refuses a top-up before setup has started the plan or trial (F-43)", () => {
+    expect(canBuyTopUps(agency({ status: "trialing", planStarted: false }))).toEqual({ allowed: false, reason: REASONS.setupUnfinished });
+  });
+
+  it("sells to a started trial or plan, and keeps every spend rule", () => {
+    expect(canBuyTopUps(agency({ status: "trialing" }))).toEqual({ allowed: true, reason: "" });
+    expect(canBuyTopUps(agency({ status: "active" }))).toEqual({ allowed: true, reason: "" });
+    expect(canBuyTopUps(agency({ status: "canceled" }))).toEqual({ allowed: false, reason: REASONS.canceled });
+    expect(canBuyTopUps(agency({ status: "trialing", trialOver: true }))).toEqual({ allowed: false, reason: REASONS.trialOver });
+  });
+
+  it("does not change spending: a scan in setup still runs on its credits", () => {
+    expect(canSpendTopUps(agency({ status: "trialing", planStarted: false })).allowed).toBe(true);
+  });
+
+  it("points an ended plan to Choose a plan, not to contacting us", () => {
+    expect(REASONS.canceled).toBe("Your plan has ended. Choose a plan to start it again.");
+    expect(REASONS.readOnly).toBe("Your plan has ended, so your account is read-only. Choose a plan to start it again.");
+  });
+});
+
 describe("canAddBusiness", () => {
   it("lets a trial agency add its second business", () => {
     expect(canAddBusiness(agency({ status: "trialing", businessCount: 1 })).allowed).toBe(true);
@@ -77,6 +105,29 @@ describe("canAddBusiness", () => {
 
   it.each(blockedStatuses)("blocks a %s agency", (status, reason) => {
     expect(canAddBusiness(agency({ status, businessCount: 0 }))).toEqual({ allowed: false, reason });
+  });
+});
+
+describe("canFinishDraft", () => {
+  // businessCount holds set-up businesses only, so the draft being finished is not in it.
+  it("lets a trial with 1 set-up business finish its draft", () => {
+    expect(canFinishDraft(agency({ status: "trialing", businessCount: 1 })).allowed).toBe(true);
+  });
+
+  it("stops a trial with 2 set-up businesses from turning on a third", () => {
+    expect(canFinishDraft(agency({ status: "trialing", businessCount: 2 }))).toEqual({
+      allowed: false,
+      reason: "Your trial includes 2 businesses. Upgrade to add more.",
+    });
+  });
+
+  it("has no limit on a paid plan", () => {
+    expect(canFinishDraft(agency({ status: "active", businessCount: 40 })).allowed).toBe(true);
+  });
+
+  it("refuses while the last payment failed, so no business is set up unbilled", () => {
+    expect(canFinishDraft(agency({ status: "past_due", businessCount: 0 }))).toEqual({ allowed: false, reason: REASONS.pastDue });
+    expect(canFinishDraft(agency({ status: "unpaid", businessCount: 0 }))).toEqual({ allowed: false, reason: REASONS.pastDue });
   });
 });
 
@@ -110,6 +161,15 @@ describe("canStartScan", () => {
       reason: REASONS.notYourBusiness,
     });
     expect(canStartScan(agency(), business({ agencyId: null })).allowed).toBe(false);
+  });
+
+  it("blocks a business taken off the plan, even with credits (M1)", () => {
+    expect(canStartScan(agency({ balance: 500 }), business({ onPlan: false }))).toEqual({
+      allowed: false,
+      reason: "This business is off your plan.",
+    });
+    // The account problem still comes first.
+    expect(canStartScan(agency({ status: "past_due" }), business({ onPlan: false })).reason).toBe(REASONS.pastDue);
   });
 
   it("reports the account problem before the credit problem", () => {
@@ -154,5 +214,33 @@ describe("maxCompetitors", () => {
 
   it("has no limit when the plan sets none", () => {
     expect(maxCompetitors(business({ maxCompetitors: null, competitorCount: 99 })).limit).toBeNull();
+  });
+});
+
+describe("fitsPlan", () => {
+  const starter = { name: "Starter", maxCompetitors: 5, maxQuestions: 25 };
+  it("allows a business inside the smaller plan's limits", () => {
+    expect(fitsPlan(business({ competitorCount: 5, activeQuestionCount: 25 }), starter).allowed).toBe(true);
+    expect(fitsPlan(business({ competitorCount: 40 }), { name: "Custom", maxCompetitors: null, maxQuestions: null }).allowed).toBe(true);
+  });
+  it("says what to remove first", () => {
+    expect(fitsPlan(business({ competitorCount: 8 }), starter)).toEqual({
+      allowed: false,
+      reason: "Starter tracks up to 5 competitors per business and this one has 8. Remove 3 competitors on the Competitors page, then move it to Starter.",
+    });
+    expect(fitsPlan(business({ competitorCount: 6 }), starter).reason).toContain("Remove 1 competitor on");
+    expect(fitsPlan(business({ competitorCount: 2, activeQuestionCount: 26 }), starter).reason).toContain("Remove 1 question on the Questions page");
+  });
+});
+
+describe("a trial past its end date with no payment confirmed", () => {
+  it("refuses scans and top-up spending, even with credits left", () => {
+    const over = agency({ status: "trialing", balance: 330, trialOver: true });
+    expect(canStartScan(over, business())).toEqual({ allowed: false, reason: REASONS.trialOver });
+    expect(canSpendTopUps(over).allowed).toBe(false);
+    expect(canStartScan(agency({ status: "trialing", balance: 330 }), business()).allowed).toBe(true);
+  });
+  it("still allows edits, which spend nothing", () => {
+    expect(canEditTracking(agency({ status: "trialing", trialOver: true })).allowed).toBe(true);
   });
 });

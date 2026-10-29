@@ -5,32 +5,39 @@ import { AccountForm } from "@/components/settings/AccountForm";
 import { AgencyForm } from "@/components/settings/AgencyForm";
 import { BusinessProfileForm } from "@/components/settings/BusinessProfileForm";
 import { DangerZone } from "@/components/settings/DangerZone";
+import { EmailSettingsForm } from "@/components/settings/EmailSettingsForm";
 import { ScanSettingsForm } from "@/components/settings/ScanSettingsForm";
 import { Panel, SettingsSection } from "@/components/settings/SettingsSection";
 import { Button } from "@/components/ui/button";
 import { changeEmail, changePassword, deleteAccount, deleteBusiness, getAccountView } from "@/modules/account";
+import { EMAIL_LINK_INVALID_TEXT, EMAIL_LINK_PARAM } from "@/modules/auth";
+import { getMyEmailPreferences, saveEmailPreferences } from "@/modules/email";
 import { BILLING_HREF } from "@/modules/workspace";
 import { getSettings, saveAgencyName, saveBusinessProfile, saveScanSettings, uploadAgencyLogo } from "@/modules/settings";
+import { PageHeader } from "@/components/app/PageHeader";
 
 export const metadata = { title: "Settings", robots: { index: false } };
 
 const USAGE_HREF = "/settings/usage";
 const QUESTIONS_HREF = "/questions";
 
-export default async function SettingsPage() {
+type SearchParams = Promise<Record<string, string | string[] | undefined>>;
+
+export default async function SettingsPage({ searchParams }: { searchParams: SearchParams }) {
+  // An email change link that did not work comes back here (auth/callback), not to the login page.
+  const emailLinkFailed = (await searchParams)[EMAIL_LINK_PARAM] === "invalid";
   const [{ agency, business, activeQuestions, plan }, account] = await Promise.all([
     getSettings({ next: "/settings" }),
     getAccountView({ next: "/settings" }),
   ]);
+  // Only an agency has email settings: the weekly report goes to its owner (EMAIL-01).
+  const emails = agency ? await getMyEmailPreferences() : null;
 
   return (
     <PageContainer>
-      <header className="mb-8">
-        <h1 className="text-2xl font-semibold tracking-[-0.02em]">Settings</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          {business ? `${business.name} and your account, in one place.` : "Your account, in one place."}
-        </p>
-      </header>
+      <div className="mb-6">
+        <PageHeader title="Settings" description={business ? `${business.name} and your account, in one place.` : "Your account, in one place."} />
+      </div>
 
       {business ? (
         <>
@@ -65,7 +72,7 @@ export default async function SettingsPage() {
             <Building2 className="size-5 text-muted-foreground" aria-hidden="true" />
             <p className="text-sm">Add a business to set its profile and AI checks here.</p>
             <Button asChild size="sm">
-              <Link href="/dashboard/add-business">Add a business</Link>
+              <Link href="/onboarding?add=1">Add a business</Link>
             </Button>
           </Panel>
         </SettingsSection>
@@ -77,6 +84,16 @@ export default async function SettingsPage() {
         </SettingsSection>
       )}
 
+      {emails && (
+        <SettingsSection
+          id="emails"
+          title="Emails"
+          description="Emails about your login, billing and credits always come, since they need your attention. The weekly report is up to you."
+        >
+          <EmailSettingsForm weeklyReport={emails.weeklyReport} save={saveEmailPreferences} />
+        </SettingsSection>
+      )}
+
       <SettingsSection id="billing" title="Billing and usage" description="Your plan, card, invoices and where your credits went.">
         <Panel className="flex flex-col divide-y divide-border p-0">
           <LinkRow href={BILLING_HREF} title="Billing" text="Change plan, update your card and download invoices." />
@@ -85,6 +102,11 @@ export default async function SettingsPage() {
       </SettingsSection>
 
       <SettingsSection id="account" title="Account" description="How you log in. Changes to your email need a click on the link we send.">
+        {emailLinkFailed && (
+          <p role="alert" className="mb-4 rounded-md bg-low-bg px-3 py-2 text-[13px] text-low-text">
+            {EMAIL_LINK_INVALID_TEXT}
+          </p>
+        )}
         <AccountForm
           email={account.email}
           pendingEmail={account.pendingEmail}
@@ -105,6 +127,7 @@ export default async function SettingsPage() {
             business={business && { id: business.id, name: business.name }}
             agencyName={account.agencyName}
             waitDays={account.waitDays}
+            trialing={account.trialing}
             deleteBusiness={deleteBusiness}
             deleteAccount={deleteAccount}
           />

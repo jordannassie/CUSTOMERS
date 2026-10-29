@@ -111,7 +111,7 @@ export type OpportunityCategory =
   | "reviews_reputation"
   | "local_presence"
   | "competitor_gap";
-export type OpportunityStatus = "open" | "in_progress" | "resolved" | "dismissed";
+export type OpportunityStatus = "open" | "todo" | "in_progress" | "resolved" | "dismissed";
 
 export interface Opportunity {
   id: string;
@@ -127,6 +127,13 @@ export interface Opportunity {
   claude_prompt: string | null;
   created_at: string;
   updated_at: string;
+  /** Migration 078: the Actions board. */
+  where_to_apply?: string | null;
+  source?: string;
+  evidence_data?: unknown;
+  due_date?: string | null;
+  completed_at?: string | null;
+  assignee_id?: string | null;
 }
 
 export type ServiceRequestStatus =

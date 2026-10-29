@@ -4,14 +4,22 @@
 // rules in opportunity-engine.ts are used instead.
 import { generateOpportunities } from "@/lib/geo/opportunity-engine";
 import type { OpportunityCategory, OpportunityImpact } from "@/types/geo";
+import { yourWebsite } from "@/lib/your-website";
 import { buildExplainInput, domainOf, type ExplainInput, type ExplainSources } from "./facts";
+import { capitalizeFirst, fixNameCase } from "./name-case";
 import { toStored } from "./placeholders";
-import { MAX_REASONS, MIN_REASONS, type ExplainOutput, type ExplainReason } from "./prompts/explain.v1";
+import { MAX_REASONS, MIN_REASONS, type ExplainOutput, type ExplainReason } from "./prompts/explain.v2";
+import { withBlockedSite } from "./blocked-site";
 import { reasonIssues } from "./validate";
 
 export type WriterUsage = { inputTokens: number; outputTokens: number };
 
-export type WriteExplanation = (input: ExplainInput) => Promise<{ output: ExplainOutput; model: string; usage: WriterUsage | null }>;
+/** Which provider answered, when the writer is a live model: Claude, or the ChatGPT backup (D-84). */
+export type WriterSource = { provider: "anthropic" | "openai"; fellBack: boolean; primaryError: string | null };
+
+export type WriteExplanation = (
+  input: ExplainInput,
+) => Promise<{ output: ExplainOutput; model: string; usage: WriterUsage | null; writer?: WriterSource }>;
 
 export type OpportunityDraft = {
   title: string;
@@ -32,6 +40,8 @@ export type Explanation = {
   /** Why the rules were used, when they were. */
   fallbackReason: string | null;
   usage: WriterUsage | null;
+  /** Set when a live model wrote the reasons. */
+  writer?: WriterSource;
 };
 
 export function stepsText(steps: string[]): string {
@@ -42,13 +52,14 @@ export function stepsText(steps: string[]): string {
     .join("\n");
 }
 
-function toDraft(reason: ExplainReason, keys: Record<string, string>): OpportunityDraft | null {
-  const evidence = toStored(reason.evidence.trim(), keys);
-  const description = toStored(reason.why_it_matters.trim(), keys);
-  const steps = toStored(stepsText(reason.steps), keys);
+function toDraft(reason: ExplainReason, keys: Record<string, string>, names: string[]): OpportunityDraft | null {
+  const fix = (text: string) => fixNameCase(text, names);
+  const evidence = toStored(fix(reason.evidence.trim()), keys);
+  const description = toStored(fix(reason.why_it_matters.trim()), keys);
+  const steps = toStored(fix(stepsText(reason.steps)), keys);
   if (evidence === null || description === null || steps === null) return null;
   return {
-    title: reason.title.trim(),
+    title: capitalizeFirst(fix(reason.title.trim())),
     description,
     evidence,
     impact: reason.impact,
@@ -66,6 +77,9 @@ export function ruleDrafts(src: ExplainSources): OpportunityDraft[] {
     domain: src.business.domain ? domainOf(`https://${src.business.domain.replace(/^https?:\/\//, "")}`) : null,
     description: src.business.description,
     primaryCity: src.business.city,
+    // No website: no website steps or prompts. Read: only then can we say the site had no description (2026-10-28).
+    hasWebsite: src.business.hasWebsite,
+    websiteRead: yourWebsite(src.siteFacts)?.readStatus === "read",
     results: src.checks.map((check) => ({
       business_mentioned: check.businessMentioned,
       competitors_mentioned: mentionedNames(check.competitorsMentioned)
@@ -78,23 +92,24 @@ export function ruleDrafts(src: ExplainSources): OpportunityDraft[] {
   }).map((o) => ({ ...o, claude_prompt: o.claude_prompt || null }));
 }
 
+// Saved as { name, position } for each named competitor; named unless an older row says `mentioned: false`.
 function mentionedNames(value: unknown): string[] {
   if (!Array.isArray(value)) return [];
-  return value.filter((m) => m && m.mentioned === true && typeof m.name === "string").map((m) => m.name as string);
+  return value.filter((m) => m && m.mentioned !== false && typeof m.name === "string").map((m) => m.name as string);
 }
 
 export async function explain(src: ExplainSources, write: WriteExplanation | null): Promise<Explanation> {
   const rules = (fallbackReason: string, extra: Partial<Explanation> = {}): Explanation => ({
     source: "rules",
     model: null,
-    drafts: ruleDrafts(src),
+    drafts: withBlockedSite(ruleDrafts(src), src, Number.POSITIVE_INFINITY),
     dropped: [],
     fallbackReason,
     usage: null,
     ...extra,
   });
   if (src.checks.length === 0) return rules("the scan has no saved answers");
-  if (!write) return rules("no writer (ANTHROPIC_API_KEY is not set)");
+  if (!write) return rules("no writer (neither ANTHROPIC_API_KEY nor OPENAI_API_KEY is set)");
 
   const { input, keys } = buildExplainInput(src);
   let written: Awaited<ReturnType<WriteExplanation>>;
@@ -106,24 +121,30 @@ export async function explain(src: ExplainSources, write: WriteExplanation | nul
 
   const drafts: OpportunityDraft[] = [];
   const dropped: Explanation["dropped"] = [];
+  const names = [src.business.name, ...src.competitors.map((c) => c.name)];
   for (const reason of written.output.reasons) {
     const issues = reasonIssues(reason, input);
-    const draft = issues.length === 0 ? toDraft(reason, keys) : null;
+    const draft = issues.length === 0 ? toDraft(reason, keys, names) : null;
     if (draft) drafts.push(draft);
     else dropped.push({ title: reason.title, issues: issues.length ? issues : ["unknown competitor key"] });
   }
   if (drafts.length < MIN_REASONS) {
+    // The model was paid for, so its model stays on the result and its cost is recorded (2026-10-14: Car4Tune's
+    // explanation fell back here and the Sonnet call left no usage row).
     return rules(`only ${drafts.length} of ${written.output.reasons.length} reasons passed the checks`, {
       dropped,
       usage: written.usage,
+      model: written.model,
+      writer: written.writer,
     });
   }
   return {
     source: "ai",
     model: written.model,
-    drafts: drafts.slice(0, MAX_REASONS),
+    drafts: withBlockedSite(drafts, src, MAX_REASONS),
     dropped,
     fallbackReason: null,
     usage: written.usage,
+    writer: written.writer,
   };
 }

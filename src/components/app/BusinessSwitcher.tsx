@@ -2,7 +2,8 @@
 
 import { Suspense, use, useState, useTransition } from "react";
 import Link from "next/link";
-import { ArrowDown, ArrowUp, Check, ChevronsUpDown, Loader2, Plus } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { ArrowDown, ArrowUp, Check, ChevronsUpDown, CircleDashed, Loader2, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "cn";
 import {
@@ -15,9 +16,18 @@ import {
 import type { SwitcherScore, SwitcherScores } from "@/modules/workspace";
 
 export type SwitcherBusiness = { id: string; name: string; domain: string | null; logoUrl: string | null };
+/** The agency's unfinished draft: "Finish setting up <name>", linking to the step where it stopped. */
+export type SwitcherDraft = { label: string; href: string };
+
+// Every "Add a business" link: the open draft continues, else a new business starts (ADD_BUSINESS_PATH).
+const ADD_BUSINESS_HREF = "/onboarding?add=1";
+// Switching opens the other business's Overview, so no page is left showing the business it was opened for.
+const OVERVIEW_HREF = "/dashboard";
 export type SwitchBusinessAction = (
   input: { businessId: string },
 ) => Promise<{ ok: true } | { ok: false; error: string }>;
+/** The scores, asked for when the switcher opens so no page load waits on (or pays for) every business's score. */
+export type SwitcherScoresAction = () => Promise<{ ok: true; data: SwitcherScores | null } | { ok: false; error: string }>;
 
 function BusinessMark({ name, logoUrl }: { name: string; logoUrl: string | null }) {
   const [failed, setFailed] = useState(false);
@@ -93,25 +103,26 @@ function Items({ businesses, activeId, pending, target, choose, scores }: ItemsP
         key={b.id}
         onSelect={() => choose(b.id)}
         disabled={pending}
-        className="gap-2.5 py-2"
+        className="items-start gap-2.5 py-2"
         aria-current={b.id === activeId ? "true" : undefined}
+        title={b.name}
         data-testid="switcher-item"
       >
         <BusinessMark name={b.name} logoUrl={b.logoUrl} />
         <span className="flex min-w-0 flex-1 flex-col">
-          <span className="truncate">{b.name}</span>
+          <span className="line-clamp-2 break-words">{b.name}</span>
           {score && <ScoreLine score={score} />}
         </span>
         {score?.score != null && score.tone && (
-          <span className="flex items-center gap-1.5 text-sm font-semibold tabular-nums" data-testid="switcher-score">
+          <span className="flex shrink-0 items-center gap-1.5 text-sm font-semibold tabular-nums" data-testid="switcher-score">
             <span className={cn("size-2 rounded-full", DOT[score.tone])} aria-hidden="true" />
             {score.score}
           </span>
         )}
         {target === b.id ? (
-          <Loader2 className="size-4 animate-spin text-muted-foreground" aria-hidden="true" />
+          <Loader2 className="size-4 shrink-0 animate-spin text-muted-foreground" aria-hidden="true" />
         ) : (
-          <Check className={cn("size-4 text-primary", b.id !== activeId && "invisible")} aria-hidden="true" />
+          <Check className={cn("size-4 shrink-0 text-primary", b.id !== activeId && "invisible")} aria-hidden="true" />
         )}
       </DropdownMenuItem>
     );
@@ -123,26 +134,41 @@ export function BusinessSwitcher({
   activeBusinessId,
   switchBusiness,
   onSwitched,
-  scores,
+  loadScores,
+  draft = null,
 }: {
   businesses: SwitcherBusiness[];
   activeBusinessId: string;
+  /** Shown instead of Add business: with a draft open, adding one means finishing it (one draft per agency). */
+  draft?: SwitcherDraft | null;
   switchBusiness: SwitchBusinessAction;
   onSwitched?: () => void;
-  /** Loaded after the frame, so the page never waits for every client's score. */
-  scores?: Promise<SwitcherScores | null>;
+  /** Asked for on the first open for the current business; until it answers the list shows without scores. */
+  loadScores?: SwitcherScoresAction;
 }) {
+  const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [target, setTarget] = useState<string | null>(null);
+  const [scores, setScores] = useState<{ forId: string; promise: Promise<SwitcherScores | null> } | null>(null);
   const active = businesses.find((b) => b.id === activeBusinessId) ?? businesses[0];
+
+  function onOpenChange(open: boolean) {
+    if (!open || !loadScores || scores?.forId === active.id) return;
+    const promise = loadScores()
+      .then((r) => (r.ok ? r.data : null))
+      .catch(() => null);
+    setScores({ forId: active.id, promise });
+  }
 
   function choose(id: string) {
     if (id === active.id) return;
     setTarget(id);
     startTransition(async () => {
       const result = await switchBusiness({ businessId: id });
-      if (result.ok) onSwitched?.();
-      else toast.error(result.error);
+      if (result.ok) {
+        onSwitched?.();
+        router.push(OVERVIEW_HREF);
+      } else toast.error(result.error);
       setTarget(null);
     });
   }
@@ -150,16 +176,20 @@ export function BusinessSwitcher({
   const items: ItemsProps = { businesses, activeId: active.id, pending, target, choose };
 
   return (
-    <DropdownMenu>
+    <DropdownMenu onOpenChange={onOpenChange}>
       <DropdownMenuTrigger
         className="flex w-full items-center gap-2.5 rounded-md border border-border bg-surface px-2.5 py-2 text-left outline-none transition-colors hover:border-input focus-visible:ring-3 focus-visible:ring-ring/50"
         aria-label={`Business: ${active.name}. Switch business`}
+        title={active.name}
         data-testid="business-switcher"
       >
         <BusinessMark name={active.name} logoUrl={active.logoUrl} />
+        {/* Long names get two lines, so the start of the name and the domain both stay readable. */}
         <span className="min-w-0 flex-1">
-          <span className="block truncate text-sm font-medium text-foreground">{active.name}</span>
-          {active.domain && <span className="block truncate text-xs text-muted-foreground">{active.domain}</span>}
+          <span className="line-clamp-2 text-sm font-medium break-words text-foreground" data-testid="switcher-name">
+            {active.name}
+          </span>
+          {active.domain && <span className="block truncate text-xs text-muted-foreground" title={active.domain}>{active.domain}</span>}
         </span>
         {pending ? (
           <Loader2 className="size-4 shrink-0 animate-spin text-muted-foreground" aria-label="Switching" />
@@ -170,18 +200,27 @@ export function BusinessSwitcher({
       <DropdownMenuContent align="start" className="w-[min(20rem,calc(100vw-2rem))]">
         {scores ? (
           <Suspense fallback={<Items {...items} scores={null} />}>
-            <ScoredItems {...items} scores={scores} />
+            <ScoredItems {...items} scores={scores.promise} />
           </Suspense>
         ) : (
           <Items {...items} scores={null} />
         )}
         <DropdownMenuSeparator />
-        <DropdownMenuItem asChild className="gap-2.5 py-2 text-muted-foreground">
-          <Link href="/dashboard/add-business" onClick={onSwitched}>
-            <Plus className="size-4" aria-hidden="true" />
-            Add business
-          </Link>
-        </DropdownMenuItem>
+        {draft ? (
+          <DropdownMenuItem asChild className="items-start gap-2.5 py-2 text-foreground" title={draft.label}>
+            <Link href={draft.href} onClick={onSwitched} data-testid="switcher-draft">
+              <CircleDashed className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden="true" />
+              <span className="line-clamp-2 min-w-0 break-words">{draft.label}</span>
+            </Link>
+          </DropdownMenuItem>
+        ) : (
+          <DropdownMenuItem asChild className="gap-2.5 py-2 text-muted-foreground">
+            <Link href={ADD_BUSINESS_HREF} onClick={onSwitched}>
+              <Plus className="size-4" aria-hidden="true" />
+              Add business
+            </Link>
+          </DropdownMenuItem>
+        )}
       </DropdownMenuContent>
     </DropdownMenu>
   );

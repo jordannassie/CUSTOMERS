@@ -1,14 +1,20 @@
-import { SCORE_WINDOW_DAYS, type Change, type Confidence, type ProviderId, type ScoreReport } from "@/modules/scanning";
+import {
+  SCORE_WINDOW_DAYS,
+  type Change,
+  type Confidence,
+  type OwnChain,
+  type OwnQuestionsResult,
+  type ProviderId,
+  type ScoreReport,
+} from "@/modules/scanning";
+import { coverageText, MODEL_LABELS, scanNoticeText, type ScanFailures } from "./coverage";
 import { CALIBRATION, methodPanel, type Calibration, type MethodPanel } from "./method";
 import { trendView, type TrendView } from "./trend";
 
+export { coverageText, MODEL_LABELS, scanFailuresFrom, scanNoticeText, scanSkipsFrom, type ScanFailures } from "./coverage";
+
 // What the Overview shows (B-49, MVP_SPEC 5.6, 8.1). Pure, so every state is unit tested.
 
-export const MODEL_LABELS: Record<ProviderId, string> = {
-  openai: "ChatGPT",
-  anthropic: "Claude",
-  perplexity: "Perplexity",
-};
 
 const CONFIDENCE_LABELS: Record<Confidence, string> = {
   early: "Early estimate",
@@ -40,9 +46,26 @@ export type OverviewView = {
     /** "First results. Accuracy improves with every scan." while there is one scan's worth of data. */
     firstResults: boolean;
     change: { direction: Change["direction"]; text: string } | null;
+    /** "Based on ChatGPT and Perplexity. Claude couldn't be checked." when a chosen AI has no checks (BUG-074). */
+    coverage?: string | null;
     details: MethodPanel;
   } | null;
-  models: { id: ProviderId; label: string; score: number | null; change: PointsChange | null }[];
+  /**
+   * notChecked: no checks in the window and every check failed in the last scan, so "Couldn't be checked".
+   * skipped: the last scan left this AI out because it was unavailable (a rejected key or no credit).
+   */
+  models: {
+    id: ProviderId;
+    label: string;
+    score: number | null;
+    notChecked?: boolean;
+    skipped?: boolean;
+    change: PointsChange | null;
+    /** Against the 30 days before, for the monthly report; the Overview shows the weekly change. */
+    monthChange?: PointsChange | null;
+  }[];
+  /** A scan that finished with some AIs failing: which ones, and that failed checks cost nothing (BUG-074). */
+  scanNotice: string | null;
   trend: TrendView;
   opportunities: Pick<Opportunity, "id" | "title" | "impact">[];
   lastCheckedAt: string | null;
@@ -50,6 +73,10 @@ export type OverviewView = {
   monthChange: PointsChange | null;
   /** One credit per answer: active questions times chosen models. */
   scanCredits: number;
+  /** "Your own questions: named in 3 of 9 answers. Not part of the score." Null when they have no answers (BUG-129). */
+  ownQuestions: string | null;
+  /** "Bennu Coffee (all locations): named in 9 of 36 answers..." for a business that is one branch (step 7). */
+  ownChain: string | null;
 };
 
 /** DESIGN.md bands: 70 to 100 good, 40 to 69 mid, under 40 low. */
@@ -73,6 +100,20 @@ export function changeText(change: Change): string {
   return `${change.direction === "up" ? "Up" : "Down"} ${points} ${points === 1 ? "point" : "points"} on last week`;
 }
 
+/** A branch business's chain-wide mentions, apart from its score, which counts only the branch (step 7). */
+export function ownChainText(chain: OwnChain | null): string | null {
+  if (!chain || chain.named === 0) return null;
+  const answers = `${chain.answers} ${chain.answers === 1 ? "answer" : "answers"}`;
+  return `${chain.brand} (all locations): named in ${chain.named} of ${answers}. Your score counts only the answers that name your location.`;
+}
+
+/** The user's own questions, shown apart from the score they are not part of (BUG-129). */
+export function ownQuestionsText(result: OwnQuestionsResult | null): string | null {
+  if (!result) return null;
+  const answers = `${result.answers} ${result.answers === 1 ? "answer" : "answers"}`;
+  return `Your own questions: named in ${result.named} of ${answers}. Not part of the score.`;
+}
+
 /** Most important first, then newest; the Overview shows three. */
 export function topOpportunities(opportunities: Opportunity[], count = 3): OverviewView["opportunities"] {
   return [...opportunities]
@@ -81,22 +122,38 @@ export function topOpportunities(opportunities: Opportunity[], count = 3): Overv
     .map(({ id, title, impact }) => ({ id, title, impact }));
 }
 
+/** Fewer different answers than this, with most of the last scan's checks for that AI failed, is no score for it. */
+export const MIN_MODEL_ANSWERS = 3;
+
 export function overviewView(
   report: ScoreReport,
   opportunities: Opportunity[],
-  options: { nextScanAt?: Date | null; now?: Date; calibration?: Calibration | null } = {},
+  options: {
+    nextScanAt?: Date | null;
+    now?: Date;
+    calibration?: Calibration | null;
+    lastScanFailures?: ScanFailures | null;
+    /** AIs the last scan left out because they were unavailable (scanSkipsFrom). */
+    lastScanSkipped?: ProviderId[];
+  } = {},
 ): OverviewView {
-  const { nextScanAt = null, now = new Date(), calibration = CALIBRATION } = options;
+  const { nextScanAt = null, now = new Date(), calibration = CALIBRATION, lastScanFailures = null, lastScanSkipped = [] } = options;
   const { overall } = report;
   const scannedDays = report.trend.filter((p) => p.checks > 0).length;
   const byModel = new Map(report.byModel.map((m) => [m.model, m.estimate]));
   const models = report.models.map((id) => {
-    const estimate = byModel.get(id);
+    const failed = lastScanFailures?.[id] ?? 0;
+    // One cached answer while the rest of the scan failed is not a score for that AI: "Claude 0" there meant only
+    // that Claude was out of credit (First Light, 2026-10-12).
+    const thin = !!byModel.get(id) && byModel.get(id)!.uniqueAnswers < MIN_MODEL_ANSWERS && failed > byModel.get(id)!.checks;
+    const estimate = thin ? undefined : byModel.get(id);
     return {
       id,
       label: MODEL_LABELS[id],
       score: estimate ? Math.round(estimate.score) : null,
       margin: estimate ? Math.round(estimate.margin) : null,
+      notChecked: !estimate && failed > 0,
+      skipped: !estimate && lastScanSkipped.includes(id),
     };
   });
   return {
@@ -107,10 +164,12 @@ export function overviewView(
       sentence: scoreSentence(overall.score),
       firstResults: overall.confidence === "early" && scannedDays <= 1,
       change: report.change && { direction: report.change.direction, text: changeText(report.change) },
+      coverage: coverageText(models),
       details: methodPanel(
         {
           windowDays: SCORE_WINDOW_DAYS,
           label: CONFIDENCE_LABELS[overall.confidence],
+          confidence: overall.confidence,
           margin: Math.round(overall.margin),
           checks: overall.checks,
           uniqueAnswers: overall.uniqueAnswers,
@@ -119,11 +178,22 @@ export function overviewView(
         calibration,
       ),
     },
-    models: models.map(({ id, label, score }) => ({ id, label, score, change: pointsChange(report.modelChanges[id]) })),
+    models: models.map(({ id, label, score, notChecked, skipped }) => ({
+      id,
+      label,
+      score,
+      notChecked,
+      skipped,
+      change: pointsChange(report.modelChanges[id]),
+      monthChange: pointsChange(report.modelMonthChanges?.[id]),
+    })),
+    scanNotice: scanNoticeText(report.models, lastScanFailures, report.questions.length, lastScanSkipped),
     trend: trendView({ history: report.history, nextScanAt, now }),
     opportunities: topOpportunities(opportunities),
     lastCheckedAt: report.lastCheckedAt?.toISOString() ?? null,
     scanCredits: report.questions.length * report.models.length,
     monthChange: pointsChange(report.monthChange),
+    ownQuestions: ownQuestionsText(report.ownQuestions),
+    ownChain: ownChainText(report.ownChain),
   };
 }

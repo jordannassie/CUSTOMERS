@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { FieldMessage, INVALID_CLASS, useFieldErrors } from "@/components/ui/field-errors";
 import { Label } from "@/components/ui/label";
+import { Select } from "@/components/ui/select";
 import { check, INTERESTS, interestFromParam, MESSAGE_PLACEHOLDERS, type ContactSource, type InterestValue, type Required } from "./contact-fields";
 
 export type { ContactSource, InterestValue } from "./contact-fields";
@@ -173,19 +174,17 @@ export default function ContactForm({ initialInterest, source = "contact_page", 
 
       <div className="flex flex-col gap-2">
         <Label htmlFor="cf-interest">What is it about?</Label>
-        <select
+        {/* Our Select, so the list stays on screen on a phone (2026-10-16); always set, so it is never empty. */}
+        <Select
           id="cf-interest"
+          name="interest"
           required
           value={interest}
-          onChange={(e) => setInterest(e.target.value as InterestValue)}
-          className={cn(fieldClass, "h-9 py-1")}
-        >
-          {INTERESTS.map(({ value, label }) => (
-            <option key={value} value={value}>
-              {label}
-            </option>
-          ))}
-        </select>
+          onValueChange={(v) => setInterest(v as InterestValue)}
+          options={INTERESTS.map(({ value, label }) => ({ value, label }))}
+          placeholder="Choose a topic"
+          className="h-9"
+        />
       </div>
 
       <div className="flex flex-col gap-2">

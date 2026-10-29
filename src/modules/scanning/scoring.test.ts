@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { ProviderId } from "./providers/types";
 import {
+  compareStatus,
   compareWithCompetitor,
   competitorScores,
   confidenceLabel,
@@ -38,11 +39,12 @@ describe("visibilityScore", () => {
     ]);
   });
 
-  it("weights each chosen model equally, whatever its number of checks (D-65)", () => {
+  it("pools every chosen model's answers, whatever each one's number of checks (D-91)", () => {
+    // Was 65 under D-65 (the average of 80 and 50); D-91 counts 9 of 12 answers. More in scoring-pooled.test.ts.
     const checks = [...series("openai", 8, 10), ...series("anthropic", 1, 2)];
     const result = visibilityScore(checks, { now: NOW, models: MODELS });
-    // 80 and 50, not 9 of 12 (75).
-    expect(result.overall?.score).toBeCloseTo(65);
+    expect(result.overall?.score).toBeCloseTo(75);
+    expect(result.overall?.checks).toBe(12);
     expect(result.byModel.map((m) => m.model)).toEqual(["openai", "anthropic"]);
   });
 
@@ -140,6 +142,9 @@ describe("competitor comparison", () => {
     expect(compareWithCompetitor({ score: 70, margin: 5 }, { score: 50, margin: 5 })).toBe("ahead");
     expect(compareWithCompetitor({ score: 50, margin: 5 }, { score: 70, margin: 5 })).toBe("behind");
     expect(compareWithCompetitor({ score: 55, margin: 5 }, { score: 50, margin: 5 })).toBe("about_same");
+    // The brief's case: 13 points behind with an 11 point margin is behind (it read "About the same" before).
+    expect(compareWithCompetitor({ score: 15, margin: 11 }, { score: 28, margin: 11 })).toBe("behind");
+    expect(compareWithCompetitor({ score: 15, margin: 11 }, { score: 26, margin: 11 })).toBe("about_same");
   });
 
   it("scores each competitor on the same checks", () => {
@@ -174,7 +179,7 @@ describe("competitor comparison", () => {
 });
 
 describe("trendSeries", () => {
-  it("gives the last 7 UTC days, oldest first, equal weight per model", () => {
+  it("gives the last 7 UTC days, oldest first, all answers of the day pooled (D-91)", () => {
     const checks = [
       check("openai", "q1", 0, true),
       check("anthropic", "q1", 0, false),
@@ -192,7 +197,8 @@ describe("trendSeries", () => {
       "2026-09-26",
       "2026-09-27",
     ]);
-    expect(points[6]).toEqual({ date: "2026-09-27", score: 50, checks: 3 });
+    // Today: 1 of 3 answers named you. Was 50 under D-65 (ChatGPT 100 and Claude 0, averaged).
+    expect(points[6]).toEqual({ date: "2026-09-27", score: 100 / 3, checks: 3 });
     expect(points[0]).toEqual({ date: "2026-09-21", score: 100, checks: 1 });
     expect(points[3]).toEqual({ date: "2026-09-24", score: null, checks: 0 });
   });
@@ -217,5 +223,14 @@ describe("weeklyChange", () => {
     expect(weeklyChange([...week(20, 40, 8 * 24), ...week(22, 40, 24)], { now: NOW, models: MODELS })).toBeNull();
     expect(weeklyChange(week(30, 40, 24), { now: NOW, models: MODELS })).toBeNull();
     expect(weeklyChange([], { now: NOW, models: MODELS })).toBeNull();
+  });
+});
+
+describe("compareStatus", () => {
+  it("counts a gap only when it is larger than the margin", () => {
+    expect(compareStatus(15, 28, 11)).toBe("behind");
+    expect(compareStatus(28, 15, 11)).toBe("ahead");
+    expect(compareStatus(15, 26, 11)).toBe("same");
+    expect(compareStatus(20, 20, 0)).toBe("same");
   });
 });

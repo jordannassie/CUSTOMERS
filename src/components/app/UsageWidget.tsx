@@ -10,6 +10,7 @@ export type UsageWidgetProps = {
   details: string[];
   showBuyCredits: boolean;
   buyCreditsHref: string;
+  paymentFailed?: { text: string; href: string } | null;
 };
 
 const BAR_TONE = {
@@ -19,7 +20,7 @@ const BAR_TONE = {
 } as const;
 
 // MVP_SPEC 8.2: always visible in the sidebar; red with "Buy credits" at 0 or below.
-export function UsageWidget({ tone, headline, percentUsed, details, showBuyCredits, buyCreditsHref }: UsageWidgetProps) {
+export function UsageWidget({ tone, headline, percentUsed, details, showBuyCredits, buyCreditsHref, paymentFailed = null }: UsageWidgetProps) {
   const empty = tone === "empty";
   return (
     <section
@@ -46,6 +47,15 @@ export function UsageWidget({ tone, headline, percentUsed, details, showBuyCredi
             </li>
           ))}
         </ul>
+      )}
+      {paymentFailed && (
+        <Link
+          href={paymentFailed.href}
+          className="mt-2 block text-xs font-medium text-low-text underline-offset-2 hover:underline"
+          data-testid="usage-payment-failed"
+        >
+          {paymentFailed.text}
+        </Link>
       )}
       {showBuyCredits && (
         <Button asChild size="sm" className="mt-3 w-full">

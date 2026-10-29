@@ -1,11 +1,12 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ADMIN_SCAN_PRIORITY, type AdminScan } from "@/modules/admin";
-import { ScanBadge, formatDate } from "../../_components/scan-parts";
+import { ScanStatusBadge } from "../../../_components/badges";
+import { formatDate } from "../../../_components/format";
 import Section, { Empty } from "./section";
 
 export default function ScanHistory({ scans }: { scans: AdminScan[] }) {
   return (
-    <Section title="Scan history" note={scans.length ? `Newest ${scans.length}` : undefined}>
+    <Section title="Scan history" note={scanCount(scans.length)}>
       {scans.length === 0 ? (
         <Empty>This business has never been scanned.</Empty>
       ) : (
@@ -25,7 +26,7 @@ export default function ScanHistory({ scans }: { scans: AdminScan[] }) {
                 <TableRow key={s.id}>
                   <TableCell className="whitespace-nowrap">{formatDate(s.startedAt, true)}</TableCell>
                   <TableCell>
-                    <ScanBadge state={s.state} />
+                    <ScanStatusBadge status={s.state} />
                   </TableCell>
                   <TableCell className="tabular-nums whitespace-nowrap">
                     {s.checks === null ? "" : `${s.checks - (s.checksFailed ?? 0)} of ${s.checks}`}
@@ -40,6 +41,12 @@ export default function ScanHistory({ scans }: { scans: AdminScan[] }) {
       )}
     </Section>
   );
+}
+
+// "1 scan", "12 scans, newest first"; the list keeps the newest 20.
+function scanCount(n: number): string | undefined {
+  if (n === 0) return undefined;
+  return n === 1 ? "1 scan" : `${n} scans, newest first`;
 }
 
 function details(s: AdminScan): string {

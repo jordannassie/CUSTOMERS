@@ -27,7 +27,8 @@ async function openOf(kind: string) {
   return data;
 }
 
-describe("resolveAlert (B-69)", () => {
+// Known to fail with "fetch failed" when the local database is busy, then pass (BUG-069): one retry.
+describe("resolveAlert (B-69)", { retry: 1 }, () => {
   it("resolves an open alert with a reason and writes the audit log", async () => {
     await resolveOpen("resolve_test");
     const { data: id } = await service.rpc("raise_system_alert", {

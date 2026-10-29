@@ -1,6 +1,6 @@
 import "server-only";
 import { createServiceClient } from "@/lib/supabase/service";
-import { ADMIN_SCAN_PRIORITY, firstBy, startOfMonthUtc, sumBy, toScanState, type ScanState } from "./service";
+import { ADMIN_SCAN_PRIORITY } from "./service";
 
 // Admin reads cross every agency, so they use the service role; callers run requireAdmin() first.
 
@@ -53,6 +53,22 @@ export async function emailsOf(userIds: string[]): Promise<Map<string, string>> 
   }
 }
 
+/** Users whose login email contains the search text, for the admin search boxes. Auth users are not in PostgREST. */
+export async function userIdsByEmail(search: string): Promise<string[]> {
+  const needle = search.toLowerCase();
+  const ids: string[] = [];
+  if (!needle) return ids;
+  for (let page = 1; ; page++) {
+    const { data, error } = await createServiceClient().auth.admin.listUsers({ page, perPage: PAGE });
+    if (error) fail("users by email", error);
+    for (const u of data.users) if (u.email?.toLowerCase().includes(needle)) ids.push(u.id);
+    if (data.users.length < PAGE) return ids;
+  }
+}
+
+/** A PostgREST `in` list; an empty one matches nothing (a random id stands in, as `in.()` is refused). */
+export const inList = (ids: string[]) => `(${(ids.length ? ids : ["00000000-0000-0000-0000-000000000000"]).join(",")})`;
+
 export type Capture = {
   holdId: string | null;
   credits: number;
@@ -76,120 +92,6 @@ export async function readCaptures(filter: { since?: Date; holdIds?: string[] })
     credits: -r.delta,
     createdAt: r.created_at,
   }));
-}
-
-export type AdminBusinessRow = {
-  id: string;
-  name: string;
-  location: string;
-  agency: { name: string; ownerEmail: string | null; isTest: boolean } | null;
-  plan: string | null;
-  frequency: string;
-  models: string[];
-  lastScan: { state: ScanState; at: string } | null;
-  creditsThisMonth: number;
-  deleted: { at: string; purgeAfter: string | null } | null;
-};
-
-export async function listBusinesses(now = new Date()): Promise<AdminBusinessRow[]> {
-  const db = createServiceClient();
-  const [businesses, agencies, subscriptions, captures] = await Promise.all([
-    allRows("businesses", (from, to) =>
-      db
-        .from("businesses")
-        .select("id, name, primary_city, primary_region, agency_id, scan_frequency, models, created_at, deleted_at, purge_after")
-        .order("created_at", { ascending: false })
-        .order("id")
-        .range(from, to),
-    ),
-    allRows("agencies", (from, to) =>
-      db.from("agencies").select("id, name, owner_user_id, is_test").order("id").range(from, to),
-    ),
-    allRows("plans", (from, to) =>
-      db.from("business_subscriptions").select("business_id, plans(name)").order("business_id").range(from, to),
-    ),
-    readCaptures({ since: startOfMonthUtc(now) }),
-  ]);
-
-  const ids = businesses.map((b) => b.id);
-  const [jobs, runs, holdJobs, emails] = await Promise.all([
-    inChunks(ids, (chunk) =>
-      allRows("scan jobs", (from, to) =>
-        db
-          .from("scan_jobs")
-          .select("business_id, status, created_at, finished_at")
-          .in("business_id", chunk)
-          .order("created_at", { ascending: false })
-          .order("id")
-          .range(from, to),
-      ),
-    ),
-    // Businesses scanned before the job queue existed only have runs.
-    inChunks(ids, (chunk) =>
-      allRows("scan runs", (from, to) =>
-        db
-          .from("visibility_runs")
-          .select("business_id, status, created_at, completed_at")
-          .in("business_id", chunk)
-          .is("scan_job_id", null)
-          .order("created_at", { ascending: false })
-          .order("id")
-          .range(from, to),
-      ),
-    ),
-    inChunks(unique(captures.map((c) => c.holdId)), async (chunk) => {
-      const { data, error } = await db.from("scan_jobs").select("hold_id, business_id").in("hold_id", chunk);
-      if (error) fail("scan holds", error);
-      return data;
-    }),
-    emailsOf(agencies.map((a) => a.owner_user_id)),
-  ]);
-
-  const agencyById = new Map(agencies.map((a) => [a.id, a]));
-  const planOf = new Map(subscriptions.map((s) => [s.business_id, s.plans?.name ?? null]));
-  const lastJob = firstBy(jobs, (j) => j.business_id);
-  const lastRun = firstBy(runs, (r) => r.business_id);
-  const businessOfHold = new Map(holdJobs.map((j) => [j.hold_id!, j.business_id]));
-  const credits = sumBy(
-    captures,
-    (c) => c.holdId && businessOfHold.get(c.holdId),
-    (c) => c.credits,
-  );
-
-  return businesses.map((b) => {
-    const agency = b.agency_id ? agencyById.get(b.agency_id) : undefined;
-    const job = lastJob.get(b.id);
-    const run = lastRun.get(b.id);
-    const lastScan = job
-      ? {
-          state: toScanState(job.status),
-          at: job.finished_at ?? job.created_at,
-        }
-      : run
-        ? {
-            state: toScanState(run.status),
-            at: run.completed_at ?? run.created_at,
-          }
-        : null;
-    return {
-      id: b.id,
-      name: b.name,
-      location: [b.primary_city, b.primary_region].filter(Boolean).join(", "),
-      agency: agency
-        ? {
-            name: agency.name,
-            ownerEmail: emails.get(agency.owner_user_id) ?? null,
-            isTest: agency.is_test,
-          }
-        : null,
-      plan: planOf.get(b.id) ?? null,
-      frequency: b.scan_frequency,
-      models: b.models,
-      lastScan,
-      creditsThisMonth: credits.get(b.id) ?? 0,
-      deleted: b.deleted_at ? { at: b.deleted_at, purgeAfter: b.purge_after } : null,
-    };
-  });
 }
 
 export type EnqueueResult =

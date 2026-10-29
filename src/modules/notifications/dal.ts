@@ -3,18 +3,13 @@ import { timingSafeEqual } from "node:crypto";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { env } from "@/lib/env";
 import { createServiceClient } from "@/lib/supabase/service";
-import { loadOverview } from "@/modules/overview";
-import { shareForEmail } from "@/modules/reports";
-import type { WeeklyBusiness } from "@/modules/email";
+import { currentReport, shareForEmail } from "@/modules/reports";
 import type { Database } from "@/types/database.types";
-import { weeklyBusiness, type LowCreditAgency, type NewOpportunity } from "./service";
+import { OutOfTime, weeklyBusiness, type LowCreditAgency, type ReportedBusiness } from "./service";
 
 // The scheduled emails run from pg_cron with no signed-in user, so every read here uses the service role,
 // after the route has checked the worker secret.
 type Db = SupabaseClient<Database>;
-
-const WEEK_MS = 7 * 86_400_000;
-const OPEN_OPPORTUNITIES = ["open", "in_progress"];
 
 export function isEmailJobSecret(header: string | null): boolean {
   const secret = env.WORKER_SECRET;
@@ -32,9 +27,13 @@ export async function ownerEmail(ownerUserId: string, db: Db = createServiceClie
 
 const LEVELS = new Set(["low", "empty", "negative"]);
 
+// The generated types say string, but a left join and an agency without plan credits give null.
+const dateOrNull = (value: string | null) => (value ? new Date(value) : null);
+
+/** low_credit_alerts (migration 086): low_credit_agencies plus a period key that does not move inside a period. */
 export async function listLowCreditAgencies(db: Db = createServiceClient()): Promise<LowCreditAgency[]> {
-  const { data, error } = await db.rpc("low_credit_agencies");
-  if (error) throw new Error(`low_credit_agencies failed: ${error.message}`);
+  const { data, error } = await db.rpc("low_credit_alerts");
+  if (error) throw new Error(`low_credit_alerts failed: ${error.message}`);
   return data
     .filter((row) => LEVELS.has(row.level))
     .map((row) => ({
@@ -43,18 +42,39 @@ export async function listLowCreditAgencies(db: Db = createServiceClient()): Pro
       used: row.used,
       total: row.total,
       balance: row.balance,
-      periodEnd: row.period_end ? new Date(row.period_end) : null,
+      periodEnd: dateOrNull(row.period_end),
+      periodKey: dateOrNull(row.period_key),
+      periodStartedAt: dateOrNull(row.period_started_at),
     }));
+}
+
+export type SentLowCredits = { agencyId: string; idempotencyKey: string; sentAt: Date };
+
+/** The low credits emails these agencies were sent since `since`, under any key format (BUG-280). */
+export async function listSentLowCredits(agencyIds: string[], since: Date, db: Db = createServiceClient()): Promise<SentLowCredits[]> {
+  if (agencyIds.length === 0) return [];
+  const { data, error } = await db
+    .from("email_log")
+    .select("agency_id, idempotency_key, sent_at")
+    .eq("type", "low_credits")
+    .eq("status", "sent")
+    .in("agency_id", agencyIds)
+    .gte("sent_at", since.toISOString());
+  if (error) throw new Error(`email_log lookup failed: ${error.message}`);
+  return data.flatMap((row) =>
+    row.agency_id && row.idempotency_key ? [{ agencyId: row.agency_id, idempotencyKey: row.idempotency_key, sentAt: new Date(row.sent_at) }] : [],
+  );
 }
 
 export type ReportAgency = { id: string; ownerUserId: string };
 
-/** Paying or trialing agencies that still want the weekly report. */
+/** Paying or trialing agencies that still want the weekly report. Never a test agency: its scores are sample data (D-61). */
 export async function listWeeklyReportAgencies(db: Db = createServiceClient()): Promise<ReportAgency[]> {
   const { data, error } = await db
     .from("agencies")
     .select("id, owner_user_id")
     .eq("weekly_report_emails", true)
+    .eq("is_test", false)
     .in("status", ["trialing", "active"])
     .is("deleted_at", null)
     .order("created_at");
@@ -68,38 +88,45 @@ export async function ownerOf(agencyId: string, db: Db = createServiceClient()):
   return data?.owner_user_id ?? null;
 }
 
-async function newOpportunities(db: Db, businessId: string, now: Date): Promise<NewOpportunity[]> {
-  const { data, error } = await db
-    .from("opportunities")
-    .select("title, impact, created_at")
-    .eq("business_id", businessId)
-    .in("status", OPEN_OPPORTUNITIES)
-    .gte("created_at", new Date(now.getTime() - WEEK_MS).toISOString());
-  if (error) throw new Error(`Could not load new opportunities: ${error.message}`);
-  return data.map((o) => ({ title: o.title, impact: o.impact as NewOpportunity["impact"], createdAt: o.created_at }));
+// Businesses read at once: each is a few reads (a new report when a scan changed it), and a big agency must fit in
+// one run (jobs.ts TIME_BUDGET_MS).
+const BUSINESSES_AT_ONCE = 4;
+
+/**
+ * One business as the weekly report shows it: its current report (D-90), saved now if a scan changed the numbers,
+ * which also adds the report's fixes to Actions. The link is the business's share link, which opens the PDF.
+ */
+async function reportBusiness(agencyId: string, business: { id: string; name: string; models: string[] }, now: Date): Promise<ReportedBusiness> {
+  const report = await currentReport(agencyId, business.id, now);
+  const snapshot = report && report !== "empty" ? report.snapshot : null;
+  const share = snapshot ? await shareForEmail(agencyId, business.id) : null;
+  return weeklyBusiness({ name: business.name, snapshot, sharePath: share?.path ?? null, models: business.models });
 }
 
-/** Every finished business of the agency, as the weekly report shows it. */
-export async function weeklyBusinesses(agencyId: string, now: Date, db: Db = createServiceClient()): Promise<WeeklyBusiness[]> {
+/**
+ * Every finished business of the agency, as the weekly report shows it. `outOfTime` is checked before each group of
+ * businesses: once it says so, this throws OutOfTime and the agency is left for the next run.
+ */
+export async function weeklyBusinesses(
+  agencyId: string,
+  now: Date,
+  outOfTime: () => boolean = () => false,
+  db: Db = createServiceClient(),
+): Promise<ReportedBusiness[]> {
   const { data, error } = await db
     .from("businesses")
-    .select("id, name")
+    .select("id, name, models")
     .eq("agency_id", agencyId)
     .neq("status", "onboarding")
     .is("deleted_at", null)
     .order("created_at");
   if (error) throw new Error(`Could not load businesses: ${error.message}`);
 
-  const businesses: WeeklyBusiness[] = [];
-  for (const business of data) {
-    const [overview, opportunities] = await Promise.all([
-      loadOverview(agencyId, business.id, now),
-      newOpportunities(db, business.id, now),
-    ]);
-    const share = overview?.score ? await shareForEmail(agencyId, business.id) : null;
-    businesses.push(
-      weeklyBusiness({ name: business.name, overview, newOpportunities: opportunities, reportPath: share?.path ?? "/dashboard" }),
-    );
+  const businesses: ReportedBusiness[] = [];
+  for (let i = 0; i < data.length; i += BUSINESSES_AT_ONCE) {
+    if (outOfTime()) throw new OutOfTime();
+    const group = data.slice(i, i + BUSINESSES_AT_ONCE);
+    businesses.push(...(await Promise.all(group.map((b) => reportBusiness(agencyId, b, now)))));
   }
   return businesses;
 }

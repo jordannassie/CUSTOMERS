@@ -3,9 +3,19 @@
 import { useId, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { SegmentedControl } from "@/components/ui/segmented-control";
+import { formatDate } from "../../../_components/format";
 import ActionCard, { type Outcome } from "./action-card";
 
 type Base = { agencyId: string; reason: string };
+
+/** A whole number from 1 to max, or the message to show under the field. */
+export function wholeNumberError(value: FormDataEntryValue | null, max: number, what: string): string | undefined {
+  const n = Number(value);
+  if (String(value ?? "").trim() === "" || !Number.isInteger(n) || n < 1 || n > max) {
+    return `Enter a whole number of ${what} from 1 to ${max.toLocaleString("en-US")}.`;
+  }
+}
 
 const DAY = 24 * 60 * 60 * 1000;
 
@@ -13,7 +23,7 @@ const DAY = 24 * 60 * 60 * 1000;
 function newTrialEnd(current: string | null, days: number): string | null {
   if (!Number.isInteger(days) || days < 1) return null;
   const from = Math.max(current ? new Date(current).getTime() : 0, Date.now());
-  return new Date(from + days * DAY).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" });
+  return formatDate(new Date(from + days * DAY).toISOString(), true);
 }
 type Props = {
   agency: {
@@ -41,8 +51,10 @@ export default function AgencyActions({ agency, stripeConnected, maxCredits, max
   const agencyId = agency.id;
   const deleted = agency.status === "deleted";
   const suspended = agency.status === "suspended";
-  // A new ID per submitted change, so a double click is applied once (D-55).
+  // A new ID per submitted change, so a double click is applied once (D-55). A different amount is a different change:
+  // it gets its own ID, so it is never answered with an earlier request's result (audit, 2026-10-28).
   const [requestId, setRequestId] = useState(() => crypto.randomUUID());
+  const [sentDelta, setSentDelta] = useState<number | null>(null);
   const ids = { amount: useId(), days: useId(), preview: useId() };
   const [trialDays, setTrialDays] = useState("7");
   const trialPreview = newTrialEnd(agency.trialEndsAt, Number(trialDays));
@@ -60,29 +72,50 @@ export default function AgencyActions({ agency, stripeConnected, maxCredits, max
         pendingLabel="Saving…"
         successText="Credits updated."
         blocked={deleted ? "Restore the account before changing its credits." : null}
+        validate={(form) => ({ amount: wholeNumberError(form.get("amount"), maxCredits, "credits") })}
         run={async (form, reason) => {
           const amount = Number(form.get("amount"));
           const delta = form.get("direction") === "remove" ? -amount : amount;
-          const result = await actions.adjustCredits({ agencyId, reason, delta, requestId });
-          if (result.ok) setRequestId(crypto.randomUUID());
+          const id = sentDelta !== null && sentDelta !== delta ? crypto.randomUUID() : requestId;
+          if (id !== requestId) setRequestId(id);
+          setSentDelta(delta);
+          const result = await actions.adjustCredits({ agencyId, reason, delta, requestId: id });
+          if (result.ok) {
+            setRequestId(crypto.randomUUID());
+            setSentDelta(null);
+          }
           return result;
         }}
       >
-        <fieldset className="flex gap-4 text-[14px]">
-          <legend className="sr-only">Add or remove</legend>
-          <label className="flex items-center gap-2">
-            <input type="radio" name="direction" value="add" defaultChecked className="accent-primary" />
-            Add
-          </label>
-          <label className="flex items-center gap-2">
-            <input type="radio" name="direction" value="remove" className="accent-primary" />
-            Remove
-          </label>
-        </fieldset>
-        <div className="flex flex-col gap-1.5">
-          <Label htmlFor={ids.amount}>Credits</Label>
-          <Input id={ids.amount} name="amount" type="number" inputMode="numeric" min={1} max={maxCredits} step={1} required className="max-w-40" />
-        </div>
+        {(fields) => (
+          <>
+            <SegmentedControl
+              name="direction"
+              defaultValue="add"
+              aria-label="Add or remove"
+              options={[
+                { value: "add", label: "Add" },
+                { value: "remove", label: "Remove" },
+              ]}
+            />
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor={ids.amount}>Credits</Label>
+              <Input
+                id={ids.amount}
+                name="amount"
+                type="number"
+                inputMode="numeric"
+                min={1}
+                max={maxCredits}
+                step={1}
+                className="max-w-40"
+                onChange={() => fields.clear("amount")}
+                {...fields.props("amount")}
+              />
+              {fields.message("amount")}
+            </div>
+          </>
+        )}
       </ActionCard>
 
       <ActionCard
@@ -102,28 +135,34 @@ export default function AgencyActions({ agency, stripeConnected, maxCredits, max
                 ? "Stripe is not connected, so trials cannot be changed here yet."
                 : null
         }
+        validate={(form) => ({ days: wholeNumberError(form.get("days"), maxTrialDays, "days") })}
         run={(form, reason) => actions.extendTrial({ agencyId, reason, days: Number(form.get("days")) })}
       >
-        <div className="flex flex-col gap-1.5">
-          <Label htmlFor={ids.days}>Extra days (1 to {maxTrialDays})</Label>
-          <Input
-            id={ids.days}
-            name="days"
-            type="number"
-            inputMode="numeric"
-            min={1}
-            max={maxTrialDays}
-            step={1}
-            value={trialDays}
-            onChange={(e) => setTrialDays(e.target.value)}
-            aria-describedby={ids.preview}
-            required
-            className="max-w-40"
-          />
-          <p id={ids.preview} className="text-[13px] text-muted-foreground" data-testid="trial-preview">
-            {trialPreview ? `The trial will end on ${trialPreview}.` : "Enter a whole number of days."}
-          </p>
-        </div>
+        {(fields) => (
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor={ids.days}>Extra days (1 to {maxTrialDays})</Label>
+            <Input
+              id={ids.days}
+              name="days"
+              type="number"
+              inputMode="numeric"
+              min={1}
+              max={maxTrialDays}
+              step={1}
+              value={trialDays}
+              onChange={(e) => {
+                setTrialDays(e.target.value);
+                fields.clear("days");
+              }}
+              className="max-w-40"
+              {...fields.props("days", ids.preview)}
+            />
+            {fields.message("days")}
+            <p id={ids.preview} className="text-[13px] text-muted-foreground" data-testid="trial-preview">
+              {trialPreview ? `The trial will end on ${trialPreview}.` : "Enter a whole number of days."}
+            </p>
+          </div>
+        )}
       </ActionCard>
 
       {/* Keyed: the status change swaps the card, and the old card's message must not carry over. */}

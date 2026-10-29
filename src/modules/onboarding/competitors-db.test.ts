@@ -185,6 +185,7 @@ describe("saving competitors", () => {
     const kept = rows.find((r) => r.name === bean.name)!;
     expect(kept).toMatchObject({ id: legacy.data.id, places_id: bean.placeId, formatted_address: null, phone: null, category: null });
   });
+
 });
 
 describe("loading the step", () => {
@@ -214,7 +215,7 @@ describe("loading the step", () => {
     const owner = await createOwner();
     session = owner.client;
     const { places, calls } = fakeCompetitorPlaces();
-    expect(await lookupCompetitor(owner.userId, owner.businessId, "Blue Door", places)).toEqual({ matches: LOOKUP_CANDIDATES, note: null });
+    expect(await lookupCompetitor(owner.userId, owner.businessId, "Blue Door", places)).toEqual({ matches: LOOKUP_CANDIDATES, note: null, country: null });
     expect(calls.search).toEqual(["Blue Door in Springfield, IL"]);
 
     const down = fakeCompetitorPlaces(new Error("timeout"));

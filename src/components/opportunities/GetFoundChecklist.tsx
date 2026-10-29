@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
+import { cn } from "cn";
 import { Progress } from "@/components/ui/progress";
 import type { ActionResult } from "@/modules/auth";
 import type { ChecklistItem, ChecklistKey } from "@/modules/opportunities";
@@ -23,11 +24,14 @@ export function GetFoundChecklist({
   missing,
   initialItems,
   setItem,
+  readOnly = false,
 }: {
   businessId: string;
   missing: string[];
   initialItems: ChecklistItem[];
   setItem: SetChecklist;
+  /** An ended plan (MVP_SPEC 4.4): the ticks show, but can't change. */
+  readOnly?: boolean;
 }) {
   const [items, setItems] = useState(initialItems);
   const [busy, setBusy] = useState<ChecklistKey | null>(null);
@@ -49,12 +53,15 @@ export function GetFoundChecklist({
   }
 
   return (
-    <section className="flex flex-col gap-4 rounded-md border border-border bg-surface p-5" data-testid="get-found-checklist">
+    <section className="flex flex-col gap-3 rounded-md border border-border bg-surface p-5" data-testid="get-found-checklist">
       <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <div className="flex max-w-[620px] flex-col gap-1">
-          <h2 className="text-base font-semibold tracking-[-0.01em]">Get found by AI</h2>
+        <div className="flex max-w-[620px] flex-col gap-3">
+          <h2 className="text-base font-semibold tracking-[-0.02em]">Get found by AI</h2>
           <p className="text-sm text-muted-foreground">
-            We have no record of {missingText(missing)} for your business. AI assistants lean on these basics, so start here.
+            {/* "Couldn't confirm", not "no record": a Google profile is also unconfirmed when Google could not be reached at
+                setup, or its listing did not match the website (2026-10-14). */}
+            We couldn&apos;t confirm {missingText(missing)} for your business. AI assistants lean on these basics, so check them
+            first.
           </p>
         </div>
         <div className="flex w-full flex-col gap-1.5 sm:w-44">
@@ -74,9 +81,9 @@ export function GetFoundChecklist({
                 id={`check-${item.key}`}
                 type="checkbox"
                 checked={item.done}
-                disabled={busy === item.key}
+                disabled={readOnly || busy === item.key}
                 onChange={() => toggle(item)}
-                className="mt-0.5 size-4 cursor-pointer rounded-sm accent-primary disabled:cursor-wait"
+                className={cn("mt-0.5 size-4 cursor-pointer rounded-sm accent-primary", readOnly ? "disabled:cursor-not-allowed" : "disabled:cursor-wait")}
               />
             </label>
             <div className="flex min-w-0 flex-col gap-1">

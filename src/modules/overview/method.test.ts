@@ -4,6 +4,7 @@ import { listNames, methodPanel, type MethodInput } from "./method";
 const input: MethodInput = {
   windowDays: 30,
   label: "Good confidence",
+  confidence: "good",
   margin: 8,
   checks: 1080,
   uniqueAnswers: 84,
@@ -17,6 +18,19 @@ const input: MethodInput = {
 describe("methodPanel", () => {
   it("reads the same as the approved wording", () => {
     expect(methodPanel(input, null)).toMatchSnapshot();
+  });
+
+  it("says how sure the score is as how it improves, from the confidence bands (D-64)", () => {
+    expect(methodPanel(input, null).accuracy).toEqual({
+      level: "good",
+      label: "Good confidence",
+      margin: "Give or take 8 points",
+      note: "Gets sharper with every scan: 117 more different answers for high confidence.",
+    });
+    expect(methodPanel({ ...input, confidence: "early", label: "Early estimate", uniqueAnswers: 49 }, null).accuracy.note).toBe(
+      "Gets sharper with every scan: 1 more different answer for good confidence.",
+    );
+    expect(methodPanel({ ...input, confidence: "high", uniqueAnswers: 240 }, null).accuracy.note).toBe("Based on 240 different answers.");
   });
 
   it("shows nothing about the real apps until the calibration check is done (B-76)", () => {

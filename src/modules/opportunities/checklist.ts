@@ -4,6 +4,21 @@
 
 export const CHECKLIST_PREFIX = "checklist:";
 
+/**
+ * Saved by "Pick your branch on Google" when a search that worked found no branch of the chain (step 6d), with the
+ * words searched in evidence_data.query. The same text as NO_BRANCH_MARKER in onboarding/branch/service.ts.
+ */
+export const NO_BRANCH_MARKER = "checklist:no_branch";
+
+/** The words of the search that found no branch, or null when no such search is saved. */
+export function noBranchQuery(rows: readonly { affected_url: string | null; evidence_data?: unknown }[]): string | null {
+  const row = rows.find((r) => r.affected_url === NO_BRANCH_MARKER);
+  if (!row) return null;
+  const data = row.evidence_data;
+  const query = data && typeof data === "object" && !Array.isArray(data) ? (data as Record<string, unknown>).query : null;
+  return typeof query === "string" ? query : "";
+}
+
 export const CHECKLIST_KEYS = ["google_profile", "listings", "reviews", "same_details", "website", "directories"] as const;
 export type ChecklistKey = (typeof CHECKLIST_KEYS)[number];
 
@@ -26,6 +41,11 @@ export type ChecklistBusiness = {
   domain: string | null;
   hasWebsite: boolean | null;
   placesId: string | null;
+  /**
+   * A chain whose branch is still to be picked on Google (step 6d): it has no Google profile to claim, so the
+   * profile is neither listed as missing nor offered as a step.
+   */
+  branchPending?: boolean;
 };
 
 export type ChecklistItem = {
@@ -84,7 +104,7 @@ export function websitePrompt(b: ChecklistBusiness): string {
 export function missingBasics(b: ChecklistBusiness): string[] {
   const missing: string[] = [];
   if (b.hasWebsite === false || !b.domain?.trim()) missing.push("a website");
-  if (!b.placesId) missing.push("a Google Business Profile");
+  if (!b.placesId && !b.branchPending) missing.push("a Google Business Profile");
   if (!b.phone?.trim()) missing.push("a phone number");
   if (!b.city?.trim()) missing.push("a city");
   return missing;
@@ -95,7 +115,8 @@ export function checklist(b: ChecklistBusiness, done: ReadonlySet<string>): Chec
     {
       key: "google_profile",
       title: CHECKLIST_TITLES.google_profile,
-      detail: "AI assistants use Google for hours, reviews and location. Search for your business on Google Maps, then claim it or add it at business.google.com.",
+      detail:
+        "AI assistants use Google for hours, reviews and location. Search for your business on Google Maps, then claim it or add it at business.google.com. If you already have one, make sure its name, address and website match yours exactly.",
       copy: null,
     },
     {
@@ -129,7 +150,11 @@ export function checklist(b: ChecklistBusiness, done: ReadonlySet<string>): Chec
       copy: null,
     },
   ];
-  return items.map((item) => ({ ...item, done: done.has(item.key) }));
+  // A business with a website is never told to build one (BUG-087).
+  const hasSite = b.hasWebsite !== false && !!b.domain?.trim();
+  return items
+    .filter((item) => !(hasSite && item.key === "website") && !(b.branchPending && item.key === "google_profile"))
+    .map((item) => ({ ...item, done: done.has(item.key) }));
 }
 
 export function checklistKeyOf(affectedUrl: string | null): ChecklistKey | null {

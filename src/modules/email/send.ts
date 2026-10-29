@@ -2,7 +2,7 @@ import "server-only";
 import type { ReactElement } from "react";
 import { createEmailStore, getEmailSettings, type EmailSettings, type EmailStore } from "./dal";
 import { renderEmail } from "./render";
-import { getEmailClient, type EmailClient } from "./resend";
+import { EmailProviderError, getEmailClient, type EmailClient } from "./resend";
 import { UNSUBSCRIBE_TOPICS, type EmailType, type UnsubscribeTopic } from "./schema";
 import { signUnsubscribeToken, unsubscribeUrl } from "./service";
 
@@ -15,6 +15,8 @@ export type SendEmailInput = {
   /** Null only for emails sent before the agency exists. Required for emails a user can turn off. */
   agencyId: string | null;
   template: (links: EmailLinks) => ReactElement;
+  /** The plain text part, when it should say more than the HTML turned into text (the weekly report, D-90). */
+  text?: (links: EmailLinks) => string;
   /** One email per key, ever: a repeated event (webhook retry, cron rerun) sends nothing. */
   idempotencyKey?: string;
 };
@@ -58,7 +60,10 @@ export async function sendEmail(input: SendEmailInput, deps: Partial<SendEmailDe
     };
   }
 
-  const { html, text } = await renderEmail(input.template({ baseUrl: settings.baseUrl, unsubscribeUrl: unsubscribe?.page ?? null }));
+  const links = { baseUrl: settings.baseUrl, unsubscribeUrl: unsubscribe?.page ?? null };
+  const rendered = await renderEmail(input.template(links));
+  const { html } = rendered;
+  const text = input.text ? input.text(links) : rendered.text;
   // RFC 8058 one-click unsubscribe; Gmail and Yahoo expect it on bulk mail.
   const headers = unsubscribe
     ? { "List-Unsubscribe": `<${unsubscribe.oneClick}>`, "List-Unsubscribe-Post": "List-Unsubscribe=One-Click" }
@@ -71,6 +76,14 @@ export async function sendEmail(input: SendEmailInput, deps: Partial<SendEmailDe
       { idempotencyKey: input.idempotencyKey },
     ));
   } catch (error) {
+    // Resend keeps a key for 24 hours (409). Used before with another body: that email went out, but our sent row
+    // was not saved, so it is saved now. Still in flight: the other request sends it and logs it.
+    const code = error instanceof EmailProviderError ? error.code : null;
+    if (code === "invalid_idempotent_request") {
+      await store.record({ ...log, status: "sent", error: "already sent under this key (Resend 409)" });
+      return { status: "skipped", reason: "duplicate" };
+    }
+    if (code === "concurrent_idempotent_requests") return { status: "skipped", reason: "duplicate" };
     const message = error instanceof Error ? error.message : String(error);
     await store.record({ ...log, status: "failed", error: message });
     return { status: "failed", error: message };

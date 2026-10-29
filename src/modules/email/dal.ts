@@ -1,5 +1,6 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { appUrl } from "@/lib/app-url";
 import { env } from "@/lib/env";
 import { createServiceClient } from "@/lib/supabase/service";
 import { requireAgency } from "@/modules/auth";
@@ -13,9 +14,8 @@ export type EmailSettings = { from: string; baseUrl: string; unsubscribeSecret: 
 
 export function getEmailSettings(): EmailSettings {
   if (!env.EMAIL_FROM) throw new Error("Email is not configured. Set EMAIL_FROM.");
-  const baseUrl = env.NEXT_PUBLIC_APP_URL ?? env.NEXT_PUBLIC_SITE_URL;
-  if (!baseUrl) throw new Error("Set NEXT_PUBLIC_APP_URL so emails can link back to the app.");
-  return { from: env.EMAIL_FROM, baseUrl, unsubscribeSecret: env.EMAIL_UNSUBSCRIBE_SECRET ?? null };
+  // The configured address, the same one Stripe and login links use (BUG-283); throws when none is set.
+  return { from: env.EMAIL_FROM, baseUrl: appUrl(), unsubscribeSecret: env.EMAIL_UNSUBSCRIBE_SECRET ?? null };
 }
 
 /** The agency and topic behind an unsubscribe link, or null for a bad, forged or unconfigured token. */
@@ -76,16 +76,43 @@ export function createEmailStore(db: Db = createServiceClient()): EmailStore {
   };
 }
 
-/** Which of these idempotency keys already have a sent or skipped email, so a cron job can pass over them before doing any work. */
-export async function findHandledEmailKeys(keys: string[], db: Db = createServiceClient()): Promise<Set<string>> {
-  if (keys.length === 0) return new Set();
+/**
+ * Where each idempotency key stands, so a cron job can pass over the handled ones before doing any work and leave the
+ * ones that failed last time until the end. handled: a sent or skipped row (skipped includes "nothing to report").
+ * tried: only failed rows, such as a run that ran out of time on that agency.
+ */
+export async function findEmailKeyStates(keys: string[], db: Db = createServiceClient()): Promise<{ handled: Set<string>; tried: Set<string> }> {
+  const handled = new Set<string>();
+  const tried = new Set<string>();
+  if (keys.length === 0) return { handled, tried };
   const { data, error } = await db
     .from("email_log")
-    .select("idempotency_key")
+    .select("idempotency_key, status")
     .in("idempotency_key", keys)
-    .in("status", ["sent", "skipped"]);
+    .in("status", ["sent", "skipped", "failed"]);
   if (error) throw new Error(`email_log lookup failed: ${error.message}`);
-  return new Set(data.map((row) => row.idempotency_key).filter((key): key is string => key !== null));
+  for (const row of data) {
+    if (!row.idempotency_key) continue;
+    (row.status === "failed" ? tried : handled).add(row.idempotency_key);
+  }
+  for (const key of handled) tried.delete(key);
+  return { handled, tried };
+}
+
+/** Which of these idempotency keys already have a sent or skipped email. */
+export async function findHandledEmailKeys(keys: string[], db: Db = createServiceClient()): Promise<Set<string>> {
+  return (await findEmailKeyStates(keys, db)).handled;
+}
+
+/**
+ * Logs a cron email that was not sent, under its key: "skipped" (nothing to report) marks the key handled for good;
+ * "failed" (out of time) only puts the agency last on the next run.
+ */
+export async function recordUnsentEmail(
+  row: { type: EmailType; agencyId: string; to: string; idempotencyKey: string; status: "skipped" | "failed"; reason: string },
+  db: Db = createServiceClient(),
+): Promise<void> {
+  await createEmailStore(db).record({ type: row.type, agencyId: row.agencyId, to: row.to, status: row.status, error: row.reason, idempotencyKey: row.idempotencyKey });
 }
 
 /** Called by the public unsubscribe route after the signed token is checked. False when the agency is gone. */

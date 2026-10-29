@@ -17,11 +17,19 @@ const MAX_DOTS = 30;
 type Point = TrendView["points"][number];
 
 /** Score at each scan over 90 days with its margin as a band (DB-002); a sentence under 2 scans (DB-001). */
-export function TrendChart({ trend, heading: Heading = "h2" }: { trend: TrendView; heading?: "h2" | "h3" | "h4" }) {
+export function TrendChart({
+  trend,
+  heading: Heading = "h2",
+  title = "Score at each scan",
+}: {
+  trend: TrendView;
+  heading?: "h2" | "h3" | "h4";
+  title?: string;
+}) {
   return (
     <div className="flex flex-col gap-2">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <Heading className="text-sm font-medium">Score at each scan</Heading>
+        <Heading className="text-sm font-medium">{title}</Heading>
         {trend.change && (
           <span
             data-testid="trend-change"

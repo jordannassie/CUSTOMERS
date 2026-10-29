@@ -16,6 +16,11 @@ export function longDate(date: Date | string): string {
   return new Date(date).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric", timeZone: "UTC" });
 }
 
+/**
+ * Stripe idempotency key for cancelling on account delete. Includes the subscription, so deleting again within
+ * Stripe's 24 hour key window, after an admin restore and a new subscription, cancels the new one.
+ */
+export const accountCancelKey = (agencyId: string, subscriptionId: string) => `account-delete:${agencyId}:${subscriptionId}`;
 export const accountDeletedKey = (agencyId: string) => `account_deleted:${agencyId}`;
 export const accountRestoredKey = (agencyId: string, at: Date) => `account_restored:${agencyId}:${at.toISOString()}`;
 export const accountPurgedKey = (agencyId: string) => `account_purged:${agencyId}`;

@@ -1,23 +1,28 @@
 import "server-only";
 // Database access for "why competitors win" (B-51). The worker runs explainAfterScan with the service
 // role (no user session); the page reads through getLiveOpportunities, which checks the agency first.
-import { env } from "@/lib/env";
 import { createServiceClient } from "@/lib/supabase/service";
+import { aiUsageMetadata, liveAiClients } from "@/modules/ai/server";
 import { requireAgency } from "@/modules/auth";
 import { fetchPlaceSignals } from "@/modules/competitors/server";
-import { loadAlsoRecommended } from "@/modules/scanning";
+import { loadAlsoRecommended, splitByQuestion } from "@/modules/scanning";
 import type { Opportunity } from "@/types/geo";
 import { explain, type Explanation, type WriteExplanation } from "./explain";
 import type { ExplainSources, Signals } from "./facts";
-import { fillOpportunity, hasPlaceValues, liveLookup, planSave, referencedCompetitors, usageCostUsd, usesBusinessValues } from "./service";
+import { markExplained, recordExplainFallback, saveExplanation, type SaveOutcome } from "./save/dal";
+import { fillOpportunity, hasPlaceValues, liveLookup, referencedCompetitors, usageCostUsd, usesBusinessValues } from "./service";
 import { templateWriter } from "./template-writer";
 import { createExplanationWriter } from "./writer";
 
-/** An opportunity with Google values filled in; usesGoogle means the text shows some, so attribution is due. */
-export type LiveOpportunity = Opportunity & { usesGoogle: boolean };
+/**
+ * An opportunity with Google values filled in. usesGoogle: the text shows some, so attribution is due. googleValues:
+ * its text has Google values to show, filled or not (a page that skipped Google offers "Show Google numbers").
+ */
+export type LiveOpportunity = Opportunity & { usesGoogle: boolean; googleValues: boolean };
 
 /** Live Google signals for a place id; null when Google has no such place. */
 type FetchSignals = (placeId: string) => Promise<Signals | null>;
+const noSignals: FetchSignals = async () => null;
 
 export type ExplainDeps = {
   /** Null means "pick by agency": the template for test agencies, Claude otherwise. */
@@ -40,9 +45,10 @@ async function signalsFor(placeIds: (string | null)[], fetchSignals: FetchSignal
 
 async function loadSources(runId: string, deps: ExplainDeps) {
   const db = createServiceClient();
-  const runResult = await db.from("visibility_runs").select("business_id").eq("id", runId).single();
-  const businessId = must("load the scan run", runResult).business_id;
-  const [business, competitors, checks, facts] = await Promise.all([
+  const runResult = await db.from("visibility_runs").select("business_id, provider").eq("id", runId).single();
+  const run = must("load the scan run", runResult);
+  const businessId = run.business_id;
+  const [business, competitors, checks, questions, facts] = await Promise.all([
     db
       .from("businesses")
       .select(
@@ -53,9 +59,10 @@ async function loadSources(runId: string, deps: ExplainDeps) {
     db.from("business_competitors").select("id, name, places_id, place_id").eq("business_id", businessId).order("created_at"),
     db
       .from("visibility_results")
-      .select("provider, question, business_mentioned, competitors_mentioned, cited_sources")
+      .select("provider, question, business_mentioned, competitors_mentioned, cited_sources, tracked_prompt_id")
       .eq("run_id", runId)
       .order("id"),
+    db.from("tracked_prompts").select("id, source, active").eq("business_id", businessId),
     db.from("business_site_facts").select("data").eq("business_id", businessId).maybeSingle(),
   ]);
   const b = must("load the business", business);
@@ -64,7 +71,9 @@ async function loadSources(runId: string, deps: ExplainDeps) {
   const agency = must("load the agency", agencyResult);
   const also = await loadAlsoRecommended(b.agency_id, businessId, (deps.now ?? (() => new Date()))());
   const rivals = must("load the competitors", competitors).map((c) => ({ id: c.id, name: c.name, placesId: c.places_id ?? c.place_id }));
-  const signals = await signalsFor([b.places_id, ...rivals.map((c) => c.placesId)], deps.fetchSignals ?? fetchPlaceSignals);
+  // Test agencies never call Google (D-61): their reasons are written without Google values, as when Google has none.
+  const fetchSignals = deps.fetchSignals ?? (agency.is_test ? noSignals : fetchPlaceSignals);
+  const signals = await signalsFor([b.places_id, ...rivals.map((c) => c.placesId)], fetchSignals);
 
   const sources: ExplainSources = {
     business: {
@@ -79,7 +88,12 @@ async function loadSources(runId: string, deps: ExplainDeps) {
       placesId: b.places_id,
     },
     competitors: rivals,
-    checks: must("load the checks", checks).map((c) => ({
+    models: run.provider.split(",").map((m) => m.trim()).filter(Boolean),
+    // The answers the score counts, so the reasons quote the same numbers as the score (BUG-129).
+    checks: splitByQuestion(
+      must("load the checks", checks).map((c) => ({ ...c, questionId: c.tracked_prompt_id ?? "none" })),
+      must("load the questions", questions),
+    ).scored.map((c) => ({
       provider: c.provider,
       question: c.question ?? "",
       businessMentioned: c.business_mentioned,
@@ -97,55 +111,56 @@ function pickWriter(isTest: boolean, deps: ExplainDeps): WriteExplanation | null
   // Test agencies never reach a live model, whatever was passed in (D-61).
   if (isTest) return templateWriter;
   if (deps.write !== undefined && deps.write !== null) return deps.write;
-  return env.ANTHROPIC_API_KEY ? createExplanationWriter(env.ANTHROPIC_API_KEY) : null;
+  const ai = liveAiClients();
+  return ai.anthropic || ai.openai ? createExplanationWriter(ai) : null;
 }
 
-/** Explains one finished scan run and replaces the business's open opportunities with the result. */
-export async function explainAfterScan(runId: string, deps: ExplainDeps = {}): Promise<Explanation> {
-  const { sources, businessId, ownerUserId, isTest } = await loadSources(runId, deps);
-  const explanation = await explain(sources, pickWriter(isTest, deps));
-  await saveDrafts(businessId, explanation);
-  if (explanation.usage && explanation.model) {
-    const { error } = await createServiceClient().from("usage_events").insert({
-      account_user_id: ownerUserId,
-      business_id: businessId,
-      usage_type: "other",
-      provider: "anthropic",
-      model: explanation.model,
-      input_tokens: explanation.usage.inputTokens,
-      output_tokens: explanation.usage.outputTokens,
-      request_count: 1,
-      estimated_cost_usd: usageCostUsd(explanation.usage),
-    });
-    if (error) throw new Error(`Insights: could not record usage: ${error.message}`);
-  }
-  return explanation;
-}
-
-async function saveDrafts(businessId: string, explanation: Explanation): Promise<void> {
-  const db = createServiceClient();
-  const existing = must(
-    "load opportunities",
-    await db.from("opportunities").select("id, title, status").eq("business_id", businessId),
-  );
-  const { insert, removeIds } = planSave(existing, explanation.drafts);
-  // Insert first, so a failure leaves the old list rather than an empty one.
-  if (insert.length > 0) {
-    const { error } = await db.from("opportunities").insert(insert.map((d) => ({ ...d, business_id: businessId, status: "open" })));
-    if (error) throw new Error(`Insights: could not save opportunities: ${error.message}`);
-  }
-  if (removeIds.length > 0) {
-    const { error } = await db.from("opportunities").delete().in("id", removeIds).eq("status", "open");
-    if (error) throw new Error(`Insights: could not replace old opportunities: ${error.message}`);
+/**
+ * Explains one finished scan run and saves the fixes (save/dal.ts): the cost is recorded, a fallback to the fixed rules
+ * is logged to provider_errors, and the run is marked explained even when a step fails.
+ */
+export async function explainAfterScan(runId: string, deps: ExplainDeps = {}): Promise<Explanation & { saved?: SaveOutcome }> {
+  try {
+    const { sources, businessId, ownerUserId, isTest } = await loadSources(runId, deps);
+    const explanation = await explain(sources, pickWriter(isTest, deps));
+    if (!isTest) await recordExplainFallback(explanation);
+    const saved = await saveExplanation(businessId, runId, explanation);
+    await recordUsage(explanation, ownerUserId, businessId);
+    return { ...explanation, saved };
+  } finally {
+    await markExplained(runId);
   }
 }
 
-/** Opportunities for one of the signed-in agency's businesses, with Google values filled in live. */
+async function recordUsage(explanation: Explanation, ownerUserId: string, businessId: string): Promise<void> {
+  if (!explanation.usage || !explanation.model) return;
+  const { error } = await createServiceClient().from("usage_events").insert({
+    account_user_id: ownerUserId,
+    business_id: businessId,
+    usage_type: "other",
+    provider: explanation.writer?.provider ?? "anthropic",
+    model: explanation.model,
+    input_tokens: explanation.usage.inputTokens,
+    output_tokens: explanation.usage.outputTokens,
+    request_count: 1,
+    estimated_cost_usd: usageCostUsd(explanation.usage, explanation.model),
+    ...(explanation.writer && {
+      metadata: aiUsageMetadata({ task: "why_competitors_win", fellBack: explanation.writer.fellBack, primaryError: explanation.writer.primaryError }),
+    }),
+  });
+  if (error) throw new Error(`Insights: could not record usage: ${error.message}`);
+}
+
+/**
+ * Opportunities for one of the signed-in agency's businesses, with Google values filled in live. `google: false`
+ * asks Google nothing: sentences that need its values are left out (2026-10-27, Places calls only on request).
+ */
 export async function getLiveOpportunities(
   businessId: string,
   fetchSignals: FetchSignals = fetchPlaceSignals,
+  { google = true }: { google?: boolean } = {},
 ): Promise<LiveOpportunity[] | null> {
-  const { agency } = await requireAgency({ next: "/opportunities" });
+  const { agency } = await requireAgency({ next: "/actions" });
   const db = createServiceClient();
   const business = await db.from("businesses").select("places_id").eq("id", businessId).eq("agency_id", agency.id).maybeSingle();
   if (business.error) throw new Error(`Insights: could not load the business: ${business.error.message}`);
@@ -156,20 +171,24 @@ export async function getLiveOpportunities(
     await db
       .from("opportunities")
       .select(
-        "id, business_id, title, description, evidence, impact, category, affected_url, status, recommended_action, claude_prompt, created_at, updated_at",
+        "id, business_id, title, description, evidence, impact, category, affected_url, status, recommended_action, claude_prompt, created_at, updated_at, where_to_apply, source, evidence_data, due_date, completed_at, assignee_id",
       )
       .eq("business_id", businessId)
       .order("created_at", { ascending: false }),
   ) as Opportunity[];
 
+  // Only this business's own competitors: an id typed into a fix's text must never read another account's listing.
   const ids = referencedCompetitors(rows);
   const competitors =
     ids.size > 0
-      ? must("load competitors", await db.from("business_competitors").select("id, places_id, place_id").in("id", [...ids]))
+      ? must(
+          "load competitors",
+          await db.from("business_competitors").select("id, places_id, place_id").eq("business_id", businessId).in("id", [...ids]),
+        )
       : [];
   const placeOf = new Map(competitors.map((c) => [c.id, c.places_id ?? c.place_id]));
   const businessPlace = usesBusinessValues(rows) ? business.data.places_id : null;
-  const signals = await signalsFor([businessPlace, ...placeOf.values()], fetchSignals);
+  const signals = google ? await signalsFor([businessPlace, ...placeOf.values()], fetchSignals) : new Map();
   const lookup = liveLookup(businessPlace, placeOf, signals);
-  return rows.map((row) => ({ ...fillOpportunity(row, lookup), usesGoogle: hasPlaceValues(row) }));
+  return rows.map((row) => ({ ...fillOpportunity(row, lookup), usesGoogle: google && hasPlaceValues(row), googleValues: hasPlaceValues(row) }));
 }

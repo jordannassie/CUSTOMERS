@@ -9,14 +9,33 @@ export type Frequency = (typeof FREQUENCIES)[number];
 
 const text = (max: number) => z.string().trim().max(max);
 
+// Other names customers and AI use for a business or a competitor (MVP_SPEC 5.5): "KFC", "Book Woman", an old name.
+export const ALIASES_MAX = 10;
+export const aliasesInput = z.array(text(120).min(2)).max(ALIASES_MAX);
+
+/** A business's neighborhood or area, "East Austin". Same 80 limit as businesses_primary_area_length; empty is null. */
+export const AREA_MAX = 80;
+export const areaText = z.string().trim().max(AREA_MAX).nullable().transform((area) => area || null);
+
+/** The form checks the same limits before it saves (servicesProblem, phoneProblem), so a refusal names its field. */
+export const SERVICES_MAX = 20;
+export const SERVICE_MAX_CHARS = 60;
+export const PHONE_MAX = 30;
+export const PHONE_PATTERN = /^[0-9+().\s-]*$/;
+
 export const businessProfileInput = z.object({
   businessId: z.uuid(),
   name: text(120).min(1),
   industry: text(80),
-  services: z.array(text(60).min(1)).max(20),
+  services: z.array(text(SERVICE_MAX_CHARS).min(1)).max(SERVICES_MAX),
+  // "Cheezious" for "Cheezious Golra Mor Branch".
+  aliases: aliasesInput.optional(),
   city: text(80),
   region: text(80),
-  phone: text(30).regex(/^[0-9+().\s-]*$/),
+  country: text(80).optional(),
+  // Left as it is when the form did not send one.
+  area: areaText.optional(),
+  phone: text(PHONE_MAX).regex(PHONE_PATTERN),
   website: text(253),
 });
 

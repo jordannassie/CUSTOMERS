@@ -72,7 +72,7 @@ function Row(props: { title: string; value: React.ReactNode; note?: React.ReactN
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="min-w-0">
           <p className="text-[13px] text-muted-foreground">{props.title}</p>
-          <p className="truncate text-sm font-medium">{props.value}</p>
+          <p className="truncate text-sm font-medium" title={typeof props.value === "string" ? props.value : undefined}>{props.value}</p>
           {props.note && <p className="mt-1 text-[13px]">{props.note}</p>}
         </div>
         {props.action}

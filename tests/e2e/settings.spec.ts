@@ -4,6 +4,9 @@ import { parseEnv } from "node:util";
 import { createClient } from "@supabase/supabase-js";
 import { expect, test, type Page } from "@playwright/test";
 
+// Failed in full local runs and passed alone (BUG-068: shared test data and auth under load): one retry here only.
+test.describe.configure({ retries: 1 });
+
 // B-55 against the local Supabase stack, like app-shell.spec.ts: each test seeds its own agency.
 // The logo test also needs the local storage service, which scripts/test-db-reset.sh starts.
 const local = existsSync(".env.test.local") ? parseEnv(readFileSync(".env.test.local", "utf8")) : {};
@@ -82,7 +85,8 @@ test("settings is in the menu, the old address redirects, and the account shows 
   await expect(page.getByTestId("account-email")).toHaveText(s.email);
   await expect(page.getByRole("button", { name: "Change password" })).toBeVisible();
   await expect(page.getByText(/Supabase/)).toHaveCount(0);
-  await expect(page.getByRole("link", { name: /^Billing/ })).toHaveAttribute("href", "/settings/billing");
+  // The Settings card, not the sidebar's Billing item (BUG-094).
+  await expect(page.getByRole("link", { name: /^Billing Change plan/ })).toHaveAttribute("href", "/settings/billing");
   await expect(page.getByRole("button", { name: "Delete business" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Delete account" })).toBeVisible();
 
@@ -119,6 +123,20 @@ test("edit the business profile, with a warning when the website changes", async
     primary_region: "TX",
     phone: "(512) 555-0100",
   });
+});
+
+// The form checks what the server checks, so a bad phone or too many services is marked on its field (no vague alert).
+test("a bad phone number or too many services is marked on the field", async ({ page }) => {
+  await logIn(page);
+  const form = page.getByRole("form", { name: "Business profile" });
+  await form.getByLabel("Phone").fill("call 555 0100");
+  await form.getByLabel("Services").fill(Array.from({ length: 21 }, (_, i) => `Service ${i}`).join(", "));
+  await form.getByRole("button", { name: "Save profile" }).click();
+  await expect(form.getByLabel("Services")).toHaveAttribute("aria-invalid", "true");
+  await expect(form.getByText("Add up to 20 services.")).toBeVisible();
+  await expect(form.getByLabel("Phone")).toHaveAttribute("aria-invalid", "true");
+  await expect(form.getByText("Use only numbers, spaces and + ( ) - in the phone number.")).toBeVisible();
+  await expect(page.getByText("Check the highlighted details", { exact: false })).toHaveCount(0);
 });
 
 test("change models and frequency, seeing the credit effect before saving", async ({ page }) => {
@@ -220,6 +238,17 @@ test("delete a business after typing its name", async ({ page }) => {
 
   const { data } = await db.from("businesses").select("deleted_at").eq("id", s.businessId).single();
   expect(data?.deleted_at).not.toBeNull();
+});
+
+test("during a trial, the delete dialog says the business leaves the trial now and is never charged (2026-10-16)", async ({ page }) => {
+  const s = await logIn(page);
+  await db.from("agencies").update({ status: "trialing" }).eq("id", s.agencyId).throwOnError();
+  await page.reload();
+  await page.getByRole("button", { name: "Delete business" }).click();
+  const dialog = page.getByTestId("delete-dialog");
+  await expect(dialog.getByText("It leaves your trial now and you won't be charged for it.")).toBeVisible();
+  await expect(dialog.getByText("End of this billing period")).toHaveCount(0);
+  await expect(dialog.getByText(/no refund/)).toHaveCount(0);
 });
 
 test("deleting the only business after the plan ended leads to settings, not a loop (BUG-D)", async ({ page }) => {

@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createAgencyWithBusiness, deleteTestUsers, service } from "../admin.test-helpers";
 import { loadUsageCost } from "./dal";
@@ -131,5 +132,76 @@ describe("admin Usage and cost numbers (B-67)", () => {
     const { data } = await service.from("plans").select("price_cents, monthly_credits").eq("active", true);
     const cheapest = Math.min(...data!.filter((p) => p.price_cents && p.monthly_credits).map((p) => p.price_cents! / 100 / p.monthly_credits!));
     expect(report.creditPriceUsd).toBeCloseTo(cheapest, 8);
+  });
+});
+
+// BUG-160: a purged account's AI costs stay in the totals, with nothing left that names the account.
+describe("AI costs of a deleted account (BUG-160, migration 059)", () => {
+  const WEEK = Date.UTC(2019, 0, 1) - Math.floor(Math.random() * 2000) * 7 * DAY;
+  const day = (n: number) => new Date(WEEK + n * DAY).toISOString();
+  const END = new Date(WEEK + 6 * DAY);
+
+  async function purgedAgency(isTest: boolean, cost: number) {
+    const a = await createAgencyWithBusiness(isTest ? "Purged test" : "Purged real");
+    await service.from("agencies").update({ is_test: isTest }).eq("id", a.agencyId).throwOnError();
+    await service
+      .from("usage_events")
+      .insert([
+        { account_user_id: a.ownerId, business_id: a.businessId, usage_type: "ai_visibility_check", provider: "openai", model: "gpt-4.1-mini", input_tokens: 8000, output_tokens: 400, estimated_cost_usd: cost, created_at: day(1) },
+        {
+          account_user_id: a.ownerId,
+          business_id: a.businessId,
+          usage_type: "other",
+          provider: "anthropic",
+          model: "claude-haiku-4-5",
+          estimated_cost_usd: 0.002,
+          metadata: { task: "autofill", fellBack: false, primaryError: "Claude could not read cheezious.com for Owner Name" },
+          created_at: day(2),
+        },
+      ])
+      .throwOnError();
+    // Credits used: 3 for the real agency, 40 for the test one (migration 060 keeps those out of real totals).
+    await service
+      .from("credit_transactions")
+      .insert({ agency_id: a.agencyId, delta: isTest ? -40 : -3, kind: "capture", source_type: "vitest_check", source_id: randomUUID(), created_at: day(1) })
+      .throwOnError();
+    await service.from("agencies").update({ status: "deleted", deleted_at: day(3), purge_after: new Date(Date.now() - 1000).toISOString() }).eq("id", a.agencyId).throwOnError();
+    return a;
+  }
+
+  it("keeps provider, model, cost and tokens with no user, business or error text, and counts them", async () => {
+    const real = await purgedAgency(false, 0.031);
+    const test = await purgedAgency(true, 0.5);
+    await service.rpc("purge_deleted_accounts").throwOnError();
+
+    const rows = (await service.from("usage_events").select("account_user_id, business_id, visibility_run_id, usage_type, provider, model, input_tokens, output_tokens, estimated_cost_usd, metadata").gte("created_at", day(0)).lte("created_at", END.toISOString()).order("created_at")).data!;
+    expect(rows).toHaveLength(4);
+    for (const r of rows) {
+      expect([r.account_user_id, r.business_id, r.visibility_run_id]).toEqual([null, null, null]);
+      expect(JSON.stringify(r.metadata)).not.toMatch(/Owner Name|cheezious|primaryError/);
+    }
+    expect(rows.find((r) => Number(r.estimated_cost_usd) === 0.031)).toMatchObject({ provider: "openai", model: "gpt-4.1-mini", input_tokens: 8000, output_tokens: 400, metadata: { accountDeleted: true, testAccount: false } });
+    const byTest = (m: unknown) => ((m as { testAccount?: boolean }).testAccount ? 1 : 0);
+    expect(rows.filter((r) => r.usage_type === "other").map((r) => r.metadata).sort((a, b) => byTest(a) - byTest(b))).toEqual([
+      { task: "autofill", fellBack: false, accountDeleted: true, testAccount: false },
+      { task: "autofill", fellBack: false, accountDeleted: true, testAccount: true },
+    ]);
+    expect((await service.auth.admin.getUserById(real.ownerId)).data.user).toBeNull();
+    expect((await service.auth.admin.getUserById(test.ownerId)).data.user).toBeNull();
+
+    // Real totals keep the real account's costs under "Deleted accounts" and leave the test one out.
+    const report = await loadUsageCost({ days: 7, includeTest: false }, END);
+    expect(report.totals.costUsd).toBeCloseTo(0.031 + 0.002, 6);
+    expect(report.totals.credits).toBe(3);
+    expect(report.byAgency.find((a) => a.name === "Deleted accounts")).toMatchObject({ credits: 3, costUsd: expect.closeTo(0.033, 6) });
+    const withTest = await loadUsageCost({ days: 7, includeTest: true }, END);
+    expect(withTest.totals.costUsd).toBeCloseTo(0.033 + 0.502, 6);
+    expect(withTest.totals.credits).toBe(43);
+    // The ledger rows lost their agency but say whether it was a test one.
+    const ledger = (await service.from("credit_transactions").select("agency_id, delta, from_test_agency").gte("created_at", day(0)).lte("created_at", END.toISOString())).data!;
+    expect(ledger.map((r) => [r.agency_id, r.delta, r.from_test_agency]).sort()).toEqual([
+      [null, -3, false],
+      [null, -40, true],
+    ]);
   });
 });

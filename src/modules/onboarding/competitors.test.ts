@@ -11,14 +11,15 @@ import {
   COMPETITOR_NOTES,
   MAX_SUGGESTIONS,
   competitorFields,
+  competitorInsertRow,
   dedupeConfirmed,
   discoverCompetitors,
   limitMessage,
   lookupQuery,
+  mergeAliases,
   nearbyQuery,
   planSave,
-  type BusinessForSearch,
-} from "./competitors";
+  type BusinessForSearch, matchingPlace } from "./competitors";
 import { PLACES_TEXT_SEARCH_URL, PlacesError } from "./places";
 
 const COFFEE: BusinessForSearch = {
@@ -42,6 +43,12 @@ describe("search queries", () => {
     expect(nearbyQuery({ ...COFFEE, city: null })).toBeNull();
     expect(lookupQuery(" Blue Door ", COFFEE)).toBe("Blue Door in Springfield, IL");
     expect(lookupQuery("Blue Door", { ...COFFEE, city: null, region: null })).toBe("Blue Door");
+  });
+
+  it("searches the user's own words for an industry we do not list, then the Google type (BUG-085)", () => {
+    expect(nearbyQuery({ ...COFFEE, industry: "Sportswear store", services: ["Athletic footwear"] })).toBe("Sportswear store in Springfield, IL");
+    const origin = { latitude: 33.6, longitude: 73.1, primaryType: "clothing_store" };
+    expect(nearbyQuery({ ...COFFEE, industry: "other", services: ["Lawn prints"] }, origin)).toBe("clothing store in Springfield, IL");
   });
 });
 
@@ -188,5 +195,49 @@ describe("fixture Places", () => {
     expect(await places.search("plumber in Springfield, IL", 3)).toEqual(NEARBY_CANDIDATES.slice(0, 3));
     expect(await places.search("Blue Door in Springfield, IL", 5)).toEqual(LOOKUP_CANDIDATES);
     expect(await places.search("Nowhere Diner in Springfield, IL", 5)).toEqual([]);
+  });
+});
+
+describe("matchingPlace (step 9c)", () => {
+  const candidate = (name: string, placeId = name) => ({ placeId, name, rating: null, reviewCount: null, address: null, mapsUri: null });
+
+  it("finds the listing for a business AI named, long or short", () => {
+    expect(matchingPlace("Canopy", [candidate("Canopy by Hilton Austin Downtown", "p1")])?.placeId).toBe("p1");
+    expect(matchingPlace("Blue Door Coffee", [candidate("Kiln Coffee Co", "p0"), candidate("Blue Door Coffee", "p2")])?.placeId).toBe("p2");
+    expect(matchingPlace("Bennu Coffee on Congress", [candidate("Bennu Coffee", "p3")])?.placeId).toBe("p3");
+  });
+
+  it("saves no listing for a near miss or a very short name", () => {
+    // Two places start with "Canopy": a guess, so none is saved.
+    expect(matchingPlace("Canopy", [candidate("Canopy Tree Service", "x"), candidate("Canopy by Hilton Austin Downtown", "y")])).toBeNull();
+    expect(matchingPlace("Canopy", [candidate("Canopy Tree Service", "x"), candidate("Canopy", "z")])?.placeId).toBe("z");
+    expect(matchingPlace("Blue Door Coffee", [candidate("Blue Dog Coffee")])).toBeNull();
+    expect(matchingPlace("Ace", [candidate("Ace Hardware")])).toBeNull();
+  });
+});
+
+// 2026-10-15: the long Google name stays as another name when the short brand is saved.
+describe("other names from Google", () => {
+  it("keep the aliases through dedupe and into the row", () => {
+    const long = "BeRejuved Medical Spa & Wellness Studio - NYC";
+    const [c] = dedupeConfirmed([{ name: "BeRejuved Medical Spa & Wellness Studio", placesId: "ChIJbe", aliases: [long] }]);
+    expect(c.aliases).toEqual([long]);
+    expect(competitorInsertRow("b1", c)).toMatchObject({ name: "BeRejuved Medical Spa & Wellness Studio", aliases: [long] });
+    // A kept row's other names are merged separately, never overwritten by a save.
+    expect(competitorFields(c)).not.toHaveProperty("aliases");
+  });
+
+  it("every new row has the same columns, so one insert can mix a long Google name and a plain one (2026-10-16)", () => {
+    const rows = [
+      competitorInsertRow("b1", { name: "Blue Door", placesId: null }),
+      competitorInsertRow("b1", { name: "BeRejuved", placesId: "ChIJbe", aliases: ["BeRejuved Medical Spa - NYC"] }),
+    ];
+    expect(Object.keys(rows[0]).sort()).toEqual(Object.keys(rows[1]).sort());
+    expect(rows[0].aliases).toEqual([]);
+  });
+
+  it("merge once each, never the name itself, up to ten", () => {
+    expect(mergeAliases(["Old Name"], ["old name", "Long Google Name", "Glow"], "Glow")).toEqual(["Old Name", "Long Google Name"]);
+    expect(mergeAliases([], Array.from({ length: 12 }, (_, i) => `Name ${i}`), "X")).toHaveLength(10);
   });
 });

@@ -2,6 +2,7 @@ import "server-only";
 // Claude checks through the Anthropic Messages API with web search and the business location
 // (MVP_SPEC 5.1, D-67). The API key is passed in; only a dal.ts reads secrets.
 import Anthropic from "@anthropic-ai/sdk";
+import { knownLocation } from "./location";
 import { CHECK_MODELS } from "./models";
 import { checkCostUsd } from "./pricing";
 import {
@@ -19,6 +20,10 @@ import { cleanUrl } from "./urls";
 const MAX_OUTPUT_TOKENS = 2_000;
 const MAX_SEARCHES = 3;
 
+// Countries Claude's web search has refused ("Country code PK is not supported"). Checks for them are sent without
+// a location from then on; the question already names the city (BUG-073). Kept for the life of the process.
+const unsupportedCountries = new Set<string>();
+
 export function createAnthropicCheck(apiKey: string, deps: RequestDeps = {}): RunCheck {
   const timeoutMs = deps.timeoutMs ?? TIMEOUT_MS;
   // Retries run through withRetries so every provider shares one policy (REL-01).
@@ -28,21 +33,36 @@ export function createAnthropicCheck(apiKey: string, deps: RequestDeps = {}): Ru
     const model = CHECK_MODELS.anthropic;
     if (input.model !== model) throw new Error(`Claude adapter only runs ${model}, not ${input.model}`);
 
+    const send = (withLocation: boolean) =>
+      withRetries(async (attempt): Promise<Attempt<Anthropic.Message>> => {
+        try {
+          return { ok: true, value: await client.messages.create(requestBody(input, withLocation)) };
+        } catch (err) {
+          return classify(err, attempt, timeoutMs);
+        }
+      }, deps);
+
     const started = performance.now();
-    const message = await withRetries(async (attempt): Promise<Attempt<Anthropic.Message>> => {
-      try {
-        return { ok: true, value: await client.messages.create(requestBody(input)) };
-      } catch (err) {
-        return classify(err, attempt, timeoutMs);
-      }
-    }, deps);
+    const country = input.location.country;
+    const withLocation = !unsupportedCountries.has(country);
+    let message: Anthropic.Message;
+    try {
+      message = await send(withLocation);
+    } catch (err) {
+      if (!withLocation || !isLocationRejected(err)) throw err;
+      if (/country code/i.test(err.message)) unsupportedCountries.add(country);
+      message = await send(false);
+    }
     const latencyMs = Math.round(performance.now() - started);
 
     return toResult(message, latencyMs);
   };
 }
 
-export function requestBody({ question, location, model }: CheckInput): Anthropic.MessageCreateParamsNonStreaming {
+export function requestBody(
+  { question, location, model }: CheckInput,
+  withLocation = true,
+): Anthropic.MessageCreateParamsNonStreaming {
   return {
     model,
     max_tokens: MAX_OUTPUT_TOKENS,
@@ -52,10 +72,15 @@ export function requestBody({ question, location, model }: CheckInput): Anthropi
         type: "web_search_20250305",
         name: "web_search",
         max_uses: MAX_SEARCHES,
-        user_location: { type: "approximate", city: location.city, region: location.region, country: location.country },
+        ...(withLocation ? { user_location: { type: "approximate" as const, ...knownLocation(location) } } : {}),
       },
     ],
   };
+}
+
+/** A 400 about the location ("Country code PK is not supported"), not about the question. */
+export function isLocationRejected(err: unknown): err is ProviderError {
+  return err instanceof ProviderError && err.status === 400 && /user_location|country code/i.test(err.message);
 }
 
 export function classify(err: unknown, attempt: number, timeoutMs: number): Attempt<never> {

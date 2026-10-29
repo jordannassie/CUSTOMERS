@@ -1,17 +1,16 @@
 import type Stripe from "stripe";
-import { planInvoiceGrants, type PlanCredits } from "../webhooks/credits";
+import { planInvoiceGrants, prorationPeriodStarts, type PlanCredits } from "../webhooks/credits";
 import type { PlanChangeStripe } from "./client";
-import { doneCopy, previewCopy, type Copy } from "./copy";
+import { changesDroppedByCancel, changesRestoredByKeep, cancelScheduleParams, keepScheduleParams } from "./cancel-schedule";
+import { doneCopy, previewCopy, type Copy, type ScheduledNote } from "./copy";
 import {
   buildPhases,
   checkChange,
   currentItems,
   idempotencyKey,
-  itemSpec,
+  isTrialing,
   periodEnd,
-  phasesOf,
   PlanChangeError,
-  previewItemsFor,
   scheduleIdOf,
   subscriptionItemsFor,
   timingOf,
@@ -20,15 +19,25 @@ import {
   type PlanChangeContext,
   type Timing,
 } from "./planner";
+import { previewParams, schedulePhases } from "./preview-params";
+import { phasesOnOnePrice, phasesWithoutPending, refuseWhileLeaving } from "./pending";
+import { changeNowAroundSchedule } from "./schedule-now";
+import { trialBillCents } from "./trial-bill";
 
 // Previews and applies plan changes (MVP_SPEC 11.5, D-57). Changes made now invoice the proration at once;
 // credits for it are granted by the invoice.paid webhook (B-42), never here. Period-end changes go on a
-// subscription schedule; cancel uses cancel_at_period_end.
+// subscription schedule; cancel uses cancel_at_period_end, or ends the schedule when a change is scheduled (BUG-124).
 
 export type PlanChangeDeps = {
   stripe: PlanChangeStripe;
   plansByProduct: Map<string, PlanCredits>;
   now: () => Date;
+  /** For the dates in the sentences; UTC when unknown. */
+  timeZone?: string;
+  /** Credits left now, read for a cancel or a removal so the preview can say how many end. */
+  credits?: { plan: number; topup: number };
+  /** Raises an admin alert when a pending change could not be put back after a change made now (schedule-now.ts). */
+  onScheduleLost?: (message: string) => Promise<void>;
 };
 
 export type PlanChangePreview = Copy & {
@@ -55,41 +64,34 @@ async function load(ctx: PlanChangeContext, deps: PlanChangeDeps): Promise<Loade
   return { sub, schedule: schedule && schedule.status === "active" ? schedule : null };
 }
 
-const seconds = (date: Date) => Math.floor(date.getTime() / 1000);
-
-function schedulePhases(sub: Stripe.Subscription, schedule: Stripe.SubscriptionSchedule, checked: CheckedChange) {
-  const { current, next } = phasesOf(schedule);
-  return buildPhases(
-    sub,
-    { start: current.start_date, end: current.end_date, items: current.items.map(itemSpec) },
-    next ? next.items.map(itemSpec) : null,
-    checked,
-  );
+/** Refusals that depend on what is scheduled: nothing to take back, or a business that is already leaving. */
+function checkAgainstSchedule({ sub, schedule }: Loaded, checked: CheckedChange) {
+  const { change, business } = checked;
+  if (change.kind === "keepBusiness") {
+    if (!schedule) throw new PlanChangeError(409, `Nothing is scheduled to change for ${business!.name}.`);
+    phasesWithoutPending(sub, schedule, change.businessId, business!.name);
+  } else if (business && (change.kind === "upgrade" || change.kind === "downgrade")) {
+    refuseWhileLeaving(schedule, business.id, business.name);
+  }
 }
+
+/** The scheduled changes a cancel drops, or "Keep my plan" puts back, in the words the sentences need. */
+function scheduledNotes(ctx: PlanChangeContext, { schedule }: Loaded, kind: PlanChange["kind"]): ScheduledNote[] {
+  const changes =
+    kind === "cancel" ? changesDroppedByCancel(schedule, ctx.plans) : kind === "keep" ? changesRestoredByKeep(schedule, ctx.plans) : [];
+  return changes.flatMap(({ businessId, planId }) => {
+    const business = ctx.businesses.find((b) => b.id === businessId);
+    // A deleted business leaves either way; a cancel or keep changes nothing for it (2026-10-15).
+    if (!business || business.deleted) return [];
+    const planName = planId === null ? null : (ctx.plans.find((p) => p.id === planId)?.name ?? "another plan");
+    return [{ businessName: business.name, planName }];
+  });
+}
+
+const seconds = (date: Date) => Math.floor(date.getTime() / 1000);
 
 function effectiveAt(timing: Timing, sub: Stripe.Subscription, nowSeconds: number): number {
   return timing === "now" ? nowSeconds : periodEnd(sub);
-}
-
-function previewParams(
-  { sub, schedule }: Loaded,
-  checked: CheckedChange,
-  prorationDate: number,
-): Stripe.InvoiceCreatePreviewParams | null {
-  const kind = checked.change.kind;
-  if (kind === "cancel" || kind === "keep") return null;
-  const proration_behavior = timingOf(kind) === "now" ? "always_invoice" : "none";
-  if (schedule) {
-    return { schedule: schedule.id, schedule_details: { phases: schedulePhases(sub, schedule, checked), proration_behavior } };
-  }
-  return {
-    subscription: sub.id,
-    subscription_details: {
-      items: previewItemsFor(checked),
-      proration_behavior,
-      ...(proration_behavior === "always_invoice" ? { proration_date: prorationDate } : {}),
-    },
-  };
 }
 
 export async function previewPlanChange(
@@ -99,16 +101,18 @@ export async function previewPlanChange(
 ): Promise<PlanChangePreview> {
   const loaded = await load(ctx, deps);
   const checked = checkChange(ctx, loaded.sub, change);
+  checkAgainstSchedule(loaded, checked);
   const now = deps.now();
   const previewedAt = seconds(now);
-  const timing = timingOf(change.kind);
-  const trialing = loaded.sub.status === "trialing";
+  const trialing = isTrialing(loaded.sub);
+  const timing = timingOf(change.kind, trialing);
 
   const params = previewParams(loaded, checked, previewedAt);
   const invoice = params ? await deps.stripe.previewInvoice(params) : null;
   const extraCredits =
     invoice && timing === "now" && !trialing
-      ? planInvoiceGrants(invoice, invoice.lines.data, deps.plansByProduct, now).reduce((sum, g) => sum + g.amount, 0)
+      ? planInvoiceGrants(invoice, invoice.lines.data, deps.plansByProduct, now, prorationPeriodStarts(loaded.sub.items.data, invoice.lines.data))
+          .reduce((sum, g) => sum + g.amount, 0)
       : 0;
   const at = effectiveAt(timing, loaded.sub, previewedAt);
 
@@ -122,6 +126,11 @@ export async function previewPlanChange(
       amountCents: invoice?.amount_due ?? 0,
       extraCredits,
       effectiveAt: timing === "now" && trialing ? periodEnd(loaded.sub) : at,
+      timeZone: deps.timeZone,
+      scheduled: scheduledNotes(ctx, loaded, change.kind),
+      credits: deps.credits,
+      firstBillCents: trialing && checked.business ? trialBillCents(ctx, loaded.sub, loaded.schedule, checked) : null,
+      pastDue: ctx.agencyStatus === "past_due" || loaded.sub.status === "past_due" || loaded.sub.status === "unpaid",
     }),
     timing,
     effectiveAt: new Date(at * 1000).toISOString(),
@@ -144,15 +153,30 @@ export async function applyPlanChange(
   const loaded = await load(ctx, deps);
   const { sub, schedule } = loaded;
   const checked = checkChange(ctx, sub, change);
+  checkAgainstSchedule(loaded, checked);
   const key = idempotencyKey(ctx.agencyId, change, previewedAt);
-  const timing = timingOf(change.kind);
+  const timing = timingOf(change.kind, isTrialing(sub));
+  const scheduled = scheduledNotes(ctx, loaded, change.kind);
 
   if (change.kind === "cancel" || change.kind === "keep") {
-    // A cancel replaces any pending downgrade or removal, so the schedule goes first.
-    if (change.kind === "cancel" && schedule) await deps.stripe.releaseSchedule(schedule.id, `${key}:release`);
-    await deps.stripe.updateSubscription(sub.id, { cancel_at_period_end: change.kind === "cancel" }, `${key}:subscription`);
+    // BUG-124: with a change scheduled, the schedule ends the plan and keeps the change for "Keep my plan", which
+    // puts it back. Stripe refuses cancel_at_period_end while a schedule controls the subscription.
+    if (schedule && !sub.cancel_at_period_end) {
+      const params = change.kind === "cancel" ? cancelScheduleParams(sub, schedule, ctx.plans) : keepScheduleParams(sub, schedule);
+      await deps.stripe.updateSchedule(schedule.id, params, `${key}:schedule`);
+    } else {
+      await deps.stripe.updateSubscription(sub.id, { cancel_at_period_end: change.kind === "cancel" }, `${key}:subscription`);
+    }
+  } else if (change.kind === "keepBusiness") {
+    // Checked above: a schedule with something pending for this business. Nothing else pending means no schedule needed.
+    const phases = phasesWithoutPending(sub, schedule!, change.businessId, checked.business!.name);
+    if (phases) await deps.stripe.updateSchedule(schedule!.id, { phases }, `${key}:schedule`);
+    else await deps.stripe.releaseSchedule(schedule!.id, `${key}:release`);
+  } else if (schedule && timing === "now" && sub.status !== "trialing") {
+    // A schedule update can't refuse a declined card, so a paid change made now goes on the subscription itself.
+    await changeNowAroundSchedule({ stripe: deps.stripe, ctx, sub, schedule, checked, previewedAt, key, onScheduleLost: deps.onScheduleLost });
   } else if (schedule) {
-    await deps.stripe.updateSchedule(
+    const updated = await deps.stripe.updateSchedule(
       schedule.id,
       {
         phases: schedulePhases(sub, schedule, checked),
@@ -160,6 +184,9 @@ export async function applyPlanChange(
       },
       `${key}:schedule`,
     );
+    // An add or upgrade made now got a price of its own in each phase; one price keeps a plan change from showing.
+    const onePrice = timing === "now" && checked.business ? phasesOnOnePrice(sub, updated, checked.business.id) : null;
+    if (onePrice) await deps.stripe.updateSchedule(schedule.id, { phases: onePrice, proration_behavior: "none" }, `${key}:one-price`);
   } else if (timing === "now") {
     await deps.stripe.updateSubscription(
       sub.id,
@@ -190,8 +217,11 @@ export async function applyPlanChange(
       change,
       businessName: checked.business?.name ?? null,
       planName: checked.plan?.name ?? null,
-      effectiveAt: effectiveAt(timing, sub, nowSeconds),
+      // Like the preview: during a trial, a change made now is first paid for at the trial end (B2).
+      effectiveAt: timing === "now" && sub.status === "trialing" ? periodEnd(sub) : effectiveAt(timing, sub, nowSeconds),
       trialing: sub.status === "trialing",
+      timeZone: deps.timeZone,
+      scheduled,
     }),
   };
 }

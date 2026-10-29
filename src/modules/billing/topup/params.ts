@@ -20,11 +20,12 @@ export type TopupSessionInput = {
 
 /**
  * A one-time payment for one pack. The metadata follows the webhook contract in README.md: the webhook
- * grants the pack's credits on checkout.session.completed, keyed by the session ID. No payment_method_types,
+ * grants metadata.credits on checkout.session.completed, keyed by the session ID. No payment_method_types,
  * so Stripe picks the payment methods.
  */
 export function topupSessionParams(input: TopupSessionInput): Stripe.Checkout.SessionCreateParams {
-  const metadata = { agency_id: input.agencyId, kind: "topup", topup_pack_id: input.pack.id };
+  // credits: what this session sells, read back by the webhook, so a pack changed after checkout started changes nothing.
+  const metadata = { agency_id: input.agencyId, kind: "topup", topup_pack_id: input.pack.id, credits: String(input.pack.credits) };
   return {
     mode: "payment",
     ui_mode: "elements",
@@ -51,7 +52,7 @@ export type TopupCheck = { ok: true; pack: TopupSessionInput["pack"] } | { ok: f
 
 /**
  * Whether this agency may buy this pack now. Top-ups are only spendable with an active plan or trial
- * (canSpendTopUps), so they are not sold without one either.
+ * (canSpendTopUps), so they are not sold without one either, nor before setup has started the trial (canBuyTopUps).
  */
 export function checkTopupPurchase(packs: TopupPackPrice[], packId: string, spend: Entitlement): TopupCheck {
   if (!spend.allowed) return { ok: false, status: 403, error: spend.reason };

@@ -10,6 +10,8 @@ export async function isAgencyBusiness(agencyId: string, businessId: string): Pr
     .select("id")
     .eq("id", businessId)
     .eq("agency_id", agencyId)
+    // A deleted business's first scan is gone for its owner too, like everywhere a signed-in user reads.
+    .is("deleted_at", null)
     .maybeSingle();
   if (error) throw new Error(`First scan: could not read the business: ${error.message}`);
   return data !== null;

@@ -1,8 +1,8 @@
 import "server-only";
-// Claude Sonnet 5 writes the reasons with structured outputs (MVP_SPEC 7.2, D-30). The API key is
-// passed in; only a dal.ts reads secrets. Tests pass a fake fetch, so no real call is made.
-import Anthropic from "@anthropic-ai/sdk";
-import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
+// Claude Sonnet 5 writes the reasons with structured outputs (MVP_SPEC 7.2, D-30); OpenAI answers the same prompt
+// and schema when Claude fails (D-84). Clients are passed in; only a dal.ts reads secrets. Tests pass a fake fetch,
+// so no real call is made.
+import { AiUnavailableError, runJob, type AiClients } from "@/modules/ai";
 import type { WriteExplanation } from "./explain";
 import type { ExplainInput } from "./facts";
 import {
@@ -11,8 +11,7 @@ import {
   EXPLAIN_SYSTEM,
   explainOutput,
   explainUserMessage,
-  type ExplainOutput,
-} from "./prompts/explain.v1";
+} from "./prompts/explain.v2";
 
 const TIMEOUT_MS = 120_000;
 
@@ -28,41 +27,29 @@ export class ExplainError extends Error {
 
 export function explainRequest(input: ExplainInput) {
   return {
+    task: "why_competitors_win",
     model: EXPLAIN_MODEL,
-    max_tokens: EXPLAIN_MAX_TOKENS,
+    maxTokens: EXPLAIN_MAX_TOKENS,
     system: EXPLAIN_SYSTEM,
-    messages: [{ role: "user" as const, content: explainUserMessage(input) }],
-    output_config: { format: zodOutputFormat(explainOutput) },
+    user: explainUserMessage(input),
+    schema: explainOutput,
+    timeoutMs: TIMEOUT_MS,
   };
 }
 
-export function createExplanationWriter(apiKey: string, deps: { fetch?: typeof fetch } = {}): WriteExplanation {
-  const client = new Anthropic({ apiKey, fetch: deps.fetch, maxRetries: 1, timeout: TIMEOUT_MS });
+export function createExplanationWriter(ai: AiClients): WriteExplanation {
   return async (input) => {
-    let message: Anthropic.Message;
     try {
-      message = await client.messages.create(explainRequest(input));
+      const result = await runJob(ai, explainRequest(input));
+      return {
+        output: result.output,
+        model: result.model,
+        usage: { inputTokens: result.usage.inputTokens, outputTokens: result.usage.outputTokens },
+        writer: { provider: result.provider, fellBack: result.fellBack, primaryError: result.primaryError },
+      };
     } catch (err) {
-      throw new ExplainError("Claude request failed", false, err);
+      if (err instanceof AiUnavailableError) throw new ExplainError(err.message, err.modelFault, err);
+      throw new ExplainError("Explanation request failed", false, err);
     }
-    return {
-      output: toOutput(message),
-      model: message.model,
-      usage: { inputTokens: message.usage.input_tokens, outputTokens: message.usage.output_tokens },
-    };
   };
-}
-
-export function toOutput(message: Anthropic.Message): ExplainOutput {
-  if (message.stop_reason === "refusal") throw new ExplainError("Claude declined", true);
-  if (message.stop_reason === "max_tokens") throw new ExplainError("Claude ran out of output tokens", true);
-  const text = message.content
-    .filter((b): b is Anthropic.TextBlock => b.type === "text")
-    .map((b) => b.text)
-    .join("");
-  try {
-    return explainOutput.parse(JSON.parse(text));
-  } catch (err) {
-    throw new ExplainError("Claude returned JSON that does not match the schema", true, err);
-  }
 }

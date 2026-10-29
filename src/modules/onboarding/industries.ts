@@ -27,3 +27,27 @@ export function industryFromPlacesType(primaryType: string | null | undefined): 
   if (primaryType.endsWith("_restaurant")) return "restaurant";
   return null;
 }
+
+/**
+ * Every one of our industries any of the listing's types maps to. A Tim Hortons is primaryType restaurant, but its
+ * types also say cafe and coffee_shop, so it is a restaurant and a coffee shop as far as Google is concerned.
+ */
+export function industriesFromPlacesTypes(types: readonly string[]): Set<Industry> {
+  return new Set(types.map((t) => industryFromPlacesType(t)).filter((i): i is Industry => i !== null));
+}
+
+// Places types too broad to say what a business is.
+const BROAD_TYPES = new Set(["establishment", "point_of_interest", "store", "food", "service", "health", "finance", "premise"]);
+const TYPE_LABELS: Record<string, string> = { book_store: "Bookstore", clothing_store: "Clothing store", shoe_store: "Shoe store" };
+
+/**
+ * What Google calls a business whose type is none of our industries: "book_store" is "Bookstore". Null for a broad
+ * type ("store") or one we map to an industry. Two bookstores then both come in as "Other: Bookstore", instead of
+ * one as a coffee shop (its cafe, from its website) and one as "Other" with no type (BUG-123).
+ */
+export function placesTypeLabel(primaryType: string | null | undefined): string | null {
+  if (!primaryType || BROAD_TYPES.has(primaryType) || industryFromPlacesType(primaryType)) return null;
+  const label = TYPE_LABELS[primaryType] ?? primaryType.replace(/_/g, " ");
+  return label.charAt(0).toUpperCase() + label.slice(1);
+}
+

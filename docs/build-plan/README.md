@@ -20,6 +20,7 @@ Live progress: [STATUS.md](./STATUS.md)
 | 8 | Admin | [08-admin.md](./08-admin.md) | B-64 to B-69 | 9.5 days |
 | 9 | Marketing site | [09-marketing.md](./09-marketing.md) | B-70 to B-74 | 9 days |
 | 10 | Launch readiness | [10-launch.md](./10-launch.md) | B-75 to B-84 | 13.5 days |
+| 11 | Why you are behind (added 2026-10-26) | [11-why-behind.md](./11-why-behind.md) | B-85 to B-93 | about 12 days |
 
 **Total: 80 tasks, about 129 developer days.** One developer: about 6 months. Two developers working in parallel (see below): about 3 to 3.5 months. Estimates use S = half a day, M = 1 to 2 days, L = 3 to 5 days, and include tests. Gaps in the numbering (B-19, B-39, B-47, B-63) are spare IDs for tasks added later.
 

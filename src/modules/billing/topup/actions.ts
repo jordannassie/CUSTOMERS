@@ -4,13 +4,14 @@ import type Stripe from "stripe";
 import { z } from "zod";
 import { authFailure, requireAgency, type ActionResult } from "@/modules/auth";
 import { getBalance } from "@/modules/credits";
-import { canSpendTopUps } from "@/modules/entitlements";
+import { canBuyTopUps } from "@/modules/entitlements";
 import { BUY_CREDITS_HREF } from "@/modules/workspace";
 import { listTopupPacks } from "../dal";
 import { appOrigin } from "../origin";
 import { liveTopupClient, topupFixtures } from "./client";
 import { agencyCustomerId, topupGrantFor } from "./dal";
 import { buyTopUp as buyTopUpWith, completeFixtureTopUp as completeFixture } from "./service";
+import { recoverTopUp } from "../checkout-recovery";
 import { createWebhookStore } from "../webhooks/dal";
 import { sendBillingEmail } from "../webhooks/emails";
 import { dispatchEvent } from "../webhooks/handlers";
@@ -33,7 +34,7 @@ export async function buyTopUp(input: unknown): Promise<ActionResult<{ sessionId
   if (!parsed.success) return badInput;
 
   return buyTopUpWith(
-    { client: liveTopupClient(), loadPacks: listTopupPacks, canSpendTopUps, customerId: agencyCustomerId },
+    { client: liveTopupClient(), loadPacks: listTopupPacks, canBuyTopUps, customerId: agencyCustomerId },
     {
       agencyId: session.agency.id,
       email: session.user.email,
@@ -56,7 +57,10 @@ export async function getTopUpStatus(input: unknown): Promise<ActionResult<TopUp
   const parsed = sessionInput.safeParse(input);
   if (!parsed.success) return badInput;
 
-  const [credited, balance] = await Promise.all([topupGrantFor(agencyId, parsed.data.sessionId), getBalance(agencyId)]);
+  let credited = await topupGrantFor(agencyId, parsed.data.sessionId);
+  // The webhook is late or missed: the paid session is read from Stripe and granted the same way (BUG-105).
+  if (!credited && (await recoverTopUp(agencyId, parsed.data.sessionId))) credited = await topupGrantFor(agencyId, parsed.data.sessionId);
+  const balance = await getBalance(agencyId);
   return { ok: true, data: { credited, balance: balance.balance ?? 0 } };
 }
 
@@ -77,6 +81,11 @@ export async function completeFixtureTopUp(input: unknown): Promise<ActionResult
       retrieveSubscription: () => Promise.reject(new Error("not used for top-ups")),
       listSubscriptionItems: () => Promise.reject(new Error("not used for top-ups")),
       listInvoiceLines: () => Promise.reject(new Error("not used for top-ups")),
+      retrieveInvoice: () => Promise.reject(new Error("not used for top-ups")),
+      checkoutBusinessIds: () => Promise.reject(new Error("not used for top-ups")),
+      tagItem: () => Promise.reject(new Error("not used for top-ups")),
+      checkoutSessionForPaymentIntent: () => Promise.reject(new Error("not used for top-ups")),
+      retrieveSchedule: () => Promise.reject(new Error("not used for top-ups")),
     },
     sendEmail: sendBillingEmail,
     now: () => new Date(),

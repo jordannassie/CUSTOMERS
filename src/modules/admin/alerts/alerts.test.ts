@@ -12,7 +12,7 @@ vi.mock("@/lib/env", async (importOriginal) => {
   return { env: new Proxy(env, { get: (t, key) => (key === "ADMIN_EMAILS" ? session.adminEmails : Reflect.get(t, key)) }) };
 });
 
-const { createNotifyDeps } = await import("./dal");
+const { createNotifyDeps, syncServiceAlerts } = await import("./dal");
 const { handleAlertsRequest } = await import("./cron");
 const { notifyAdmins, EMAIL_EVERY_MS } = await import("./service");
 const { sendEmail } = await import("@/modules/email");
@@ -122,6 +122,19 @@ describe("check_system_alerts (B-69, MVP_SPEC 22)", () => {
     expect(alert.message).toMatch(/Firecrawl \(\d+\)/);
   });
 
+  it("provider error spike: counts the repeats one row holds (migration 058)", async () => {
+    await resolveOpen("provider_errors");
+    for (let i = 0; i < 5; i++) {
+      await service.rpc("record_provider_error", { p_provider: "google_places", p_kind: "rate_limit", p_message: "Places returned 429" }).throwOnError();
+    }
+    const { data } = await service.from("provider_errors").select("occurrences").eq("provider", "google_places").eq("kind", "rate_limit").gt("created_at", new Date(Date.now() - 3_600_000).toISOString()).throwOnError();
+    // One row for the five failures this hour, not five.
+    expect(data).toHaveLength(1);
+    expect(data[0].occurrences).toBeGreaterThanOrEqual(5);
+    const alert = await expectFiresOnce("provider_errors");
+    expect(alert.message).toMatch(/Google Places \(\d+\)/);
+  });
+
   it("negative credit balance: fires once", async () => {
     await resolveOpen("negative_balances");
     const overdrawn = await createAgencyWithBusiness("Alerts Overdrawn");
@@ -211,5 +224,26 @@ describe("alert emails (B-69)", () => {
   it("the cron endpoint refuses a call without the worker secret", async () => {
     const res = await handleAlertsRequest(new Request("http://localhost/api/alerts/check", { method: "POST" }));
     expect(res.status).toBe(401);
+  });
+});
+
+describe("Settings service checks (syncServiceAlerts)", () => {
+  const kind = "service_check:vitest_probe";
+  const probe = (state: string) => ({ id: "vitest_probe", name: "Vitest probe", group: "ai", state, detail: "The key was rejected (401)." });
+
+  it("opens one alert while the check fails and closes it once the check passes", async () => {
+    await clearKind(kind);
+    expect(await syncServiceAlerts([probe("error")])).toBe(1);
+    expect(await syncServiceAlerts([probe("error")])).toBe(1);
+    expect(await openOf(kind)).toEqual([
+      expect.objectContaining({ severity: "critical", message: "Vitest probe is not working. The key was rejected (401). Found by the Settings check." }),
+    ]);
+
+    // Unknown (a timeout) leaves it open; a passing check closes it.
+    await syncServiceAlerts([probe("unknown")]);
+    expect(await openOf(kind)).toHaveLength(1);
+    expect(await syncServiceAlerts([probe("ok")])).toBe(0);
+    expect(await openOf(kind)).toEqual([]);
+    await clearKind(kind);
   });
 });

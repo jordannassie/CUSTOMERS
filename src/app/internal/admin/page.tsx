@@ -2,14 +2,19 @@ import { Suspense } from "react";
 import { ArrowDown, ArrowUp } from "lucide-react";
 import type { MonthChange } from "@/modules/admin";
 import { Skeleton } from "@/components/ui/skeleton";
-import { loadOverview, resolveAlert } from "@/modules/admin";
+import AdminPageHeader from "./_components/page-header";
+import { ReportSkeleton } from "./_components/skeletons";
+import { StatGrid, StatTile } from "./_components/stat";
+import { alertWording, isServiceCheckKind, loadLibraryGaps, loadOverview, resolveAlert } from "@/modules/admin";
+import { requestNow } from "@/lib/request-now";
 import { requireAdmin } from "@/modules/auth";
-import { formatDate } from "./businesses/_components/scan-parts";
+import { formatDate } from "./_components/format";
 import { credits } from "./agencies/_components/agency-parts";
 import Sparkline from "./_overview/sparkline";
 import MoneyPanel from "./_overview/money-panel";
 import { FailedScans, RecentSignups } from "./_overview/lists";
 import OpenAlerts from "./_overview/open-alerts";
+import LibraryGaps from "./_overview/library-gaps";
 
 // The admin layout's title template only reaches pages below it, so its own page names the pattern itself.
 export const metadata = { title: { absolute: "Overview | Admin" } };
@@ -27,41 +32,38 @@ export default async function AdminOverviewPage() {
 }
 
 async function Overview() {
-  const o = await loadOverview();
-  const alerts = o.openAlerts.map((a) => ({ ...a, started: formatDate(a.createdAt, true), lastSeen: formatDate(a.lastSeenAt, true) }));
+  const [o, gaps] = await Promise.all([loadOverview(), loadLibraryGaps()]);
+  const now = requestNow();
+  const alerts = o.openAlerts.map((a) => ({
+    ...a,
+    ...alertWording(a, now),
+    started: formatDate(a.createdAt, true),
+    lastSeen: formatDate(a.lastSeenAt, true),
+    serviceCheck: isServiceCheckKind(a.kind),
+  }));
   return (
     <>
-      <header>
-        <h1 className="text-[24px] font-semibold tracking-[-0.02em]">Overview</h1>
-        <p className="mt-1 text-[14px] text-muted-foreground">
-          This month so far, since {formatDate(o.monthStart)}. Test agencies are not counted.
-        </p>
-      </header>
+      <AdminPageHeader title="Overview" subtitle={`This month so far, since ${formatDate(o.monthStart)}. Test agencies are not counted.`} />
 
       {/* Problems come first while there are any; an empty list sits at the bottom. */}
       {alerts.length > 0 && <OpenAlerts rows={alerts} resolve={resolveAlert} />}
 
-      <dl className="grid grid-cols-2 gap-px overflow-hidden rounded-md border border-border bg-border lg:grid-cols-4">
-        <Stat label="Agencies" value={o.agencies} note={<Change change={o.vsLastMonth.agencies} />} />
-        <Stat
+      <StatGrid>
+        <StatTile label="Agencies" value={credits(o.agencies)} note={<Change change={o.vsLastMonth.agencies} />} />
+        <StatTile
           label="Active trials"
-          value={o.activeTrials}
+          value={credits(o.activeTrials)}
           note={`${o.vsLastMonth.trialsStarted.thisMonth} started this month, ${o.vsLastMonth.trialsStarted.lastMonth} by this day last month`}
         />
-        <Stat label="Paying businesses" value={o.payingBusinesses} />
-        <Stat
-          label="Credits used"
-          value={o.creditsUsed}
-          note={<Change change={o.vsLastMonth.credits} />}
-          spark={
-            <Sparkline
-              points={o.spark.map((d) => ({ day: d.day, value: d.credits }))}
-              label="Credits used per day"
-              format={(n) => `${credits(n)} credits`}
-            />
-          }
-        />
-      </dl>
+        <StatTile label="Paying businesses" value={credits(o.payingBusinesses)} />
+        <StatTile label="Credits used" value={credits(o.creditsUsed)} note={<Change change={o.vsLastMonth.credits} />}>
+          <Sparkline
+            points={o.spark.map((d) => ({ day: d.day, value: d.credits }))}
+            label="Credits used per day"
+            format={(n) => `${credits(n)} credits`}
+          />
+        </StatTile>
+      </StatGrid>
 
       <MoneyPanel
         revenue={o.revenue}
@@ -76,21 +78,10 @@ async function Overview() {
         <FailedScans rows={o.recentFailedScans} />
       </div>
 
+      <LibraryGaps loaded={gaps.loaded} rows={gaps.gaps} />
+
       {alerts.length === 0 && <OpenAlerts rows={alerts} resolve={resolveAlert} />}
     </>
-  );
-}
-
-function Stat({ label, value, note, spark }: { label: string; value: number; note?: React.ReactNode; spark?: React.ReactNode }) {
-  return (
-    <div className="flex flex-col gap-1 bg-surface px-4 py-4">
-      <dt className="text-[13px] text-muted-foreground">{label}</dt>
-      <dd className="flex flex-col gap-1.5">
-        <span className="text-[32px] leading-none font-semibold tracking-[-0.02em] tabular-nums">{credits(value)}</span>
-        {note && <span className="text-[13px] text-text-hint tabular-nums">{note}</span>}
-        {spark}
-      </dd>
-    </div>
   );
 }
 
@@ -107,14 +98,12 @@ export function Change({ change }: { change: MonthChange }) {
 
 function OverviewSkeleton() {
   return (
-    <div className="flex flex-col gap-8" aria-busy aria-label="Loading overview">
-      <Skeleton className="h-12 w-80" />
-      <Skeleton className="h-24 rounded-md" />
-      <Skeleton className="h-40 rounded-md" />
-      <div className="grid gap-8 lg:grid-cols-2">
-        <Skeleton className="h-64 rounded-md" />
-        <Skeleton className="h-64 rounded-md" />
+    <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-2">
+        <Skeleton className="h-8 w-48" />
+        <Skeleton className="h-4 w-full max-w-md" />
       </div>
+      <ReportSkeleton label="Loading overview" />
     </div>
   );
 }
