@@ -43,7 +43,7 @@ export function fixFor(site: Pick<Site, "host" | "kind">, place: string | null):
   }
 }
 
-function titleFor(site: Pick<Site, "host" | "kind">): string {
+export function titleFor(site: Pick<Site, "host" | "kind">): string {
   if (isGoogle(site.host)) return "Complete your Google Business Profile";
   switch (site.kind) {
     case "delivery":

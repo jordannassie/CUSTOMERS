@@ -130,6 +130,7 @@ export async function previewPlanChange(
       scheduled: scheduledNotes(ctx, loaded, change.kind),
       credits: deps.credits,
       firstBillCents: trialing && checked.business ? trialBillCents(ctx, loaded.sub, loaded.schedule, checked) : null,
+      pastDue: ctx.agencyStatus === "past_due" || loaded.sub.status === "past_due" || loaded.sub.status === "unpaid",
     }),
     timing,
     effectiveAt: new Date(at * 1000).toISOString(),

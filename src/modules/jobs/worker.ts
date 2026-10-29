@@ -1,7 +1,7 @@
 import "server-only";
 // Scan job worker (B-27, MVP_SPEC 6.3, D-42): claims queued jobs, runs them in parallel, and marks each
 // done, queued again with backoff, or failed. The host entry point only checks the secret and calls this.
-import { explainAfterScan } from "@/modules/insights/server";
+import { claimExplanation, explainAfterScan, runsToSweep, unexplainedRunOfJob } from "@/modules/insights/server";
 import { refreshStaleSiteFacts } from "@/modules/onboarding/server";
 import { ALREADY_FINISHED, isMissingSample, NO_SAMPLE_ANSWERS, runScan, type ScanOutcome } from "@/modules/scanning";
 import { claimScanJobs, finishJob, isWorkerSecret, workerTimeBudgetMs, type ClaimedJob, type JobUpdate } from "./dal";
@@ -11,6 +11,11 @@ export const MAX_ATTEMPTS = 3;
 const RETRY_STEP_MS = 5 * 60 * 1000;
 // Stop claiming once 90% of the budget is used; the budget already sits well under the host's hard limit.
 const CLAIM_CUTOFF = 0.9;
+// An explanation takes up to 2 minutes, its backup as long again (insights EXPLAIN_WAIT_MS). With less of the budget
+// left it is not started: the host could stop it before the fixes are saved, so the sweep explains the run later.
+export const EXPLAIN_RESERVE_MS = 4 * 60_000;
+// Runs the sweep explains per worker run at most, so a backlog never crowds out the scans.
+export const SWEEP_LIMIT = 3;
 
 export type WorkerDeps = {
   claim: (limit: number) => Promise<ClaimedJob[]>;
@@ -19,6 +24,10 @@ export type WorkerDeps = {
   now: () => Date;
   /** "Why competitors win" after a finished scan (B-51). Its failure never changes the job. */
   explain?: (runId: string) => Promise<unknown>;
+  /** The finished run of a job an earlier attempt completed, when its explanation never ran; null otherwise. */
+  unexplainedRun?: (jobId: string) => Promise<string | null>;
+  /** Recently finished runs left without fixes, and the claim that keeps two workers from explaining one twice. */
+  sweep?: { find: (now: Date, limit: number) => Promise<string[]>; claim: (runId: string, now: Date) => Promise<boolean> };
 };
 
 export type WorkerSummary = {
@@ -31,6 +40,10 @@ export type WorkerSummary = {
   /** Jobs that another worker took over (reset as stuck) before this one finished them. */
   lost: number;
   stoppedForTime: boolean;
+  /** Explanations not started for lack of time; the sweep picks them up later. */
+  explainsDeferred: number;
+  /** Earlier runs without fixes that this run explained. */
+  swept: number;
 };
 
 const liveDeps: WorkerDeps = {
@@ -43,6 +56,8 @@ const liveDeps: WorkerDeps = {
     await refreshStaleSiteFacts(runId).catch((err) => console.error(`scan worker: site refresh for run ${runId} failed: ${errorText(err)}`));
     return explainAfterScan(runId);
   },
+  unexplainedRun: unexplainedRunOfJob,
+  sweep: { find: runsToSweep, claim: claimExplanation },
 };
 
 /** How a job ends after one attempt. A thrown error is treated like a scan where every check failed. */
@@ -71,7 +86,8 @@ export function jobUpdateFor(outcome: ScanOutcome | { status: "error"; error: st
 
 export async function runWorker(budgetMs: number, deps: WorkerDeps = liveDeps): Promise<WorkerSummary> {
   const started = deps.now().getTime();
-  const summary: WorkerSummary = { claimed: 0, done: 0, retrying: 0, failed: 0, skipped: 0, lost: 0, stoppedForTime: false };
+  const remaining = () => budgetMs - (deps.now().getTime() - started);
+  const summary: WorkerSummary = { claimed: 0, done: 0, retrying: 0, failed: 0, skipped: 0, lost: 0, stoppedForTime: false, explainsDeferred: 0, swept: 0 };
 
   while (true) {
     if (deps.now().getTime() - started >= budgetMs * CLAIM_CUTOFF) {
@@ -81,13 +97,19 @@ export async function runWorker(budgetMs: number, deps: WorkerDeps = liveDeps): 
     const jobs = await deps.claim(CLAIM_LIMIT);
     if (jobs.length === 0) break;
     summary.claimed += jobs.length;
-    const results = await Promise.all(jobs.map((job) => runJob(job, deps)));
+    const results = await Promise.all(jobs.map((job) => runJob(job, deps, remaining, summary)));
     for (const result of results) summary[result]++;
   }
+  await sweepUnexplained(deps, remaining, summary);
   return summary;
 }
 
-async function runJob(job: ClaimedJob, deps: WorkerDeps): Promise<"done" | "retrying" | "failed" | "skipped" | "lost"> {
+async function runJob(
+  job: ClaimedJob,
+  deps: WorkerDeps,
+  remaining: () => number,
+  summary: WorkerSummary,
+): Promise<"done" | "retrying" | "failed" | "skipped" | "lost"> {
   let outcome: ScanOutcome | { status: "error"; error: string };
   try {
     outcome = await deps.run(job.id);
@@ -102,14 +124,66 @@ async function runJob(job: ClaimedJob, deps: WorkerDeps): Promise<"done" | "retr
     console.error(`scan worker: could not save job ${job.id}: ${errorText(err)}`);
     return "lost";
   }
-  if (outcome.status === "done" && deps.explain) {
-    try {
-      await deps.explain(outcome.runId);
-    } catch (err) {
-      console.error(`scan worker: could not explain run ${outcome.runId}: ${errorText(err)}`);
+  const runId = await runToExplain(job, outcome, deps);
+  if (runId && deps.explain) {
+    if (remaining() < EXPLAIN_RESERVE_MS) {
+      // Left for the sweep: started now, the host could stop it before the fixes are saved.
+      summary.explainsDeferred++;
+      console.warn(`scan worker: too little time left to explain run ${runId}; the sweep explains it later`);
+    } else {
+      await explainSafely(runId, deps.explain);
     }
   }
   return update.status === "queued" ? "retrying" : update.status;
+}
+
+/** The run to explain after a job: the scan just finished, or one an earlier attempt finished before it died. */
+async function runToExplain(job: ClaimedJob, outcome: ScanOutcome | { status: "error"; error: string }, deps: WorkerDeps): Promise<string | null> {
+  if (outcome.status === "done") return outcome.runId;
+  if (outcome.status !== "skipped" || outcome.reason !== ALREADY_FINISHED || !deps.unexplainedRun) return null;
+  try {
+    return await deps.unexplainedRun(job.id);
+  } catch (err) {
+    console.error(`scan worker: could not look up the run of job ${job.id}: ${errorText(err)}`);
+    return null;
+  }
+}
+
+async function explainSafely(runId: string, explain: (runId: string) => Promise<unknown>): Promise<void> {
+  try {
+    await explain(runId);
+  } catch (err) {
+    console.error(`scan worker: could not explain run ${runId}: ${errorText(err)}`);
+  }
+}
+
+/**
+ * Explains a few recently finished runs that never got their fixes (deferred above, or the host stopped the worker
+ * part way), while the budget still has room for one. Claiming sets explained_at first, so a sweep stopped part way
+ * loses that run's fixes; it only starts with EXPLAIN_RESERVE_MS left, which makes that rare.
+ */
+async function sweepUnexplained(deps: WorkerDeps, remaining: () => number, summary: WorkerSummary): Promise<void> {
+  const { sweep, explain } = deps;
+  if (!sweep || !explain || remaining() < EXPLAIN_RESERVE_MS) return;
+  let runIds: string[];
+  try {
+    runIds = await sweep.find(deps.now(), SWEEP_LIMIT);
+  } catch (err) {
+    console.error(`scan worker: could not look for runs without fixes: ${errorText(err)}`);
+    return;
+  }
+  await Promise.all(
+    runIds.map(async (runId) => {
+      if (remaining() < EXPLAIN_RESERVE_MS) return;
+      const mine = await sweep.claim(runId, deps.now()).catch((err) => {
+        console.error(`scan worker: could not take run ${runId} to explain: ${errorText(err)}`);
+        return false;
+      });
+      if (!mine) return;
+      summary.swept++;
+      await explainSafely(runId, explain);
+    }),
+  );
 }
 
 /**

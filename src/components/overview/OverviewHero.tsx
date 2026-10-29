@@ -23,6 +23,7 @@ export function OverviewHero({
   sample,
   ownQuestions,
   ownChain,
+  reason = null,
 }: {
   score: Score;
   compete: OverviewCompete | null;
@@ -30,9 +31,14 @@ export function OverviewHero({
   sample: boolean;
   ownQuestions: string | null;
   ownChain: string | null;
+  /** The same likely reason the report and weekly email give (competitors likelyReason). */
+  reason?: string | null;
 }) {
   const period = compete?.period ?? null;
-  const moved = period && period.prevAnswers > 0 ? period.named - period.prevNamed : null;
+  // Counted like the report (the score's answers), falling back to the Sources count.
+  const cited = compete?.ownSite ? compete.ownSite.cited : sources ? sources.ownSite.answers : null;
+  // Rates, not counts: a range with more answers is not a gain by itself.
+  const moved = compete?.periodChange ?? null;
   return (
     <section className="grid overflow-hidden rounded-md border border-border bg-surface lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]" data-testid="overview-hero">
       <div className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:gap-6 sm:p-6" data-testid="score-summary">
@@ -61,6 +67,11 @@ export function OverviewHero({
           <p className="max-w-[36ch] text-lg leading-snug font-semibold tracking-[-0.02em]" data-testid="score-sentence">
             {score.sentence}
           </p>
+          {reason && (
+            <p className="max-w-prose text-sm text-muted-foreground" data-testid="likely-reason">
+              {reason}
+            </p>
+          )}
           {score.coverage && (
             <p className="text-sm text-muted-foreground" data-testid="score-coverage">
               {score.coverage}
@@ -84,21 +95,19 @@ export function OverviewHero({
       <dl className="grid divide-y divide-border border-t border-border bg-muted/30 lg:border-t-0 lg:border-l" data-testid="overview-kpis">
         <Stat
           icon={PieChart}
-          label="Share of AI picks"
-          value={compete?.share ? `${compete.share.percent}%` : "None"}
-          sub={compete?.share ? `#${compete.share.rank} of ${compete.share.of} tracked businesses` : "Track competitors to compare"}
+          label="Share of AI picks, last 30 days"
+          value={compete?.share ? `${compete.share.percent}%` : "Not yet"}
+          sub={compete?.share ? placeText(compete.share) : "Track competitors to compare"}
         />
         <Stat
           icon={MessageSquareText}
           label={period ? `Answers that named you, last ${period.days} days` : "Answers that named you"}
           value={period ? `${period.named} of ${period.answers}` : "None"}
           sub={
-            moved === null ? undefined : moved === 0 ? (
-              `Same as the ${period!.days} days before`
+            moved === null ? undefined : moved.direction === "same" ? (
+              moved.text
             ) : (
-              <span className={moved > 0 ? "text-good-text" : "text-low-text"}>
-                {moved > 0 ? `${moved} more` : `${-moved} fewer`} than the {period!.days} days before
-              </span>
+              <span className={moved.direction === "up" ? "text-good-text" : "text-low-text"}>{moved.text}</span>
             )
           }
           testId="kpi-named"
@@ -106,14 +115,20 @@ export function OverviewHero({
         <Stat
           icon={Globe}
           label="Your website cited by AI, last 30 days"
-          value={sources ? `${sources.ownSite.answers} ${sources.ownSite.answers === 1 ? "time" : "times"}` : "None"}
-          tone={sources?.ownSite.answers === 0 ? "mid" : undefined}
+          value={compete?.ownSite && !compete.ownSite.hasSite ? "No website saved" : cited === null ? "Not yet" : `${cited} ${cited === 1 ? "time" : "times"}`}
+          tone={cited === 0 ? "mid" : undefined}
           sub={sources ? `Competitor sites: ${sources.competitorSiteTimes} times` : undefined}
           testId="kpi-own-site"
         />
       </dl>
     </section>
   );
+}
+
+/** "#2 by score of 4 businesses"; before any competitor has a score, there is no place to give yet. */
+function placeText(share: NonNullable<OverviewCompete["share"]>): string {
+  if (share.of < 2) return "No competitor has a score yet";
+  return `#${share.rank} by score of ${share.of} businesses`;
 }
 
 function Stat({ icon: Icon, label, value, sub, tone, testId }: { icon: typeof Globe; label: string; value: string; sub?: ReactNode; tone?: "mid"; testId?: string }) {

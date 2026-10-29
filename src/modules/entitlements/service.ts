@@ -15,6 +15,11 @@ export type AgencyFacts = {
    * never came). Nothing is spent until it does, top-ups included (2026-10-17).
    */
   trialOver: boolean;
+  /**
+   * The plan or trial has started: a Stripe subscription is linked, a trial end is saved, the status is past
+   * "trialing", or it is a test agency (D-61, no card step). False while the first business is still being set up.
+   */
+  planStarted: boolean;
 };
 
 export type BusinessFacts = {
@@ -45,11 +50,12 @@ export const REASONS = {
   scanAlreadyQueued: "A scan is already running. You can start another when it finishes.",
   notYourBusiness: "This business is not in your account.",
   pastDue: "Your last payment didn't go through. Update your card to continue.",
-  canceled: "Your plan has ended. Contact us to start it again.",
-  readOnly: "Your plan has ended, so your account is read-only. Contact us to start it again.",
+  canceled: "Your plan has ended. Choose a plan to start it again.",
+  readOnly: "Your plan has ended, so your account is read-only. Choose a plan to start it again.",
   paused: "Your account is paused. Contact support to turn it back on.",
   offPlan: "This business is off your plan.",
   trialOver: "Your free trial has ended. Scans start again once your first payment goes through.",
+  setupUnfinished: "Finish setting up your first business to start your free trial. Then you can buy credits.",
 } as const;
 
 const allow: Entitlement = { allowed: true, reason: REASONS.ok };
@@ -65,6 +71,15 @@ function statusBlock(status: string): Entitlement | null {
 /** Top-up credits are spendable only with an active plan or trial (MVP_SPEC 4.2, D-57, F-20). */
 export function canSpendTopUps(agency: AgencyFacts): Entitlement {
   return statusBlock(agency.status) ?? (agency.trialOver ? deny(REASONS.trialOver) : allow);
+}
+
+/**
+ * Buying a top-up: only once the plan or trial has started. Bought during setup, it made the Stripe customer the
+ * trial checkout then refused (trialAllowed, F-43), so the card step could never start the free trial.
+ */
+export function canBuyTopUps(agency: AgencyFacts): Entitlement {
+  if (!agency.planStarted) return deny(REASONS.setupUnfinished);
+  return canSpendTopUps(agency);
 }
 
 /**
@@ -87,10 +102,12 @@ export function canAddBusiness(agency: AgencyFacts): Entitlement {
 }
 
 /**
- * Finishing setup turns the agency's draft into a set-up business, so on a trial it must still fit the limit. Only the
- * limit: the draft was allowed when it started, and finishing spends nothing (scans have their own check).
+ * Finishing setup turns the agency's draft into a set-up business, so on a trial it must still fit the limit. While a
+ * payment has failed it is refused too: setup cannot add the business to the subscription then (the plan change is
+ * refused), so it would be set up and never billed. Scans have their own check.
  */
 export function canFinishDraft(agency: AgencyFacts): Entitlement {
+  if (agency.status === "past_due" || agency.status === "unpaid") return deny(REASONS.pastDue);
   if (agency.status === "trialing" && agency.businessCount >= TRIAL_MAX_BUSINESSES) {
     return deny(REASONS.trialBusinessLimit);
   }

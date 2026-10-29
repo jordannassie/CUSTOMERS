@@ -3,6 +3,7 @@
 import { refresh } from "next/cache";
 import { AuthError, authFailure, requireAdmin, type ActionResult, type SessionUser } from "@/modules/auth";
 import { accountRestoredEmail, sendSafely } from "@/modules/account";
+import { PERIOD_GRACE_MS } from "@/modules/billing";
 import { adminAdjustCredits, extendTrialGrant } from "@/modules/credits";
 import { logAdminAction } from "../dal";
 import { changeStatus, ownerEmail, readAgencyState, setTestFlag, setTrialEnd, statusBeforeSuspend, type AgencyState } from "./dal";
@@ -71,15 +72,16 @@ export async function extendTrial(input: unknown): Promise<ActionResult<{ trialE
       return { ok: false, status: 502, error: `Stripe did not accept the change, so nothing was saved. Stripe said: ${message}` };
     }
     await setTrialEnd(agencyId, trialEnd);
-    // A3: the trial credits last as long as the trial.
-    const trialGrantId = await extendTrialGrant(agencyId, trialEnd);
+    // A3: the trial credits last as long as the trial, plus the grace every trial grant gets (M6).
+    const grantEnd = new Date(trialEnd.getTime() + PERIOD_GRACE_MS);
+    const trialGrantId = await extendTrialGrant(agencyId, grantEnd);
     await finish("agency.extend_trial", agencyId, {
       reason,
       days,
       previous_trial_end: r.state.trialEndsAt,
       new_trial_end: trialEnd.toISOString(),
       trial_grant_id: trialGrantId,
-      trial_grant_expires_at: trialGrantId ? trialEnd.toISOString() : null,
+      trial_grant_expires_at: trialGrantId ? grantEnd.toISOString() : null,
       stripe_mode: stripe.mode,
     });
     return { ok: true, data: { trialEndsAt: trialEnd.toISOString() } };

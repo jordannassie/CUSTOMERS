@@ -54,4 +54,13 @@ describe("signed-in limits", () => {
     // Each bucket keeps its own count.
     expect(await allow("competitor_lookup", "user-1", 0)).toBe("allowed");
   });
+
+  it("cap branch searches (a paid Places Text Search each) at 20 an hour per user", async () => {
+    expect(LIMITS.branch_search).toEqual({ max: 20, windowMs: 3_600_000 });
+    const allow = createLimiter(memoryStore());
+    for (let i = 0; i < 20; i++) expect(await allow("branch_search", "user-1", 0)).toBe("allowed");
+    expect(await allow("branch_search", "user-1", 0)).toBe("limited");
+    expect(await allow("branch_search", "user-2", 0)).toBe("allowed");
+    expect(await allow("branch_search", "user-1", LIMITS.branch_search.windowMs)).toBe("allowed");
+  });
 });

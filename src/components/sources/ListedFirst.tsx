@@ -47,7 +47,7 @@ export function ListedFirst({ businessId, listed, add }: Props) {
                     <span className="sr-only">Impact: </span>
                     {IMPACT[s.impact].label}
                   </Badge>
-                  <AddToActionsButton businessId={businessId} action={s.action} inActions={s.inActions} add={add} />
+                  <AddToActionsButton businessId={businessId} action={s.action} inActions={s.inActions} actionId={s.actionId} add={add} />
                 </div>
               </li>
             ))}

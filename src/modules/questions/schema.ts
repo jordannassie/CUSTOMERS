@@ -40,7 +40,8 @@ const one = (v: unknown) => (Array.isArray(v) ? v[0] : v);
 export const questionsPageParams = z.object({
   q: z.preprocess(one, z.uuid().optional()).catch(undefined),
   site: z.preprocess(one, domain.optional()).catch(undefined),
-  named: z.preprocess(one, z.string().trim().min(2).max(80).optional()).catch(undefined),
+  named: z.preprocess(one, z.string().trim().min(2).max(200).optional()).catch(undefined),
+  ai: z.preprocess(one, z.enum(["openai", "anthropic", "perplexity"]).optional()).catch(undefined),
 });
 
 export type QuestionsPageParams = z.infer<typeof questionsPageParams>;

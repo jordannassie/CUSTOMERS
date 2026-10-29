@@ -12,8 +12,9 @@ import { loadAlsoRecommended, loadScoreReport, recountAfterNamesChange, type Sco
 import { fixtureSignals } from "./place-fixtures";
 import { createPlaceSignals, PlacesUnavailable, type FetchSignals } from "./places";
 import { pickedInstead, type PickedInstead } from "./picked";
-import { competitorChartsView } from "./charts";
+import { competitorChartsView, pickShares } from "./charts";
 import { competitorsView, signalRows, type CompetitorsView, type SignalResult, type SignalRow } from "./service";
+import { loadStanding } from "@/modules/standing";
 import { buildWhyPanels, loadWhyInputs } from "./why/dal";
 import { whyCard, type WhyPanel } from "./why/service";
 import { leaderTable } from "./table";
@@ -54,6 +55,12 @@ function countedFrom(r: { created_at: string; checked_from: string | null }): Da
   return r.checked_from && Date.parse(r.checked_from) < added.getTime() ? new Date(r.checked_from) : added;
 }
 
+/**
+ * The Competitors and Compare charts cover 30 days. Passing it reads 60 days of answers (historyDays), so the dashed
+ * 30-day score at the oldest point has its full 30 days too, as on the Overview.
+ */
+export const CHART_DAYS = 30;
+
 /** Live Google signals for one place id; kept in memory for the request only (D-73). */
 export const fetchPlaceSignals: FetchSignals = (placeId) => signalsForRequest(placeId);
 
@@ -68,10 +75,12 @@ export async function getCompetitorsPage(
   const { agency } = await requireAgency({ next });
   const now = requestNow();
   // The page's reads and the "See why" reads start together (2026-10-27: they used to run one after the other).
-  const [base, inputs] = await Promise.all([loadCompetitorsBase(agency.id, businessId, now, { charts: true }), loadWhyInputs(agency.id, businessId, now.getTime())]);
+  const [base, inputs] = await Promise.all([loadCompetitorsBase(agency.id, businessId, now, { charts: true, chartDays: CHART_DAYS }), loadWhyInputs(agency.id, businessId, now.getTime())]);
   if (!base) return null;
   // "See why" reads only saved answers (already read for this request) and fixes; a chain row's panel uses its name.
   const why = inputs ? buildWhyPanels(inputs, chainNames(base.view.leaderboard)) : [];
+  // The donut's share by the rule the Overview and the report use, from the same saved answers (D-89).
+  if (base.view.charts && inputs) base.view.charts = pickShares(base.view.charts, base.view.leaderboard, inputs.data.checks);
   // Google is asked only when the page calls loadSignals: when the owner pressed "Show Google details" (2026-10-27).
   return { view: base.view, loadSignals: () => base.signals(signalsForRequest), why, table: leaderTable(base.view, base.report, why) };
 }
@@ -233,6 +242,8 @@ export function chainNames(rows: CompetitorsView["leaderboard"]): Map<string, st
 /** The Overview's competitor blocks (dashboard redesign) over the last `days` days; null when not the agency's. */
 export async function getOverviewCompete(businessId: string, days: number): Promise<OverviewCompete | null> {
   const { agency } = await requireAgency({ next: "/dashboard" });
-  const base = await loadCompetitorsBase(agency.id, businessId, requestNow(), { charts: true, chartDays: days });
-  return base ? overviewCompete(base.view, base.report) : null;
+  const now = requestNow();
+  // The score's own answers, read once per request (React cache) and shared with the likely reason.
+  const [base, standing] = await Promise.all([loadCompetitorsBase(agency.id, businessId, now, { charts: true, chartDays: days }), loadStanding(agency.id, businessId, now)]);
+  return base ? overviewCompete(base.view, base.report, standing && { checks: standing.checks, domain: standing.you.domain }) : null;
 }

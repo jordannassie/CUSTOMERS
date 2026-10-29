@@ -101,6 +101,7 @@ export function siteClaims(pages: { path: string; markdown: string }[]): SiteCla
 /** For display: a title's separators become commas and ALL CAPS reads as a sentence. The words stay theirs. */
 export function tidyQuote(quote: string): string {
   let t = quote
+    .replace(/[\u200B-\u200D\uFEFF]/g, "")
     .replace(/\s*[\\|•·]\s*/g, ", ")
     .replace(/\s+[-\u2013\u2014]\s+/g, ", ")
     .replace(/\s+/g, " ")
@@ -147,4 +148,23 @@ export function siteWords(pages: { markdown: string }[]): string[] {
   const words = new Set<string>();
   for (const p of pages) for (const w of meaningWords(p.markdown)) if (words.size < MAX_WORDS) words.add(w);
   return [...words];
+}
+
+/**
+ * A long quote cut to the words around what it is quoted for: "...Select Your Order Type DeliveryPick-UpDine-In
+ * Please select..." around "pick-up". Cut at word breaks, with an ellipsis on each cut side. Tidied first.
+ */
+export function quoteAround(quote: string, about: string, max = 110): string {
+  const t = tidyQuote(quote);
+  if (t.length <= max) return t;
+  const lower = t.toLowerCase();
+  const words = about.toLowerCase().split(/[^\p{L}\p{N}]+/u).filter((w) => w.length >= 3);
+  const hits = [about.toLowerCase(), ...words].map((w) => lower.indexOf(w)).filter((i) => i >= 0);
+  const at = hits.length > 0 ? hits[0] : 0;
+  let start = Math.max(0, Math.min(at - Math.floor(max / 3), t.length - max));
+  let end = Math.min(t.length, start + max);
+  if (start > 0) start = t.indexOf(" ", start) + 1 || start;
+  if (end < t.length) end = t.lastIndexOf(" ", end) > start ? t.lastIndexOf(" ", end) : end;
+  const cut = t.slice(start, end).replace(/[,\s]+$/, "");
+  return `${start > 0 ? "…" : ""}${cut}${end < t.length ? "…" : ""}`;
 }

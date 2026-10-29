@@ -30,7 +30,7 @@ describe("websiteGaps", () => {
   it("puts a gap that matches a question they win first, then a plain gap, then contact", () => {
     const facts = websiteGaps("Bean Tires", theirs, yours, [{ question: "Who does tire rotation in Dallas?" }]);
     expect(facts.map((f) => [f.title, f.detail])).toEqual([
-      ["Their website lists Tire rotation", 'Not in the services on yours. They win "Who does tire rotation in Dallas?".'],
+      ["Their website lists Tire rotation", 'Not in the services on yours. AI named them more often on "Who does tire rotation in Dallas?".'],
       ["Their website lists Office catering", "Not in the services on yours. Found on their /services page."],
       ["Their website shows a phone number", "We didn't find one on yours."],
     ]);

@@ -78,7 +78,10 @@ export default async function CompetitorsPage({ searchParams }: { searchParams: 
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Who AI recommends most</CardTitle>
-            <CardDescription>Share of customer questions where each business was named, last 30 days. Compare opens every fact behind a gap.</CardDescription>
+            <CardDescription>
+              Share of customer questions where each business was named, last 30 days. Compare opens every fact behind a gap.
+              {view.hasScore && view.margin !== null && view.margin > 0 ? ` Scores are give or take ${view.margin} points.` : ""}
+            </CardDescription>
           </CardHeader>
           <CardContent>
             {view.count === 0 ? (
@@ -143,25 +146,29 @@ export default async function CompetitorsPage({ searchParams }: { searchParams: 
 }
 
 function Kpis({ kpis }: { kpis: TableKpis }) {
+  // A gap inside the margin of error reads "About the same", like the Status column (audit, 2026-10-28).
+  const level = kpis.leader?.standing === "about_same";
+  const nextLevel = kpis.next?.standing === "about_same";
   return (
     <KpiStrip testId="competitor-kpis">
-      <KpiTile label="Your rank" value={kpis.rank ? `#${kpis.rank.place}` : "None"} sub={kpis.rank ? `of ${kpis.rank.of} tracked businesses` : undefined} testId="kpi-rank" />
+      <KpiTile label="Your rank" value={kpis.rank ? `#${kpis.rank.place}` : "No score yet"} sub={kpis.rank ? `of ${kpis.rank.of} tracked businesses` : undefined} testId="kpi-rank" />
       <KpiTile
         label="Leader"
-        value={kpis.leader ? (kpis.leader.isYou ? "You" : kpis.leader.name) : "None"}
+        value={kpis.leader ? (kpis.leader.isYou ? "You" : kpis.leader.name) : "No one yet"}
         sub={kpis.leader ? `Score ${kpis.leader.score}` : undefined}
         testId="kpi-leader"
       />
       <KpiTile
         label="Gap to the leader"
-        value={kpis.gap === null ? "None" : kpis.gap === 0 ? "You lead" : `${kpis.gap} pts`}
-        tone={kpis.gap === 0 ? "good" : kpis.gap ? "mid" : undefined}
+        value={kpis.gap === null ? "Not compared yet" : kpis.gap === 0 ? "You lead" : level ? "About the same" : `${kpis.gap} pts`}
+        sub={level && kpis.gap ? `${kpis.gap} pts, inside the margin of error` : undefined}
+        tone={kpis.gap === 0 ? "good" : kpis.gap && !level ? "mid" : undefined}
         testId="kpi-gap"
       />
       <KpiTile
         label="Next one to pass"
-        value={kpis.next ? kpis.next.name : "None"}
-        sub={kpis.next ? `${kpis.next.points} pts ahead of you` : "No one is ahead of you"}
+        value={kpis.next ? kpis.next.name : "No one"}
+        sub={kpis.next ? (nextLevel ? `About the same, ${kpis.next.points} pts above you` : `${kpis.next.points} pts ahead of you`) : "No one is ahead of you"}
         testId="kpi-next"
       />
     </KpiStrip>

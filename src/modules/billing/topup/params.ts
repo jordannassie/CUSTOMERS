@@ -52,7 +52,7 @@ export type TopupCheck = { ok: true; pack: TopupSessionInput["pack"] } | { ok: f
 
 /**
  * Whether this agency may buy this pack now. Top-ups are only spendable with an active plan or trial
- * (canSpendTopUps), so they are not sold without one either.
+ * (canSpendTopUps), so they are not sold without one either, nor before setup has started the trial (canBuyTopUps).
  */
 export function checkTopupPurchase(packs: TopupPackPrice[], packId: string, spend: Entitlement): TopupCheck {
   if (!spend.allowed) return { ok: false, status: 403, error: spend.reason };

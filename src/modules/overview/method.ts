@@ -68,7 +68,7 @@ export function methodPanel(input: MethodInput, calibration: Calibration | null)
       score: m.score,
       value: m.score !== null ? String(m.score) : m.skipped ? "Skipped" : m.notChecked ? "Not checked" : "No checks yet",
     })),
-    modelsNote: "Your score is the average of these.",
+    modelsNote: "Your score counts the answers from all of these together.",
     numbers: [
       { label: "Time covered", value: `Last ${input.windowDays} days` },
       { label: "Answers checked", value: count(input.checks), hint: "Answers to suggested questions only." },

@@ -25,7 +25,7 @@ import {
 } from "../competitors";
 import { clearLocationNotes, loadLocationNotes } from "../competitor-location/notes/dal";
 import { PlacesError } from "../places";
-import { withDistance } from "../branches";
+import { forDisplay, withDistance } from "../branches";
 
 // The competitors step (MVP_SPEC 3.1 step 5): suggestions near the business, lookups by name and the saved list.
 // Split from onboarding/dal.ts, which re-exports it.
@@ -109,7 +109,9 @@ export async function loadCompetitorStep(
       rows.map(async (row): Promise<SavedCompetitor & { createdAt: string }> => {
         // place_id is where older code kept the id; it moves to places_id on the next save.
         const placesId = row.places_id ?? row.place_id;
-        const live = placesId ? await places.details(placesId).catch(() => null) : null;
+        // Location and website help pick a branch; they never go to the browser (D-88).
+        const found = placesId ? await places.details(placesId).catch(() => null) : null;
+        const live = found ? forDisplay([found])[0] : null;
         return { name: row.name, placesId, live, createdAt: row.created_at };
       }),
     ),

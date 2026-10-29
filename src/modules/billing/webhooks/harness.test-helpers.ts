@@ -52,6 +52,7 @@ export function harness(send?: SendBillingEmail) {
   const tagged: [itemId: string, businessId: string][] = [];
   /** Payment intent ID to the Checkout Session that took the payment (top-ups). */
   const paymentSessions = new Map<string, Stripe.Checkout.Session>();
+  const schedules = new Map<string, Stripe.SubscriptionSchedule>();
   const deps: WebhookDeps = {
     store: createWebhookStore(service),
     stripe: {
@@ -72,6 +73,11 @@ export function harness(send?: SendBillingEmail) {
         tagged.push([itemId, businessId]);
       },
       checkoutSessionForPaymentIntent: async (paymentIntentId) => paymentSessions.get(paymentIntentId) ?? null,
+      retrieveSchedule: async (scheduleId) => {
+        const schedule = schedules.get(scheduleId);
+        if (!schedule) throw new Error(`no fixture for ${scheduleId}`);
+        return schedule;
+      },
     },
     sendEmail: async (input) => {
       emails.push(input);
@@ -85,7 +91,7 @@ export function harness(send?: SendBillingEmail) {
   };
   /** Delivers the same event twice, as a Stripe retry would. */
   const deliverTwice = async (event: Stripe.Event) => [await deliver(event), await deliver(event)];
-  return { emails, subscriptions, invoices, checkoutLines, tagged, paymentSessions, deliver, deliverTwice, deps };
+  return { emails, subscriptions, invoices, checkoutLines, tagged, paymentSessions, schedules, deliver, deliverTwice, deps };
 }
 
 export async function grants(agencyId: string) {

@@ -16,7 +16,7 @@ export type AgencyStatus = "trialing" | "active" | "past_due" | "canceled";
 export type ItemStatus = AgencyStatus;
 /** `subscriptionId`: the subscription the agency is linked to, so events for another one (a duplicate) are ignored. */
 export type WebhookAgency = { id: string; ownerUserId: string; status: string; subscriptionId: string | null };
-export type BusinessItem = { businessId: string | null; itemId: string; planId: string; periodEnd: string | null };
+export type BusinessItem = { businessId: string | null; itemId: string; planId: string; periodEnd: string | null; priceCents?: number | null };
 /** claimed: this delivery runs the handler; done: already handled; busy: another delivery is running it now. */
 export type EventClaim = "claimed" | "done" | "busy";
 
@@ -154,7 +154,14 @@ export function createWebhookStore(db: Db = createServiceClient()) {
       const ownedIds = new Set(owned.map((b) => b.id));
 
       for (const item of items) {
-        const row = { plan_id: item.planId, status, current_period_end: item.periodEnd, stripe_subscription_item_id: item.itemId };
+        const row = {
+          plan_id: item.planId,
+          status,
+          current_period_end: item.periodEnd,
+          stripe_subscription_item_id: item.itemId,
+          // Left as it is when the price is not known (an item Stripe sent without one).
+          ...(item.priceCents == null ? {} : { price_cents: item.priceCents }),
+        };
         if (item.businessId && ownedIds.has(item.businessId)) {
           const { error } = await db
             .from("business_subscriptions")

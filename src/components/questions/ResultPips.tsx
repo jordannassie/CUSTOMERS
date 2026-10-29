@@ -1,5 +1,5 @@
 import { cn } from "cn";
-import { resultText, type QuestionResult } from "@/modules/questions/service";
+import { FAILED_LAST_SCAN, resultText, type QuestionResult } from "@/modules/questions/service";
 import type { ProviderId } from "@/modules/scanning";
 
 const FILL: Record<ProviderId, string> = { openai: "bg-chatgpt", anthropic: "bg-claude", perplexity: "bg-perplexity" };
@@ -14,7 +14,9 @@ export function ResultPips({ result }: { result: QuestionResult }) {
         {result.label}
       </span>
       {result.checks === 0 ? (
-        <span className="text-[13px] text-text-hint">Not checked yet</span>
+        <span className={cn("text-[13px]", result.failedLastScan ? "text-mid-text" : "text-text-hint")} data-failed={result.failedLastScan || undefined}>
+          {text}
+        </span>
       ) : (
         <>
           <span className="flex flex-wrap gap-[3px]" aria-hidden="true">
@@ -29,6 +31,12 @@ export function ResultPips({ result }: { result: QuestionResult }) {
             </span>
             <span className="sr-only">{text}</span>
           </span>
+          {/* Older checks still show; the last scan's gap is said, never left blank (BUG-074). */}
+          {result.failedLastScan && (
+            <span className="text-xs text-mid-text" aria-hidden="true" data-failed>
+              {FAILED_LAST_SCAN}
+            </span>
+          )}
         </>
       )}
     </div>

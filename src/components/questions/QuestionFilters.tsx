@@ -9,6 +9,8 @@ import { SegmentedControl } from "@/components/ui/segmented-control";
 import { useQuestions } from "./QuestionsProvider";
 
 /** All, Named you, Never named, Getting worse; the topic chips in use; and the chip of a link that narrowed the list. */
+
+const AI_LABELS: Record<string, string> = { openai: "ChatGPT", anthropic: "Claude", perplexity: "Perplexity" };
 export function QuestionFilters() {
   const { view, focus, filter, setFilter, topic, setTopic, showPaused } = useQuestions();
   const rows = [...view.active, ...(showPaused ? view.paused : [])].filter((r) => r.matches);
@@ -20,10 +22,13 @@ export function QuestionFilters() {
       {(focus.site || focus.named) && (
         <div className="flex flex-wrap gap-2">
           {focus.site && (
-            <LinkChip href={questionsHref({ named: focus.named })} label={`Answers that used ${focus.site}`} testId="site-filter" />
+            <LinkChip href={questionsHref({ named: focus.named, ai: focus.ai })} label={`Answers that used ${focus.site}`} testId="site-filter" />
           )}
           {focus.named && (
-            <LinkChip href={questionsHref({ site: focus.site })} label={`${focus.named} named, not you`} testId="named-filter" />
+            <LinkChip href={questionsHref({ site: focus.site, ai: focus.ai })} label={`${focus.named} named, not you`} testId="named-filter" />
+          )}
+          {focus.ai && (
+            <LinkChip href={questionsHref({ site: focus.site, named: focus.named })} label={`From ${AI_LABELS[focus.ai] ?? focus.ai}`} testId="ai-filter" />
           )}
         </div>
       )}

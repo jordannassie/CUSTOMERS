@@ -15,6 +15,20 @@ export function shareMargin(hits: number, answers: number): number {
   return Z * 100 * Math.sqrt((p * (1 - p)) / Math.max(1, answers));
 }
 
+/** Below this many answers a question or site shows "Too few answers" instead of who wins. */
+export const MIN_TALLY_ANSWERS = 2;
+export type TallyResult = "they_win" | "you_win" | "tie" | "too_few";
+
+/**
+ * Who wins a question or a site: only a gap bigger than the margin on your share counts, so 1 of 1 against 0 of 1
+ * is never a win (audit, 2026-10-28). Same margin as the per-AI facts.
+ */
+export function tallyResult(t: { answers: number; them: number; you: number }): TallyResult {
+  if (t.answers < MIN_TALLY_ANSWERS) return "too_few";
+  const status = compareStatus(pct(t.you, t.answers), pct(t.them, t.answers), shareMargin(t.you, t.answers));
+  return status === "behind" ? "they_win" : status === "ahead" ? "you_win" : "tie";
+}
+
 const WHERE_FOR: Record<string, Where> = { reviews: "other_places", directories: "other_places", news: "other_places", social: "other_places" };
 
 export function assistantFacts(
@@ -37,7 +51,7 @@ export function assistantFacts(
     const own = !!top && !!theirSite && (top === theirSite || top.endsWith(`.${theirSite}`));
     const where: Where = google ? "google_listing" : own || !top ? "website" : (WHERE_FOR[sourceType(top, null)] ?? "other_places");
     const action = !top
-      ? `${a.assistant} cited no sites in those answers, so it relied on what it already knows. Your website and Google listing are the best places to start.`
+      ? `${a.assistant} cited no sites in those answers, so we can't see where it looked. Your website and Google listing are the best places to start.`
       : google
         ? `${a.assistant} used Google in ${n} of those answers. Complete your Google listing: hours, category, photos and reviews.`
         : own
@@ -55,6 +69,7 @@ export function assistantFacts(
         // Pointing at a site: the same fix as that site's own reason, so the two share one key and one action.
         key: google ? "google:listing" : top && !own ? `site:${top}` : `ai:${a.provider}`,
         assistant: a.assistant,
+        provider: a.provider,
         answers: a.answers,
         basis: "answers" as const,
       },

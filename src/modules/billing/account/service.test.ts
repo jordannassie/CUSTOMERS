@@ -40,6 +40,21 @@ describe("billingView", () => {
     expect(view.cancelAt).toBeNull();
   });
 
+  it("shows what each business is charged, and the plan's new price from the renewal when it pays an older one (D-93)", async () => {
+    const { stripe, ctx } = setup({ a: "price_pro" });
+    const raised = rows();
+    raised.plans = raised.plans.map((p) => (p.id === "starter" ? { ...p, priceCents: 16900 } : p));
+    const view = await billingView({ rows: raised, access: { context: ctx, stripe } });
+    expect(view.onPlan.map((b) => [b.name, b.priceCents, b.newPrice])).toEqual([
+      ["Acme Plumbing", 24900, null],
+      ["Bay Dental", 14900, { cents: 16900, at: iso(RENEWAL) }],
+    ]);
+    // Without Stripe, the price the webhook saved.
+    raised.businesses = raised.businesses.map((b) => (b.id === B ? { ...b, priceCents: 15900 } : b));
+    const offline = await billingView({ rows: raised, access: null });
+    expect(offline.onPlan.find((b) => b.id === B)?.priceCents).toBe(15900);
+  });
+
   it("never offers a deleted business, and marks one whose item runs to the period end (BUG-120)", async () => {
     const { stripe, ctx } = setup({ a: "price_pro" });
     const base = rows();

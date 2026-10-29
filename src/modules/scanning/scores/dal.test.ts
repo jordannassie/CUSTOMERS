@@ -69,8 +69,9 @@ describe("loadScoreReport", () => {
       ["openai", 75, 4],
       ["anthropic", 0, 2],
     ]);
+    // 3 of 6 answers, pooled (D-91). It was 37.5 under D-65, the average of 75 and 0.
     expect(report?.overall).toMatchObject({
-      score: 37.5,
+      score: 50,
       checks: 6,
       uniqueAnswers: 4,
       confidence: "early",

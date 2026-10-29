@@ -25,5 +25,7 @@ export { MAX_COMPETITORS, type ChartSeries, type CompetitorChartsView, type Pair
 export { standingSentence, whySentence, type ClaimRow, type CompareRow, type ServiceChip, type FixLink, type WebsiteView, type WhyCard, type WhyPanel } from "./why/service";
 export { getWebsiteChecks } from "./why/dal";
 export { getComparePage, getComparison, type CompareOption, type ComparePage, type Comparison } from "./compare/dal";
-export type { LeadCard, ReasonCard } from "./compare/cards";
+export { googleReasonCards, type LeadCard, type ReasonCard } from "./compare/cards";
 export { SPARK_SCANS, TABLE_MODELS, type TableKpis, type TableRow } from "./table";
+export { placeAmongTracked, type TrackedPlace } from "./rank";
+export { likelyReason } from "./likely-reason";

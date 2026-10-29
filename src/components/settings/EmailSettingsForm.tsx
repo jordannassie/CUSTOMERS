@@ -36,7 +36,7 @@ export function EmailSettingsForm({ weeklyReport, save }: { weeklyReport: boolea
             Weekly report
           </label>
           <p id="weekly-report-text" className="mt-1 text-[13px] text-muted-foreground">
-            Every Monday: how each business&apos;s score changed and any new opportunities.
+            Every Monday: how each business&apos;s score changed and any new things to fix.
           </p>
         </div>
         <Switch

@@ -48,6 +48,8 @@ export type CheckAnswer = {
   /** Null on a cache hit, since no call was made. */
   usage: CheckUsage | null;
   latencyMs: number;
+  /** The cached row's created_at, so extracted names go onto this answer and not a newer one; unset when not cached. */
+  cachedAt?: string;
 };
 
 export async function readCachedAnswer(input: CheckInput): Promise<CheckAnswer | null> {
@@ -62,6 +64,7 @@ export async function readCachedAnswer(input: CheckInput): Promise<CheckAnswer |
     costUsd: 0,
     usage: null,
     latencyMs: 0,
+    cachedAt: row.createdAt,
   };
 }
 
@@ -71,7 +74,7 @@ export async function checkWithCache(input: CheckInput, run: RunCheck): Promise<
   if (hit) return hit;
 
   const result = await run(input);
-  await upsertCachedAnswer({
+  const cachedAt = await upsertCachedAnswer({
     cacheKey: cacheKey(input),
     model: result.model,
     question: input.question,
@@ -89,6 +92,7 @@ export async function checkWithCache(input: CheckInput, run: RunCheck): Promise<
     costUsd: result.costUsd,
     usage: result.usage,
     latencyMs: result.latencyMs,
+    cachedAt,
   };
 }
 

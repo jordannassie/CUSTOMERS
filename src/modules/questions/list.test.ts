@@ -77,8 +77,8 @@ describe("CSV", () => {
       named: 1,
       answers: 4,
       results: [
-        { model: "openai", label: "ChatGPT", appeared: 1, checks: 2, pips: [false, true] },
-        { model: "anthropic", label: "Claude", appeared: 0, checks: 0, pips: [] },
+        { model: "openai", label: "ChatGPT", appeared: 1, checks: 2, pips: [false, true], failedLastScan: false },
+        { model: "anthropic", label: "Claude", appeared: 0, checks: 0, pips: [], failedLastScan: false },
       ],
       summary: { answers: 4, you: 1, named: [{ name: "Slice Theory", answers: 3, tracked: false }], sitesWithoutYou: [] },
     });

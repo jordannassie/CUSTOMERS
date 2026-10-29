@@ -17,7 +17,7 @@ export type BillingRows = {
    * Set up businesses, oldest first. planId is null when the business is not on the plan. A deleted business is
    * here only while its item runs to the period end (MVP_SPEC 11.5), never as one to add.
    */
-  businesses: { id: string; name: string; planId: string | null; itemId: string | null; deleted: boolean }[];
+  businesses: { id: string; name: string; planId: string | null; itemId: string | null; deleted: boolean; priceCents?: number | null }[];
 };
 
 export async function loadBillingRows(agencyId: string): Promise<BillingRows> {
@@ -32,7 +32,7 @@ export async function loadBillingRows(agencyId: string): Promise<BillingRows> {
     db.from("businesses").select("id, name, deleted_at").eq("agency_id", agencyId).neq("status", "onboarding").order("created_at"),
     db
       .from("business_subscriptions")
-      .select("business_id, plan_id, stripe_subscription_item_id")
+      .select("business_id, plan_id, stripe_subscription_item_id, price_cents")
       .eq("agency_id", agencyId)
       .neq("status", "canceled"),
   ]);
@@ -60,6 +60,8 @@ export async function loadBillingRows(agencyId: string): Promise<BillingRows> {
         planId: itemOf.get(b.id)?.plan_id ?? null,
         itemId: itemOf.get(b.id)?.stripe_subscription_item_id ?? null,
         deleted: b.deleted_at !== null,
+        // What Stripe charges for it (the webhook saves it); Stripe's own item wins when the page can read it.
+        priceCents: itemOf.get(b.id)?.price_cents ?? null,
       })),
   };
 }

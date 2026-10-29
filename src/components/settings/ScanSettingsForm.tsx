@@ -183,7 +183,7 @@ function Estimate({
             </Link>
           </>
         ) : (
-          `${count(activeQuestions)} questions × ${models} ${models === 1 ? "model" : "models"}. Each answer uses 1 credit.`
+          `${count(activeQuestions)} questions × ${models} ${models === 1 ? "model" : "models"}. Each new answer uses 1 credit; answers reused from a recent scan are free.`
         )}
       </p>
     </aside>

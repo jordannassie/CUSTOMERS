@@ -18,7 +18,8 @@ vi.mock("@/lib/supabase/server", () => ({
 }));
 
 const { addQuestion, editQuestion, removeQuestion, setQuestionActive } = await import("./actions");
-const { loadQuestionAnswers, loadQuestionsPage } = await import("./dal");
+const { loadQuestionsPage } = await import("./dal");
+const { loadQuestionAnswers } = await import("./reads/dal");
 
 async function createOwner(questions: number) {
   const email = `vitest-questions-${randomUUID()}@example.test`;

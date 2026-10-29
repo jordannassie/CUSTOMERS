@@ -47,8 +47,6 @@ create index if not exists feature_requests_user_id_idx    on public.feature_req
 create index if not exists feature_requests_status_idx     on public.feature_requests (status);
 create index if not exists feature_requests_created_at_idx on public.feature_requests (created_at desc);
 alter table public.feature_requests enable row level security;
-create policy "feature_requests_insert" on public.feature_requests
-  for insert to authenticated with check (user_id = auth.uid());
 create policy "feature_requests_select_own" on public.feature_requests
   for select to authenticated using (user_id = auth.uid());`}
           </pre>

@@ -36,14 +36,14 @@ const FIXES: OpportunityItem[] = [
   },
 ];
 
-/** The Opportunities screen (B-51) with the real fix cards; status changes stay in the browser. */
+/** The Actions screen (B-51, named Actions since D-86) with the real fix cards; status changes stay in the browser. */
 export function FixStepsExample() {
   const [items, setItems] = useState(FIXES);
   const setStatus = (id: string, status: Status) =>
     setItems((all) => all.map((o) => (o.id === id ? { ...o, status } : o)));
 
   return (
-    <ProductFrame page="Opportunities">
+    <ProductFrame page="Actions">
       <div className="grid items-start gap-3 sm:gap-6 lg:grid-cols-2">
         {items.map((item) => (
           <OpportunityCard key={item.id} item={item} busy={false} onStatus={(s) => setStatus(item.id, s)} />

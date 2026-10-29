@@ -35,7 +35,7 @@ export function RowMeta({ question }: { question: QuestionRow }) {
             </span>
           )}
           {pick && sites.length > 0 && <span aria-hidden="true"> · </span>}
-          {sites.length > 0 && <span>Sites that skipped you: {sites.join(", ")}</span>}
+          {sites.length > 0 && <span>Sites AI used when it skipped you: {sites.join(", ")}</span>}
         </p>
       )}
     </>
@@ -52,9 +52,15 @@ export function NamedCell({ question }: { question: QuestionRow }) {
       {pct === null ? (
         <span className="text-[13px] text-text-hint">No answers</span>
       ) : (
-        <span className="text-sm font-semibold tabular-nums" title={`Named you in ${question.named} of ${question.answers} answers in the last 30 days`}>
-          {pct}%<span className="sr-only">, named you in {question.named} of {question.answers} answers in the last 30 days</span>
-        </span>
+        <>
+          <span className="text-sm font-semibold tabular-nums" title={`Named you in ${question.named} of ${question.answers} answers in the last 30 days`}>
+            {pct}%<span className="sr-only">, named you in {question.named} of {question.answers} answers in the last 30 days</span>
+          </span>
+          {/* The count behind the share, so a small number of checks is plain to see (MVP_SPEC 5.6). */}
+          <span className="text-xs text-muted-foreground tabular-nums" aria-hidden="true" data-testid="question-named-count">
+            {question.named} of {question.answers} {question.answers === 1 ? "check" : "checks"}
+          </span>
+        </>
       )}
     </div>
   );

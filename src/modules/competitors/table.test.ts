@@ -41,6 +41,29 @@ describe("leaderTable", () => {
   });
 
   it("says your rank, the leader, the gap and the next one to pass", () => {
-    expect(kpis).toEqual({ rank: { place: 3, of: 4 }, leader: { name: "Pizza Hut", score: 38, isYou: false }, gap: 23, next: { name: "Domino's", points: 13 } });
+    expect(kpis).toEqual({
+      rank: { place: 3, of: 4 },
+      leader: { name: "Pizza Hut", score: 38, isYou: false, standing: "behind" },
+      gap: 23,
+      next: { name: "Domino's", points: 13, standing: "behind" },
+    });
+  });
+
+  it("names a chain by its brand only in the tiles, while its row keeps (all locations)", () => {
+    const chain = { brand: "Domino's", tracked: ["Domino's Pizza Saddar"] };
+    const chained = { leaderboard: view.leaderboard.map((r) => (r.name === "Domino's" ? { ...r, chain } : r)) } as CompetitorsView;
+    const out = leaderTable(chained, report, []);
+    expect(out.kpis.next?.name).toBe("Domino's");
+    expect(out.rows[1].name).toBe("Domino's (all locations)");
+  });
+
+  it("says about the same when the one above is inside the margin", () => {
+    const close = { leaderboard: view.leaderboard.map((r) => (r.name === "Domino's" ? { ...r, standing: "about_same" as const } : r)) } as CompetitorsView;
+    expect(leaderTable(close, report, []).kpis.next).toMatchObject({ name: "Domino's", standing: "about_same" });
+  });
+
+  it("leaves out competitors still collecting from the place", () => {
+    const collecting = { leaderboard: view.leaderboard.map((r) => (r.name === "Pizza Hut" ? { ...r, collecting: true } : r)) } as CompetitorsView;
+    expect(leaderTable(collecting, report, []).kpis.rank).toEqual({ place: 2, of: 3 });
   });
 });

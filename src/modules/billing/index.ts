@@ -21,7 +21,7 @@ export { addBusinessAtSetup, previewSetupAddOn, type SetupAddOn, type SetupAddOn
 export { PlanChangeError } from "./plan-change/planner";
 export { isMissingInStripe } from "./stripe-missing";
 export { TRIAL_DAYS, trialAllowed } from "./checkout";
-export { TRIAL_CREDITS } from "./webhooks/credits";
+export { PERIOD_GRACE_MS, TRIAL_CREDITS } from "./webhooks/credits";
 export { extendSubscriptionTrial } from "./trial-extend";
 export { createTrialCheckout, getTrialOffer, type CardFormMode, type StartTrialResult, type TrialOffer } from "./trial";
 export { openBillingPortal } from "./account/actions";
@@ -34,3 +34,4 @@ export { loadPlanNowOffer, type PlanNowView } from "./end-trial/load";
 export { checkPaidNotActive } from "./paid-not-active/dal";
 export type { BillingBusiness, BillingPlan, BillingView, PendingChange } from "./account/summary";
 export { subscriptionAgencyStatus } from "./subscription-status";
+export { runPriceMoves } from "./price-move/run";

@@ -21,6 +21,13 @@ export type BillingBusiness = {
   pending: PendingChange | null;
   deleted: boolean;
   notCharged: boolean;
+  /** What the business is charged a month now: its Stripe item's amount, which can differ from the plan's price. */
+  priceCents: number;
+  /**
+   * The plan's price when the business is still on an older amount: it moves to it at the renewal (D-93). Null when
+   * it pays the plan's price, or does not renew on this plan.
+   */
+  newPrice: { cents: number; at: string } | null;
 };
 
 /**
@@ -85,18 +92,23 @@ export function buildBillingView(rows: BillingRows, stripe: StripeSnapshot | Exc
     !sub || sub.items.data.some((i) => i.metadata?.business_id === b.id || (b.itemId !== null && i.id === b.itemId));
   const onPlan: BillingBusiness[] = [];
   const notOnPlan: BillingView["notOnPlan"] = [];
+  const ended = rows.agency.status === "canceled" || sub?.status === "canceled";
+  const ends = sub && !ended ? iso(periodEnd(sub)) : null;
+  const cancelling = !!sub && isCancelling(sub);
+
   for (const b of rows.businesses) {
     const plan = rows.plans.find((p) => p.id === b.planId);
     if (plan && b.deleted && !inStripe(b)) continue;
     if (plan) {
       const notCharged = b.deleted && trialing;
-      onPlan.push({ id: b.id, name: b.name, plan, pending: notCharged ? null : (pending.get(b.id) ?? null), deleted: b.deleted, notCharged });
+      const change = notCharged ? null : (pending.get(b.id) ?? null);
+      const item = sub?.items.data.find((i) => i.metadata?.business_id === b.id || (b.itemId !== null && i.id === b.itemId));
+      const priceCents = item?.price.unit_amount ?? b.priceCents ?? plan.priceCents;
+      const renews = !!ends && !cancelling && !b.deleted && !notCharged && change === null;
+      const newPrice = renews && priceCents !== plan.priceCents ? { cents: plan.priceCents, at: ends } : null;
+      onPlan.push({ id: b.id, name: b.name, plan, pending: change, deleted: b.deleted, notCharged, priceCents, newPrice });
     } else if (!b.deleted) notOnPlan.push({ id: b.id, name: b.name });
   }
-
-  const ended = rows.agency.status === "canceled" || sub?.status === "canceled";
-  const ends = sub && !ended ? iso(periodEnd(sub)) : null;
-  const cancelling = !!sub && isCancelling(sub);
 
   return {
     status: rows.agency.status,

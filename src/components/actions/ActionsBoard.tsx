@@ -1,15 +1,28 @@
 "use client";
 
-import { useEffect, useId, useMemo, useState, useTransition } from "react";
+import { useEffect, useId, useMemo, useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { cn } from "cn";
 import { SegmentedControl } from "@/components/ui/segmented-control";
 import { Select } from "@/components/ui/select";
 import { fixCardId } from "@/lib/fix-where";
 import type { ActionResult } from "@/modules/auth";
-import { ACTION_STATUSES, PLACE_TEXT, PLACES, STATUS_TEXT, type ActionItem, type ActionStatus, type Place } from "@/modules/opportunities/board/service";
+import { WHERE_LABEL, type Where } from "@/lib/fix-where";
+import {
+  ACTION_STATUSES,
+  PLACE_GROUP,
+  STATUS_TEXT,
+  WHERE_FILTER_TEXT,
+  WHERE_FILTERS,
+  inWhere,
+  type ActionItem,
+  type ActionStatus,
+  type WhereFilter,
+} from "@/modules/opportunities/board/service";
+import { WHERE_ORDER } from "@/modules/opportunities/where";
 import { ActionCard, IMPACT } from "./ActionCard";
 import { ActionsList } from "./ActionsList";
+import { dropOverride, overrideKey, pruneOverrides, settleOverride, startOverride, withOverrides, type Overrides, type Patch } from "./board-overrides";
 
 export type MoveAction = (input: { businessId: string; actionId: string; status: ActionStatus }) => Promise<ActionResult<{ status: ActionStatus }>>;
 export type AssignAction = (input: { businessId: string; actionId: string; toMe: boolean }) => Promise<ActionResult<{ toMe: boolean }>>;
@@ -18,7 +31,7 @@ type Impact = ActionItem["impact"];
 const DONE_NOTE: Partial<Record<ActionStatus, string>> = {
   todo: "Moved to To do.",
   in_progress: "Moved to In progress.",
-  done: "Marked done. We will measure the effect over the next 30 days.",
+  done: "Marked done.",
   dismissed: "Dismissed. You can bring it back from Dismissed.",
 };
 
@@ -33,75 +46,93 @@ export function ActionsBoard({
   move,
   assign,
   pickedId,
+  readOnly = false,
 }: {
   businessId: string;
   initialItems: ActionItem[];
   move: MoveAction;
   assign: AssignAction;
   pickedId: string | null;
+  /** An ended plan (MVP_SPEC 4.4): fixes can be read and filtered, not moved or assigned. */
+  readOnly?: boolean;
 }) {
-  const [items, setItems] = useState(initialItems);
+  // The server's list wins on every refresh; the board's own moves sit on top while they are saved (board-overrides.ts).
+  const [overrides, setOverrides] = useState<Overrides>({});
+  const items = useMemo(() => withOverrides(initialItems, overrides), [initialItems, overrides]);
+  const serverItems = useRef(initialItems);
+  useEffect(() => {
+    serverItems.current = initialItems;
+  }, [initialItems]);
   const [view, setView] = useState<"board" | "list">("board");
   const [impact, setImpact] = useState<Impact | "all">("all");
-  const [place, setPlace] = useState<Place | "all">("all");
+  const [place, setPlace] = useState<WhereFilter | "all">("all");
   const [busy, setBusy] = useState<string | null>(null);
   const [, start] = useTransition();
 
+  // A link to one fix (?fix=) brings it into view; one that is gone says so instead of leaving the user guessing.
+  const pickedFound = !pickedId || items.some((i) => i.id === pickedId);
   useEffect(() => {
     if (!pickedId) return;
-    document.getElementById(fixCardId(pickedId))?.scrollIntoView({ block: "center" });
+    const card = document.getElementById(fixCardId(pickedId));
+    if (card) card.scrollIntoView({ block: "center", behavior: "smooth" });
   }, [pickedId]);
+  useEffect(() => {
+    if (!pickedFound) toast.info("That fix is no longer in your Actions. It may have been replaced by a newer scan.");
+  }, [pickedFound]);
 
   const shown = useMemo(
     () =>
       items.filter(
         (i) =>
           (impact === "all" || i.impact === impact) &&
-          (place === "all" || i.place === place),
+          (place === "all" || inWhere(i.place, place)),
       ),
     [items, impact, place],
   );
-  const counts = PLACES.map((p) => ({ place: p, n: items.filter((i) => i.place === p && i.status !== "dismissed" && i.status !== "done").length })).filter((c) => c.n > 0);
+  // Open fixes in each of the three groups; a click shows only that group.
+  const counts = WHERE_ORDER.map((where: Where) => ({
+    place: where,
+    n: items.filter((i) => PLACE_GROUP[i.place] === where && i.status !== "dismissed" && i.status !== "done").length,
+  })).filter((c) => c.n > 0);
 
-  function onMove(item: ActionItem, status: ActionStatus) {
-    const before = items;
-    const now = new Date().toISOString();
-    setItems((all) => all.map((i) => (i.id === item.id ? { ...i, status, completedAt: status === "done" ? now : null } : i)));
-    setBusy(item.id);
+  /** Shows the change at once, saves it, and drops it again if the save fails. */
+  function change(kind: "move" | "assign", item: ActionItem, patch: Patch, save: () => Promise<ActionResult<unknown>>, done?: string) {
+    const key = overrideKey(kind, item.id);
+    setOverrides((all) => startOverride(pruneOverrides(all, serverItems.current), key, item.id, patch));
+    if (kind === "move") setBusy(item.id);
     start(async () => {
       try {
-        const result = await move({ businessId, actionId: item.id, status });
+        const result = await save();
         if (!result.ok) throw new Error(result.error);
-        if (DONE_NOTE[status]) toast.success(DONE_NOTE[status]);
+        setOverrides((all) => settleOverride(all, key, serverItems.current));
+        if (done) toast.success(done);
       } catch (error) {
-        setItems(before);
+        setOverrides((all) => dropOverride(all, key));
         toast.error(error instanceof Error && error.message ? error.message : "That change could not be saved. Check your connection and try again.");
       } finally {
-        setBusy(null);
+        if (kind === "move") setBusy(null);
       }
     });
+  }
+
+  function onMove(item: ActionItem, status: ActionStatus) {
+    const completedAt = status === "done" ? new Date().toISOString() : null;
+    change("move", item, { status, completedAt }, () => move({ businessId, actionId: item.id, status }), DONE_NOTE[status]);
   }
 
   function onAssign(item: ActionItem, toMe: boolean) {
-    setItems((all) => all.map((i) => (i.id === item.id ? { ...i, assignedToYou: toMe } : i)));
-    start(async () => {
-      const result = await assign({ businessId, actionId: item.id, toMe }).catch(() => null);
-      if (!result?.ok) {
-        setItems((all) => all.map((i) => (i.id === item.id ? { ...i, assignedToYou: !toMe } : i)));
-        toast.error(result && !result.ok ? result.error : "That change could not be saved. Try again.");
-      }
-    });
+    change("assign", item, { assignedToYou: toMe }, () => assign({ businessId, actionId: item.id, toMe }));
   }
 
   const card = (i: ActionItem) => (
-    <ActionCard key={i.id} item={i} busy={busy === i.id} picked={pickedId === i.id} onMove={(s) => onMove(i, s)} onAssign={(m) => onAssign(i, m)} />
+    <ActionCard key={i.id} item={i} busy={busy === i.id} picked={pickedId === i.id} onMove={(s) => onMove(i, s)} onAssign={(m) => onAssign(i, m)} readOnly={readOnly} />
   );
 
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center gap-2" data-testid="action-filters">
         <Filter label="Impact" value={impact} onChange={setImpact} options={[["all", "All"], ...(["high", "medium", "low"] as const).map((v) => [v, IMPACT[v].text] as const)]} />
-        <Filter label="Where" value={place} onChange={setPlace} options={[["all", "All"], ...PLACES.map((p) => [p, PLACE_TEXT[p]] as const)]} />
+        <Filter label="Where" value={place} onChange={setPlace} options={[["all", "All"], ...WHERE_FILTERS.map((p) => [p, WHERE_FILTER_TEXT[p]] as const)]} />
         <SegmentedControl
           className="sm:ml-auto"
           aria-label="View"
@@ -119,17 +150,18 @@ export function ActionsBoard({
             <button
               key={c.place}
               type="button"
+              aria-pressed={place === c.place}
               onClick={() => setPlace(place === c.place ? "all" : c.place)}
               className={cn("rounded-xs px-2 py-0.5 text-xs font-medium", place === c.place ? "bg-primary text-primary-foreground" : "bg-muted text-foreground hover:bg-muted/70")}
             >
-              {PLACE_TEXT[c.place]} {c.n}
+              {WHERE_LABEL[c.place]} {c.n}
             </button>
           ))}
         </p>
       )}
 
       {view === "list" ? (
-        <ActionsList items={shown} busy={busy} pickedId={pickedId} onMove={onMove} onAssign={onAssign} />
+        <ActionsList items={shown} busy={busy} pickedId={pickedId} onMove={onMove} onAssign={onAssign} readOnly={readOnly} />
       ) : (
         <div className="-mx-4 overflow-x-auto px-4 pb-2 sm:mx-0 sm:px-0" data-testid="action-board">
           <div className="grid grid-cols-[repeat(5,minmax(200px,1fr))] gap-3">

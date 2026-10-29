@@ -9,30 +9,34 @@ import type { PdfFile } from "@/modules/reports";
 
 type ExportAction = (input: unknown) => Promise<ActionResult<PdfFile>>;
 
-const FAILED = "PDF could not be created. Try again, or use Print, Save as PDF.";
+const FAILED = "The PDF could not be created. Try again in a moment.";
 
-function save({ fileName, base64 }: PdfFile) {
-  const bytes = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
-  const url = URL.createObjectURL(new Blob([bytes], { type: "application/pdf" }));
-  const link = Object.assign(document.createElement("a"), { href: url, download: fileName });
+// The signed URL answers with a download header and the file name, so a plain link click saves the file.
+function download({ url, fileName }: PdfFile) {
+  const link = Object.assign(document.createElement("a"), { href: url, download: fileName, rel: "noopener noreferrer" });
+  // In the page while clicked: some browsers ignore a click on a detached link.
+  link.style.display = "none";
+  document.body.appendChild(link);
   link.click();
-  setTimeout(() => URL.revokeObjectURL(url), 10_000);
+  link.remove();
 }
 
 /**
- * Export PDF (B-60): the share page as a PDF the agency can attach to an email. `reportId` prints a saved snapshot
- * instead of the live report.
+ * Download PDF (D-90): the report PDF the agency can attach to an email. `reportId` downloads a saved report instead
+ * of the current one.
  */
 export function ExportPdfButton({
   businessId,
   exportPdf,
   reportId = null,
-  label = "Export PDF",
+  label = "Download PDF",
+  disabled = false,
 }: {
   businessId: string;
   exportPdf: ExportAction;
   reportId?: string | null;
   label?: string;
+  disabled?: boolean;
 }) {
   const [pending, startTransition] = useTransition();
 
@@ -43,13 +47,13 @@ export function ExportPdfButton({
         toast.error(result?.error ?? FAILED);
         return;
       }
-      save(result.data);
+      download(result.data);
       toast.success("PDF downloaded.");
     });
   }
 
   return (
-    <Button variant="outline" disabled={pending} onClick={run} aria-busy={pending} data-testid="export-pdf">
+    <Button variant="outline" disabled={pending || disabled} onClick={run} aria-busy={pending} data-testid="export-pdf">
       {pending ? <Loader2 aria-hidden className="animate-spin" /> : <FileDown aria-hidden />}
       {pending ? "Creating PDF…" : label}
     </Button>

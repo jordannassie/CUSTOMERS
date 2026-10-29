@@ -22,6 +22,8 @@ export const LIMITS = {
   competitor_lookup: { max: 30, windowMs: HOUR },
   // Each website check reads a competitor's pages and asks an AI model, both paid for (Competitors, B-91).
   site_check: { max: 20, windowMs: HOUR },
+  // Each branch search is a paid Google Places Text Search ("Pick your branch on Google", step 6d).
+  branch_search: { max: 20, windowMs: HOUR },
 } satisfies Record<string, Limit>;
 
 export type Bucket = keyof typeof LIMITS;

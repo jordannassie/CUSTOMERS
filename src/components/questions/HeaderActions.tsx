@@ -16,11 +16,14 @@ export function HeaderActions() {
     // A byte order mark, so spreadsheet apps read names with accents correctly.
     const blob = new Blob(["﻿", questionsCsv(rows, view.models)], { type: "text/csv;charset=utf-8" });
     const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = "questions.csv";
+    // In the page while clicked, and the address kept a while: some browsers ignore a detached link, or start the
+    // download only after the click returns.
+    const link = Object.assign(document.createElement("a"), { href: url, download: "questions.csv" });
+    link.style.display = "none";
+    document.body.appendChild(link);
     link.click();
-    URL.revokeObjectURL(url);
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 10_000);
   }
 
   function goToForm() {

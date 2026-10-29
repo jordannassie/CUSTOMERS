@@ -8,10 +8,11 @@ import { GoogleAttribution } from "@/components/onboarding/PlaceBits";
 import { CopyButton } from "@/components/opportunities/CopyButton";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { LocalDate } from "@/components/ui/local-date";
 import { compareHref } from "@/lib/compare-href";
 import { fixCardId } from "@/lib/fix-where";
 import { STATUS_TEXT, type ActionItem, type ActionStatus } from "@/modules/opportunities/board/service";
-import { IMPACT, Moves } from "./ActionCard";
+import { IMPACT, Moves, SHORT_DAY } from "./ActionCard";
 
 const ORDER: ActionStatus[] = ["todo", "in_progress", "suggested", "done", "dismissed"];
 const STATUS_BADGE: Record<ActionStatus, "tint" | "secondary" | "good" | "mid" | "outline"> = {
@@ -21,7 +22,6 @@ const STATUS_BADGE: Record<ActionStatus, "tint" | "secondary" | "good" | "mid" |
   done: "good",
   dismissed: "secondary",
 };
-const day = (iso: string) => new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric" });
 
 /**
  * The list view of Actions (dashboard redesign): one full-width table, a row per fix, To do first. Each row says the
@@ -34,12 +34,14 @@ export function ActionsList({
   pickedId,
   onMove,
   onAssign,
+  readOnly = false,
 }: {
   items: ActionItem[];
   busy: string | null;
   pickedId: string | null;
   onMove: (item: ActionItem, status: ActionStatus) => void;
   onAssign: (item: ActionItem, toMe: boolean) => void;
+  readOnly?: boolean;
 }) {
   const [open, setOpen] = useState<string | null>(pickedId);
   const rows = ORDER.flatMap((status) => items.filter((i) => i.status === status));
@@ -63,9 +65,10 @@ export function ActionsList({
               <li
                 key={item.id}
                 id={fixCardId(item.id)}
-                className={cn("scroll-mt-24 px-4 py-3", pickedId === item.id && "bg-primary-tint/40")}
+                className={cn("scroll-mt-24 px-4 py-3", pickedId === item.id && "animate-fix-pulse bg-primary-tint/40")}
                 data-testid="opportunity"
                 data-status={item.status}
+                data-picked={pickedId === item.id || undefined}
               >
                 <div className="grid gap-x-4 gap-y-2 lg:grid-cols-[5.5rem_minmax(0,1fr)_minmax(0,13rem)_7rem_4.5rem_11rem] lg:items-start">
                   {/* On a phone the impact, column and date share one line above the fix. */}
@@ -74,7 +77,7 @@ export function ActionsList({
                     <Badge variant={STATUS_BADGE[item.status]} className="lg:hidden">
                       {STATUS_TEXT[item.status]}
                     </Badge>
-                    <span className="text-xs text-muted-foreground tabular-nums lg:hidden">{day(item.completedAt ?? item.createdAt)}</span>
+                    <span className="text-xs text-muted-foreground tabular-nums lg:hidden"><LocalDate iso={item.completedAt ?? item.createdAt} options={SHORT_DAY} /></span>
                   </span>
                   <div className="flex min-w-0 flex-col gap-0.5">
                     <button
@@ -95,9 +98,9 @@ export function ActionsList({
                   <span className="hidden lg:block">
                     <Badge variant={STATUS_BADGE[item.status]}>{STATUS_TEXT[item.status]}</Badge>
                   </span>
-                  <span className="hidden text-xs text-muted-foreground tabular-nums lg:block">{day(item.completedAt ?? item.createdAt)}</span>
+                  <span className="hidden text-xs text-muted-foreground tabular-nums lg:block"><LocalDate iso={item.completedAt ?? item.createdAt} options={SHORT_DAY} /></span>
                   <div className="flex flex-wrap items-center gap-1.5 lg:justify-end">
-                    {item.status === "suggested" ? (
+                    {readOnly ? null : item.status === "suggested" ? (
                       <>
                         <Button type="button" size="sm" variant="outline" disabled={busy === item.id} onClick={() => onMove(item, "dismissed")}>
                           Dismiss
@@ -134,7 +137,7 @@ export function ActionsList({
                       </ol>
                     )}
                     <div className="flex flex-wrap items-center gap-3">
-                      {item.claudePrompt && item.place === "website" && (
+                      {item.claudePrompt && (
                         <CopyButton text={item.claudePrompt} label="Copy prompt for Claude" copiedNote="Prompt copied. Paste it into Claude to get a draft." />
                       )}
                       {item.about.map((c) => (
@@ -142,7 +145,6 @@ export function ActionsList({
                           Compare with {c.name}
                         </Link>
                       ))}
-                      {item.status === "done" && <span className="text-xs text-muted-foreground">We will measure the effect over the next 30 days.</span>}
                     </div>
                   </div>
                 )}

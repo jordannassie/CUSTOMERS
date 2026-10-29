@@ -16,6 +16,7 @@ import {
 const PAGE = 1000;
 // Keeps each .in() filter well inside the URL length limit.
 const ID_CHUNK = 200;
+const PARALLEL_READS = 4;
 
 export type UsageCostOptions = { days: PeriodDays; includeTest: boolean };
 
@@ -118,14 +119,18 @@ async function readAll<T>(
 async function providerOfChecks(checkIds: string[]): Promise<Map<string, string>> {
   const unique = [...new Set(checkIds)];
   const chunks = Array.from({ length: Math.ceil(unique.length / ID_CHUNK) }, (_, i) => unique.slice(i * ID_CHUNK, (i + 1) * ID_CHUNK));
-  const rows = (
-    await Promise.all(
-      chunks.map(async (chunk) => {
+  // A few requests at a time: with many checks, one request per chunk all at once swamps the database gateway and
+  // every read fails ("fetch failed"), the Overview included (audit, 2026-10-28).
+  const rows: { id: string; provider: string }[] = [];
+  for (let i = 0; i < chunks.length; i += PARALLEL_READS) {
+    const batch = await Promise.all(
+      chunks.slice(i, i + PARALLEL_READS).map(async (chunk) => {
         const { data, error } = await createServiceClient().from("visibility_results").select("id, provider").in("id", chunk);
         if (error) throw new Error(`Usage and cost: ${error.message}`);
         return data;
       }),
-    )
-  ).flat();
+    );
+    rows.push(...batch.flat());
+  }
   return new Map(rows.map((r) => [r.id, r.provider]));
 }

@@ -35,7 +35,7 @@ describe("questionFacts (step 2)", () => {
     expect(facts).toEqual([
       expect.objectContaining({
         title: "Their website says emergency service",
-        detail: `They win "Which plumber in Dallas offers emergency repairs?". Yours doesn't say it. Theirs: "24/7 emergency plumbing"`,
+        detail: `AI named them more often on "Which plumber in Dallas offers emergency repairs?". We didn't find it on the pages we read of yours. Theirs: "24/7 emergency plumbing"`,
         where: "website",
       }),
     ]);
@@ -43,7 +43,7 @@ describe("questionFacts (step 2)", () => {
 
   it("falls back to the question's own words their site uses and yours doesn't, such as a place", () => {
     const facts = questionFacts([{ question: "Best tire shop in Plano?" }], { claims: [], words: ["tire", "plano"] }, { claims: [], words: ["tire"] });
-    expect(facts[0]).toMatchObject({ title: 'Their website mentions "plano"', detail: `They win "Best tire shop in Plano?". Your website doesn't mention it.` });
+    expect(facts[0]).toMatchObject({ title: 'Their website mentions "plano"', detail: `AI named them more often on "Best tire shop in Plano?". We didn't find it on the pages we read of yours.` });
   });
 
   it("says nothing when your site says the same, and gives at most 2", () => {

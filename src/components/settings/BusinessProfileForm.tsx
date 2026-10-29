@@ -7,8 +7,8 @@ import { INDUSTRIES, INDUSTRY_LABELS, isIndustry } from "@/lib/industries";
 import { isVagueOtherLabel, OTHER_LABEL_HINT } from "@/lib/other-label";
 import type { ActionResult } from "@/modules/auth";
 import type { SettingsBusiness } from "@/modules/settings";
-import { ALIASES_MAX, AREA_MAX } from "@/modules/settings/schema";
-import { aliasesProblem, aliasExample, normalizeWebsite, parseServices } from "@/modules/settings/service";
+import { ALIASES_MAX, AREA_MAX, PHONE_MAX, SERVICES_MAX } from "@/modules/settings/schema";
+import { aliasesProblem, aliasExample, normalizeWebsite, parseServices, phoneProblem, PROFILE_FIELDS, servicesProblem, type ProfileField } from "@/modules/settings/service";
 import { Button } from "@/components/ui/button";
 import { CountrySelect } from "@/components/ui/country-select";
 import { Select } from "@/components/ui/select";
@@ -20,7 +20,7 @@ import { FormError, Panel, TEXTAREA_CLASS } from "./SettingsSection";
 export type SaveAction = (input: unknown) => Promise<ActionResult<null>>;
 
 type Fields = Omit<SettingsBusiness, "id" | "services" | "aliases" | "models" | "frequency"> & { services: string; aliases: string };
-type Checked = "name" | "website" | "industry" | "aliases";
+type Checked = ProfileField;
 
 // Matches the height of the inputs in this form.
 const SELECT_HEIGHT = "h-9";
@@ -58,7 +58,7 @@ export function BusinessProfileForm({ business, save }: { business: SettingsBusi
     value: form[key],
     onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
       setForm((f) => ({ ...f, [key]: e.target.value }));
-      if (key === "name" || key === "website" || key === "aliases") fields.clear(key);
+      if (isChecked(key)) fields.clear(key);
     },
   });
 
@@ -75,7 +75,9 @@ export function BusinessProfileForm({ business, save }: { business: SettingsBusi
             ? OTHER_LABEL_HINT
             : undefined,
       website: typed.ok ? undefined : "Enter a website like yourbusiness.com, or leave it empty.",
+      services: servicesProblem(parseServices(form.services)),
       aliases: aliasesProblem(parseServices(form.aliases)),
+      phone: phoneProblem(form.phone),
     });
     if (bad) return;
     startTransition(async () => {
@@ -85,7 +87,11 @@ export function BusinessProfileForm({ business, save }: { business: SettingsBusi
         services: parseServices(form.services),
         aliases: parseServices(form.aliases),
       });
-      if (!result.ok) return setError(result.error);
+      if (!result.ok) {
+        // The server names the field it refused, so the message sits under it like the form's own checks.
+        if (result.field && isChecked(result.field)) return void fields.show({ [result.field]: result.error });
+        return setError(result.error);
+      }
       setSaved(form);
       toast.success("Business profile saved");
     });
@@ -151,8 +157,8 @@ export function BusinessProfileForm({ business, save }: { business: SettingsBusi
           </div>
         )}
 
-        <Row label="Services" htmlFor="profile-services" hint="Separate services with commas.">
-          <textarea {...field("services")} rows={2} className={TEXTAREA_CLASS} />
+        <Row label="Services" htmlFor="profile-services" hint={`Separate services with commas, up to ${SERVICES_MAX}.`} error={fields.errors.services}>
+          <textarea {...field("services")} rows={2} className={TEXTAREA_CLASS} {...fields.fieldProps("services", "profile-services-hint")} />
         </Row>
 
         <Row
@@ -183,8 +189,8 @@ export function BusinessProfileForm({ business, save }: { business: SettingsBusi
               className={SELECT_HEIGHT}
             />
           </Row>
-          <Row label="Phone" htmlFor="profile-phone">
-            <Input {...field("phone")} maxLength={30} type="tel" autoComplete="tel" />
+          <Row label="Phone" htmlFor="profile-phone" error={fields.errors.phone}>
+            <Input {...field("phone")} maxLength={PHONE_MAX} type="tel" autoComplete="tel" {...fields.fieldProps("phone")} />
           </Row>
         </div>
 
@@ -225,6 +231,10 @@ function Row({
       )}
     </div>
   );
+}
+
+function isChecked(key: string): key is Checked {
+  return (PROFILE_FIELDS as readonly string[]).includes(key);
 }
 
 /** The owner's own words for an "Other" industry: never a list key, never the bare "other". */

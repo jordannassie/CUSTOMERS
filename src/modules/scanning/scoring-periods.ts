@@ -64,6 +64,19 @@ export function modelWeeklyChanges(
   return changes;
 }
 
+/** Each model's change in its 30-day score against the 30 days before, for the monthly client report. Same rule. */
+export function modelMonthlyChanges(
+  checks: ScoreCheck[],
+  opts: { now: Date; models: readonly ProviderId[] },
+): Partial<Record<ProviderId, Change>> {
+  const changes: Partial<Record<ProviderId, Change>> = {};
+  for (const model of opts.models) {
+    const change = periodChange(checks, { now: opts.now, models: [model] }, SCORE_WINDOW_DAYS);
+    if (change) changes[model] = change;
+  }
+  return changes;
+}
+
 /** A competitor's weekly change in its 30-day score, how often AI named it (DB-013). */
 export function competitorWeeklyChange(
   checks: ScoreCheck[],

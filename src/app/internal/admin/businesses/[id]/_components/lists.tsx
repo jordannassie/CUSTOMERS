@@ -1,3 +1,4 @@
+import { OPEN_FIX_STATUSES } from "@/lib/fix-status";
 import { Badge } from "@/components/ui/badge";
 import type { AdminBusinessDetail } from "@/modules/admin";
 import Section, { Empty } from "./section";
@@ -52,15 +53,17 @@ const IMPACT = {
   medium: { variant: "mid", label: "Medium impact" },
   low: { variant: "secondary", label: "Low impact" },
 } as const;
+// The Actions board's names for each saved status (migration 078 added To do).
 const OPPORTUNITY_STATUS: Record<string, string> = {
-  open: "Open",
+  open: "Suggested",
+  todo: "To do",
   in_progress: "In progress",
   resolved: "Done",
   dismissed: "Dismissed",
 };
 
 export function Opportunities({ opportunities }: { opportunities: Detail["opportunities"] }) {
-  const open = opportunities.filter((o) => o.status === "open" || o.status === "in_progress").length;
+  const open = opportunities.filter((o) => OPEN_FIX_STATUSES.includes(o.status)).length;
   return (
     <Section title="Opportunities" note={opportunities.length ? `${open} still open` : undefined}>
       {opportunities.length === 0 ? (

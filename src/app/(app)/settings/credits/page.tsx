@@ -5,12 +5,22 @@ import { credits } from "@/components/usage/format";
 import { buyTopUp, completeFixtureTopUp, getTopUpStatus, getTopupOffer } from "@/modules/billing";
 import { requireAgency } from "@/modules/auth";
 import { getBalance } from "@/modules/credits";
-import { canSpendTopUps } from "@/modules/entitlements";
-import { BILLING_HREF, BUY_CREDITS_HREF } from "@/modules/workspace";
+import { canBuyTopUps, REASONS, type Entitlement } from "@/modules/entitlements";
+import { BILLING_HREF, BUY_CREDITS_HREF, CHOOSE_PLAN_HREF } from "@/modules/workspace";
 import { TopupCheckout } from "./_components/topup-checkout";
 import { PageHeader } from "@/components/app/PageHeader";
 
 export const metadata: Metadata = { title: "Buy credits" };
+
+// Resumes setup at the step where it stopped (the onboarding page's resume redirect).
+const FINISH_SETUP_HREF = "/onboarding";
+
+/** Where a refusal's link goes: finish setup, choose a plan after one ended, else Billing (card, account). */
+function nextStep(spend: Entitlement): { label: string; href: string } {
+  if (spend.reason === REASONS.setupUnfinished) return { label: "Finish setup", href: FINISH_SETUP_HREF };
+  if (spend.reason === REASONS.canceled) return { label: "Choose a plan", href: CHOOSE_PLAN_HREF };
+  return { label: "Go to billing", href: BILLING_HREF };
+}
 
 type Props = { searchParams: Promise<{ session_id?: string | string[] }> };
 
@@ -19,7 +29,7 @@ export default async function BuyCreditsPage({ searchParams }: Props) {
   const { agency } = await requireAgency({ next: BUY_CREDITS_HREF });
   const [offer, spend, balance, params] = await Promise.all([
     getTopupOffer(),
-    canSpendTopUps(agency.id),
+    canBuyTopUps(agency.id),
     getBalance(agency.id),
     searchParams,
   ]);
@@ -50,8 +60,8 @@ export default async function BuyCreditsPage({ searchParams }: Props) {
         {!spend.allowed && !returned ? (
           <Notice>
             {spend.reason}{" "}
-            <Link href={BILLING_HREF} className="font-medium underline underline-offset-4 hover:no-underline">
-              Go to billing
+            <Link href={nextStep(spend).href} className="font-medium underline underline-offset-4 hover:no-underline">
+              {nextStep(spend).label}
             </Link>
           </Notice>
         ) : offer.packs.length === 0 ? (

@@ -4,7 +4,7 @@ import "server-only";
 import { providerErrorKind } from "@/lib/provider-error-kind";
 import { createServiceClient } from "@/lib/supabase/service";
 import { requireAgency } from "@/modules/auth";
-import type { Explanation } from "../explain";
+import type { Explanation, OpportunityDraft } from "../explain";
 import { fallbackMessage, fixesPending, saveFor } from "./service";
 import { trackedWording } from "../tracked-wording";
 
@@ -30,25 +30,36 @@ export async function saveExplanation(businessId: string, runId: string, explana
   if (newer.error) throw new Error(`Insights: could not check for a newer scan: ${newer.error.message}`);
   if (newer.data.length > 0) return "superseded";
 
-  const existing = await db.from("opportunities").select("id, title, status").eq("business_id", businessId);
+  const existing = await db.from("opportunities").select("id, title, status, source, affected_url").eq("business_id", businessId);
   if (existing.error) throw new Error(`Insights: could not load opportunities: ${existing.error.message}`);
-  const { insert, removeIds } = saveFor(existing.data, explanation);
+  const { insert, update, removeIds } = saveFor(existing.data, explanation);
+  // The AI's order, kept so the lists show its fixes the way it ranked them (lib/fix-order.ts). The rules have none:
+  // their fixes come after the AI's within an impact.
+  const rankOf = new Map(explanation.drafts.map((d, i) => [d, i]));
+  const evidenceData = (d: OpportunityDraft) => (explanation.source === "ai" ? { rank: rankOf.get(d) ?? null } : {});
+  const text = (d: OpportunityDraft) => ({
+    title: trackedWording(d.title),
+    description: trackedWording(d.description),
+    evidence: trackedWording(d.evidence),
+    impact: d.impact,
+    category: d.category,
+    recommended_action: trackedWording(d.recommended_action),
+    claude_prompt: d.claude_prompt === null ? null : trackedWording(d.claude_prompt),
+    evidence_data: evidenceData(d),
+  });
   // Insert first, so a failure leaves the old list rather than an empty one.
   if (insert.length > 0) {
     // Every column named on every row: in a many-row insert a missing one is sent as null for that row.
-    const rows = insert.map((d) => ({
-      business_id: businessId,
-      status: "open",
-      title: trackedWording(d.title),
-      description: trackedWording(d.description),
-      evidence: trackedWording(d.evidence),
-      impact: d.impact,
-      category: d.category,
-      recommended_action: trackedWording(d.recommended_action),
-      claude_prompt: d.claude_prompt === null ? null : trackedWording(d.claude_prompt),
-    }));
+    const rows = insert.map((d) => ({ business_id: businessId, status: "open", ...text(d) }));
     const { error } = await db.from("opportunities").insert(rows);
     if (error) throw new Error(`Insights: could not save opportunities: ${error.message}`);
+  }
+  // The same fix suggested again keeps its row (id, created_at), so ?fix= links and "new this week" stay right. Only
+  // while nobody has taken it up: a fix moved to To do since the list was read keeps the user's version.
+  const updatedAt = new Date().toISOString();
+  for (const { id, draft } of update) {
+    const { error } = await db.from("opportunities").update({ ...text(draft), updated_at: updatedAt }).eq("id", id).eq("business_id", businessId).eq("status", "open").eq("source", "scan");
+    if (error) throw new Error(`Insights: could not update an opportunity: ${error.message}`);
   }
   if (removeIds.length > 0) {
     // Only fixes a scan wrote and nobody has taken up yet: ones added from Compare or Sources stay (migration 078).

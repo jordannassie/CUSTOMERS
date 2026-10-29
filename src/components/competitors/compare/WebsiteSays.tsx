@@ -1,135 +1,121 @@
 "use client";
 
-import { useState } from "react";
-import { Check, Minus, X } from "lucide-react";
+import { Check, Minus } from "lucide-react";
 import { cn } from "cn";
-import { Button } from "@/components/ui/button";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { tidyQuote } from "@/lib/site-claims";
+import { Badge } from "@/components/ui/badge";
 import type { ClaimRow, ServiceChip } from "@/modules/competitors";
+import { QuoteBox, QuoteRow, Said, useOpenRows } from "./QuoteRows";
 
-const pageName = (page: string | null) => (page === "/" ? "Home page" : page ? `${page} page` : "Their website");
 const sentence = (label: string) => label.charAt(0).toUpperCase() + label.slice(1);
 
+type Yours = ServiceChip["yours"];
+const STATUS = {
+  missing: { text: "Not on your site", variant: "mid" },
+  mentioned: { text: "Mentioned only", variant: "secondary" },
+  listed: { text: "On your site", variant: "good" },
+  unknown: { text: "Not checked", variant: "secondary" },
+} as const;
+const statusOf = (y: Yours): keyof typeof STATUS => (y === null ? "unknown" : y === false ? "missing" : y === "mentioned" ? "mentioned" : "listed");
+// Gaps first: what they list and you don't is what to act on.
+const ORDER: (keyof typeof STATUS)[] = ["missing", "mentioned", "listed", "unknown"];
+
 /**
- * What their website says (B-91): their services as chips and, below, every claim either site makes. Picking a service
- * turns the list into that service, them against you, with each site's own words; "Show everything" goes back.
+ * What their website says (B-91, redesigned 2026-10-28): their services, each with whether yours lists it, and the
+ * things customers ask about, each side marked. Every row opens to both sites' words; one button opens them all.
  */
 export function WebsiteSays({ name, services, claims }: { name: string; services: ServiceChip[]; claims: ClaimRow[] }) {
-  const [picked, setPicked] = useState<string | null>(null);
-  const service = services.find((s) => s.name === picked) ?? null;
   return (
-    <div className="flex flex-col gap-4">
-      {services.length > 0 && (
-        <div className="flex flex-col gap-1.5">
-          <p className="text-xs font-medium text-muted-foreground">Services on their website</p>
-          <ul className="flex flex-wrap gap-1.5" data-testid="their-services">
-            {services.map((s) => (
-              <li key={s.name}>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <button
-                      type="button"
-                      aria-pressed={picked === s.name}
-                      onClick={() => setPicked(picked === s.name ? null : s.name)}
-                      className={cn(
-                        "rounded-xs px-2 py-0.5 text-[13px] focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none",
-                        s.onlyThem ? "bg-mid-bg font-medium text-mid-text" : "bg-muted text-foreground",
-                        picked === s.name && "ring-2 ring-primary",
-                      )}
-                    >
-                      {s.name}
-                    </button>
-                  </TooltipTrigger>
-                  {s.quote && (
-                    <TooltipContent className="max-w-72">
-                      &ldquo;{tidyQuote(s.quote)}&rdquo; ({pageName(s.page).toLowerCase()})
-                    </TooltipContent>
-                  )}
-                </Tooltip>
-              </li>
-            ))}
-          </ul>
-          <p className="text-xs text-text-hint">
-            {services.some((s) => s.onlyThem) ? "Highlighted: not in the services on your website. " : ""}Pick a service to compare it with yours.
-          </p>
-        </div>
-      )}
-
-      {service ? (
-        <ServiceCompare name={name} service={service} onClose={() => setPicked(null)} />
-      ) : (
-        <ClaimList name={name} rows={claims} />
-      )}
+    <div className="flex flex-col gap-6">
+      {services.length > 0 && <Services name={name} services={services} />}
+      <Claims name={name} rows={claims} />
     </div>
   );
 }
 
-function ServiceCompare({ name, service, onClose }: { name: string; service: ServiceChip; onClose: () => void }) {
-  const y = service.yours;
+function Services({ name, services }: { name: string; services: ServiceChip[] }) {
+  const sorted = [...services].sort((a, b) => ORDER.indexOf(statusOf(a.yours)) - ORDER.indexOf(statusOf(b.yours)));
+  const rows = useOpenRows(sorted.map((s) => s.name));
+  const read = services.every((s) => s.yours !== null);
+  const listed = services.filter((s) => !!s.yours && s.yours !== "mentioned").length;
   return (
-    <section className="flex flex-col gap-3 rounded-md border border-border p-3" data-testid="service-compare" aria-label={`${service.name}, them and you`}>
-      <div className="flex items-center justify-between gap-2">
-        <h4 className="text-sm font-semibold">{sentence(service.name)}</h4>
-        <Button type="button" variant="ghost" size="sm" className="h-7 gap-1 px-2 text-xs" onClick={onClose}>
-          <X className="size-3.5" aria-hidden="true" />
-          Show everything
-        </Button>
-      </div>
-      <Said who={name} tone="them" quote={service.quote} page={service.page} fallback="Listed on their website." />
-      {y === null ? (
-        <Said who="You" tone="none" fallback="We haven't read your website the same way yet." />
-      ) : y === false ? (
-        <Said who="You" tone="none" fallback="Not found on the pages we read of yours." />
-      ) : y === "mentioned" ? (
-        <Said who="You" tone="you" fallback="Your pages use these words, but it isn't in your services." />
-      ) : (
-        <Said who="You" tone="you" quote={y.quote} page={y.page} fallback={`Listed on your website as "${y.name}".`} />
-      )}
-    </section>
+    <QuoteBox
+      title="Services on their website"
+      summary={read ? `You list ${listed} of their ${services.length}. Open one to see both websites' words.` : "Open one to see their words."}
+      everyOpen={rows.everyOpen}
+      onToggleAll={rows.toggleAll}
+      testId="their-services"
+    >
+      {sorted.map((s) => {
+        const status = STATUS[statusOf(s.yours)];
+        return (
+          <QuoteRow
+            key={s.name}
+            label={sentence(s.name)}
+            open={rows.open.has(s.name)}
+            onToggle={() => rows.toggle(s.name)}
+            aside={<Badge variant={status.variant}>{status.text}</Badge>}
+            tone={s.yours === false ? "gap" : undefined}
+            testId="service-row"
+          >
+            <Said who={name} tone="them" about={s.name} quote={s.quote} page={s.page} fallback="Listed on their website." />
+            <YourService about={s.name} yours={s.yours} />
+          </QuoteRow>
+        );
+      })}
+    </QuoteBox>
   );
 }
 
-/** One side's words: a name tag, the quote with a coloured line, and the page it is on. */
-function Said({ who, tone, quote, page, fallback }: { who: string; tone: "them" | "you" | "none"; quote?: string | null; page?: string | null; fallback: string }) {
-  return (
-    <figure className="m-0 grid grid-cols-[4.5rem_minmax(0,1fr)] items-start gap-2">
-      <figcaption className={cn("truncate pt-0.5 text-xs font-medium", tone === "you" ? "text-primary" : "text-muted-foreground")} title={who}>
-        {who}
-      </figcaption>
-      <div className={cn("flex flex-col gap-0.5 border-l-2 pl-3", tone === "them" ? "border-competitor-1" : tone === "you" ? "border-primary" : "border-border")}>
-        {quote ? (
-          <>
-            <blockquote className="m-0 text-[13px] leading-relaxed text-foreground">&ldquo;{tidyQuote(quote)}&rdquo;</blockquote>
-            {page !== undefined && <span className="text-xs text-text-hint">{pageName(page ?? null)}</span>}
-          </>
-        ) : (
-          <span className="text-[13px] text-muted-foreground">{fallback}</span>
-        )}
-      </div>
-    </figure>
-  );
+function YourService({ about, yours }: { about: string; yours: Yours }) {
+  if (yours === null) return <Said who="You" tone="you" about={about} fallback="We haven't read your website the same way yet." />;
+  if (yours === false) return <Said who="You" tone="you" about={about} fallback="Not found on the pages we read of yours." />;
+  if (yours === "mentioned") return <Said who="You" tone="you" about={about} fallback="Your pages use these words, but it isn't in your services." />;
+  return <Said who="You" tone="you" about={about} quote={yours.quote} page={yours.page} fallback={`Listed on your website as "${yours.name}".`} />;
 }
 
-/** Every claim either site makes that questions ask about, side by side, with each site's words. */
-function ClaimList({ name, rows }: { name: string; rows: ClaimRow[] }) {
-  if (rows.length === 0) return <p className="text-sm text-muted-foreground">Neither website says the things questions usually ask about.</p>;
-  return (
-    <div className="flex flex-col gap-1.5" data-testid="website-claims">
-      <div className="grid grid-cols-[minmax(0,1fr)_4.5rem_3rem] gap-2 text-xs text-muted-foreground">
-        <span className="font-medium">What their website says</span>
-        <span className="truncate text-center" title={name}>
+/** Every claim either site makes that questions ask about, each side marked, opening to each site's words. */
+function Claims({ name, rows }: { name: string; rows: ClaimRow[] }) {
+  // Claim quotes are short, so they start open.
+  const open = useOpenRows(
+    rows.map((r) => r.key),
+    true,
+  );
+  if (rows.length === 0) {
+    return <p className="text-sm text-muted-foreground">Neither website says the things questions usually ask about.</p>;
+  }
+  const head = (
+    <div className="grid grid-cols-[minmax(0,1fr)_auto_1rem] gap-3 border-b border-border px-4 py-2 text-xs text-muted-foreground">
+      <span>A dash means we didn&apos;t find it on that website.</span>
+      <span className="grid grid-cols-[4.5rem_3rem] text-center">
+        <span className="truncate" title={name}>
           {name}
         </span>
-        <span className="text-center text-primary">You</span>
-      </div>
-      <ul className="flex flex-col divide-y divide-border rounded-md border border-border">
-        {rows.map((r) => {
-          const gap = !!r.them && r.you === false;
-          return (
-            <li key={r.key} className={cn("flex flex-col gap-2.5 px-3 py-3", gap && "bg-mid-bg/30")} data-testid="claim-row">
-              <div className="grid grid-cols-[minmax(0,1fr)_4.5rem_3rem] items-center gap-2 text-sm">
-                <span className="font-medium">{sentence(r.label)}</span>
+        <span className="font-medium text-primary">You</span>
+      </span>
+      <span />
+    </div>
+  );
+  return (
+    <QuoteBox
+      title="Things customers ask about"
+      summary="What each website says on the topics in customers' questions."
+      everyOpen={open.everyOpen}
+      onToggleAll={open.toggleAll}
+      head={head}
+      testId="website-claims"
+    >
+      {rows.map((r) => {
+        const gap = !!r.them && r.you === false;
+        return (
+          <QuoteRow
+            key={r.key}
+            label={sentence(r.label)}
+            open={open.open.has(r.key)}
+            onToggle={() => open.toggle(r.key)}
+            tone={gap ? "gap" : undefined}
+            testId="claim-row"
+            aside={
+              <span className="grid grid-cols-[4.5rem_3rem] items-center">
                 <Mark value={!!r.them} />
                 {r.you === null ? (
                   <span className="text-center text-xs text-text-hint" aria-label="Not checked" title="Your website wasn't read the same way yet">
@@ -138,15 +124,22 @@ function ClaimList({ name, rows }: { name: string; rows: ClaimRow[] }) {
                 ) : (
                   <Mark value={!!r.you} gap={gap} />
                 )}
-              </div>
-              {r.them && <Said who={name} tone="them" quote={r.them.quote} page={r.them.page} fallback="" />}
-              {r.you && <Said who="You" tone="you" quote={r.you.quote} page={r.you.page} fallback="" />}
-            </li>
-          );
-        })}
-      </ul>
-      <p className="text-xs text-text-hint">From the pages we read on each website. A dash means we didn&apos;t find it there.</p>
-    </div>
+              </span>
+            }
+          >
+            <Said who={name} tone="them" about={r.label} quote={r.them ? r.them.quote : null} page={r.them ? r.them.page : undefined} fallback="Not found on their pages." />
+            <Said
+              who="You"
+              tone="you"
+              about={r.label}
+              quote={r.you ? r.you.quote : null}
+              page={r.you ? r.you.page : undefined}
+              fallback={r.you === null ? "We haven't read your website the same way yet." : "Not found on the pages we read of yours."}
+            />
+          </QuoteRow>
+        );
+      })}
+    </QuoteBox>
   );
 }
 

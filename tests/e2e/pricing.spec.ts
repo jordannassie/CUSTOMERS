@@ -66,6 +66,7 @@ test("marketing pages make no removed claims", async ({ page }) => {
     "Checking my business in AI answers",
     "Using it for my agency's clients",
     "Booking a demo call",
+    "Help with my account",
     "Something else",
   ]);
 });

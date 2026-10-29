@@ -8,13 +8,14 @@ import { hostOf } from "@/lib/site-type";
 import { requireAgency } from "@/modules/auth";
 import { pairTimeline, type PairPoint } from "../charts";
 import { rowName, trackedNote } from "../chain";
-import { chainNames, fetchPlaceSignals, loadCompetitorsBase } from "../dal";
+import { CHART_DAYS, chainNames, fetchPlaceSignals, loadCompetitorsBase } from "../dal";
 import type { LeaderRow, SignalRow } from "../service";
 import { buildWhyPanels, loadWhyInputs } from "../why/dal";
 import type { WhyPanel } from "../why/service";
 import { leadCards, reasonCards, type LeadCard, type ReasonCard } from "./cards";
+import { pickerOptions, rowFor, type CompareOption } from "./options";
 
-export type CompareOption = { id: string; name: string; score: number | null; standing: LeaderRow["standing"]; color: string };
+export type { CompareOption } from "./options";
 
 export type Comparison = {
   businessId: string;
@@ -23,6 +24,8 @@ export type Comparison = {
   title: string;
   /** "You track Bean House on Congress" for a chain row. */
   note: string | null;
+  /** The tracked branch, as saved: Google values are this one listing's, never the whole chain's. */
+  branch: string;
   standing: LeaderRow["standing"];
   /** Added partway through the 30 days, so it is not compared yet. */
   collecting: boolean;
@@ -49,8 +52,6 @@ export type ComparePage = {
   selected: Comparison | null;
 };
 
-const rowFor = (leaderboard: LeaderRow[], tracked: string) =>
-  leaderboard.find((r) => !r.isYou && (r.name === tracked || r.chain?.tracked.includes(tracked))) ?? null;
 
 /** The competitor furthest ahead of you, else the strongest one: what an owner most wants to see first. */
 function defaultPick(options: CompareOption[]): string | null {
@@ -64,24 +65,16 @@ export async function getComparePage(businessId: string, competitorId: string | 
   const now = requestNow();
   // Both sets of reads start together.
   const [base, inputs] = await Promise.all([
-    loadCompetitorsBase(agency.id, businessId, now, { charts: true }),
+    loadCompetitorsBase(agency.id, businessId, now, { charts: true, chartDays: CHART_DAYS }),
     loadWhyInputs(agency.id, businessId, now.getTime()),
   ]);
   if (!base || !inputs) return null;
   const { view } = base;
   const panels = buildWhyPanels(inputs, chainNames(view.leaderboard));
   const order = colorOrder(view.leaderboard);
-  const options = panels.map((p) => {
-    const row = rowFor(view.leaderboard, p.trackedName);
-    return {
-      id: p.competitorId,
-      name: row ? rowName(row) : p.why.name,
-      score: row?.score ?? null,
-      standing: row?.standing ?? null,
-      color: competitorColor(order, row?.name ?? p.trackedName),
-    };
-  });
-  const pick = options.some((o) => o.id === competitorId) ? competitorId : defaultPick(options);
+  const { options, idFor } = pickerOptions(panels, view.leaderboard, order);
+  const asked = competitorId ? idFor.get(competitorId) : undefined;
+  const pick = asked ?? defaultPick(options);
   const panel = panels.find((p) => p.competitorId === pick);
   const page = { businessId, businessName: view.businessName, options, also: view.also };
   if (!panel) return { ...page, selected: null };
@@ -96,12 +89,13 @@ export async function getComparePage(businessId: string, competitorId: string | 
       businessName: view.businessName,
       title: row ? rowName(row) : panel.why.name,
       note: row ? trackedNote(row) : null,
+      branch: panel.trackedName,
       standing: row?.standing ?? null,
       collecting: row?.collecting ?? false,
       color: competitorColor(order, row?.name ?? panel.trackedName),
       scores: { you: you?.score ?? null, them: row?.score ?? null, margin: view.margin },
       panel,
-      cards: reasonCards(panel.why.allReasons, { id: panel.competitorId, name: panel.why.name }, ownDomain),
+      cards: reasonCards(panel.why.allReasons, { id: panel.competitorId, name: panel.why.name, tracked: panel.trackedName }, ownDomain, panel.fixRefs),
       leads: leadCards(panel.why.allLeads),
       trend: pairTimeline(base.report, row?.name ?? panel.trackedName),
       // Only the two places on this page are looked up, live, for this view only (D-73).

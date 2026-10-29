@@ -1,9 +1,9 @@
 import Link from "next/link";
 import { cn } from "cn";
 import { Badge } from "@/components/ui/badge";
-import { compareHref } from "@/lib/compare-href";
 import { STANDING_TEXT, type ComparePage } from "@/modules/competitors";
 import { AnyBusiness } from "./AnyBusiness";
+import { ChipLink } from "./ChipLink";
 import type { TrackAction } from "../AlsoRecommended";
 
 const BADGE = { ahead: "good", behind: "mid", about_same: "secondary" } as const;
@@ -26,20 +26,20 @@ export function Picker({ page, tab, track }: { page: ComparePage; tab: string; t
         {page.options.map((o) => {
           const on = selected?.panel.competitorId === o.id;
           return (
-            <Link
+            <ChipLink
               key={o.id}
-              href={compareHref(o.id, tab)}
-              aria-current={on ? "page" : undefined}
+              id={o.id}
+              tab={tab}
+              current={on}
               className={cn(
                 "inline-flex h-9 items-center gap-2 rounded-md border px-3 text-[13px] font-medium outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
                 on ? "border-primary bg-primary-tint text-primary-hover" : "border-border hover:bg-muted",
               )}
-              data-testid="compare-chip"
             >
               <span className="size-2.5 shrink-0 rounded-full" style={{ background: o.color }} aria-hidden="true" />
               <span className="max-w-48 truncate">{o.name}</span>
               <span className={cn("tabular-nums", on ? "text-primary" : "text-muted-foreground")}>{o.score ?? "None"}</span>
-            </Link>
+            </ChipLink>
           );
         })}
         <AnyBusiness businessId={page.businessId} names={page.also} track={track} />

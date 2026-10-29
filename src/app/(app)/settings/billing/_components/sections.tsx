@@ -18,7 +18,8 @@ const STATUS: Record<string, { label: string; variant: "tint" | "good" | "low" |
 export function PlanStatus({ view, keep }: { view: BillingView; keep: ChangeAction }) {
   const status = STATUS[view.status] ?? { label: "Active", variant: "good" as const };
   const billed = view.onPlan.filter((b) => !b.notCharged);
-  const monthly = billed.reduce((sum, b) => sum + b.plan.priceCents, 0);
+  // What the businesses are charged now, which can be an older amount than the plan's price (D-93).
+  const monthly = billed.reduce((sum, b) => sum + b.priceCents, 0);
 
   return (
     <div className="flex flex-col gap-3">
@@ -38,8 +39,8 @@ export function PlanStatus({ view, keep }: { view: BillingView; keep: ChangeActi
 
       {view.status === "past_due" && (
         <Notice tone="danger" testId="past-due-notice">
-          Your last payment didn&apos;t go through, so automatic scans are paused. Use Manage card and invoices to update
-          your card, and we&apos;ll try the payment again.
+          Your last payment didn&apos;t go through, so scans are paused. Use Manage card and invoices to update your
+          card, and we&apos;ll try the payment again.
         </Notice>
       )}
       {view.cancelAt && (
@@ -50,7 +51,9 @@ export function PlanStatus({ view, keep }: { view: BillingView; keep: ChangeActi
             <LocalDate iso={view.cancelAt} />
             {view.status === "trialing"
               ? ". Your trial credits work until then, and you won't be charged."
-              : ". Your plan credits work until then, and you won't be charged again."}
+              : view.status === "past_due"
+                ? ". You won't be charged for another month, but the unpaid invoice may still be collected."
+                : ". Your plan credits work until then, and you won't be charged again."}
           </span>
           <ChangeDialog
             label="Keep my plan"

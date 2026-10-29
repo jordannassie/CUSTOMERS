@@ -3,6 +3,8 @@ export { addToActions, assignActionToMe, moveActionTo, setChecklistItem, setOppo
 export { actionStates, getActionsBoard } from "./board/dal";
 export {
   ACTION_STATUSES,
+  OPEN_ACTION_STATUSES,
+  fixPlace,
   PLACE_TEXT,
   PLACES,
   STATUS_TEXT,
@@ -12,7 +14,7 @@ export {
   type NewAction,
   type Place,
 } from "./board/service";
-export { getOpportunitiesPage, type OpportunitiesPage } from "./dal";
+export { getActionsExtras, type ActionsExtras } from "./dal";
 export type { ChecklistItem, ChecklistKey } from "./checklist";
 export type { Impact, OpportunityItem, Status } from "./service";
 export { WHERE_ORDER, type Where } from "./where";

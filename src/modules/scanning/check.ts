@@ -118,7 +118,8 @@ async function namesFor(input: CheckInput, answer: CheckAnswer, ctx: CheckContex
   try {
     const extraction = await ctx.extractNames(answer.answerText);
     if (!ctx.isTest) {
-      await storeExtraction(cacheKey(input), extraction);
+      // Onto the answer it came from only: a newer answer under the same key keeps its own names (or none yet).
+      if (answer.cachedAt) await storeExtraction(cacheKey(input), answer.cachedAt, extraction);
       await insertExtractionUsage({
         accountUserId: ctx.ownerUserId,
         businessId: ctx.businessId,

@@ -98,6 +98,7 @@ export type Database = {
           name: string
           owner_user_id: string
           purge_after: string | null
+          report_branding: Json
           status: string
           stripe_customer_id: string | null
           stripe_subscription_id: string | null
@@ -116,6 +117,7 @@ export type Database = {
           name: string
           owner_user_id: string
           purge_after?: string | null
+          report_branding?: Json
           status?: string
           stripe_customer_id?: string | null
           stripe_subscription_id?: string | null
@@ -134,6 +136,7 @@ export type Database = {
           name?: string
           owner_user_id?: string
           purge_after?: string | null
+          report_branding?: Json
           status?: string
           stripe_customer_id?: string | null
           stripe_subscription_id?: string | null
@@ -518,6 +521,7 @@ export type Database = {
           created_at: string
           current_period_end: string | null
           plan_id: string
+          price_cents: number | null
           status: string
           stripe_subscription_item_id: string | null
         }
@@ -527,6 +531,7 @@ export type Database = {
           created_at?: string
           current_period_end?: string | null
           plan_id: string
+          price_cents?: number | null
           status?: string
           stripe_subscription_item_id?: string | null
         }
@@ -536,6 +541,7 @@ export type Database = {
           created_at?: string
           current_period_end?: string | null
           plan_id?: string
+          price_cents?: number | null
           status?: string
           stripe_subscription_item_id?: string | null
         }
@@ -1273,6 +1279,64 @@ export type Database = {
         }
         Relationships: []
       }
+      price_changes: {
+        Row: {
+          agency_id: string
+          batch: string
+          business_id: string
+          created_at: string
+          from_cents: number
+          id: string
+          plan_id: string
+          starts_at: string
+          to_cents: number
+        }
+        Insert: {
+          agency_id: string
+          batch: string
+          business_id: string
+          created_at?: string
+          from_cents: number
+          id?: string
+          plan_id: string
+          starts_at: string
+          to_cents: number
+        }
+        Update: {
+          agency_id?: string
+          batch?: string
+          business_id?: string
+          created_at?: string
+          from_cents?: number
+          id?: string
+          plan_id?: string
+          starts_at?: string
+          to_cents?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "price_changes_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "price_changes_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "price_changes_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           account_type: string
@@ -1562,8 +1626,10 @@ export type Database = {
           business_id: string
           created_at: string
           id: string
+          pdf_path: string | null
           period_end: string
           period_start: string
+          saved: boolean
           sections: Json
           snapshot: Json
           title: string
@@ -1573,8 +1639,10 @@ export type Database = {
           business_id: string
           created_at?: string
           id?: string
+          pdf_path?: string | null
           period_end: string
           period_start: string
+          saved?: boolean
           sections?: Json
           snapshot: Json
           title: string
@@ -1584,8 +1652,10 @@ export type Database = {
           business_id?: string
           created_at?: string
           id?: string
+          pdf_path?: string | null
           period_end?: string
           period_start?: string
+          saved?: boolean
           sections?: Json
           snapshot?: Json
           title?: string

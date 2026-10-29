@@ -1,7 +1,7 @@
 import type Stripe from "stripe";
 import { afterAll, describe, expect, it } from "vitest";
 import { sendEmail, type EmailClient } from "@/modules/email";
-import { trialChargeCents } from "./emails";
+import { firstChargeCents } from "../plan-change/trial-bill";
 import * as fx from "./fixtures.test-helpers";
 import { cleanUp, harness, service, setup } from "./harness.test-helpers";
 
@@ -33,11 +33,11 @@ async function sentRows(key: string) {
   return data;
 }
 
-describe("trialChargeCents", () => {
+describe("firstChargeCents", () => {
   it("adds up every item, and gives up when a price is unknown", () => {
     const sub = fx.subscription({ customer: "cus_x", status: "trialing", items: [{ product: "a", periodEnd: 1 }, { product: "b", periodEnd: 1 }] });
-    expect(trialChargeCents(sub)).toBeNull();
-    expect(trialChargeCents(priced(sub, [14900, 14900]))).toBe(29800);
+    expect(firstChargeCents(sub, null)).toBeNull();
+    expect(firstChargeCents(priced(sub, [14900, 14900]), null)).toBe(29800);
   });
 });
 
@@ -66,6 +66,43 @@ describe("trial ending", () => {
     expect(mail.sent[0].subject).toBe("Your free trial ends on October 2 (UTC)");
     expect(mail.sent[0].text).toContain("On October 2 (UTC) we'll charge $298 to your card");
     expect(await sentRows(`trial_ending:${sub.id}:${trialEnd * 1000}`)).toEqual([{ type: "trial_ending", status: "sent" }]);
+  });
+});
+
+describe("trial ending with a business coming off at the trial end", () => {
+  it("states the first charge from the schedule's next phase, not every item now (BUG-245)", async () => {
+    const a = await setup();
+    const mail = fakeSender();
+    const h = harness(mail.send);
+    const trialEnd = Date.UTC(2026, 9, 2, 12) / 1000;
+    const sub = priced(
+      fx.subscription({
+        customer: a.customer,
+        agencyId: a.agencyId,
+        status: "trialing",
+        trialEnd,
+        items: a.businesses.map((businessId) => ({ product: "cd_plan_starter", businessId, periodEnd: trialEnd })),
+      }),
+      [14900, 14900],
+    );
+    const [kept, removed] = sub.items.data;
+    const phase = (items: Stripe.SubscriptionItem[], from: number, to: number) => ({
+      start_date: from,
+      end_date: to,
+      items: items.map((i) => ({ price: i.price.id, quantity: 1, metadata: i.metadata })),
+    });
+    const start = trialEnd - 7 * DAY;
+    const schedule = {
+      id: fx.id("sub_sched"),
+      current_phase: { start_date: start, end_date: trialEnd },
+      phases: [phase([kept, removed], start, trialEnd), phase([kept], trialEnd, trialEnd + 30 * DAY)],
+    } as unknown as Stripe.SubscriptionSchedule;
+    h.schedules.set(schedule.id, schedule);
+
+    await h.deliver(fx.event("customer.subscription.trial_will_end", { ...sub, schedule: schedule.id }));
+
+    expect(mail.sent).toHaveLength(1);
+    expect(mail.sent[0].text).toContain("On October 2 (UTC) we'll charge $149 to your card");
   });
 });
 

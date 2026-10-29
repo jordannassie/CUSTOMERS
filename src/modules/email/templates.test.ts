@@ -61,15 +61,39 @@ describe("B-62 email templates", () => {
     expect((await render(createElement(LowCreditsEmail, lowProps("negative", -12)))).text).toContain("your balance is now -12");
   });
 
-  it("weekly report: scores, real changes, new fixes, share links and an unsubscribe link", async () => {
+  it("weekly report: the report's numbers, real changes, top fixes, PDF links and an unsubscribe link", async () => {
     const { html, text } = await render(createElement(WeeklyReportEmail, { ...WeeklyReportEmail.PreviewProps, baseUrl: BASE }));
     expect(text).toContain("Bean There Coffee");
-    expect(text).toContain("Up 8 points on last week");
-    expect(text).toContain("No real change on last week.");
-    expect(text).toContain("Add your opening hours to Google");
-    expect(text).toContain("and 1 more");
+    expect(text).toContain("23 of 36 answers named Bean There Coffee. Rank #1 of 3 tracked businesses.");
+    expect(text).toContain("Up 8 points on the 30 days before");
+    expect(text).toContain("No clear change on the 30 days before.");
+    expect(text).toContain("Add your opening hours to Google (Google Business Profile)");
+    expect(text).toContain("and 1 more in the report");
+    expect(text).toContain("Open the full report (PDF)");
     expect(html).toContain('href="https://customers.direct/r/preview-one"');
     expect(html).toContain("Unsubscribe from weekly reports");
-    expect(html).not.toMatch(/\.pdf/i);
+    // Preview businesses carry no chosen tools, so all three are named.
+    expect(text).toContain("how often ChatGPT, Claude and Perplexity recommended the business");
+  });
+
+  it("weekly report names only the AI tools the businesses chose", async () => {
+    const [first, second] = WeeklyReportEmail.PreviewProps.businesses;
+    const same = await render(
+      createElement(WeeklyReportEmail, { ...WeeklyReportEmail.PreviewProps, businesses: [{ ...first, aiTools: ["ChatGPT", "Claude"] }], baseUrl: BASE }),
+    );
+    expect(same.text).toContain("how often ChatGPT and Claude recommended the business");
+    expect(same.text).not.toContain("Perplexity");
+    expect(same.text).not.toContain("Checked on");
+
+    const mixed = await render(
+      createElement(WeeklyReportEmail, {
+        ...WeeklyReportEmail.PreviewProps,
+        businesses: [{ ...first, aiTools: ["Claude"] }, { ...second, aiTools: ["ChatGPT", "Perplexity"] }],
+        baseUrl: BASE,
+      }),
+    );
+    expect(mixed.text).toContain("how often the AI tools chosen for it recommended the business");
+    expect(mixed.text).toContain("Checked on Claude.");
+    expect(mixed.text).toContain("Checked on ChatGPT and Perplexity.");
   });
 });

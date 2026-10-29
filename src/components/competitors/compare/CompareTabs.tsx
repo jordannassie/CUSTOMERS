@@ -37,7 +37,7 @@ export function CompareTabs({ initial, panels }: { initial: CompareTab; panels: 
   }
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex min-w-0 flex-col gap-6">
       <div className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
         <div role="tablist" aria-label="Comparison" className="flex w-max gap-1 border-b border-border sm:w-full">
           {COMPARE_TABS.map((t) => (
@@ -63,7 +63,7 @@ export function CompareTabs({ initial, panels }: { initial: CompareTab; panels: 
         </div>
       </div>
       {COMPARE_TABS.map((t) => (
-        <div key={t.id} role="tabpanel" id={`compare-panel-${t.id}`} aria-labelledby={`compare-tab-${t.id}`} hidden={t.id !== active}>
+        <div key={t.id} role="tabpanel" id={`compare-panel-${t.id}`} aria-labelledby={`compare-tab-${t.id}`} hidden={t.id !== active} className="min-w-0">
           {panels[t.id]}
         </div>
       ))}

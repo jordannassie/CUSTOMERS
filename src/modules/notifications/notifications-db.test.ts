@@ -94,7 +94,7 @@ describe("low credits", () => {
 });
 
 describe("weekly report", () => {
-  it("sends each agency one summary a week with scores, new fixes and a share link", async () => {
+  it("sends each agency one summary a week with each business's report numbers and a link to its PDF", async () => {
     const a = await createAgency({ isTest: false });
     const scored = await addBusiness(a, "Sunrise Coffee Bar", { scored: true });
     await addBusiness(a, "Brand New Bakery");
@@ -106,14 +106,20 @@ describe("weekly report", () => {
 
     const [email] = mail.sent;
     expect(email.subject).toBe("Your weekly report: 2 businesses, no big moves");
-    expect(email.text).toContain("Sunrise Coffee Bar");
-    expect(email.text).toContain("67 out of 100");
-    expect(email.text).toContain("Add your opening hours to your website");
+    // The text part is the report summary (D-90): the same numbers as the PDF the link opens.
+    expect(email.text).toContain("Sunrise Coffee Bar: AI visibility report");
+    expect(email.text).toContain("Visibility score: 67/100, 2 of 3 answers named Sunrise Coffee Bar.");
     expect(email.text).toContain("No score yet");
+    expect(email.html).toContain("67");
     const { data: shares } = await service.from("report_shares").select("token").eq("business_id", scored).is("revoked_at", null).throwOnError();
     expect(shares).toHaveLength(1);
     expect(email.html).toContain(`href="https://app.example/r/${shares[0].token}"`);
+    expect(email.text).toContain(`Full report (PDF): https://app.example/r/${shares[0].token}`);
     expect(email.html).toContain("Unsubscribe from weekly reports");
+    expect(email.text).toContain("Unsubscribe from weekly reports: ");
+    // The report was saved once, and its fixes are in Actions.
+    const { data: reports } = await service.from("reports").select("id").eq("business_id", scored).throwOnError();
+    expect(reports).toHaveLength(1);
   });
 
   it("never turns a share link back on, skips agencies with no scores, and respects unsubscribes", async () => {

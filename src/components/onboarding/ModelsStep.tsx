@@ -66,6 +66,9 @@ export function ModelsStep({ businessId, models, frequency, activeQuestions, pla
       const result = await save({ businessId, models: chosen, frequency: often, addOn: confirmed });
       if (!result.ok) return setError(result.error);
       router.push(result.data.next);
+      // Setup shares the app frame, which a push keeps as it was: refresh it so the switcher lists the business just
+      // set up, not the draft.
+      router.refresh();
     });
   }
 
@@ -139,7 +142,7 @@ export function ModelsStep({ businessId, models, frequency, activeQuestions, pla
             </div>
           ) : null}
           <p className="mt-3 border-t border-border pt-3 text-xs leading-relaxed text-text-hint">
-            {count(activeQuestions)} {activeQuestions === 1 ? "question" : "questions"} × {chosen.length} {chosen.length === 1 ? "model" : "models"}, checked {CADENCE[often]}. Each answer uses 1 credit.
+            {count(activeQuestions)} {activeQuestions === 1 ? "question" : "questions"} × {chosen.length} {chosen.length === 1 ? "model" : "models"}, checked {CADENCE[often]}. Each new answer uses 1 credit; answers reused from a recent scan are free.
           </p>
         </aside>
       </div>

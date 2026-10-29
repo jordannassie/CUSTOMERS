@@ -2,7 +2,16 @@ import { describe, expect, it, vi } from "vitest";
 import { setupAddOnText } from "./setup-add-on-copy";
 
 vi.mock("server-only", () => ({}));
-const { chosenPlanFor, planForNewBusiness } = await import("./setup-add-on");
+// The plan-change data comes from a fake, and Stripe is never reached: a past-due refusal comes before billingAccess.
+const loaded = vi.hoisted(() => ({ context: null as unknown }));
+vi.mock("./dal", () => ({ loadPlanChangeData: async () => ({ context: loaded.context, plansByProduct: new Map() }), raiseScheduleLost: async () => {} }));
+vi.mock("../account/access", () => ({
+  billingAccess: async () => {
+    throw new Error("setup add-on tests must not reach Stripe");
+  },
+}));
+const { addBusinessAtSetup, chosenPlanFor, planForNewBusiness, previewSetupAddOn } = await import("./setup-add-on");
+const { PAST_DUE_REFUSAL } = await import("./copy");
 
 const plans = [
   { id: "starter", name: "Starter", priceCents: 14900, stripePriceId: "price_s" },
@@ -54,5 +63,22 @@ describe("chosenPlanFor", () => {
 
   it("falls back when the chosen plan is no longer on sale here", () => {
     expect(chosenPlanFor(ctx, "b2", "enterprise")).toBe("starter");
+  });
+});
+
+describe("finishing setup while the last payment failed", () => {
+  const pastDue = { ...context([{ id: "b1", planId: "starter" }, { id: "b2", planId: null }]), agencyStatus: "past_due" };
+
+  it("refuses to add the business, so it is never set up unbilled", async () => {
+    loaded.context = pastDue;
+    expect(await addBusinessAtSetup("a1", "b2", { planId: "starter", previewedAt: 1 })).toEqual({ ok: false, status: 402, error: PAST_DUE_REFUSAL });
+    await expect(previewSetupAddOn("a1", "b2")).rejects.toMatchObject({ status: 402, message: PAST_DUE_REFUSAL });
+  });
+
+  it("still adds nothing for a business already on the plan, or an agency with no subscription", async () => {
+    loaded.context = pastDue;
+    expect(await addBusinessAtSetup("a1", "b1", null)).toEqual({ ok: true });
+    loaded.context = { ...pastDue, subscriptionId: null };
+    expect(await addBusinessAtSetup("a1", "b2", null)).toEqual({ ok: true });
   });
 });

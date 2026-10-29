@@ -8,9 +8,10 @@ import { GetFoundChecklist } from "@/components/opportunities/GetFoundChecklist"
 import { PickBranch } from "@/components/opportunities/PickBranch";
 import { WaitForFixes } from "@/components/opportunities/WaitForFixes";
 import { Button } from "@/components/ui/button";
+import { canEditTracking } from "@/modules/entitlements";
 import { checkFixes, getFixesState } from "@/modules/insights";
 import { pickBranch, searchBranches } from "@/modules/onboarding";
-import { addToActions, assignActionToMe, getActionsBoard, getOpportunitiesPage, moveActionTo, setChecklistItem } from "@/modules/opportunities";
+import { OPEN_ACTION_STATUSES, addToActions, assignActionToMe, getActionsBoard, getActionsExtras, moveActionTo, setChecklistItem } from "@/modules/opportunities";
 import { getWorkspace } from "@/modules/workspace";
 
 export const metadata = { title: "Actions", robots: { index: false } };
@@ -29,13 +30,17 @@ export default async function ActionsPage({ searchParams }: { searchParams: Prom
   const business = workspace.businesses.find((b) => b.id === workspace.activeBusinessId);
   if (!business || business.status === "onboarding") redirect("/dashboard");
 
+  // The fixes are read once (the board); the extras are the business row and its checklist ticks only.
   const [view, board, fixes] = await Promise.all([
-    getOpportunitiesPage(business.id, { google }),
+    getActionsExtras(business.id),
     getActionsBoard(business.id, { google }),
     getFixesState(business.id),
   ]);
   if (!view || !board || !fixes) notFound();
-  const open = board.items.filter((i) => i.status === "suggested" || i.status === "todo" || i.status === "in_progress").length;
+  const open = board.items.filter((i) => OPEN_ACTION_STATUSES.includes(i.status)).length;
+  // An ended plan is read-only (MVP_SPEC 4.4): fixes stay readable, nothing can be moved, added or ticked. The actions
+  // refuse it too; this only hides the buttons that would fail.
+  const readOnly = workspace.account ? !canEditTracking(workspace.account).allowed : false;
 
   return (
     <PageContainer wide>
@@ -48,15 +53,17 @@ export default async function ActionsPage({ searchParams }: { searchParams: Prom
               {board.items.length > 0 && (
                 <span data-testid="to-do-count"> {open === 0 ? "You have done or dismissed every fix." : `${open} open.`}</span>
               )}
+              {/* The banner above the page says why (plan ended or paused) and links to Billing. */}
+              {readOnly && <span data-testid="actions-read-only"> You can read these fixes but not change them right now.</span>}
             </>
           }
-          actions={<AddActionDialog businessId={business.id} add={addToActions} />}
+          actions={readOnly ? null : <AddActionDialog businessId={business.id} add={addToActions} />}
         />
 
-        {view.branch && <PickBranch key={`branch-${business.id}`} businessId={business.id} initial={view.branch} search={searchBranches} pick={pickBranch} />}
+        {view.branch && !readOnly && <PickBranch key={`branch-${business.id}`} businessId={business.id} initial={view.branch} search={searchBranches} pick={pickBranch} />}
 
         {view.checklist && (
-          <GetFoundChecklist key={business.id} businessId={business.id} missing={view.checklist.missing} initialItems={view.checklist.items} setItem={setChecklistItem} />
+          <GetFoundChecklist key={business.id} businessId={business.id} missing={view.checklist.missing} initialItems={view.checklist.items} setItem={setChecklistItem} readOnly={readOnly} />
         )}
 
         {fixes.pending ? (
@@ -90,6 +97,7 @@ export default async function ActionsPage({ searchParams }: { searchParams: Prom
             move={moveActionTo}
             assign={assignActionToMe}
             pickedId={pickedId}
+            readOnly={readOnly}
           />
         )}
       </div>

@@ -17,6 +17,7 @@ import {
 import { competitorCharts } from "../charts";
 import {
   competitorWeeklyChange,
+  modelMonthlyChanges,
   modelWeeklyChanges,
   monthlyChange,
   scoreHistory,
@@ -115,6 +116,7 @@ export async function loadScoreReport(
     history: historyDays > 0 ? scoreHistory(all, { ...opts, days: historyDays }) : [],
     change: weeklyChange(all, opts),
     modelChanges: modelWeeklyChanges(all, opts),
+    modelMonthChanges: historyDays >= SCORE_WINDOW_DAYS ? modelMonthlyChanges(all, opts) : {},
     monthChange: historyDays >= SCORE_WINDOW_DAYS ? monthlyChange(all, opts) : null,
     firstCheckedAt: checks[0]?.checkedAt ?? null,
     // The last scan, whichever questions it asked.

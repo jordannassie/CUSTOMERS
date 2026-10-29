@@ -4,7 +4,8 @@ import { refresh } from "next/cache";
 import { authFailure, requireAgency, type ActionResult } from "@/modules/auth";
 import { canEditTracking } from "@/modules/entitlements";
 import type { QuestionAnswer } from "./answers";
-import { deleteQuestion, insertQuestion, loadQuestionAnswers, updateQuestionActive, updateQuestionText, type ChangeResult } from "./dal";
+import { deleteQuestion, insertQuestion, updateQuestionActive, updateQuestionText, type ChangeResult } from "./dal";
+import { loadQuestionAnswers } from "./reads/dal";
 import {
   addQuestionInput,
   editQuestionInput,

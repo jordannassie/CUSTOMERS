@@ -22,6 +22,7 @@ export type LiveOpportunity = Opportunity & { usesGoogle: boolean; googleValues:
 
 /** Live Google signals for a place id; null when Google has no such place. */
 type FetchSignals = (placeId: string) => Promise<Signals | null>;
+const noSignals: FetchSignals = async () => null;
 
 export type ExplainDeps = {
   /** Null means "pick by agency": the template for test agencies, Claude otherwise. */
@@ -70,7 +71,9 @@ async function loadSources(runId: string, deps: ExplainDeps) {
   const agency = must("load the agency", agencyResult);
   const also = await loadAlsoRecommended(b.agency_id, businessId, (deps.now ?? (() => new Date()))());
   const rivals = must("load the competitors", competitors).map((c) => ({ id: c.id, name: c.name, placesId: c.places_id ?? c.place_id }));
-  const signals = await signalsFor([b.places_id, ...rivals.map((c) => c.placesId)], deps.fetchSignals ?? fetchPlaceSignals);
+  // Test agencies never call Google (D-61): their reasons are written without Google values, as when Google has none.
+  const fetchSignals = deps.fetchSignals ?? (agency.is_test ? noSignals : fetchPlaceSignals);
+  const signals = await signalsFor([b.places_id, ...rivals.map((c) => c.placesId)], fetchSignals);
 
   const sources: ExplainSources = {
     business: {
@@ -174,10 +177,14 @@ export async function getLiveOpportunities(
       .order("created_at", { ascending: false }),
   ) as Opportunity[];
 
+  // Only this business's own competitors: an id typed into a fix's text must never read another account's listing.
   const ids = referencedCompetitors(rows);
   const competitors =
     ids.size > 0
-      ? must("load competitors", await db.from("business_competitors").select("id, places_id, place_id").in("id", [...ids]))
+      ? must(
+          "load competitors",
+          await db.from("business_competitors").select("id, places_id, place_id").eq("business_id", businessId).in("id", [...ids]),
+        )
       : [];
   const placeOf = new Map(competitors.map((c) => [c.id, c.places_id ?? c.place_id]));
   const businessPlace = usesBusinessValues(rows) ? business.data.places_id : null;

@@ -51,8 +51,10 @@ export default function AgencyActions({ agency, stripeConnected, maxCredits, max
   const agencyId = agency.id;
   const deleted = agency.status === "deleted";
   const suspended = agency.status === "suspended";
-  // A new ID per submitted change, so a double click is applied once (D-55).
+  // A new ID per submitted change, so a double click is applied once (D-55). A different amount is a different change:
+  // it gets its own ID, so it is never answered with an earlier request's result (audit, 2026-10-28).
   const [requestId, setRequestId] = useState(() => crypto.randomUUID());
+  const [sentDelta, setSentDelta] = useState<number | null>(null);
   const ids = { amount: useId(), days: useId(), preview: useId() };
   const [trialDays, setTrialDays] = useState("7");
   const trialPreview = newTrialEnd(agency.trialEndsAt, Number(trialDays));
@@ -74,8 +76,14 @@ export default function AgencyActions({ agency, stripeConnected, maxCredits, max
         run={async (form, reason) => {
           const amount = Number(form.get("amount"));
           const delta = form.get("direction") === "remove" ? -amount : amount;
-          const result = await actions.adjustCredits({ agencyId, reason, delta, requestId });
-          if (result.ok) setRequestId(crypto.randomUUID());
+          const id = sentDelta !== null && sentDelta !== delta ? crypto.randomUUID() : requestId;
+          if (id !== requestId) setRequestId(id);
+          setSentDelta(delta);
+          const result = await actions.adjustCredits({ agencyId, reason, delta, requestId: id });
+          if (result.ok) {
+            setRequestId(crypto.randomUUID());
+            setSentDelta(null);
+          }
           return result;
         }}
       >

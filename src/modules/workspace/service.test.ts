@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { TEST_MODE_MESSAGE } from "@/lib/test-mode";
-import { BILLING_HREF, BUY_CREDITS_HREF, CHOOSE_PLAN_HREF, pickBanners, shortBalance, usageWidget, type AccountState, type UsageNumbers } from "./service";
+import { BILLING_HREF, BUY_CREDITS_HREF, CHOOSE_PLAN_HREF, pickBanners, shortBalance, type AccountState, type UsageNumbers } from "./service";
 
 const now = new Date("2026-09-27T12:00:00Z");
 const inDays = (days: number) => new Date(now.getTime() + days * 24 * 60 * 60 * 1000);
@@ -13,111 +13,6 @@ const usage = (u: Partial<UsageNumbers>): UsageNumbers => ({
   periodCredits: 1200,
   periodUsed: 620,
   ...u,
-});
-
-describe("usageWidget", () => {
-  it("shows credits used and the renewal on a paid plan", () => {
-    expect(usageWidget(usage({}), active, now)).toEqual({
-      tone: "normal",
-      headline: "620 of 1,200 credits used",
-      percentUsed: 52,
-      details: ["Renews in 12 days"],
-      showBuyCredits: false,
-      paymentFailed: null,
-    });
-  });
-
-  it("says the payment failed, with a link to Billing, instead of a renewal date when past due", () => {
-    for (const status of ["past_due", "unpaid"]) {
-      const view = usageWidget(usage({ balance: 64, periodCredits: 100, periodUsed: 36, topupRemaining: 0 }), { ...active, status }, now);
-      expect(view.details.join(" ")).not.toMatch(/Renews/);
-      expect(view.paymentFailed).toEqual({ text: "Payment failed. Update your card", href: BILLING_HREF });
-    }
-    // Out of credits too: the card comes first, so no Buy credits button.
-    expect(usageWidget(usage({ balance: 0 }), { ...active, status: "past_due" }, now)).toMatchObject({ showBuyCredits: false, tone: "empty" });
-    expect(usageWidget(usage({}), active, now).paymentFailed).toBeNull();
-  });
-
-  it("shows days and credits left during the trial", () => {
-    const view = usageWidget(usage({ balance: 64, periodCredits: 100, periodUsed: 36 }), trial, now);
-    expect(view.headline).toBe("Trial: 5 days left, 64 of 100 credits left");
-    expect(view.tone).toBe("normal");
-    expect(view.showBuyCredits).toBe(false);
-  });
-
-  it("turns amber at 80% used", () => {
-    expect(usageWidget(usage({ balance: 200, periodUsed: 1000 }), active, now).tone).toBe("warning");
-  });
-
-  it("goes red with Buy credits at 0", () => {
-    const view = usageWidget(usage({ balance: 0, periodUsed: 1200 }), active, now);
-    expect(view).toMatchObject({ tone: "empty", showBuyCredits: true, percentUsed: 100 });
-    expect(view.details).toEqual(["No credits left", "Renews in 12 days"]);
-  });
-
-  it("shows how far over a negative balance is", () => {
-    const view = usageWidget(usage({ balance: -31, periodUsed: 1200 }), active, now);
-    expect(view.tone).toBe("empty");
-    expect(view.details[0]).toBe("31 credits over");
-  });
-
-  it("never shows a negative trial balance as credits left", () => {
-    const view = usageWidget(usage({ balance: -4, periodCredits: 100, periodUsed: 100 }), trial, now);
-    expect(view.headline).toBe("Trial: 5 days left, 0 of 100 credits left");
-    expect(view.showBuyCredits).toBe(true);
-  });
-
-  it("mentions top-up credits and falls back to a plain balance with no plan grant", () => {
-    const view = usageWidget(usage({ balance: 500, topupRemaining: 500, periodCredits: 0, periodUsed: 0 }), active, now);
-    expect(view.headline).toBe("500 credits left");
-    expect(view.percentUsed).toBeNull();
-    expect(view.details).toEqual(["Includes 500 top-up credits"]);
-  });
-
-  it("keeps top-up credits out of the trial's plan number (BUG-6)", () => {
-    const view = usageWidget(usage({ balance: 1664, topupRemaining: 500, periodCredits: 1200, periodUsed: 36 }), trial, now);
-    expect(view.headline).toBe("Trial: 5 days left, 1,164 of 1,200 credits left");
-    expect(view.details).toEqual(["Plus 500 top-up credits"]);
-  });
-
-  it("takes credits held for a running scan from the plan before the top-up", () => {
-    // 1,164 plan and 500 top-up remaining, 36 held.
-    const view = usageWidget(usage({ balance: 1628, topupRemaining: 500, periodCredits: 1200, periodUsed: 36 }), trial, now);
-    expect(view.headline).toBe("Trial: 5 days left, 1,128 of 1,200 credits left");
-    expect(view.details).toEqual(["Plus 500 top-up credits"]);
-  });
-
-  it("does not count a held top-up credit as left", () => {
-    // Plan used up, 1 top-up credit left but held for a scan.
-    const view = usageWidget(usage({ balance: 0, topupRemaining: 1, periodCredits: 1200, periodUsed: 1200 }), trial, now);
-    expect(view.headline).toBe("Trial: 5 days left, 0 of 1,200 credits left");
-    expect(view.details).toEqual(["No credits left"]);
-  });
-
-  it("shows only the overdraft when over, even with top-up grants on record", () => {
-    const view = usageWidget(usage({ balance: -12, topupRemaining: 5, periodCredits: 1200, periodUsed: 1200 }), active, now);
-    expect(view.tone).toBe("empty");
-    expect(view.details).toEqual(["12 credits over", "Renews in 12 days"]);
-  });
-
-  it("lists top-up credits separately on a paid plan", () => {
-    const view = usageWidget(usage({ balance: 780, topupRemaining: 200, periodUsed: 620 }), active, now);
-    expect(view.headline).toBe("620 of 1,200 credits used");
-    expect(view.details).toEqual(["Renews in 12 days", "Plus 200 top-up credits"]);
-  });
-
-  it("lists admin or promo credits beyond the plan as extra", () => {
-    const view = usageWidget(usage({ balance: 150, periodCredits: 100, periodUsed: 0 }), trial, now);
-    expect(view.headline).toBe("Trial: 5 days left, 100 of 100 credits left");
-    expect(view.details).toEqual(["Plus 50 extra credits"]);
-  });
-
-  it("says renews tomorrow and trial ends today at the edges", () => {
-    expect(usageWidget(usage({}), { ...active, periodEndsAt: inDays(0.5) }, now).details).toEqual(["Renews tomorrow"]);
-    expect(
-      usageWidget(usage({ balance: 10, periodCredits: 100 }), { ...trial, trialEndsAt: inDays(0) }, now).headline,
-    ).toBe("Trial ends today, 10 of 100 credits left");
-  });
 });
 
 describe("test mode banner (D-61)", () => {
@@ -166,6 +61,21 @@ describe("pickBanners", () => {
     ]);
     const lastDay = pickBanners(usage({ balance: 1, periodCredits: 100 }), { ...trial, trialEndsAt: inDays(0) }, now).find((b) => b.kind === "trial")!;
     expect(lastDay.message).toBe("Your free trial ends today, with 1 trial credit left. Your card will be charged on September 27.");
+  });
+
+  it("says the trial ends today on its last day, by the same calendar as the date it shows", () => {
+    const lastDay = { ...trial, trialEndsAt: new Date("2026-09-27T23:00:00Z") };
+    expect(pickBanners(trialUsage, lastDay, now)[0].message).toBe(
+      "Your free trial ends today, with 64 trial credits left. Your card will be charged on September 27.",
+    );
+    // 02:00 UTC tomorrow is still the evening of September 27 in Los Angeles.
+    const lateTonight = { ...trial, trialEndsAt: new Date("2026-09-28T02:00:00Z") };
+    expect(pickBanners(trialUsage, lateTonight, now)[0].message).toBe(
+      "Your free trial has 1 day and 64 trial credits left. Your card will be charged on September 28.",
+    );
+    expect(pickBanners(trialUsage, lateTonight, now, "America/Los_Angeles")[0].message).toBe(
+      "Your free trial ends today, with 64 trial credits left. Your card will be charged on September 27.",
+    );
   });
 
   it("dates the charge in the viewer's time zone, like Billing (BUG-111)", () => {
@@ -220,6 +130,13 @@ describe("pickBanners", () => {
     expect(kinds(none, { ...trial, trialEndsAt: null })).toEqual([]);
     // A trial that did get credits and spent them all is out of credits.
     expect(kinds(usage({ balance: 0, periodCredits: 100, periodUsed: 100 }), freshTrial)).toEqual(["out_of_credits", "trial"]);
+  });
+
+  it("does not say out of credits for a new paid plan whose first credits are still being added (F-48)", () => {
+    const none = usage({ balance: 0, topupRemaining: 0, periodCredits: 0, periodUsed: 0 });
+    expect(kinds(none, active)).toEqual([]);
+    // A paid plan that used everything it got is out of credits.
+    expect(kinds(usage({ balance: 0, topupRemaining: 0, periodCredits: 1_000, periodUsed: 1_000 }), active)).toEqual(["out_of_credits"]);
   });
 
   it("shows only the suspended banner for a paused account", () => {

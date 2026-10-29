@@ -16,6 +16,8 @@ export type BranchSearch = {
   choices: BranchChoice[];
   /** Google could not be searched: not the same as "no branch", so the claim step stays hidden. */
   unavailable: boolean;
+  /** False until the owner presses Search: the page no longer searches Google on every visit (2026-10-28). */
+  searched: boolean;
 };
 
 /** A chain with no listing picked yet needs its branch; anything else uses its listing or the claim step. */
@@ -25,6 +27,11 @@ export function needsBranch(b: { chain: boolean; placesId: string | null }): boo
 
 export function branchQuery(name: string, city: string | null): string {
   return [name.trim(), city?.trim()].filter(Boolean).join(" ");
+}
+
+/** The card before any search: the box filled with the name and city, no listings, and no "No branch matched". */
+export function notSearched(name: string, city: string | null): BranchSearch {
+  return { query: branchQuery(name, city), choices: [], unavailable: false, searched: false };
 }
 
 const words = (s: string) => s.toLowerCase().normalize("NFKD").replace(/[^a-z0-9]+/g, " ").trim();
@@ -44,8 +51,39 @@ export function branchChoices(found: PlaceCandidate[], name: string, domain: str
     .map((c) => ({ placeId: c.placeId, name: c.name!, address: c.address }));
 }
 
-/** The claim step is for a business Google does not list: never while its branch may still be picked. */
+/**
+ * The claim step is for a business Google does not list: never while its branch may still be picked, so for a chain
+ * only after a search that worked and found none of its branches.
+ */
 export function showClaimStep(b: { chain: boolean; placesId: string | null }, search: BranchSearch | null): boolean {
   if (!needsBranch(b)) return !b.placesId;
-  return search !== null && !search.unavailable && search.choices.length === 0;
+  return search !== null && noBranchFound(search);
+}
+
+/** A search that worked and found none of the chain's branches; Google being down is not this. */
+export function noBranchFound(search: BranchSearch): boolean {
+  return search.searched && !search.unavailable && search.choices.length === 0;
+}
+
+/**
+ * Saved when a search that worked found no branch, so the claim step still shows after a reload without asking Google
+ * again (D-87). It is an opportunities row like the checklist ticks (no new table, D-43), with the words searched in
+ * evidence_data.query; a later search that finds branches, or a picked branch, removes it. opportunities/checklist.ts
+ * reads the same marker (modules share only index.ts and server.ts, so the text is kept in both, with a test each).
+ */
+export const NO_BRANCH_MARKER = "checklist:no_branch";
+
+/** The marker row: Dismissed and added by the owner's search, so no list, count or report shows it as a fix. */
+export function noBranchRow(businessId: string, query: string) {
+  return {
+    business_id: businessId,
+    title: "Google lists no branch of this chain",
+    category: "local_presence",
+    impact: "low",
+    status: "dismissed",
+    source: "manual",
+    affected_url: NO_BRANCH_MARKER,
+    dedupe_key: NO_BRANCH_MARKER,
+    evidence_data: { query },
+  };
 }

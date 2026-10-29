@@ -19,7 +19,8 @@ export function copyFor(): string[] {
       const scheduled = [{ businessName: "Acme", planName: "Starter" }, { businessName: "Bay", planName: null }];
       const base = { change, businessName: "Acme", planName: "Pro", effectiveAt: 1_790_000_000, scheduled };
       const copy = previewCopy({ ...base, trialing, planPriceCents: 24900, amountCents: 5000, extraCredits: 650 });
-      texts.push(copy.headline, ...copy.details, doneCopy({ ...base, trialing }));
+      const pastDue = previewCopy({ ...base, trialing, planPriceCents: 24900, amountCents: 5000, extraCredits: 650, pastDue: true });
+      texts.push(copy.headline, ...copy.details, pastDue.headline, doneCopy({ ...base, trialing }));
     }
   }
   return texts;

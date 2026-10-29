@@ -16,6 +16,8 @@ export type LeaderRow = {
   collecting: boolean;
   /** Weekly change, only outside the margin and never for a competitor still collecting (DB-013). */
   change: PointsChange | null;
+  /** A week-ago score exists to compare with, so a null change means "no real change", not "not enough history". */
+  changeKnown?: boolean;
   /** Grey shade for a competitor's bar: 1 is the strongest (DESIGN.md competitor-1 to 3). */
   shade: 1 | 2 | 3 | null;
   /** Set when the score is a chain's, not the tracked branch's: show rowName() and trackedNote() (chain.ts). */
@@ -88,6 +90,8 @@ export function competitorsView(input: {
   const firstCheck = report.firstCheckedAt?.getTime() ?? null;
   const lastCheck = report.lastCheckedAt?.getTime() ?? null;
   const weekAgoStart = firstCheck === null ? null : firstCheck - 7 * 86_400_000;
+  // The weekly change needs checks from more than a week before the latest one.
+  const hasWeekAgo = firstCheck !== null && lastCheck !== null && lastCheck - firstCheck >= 7 * 86_400_000;
 
   const tracked: LeaderRow[] = competitors.map((c) => {
     const score = scored.get(key(c.name));
@@ -102,6 +106,7 @@ export function competitorsView(input: {
       // The change compares with the 30-day score a week ago, whose window starts 7 days before this one; checks
       // from before a competitor was added never looked for it, so a newer one could show a false rise.
       change: checked && !collecting && weekAgoStart !== null && c.countedFrom.getTime() <= weekAgoStart ? pointsChange(score.change) : null,
+      changeKnown: !!checked && !collecting && hasWeekAgo && weekAgoStart !== null && c.countedFrom.getTime() <= weekAgoStart,
       collecting,
       shade: null,
       chain: checked && score.chain ? { brand: score.chain, tracked: [c.name] } : null,
@@ -120,6 +125,7 @@ export function competitorsView(input: {
     score: overall ? Math.round(overall.score) : null,
     standing: null,
     change: pointsChange(report.change),
+    changeKnown: hasWeekAgo,
     collecting: false,
     shade: null,
   };

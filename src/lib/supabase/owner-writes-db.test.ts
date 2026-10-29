@@ -68,3 +68,19 @@ describe("owner tables are read only to users (SEC-10)", () => {
     expect((await c.from("visibility_results").insert({ business_id: id, provider: "openai", business_mentioned: true })).error).toMatchObject(denied);
   });
 });
+
+describe("AI costs stay on the server (migration 082)", () => {
+  it("reads its own answers but never what a check or an AI call cost", async () => {
+    const c = mine.client;
+    const { data: run } = await service.from("visibility_runs").insert({ business_id: mine.businessId, provider: "scan", status: "completed" }).select("id").single().throwOnError();
+    await service.from("visibility_results").insert({ run_id: run.id, business_id: mine.businessId, provider: "openai", business_mentioned: true, cost_usd: 0.03 }).throwOnError();
+    await service.from("usage_events").insert({ account_user_id: mine.userId, business_id: mine.businessId, usage_type: "other", provider: "openai", estimated_cost_usd: 0.03 }).throwOnError();
+    const { data: answers } = await c.from("visibility_results").select("id, business_mentioned").eq("business_id", mine.businessId);
+    expect(answers).toHaveLength(1);
+    expect((await c.from("visibility_results").select("cost_usd").eq("business_id", mine.businessId)).error).toMatchObject(denied);
+    // eslint-disable-next-line local/no-select-star -- checks that a whole-row read is refused, cost column included
+    expect((await c.from("visibility_results").select("*").eq("business_id", mine.businessId)).error).toMatchObject(denied);
+    expect((await c.from("usage_events").select("estimated_cost_usd, input_tokens")).error).toMatchObject(denied);
+    expect((await c.from("visibility_results_counted").select("id")).error).toMatchObject(denied);
+  });
+});

@@ -36,15 +36,15 @@ Nothing else from Places is written by current code. The onboarding competitor s
 
 ## What we fetch live
 
-Each call is made when a page is shown, with no cache beyond one request.
+Google is asked only when the owner asks to see its values ("Show Google details", "Show Google numbers"), once for that view, with no cache beyond one request (D-87). The share page, the PDF and the weekly email never show Places values. The chain branch search on Actions runs only when the owner presses its Search button.
 
 | Code | Fields | Used on |
 |---|---|---|
-| `src/modules/competitors/places.ts` | rating, review count, category, types, website, opening hours, Maps link | Competitors page, share page, PDF, Opportunities (placeholder values), AI writer (comparisons only) |
-| `src/modules/onboarding/places.ts` | name, address, address parts, type, phone, website | Onboarding details pre-fill |
-| `src/modules/onboarding/competitor-places.ts` | name, rating, review count, short address, Maps link | Onboarding competitor suggestions and "add by name" |
+| `src/modules/competitors/places.ts` | rating, review count, category, types, website, opening hours, Maps link | Competitors "Side by side on Google", Compare's Google tab and Google reasons, Actions (placeholder values), AI writer after a scan (comparisons only) |
+| `src/modules/onboarding/places.ts` | name, address, address parts, type, phone, website | Onboarding details pre-fill; the listing search after a scan (stores `places_id` and `is_chain` only) |
+| `src/modules/onboarding/competitor-places.ts` | name, rating, review count, short address, Maps link, type; search also asks location and website | Competitor suggestions and "add by name" (location and website only pick the nearest branch, D-88, and never reach the browser); saved competitors' rating and reviews |
 
-The AI writer gets only comparisons ("more", "fewer", "higher") and placeholder names, never the values (`src/modules/insights/prompts/explain.v1.ts`).
+The AI writer gets only comparisons ("more", "fewer", "higher") and placeholder names, never the values (`src/modules/insights/prompts/explain.v2.ts`).
 
 ## Where attribution shows
 
@@ -53,12 +53,14 @@ All surfaces use one component, `GoogleAttribution` (`src/components/onboarding/
 | Surface | Places data shown | Attribution |
 |---|---|---|
 | Competitors page, "Side by side on Google" | Rating, reviews, category, website, hours | Logo under the table, same card (`SignalsTable.tsx`) |
-| Share page `/r/<token>` | Same table | Same component, same card (`Report.tsx`) |
-| PDF export | Prints the share page | Same as the share page |
+| Compare, Google tab and Google reasons | Rating, reviews, open days, category | Logo under the table or cards (`GoogleCompare.tsx`, `GoogleReasons.tsx`) |
+| Actions cards and list | Review counts and ratings filled into the text, after "Show Google numbers" | Logo when a value is filled in (`ActionCard.tsx`, `ActionsList.tsx`) |
+| Actions, "Pick your branch" | Branch names and addresses | Logo under the choices (`PickBranch.tsx`) |
+| Share page `/r/<token>` and PDF | No Places values (placeholder text is left out) | None needed |
 | Onboarding, business details | Name, phone, city, industry pre-filled | "Business details from" plus logo, in the pre-fill note (`DetailsStep.tsx`) |
 | Onboarding, competitor suggestions | Names, ratings, reviews | Logo under the list, same box (`CompetitorPicker.tsx`) |
 | Onboarding, add by name | Names, addresses, ratings | Logo under the matches, same box (`AddCompetitor.tsx`) |
-| Opportunities | Review counts and ratings filled into the text | Logo inside the card when a value is filled in (`OpportunityCard.tsx`) |
+| Onboarding, pre-fill choices and notes | Names, addresses | Logo (`PlaceChoices.tsx`, `AutofillNote.tsx`) |
 | Overview | No Places values. Top opportunities show stored titles only | None needed. See open question 3 |
 
 ## Fixes in B-79
@@ -85,7 +87,7 @@ Effect on scans: the scan matches competitor mentions by name, domain, phone and
 
 ## Still to clean up later
 
-- `GET /api/geo/competitors/search`, `POST /api/geo/competitors/discover`, `src/lib/google-places.ts` and `src/lib/geo/competitor-*.ts` return Places data but no screen uses them. They also ignore `PLACES_FIXTURES`, so they call Google whenever a key is set. They store nothing. Suggest removing them in a later task.
+- The old `/api/geo/*` routes, `src/lib/google-places.ts` and `src/lib/geo/competitor-*.ts` have been removed.
 - `business_competitors` still has the old Places columns, and `prospecting_leads` still has its Places columns. Dropping them needs a migration after the MVP is live (D-43).
 
 ## Open questions for Jordan or a lawyer (D-73)

@@ -33,7 +33,7 @@ export function SourcesKpis(p: Props) {
       <Tile
         label="Your website used"
         value={p.ownSiteHost ? times(p.ownSiteAnswers) : "No website"}
-        detail={`Competitor sites: ${times(p.competitorSiteTimes)}`}
+        detail={`Competitor sites: ${times(p.competitorSiteTimes)}. From all your questions.`}
         testId="kpi-own-site"
       />
     </dl>

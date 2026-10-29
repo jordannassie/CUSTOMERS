@@ -9,6 +9,8 @@ export type SiteRow = Site & {
   action: SiteAction | null;
   /** The Actions column it is in, once added ("In Actions · To do"). */
   inActions: ActionStatus | null;
+  /** That fix's id, so "In Actions" opens it on the board. */
+  actionId: string | null;
 };
 
 export type ListedSite = {
@@ -20,6 +22,7 @@ export type ListedSite = {
   impact: Impact;
   action: SiteAction;
   inActions: ActionStatus | null;
+  actionId: string | null;
 };
 
 type Opts = { place: string | null; toolLabel: string | null };
@@ -33,9 +36,10 @@ export function actionKeys(view: SourcesView): string[] {
 export function sourceRows(
   view: SourcesView,
   opts: Opts,
-  states: Map<string, { status: ActionStatus }>,
+  states: Map<string, { id?: string; status: ActionStatus }>,
 ): { listed: ListedSite[]; rows: SiteRow[] } {
   const inActions = (host: string) => states.get(siteKey(host))?.status ?? null;
+  const actionId = (host: string) => states.get(siteKey(host))?.id ?? null;
   const listed = listedFirst(view.sites).map((s) => ({
     host: s.host,
     kindLabel: s.kindLabel,
@@ -44,10 +48,11 @@ export function sourceRows(
     impact: impactFor(s.answers, view.answers),
     action: siteAction(s, view.answers, opts),
     inActions: inActions(s.host),
+    actionId: actionId(s.host),
   }));
   const rows = view.sites.map((s) => {
     const cta = ctaFor(s);
-    return { ...s, cta, action: cta === "listed" ? siteAction(s, view.answers, opts) : null, inActions: inActions(s.host) };
+    return { ...s, cta, action: cta === "listed" ? siteAction(s, view.answers, opts) : null, inActions: inActions(s.host), actionId: actionId(s.host) };
   });
   return { listed, rows };
 }

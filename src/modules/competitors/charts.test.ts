@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { ScoreReport } from "@/modules/scanning";
-import { competitorChartsView } from "./charts";
+import { competitorChartsView, pickShares } from "./charts";
+import type { LeaderRow } from "./service";
 
 const names = ["You Co", "A", "B", "C", "D", "Late"];
 function report(overrides: Partial<ScoreReport> = {}): ScoreReport {
@@ -53,11 +54,11 @@ describe("competitorChartsView", () => {
 
   it("folds the competitors past the top three into Other competitors for share of voice", () => {
     expect(view.share.map((s) => [s.name, s.mentions, s.share])).toEqual([
-      ["You Co", 10, 28.6],
-      ["B", 15, 42.9],
+      ["You Co", 10, 29],
+      ["B", 15, 43],
       ["C", 7, 20],
-      ["A", 2, 5.7],
-      ["Other competitors", 1, 2.9],
+      ["A", 2, 6],
+      ["Other competitors", 1, 3],
     ]);
     expect(view.mentions).toBe(35);
   });
@@ -84,5 +85,36 @@ describe("colors follow the leaderboard", () => {
       ["B", "var(--cd-series-3)"],
       ["C", "var(--cd-series-4)"],
     ]);
+  });
+});
+
+describe("pickShares", () => {
+  const check = (youNamed: boolean, competitors: string[]) => ({ provider: "openai", questionId: "q", youNamed, competitors, extracted: null, sites: [] }) as never;
+  const row = (name: string, score: number | null, over: Partial<LeaderRow> = {}): LeaderRow => ({ name, isYou: false, score, standing: "behind", collecting: false, change: null, shade: 1, ...over });
+  const leaderboard = [
+    row("Bennu Coffee on Congress", 60, { chain: { brand: "Bennu Coffee", tracked: ["Bennu Coffee on Congress", "Bennu Coffee on 6th"] } }),
+    row("A", 40),
+    row("B", 30),
+    row("C", 20),
+    row("You Co", 10, { isYou: true, standing: null }),
+  ];
+  // An answer naming two branches of one chain counts once for the chain, as the Overview and the report count it.
+  const checks = [check(true, ["Bennu Coffee on Congress", "Bennu Coffee on 6th"]), check(false, ["Bennu Coffee on 6th", "A"]), check(true, ["C"]), check(false, ["B"])];
+  const view = pickShares(competitorChartsView(report(), scored)!, leaderboard, checks);
+
+  it("gives you the same share as the Overview's rule, a chain as one slice, and the rest as Other competitors", () => {
+    expect(view.share.map((s) => [s.name, s.mentions, s.share])).toEqual([
+      ["You Co", 2, 29],
+      ["Bennu Coffee (all locations)", 2, 29],
+      ["A", 1, 14],
+      ["B", 1, 14],
+      ["Other competitors", 1, 14],
+    ]);
+    expect(view.mentions).toBe(7);
+  });
+
+  it("keeps each competitor's leaderboard color", () => {
+    expect(view.share.find((s) => s.name === "A")?.color).toBe("var(--cd-series-3)");
+    expect(view.share.find((s) => s.isYou)?.color).toBe("var(--chart-1)");
   });
 });

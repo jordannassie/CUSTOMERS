@@ -4,6 +4,13 @@
 
 export type Where = "website" | "google_listing" | "other_places";
 
+/** The one name for each group, on Actions, Compare and the standing reasons. */
+export const WHERE_LABEL: Record<Where, string> = {
+  website: "Website",
+  google_listing: "Google Business Profile",
+  other_places: "Other places",
+};
+
 const WEBSITE = new Set(["content", "service_page", "technical", "structured_data", "agent_readiness"]);
 const GOOGLE = /google (business )?(listing|profile)|google business|google maps|google reviews?|on google/i;
 const OTHER_SITES =

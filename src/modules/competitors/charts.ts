@@ -2,7 +2,9 @@
 // the brand blue and up to three competitors in the greys, strongest darkest (DESIGN.md: charts). Pure.
 import { MODEL_LABELS } from "@/modules/overview";
 import type { ScoreReport } from "@/modules/scanning";
-import { colorAt, competitorColor, OTHER_SERIES_COLOR } from "@/lib/series-colors";
+import { colorAt, colorOrder, competitorColor, OTHER_SERIES_COLOR } from "@/lib/series-colors";
+import { pickCounts, shareOf as pickShare, type StandingCheck } from "@/modules/standing";
+import { rowName, type ChainOf } from "./chain";
 
 /** A line or bar series. `key` is safe as a chart data key; names can hold any character. */
 export type ChartSeries = { key: string; name: string; isYou: boolean; color: string };
@@ -17,7 +19,7 @@ export type CompetitorChartsView = {
    * score as it stood then (the dashed reference). Rounded, null without checks.
    */
   timeline: ({ date: string; label: string } & Record<string, number | string | null>)[];
-  /** Share of voice: the series, then "Other competitors" when hidden ones were named. Shares add up to 100. */
+  /** Share of AI picks: the series, then "Other competitors" when hidden ones were named. Whole percents, rounded once. */
   share: (ChartSeries & { share: number; mentions: number })[];
   /** Answers in the last 30 days that named any of these businesses. */
   mentions: number;
@@ -64,7 +66,8 @@ export function competitorChartsView(report: ScoreReport, scored: ReadonlySet<st
   const values = (scores: (number | null)[]) => Object.fromEntries(series.map((s) => [s.key, round(scores[s.index])]));
   const others = ranked.slice(MAX_COMPETITORS).reduce((sum, c) => sum + at(c.index), 0);
   const mentions = series.reduce((sum, s) => sum + at(s.index), 0) + others;
-  const shareOf = (n: number) => (mentions > 0 ? Math.round((1000 * n) / mentions) / 10 : 0);
+  // Rounded once, to a whole percent, as the donut shows it (2026-10-28: rounded twice before).
+  const shareOf = (n: number) => pickShare(n, mentions) ?? 0;
 
   return {
     series: series.map((s) => ({ key: s.key, name: s.name, isYou: s.isYou, color: s.color })),
@@ -102,4 +105,38 @@ export function pairTimeline(report: ScoreReport, competitor: string): PairPoint
     youRolling: round(p.rolling[0]),
     themRolling: round(p.rolling[at]),
   }));
+}
+
+type ShareRow = { name: string; isYou: boolean; score: number | null; chain?: ChainOf | null };
+
+/**
+ * The donut from the shared share-of-picks rule (standing/picks.ts, D-89), the one the Overview and the report use,
+ * so "you" is the same number on every screen. One slice per leaderboard row, a chain once with all its branches: you,
+ * the first MAX_COMPETITORS competitors with a score (leaderboard order, their colors), then "Other competitors".
+ */
+export function pickShares(view: CompetitorChartsView, leaderboard: ShareRow[], checks: StandingCheck[]): CompetitorChartsView {
+  const counts = pickCounts(checks, leaderboard.map((r) => ({ isYou: r.isYou, names: r.chain?.tracked ?? [r.name] })));
+  const mentions = counts.reduce((a, b) => a + b, 0);
+  const order = colorOrder(leaderboard);
+  const rows = leaderboard.map((r, i) => ({ row: r, n: counts[i] }));
+  const you = rows.find((x) => x.row.isYou);
+  const shown = rows.filter((x) => !x.row.isYou && x.row.score !== null).slice(0, MAX_COMPETITORS);
+  const others = rows.filter((x) => !x.row.isYou && !shown.includes(x)).reduce((sum, x) => sum + x.n, 0);
+  const share = (n: number) => pickShare(n, mentions) ?? 0;
+  return {
+    ...view,
+    share: [
+      ...(you ? [{ key: "s0", name: you.row.name, isYou: true, color: YOU_COLOR, mentions: you.n, share: share(you.n) }] : []),
+      ...shown.map((x, i) => ({
+        key: `p${i + 1}`,
+        name: rowName(x.row),
+        isYou: false,
+        color: competitorColor(order, x.row.name),
+        mentions: x.n,
+        share: share(x.n),
+      })),
+      ...(others > 0 ? [{ key: "other", name: "Other competitors", isYou: false, color: OTHER_COLOR, mentions: others, share: share(others) }] : []),
+    ],
+    mentions,
+  };
 }

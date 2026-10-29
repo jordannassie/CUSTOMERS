@@ -54,10 +54,18 @@ export function BusinessLine({
             </p>
           )}
         </div>
-        <p className="shrink-0 text-right text-[15px] font-medium tabular-nums">
-          {formatUsd(plan.priceCents)}
-          <span className="block text-[13px] font-normal text-muted-foreground sm:inline"> a month</span>
-        </p>
+        <div className="shrink-0 text-right">
+          <p className="text-[15px] font-medium tabular-nums" data-testid="line-price">
+            {formatUsd(business.priceCents)}
+            <span className="block text-[13px] font-normal text-muted-foreground sm:inline"> a month</span>
+          </p>
+          {business.newPrice && (
+            // An older amount moves to the plan's price at the renewal (D-93); the owner was emailed about it.
+            <p className="mt-1 text-[13px] text-muted-foreground tabular-nums" data-testid="new-price">
+              {formatUsd(business.newPrice.cents)} from <LocalDate iso={business.newPrice.at} options={SHORT_DATE} />
+            </p>
+          )}
+        </div>
       </div>
       {!locked && (
         <div className="mt-3 flex flex-wrap gap-2">

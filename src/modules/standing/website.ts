@@ -54,7 +54,7 @@ export function websiteGaps(name: string, theirs: TheirWebsite | null, yours: Yo
     title: `Their website lists ${service.name}`,
     action: `If you offer ${service.name}, add it to the services page on your website, with a short description.`,
     match: meaningWords(service.name),
-    detail: won ? `Not in the services on yours. They win "${won.question}".` : `Not in the services on yours. Found on their ${pageName(service.page)}.`,
+    detail: won ? `Not in the services on yours. AI named them more often on "${won.question}".` : `Not in the services on yours. Found on their ${pageName(service.page)}.`,
     text: `${possessive(name)} website lists ${service.name}, and the services on your website don't include it.`,
     where: "website",
     weight: won ? 6 : 3.5,

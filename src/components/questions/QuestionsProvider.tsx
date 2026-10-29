@@ -1,11 +1,12 @@
 "use client";
 
 import { createContext, useContext, useMemo, useState } from "react";
+import type { AddToActionsAction } from "@/components/actions/AddToActionsButton";
 import { visibleRows, type ListFilter } from "@/modules/questions/list";
 import type { QuestionRow, QuestionsView } from "@/modules/questions/service";
 
 /** From the page's link (questionsHref): the question to open, and the site or business the list is narrowed to. */
-export type ListFocus = { q: string | null; site: string | null; named: string | null };
+export type ListFocus = { q: string | null; site: string | null; named: string | null; ai?: string | null };
 
 type State = {
   view: QuestionsView;
@@ -22,6 +23,8 @@ type State = {
   shown: { active: QuestionRow[]; paused: QuestionRow[] };
   /** How many rows the filters chose from. */
   total: number;
+  /** addToActions, for "Why you were skipped" (passed in by the page). */
+  addAction: AddToActionsAction | null;
 };
 
 const Ctx = createContext<State | null>(null);
@@ -33,7 +36,17 @@ export function useQuestions(): State {
 }
 
 // The Questions page's list state, shared by the header (Export CSV), the filters, the list and its footer.
-export function QuestionsProvider({ view, focus, children }: { view: QuestionsView; focus: ListFocus; children: React.ReactNode }) {
+export function QuestionsProvider({
+  view,
+  focus,
+  addAction = null,
+  children,
+}: {
+  view: QuestionsView;
+  focus: ListFocus;
+  addAction?: AddToActionsAction | null;
+  children: React.ReactNode;
+}) {
   const linkedPaused = !!focus.q && view.paused.some((r) => r.id === focus.q);
   const [filter, setFilter] = useState<ListFilter>("all");
   const [topic, setTopic] = useState<string | null>(null);
@@ -58,8 +71,9 @@ export function QuestionsProvider({ view, focus, children }: { view: QuestionsVi
       toggle: (id) => setOpenId((now) => (now === id ? null : id)),
       shown: { active, paused },
       total,
+      addAction,
     };
-  }, [view, focus, filter, topic, showPaused, openId]);
+  }, [view, focus, filter, topic, showPaused, openId, addAction]);
 
   return <Ctx.Provider value={state}>{children}</Ctx.Provider>;
 }

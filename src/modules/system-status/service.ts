@@ -61,13 +61,6 @@ export const PROBES: Probe[] = [
     }),
   },
   {
-    id: "browserless",
-    name: "Browserless",
-    group: "data",
-    // The account's own host (BROWSERLESS_URL), as PDF export uses. /pressure was removed and answers 404 (BUG-082).
-    request: (key, deps) => ({ url: joinUrl(deps.browserlessUrl ?? BROWSERLESS_DEFAULT_URL, `/meta?token=${encodeURIComponent(key)}`) }),
-  },
-  {
     id: "resend",
     name: "Resend (email)",
     group: "data",
@@ -84,14 +77,7 @@ export const PROBES: Probe[] = [
   },
 ];
 
-export type ProbeDeps = { fetch?: typeof fetch; timeoutMs?: number; browserlessUrl?: string };
-
-export const BROWSERLESS_DEFAULT_URL = "https://production-sfo.browserless.io";
-
-/** Adds a path to a base URL without dropping a path the base already has ("https://host/v2" + "/pdf"). */
-export function joinUrl(base: string, path: string): string {
-  return `${base.replace(/\/+$/, "")}/${path.replace(/^\/+/, "")}`;
-}
+export type ProbeDeps = { fetch?: typeof fetch; timeoutMs?: number };
 
 export type ProbeResult = Pick<ServiceStatus, "state" | "detail">;
 

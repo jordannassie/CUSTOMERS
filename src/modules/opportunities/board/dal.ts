@@ -2,9 +2,11 @@ import "server-only";
 // The Actions board's reads and writes (dashboard redesign, 2026-10-27). Reads go through insights, which fills in
 // Google values live (D-73); writes check the business is the agency's first, and never touch the scan's own fields.
 import { createServiceClient } from "@/lib/supabase/service";
+import { OPEN_FIX_STATUSES } from "@/lib/fix-status";
 import { requireAgency } from "@/modules/auth";
 import { getLiveOpportunities } from "@/modules/insights";
-import { actionRow, statusUpdate, toActionItems, toActionStatus, type ActionItem, type ActionState, type ActionStatus, type NewAction } from "./service";
+import { MAX_OPEN_ADDED_ACTIONS } from "../schema";
+import { ADDED_SOURCES, actionRow, statusUpdate, toActionItems, toActionStatus, type ActionItem, type ActionState, type ActionStatus, type NewAction } from "./service";
 
 /**
  * Every action of one of the agency's businesses; null when it is not theirs. `google`: fill in Google's values,
@@ -30,13 +32,14 @@ async function ownsBusiness(agencyId: string, businessId: string): Promise<boole
 
 /**
  * Adds a fix, or finds the one already added with the same key (a second click, another tab). Null when the business
- * is not the agency's.
+ * is not the agency's; "full" when it already has MAX_OPEN_ADDED_ACTIONS open fixes added by hand, Compare or Sources.
  */
-export async function addAction(agencyId: string, businessId: string, action: NewAction): Promise<ActionState | null> {
+export async function addAction(agencyId: string, businessId: string, action: NewAction): Promise<ActionState | "full" | null> {
   if (!(await ownsBusiness(agencyId, businessId))) return null;
   const db = createServiceClient();
   const existing = await findByKey(businessId, action.dedupeKey);
   if (existing) return existing;
+  if ((await openAddedCount(businessId)) >= MAX_OPEN_ADDED_ACTIONS) return "full";
   const inserted = await db.from("opportunities").insert(actionRow(businessId, action)).select("id, status").single();
   if (!inserted.error) return { id: inserted.data.id, status: toActionStatus(inserted.data.status) };
   // Two clicks at once: the unique key let one in; return that one.
@@ -45,6 +48,18 @@ export async function addAction(agencyId: string, businessId: string, action: Ne
     if (again) return again;
   }
   throw new Error(`Actions: could not add the fix: ${inserted.error.message}`);
+}
+
+/** Open fixes the owner added (by hand, Compare or Sources); the scan's own fixes do not count toward the cap. */
+async function openAddedCount(businessId: string): Promise<number> {
+  const { count, error } = await createServiceClient()
+    .from("opportunities")
+    .select("id", { count: "exact", head: true })
+    .eq("business_id", businessId)
+    .in("source", ADDED_SOURCES)
+    .in("status", OPEN_FIX_STATUSES);
+  if (error) throw new Error(`Actions: could not count added fixes: ${error.message}`);
+  return count ?? 0;
 }
 
 async function findByKey(businessId: string, key: string): Promise<ActionState | null> {

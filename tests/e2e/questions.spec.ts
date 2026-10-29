@@ -292,6 +292,13 @@ test("a question opens in place with each AI's answer, and a link can open it or
   await expect(page.getByTestId("question-row")).toHaveCount(1);
   await page.getByTestId("site-filter").click();
   await expect(page.getByTestId("question-row")).toHaveCount(2, ACTION);
+
+  // A link that matches nothing: Clear filters also clears the link, back to every question.
+  await page.goto("/questions?site=nowhere.example");
+  await expect(page.getByTestId("no-matches")).toBeVisible({ timeout: 60_000 });
+  await page.getByTestId("no-matches").getByRole("button", { name: "Clear filters" }).click();
+  await page.waitForURL((url) => url.pathname === "/questions" && url.search === "");
+  await expect(page.getByTestId("question-row")).toHaveCount(2, ACTION);
 });
 
 test("the old address opens the Questions page", async ({ page }) => {

@@ -12,7 +12,14 @@ export function Scorecard({ data }: { data: Comparison }) {
   const { why } = data.panel;
   const { you, them, margin } = data.scores;
   const gap = you !== null && them !== null ? you - them : null;
-  const gapText = gap === null ? "Not compared yet" : gap === 0 ? "Even" : `${Math.abs(gap)} pts ${gap > 0 ? "ahead" : "behind"}`;
+  // The words follow the standing, which weighs the gap against the margin: a gap inside it is "About the same".
+  const gapText =
+    gap === null || data.collecting || data.standing === null
+      ? "Not compared yet"
+      : data.standing === "about_same"
+        ? "About the same"
+        : `${Math.abs(gap)} pts ${data.standing}`;
+  const inside = data.standing === "about_same" && gap !== null && gap !== 0;
   return (
     <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]" data-testid="scorecard">
       <div className="grid grid-cols-2 content-start items-start gap-3 sm:grid-cols-3" data-testid="why-versus">
@@ -26,8 +33,10 @@ export function Scorecard({ data }: { data: Comparison }) {
           >
             {gapText}
           </span>
+          {inside && <span className="text-xs text-muted-foreground">{Math.abs(gap)} pts, inside the margin of error</span>}
           {margin !== null && <span className="text-xs text-muted-foreground">Margin of error is about {Math.round(margin)} pts</span>}
         </div>
+        <p className="col-span-2 text-xs text-text-hint sm:col-span-3">Each score is the share of all answers that named that business.</p>
       </div>
       {why.assistants.length > 0 ? (
         <ByAi name={data.title} assistants={why.assistants} color={data.color} />
@@ -45,7 +54,7 @@ function Stat({ label, value, sub, you = false, color }: { label: string; value:
         {color && <span className="size-2.5 shrink-0 rounded-full" style={{ background: color }} aria-hidden="true" />}
         <span className="truncate">{label}</span>
       </span>
-      <span className={cn("text-3xl font-semibold tracking-[-0.03em] tabular-nums", you ? "text-primary" : "text-foreground")}>{value ?? "None"}</span>
+      <span className={cn("text-3xl font-semibold tracking-[-0.03em] tabular-nums", you ? "text-primary" : "text-foreground")}>{value ?? "Not checked"}</span>
       <span className="text-xs tabular-nums text-muted-foreground">{sub}</span>
     </div>
   );

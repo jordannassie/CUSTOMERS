@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/browser";
 import { env } from "@/lib/env";
 import { safeNextPath } from "@/lib/safe-next";
+import { loginNotice } from "@/modules/auth/callback";
 import { AuthAlert, AuthCard, AuthField, AuthLogo, authLinkClass } from "./auth-bits";
 
 const MIN_PASSWORD = 8;
@@ -42,13 +43,16 @@ function nextFromUrl(signup = false) {
 
 export default function AuthForm({ defaultMode = "login", errorParam = "", notice, linkError }: AuthFormProps) {
   const router = useRouter();
-  const oauthFailed = errorParam.includes("oauth") || errorParam.includes("callback");
+  // Each failed link or sign-in has its own wording: a cancelled Google sign-in or a used reset link is not a
+  // "Google signed you in, but" failure (callbackFailurePath).
+  const fromUrl = loginNotice(errorParam);
   const [mode, setMode] = useState<"login" | "signup">(defaultMode);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState<"google" | "email" | null>(null);
-  const [googleFailed, setGoogleFailed] = useState(oauthFailed);
-  const [error, setError] = useState<string | null>(oauthFailed ? "google_failed" : (linkError ?? null));
+  const [google, setGoogle] = useState(fromUrl?.kind === "google" ? fromUrl : null);
+  const [linkNotice, setLinkNotice] = useState(fromUrl?.kind === "message" ? fromUrl : null);
+  const [error, setError] = useState<string | null>(linkError ?? null);
   const [message, setMessage] = useState<string | null>(notice ?? null);
   const [passwordError, setPasswordError] = useState<string | null>(null);
   // Which fields the form alert is about, so they are marked invalid and point at it.
@@ -57,9 +61,10 @@ export default function AuthForm({ defaultMode = "login", errorParam = "", notic
 
   const isSignup = mode === "signup";
 
+  const hadNotice = fromUrl !== null;
   useEffect(() => {
-    if (oauthFailed) window.history.replaceState(null, "", window.location.pathname);
-  }, [oauthFailed]);
+    if (hadNotice) window.history.replaceState(null, "", window.location.pathname);
+  }, [hadNotice]);
 
   // Clear form state when switching tabs
   function switchMode(next: "login" | "signup") {
@@ -68,12 +73,14 @@ export default function AuthForm({ defaultMode = "login", errorParam = "", notic
     setPassword("");
     setError(null);
     setMessage(null);
+    setLinkNotice(null);
     setPasswordError(null);
     setInvalid(null);
   }
 
   async function handleGoogle() {
     setError(null);
+    setLinkNotice(null);
     setLoading("google");
     const supabase = createClient();
     const next = nextFromUrl();
@@ -89,7 +96,7 @@ export default function AuthForm({ defaultMode = "login", errorParam = "", notic
       options: { redirectTo: callbackUrl },
     });
     if (oauthError) {
-      setGoogleFailed(true);
+      setGoogle({ kind: "google", title: "Google sign-in didn't start.", text: "This is usually temporary." });
       setLoading(null);
     }
   }
@@ -202,13 +209,12 @@ export default function AuthForm({ defaultMode = "login", errorParam = "", notic
               : "Log in to your Customers.Direct dashboard."}
           </p>
 
-          {googleFailed && (
+          {google && (
             <div className="mb-4">
               <AuthAlert tone="warning">
-                <p className="font-semibold">Sign-in couldn&apos;t complete. Please try again.</p>
+                <p className="font-semibold">{google.title}</p>
                 <p className="mt-1">
-                  Google signed you in, but we couldn&apos;t save your login.
-                  This is usually temporary.{" "}
+                  {google.text}{" "}
                   <button type="button" onClick={handleGoogle} className="font-semibold underline hover:no-underline">
                     Retry with Google
                   </button>{" "}
@@ -217,6 +223,21 @@ export default function AuthForm({ defaultMode = "login", errorParam = "", notic
                     contact support
                   </Link>.
                 </p>
+              </AuthAlert>
+            </div>
+          )}
+          {linkNotice && (
+            <div className="mb-4">
+              <AuthAlert tone={linkNotice.tone}>
+                {linkNotice.text}
+                {linkNotice.link && (
+                  <>
+                    {" "}
+                    <Link href={linkNotice.link.href} prefetch={false} className="font-semibold underline hover:no-underline">
+                      {linkNotice.link.label}
+                    </Link>
+                  </>
+                )}
               </AuthAlert>
             </div>
           )}
@@ -267,7 +288,7 @@ export default function AuthForm({ defaultMode = "login", errorParam = "", notic
               }
             />
 
-            {error && error !== "google_failed" && (
+            {error && (
               <AuthAlert id={alertId} tone="error">
                 {error}
               </AuthAlert>

@@ -5,6 +5,8 @@ import { z } from "zod";
 
 export type FocusCheck = {
   questionId: string;
+  /** The AI tool that answered; checked only when the link names one (?ai=). */
+  provider?: string;
   youNamed: boolean;
   /** Hosts the answer cited. */
   sites: string[];
@@ -14,28 +16,37 @@ export type FocusCheck = {
   extracted: unknown;
 };
 
-const extracted = z.object({ names: z.array(z.object({ name: z.string(), matches: z.string().nullish() })) });
+const extracted = z.object({
+  names: z.array(z.object({ name: z.string(), matches: z.string().nullish(), competitorName: z.string().nullish() })),
+});
 const key = (s: string) => s.trim().toLowerCase();
 
 /** maps.google.com counts for google.com. */
 export const usesSite = (host: string, site: string) => host === site || host.endsWith(`.${site}`);
 
+/**
+ * Every name the answer gave a business, in every form we saved: the tracked name ("Domino's Pizza | Chaklala-III"),
+ * the words AI used ("Domino's Pizza") and other businesses, so a link by either name finds the answer.
+ */
 function namesIn(check: FocusCheck): string[] {
   const parsed = extracted.safeParse(check.extracted);
-  const others = parsed.success ? parsed.data.names.filter((n) => !n.matches).map((n) => n.name) : [];
-  return [...check.competitors, ...others].map(key);
+  const saved = parsed.success ? parsed.data.names.flatMap((n) => [n.name, ...(n.competitorName ? [n.competitorName] : [])]) : [];
+  return [...check.competitors, ...saved].map(key);
 }
 
-/** Question ids that pass both links; undefined when neither is set, so every question shows. */
-export function focusMatches(checks: FocusCheck[], focus: { site?: string | null; named?: string | null }): Set<string> | undefined {
+export type Focus = { site?: string | null; named?: string | null; ai?: string | null };
+
+/** One answer passes the link only when it does everything the link asks: used the site and named them, not you. */
+export function checkMatches(check: FocusCheck, focus: Focus): boolean {
+  if (!focus.site && !focus.named) return false;
+  if (focus.ai && check.provider !== focus.ai) return false;
+  if (focus.site && !check.sites.some((h) => usesSite(h, focus.site!))) return false;
+  if (focus.named && (check.youNamed || !namesIn(check).includes(key(focus.named)))) return false;
+  return true;
+}
+
+/** Question ids with at least one answer that passes the link; undefined when no link is set, so every question shows. */
+export function focusMatches(checks: FocusCheck[], focus: Focus): Set<string> | undefined {
   if (!focus.site && !focus.named) return undefined;
-  const bySite = new Set<string>();
-  const byName = new Set<string>();
-  const wanted = focus.named ? key(focus.named) : null;
-  for (const c of checks) {
-    if (focus.site && c.sites.some((h) => usesSite(h, focus.site!))) bySite.add(c.questionId);
-    if (wanted && !c.youNamed && namesIn(c).includes(wanted)) byName.add(c.questionId);
-  }
-  const ids = new Set(checks.map((c) => c.questionId));
-  return new Set([...ids].filter((id) => (!focus.site || bySite.has(id)) && (!wanted || byName.has(id))));
+  return new Set(checks.filter((c) => checkMatches(c, focus)).map((c) => c.questionId));
 }

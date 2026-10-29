@@ -35,6 +35,8 @@ export type Fact = {
   basis?: "answers" | "website" | "google";
   /** For an AI tool's reason: the tool, so a card can say "ChatGPT and Claude used it most" when merged. */
   assistant?: string;
+  /** The AI tool a per-AI fact is about ("openai"), so "See the answers" shows that tool's answers only. */
+  provider?: string;
 };
 
 /** Google values for one business, fetched live for this page view and never stored (D-73). */
@@ -88,7 +90,7 @@ export function websiteFacts(
       action: "Give each service its own clear page on your website that answers what customers ask, so AI has something of yours to quote.",
       match: ["service page", "services page", "dedicated page", "landing page", "own page"],
       detail: you.domain ? `${them.site} in ${answers(usedTheirs)}, yours in ${count(usedYours)}.` : `${them.site} in ${answers(usedTheirs)}.`,
-      text: `AI used ${possessive(them.name)} website (${them.site}) in ${answers(usedTheirs)}.${yours} AI tools read business websites to answer these questions.`,
+      text: `AI used ${possessive(them.name)} website (${them.site}) in ${answers(usedTheirs)}.${yours} AI tools often read business websites for questions like these.`,
       where: "website",
       weight: 1.5 * (usedTheirs - usedYours),
       key: "web:quoted",
@@ -165,7 +167,7 @@ export function googleFacts(name: string, theirs: GoogleValues | null, yours: Go
         text,
         where: "google_listing",
         weight: 3,
-        action: "Ask happy customers for a Google review: send them your review link after each job.",
+        action: "Ask happy customers for a Google review: send them your review link after each visit or sale.",
         match: ["review"],
         key: "google:reviews",
         basis: "google",
@@ -215,7 +217,7 @@ export function googleFacts(name: string, theirs: GoogleValues | null, yours: Go
   const shared = theirs.categories.some((t) => yours.categories.some((y) => t.toLowerCase() === y.toLowerCase()));
   if (theirType && yourType && !shared) {
     behind.push({
-      title: "Different Google category",
+      title: "Their Google category may fit better",
       detail: `Theirs: ${theirType}. Yours: ${yourType}.`,
       action: `Check your Google categories: add "${theirType}" as a category if it describes what you do.`,
       match: ["category"],

@@ -13,7 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { PLACE_TEXT, PLACES, type Place } from "@/modules/opportunities/board/service";
 import type { AddToActionsAction } from "./AddToActionsButton";
 
-/** Where a hand-added fix sits on the board, as the category the board reads it back from. */
+/** The category for each place; the board reads the place itself back from evidence_data.place (no category says "Social"). */
 const CATEGORY: Record<Place, string> = {
   website: "technical",
   google_listing: "local_presence",
@@ -49,6 +49,7 @@ export function AddActionDialog({ businessId, add }: { businessId: string; add: 
         category: CATEGORY[place],
         source: "manual",
         dedupeKey: `manual:${crypto.randomUUID()}`,
+        evidenceData: { place },
       }).catch(() => null);
       if (!result?.ok) {
         toast.error(result && !result.ok ? result.error : "That action could not be added. Try again.");

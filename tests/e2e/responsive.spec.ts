@@ -328,10 +328,9 @@ for (const width of WIDTHS) {
     await expect(h1("Settings")).toBeVisible();
     await shot(page, width, "settings");
 
-    await visit(page, `/r/${shareToken}`, h1(NAME));
-    expect((await h1(NAME).boundingBox())!.width).toBeGreaterThan(100);
-    await noSideScroll(page, `${width} share page`);
-    await shot(page, width, "share-page");
+    // A share link opens the report PDF (D-90): there is no share page to lay out, only a redirect to the file.
+    const shared = await page.request.get(`/r/${shareToken}`, { maxRedirects: 0 });
+    expect(shared.status()).toBe(303);
 
     for (const [path, title, file] of [
       ["/internal/admin", "Overview", "admin-overview"],

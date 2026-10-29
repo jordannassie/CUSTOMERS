@@ -1,5 +1,5 @@
 // The Competitors page charts (2026-10-23): each business over time, share of voice, and by AI model. The same
-// checks and the same 30-day mention rate as the leaderboard (D-63, D-65), so a line ends where that business's
+// checks and the same 30-day mention rate as the leaderboard (D-63, D-91), so a line ends where that business's
 // leaderboard score is. Pure.
 import type { ProviderId } from "./providers/types";
 import { checksInWindow, DAY_MS, estimateFor, groupBy, SCORE_WINDOW_DAYS, type Mentioned, type ScoreCheck } from "./scoring";

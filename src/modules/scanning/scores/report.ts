@@ -16,6 +16,8 @@ export type ScoreReport = VisibilityScore & {
   change: Change | null;
   /** Each model's 30-day score against a week ago, only where it is bigger than the margin (DB-013). */
   modelChanges: Partial<Record<ProviderId, Change>>;
+  /** Each model's change on the 30 days before, when 60 days were read (the client report); else empty. */
+  modelMonthChanges?: Partial<Record<ProviderId, Change>>;
   /** The 30-day score against 30 days ago; null unless `historyDays` reaches 30 (DB-012). */
   monthChange: Change | null;
   /** The oldest check in the window; a competitor added after it was not looked for on every check (F-53). */

@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import type Stripe from "stripe";
 import { afterAll, describe, expect, it } from "vitest";
 import { adminAdjustCredits, expireGrants, getBalance } from "@/modules/credits";
-import { canSpendTopUps, canStartScan, REASONS } from "@/modules/entitlements";
+import { canBuyTopUps, canSpendTopUps, canStartScan, REASONS } from "@/modules/entitlements";
 import { createWebhookStore } from "../webhooks/dal";
 import * as fx from "../webhooks/fixtures.test-helpers";
 import { dispatchEvent } from "../webhooks/handlers";
@@ -76,7 +76,7 @@ describe("cancelled plan", () => {
     const created: unknown[] = [];
     const client: TopupCheckoutClient = { mode: "stripe", createSession: async (p) => (created.push(p), { id: "cs_x", clientSecret: "x" }) };
     const result = await buyTopUp(
-      { client, loadPacks: listTopupPacks, canSpendTopUps, customerId: async () => a.customer },
+      { client, loadPacks: listTopupPacks, canBuyTopUps, customerId: async () => a.customer },
       { agencyId: a.agencyId, email: null, packId: "topup_500", returnUrl: "https://app.test/r" },
     );
     expect(result).toEqual({ ok: false, status: 403, error: REASONS.canceled });
@@ -89,7 +89,7 @@ describe("fixture payment (dev and Playwright)", () => {
     const a = await setup("trialing");
     const deps = {
       store: createWebhookStore(service),
-      stripe: { retrieveSubscription: async () => ({}) as Stripe.Subscription, listSubscriptionItems: async () => [], listInvoiceLines: async () => [], retrieveInvoice: async () => ({}) as Stripe.Invoice, checkoutBusinessIds: async () => new Map(), tagItem: async () => {}, checkoutSessionForPaymentIntent: async () => null },
+      stripe: { retrieveSubscription: async () => ({}) as Stripe.Subscription, listSubscriptionItems: async () => [], listInvoiceLines: async () => [], retrieveInvoice: async () => ({}) as Stripe.Invoice, checkoutBusinessIds: async () => new Map(), tagItem: async () => {}, checkoutSessionForPaymentIntent: async () => null, retrieveSchedule: async () => ({}) as Stripe.SubscriptionSchedule },
       sendEmail: async () => ({ status: "sent" as const, providerId: "fake" }),
       now: () => new Date(),
     };

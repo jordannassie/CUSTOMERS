@@ -35,8 +35,8 @@ export function ModelScoresRow({ models, className }: { models: OverviewView["mo
   );
 }
 
-/** Per-model scores, always next to the overall score (D-65). Model colours mark the dot and bar only. */
-export function ModelScores({ models }: { models: OverviewView["models"] }) {
+/** Per-model scores, always next to the overall score (D-91). Model colours mark the dot and bar only. */
+export function ModelScores({ models, period = "week" }: { models: OverviewView["models"]; period?: "week" | "month" }) {
   return (
     <ul className="flex flex-col gap-4" data-testid="model-scores">
       {models.map((m) => (
@@ -47,7 +47,7 @@ export function ModelScores({ models }: { models: OverviewView["models"] }) {
               {m.label}
             </span>
             <span className="flex items-baseline gap-2">
-              {m.change && <PointsChange change={m.change} />}
+              {m.change && <PointsChange change={m.change} period={period} />}
               <span className="font-semibold tabular-nums">
                 {m.score === null ? <span className="font-normal text-text-hint">{emptyLabel(m)}</span> : m.score}
               </span>

@@ -42,6 +42,8 @@ const DASH_ALLOW: Record<string, string> = {
 const WORD_ALLOW: Record<string, string> = {
   "src/modules/insights/validate.ts": "the banned word list that rejects AI-written reasons",
   "src/modules/insights/prompts/explain.v2.ts": "tells the model which words to avoid",
+  "src/modules/reports/v2/wording/validate.ts": "the banned word list that rejects AI-written report fixes",
+  "src/modules/reports/prompts/fix-wording.v1.ts": "tells the model which words to avoid",
   "src/modules/sources/classify.ts": "Seamless is a food delivery site name",
   "src/lib/site-type.ts": "Seamless is a food delivery site name",
 };

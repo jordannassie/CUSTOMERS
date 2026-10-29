@@ -15,6 +15,8 @@ export type SendEmailInput = {
   /** Null only for emails sent before the agency exists. Required for emails a user can turn off. */
   agencyId: string | null;
   template: (links: EmailLinks) => ReactElement;
+  /** The plain text part, when it should say more than the HTML turned into text (the weekly report, D-90). */
+  text?: (links: EmailLinks) => string;
   /** One email per key, ever: a repeated event (webhook retry, cron rerun) sends nothing. */
   idempotencyKey?: string;
 };
@@ -58,7 +60,10 @@ export async function sendEmail(input: SendEmailInput, deps: Partial<SendEmailDe
     };
   }
 
-  const { html, text } = await renderEmail(input.template({ baseUrl: settings.baseUrl, unsubscribeUrl: unsubscribe?.page ?? null }));
+  const links = { baseUrl: settings.baseUrl, unsubscribeUrl: unsubscribe?.page ?? null };
+  const rendered = await renderEmail(input.template(links));
+  const { html } = rendered;
+  const text = input.text ? input.text(links) : rendered.text;
   // RFC 8058 one-click unsubscribe; Gmail and Yahoo expect it on bulk mail.
   const headers = unsubscribe
     ? { "List-Unsubscribe": `<${unsubscribe.oneClick}>`, "List-Unsubscribe-Post": "List-Unsubscribe=One-Click" }

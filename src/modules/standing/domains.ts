@@ -1,8 +1,9 @@
 // "Where AI looked" on Compare (dashboard redesign): each site the answers used, how many of those answers named them
 // and how many named you, so a site that names them and skips you stands out. Pure, over the score's own answers.
+import { tallyResult, type TallyResult } from "./assistant-facts";
 import { namedIn, type StandingCheck } from "./checks";
 
-export type DomainRow = { host: string; answers: number; them: number; you: number; result: "they_win" | "tie" | "you_win" };
+export type DomainRow = { host: string; answers: number; them: number; you: number; result: TallyResult };
 
 const MAX_ROWS = 15;
 
@@ -19,7 +20,7 @@ export function domainRows(checks: StandingCheck[], tracked: string, max = MAX_R
     }
   }
   return [...rows]
-    .map(([host, r]) => ({ host, ...r, result: r.them > r.you ? ("they_win" as const) : r.you > r.them ? ("you_win" as const) : ("tie" as const) }))
+    .map(([host, r]) => ({ host, ...r, result: tallyResult(r) }))
     .sort((a, b) => b.answers - a.answers || b.them - b.you - (a.them - a.you) || a.host.localeCompare(b.host))
     .slice(0, max);
 }

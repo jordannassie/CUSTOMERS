@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Globe } from "lucide-react";
+import { ExternalLink, Globe } from "lucide-react";
 import { PageContainer } from "@/components/app/PageContainer";
 import { PageHeader } from "@/components/app/PageHeader";
 import { SampleDataBadge } from "@/components/app/SampleDataBadge";
@@ -16,17 +16,27 @@ import { Scorecard } from "@/components/competitors/compare/Scorecard";
 import { toCompareTab } from "@/components/competitors/compare/tabs";
 import { WebsitesTab } from "@/components/competitors/compare/WebsitesTab";
 import { GoogleTable } from "@/components/competitors/GoogleCompare";
+import { cn } from "cn";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { compareHref } from "@/lib/compare-href";
+import { siteHref } from "@/lib/site-href";
 import { checkCompetitorWebsite, getComparePage, saveCompetitorWebsite, trackCompetitor } from "@/modules/competitors";
-import { actionStates, addToActions } from "@/modules/opportunities";
+import { actionStates, addToActions, moveActionTo } from "@/modules/opportunities";
 import { getWorkspace } from "@/modules/workspace";
 
 export const metadata = { title: "Compare", robots: { index: false } };
 
 const ID = /^[0-9a-f-]{36}$/i;
+
+/** The reasons heading says what the standing is: "Why they are ahead" only when they are (audit, 2026-10-28). */
+function reasonsHeading(standing: string | null, collecting: boolean): string {
+  if (collecting) return "Where they beat you so far";
+  if (standing === "behind") return "Why they are ahead";
+  if (standing === "ahead") return "Where they still beat you";
+  return "Where they beat you";
+}
 const GOOGLE_KEYS = ["google:reviews", "google:rating", "google:hours", "google:category"];
 
 // Compare (dashboard redesign, 2026-10-27): you against one competitor at a time, every fact with its fix.
@@ -44,6 +54,8 @@ export default async function ComparePage({ searchParams }: { searchParams: Prom
   // Google tab together (2026-10-27).
   const signals = data && params.google === "1" ? data.loadSignals() : null;
   const askGoogle = (t: string) => `${compareHref(data?.panel.competitorId, t)}&google=1`;
+  // Once their website is checked, the button opens it; before, it goes to the Website tab to check it.
+  const visit = data?.panel.website.checked ? siteHref(data.panel.website.domain) : null;
   const keys = data ? data.cards.map((c) => c.key) : [];
   const [states, googleStates] = data
     ? await Promise.all([actionStates(business.id, keys), actionStates(business.id, GOOGLE_KEYS)]).then(([a, b]) => [Object.fromEntries(a), Object.fromEntries(b)])
@@ -62,10 +74,19 @@ export default async function ComparePage({ searchParams }: { searchParams: Prom
           actions={
             data ? (
               <Button asChild variant="outline">
-                <Link href={compareHref(data.panel.competitorId, "website")}>
-                  <Globe aria-hidden="true" />
-                  {data.panel.website.checked ? "Their website" : "Scan their website"}
-                </Link>
+                {visit ? (
+                  <a href={visit} target="_blank" rel="noopener noreferrer">
+                    <Globe aria-hidden="true" />
+                    Their website
+                    <ExternalLink className="size-3.5 text-muted-foreground" aria-hidden="true" />
+                    <span className="sr-only">(opens in a new tab)</span>
+                  </a>
+                ) : (
+                  <Link href={compareHref(data.panel.competitorId, "website")}>
+                    <Globe aria-hidden="true" />
+                    Check their website
+                  </Link>
+                )}
               </Button>
             ) : undefined
           }
@@ -98,28 +119,41 @@ export default async function ComparePage({ searchParams }: { searchParams: Prom
                   <div className="flex flex-col gap-8" data-testid="tab-summary">
                     <section className="flex flex-col gap-3">
                       <div className="flex flex-col gap-1">
-                        <h3 className="text-sm font-semibold">Why they are ahead</h3>
+                        <h3 className="text-sm font-semibold">{reasonsHeading(data.standing, data.collecting)}</h3>
                         <p className="text-xs text-muted-foreground">Facts from AI answers in the last 30 days and what we read, biggest first. Each comes with its fix.</p>
                       </div>
-                      <ReasonCards name={data.title} businessId={business.id} cards={data.cards} states={states} add={addToActions} />
+                      <ReasonCards
+                        name={data.title}
+                        businessId={business.id}
+                        cards={data.cards}
+                        states={states}
+                        add={addToActions}
+                        move={moveActionTo}
+                        answers={data.panel.why.answers}
+                        standing={data.collecting ? null : data.standing}
+                      />
                       {signals ? (
                         <Suspense fallback={<Skeleton className="h-28 w-full" />}>
+                          {/* One listing's Google values: the tracked branch's name, never "(all locations)". */}
                           <GoogleReasons
-                            name={data.title}
+                            name={data.branch}
                             competitorId={data.panel.competitorId}
                             businessId={business.id}
                             signals={signals}
                             states={googleStates}
                             add={addToActions}
+                            move={moveActionTo}
+                            fixes={data.panel.fixRefs}
                           />
                         </Suspense>
                       ) : (
                         <ShowGoogle href={askGoogle("summary")} text="Google reasons too: reviews, rating, opening days and category, live from Google." />
                       )}
                     </section>
-                    <section className="flex flex-col gap-3">
+                    {/* When you lead, where you are ahead comes first. */}
+                    <section className={cn("flex flex-col gap-3", data.standing === "ahead" && "order-first")}>
                       <h3 className="text-sm font-semibold">Where you are ahead</h3>
-                      <LeadCards leads={data.leads} />
+                      <LeadCards leads={data.leads} standing={data.collecting ? null : data.standing} />
                     </section>
                     <p className="text-xs text-text-hint">We can&apos;t see inside the AI tools, so these are likely reasons, each backed by the facts shown.</p>
                   </div>
@@ -133,7 +167,7 @@ export default async function ComparePage({ searchParams }: { searchParams: Prom
                   <div className="max-w-xl" data-testid="tab-google">
                     {signals ? (
                       <Suspense fallback={<Skeleton className="h-40 w-full" />}>
-                        <GoogleTable name={data.title} competitorId={data.panel.competitorId} signals={signals} />
+                        <GoogleTable name={data.branch} competitorId={data.panel.competitorId} signals={signals} />
                       </Suspense>
                     ) : (
                       <ShowGoogle href={askGoogle("google")} text="Your Google listing next to theirs: reviews, rating, opening days and category, live from Google." />

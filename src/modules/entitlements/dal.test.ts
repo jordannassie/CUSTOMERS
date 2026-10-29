@@ -3,7 +3,7 @@ import { afterAll, describe, expect, it } from "vitest";
 import { createServiceClient } from "@/lib/supabase/service";
 import { grantCredits } from "@/modules/credits";
 import { loadAgencyFacts, loadBusinessFacts } from "./dal";
-import { canAddBusiness, canFinishDraft, canSpendTopUps, canStartScan, maxQuestions, REASONS } from "./index";
+import { canAddBusiness, canBuyTopUps, canFinishDraft, canSpendTopUps, canStartScan, maxQuestions, REASONS } from "./index";
 
 // Runs against the local database `npm test` rebuilds.
 const service = createServiceClient();
@@ -72,7 +72,30 @@ describe("entitlements against the database", () => {
       businessCount: 2,
       balance: 40,
       trialOver: false,
+      // A test agency has no card step (D-61), so its trial counts as started.
+      planStarted: true,
     });
+  });
+
+  it("refuses top-ups until setup has started the trial, for an agency with a card step (F-43)", async () => {
+    const agency = await createAgency(0);
+    await service.from("agencies").update({ is_test: false }).eq("id", agency.agencyId).throwOnError();
+    expect(await canBuyTopUps(agency.agencyId)).toEqual({ allowed: false, reason: REASONS.setupUnfinished });
+    await service.from("agencies").update({ trial_ends_at: new Date(Date.now() + 7 * 86_400_000).toISOString() }).eq("id", agency.agencyId).throwOnError();
+    expect(await canBuyTopUps(agency.agencyId)).toEqual({ allowed: true, reason: "" });
+  });
+
+  it("counts a set-up business put on the plan once, and checks a draft like finishing it (B-44, D-16)", async () => {
+    const agency = await createAgency(2, 1);
+    const draft = (await service.from("businesses").select("id").eq("agency_id", agency.agencyId).eq("status", "onboarding").single().throwOnError()).data.id;
+    expect(await canAddBusiness(agency.agencyId, { businessId: agency.businessIds[0] })).toEqual({ allowed: true, reason: "" });
+    expect(await canAddBusiness(agency.agencyId, { businessId: draft })).toEqual({ allowed: false, reason: REASONS.trialBusinessLimit });
+  });
+
+  it("refuses finishing a draft while the last payment failed", async () => {
+    const agency = await createAgency(1, 1);
+    await setStatus(agency, "past_due");
+    expect(await canFinishDraft(agency.agencyId)).toEqual({ allowed: false, reason: REASONS.pastDue });
   });
 
   it("stops a trial agency at its third business", async () => {

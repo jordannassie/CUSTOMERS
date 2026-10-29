@@ -7,6 +7,7 @@ import type { ActionResult } from "@/modules/auth";
 import type { QuestionAnswer } from "@/modules/questions/answers";
 import { topPick } from "@/modules/questions/list";
 import type { QuestionRow } from "@/modules/questions/service";
+import { listText } from "@/modules/questions/skipped";
 import { compareHref } from "@/lib/compare-href";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -82,10 +83,18 @@ function AllNamed({ question, answers, businessName }: { question: QuestionRow; 
   }
   const you = answers.filter((a) => a.namedYou).length;
   const pick = topPick(question);
-  if (names.size === 0 && you === 0) return null;
+  // The name finder failed on these answers, so the list may be missing businesses they named.
+  const unread = answers.filter((a) => !a.namesChecked).map((a) => a.label);
+  if (names.size === 0 && you === 0 && unread.length === 0) return null;
   return (
     <div className="flex flex-col gap-2">
       <p className="text-xs font-medium text-muted-foreground">Businesses named, all tools</p>
+      {unread.length > 0 && (
+        <p className="text-[13px] text-muted-foreground" data-testid="names-unread">
+          We couldn&apos;t read which businesses {listText(unread)} named, so this list may be missing some.
+        </p>
+      )}
+      {(names.size > 0 || you > 0) && (
       <ul className="flex flex-wrap gap-1.5" data-testid="all-named">
         {you > 0 && (
           <li className="rounded-xs bg-primary-tint px-2 py-0.5 text-[13px] font-medium text-primary">
@@ -123,6 +132,7 @@ function AllNamed({ question, answers, businessName }: { question: QuestionRow; 
             );
           })}
       </ul>
+      )}
       {pick?.competitorId && (
         <Link href={compareHref(pick.competitorId, "questions")} className="inline-flex w-fit items-center gap-1 text-[13px] font-medium text-primary hover:underline">
           Compare with {pick.name}

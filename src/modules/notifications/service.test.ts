@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
+import type { ReportSnapshot } from "@/modules/reports";
 import {
+  aiToolNames,
   hasSomethingToReport,
   lowCreditsKey,
-  MAX_NEW_OPPORTUNITIES,
+  MAX_FIXES,
   weekOf,
   weeklyBusiness,
   weeklyReportKey,
@@ -30,62 +32,66 @@ describe("keys", () => {
   });
 });
 
-const score = (change: { direction: "up" | "down"; text: string } | null) => ({
-  score: {
-    value: 64,
-    tone: "mid" as const,
-    label: "Good confidence",
-    sentence: "AI recommended you in about 6 of 10 customer questions this month.",
-    firstResults: false,
-    change,
-    details: {} as never,
-  },
-});
+// Only the parts of a report snapshot the weekly email reads.
+const fix = (n: number) => ({ n, title: `Fix ${n}`, where: n === 1 ? "Your website" : "Google Business Profile" });
+const report = (change: { direction: "up" | "down"; points: number } | null, fixes = 4) =>
+  ({
+    score: { value: 64, change, rangePoints: 8 },
+    named: { answers: 23, total: 36, questions: 10, questionsAsked: 12 },
+    rank: { position: 2, of: 4, leader: { name: "Bean House", score: 70 } },
+    summary: { headline: "AI named Bean There Coffee in 23 of 36 answers.", lead: "", short: { knows: "", behind: "Bean House is named more often.", fixes: "" } },
+    fixes: Array.from({ length: fixes }, (_, i) => fix(i + 1)),
+  }) as unknown as ReportSnapshot;
 
 describe("weeklyBusiness", () => {
-  it("shows the Overview's change (already past the margin), and new fixes most important first", () => {
-    const business = weeklyBusiness({
-      name: "Bean There Coffee",
-      overview: score({ direction: "up", text: "Up 8 points on last week" }),
-      newOpportunities: [
-        { title: "Low one", impact: "low", createdAt: "2026-09-27T00:00:00Z" },
-        { title: "High older", impact: "high", createdAt: "2026-09-23T00:00:00Z" },
-        { title: "High newer", impact: "high", createdAt: "2026-09-28T00:00:00Z" },
-        { title: "Medium", impact: "medium", createdAt: "2026-09-28T00:00:00Z" },
-      ],
-      reportPath: "/r/token",
-    });
-    expect(business).toEqual({
+  it("takes every number from the business's report, with its top fixes and where each is made", () => {
+    const business = weeklyBusiness({ name: "Bean There Coffee", snapshot: report({ direction: "up", points: 8 }), sharePath: "/r/token" });
+    expect(business).toMatchObject({
       name: "Bean There Coffee",
       score: 64,
-      sentence: "AI recommended you in about 6 of 10 customer questions this month.",
-      reason: null,
-      change: { direction: "up", text: "Up 8 points on last week" },
-      newOpportunities: ["High newer", "High older", "Medium"],
-      moreOpportunities: 1,
+      named: { answers: 23, total: 36 },
+      rank: { position: 2, of: 4 },
+      sentence: "AI named Bean There Coffee in 23 of 36 answers.",
+      reason: "Bean House is named more often.",
+      change: { direction: "up", text: "Up 8 points on the 30 days before" },
+      fixes: [fix(1), fix(2), fix(3)].map(({ title, where }) => ({ title, where })),
+      moreFixes: 1,
       reportUrl: "/r/token",
+      pdf: true,
+      aiTools: ["ChatGPT", "Claude", "Perplexity"],
     });
-    expect(business.newOpportunities).toHaveLength(MAX_NEW_OPPORTUNITIES);
+    expect(business.fixes).toHaveLength(MAX_FIXES);
   });
 
-  it("has no change when the Overview has none, and nothing to report without a score", () => {
-    const steady = weeklyBusiness({ name: "A", overview: score(null), newOpportunities: [], reportPath: "/r/a" });
-    // The likely reason goes out only with a score, so an unscored business never gets one.
-    const reason = "A likely reason Bean House is ahead of you: AI used yelp.com in 9 answers that named Bean House and not you.";
-    expect(weeklyBusiness({ name: "A", overview: score(null), newOpportunities: [], reportPath: "/r/a", reason }).reason).toBe(reason);
-    expect(weeklyBusiness({ name: "B", overview: null, newOpportunities: [], reportPath: "/dashboard", reason }).reason).toBeNull();
-    const unscored = weeklyBusiness({ name: "B", overview: null, newOpportunities: [], reportPath: "/dashboard" });
-    expect(steady.change).toBeNull();
-    expect(unscored).toMatchObject({ score: null, sentence: null, change: null });
+  it("links to the dashboard when the share link is off, and has nothing to report without a report", () => {
+    const off = weeklyBusiness({ name: "A", snapshot: report(null, 0), sharePath: null });
+    expect(off).toMatchObject({ reportUrl: "/dashboard", pdf: false, change: null, fixes: [], moreFixes: 0 });
+    const unscored = weeklyBusiness({ name: "B", snapshot: null, sharePath: "/r/b" });
+    expect(unscored).toMatchObject({ score: null, sentence: null, reason: null, change: null, reportUrl: "/dashboard", pdf: false });
     expect(hasSomethingToReport([unscored])).toBe(false);
-    expect(hasSomethingToReport([unscored, steady])).toBe(true);
+    expect(hasSomethingToReport([unscored, off])).toBe(true);
+  });
+
+  it("says one point, not one points", () => {
+    expect(weeklyBusiness({ name: "A", snapshot: report({ direction: "down", points: 1 }), sharePath: null }).change?.text).toBe(
+      "Down 1 point on the 30 days before",
+    );
   });
 
   it("writes a subject that says what moved", () => {
-    const moved = weeklyBusiness({ name: "A", overview: score({ direction: "down", text: "Down 9 points on last week" }), newOpportunities: [], reportPath: "/r/a" });
-    const steady = weeklyBusiness({ name: "B", overview: score(null), newOpportunities: [], reportPath: "/r/b" });
+    const moved = weeklyBusiness({ name: "A", snapshot: report({ direction: "down", points: 9 }), sharePath: "/r/a" });
+    const steady = weeklyBusiness({ name: "B", snapshot: report(null), sharePath: "/r/b" });
     expect(weeklyReportSubject([moved])).toBe("Your weekly report for A");
     expect(weeklyReportSubject([moved, steady])).toBe("Your weekly report: 1 of 2 businesses moved");
     expect(weeklyReportSubject([steady, steady])).toBe("Your weekly report: 2 businesses, no big moves");
+  });
+});
+
+describe("aiToolNames", () => {
+  it("names the business's chosen AI tools in the usual order, and all three when none are saved", () => {
+    expect(aiToolNames(["perplexity", "openai"])).toEqual(["ChatGPT", "Perplexity"]);
+    expect(aiToolNames(["anthropic"])).toEqual(["Claude"]);
+    expect(aiToolNames([])).toEqual(["ChatGPT", "Claude", "Perplexity"]);
+    expect(aiToolNames(null)).toEqual(["ChatGPT", "Claude", "Perplexity"]);
   });
 });

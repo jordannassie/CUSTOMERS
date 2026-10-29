@@ -54,7 +54,16 @@ export type OverviewView = {
    * notChecked: no checks in the window and every check failed in the last scan, so "Couldn't be checked".
    * skipped: the last scan left this AI out because it was unavailable (a rejected key or no credit).
    */
-  models: { id: ProviderId; label: string; score: number | null; notChecked?: boolean; skipped?: boolean; change: PointsChange | null }[];
+  models: {
+    id: ProviderId;
+    label: string;
+    score: number | null;
+    notChecked?: boolean;
+    skipped?: boolean;
+    change: PointsChange | null;
+    /** Against the 30 days before, for the monthly report; the Overview shows the weekly change. */
+    monthChange?: PointsChange | null;
+  }[];
   /** A scan that finished with some AIs failing: which ones, and that failed checks cost nothing (BUG-074). */
   scanNotice: string | null;
   trend: TrendView;
@@ -176,6 +185,7 @@ export function overviewView(
       notChecked,
       skipped,
       change: pointsChange(report.modelChanges[id]),
+      monthChange: pointsChange(report.modelMonthChanges?.[id]),
     })),
     scanNotice: scanNoticeText(report.models, lastScanFailures, report.questions.length, lastScanSkipped),
     trend: trendView({ history: report.history, nextScanAt, now }),

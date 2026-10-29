@@ -1,10 +1,6 @@
 import { randomBytes } from "node:crypto";
-import { namedAs, type CompetitorsView } from "@/modules/competitors";
-import type { OverviewView } from "@/modules/overview";
-import type { ReportDocument } from "./document";
-import type { SectionId } from "./sections";
 
-// Share links and the read-only report (B-59, MVP_SPEC 8.3, D-12). Pure apart from the token source.
+// Share links (B-59, MVP_SPEC 8.3, D-12, D-90). Pure apart from the token source.
 
 /** 32 random bytes as base64url: 43 characters, never guessable (MVP_SPEC 8.3). */
 export function newShareToken(): string {
@@ -18,81 +14,14 @@ export const isShareToken = (token: string): boolean => SHARE_TOKEN.test(token);
 
 export const sharePath = (token: string): string => `/r/${token}`;
 
-/** The report as a page shows it: the agency's name and logo now, the document, and the sections to leave out. */
-export type ReportView = {
-  /** isTest: test mode (D-61), so the report says its answers are samples. */
-  agency: { name: string; hasLogo: boolean; isTest?: boolean };
-  document: ReportDocument;
-  hidden: SectionId[];
-  /** A snapshot is dated when it was saved; the live report is worked out on read. */
-  kind: "live" | "snapshot";
-};
+// Before D-90 a PDF export made its own short link (for_pdf) to print. Any such link left on stops opening after this.
+export const PDF_LINK_MAX_AGE_MS = 5 * 60_000;
 
-// Scores closer than this read as level; further apart they are named even when the margin can't separate them.
-const LEVEL_POINTS = 10;
-
-const inTen = (score: number) => {
-  const n = Math.round(score / 10);
-  return n === 0 ? "fewer than 1 of 10" : `about ${n} of 10`;
-};
-
-/** The top of the client report: the score and its change, the competitor AI picked most, the first fix. */
-export function reportSummary(input: {
-  businessName: string;
-  score: number | null;
-  monthChange: OverviewView["monthChange"];
-  leaderboard: CompetitorsView["leaderboard"];
-  firstFix: string | null;
-  /** "A likely reason Bean House is ahead of you: ...", from saved answers only. */
-  reason?: string | null;
-}): string[] {
-  const { businessName: name, score, monthChange } = input;
-  if (score === null) return [];
-  const change = monthChange
-    ? `, ${monthChange.direction} ${monthChange.points} ${monthChange.points === 1 ? "point" : "points"} on the 30 days before`
-    : "";
-  const lines = [
-    score === 0
-      ? `Over the last 30 days, AI did not recommend ${name} in any customer questions${change}.`
-      : `Over the last 30 days, AI recommended ${name} in ${inTen(score)} customer questions${change}.`,
-  ];
-
-  // Only competitors compared over the whole window have a standing (F-53).
-  const top = input.leaderboard
-    .filter((r) => !r.isYou && r.score !== null && r.standing !== null)
-    .sort((a, b) => b.score! - a.score!)[0];
-  // A branch whose score is its chain's is named as the chain AI named.
-  const them = top ? namedAs(top) : "";
-  if (top?.standing === "behind") lines.push(`AI recommended ${them} more often, in ${inTen(top.score!)} questions.`);
-  else if (top?.standing === "about_same") {
-    // Within the margin, but 27 against 8 never reads as "level" (BUG-111): the numbers are given, with the reason.
-    const apart = Math.abs(Math.round(top.score!) - Math.round(score)) >= LEVEL_POINTS;
-    lines.push(
-      apart
-        ? `AI recommended ${them}, the competitor it named most, in ${inTen(top.score!)} questions and ${name} in ${inTen(score)}. There aren't enough answers yet to say that gap will hold.`
-        : `${them}, the competitor AI recommended most, was about level with ${name}.`,
-    );
-  }
-  else if (top?.standing === "ahead") lines.push(`AI recommended ${name} more often than every competitor tracked here.`);
-
-  if (input.reason) lines.push(input.reason);
-  if (input.firstFix) lines.push(`First fix: ${input.firstFix.replace(/[.!?]$/, "")}.`);
-  return lines;
-}
-
-const IMAGE_TYPES: { type: string; matches: (b: Uint8Array) => boolean }[] = [
-  { type: "image/png", matches: (b) => b[0] === 0x89 && b[1] === 0x50 && b[2] === 0x4e && b[3] === 0x47 },
-  { type: "image/jpeg", matches: (b) => b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xff },
-  {
-    type: "image/webp",
-    matches: (b) =>
-      String.fromCharCode(...b.slice(0, 4)) === "RIFF" && String.fromCharCode(...b.slice(8, 12)) === "WEBP",
-  },
-];
-
-/** The logo's type from its first bytes; null for anything that is not a PNG, JPG or WebP. */
-export function logoType(bytes: Uint8Array): string | null {
-  return IMAGE_TYPES.find((t) => t.matches(bytes))?.type ?? null;
+/** False for an old PDF export link older than PDF_LINK_MAX_AGE_MS; an agency's own links never expire. */
+export function shareLinkOpens(share: { for_pdf: boolean; created_at: string }, now: Date): boolean {
+  if (!share.for_pdf) return true;
+  const age = now.getTime() - Date.parse(share.created_at);
+  return Number.isFinite(age) && age < PDF_LINK_MAX_AGE_MS;
 }
 
 /** The storage path of a logo uploaded to our own bucket; null for any other URL. */
@@ -107,16 +36,4 @@ export function storagePath(logoUrl: string, supabaseUrl: string, bucket: string
   if (url.origin !== new URL(supabaseUrl).origin || !url.pathname.startsWith(prefix)) return null;
   const path = decodeURIComponent(url.pathname.slice(prefix.length));
   return path && !path.split("/").includes("..") ? path : null;
-}
-
-/** "sunrise-coffee-bar-ai-visibility-2026-09-29.pdf" (B-60). */
-export function pdfFileName(businessName: string, now: Date): string {
-  const slug = businessName
-    .normalize("NFKD")
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 60)
-    .replace(/-+$/, "");
-  return `${slug || "report"}-ai-visibility-${now.toISOString().slice(0, 10)}.pdf`;
 }

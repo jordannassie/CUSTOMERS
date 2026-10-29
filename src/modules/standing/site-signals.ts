@@ -159,8 +159,8 @@ export function questionFacts(
         match: claim.label.split(/\s+/).filter((w) => w.length > 3),
         key: `web:claim:${claim.key}`,
         basis: "website",
-        detail: `They win "${question}". Yours doesn't say it. Theirs: "${claim.quote}"`,
-        text: `They win "${question}", and their website says ${claim.label} ("${claim.quote}"). Yours doesn't say it.`,
+        detail: `AI named them more often on "${question}". We didn't find it on the pages we read of yours. Theirs: "${claim.quote}"`,
+        text: `AI named them more often on "${question}", and their website says ${claim.label} ("${claim.quote}"). We didn't find it on the pages we read of yours.`,
         where: "website",
         weight: 5.5,
       });
@@ -175,8 +175,8 @@ export function questionFacts(
         match: words.slice(0, 3),
         key: `web:words:${words.slice(0, 3).join(",")}`,
         basis: "website",
-        detail: `They win "${question}". Your website doesn't mention ${words.length === 1 ? "it" : "them"}.`,
-        text: `They win "${question}", and their website mentions ${list(shown)}. Your website doesn't.`,
+        detail: `AI named them more often on "${question}". We didn't find ${words.length === 1 ? "it" : "them"} on the pages we read of yours.`,
+        text: `AI named them more often on "${question}", and their website mentions ${list(shown)}. We didn't find ${words.length === 1 ? "it" : "them"} on the pages we read of yours.`,
         where: "website",
         weight: 5,
       });

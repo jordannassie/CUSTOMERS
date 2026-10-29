@@ -5,7 +5,7 @@ import { cn } from "cn";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { fixHref } from "@/lib/fix-where";
-import type { OverviewCompete } from "@/modules/competitors";
+import { STANDING_TEXT, type OverviewCompete } from "@/modules/competitors";
 import type { ActionItem } from "@/modules/opportunities/board/service";
 import type { OverviewView } from "@/modules/overview";
 import type { QuestionTrends } from "@/modules/scanning";
@@ -13,7 +13,8 @@ import { colorAt } from "@/lib/series-colors";
 
 // The Overview's cards (dashboard redesign, 2026-10-27), each a short summary with a link to the page that has it all.
 
-const STANDING = { ahead: { text: "Ahead", variant: "good" }, behind: { text: "Behind", variant: "mid" }, about_same: { text: "Same", variant: "secondary" } } as const;
+// Your standing against that business, in the Competitors page's words: "You're ahead" on a row you beat.
+const STANDING = { ahead: "good", behind: "mid", about_same: "secondary" } as const;
 const IMPACT = { high: { text: "High", variant: "low" }, medium: { text: "Medium", variant: "mid" }, low: { text: "Low", variant: "secondary" } } as const;
 const DOT: Record<string, string> = { openai: "bg-chatgpt", anthropic: "bg-claude", perplexity: "bg-perplexity" };
 
@@ -76,7 +77,7 @@ export function WhereYouStand({ rows, lines = [] }: { rows: OverviewCompete["sta
       ) : (
         <ul className="flex flex-col divide-y divide-border">
           {rows.map((r) => (
-            <li key={r.name} className="grid grid-cols-[minmax(0,9rem)_minmax(0,1fr)_2rem_4.5rem] items-center gap-3 py-2.5 first:pt-0 last:pb-0">
+            <li key={r.name} className="grid grid-cols-[minmax(0,9rem)_minmax(2rem,1fr)_2rem_auto] items-center gap-3 py-2.5 first:pt-0 last:pb-0">
               <span className={cn("truncate text-sm", r.isYou && "font-semibold text-primary")} title={r.name}>
                 {r.isYou ? `${r.name} (you)` : r.name}
               </span>
@@ -84,7 +85,7 @@ export function WhereYouStand({ rows, lines = [] }: { rows: OverviewCompete["sta
                 <span className="block h-full rounded-xs" style={{ width: `${Math.max(r.score, 1)}%`, background: color(r.name) }} />
               </span>
               <strong className="text-right text-sm tabular-nums">{r.score}</strong>
-              <span className="text-right">{r.standing && <Badge variant={STANDING[r.standing].variant}>{STANDING[r.standing].text}</Badge>}</span>
+              <span className="text-right">{r.standing && <Badge variant={STANDING[r.standing]}>{STANDING_TEXT[r.standing]}</Badge>}</span>
             </li>
           ))}
         </ul>
@@ -94,10 +95,12 @@ export function WhereYouStand({ rows, lines = [] }: { rows: OverviewCompete["sta
 }
 
 /** "Top actions": the three most important open fixes, each with where to apply it. */
-export function TopActions({ items, total }: { items: ActionItem[]; total: number }) {
+export function TopActions({ items, total, wait = null }: { items: ActionItem[]; total: number; wait?: ReactNode }) {
   return (
     <Block title="Top actions" link={total > 0 ? { href: "/actions", text: `All ${total} actions` } : undefined} testId="top-opportunities">
-      {items.length === 0 ? (
+      {/* Between a finished scan and its saved fixes (MVP_SPEC 7.2), as on Actions. */}
+      {wait && <div className="mb-3">{wait}</div>}
+      {items.length === 0 && wait ? null : items.length === 0 ? (
         <p className="text-sm text-muted-foreground">No open actions. New ones come from your scans, or from Compare.</p>
       ) : (
         <ul className="flex flex-col divide-y divide-border">

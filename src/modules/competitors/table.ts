@@ -3,7 +3,8 @@
 // Compare. Built from the same score report and reason panels as the rest of the page. Pure.
 import type { ProviderId, ScoreReport } from "@/modules/scanning";
 import { colorAt, colorOrder, competitorColor } from "@/lib/series-colors";
-import { rowName, trackedNote } from "./chain";
+import { namedAs, rowName, trackedNote } from "./chain";
+import { placeAmongTracked } from "./rank";
 import type { CompetitorsView, LeaderRow } from "./service";
 import type { WhyPanel } from "./why/service";
 
@@ -25,6 +26,8 @@ export type TableRow = {
   /** Each scan's own share of answers naming them, oldest first, at most SPARK_SCANS. */
   spark: (number | null)[];
   change: LeaderRow["change"];
+  /** False when there is no week-ago score to compare with yet. */
+  changeKnown: boolean;
   /** Each AI tool's 30-day score; null without checks, undefined when the business doesn't use that tool. */
   byModel: Partial<Record<ProviderId, number | null>>;
   standing: LeaderRow["standing"];
@@ -37,11 +40,12 @@ export type TableRow = {
 export type TableKpis = {
   /** "#3 of 5 tracked businesses", you included. */
   rank: { place: number; of: number } | null;
-  leader: { name: string; score: number; isYou: boolean } | null;
+  /** standing is yours against them: "about_same" when the gap is inside the margin of error. */
+  leader: { name: string; score: number; isYou: boolean; standing: LeaderRow["standing"] } | null;
   /** Points between you and the leader; 0 when you lead. */
   gap: number | null;
   /** The business just above you, and the points to pass it. */
-  next: { name: string; points: number } | null;
+  next: { name: string; points: number; standing: LeaderRow["standing"] } | null;
 };
 
 const round = (n: number | null | undefined) => (n === null || n === undefined ? null : Math.round(n));
@@ -64,6 +68,7 @@ export function leaderTable(view: CompetitorsView, report: ScoreReport, panels: 
       score: row.score,
       spark: charts && at >= 0 ? charts.timeline.slice(-SPARK_SCANS).map((p) => round(p.scores[at])) : [],
       change: row.change,
+      changeKnown: row.changeKnown ?? false,
       byModel: Object.fromEntries((charts?.byModel ?? []).map((m) => [m.model, at >= 0 ? round(m.scores[at]) : null])),
       standing: row.standing,
       collecting: row.collecting,
@@ -71,19 +76,19 @@ export function leaderTable(view: CompetitorsView, report: ScoreReport, panels: 
       color: row.isYou ? colorAt(0) : competitorColor(order, row.name),
     };
   });
-  return { rows, kpis: kpisOf(ranked) };
+  return { rows, kpis: kpisOf(view.leaderboard) };
 }
 
-function kpisOf(ranked: LeaderRow[]): TableKpis {
-  const at = ranked.findIndex((r) => r.isYou);
-  if (at < 0) return { rank: null, leader: null, gap: null, next: null };
-  const leader = ranked[0];
-  const you = ranked[at];
-  const above = at > 0 ? ranked[at - 1] : null;
+function kpisOf(rows: LeaderRow[]): TableKpis {
+  const place = placeAmongTracked(rows);
+  const you = rows.find((r) => r.isYou);
+  if (!place || !you) return { rank: null, leader: null, gap: null, next: null };
+  const leader = place.leader ?? you;
+  const above = place.above;
   return {
-    rank: { place: at + 1, of: ranked.length },
-    leader: { name: leader.isYou ? leader.name : rowName(leader), score: leader.score!, isYou: leader.isYou },
+    rank: { place: place.place, of: place.of },
+    leader: { name: leader.isYou ? leader.name : namedAs(leader), score: leader.score!, isYou: leader.isYou, standing: leader.isYou ? null : leader.standing },
     gap: leader.score! - you.score!,
-    next: above ? { name: rowName(above), points: above.score! - you.score! } : null,
+    next: above ? { name: namedAs(above), points: above.score! - you.score!, standing: above.standing } : null,
   };
 }

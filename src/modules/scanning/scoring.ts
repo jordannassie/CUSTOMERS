@@ -1,6 +1,6 @@
 import type { ProviderId } from "./providers/types";
 
-// Visibility score and confidence (MVP_SPEC 5.6, D-63 to D-65). Pure functions over saved checks.
+// Visibility score and confidence (MVP_SPEC 5.6, D-63, D-64, D-91). Pure functions over saved checks.
 
 export const SCORE_WINDOW_DAYS = 30;
 export const TREND_DAYS = 7;
@@ -63,13 +63,15 @@ export function groupBy<T>(items: T[], key: (item: T) => string): Map<string, T[
   return groups;
 }
 
-// Score over all checks; variance stratified by question over unique answers only.
-function modelStats(checks: ScoreCheck[], mentioned: Mentioned): Stats | null {
+// Score over all checks; variance stratified by question on each AI tool, over unique answers only (D-64). One
+// model's checks give that model's rate; all chosen models' checks together give the pooled score (D-91).
+function poolStats(checks: ScoreCheck[], mentioned: Mentioned): Stats | null {
   if (checks.length === 0) return null;
   let mentions = 0;
   let variance = 0;
   let uniqueAnswers = 0;
-  for (const cluster of groupBy(checks, (c) => c.questionId).values()) {
+  // A question asked of two AI tools is two clusters: the tools differ, so their answers are not one sample.
+  for (const cluster of groupBy(checks, (c) => `${c.provider}:${c.questionId}`).values()) {
     mentions += cluster.filter(mentioned).length;
     const unique = [...groupBy(cluster, (c) => c.answerKey).values()].map((same) => same[0]);
     uniqueAnswers += unique.length;
@@ -78,9 +80,8 @@ function modelStats(checks: ScoreCheck[], mentioned: Mentioned): Stats | null {
     const weight = cluster.length / checks.length;
     variance += (weight * weight * p * (1 - p)) / unique.length;
   }
-  const score = (100 * mentions) / checks.length;
   return {
-    score,
+    score: (100 * mentions) / checks.length,
     margin: Z * 100 * Math.sqrt(variance),
     checks: checks.length,
     uniqueAnswers,
@@ -97,26 +98,24 @@ function strip(stats: Stats): Estimate {
   };
 }
 
-/** Per model estimates and their equal-weight average (D-65). Null overall when no chosen model has a check. */
+/**
+ * Per model estimates and the overall one (D-91): answers naming the business over all answers from the chosen
+ * models, as one pool, so 9 of 60 answers gives 15 however they split between the AI tools. With the same number
+ * of answers on each tool this equals the old equal-weight average (D-65), margin included. Null overall when no
+ * chosen model has a check.
+ */
 export function estimateFor(checks: ScoreCheck[], models: readonly ProviderId[], mentioned: Mentioned) {
+  const chosen = checks.filter((c) => models.includes(c.provider));
   const byModel = new Map<ProviderId, Stats>();
   for (const model of models) {
-    const stats = modelStats(
-      checks.filter((c) => c.provider === model),
+    const stats = poolStats(
+      chosen.filter((c) => c.provider === model),
       mentioned,
     );
     if (stats) byModel.set(model, stats);
   }
-  const all = [...byModel.values()];
-  if (all.length === 0) return { overall: null, byModel };
-  const n = all.length;
-  const overall: Estimate = {
-    score: all.reduce((sum, s) => sum + s.score, 0) / n,
-    margin: (Z * 100 * Math.sqrt(all.reduce((sum, s) => sum + s.variance, 0))) / n,
-    checks: all.reduce((sum, s) => sum + s.checks, 0),
-    uniqueAnswers: all.reduce((sum, s) => sum + s.uniqueAnswers, 0),
-  };
-  return { overall, byModel };
+  const pooled = poolStats(chosen, mentioned);
+  return { overall: pooled && strip(pooled), byModel };
 }
 
 export type VisibilityScore = {
@@ -124,7 +123,7 @@ export type VisibilityScore = {
   byModel: { model: ProviderId; estimate: Estimate }[];
 };
 
-/** Mentions divided by checks over the last 30 days, per chosen model and overall. */
+/** Mentions divided by checks over the last 30 days, per chosen model and overall (all chosen models pooled, D-91). */
 export function visibilityScore(
   checks: ScoreCheck[],
   opts: { now: Date; models: readonly ProviderId[] },

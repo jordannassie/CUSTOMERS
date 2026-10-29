@@ -125,6 +125,20 @@ test("edit the business profile, with a warning when the website changes", async
   });
 });
 
+// The form checks what the server checks, so a bad phone or too many services is marked on its field (no vague alert).
+test("a bad phone number or too many services is marked on the field", async ({ page }) => {
+  await logIn(page);
+  const form = page.getByRole("form", { name: "Business profile" });
+  await form.getByLabel("Phone").fill("call 555 0100");
+  await form.getByLabel("Services").fill(Array.from({ length: 21 }, (_, i) => `Service ${i}`).join(", "));
+  await form.getByRole("button", { name: "Save profile" }).click();
+  await expect(form.getByLabel("Services")).toHaveAttribute("aria-invalid", "true");
+  await expect(form.getByText("Add up to 20 services.")).toBeVisible();
+  await expect(form.getByLabel("Phone")).toHaveAttribute("aria-invalid", "true");
+  await expect(form.getByText("Use only numbers, spaces and + ( ) - in the phone number.")).toBeVisible();
+  await expect(page.getByText("Check the highlighted details", { exact: false })).toHaveCount(0);
+});
+
 test("change models and frequency, seeing the credit effect before saving", async ({ page }) => {
   const s = await logIn(page);
   const form = page.getByRole("form", { name: "AI checks" });

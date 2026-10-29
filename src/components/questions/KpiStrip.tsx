@@ -115,7 +115,7 @@ export function KpiStrip({ view }: { view: QuestionsView }) {
           <>
             {plural(k.active, "question", "questions")} ×{" "}
             {plural(models, "AI tool", "AI tools")}, checked{" "}
-            {FREQUENCY_WORDS[view.frequency]}. Each answer uses 1 credit.{" "}
+            {FREQUENCY_WORDS[view.frequency]}. Each new answer uses 1 credit; answers reused from a recent scan are free.{" "}
             <Link
               href="/settings#checks"
               className="text-primary underline-offset-2 hover:underline"

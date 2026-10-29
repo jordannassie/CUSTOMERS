@@ -58,16 +58,48 @@ describe("pick your branch on Google, against the database (step 6d)", () => {
       query: "KFC Islamabad",
       choices: [{ placeId: KFC_F7.placeId, name: KFC_F7.name, address: KFC_F7.address }],
       unavailable: false,
+      searched: true,
     });
     expect(await findBranches(other.agencyId, own.businessId, undefined, search)).toBeNull();
     expect(queries).toEqual(["KFC Islamabad"]);
 
-    expect(await saveBranch(other.agencyId, own.businessId, KFC_F7.placeId)).toBe(false);
+    expect(await saveBranch(other.agencyId, own.businessId, KFC_F7.placeId)).toBe("not_found");
     expect(await placesIdOf(own.businessId)).toBeNull();
-    expect(await saveBranch(own.agencyId, own.businessId, KFC_F7.placeId)).toBe(true);
+    expect(await saveBranch(own.agencyId, own.businessId, KFC_F7.placeId)).toBe("saved");
     expect(await placesIdOf(own.businessId)).toBe(KFC_F7.placeId);
-    // Picked: no more search.
+    // Picked: no more search, and no second pick over it.
     expect(await findBranches(own.agencyId, own.businessId, undefined, search)).toBeNull();
+    expect(await saveBranch(own.agencyId, own.businessId, "ChIJ-test-kfc-blue-area")).toBe("not_needed");
+    expect(await placesIdOf(own.businessId)).toBe(KFC_F7.placeId);
+  });
+
+  it("refuses a branch another business in the account already uses (migration 067), and a single shop", async () => {
+    const first = await seedAgency(true);
+    expect(await saveBranch(first.agencyId, first.businessId, KFC_F7.placeId)).toBe("saved");
+    const { data: second } = await service
+      .from("businesses")
+      .insert({ owner_user_id: userIds.at(-1)!, agency_id: first.agencyId, name: "KFC", domain: "kfc-two.example", primary_city: "Lahore", status: "active", is_chain: true })
+      .select("id")
+      .single()
+      .throwOnError();
+    expect(await saveBranch(first.agencyId, second.id, KFC_F7.placeId)).toBe("duplicate");
+    expect(await placesIdOf(second.id)).toBeNull();
+    const single = await seedAgency(false);
+    expect(await saveBranch(single.agencyId, single.businessId, "ChIJ-test-single-shop")).toBe("not_needed");
+  });
+
+  it("remembers a search that found no branch, and forgets it once one is found", async () => {
+    const chain = await seedAgency(true);
+    const marker = async () =>
+      (await service.from("opportunities").select("status, source, evidence_data").eq("business_id", chain.businessId).eq("affected_url", "checklist:no_branch").throwOnError()).data;
+    await findBranches(chain.agencyId, chain.businessId, "KFC Nowhere", async () => []);
+    await findBranches(chain.agencyId, chain.businessId, "KFC Nowhere 2", async () => []);
+    expect(await marker()).toEqual([{ status: "dismissed", source: "manual", evidence_data: { query: "KFC Nowhere 2" } }]);
+    // Google down says nothing about branches: the saved search stays.
+    await findBranches(chain.agencyId, chain.businessId, "KFC", async () => Promise.reject(new Error("Places returned 429")));
+    expect(await marker()).toHaveLength(1);
+    await findBranches(chain.agencyId, chain.businessId, "KFC F-7", async () => [KFC_F7]);
+    expect(await marker()).toEqual([]);
   });
 
   it("is not offered to a single shop, and Google failing reads as unavailable, not as no branch", async () => {
@@ -78,6 +110,6 @@ describe("pick your branch on Google, against the database (step 6d)", () => {
     expect(await findBranches(single.agencyId, single.businessId, undefined, failing)).toBeNull();
     const chain = await seedAgency(true);
     const found = await findBranches(chain.agencyId, chain.businessId, "KFC F-7", failing);
-    expect(found).toEqual({ query: "KFC F-7", choices: [], unavailable: true });
+    expect(found).toEqual({ query: "KFC F-7", choices: [], unavailable: true, searched: true });
   });
 });

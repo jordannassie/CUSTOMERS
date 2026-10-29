@@ -1,7 +1,7 @@
 import { GoogleAttribution } from "@/components/onboarding/PlaceBits";
+import type { MoveAction } from "@/components/actions/ActionsBoard";
 import type { AddToActionsAction } from "@/components/actions/AddToActionsButton";
-import { reasonCards, type ReasonCard } from "@/modules/competitors/compare/cards";
-import type { SignalRow } from "@/modules/competitors";
+import { googleReasonCards, type SignalRow, type WhyPanel } from "@/modules/competitors";
 import type { ActionState } from "@/modules/opportunities/board/service";
 import { googleFacts } from "@/modules/standing";
 import { ReasonCards } from "./ReasonCards";
@@ -27,20 +27,27 @@ export async function GoogleReasons({
   signals,
   states,
   add,
+  move,
+  fixes,
 }: {
+  /** The tracked branch's name: these are its own Google values, never the whole chain's. */
   name: string;
   competitorId: string;
   businessId: string;
   signals: Promise<SignalRow[]>;
   states: Record<string, ActionState>;
   add: AddToActionsAction;
+  /** "Move to To do" for a reason the scan already saved a fix for (moved, never copied). */
+  move?: MoveAction;
+  /** The open saved fixes, so a reason the scan already has a fix for links to it instead of adding a copy. */
+  fixes: WhyPanel["fixRefs"];
 }) {
   const rows = await signals;
   const theirs = rows.find((r) => r.competitorId === competitorId)?.signals ?? null;
   const yours = rows.find((r) => r.isYou)?.signals ?? null;
   const facts = googleFacts(name, theirs, yours).behind;
   if (facts.length === 0) return null;
-  const cards: ReasonCard[] = reasonCards(facts, { id: competitorId, name }, null);
+  const cards = googleReasonCards(facts, { id: competitorId, name }, fixes);
   return (
     <div className="flex flex-col gap-2">
       <ReasonCards
@@ -49,6 +56,7 @@ export async function GoogleReasons({
         cards={cards}
         states={states}
         add={add}
+        move={move}
         saved={(c) => SAVED[c.key]?.(name) ?? { fact: `${name} is ahead of you on Google.` }}
       />
       <GoogleAttribution what="Google listing values" />

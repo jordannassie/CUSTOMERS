@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { actionRow, defaultWhereToApply, placeOf, statusUpdate, toActionItems, toActionStatus, toDbActionStatus, type ActionRow } from "./service";
+import { actionRow, defaultWhereToApply, inWhere, PLACE_GROUP, placeOf, statusUpdate, toActionItems, toActionStatus, toDbActionStatus, type ActionRow } from "./service";
 
 const row = (over: Partial<ActionRow>): ActionRow => ({
   id: "a",
@@ -42,6 +42,27 @@ describe("where to apply", () => {
   });
 });
 
+describe("where groups", () => {
+  it("puts content with the website and review sites with social, and a narrower filter takes only its own place", () => {
+    expect(PLACE_GROUP).toEqual({ website: "website", content: "website", google_listing: "google_listing", review_sites: "other_places", social: "other_places" });
+    expect([inWhere("content", "website"), inWhere("social", "other_places"), inWhere("review_sites", "google_listing")]).toEqual([true, true, false]);
+    expect([inWhere("website", "content"), inWhere("content", "content"), inWhere("review_sites", "social")]).toEqual([false, true, false]);
+  });
+
+  it("reads back the place picked for a hand-added fix before guessing from its category", () => {
+    const [social, plain] = toActionItems(
+      [
+        row({ id: "s", category: "citations", source: "manual", evidence_data: { place: "social" }, created_at: "2026-10-21T00:00:00Z" }),
+        row({ id: "r", category: "citations", source: "manual", evidence_data: { place: "nowhere" } }),
+      ],
+      [],
+      null,
+    );
+    expect([social.place, plain.place]).toEqual(["social", "review_sites"]);
+    expect(social.whereToApply).toBe("Your social profiles");
+  });
+});
+
 describe("toActionItems", () => {
   it("leaves out checklist ticks and puts high impact first", () => {
     const items = toActionItems(
@@ -50,6 +71,21 @@ describe("toActionItems", () => {
       null,
     );
     expect(items.map((i) => i.id)).toEqual(["high", "low"]);
+  });
+
+  it("keeps the AI's order within an impact, with fixes it did not rank after, newest first", () => {
+    const items = toActionItems(
+      [
+        row({ id: "added", source: "comparison", created_at: "2026-10-25T00:00:00Z" }),
+        row({ id: "second", evidence_data: { rank: 1 }, created_at: "2026-10-24T00:00:00Z" }),
+        row({ id: "first", evidence_data: { rank: 0 }, created_at: "2026-10-20T00:00:00Z" }),
+        row({ id: "older-added", evidence_data: {}, created_at: "2026-10-01T00:00:00Z" }),
+        row({ id: "high", impact: "high", evidence_data: { rank: 4 } }),
+      ],
+      [],
+      null,
+    );
+    expect(items.map((i) => i.id)).toEqual(["high", "first", "second", "added", "older-added"]);
   });
 
   it("keeps a saved where to apply, and says which are assigned to you", () => {

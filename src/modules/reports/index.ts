@@ -1,10 +1,10 @@
 // The only file other modules may import from (eslint-plugin-boundaries).
-export { createShareLink, exportPdf, removeSnapshot, revokeShareLink, saveReportSections, saveSnapshot, type PdfFile } from "./actions";
+export { createShareLink, exportPdf, removeSnapshot, revokeShareLink, saveReportBranding, saveSnapshot, type PdfFile } from "./actions";
 export { getShareLink, shareForEmail, type ShareLink } from "./dal";
-export { getSharedLogo, getSharedReport, isShareLinkActive } from "./public/dal";
-export { getReportsPage, type ReportsPage } from "./page/dal";
-export type { ActionLine, CompetitorLine, ModelLine, QuestionLine, ReportDocument, SourceLine } from "./document";
-export { reportParam } from "./schema";
-export { canHide, SECTION_TITLES, SECTIONS, sectionNumbers, visibleSections, type SectionId } from "./sections";
-export type { SavedReport } from "./snapshot";
-export type { ReportView } from "./service";
+export { sharedPdfUrl } from "./public/dal";
+export { getReportsPage, type ReportsPage, type ShownFix, type ShownReport } from "./page/dal";
+export { reportParam, type ReportBrandingInput } from "./schema";
+export type { SavedReport } from "./saved/service";
+export { currentReport } from "./v2/delivery/dal";
+export { emailSnapshot, reportEmailText, type EmailSnapshot } from "./v2/email-text";
+export type { ReportSnapshot } from "./v2/snapshot-schema";

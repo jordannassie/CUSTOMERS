@@ -13,7 +13,8 @@ export const PLACES_DETAILS_URL = "https://places.googleapis.com/v1/places";
 // while choosing, never shown as stored data and never saved.
 const FIELDS = ["id", "displayName", "rating", "userRatingCount", "shortFormattedAddress", "googleMapsUri", "primaryType", "location", "websiteUri"];
 export const COMPETITOR_SEARCH_FIELD_MASK = FIELDS.map((f) => `places.${f}`).join(",");
-export const COMPETITOR_DETAILS_FIELD_MASK = FIELDS.join(",");
+// Details only show a saved competitor's rating and reviews: no location or website (those pick a branch in search).
+export const COMPETITOR_DETAILS_FIELD_MASK = FIELDS.filter((f) => f !== "location" && f !== "websiteUri").join(",");
 // The business's own place, read live to search near it (never stored, MVP_SPEC 26).
 export const ORIGIN_FIELD_MASK = "location,primaryType";
 // A saved competitor's city, region and country, read live when the business moves (Essentials tier, never stored).

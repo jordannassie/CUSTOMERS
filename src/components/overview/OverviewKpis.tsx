@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { cn } from "cn";
+import type { OverviewCompete } from "@/modules/competitors";
 import type { SourcesPage } from "@/modules/sources";
 import type { SourceLine } from "./OverviewCards";
 
@@ -7,6 +8,20 @@ import type { SourceLine } from "./OverviewCards";
 
 export const RANGES = [7, 30, 90] as const;
 
+/**
+ * "Where AI gets its answers" from the score's own answers, counted like the report's "Where AI looks" (audit,
+ * 2026-10-28): your own site is left out of the list and shown last when AI never cited it.
+ */
+export function standingSourceLines(sites: OverviewCompete["sites"], own: OverviewCompete["ownSite"], ownHost: string | null): SourceLine[] | null {
+  if (!sites) return null;
+  const uncited = !!own?.hasSite && own.cited === 0 && !!ownHost;
+  const lines: SourceLine[] = sites
+    .filter((s) => !s.own)
+    .slice(0, uncited ? 4 : 5)
+    .map((s) => ({ host: s.host, answers: s.answers, status: s.namedYou === s.answers ? "named" : s.namedYou > 0 ? "partly" : "missing" }));
+  if (uncited) lines.push({ host: ownHost!, answers: 0, status: "never" });
+  return lines;
+}
 
 export function sourceLines(sources: SourcesPage | null): SourceLine[] {
   if (!sources) return [];

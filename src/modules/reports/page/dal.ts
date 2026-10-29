@@ -1,51 +1,96 @@
 import "server-only";
-// The Reports page (dashboard redesign, 7. Reports): the chosen report as a document, the saved reports, the hidden
-// sections, the agency's branding and the chosen report's share link, for one of the signed-in agency's businesses.
+// The Reports page (D-90): the shown report's summary and fixes from its snapshot, the saved reports, the share link and
+// the agency's report branding, for one of the signed-in agency's businesses.
 import { createServiceClient } from "@/lib/supabase/service";
 import { requireAgency } from "@/modules/auth";
 import { getShareLink, ownsBusiness, type ShareLink } from "../dal";
-import { loadLiveDocument } from "../live/dal";
-import { logoPath } from "../public/dal";
-import { listSnapshots, loadSnapshot, readHidden } from "../saved/dal";
-import type { ReportView } from "../service";
-import { LIVE_REPORT, type SavedReport } from "../snapshot";
+import { logoPath } from "../logo";
+import { listReports } from "../saved/dal";
+import type { SavedReport } from "../saved/service";
+import { readBranding, type Branding } from "../v2/branding";
+import { currentReport, readReport, type SavedV2 } from "../v2/delivery/dal";
+import { emailSnapshot, type EmailSnapshot } from "../v2/email-text";
+import type { ReportFix, ReportSnapshot } from "../v2/snapshot-schema";
+
+/** One fix as the page shows it: its row, and what opens under it. */
+export type ShownFix = Pick<ReportFix, "n" | "title" | "where" | "priority" | "impact" | "effort" | "owner" | "evidence" | "why" | "steps" | "goal">;
+
+/** What the page shows for one report, all from its frozen snapshot: the summary page and every fix. */
+export type ShownReport = {
+  id: string;
+  preparedAt: string;
+  /** The numbers and top fixes, as the email summary has them. */
+  summary: EmailSnapshot;
+  headline: string;
+  lead: string;
+  short: ReportSnapshot["summary"]["short"];
+  fixes: ShownFix[];
+};
 
 export type ReportsPage = {
-  /** The live report first, then snapshots, newest first. */
-  saved: SavedReport[];
-  /** The chosen report; null is the live one. */
+  reports: SavedReport[];
+  /** The chosen saved report; null is the current one. */
   selected: string | null;
-  view: ReportView;
+  /** "old": a saved report from before the PDF (version 1); "empty": no answers to report on yet. */
+  shown: ShownReport | "old" | "empty";
   share: ShareLink | null;
-  /** The logo uploaded in Settings, shown on the page; the share page serves it through its own link. */
+  agencyName: string;
+  branding: Branding;
+  /** The logo uploaded in Settings, shown on the branding card. */
   logoSrc: string | null;
 };
 
-/** Null when the business is not the agency's; "missing" when the chosen snapshot is not one of its reports. */
+const shownOf = ({ id, snapshot }: SavedV2): ShownReport => ({
+  id,
+  preparedAt: snapshot.preparedAt,
+  summary: emailSnapshot(snapshot),
+  headline: snapshot.summary.headline,
+  lead: snapshot.summary.lead,
+  short: snapshot.summary.short,
+  fixes: snapshot.fixes.map(({ n, title, where, priority, impact, effort, owner, evidence, why, steps, goal }) => ({
+    n,
+    title,
+    where,
+    priority,
+    impact,
+    effort,
+    owner,
+    evidence,
+    why,
+    steps,
+    goal,
+  })),
+});
+
+/** Null when the business is not the agency's; "missing" when the chosen report is not one of its reports. */
 export async function getReportsPage(businessId: string, reportId: string | null): Promise<ReportsPage | "missing" | null> {
   const { agency } = await requireAgency({ next: "/reports" });
   if (!(await ownsBusiness(agency.id, businessId))) return null;
   const now = new Date();
-  const [document, snapshots, hidden, share, logo] = await Promise.all([
-    reportId ? loadSnapshot(businessId, reportId) : loadLiveDocument(agency.id, businessId, now),
-    listSnapshots(businessId),
-    readHidden(businessId),
+  // The current report first: it may save a new row, which the list then shows.
+  const report = reportId ? await readReport(businessId, reportId) : await currentReport(agency.id, businessId, now);
+  if (report === null && reportId) return "missing";
+  const [reports, share, agencyRow] = await Promise.all([
+    listReports(businessId),
     getShareLink(businessId, reportId),
-    createServiceClient().from("agencies").select("logo_url").eq("id", agency.id).single(),
+    createServiceClient().from("agencies").select("logo_url, report_branding").eq("id", agency.id).single(),
   ]);
-  if (logo.error) throw new Error(`Reports: could not read the agency: ${logo.error.message}`);
-  if (!document) return reportId ? "missing" : null;
-  const logoUrl = logoPath(logo.data.logo_url) ? logo.data.logo_url : null;
+  if (agencyRow.error) throw new Error(`Reports: could not read the agency: ${agencyRow.error.message}`);
+  const logoUrl = logoPath(agencyRow.data.logo_url) ? agencyRow.data.logo_url : null;
   return {
-    saved: [LIVE_REPORT, ...snapshots],
+    reports,
     selected: reportId,
-    view: {
-      agency: { name: agency.name, hasLogo: logoUrl !== null, isTest: agency.isTest },
-      document,
-      hidden,
-      kind: reportId ? "snapshot" : "live",
-    },
+    shown: report === "old" ? "old" : report === "empty" || report === null ? "empty" : shownOf(report),
     share,
+    agencyName: agency.name,
+    branding: readBranding(agencyRow.data.report_branding),
     logoSrc: logoUrl,
   };
+}
+
+/** Saves the agency's report branding (D-90). Saved reports keep theirs; the current report is made again with it. */
+export async function saveBranding(agencyId: string, branding: { accent: string | null; contactEmail: string | null; bookingUrl: string | null }): Promise<void> {
+  const value = Object.fromEntries(Object.entries(branding).filter(([, v]) => v !== null));
+  const { error } = await createServiceClient().from("agencies").update({ report_branding: value }).eq("id", agencyId);
+  if (error) throw new Error(`Reports: could not save the branding: ${error.message}`);
 }

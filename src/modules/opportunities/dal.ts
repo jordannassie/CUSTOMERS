@@ -1,51 +1,60 @@
 import "server-only";
-// The Opportunities page (B-52). Reads go through insights, which fills Google values in live (D-73);
-// the writes here only change a status or tick a checklist item, after checking the business is the agency's.
+// The Actions page's extras (B-52): the "get found by AI" checklist and "Pick your branch on Google". The fixes
+// themselves are read by board/dal.ts. The writes here only change a status or tick a checklist item, after checking
+// the business is the agency's.
 import { createServiceClient } from "@/lib/supabase/service";
 import { requireAgency } from "@/modules/auth";
-import { getLiveOpportunities } from "@/modules/insights";
-import { findBranches, needsBranch, showClaimStep, type BranchSearch } from "@/modules/onboarding/server";
-import { CHECKLIST_PREFIX, CHECKLIST_TITLES, checklist, checklistKeyOf, missingBasics, type ChecklistItem, type ChecklistKey } from "./checklist";
-import { toDbStatus, toItems, type OpportunityItem, type Status } from "./service";
+import { needsBranch, notSearched, showClaimStep, type BranchSearch } from "@/modules/onboarding/server";
+import {
+  CHECKLIST_PREFIX,
+  CHECKLIST_TITLES,
+  checklist,
+  checklistKeyOf,
+  missingBasics,
+  noBranchQuery,
+  type ChecklistItem,
+  type ChecklistKey,
+} from "./checklist";
+import { toDbStatus, type Status } from "./service";
 
-export type OpportunitiesPage = {
-  items: OpportunityItem[];
+export type ActionsExtras = {
   /** Null when the business has its basics; the checklist is only for those missing some (MVP_SPEC 7.3). */
   checklist: { missing: string[]; items: ChecklistItem[] } | null;
-  /** "Pick your branch on Google" for a chain with no listing yet, with Google's first results (step 6d). */
+  /**
+   * "Pick your branch on Google" for a chain with no listing yet (step 6d). Google is searched only when the owner
+   * presses Search (2026-10-28), never on a visit: the card opens not searched, or with the saved search that found no
+   * branch, which also puts the claim step in the checklist.
+   */
   branch: BranchSearch | null;
 };
 
-/** The page for one of the signed-in agency's businesses; null when it is not theirs. */
-/** `google`: ask Google for the values in fix texts; off unless the owner asked to see them (Places calls on request). */
-export async function getOpportunitiesPage(businessId: string, { google = false }: { google?: boolean } = {}): Promise<OpportunitiesPage | null> {
+/** The business row and its checklist ticks, nothing else; null when the business is not the agency's. */
+export async function getActionsExtras(businessId: string): Promise<ActionsExtras | null> {
   const { agency } = await requireAgency({ next: "/actions" });
-  const [{ data: b, error }, live, rivals] = await Promise.all([
-    createServiceClient()
+  const db = createServiceClient();
+  const [{ data: b, error }, ticks] = await Promise.all([
+    db
       .from("businesses")
       .select("name, primary_city, primary_region, industry, services, phone, domain, has_website, places_id, is_chain")
       .eq("id", businessId)
       .eq("agency_id", agency.id)
       .maybeSingle(),
-    // Checks the agency itself, so it can run alongside the business read.
-    getLiveOpportunities(businessId, undefined, { google }),
-    // Ids and names only, to say which competitor a fix is about and link to its comparison.
-    createServiceClient().from("business_competitors").select("id, name").eq("business_id", businessId).order("created_at"),
+    db.from("opportunities").select("affected_url, status, evidence_data").eq("business_id", businessId).like("affected_url", `${CHECKLIST_PREFIX}%`),
   ]);
-  if (rivals.error) throw new Error(`Opportunities: could not read competitors: ${rivals.error.message}`);
   if (error) throw new Error(`Opportunities: could not read the business: ${error.message}`);
-  if (!b || !live) return null;
+  if (ticks.error) throw new Error(`Opportunities: could not read the checklist: ${ticks.error.message}`);
+  if (!b) return null;
 
   const ticked = new Set<string>();
-  const fixes = live.filter((row) => {
+  for (const row of ticks.data) {
     const key = checklistKeyOf(row.affected_url);
     if (key && row.status === "resolved") ticked.add(key);
-    return key === null;
-  });
+  }
 
-  // A chain has a branch to pick, not a profile to claim, unless Google lists no branch of it (step 6d).
+  // A chain has a branch to pick, not a profile to claim; the claim step waits for a search that finds none (step 6d).
+  // That search's result is saved, so it holds after a reload without asking Google again (D-87).
   const own = { chain: b.is_chain, placesId: b.places_id };
-  const search = needsBranch(own) ? await findBranches(agency.id, businessId) : null;
+  const search = needsBranch(own) ? branchSearch(b.name, b.primary_city, noBranchQuery(ticks.data)) : null;
   const branchPending = needsBranch(own) && !showClaimStep(own, search);
   const business = {
     name: b.name,
@@ -61,10 +70,16 @@ export async function getOpportunitiesPage(businessId: string, { google = false 
   };
   const missing = missingBasics(business);
   return {
-    items: toItems(fixes, b ? rivals.data.map((c) => ({ id: c.id, name: c.name })) : []),
     checklist: missing.length > 0 ? { missing, items: checklist(business, ticked) } : null,
-    branch: branchPending ? search : null,
+    // The picker stays after "no branch found", so the owner can search again with other words.
+    branch: search,
   };
+}
+
+/** The card as the page opens it: not searched yet, or the saved search that found no branch. */
+function branchSearch(name: string, city: string | null, noBranch: string | null): BranchSearch {
+  const fresh = notSearched(name, city);
+  return noBranch === null ? fresh : { ...fresh, query: noBranch || fresh.query, searched: true };
 }
 
 async function ownsBusiness(agencyId: string, businessId: string): Promise<boolean> {

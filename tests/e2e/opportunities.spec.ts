@@ -157,8 +157,8 @@ test("accepting a fix plans it, marking it done moves it to Done, and it stays t
   await reviews.getByRole("button", { name: /Move or assign/ }).click();
   await page.getByRole("menuitem", { name: "Move to Done" }).click();
   await expect(column(page, "done")).toContainText("Bean House has more Google reviews than you");
-  await expect(page.getByText("Marked done. We will measure the effect over the next 30 days.")).toBeVisible({ timeout: 30_000 });
-  await expect(column(page, "done").getByTestId("action-done")).toContainText("we will measure the effect over the next 30 days");
+  await expect(page.getByText("Marked done.", { exact: true })).toBeVisible({ timeout: 30_000 });
+  await expect(column(page, "done").getByTestId("action-done")).toContainText(/^Done /);
 
   await page.reload();
   const done = column(page, "done").getByTestId("opportunity");

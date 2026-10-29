@@ -6,7 +6,19 @@ import { isAuthUnavailable } from "@/lib/supabase/auth-errors";
 
 // Quick redirects only (MVP_SPEC 18.1 rule 4). Every page, action and route still checks access
 // itself through src/modules/auth.
-const PROTECTED = ["/dashboard", "/settings", "/sources", "/competitors", "/questions", "/internal", "/design-preview"];
+const PROTECTED = [
+  "/dashboard",
+  "/settings",
+  "/sources",
+  "/competitors",
+  "/questions",
+  "/actions",
+  "/reports",
+  // Setup is in the app frame too: the next path keeps a plan picked on the pricing page (?plan=).
+  "/onboarding",
+  "/internal",
+  "/design-preview",
+];
 const AUTH_PAGES = ["/login", "/signup"];
 
 export async function proxy(request: NextRequest) {

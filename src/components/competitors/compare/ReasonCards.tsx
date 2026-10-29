@@ -1,15 +1,19 @@
 import Link from "next/link";
 import { ArrowRight, ThumbsUp } from "lucide-react";
+import type { MoveAction } from "@/components/actions/ActionsBoard";
 import { AddToActionsButton, type AddToActionsAction } from "@/components/actions/AddToActionsButton";
 import { Badge } from "@/components/ui/badge";
-import type { LeadCard, ReasonCard } from "@/modules/competitors";
-import type { ActionState } from "@/modules/opportunities/board/service";
+import type { LeadCard, LeaderRow, ReasonCard } from "@/modules/competitors";
+import { toActionStatus, type ActionState } from "@/modules/opportunities/board/service";
+
+type Standing = NonNullable<LeaderRow["standing"]>;
 
 const IMPACT = { high: { text: "High impact", variant: "low" }, medium: { text: "Medium impact", variant: "mid" }, low: { text: "Low impact", variant: "secondary" } } as const;
 
 /**
- * "Why they are ahead" on Compare (dashboard redesign): one card per likely reason, biggest evidence first. The fact
- * and its answer count on the left; what to do, where, the impact and "Add to Actions" on the right.
+ * The reasons on Compare (dashboard redesign; heading by standing): one card per likely reason, biggest evidence first. The fact
+ * and its answer count on the left; what to do, where, the impact and "Add to Actions" on the right. A reason a saved
+ * fix already deals with says "In Actions · {status}" and links to that fix.
  */
 export function ReasonCards({
   name,
@@ -18,20 +22,42 @@ export function ReasonCards({
   states,
   add,
   saved,
+  answers,
+  move,
+  standing = null,
 }: {
   name: string;
   businessId: string;
   cards: ReasonCard[];
   states: Record<string, ActionState>;
   add: AddToActionsAction;
+  /** "Move to To do" for a reason whose saved fix is still a suggestion (the scan's fix, moved, never copied). */
+  move?: MoveAction;
   /** What "Add to Actions" saves, when it must differ from what is shown (Google values are never stored, D-73). */
   saved?: (card: ReasonCard) => { fact: string; whatToDo?: string };
+  /** Answers from the last 30 days that this comparison is based on; with none there is nothing to say yet. */
+  answers?: number;
+  /** Your standing against them, so an empty list never says they aren't ahead when they are. */
+  standing?: Standing | null;
 }) {
-  if (cards.length === 0) {
+  if (cards.length === 0 && answers === 0) {
     return (
       <div className="rounded-md border border-dashed border-border p-5" data-testid="no-reasons">
-        <p className="text-sm font-medium">{name} isn&apos;t ahead of you anywhere we can see right now</p>
-        <p className="mt-1 text-sm text-muted-foreground">We flag it here as soon as AI starts naming them more than you.</p>
+        <p className="text-sm font-medium">No answers from the last 30 days yet</p>
+        <p className="mt-1 text-sm text-muted-foreground">Reasons show here after a scan.</p>
+      </div>
+    );
+  }
+  if (cards.length === 0) {
+    const behind = standing === "behind";
+    return (
+      <div className="rounded-md border border-dashed border-border p-5" data-testid="no-reasons">
+        <p className="text-sm font-medium">
+          {behind ? "They're ahead, but no single reason has enough answers yet to call it" : <>{name} isn&apos;t ahead of you anywhere we can see right now</>}
+        </p>
+        <p className="mt-1 text-sm text-muted-foreground">
+          {behind ? "We show a reason here once more answers point to one." : "We flag it here as soon as AI starts naming them more than you."}
+        </p>
       </div>
     );
   }
@@ -67,8 +93,9 @@ export function ReasonCards({
               Where: {c.whereToApply}
             </p>
             <AddToActionsButton
-              initial={states[c.key] ?? null}
+              initial={states[c.key] ?? (c.fix ? { id: c.fix.id, status: toActionStatus(c.fix.status) } : null)}
               add={add}
+              move={move}
               input={{
                 businessId,
                 title: c.action.title,
@@ -90,8 +117,14 @@ export function ReasonCards({
 }
 
 /** "Where you are ahead": short cards, nothing to do but keep it up. */
-export function LeadCards({ leads }: { leads: LeadCard[] }) {
-  if (leads.length === 0) return <p className="text-sm text-muted-foreground">No clear lead over them yet.</p>;
+export function LeadCards({ leads, standing = null }: { leads: LeadCard[]; standing?: Standing | null }) {
+  if (leads.length === 0) {
+    return (
+      <p className="text-sm text-muted-foreground" data-testid="no-leads">
+        {standing === "ahead" ? "You're ahead overall. No single reason stands out yet." : "No clear lead over them yet."}
+      </p>
+    );
+  }
   return (
     <ul className="grid gap-3 md:grid-cols-2" data-testid="lead-cards">
       {leads.map((l) => (

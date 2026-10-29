@@ -1,8 +1,10 @@
+import { addToActions } from "@/modules/opportunities";
 import { notFound, redirect } from "next/navigation";
 import { SampleDataBadge } from "@/components/app/SampleDataBadge";
 import { PageContainer } from "@/components/app/PageContainer";
 import { PageHeader } from "@/components/app/PageHeader";
 import { AddQuestionForm } from "@/components/questions/AddQuestionForm";
+import { FocusAnswers } from "@/components/questions/FocusAnswers";
 import { HeaderActions } from "@/components/questions/HeaderActions";
 import { KpiStrip } from "@/components/questions/KpiStrip";
 import { QuestionsProvider } from "@/components/questions/QuestionsProvider";
@@ -36,17 +38,17 @@ export default async function QuestionsPage({ searchParams }: { searchParams: Se
   const business = workspace.businesses.find((b) => b.id === workspace.activeBusinessId);
   if (!business || business.status === "onboarding") redirect("/dashboard");
 
-  const view = await getQuestionsPage(business.id, PATH, { site: params.site, named: params.named });
+  const view = await getQuestionsPage(business.id, PATH, { site: params.site, named: params.named, ai: params.ai });
   if (!view) notFound();
   const limitMessage = view.limit !== null && atLimit(view.active.length, view.limit) ? limitText(view.limit) : null;
   const names = view.models.map((m) => m.label);
   const asked = names.length > 1 ? `${names.slice(0, -1).join(", ")} and ${names.at(-1)}` : (names[0] ?? "AI");
-  const focus = { q: params.q ?? null, site: params.site ?? null, named: params.named ?? null };
+  const focus = { q: params.q ?? null, site: params.site ?? null, named: params.named ?? null, ai: params.ai ?? null };
 
   return (
     <PageContainer>
       {/* Keyed by the link, so a new ?q= or ?site= starts the list fresh. */}
-      <QuestionsProvider key={`${business.id}-${focus.q}-${focus.site}-${focus.named}`} view={view} focus={focus}>
+      <QuestionsProvider key={`${business.id}-${focus.q}-${focus.site}-${focus.named}-${focus.ai}`} view={view} focus={focus} addAction={addToActions}>
         <div className="flex flex-col gap-6">
           <PageHeader
             title={
@@ -57,6 +59,16 @@ export default async function QuestionsPage({ searchParams }: { searchParams: Se
             description={<>What we ask {asked} for you on every scan, and what each one answered.</>}
             actions={<HeaderActions />}
           />
+
+          {/* Which AIs the last scan could not check, so a gap in the list is never read as "not asked" (BUG-074). */}
+          {view.scanNotice && (
+            <p role="status" className="rounded-md border border-border bg-mid-bg px-4 py-3 text-sm text-mid-text" data-testid="scan-notice">
+              {view.scanNotice}
+            </p>
+          )}
+
+          {/* Opened from "See the answers": the answers the link is about, before the list of questions. */}
+          <FocusAnswers />
 
           <KpiStrip view={view} />
 

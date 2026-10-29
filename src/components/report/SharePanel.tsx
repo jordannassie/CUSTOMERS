@@ -16,8 +16,8 @@ const noSubscribe = () => () => {};
 const FAILED = "Something went wrong. Try again in a moment.";
 
 /**
- * The Reports page share panel: one read-only link per report (the live one, or a snapshot) that shows the report
- * document only, never the dashboard, with Copy and Turn off.
+ * The Reports page share panel: one link per report (the current one, or a saved one) that opens the report PDF,
+ * never the dashboard, with Copy and Turn off (D-90).
  */
 export function SharePanel({
   businessId,
@@ -39,7 +39,7 @@ export function SharePanel({
   const [pending, startTransition] = useTransition();
   const origin = useSyncExternalStore(noSubscribe, () => window.location.origin, () => "");
   const url = link ? `${origin}${link.path}` : "";
-  const updates = reportId ? "It shows this snapshot and never changes." : "It updates after each scan.";
+  const updates = reportId ? "It opens this saved report and never changes." : "It opens the latest report, which updates after each scan.";
 
   function run<T>(action: () => Promise<ActionResult<T>>, done: (data: T) => void) {
     setError(null);
@@ -55,12 +55,12 @@ export function SharePanel({
     <section id="share-panel" aria-labelledby="share-panel-title" className="flex flex-col gap-3 rounded-md border border-border bg-surface p-5" data-testid="share-panel">
       <div className="flex flex-col gap-1">
         <h2 id="share-panel-title" className="text-base font-semibold tracking-[-0.02em]">
-          {link ? "Read-only link is on" : "Read-only link is off"}
+          {link ? "Share link is on" : "Share link is off"}
         </h2>
         <p className="text-sm text-muted-foreground">
           {link
-            ? `Anyone with the link sees this report, not your dashboard. They don't need to log in. ${updates}`
-            : "Create a link your client can open without logging in. It shows this report only, never your dashboard."}
+            ? `Anyone with the link can open the report PDF, not your dashboard. They don't need to log in. ${updates}`
+            : "Create a link your client can open without logging in. It opens the report PDF only, never your dashboard."}
         </p>
       </div>
 
@@ -103,7 +103,7 @@ export function SharePanel({
                       () => {
                         onLink(null);
                         setConfirmOff(false);
-                        toast.success("Link turned off. Anyone who opens it now sees that it is no longer active.");
+                        toast.success("Link turned off. Anyone who opens it now is told it is no longer available.");
                       },
                     )
                   }
@@ -121,7 +121,7 @@ export function SharePanel({
               rel="noopener noreferrer"
               className="inline-flex w-fit items-center gap-1.5 text-sm font-medium text-primary hover:underline"
             >
-              Open the shared report
+              Open the shared PDF
               <ExternalLink aria-hidden className="size-3.5" />
             </a>
           )}

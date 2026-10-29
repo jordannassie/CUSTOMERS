@@ -34,7 +34,8 @@ export async function getTopupOffer(
 export type BuyTopUpDeps = {
   client: TopupCheckoutClient | null;
   loadPacks: () => Promise<TopupPackPrice[]>;
-  canSpendTopUps: (agencyId: string) => Promise<Entitlement>;
+  /** entitlements canBuyTopUps: an active plan or trial, and setup finished (a top-up's Stripe customer blocks the trial). */
+  canBuyTopUps: (agencyId: string) => Promise<Entitlement>;
   customerId: (agencyId: string) => Promise<string | null>;
 };
 
@@ -47,7 +48,7 @@ export type BuyTopUpResult =
 /** Creates the one-time Checkout Session the card form runs on. */
 export async function buyTopUp(deps: BuyTopUpDeps, input: BuyTopUpInput): Promise<BuyTopUpResult> {
   if (!deps.client) return { ok: false, status: 503, error: TOPUP_ERRORS.unavailable };
-  const [packs, spend] = await Promise.all([deps.loadPacks(), deps.canSpendTopUps(input.agencyId)]);
+  const [packs, spend] = await Promise.all([deps.loadPacks(), deps.canBuyTopUps(input.agencyId)]);
   // Fixture mode runs before the Stripe catalog exists locally, so the price ID may still be empty.
   const priced = deps.client.mode === "fixture" ? packs.map((p) => ({ ...p, stripePriceId: p.stripePriceId ?? `price_fixture_${p.id}` })) : packs;
   const check = checkTopupPurchase(priced, input.packId, spend);

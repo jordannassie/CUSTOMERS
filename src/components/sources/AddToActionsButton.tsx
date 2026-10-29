@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { CircleCheck, Loader2, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { fixHref } from "@/lib/fix-where";
 import type { ActionResult } from "@/modules/auth";
 import { STATUS_TEXT, type ActionState, type ActionStatus } from "@/modules/opportunities/board/service";
 import type { SiteAction } from "@/modules/sources/listings";
@@ -17,14 +18,18 @@ type Props = {
   businessId: string;
   action: SiteAction;
   inActions: ActionStatus | null;
+  /** The saved fix's id, so the link opens it on the board. */
+  actionId?: string | null;
   add: AddToActions;
   /** "Get listed" in the table, "Add to Actions" in the cards. */
   label?: string;
 };
 
 // Adds a site's fix to Actions in To do. Once added it says which column it is in, and links to the board.
-export function AddToActionsButton({ businessId, action, inActions, add, label = "Add to Actions" }: Props) {
+export function AddToActionsButton({ businessId, action, inActions, actionId = null, add, label = "Add to Actions" }: Props) {
   const [added, setAdded] = useState<ActionStatus | null>(null);
+  const [addedId, setAddedId] = useState<string | null>(null);
+  const id = addedId ?? actionId;
   const [pending, start] = useTransition();
   const router = useRouter();
   // The same site can have a button in "Get listed here first" and in the table; the refresh updates both.
@@ -33,7 +38,7 @@ export function AddToActionsButton({ businessId, action, inActions, add, label =
   if (status) {
     return (
       <Link
-        href="/actions"
+        href={id ? fixHref(id) : "/actions"}
         className="inline-flex h-8 items-center gap-1.5 text-[13px] font-medium whitespace-nowrap text-good-text hover:underline"
         data-testid="in-actions"
       >
@@ -51,7 +56,9 @@ export function AddToActionsButton({ businessId, action, inActions, add, label =
         return;
       }
       setAdded(result.data.status);
-      toast.success(`Added to Actions: ${action.title}.`);
+      setAddedId(result.data.id);
+      const newId = result.data.id;
+      toast.success(`Added to Actions: ${action.title}.`, { action: { label: "View", onClick: () => router.push(fixHref(newId)) } });
       router.refresh();
     });
   }

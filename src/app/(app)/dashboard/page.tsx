@@ -5,20 +5,22 @@ import { PageHeader } from "@/components/app/PageHeader";
 import { RunScanButton } from "@/components/app/RunScanButton";
 import { QuestionsMoved, ToolScores, TopActions, WhereAiLooks, WhereYouStand } from "@/components/overview/OverviewCards";
 import { OverviewHero } from "@/components/overview/OverviewHero";
-import { RANGES, RangeControl, sourceLines } from "@/components/overview/OverviewKpis";
+import { RANGES, RangeControl, sourceLines, standingSourceLines } from "@/components/overview/OverviewKpis";
 import { ScanChart } from "@/components/overview/ScanChart";
+import { WaitForFixes } from "@/components/opportunities/WaitForFixes";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { getOverviewCompete } from "@/modules/competitors";
+import { getOverviewCompete, getPickedInstead, likelyReason } from "@/modules/competitors";
+import { checkFixes, getFixesState } from "@/modules/insights";
 import { getScanStatus, startScan } from "@/modules/jobs";
-import { getActionsBoard } from "@/modules/opportunities";
+import { OPEN_ACTION_STATUSES, getActionsBoard } from "@/modules/opportunities";
 import { getOverview, getQuestionTrends } from "@/modules/overview";
 import { getSources } from "@/modules/sources";
 import { getWorkspace } from "@/modules/workspace";
 
 export const metadata = { title: "Overview", robots: { index: false } };
 
-const OPEN = new Set(["suggested", "todo", "in_progress"]);
+const OPEN = new Set(OPEN_ACTION_STATUSES);
 
 // B-49, MVP_SPEC 8.1, dashboard redesign (2026-10-27): the score and its movement, where you stand, what to do first,
 // which questions moved and where AI looks. The range changes the charts and counts; the score stays 30 days (D-63).
@@ -30,13 +32,16 @@ export default async function OverviewPage({ searchParams }: { searchParams: Pro
   // Setup is the onboarding wizard's job (B-36); it resumes where the user stopped.
   if (!business || business.status === "onboarding") redirect("/onboarding");
 
-  const [overview, scanStatus, compete, board, sources, trends] = await Promise.all([
+  const [overview, scanStatus, compete, board, sources, trends, picked, fixes] = await Promise.all([
     getOverview(business.id),
     getScanStatus({ businessId: business.id }),
     getOverviewCompete(business.id, days),
     getActionsBoard(business.id),
     getSources(business.id),
     getQuestionTrends(business.id),
+    // The same likely reason as the report and the weekly email (database reads only, no AI or Google call).
+    getPickedInstead(business.id),
+    getFixesState(business.id, "/dashboard"),
   ]);
   if (!overview) notFound();
   const { score } = overview;
@@ -138,6 +143,7 @@ export default async function OverviewPage({ searchParams }: { searchParams: Pro
             sample={!!workspace.account?.isTest}
             ownQuestions={overview.ownQuestions}
             ownChain={overview.ownChain}
+            reason={likelyReason(picked)}
           />
 
           <div className="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
@@ -147,7 +153,7 @@ export default async function OverviewPage({ searchParams }: { searchParams: Pro
                 <CardDescription>Share of each scan&apos;s answers that named each business, last {days} days. Pick a name to hide or show its line.</CardDescription>
               </CardHeader>
               <CardContent>
-                <ScanChart timeline={compete?.timeline ?? []} lines={compete?.lines ?? []} />
+                <ScanChart timeline={compete?.timeline ?? []} lines={compete?.lines ?? []} days={days} earlier={compete?.earlierScans ?? false} />
               </CardContent>
             </Card>
             <ToolScores models={overview.models} context={compete?.modelContext ?? {}} />
@@ -155,12 +161,17 @@ export default async function OverviewPage({ searchParams }: { searchParams: Pro
 
           <div className="grid gap-6 lg:grid-cols-2">
             <WhereYouStand rows={compete?.stand ?? []} lines={compete?.lines ?? []} />
-            <TopActions items={open.slice(0, 3)} total={open.length} />
+            <TopActions
+              items={open.slice(0, 3)}
+              total={open.length}
+              wait={fixes?.pending ? <WaitForFixes businessId={business.id} check={checkFixes} compact /> : null}
+            />
           </div>
 
           <div className="grid gap-6 lg:grid-cols-2">
             <QuestionsMoved trends={trends} />
-            <WhereAiLooks rows={sourceLines(sources)} />
+            {/* Counted like the report's "Where AI looks"; the Sources page has every question. */}
+            <WhereAiLooks rows={standingSourceLines(compete?.sites ?? null, compete?.ownSite ?? null, sources?.ownSite.host ?? null) ?? sourceLines(sources)} />
           </div>
         </>
       )}

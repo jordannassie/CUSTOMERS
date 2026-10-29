@@ -39,7 +39,6 @@ Needed in production (the build passes without them, but a feature breaks):
 | `PERPLEXITY_API_KEY` | Perplexity checks | Perplexity |
 | `GOOGLE_PLACES_API_KEY` | Onboarding pre-fill, competitor suggestions, Google signals | Google Cloud |
 | `FIRECRAWL_API_KEY` | Reads the business website in onboarding | Firecrawl |
-| `BROWSERLESS_API_KEY` | PDF export | Browserless |
 | `STRIPE_SECRET_KEY` | Stripe app key, restricted, live mode | Stripe (Jordan's account) |
 | `STRIPE_WEBHOOK_SECRET` | Checks webhook signatures | Stripe, live webhook endpoint |
 | `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Card form and top-ups in the browser | Stripe, live mode |
@@ -56,8 +55,6 @@ Optional:
 |---|---|---|
 | `ALERT_DAILY_COST_USD` | Alert when the day's AI cost passes this amount (F-63) | Off |
 | `WORKER_TIME_BUDGET_SECONDS` | How long one worker run keeps taking jobs | 600 |
-| `PDF_RENDERER` | `browserless` or `chromium` | `browserless` |
-| `BROWSERLESS_URL` | Browserless region address | Browserless San Francisco |
 | `OPENAI_NEWS_MODEL` | Model for admin news | `gpt-4o` |
 | `DELETION_WAIT_DAYS` | Days before a deleted account or business is removed for good (B-77). The Privacy page shows this number | 30 |
 | `STRIPE_PRICE_STARTER_MONTHLY`, `STRIPE_PRICE_GROWTH_MONTHLY`, `STRIPE_PRICE_PRO_MONTHLY` | Old pricing config only; real price IDs live in the `plans` table | Unset |

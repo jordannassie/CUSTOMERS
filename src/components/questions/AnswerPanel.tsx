@@ -2,21 +2,27 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ArrowRight, ChevronDown } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 import { cn } from "cn";
 import type { QuestionAnswer } from "@/modules/questions/answers";
 import { namedBusinesses } from "@/modules/questions/answer-parse";
 import { whySkipped } from "@/modules/questions/skipped";
-import { fixHref } from "@/lib/fix-where";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { LocalDate } from "@/components/ui/local-date";
 import { AnswerText } from "./AnswerText";
+import { useQuestions } from "./QuestionsProvider";
+import { SkippedFix } from "./SkippedFix";
 
 const SHORT: Intl.DateTimeFormatOptions = { month: "short", day: "numeric" };
 
-/** One AI's latest answer: who it named in its order, the sites it used, and why you were left out. */
-export function AnswerPanel({ answer: a, businessName }: { answer: QuestionAnswer; businessName: string }) {
+/**
+ * One AI's latest answer: who it named, the sites it used, and why you were left out. Numbered by where AI listed
+ * each business only with SHOW_POSITION (D-63).
+ */
+export function AnswerPanel({ answer: a, businessName, when = "Latest answer" }: { answer: QuestionAnswer; businessName: string; when?: string }) {
+  const { showPositions } = useQuestions().view;
+  const List = showPositions ? "ol" : "ul";
   const [full, setFull] = useState(false);
   const others = [...a.competitors, ...a.others];
   const names = { you: businessName, others };
@@ -27,7 +33,7 @@ export function AnswerPanel({ answer: a, businessName }: { answer: QuestionAnswe
       <div className="flex flex-wrap items-center gap-2 text-[13px]">
         <Badge variant={a.namedYou ? "good" : "secondary"}>{a.namedYou ? "Named you" : "Did not name you"}</Badge>
         <span className="text-muted-foreground">
-          Latest answer, <LocalDate iso={a.checkedAt} options={SHORT} />
+          {when}, <LocalDate iso={a.checkedAt} options={SHORT} />
         </span>
         {a.reused && (
           <Badge variant="outline" title="This answer was reused from an earlier check of the same question in the last 20 hours.">
@@ -37,14 +43,16 @@ export function AnswerPanel({ answer: a, businessName }: { answer: QuestionAnswe
       </div>
 
       {list.length > 0 ? (
-        <ol className="flex flex-col gap-2" data-testid="answer-named" aria-label="Businesses in this answer">
+        <List className="flex flex-col gap-2" data-testid="answer-named" aria-label="Businesses in this answer">
           {list.map((b, i) => (
             <li
               key={b.name}
               className={cn("flex gap-3 rounded-sm border px-3 py-2", b.you ? "border-primary/30 bg-primary-tint" : "border-border bg-surface")}
               data-you={b.you || undefined}
             >
-              <span className={cn("w-4 shrink-0 text-sm font-semibold tabular-nums", b.you ? "text-primary" : "text-text-hint")}>{i + 1}</span>
+              {showPositions && (
+                <span className={cn("w-4 shrink-0 text-sm font-semibold tabular-nums", b.you ? "text-primary" : "text-text-hint")}>{i + 1}</span>
+              )}
               <span className="flex min-w-0 flex-col gap-0.5">
                 <span className={cn("text-sm font-semibold", b.you && "text-primary")}>
                   {b.name}
@@ -54,7 +62,7 @@ export function AnswerPanel({ answer: a, businessName }: { answer: QuestionAnswe
               </span>
             </li>
           ))}
-        </ol>
+        </List>
       ) : (
         <div className="rounded-md border border-border bg-background px-4 py-3.5">
           <AnswerText text={a.text} names={names} />
@@ -95,13 +103,12 @@ export function AnswerPanel({ answer: a, businessName }: { answer: QuestionAnswe
       )}
 
       {!a.namedYou && (
-        <div className="flex flex-col gap-2 rounded-md border border-mid/30 bg-mid-bg px-4 py-3" data-testid="why-skipped">
-          <p className="text-xs font-semibold text-mid-text">Why you were skipped</p>
-          <p className="text-[13px] text-foreground">{whySkipped(a)}</p>
-          <Link href={a.fix ? fixHref(a.fix.id) : "/actions"} className="inline-flex w-fit items-center gap-1 text-[13px] font-medium text-primary hover:underline">
-            {a.fix ? `Open the fix for ${a.fix.host}` : "See what to fix in Actions"}
-            <ArrowRight className="size-3.5" aria-hidden="true" />
-          </Link>
+        <div className="flex flex-col gap-3 rounded-md border border-border border-l-2 border-l-mid bg-surface px-4 py-3" data-testid="why-skipped">
+          <div className="flex flex-col gap-1">
+            <p className="text-xs font-semibold tracking-wide text-mid-text uppercase">Why you were skipped</p>
+            <p className="text-[13px] leading-relaxed text-foreground">{whySkipped(a)}</p>
+          </div>
+          <SkippedFix answer={a} />
         </div>
       )}
     </div>

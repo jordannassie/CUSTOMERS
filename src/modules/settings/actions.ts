@@ -15,7 +15,7 @@ import {
 import { recountAfterNamesChange } from "@/modules/scanning";
 import { businessBefore, forgetOldWebsite, saveAgencyLogo, updateAgencyName, updateBusinessProfile, updateScanSettings } from "./dal";
 import { agencyNameInput, businessProfileInput, scanSettingsInput } from "./schema";
-import { checkLogo, matchingChanged, normalizeWebsite, refusesOtherLabel, websiteChanged } from "./service";
+import { checkLogo, matchingChanged, normalizeWebsite, profileFieldError, refusesOtherLabel, websiteChanged } from "./service";
 
 type Result<T = null> = ActionResult<T>;
 
@@ -45,17 +45,21 @@ export async function saveBusinessProfile(input: unknown): Promise<Result> {
   if (denied) return denied;
 
   const parsed = businessProfileInput.safeParse(input);
-  if (!parsed.success) return { ok: false, status: 400, error: "Check the highlighted details and try again." };
+  if (!parsed.success) {
+    // Named, so the form marks that field: "Check the highlighted details" with nothing highlighted helped no one.
+    const field = profileFieldError(parsed.error.issues);
+    return field ? { ok: false, status: 400, ...field } : { ok: false, status: 400, error: "Check the details and try again." };
+  }
   const { businessId, name, industry, services, aliases, city, region, country, area, phone, website } = parsed.data;
   const site = normalizeWebsite(website);
-  if (!site.ok) return { ok: false, status: 400, error: "Enter a website like yourbusiness.com, or leave it empty." };
+  if (!site.ok) return { ok: false, status: 400, error: "Enter a website like yourbusiness.com, or leave it empty.", field: "website" };
 
   const before = await businessBefore(businessId);
   if (before === undefined) return notFound;
   const location = await savedLocation(businessId);
   // A new "Other" label must say what the business does; one saved before this rule can stay while other fields
   // change (2026-10-16).
-  if (refusesOtherLabel(before.industry, industry)) return { ok: false, status: 400, error: OTHER_LABEL_HINT };
+  if (refusesOtherLabel(before.industry, industry)) return { ok: false, status: 400, error: OTHER_LABEL_HINT, field: "industry" };
   const saved = await updateBusinessProfile(businessId, {
     name,
     industry: industry || null,

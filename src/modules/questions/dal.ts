@@ -3,18 +3,18 @@ import { requireAgency } from "@/modules/auth";
 import type { ScanFrequency } from "@/modules/credits";
 import { maxQuestions } from "@/modules/entitlements";
 import { CHECK_MODELS, isOwnQuestion, type ProviderId } from "@/modules/scanning";
+import { env } from "@/lib/env";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { questionSummaries, loadStanding } from "@/modules/standing";
-import { latestAnswers, type QuestionAnswer } from "./answers";
 import { focusMatches } from "./focus";
+import { readFocusAnswers } from "./focus-answers/dal";
 import { questionHistory, TREND_LOOKBACK_DAYS } from "./history";
-import { readFixTexts, readHistory } from "./reads/dal";
+import { placeOf, readHistory, readLastScan } from "./reads/dal";
 import { editMakesNewQuestion, questionsView, sameQuestion, tidyQuestion, type QuestionsView } from "./service";
-import { fixForSites } from "./skipped";
 
 /** From the page's link: only the questions whose answers used this site, or named this business and not you. */
-export type QuestionsFocus = { site?: string | null; named?: string | null };
+export type QuestionsFocus = { site?: string | null; named?: string | null; ai?: string | null };
 
 const FREQUENCIES: readonly string[] = ["daily", "weekly", "monthly"] satisfies ScanFrequency[];
 const isModel = (m: string): m is ProviderId => m in CHECK_MODELS;
@@ -31,14 +31,14 @@ export async function loadQuestionsPage(agencyId: string, businessId: string, no
   const [business, questions] = await Promise.all([
     db
       .from("businesses")
-      .select("id, name, models, scan_frequency, primary_city, industry")
+      .select("id, name, domain, models, scan_frequency, primary_city, primary_region, industry")
       .eq("id", businessId)
       .eq("agency_id", agencyId)
       .maybeSingle(),
     // A removed question is kept for past scores (step 9e) but never listed again.
     db
       .from("tracked_prompts")
-      .select("id, prompt, active, source, category")
+      .select("id, prompt, active, source, category, created_at")
       .eq("business_id", businessId)
       .is("removed_at", null)
       .order("created_at")
@@ -48,12 +48,27 @@ export async function loadQuestionsPage(agencyId: string, businessId: string, no
   if (!business.data) return null;
 
   const models = business.data.models.filter(isModel);
-  const [history, limit, standing] = await Promise.all([
+  const records = questions.data!.map(({ source, category, created_at, ...q }) => ({
+    ...q,
+    own: isOwnQuestion(source),
+    topic: category,
+    createdAt: created_at,
+  }));
+  // A link from Compare counts what Compare counts: the suggested questions in the score, not your own or paused ones.
+  const scored = new Map(records.filter((q) => q.active && !q.own).map((q) => [q.id, q.prompt]));
+  const [history, limit, standing, lastScan, focusAnswers] = await Promise.all([
     // The pips, the 30-day rate and the change since the scan before, from the same saved checks as the score.
     readHistory(businessId, now, TREND_LOOKBACK_DAYS),
     maxQuestions(businessId),
     // Saved answers only: who AI named on each question and the sites it used without you.
     loadStanding(agencyId, businessId, now),
+    // Checks the last scan could not do, so the page never calls them "not checked yet" (BUG-074).
+    readLastScan(businessId, models, records),
+    // "See the answers" from Compare: the answers the link is about, shown above the list.
+    readFocusAnswers(businessId, models, scored, focus, now, {
+      ownDomain: business.data.domain,
+      place: placeOf(business.data.primary_city, business.data.primary_region),
+    }),
   ]);
   const answered = standing ? [...standing.checks, ...standing.ownChecks] : [];
   const summaries = standing ? questionSummaries(answered, standing.you.domain, standing.competitors) : undefined;
@@ -64,51 +79,16 @@ export async function loadQuestionsPage(agencyId: string, businessId: string, no
     industry: business.data.industry,
     models,
     frequency: FREQUENCIES.includes(business.data.scan_frequency) ? (business.data.scan_frequency as ScanFrequency) : "weekly",
-    questions: questions.data!.map(({ source, category, ...q }) => ({ ...q, own: isOwnQuestion(source), topic: category })),
+    questions: records,
     history: questionHistory(history, { now, models }),
     limit: limit.limit,
     summaries,
-    matching: focusMatches(answered, focus),
+    matching: focusMatches(standing?.checks ?? [], focus),
+    focusAnswers,
+    lastScan,
+    // Where AI listed each business stays hidden until decided (D-63).
+    showPositions: env.SHOW_POSITION === "true",
   });
-}
-
-// Enough rows to find the newest answer from every model, even after a few scans with one model failing.
-const ANSWER_ROWS = 30;
-
-/** The latest answer per model for one question (BUG-089); null when the question is not this agency's. */
-export async function loadQuestionAnswers(agencyId: string, businessId: string, questionId: string): Promise<QuestionAnswer[] | null> {
-  const db = createServiceClient();
-  const [business, question, fixes] = await Promise.all([
-    db.from("businesses").select("models").eq("id", businessId).eq("agency_id", agencyId).maybeSingle(),
-    db.from("tracked_prompts").select("id").eq("id", questionId).eq("business_id", businessId).maybeSingle(),
-    readFixTexts(businessId),
-  ]);
-  for (const r of [business, question]) if (r.error) throw new Error(`Questions: ${r.error.message}`);
-  if (!business.data || !question.data) return null;
-  // The rows that count: never sample answers once the agency is real (migration 044).
-  const { data, error } = await db
-    .from("visibility_results_counted")
-    .select("provider, created_at, business_mentioned, competitors_mentioned, answer_text, cached, extracted_names, cited_sources")
-    .eq("business_id", businessId)
-    .eq("tracked_prompt_id", questionId)
-    .order("created_at", { ascending: false })
-    .limit(ANSWER_ROWS);
-  if (error) throw new Error(`Questions: could not load answers: ${error.message}`);
-  const rows = data.map((r) => ({
-    provider: r.provider ?? "",
-    created_at: r.created_at ?? "",
-    business_mentioned: r.business_mentioned ?? false,
-    competitors_mentioned: r.competitors_mentioned,
-    answer_text: r.answer_text,
-    cached: r.cached,
-    extracted_names: r.extracted_names,
-    cited_sources: r.cited_sources,
-  }));
-  // "Why you were skipped" links the saved fix that names a site the answer used, if there is one.
-  return latestAnswers(rows, business.data.models.filter(isModel)).map((a) => ({
-    ...a,
-    fix: a.namedYou ? null : fixForSites(fixes, a.sites.map((s) => s.host)),
-  }));
 }
 
 type ChangeFailure = { ok: false; status: 400 | 403 | 404; error: string };

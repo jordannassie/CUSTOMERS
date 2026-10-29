@@ -1,7 +1,8 @@
 import Image from "next/image";
 import Link from "next/link";
 
-export function Logo({ className, priority = false }: { className?: string; priority?: boolean }) {
+// `preload` replaces the `priority` prop, deprecated in Next.js 16.
+export function Logo({ className, preload = false }: { className?: string; preload?: boolean }) {
   return (
     <Link
       href="/"
@@ -13,7 +14,7 @@ export function Logo({ className, priority = false }: { className?: string; prio
         alt="Customers.Direct"
         width={2172}
         height={724}
-        priority={priority}
+        preload={preload}
         className={className ?? "h-9 w-auto"}
       />
     </Link>

@@ -4,6 +4,7 @@ import { getCurrentAgency, requireAgency, requireUser, type GuardOptions } from 
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { duplicateBusiness } from "@/modules/onboarding/server";
+import { pickActiveBusiness } from "@/modules/workspace";
 import { FREQUENCIES, MODEL_IDS, type Frequency, type ModelId } from "./schema";
 import type { MatchedFields } from "./service";
 
@@ -50,8 +51,9 @@ export async function getSettings(options: GuardOptions = {}): Promise<SettingsV
     supabase.from("agencies").select("name, logo_url").eq("id", agency.id).single(),
     supabase
       .from("businesses")
-      .select("id, name, industry, services, aliases, primary_city, primary_region, primary_country, primary_area, phone, domain, models, scan_frequency")
+      .select("id, status, name, industry, services, aliases, primary_city, primary_region, primary_country, primary_area, phone, domain, models, scan_frequency")
       .eq("agency_id", agency.id)
+      .is("deleted_at", null)
       .order("created_at", { ascending: false }),
     supabase.from("profiles").select("active_business_id").eq("id", user.id).maybeSingle(),
   ]);
@@ -59,8 +61,8 @@ export async function getSettings(options: GuardOptions = {}): Promise<SettingsV
   if (businesses.error) throw new Error(`Could not load businesses: ${businesses.error.message}`);
 
   const view = { ...empty, agency: { name: agencyRow.data.name, logoUrl: agencyRow.data.logo_url } };
-  // Same pick as the business switcher: the saved choice, else the newest.
-  const row = businesses.data.find((b) => b.id === profile.data?.active_business_id) ?? businesses.data[0];
+  // Same pick as the business switcher: the saved choice, else the newest set-up business, a draft only when alone.
+  const row = pickActiveBusiness(businesses.data, profile.data?.active_business_id);
   if (!row) return view;
 
   const [questions, subscription] = await Promise.all([
@@ -124,6 +126,7 @@ export async function businessBefore(businessId: string): Promise<SavedProfile |
     .select("industry, name, aliases, domain, phone, primary_city, primary_region, primary_area")
     .eq("id", businessId)
     .eq("agency_id", agency.id)
+    .is("deleted_at", null)
     .maybeSingle();
   if (error) throw new Error(`Could not load the business: ${error.message}`);
   if (!data) return undefined;
@@ -148,11 +151,22 @@ export async function businessBefore(businessId: string): Promise<SavedProfile |
 export async function forgetOldWebsite(businessId: string, newDomain: string | null): Promise<void> {
   const { agency } = await requireAgency();
   const db = createServiceClient();
-  const { data, error } = await db.from("businesses").select("id").eq("id", businessId).eq("agency_id", agency.id).maybeSingle();
+  const { data, error } = await db
+    .from("businesses")
+    .select("id")
+    .eq("id", businessId)
+    .eq("agency_id", agency.id)
+    .is("deleted_at", null)
+    .maybeSingle();
   if (error) throw new Error(`Could not load the business: ${error.message}`);
   if (!data) return;
   if (newDomain) {
-    const { error: listingError } = await db.from("businesses").update({ places_id: null, is_chain: false }).eq("id", businessId).eq("agency_id", agency.id);
+    const { error: listingError } = await db
+      .from("businesses")
+      .update({ places_id: null, is_chain: false })
+      .eq("id", businessId)
+      .eq("agency_id", agency.id)
+      .is("deleted_at", null);
     if (listingError) throw new Error(`Could not clear the old website's listing: ${listingError.message}`);
   }
   const { error: factsError } = await db.from("business_site_facts").delete().eq("business_id", businessId);
@@ -182,6 +196,8 @@ async function updateBusiness(
     .update({ ...update, updated_at: new Date().toISOString() })
     .eq("id", businessId)
     .eq("agency_id", agency.id)
+    // The service client skips the policy that hides deleted businesses, so a deleted one is refused here.
+    .is("deleted_at", null)
     .select("id")
     .maybeSingle();
   if (duplicateBusiness(error)) return "duplicate";

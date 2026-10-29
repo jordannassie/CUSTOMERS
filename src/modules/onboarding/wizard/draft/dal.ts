@@ -1,4 +1,5 @@
 import "server-only";
+import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { duplicateBusiness, type DuplicateKind } from "../../duplicates";
 import { stepNumber } from "../steps";
@@ -91,4 +92,26 @@ export function siteWasRead(saved: unknown): boolean {
   if (typeof saved !== "object" || saved === null) return false;
   const facts = (saved as { facts?: unknown }).facts;
   return typeof facts === "object" && facts !== null;
+}
+
+// With no active business saved, the app falls back to the newest one, which would now be the draft
+// and hide the dashboard while a second business is set up. Pin the newest finished one instead. Through the
+// user's own session: profiles are theirs to update.
+export async function keepActiveBusiness(userId: string): Promise<void> {
+  const supabase = await createClient();
+  const profile = await supabase.from("profiles").select("active_business_id").eq("id", userId).maybeSingle();
+  if (profile.error) throw new Error(`Could not load profile: ${profile.error.message}`);
+  if (profile.data?.active_business_id) return;
+  const latest = await supabase
+    .from("businesses")
+    .select("id")
+    .eq("owner_user_id", userId)
+    .neq("status", "onboarding")
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (latest.error) throw new Error(`Could not load businesses: ${latest.error.message}`);
+  if (!latest.data) return;
+  const { error } = await supabase.from("profiles").update({ active_business_id: latest.data.id }).eq("id", userId);
+  if (error) throw new Error(`Could not save the active business: ${error.message}`);
 }

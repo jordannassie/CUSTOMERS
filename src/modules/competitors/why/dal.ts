@@ -1,4 +1,5 @@
 import "server-only";
+import { OPEN_FIX_STATUSES } from "@/lib/fix-status";
 // The "See why" panels for every tracked competitor, from answers the scans already saved and the saved fixes. No scan,
 // AI call or Google call happens here; Google lines are added by the page from the values it already fetched (D-73).
 // Callers check the user may see this agency first.
@@ -10,9 +11,10 @@ import { requireAgency } from "@/modules/auth";
 import { competitorWhy, loadStanding, type StandingData } from "@/modules/standing";
 import { loadSavedSites } from "../site/dal";
 import type { SavedSite } from "../site/service";
-import { claimRows, compareRows, fixesAbout, openFixRefs, ownSite, serviceChips, withFixes, type WebsiteView, type WhyPanel } from "./service";
+import { fixesAbout, openFixRefs, withFixes } from "./fixes";
+import { claimRows, compareRows, ownSite, serviceChips, type WebsiteView, type WhyPanel } from "./service";
 
-const OPEN_STATUSES = ["open", "in_progress"];
+const OPEN_STATUSES = OPEN_FIX_STATUSES;
 
 type FixRow = {
   id: string;
@@ -23,6 +25,7 @@ type FixRow = {
   affected_url: string | null;
   category: string | null;
   claude_prompt: string | null;
+  status: string;
 };
 
 /** What the panels are built from: saved answers, open fixes and saved website reads, all read at once. */
@@ -43,7 +46,7 @@ export const loadWhyInputs = cache(async (agencyId: string, businessId: string, 
     loadStanding(agencyId, businessId, new Date(nowMs)),
     createServiceClient()
       .from("opportunities")
-      .select("id, title, description, evidence, recommended_action, affected_url, category, claude_prompt")
+      .select("id, title, description, evidence, recommended_action, affected_url, category, claude_prompt, status")
       .eq("business_id", businessId)
       .in("status", OPEN_STATUSES)
       .order("created_at", { ascending: false }),

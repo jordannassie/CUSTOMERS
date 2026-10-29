@@ -30,7 +30,7 @@ exports[`methodPanel > reads the same as the approved wording 1`] = `
       "value": "48",
     },
   ],
-  "modelsNote": "Your score is the average of these.",
+  "modelsNote": "Your score counts the answers from all of these together.",
   "numbers": [
     {
       "label": "Time covered",

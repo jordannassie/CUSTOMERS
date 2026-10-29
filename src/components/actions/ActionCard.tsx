@@ -9,6 +9,7 @@ import { CopyButton } from "@/components/opportunities/CopyButton";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { LocalDate } from "@/components/ui/local-date";
 import { compareHref } from "@/lib/compare-href";
 import { fixCardId } from "@/lib/fix-where";
 import { ACTION_STATUSES, STATUS_TEXT, type ActionItem, type ActionStatus } from "@/modules/opportunities/board/service";
@@ -19,8 +20,8 @@ export const IMPACT = {
   low: { text: "Low", variant: "secondary" },
 } as const;
 
-const SHORT: Intl.DateTimeFormatOptions = { month: "short", day: "numeric" };
-const day = (iso: string) => new Date(iso).toLocaleDateString("en-US", SHORT);
+/** "Oct 27", in the viewer's own time zone without a hydration mismatch (LocalDate). */
+export const SHORT_DAY: Intl.DateTimeFormatOptions = { month: "short", day: "numeric" };
 
 /**
  * One action on the board (dashboard redesign): where to apply it, the impact, the title, the fact that created it,
@@ -32,22 +33,31 @@ export function ActionCard({
   picked,
   onMove,
   onAssign,
+  readOnly = false,
 }: {
   item: ActionItem;
   busy: boolean;
   picked: boolean;
   onMove: (status: ActionStatus) => void;
   onAssign: (toMe: boolean) => void;
+  /** An ended plan (MVP_SPEC 4.4): the card reads as before, with no moves. */
+  readOnly?: boolean;
 }) {
   const [open, setOpen] = useState(picked);
   const impact = IMPACT[item.impact];
   return (
     <article
       id={fixCardId(item.id)}
-      className={cn("flex scroll-mt-24 flex-col gap-2.5 rounded-md border bg-surface p-3.5", picked ? "border-primary ring-2 ring-primary/20" : "border-border")}
+      className={cn(
+        "flex scroll-mt-24 flex-col gap-2.5 rounded-md border bg-surface p-3.5",
+        // The fix a link opened (?fix=): outlined and pulsing a few times, so it is easy to spot on the board.
+        picked ? "animate-fix-pulse border-primary ring-2 ring-primary/20" : "border-border",
+      )}
       data-testid="opportunity"
       data-status={item.status}
+      data-picked={picked || undefined}
     >
+      {picked && <span className="text-[11px] font-semibold tracking-wide text-primary uppercase">The fix you opened</span>}
       <div className="flex items-start justify-between gap-2">
         <span className="min-w-0 truncate text-xs font-semibold text-primary-hover" title={item.whereToApply} data-testid="action-where">
           {item.whereToApply}
@@ -95,17 +105,22 @@ export function ActionCard({
               {i > 0 && ", "}
               <Link href={compareHref(c.id)} className="text-primary hover:underline">
                 {c.name}
+              </Link>{" "}
+              (
+              <Link href={`/questions?${new URLSearchParams({ named: c.name })}`} className="text-primary hover:underline" data-testid="action-named-answers">
+                see answers
               </Link>
+              )
             </span>
           ))}
         </p>
       )}
       {item.status === "done" && item.completedAt && (
         <p className="text-xs text-muted-foreground" data-testid="action-done">
-          Done {day(item.completedAt)} · we will measure the effect over the next 30 days
+          Done <LocalDate iso={item.completedAt} options={SHORT_DAY} />
         </p>
       )}
-      {item.claudePrompt && item.place === "website" && (
+      {item.claudePrompt && (
         <div className="[&_button]:w-full">
           <CopyButton text={item.claudePrompt} label="Copy prompt for Claude" copiedNote="Prompt copied. Paste it into Claude to get a draft." />
         </div>
@@ -118,9 +133,10 @@ export function ActionCard({
               Assigned to you
             </>
           ) : (
-            day(item.createdAt)
+            <LocalDate iso={item.createdAt} options={SHORT_DAY} />
           )}
         </span>
+        {!readOnly && (
         <div className="flex flex-wrap items-center gap-1.5">
           {item.status === "suggested" ? (
             <>
@@ -135,6 +151,7 @@ export function ActionCard({
             <Moves item={item} busy={busy} onMove={onMove} onAssign={onAssign} />
           )}
         </div>
+        )}
       </div>
       {open && (
         <button type="button" className="flex items-center gap-1 self-start text-xs text-muted-foreground hover:text-foreground" onClick={() => setOpen(false)}>

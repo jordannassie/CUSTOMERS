@@ -20,3 +20,5 @@ export { theirSite } from "./reasons";
 export { meaningWords, serviceGaps, type TheirWebsite, type YourSite } from "./website";
 export { googleArea, type Area, type Lead, type SourceRow } from "./gap";
 export type { DomainRow } from "./domains";
+export { tallyResult, MIN_TALLY_ANSWERS, type TallyResult } from "./assistant-facts";
+export { citations, pickCounts, shareOf, shares, siteRows, type SiteRow } from "./picks";

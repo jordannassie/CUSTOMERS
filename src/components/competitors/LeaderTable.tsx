@@ -62,10 +62,14 @@ export function LeaderTable({ rows }: { rows: TableRow[] }) {
               <td className="py-3 pr-3 align-top">
                 <Sparkline values={r.spark} you={r.isYou} color={r.color} />
               </td>
-              <td className="py-3 pr-3 align-top">{r.change ? <PointsChange change={r.change} neutral={!r.isYou} /> : <span className="text-xs text-text-hint">No change</span>}</td>
+              <td className="py-3 pr-3 align-top">{r.change ? (
+                  <PointsChange change={r.change} neutral={!r.isYou} />
+                ) : (
+                  <span className="text-xs text-text-hint">{r.changeKnown ? "No change" : "Not enough history"}</span>
+                )}</td>
               {tools.map((t) => (
                 <td key={t.id} className="py-3 pr-3 text-right align-top tabular-nums">
-                  {r.byModel[t.id] ?? <span className="text-text-hint">None</span>}
+                  {r.byModel[t.id] ?? <span className="text-xs text-text-hint">Not checked</span>}
                 </td>
               ))}
               <td className="py-3 pr-3 align-top">
@@ -83,6 +87,8 @@ export function LeaderTable({ rows }: { rows: TableRow[] }) {
                 {r.competitorId && (
                   <Link
                     href={compareHref(r.competitorId)}
+                    // Each row's link says whom it compares: a list of links all named "Compare" is no help to a screen reader.
+                    aria-label={`Compare with ${r.name}`}
                     className="inline-flex h-8 items-center rounded-md border border-border px-3 text-[13px] font-medium hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
                     data-testid="compare-link"
                   >

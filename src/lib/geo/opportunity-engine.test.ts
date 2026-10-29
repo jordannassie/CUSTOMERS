@@ -7,8 +7,9 @@ const result = (mentioned: boolean, competitors: string[] = []) => ({
   cited_sources: [{ url: "https://elsewhere.example/page" }],
 });
 
-const all = (mentioned: number, total: number) =>
+const all = (mentioned: number, total: number, site: { hasWebsite?: boolean; websiteRead?: boolean } = {}) =>
   generateOpportunities({
+    ...site,
     businessName: "Sunrise Coffee Bar",
     domain: "sunrise.example",
     description: null,
@@ -52,5 +53,31 @@ describe("rules fallback wording (BUG-A)", () => {
 
   it("has nothing to copy for Claude when the fix is a settings task", () => {
     expect(all(0, 36).find((d) => d.category === "local_presence")?.claude_prompt).toBe("");
+  });
+});
+
+describe("rules fallback does not guess (2026-10-28)", () => {
+  const description = (site: { hasWebsite?: boolean; websiteRead?: boolean }) => all(1, 36, site).find((d) => d.category === "entity_consistency")!;
+
+  it("says the website check found no description only when it read the site", () => {
+    expect(description({ websiteRead: true }).evidence).toBe("There is no business description on file, and our check of your website didn't find one either.");
+    expect(description({ websiteRead: false }).evidence).toBe("There is no business description on file.");
+    expect(description({}).evidence).toBe("There is no business description on file.");
+  });
+
+  it("gives a business with no website no website steps and nothing to copy for Claude", () => {
+    const drafts = all(1, 36, { hasWebsite: false });
+    for (const d of drafts) expect(d.claude_prompt).toBe("");
+    expect(drafts.map((d) => d.category)).not.toContain("citations");
+    expect(description({ hasWebsite: false }).recommended_action).toContain("Google Business Profile");
+    expect(drafts[0].recommended_action).toMatch(/^Fill in your Google Business Profile/);
+    for (const d of drafts) expect(d.recommended_action).not.toMatch(/your website|homepage/i);
+    expect(all(1, 36).filter((d) => d.claude_prompt).length).toBeGreaterThan(0);
+  });
+
+  it("names the next step for a competitor gap instead of saying look at them", () => {
+    const gap = all(1, 36).find((d) => d.category === "competitor_gap")!;
+    expect(gap.recommended_action).toMatch(/^On the Questions page, open the questions where AI names Rival Roasters\./);
+    expect(gap.recommended_action).not.toMatch(/\blook at\b/i);
   });
 });

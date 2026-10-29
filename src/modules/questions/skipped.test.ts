@@ -13,6 +13,15 @@ describe("whySkipped", () => {
     expect(whySkipped({ ...base, sites: [], competitors: [] })).toBe("ChatGPT did not name any business in this answer.");
   });
 
+  it("says the names couldn't be read when the name finder failed, never that no business was named", () => {
+    const unread = { ...base, competitors: [], namesChecked: false };
+    expect(whySkipped(unread)).toBe("ChatGPT used yelp.com and tripadvisor.com here. We couldn't read which businesses it named.");
+    expect(whySkipped({ ...unread, sites: [] })).toBe("We couldn't read which businesses ChatGPT named in this answer.");
+    // Names found some other way still say who it named.
+    expect(whySkipped({ ...base, namesChecked: false })).toBe("ChatGPT used yelp.com and tripadvisor.com here and named Bean House, not you.");
+    expect(whySkipped({ ...base, competitors: [], namesChecked: true })).toBe("ChatGPT used yelp.com and tripadvisor.com here and did not name any business.");
+  });
+
   it("shortens long lists", () => {
     expect(listText(["a", "b", "c", "d", "e"])).toBe("a, b and 3 others");
     expect(listText(["a", "b", "c"])).toBe("a, b and c");
@@ -66,6 +75,21 @@ describe("focus links", () => {
     expect(focusMatches(checks, {})).toBeUndefined();
   });
 
+  it("needs one answer to do both: use the site and name them, not you (Compare's See the answers)", () => {
+    // q4: one answer used yelp.com without naming them, another named them without yelp.com.
+    const split = [check("q4", false, ["yelp.com"]), check("q4", false, ["google.com"], ["Bean House"])];
+    expect([...focusMatches(split, { site: "yelp.com", named: "Bean House" })!]).toEqual([]);
+    expect([...focusMatches([...split, check("q4", false, ["yelp.com"], ["Bean House"])], { site: "yelp.com", named: "Bean House" })!]).toEqual(["q4"]);
+  });
+
+  it("finds a chain by the name AI used as well as the tracked branch name", () => {
+    const chain = check("q5", false, ["google.com"], ["Domino's Pizza | Chaklala-III"], {
+      names: [{ name: "Domino's Pizza", matches: "competitor", competitorName: "Domino's Pizza | Chaklala-III" }],
+    });
+    expect([...focusMatches([chain], { named: "Domino's Pizza" })!]).toEqual(["q5"]);
+    expect([...focusMatches([chain], { named: "Domino's Pizza | Chaklala-III" })!]).toEqual(["q5"]);
+  });
+
   it("checks the page's search params and drops bad ones", () => {
     const id = "0e3f6a2b-1c4d-4e5f-8a9b-0c1d2e3f4a5b";
     expect(questionsPageParams.parse({ q: id, site: "https://www.Yelp.com/biz/x", named: " Bean House " })).toEqual({
@@ -74,5 +98,12 @@ describe("focus links", () => {
       named: "Bean House",
     });
     expect(questionsPageParams.parse({ q: "nope", site: "javascript:alert(1)", named: ["a"] })).toEqual({});
+  });
+
+  it("keeps a competitor name up to 200 characters, as long as names can be", () => {
+    const long = `Domino's Pizza ${"Chaklala ".repeat(25)}`.slice(0, 199) + "x";
+    expect(long).toHaveLength(200);
+    expect(questionsPageParams.parse({ named: long }).named).toBe(long);
+    expect(questionsPageParams.parse({ named: "x".repeat(201) })).toEqual({});
   });
 });

@@ -16,13 +16,18 @@ type LineInfo = OverviewCompete["lines"][number];
  * and every competitor in its own color, with your 30-day score dashed. The legend names every line with its latest
  * value; hovering one brings its line forward, clicking one hides or shows it. The Y axis fits the data.
  */
-export function ScanChart({ timeline, lines }: { timeline: Row[]; lines: LineInfo[] }) {
+export function ScanChart({ timeline, lines, days, earlier = false }: { timeline: Row[]; lines: LineInfo[]; days?: number; earlier?: boolean }) {
   const [hidden, setHidden] = useState<Set<string>>(new Set());
   const [focus, setFocus] = useState<string | null>(null);
   if (timeline.length < 2) {
+    // Scans before the range: a longer range draws the trend, so waiting for a second scan is the wrong advice.
+    const text =
+      earlier && days
+        ? `${timeline.length === 1 ? "Only one scan" : "No scans"} in the last ${days} days. Pick a longer range to see the trend.`
+        : "The chart starts after your second scan. Each scan adds a point.";
     return (
       <p className="flex min-h-40 items-center rounded-md border border-dashed border-border px-4 text-sm text-muted-foreground" data-testid="trend-waiting">
-        The chart starts after your second scan. Each scan adds a point.
+        {text}
       </p>
     );
   }

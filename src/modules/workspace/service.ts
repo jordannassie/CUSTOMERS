@@ -1,8 +1,10 @@
 // Pure rules for the app frame: the usage widget text and which banners show (MVP_SPEC 8.2, B-48).
 import { customerDate } from "@/lib/time-zone";
+import { daysUntil, renewsText } from "./days";
+
+export { daysUntil } from "./days";
 import { TEST_MODE_MESSAGE } from "@/lib/test-mode";
 
-const DAY = 24 * 60 * 60 * 1000;
 const WARN_AT_PERCENT = 80;
 
 export const BILLING_HREF = "/settings/billing";
@@ -53,16 +55,6 @@ export type Banner = {
 
 const count = (n: number) => n.toLocaleString("en-US");
 const plural = (n: number, word: string) => `${count(n)} ${word}${n === 1 ? "" : "s"}`;
-
-export function daysUntil(date: Date, now: Date): number {
-  return Math.max(0, Math.ceil((date.getTime() - now.getTime()) / DAY));
-}
-
-function renewsText(days: number): string {
-  if (days === 0) return "Renews today";
-  if (days === 1) return "Renews tomorrow";
-  return `Renews in ${days} days`;
-}
 
 function trialText(days: number): string {
   return days === 0 ? "Trial ends today" : `Trial: ${plural(days, "day")} left`;
@@ -136,7 +128,7 @@ function formatDate(date: Date, timeZone: string): string {
 
 /** Days and trial credits left, then the charge date, or that nothing is charged after a cancel (B-45, MVP_SPEC 4.4). */
 function trialBanner(usage: UsageNumbers, account: AccountState, now: Date, timeZone: string): Banner {
-  const days = daysUntil(account.trialEndsAt!, now);
+  const days = daysUntil(account.trialEndsAt!, now, timeZone);
   const credits = plural(splitCredits(usage).plan, "trial credit");
   const adding = usage.periodCredits === 0 && usage.balance === 0 && usage.periodUsed === 0;
   const timeLeft = days === 0 ? `Your free trial ends today, with ${credits} left.` : `Your free trial has ${plural(days, "day")} and ${credits} left.`;
@@ -209,9 +201,14 @@ function accountBanners(usage: UsageNumbers, account: AccountState, now: Date, t
     return banners;
   }
 
-  // A trial that has never been granted a credit (its end date may not be saved yet) is waiting for the first
-  // invoice to be paid, not out of credits.
-  const creditsComing = account.status === "trialing" && usage.balance === 0 && usage.periodCredits === 0 && usage.periodUsed === 0;
+  // A plan (trial or paid) that has never been granted a credit is waiting for its first invoice to be paid (F-48),
+  // not out of credits: right after setup the first-scan screen says "Adding your trial credits", not this banner.
+  const creditsComing =
+    (account.status === "trialing" || account.status === "active") &&
+    usage.balance === 0 &&
+    usage.periodCredits === 0 &&
+    usage.periodUsed === 0 &&
+    usage.topupRemaining === 0;
   if (usage.balance <= 0 && !creditsComing) {
     banners.push({
       kind: "out_of_credits",

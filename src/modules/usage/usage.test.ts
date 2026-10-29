@@ -19,6 +19,8 @@ async function seedAgency() {
   if (error || !user.user) throw error ?? new Error("no user");
   userIds.push(user.user.id);
   const owner = user.user.id;
+  // Scheduled: a business with no next scan has none coming, so the forecast counts nothing for it.
+  const nextScan = new Date(Date.now() + 86_400_000).toISOString();
 
   const { data: agency } = await service
     .from("agencies")
@@ -35,8 +37,8 @@ async function seedAgency() {
   const { data: businesses } = await service
     .from("businesses")
     .insert([
-      { owner_user_id: owner, agency_id: agency.id, name: "Joe's Plumbing", status: "active", scan_frequency: "weekly" },
-      { owner_user_id: owner, agency_id: agency.id, name: "Joe's Heating", status: "active", scan_frequency: "daily" },
+      { owner_user_id: owner, agency_id: agency.id, name: "Joe's Plumbing", status: "active", scan_frequency: "weekly", next_scan_at: nextScan },
+      { owner_user_id: owner, agency_id: agency.id, name: "Joe's Heating", status: "active", scan_frequency: "daily", next_scan_at: nextScan },
     ])
     .select("id, name")
     .order("name", { ascending: false })
@@ -140,6 +142,18 @@ describe("usage report (B-56)", () => {
     expect(report.forecast.kind).toBe("renewal");
     expect(report.forecast.available).toBe(report.balance.total);
     expect(report.forecast.needed).toBe(report.forecast.scans * 6);
+  });
+
+  it("forecasts only scheduled businesses that are not deleted, at the checks a scan holds", async () => {
+    const { agencyId, businessIds } = await seedAgency();
+    const [plumbing, heating] = businessIds;
+    await service.from("businesses").update({ deleted_at: new Date().toISOString() }).eq("id", heating).throwOnError();
+    await service.from("businesses").update({ models: ["openai", "anthropic"] }).eq("id", plumbing).throwOnError();
+    // Weekly from tomorrow over the 14 days to renewal: 2 scans of 2 questions on 2 models.
+    expect((await loadUsageReport(agencyId, new Date())).forecast).toMatchObject({ scans: 2, needed: 8 });
+
+    await service.from("businesses").update({ next_scan_at: null }).eq("id", plumbing).throwOnError();
+    expect((await loadUsageReport(agencyId, new Date())).forecast).toMatchObject({ scans: 0, needed: 0, runsOutAt: null });
   });
 
   it("shows an empty report for an agency with no scans", async () => {

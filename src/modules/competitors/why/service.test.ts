@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { claimRows, compareRows, fixesAbout, openFixRefs, serviceChips, standingSentence, whyCard, whySentence, withFixes } from "./service";
+import { fixesAbout, openFixRefs, withFixes } from "./fixes";
+import { claimRows, compareRows, serviceChips, standingSentence, whyCard, whySentence } from "./service";
 
 const why = { name: "Bean Tires", answers: 40, them: 12, you: 5 };
 const id = "11111111-2222-3333-4444-555555555555";
@@ -108,6 +109,7 @@ describe("openFixRefs", () => {
     recommended_action: null,
     category: null,
     claude_prompt: null,
+    status: "open",
     ...over,
   });
 
@@ -117,6 +119,7 @@ describe("openFixRefs", () => {
       fix({ id: "m", title: "Add a menu page", claude_prompt: "Draft it." }),
     ]);
     expect(refs.map((r) => [r.id, r.where])).toEqual([["g", "google_listing"], ["m", "website"]]);
+    expect(openFixRefs([fix({ id: "t", status: "todo" })])[0].status).toBe("todo");
     expect(openFixRefs([])).toEqual([]);
   });
 

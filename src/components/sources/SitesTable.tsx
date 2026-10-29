@@ -147,7 +147,7 @@ export function SitesTable({ businessId, rows, answers, add }: Props) {
 
 function RowCta({ row, businessId, add }: { row: SiteRow; businessId: string; add: AddToActions }) {
   if (row.cta === "listed" && row.action) {
-    return <AddToActionsButton businessId={businessId} action={row.action} inActions={row.inActions} add={add} label="Get listed" />;
+    return <AddToActionsButton businessId={businessId} action={row.action} inActions={row.inActions} actionId={row.actionId} add={add} label="Get listed" />;
   }
   if (row.cta === "improve" || row.cta === "compare") {
     const href = row.cta === "compare" ? compareHref(row.competitorId) : "/actions";

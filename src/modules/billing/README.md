@@ -27,7 +27,7 @@ Stripe setup (B-40, MVP_SPEC 11, D-39, D-56).
 - Plans: `cd_plan_starter`, `cd_plan_pro`, monthly, per business (licensed quantity), lookup key `cd_plan_<id>_monthly_usd`.
 - One item per business (D-56). Stripe refuses one price on two items of a subscription, so an item added or changed by the app uses `price_data` on the plan's product at the `plans` row's amount: each business gets a price of its own (BUG-103). The catalog price is used only for the signup trial's single item. A plan is always told apart by its product (`plan-price.ts`), never by its price ID.
 - Top-ups: `cd_topup_500`, `cd_topup_2000`, one-time, lookup key `cd_topup_<n>_usd`.
-- USD only, no `currency_options`. To change a price, change the row, then rerun the sync: it makes a new price, moves the lookup key and stores the new ID. Old prices stay active for existing subscriptions.
+- USD only, no `currency_options`. To change a price, change the row, then rerun the sync: it makes a new price, moves the lookup key and stores the new ID. Existing customers follow within the hour (D-93): `price-move/` moves every renewing item still on an older amount to the plan's price from its next renewal (no proration) and emails the agency once (`price_change:<batch>`). Billing shows each item's charged amount (`business_subscriptions.price_cents`, from the webhook).
 
 ## First-time setup (a person does this, not a session)
 

@@ -1,6 +1,8 @@
 "use client";
 
 import { Eye, EyeOff } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { questionsHref } from "@/lib/questions-href";
 import { rowHasAnswers, type QuestionRow } from "@/modules/questions/service";
 import { Button } from "@/components/ui/button";
 import { QuestionFilters } from "./QuestionFilters";
@@ -19,6 +21,7 @@ type Props = { limitMessage: string | null; actions: QuestionActions };
 
 export function QuestionTable({ limitMessage, actions }: Props) {
   const { view, shown, total, showPaused, setShowPaused, setFilter, setTopic, focus } = useQuestions();
+  const router = useRouter();
   const grid = `${GRID[view.models.length] ?? GRID[3]} lg:items-start lg:gap-x-5`;
   const count = shown.active.length + shown.paused.length;
   const noneYet = view.active.length > 0 && !view.active.some(rowHasAnswers);
@@ -79,6 +82,8 @@ export function QuestionTable({ limitMessage, actions }: Props) {
               onClick={() => {
                 setFilter("all");
                 setTopic(null);
+                // A link from Compare or Sources (?site=, ?named=, ?ai=) narrows the list too, so it is cleared as well.
+                if (focus.site || focus.named || focus.ai) router.push(questionsHref());
               }}
             >
               Clear filters

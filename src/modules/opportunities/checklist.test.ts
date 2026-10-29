@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { CHECKLIST_KEYS, checklist, checklistKeyOf, missingBasics, websitePrompt, type ChecklistBusiness } from "./checklist";
+import { CHECKLIST_KEYS, NO_BRANCH_MARKER, checklist, checklistKeyOf, missingBasics, noBranchQuery, websitePrompt, type ChecklistBusiness } from "./checklist";
 
 const full: ChecklistBusiness = {
   name: "Sunrise Coffee Bar",
@@ -54,5 +54,16 @@ describe("get found by AI checklist", () => {
     expect(checklistKeyOf("checklist:other")).toBeNull();
     expect(checklistKeyOf("https://example.com")).toBeNull();
     expect(checklistKeyOf(null)).toBeNull();
+  });
+
+  it("reads back a saved search that found no branch of a chain (step 6d)", () => {
+    // The same text as NO_BRANCH_MARKER in onboarding/branch/service.ts (its service.test.ts checks that one).
+    expect(NO_BRANCH_MARKER).toBe("checklist:no_branch");
+    expect(checklistKeyOf(NO_BRANCH_MARKER)).toBeNull();
+    expect(noBranchQuery([{ affected_url: "checklist:website" }])).toBeNull();
+    expect(noBranchQuery([{ affected_url: NO_BRANCH_MARKER, evidence_data: { query: "KFC Nowhere" } }])).toBe("KFC Nowhere");
+    // Saved without its words: still "no branch found", with the default search in the box.
+    expect(noBranchQuery([{ affected_url: NO_BRANCH_MARKER, evidence_data: {} }])).toBe("");
+    expect(noBranchQuery([{ affected_url: NO_BRANCH_MARKER, evidence_data: null }])).toBe("");
   });
 });

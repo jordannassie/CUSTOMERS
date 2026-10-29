@@ -1,6 +1,6 @@
 import { utcDate } from "@/lib/time-zone";
 import type { LowCreditsLevel, WeeklyBusiness } from "@/modules/email";
-import type { OverviewView } from "@/modules/overview";
+import type { ReportSnapshot } from "@/modules/reports";
 
 // Pure rules for the scheduled emails (B-62, MVP_SPEC 10, D-37): unique keys, weeks and what the weekly report shows.
 
@@ -34,37 +34,61 @@ export function weeklyReportKey(agencyId: string, now: Date): string {
 
 export const welcomeKey = (agencyId: string) => `welcome:${agencyId}`;
 
-export type NewOpportunity = { title: string; impact: "high" | "medium" | "low"; createdAt: string };
+/** The report fixes each business lists, as the PDF's first fixes. */
+export const MAX_FIXES = 3;
 
-const IMPACT_ORDER = { high: 0, medium: 1, low: 2 } as const;
-export const MAX_NEW_OPPORTUNITIES = 3;
+/** Thrown between businesses when a run's time is up: the agency is left for the next run, not counted as failed. */
+export class OutOfTime extends Error {
+  constructor() {
+    super("The email job ran out of time on this agency.");
+  }
+}
+
+const AI_TOOLS: [string, string][] = [
+  ["openai", "ChatGPT"],
+  ["anthropic", "Claude"],
+  ["perplexity", "Perplexity"],
+];
+
+/** The business's chosen AI tools by name, in the usual order; all three for a business with none saved. */
+export function aiToolNames(models: string[] | null | undefined): string[] {
+  const chosen = AI_TOOLS.filter(([id]) => models?.includes(id)).map(([, name]) => name);
+  return chosen.length > 0 ? chosen : AI_TOOLS.map(([, name]) => name);
+}
+
+/** One business in the weekly report, with the report its numbers came from (null before the first counted answer). */
+export type ReportedBusiness = WeeklyBusiness & { snapshot: ReportSnapshot | null };
+
+const points = (n: number) => `${n} ${n === 1 ? "point" : "points"}`;
 
 /**
- * One business in the weekly report. The Overview already drops score changes inside the margin of error,
- * so a change shown here is always a real one (D-63: a mention rate, never a rank).
+ * One business in the weekly report (D-90): every number from its current report, so the email, the share link and
+ * the PDF agree. The report already drops score changes inside the margin of error (D-63: a mention rate, never a rank).
  */
 export function weeklyBusiness(input: {
   name: string;
-  overview: Pick<OverviewView, "score"> | null;
-  newOpportunities: NewOpportunity[];
-  /** The share page path (/r/...), or the dashboard when the agency turned the business's link off. */
-  reportPath: string;
-  /** The likely reason line shared with the Overview and the report (competitors whySentence). */
-  reason?: string | null;
-}): WeeklyBusiness {
-  const score = input.overview?.score ?? null;
-  const sorted = [...input.newOpportunities].sort(
-    (a, b) => IMPACT_ORDER[a.impact] - IMPACT_ORDER[b.impact] || b.createdAt.localeCompare(a.createdAt),
-  );
+  snapshot: ReportSnapshot | null;
+  /** The share link path (/r/...), which opens the PDF, or null when the agency turned the business's link off. */
+  sharePath: string | null;
+  /** The AI tools chosen for the business (businesses.models), e.g. ["openai", "anthropic"]. */
+  models?: string[] | null;
+}): ReportedBusiness {
+  const s = input.snapshot;
+  const change = s?.score.change ?? null;
   return {
     name: input.name,
-    score: score?.value ?? null,
-    sentence: score?.sentence ?? null,
-    reason: score ? (input.reason ?? null) : null,
-    change: score?.change ?? null,
-    newOpportunities: sorted.slice(0, MAX_NEW_OPPORTUNITIES).map((o) => o.title),
-    moreOpportunities: Math.max(0, sorted.length - MAX_NEW_OPPORTUNITIES),
-    reportUrl: input.reportPath,
+    score: s?.score.value ?? null,
+    named: s ? { answers: s.named.answers, total: s.named.total } : null,
+    rank: s?.rank ? { position: s.rank.position, of: s.rank.of } : null,
+    sentence: s?.summary.headline ?? null,
+    reason: s?.summary.short.behind ?? null,
+    change: change && { direction: change.direction, text: `${change.direction === "up" ? "Up" : "Down"} ${points(change.points)} on the 30 days before` },
+    fixes: (s?.fixes ?? []).slice(0, MAX_FIXES).map((f) => ({ title: f.title, where: f.where })),
+    moreFixes: Math.max(0, (s?.fixes.length ?? 0) - MAX_FIXES),
+    reportUrl: s && input.sharePath ? input.sharePath : "/dashboard",
+    pdf: !!(s && input.sharePath),
+    aiTools: aiToolNames(input.models),
+    snapshot: s,
   };
 }
 

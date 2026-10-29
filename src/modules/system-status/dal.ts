@@ -21,7 +21,6 @@ const KEYS: Record<string, string | undefined> = {
   perplexity: env.PERPLEXITY_API_KEY,
   google_places: env.GOOGLE_PLACES_API_KEY,
   firecrawl: env.FIRECRAWL_API_KEY,
-  browserless: env.BROWSERLESS_API_KEY,
   resend: env.RESEND_API_KEY,
   stripe: env.STRIPE_SECRET_KEY,
 };
@@ -35,7 +34,7 @@ export async function getSystemStatus(deps: ProbeDeps = {}): Promise<SystemStatu
     Promise.all(
       PROBES.map(async (probe): Promise<ServiceStatus> => {
         const key = KEYS[probe.id];
-        const result = await runProbe(probe, key, { browserlessUrl: env.BROWSERLESS_URL, ...deps });
+        const result = await runProbe(probe, key, deps);
         const mode = probe.id === "stripe" ? stripeMode(key) : undefined;
         return { id: probe.id, name: probe.name, group: probe.group, ...result, ...(mode && { mode }) };
       }),

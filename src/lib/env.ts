@@ -26,12 +26,6 @@ export const env = createEnv({
     // Dev and Playwright only: auto-fill and question picking answer from fixtures, never Firecrawl, Google or Claude.
     ONBOARDING_FIXTURES: flag,
     FIRECRAWL_API_KEY: optional,
-    BROWSERLESS_API_KEY: optional,
-    // PDF export (B-60, D-71): hosted Chrome, or our own Chromium when Browserless is down or for local checks.
-    PDF_RENDERER: z.enum(["browserless", "chromium"]).default("browserless"),
-    BROWSERLESS_URL: z.url().default("https://production-sfo.browserless.io"),
-    // Local Chrome for the chromium renderer on a laptop; unset uses the @sparticuz/chromium build (Linux only).
-    CHROMIUM_PATH: optional,
     // Search Intelligence stays on hold until D-06 is decided.
 
     STRIPE_SECRET_KEY: optional,
@@ -64,6 +58,9 @@ export const env = createEnv({
 
     // Where AI listed the business ("named 2nd") on the Overview. Off until Jordan decides (D-63: stored, not shown).
     SHOW_POSITION: flag,
+    // The report's fix wording rewritten by AI and checked against its numbers (reports/v2/wording). Off by default:
+    // the template wording is used.
+    REPORT_AI_WORDING: flag,
   },
   client: {
     NEXT_PUBLIC_SUPABASE_URL: z.url(),
@@ -86,10 +83,6 @@ export const env = createEnv({
     PLACES_FIXTURES: process.env.PLACES_FIXTURES,
     ONBOARDING_FIXTURES: process.env.ONBOARDING_FIXTURES,
     FIRECRAWL_API_KEY: process.env.FIRECRAWL_API_KEY,
-    BROWSERLESS_API_KEY: process.env.BROWSERLESS_API_KEY,
-    PDF_RENDERER: process.env.PDF_RENDERER,
-    BROWSERLESS_URL: process.env.BROWSERLESS_URL,
-    CHROMIUM_PATH: process.env.CHROMIUM_PATH,
     STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY,
     STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET,
     STRIPE_CHECKOUT_FIXTURES: process.env.STRIPE_CHECKOUT_FIXTURES,
@@ -107,6 +100,7 @@ export const env = createEnv({
     ALERT_DAILY_COST_USD: process.env.ALERT_DAILY_COST_USD,
     DELETION_WAIT_DAYS: process.env.DELETION_WAIT_DAYS,
     SHOW_POSITION: process.env.SHOW_POSITION,
+    REPORT_AI_WORDING: process.env.REPORT_AI_WORDING,
     NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
     NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
     NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL,

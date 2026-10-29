@@ -29,6 +29,7 @@ function stripeReader(): StripeReader {
     },
     checkoutSessionForPaymentIntent: async (payment_intent) =>
       (await getStripe().checkout.sessions.list({ payment_intent, limit: 1 })).data[0] ?? null,
+    retrieveSchedule: (id) => getStripe().subscriptionSchedules.retrieve(id, { expand: ["phases.items.price"] }),
   };
 }
 

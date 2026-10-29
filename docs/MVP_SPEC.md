@@ -265,19 +265,19 @@ Replace today's substring match (`src/lib/geo/providers/types.ts:33`):
 - Same rules for competitors.
 - Unit tests with tricky names are required.
 
-### 5.6 Scores (D-63 to D-66)
+### 5.6 Scores (D-63, D-64, D-66, D-91)
 
 Based on research into how AEO tools and independent studies measure AI visibility (2026-09-26): AI answers change between runs, list order is not reliable, but whether a business appears is fairly stable when measured across many varied questions over time.
 
 **Score**
 - **Visibility score** (0 to 100) = mentions ÷ checks, over the **last 30 days** of checks. No bonus or penalty for position in a list.
 - The score counts suggested questions that are active now; paused, removed and custom questions are left out.
-- Per model scores, plus one overall score = equal-weight average of the chosen models (D-65). Per model scores are always shown next to it.
+- Per model scores, plus one overall score = answers that named the business ÷ all answers from the chosen models, as one pool (D-91, replacing the equal-weight average of D-65): 9 of 60 answers gives 15, however they split between the AI tools. Per model scores (each model's own rate) are always shown next to it. Competitor scores, changes and charts use the same pooled rule.
 - **Trend**: a "last 7 days" line and a note such as "Up since your last scan", so real improvements show quickly while the headline stays steady.
 - Position in lists is still stored (5.5) for later research, never shown as a rank. Behind `SHOW_POSITION` (off by default, for Jordan to decide), the Overview's per-question table shows "named 2nd" or "named, not in a list" and an average place, never called a rank.
 
 **Confidence (D-64)**
-- Margin of error is computed per question cluster (questions differ in difficulty), from **unique answers**: a cached answer reused for several businesses counts once for confidence.
+- Margin of error is computed per question cluster (questions differ in difficulty), from **unique answers**: a cached answer reused for several businesses counts once for confidence. The overall margin is the pooled rate's own (D-91): each question on each AI tool is one cluster, weighted by its share of all answers.
 - Labels: **Early estimate** (under 50 unique answers), **Good confidence** (50 to 200), **High confidence** (over 200). Trial accounts will usually show "First results. Accuracy improves with every scan."
 - Rough guide at 12 questions × 3 models: weekly about ±8 points, daily about ±3, monthly about ±16.
 
@@ -349,7 +349,7 @@ Based on research into how AEO tools and independent studies measure AI visibili
 
 | Signal | Source | Refresh |
 |---|---|---|
-| Google rating, review count, categories, website, hours | Google Places (business and each competitor), fetched live when a page or report is shown; only `place_id` is stored (D-73) | Live |
+| Google rating, review count, categories, website, hours | Google Places (business and each competitor), fetched live only when the owner asks to see them on a page (D-87), never in the share page, PDF or email; only `place_id` is stored (D-73) | Live |
 | Who AI named instead of the business | Scan answers, including businesses not on the competitor list | Every scan |
 | Sources AI cited | Citations from Perplexity and web-search answers | Every scan |
 | Website facts (services pages, contact info, structured data) | Firecrawl: the business's own site; a competitor's own site only when the owner asks ("Check their website", D-85) | Business: at onboarding and monthly. Competitor: on request, once per site and kept, shared |
@@ -387,7 +387,7 @@ A chain with no listing picked (its website matches branches in several cities) 
 
 | Item | Contents |
 |---|---|
-| **Overview** | Visibility score and trend, per-model scores, top 3 opportunities, last scan time, Run scan button, Export PDF and Share buttons; "Question by question": each active question at the last 6 weekly scans ("2 of 3" AI tools named the business, up, down or same), "Getting better" and "Getting worse" over 4 weeks, own questions apart (saved results only) |
+| **Overview** | Visibility score and trend, per-model scores, top 3 opportunities, last scan time, Run scan button, View report and Share links (to Reports); "Question by question": each active question at the last 6 weekly scans ("2 of 3" AI tools named the business, up, down or same), "Getting better" and "Getting worse" over 4 weeks, own questions apart (saved results only) |
 | **Competitors** | Leaderboard (score vs competitors), manage list (add / remove), side-by-side signals (7.1), "Also recommended by AI" list |
 | **Opportunities** | All fix steps, status (open / done / dismissed), Copy for Claude |
 | **Questions** | Question list, per-question results per model, add / edit / pause |
@@ -401,13 +401,21 @@ Sidebar also has: business switcher, usage widget (8.2), "Suggest a feature", si
 - **Widget** (always visible): "620 of 1,200 credits used", progress bar, "Renews in 12 days". During trial: "Trial: 5 days left, 64 of 150 credits left".
 - **Usage page**: balance (plan and top-up), used this month, by business, by model, forecast to renewal from the scan schedules, scan history with credits per scan, Buy credits button.
 
-### 8.3 Export and Share (D-12)
+### 8.3 Export and Share (D-12, D-90, D-92)
 
-- **Export PDF**: score, trend, competitor table, top opportunities, date range. Agency logo and name in the header.
-  - Made by printing the share page (`/r/<token>`) to PDF through **Browserless** (hosted Chrome), behind one function `renderPdf(url)` in `modules/reports` (D-71). Browserless waits for a `data-report-ready` element so charts are drawn first.
-  - Fallbacks: our own headless Chrome (`playwright-core` + `@sparticuz/chromium`) behind the same function; and print styling on the share page so "Print, Save as PDF" in any browser works.
-  - Weekly report emails link to the share page instead of attaching a PDF.
-- **Share link**: read-only page at `/r/<random token>`, no login, same content as the PDF. Agency can revoke it. Tokens are long and random; pages are `noindex`.
+One report, one set of numbers: the Reports page, the PDF, the share link and the weekly email all read the same frozen snapshot.
+
+- **Snapshot**: a version 2 report snapshot (`src/modules/reports/v2/snapshot-schema.ts`) built from saved answers only (no scan, no Google values, D-73) and saved as a row in the `reports` table before anything is drawn. Saved reports from before D-90 (version 1) stay in the list as "Old layout", with no PDF.
+- **PDF**: a 10-page Letter PDF in Inter, drawn on the server with `@react-pdf/renderer` from the snapshot (design in `docs/report-reference.pdf`). Agency name and logo on the cover, the agency accent colour on section labels and step numbers. Drawn once per saved report and stored in the private `reports` bucket at `<businessId>/<reportId>.pdf`; opened only through fresh signed URLs that last 10 minutes.
+- **Reports page**: the shown report's summary (headline, lead, score, answers naming you, rank, fix count and the three short takeaways) and every fix in priority order; a fix opens in place to show its evidence, why it matters, steps and goal. The side list shows "Latest report" and the snapshots saved with Save snapshot (`reports.saved`); reports saved automatically (live link, weekly email, the page itself) are not listed.
+- **Download PDF** (Reports page): the shown report's PDF, downloaded as "<Business> AI visibility report <YYYY-MM-DD>.pdf". About 10 an hour per user.
+- **Share link**: `/r/<random token>`, no login, long random token, the agency can turn it off. It never shows a page: each visit redirects to a fresh signed URL of the stored PDF, with `noindex, nofollow`, `no-referrer` and `no-store`. A turned off or unknown link answers 404 with a short note.
+  - A snapshot link opens that saved report and never changes.
+  - A live link opens the current report: the newest version 2 report saved after the latest counted answer, in the last week and with the agency's branding as it is now; otherwise a new one is saved first.
+- **Weekly email**: per business, the current report's numbers: score ("15/100, 9 of 60 answers"), rank among the tracked businesses, the top 3 fixes with where each is made, and the share link to the PDF. The plain text part is that summary; the HTML shows the same numbers. No PDF is attached.
+- **Copy email summary** (Reports page): the same plain text summary for the shown report with its share link, ready to paste into an email. It makes the share link first when there is none.
+- **Fixes in Actions**: saving a report adds its fixes to Actions as suggestions (source `report`, key `report:<issue key>`), once per business. A fix already there keeps whatever status the owner gave it.
+- **Branding** (Reports page): accent colour (`#RRGGBB`), contact email and booking link (`https://`), saved in `agencies.report_branding`; the logo comes from Settings. New reports use it; saved ones keep theirs.
 
 ### 8.4 Wording (D-32)
 
@@ -497,6 +505,7 @@ Keep the existing signature check and idempotency table (`stripe_webhook_events`
 - One Stripe subscription per agency, one subscription item per business, one renewal date for the agency.
 - The 7-day trial applies to the whole subscription.
 - USD only. Turn off Stripe's automatic currency conversion (the test checkout showed PKR).
+- Price changes (D-93): change the `plans` row and run the catalog sync. Within the hour, the price move job (`run_email_job('price_changes')`, `src/modules/billing/price-move/`) moves each renewing subscription still on an older amount to the new price from its next renewal (the trial end during a trial), with no proration, and emails the agency once: the old price, the new price and the date. Billing shows each business's charged price (`business_subscriptions.price_cents`, kept by the webhook) and "$X from <date>" while a move is pending. Subscriptions set to end and deleted businesses are not moved.
 
 ### 11.5 Plan changes and refunds (D-57)
 
@@ -645,7 +654,7 @@ Notes:
 | Payments | Stripe |
 | Monitoring | None in MVP (D-44). Log errors to the console and to `scan_jobs.error`. |
 
-Environment variables (new or changed): `FIRECRAWL_API_KEY`, `BROWSERLESS_API_KEY`, `GOOGLE_PLACES_API_KEY`, `WORKER_SECRET`, `RESEND_API_KEY`, `EMAIL_FROM`, Stripe restricted key and webhook secret, plan price IDs, top-up price IDs. Remove unused: `DATAFORSEO_*`, `GEMINI_API_KEY`, `GOOGLE_AI_API_KEY`, `CLAUDE_API_KEY`, `ADMIN_PIN`, `ADMIN_SESSION_SECRET`, `BETA_FREE_ACCESS`, `TRIAL_ENABLED`, `BILLING_ENABLED` (all removed 2026-10-14; billing is always on, and Stripe test keys are what keep local and staging safe).
+Environment variables (new or changed): `FIRECRAWL_API_KEY`, `GOOGLE_PLACES_API_KEY`, `WORKER_SECRET`, `RESEND_API_KEY`, `EMAIL_FROM`, Stripe restricted key and webhook secret, plan price IDs, top-up price IDs. Remove unused: `DATAFORSEO_*`, `GEMINI_API_KEY`, `GOOGLE_AI_API_KEY`, `CLAUDE_API_KEY`, `ADMIN_PIN`, `ADMIN_SESSION_SECRET`, `BETA_FREE_ACCESS`, `TRIAL_ENABLED`, `BILLING_ENABLED` (all removed 2026-10-14; billing is always on, and Stripe test keys are what keep local and staging safe).
 
 Before any key goes into the hosting environment, all keys must be rotated (malware incident, see MVP_ROADMAP SEC-01).
 
@@ -667,7 +676,7 @@ Prices checked 2026-09-25 on vendor pricing pages. Recheck before launch.
 
 **"Also recommended by AI" extraction**: about $0.0014 per check (Haiku, about 900 input and 100 output tokens), about $0.05 per scan; half that through the Batches API; free on cache hits. Included in the credit price.
 
-**PDFs**: Browserless free plan covers 1,000 PDFs a month (1 unit = up to 30 seconds of browser time); next plan $25 a month for 20,000 units (checked 2026-09-26, browserless.io/pricing).
+**PDFs**: drawn on our own server with `@react-pdf/renderer` (D-90), so there is no PDF provider to pay; stored PDFs use Supabase storage.
 
 **Per business per month, Starter $149, daily scans**: AI checks about $17.50, explanations about $1, Places refresh about $0.10, Stripe fee about $4.60. Total about $23, margin about 85%. Worst case (all 1,200 credits on ChatGPT): about $36, margin about 75%.
 
@@ -855,7 +864,7 @@ A pg_cron job every 15 minutes checks, and emails the admin (at most once per ho
 - More than 20% of scans failed in the last hour.
 - Jobs stuck in `running` (after the reset in 6.2 fails to clear them).
 - Failed Stripe webhook events.
-- Error spike from one AI provider, Firecrawl, Places or Browserless.
+- Error spike from one AI provider, Firecrawl or Places.
 - Agencies with a negative credit balance.
 - Daily real AI cost above a set limit.
 - An agency Stripe has as paid and active while the app still shows a trial for more than 5 minutes (`paid_not_active`, checked by the app because it reads Stripe; 2026-10-15).
@@ -891,8 +900,8 @@ The Terms and Privacy pages must cover:
 - 7-day trial with card, automatic charge on day 7, automatic monthly renewal, and how to cancel online. Some US states (for example California) have automatic renewal laws; a lawyer confirms the exact wording.
 - Credits: what a credit is, plan credits expire at period end, top-ups need an active plan, credits have no cash value.
 - Refunds and cancellation (11.5).
-- AI and data: questions are sent to OpenAI, Anthropic and Perplexity; website pages to Firecrawl; Google Places data is used and attributed; PDFs are made through Browserless.
-- List of subprocessors (Supabase, Netlify or Vercel, Stripe, Resend, OpenAI, Anthropic, Perplexity, Firecrawl, Google, Browserless).
+- AI and data: questions are sent to OpenAI, Anthropic and Perplexity; website pages to Firecrawl; Google Places data is used and attributed.
+- List of subprocessors (Supabase, Netlify or Vercel, Stripe, Resend, OpenAI, Anthropic, Perplexity, Firecrawl, Google).
 - Data retention and deletion (section 23).
 - Share links are visible to anyone who has the link.
 - Agencies are responsible for having their clients' permission.
@@ -968,4 +977,4 @@ D-73. Quoted from the Google Maps Platform Terms (cloud.google.com/maps-platform
 - Onboarding: Places only pre-fills the form; the saved record is the user's confirmation of their own business.
 - Competitor list: names are confirmed by the user; `place_id` kept for live lookups.
 - Explanations: Claude writes placeholders; live Places values are filled in at display time, never stored.
-- Existing code saves competitor names from Places (`source: google_places`); fix during the move.
+- Old code saved competitor rows as `source: google_places`; current code writes `confirmed_place` or `manual` and clears the old Places columns on save. The saved name is still the one the owner confirmed from Google (open question 2 in `docs/launch/places-compliance.md`).

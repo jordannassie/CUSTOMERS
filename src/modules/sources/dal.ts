@@ -27,7 +27,7 @@ export async function getSources(businessId: string, tool: ProviderId | null = n
   const db = createServiceClient();
   const { data: business, error } = await db
     .from("businesses")
-    .select("id, name, domain, primary_city, primary_region")
+    .select("id, name, domain, primary_city, primary_region, models")
     .eq("id", businessId)
     .eq("agency_id", agency.id)
     .maybeSingle();
@@ -40,6 +40,8 @@ export async function getSources(businessId: string, tool: ProviderId | null = n
     .eq("business_id", businessId);
   if (rivalsError) throw new Error(`Sources: could not read competitors: ${rivalsError.message}`);
 
+  // Only the AI tools the business uses, like the score: answers from a tool it turned off no longer count.
+  const models = new Set((business.models as string[] | null) ?? []);
   const since = new Date(now.getTime() - WINDOW_DAYS * DAY_MS).toISOString();
   const checks: SourceCheck[] = [];
   for (let from = 0; ; from += PAGE) {
@@ -54,6 +56,7 @@ export async function getSources(businessId: string, tool: ProviderId | null = n
       .range(from, from + PAGE - 1);
     if (readError) throw new Error(`Sources: could not read checks: ${readError.message}`);
     for (const r of data) {
+      if (models.size > 0 && !models.has(r.provider!)) continue;
       const mentioned = r.business_mentioned === true;
       checks.push({
         provider: r.provider!,

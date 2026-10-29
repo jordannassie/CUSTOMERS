@@ -31,7 +31,7 @@ function countOf(what: string, result: Result<unknown>): number {
 export async function loadAgencyFacts(agencyId: string): Promise<AgencyFacts> {
   const db = createServiceClient();
   const [agency, businesses, balance] = await Promise.all([
-    db.from("agencies").select("id, status, trial_ends_at").eq("id", agencyId).single(),
+    db.from("agencies").select("id, status, trial_ends_at, stripe_subscription_id, is_test").eq("id", agencyId).single(),
     // D-16: only set-up businesses count. A draft still being set up never blocks finishing it or starting it again.
     db
       .from("businesses")
@@ -48,7 +48,24 @@ export async function loadAgencyFacts(agencyId: string): Promise<AgencyFacts> {
     businessCount: countOf("business count", businesses),
     balance: balance.balance ?? 0,
     trialOver: row.status === "trialing" && row.trial_ends_at !== null && Date.parse(row.trial_ends_at) < Date.now(),
+    // Same line as the admin list's "signup unfinished" (admin/agencies displayStatus).
+    planStarted: row.status !== "trialing" || row.trial_ends_at !== null || row.stripe_subscription_id !== null || row.is_test,
   };
+}
+
+/**
+ * Whether this business is one of the agency's set-up businesses, the ones loadAgencyFacts counts. A draft
+ * ("onboarding"), a deleted business or another agency's is not.
+ */
+export async function isCountedBusiness(agencyId: string, businessId: string): Promise<boolean> {
+  const result = await createServiceClient()
+    .from("businesses")
+    .select("id", { count: "exact", head: true })
+    .eq("id", businessId)
+    .eq("agency_id", agencyId)
+    .neq("status", "onboarding")
+    .is("deleted_at", null);
+  return countOf("business", result) > 0;
 }
 
 export async function loadBusinessFacts(businessId: string): Promise<BusinessFacts> {

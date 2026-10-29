@@ -1,7 +1,7 @@
 import { z } from "zod";
 
-// The five MVP emails (D-37), the admin alert (B-69) and the deletion emails (B-77). Matches the check on
-// email_log.type (migration 042).
+// The five MVP emails (D-37), the admin alert (B-69), the deletion emails (B-77) and the price change notice (D-93).
+// Matches the check on email_log.type (migration 083).
 export const EMAIL_TYPES = [
   "welcome",
   "trial_ending",
@@ -13,6 +13,8 @@ export const EMAIL_TYPES = [
   "account_deleted",
   "account_restored",
   "account_purged",
+  // A plan price change reaching an existing customer at the next renewal (D-93, migration 083).
+  "price_change",
 ] as const;
 export type EmailType = (typeof EMAIL_TYPES)[number];
 
