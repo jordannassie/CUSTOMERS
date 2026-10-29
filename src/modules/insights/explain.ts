@@ -4,6 +4,7 @@
 // rules in opportunity-engine.ts are used instead.
 import { generateOpportunities } from "@/lib/geo/opportunity-engine";
 import type { OpportunityCategory, OpportunityImpact } from "@/types/geo";
+import { yourWebsite } from "@/lib/your-website";
 import { buildExplainInput, domainOf, type ExplainInput, type ExplainSources } from "./facts";
 import { capitalizeFirst, fixNameCase } from "./name-case";
 import { toStored } from "./placeholders";
@@ -76,6 +77,9 @@ export function ruleDrafts(src: ExplainSources): OpportunityDraft[] {
     domain: src.business.domain ? domainOf(`https://${src.business.domain.replace(/^https?:\/\//, "")}`) : null,
     description: src.business.description,
     primaryCity: src.business.city,
+    // No website: no website steps or prompts. Read: only then can we say the site had no description (2026-10-28).
+    hasWebsite: src.business.hasWebsite,
+    websiteRead: yourWebsite(src.siteFacts)?.readStatus === "read",
     results: src.checks.map((check) => ({
       business_mentioned: check.businessMentioned,
       competitors_mentioned: mentionedNames(check.competitorsMentioned)

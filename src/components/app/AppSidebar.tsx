@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import { LogOut, ShieldCheck } from "lucide-react";
 import { cn } from "cn";
 import { BusinessSwitcher, type SwitchBusinessAction, type SwitcherBusiness, type SwitcherDraft, type SwitcherScoresAction } from "./BusinessSwitcher";
-import { APP_NAV, isNavActive, setupLabel } from "./nav";
+import { APP_NAV_GROUPS, isNavActive, setupLabel } from "./nav";
 import { SuggestFeatureDialog, type SuggestFeatureAction } from "./SuggestFeatureDialog";
 import { UsageWidget, type UsageWidgetProps } from "./UsageWidget";
 
@@ -25,7 +25,7 @@ export type AppSidebarProps = {
 };
 
 const FOOTER_ITEM =
-  "flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-sm text-muted-foreground outline-none transition-colors hover:bg-surface hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 [&_svg]:size-4 [&_svg]:shrink-0";
+  "flex w-full items-center gap-2.5 rounded-md px-2.5 py-1.5 text-sm text-muted-foreground outline-none transition-colors hover:bg-surface hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 [&_svg]:size-4 [&_svg]:shrink-0";
 
 export function AppSidebar({
   businesses,
@@ -44,7 +44,7 @@ export function AppSidebar({
   const settingUp = pathname.startsWith("/onboarding");
 
   return (
-    <div className="flex h-full flex-col gap-4 p-3">
+    <div className="flex min-h-full flex-col gap-3 p-3">
       <Link href="/dashboard" onClick={onNavigate} className="px-1.5 pt-2" aria-label="Customers.Direct, go to Overview">
         <Image src="/images/logos/logo-black.png" alt="" width={96} height={32} loading="eager" className="h-8 w-auto" />
       </Link>
@@ -67,33 +67,36 @@ export function AppSidebar({
         />
       )}
 
-      <nav aria-label="Main" className="flex flex-col gap-0.5">
-        {APP_NAV.map((item) => {
-          const active = isNavActive(item, pathname);
-          const Icon = item.icon;
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              onClick={onNavigate}
-              aria-current={active ? "page" : undefined}
-              className={cn(
-                "flex items-center gap-2.5 rounded-md px-2.5 py-2 text-sm font-medium outline-none transition-colors focus-visible:ring-3 focus-visible:ring-ring/50",
-                active
-                  ? "bg-primary-tint text-primary-hover"
-                  : "text-muted-foreground hover:bg-surface hover:text-foreground",
-              )}
-            >
-              <Icon className={cn("size-4 shrink-0", active ? "text-primary" : "text-text-hint")} aria-hidden="true" />
-              {item.label}
-            </Link>
-          );
-        })}
+      <nav aria-label="Main" className="flex flex-col gap-2.5">
+        {APP_NAV_GROUPS.map((group) => (
+          <div key={group.label ?? "top"} className="flex flex-col gap-0.5">
+            {group.label && <p className="px-2.5 pb-0.5 text-[11px] font-semibold tracking-wide text-text-hint uppercase">{group.label}</p>}
+            {group.items.map((item) => {
+              const active = isNavActive(item, pathname);
+              const Icon = item.icon;
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={onNavigate}
+                  aria-current={active ? "page" : undefined}
+                  className={cn(
+                    "flex items-center gap-2.5 rounded-md px-2.5 py-1.5 text-sm font-medium outline-none transition-colors focus-visible:ring-3 focus-visible:ring-ring/50",
+                    active ? "bg-primary-tint text-primary-hover" : "text-muted-foreground hover:bg-surface hover:text-foreground",
+                  )}
+                >
+                  <Icon className={cn("size-4 shrink-0", active ? "text-primary" : "text-text-hint")} aria-hidden="true" />
+                  {item.label}
+                </Link>
+              );
+            })}
+          </div>
+        ))}
       </nav>
 
-      <div className="mt-auto flex flex-col gap-3">
+      <div className="mt-auto flex flex-col gap-2.5">
         {usage && <UsageWidget {...usage} />}
-        <div className="flex flex-col gap-0.5 border-t border-border pt-3">
+        <div className="flex flex-col gap-0.5 border-t border-border pt-2.5">
           {isAdmin && (
             <Link href="/internal/admin" onClick={onNavigate} className={FOOTER_ITEM}>
               <ShieldCheck aria-hidden="true" />

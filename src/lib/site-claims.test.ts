@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { bestQuote, claimsAskedBy, meaningWords, siteClaims, siteWords, tidyQuote } from "./site-claims";
+import { bestQuote, claimsAskedBy, meaningWords, siteClaims, siteWords, tidyQuote, quoteAround } from "./site-claims";
 
 describe("siteClaims", () => {
   it("quotes the plain sentence that makes the claim, without page formatting", () => {
@@ -44,5 +44,26 @@ describe("tidyQuote", () => {
     expect(tidyQuote("Pizza Hut Pakistan \\ Order Pizza Online - Fast Home Delivery")).toBe("Pizza Hut Pakistan, Order Pizza Online, Fast Home Delivery");
     expect(tidyQuote("DELIVERY")).toBe("Delivery");
     expect(tidyQuote("Roasting since 2009.")).toBe("Roasting since 2009.");
+  });
+});
+
+describe("quoteAround", () => {
+  const long = "Pizza Hut Pakistan Authentic Flavors Select Your Order Type DeliveryPick-UpDine-In Please select your location Use Current Location Please Select a branch near you";
+  it("keeps a short quote whole", () => {
+    expect(quoteAround("Roasting since 2009.", "years")).toBe("Roasting since 2009.");
+  });
+  it("cuts a long one around the service, at word breaks", () => {
+    const out = quoteAround(long, "Dine-in", 60);
+    expect(out).toContain("Dine-In");
+    expect(out.startsWith("…")).toBe(true);
+    expect(out.endsWith("…")).toBe(true);
+    expect(out.length).toBeLessThanOrEqual(62);
+    expect(out).not.toMatch(/^…\s|\s…$/);
+  });
+  it("starts at the beginning when the service is near it", () => {
+    expect(quoteAround(long, "Pizza", 60)).toMatch(/^Pizza Hut Pakistan/);
+  });
+  it("drops invisible spaces", () => {
+    expect(quoteAround("DELIVERY\u200B PICK-UP", "pick-up")).toBe("Delivery pick-up");
   });
 });

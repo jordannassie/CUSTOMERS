@@ -40,7 +40,7 @@ Rules:
 - One blue only. `#3B82F6` and `#0866F5` are removed.
 - The bright status colours (`good`, `mid`, `low`) are for fills, rings, dots and bars. Status **text** uses the `-text` shade on its `-bg`.
 - Model colours never colour text; labels stay `text`.
-- Charts: the business is always `primary`, competitors are greys. Nothing else competes with the blue.
+- Charts: the business is always `primary`, competitors are greys. Nothing else competes with the blue. Changed by the user, 2026-10-27: each competitor has its own hue (`series-2` to `series-5`: orange, aqua, violet, pink) on the Overview, the Competitors charts and Compare, by its place on the leaderboard so it keeps one color everywhere (`src/lib/series-colors.ts`). Validated as a categorical set; the business names always sit beside them. Past the fourth competitor, and "Other competitors", stay grey. The By AI model heat map stays one blue (it shows amounts, not businesses).
 
 ## Typography
 

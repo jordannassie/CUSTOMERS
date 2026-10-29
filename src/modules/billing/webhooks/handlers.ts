@@ -20,6 +20,8 @@ export type StripeReader = {
   tagItem(itemId: string, businessId: string): Promise<void>;
   /** The Checkout Session that took this payment, for a refunded top-up; null when none did (an invoice charge). */
   checkoutSessionForPaymentIntent(paymentIntentId: string): Promise<Stripe.Checkout.Session | null>;
+  /** A subscription schedule with its phase items' prices, for the first charge after a trial. */
+  retrieveSchedule(id: string): Promise<Stripe.SubscriptionSchedule>;
 };
 
 export type WebhookDeps = {
@@ -121,6 +123,8 @@ async function syncSubscription(deps: WebhookDeps, sub: Stripe.Subscription, age
       itemId: item.id,
       planId: plan.planId,
       periodEnd: iso(item.current_period_end),
+      // What Stripe charges for it each month: Billing shows it, and the price move job compares it to the plan (D-93).
+      priceCents: item.price.unit_amount ?? null,
     });
   }
   await deps.store.syncBusinessItems(agency.id, businessItems, status);
@@ -188,7 +192,10 @@ async function trialWillEnd(deps: WebhookDeps, sub: Stripe.Subscription) {
   if (sub.cancel_at_period_end || sub.cancel_at) return;
   const agency = await requireAgency(deps, { agencyId: sub.metadata?.agency_id, customerId: idOf(sub.customer) });
   const to = await deps.store.ownerEmail(agency.ownerUserId);
-  if (to) await notify(deps, trialEndingEmail({ to, agencyId: agency.id, subscription: sub }));
+  if (!to) return;
+  // A change pending at the trial end (a business coming off) lives on the schedule, and sets the first charge.
+  const schedule = typeof sub.schedule === "string" ? await deps.stripe.retrieveSchedule(sub.schedule) : (sub.schedule ?? null);
+  await notify(deps, trialEndingEmail({ to, agencyId: agency.id, subscription: sub, schedule }));
 }
 
 /** Events can arrive out of order, so the subscription's current state is read from Stripe before it is saved. */

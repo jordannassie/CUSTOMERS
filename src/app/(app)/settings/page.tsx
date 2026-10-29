@@ -10,6 +10,7 @@ import { ScanSettingsForm } from "@/components/settings/ScanSettingsForm";
 import { Panel, SettingsSection } from "@/components/settings/SettingsSection";
 import { Button } from "@/components/ui/button";
 import { changeEmail, changePassword, deleteAccount, deleteBusiness, getAccountView } from "@/modules/account";
+import { EMAIL_LINK_INVALID_TEXT, EMAIL_LINK_PARAM } from "@/modules/auth";
 import { getMyEmailPreferences, saveEmailPreferences } from "@/modules/email";
 import { BILLING_HREF } from "@/modules/workspace";
 import { getSettings, saveAgencyName, saveBusinessProfile, saveScanSettings, uploadAgencyLogo } from "@/modules/settings";
@@ -20,7 +21,11 @@ export const metadata = { title: "Settings", robots: { index: false } };
 const USAGE_HREF = "/settings/usage";
 const QUESTIONS_HREF = "/questions";
 
-export default async function SettingsPage() {
+type SearchParams = Promise<Record<string, string | string[] | undefined>>;
+
+export default async function SettingsPage({ searchParams }: { searchParams: SearchParams }) {
+  // An email change link that did not work comes back here (auth/callback), not to the login page.
+  const emailLinkFailed = (await searchParams)[EMAIL_LINK_PARAM] === "invalid";
   const [{ agency, business, activeQuestions, plan }, account] = await Promise.all([
     getSettings({ next: "/settings" }),
     getAccountView({ next: "/settings" }),
@@ -97,6 +102,11 @@ export default async function SettingsPage() {
       </SettingsSection>
 
       <SettingsSection id="account" title="Account" description="How you log in. Changes to your email need a click on the link we send.">
+        {emailLinkFailed && (
+          <p role="alert" className="mb-4 rounded-md bg-low-bg px-3 py-2 text-[13px] text-low-text">
+            {EMAIL_LINK_INVALID_TEXT}
+          </p>
+        )}
         <AccountForm
           email={account.email}
           pendingEmail={account.pendingEmail}

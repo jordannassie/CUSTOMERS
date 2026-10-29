@@ -26,6 +26,12 @@ const nextConfig: NextConfig = {
     // Share links, auth codes and unsubscribe links carry their secret in the URL.
     incomingRequests: { ignore: [/^\/r\//, /^\/auth\/callback/, /[?&](token|token_hash|code)=/] },
   },
+  // The report PDF (D-90) reads its Inter font files from disk at run time, so the routes that draw it carry them:
+  // the share link and the Reports page, whose Download PDF action draws it.
+  outputFileTracingIncludes: {
+    "/r/\\[token\\]": ["src/modules/reports/v2/pdf/fonts/**"],
+    "/reports": ["src/modules/reports/v2/pdf/fonts/**"],
+  },
   experimental: {
     // Agency logos are up to 2 MB (B-55); the default 1 MB limit would reject them before the action runs.
     serverActions: { bodySizeLimit: "3mb" },
@@ -36,8 +42,8 @@ const nextConfig: NextConfig = {
         source: "/:path*",
         headers: securityHeaders({ supabaseUrl: supabaseUrl.href, isDev: env.NODE_ENV === "development" }),
       },
-      // Share pages (B-59): never indexed, and the token never leaves in a Referer header.
-      // Listed after the global rule so its Referrer-Policy wins.
+      // Share links (B-59, D-90): never indexed, and the token never leaves in a Referer header. The route sets the
+      // same headers itself; listed after the global rule so its Referrer-Policy wins.
       {
         source: "/r/:path*",
         headers: [
@@ -73,7 +79,15 @@ const nextConfig: NextConfig = {
       // These used to be pages that only called redirect(). A redirect thrown while rendering trips a React dev
       // timing bug ("cannot have a negative time stamp"), and a config redirect never renders anything.
       { source: "/dashboard/citations", destination: "/sources", permanent: true },
-      { source: "/dashboard/opportunities", destination: "/opportunities", permanent: true },
+      { source: "/dashboard/opportunities", destination: "/actions", permanent: true },
+      // Dashboard redesign (D-86): Opportunities is now Actions, and one competitor's page is Compare. Query strings
+      // (?fix=<id>, ?tab=websites) carry over; Compare maps the old tab names.
+      { source: "/opportunities", destination: "/actions", permanent: false },
+      {
+        source: "/competitors/:id([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})",
+        destination: "/competitors/compare?with=:id",
+        permanent: false,
+      },
       // Adding another business runs the wizard's business steps; the website step checks the trial limit.
       { source: "/dashboard/add-business", destination: "/onboarding/website", permanent: false },
       {

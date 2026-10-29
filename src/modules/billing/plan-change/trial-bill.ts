@@ -27,3 +27,32 @@ function unitAmount(ctx: PlanChangeContext, item: ItemSpec, known: Map<string, n
   const business = ctx.businesses.find((b) => b.id === item.metadata.business_id);
   return ctx.plans.find((p) => p.id === business?.planId)?.priceCents ?? 0;
 }
+
+type PriceRef = string | Stripe.Price | Stripe.DeletedPrice;
+
+/**
+ * The first charge after the trial for the trial ending email: the schedule's next phase when one is pending (a
+ * business coming off, or moving plan, at the trial end), like trialBillCents, else every item now. Null when a
+ * price is unknown or not USD, or the schedule has phases we did not write; the email then leaves the amount out.
+ */
+export function firstChargeCents(sub: Stripe.Subscription, schedule: Stripe.SubscriptionSchedule | null): number | null {
+  let next: Stripe.SubscriptionSchedule.Phase | null = null;
+  try {
+    next = schedule ? phasesOf(schedule).next : null;
+  } catch {
+    return null;
+  }
+  const known = new Map(sub.items.data.map((i) => [i.price.id, i.price]));
+  const priceOf = (ref: PriceRef): Stripe.Price | null =>
+    typeof ref === "string" ? (known.get(ref) ?? null) : "deleted" in ref && ref.deleted ? null : (ref as Stripe.Price);
+  const lines = next
+    ? next.items.map((i) => ({ price: priceOf(i.price), quantity: i.quantity ?? 1 }))
+    : sub.items.data.map((i) => ({ price: i.price as Stripe.Price | null, quantity: i.quantity ?? 1 }));
+  let total = 0;
+  for (const { price, quantity } of lines) {
+    const unit = price?.unit_amount;
+    if (unit === null || unit === undefined || (price?.currency && price.currency !== "usd")) return null;
+    total += unit * quantity;
+  }
+  return lines.length > 0 ? total : null;
+}

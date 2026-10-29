@@ -15,7 +15,8 @@ type PickAction = (input: { businessId: string; placeId: string }) => Promise<Ac
 const UNAVAILABLE = "Google could not be searched right now. Try again in a few minutes.";
 
 // Step 6d: a chain's website matches branches in several cities, so the owner picks theirs. The listings are shown
-// live from Google; only the picked one's place ID is saved (D-73).
+// live from Google; only the picked one's place ID is saved (D-73). Google is searched only when the owner presses
+// Search (2026-10-28): the card starts filled with the name and city and no listings.
 export function PickBranch({ businessId, initial, search, pick }: { businessId: string; initial: BranchSearch; search: SearchAction; pick: PickAction }) {
   const [query, setQuery] = useState(initial.query);
   const [result, setResult] = useState(initial);
@@ -66,14 +67,18 @@ export function PickBranch({ businessId, initial, search, pick }: { businessId: 
         </Button>
       </form>
 
-      {result.unavailable ? (
+      {!result.searched ? (
+        <p className="text-sm text-muted-foreground" data-testid="branch-not-searched">
+          Search for your branch on Google, then pick it from the list.
+        </p>
+      ) : result.unavailable ? (
         <p className="text-sm text-muted-foreground" data-testid="branch-unavailable">
           {UNAVAILABLE}
         </p>
       ) : result.choices.length === 0 ? (
         <p className="text-sm text-muted-foreground" data-testid="branch-none">
           No branch matched {result.query}. Try the area or street name, like your name plus &quot;F-7&quot;. If Google has no
-          listing for your branch, add it at business.google.com.
+          listing for your branch, add it at business.google.com. That step is in your checklist below.
         </p>
       ) : (
         <div className="rounded-md border border-border">

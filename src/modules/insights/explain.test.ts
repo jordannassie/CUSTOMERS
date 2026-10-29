@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { explain, type WriteExplanation } from "./explain";
+import { explain, ruleDrafts, type WriteExplanation } from "./explain";
 import { BEAN_HOUSE_ID, COFFEE_PLACES_NUMBERS, COFFEE_SOURCES, PLUMBER_SOURCES } from "./fixtures";
 import type { ExplainReason } from "./prompts/explain.v2";
 import { templateWriter } from "./template-writer";
@@ -108,5 +108,19 @@ describe("explain", () => {
     const old = PLUMBER_SOURCES.checks.map((c, i) => ({ ...c, competitorsMentioned: [{ name: "Fast Pipes", mentioned: i === 0 }] }));
     const { drafts } = await explain({ ...PLUMBER_SOURCES, checks: old }, null);
     expect(drafts.find((d) => d.category === "competitor_gap")?.evidence).toContain('"Fast Pipes" in 1 of the same 3 answers');
+  });
+
+  it("rules use what we know about the website: no website steps without one, no guess about an unread site", () => {
+    const none = ruleDrafts(PLUMBER_SOURCES);
+    expect(none.length).toBeGreaterThan(0);
+    for (const d of none) expect(d.claude_prompt).toBeNull();
+    expect(none.find((d) => d.category === "entity_consistency")?.evidence).toBe("There is no business description on file.");
+    const noDescription = { ...COFFEE_SOURCES, business: { ...COFFEE_SOURCES.business, description: null } };
+    expect(ruleDrafts(noDescription).find((d) => d.category === "entity_consistency")?.evidence).toBe(
+      "There is no business description on file, and our check of your website didn't find one either.",
+    );
+    const blocked = { ...noDescription, siteFacts: { pages: [{ path: "/", status: "blocked" }] } };
+    expect(ruleDrafts(blocked).find((d) => d.category === "entity_consistency")?.evidence).toBe("There is no business description on file.");
+    expect(ruleDrafts(blocked).some((d) => d.claude_prompt)).toBe(true);
   });
 });

@@ -14,6 +14,7 @@ import {
 import { getUsage } from "@/modules/credits";
 import { scoreTone } from "@/modules/overview";
 import { loadScoreReport } from "@/modules/scanning";
+import { pickActiveBusiness } from "./active";
 import { dropFirst, switcherScore, type SwitcherScores } from "./scores";
 import type { AccountState, UsageNumbers } from "./service";
 
@@ -55,6 +56,7 @@ const loadWorkspace = cache(async (): Promise<Workspace> => {
       .from("businesses")
       .select("id, name, domain, logo_url, status, onboarding_step")
       .eq("owner_user_id", user.id)
+      .is("deleted_at", null)
       .order("created_at", { ascending: false }),
     supabase.from("profiles").select("active_business_id").eq("id", user.id).maybeSingle(),
     agency
@@ -75,8 +77,7 @@ const loadWorkspace = cache(async (): Promise<Workspace> => {
     status: b.status,
     onboardingStep: b.onboarding_step,
   }));
-  const wanted = profile.data?.active_business_id;
-  const active = list.find((b) => b.id === wanted) ?? list[0] ?? null;
+  const active = pickActiveBusiness(list, profile.data?.active_business_id);
   const dates = agencyDates?.data;
 
   return {

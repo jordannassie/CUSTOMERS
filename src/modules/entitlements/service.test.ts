@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   fitsPlan,
   canAddBusiness,
+  canBuyTopUps,
   canFinishDraft,
   canEditTracking,
   canSpendTopUps,
@@ -19,6 +20,7 @@ const agency = (over: Partial<AgencyFacts> = {}): AgencyFacts => ({
   businessCount: 1,
   balance: 100,
   trialOver: false,
+  planStarted: true,
   ...over,
 });
 
@@ -63,6 +65,28 @@ describe("canSpendTopUps", () => {
   });
 });
 
+describe("canBuyTopUps", () => {
+  it("refuses a top-up before setup has started the plan or trial (F-43)", () => {
+    expect(canBuyTopUps(agency({ status: "trialing", planStarted: false }))).toEqual({ allowed: false, reason: REASONS.setupUnfinished });
+  });
+
+  it("sells to a started trial or plan, and keeps every spend rule", () => {
+    expect(canBuyTopUps(agency({ status: "trialing" }))).toEqual({ allowed: true, reason: "" });
+    expect(canBuyTopUps(agency({ status: "active" }))).toEqual({ allowed: true, reason: "" });
+    expect(canBuyTopUps(agency({ status: "canceled" }))).toEqual({ allowed: false, reason: REASONS.canceled });
+    expect(canBuyTopUps(agency({ status: "trialing", trialOver: true }))).toEqual({ allowed: false, reason: REASONS.trialOver });
+  });
+
+  it("does not change spending: a scan in setup still runs on its credits", () => {
+    expect(canSpendTopUps(agency({ status: "trialing", planStarted: false })).allowed).toBe(true);
+  });
+
+  it("points an ended plan to Choose a plan, not to contacting us", () => {
+    expect(REASONS.canceled).toBe("Your plan has ended. Choose a plan to start it again.");
+    expect(REASONS.readOnly).toBe("Your plan has ended, so your account is read-only. Choose a plan to start it again.");
+  });
+});
+
 describe("canAddBusiness", () => {
   it("lets a trial agency add its second business", () => {
     expect(canAddBusiness(agency({ status: "trialing", businessCount: 1 })).allowed).toBe(true);
@@ -97,9 +121,13 @@ describe("canFinishDraft", () => {
     });
   });
 
-  it("has no limit on a paid plan, and never blocks on status alone", () => {
+  it("has no limit on a paid plan", () => {
     expect(canFinishDraft(agency({ status: "active", businessCount: 40 })).allowed).toBe(true);
-    expect(canFinishDraft(agency({ status: "past_due", businessCount: 0 })).allowed).toBe(true);
+  });
+
+  it("refuses while the last payment failed, so no business is set up unbilled", () => {
+    expect(canFinishDraft(agency({ status: "past_due", businessCount: 0 }))).toEqual({ allowed: false, reason: REASONS.pastDue });
+    expect(canFinishDraft(agency({ status: "unpaid", businessCount: 0 }))).toEqual({ allowed: false, reason: REASONS.pastDue });
   });
 });
 

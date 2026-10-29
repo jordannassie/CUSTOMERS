@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import type { ScanOutcome } from "@/modules/scanning";
 import type { ClaimedJob, JobUpdate } from "./dal";
-import { handleWorkerRequest, jobUpdateFor, runWorker, type WorkerDeps } from "./worker";
+import { EXPLAIN_RESERVE_MS, handleWorkerRequest, jobUpdateFor, runWorker, SWEEP_LIMIT, type WorkerDeps } from "./worker";
 
 const NOW = new Date("2026-09-27T12:00:00Z");
 const job = (attempts: number, creditsCharged = 0): ClaimedJob => ({ id: `job-${attempts}`, attempts, creditsCharged });
@@ -83,7 +83,7 @@ describe("runWorker", () => {
     const queue = Array.from({ length: 23 }, (_, i) => (i === 4 ? "bad-4" : `job-${i}`));
     const { deps, finished, maxRunning } = fakeDeps(queue);
     const summary = await runWorker(600_000, deps);
-    expect(summary).toEqual({ claimed: 23, done: 22, retrying: 1, failed: 0, skipped: 0, lost: 0, stoppedForTime: false });
+    expect(summary).toEqual({ claimed: 23, done: 22, retrying: 1, failed: 0, skipped: 0, lost: 0, stoppedForTime: false, explainsDeferred: 0, swept: 0 });
     expect(deps.claim).toHaveBeenCalledWith(10);
     expect(maxRunning()).toBe(10);
     expect(finished.find((f) => f.job.id === "bad-4")?.update).toMatchObject({ status: "queued", error: "database went away" });
@@ -129,7 +129,7 @@ describe("why competitors win after a scan (B-51)", () => {
       if (explained.length === 2) throw new Error("Claude returned 529");
     });
     vi.spyOn(console, "error").mockImplementation(() => {});
-    const summary = await runWorker(60_000, deps);
+    const summary = await runWorker(600_000, deps);
     expect(summary).toMatchObject({ done: 2, failed: 0 });
     expect(explained).toEqual(["r", "r"]);
     expect(finished.every((f) => f.update.status === "done")).toBe(true);
@@ -138,7 +138,76 @@ describe("why competitors win after a scan (B-51)", () => {
   it("does not explain a scan that did not finish", async () => {
     const { deps } = fakeDeps(["bad-1"]);
     deps.explain = vi.fn(async () => {});
-    await runWorker(60_000, deps);
+    await runWorker(600_000, deps);
     expect(deps.explain).not.toHaveBeenCalled();
+  });
+
+  it("explains a run an earlier attempt finished when it has no fixes yet, and not one that has them", async () => {
+    const { deps } = fakeDeps(["retry-1", "retry-2"]);
+    deps.run = async () => ({ status: "skipped", reason: "This scan already finished." });
+    deps.unexplainedRun = vi.fn(async (jobId: string) => (jobId === "retry-1" ? "run-1" : null));
+    deps.explain = vi.fn(async () => {});
+    expect(await runWorker(600_000, deps)).toMatchObject({ done: 2 });
+    expect(deps.unexplainedRun).toHaveBeenCalledTimes(2);
+    expect(deps.explain).toHaveBeenCalledExactlyOnceWith("run-1");
+  });
+
+  it("does not look up a run for a scan skipped for another reason", async () => {
+    const { deps } = fakeDeps(["paused"]);
+    deps.run = async () => ({ status: "skipped", reason: "You're out of credits." });
+    deps.unexplainedRun = vi.fn(async () => "run-1");
+    deps.explain = vi.fn(async () => {});
+    await runWorker(600_000, deps);
+    expect(deps.unexplainedRun).not.toHaveBeenCalled();
+    expect(deps.explain).not.toHaveBeenCalled();
+  });
+
+  it("leaves the explanation for the sweep when too little of the budget is left", async () => {
+    // The scan uses all but 3 minutes of a 10 minute budget: less than an explanation may take.
+    const { deps } = fakeDeps(["late"], { runMs: 600_000 - EXPLAIN_RESERVE_MS + 60_000 });
+    deps.explain = vi.fn(async () => {});
+    const sweep = { find: vi.fn(async () => ["old-run"]), claim: vi.fn(async () => true) };
+    deps.sweep = sweep;
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    expect(await runWorker(600_000, deps)).toMatchObject({ done: 1, explainsDeferred: 1, swept: 0 });
+    expect(deps.explain).not.toHaveBeenCalled();
+    // The sweep needs the same room, so it waits for a later run too.
+    expect(sweep.find).not.toHaveBeenCalled();
+  });
+});
+
+describe("sweep of runs left without fixes", () => {
+  it("explains the runs it claims, at most SWEEP_LIMIT, and skips one another worker took", async () => {
+    const { deps } = fakeDeps([]);
+    const explained: string[] = [];
+    deps.explain = vi.fn(async (runId: string) => {
+      explained.push(runId);
+    });
+    deps.sweep = {
+      find: vi.fn(async () => ["r1", "r2", "r3"]),
+      claim: vi.fn(async (runId: string) => runId !== "r2"),
+    };
+    expect(await runWorker(600_000, deps)).toMatchObject({ claimed: 0, swept: 2 });
+    expect(deps.sweep.find).toHaveBeenCalledWith(NOW, SWEEP_LIMIT);
+    expect(explained.sort()).toEqual(["r1", "r3"]);
+  });
+
+  it("runs after the queue is empty, and a failed lookup or explanation changes nothing else", async () => {
+    const { deps } = fakeDeps(["a"]);
+    const order: string[] = [];
+    deps.explain = vi.fn(async (runId: string) => {
+      order.push(runId);
+      if (runId === "swept") throw new Error("Claude returned 529");
+    });
+    deps.sweep = { find: async () => ["swept"], claim: async () => true };
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    expect(await runWorker(600_000, deps)).toMatchObject({ done: 1, swept: 1 });
+    expect(order).toEqual(["r", "swept"]);
+
+    const failing = fakeDeps([]).deps;
+    failing.explain = vi.fn(async () => {});
+    failing.sweep = { find: async () => Promise.reject(new Error("db down")), claim: async () => true };
+    expect(await runWorker(600_000, failing)).toMatchObject({ swept: 0 });
+    expect(failing.explain).not.toHaveBeenCalled();
   });
 });

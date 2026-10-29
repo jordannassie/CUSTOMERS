@@ -1,5 +1,5 @@
 import "server-only";
-import { loadAgencyFacts, loadBusinessFacts, loadPlanLimits } from "./dal";
+import { isCountedBusiness, loadAgencyFacts, loadBusinessFacts, loadPlanLimits } from "./dal";
 import * as rules from "./service";
 import type { Entitlement, LimitEntitlement } from "./service";
 
@@ -7,12 +7,16 @@ import type { Entitlement, LimitEntitlement } from "./service";
 // data calls one of these after its auth guard, and shows `reason` when `allowed` is false.
 
 /**
- * Only set-up businesses count (D-16): the agency's draft never blocks it. `alreadySaved`: the business is a set-up one
- * being put on the plan (B-44), so it is in the count and must not be counted twice.
+ * Only set-up businesses count (D-16): the agency's draft never blocks it. `businessId`: an existing business being put
+ * on the plan (B-44). A set-up one is already in the count, so it is not counted twice; a draft is not, so it is checked
+ * like finishing it (canFinishDraft) and a full trial refuses it.
  */
-export async function canAddBusiness(agencyId: string, options: { alreadySaved?: boolean } = {}): Promise<Entitlement> {
-  const facts = await loadAgencyFacts(agencyId);
-  const businessCount = options.alreadySaved ? Math.max(0, facts.businessCount - 1) : facts.businessCount;
+export async function canAddBusiness(agencyId: string, options: { businessId?: string } = {}): Promise<Entitlement> {
+  const [facts, counted] = await Promise.all([
+    loadAgencyFacts(agencyId),
+    options.businessId ? isCountedBusiness(agencyId, options.businessId) : Promise.resolve(false),
+  ]);
+  const businessCount = counted ? Math.max(0, facts.businessCount - 1) : facts.businessCount;
   return rules.canAddBusiness({ ...facts, businessCount });
 }
 
@@ -35,6 +39,11 @@ export async function canRunScanJob(agencyId: string, businessId: string): Promi
 
 export async function canSpendTopUps(agencyId: string): Promise<Entitlement> {
   return rules.canSpendTopUps(await loadAgencyFacts(agencyId));
+}
+
+/** Call before selling a top-up and on Buy credits: refused until the plan or trial has started (setup finished). */
+export async function canBuyTopUps(agencyId: string): Promise<Entitlement> {
+  return rules.canBuyTopUps(await loadAgencyFacts(agencyId));
 }
 
 export async function maxQuestions(businessId: string): Promise<LimitEntitlement> {

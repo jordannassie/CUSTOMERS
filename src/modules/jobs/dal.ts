@@ -206,6 +206,7 @@ export async function postToWorker(): Promise<boolean> {
   return true;
 }
 
+/** Local dev only: never in production, where a stray flag would run scans inside a web request. */
 export function runWorkerInProcess(): boolean {
-  return env.WORKER_IN_PROCESS === "true";
+  return env.WORKER_IN_PROCESS === "true" && env.NODE_ENV !== "production";
 }

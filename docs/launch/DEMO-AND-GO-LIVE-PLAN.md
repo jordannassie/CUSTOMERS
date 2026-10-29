@@ -67,9 +67,9 @@ Each one works in tests and with fixtures. Each needs an account or setting befo
 
 ### 2.4 PDF export
 
-**Needs**: a Browserless account and `BROWSERLESS_API_KEY` (and `BROWSERLESS_URL` if not the San Francisco region).
-**Where**: browserless.io, the dashboard's API token.
-**How to check**: on the deploy, Overview, Export PDF. Expect a download within a few seconds that matches the share page. On failure the page says "PDF could not be created. Try again, or use Print, Save as PDF."
+**Needs**: nothing outside the app. The PDF is drawn on our own server (D-90) and stored in the private `reports` bucket (migration 080), so migration 080 must be applied.
+**Where**: Supabase, Storage: the `reports` bucket exists and is private.
+**How to check**: on the deploy, Reports, Download PDF. Expect a download within a few seconds named "<Business> AI visibility report <date>.pdf". Open a share link in a private window: it opens the same PDF. On failure the page says "The PDF could not be created. Try again in a moment."
 
 ### 2.5 Keys owned by the client (B-01)
 

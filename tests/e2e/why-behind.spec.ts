@@ -4,8 +4,8 @@ import { parseEnv } from "node:util";
 import { createClient } from "@supabase/supabase-js";
 import { expect, test, type Page, type TestInfo } from "@playwright/test";
 
-// "Why you are behind" (Phase A): the Competitors "See why" panel, who won each question, fixes grouped by where you
-// make them, and the Overview card. Everything comes from saved answers seeded here; Google values come from fixtures
+// "Why you are behind" (Phase A, moved by the dashboard redesign, D-86): the leaderboard's top reason, Compare's reason
+// cards and tabs, Add to Actions and the Actions board, and the Overview. Everything comes from saved answers seeded here; Google values come from fixtures
 // (PLACES_FIXTURES), and no scan, AI or Places call is made. Each test seeds its own is_test agency.
 const local = existsSync(".env.test.local")
   ? parseEnv(readFileSync(".env.test.local", "utf8"))
@@ -162,7 +162,7 @@ async function seed(
             business_id: business.id,
             tracked_prompt_id: question.id,
             provider,
-            // The first answer is the newest, so "See the answers" shows it.
+            // The first answer is the newest, so the opened question shows it.
             created_at: new Date(
               Date.now() - hoursAgo * 3_600_000 - i * 60_000,
             ).toISOString(),
@@ -232,15 +232,6 @@ async function competitorId(businessId: string, name: string): Promise<string> {
   return data.id;
 }
 
-/** The whole See why panel in one picture, on a screen tall enough to show it all (layout reviews only). */
-async function panelShot(page: Page, info: TestInfo, name: string) {
-  if (!SHOTS) return;
-  const size = page.viewportSize()!;
-  await page.setViewportSize({ width: size.width, height: 7000 });
-  await page.getByTestId("why-sheet").screenshot({ path: `${SHOTS}/${name}-${info.project.name}.png` });
-  await page.setViewportSize(size);
-}
-
 async function shot(page: Page, info: TestInfo, name: string) {
   if (SHOTS)
     await page.screenshot({
@@ -266,8 +257,9 @@ test.afterAll(async () => {
   for (const id of userIds.splice(0)) await db.auth.admin.deleteUser(id);
 });
 
-test("See why: a short panel, then the full comparison page with a tab for each kind of evidence", async ({ page }, info) => {
+test("Competitors names the leader's top reason, and Compare shows every fact with its fix, a tab for each kind of evidence", async ({ page }, info) => {
   const businessId = await seed(page, "/competitors");
+  const bean = await competitorId(businessId, "Bean House");
   await expect(page.getByRole("heading", { level: 1, name: "Competitors" })).toBeVisible({ timeout: 60_000 });
   // Share of AI picks: your share as the headline, no hover card over it (2026-10-27).
   await expect(page.getByTestId("share-you")).toHaveText("17%");
@@ -282,62 +274,71 @@ test("See why: a short panel, then the full comparison page with a tab for each 
   await expect(donut.getByTestId("share-focus")).toHaveText("67%");
   await page.mouse.move(0, 0);
   await expect(donut.getByTestId("share-you")).toHaveText("17%");
-  await page.getByTestId("leaderboard").getByRole("listitem").filter({ hasText: "Bean House" }).getByTestId("see-why").click();
-  const sheet = page.getByTestId("why-sheet");
-  await expect(sheet.getByRole("heading", { name: /Bean House/ })).toBeVisible();
-  await expect(sheet.getByTestId("why-versus")).toHaveText(/Bean House\s*12 of 15 answers\s*You\s*3 of 15 answers/);
-  // 3 places, or 4 once a website check (another test, shared for everyone) has read both sites.
-  await expect(sheet.getByTestId("gap-summary")).toContainText(/Bean House leads in (3 of 3|4 of 4) places AI looks/);
-  await expect(sheet.getByTestId("gap-areas")).toContainText("320 reviews vs your 12, rated 4.7 vs 4.2.");
-  await expect(sheet.getByRole("img", { name: "Google Maps" })).toHaveCount(1);
-  const first = sheet.getByTestId("why-reasons").getByTestId("fact").first();
-  await expect(first).toHaveText(
-    /AI used yelp.com when it picked them\s*9 answers without you.\s*What to do\s*Other places AI looks\s*Claim or update your listing on yelp.com/,
-  );
-  // Its link opens the Yelp fix itself.
-  const yelpFix = await db.from("opportunities").select("id").eq("business_id", businessId).eq("title", "Check your Yelp listing").single().throwOnError();
-  await expect(first.getByTestId("fix-link")).toHaveAttribute("href", `/opportunities?fix=${yelpFix.data!.id}`);
-  // The short panel has no tables: those are on the comparison page.
-  await expect(sheet.getByTestId("gap-sources")).toHaveCount(0);
-  await expect(sheet.getByTestId("website-status")).toContainText("Their website");
-  await shot(page, info, "competitors-see-why");
-  await panelShot(page, info, "panel-full");
+  // The leaderboard says the leader's biggest likely reason, and opens Compare for the rest (D-86).
+  const row = page.getByTestId("leaderboard").getByTestId("leader-row").filter({ hasText: "Bean House" });
+  await expect(row.getByTestId("top-reason")).toHaveText("Top reason: AI used yelp.com when it picked them");
+  await row.getByTestId("compare-link").click();
+  await page.waitForURL((url) => url.pathname === "/competitors/compare" && url.searchParams.get("with") === bean, { timeout: 60_000 });
 
-  await sheet.getByTestId("open-comparison").click();
-  await page.waitForURL(/\/competitors\/[0-9a-f-]{36}$/, { timeout: 60_000 });
   const compare = page.getByTestId("compare-page");
-  await expect(compare.getByRole("heading", { level: 1 })).toHaveText("Bean House vs you");
-  await expect(compare.getByTestId("head-to-head")).toContainText(/Bean House\s*80%/);
-  await expect(compare.getByTestId("head-to-head")).toContainText(/You\s*20%/);
+  await expect(compare.getByRole("heading", { level: 2, name: "You vs Bean House" })).toBeVisible({ timeout: 60_000 });
+  await expect(compare.getByTestId("why-versus")).toHaveText(/You\s*20\s*3 of 15 answers\s*Bean House\s*80\s*12 of 15 answers/);
+  await expect(compare.getByTestId("gap")).toHaveText("60 pts behind");
+  await expect(compare.getByTestId("by-ai")).toContainText("ChatGPT");
   // Never wider than the screen, at 390px too: the tab row scrolls on its own.
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
-  // Why they're ahead (the first tab): every reason, grouped by where you fix it, Google included.
-  const why = compare.getByTestId("tab-why");
-  await expect(why.getByTestId("why-group").filter({ hasText: "Other places AI looks" })).toContainText("AI used yelp.com when it picked them", { timeout: 60_000 });
-  await expect(why.getByTestId("why-group").filter({ hasText: "Your website" })).toContainText("AI quotes their website more");
-  await expect(why.getByTestId("why-group").filter({ hasText: "Your Google listing" })).toContainText("More Google reviews");
-  await shot(page, info, "compare-why");
 
-  // AI answers: the score's own answers, by where AI looked, by question, and the pages used.
-  await compare.getByTestId("compare-tab-answers").click();
-  // The dev server compiles each tab's first visit, which can take far longer than an assertion's 5s.
-  await expect(page).toHaveURL(/tab=answers/, { timeout: 60_000 });
-  const sources = compare.getByTestId("gap-sources");
-  // Them against you per kind of site: answers, then how many named them and you.
-  await expect(sources.getByTestId("source-row").filter({ hasText: "Review sites and directories" })).toHaveText(/Review sites and directories\s*9 answers · yelp.com\s*9\s*0/);
-  await expect(sources.getByTestId("source-row").filter({ hasText: "Their website" })).toHaveText(/Their website\s*6 answers · beanhouse.example\s*6\s*0/);
-  await expect(compare.getByTestId("by-ai")).toContainText("ChatGPT");
-  await expect(compare.getByTestId("questions-they-win")).toHaveText(/Best coffee shop in Springfield, IL\?\s*12\s*vs\s*3/, { timeout: 60_000 });
-  await expect(compare.getByTestId("their-pages")).toContainText("/menu");
-  await shot(page, info, "compare-answers");
+  // Why ahead or behind (the first tab): every likely reason as a card, biggest first, with what to do and where.
+  const reasons = compare.getByTestId("tab-summary").getByTestId("reason-card");
+  await expect(reasons.first()).toContainText("AI used yelp.com when it picked them");
+  const yelp = reasons.filter({ hasText: "AI used yelp.com when it picked them" });
+  await expect(yelp.getByTestId("reason-basis")).toHaveText("Based on 9 answers");
+  await expect(yelp.getByTestId("fix-action")).toContainText("Claim or update your listing on yelp.com");
+  await expect(yelp.getByTestId("fix-where")).toHaveText("Where: yelp.com");
+  await expect(reasons.filter({ hasText: "AI quotes their website more" })).toHaveCount(1);
+  // Google reasons wait for "Show Google details" (2026-10-27): Google is asked only on request, for this view.
+  await expect(reasons.filter({ hasText: "More Google reviews" })).toHaveCount(0);
+  await compare.getByTestId("tab-summary").getByTestId("show-google-button").click();
+  await page.waitForURL((url) => url.searchParams.get("google") === "1");
+  // They show Google's live values (D-73), and what Add to Actions saves leaves them out.
+  const reviews = reasons.filter({ hasText: "More Google reviews" });
+  await expect(reviews).toContainText("320", { timeout: 60_000 });
+  await expect(reviews.getByTestId("reason-basis")).toHaveText("Based on Google's listing");
+  // The reviews reason has a scan fix already ("Ask your customers for Google reviews"): it moves that fix, no copy.
+  await expect(reviews.getByTestId("in-actions")).toHaveText("In Actions · Suggested");
+  await reviews.getByTestId("move-to-todo").click();
+  await expect(reviews.getByTestId("in-actions")).toHaveText("In Actions · To do", { timeout: 30_000 });
+  const moved = await db.from("opportunities").select("status").eq("business_id", businessId).eq("title", "Ask your customers for Google reviews").single().throwOnError();
+  expect(moved.data!.status).toBe("todo");
+  expect((await db.from("opportunities").select("id").eq("business_id", businessId).eq("dedupe_key", "google:reviews")).data).toEqual([]);
+  // A Google reason with no saved fix adds one, and what it saves leaves Google's values out.
+  const hours = reasons.filter({ hasText: "Open more days on Google" });
+  await hours.getByTestId("add-to-actions").click();
+  await expect(hours.getByTestId("in-actions")).toHaveText("In Actions · To do");
+  const saved = await db.from("opportunities").select("evidence, recommended_action").eq("business_id", businessId).eq("dedupe_key", "google:hours").single().throwOnError();
+  expect(`${saved.data!.evidence} ${saved.data!.recommended_action}`).not.toMatch(/\b[67]\b|320|4\.7/);
+  await shot(page, info, "compare-summary");
+
+  // Questions: each question, how many answers named each of you, and who won it.
+  await compare.getByTestId("compare-tab-questions").click();
+  await expect(page).toHaveURL(/tab=questions/);
+  await expect(compare.getByTestId("compare-question")).toHaveText(/Best coffee shop in Springfield, IL\?\s*12 of 15\s*3 of 15\s*They win/);
+
+  // Where AI looked: each site the answers used, them against you.
+  await compare.getByTestId("compare-tab-sources").click();
+  await expect(page).toHaveURL(/tab=sources/);
+  const sites = compare.getByTestId("compare-site");
+  await expect(sites.filter({ hasText: "yelp.com" })).toHaveText(/yelp.com\s*9\s*9\s*0\s*They win/);
+  await expect(sites.filter({ hasText: "beanhouse.example" })).toHaveText(/beanhouse.example\s*6\s*6\s*0\s*They win/);
+  await shot(page, info, "compare-sources");
 
   await compare.getByTestId("compare-tab-google").click();
   await expect(compare.getByTestId("why-google")).toContainText(/Reviews\s*320\s*12/, { timeout: 60_000 });
-  await compare.getByTestId("compare-tab-fixes").click();
-  await expect(compare.getByTestId("tab-fixes")).toContainText("Ask your customers for Google reviews", { timeout: 60_000 });
   // Each tab has its own address, so Back returns to the one before.
   await page.goBack();
-  await expect(page).toHaveURL(/tab=google/);
+  await expect(page).toHaveURL(/tab=sources/);
+  await expect(compare.getByTestId("tab-sources")).toBeVisible();
+  await expect(compare.getByTestId("why-google")).toBeHidden();
 });
 
 test("Questions show who AI named and the sites it used, and the answers list them", async ({
@@ -345,113 +346,79 @@ test("Questions show who AI named and the sites it used, and the answers list th
 }, info) => {
   await seed(page, "/questions");
   const summary = page.getByTestId("question-summary");
-  await expect(summary).toContainText(
-    /AI named\s*Bean House\s*12\s*Blue Door Coffee\s*6\s*The Daily Grind\s*3/,
-    { timeout: 60_000 },
-  );
-  await expect(summary).toContainText(
-    /Sites used without you\s*yelp.com\s*9\s*beanhouse.example\s*6/,
-  );
-  await summary.getByRole("button", { name: "See the answers" }).click();
-  const dialog = page.getByRole("dialog");
-  await expect(dialog.getByRole("tab")).toHaveCount(3);
-  const answer = dialog.getByTestId("answer");
-  await expect(answer.getByTestId("answer-named")).toHaveText(
-    /Bean House\s*Blue Door Coffee/,
-  );
+  // The row names the business AI named most and the sites it used without you (dashboard redesign, Questions).
+  await expect(summary).toContainText(/Top pick:\s*Bean House/, { timeout: 60_000 });
+  await expect(summary).toContainText(/Sites AI used when it skipped you:\s*yelp.com, beanhouse.example/);
+  // The question opens in place, with each AI's answer in a tab.
+  const row = page.getByTestId("question-row").filter({ has: summary });
+  await row.getByTestId("question-text").click();
+  const details = row.getByTestId("question-details");
+  await expect(details.getByRole("tab")).toHaveCount(3, { timeout: 30_000 });
+  const answer = details.getByTestId("answer");
+  await expect(answer.getByTestId("answer-named")).toContainText("Bean House");
+  await expect(answer.getByTestId("answer-named")).toContainText("Blue Door Coffee");
   await expect(answer.getByTestId("answer-sites")).toContainText("yelp.com");
-  await dialog.getByRole("tab", { name: /Claude/ }).click();
-  await expect(dialog.getByRole("tabpanel")).toHaveAttribute(
+  await details.getByRole("tab", { name: /Claude/ }).click();
+  await expect(details.getByRole("tabpanel")).toHaveAttribute(
     "data-model",
     "anthropic",
   );
   await shot(page, info, "questions");
 });
 
-test("Fixes are grouped by where you make them, and say which competitor they are about", async ({
-  page,
-}, info) => {
-  await seed(page, "/opportunities");
-  const list = page.getByTestId("list-open");
-  await expect(list.getByTestId("group-google_listing")).toContainText(
+test("Actions say where each fix is made and which competitor it is about", async ({ page }, info) => {
+  const businessId = await seed(page, "/actions");
+  const bean = await competitorId(businessId, "Bean House");
+  const card = (title: string) => page.getByTestId("opportunity").filter({ hasText: title });
+  await expect(card("Ask your customers for Google reviews").getByTestId("action-where")).toHaveText("Google Business Profile", { timeout: 60_000 });
+  await expect(card("Add a menu page to your website").getByTestId("action-where")).toHaveText("Your website");
+  await expect(card("Check your Yelp listing").getByTestId("action-where")).toHaveText("yelp.com");
+  // A scan's fixes are suggestions, most important first.
+  await expect(page.getByTestId("column-suggested").getByRole("heading", { level: 3 })).toHaveText([
     "Ask your customers for Google reviews",
-    { timeout: 60_000 },
-  );
-  await expect(list.getByTestId("group-website")).toContainText(
     "Add a menu page to your website",
-  );
-  await expect(list.getByTestId("group-other_places")).toContainText(
     "Check your Yelp listing",
-  );
-  await expect(list.locator("section > header h2")).toHaveText([
-    /Your Google listing/,
-    /Your website/,
-    /Other places AI looks/,
   ]);
-  await expect(list.getByTestId("fix-about").first()).toHaveText(
-    "About Bean House",
+  // The competitor a fix is about opens on Compare.
+  await expect(card("Ask your customers for Google reviews").getByRole("link", { name: "Bean House" })).toHaveAttribute(
+    "href",
+    `/competitors/compare?with=${bean}`,
   );
-  await shot(page, info, "opportunities");
+  await shot(page, info, "actions");
+  // Where each fix is made, counted in the three groups, and one click shows only that group.
+  const counts = page.getByTestId("place-counts");
+  await expect(counts.getByRole("button")).toHaveText(["Website 1", "Google Business Profile 1", "Other places 1"]);
+  await counts.getByRole("button", { name: "Other places 1" }).click();
+  await expect(page.getByTestId("opportunity")).toHaveCount(1);
+  await expect(page.getByTestId("opportunity")).toContainText("Check your Yelp listing");
 });
 
-test("The Overview says why the leading competitor is ahead and opens its comparison page", async ({ page }, info) => {
-  await seed(page, "/dashboard");
-  const card = page.getByTestId("why-behind");
-  await expect(card).toContainText("Why Bean House is ahead of you", { timeout: 60_000 });
-  await expect(card).toContainText("AI used yelp.com when it picked them");
-  await shot(page, info, "overview");
-  await card.getByRole("link", { name: "See why" }).click();
-  await expect(page.getByTestId("compare-page").getByRole("heading", { level: 1 })).toHaveText("Bean House vs you", { timeout: 60_000 });
-});
-
-test("The shared report says the same likely reason, with no Google values in it", async ({
-  page,
-  browser,
-}, info) => {
+test("The Overview shows where you stand and opens the competitor who leads", async ({ page }, info) => {
   const businessId = await seed(page, "/dashboard");
-  const token =
-    randomUUID().replace(/-/g, "") +
-    randomUUID().replace(/-/g, "").slice(0, 11);
-  await db
-    .from("report_shares")
-    .insert({ business_id: businessId, token })
-    .throwOnError();
-  // Opened by someone with no account, as a client would.
-  const visitor = await browser.newPage();
-  await visitor.goto(`/r/${token}`);
-  const summary = visitor.getByTestId("report-summary");
-  await expect(summary).toContainText(
-    "A likely reason Bean House is ahead of you: AI used yelp.com in 9 answers that named Bean House and not you.",
-    { timeout: 60_000 },
-  );
-  // The fixture's live Google numbers (320 reviews, 4.7 stars) never go into the summary text.
-  await expect(summary).not.toContainText("320");
-  await expect(summary).not.toContainText("4.7");
-  await shot(visitor, info, "share-report");
-  await visitor.close();
+  const stand = page.getByTestId("where-you-stand");
+  await expect(stand.getByRole("listitem").first()).toHaveText(/Bean House\s*80\s*You're behind/, { timeout: 60_000 });
+  await expect(stand.getByRole("listitem").filter({ hasText: "(you)" })).toContainText("20");
+  await shot(page, info, "overview");
+  await stand.getByRole("link", { name: "All competitors" }).click();
+  await page.waitForURL((url) => url.pathname === "/competitors", { timeout: 60_000 });
+  // The leader's likely reason is on its row, and Compare has the rest.
+  const row = page.getByTestId("leaderboard").getByTestId("leader-row").first();
+  await expect(row).toContainText("Bean House", { timeout: 60_000 });
+  await expect(row.getByTestId("top-reason")).toHaveText("Top reason: AI used yelp.com when it picked them");
+  await row.getByTestId("compare-link").click();
+  await page.waitForURL((url) => url.pathname === "/competitors/compare", { timeout: 60_000 });
+  expect(new URL(page.url()).searchParams.get("with")).toBe(await competitorId(businessId, "Bean House"));
+  await expect(page.getByTestId("compare-page").getByRole("heading", { level: 2, name: "You vs Bean House" })).toBeVisible({ timeout: 60_000 });
 });
 
-test("Competitors: the trend sits under the leaderboard and both columns end level", async ({
-  page,
-}, info) => {
+test("Competitors: the trend chart draws a line for you and each competitor", async ({ page }, info) => {
   await seed(page, "/competitors", [8 * 24, 1]);
-  await expect(page.getByTestId("competitor-trend-chart")).toBeVisible({
-    timeout: 60_000,
-  });
+  const trend = page.getByTestId("competitor-trend-chart");
+  await expect(trend).toBeVisible({ timeout: 60_000 });
+  // Two scans, so each business has a line to draw (you, Bean House, The Daily Grind), plus your 30-day score.
+  await expect(trend.locator("svg .recharts-line-curve")).toHaveCount(4, { timeout: 30_000 });
+  await expect(trend.getByTestId("chart-legend")).toContainText("Bean House");
   await shot(page, info, "competitors-layout");
-  // Side by side only on wide screens; on a phone the cards stack.
-  if (info.project.name !== "desktop") return;
-  const trend = await page
-    .getByTestId("competitor-trend-chart")
-    .locator("xpath=ancestor::*[@data-slot='card'][1]")
-    .boundingBox();
-  const also = await page
-    .getByTestId("also-recommended")
-    .locator("xpath=ancestor::*[@data-slot='card'][1]")
-    .boundingBox();
-  expect(
-    Math.abs(trend!.y + trend!.height - (also!.y + also!.height)),
-  ).toBeLessThan(2);
 });
 
 test("How is this calculated: score by AI, how we check, and accuracy said as how it improves", async ({
@@ -471,64 +438,103 @@ test("How is this calculated: score by AI, how we check, and accuracy said as ho
   await shot(page, info, "score-details");
 });
 
-test("Each reason says what to do and where, and opens only the fix about it", async ({ page }) => {
-  await seed(page, "/dashboard");
-  const card = page.getByTestId("why-behind");
-  const yelp = card.getByTestId("fact").filter({ hasText: "yelp.com" });
-  await expect(yelp.getByTestId("fix-where")).toHaveText("Other places AI looks", { timeout: 60_000 });
+test("Each reason says what to do and where; a reason with a saved fix moves that fix, and Add to Actions adds once", async ({ page }) => {
+  const businessId = await seed(page, "/competitors");
+  const bean = await competitorId(businessId, "Bean House");
+  const scanFix = await db.from("opportunities").select("id").eq("business_id", businessId).eq("title", "Check your Yelp listing").single().throwOnError();
+  await page.goto(`/competitors/compare?with=${bean}`);
+  const reasons = page.getByTestId("tab-summary").getByTestId("reason-card");
+  const yelp = reasons.filter({ hasText: "AI used yelp.com when it picked them" });
+  await expect(yelp.getByTestId("reason-basis")).toHaveText("Based on 9 answers", { timeout: 60_000 });
+  await expect(yelp.getByTestId("fix-where")).toHaveText("Where: yelp.com");
   await expect(yelp.getByTestId("fix-action")).toContainText("Claim or update your listing on yelp.com");
 
-  // The website reason has no saved fix about it (the menu page fix is about something else): its step, no link.
-  const website = card.getByTestId("fact").filter({ hasText: "AI quotes their website more" });
-  await expect(website.getByTestId("fix-action")).toContainText("own clear page");
-  await expect(website.getByTestId("fix-link")).toHaveCount(0);
+  // The scan already saved a fix for this reason ("Check your Yelp listing"): the card says so and links to it.
+  await expect(yelp.getByTestId("in-actions")).toHaveText("In Actions · Suggested");
+  await expect(yelp.getByTestId("in-actions")).toHaveAttribute("href", `/actions?fix=${scanFix.data.id}`);
+  await expect(yelp.getByTestId("add-to-actions")).toHaveCount(0);
+  // "Move to To do" moves that fix; nothing is copied, and it stays that way after a reload.
+  await yelp.getByTestId("move-to-todo").click();
+  await expect(yelp.getByTestId("in-actions")).toHaveText("In Actions · To do", { timeout: 30_000 });
+  await expect(page.getByText("Moved to To do.")).toBeVisible();
+  await page.reload();
+  await expect(yelp.getByTestId("in-actions")).toHaveText("In Actions · To do", { timeout: 60_000 });
+  await expect(yelp.getByTestId("move-to-todo")).toHaveCount(0);
+  const moved = await db.from("opportunities").select("id, status").eq("business_id", businessId).ilike("title", "%yelp%").throwOnError();
+  expect(moved.data).toEqual([{ id: scanFix.data.id, status: "todo" }]);
+  const copies = await db.from("opportunities").select("id").eq("business_id", businessId).eq("dedupe_key", "site:yelp.com").throwOnError();
+  expect(copies.data).toEqual([]);
 
-  // The Yelp reason opens the Yelp fix itself, not the first fix in its group.
-  await yelp.getByTestId("fix-link").click();
-  await page.waitForURL((url) => url.pathname === "/opportunities" && url.searchParams.has("fix"));
-  const fix = page.getByTestId("opportunity").filter({ hasText: "Check your Yelp listing" });
-  await expect(fix.getByRole("button", { name: "Check your Yelp listing" })).toHaveAttribute("aria-expanded", "true", { timeout: 30_000 });
-  await expect(fix).toBeInViewport();
+  // A reason with no saved fix (the website one) has its own step, and Add to Actions puts it in To do once.
+  const website = reasons.filter({ hasText: "AI quotes their website more" });
+  await expect(website.getByTestId("fix-action")).toContainText("own clear page");
+  await expect(website.getByTestId("in-actions")).toHaveCount(0);
+  await website.getByTestId("add-to-actions").click();
+  await expect(website.getByTestId("in-actions")).toHaveText("In Actions · To do", { timeout: 30_000 });
+  await expect(page.getByText("Added to Actions, in To do.")).toBeVisible();
+  await page.reload();
+  await expect(website.getByTestId("in-actions")).toHaveText("In Actions · To do", { timeout: 60_000 });
+  await expect(website.getByTestId("add-to-actions")).toHaveCount(0);
+  const added = await db.from("opportunities").select("status").eq("business_id", businessId).eq("dedupe_key", "web:quoted").throwOnError();
+  expect(added.data).toEqual([{ status: "todo" }]);
+
+  // The Yelp reason opens the scan's fix on the board, in To do, picked out and on screen.
+  await yelp.getByTestId("in-actions").click();
+  await page.waitForURL((url) => url.pathname === "/actions" && url.searchParams.get("fix") === scanFix.data.id, { timeout: 60_000 });
+  const todo = page.getByTestId("column-todo").getByTestId("opportunity").filter({ hasText: "Check your Yelp listing" });
+  await expect(todo).toHaveCount(1, { timeout: 60_000 });
+  await expect(todo).toHaveAttribute("data-status", "todo");
+  await expect(todo.getByTestId("action-where")).toHaveText("yelp.com");
+  await expect(todo.getByRole("button", { name: "Check your Yelp listing", exact: true })).toHaveAttribute("aria-expanded", "true");
+  await expect(todo).toHaveClass(/border-primary/);
+  await expect(todo).toBeInViewport();
 });
 
-test("A fix picked on the Overview opens on Opportunities instead of the first one", async ({ page }) => {
+test("A fix picked on the Overview opens on Actions, picked out, and no other one is", async ({ page }) => {
   await seed(page, "/dashboard");
   await page.getByTestId("top-opportunities").getByRole("link", { name: "Check your Yelp listing" }).click({ timeout: 60_000 });
-  await page.waitForURL((url) => url.pathname === "/opportunities" && url.searchParams.has("fix"));
+  await page.waitForURL((url) => url.pathname === "/actions" && url.searchParams.has("fix"), { timeout: 60_000 });
   const card = (title: string) => page.getByTestId("opportunity").filter({ hasText: title });
-  await expect(card("Check your Yelp listing").getByRole("button", { name: "Check your Yelp listing" })).toHaveAttribute("aria-expanded", "true", {
-    timeout: 30_000,
-  });
+  const toggle = (title: string) => card(title).getByRole("button", { name: title, exact: true });
+  await expect(toggle("Check your Yelp listing")).toHaveAttribute("aria-expanded", "true", { timeout: 30_000 });
+  await expect(card("Check your Yelp listing")).toHaveClass(/border-primary/);
   await expect(card("Check your Yelp listing")).toBeInViewport();
-  await expect(card("Ask your customers for Google reviews").getByRole("button", { name: "Ask your customers for Google reviews" })).toHaveAttribute(
-    "aria-expanded",
-    "false",
-  );
+  await expect(toggle("Ask your customers for Google reviews")).toHaveAttribute("aria-expanded", "false");
+  await expect(card("Ask your customers for Google reviews")).not.toHaveClass(/border-primary/);
 
-  // Arriving without a pick still opens the most important fix, as before.
-  await page.goto("/opportunities");
-  await expect(card("Ask your customers for Google reviews").getByRole("button", { name: "Ask your customers for Google reviews" })).toHaveAttribute(
-    "aria-expanded",
-    "true",
-    { timeout: 30_000 },
-  );
-  await expect(card("Check your Yelp listing").getByRole("button", { name: "Check your Yelp listing" })).toHaveAttribute("aria-expanded", "false");
+  // An old Opportunities link to the same fix lands on it too.
+  const id = new URL(page.url()).searchParams.get("fix")!;
+  await page.goto(`/opportunities?fix=${id}`);
+  await page.waitForURL((url) => url.pathname === "/actions" && url.searchParams.get("fix") === id);
+  await expect(toggle("Check your Yelp listing")).toHaveAttribute("aria-expanded", "true", { timeout: 30_000 });
+
+  // Arriving without a pick, nothing is picked out.
+  await page.goto("/actions");
+  await expect(toggle("Ask your customers for Google reviews")).toHaveAttribute("aria-expanded", "false", { timeout: 30_000 });
+  await expect(toggle("Check your Yelp listing")).toHaveAttribute("aria-expanded", "false");
+  await expect(page.locator("[data-testid=opportunity].border-primary")).toHaveCount(0);
 });
 
-test("Check their website: on the Websites tab only, read once, compared side by side with quotes", async ({ page }, info) => {
+test("Check their website: on Compare's Website tab only, read once, compared side by side with quotes", async ({ page }, info) => {
   // One project only: both would share the one fixture site, and a check is kept for everyone.
   test.skip(info.project.name !== "desktop", "The website check runs once, on desktop.");
   // Both sites are read on the first check: theirs, and yours the same way (fixture sites, no real reads).
   await db.from("website_facts").delete().in("domain", ["beanhouse.example", "sunrise-coffee.example"]).throwOnError();
   const businessId = await seed(page, "/competitors");
   const bean = await competitorId(businessId, "Bean House");
+  // An old link to the Websites tab lands on Compare's Website tab (D-86).
   await page.goto(`/competitors/${bean}?tab=websites`);
+  await page.waitForURL((url) => url.pathname === "/competitors/compare" && url.searchParams.get("with") === bean && url.searchParams.get("tab") === "website", {
+    timeout: 60_000,
+  });
+  await expect(page.getByTestId("compare-tab-website")).toHaveAttribute("aria-selected", "true");
+  await expect(page.getByRole("link", { name: "Check their website" })).toHaveAttribute("href", `/competitors/compare?with=${bean}&tab=website`);
   const tab = page.getByTestId("tab-websites");
   // Found from the AI answers that cited it, so the owner only presses the button.
   await expect(tab.getByTestId("check-website")).toContainText("beanhouse.example", { timeout: 60_000 });
   await tab.getByTestId("check-website-button").click();
-  await expect(tab.getByTestId("their-services")).toContainText("office catering", { timeout: 60_000 });
-  await expect(tab.getByTestId("their-services").getByRole("button", { name: "office catering" })).toHaveClass(/bg-mid-bg/);
+  await expect(tab.getByTestId("their-services")).toContainText("Office catering", { timeout: 60_000 });
+  await expect(tab.getByTestId("their-services").getByTestId("service-row").filter({ hasText: "Office catering" })).toContainText("Not on your site");
   await expect(tab.getByTestId("check-website")).toContainText(/beanhouse.example\s*·\s*checked/);
   await expect(tab.getByTestId("check-website-button")).toHaveCount(0);
 
@@ -549,40 +555,46 @@ test("Check their website: on the Websites tab only, read once, compared side by
   await expect(years.getByLabel("Not found")).toHaveCount(1);
   await expect(claims.getByTestId("claim-row").filter({ hasText: "Free estimates" })).toContainText("free quotes for teams");
 
-  // Hover a service for its words; pick it and the list becomes that service, them against you.
-  const catering = tab.getByTestId("their-services").getByRole("button", { name: "office catering" });
-  await catering.hover();
-  await expect(page.getByRole("tooltip")).toContainText("Office catering for teams of 10 to 200");
+  // Open a service for both websites' words; the claims stay on screen. "Show all quotes" opens every row, then closes them.
+  const services = tab.getByTestId("their-services");
+  const catering = services.getByRole("button", { name: /Office catering/ });
+  await expect(catering).toHaveAttribute("aria-expanded", "false");
   await catering.click();
-  const one = tab.getByTestId("service-compare");
-  await expect(one).toContainText("Office catering");
+  await expect(catering).toHaveAttribute("aria-expanded", "true");
+  const one = services.getByTestId("service-row").filter({ hasText: "Office catering" });
+  await expect(one).toContainText("Office catering for teams of 10 to 200");
   await expect(one).toContainText("/services page");
   await expect(one).toContainText("Not found on the pages we read of yours.");
-  await expect(tab.getByTestId("website-claims")).toHaveCount(0);
-  await one.getByRole("button", { name: "Show everything" }).click();
   await expect(tab.getByTestId("website-claims")).toBeVisible();
+  await services.getByRole("button", { name: "Show all quotes" }).click();
+  await expect(services.getByRole("button", { expanded: false })).toHaveCount(0);
+  await services.getByRole("button", { name: "Hide quotes" }).click();
+  await expect(services.getByRole("button", { expanded: true })).toHaveCount(0);
+  await catering.click();
   await shot(page, info, "compare-websites");
 
-  // Steps 1 and 2 add likely reasons on the first tab.
-  await page.getByTestId("compare-tab-why").click();
-  const why = page.getByTestId("tab-why");
-  await expect(why).toContainText("Their website lists office catering", { timeout: 60_000 });
+  // Steps 1 and 2 add likely reasons on the first tab, each with its fix.
+  await page.getByTestId("compare-tab-summary").click();
+  const why = page.getByTestId("tab-summary");
+  await expect(why.getByTestId("reason-card").filter({ hasText: "Their website lists office catering" })).toContainText("Based on the website check", { timeout: 60_000 });
   await expect(why).toContainText("Your website blocks some AI tools");
   await expect(why).toContainText("GPTBot and ClaudeBot");
   await expect(why).toContainText("Their website says years in business");
-  await expect(page.getByTestId("gap-areas").getByRole("listitem").filter({ hasText: "The websites" })).toContainText("Only theirs:");
+  await shot(page, info, "compare-website-reasons");
 
   // Read once (D-85): reload, and no screen offers to read it again; the record is unchanged.
   const before = (await db.from("website_facts").select("fetched_at").eq("domain", "beanhouse.example").single().throwOnError()).data.fetched_at;
-  await page.goto(`/competitors/${bean}?tab=websites`);
+  await page.goto(`/competitors/compare?with=${bean}&tab=website`);
   await expect(page.getByTestId("tab-websites").getByTestId("check-website")).toContainText("checked", { timeout: 60_000 });
   await expect(page.getByTestId("check-website-button")).toHaveCount(0);
-  await page.goto("/competitors");
-  await page.getByTestId("leaderboard").getByRole("listitem").filter({ hasText: "Bean House" }).getByTestId("see-why").click({ timeout: 60_000 });
-  await expect(page.getByTestId("why-sheet").getByTestId("website-status")).toContainText("Their website: checked");
-  await page.goto("/opportunities");
-  const row = page.getByTestId("competitor-websites").getByTestId("website-row").filter({ hasText: "Bean House" });
-  await expect(row).toContainText("Checked", { timeout: 60_000 });
+  // The header now says the website was checked instead of offering a scan, on every tab.
+  await page.goto(`/competitors/compare?with=${bean}`);
+  // and opens their website itself, in a new tab.
+  const visit = page.getByRole("link", { name: "Their website (opens in a new tab)" });
+  await expect(visit).toBeVisible({ timeout: 60_000 });
+  await expect(visit).toHaveAttribute("href", "https://beanhouse.example");
+  await expect(visit).toHaveAttribute("target", "_blank");
+  await expect(page.getByRole("link", { name: "Check their website" })).toHaveCount(0);
   await expect(page.getByTestId("check-website-button")).toHaveCount(0);
   const after = (await db.from("website_facts").select("fetched_at").eq("domain", "beanhouse.example").single().throwOnError()).data.fetched_at;
   expect(after).toBe(before);
@@ -598,14 +610,63 @@ test("Check their website: on the Websites tab only, read once, compared side by
   await db.from("website_facts").delete().in("domain", ["beanhouse.example", "sunrise-coffee.example"]).throwOnError();
 });
 
-test("Competitor websites: Opportunities lists where each check stands, and the Websites tab asks for an unknown address", async ({ page }) => {
-  await seed(page, "/opportunities");
-  const card = page.getByTestId("competitor-websites");
-  const grind = card.getByTestId("website-row").filter({ hasText: "The Daily Grind" });
-  await expect(grind).toContainText("Website not known yet", { timeout: 60_000 });
-  await expect(card.getByTestId("website-row").filter({ hasText: "Bean House" })).toContainText("beanhouse.example");
-  // No check button here: the check is only on each competitor's Websites tab (read once, D-85).
-  await expect(card.getByRole("button")).toHaveCount(0);
-  await grind.click();
+test("Compare's Website tab says what is known of each competitor's website, and asks for an unknown address", async ({ page }) => {
+  const businessId = await seed(page, "/competitors");
+  const [bean, grind] = await Promise.all([competitorId(businessId, "Bean House"), competitorId(businessId, "The Daily Grind")]);
+  // Found from the AI answers that cited it, not checked yet: the header offers the scan.
+  await page.goto(`/competitors/compare?with=${bean}&tab=website`);
+  await expect(page.getByTestId("tab-websites").getByTestId("check-website")).toContainText("beanhouse.example", { timeout: 60_000 });
+  await expect(page.getByRole("link", { name: "Check their website" })).toBeVisible();
+  // No website known yet: the tab asks for it. Old links to the Websites tab land here too.
+  await page.goto(`/competitors/${grind}?tab=websites`);
+  await page.waitForURL((url) => url.pathname === "/competitors/compare" && url.searchParams.get("with") === grind, { timeout: 60_000 });
   await expect(page.getByTestId("tab-websites").getByRole("textbox", { name: "Website for The Daily Grind" })).toBeVisible({ timeout: 60_000 });
+  await expect(page.getByTestId("check-website-button")).toHaveCount(0);
+});
+
+test("See the answers on a Compare reason opens the answers it counts, not an empty list", async ({ page }, info) => {
+  const businessId = await seed(page, "/competitors");
+  const bean = await competitorId(businessId, "Bean House");
+  await page.goto(`/competitors/compare?with=${bean}`);
+  const yelp = page.getByTestId("tab-summary").getByTestId("reason-card").filter({ hasText: "AI used yelp.com when it picked them" });
+  await expect(yelp.getByTestId("reason-basis")).toHaveText("Based on 9 answers", { timeout: 60_000 });
+  await yelp.getByRole("link", { name: "See the answers" }).click();
+  await page.waitForURL((url) => url.pathname === "/questions" && url.searchParams.get("site") === "yelp.com" && url.searchParams.get("named") === "Bean House");
+  // The same 9 answers the card counts, at the top, the newest open with its text and why you were skipped.
+  const found = page.getByTestId("focus-answers");
+  await expect(found.getByRole("heading", { level: 2 })).toHaveText("9 answers that used yelp.com and named Bean House, not you", { timeout: 60_000 });
+  const first = found.getByTestId("focus-answer").first();
+  await expect(first.locator("button[aria-expanded]").first()).toHaveAttribute("aria-expanded", "true");
+  await expect(first).toContainText("yelp.com");
+  await expect(first).toContainText("Why you were skipped");
+  await shot(page, info, "questions-from-compare");
+
+  // The saved fix for yelp.com ("Check your Yelp listing", from a scan) opens on Actions, picked out and pulsing.
+  await expect(first.getByTestId("why-skipped")).toContainText("In Actions · Suggested");
+  await expect(first.getByTestId("skipped-fix-title")).toHaveText("Check your Yelp listing");
+  await first.getByTestId("skipped-fix-link").click();
+  await page.waitForURL((url) => url.pathname === "/actions" && url.searchParams.has("fix"), { timeout: 60_000 });
+  const picked = page.locator("[data-testid=opportunity][data-picked]");
+  await expect(picked).toHaveCount(1, { timeout: 30_000 });
+  await expect(picked).toContainText("The fix you opened");
+  await expect(picked).toContainText("Check your Yelp listing");
+  await expect(picked).toBeInViewport();
+});
+
+test("Why you were skipped adds a site's fix that isn't in Actions yet, then opens it picked out", async ({ page }, info) => {
+  const businessId = await seed(page, "/questions");
+  // beanhouse.example is their own site (no fix to add); a site with no saved fix offers Add to Actions.
+  await db.from("opportunities").delete().eq("business_id", businessId).eq("title", "Check your Yelp listing").throwOnError();
+  await page.goto("/questions?site=yelp.com&named=Bean%20House");
+  const first = page.getByTestId("focus-answers").getByTestId("focus-answer").first();
+  const add = first.getByTestId("skipped-fix-add");
+  await expect(add).toContainText("Where: yelp.com", { timeout: 60_000 });
+  await add.getByTestId("add-to-actions").click();
+  await page.waitForURL((url) => url.pathname === "/actions" && url.searchParams.has("fix"), { timeout: 60_000 });
+  const picked = page.locator("[data-testid=opportunity][data-picked]");
+  await expect(picked).toContainText("Get listed on yelp.com", { timeout: 30_000 });
+  await expect(picked).toHaveAttribute("data-status", "todo");
+  const saved = await db.from("opportunities").select("dedupe_key, source").eq("business_id", businessId).eq("dedupe_key", "site:yelp.com").throwOnError();
+  expect(saved.data).toEqual([{ dedupe_key: "site:yelp.com", source: "sources" }]);
+  await shot(page, info, "actions-picked-from-questions");
 });

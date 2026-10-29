@@ -1,8 +1,8 @@
 import type Stripe from "stripe";
 import { planIdOfPrice, planPriceData, type PlanPriceData } from "../plan-price";
+import { ENDED_REFUSAL, PAST_DUE_REFUSAL } from "./copy";
 
-// Pure rules for plan changes (MVP_SPEC 11.5, D-57): which change is allowed, and the exact Stripe items or
-// schedule phases it becomes. No database, env or Stripe calls, so every case is unit tested.
+// Pure rules for plan changes (MVP_SPEC 11.5, D-57): which change is allowed and the Stripe items or phases it becomes.
 
 export type PlanChange =
   | { kind: "upgrade"; businessId: string; planId: string }
@@ -107,7 +107,7 @@ export type CheckedChange = {
 /** Refuses changes that can't happen, with the message the user sees. */
 export function checkChange(ctx: PlanChangeContext, sub: Stripe.Subscription, change: PlanChange): CheckedChange {
   if (sub.status === "canceled" || sub.status === "incomplete_expired") {
-    throw refused(409, "Your plan has ended. Contact us to start it again.");
+    throw refused(409, ENDED_REFUSAL);
   }
   if (change.kind === "keep") {
     if (!isCancelling(sub)) throw refused(409, "Your plan is not set to end.");
@@ -118,7 +118,7 @@ export function checkChange(ctx: PlanChangeContext, sub: Stripe.Subscription, ch
   }
   if (change.kind === "cancel") return { change, business: null, item: null, plan: null };
   if (timingOf(change.kind, isTrialing(sub)) === "now" && (ctx.agencyStatus === "past_due" || sub.status === "past_due")) {
-    throw refused(402, "Your last payment didn't go through. Update your card first, then try again.");
+    throw refused(402, PAST_DUE_REFUSAL);
   }
 
   const business = businessById(ctx, change.businessId);

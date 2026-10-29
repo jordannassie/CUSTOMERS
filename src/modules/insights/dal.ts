@@ -14,11 +14,15 @@ import { fillOpportunity, hasPlaceValues, liveLookup, referencedCompetitors, usa
 import { templateWriter } from "./template-writer";
 import { createExplanationWriter } from "./writer";
 
-/** An opportunity with Google values filled in; usesGoogle means the text shows some, so attribution is due. */
-export type LiveOpportunity = Opportunity & { usesGoogle: boolean };
+/**
+ * An opportunity with Google values filled in. usesGoogle: the text shows some, so attribution is due. googleValues:
+ * its text has Google values to show, filled or not (a page that skipped Google offers "Show Google numbers").
+ */
+export type LiveOpportunity = Opportunity & { usesGoogle: boolean; googleValues: boolean };
 
 /** Live Google signals for a place id; null when Google has no such place. */
 type FetchSignals = (placeId: string) => Promise<Signals | null>;
+const noSignals: FetchSignals = async () => null;
 
 export type ExplainDeps = {
   /** Null means "pick by agency": the template for test agencies, Claude otherwise. */
@@ -67,7 +71,9 @@ async function loadSources(runId: string, deps: ExplainDeps) {
   const agency = must("load the agency", agencyResult);
   const also = await loadAlsoRecommended(b.agency_id, businessId, (deps.now ?? (() => new Date()))());
   const rivals = must("load the competitors", competitors).map((c) => ({ id: c.id, name: c.name, placesId: c.places_id ?? c.place_id }));
-  const signals = await signalsFor([b.places_id, ...rivals.map((c) => c.placesId)], deps.fetchSignals ?? fetchPlaceSignals);
+  // Test agencies never call Google (D-61): their reasons are written without Google values, as when Google has none.
+  const fetchSignals = deps.fetchSignals ?? (agency.is_test ? noSignals : fetchPlaceSignals);
+  const signals = await signalsFor([b.places_id, ...rivals.map((c) => c.placesId)], fetchSignals);
 
   const sources: ExplainSources = {
     business: {
@@ -145,12 +151,16 @@ async function recordUsage(explanation: Explanation, ownerUserId: string, busine
   if (error) throw new Error(`Insights: could not record usage: ${error.message}`);
 }
 
-/** Opportunities for one of the signed-in agency's businesses, with Google values filled in live. */
+/**
+ * Opportunities for one of the signed-in agency's businesses, with Google values filled in live. `google: false`
+ * asks Google nothing: sentences that need its values are left out (2026-10-27, Places calls only on request).
+ */
 export async function getLiveOpportunities(
   businessId: string,
   fetchSignals: FetchSignals = fetchPlaceSignals,
+  { google = true }: { google?: boolean } = {},
 ): Promise<LiveOpportunity[] | null> {
-  const { agency } = await requireAgency({ next: "/opportunities" });
+  const { agency } = await requireAgency({ next: "/actions" });
   const db = createServiceClient();
   const business = await db.from("businesses").select("places_id").eq("id", businessId).eq("agency_id", agency.id).maybeSingle();
   if (business.error) throw new Error(`Insights: could not load the business: ${business.error.message}`);
@@ -161,20 +171,24 @@ export async function getLiveOpportunities(
     await db
       .from("opportunities")
       .select(
-        "id, business_id, title, description, evidence, impact, category, affected_url, status, recommended_action, claude_prompt, created_at, updated_at",
+        "id, business_id, title, description, evidence, impact, category, affected_url, status, recommended_action, claude_prompt, created_at, updated_at, where_to_apply, source, evidence_data, due_date, completed_at, assignee_id",
       )
       .eq("business_id", businessId)
       .order("created_at", { ascending: false }),
   ) as Opportunity[];
 
+  // Only this business's own competitors: an id typed into a fix's text must never read another account's listing.
   const ids = referencedCompetitors(rows);
   const competitors =
     ids.size > 0
-      ? must("load competitors", await db.from("business_competitors").select("id, places_id, place_id").in("id", [...ids]))
+      ? must(
+          "load competitors",
+          await db.from("business_competitors").select("id, places_id, place_id").eq("business_id", businessId).in("id", [...ids]),
+        )
       : [];
   const placeOf = new Map(competitors.map((c) => [c.id, c.places_id ?? c.place_id]));
   const businessPlace = usesBusinessValues(rows) ? business.data.places_id : null;
-  const signals = await signalsFor([businessPlace, ...placeOf.values()], fetchSignals);
+  const signals = google ? await signalsFor([businessPlace, ...placeOf.values()], fetchSignals) : new Map();
   const lookup = liveLookup(businessPlace, placeOf, signals);
-  return rows.map((row) => ({ ...fillOpportunity(row, lookup), usesGoogle: hasPlaceValues(row) }));
+  return rows.map((row) => ({ ...fillOpportunity(row, lookup), usesGoogle: google && hasPlaceValues(row), googleValues: hasPlaceValues(row) }));
 }

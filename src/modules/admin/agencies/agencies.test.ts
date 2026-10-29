@@ -22,6 +22,7 @@ const { loadAgencyDetail } = await import("./detail/dal");
 
 const REASON = "Support ticket 42";
 const DAY = 86_400_000;
+const GRACE = 6 * 60 * 60 * 1000;
 let agency: Awaited<ReturnType<typeof createAgencyWithBusiness>>;
 
 function fakeStripe(overrides: Partial<AdminStripeClient> = {}): AdminStripeClient & { extendTrial: ReturnType<typeof vi.fn> } {
@@ -130,14 +131,14 @@ describe("agency actions (B-65)", () => {
     expect(await auditRows("agency.extend_trial")).toMatchObject([{ details: { reason: REASON, days: 7 } }]);
   });
 
-  it("moves the trial credits' expiry with the trial (A3)", async () => {
+  it("moves the trial credits' expiry with the trial, keeping the 6-hour grace (A3, M6)", async () => {
     const end = new Date(Date.now() + 2 * DAY);
     await setAgency({ status: "trialing", trial_ends_at: end.toISOString(), stripe_subscription_id: `sub_${randomUUID()}` });
-    const grantId = await grantTrialCredits({ agencyId: agency.agencyId, sourceId: `il_${randomUUID()}`, amount: 100, expiresAt: end });
+    const grantId = await grantTrialCredits({ agencyId: agency.agencyId, sourceId: `il_${randomUUID()}`, amount: 100, expiresAt: new Date(end.getTime() + GRACE) });
     stripe.client = fakeStripe();
 
     expect((await actions.extendTrial({ agencyId: agency.agencyId, days: 2, reason: REASON })).ok).toBe(true);
-    const expected = new Date(end.getTime() + 2 * DAY).toISOString();
+    const expected = new Date(end.getTime() + 2 * DAY + GRACE).toISOString();
     const { data: grant } = await service.from("credit_grants").select("expires_at, remaining").eq("id", grantId!).single().throwOnError();
     expect(new Date(grant.expires_at!).toISOString()).toBe(expected);
     expect(grant.remaining).toBe(100);

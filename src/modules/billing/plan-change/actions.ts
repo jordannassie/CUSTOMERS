@@ -118,9 +118,10 @@ export async function addBusiness(input: unknown): Promise<PlanChangeResult> {
   if (typeof agency !== "string") return agency;
   const parsed = businessPlanInput.safeParse(input);
   if (!parsed.success) return badInput;
-  const allowed = await canAddBusiness(agency, { alreadySaved: true });
-  if (!allowed.allowed) return { ok: false, status: 403, error: allowed.reason };
   const { businessId, planId, previewedAt } = parsed.data;
+  // A set-up business is already in the trial count; a draft is not, so a full trial refuses it (D-16).
+  const allowed = await canAddBusiness(agency, { businessId });
+  if (!allowed.allowed) return { ok: false, status: 403, error: allowed.reason };
   return run(agency, { kind: "add", businessId, planId }, previewedAt);
 }
 

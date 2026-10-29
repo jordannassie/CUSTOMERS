@@ -6,10 +6,22 @@ const state = vi.hoisted(() => ({
   agency: null as { id: string; name: string; status: string; isTest: boolean } | null,
   hits: new Map<string, number>(),
   storeDown: false,
+  /** startBusiness found auto-fill already done for this draft (Back, then Continue with the same business). */
+  autofillDone: false,
+  /** Auto-fills startBusiness really ran, after its gate let it. */
+  autofillRuns: 0,
 }));
 const writes = vi.hoisted(() => ({
   autofill: vi.fn(async () => ({ details: {}, note: null })),
-  start: vi.fn(async () => ({ ok: true, businessId: "7b0c4b4e-8a59-4a4f-9a8e-2f1d1b2c3d4e", autofill: { details: {}, note: null } })),
+  // Like the real one: the gate (the hourly limit) runs only when auto-fill will.
+  start: vi.fn(async (...args: unknown[]) => {
+    const done = { ok: true, businessId: "7b0c4b4e-8a59-4a4f-9a8e-2f1d1b2c3d4e" };
+    if (state.autofillDone) return { ...done, autofill: null };
+    const refused = await (args[6] as (() => Promise<unknown>) | undefined)?.();
+    if (refused) return refused;
+    state.autofillRuns += 1;
+    return { ...done, autofill: { details: {}, note: null } };
+  }),
   agency: vi.fn(async () => ({ agencyId: "agency-1" })),
   place: vi.fn(async () => true),
   lookup: vi.fn(async () => ({ matches: [], note: null })),
@@ -58,6 +70,8 @@ beforeEach(() => {
   state.agency = agency("trialing");
   state.hits.clear();
   state.storeDown = false;
+  state.autofillDone = false;
+  state.autofillRuns = 0;
   for (const fn of Object.values(writes)) fn.mockClear();
 });
 
@@ -93,13 +107,24 @@ describe("auto-fill limit", () => {
     }
     expect(await autofillBusiness({ businessId, domain: "sunrise-coffee.com" })).toMatchObject({ ok: false, status: 429 });
     expect(await saveWebsiteStep({ name: "Sunrise Coffee", city: "Springfield" })).toMatchObject({ ok: false, status: 429 });
-    expect(writes.autofill.mock.calls.length + writes.start.mock.calls.length).toBe(LIMITS.autofill.max);
+    expect(writes.autofill.mock.calls.length + state.autofillRuns).toBe(LIMITS.autofill.max);
+  });
+
+  it("does not count a website step that reuses what auto-fill already found (Back, then Continue)", async () => {
+    state.autofillDone = true;
+    for (let i = 0; i < LIMITS.autofill.max + 2; i++) {
+      expect(await saveWebsiteStep({ domain: "sunrise-coffee.com" })).toMatchObject({ ok: true, data: { autofill: null } });
+    }
+    expect(state.hits.size).toBe(0);
+    state.autofillDone = false;
+    expect(await saveWebsiteStep({ domain: "sunrise-coffee.com" })).toMatchObject({ ok: true });
+    expect(state.autofillRuns).toBe(1);
   });
 
   it("refuses with a try-again message when the count cannot be read", async () => {
     state.storeDown = true;
     expect(await saveWebsiteStep({ domain: "sunrise-coffee.com" })).toMatchObject({ ok: false, status: 503 });
-    expect(writes.start).not.toHaveBeenCalled();
+    expect(state.autofillRuns).toBe(0);
   });
 });
 

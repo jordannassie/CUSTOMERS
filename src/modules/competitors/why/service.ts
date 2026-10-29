@@ -1,12 +1,11 @@
 // "See why" on the Competitors page: the standing in one sentence and the saved fixes that are about this competitor.
 // Pure. The facts themselves come from the standing module, over answers the scans already saved.
-import { attachFixes, fixRef, type FixRef } from "@/lib/fix-match";
-import { whereOf } from "@/lib/fix-where";
 import { CLAIMS, meaningWords } from "@/lib/site-claims";
 import type { Standing } from "@/modules/scanning";
 import { questionLine, serviceGaps, type CompetitorWhy, type Fact, type TheirWebsite, type YourSite } from "@/modules/standing";
+import type { FixLink, OpenFixRef } from "./fixes";
 
-export type FixLink = { id: string; title: string };
+export type { FixLink, OpenFixRef } from "./fixes";
 
 /** trackedName: the competitor as tracked, which the leaderboard row is named by; why.name is the name AI used. */
 /** Their website on the panel: where it is, whether and when it was checked, and what it lists. */
@@ -55,7 +54,7 @@ export type WhyPanel = {
   trackedName: string;
   why: CompetitorWhy;
   fixes: FixLink[];
-  fixRefs: FixRef[];
+  fixRefs: OpenFixRef[];
   website: WebsiteView;
 };
 
@@ -118,20 +117,6 @@ export function standingSentence(why: Pick<CompetitorWhy, "name" | "answers" | "
   return standing === "about_same" ? `${counts} That gap is too small to call.` : counts;
 }
 
-type FixRow = { id: string; title: string; description: string | null; evidence: string | null; recommended_action: string | null };
-
-const escape = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-
-/** Saved fixes that name this competitor, or hold one of its live Google placeholders ({competitor.<id>.rating}). */
-export function fixesAbout(rows: FixRow[], competitor: { id: string; name: string; also?: string }): FixLink[] {
-  const names = [competitor.name, competitor.also].filter((n): n is string => !!n?.trim()).map((n) => escape(n.trim()));
-  const byName = new RegExp(`(^|[^\\p{L}\\p{N}])(${names.join("|")})($|[^\\p{L}\\p{N}])`, "iu");
-  const byId = `{competitor.${competitor.id}.`;
-  return rows
-    .filter((r) => [r.title, r.description, r.evidence, r.recommended_action].some((t) => !!t && (t.includes(byId) || byName.test(t))))
-    .map((r) => ({ id: r.id, title: r.title }));
-}
-
 /** The Overview's "Why they're ahead" card: one competitor, its clearest facts, and a link to the full panel. */
 export type WhyCard = {
   competitorId: string;
@@ -182,36 +167,6 @@ export function whySentence(card: WhyCard | null | undefined): string | null {
   const lead = card.side === "behind" ? `A likely reason ${card.name} is ahead of you` : `A likely reason you are ahead of ${card.name}`;
   // Names (AI, Google, a business) keep their capital; only a plain opening word is lowered after the colon.
   return `${lead}: ${firstSentence(fact.text).replace(/^(Your|The) /, (w) => w.toLowerCase())}`;
-}
-
-type OpenFixRow = {
-  id: string;
-  title: string;
-  description: string | null;
-  evidence: string | null;
-  recommended_action: string | null;
-  category: string | null;
-  claude_prompt: string | null;
-};
-
-/** Each open fix with where it is fixed, by the same rule and text as the Opportunities page groups (toItems). */
-export function openFixRefs(rows: OpenFixRow[]): FixRef[] {
-  const text = (r: OpenFixRow) => [r.title, r.description, r.evidence, r.recommended_action].filter(Boolean).join("\n");
-  const clean = (t: string | null) => (t?.trim() ? t.trim() : null);
-  return rows.map((r) =>
-    fixRef({
-      id: r.id,
-      where: whereOf({ category: r.category, claudePrompt: clean(r.claude_prompt), text: text(r) }),
-      title: r.title,
-      recommendedAction: r.recommended_action,
-      description: r.description,
-    }),
-  );
-}
-
-/** The reasons with the exact fix for each one, where a saved fix deals with it. */
-export function withFixes(why: CompetitorWhy, refs: FixRef[]): CompetitorWhy {
-  return { ...why, reasons: attachFixes(why.reasons, refs), allReasons: attachFixes(why.allReasons, refs) };
 }
 
 type Signals = NonNullable<TheirWebsite["signals"]>;

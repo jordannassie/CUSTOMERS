@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { Globe, Loader2 } from "lucide-react";
+import { siteHref } from "@/lib/site-href";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { LocalDate } from "@/components/ui/local-date";
@@ -79,7 +80,13 @@ export function CheckWebsite({
       ) : checked ? (
         <p className="flex flex-wrap items-center gap-x-1.5 text-[13px] text-muted-foreground">
           <Globe className="size-3.5" aria-hidden="true" />
-          {website.domain}
+          {siteHref(website.domain) ? (
+            <a href={siteHref(website.domain)!} target="_blank" rel="noopener noreferrer" className="text-foreground underline-offset-2 hover:underline">
+              {website.domain}
+            </a>
+          ) : (
+            website.domain
+          )}
           <span aria-hidden="true">·</span>
           {website.status === "read" ? "checked" : website.status === "blocked" ? "blocks readers, checked" : "didn't load, checked"}{" "}
           <LocalDate iso={website.checkedAt!} options={SHORT} />

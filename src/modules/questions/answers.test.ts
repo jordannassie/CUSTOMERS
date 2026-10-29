@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ANSWER_MAX_CHARS, latestAnswers, plainAnswer } from "./answers";
+import { matchingAnswers, ANSWER_MAX_CHARS, latestAnswers, plainAnswer } from "./answers";
 
 // BUG-089: the answer behind each result on the Questions page.
 const row = (provider: string, at: string, mentioned: boolean, text: string | null, competitors: unknown = []) => ({
@@ -24,6 +24,8 @@ describe("latestAnswers", () => {
       ["Perplexity", true, "1. Mr. Rooter - fast."],
     ]);
     expect(answers[1].competitors).toEqual(["Pure Plumbing & Air"]);
+    // No name finder list saved: the names could not be read.
+    expect(answers.map((a) => a.namesChecked)).toEqual([false, false]);
   });
 
   it("lists the other businesses it named and the websites it used, each once", () => {
@@ -38,6 +40,7 @@ describe("latestAnswers", () => {
       ["openai"],
     );
     expect(a.others).toEqual(["Discount Tire"]);
+    expect(a.namesChecked).toBe(true);
     expect(a.sites).toEqual([
       { host: "yelp.com", url: "https://www.yelp.com/biz/a" },
       { host: "bbb.org", url: "https://bbb.org/x" },
@@ -77,5 +80,37 @@ describe("plainAnswer", () => {
     const long = plainAnswer("a".repeat(ANSWER_MAX_CHARS + 50));
     expect(long).toHaveLength(ANSWER_MAX_CHARS + 1);
     expect(long.endsWith("…")).toBe(true);
+  });
+});
+
+describe("matchingAnswers", () => {
+  const row = (over: Record<string, unknown>) => ({
+    provider: "openai",
+    created_at: "2026-10-20T10:00:00Z",
+    tracked_prompt_id: "q1",
+    business_mentioned: false,
+    competitors_mentioned: [{ name: "Bean House" }],
+    answer_text: "Try **Bean House**.",
+    cached: false,
+    extracted_names: null,
+    cited_sources: [{ url: "https://www.yelp.com/biz/bean" }],
+    ...over,
+  });
+  const questions = new Map([["q1", "Best coffee in Springfield?"]]);
+
+  it("lists the answers a link is about with their question, reused ones too, never other AIs or removed questions", () => {
+    const rows = [row({}), row({ cached: true }), row({ provider: "anthropic" }), row({ tracked_prompt_id: "gone" })];
+    const { answers: out, total } = matchingAnswers(rows, ["openai"], questions, () => true);
+    expect(out).toHaveLength(2);
+    expect(total).toBe(2);
+    expect(out[1].reused).toBe(true);
+    expect(out[0]).toMatchObject({ question: "Best coffee in Springfield?", questionId: "q1", label: "ChatGPT", text: "Try Bean House.", namedYou: false });
+  });
+
+  it("keeps only the answers that pass the link, at most the given number", () => {
+    const rows = Array.from({ length: 5 }, (_, i) => row({ created_at: `2026-10-2${i}T10:00:00Z`, business_mentioned: i % 2 === 0 }));
+    expect(matchingAnswers(rows, ["openai"], questions, (r) => !r.business_mentioned).answers).toHaveLength(2);
+    // At most 3 shown, all 5 counted, so the heading says how many there are.
+    expect(matchingAnswers(rows, ["openai"], questions, () => true, 3)).toMatchObject({ total: 5, answers: { length: 3 } });
   });
 });

@@ -17,6 +17,7 @@ import {
 import { competitorCharts } from "../charts";
 import {
   competitorWeeklyChange,
+  modelMonthlyChanges,
   modelWeeklyChanges,
   monthlyChange,
   scoreHistory,
@@ -62,6 +63,8 @@ export type ReportOptions = {
   historyDays?: number;
   /** Also build the Competitors page charts from the same checks. */
   charts?: boolean;
+  /** Days the chart timeline and period counts cover (30 by default); historyDays should reach twice this. */
+  chartDays?: number;
 };
 
 // Callers check the user may see this agency first.
@@ -113,6 +116,7 @@ export async function loadScoreReport(
     history: historyDays > 0 ? scoreHistory(all, { ...opts, days: historyDays }) : [],
     change: weeklyChange(all, opts),
     modelChanges: modelWeeklyChanges(all, opts),
+    modelMonthChanges: historyDays >= SCORE_WINDOW_DAYS ? modelMonthlyChanges(all, opts) : {},
     monthChange: historyDays >= SCORE_WINDOW_DAYS ? monthlyChange(all, opts) : null,
     firstCheckedAt: checks[0]?.checkedAt ?? null,
     // The last scan, whichever questions it asked.
@@ -132,7 +136,7 @@ export async function loadScoreReport(
     })),
     ownQuestions: ownQuestionsResult(split.own, opts),
     ownChain,
-    ...(options.charts ? { charts: competitorCharts(all, b.name, competitors.data!.map((c) => c.name), opts) } : {}),
+    ...(options.charts ? { charts: competitorCharts(all, b.name, competitors.data!.map((c) => c.name), { ...opts, days: options.chartDays }) } : {}),
   };
 }
 

@@ -37,9 +37,13 @@ describe("scheduledScans", () => {
     expect(scheduledScans([weekly()], now, days(21)).map((s) => s.at)).toEqual([days(1), days(8), days(15)]);
   });
 
-  it("runs an overdue or unscheduled business now", () => {
+  it("runs an overdue business now", () => {
     expect(scheduledScans([weekly({ nextScanAt: days(-3) })], now, days(2))[0].at).toEqual(now);
-    expect(scheduledScans([weekly({ nextScanAt: null })], now, days(2))[0].at).toEqual(now);
+  });
+
+  it("counts nothing for a business with no scan scheduled (off the plan)", () => {
+    expect(scheduledScans([weekly({ nextScanAt: null })], now, days(30))).toEqual([]);
+    expect(forecast([weekly({ nextScanAt: null })], 0, { endsAt: days(30), kind: "renewal" }, now)).toMatchObject({ scans: 0, needed: 0, runsOutAt: null });
   });
 
   it("skips businesses with nothing to check", () => {

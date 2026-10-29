@@ -9,9 +9,12 @@ import { placeIdPattern } from "./schema";
 export const PLACES_DETAILS_URL = "https://places.googleapis.com/v1/places";
 // rating and userRatingCount put these calls in the Enterprise tier; nothing else we ask for costs more.
 // primaryType ranks suggestions of the business's own kind first (2026-10-14); shown nowhere, never stored.
-const FIELDS = ["id", "displayName", "rating", "userRatingCount", "shortFormattedAddress", "googleMapsUri", "primaryType"];
+// location and websiteUri (same tier) tell branches of one chain apart and find the nearest (2026-10-27); used only
+// while choosing, never shown as stored data and never saved.
+const FIELDS = ["id", "displayName", "rating", "userRatingCount", "shortFormattedAddress", "googleMapsUri", "primaryType", "location", "websiteUri"];
 export const COMPETITOR_SEARCH_FIELD_MASK = FIELDS.map((f) => `places.${f}`).join(",");
-export const COMPETITOR_DETAILS_FIELD_MASK = FIELDS.join(",");
+// Details only show a saved competitor's rating and reviews: no location or website (those pick a branch in search).
+export const COMPETITOR_DETAILS_FIELD_MASK = FIELDS.filter((f) => f !== "location" && f !== "websiteUri").join(",");
 // The business's own place, read live to search near it (never stored, MVP_SPEC 26).
 export const ORIGIN_FIELD_MASK = "location,primaryType";
 // A saved competitor's city, region and country, read live when the business moves (Essentials tier, never stored).
@@ -31,6 +34,12 @@ export type CompetitorCandidate = {
   mapsUri: string | null;
   /** Google's type, to put suggestions of the business's own kind first. */
   primaryType?: string | null;
+  /** Where it is and its website, to keep one branch of a chain near the business (branches.ts). Never stored. */
+  location?: { latitude: number; longitude: number } | null;
+  website?: string | null;
+  /** Meters from the business, when both locations are known, and the same said for the screen ("0.5 mi away"). */
+  distanceM?: number | null;
+  distance?: string | null;
 };
 
 /** Where a place is: its city names (town, borough), region names (long and short) and country code. Never stored. */
@@ -59,6 +68,8 @@ const place = z.object({
   shortFormattedAddress: z.string().nullish(),
   googleMapsUri: z.string().nullish(),
   primaryType: z.string().nullish(),
+  location: z.object({ latitude: z.number(), longitude: z.number() }).nullish(),
+  websiteUri: z.string().nullish(),
 });
 
 function toCandidate(p: z.infer<typeof place>): CompetitorCandidate | null {
@@ -72,6 +83,8 @@ function toCandidate(p: z.infer<typeof place>): CompetitorCandidate | null {
     address: p.shortFormattedAddress || null,
     mapsUri: p.googleMapsUri || null,
     ...(p.primaryType ? { primaryType: p.primaryType } : {}),
+    ...(p.location ? { location: p.location } : {}),
+    ...(p.websiteUri ? { website: p.websiteUri } : {}),
   };
 }
 

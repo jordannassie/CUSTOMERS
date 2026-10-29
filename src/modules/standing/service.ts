@@ -2,6 +2,8 @@
 // scans already saved: where they beat you (questions, AI tools), likely reasons with where to fix them, and where
 // you lead. Ahead or behind itself is the leaderboard's call (scoring.ts compareWithCompetitor), never made here.
 import { hostOf } from "@/lib/site-type";
+import { assistantFacts, MIN_TALLY_ANSWERS, tallyResult } from "./assistant-facts";
+import { domainRows, type DomainRow } from "./domains";
 import { namedIn, type StandingCheck } from "./checks";
 import { googleFacts, siteFacts, theirSite, websiteFacts, type Fact, type GoogleValues } from "./reasons";
 import { websiteChecks, websiteGaps, serviceGaps, type TheirWebsite, type YourSite } from "./website";
@@ -17,6 +19,10 @@ export type CompetitorWhy = Tally & {
   name: string;
   /** Their own website when we know it: the one the user typed, or a cited site with their name. */
   site: string | null;
+  /** Every question with answers, in the order they are tracked (Compare's Questions tab). */
+  allQuestions: QuestionTally[];
+  /** Each site the answers used, with who it named (Compare's "Where AI looked"). */
+  domains: DomainRow[];
   /** Questions where AI named them more often than you, biggest gap first. */
   questionsTheyWin: QuestionTally[];
   questionsYouWin: QuestionTally[];
@@ -79,7 +85,12 @@ export function questionTallies(checks: StandingCheck[], questions: Map<string, 
   });
 }
 
-const questionsTheyWin = (questions: QuestionTally[]) => questions.filter((q) => gap(q) > 0).sort(byGap);
+/**
+ * Questions they win, for the website reasons and the "likely reason" line: at least MIN_TALLY_ANSWERS answers and
+ * them named strictly more (D-89). Less strict than the full margin (tallyResult), so a first scan still gives
+ * website reasons; never 1 of 1 against 0 of 1.
+ */
+const questionsTheyWin = (questions: QuestionTally[]) => questions.filter((q) => q.answers >= MIN_TALLY_ANSWERS && gap(q) > 0).sort(byGap);
 
 const of = (t: Tally, n: number) => `${n} of ${t.answers}`;
 
@@ -102,15 +113,18 @@ export function competitorWhy(input: WhyInput): CompetitorWhy {
   const won = questionsTheyWin(questions);
   const onSite = input.you.site ? websiteChecks(input.theirWebsite ?? null, input.you.site, won) : { behind: [], ahead: [] };
 
-  const questionsYouWin = questions.filter((q) => gap(q) < 0).sort(byGap);
-  const assistantsYouWin = assistants.filter((a) => gap(a) < 0).sort(byGap);
+  // Wins you can count on: a gap bigger than the margin (tallyResult), not any difference.
+  const questionsYouWin = questions.filter((q) => tallyResult(q) === "you_win").sort(byGap);
+  const questionsTheyClearlyWin = questions.filter((q) => tallyResult(q) === "they_win").length;
+  const assistantsYouWin = assistants.filter((a) => tallyResult(a) === "you_win").sort(byGap);
+  const youWin = questionsYouWin.length;
   const youLead: Fact[] = [
     ...(questionsYouWin.length > 0
       ? [
           {
-            title: "You win more questions",
-            detail: `${questionsYouWin.length} of ${questions.length} questions`,
-            text: `AI named you more often than ${name} on ${questionsYouWin.length} of ${questions.length} questions.`,
+            title: youWin > questionsTheyClearlyWin ? "You win more questions" : `You win ${youWin} ${youWin === 1 ? "question" : "questions"}`,
+            detail: `${youWin} of ${questions.length} questions`,
+            text: `AI named you more often than ${name} on ${youWin} of ${questions.length} questions.`,
             where: null,
             weight: 5,
           },
@@ -135,6 +149,7 @@ export function competitorWhy(input: WhyInput): CompetitorWhy {
     ...google.behind,
     ...(input.you.site ? websiteGaps(name, input.theirWebsite ?? null, input.you.site, won) : []),
     ...onSite.behind,
+    ...assistantFacts(checks, tracked, name, assistants, site),
   ].sort((a, b) => b.weight - a.weight);
   const allLeads = [...youLead].sort((a, b) => b.weight - a.weight);
   const sources = sourceBreakdown(checks, tracked, input.you.domain, site);
@@ -165,6 +180,8 @@ export function competitorWhy(input: WhyInput): CompetitorWhy {
     theirPages: pagesUsed(checks, site),
     yourPages: pagesUsed(checks, input.you.domain ? hostOf(input.you.domain) : null),
     ...tally(checks, tracked),
+    allQuestions: questions,
+    domains: domainRows(checks, tracked),
     questionsTheyWin: won,
     questionsYouWin,
     assistantsTheyWin: assistants.filter((a) => gap(a) > 0).sort(byGap),

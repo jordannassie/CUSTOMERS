@@ -17,6 +17,7 @@ export { placeText, type AveragePlace, type Place } from "./question-trends/plac
 export { recountAfterNamesChange, recountSavedAnswers, type RecountResult } from "./recount/dal";
 export type { AlsoRecommended, AlsoRecommendedList } from "./also-recommended/names";
 export {
+  compareStatus,
   compareWithCompetitor,
   isRealChange,
   SCORE_WINDOW_DAYS,

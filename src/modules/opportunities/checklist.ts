@@ -4,6 +4,21 @@
 
 export const CHECKLIST_PREFIX = "checklist:";
 
+/**
+ * Saved by "Pick your branch on Google" when a search that worked found no branch of the chain (step 6d), with the
+ * words searched in evidence_data.query. The same text as NO_BRANCH_MARKER in onboarding/branch/service.ts.
+ */
+export const NO_BRANCH_MARKER = "checklist:no_branch";
+
+/** The words of the search that found no branch, or null when no such search is saved. */
+export function noBranchQuery(rows: readonly { affected_url: string | null; evidence_data?: unknown }[]): string | null {
+  const row = rows.find((r) => r.affected_url === NO_BRANCH_MARKER);
+  if (!row) return null;
+  const data = row.evidence_data;
+  const query = data && typeof data === "object" && !Array.isArray(data) ? (data as Record<string, unknown>).query : null;
+  return typeof query === "string" ? query : "";
+}
+
 export const CHECKLIST_KEYS = ["google_profile", "listings", "reviews", "same_details", "website", "directories"] as const;
 export type ChecklistKey = (typeof CHECKLIST_KEYS)[number];
 

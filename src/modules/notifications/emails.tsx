@@ -3,10 +3,11 @@ import {
   LowCreditsEmail,
   WeeklyReportEmail,
   WelcomeEmail,
+  type EmailLinks,
   type SendEmailInput,
-  type WeeklyBusiness,
 } from "@/modules/email";
-import { lowCreditsKey, renewalDate, weeklyReportKey, weeklyReportSubject, welcomeKey, type LowCreditAgency } from "./service";
+import { emailSnapshot, reportEmailText } from "@/modules/reports";
+import { lowCreditsKey, renewalDate, weeklyReportKey, weeklyReportSubject, welcomeKey, type LowCreditAgency, type ReportedBusiness } from "./service";
 
 // The three emails this module sends (MVP_SPEC 10). Billing sends trial ending and payment failed from its webhook.
 
@@ -42,10 +43,26 @@ export function lowCreditsEmail(input: { to: string; agency: LowCreditAgency; no
   };
 }
 
+/**
+ * The weekly email's plain text (D-90): each business's report summary with its PDF link, the same numbers as the
+ * PDF, then the dashboard and unsubscribe links.
+ */
+export function weeklyReportText(businesses: ReportedBusiness[], { baseUrl, unsubscribeUrl }: EmailLinks): string {
+  const base = baseUrl.replace(/\/$/, "");
+  const blocks = businesses.map((b) =>
+    b.snapshot
+      ? reportEmailText(emailSnapshot(b.snapshot), b.pdf ? `${base}${b.reportUrl}` : null)
+      : `${b.name}\nNo score yet. It appears after the first scan finishes.`,
+  );
+  const footer = [`Open your dashboard: ${base}/dashboard`];
+  if (unsubscribeUrl) footer.push(`Unsubscribe from weekly reports: ${unsubscribeUrl}`);
+  return [...blocks, footer.join("\n")].join("\n\n");
+}
+
 export function weeklyReportEmail(input: {
   to: string;
   agencyId: string;
-  businesses: WeeklyBusiness[];
+  businesses: ReportedBusiness[];
   now: Date;
 }): SendEmailInput {
   return {
@@ -55,10 +72,11 @@ export function weeklyReportEmail(input: {
     agencyId: input.agencyId,
     idempotencyKey: weeklyReportKey(input.agencyId, input.now),
     template: ({ baseUrl, unsubscribeUrl }) => {
-      // Businesses carry the share page path; the email needs the full address.
+      // Businesses carry the share link path; the email needs the full address.
       const base = baseUrl.replace(/\/$/, "");
       const businesses = input.businesses.map((b) => ({ ...b, reportUrl: `${base}${b.reportUrl}` }));
       return <WeeklyReportEmail businesses={businesses} baseUrl={baseUrl} unsubscribeUrl={unsubscribeUrl} />;
     },
+    text: (links) => weeklyReportText(input.businesses, links),
   };
 }

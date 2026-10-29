@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { Loader2, ArrowLeft, CheckCircle } from "lucide-react";
 import { createClient } from "@/lib/supabase/browser";
+import { env } from "@/lib/env";
 import { Button } from "@/components/ui/button";
 import { AuthAlert, AuthCard, AuthField, AuthLogo } from "./auth-bits";
 
@@ -19,15 +20,17 @@ export default function ForgotPasswordForm() {
     setError(null);
 
     const supabase = createClient();
+    // The site URL, like signup and Google sign-in, so the link opens on the address Supabase allows.
+    const siteBase = env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ?? window.location.origin;
     const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
       // Through the callback, so the code is swapped for a session on the server (ACC-04).
-      redirectTo: `${window.location.origin}/auth/callback?next=/reset-password`,
+      redirectTo: `${siteBase}/auth/callback?next=/reset-password`,
     });
 
     setLoading(false);
 
     if (resetError) {
-      setError(resetError.message);
+      setError(resetErrorText(resetError));
       return;
     }
 
@@ -90,6 +93,15 @@ export default function ForgotPasswordForm() {
       </AuthCard>
     </div>
   );
+}
+
+// Supabase's own error text is not ours to show (it can be technical or name its settings).
+function resetErrorText(error: { code?: string; status?: number; message: string }): string {
+  const rateLimited =
+    error.status === 429 || error.code === "over_email_send_rate_limit" || error.code === "over_request_rate_limit" || /rate limit|too many/i.test(error.message);
+  if (rateLimited) return "Too many attempts. Try again in a few minutes.";
+  if (error.code === "email_address_invalid" || error.code === "validation_failed") return "Check the email address and try again.";
+  return "We couldn't send the reset link. Try again in a few minutes.";
 }
 
 function BackToLogin() {

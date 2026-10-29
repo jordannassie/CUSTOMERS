@@ -2,9 +2,9 @@ import { randomUUID } from "node:crypto";
 import { existsSync, readFileSync } from "node:fs";
 import { parseEnv } from "node:util";
 import { createClient } from "@supabase/supabase-js";
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Locator, type Page, type TestInfo } from "@playwright/test";
 
-// B-52 against the local Supabase stack only. Each test seeds its own is_test agency and opportunities,
+// B-52 and the Actions board (D-86) against the local Supabase stack only. Each test seeds its own is_test agency and opportunities,
 // so no AI or Google call is made (D-61); run the dev server with PLACES_FIXTURES=true.
 const local = existsSync(".env.test.local") ? parseEnv(readFileSync(".env.test.local", "utf8")) : {};
 const hasDb = !!(local.NEXT_PUBLIC_SUPABASE_URL && local.SUPABASE_SERVICE_ROLE_KEY);
@@ -90,66 +90,93 @@ async function seed(page: Page, { hasWebsite, opportunities }: Seed): Promise<st
       .throwOnError();
   }
 
-  await page.goto("/login?next=/opportunities");
+  await page.goto("/login?next=/actions");
   await page.locator("#email").fill(email);
   await page.locator("#password").fill(password);
   await page.locator("button[type=submit]").click();
-  await page.waitForURL((url) => url.pathname === "/opportunities");
-  await expect(page.getByRole("heading", { level: 1, name: "Opportunities" })).toBeVisible({ timeout: 60_000 });
+  await page.waitForURL((url) => url.pathname === "/actions");
+  await expect(page.getByRole("heading", { level: 1, name: "Actions" })).toBeVisible({ timeout: 60_000 });
   return business.id;
 }
+
+/** Where every screenshot of a test run goes when E2E_SHOTS_DIR is set (layout reviews only). */
+async function shot(page: Page, info: TestInfo, name: string) {
+  if (process.env.E2E_SHOTS_DIR) await page.screenshot({ path: `${process.env.E2E_SHOTS_DIR}/${name}-${info.project.name}.png`, fullPage: true });
+}
+
+const column = (page: Page, status: string) => page.getByTestId(`column-${status}`);
+const titles = (cards: Locator) => cards.getByRole("heading", { level: 3 });
 
 test.afterAll(async () => {
   for (const id of userIds.splice(0)) await db.auth.admin.deleteUser(id);
 });
 
-test("fixes are sorted by impact, with live Google values and a copy button", async ({ page, context }) => {
+test("fixes are sorted by impact, with live Google values and a copy button", async ({ page, context }, info) => {
   await context.grantPermissions(["clipboard-read", "clipboard-write"]);
   await seed(page, { hasWebsite: true, opportunities: true });
 
-  const todo = page.getByTestId("list-open").getByTestId("opportunity");
-  await expect(todo.getByRole("heading", { level: 2 })).toHaveText([
+  // A scan's fixes arrive as Suggested (D-86), most important first.
+  const suggested = column(page, "suggested").getByTestId("opportunity");
+  await expect(titles(suggested)).toHaveText([
     "Bean House has more Google reviews than you",
     "Your website does not show your phone number",
     "Answer common questions on your site",
   ]);
-  await expect(todo.first()).toContainText("Bean House has 320 reviews and you have 12.");
-  await expect(todo.first().getByRole("img", { name: "Google Maps" })).toBeVisible();
+  await expect(suggested.first()).toHaveAttribute("data-status", "suggested");
+  // Google is asked only on request (2026-10-27): the Google sentence waits for "Show Google numbers".
+  await expect(suggested.first()).not.toContainText("320");
+  await expect(suggested.first().getByRole("img", { name: "Google Maps" })).toHaveCount(0);
+  await suggested.first().getByTestId("show-google-numbers").click();
+  await page.waitForURL((url) => url.pathname === "/actions" && url.searchParams.get("google") === "1");
+  await expect(suggested.first()).toContainText("Bean House has 320 reviews and you have 12.", { timeout: 60_000 });
+  await expect(suggested.first().getByRole("img", { name: "Google Maps" })).toBeVisible();
+  await expect(suggested.first().getByTestId("show-google-numbers")).toHaveCount(0);
   await expect(page.getByTestId("get-found-checklist")).toHaveCount(0);
   await expect(page.getByText("Request Fix")).toHaveCount(0);
+  await shot(page, info, "actions-board");
+  await page.getByRole("radio", { name: "List" }).click();
+  await expect(page.getByTestId("action-list")).toBeVisible();
+  await shot(page, info, "actions-list");
+  await page.getByRole("radio", { name: "Board" }).click();
 
-  await todo.nth(1).getByRole("button", { name: "Copy for Claude" }).click();
-  await expect(todo.nth(1).getByRole("button", { name: "Copied" })).toBeVisible();
+  await suggested.nth(1).getByRole("button", { name: "Copy prompt for Claude" }).click();
+  await expect(suggested.nth(1).getByRole("button", { name: "Copied" })).toBeVisible();
   const copied = await page.evaluate(() => navigator.clipboard.readText());
   expect(copied).toContain("Help me improve the services page for Sunrise Coffee Bar");
 });
 
-test("marking a fix done moves it to Done, and it stays there after a reload", async ({ page }) => {
+test("accepting a fix plans it, marking it done moves it to Done, and it stays there after a reload", async ({ page }) => {
   await seed(page, { hasWebsite: true, opportunities: true });
-  const first = page.getByTestId("list-open").getByTestId("opportunity").first();
-  await expect(first).toContainText("Bean House has more Google reviews than you");
-  await first.getByRole("button", { name: "Mark as done" }).click();
+  const reviews = page.getByTestId("opportunity").filter({ hasText: "Bean House has more Google reviews than you" });
+  await expect(reviews).toHaveAttribute("data-status", "suggested");
+  await reviews.getByRole("button", { name: "Accept" }).click();
+  await expect(column(page, "todo").getByTestId("opportunity")).toHaveCount(1);
+  await expect(reviews).toHaveAttribute("data-status", "todo");
+  await expect(column(page, "suggested").getByTestId("opportunity")).toHaveCount(2);
 
-  await expect(page.getByTestId("list-open").getByTestId("opportunity")).toHaveCount(2);
-  await expect(page.getByTestId("tab-done")).toContainText("1");
-  await page.getByTestId("tab-done").click();
-  await expect(page.getByTestId("list-done")).toContainText("Bean House has more Google reviews than you");
-  await expect(page.getByText("Marked as done.")).toBeVisible({ timeout: 30_000 });
+  await reviews.getByRole("button", { name: /Move or assign/ }).click();
+  await page.getByRole("menuitem", { name: "Move to Done" }).click();
+  await expect(column(page, "done")).toContainText("Bean House has more Google reviews than you");
+  await expect(page.getByText("Marked done.", { exact: true })).toBeVisible({ timeout: 30_000 });
+  await expect(column(page, "done").getByTestId("action-done")).toContainText(/^Done /);
 
   await page.reload();
-  await expect(page.getByTestId("tab-done")).toContainText("1", { timeout: 30_000 });
-  await page.getByTestId("tab-done").click();
-  const done = page.getByTestId("list-done").getByTestId("opportunity");
-  await done.getByRole("button", { name: "Move back to to-do" }).click();
-  await expect(page.getByTestId("list-done").getByTestId("opportunity")).toHaveCount(0);
+  const done = column(page, "done").getByTestId("opportunity");
+  await expect(done).toHaveCount(1, { timeout: 30_000 });
+  await expect(done).toContainText("Bean House has more Google reviews than you");
+  await done.getByRole("button", { name: /Move or assign/ }).click();
+  await page.getByRole("menuitem", { name: "Move to To do" }).click();
+  await expect(column(page, "done").getByTestId("opportunity")).toHaveCount(0);
+  await expect(column(page, "todo").getByTestId("opportunity")).toHaveCount(1);
 
-  await page.getByTestId("tab-open").click();
-  // DB-014: only the first fix starts open; the row opens the others.
-  const last = page.getByTestId("list-open").getByTestId("opportunity").last();
-  await expect(last.getByRole("button", { name: "Dismiss" })).toHaveCount(0);
-  await last.getByRole("heading", { level: 2 }).getByRole("button").click();
+  // Dismiss sits on each suggestion; a dismissed fix waits in Dismissed, after a reload too.
+  const last = column(page, "suggested").getByTestId("opportunity").last();
+  await expect(last).toContainText("Answer common questions on your site");
   await last.getByRole("button", { name: "Dismiss" }).click();
-  await expect(page.getByTestId("tab-dismissed")).toContainText("1");
+  await expect(column(page, "dismissed").getByTestId("opportunity")).toHaveCount(1);
+  await expect(page.getByText("Dismissed. You can bring it back from Dismissed.")).toBeVisible({ timeout: 30_000 });
+  await page.reload();
+  await expect(column(page, "dismissed")).toContainText("Answer common questions on your site", { timeout: 30_000 });
 });
 
 test("a business with no website gets the checklist, and ticks are saved", async ({ page, context }) => {
@@ -177,9 +204,12 @@ test("a business with no website gets the checklist, and ticks are saved", async
   await expect(page.getByTestId("checklist-progress")).toHaveText("0 of 6 done");
 });
 
-test("the old address redirects to the new page", async ({ page }) => {
+test("the old addresses redirect to Actions", async ({ page }) => {
   await seed(page, { hasWebsite: true, opportunities: false });
   await page.goto("/dashboard/opportunities");
-  await page.waitForURL((url) => url.pathname === "/opportunities");
+  await page.waitForURL((url) => url.pathname === "/actions");
   await expect(page.getByTestId("no-opportunities")).toBeVisible();
+  await page.goto("/opportunities");
+  await page.waitForURL((url) => url.pathname === "/actions");
+  await expect(page.getByRole("heading", { level: 1, name: "Actions" })).toBeVisible();
 });

@@ -33,7 +33,10 @@ export async function findCachedAnswer(cacheKey: string, since: Date): Promise<A
   };
 }
 
-/** Saves a fresh answer, replacing an expired one; its extracted names are cleared until B-25 writes them. */
+/**
+ * Saves a fresh answer, replacing an expired one; its extracted names are cleared until B-25 writes them. Returns the
+ * created_at it wrote, which tells this answer apart from a later one under the same key (saveExtractedNames).
+ */
 export async function upsertCachedAnswer(row: {
   cacheKey: string;
   model: string;
@@ -42,7 +45,8 @@ export async function upsertCachedAnswer(row: {
   answer: string;
   citations: Json;
   costUsd: number;
-}): Promise<void> {
+}): Promise<string> {
+  const createdAt = new Date().toISOString();
   const { error } = await createServiceClient().from("ai_answer_cache").upsert({
     cache_key: row.cacheKey,
     model: row.model,
@@ -52,9 +56,10 @@ export async function upsertCachedAnswer(row: {
     citations: row.citations,
     cost_usd: row.costUsd,
     extracted_names: null,
-    created_at: new Date().toISOString(),
+    created_at: createdAt,
   });
   if (error) throw new Error(`Could not write the answer cache: ${error.message}`);
+  return createdAt;
 }
 
 export async function insertCheckUsage(row: {
@@ -83,11 +88,16 @@ export async function insertCheckUsage(row: {
   if (error) throw new Error(`Could not record check usage: ${error.message}`);
 }
 
-/** Stores the names extracted from a cached answer (B-25), so later cache hits reuse them. */
-export async function saveExtractedNames(cacheKey: string, extractedNames: Json): Promise<void> {
+/**
+ * Stores the names extracted from a cached answer (B-25), so later cache hits reuse them. `cachedAt` is the created_at
+ * of the answer they came from: when a newer answer has replaced it under the same key, nothing is written, so that
+ * answer never gets another answer's names.
+ */
+export async function saveExtractedNames(cacheKey: string, cachedAt: string, extractedNames: Json): Promise<void> {
   const { error } = await createServiceClient()
     .from("ai_answer_cache")
     .update({ extracted_names: extractedNames })
-    .eq("cache_key", cacheKey);
+    .eq("cache_key", cacheKey)
+    .eq("created_at", cachedAt);
   if (error) throw new Error(`Could not save extracted names: ${error.message}`);
 }

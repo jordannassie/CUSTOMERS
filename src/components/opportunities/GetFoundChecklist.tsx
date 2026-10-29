@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
+import { cn } from "cn";
 import { Progress } from "@/components/ui/progress";
 import type { ActionResult } from "@/modules/auth";
 import type { ChecklistItem, ChecklistKey } from "@/modules/opportunities";
@@ -23,11 +24,14 @@ export function GetFoundChecklist({
   missing,
   initialItems,
   setItem,
+  readOnly = false,
 }: {
   businessId: string;
   missing: string[];
   initialItems: ChecklistItem[];
   setItem: SetChecklist;
+  /** An ended plan (MVP_SPEC 4.4): the ticks show, but can't change. */
+  readOnly?: boolean;
 }) {
   const [items, setItems] = useState(initialItems);
   const [busy, setBusy] = useState<ChecklistKey | null>(null);
@@ -77,9 +81,9 @@ export function GetFoundChecklist({
                 id={`check-${item.key}`}
                 type="checkbox"
                 checked={item.done}
-                disabled={busy === item.key}
+                disabled={readOnly || busy === item.key}
                 onChange={() => toggle(item)}
-                className="mt-0.5 size-4 cursor-pointer rounded-sm accent-primary disabled:cursor-wait"
+                className={cn("mt-0.5 size-4 cursor-pointer rounded-sm accent-primary", readOnly ? "disabled:cursor-not-allowed" : "disabled:cursor-wait")}
               />
             </label>
             <div className="flex min-w-0 flex-col gap-1">

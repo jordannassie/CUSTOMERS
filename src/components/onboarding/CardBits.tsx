@@ -6,6 +6,7 @@ import { Loader2, Lock } from "lucide-react";
 import type { ActionResult } from "@/modules/auth";
 import { LocalDate } from "@/components/ui/local-date";
 import { formatUsd } from "@/modules/billing/format";
+import { nextPollDelay, STILL_SETTING_UP_MS } from "./setting-up-poll";
 import { StepError } from "./StepBits";
 
 export type CardOffer = { planName: string; priceCents: number; trialEndsAt: string };
@@ -53,9 +54,7 @@ export function SecureNote() {
   );
 }
 
-const POLL_MS = 2000;
-// Linking and the trial credits take a few seconds; after this the screen stops spinning and says what to do.
-export const STILL_SETTING_UP_MS = 30_000;
+export { STILL_SETTING_UP_MS } from "./setting-up-poll";
 
 /**
  * Shown after the card is accepted, until the subscription is linked and the trial credits are in (B-42, A1).
@@ -81,8 +80,11 @@ export function SettingUp({ businessId, check }: {
         return window.location.assign(result.data.next);
       }
       if (result && !result.ok) setError(result.error);
-      if (Date.now() - started > STILL_SETTING_UP_MS) setLate(true);
-      timer = setTimeout(poll, POLL_MS);
+      const elapsed = Date.now() - started;
+      if (elapsed > STILL_SETTING_UP_MS) setLate(true);
+      // Every 2s at first, every 15s once the late notice shows, then not at all after 10 minutes (it said to refresh).
+      const delay = nextPollDelay(elapsed);
+      if (delay !== null) timer = setTimeout(poll, delay);
     }
     poll();
     return () => {
@@ -97,7 +99,7 @@ export function SettingUp({ businessId, check }: {
         <p className="text-base font-medium">Still setting up your account</p>
         <p className="text-[13px] text-muted-foreground">
           Your card was accepted, and your trial is taking longer than usual to start. Refresh this page in a minute, or{" "}
-          <Link href="/contact" className="font-medium text-primary underline-offset-2 hover:underline">
+          <Link href="/contact?topic=support" className="font-medium text-primary underline-offset-2 hover:underline">
             contact us
           </Link>
           .

@@ -42,6 +42,7 @@ export function ModelComparisonChart({ view }: { view: CompetitorChartsView }) {
               className={cn("flex min-w-0 items-center pr-2 text-[13px] leading-tight break-words line-clamp-2", s.isYou ? "font-semibold text-primary" : "text-foreground")}
               title={s.name}
             >
+              <span className="mr-1.5 inline-block size-2 shrink-0 rounded-full" style={{ background: s.color }} aria-hidden="true" />
               {s.isYou ? "You" : s.name}
             </span>
             {byModel.map((m, i) => {

@@ -22,6 +22,7 @@ vi.mock("@/lib/supabase/server", () => ({
 }));
 
 const { POST } = await import("./route");
+const { CONTACT_EMAIL } = await import("@/components/legal/LegalPage");
 
 function submit(fields: Record<string, unknown>, ip = "198.51.100.7") {
   return POST(
@@ -67,7 +68,7 @@ describe("POST /api/contact when the rate limit can't be checked", () => {
     const res = await submit({}, "203.0.113.50");
     limiter.down = false;
     expect(res.status).toBe(503);
-    expect((await res.json()).error).toBe("We couldn't send your message right now. Try again in a few minutes, or email us directly.");
+    expect((await res.json()).error).toBe(`We couldn't send your message right now. Try again in a few minutes, or email us at ${CONTACT_EMAIL}.`);
     expect(insert).not.toHaveBeenCalled();
   });
 });

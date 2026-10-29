@@ -60,6 +60,25 @@ describe("competitorWhy", () => {
     expect(why.questionsYouWin).toEqual([]);
   });
 
+  it("needs at least 2 answers and them named strictly more before a question counts as theirs (D-89)", () => {
+    // 1 of 1 against 0 of 1 is not a win, so it gives no website reason and no "likely reason" line.
+    expect(competitorWhy(input(theyWin(1))).questionsTheyWin).toEqual([]);
+    // 2 of 2 against 0 of 2 counts, even though it is inside the margin (a first scan still gives website reasons).
+    expect(competitorWhy(input(theyWin(2))).questionsTheyWin.map((q) => q.questionId)).toEqual([Q1]);
+    expect(competitorWhy(input([...theyWin(1), check({ youNamed: true })])).questionsTheyWin).toEqual([]);
+  });
+
+  it("gives no website reason for a question answered once", () => {
+    const theirWebsite = { status: "read" as const, services: [{ name: "Tire rotation", page: "/services" }], hasPhone: false, hasAddress: false };
+    const site = { read: true, services: ["oil change"], hasPhone: false, hasAddress: false };
+    const once = competitorWhy(input(theyWin(1), { theirWebsite, you: { domain: "joestires.com", websiteBlocked: false, site } }));
+    const twice = competitorWhy(input(theyWin(2), { theirWebsite, you: { domain: "joestires.com", websiteBlocked: false, site } }));
+    const rotation = (w: typeof once) => w.allReasons.find((f) => f.key === "web:service:tire rotation");
+    // "best tire shop in Dallas" shares "tire" with the service: only a won question lifts it.
+    expect(rotation(once)?.detail).toBe("Not in the services on yours. Found on their /services page.");
+    expect(rotation(twice)?.detail).toBe('Not in the services on yours. AI named them more often on "best tire shop in Dallas".');
+  });
+
   it("names a review site AI used when it named them and not you, with where to fix it", () => {
     const why = competitorWhy(input(theyWin(3, { sites: ["yelp.com", "bean-tires.com"] })));
     expect(why.reasons).toContainEqual(expect.objectContaining({ where: "other_places", text: "AI used yelp.com in 3 answers that named Bean Tires and not you. Check your listing there." }));

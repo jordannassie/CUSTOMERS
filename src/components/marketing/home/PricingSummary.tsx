@@ -6,7 +6,7 @@ import { Section, H2, Lead } from "../section";
 const FACTS = [
   {
     title: "Credits included",
-    body: "One question sent to one AI uses one credit. Every business adds its monthly credits to one shared pool.",
+    body: "Each new answer from 1 AI to 1 question uses 1 credit. Answers reused from a recent scan are free. Every business adds its monthly credits to one shared pool.",
   },
   {
     title: "7-day free trial",

@@ -25,6 +25,7 @@ import {
 } from "../competitors";
 import { clearLocationNotes, loadLocationNotes } from "../competitor-location/notes/dal";
 import { PlacesError } from "../places";
+import { forDisplay, withDistance } from "../branches";
 
 // The competitors step (MVP_SPEC 3.1 step 5): suggestions near the business, lookups by name and the saved list.
 // Split from onboarding/dal.ts, which re-exports it.
@@ -44,7 +45,7 @@ async function ownBusinessForSearch(userId: string, businessId: string): Promise
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("businesses")
-    .select("name, industry, services, primary_city, primary_region, places_id")
+    .select("name, industry, services, primary_city, primary_region, primary_country, places_id")
     .eq("id", businessId)
     .eq("owner_user_id", userId)
     .maybeSingle();
@@ -57,6 +58,7 @@ async function ownBusinessForSearch(userId: string, businessId: string): Promise
     city: data.primary_city,
     region: data.primary_region,
     placesId: data.places_id,
+    country: data.primary_country,
   };
 }
 
@@ -107,7 +109,9 @@ export async function loadCompetitorStep(
       rows.map(async (row): Promise<SavedCompetitor & { createdAt: string }> => {
         // place_id is where older code kept the id; it moves to places_id on the next save.
         const placesId = row.places_id ?? row.place_id;
-        const live = placesId ? await places.details(placesId).catch(() => null) : null;
+        // Location and website help pick a branch; they never go to the browser (D-88).
+        const found = placesId ? await places.details(placesId).catch(() => null) : null;
+        const live = found ? forDisplay([found])[0] : null;
         return { name: row.name, placesId, live, createdAt: row.created_at };
       }),
     ),
@@ -132,12 +136,14 @@ export async function lookupCompetitor(
   businessId: string,
   name: string,
   places: CompetitorPlaces = liveCompetitorPlaces(),
-): Promise<{ matches: CompetitorCandidate[]; note: string | null } | null> {
+): Promise<{ matches: CompetitorCandidate[]; note: string | null; country?: string | null } | null> {
   const business = await ownBusinessForSearch(userId, businessId);
   if (!business) return null;
   try {
-    const matches = await places.search(lookupQuery(name, business), MAX_LOOKUP_RESULTS, await originOf(business, places));
-    return { matches, note: null };
+    // Every branch near the business is looked at, then only the nearest of each chain is offered (branches.ts).
+    const origin = await originOf(business, places);
+    const found = withDistance(await places.search(lookupQuery(name, business), MAX_LOOKUP_RESULTS, origin), origin);
+    return { matches: found, note: null, country: business.country ?? null };
   } catch {
     return { matches: [], note: COMPETITOR_NOTES.unavailable };
   }

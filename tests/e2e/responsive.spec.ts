@@ -21,8 +21,8 @@ const PASSWORD = `pw-${randomUUID()}`;
 const MODELS = ["openai", "anthropic", "perplexity"] as const;
 const DAY = 86_400_000;
 const WIDTHS = [360, 390, 768, 1280];
-// Screenshots at 390px, kept after the run for a look by eye.
-const SHOTS = "test-results/responsive-390";
+// Screenshots at 390px, kept after the run for a look by eye (under E2E_SHOTS_DIR when it is set).
+const SHOTS = process.env.E2E_SHOTS_DIR ? `${process.env.E2E_SHOTS_DIR}/responsive-390` : "test-results/responsive-390";
 
 const NAME = "Christian Brothers Automotive S. Western Ave Oklahoma City Engine & Brake Repair Center";
 const OTHER = "Oklahoma City Southside Transmission Rebuild & Diagnostics Specialists of Moore and Norman";
@@ -248,10 +248,11 @@ for (const width of WIDTHS) {
     await visit(page, "/dashboard", h1(NAME));
     expect((await h1(NAME).boundingBox())!.width).toBeGreaterThan(100);
     await noSideScroll(page, `${width} overview`);
-    await page.getByTestId("share-button").click();
-    await onScreen(page, page.getByRole("dialog"), `${width} share dialog`);
-    await page.keyboard.press("Escape");
-    await expect(page.getByRole("dialog")).toHaveCount(0);
+    // Sharing moved to Reports (D-86): the header's Share link opens its share panel, checked further down.
+    const share = page.getByRole("link", { name: "Share" });
+    await expect(share).toHaveAttribute("href", "/reports?share=1");
+    await share.scrollIntoViewIfNeeded();
+    await onScreen(page, share, `${width} share link`);
     await shot(page, width, "overview");
     await checkSwitcher(page, `${width} overview`);
 
@@ -260,9 +261,16 @@ for (const width of WIDTHS) {
     await noSideScroll(page, `${width} competitors`);
     await shot(page, width, "competitors");
 
-    await visit(page, "/opportunities", h1("Opportunities"));
-    await noSideScroll(page, `${width} opportunities`);
-    await shot(page, width, "opportunities");
+    // Compare opens the leading competitor; its long name fits, and the tab row scrolls on its own.
+    await visit(page, "/competitors/compare", h1("Compare"));
+    await expect(page.getByTestId("compare-picker")).toContainText(RIVALS[0].name.slice(0, 20));
+    await noSideScroll(page, `${width} compare`);
+    await shot(page, width, "compare");
+
+    await visit(page, "/actions", h1("Actions"));
+    await expect(page.getByTestId("opportunity").first()).toBeVisible();
+    await noSideScroll(page, `${width} actions`);
+    await shot(page, width, "actions");
 
     await visit(page, "/questions", h1("Questions"));
     await noSideScroll(page, `${width} questions`);
@@ -270,19 +278,27 @@ for (const width of WIDTHS) {
     const menu = page.getByRole("menu");
     await onScreen(page, menu, `${width} question menu`);
     // Labels stay on one line.
-    const item = menu.getByRole("menuitem", { name: "See the answers" });
+    const item = menu.getByRole("menuitem", { name: "Edit" });
     expect((await item.boundingBox())!.height).toBeLessThan(40);
     await shot(page, width, "menu-question-options", false);
-    await item.click();
-    await onScreen(page, page.getByRole("dialog"), `${width} answers dialog`);
-    await shot(page, width, "questions-answers", false);
     await page.keyboard.press("Escape");
-    await expect(page.getByRole("dialog")).toHaveCount(0);
+    await expect(menu).toHaveCount(0);
+    // A question opens in place (the answers dialog is gone), and the page still never scrolls sideways.
+    await page.getByRole("button", { name: QUESTIONS[0], exact: true }).click();
+    await expect(page.getByTestId("question-details")).toBeVisible();
+    await noSideScroll(page, `${width} question opened`);
+    await shot(page, width, "questions-answers", false);
     await shot(page, width, "questions");
 
     await visit(page, "/sources", h1("Sources"));
     await noSideScroll(page, `${width} sources`);
     await shot(page, width, "sources");
+
+    // Reports (7. Reports): /reports?share=1 opens the share panel under the header; the document fits the width.
+    await visit(page, "/reports?share=1", h1("Reports"));
+    await expect(page.getByTestId("share-panel")).toBeVisible();
+    await noSideScroll(page, `${width} reports`);
+    await shot(page, width, "reports");
 
     await visit(page, "/settings/billing", h1("Billing"));
     await noSideScroll(page, `${width} billing`);
@@ -312,10 +328,9 @@ for (const width of WIDTHS) {
     await expect(h1("Settings")).toBeVisible();
     await shot(page, width, "settings");
 
-    await visit(page, `/r/${shareToken}`, h1(NAME));
-    expect((await h1(NAME).boundingBox())!.width).toBeGreaterThan(100);
-    await noSideScroll(page, `${width} share page`);
-    await shot(page, width, "share-page");
+    // A share link opens the report PDF (D-90): there is no share page to lay out, only a redirect to the file.
+    const shared = await page.request.get(`/r/${shareToken}`, { maxRedirects: 0 });
+    expect(shared.status()).toBe(303);
 
     for (const [path, title, file] of [
       ["/internal/admin", "Overview", "admin-overview"],

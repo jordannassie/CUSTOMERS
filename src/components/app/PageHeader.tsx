@@ -35,7 +35,8 @@ export function PageHeader({ title, description, descriptionTestId, actions, cla
         ) : null}
         {children}
       </div>
-      {actions ? <div className="shrink-0">{actions}</div> : null}
+      {/* Capped so a long row of buttons (the Overview's) wraps instead of squeezing the title on a tablet. */}
+      {actions ? <div className="shrink-0 sm:max-w-[60%]">{actions}</div> : null}
     </header>
   );
 }

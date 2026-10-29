@@ -1,6 +1,6 @@
 // Pure rules for the Settings page (B-55). No framework, database or env imports, so the forms use them too.
 import { needsClearerIndustry } from "@/lib/other-label";
-import { ALIASES_MAX, type Frequency, type ModelId } from "./schema";
+import { ALIASES_MAX, PHONE_MAX, PHONE_PATTERN, SERVICE_MAX_CHARS, SERVICES_MAX, type Frequency, type ModelId } from "./schema";
 
 // MVP_SPEC 4.5.
 export const MODELS: { id: ModelId; label: string; explanation: string }[] = [
@@ -105,6 +105,43 @@ export function aliasesProblem(names: string[]): string | undefined {
   if (names.some((n) => n.length < 2)) return "Each other name needs at least 2 characters.";
   if (names.some((n) => n.length > 120)) return "Keep each other name under 120 characters.";
   return undefined;
+}
+
+/** What is wrong with the typed services, for the field's message; undefined when they can be saved. */
+export function servicesProblem(services: string[]): string | undefined {
+  if (services.length > SERVICES_MAX) return `Add up to ${SERVICES_MAX} services.`;
+  if (services.some((s) => s.length > SERVICE_MAX_CHARS)) return `Keep each service to ${SERVICE_MAX_CHARS} characters or fewer.`;
+  return undefined;
+}
+
+/** What is wrong with the typed phone number, for the field's message; undefined when it can be saved. */
+export function phoneProblem(phone: string): string | undefined {
+  const typed = phone.trim();
+  if (typed.length > PHONE_MAX) return `Keep the phone number to ${PHONE_MAX} characters or fewer.`;
+  if (!PHONE_PATTERN.test(typed)) return "Use only numbers, spaces and + ( ) - in the phone number.";
+  return undefined;
+}
+
+/** The profile fields a refused save can point at, so the form marks the field instead of a vague alert. */
+export const PROFILE_FIELDS = ["name", "industry", "website", "services", "aliases", "phone"] as const;
+export type ProfileField = (typeof PROFILE_FIELDS)[number];
+
+const FIELD_TEXT: Record<ProfileField, string> = {
+  name: "Enter the business name, up to 120 characters.",
+  industry: "Keep the industry to 80 characters or fewer.",
+  website: "Enter a website like yourbusiness.com, or leave it empty.",
+  services: `Add up to ${SERVICES_MAX} services, each ${SERVICE_MAX_CHARS} characters or fewer.`,
+  aliases: `Add up to ${ALIASES_MAX} other names, each 2 to 120 characters.`,
+  phone: `Enter a phone number of up to ${PHONE_MAX} characters, using only numbers, spaces and + ( ) -.`,
+};
+
+/** The field and message for the first problem zod found in a profile save, or null when it is not one field's. */
+export function profileFieldError(issues: { path: PropertyKey[] }[]): { field: ProfileField; error: string } | null {
+  for (const issue of issues) {
+    const field = PROFILE_FIELDS.find((f) => f === issue.path[0]);
+    if (field) return { field, error: FIELD_TEXT[field] };
+  }
+  return null;
 }
 
 // Legal endings are not part of what customers call a business.

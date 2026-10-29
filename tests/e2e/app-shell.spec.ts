@@ -98,17 +98,18 @@ test.afterAll(async () => {
   for (const id of userIds.splice(0)) await db.auth.admin.deleteUser(id);
 });
 
-test("seven menu items navigate, and switching business opens its Overview", async ({ page }) => {
+test("nine menu items navigate, and switching business opens its Overview", async ({ page }) => {
   await logIn(page, { status: "active", grant: 1200, spend: 620, days: 12 });
 
   let nav = await openNav(page);
   const links = nav.getByRole("navigation", { name: "Main" }).getByRole("link");
-  await expect(links).toHaveText(["Overview", "Competitors", "Opportunities", "Questions", "Sources", "Billing", "Settings"]);
+  // Grouped sidebar (D-86, order the user set 2026-10-27): Overview, then Compete, Improve, Visibility and Account.
+  await expect(links).toHaveText(["Overview", "Competitors", "Compare", "Actions", "Reports", "Questions", "Sources", "Billing", "Settings"]);
   await expect(links.filter({ hasText: "Competitors" })).toHaveAttribute("aria-current", "page");
   await expect(page.getByText("Find anything")).toHaveCount(0);
 
-  await links.filter({ hasText: "Opportunities" }).click();
-  await page.waitForURL((url) => url.pathname === "/opportunities");
+  await links.filter({ hasText: "Actions" }).click();
+  await page.waitForURL((url) => url.pathname === "/actions");
   await expect(page.getByRole("dialog", { name: "Menu" })).toHaveCount(0);
 
   nav = await openNav(page);

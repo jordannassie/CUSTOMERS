@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import ContactForm from "@/components/site/ContactForm";
+import { CONTACT_EMAIL } from "@/components/legal/LegalPage";
 import Header from "@/components/marketing/Header";
 import Footer from "@/components/marketing/Footer";
 import { MrDirectAvatar } from "@/components/site/MrDirectAvatar";
@@ -65,6 +66,13 @@ export default function ContactPage() {
                   ))}
                 </ul>
               </div>
+              <p className="text-sm text-muted-foreground">
+                Prefer email? Write to{" "}
+                <a href={`mailto:${CONTACT_EMAIL}`} className="text-primary underline-offset-4 hover:underline">
+                  {CONTACT_EMAIL}
+                </a>
+                .
+              </p>
               <p className="text-sm text-muted-foreground">
                 Looking for prices?{" "}
                 <Link href="/pricing" className="text-primary underline-offset-4 hover:underline">

@@ -1,10 +1,10 @@
 import { cn } from "cn";
-import { resultText, type QuestionResult } from "@/modules/questions/service";
+import { FAILED_LAST_SCAN, resultText, type QuestionResult } from "@/modules/questions/service";
 import type { ProviderId } from "@/modules/scanning";
 
 const FILL: Record<ProviderId, string> = { openai: "bg-chatgpt", anthropic: "bg-claude", perplexity: "bg-perplexity" };
 
-/** One pip per recent check, filled when AI recommended the business in it. */
+/** One square per recent check, oldest first, filled when AI recommended the business in it. */
 export function ResultPips({ result }: { result: QuestionResult }) {
   const text = resultText(result);
   return (
@@ -14,12 +14,14 @@ export function ResultPips({ result }: { result: QuestionResult }) {
         {result.label}
       </span>
       {result.checks === 0 ? (
-        <span className="text-[13px] text-text-hint">Not checked yet</span>
+        <span className={cn("text-[13px]", result.failedLastScan ? "text-mid-text" : "text-text-hint")} data-failed={result.failedLastScan || undefined}>
+          {text}
+        </span>
       ) : (
         <>
-          <span className="flex gap-[3px]" aria-hidden="true">
-            {Array.from({ length: result.checks }, (_, i) => (
-              <span key={i} className={cn("h-2.5 w-2 rounded-xs", i < result.appeared ? FILL[result.model] : "bg-border")} />
+          <span className="flex flex-wrap gap-[3px]" aria-hidden="true">
+            {result.pips.map((named, i) => (
+              <span key={i} className={cn("h-2.5 w-2 rounded-xs", named ? FILL[result.model] : "bg-border")} />
             ))}
           </span>
           <span className="text-[13px] tabular-nums">
@@ -29,6 +31,12 @@ export function ResultPips({ result }: { result: QuestionResult }) {
             </span>
             <span className="sr-only">{text}</span>
           </span>
+          {/* Older checks still show; the last scan's gap is said, never left blank (BUG-074). */}
+          {result.failedLastScan && (
+            <span className="text-xs text-mid-text" aria-hidden="true" data-failed>
+              {FAILED_LAST_SCAN}
+            </span>
+          )}
         </>
       )}
     </div>

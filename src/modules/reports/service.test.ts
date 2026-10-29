@@ -1,7 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { reportPeriod } from "@/lib/report-dates";
-import { isShareToken, logoType, newShareToken, storagePath, reportSummary } from "./service";
-import type { LeaderRow } from "@/modules/competitors";
+import { isShareToken, newShareToken, PDF_LINK_MAX_AGE_MS, shareLinkOpens, storagePath } from "./service";
 
 describe("newShareToken", () => {
   it("is 32 random bytes in URL-safe base64, different every time", () => {
@@ -19,26 +17,6 @@ describe("isShareToken", () => {
     for (const bad of ["", "abc", "a".repeat(42), "a".repeat(44), `${"a".repeat(42)}=`, `${"a".repeat(42)}/`, `${"a".repeat(42)}%`]) {
       expect(isShareToken(bad)).toBe(false);
     }
-  });
-});
-
-describe("reportPeriod", () => {
-  it("names the 30 days the score covers", () => {
-    expect(reportPeriod(new Date("2026-09-29T12:00:00Z"), 30)).toBe("Aug 31 to Sep 29, 2026");
-    expect(reportPeriod(new Date("2026-01-10T12:00:00Z"), 30)).toBe("Dec 12, 2025 to Jan 10, 2026");
-  });
-
-  it("uses the viewer's time zone: an evening in Las Vegas is not tomorrow", () => {
-    expect(reportPeriod(new Date("2026-10-09T04:30:00Z"), 30, "America/Los_Angeles")).toBe("Sep 9 to Oct 8, 2026");
-  });
-});
-
-describe("logoType", () => {
-  it("knows PNG, JPG and WebP by their first bytes, nothing else", () => {
-    expect(logoType(new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0, 0]))).toBe("image/png");
-    expect(logoType(new Uint8Array([0xff, 0xd8, 0xff, 0xe0]))).toBe("image/jpeg");
-    expect(logoType(new TextEncoder().encode("RIFF1234WEBPVP8 "))).toBe("image/webp");
-    expect(logoType(new TextEncoder().encode("<svg onload=alert(1)>"))).toBeNull();
   });
 });
 
@@ -62,64 +40,18 @@ describe("storagePath", () => {
   });
 });
 
-describe("reportSummary", () => {
-  const row = (name: string, score: number | null, standing: LeaderRow["standing"], isYou = false): LeaderRow => ({
-    name,
-    isYou,
-    score,
-    standing,
-    change: null,
-    collecting: false,
-    shade: null,
-  });
-  const base = { businessName: "Harbor Dental", score: 62, monthChange: null, leaderboard: [], firstFix: null };
+describe("shareLinkOpens", () => {
+  const now = new Date("2026-10-28T12:00:00Z");
+  const ago = (ms: number) => new Date(now.getTime() - ms).toISOString();
 
-  it("says the score, a real change, the competitor ahead and the first fix", () => {
-    const summary = reportSummary({
-      ...base,
-      monthChange: { direction: "up", points: 9 },
-      leaderboard: [row("Casco Bay", 81, "behind"), row("Harbor Dental", 62, null, true), row("Old Port", 40, "ahead")],
-      firstFix: "Get listed on Yelp with full details",
-    });
-    expect(summary).toEqual([
-      "Over the last 30 days, AI recommended Harbor Dental in about 6 of 10 customer questions, up 9 points on the 30 days before.",
-      "AI recommended Casco Bay more often, in about 8 of 10 questions.",
-      "First fix: Get listed on Yelp with full details.",
-    ]);
+  it("closes a PDF export's link after a few minutes, in case the export never turned it off", () => {
+    expect(shareLinkOpens({ for_pdf: true, created_at: ago(30_000) }, now)).toBe(true);
+    expect(shareLinkOpens({ for_pdf: true, created_at: ago(PDF_LINK_MAX_AGE_MS) }, now)).toBe(false);
+    expect(shareLinkOpens({ for_pdf: true, created_at: ago(86_400_000) }, now)).toBe(false);
+    expect(shareLinkOpens({ for_pdf: true, created_at: "not a date" }, now)).toBe(false);
   });
 
-  it("never claims a lead inside the margin", () => {
-    const summary = reportSummary({ ...base, leaderboard: [row("Casco Bay", 66, "about_same")] });
-    expect(summary[1]).toBe("Casco Bay, the competitor AI recommended most, was about level with Harbor Dental.");
-  });
-
-  it("gives both numbers instead of 'about level' when they are far apart but the margin can't separate them (BUG-111)", () => {
-    const summary = reportSummary({ ...base, score: 8, leaderboard: [row("Kingdom Plumbing", 27, "about_same")] });
-    expect(summary[1]).toBe(
-      "AI recommended Kingdom Plumbing, the competitor it named most, in about 3 of 10 questions and Harbor Dental in about 1 of 10. There aren't enough answers yet to say that gap will hold.",
-    );
-  });
-
-  it("names the chain when a tracked branch's answers named only the chain", () => {
-    const branch = { ...row("Bennu Coffee on Congress", 81, "behind"), chain: { brand: "Bennu Coffee", tracked: ["Bennu Coffee on Congress"] } };
-    expect(reportSummary({ ...base, leaderboard: [branch] })[1]).toBe("AI recommended Bennu Coffee more often, in about 8 of 10 questions.");
-  });
-
-  it("adds the likely reason the Overview shows, before the first fix", () => {
-    const summary = reportSummary({
-      ...base,
-      leaderboard: [row("Casco Bay", 81, "behind")],
-      firstFix: "Get listed on Yelp",
-      reason: "A likely reason Casco Bay is ahead of you: AI used yelp.com in 9 answers that named Casco Bay and not you.",
-    });
-    expect(summary.slice(-2)).toEqual([
-      "A likely reason Casco Bay is ahead of you: AI used yelp.com in 9 answers that named Casco Bay and not you.",
-      "First fix: Get listed on Yelp.",
-    ]);
-  });
-
-  it("skips competitors still collecting and says nothing before a score", () => {
-    expect(reportSummary({ ...base, leaderboard: [row("New Dental", 90, null)] })).toHaveLength(1);
-    expect(reportSummary({ ...base, score: null })).toEqual([]);
+  it("never closes the agency's own link by age", () => {
+    expect(shareLinkOpens({ for_pdf: false, created_at: ago(365 * 86_400_000) }, now)).toBe(true);
   });
 });

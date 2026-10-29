@@ -4,7 +4,7 @@ import type Stripe from "stripe";
 import { z } from "zod";
 import { authFailure, requireAgency, type ActionResult } from "@/modules/auth";
 import { getBalance } from "@/modules/credits";
-import { canSpendTopUps } from "@/modules/entitlements";
+import { canBuyTopUps } from "@/modules/entitlements";
 import { BUY_CREDITS_HREF } from "@/modules/workspace";
 import { listTopupPacks } from "../dal";
 import { appOrigin } from "../origin";
@@ -34,7 +34,7 @@ export async function buyTopUp(input: unknown): Promise<ActionResult<{ sessionId
   if (!parsed.success) return badInput;
 
   return buyTopUpWith(
-    { client: liveTopupClient(), loadPacks: listTopupPacks, canSpendTopUps, customerId: agencyCustomerId },
+    { client: liveTopupClient(), loadPacks: listTopupPacks, canBuyTopUps, customerId: agencyCustomerId },
     {
       agencyId: session.agency.id,
       email: session.user.email,
@@ -85,6 +85,7 @@ export async function completeFixtureTopUp(input: unknown): Promise<ActionResult
       checkoutBusinessIds: () => Promise.reject(new Error("not used for top-ups")),
       tagItem: () => Promise.reject(new Error("not used for top-ups")),
       checkoutSessionForPaymentIntent: () => Promise.reject(new Error("not used for top-ups")),
+      retrieveSchedule: () => Promise.reject(new Error("not used for top-ups")),
     },
     sendEmail: sendBillingEmail,
     now: () => new Date(),

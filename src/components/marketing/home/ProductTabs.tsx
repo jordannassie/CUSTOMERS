@@ -11,7 +11,7 @@ const TABS = [
     title: "One score from real AI answers",
     body: [
       "Your visibility score is how often AI named you across all checks in the last 30 days, shown for each AI and overall.",
-      "A confidence label tells you how solid the number is, and the trend line shows the last 7 days.",
+      "A confidence label tells you how solid the number is, and the trend line shows the last 7, 30 or 90 days, whichever you pick.",
     ],
     visual: <OverviewExample />,
   },

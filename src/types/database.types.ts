@@ -98,6 +98,7 @@ export type Database = {
           name: string
           owner_user_id: string
           purge_after: string | null
+          report_branding: Json
           status: string
           stripe_customer_id: string | null
           stripe_subscription_id: string | null
@@ -116,6 +117,7 @@ export type Database = {
           name: string
           owner_user_id: string
           purge_after?: string | null
+          report_branding?: Json
           status?: string
           stripe_customer_id?: string | null
           stripe_subscription_id?: string | null
@@ -134,6 +136,7 @@ export type Database = {
           name?: string
           owner_user_id?: string
           purge_after?: string | null
+          report_branding?: Json
           status?: string
           stripe_customer_id?: string | null
           stripe_subscription_id?: string | null
@@ -518,6 +521,7 @@ export type Database = {
           created_at: string
           current_period_end: string | null
           plan_id: string
+          price_cents: number | null
           status: string
           stripe_subscription_item_id: string | null
         }
@@ -527,6 +531,7 @@ export type Database = {
           created_at?: string
           current_period_end?: string | null
           plan_id: string
+          price_cents?: number | null
           status?: string
           stripe_subscription_item_id?: string | null
         }
@@ -536,6 +541,7 @@ export type Database = {
           created_at?: string
           current_period_end?: string | null
           plan_id?: string
+          price_cents?: number | null
           status?: string
           stripe_subscription_item_id?: string | null
         }
@@ -602,6 +608,7 @@ export type Database = {
           purge_after: string | null
           questions_updated_at: string | null
           reach_type: string | null
+          report_settings: Json
           requested_plan_id: string | null
           scan_frequency: string
           services: string[]
@@ -639,6 +646,7 @@ export type Database = {
           purge_after?: string | null
           questions_updated_at?: string | null
           reach_type?: string | null
+          report_settings?: Json
           requested_plan_id?: string | null
           scan_frequency?: string
           services?: string[]
@@ -676,6 +684,7 @@ export type Database = {
           purge_after?: string | null
           questions_updated_at?: string | null
           reach_type?: string | null
+          report_settings?: Json
           requested_plan_id?: string | null
           scan_frequency?: string
           services?: string[]
@@ -1160,48 +1169,69 @@ export type Database = {
       opportunities: {
         Row: {
           affected_url: string | null
+          assignee_id: string | null
           business_id: string
           category: string
           claude_prompt: string | null
+          completed_at: string | null
           created_at: string
+          dedupe_key: string | null
           description: string | null
+          due_date: string | null
           evidence: string | null
+          evidence_data: Json
           id: string
           impact: string
           recommended_action: string | null
+          source: string
           status: string
           title: string
           updated_at: string
+          where_to_apply: string | null
         }
         Insert: {
           affected_url?: string | null
+          assignee_id?: string | null
           business_id: string
           category: string
           claude_prompt?: string | null
+          completed_at?: string | null
           created_at?: string
+          dedupe_key?: string | null
           description?: string | null
+          due_date?: string | null
           evidence?: string | null
+          evidence_data?: Json
           id?: string
           impact?: string
           recommended_action?: string | null
+          source?: string
           status?: string
           title: string
           updated_at?: string
+          where_to_apply?: string | null
         }
         Update: {
           affected_url?: string | null
+          assignee_id?: string | null
           business_id?: string
           category?: string
           claude_prompt?: string | null
+          completed_at?: string | null
           created_at?: string
+          dedupe_key?: string | null
           description?: string | null
+          due_date?: string | null
           evidence?: string | null
+          evidence_data?: Json
           id?: string
           impact?: string
           recommended_action?: string | null
+          source?: string
           status?: string
           title?: string
           updated_at?: string
+          where_to_apply?: string | null
         }
         Relationships: [
           {
@@ -1248,6 +1278,64 @@ export type Database = {
           stripe_product_id?: string | null
         }
         Relationships: []
+      }
+      price_changes: {
+        Row: {
+          agency_id: string
+          batch: string
+          business_id: string
+          created_at: string
+          from_cents: number
+          id: string
+          plan_id: string
+          starts_at: string
+          to_cents: number
+        }
+        Insert: {
+          agency_id: string
+          batch: string
+          business_id: string
+          created_at?: string
+          from_cents: number
+          id?: string
+          plan_id: string
+          starts_at: string
+          to_cents: number
+        }
+        Update: {
+          agency_id?: string
+          batch?: string
+          business_id?: string
+          created_at?: string
+          from_cents?: number
+          id?: string
+          plan_id?: string
+          starts_at?: string
+          to_cents?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "price_changes_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "price_changes_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "price_changes_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "plans"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
@@ -1493,6 +1581,7 @@ export type Database = {
           created_at: string
           for_pdf: boolean
           id: string
+          report_id: string | null
           revoked_at: string | null
           token: string
         }
@@ -1501,6 +1590,7 @@ export type Database = {
           created_at?: string
           for_pdf?: boolean
           id?: string
+          report_id?: string | null
           revoked_at?: string | null
           token: string
         }
@@ -1509,12 +1599,70 @@ export type Database = {
           created_at?: string
           for_pdf?: boolean
           id?: string
+          report_id?: string | null
           revoked_at?: string | null
           token?: string
         }
         Relationships: [
           {
             foreignKeyName: "report_shares_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "report_shares_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      reports: {
+        Row: {
+          branding: Json
+          business_id: string
+          created_at: string
+          id: string
+          pdf_path: string | null
+          period_end: string
+          period_start: string
+          saved: boolean
+          sections: Json
+          snapshot: Json
+          title: string
+        }
+        Insert: {
+          branding?: Json
+          business_id: string
+          created_at?: string
+          id?: string
+          pdf_path?: string | null
+          period_end: string
+          period_start: string
+          saved?: boolean
+          sections?: Json
+          snapshot: Json
+          title: string
+        }
+        Update: {
+          branding?: Json
+          business_id?: string
+          created_at?: string
+          id?: string
+          pdf_path?: string | null
+          period_end?: string
+          period_start?: string
+          saved?: boolean
+          sections?: Json
+          snapshot?: Json
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reports_business_id_fkey"
             columns: ["business_id"]
             isOneToOne: false
             referencedRelation: "businesses"

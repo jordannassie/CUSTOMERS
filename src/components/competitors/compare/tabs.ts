@@ -1,12 +1,18 @@
-// The comparison's tabs (B-93), shared by the page (server) and the tab bar (browser).
-export const COMPARE_TABS = [
-  { id: "why", label: "Why they're ahead" },
-  { id: "answers", label: "AI answers" },
-  { id: "websites", label: "Websites" },
-  { id: "google", label: "Google" },
-  { id: "fixes", label: "Fixes" },
-] as const;
+// Compare's tabs (dashboard redesign), shared by the page (server) and the tab bar (browser). Ids match ?tab= in
+// compareHref, and old ids (why, answers, websites, fixes) still open the matching tab.
+import { compareTab, type CompareTabId } from "@/lib/compare-href";
 
-export type CompareTab = (typeof COMPARE_TABS)[number]["id"];
+export const COMPARE_TABS: { id: CompareTabId; label: string }[] = [
+  { id: "summary", label: "Why ahead or behind" },
+  { id: "questions", label: "Questions" },
+  { id: "sources", label: "Where AI looked" },
+  { id: "website", label: "Website" },
+  { id: "google", label: "Google" },
+];
+
+export type CompareTab = CompareTabId;
 
 export const isCompareTab = (tab: string | null | undefined): tab is CompareTab => COMPARE_TABS.some((t) => t.id === tab);
+
+/** Any ?tab= value, old names included, as one of these tabs. */
+export const toCompareTab = (tab: string | null | undefined): CompareTab => compareTab(tab);

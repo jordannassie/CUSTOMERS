@@ -1,21 +1,17 @@
 import "server-only";
 // Share links (B-59). report_shares has RLS with an owner-only select policy and nothing public, so the
 // writes and the public read use the service role here, after checking ownership or the token.
-import { providerErrorKind } from "@/lib/provider-error-kind";
-import { env } from "@/lib/env";
+// A link opens the current report's PDF (report_id null) or one saved report's (migration 078); each has its own link.
 import { createServiceClient } from "@/lib/supabase/service";
 import { requireAgency } from "@/modules/auth";
-import { fetchPlaceSignals, loadCompetitorsPage, loadPicked, whySentence } from "@/modules/competitors";
-import { loadOverview } from "@/modules/overview";
-import { SCORE_WINDOW_DAYS } from "@/modules/scanning";
-import { isShareToken, logoType, newShareToken, reportView, sharePath, storagePath, type ReportView } from "./service";
-
-const LOGO_BUCKET = "business-logos";
-const LOGO_MAX_BYTES = 2 * 1024 * 1024;
+import { newShareToken, sharePath } from "./service";
 
 export type ShareLink = { id: string; path: string };
 
-async function ownsBusiness(agencyId: string, businessId: string): Promise<boolean> {
+/** Null is the live report; otherwise a snapshot of the same business. */
+type ReportId = string | null;
+
+export async function ownsBusiness(agencyId: string, businessId: string): Promise<boolean> {
   const { data, error } = await createServiceClient()
     .from("businesses")
     .select("id")
@@ -27,14 +23,22 @@ async function ownsBusiness(agencyId: string, businessId: string): Promise<boole
   return data !== null;
 }
 
-// The agency's own link. PDF export links (for_pdf) are never handed out: they are turned off after the export.
-async function activeShare(businessId: string): Promise<ShareLink | null> {
-  const { data, error } = await createServiceClient()
+async function ownsReport(businessId: string, reportId: ReportId): Promise<boolean> {
+  if (reportId === null) return true;
+  const { data, error } = await createServiceClient().from("reports").select("id").eq("id", reportId).eq("business_id", businessId).maybeSingle();
+  if (error) throw new Error(`Reports: could not read the saved report: ${error.message}`);
+  return data !== null;
+}
+
+// The agency's own link. Old PDF export links (for_pdf, before D-90) are never handed out.
+async function activeShare(businessId: string, reportId: ReportId = null): Promise<ShareLink | null> {
+  const query = createServiceClient()
     .from("report_shares")
     .select("id, token")
     .eq("business_id", businessId)
     .eq("for_pdf", false)
-    .is("revoked_at", null)
+    .is("revoked_at", null);
+  const { data, error } = await (reportId === null ? query.is("report_id", null) : query.eq("report_id", reportId))
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();
@@ -42,22 +46,25 @@ async function activeShare(businessId: string): Promise<ShareLink | null> {
   return data && { id: data.id, path: sharePath(data.token) };
 }
 
-/** The live share link for one of the signed-in agency's businesses, if it has one. */
-export async function getShareLink(businessId: string): Promise<ShareLink | null> {
+/** The share link for one of the signed-in agency's reports (the live one by default), if it has one. */
+export async function getShareLink(businessId: string, reportId: ReportId = null): Promise<ShareLink | null> {
   const { agency } = await requireAgency({ next: "/dashboard" });
   if (!(await ownsBusiness(agency.id, businessId))) return null;
-  return activeShare(businessId);
+  return activeShare(businessId, reportId);
 }
 
-/** Reuses the live link, so pressing Share twice never leaves two links to turn off. Null when not the agency's business. */
-export async function createShare(agencyId: string, businessId: string): Promise<ShareLink | null> {
-  if (!(await ownsBusiness(agencyId, businessId))) return null;
-  const existing = await activeShare(businessId);
+/**
+ * Reuses the report's live link, so pressing Share twice never leaves two links to turn off. Null when the business
+ * or the snapshot is not the agency's.
+ */
+export async function createShare(agencyId: string, businessId: string, reportId: ReportId = null): Promise<ShareLink | null> {
+  if (!(await ownsBusiness(agencyId, businessId)) || !(await ownsReport(businessId, reportId))) return null;
+  const existing = await activeShare(businessId, reportId);
   if (existing) return existing;
   const token = newShareToken();
   const { data, error } = await createServiceClient()
     .from("report_shares")
-    .insert({ business_id: businessId, token })
+    .insert({ business_id: businessId, token, report_id: reportId })
     .select("id")
     .single();
   if (error) throw new Error(`Reports: could not create the share link: ${error.message}`);
@@ -65,49 +72,9 @@ export async function createShare(agencyId: string, businessId: string): Promise
 }
 
 /**
- * Runs `print` with a live share page for one of the agency's businesses (B-60). Always makes its own for_pdf link
- * and turns only that one off afterwards, so exporting never leaves a public link the agency did not choose to
- * share, and Share or the weekly email never hand out a link that is about to stop working. Null when not the
- * agency's business.
- */
-export async function withSharePage<T>(
-  agencyId: string,
-  businessId: string,
-  print: (page: { path: string; businessName: string }) => Promise<T>,
-): Promise<T | null> {
-  const { data: business, error } = await createServiceClient()
-    .from("businesses")
-    .select("name")
-    .eq("id", businessId)
-    .eq("agency_id", agencyId)
-    .is("deleted_at", null)
-    .maybeSingle();
-  if (error) throw new Error(`Reports: could not read the business: ${error.message}`);
-  if (!business) return null;
-
-  const token = newShareToken();
-  const { data: link, error: insertError } = await createServiceClient()
-    .from("report_shares")
-    .insert({ business_id: businessId, token, for_pdf: true })
-    .select("id")
-    .single();
-  if (insertError) throw new Error(`Reports: could not create the PDF link: ${insertError.message}`);
-  try {
-    return await print({ path: sharePath(token), businessName: business.name });
-  } finally {
-    // Only this one row: the agency's own link stays as it is.
-    const { error: revokeError } = await createServiceClient()
-      .from("report_shares")
-      .update({ revoked_at: new Date().toISOString() })
-      .eq("id", link.id);
-    if (revokeError) throw new Error(`Reports: could not turn off the PDF link: ${revokeError.message}`);
-  }
-}
-
-/**
  * The share link for the weekly report email (B-62): the live one, or a new one through createShare. Null when
  * the agency turned a link for the business off before, so an email never switches a report back on without them.
- * PDF export links (for_pdf) do not count: the export turns those off itself.
+ * Old PDF export links (for_pdf) do not count.
  */
 export async function shareForEmail(agencyId: string, businessId: string): Promise<ShareLink | null> {
   const existing = await activeShare(businessId);
@@ -117,6 +84,7 @@ export async function shareForEmail(agencyId: string, businessId: string): Promi
     .select("id", { count: "exact", head: true })
     .eq("business_id", businessId)
     .eq("for_pdf", false)
+    .is("report_id", null)
     .not("revoked_at", "is", null);
   if (error) throw new Error(`Reports: could not read share links: ${error.message}`);
   return count ? null : createShare(agencyId, businessId);
@@ -125,105 +93,17 @@ export async function shareForEmail(agencyId: string, businessId: string): Promi
 /** False when the link is not one of this agency's. Turning off a link that is already off is fine. */
 export async function revokeShare(agencyId: string, id: string): Promise<boolean> {
   const db = createServiceClient();
-  const { data: share, error } = await db.from("report_shares").select("business_id").eq("id", id).maybeSingle();
+  const { data: share, error } = await db.from("report_shares").select("business_id, report_id").eq("id", id).maybeSingle();
   if (error) throw new Error(`Reports: could not read the share link: ${error.message}`);
   if (!share || !(await ownsBusiness(agencyId, share.business_id))) return false;
-  // Every live link for the business, so a second link from a double click can never stay on unseen. A PDF
-  // export running now keeps its own link until it finishes, then turns it off itself.
-  const { error: updateError } = await db
+  // Every live link for the same report, so a second link from a double click can never stay on unseen.
+  const query = db
     .from("report_shares")
     .update({ revoked_at: new Date().toISOString() })
     .eq("business_id", share.business_id)
     .eq("for_pdf", false)
     .is("revoked_at", null);
+  const { error: updateError } = await (share.report_id === null ? query.is("report_id", null) : query.eq("report_id", share.report_id));
   if (updateError) throw new Error(`Reports: could not turn off the share link: ${updateError.message}`);
   return true;
-}
-
-type Shared = { agencyId: string; businessId: string; businessName: string; agencyName: string; logoUrl: string | null; isTest: boolean };
-
-// Looked up by the token itself, never compared in code. Errors never include the token.
-async function sharedBusiness(token: string): Promise<Shared | null> {
-  if (!isShareToken(token)) return null;
-  const db = createServiceClient();
-  const { data: share, error } = await db
-    .from("report_shares")
-    .select("business_id")
-    .eq("token", token)
-    .is("revoked_at", null)
-    .maybeSingle();
-  if (error) throw new Error(`Reports: could not read the share link: ${error.message}`);
-  if (!share) return null;
-
-  const { data: business, error: businessError } = await db
-    .from("businesses")
-    .select("name, agency_id, agencies!inner(name, logo_url, status, deleted_at, is_test)")
-    .eq("id", share.business_id)
-    .is("deleted_at", null)
-    .maybeSingle();
-  if (businessError) throw new Error(`Reports: could not read the business: ${businessError.message}`);
-  if (!business?.agency_id) return null;
-  // A suspended or deleted agency's links stop working at once (B9); they open again if it is reinstated.
-  if (business.agencies.status === "suspended" || business.agencies.status === "deleted" || business.agencies.deleted_at) return null;
-  return {
-    agencyId: business.agency_id,
-    businessId: share.business_id,
-    businessName: business.name,
-    agencyName: business.agencies.name,
-    logoUrl: business.agencies.logo_url,
-    isTest: business.agencies.is_test,
-  };
-}
-
-/** Whether a share link still opens a report, checked before the page starts streaming so it can answer 404. */
-export async function isShareLinkActive(token: string): Promise<boolean> {
-  return (await sharedBusiness(token)) !== null;
-}
-
-/** The public report behind a share link; null when the link is unknown or turned off. */
-export async function getSharedReport(token: string): Promise<ReportView | null> {
-  const shared = await sharedBusiness(token);
-  if (!shared) return null;
-  const now = new Date();
-  const [overview, competitors, picked] = await Promise.all([
-    loadOverview(shared.agencyId, shared.businessId, now),
-    loadCompetitorsPage(shared.agencyId, shared.businessId, now, fetchPlaceSignals),
-    // Saved answers only: the same likely reason the Overview shows (no Google values in the summary, D-73).
-    loadPicked(shared.agencyId, shared.businessId, now),
-  ]);
-  if (!overview || !competitors) return null;
-  return reportView({
-    agency: { name: shared.agencyName, hasLogo: logoPath(shared.logoUrl) !== null, isTest: shared.isTest },
-    businessName: shared.businessName,
-    now,
-    windowDays: SCORE_WINDOW_DAYS,
-    overview,
-    competitors,
-    reason: picked && typeof picked === "object" ? whySentence(picked.why) : null,
-  });
-}
-
-function logoPath(logoUrl: string | null): string | null {
-  return logoUrl ? storagePath(logoUrl, env.NEXT_PUBLIC_SUPABASE_URL, LOGO_BUCKET) : null;
-}
-
-/**
- * The agency logo for a share link. Served through the link because the stored URL holds the agency id;
- * only files in our own bucket are read, so no outside URL is ever fetched.
- */
-export async function getSharedLogo(token: string): Promise<{ bytes: ArrayBuffer; type: string } | null> {
-  const shared = await sharedBusiness(token);
-  const path = shared && logoPath(shared.logoUrl);
-  if (!path) return null;
-  const { data, error } = await createServiceClient().storage.from(LOGO_BUCKET).download(path);
-  if (error || !data || data.size > LOGO_MAX_BYTES) return null;
-  const bytes = await data.arrayBuffer();
-  const type = logoType(new Uint8Array(bytes, 0, Math.min(bytes.byteLength, 16)));
-  return type ? { bytes, type } : null;
-}
-
-/** Feeds the provider error spike alert (MVP_SPEC 22): a PDF that Browserless or Chromium could not print. */
-export async function recordPdfError(message: string): Promise<void> {
-  const { error } = await createServiceClient().rpc("record_provider_error", { p_provider: "browserless", p_kind: providerErrorKind(message.slice(0, 500)), p_message: message.slice(0, 500) });
-  if (error) console.error(`Could not record the PDF error: ${error.message}`);
 }

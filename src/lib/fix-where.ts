@@ -4,6 +4,13 @@
 
 export type Where = "website" | "google_listing" | "other_places";
 
+/** The one name for each group, on Actions, Compare and the standing reasons. */
+export const WHERE_LABEL: Record<Where, string> = {
+  website: "Website",
+  google_listing: "Google Business Profile",
+  other_places: "Other places",
+};
+
 const WEBSITE = new Set(["content", "service_page", "technical", "structured_data", "agent_readiness"]);
 const GOOGLE = /google (business )?(listing|profile)|google business|google maps|google reviews?|on google/i;
 const OTHER_SITES =
@@ -23,7 +30,7 @@ export function whereOf(fix: { category: string | null; claudePrompt: string | n
 export const fixAnchor = (where: Where) => `fix-${where}`;
 
 /** One fix on the Opportunities page, opened and scrolled to: /opportunities?fix=<id>. */
-export const fixHref = (id: string) => `/opportunities?fix=${encodeURIComponent(id)}`;
+export const fixHref = (id: string) => `/actions?fix=${encodeURIComponent(id)}`;
 
 /** The id of a fix card on the Opportunities page. */
 export const fixCardId = (id: string) => `fix-card-${id}`;

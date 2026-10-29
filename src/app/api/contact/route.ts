@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { contactInput, contactProblem, contactTopic, hashIp, saveContactMessage } from "@/modules/feedback";
 import { checkRateLimit, clientIp } from "@/modules/rate-limit";
+import { CONTACT_EMAIL } from "@/components/legal/LegalPage";
+
+// The same address the legal pages and /contact show, so "email us" always says where.
+const EMAIL_US = `email us at ${CONTACT_EMAIL}`;
 
 // Public contact form: rate limited per address; checks and the write live in the feedback module.
 export async function POST(request: NextRequest) {
@@ -8,12 +12,12 @@ export async function POST(request: NextRequest) {
   const limit = await checkRateLimit("contact", ip);
   if (limit === "limited") {
     return NextResponse.json(
-      { error: "You've sent a few messages already. Try again in an hour, or email us directly." },
+      { error: `You've sent a few messages already. Try again in an hour, or ${EMAIL_US}.` },
       { status: 429 },
     );
   }
   if (limit === "unavailable") {
-    return NextResponse.json({ error: "We couldn't send your message right now. Try again in a few minutes, or email us directly." }, { status: 503 });
+    return NextResponse.json({ error: `We couldn't send your message right now. Try again in a few minutes, or ${EMAIL_US}.` }, { status: 503 });
   }
 
   const parsed = contactInput.safeParse(await request.json().catch(() => null));
@@ -29,7 +33,7 @@ export async function POST(request: NextRequest) {
 
   const saved = await saveContactMessage({ ...input, topic: contactTopic(input.interest, input.topic), ipHash: hashIp(ip) });
   if (!saved.ok) {
-    return NextResponse.json({ error: "We couldn't send your message. Try again, or email us directly." }, { status: 500 });
+    return NextResponse.json({ error: `We couldn't send your message. Try again, or ${EMAIL_US}.` }, { status: 500 });
   }
   return NextResponse.json({ success: true });
 }

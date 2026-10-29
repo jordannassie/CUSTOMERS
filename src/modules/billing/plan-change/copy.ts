@@ -9,6 +9,11 @@ export function formatDate(seconds: number, timeZone = "UTC"): string {
   return customerDate(new Date(seconds * 1000), timeZone);
 }
 
+/** A change made now while the last payment failed: Stripe would bill it onto an unpaid subscription. */
+export const PAST_DUE_REFUSAL = "Your last payment didn't go through. Update your card first, then try again.";
+/** BUG-066: an ended plan starts again on Choose a plan (CHOOSE_PLAN_HREF), with no need to contact us. */
+export const ENDED_REFUSAL = "Your plan has ended. Choose a plan to start it again.";
+
 /** A change scheduled for the period end that a cancel drops, or "Keep my plan" puts back (BUG-124). */
 export type ScheduledNote = { businessName: string; /** Null: the business comes off the plan. */ planName: string | null };
 
@@ -28,6 +33,8 @@ export type CopyInput = {
   credits?: { plan: number; topup: number };
   /** During a trial: the first bill after it, with this change made (trial-bill.ts, BUG-245). */
   firstBillCents?: number | null;
+  /** The last payment failed: an unpaid invoice can still be collected after a cancel. */
+  pastDue?: boolean;
 };
 
 /** What stops on the end date of a cancel or a removal, listed under the heading. */
@@ -144,6 +151,14 @@ export function previewCopy(input: CopyInput): Copy {
       if (input.trialing) {
         return {
           headline: `Your free trial keeps going until ${date}. Your card won't be charged.`,
+          details: [...credits, ...stays, ...droppedLines(input.scheduled)],
+          losses,
+        };
+      }
+      // Past due, Stripe keeps retrying the unpaid invoice until the plan ends, so "never charged again" is not true.
+      if (input.pastDue) {
+        return {
+          headline: `Your plan ends on ${date}. You won't be charged for another month, but the unpaid invoice may still be collected.`,
           details: [...credits, ...stays, ...droppedLines(input.scheduled)],
           losses,
         };

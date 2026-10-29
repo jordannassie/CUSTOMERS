@@ -5,7 +5,7 @@ import { canAddBusiness } from "@/modules/entitlements";
 import type { AutofillClients, AutofillRequest } from "../autofill";
 import { runBusinessAutofill } from "../dal";
 import { DUPLICATE_BUSINESS_TEXT, DuplicateBusinessError, duplicateBusiness } from "../duplicates";
-import { autofillDone, insertDraft, websiteTaken } from "./draft/dal";
+import { autofillDone, insertDraft, keepActiveBusiness, websiteTaken } from "./draft/dal";
 import { restartIfAnotherBusiness } from "./restart/dal";
 import type { AutofillResult } from "../schema";
 import { needsCard, nextStepNumber, type PlanId, type StepSlug, type WizardState } from "./steps";
@@ -78,7 +78,10 @@ export async function saveAgency(userId: string, name: string, plan: PlanId | nu
 export type StartBusinessResult =
   /** autofill is null when it already ran for this draft as it is: the details step refills from what is saved. */
   | { ok: true; businessId: string; autofill: AutofillResult | null }
-  | { ok: false; status: 403 | 409; error: string };
+  | { ok: false; status: number; error: string };
+
+/** Runs just before auto-fill does: a refusal (the hourly limit) stops it. Not called when auto-fill is skipped. */
+export type AutofillGate = () => Promise<{ ok: false; status: number; error: string } | null>;
 
 /**
  * Step 3: reuses the agency's one draft business (no duplicates on return, a double submit or a second tab) or creates
@@ -96,6 +99,8 @@ export async function startBusiness(
   createKey: string | null = null,
   /** "Try again" after the website and Google both failed: auto-fill runs once more for the same website. */
   retry = false,
+  /** The hourly auto-fill limit: charged only when auto-fill really runs, not on Back and Continue (SEC-07). */
+  gate?: AutofillGate,
 ): Promise<StartBusinessResult> {
   const supabase = await createClient();
   const agency = await supabase.from("agencies").select("id").eq("owner_user_id", userId).maybeSingle();
@@ -126,7 +131,7 @@ export async function startBusiness(
     if (created.kind === "duplicate") return { ok: false, status: 409, error: DUPLICATE_BUSINESS_TEXT };
     if (created.kind === "created") {
       if (state.hasFinishedBusiness) await keepActiveBusiness(userId);
-      return withAutofill(userId, created.id, request, clients);
+      return withAutofill(userId, created.id, request, clients, gate);
     }
     // This attempt, or another tab, made the draft a moment ago: carry on with that one.
     draft = (await loadWizardState(userId)).draft;
@@ -152,10 +157,18 @@ export async function startBusiness(
   if (error) throw new Error(`Could not update business: ${error.message}`);
   // The same business sent again: no second AI or Firecrawl call for what auto-fill already found.
   if (!restarted && !retry && (await autofillDone(businessId))) return { ok: true, businessId, autofill: null };
-  return withAutofill(userId, businessId, request, clients);
+  return withAutofill(userId, businessId, request, clients, gate);
 }
 
-async function withAutofill(userId: string, businessId: string, request: AutofillRequest, clients?: AutofillClients): Promise<StartBusinessResult> {
+async function withAutofill(
+  userId: string,
+  businessId: string,
+  request: AutofillRequest,
+  clients?: AutofillClients,
+  gate?: AutofillGate,
+): Promise<StartBusinessResult> {
+  const refused = await gate?.();
+  if (refused) return refused;
   try {
     const autofill = await runBusinessAutofill(userId, businessId, request, clients);
     if (!autofill) throw new Error("The draft business vanished during auto-fill");
@@ -165,27 +178,6 @@ async function withAutofill(userId: string, businessId: string, request: Autofil
     if (error instanceof DuplicateBusinessError) return { ok: false, status: 409, error: DUPLICATE_BUSINESS_TEXT };
     throw error;
   }
-}
-
-// With no active business saved, the app falls back to the newest one, which would now be the draft
-// and hide the dashboard while a second business is set up. Pin the newest finished one instead.
-async function keepActiveBusiness(userId: string): Promise<void> {
-  const supabase = await createClient();
-  const profile = await supabase.from("profiles").select("active_business_id").eq("id", userId).maybeSingle();
-  if (profile.error) throw new Error(`Could not load profile: ${profile.error.message}`);
-  if (profile.data?.active_business_id) return;
-  const latest = await supabase
-    .from("businesses")
-    .select("id")
-    .eq("owner_user_id", userId)
-    .neq("status", "onboarding")
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-  if (latest.error) throw new Error(`Could not load businesses: ${latest.error.message}`);
-  if (!latest.data) return;
-  const { error } = await supabase.from("profiles").update({ active_business_id: latest.data.id }).eq("id", userId);
-  if (error) throw new Error(`Could not save the active business: ${error.message}`);
 }
 
 /** The business's onboarding_step, null when unset, undefined when it is not the user's. */

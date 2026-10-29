@@ -22,7 +22,7 @@ test("terms state the trial, renewal and cancel rules", async ({ page }) => {
 test("privacy lists every company that processes data and the deletion wait", async ({ page }) => {
   await page.goto("/privacy");
   const table = page.locator("#subprocessors table");
-  for (const name of ["Supabase", "Netlify", "Stripe", "Resend", "OpenAI", "Anthropic", "Perplexity", "Google", "Firecrawl", "Browserless"]) {
+  for (const name of ["Supabase", "Netlify", "Stripe", "Resend", "OpenAI", "Anthropic", "Perplexity", "Google", "Firecrawl"]) {
     await expect(table.locator("tbody th").getByText(name, { exact: true })).toBeVisible();
   }
   await expect(page.locator("#deletion")).toContainText("30 days later we permanently delete");

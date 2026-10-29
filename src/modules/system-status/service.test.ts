@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { joinUrl, PROBES, runProbe, stripeMode, timeAgo, withCreditStatus, workerStatus, type Probe } from "./service";
+import { PROBES, runProbe, stripeMode, timeAgo, withCreditStatus, workerStatus, type Probe } from "./service";
 
 const probe = (id: string): Probe => PROBES.find((p) => p.id === id)!;
 
@@ -50,13 +50,11 @@ describe("runProbe", () => {
       "api.perplexity.ai",
       "places.googleapis.com",
       "api.firecrawl.dev",
-      "production-sfo.browserless.io",
       "api.resend.com",
       "api.stripe.com",
     ]);
     expect(calls[1].init?.headers).toMatchObject({ "x-api-key": "k-123" });
     expect(calls[3].init?.headers).toMatchObject({ "x-goog-api-key": "k-123", "x-goog-fieldmask": "id" });
-    expect(calls[5].url).toContain("token=k-123");
   });
 
   it("treats a Resend sending-only key as working", async () => {
@@ -128,16 +126,6 @@ describe("workerStatus", () => {
 describe("probe addresses (BUG-081, BUG-082)", () => {
   it("checks Perplexity on the Agent API scans use, not the retired Sonar endpoint", () => {
     expect(probe("perplexity").request("pplx-key", {}).url).toBe("https://api.perplexity.ai/v1/models");
-  });
-
-  it("checks Browserless on the configured host, keeping its path", () => {
-    expect(probe("browserless").request("k", {}).url).toBe("https://production-sfo.browserless.io/meta?token=k");
-    expect(probe("browserless").request("k", { browserlessUrl: "https://chrome.example/v2/" }).url).toBe("https://chrome.example/v2/meta?token=k");
-  });
-
-  it("joins a path onto a base without dropping the base's own path", () => {
-    expect(joinUrl("https://host/v2", "/pdf")).toBe("https://host/v2/pdf");
-    expect(joinUrl("https://host/", "pdf")).toBe("https://host/pdf");
   });
 });
 

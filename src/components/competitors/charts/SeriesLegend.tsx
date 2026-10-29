@@ -43,10 +43,13 @@ export function SeriesTooltip({
   title,
   rows,
   unit = "",
+  footer,
 }: {
   title: string;
   rows: { key: string; name: string; isYou: boolean; color: string; value: number | null }[];
   unit?: string;
+  /** One quiet line under the rows, like "Your 30-day score: 15". */
+  footer?: string;
 }) {
   const sorted = [...rows].sort((a, b) => (b.value ?? -1) - (a.value ?? -1));
   return (
@@ -63,6 +66,7 @@ export function SeriesTooltip({
           </li>
         ))}
       </ul>
+      {footer && <p className="mt-1.5 border-t border-border pt-1.5 text-muted-foreground">{footer}</p>}
     </div>
   );
 }

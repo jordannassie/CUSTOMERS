@@ -34,6 +34,12 @@ describe("cancel preview", () => {
     ]);
   });
 
+  it("past due: does not promise no more charges, since the unpaid invoice can still be collected", () => {
+    const copy = previewCopy({ ...base, change: { kind: "cancel" }, trialing: false, credits: { plan: 0, topup: 0 }, pastDue: true });
+    expect(copy.headline).toBe(`Your plan ends on ${DATE}. You won't be charged for another month, but the unpaid invoice may still be collected.`);
+    expect(copy.headline).not.toContain("won't be charged again");
+  });
+
   it("says one credit, not one credits", () => {
     expect(cancel(false, { plan: 1, topup: 1 }).details.slice(0, 2)).toEqual([
       `You have 1 plan credit left. Any left on ${DATE} are removed.`,

@@ -77,9 +77,13 @@ export async function saveWebsiteStep(input: unknown): Promise<ActionResult<{ bu
     const { name, city } = parsed.data;
     request = { name, city };
   }
-  const limited = await autofillLimit(user);
-  if (limited) return limited;
-  const result = await startBusiness(user, request, undefined, plan ?? null, createKey ?? null, retry === true && "domain" in request);
+  // The limit is charged inside startBusiness, only when auto-fill will run: Back and Continue with the same business
+  // reuses what auto-fill found and used to spend one of the hour's lookups each time.
+  const gate = async () => {
+    const limited = await autofillLimit(user);
+    return limited && !limited.ok ? limited : null;
+  };
+  const result = await startBusiness(user, request, undefined, plan ?? null, createKey ?? null, retry === true && "domain" in request, gate);
   if (!result.ok) return result;
   return { ok: true, data: { businessId: result.businessId, autofill: result.autofill } };
 }

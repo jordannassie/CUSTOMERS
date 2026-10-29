@@ -1,20 +1,18 @@
 // What a finished explanation does to the saved fixes (MVP_SPEC 7.2). Pure, so every case is unit tested.
-import type { Explanation, OpportunityDraft } from "../explain";
-import { planSave } from "../service";
-
-type Existing = { id: string; title: string; status: string };
+import type { Explanation } from "../explain";
+import { fixTitleKey, planSave, type ExistingFix, type SavePlan } from "../service";
 
 /**
- * New reasons replace the open ones, as before (planSave). When the writer failed and the fixed rules stood in, the
- * open fixes from an earlier scan stay and only rules not already listed are added: a failed explanation must never
- * leave a business with fewer fixes than it had (2026-10-14, Car4Tune went from its fixes to 1).
+ * New AI reasons rewrite, add and remove the open scan fixes (planSave). When the writer failed and the fixed rules
+ * stood in, nothing is rewritten or removed and only rules not already listed are added: a failed explanation must
+ * never leave a business with fewer fixes than it had (2026-10-14, Car4Tune went from its fixes to 1), nor replace
+ * the AI's text with the rules' text.
  */
-export function saveFor(existing: Existing[], explanation: Pick<Explanation, "source" | "drafts">): { insert: OpportunityDraft[]; removeIds: string[] } {
+export function saveFor(existing: ExistingFix[], explanation: Pick<Explanation, "source" | "drafts">): SavePlan {
   const plan = planSave(existing, explanation.drafts);
-  const open = existing.filter((o) => o.status === "open");
-  if (explanation.source === "ai" || open.length === 0) return plan;
-  const listed = new Set(existing.map((o) => o.title.trim().toLowerCase()));
-  return { insert: plan.insert.filter((d) => !listed.has(d.title.trim().toLowerCase())), removeIds: [] };
+  if (explanation.source === "ai") return plan;
+  const listed = new Set(existing.map((o) => fixTitleKey(o.title)));
+  return { insert: plan.insert.filter((d) => !listed.has(fixTitleKey(d.title))), update: [], removeIds: [] };
 }
 
 /** The provider_errors line for an explanation that fell back to the fixed rules; null when nothing failed. */

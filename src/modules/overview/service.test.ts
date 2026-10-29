@@ -99,10 +99,15 @@ describe("overviewView", () => {
 
   it("lists every chosen model, with no score for one that has no checks yet", () => {
     expect(overviewView(report(), []).models).toEqual([
-      { id: "openai", label: "ChatGPT", score: 75, notChecked: false, skipped: false, change: null },
-      { id: "anthropic", label: "Claude", score: null, notChecked: false, skipped: false, change: null },
-      { id: "perplexity", label: "Perplexity", score: 48, notChecked: false, skipped: false, change: null },
+      { id: "openai", label: "ChatGPT", score: 75, notChecked: false, skipped: false, change: null, monthChange: null },
+      { id: "anthropic", label: "Claude", score: null, notChecked: false, skipped: false, change: null, monthChange: null },
+      { id: "perplexity", label: "Perplexity", score: 48, notChecked: false, skipped: false, change: null, monthChange: null },
     ]);
+  });
+
+  it("gives each AI tool its change on the 30 days before too, for the monthly report", () => {
+    const view = overviewView(report({ modelMonthChanges: { openai: { direction: "up", points: 8.4 } } }), []);
+    expect(view.models.find((m) => m.id === "openai")).toMatchObject({ change: null, monthChange: { direction: "up", points: 8 } });
   });
 
   describe("an AI that couldn't be checked (BUG-074)", () => {

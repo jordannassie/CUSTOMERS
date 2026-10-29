@@ -4,14 +4,23 @@ import { refresh } from "next/cache";
 import { authFailure, requireAgency, type ActionResult } from "@/modules/auth";
 import { canEditTracking } from "@/modules/entitlements";
 import type { QuestionAnswer } from "./answers";
-import { deleteQuestion, insertQuestion, loadQuestionAnswers, updateQuestionActive, updateQuestionText, type ChangeResult } from "./dal";
-import { addQuestionInput, editQuestionInput, questionAnswersInput, removeQuestionInput, setQuestionActiveInput } from "./schema";
+import { deleteQuestion, insertQuestion, updateQuestionActive, updateQuestionText, type ChangeResult } from "./dal";
+import { loadQuestionAnswers } from "./reads/dal";
+import {
+  addQuestionInput,
+  editQuestionInput,
+  questionAnswersInput,
+  removeQuestionInput,
+  setQuestionActiveInput,
+  TOPIC_MAX_LENGTH,
+} from "./schema";
 
 type Result = ActionResult<null>;
 // Failures fit every action's result type.
 type Failure = ActionResult<never>;
 
 const invalidText: Failure = { ok: false, status: 400, error: "Write a question between 8 and 200 characters." };
+const invalidTopic: Failure = { ok: false, status: 400, error: `Keep the topic to ${TOPIC_MAX_LENGTH} characters or fewer.` };
 const invalid: Failure = { ok: false, status: 400, error: "Something was missing. Refresh the page and try again." };
 
 async function guard(): Promise<{ agencyId: string } | { denied: Failure }> {
@@ -44,8 +53,9 @@ export async function editQuestion(input: unknown): Promise<ActionResult<{ newQu
   const auth = await guard();
   if ("denied" in auth) return auth.denied;
   const parsed = editQuestionInput.safeParse(input);
-  if (!parsed.success) return invalidText;
-  const result = await updateQuestionText(auth.agencyId, parsed.data.businessId, parsed.data.questionId, parsed.data.text);
+  if (!parsed.success) return parsed.error.issues.some((i) => i.path[0] === "topic") ? invalidTopic : invalidText;
+  const { businessId, questionId, text, topic } = parsed.data;
+  const result = await updateQuestionText(auth.agencyId, businessId, questionId, text, topic);
   if (!result.ok) return result;
   refresh();
   return { ok: true, data: { newQuestion: result.newQuestion } };

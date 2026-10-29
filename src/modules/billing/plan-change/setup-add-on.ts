@@ -2,6 +2,7 @@ import "server-only";
 import { viewerTimeZone } from "@/lib/viewer-time-zone";
 import { billingAccess } from "../account/access";
 import { loadPlanChangeData, raiseScheduleLost, type PlanChangeData } from "./dal";
+import { PAST_DUE_REFUSAL } from "./copy";
 import { PlanChangeError, type PlanChangeContext } from "./planner";
 import { applyPlanChange, previewPlanChange } from "./service";
 import { syncAfterChange } from "./sync-after";
@@ -24,6 +25,8 @@ export type SetupAddOn = {
 export type SetupAddOnResult = { ok: true } | { ok: false; status: number; error: string };
 
 const LIVE = new Set(["trialing", "active"]);
+// The last payment failed: the business can't join the subscription, and finishing without it would leave it unbilled.
+const PAYMENT_FAILED = new Set(["past_due", "unpaid"]);
 
 /** The plan the agency's other businesses are on, so every business shares one plan by default. */
 export function planForNewBusiness(context: PlanChangeContext, businessId: string): string | null {
@@ -41,13 +44,16 @@ async function prepare(agencyId: string, businessId: string) {
   const data: PlanChangeData = await loadPlanChangeData(agencyId);
   const { context } = data;
   // No subscription (a test agency, or no plan yet): Choose plan bills every business when a plan starts.
-  if (!context.subscriptionId || !LIVE.has(context.agencyStatus)) return null;
+  if (!context.subscriptionId) return null;
   const business = context.businesses.find((b) => b.id === businessId);
   // Not this agency's business, or already on the plan: nothing to add.
   if (!business || business.planId) return null;
   // Only a business added after one already on the plan. The first business joins the subscription at checkout,
   // and its row can arrive from the webhook after setup finishes; adding it here would bill it twice.
   if (!context.businesses.some((b) => b.id !== businessId && b.planId)) return null;
+  // Refused, not skipped: setup must not finish a business that nothing bills (entitlements canFinishDraft too).
+  if (PAYMENT_FAILED.has(context.agencyStatus)) throw new PlanChangeError(402, PAST_DUE_REFUSAL);
+  if (!LIVE.has(context.agencyStatus)) return null;
   const planId = chosenPlanFor(context, businessId, business.requestedPlanId);
   if (!planId) return null;
   const access = await billingAccess(data);
@@ -86,12 +92,12 @@ export async function addBusinessAtSetup(
   businessId: string,
   confirmed: { planId: string; previewedAt: number } | null,
 ): Promise<SetupAddOnResult> {
-  const ready = await prepare(agencyId, businessId);
-  if (!ready) return { ok: true };
-  if (!confirmed || confirmed.planId !== ready.planId) {
-    return { ok: false, status: 409, error: "Your plan changed while you were setting up. Check the price and finish again." };
-  }
   try {
+    const ready = await prepare(agencyId, businessId);
+    if (!ready) return { ok: true };
+    if (!confirmed || confirmed.planId !== ready.planId) {
+      return { ok: false, status: 409, error: "Your plan changed while you were setting up. Check the price and finish again." };
+    }
     await applyPlanChange(ready.context, { kind: "add", businessId, planId: ready.planId }, confirmed.previewedAt, ready.deps);
     // Billing then lists the business on its plan at once, not under "Not on your plan" until the webhook (BUG-238).
     await syncAfterChange(ready.access, ready.context.subscriptionId);

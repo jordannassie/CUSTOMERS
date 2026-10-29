@@ -21,6 +21,7 @@ export type Schedule = {
   businessId: string;
   businessName: string;
   frequency: keyof typeof SCAN_EVERY_DAYS;
+  /** Null: no scan is scheduled (off the plan, or not set up), so none is counted. */
   nextScanAt: Date | null;
   creditsPerScan: number;
 };
@@ -51,10 +52,10 @@ export function forecastWindow(
 export function scheduledScans(schedules: Schedule[], now: Date, endsAt: Date): { at: Date; credits: number }[] {
   const scans: { at: Date; credits: number }[] = [];
   for (const s of schedules) {
-    if (s.creditsPerScan <= 0) continue;
+    if (s.creditsPerScan <= 0 || s.nextScanAt === null) continue;
     const step = SCAN_EVERY_DAYS[s.frequency] * DAY;
-    // An overdue or never-scheduled business scans as soon as the worker picks it up.
-    let at = Math.max(s.nextScanAt?.getTime() ?? now.getTime(), now.getTime());
+    // An overdue business scans as soon as the worker picks it up.
+    let at = Math.max(s.nextScanAt.getTime(), now.getTime());
     for (; at <= endsAt.getTime(); at += step) scans.push({ at: new Date(at), credits: s.creditsPerScan });
   }
   return scans.sort((a, b) => a.at.getTime() - b.at.getTime());

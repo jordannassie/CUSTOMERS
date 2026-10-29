@@ -203,7 +203,10 @@ describe("settings actions", () => {
     await signIn(seed);
     expect(await saveBusinessProfile({ ...profile(seed.businessId), name: " " })).toMatchObject({ status: 400 });
     expect(await saveBusinessProfile({ ...profile(seed.businessId), website: "not a site" })).toMatchObject({ status: 400 });
-    expect(await saveBusinessProfile({ ...profile(seed.businessId), phone: "<script>" })).toMatchObject({ status: 400 });
+    // The refusal names its field, so the form marks it (not "Check the highlighted details" with nothing marked).
+    expect(await saveBusinessProfile({ ...profile(seed.businessId), phone: "<script>" })).toMatchObject({ status: 400, field: "phone" });
+    const services = Array.from({ length: 21 }, (_, i) => `Service ${i}`);
+    expect(await saveBusinessProfile({ ...profile(seed.businessId), services })).toMatchObject({ status: 400, field: "services" });
     expect(await saveBusinessProfile({ ...profile(seed.businessId), area: "x".repeat(81) })).toMatchObject({ status: 400 });
     expect(await saveScanSettings({ businessId: seed.businessId, models: [], frequency: "weekly" })).toMatchObject({ status: 400 });
     expect(await saveScanSettings({ businessId: seed.businessId, models: ["gemini"], frequency: "weekly" })).toMatchObject({
