@@ -1,3 +1,4 @@
+import { clusterOf, namesCompetitor } from "./check-keys";
 import type { ProviderId } from "./providers/types";
 
 // Visibility score and confidence (MVP_SPEC 5.6, D-63, D-64, D-91). Pure functions over saved checks.
@@ -38,6 +39,18 @@ export type Mentioned = (check: ScoreCheck) => boolean;
 
 type Stats = Estimate & { variance: number };
 
+/** The pooled score alone (no margin): answers naming the business over all answers from the chosen models (D-91). */
+export function poolScore(checks: ScoreCheck[], models: readonly ProviderId[], mentioned: Mentioned): number | null {
+  let total = 0;
+  let mentions = 0;
+  for (const c of checks) {
+    if (!models.includes(c.provider)) continue;
+    total++;
+    if (mentioned(c)) mentions++;
+  }
+  return total === 0 ? null : (100 * mentions) / total;
+}
+
 export function checksInWindow<T extends { checkedAt: Date; activeUntil?: Date }>(checks: T[], now: Date, days = SCORE_WINDOW_DAYS): T[] {
   const since = now.getTime() - days * DAY_MS;
   // A question paused or removed later still counts in a score read at an earlier moment, so past points stay as
@@ -71,14 +84,24 @@ function poolStats(checks: ScoreCheck[], mentioned: Mentioned): Stats | null {
   let variance = 0;
   let uniqueAnswers = 0;
   // A question asked of two AI tools is two clusters: the tools differ, so their answers are not one sample.
-  for (const cluster of groupBy(checks, (c) => `${c.provider}:${c.questionId}`).values()) {
-    mentions += cluster.filter(mentioned).length;
-    const unique = [...groupBy(cluster, (c) => c.answerKey).values()].map((same) => same[0]);
-    uniqueAnswers += unique.length;
+  for (const cluster of groupBy(checks, clusterOf).values()) {
+    // One pass: every answer counts toward the score; only the first of each repeated answer toward the spread.
+    const seen = new Set<string>();
+    let unique = 0;
+    let uniqueMentioned = 0;
+    for (const c of cluster) {
+      const named = mentioned(c);
+      if (named) mentions++;
+      if (seen.has(c.answerKey)) continue;
+      seen.add(c.answerKey);
+      unique++;
+      if (named) uniqueMentioned++;
+    }
+    uniqueAnswers += unique;
     // Adding one hit and one miss keeps a cluster with a single answer from claiming zero spread.
-    const p = (unique.filter(mentioned).length + 1) / (unique.length + 2);
+    const p = (uniqueMentioned + 1) / (unique + 2);
     const weight = cluster.length / checks.length;
-    variance += (weight * weight * p * (1 - p)) / unique.length;
+    variance += (weight * weight * p * (1 - p)) / unique;
   }
   return {
     score: (100 * mentions) / checks.length,
@@ -198,7 +221,7 @@ export function competitorScores(
   if (!you) return [];
   return competitors.map((name) => {
     const lower = name.toLowerCase();
-    const mentioned: Mentioned = (c) => c.competitorsMentioned.some((n) => n.toLowerCase() === lower);
+    const mentioned: Mentioned = (c) => namesCompetitor(c, lower);
     const them = estimateFor(inWindow, opts.models, mentioned).overall!;
     return { name, estimate: them, standing: compareWithCompetitor(you, them) };
   });

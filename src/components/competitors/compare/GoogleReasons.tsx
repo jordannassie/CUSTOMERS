@@ -1,3 +1,4 @@
+import { RetryButton } from "@/components/app/RetryButton";
 import { GoogleAttribution } from "@/components/onboarding/PlaceBits";
 import type { MoveAction } from "@/components/actions/ActionsBoard";
 import type { AddToActionsAction } from "@/components/actions/AddToActionsButton";
@@ -45,8 +46,38 @@ export async function GoogleReasons({
   const rows = await signals;
   const theirs = rows.find((r) => r.competitorId === competitorId)?.signals ?? null;
   const yours = rows.find((r) => r.isYou)?.signals ?? null;
-  const facts = googleFacts(name, theirs, yours).behind;
-  if (facts.length === 0) return null;
+  // Always answer the "Show Google details" press: the button has gone, so an empty space read as nothing happening.
+  if (!theirs || !yours) {
+    const failed = rows.some((r) => (r.isYou || r.competitorId === competitorId) && (r.status === "error" || r.status === "limited"));
+    return (
+      <div className="flex flex-col items-start gap-2 rounded-md border border-dashed border-border p-4" data-testid="google-reasons-unavailable">
+        <p className="text-sm text-muted-foreground">
+          {failed ? "Google details could not be loaded just now." : "Google details aren't available for both of you. A business needs a Google listing linked."}
+        </p>
+        {failed && <RetryButton />}
+      </div>
+    );
+  }
+  const { behind: facts, ahead } = googleFacts(name, theirs, yours);
+  if (facts.length === 0) {
+    return (
+      <div className="flex flex-col gap-2 rounded-md border border-dashed border-border p-4" data-testid="google-reasons-none">
+        <p className="text-sm font-medium">{name} isn&apos;t ahead of you on Google.</p>
+        {ahead.length > 0 ? (
+          <ul className="flex flex-col gap-1 text-sm text-muted-foreground">
+            {ahead.map((f) => (
+              <li key={f.title}>
+                {f.title}: {f.detail}.
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="text-sm text-muted-foreground">You are about the same on reviews, rating and opening days.</p>
+        )}
+        <GoogleAttribution what="Google listing values" />
+      </div>
+    );
+  }
   const cards = googleReasonCards(facts, { id: competitorId, name }, fixes);
   return (
     <div className="flex flex-col gap-2">

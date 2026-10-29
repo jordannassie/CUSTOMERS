@@ -132,6 +132,8 @@ describe("details step", () => {
     const userId = await signUp();
     const id = await draft(userId);
     expect(await actions.saveDetailsStep(details(id))).toEqual({ ok: true, data: null });
+    // The questions step was shown (competitors saved), so a change is rebuilt there and then.
+    await service.from("businesses").update({ onboarding_step: 6 }).eq("id", id).throwOnError();
     await service
       .from("tracked_prompts")
       .insert([
@@ -153,5 +155,24 @@ describe("details step", () => {
     const fresh = rows.filter((r) => r.active && r.source === "library");
     expect(fresh.length).toBeGreaterThan(0);
     expect(fresh.every((r) => !r.prompt.includes("Springfield"))).toBe(true);
+  });
+
+  it("drops suggestions not shown yet when the city changes, without asking for new ones there", async () => {
+    const userId = await signUp();
+    const id = await draft(userId);
+    expect(await actions.saveDetailsStep(details(id))).toEqual({ ok: true, data: null });
+    // Made in the background after the first save (first-set/dal.ts); the user is still on the competitors step.
+    await service
+      .from("tracked_prompts")
+      .insert([{ business_id: id, prompt: "What is the best coffee shop in Springfield, IL?", source: "library", active: true }])
+      .throwOnError();
+
+    const moved = fakeQuestionClients({ library: { coffee_shop: COFFEE_LIBRARY }, pick: COFFEE_GOOD_PICK, write: new Error("no write") });
+    expect(await saveDetails(userId, details(id, "Peoria"), moved.clients)).toBe(true);
+    expect(moved.calls).toEqual({ pick: 0, write: 0 });
+    const rows = (await service.from("tracked_prompts").select("active, removed_at").eq("business_id", id)).data ?? [];
+    expect(rows).toEqual([{ active: false, removed_at: expect.any(String) }]);
+    const b = (await service.from("businesses").select("questions_updated_at").eq("id", id).single().throwOnError()).data;
+    expect(b.questions_updated_at).toBeNull();
   });
 });

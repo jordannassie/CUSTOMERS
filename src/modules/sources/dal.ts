@@ -1,5 +1,4 @@
 import "server-only";
-import { createHash } from "node:crypto";
 import { requireAgency } from "@/modules/auth";
 import { actionStates, type ActionStatus } from "@/modules/opportunities";
 import type { ProviderId } from "@/modules/scanning";
@@ -25,20 +24,14 @@ const DAY_MS = 86_400_000;
 export async function getSources(businessId: string, tool: ProviderId | null = null, now = new Date()): Promise<SourcesPage | null> {
   const { agency } = await requireAgency({ next: "/sources" });
   const db = createServiceClient();
-  const { data: business, error } = await db
-    .from("businesses")
-    .select("id, name, domain, primary_city, primary_region, models")
-    .eq("id", businessId)
-    .eq("agency_id", agency.id)
-    .maybeSingle();
+  // Read together; the competitors are only used once the business turns out to be the agency's.
+  const [{ data: business, error }, { data: competitors, error: rivalsError }] = await Promise.all([
+    db.from("businesses").select("id, name, domain, primary_city, primary_region, models").eq("id", businessId).eq("agency_id", agency.id).maybeSingle(),
+    db.from("business_competitors").select("id, name, domain, aliases").eq("business_id", businessId),
+  ]);
   if (error) throw new Error(`Sources: could not read the business: ${error.message}`);
   if (!business) return null;
-
-  const { data: competitors, error: rivalsError } = await db
-    .from("business_competitors")
-    .select("id, name, domain, aliases")
-    .eq("business_id", businessId);
-  if (rivalsError) throw new Error(`Sources: could not read competitors: ${rivalsError.message}`);
+  if (rivalsError || !competitors) throw new Error(`Sources: could not read competitors: ${rivalsError?.message}`);
 
   // Only the AI tools the business uses, like the score: answers from a tool it turned off no longer count.
   const models = new Set((business.models as string[] | null) ?? []);
@@ -46,12 +39,12 @@ export async function getSources(businessId: string, tool: ProviderId | null = n
   const checks: SourceCheck[] = [];
   for (let from = 0; ; from += PAGE) {
     const { data, error: readError } = await db
-      // The rows that count: no sample answers once the agency is real (migration 044, BUG-075).
-      .from("visibility_results_counted")
-      .select("id, provider, cited_sources, created_at, business_mentioned, competitors_mentioned, extracted_names, answer_text")
+      // The rows that count (migration 044, BUG-075), keyed without their text (migration 088).
+      .from("visibility_checks_all")
+      .select("id, provider, cited_sources, checked_at, business_mentioned, competitors_mentioned, extracted_names, answer_key")
       .eq("business_id", businessId)
-      .gt("created_at", since)
-      .order("created_at")
+      .gt("checked_at", since)
+      .order("checked_at")
       .order("id")
       .range(from, from + PAGE - 1);
     if (readError) throw new Error(`Sources: could not read checks: ${readError.message}`);
@@ -61,9 +54,9 @@ export async function getSources(businessId: string, tool: ProviderId | null = n
       checks.push({
         provider: r.provider!,
         citations: r.cited_sources,
-        checkedAt: r.created_at!,
-        // The score's answer key (scores/dal.ts): a cached answer repeats the text it reused, so it counts once.
-        answerKey: r.answer_text === null ? r.id! : createHash("md5").update(r.provider! + r.answer_text).digest("hex"),
+        checkedAt: r.checked_at!,
+        // The score's answer key: a cached answer repeats the text it reused, so it counts once.
+        answerKey: r.answer_key!,
         mentioned,
         names: answerNames(r.extracted_names, r.competitors_mentioned, mentioned, business.name),
       });

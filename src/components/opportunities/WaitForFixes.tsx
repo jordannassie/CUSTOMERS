@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
+import { toast } from "sonner";
 import type { ActionResult } from "@/modules/auth";
 
 export type CheckFixesAction = (input: { businessId: string }) => Promise<ActionResult<{ pending: boolean }>>;
@@ -28,6 +29,7 @@ export function WaitForFixes({ businessId, check, compact = false }: { businessI
       if (result?.ok && !result.data.pending) {
         stopped = true;
         clearInterval(timer);
+        toast.success("Your fixes are ready.", { description: "See what to change to show up in more AI answers." });
         router.refresh();
       }
     }, EVERY_MS);

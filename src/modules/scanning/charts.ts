@@ -2,7 +2,8 @@
 // checks and the same 30-day mention rate as the leaderboard (D-63, D-91), so a line ends where that business's
 // leaderboard score is. Pure.
 import type { ProviderId } from "./providers/types";
-import { checksInWindow, DAY_MS, estimateFor, groupBy, SCORE_WINDOW_DAYS, type Mentioned, type ScoreCheck } from "./scoring";
+import { namesCompetitor } from "./check-keys";
+import { checksInWindow, DAY_MS, groupBy, poolScore, SCORE_WINDOW_DAYS, type Mentioned, type ScoreCheck } from "./scoring";
 
 export type CompetitorCharts = {
   /** Index 0 is you, then each competitor in the order given. Every `scores` array follows this order. */
@@ -36,10 +37,11 @@ export function competitorCharts(
 ): CompetitorCharts {
   const named = (name: string): Mentioned => {
     const lower = name.toLowerCase();
-    return (c) => c.competitorsMentioned.some((n) => n.toLowerCase() === lower);
+    return (c) => namesCompetitor(c, lower);
   };
   const mentioned: Mentioned[] = [(c) => c.mentioned, ...competitors.map(named)];
-  const scoreOf = (inWindow: ScoreCheck[], models: readonly ProviderId[], m: Mentioned) => estimateFor(inWindow, models, m).overall?.score ?? null;
+  // The pooled score only (estimateFor's overall score, without the margin the charts never show).
+  const scoreOf = (inWindow: ScoreCheck[], models: readonly ProviderId[], m: Mentioned) => poolScore(inWindow, models, m);
 
   const byDay = groupBy(checksInWindow(checks, opts.now, opts.days ?? SCORE_WINDOW_DAYS), (c) => c.checkedAt.toISOString().slice(0, 10));
   const timeline = [...byDay.keys()].sort().map((date) => {

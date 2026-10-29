@@ -1,7 +1,7 @@
 "use server";
 
 import { refresh } from "next/cache";
-import { appUrl } from "@/lib/app-url";
+import { after } from "next/server";
 import { OTHER_LABEL_HINT } from "@/lib/other-label";
 import { authFailure, getCurrentAgency, type ActionResult } from "@/modules/auth";
 import { addBusinessAtSetup } from "@/modules/billing";
@@ -15,9 +15,10 @@ import { websiteNotFoundText } from "../website/domain-check";
 import { saveCompetitorsInput, toDomain, type AutofillResult } from "../schema";
 import { advanceStep, isOwnDraft, saveAgency, startBusiness } from "./dal";
 import { saveDetails } from "./details/dal";
-import { awaitingTrialCredits, finishCardStep, startCardCheckout } from "./card/dal";
+import { awaitingTrialCredits, cardReturnUrl, finishCardStep, startCardCheckout } from "./card/dal";
 import { saveDraftPlan } from "./plan/dal";
 import { finishWizard, saveModels, saveQuestions } from "./questions/dal";
+import { warmFirstQuestions } from "./questions/first-set/dal";
 import {
   agencyStepInput,
   businessOnly,
@@ -96,11 +97,24 @@ export async function saveDetailsStep(input: unknown): Promise<ActionResult<null
     const vague = parsed.error.issues.some((i) => i.message === OTHER_LABEL_HINT);
     return { ok: false, status: 400, error: vague ? OTHER_LABEL_HINT : "Add your business name, industry and city." };
   }
-  if (!(await saveDetails(user, parsed.data))) return notFound;
+  const [saved, finished] = await Promise.all([saveDetails(user, parsed.data), hasFinishedBusiness(user)]);
+  if (!saved) return notFound;
+  // The suggested questions take about 15 seconds to make: they start now, while the user picks competitors, so the
+  // questions step usually only reads them (first-set/dal.ts, 2026-10-29).
+  inBackground(() => warmFirstQuestions(user, parsed.data.businessId), "Starting the first questions");
   // The switcher names the draft by the name just saved, not its website (O2). It only shows during setup when the
   // user already has a set-up business; otherwise the refresh re-rendered the step being left, for nothing (2026-10-23).
-  if (await hasFinishedBusiness(user)) refresh();
+  if (finished) refresh();
   return { ok: true, data: null };
+}
+
+/** Runs after the response is sent. Outside a request (tests, scripts) nothing starts: the step that needs it makes it. */
+function inBackground(task: () => Promise<unknown>, what: string): void {
+  try {
+    after(() => task().catch((error) => console.warn(`${what} failed: ${error instanceof Error ? error.message : String(error)}`)));
+  } catch {
+    // after() throws outside a request scope.
+  }
 }
 
 // The competitor picker's save, plus moving the wizard on.
@@ -173,9 +187,7 @@ export async function startCardStep(input: unknown): Promise<ActionResult<{ clie
   if (!("id" in user)) return user;
   const parsed = businessOnly.safeParse(input);
   if (!parsed.success) return notFound;
-  // The configured address, never the request's host (BUG-283).
-  const returnUrl = `${appUrl()}${stepPath("card")}?session_id={CHECKOUT_SESSION_ID}`;
-  const result = await startCardCheckout(user, parsed.data.businessId, returnUrl);
+  const result = await startCardCheckout(user, parsed.data.businessId, cardReturnUrl());
   return result.ok ? { ok: true, data: { clientSecret: result.clientSecret } } : result;
 }
 

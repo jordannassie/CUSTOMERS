@@ -1,8 +1,9 @@
 import "server-only";
+import { cache } from "react";
 import { getCurrentAgency, requireUser } from "@/modules/auth";
 import { canAddBusiness, canFinishDraft } from "@/modules/entitlements";
-import { PlanChangeError, previewSetupAddOn, type SetupAddOn, type TrialOffer } from "@/modules/billing";
-import { awaitingTrialCredits, loadCardStep } from "./card/dal";
+import { PlanChangeError, previewSetupAddOn, type SetupAddOn } from "@/modules/billing";
+import { awaitingTrialCredits, loadCardStep, type CardStep } from "./card/dal";
 import { loadWebsiteStep, loadWizardState, type WebsiteStepDefaults, type WizardContext } from "./dal";
 import { loadDetailsStep, type DetailsStep } from "./details/dal";
 import { draftPlanId, loadSetupPlans, type SetupPlanOption } from "./plan/dal";
@@ -71,21 +72,26 @@ export async function getQuestionsStep(businessId: string, next: string): Promis
   return loadQuestionsStep(user.id, businessId);
 }
 
+// The models step asks for the draft's plan twice (its credits and the plan picker): read once per page (2026-10-29).
+const pagePlanId = cache(draftPlanId);
+
 export async function getModelsStep(businessId: string, next: string): Promise<ModelsStep | null> {
   const user = await requireUser({ next });
-  return loadModelsStep(user.id, businessId, await draftPlanId(user.id, businessId));
+  // Not awaited here: the plan is read alongside the business.
+  return loadModelsStep(user.id, businessId, pagePlanId(user.id, businessId));
 }
 
 /** The plans the draft can be set up on and the one it is on now (BUG-244). */
 export async function getSetupPlans(businessId: string, next: string): Promise<{ plans: SetupPlanOption[]; planId: PlanId }> {
   const user = await requireUser({ next });
-  const [plans, planId] = await Promise.all([loadSetupPlans(), draftPlanId(user.id, businessId)]);
+  const [plans, planId] = await Promise.all([loadSetupPlans(), pagePlanId(user.id, businessId)]);
   return { plans, planId };
 }
 
-export async function getCardStep(businessId: string, next: string): Promise<{ offer: TrialOffer | null; started: boolean } | null> {
+/** `withSession`: the card form will show, so its Checkout Session is made with the page (loadCardStep). */
+export async function getCardStep(businessId: string, next: string, options: { withSession?: boolean } = {}): Promise<CardStep | null> {
   const user = await requireUser({ next });
-  return loadCardStep(user, businessId);
+  return loadCardStep(user, businessId, options);
 }
 
 /** Whether the first scan must wait for the trial credits to land (F-48). */

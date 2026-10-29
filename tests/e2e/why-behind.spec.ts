@@ -670,3 +670,30 @@ test("Why you were skipped adds a site's fix that isn't in Actions yet, then ope
   expect(saved.data).toEqual([{ dedupe_key: "site:yelp.com", source: "sources" }]);
   await shot(page, info, "actions-picked-from-questions");
 });
+
+// "Show Google details" always answers on the Summary tab: the button goes, so an empty space read as nothing happening.
+test("Show Google details on Compare says when they are not ahead on Google, and when Google can't be compared", async ({ page }) => {
+  const businessId = await seed(page, "/competitors");
+  const grind = await competitorId(businessId, "The Daily Grind");
+  // Your listing has more reviews than The Daily Grind's, with the same rating and opening days (place-fixtures.ts).
+  await db.from("businesses").update({ places_id: "ChIJ-fixture-blue-door" }).eq("id", businessId).throwOnError();
+  await page.goto(`/competitors/compare?with=${grind}`);
+  const summary = page.getByTestId("tab-summary");
+  await summary.getByTestId("show-google-button").click();
+  await page.waitForURL((url) => url.searchParams.get("google") === "1");
+  const none = summary.getByTestId("google-reasons-none");
+  await expect(none).toContainText("The Daily Grind isn't ahead of you on Google.", { timeout: 60_000 });
+  await expect(none).toContainText("You have more Google reviews: 402 vs their 211.");
+  await expect(none.getByTestId("google-attribution")).toBeVisible();
+  await expect(summary.getByTestId("show-google-button")).toHaveCount(0);
+
+  // With no Google listing linked for you, it says so instead of showing nothing.
+  await db.from("businesses").update({ places_id: null }).eq("id", businessId).throwOnError();
+  await page.goto(`/competitors/compare?with=${grind}`);
+  await summary.getByTestId("show-google-button").click();
+  await page.waitForURL((url) => url.searchParams.get("google") === "1");
+  await expect(summary.getByTestId("google-reasons-unavailable")).toHaveText(
+    "Google details aren't available for both of you. A business needs a Google listing linked.",
+    { timeout: 60_000 },
+  );
+});

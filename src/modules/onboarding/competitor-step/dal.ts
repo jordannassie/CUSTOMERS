@@ -92,15 +92,14 @@ export async function loadCompetitorStep(
   businessId: string,
   places: CompetitorPlaces = liveCompetitorPlaces(),
 ): Promise<CompetitorStep | null> {
-  const business = await ownBusinessForSearch(userId, businessId);
-  if (!business) return null;
-
   const supabase = await createClient();
-  const { data: rows, error } = await supabase
-    .from("business_competitors")
-    .select("name, places_id, place_id, created_at")
-    .eq("business_id", businessId)
-    .order("created_at");
+  // Read at once (2026-10-29): the competitors are the signed-in user's own rows only, and are dropped unless the
+  // business is theirs.
+  const [business, { data: rows, error }] = await Promise.all([
+    ownBusinessForSearch(userId, businessId),
+    supabase.from("business_competitors").select("name, places_id, place_id, created_at").eq("business_id", businessId).order("created_at"),
+  ]);
+  if (!business) return null;
   if (error) throw new Error(`Could not load competitors: ${error.message}`);
 
   const [found, saved, limit, notes] = await Promise.all([

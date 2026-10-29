@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { AddActionDialog } from "@/components/actions/AddActionDialog";
 import { ActionsBoard } from "@/components/actions/ActionsBoard";
+import { OpenCount } from "@/components/actions/OpenCount";
 import { PageContainer } from "@/components/app/PageContainer";
 import { PageHeader } from "@/components/app/PageHeader";
 import { GetFoundChecklist } from "@/components/opportunities/GetFoundChecklist";
@@ -51,7 +52,7 @@ export default async function ActionsPage({ searchParams }: { searchParams: Prom
             <>
               Fixes that get AI to name {business.name} more often, most important first. Each one says where to apply it.
               {board.items.length > 0 && (
-                <span data-testid="to-do-count"> {open === 0 ? "You have done or dismissed every fix." : `${open} open.`}</span>
+                <OpenCount businessId={business.id} initial={open} />
               )}
               {/* The banner above the page says why (plan ended or paused) and links to Billing. */}
               {readOnly && <span data-testid="actions-read-only"> You can read these fixes but not change them right now.</span>}

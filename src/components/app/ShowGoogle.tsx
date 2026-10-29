@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ShowGoogleLabel } from "./ShowGoogleLabel";
 
 /**
  * "Show Google details" (2026-10-27): Google's ratings, reviews and hours are asked for only when the owner presses
@@ -16,7 +17,7 @@ export function ShowGoogle({ href, text, testId = "show-google" }: { href: strin
       </p>
       <Button asChild variant="outline" size="sm" className="shrink-0">
         <Link href={href} scroll={false} data-testid={`${testId}-button`}>
-          Show Google details
+          <ShowGoogleLabel />
         </Link>
       </Button>
     </div>

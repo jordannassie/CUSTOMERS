@@ -57,19 +57,26 @@ export async function loadOwnChain(
   // The same test as the matching (ownBranch), so the chain line shows exactly when the score counts only the branch.
   const branch = ownBranch({ ...business, area: null }) && branchOf(business.name, business.city, business.domain);
   if (!branch) return null;
-  const answers: string[] = [];
+  const rows = await ownAnswers(businessId, since.getTime());
+  const answers = rows.flatMap((r) => (r.text && r.questionId && questionIds.has(r.questionId) ? [r.text] : []));
+  return ownChain(branch.brand, answers);
+}
+
+// The Overview builds three score reports in one request; React's cache reads the branch's answers once for all.
+const ownAnswers = cache(async (businessId: string, sinceMs: number): Promise<{ text: string | null; questionId: string | null }[]> => {
+  const rows: { text: string | null; questionId: string | null }[] = [];
   for (let from = 0; ; from += PAGE) {
     const { data, error } = await createServiceClient()
       .from("visibility_results_counted")
       .select("answer_text, tracked_prompt_id")
       .eq("business_id", businessId)
-      .gt("created_at", since.toISOString())
+      .gt("created_at", new Date(sinceMs).toISOString())
       .order("created_at")
       .order("id")
       .range(from, from + PAGE - 1);
-    if (error) throw new Error(`Chains: could not read the answers for ${business.name}: ${error.message}`);
-    for (const r of data) if (r.answer_text && r.tracked_prompt_id && questionIds.has(r.tracked_prompt_id)) answers.push(r.answer_text);
+    if (error) throw new Error(`Chains: could not read the answers for business ${businessId}: ${error.message}`);
+    for (const r of data) rows.push({ text: r.answer_text, questionId: r.tracked_prompt_id });
     if (data.length < PAGE) break;
   }
-  return ownChain(branch.brand, answers);
-}
+  return rows;
+});

@@ -126,7 +126,8 @@ export async function StepContent({ step, state, plan, returned }: Props) {
     return <QuestionsStep businessId={draftId} questions={q.questions} limit={q.limit} updated={q.updated} save={saveQuestionsStep} />;
   }
   if (step === "card") {
-    const c = await getCardStep(draftId, next);
+    // Back from a bank page (returned), or no card needed: only the webhook is waited for, so no session is made.
+    const c = await getCardStep(draftId, next, { withSession: state.needsCard && !returned });
     if (!c) redirect(stepPath("models"));
     // A trial already started (or a test agency): the step only waits for the webhook, then finishes.
     if (!state.needsCard || c.started) return <SettingUp businessId={draftId} check={checkCardStep} />;
@@ -144,6 +145,7 @@ export async function StepContent({ step, state, plan, returned }: Props) {
         offer={offer}
         mode={mode}
         publishableKey={publishableKey}
+        clientSecret={c.clientSecret}
         returned={returned}
         start={startCardStep}
         check={checkCardStep}
@@ -187,11 +189,19 @@ const WAITING: Partial<Record<StepSlug, string>> = {
   questions: "Picking questions for your business",
 };
 
+// The questions usually wait ready from the details step (first-set/dal.ts); made here they take about 15 seconds.
+const WAITING_HINT: Partial<Record<StepSlug, string>> = {
+  questions: "This can take about 15 seconds.",
+};
+
 export function StepSkeleton({ step }: { step: StepSlug }) {
   const label = WAITING[step] ?? "Loading this step";
+  const hint = WAITING_HINT[step];
   return (
     <div role="status" aria-live="polite" aria-busy className="flex flex-col gap-4">
-      <p className="text-sm text-muted-foreground">{label}…</p>
+      <p className="text-sm text-muted-foreground">
+        {label}…{hint ? <span className="mt-1 block text-xs text-text-hint">{hint}</span> : null}
+      </p>
       <div className="rounded-md border border-border bg-surface">
         {Array.from({ length: step === "questions" ? 8 : 5 }, (_, i) => (
           <div key={i} className="flex items-center gap-3 border-b border-border px-4 py-3.5 last:border-b-0">

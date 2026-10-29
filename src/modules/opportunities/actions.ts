@@ -10,6 +10,10 @@ import { ADDED_ACTIONS_FULL, addActionInput, assignActionInput, moveActionInput,
 import type { Status } from "./service";
 
 const PAGE = "/actions";
+// The board and the checklist show a change at once and keep it (board-overrides.ts, open-count.ts), so the Actions
+// page is not rendered again for it. Revalidating the Overview instead still makes every page visited before, Actions
+// included, load fresh when opened again (Next.js 16 revalidatePath).
+const OTHER_PAGES = "/dashboard";
 
 type Denied = { denied: ActionResult<never> };
 
@@ -39,8 +43,7 @@ export async function setOpportunityStatus(input: unknown): Promise<ActionResult
   if (!(await updateStatus(agencyId, businessId, opportunityId, status))) {
     return { ok: false, status: 404, error: "We could not find that fix. Reload the page and try again." };
   }
-  revalidatePath(PAGE);
-  revalidatePath("/dashboard");
+  revalidatePath(OTHER_PAGES);
   return { ok: true, data: { status } };
 }
 
@@ -55,7 +58,7 @@ export async function setChecklistItem(input: unknown): Promise<ActionResult<{ d
   if (!(await updateChecklistItem(agencyId, businessId, key, done))) {
     return { ok: false, status: 404, error: "We could not find that business. Reload the page and try again." };
   }
-  revalidatePath(PAGE);
+  revalidatePath(OTHER_PAGES);
   return { ok: true, data: { done } };
 }
 
@@ -87,8 +90,7 @@ export async function moveActionTo(input: unknown): Promise<ActionResult<{ statu
   if (!(await moveAction(agencyId, businessId, actionId, status))) {
     return { ok: false, status: 404, error: "We could not find that fix. Reload the page and try again." };
   }
-  revalidatePath(PAGE);
-  revalidatePath("/dashboard");
+  revalidatePath(OTHER_PAGES);
   return { ok: true, data: { status } };
 }
 
@@ -102,6 +104,6 @@ export async function assignActionToMe(input: unknown): Promise<ActionResult<{ t
   if (!(await assignAction(ids.agencyId, businessId, actionId, toMe ? ids.userId : null))) {
     return { ok: false, status: 404, error: "We could not find that fix. Reload the page and try again." };
   }
-  revalidatePath(PAGE);
+  revalidatePath(OTHER_PAGES);
   return { ok: true, data: { toMe } };
 }

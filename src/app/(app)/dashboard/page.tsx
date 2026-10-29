@@ -1,26 +1,30 @@
+import { Suspense } from "react";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { FileText, Share2 } from "lucide-react";
 import { PageHeader } from "@/components/app/PageHeader";
 import { RunScanButton } from "@/components/app/RunScanButton";
-import { QuestionsMoved, ToolScores, TopActions, WhereAiLooks, WhereYouStand } from "@/components/overview/OverviewCards";
-import { OverviewHero } from "@/components/overview/OverviewHero";
-import { RANGES, RangeControl, sourceLines, standingSourceLines } from "@/components/overview/OverviewKpis";
-import { ScanChart } from "@/components/overview/ScanChart";
-import { WaitForFixes } from "@/components/opportunities/WaitForFixes";
+import { RANGES, RangeControl } from "@/components/overview/OverviewKpis";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { getOverviewCompete, getPickedInstead, likelyReason } from "@/modules/competitors";
-import { checkFixes, getFixesState } from "@/modules/insights";
+import { Card, CardContent } from "@/components/ui/card";
+import { getOverviewCompete, getPickedInstead } from "@/modules/competitors";
+import { getFixesState } from "@/modules/insights";
 import { getScanStatus, startScan } from "@/modules/jobs";
-import { OPEN_ACTION_STATUSES, getActionsBoard } from "@/modules/opportunities";
+import { getActionsBoard } from "@/modules/opportunities";
 import { getOverview, getQuestionTrends } from "@/modules/overview";
 import { getSources } from "@/modules/sources";
 import { getWorkspace } from "@/modules/workspace";
+import { ChartSection, HeroSection, MovedSection, StandSection } from "./_components/sections";
+import { ChartSkeleton, HeroSkeleton, PairSkeleton } from "./_components/section-skeletons";
 
 export const metadata = { title: "Overview", robots: { index: false } };
 
-const OPEN = new Set(OPEN_ACTION_STATUSES);
+/** Started now and awaited by a streamed section; a failure still reaches that section's error boundary. */
+function later<T>(promise: Promise<T>): Promise<T> {
+  // Marks it handled, so a page that stops early (not found, redirect) leaves no unhandled rejection behind.
+  promise.catch(() => {});
+  return promise;
+}
 
 // B-49, MVP_SPEC 8.1, dashboard redesign (2026-10-27): the score and its movement, where you stand, what to do first,
 // which questions moved and where AI looks. The range changes the charts and counts; the score stays 30 days (D-63).
@@ -32,20 +36,21 @@ export default async function OverviewPage({ searchParams }: { searchParams: Pro
   // Setup is the onboarding wizard's job (B-36); it resumes where the user stopped.
   if (!business || business.status === "onboarding") redirect("/onboarding");
 
-  const [overview, scanStatus, compete, board, sources, trends, picked, fixes] = await Promise.all([
+  // Everything starts at once. The header and notices wait for the reads they show; the competitor blocks, the chart
+  // and the fixes stream in below as each is ready (they share the score's answers through React's cache).
+  const compete = later(getOverviewCompete(business.id, days));
+  // The same likely reason as the report and the weekly email (database reads only, no AI or Google call).
+  const picked = later(getPickedInstead(business.id));
+  const board = later(getActionsBoard(business.id));
+  const fixes = later(getFixesState(business.id, "/dashboard"));
+  const [overview, scanStatus, sources, trends] = await Promise.all([
     getOverview(business.id),
     getScanStatus({ businessId: business.id }),
-    getOverviewCompete(business.id, days),
-    getActionsBoard(business.id),
     getSources(business.id),
     getQuestionTrends(business.id),
-    // The same likely reason as the report and the weekly email (database reads only, no AI or Google call).
-    getPickedInstead(business.id),
-    getFixesState(business.id, "/dashboard"),
   ]);
   if (!overview) notFound();
   const { score } = overview;
-  const open = (board?.items ?? []).filter((a) => OPEN.has(a.status));
   const tools = overview.models.map((m) => m.label).join(", ");
   const meta = [
     sources?.place,
@@ -80,7 +85,7 @@ export default async function OverviewPage({ searchParams }: { searchParams: Pro
                 </Button>
               </>
             )}
-            {score && scanStatus.ok && <RunScanButton businessId={business.id} initial={scanStatus.data} start={startScan} getStatus={getScanStatus} />}
+            {score && scanStatus.ok && <RunScanButton businessId={business.id} initial={scanStatus.data} start={startScan} />}
           </div>
         }
       />
@@ -122,7 +127,6 @@ export default async function OverviewPage({ searchParams }: { searchParams: Pro
                   businessId={business.id}
                   initial={scanStatus.data}
                   start={startScan}
-                  getStatus={getScanStatus}
                   label={scanStatus.data.lastResult === null ? "Run first scan" : "Run scan"}
                 />
                 {!scanStatus.data.scanning && (
@@ -136,43 +140,18 @@ export default async function OverviewPage({ searchParams }: { searchParams: Pro
         </Card>
       ) : (
         <>
-          <OverviewHero
-            score={score}
-            compete={compete}
-            sources={sources}
-            sample={!!workspace.account?.isTest}
-            ownQuestions={overview.ownQuestions}
-            ownChain={overview.ownChain}
-            reason={likelyReason(picked)}
-          />
-
-          <div className="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Visibility at each scan</CardTitle>
-                <CardDescription>Share of each scan&apos;s answers that named each business, last {days} days. Pick a name to hide or show its line.</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ScanChart timeline={compete?.timeline ?? []} lines={compete?.lines ?? []} days={days} earlier={compete?.earlierScans ?? false} />
-              </CardContent>
-            </Card>
-            <ToolScores models={overview.models} context={compete?.modelContext ?? {}} />
-          </div>
-
-          <div className="grid gap-6 lg:grid-cols-2">
-            <WhereYouStand rows={compete?.stand ?? []} lines={compete?.lines ?? []} />
-            <TopActions
-              items={open.slice(0, 3)}
-              total={open.length}
-              wait={fixes?.pending ? <WaitForFixes businessId={business.id} check={checkFixes} compact /> : null}
-            />
-          </div>
-
-          <div className="grid gap-6 lg:grid-cols-2">
-            <QuestionsMoved trends={trends} />
-            {/* Counted like the report's "Where AI looks"; the Sources page has every question. */}
-            <WhereAiLooks rows={standingSourceLines(compete?.sites ?? null, compete?.ownSite ?? null, sources?.ownSite.host ?? null) ?? sourceLines(sources)} />
-          </div>
+          <Suspense fallback={<HeroSkeleton />}>
+            <HeroSection overview={overview} compete={compete} sources={sources} picked={picked} sample={!!workspace.account?.isTest} />
+          </Suspense>
+          <Suspense fallback={<ChartSkeleton />}>
+            <ChartSection overview={overview} compete={compete} days={days} />
+          </Suspense>
+          <Suspense fallback={<PairSkeleton />}>
+            <StandSection businessId={business.id} compete={compete} board={board} fixes={fixes} />
+          </Suspense>
+          <Suspense fallback={<PairSkeleton />}>
+            <MovedSection trends={trends} compete={compete} sources={sources} />
+          </Suspense>
         </>
       )}
 

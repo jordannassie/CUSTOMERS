@@ -156,26 +156,28 @@ export async function runBusinessAutofill(
   if (!business) return null;
 
   const run = await autofill(request, clients);
-  await recordAutofillProblems(request, run.problems);
 
   // business_site_facts has no write policy for signed-in users, so writes use the service role
-  // after the ownership check above.
+  // after the ownership check above. The problem log and both writes go at once: the user waits on this (2026-10-29).
   const service = createServiceClient();
-  // Whether it is a chain, and the logo, are saved every time: another website typed in later may be another shop.
-  const { error: placeError } = await service
-    .from("businesses")
-    .update({ is_chain: run.chain, logo_url: run.logoUrl, ...(run.placeId ? { places_id: run.placeId } : {}) })
-    .eq("id", businessId);
+  const [, { error: placeError }, facts] = await Promise.all([
+    recordAutofillProblems(request, run.problems),
+    // Whether it is a chain, and the logo, are saved every time: another website typed in later may be another shop.
+    service
+      .from("businesses")
+      .update({ is_chain: run.chain, logo_url: run.logoUrl, ...(run.placeId ? { places_id: run.placeId } : {}) })
+      .eq("id", businessId),
+    run.siteFacts
+      ? service
+          .from("business_site_facts")
+          .upsert({ business_id: businessId, data: run.siteFacts as unknown as Json, fetched_at: new Date().toISOString() })
+      : null,
+  ]);
   // The listing found for this website is another business's in the agency already (migration 067).
   const duplicate = duplicateBusiness(placeError);
   if (duplicate) throw new DuplicateBusinessError(duplicate);
   if (placeError) throw new Error(`Could not save place_id: ${placeError.message}`);
-  if (run.siteFacts) {
-    const { error: factsError } = await service
-      .from("business_site_facts")
-      .upsert({ business_id: businessId, data: run.siteFacts as unknown as Json, fetched_at: new Date().toISOString() });
-    if (factsError) throw new Error(`Could not save site facts: ${factsError.message}`);
-  }
+  if (facts?.error) throw new Error(`Could not save site facts: ${facts.error.message}`);
   return run.result;
 }
 

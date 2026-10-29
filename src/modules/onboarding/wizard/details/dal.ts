@@ -13,7 +13,7 @@ import { ownDraftStep } from "../dal";
 import { questionBasisChanged, rebuildQuestionsForIndustry, savedQuestionBasis } from "../questions/rebuild/dal";
 import { refillDetails } from "../refill";
 import type { DetailsStepInput } from "../schema";
-import { nextStepNumber } from "../steps";
+import { nextStepNumber, stepNumber } from "../steps";
 
 // Step 4 (MVP_SPEC 3.1): what the details form starts from, and saving what the user confirmed.
 
@@ -108,10 +108,26 @@ export async function saveDetails(
     area: input.area === undefined ? (before?.area ?? null) : input.area,
   };
   if (before && questionBasisChanged(before, after)) {
-    const rebuilt = await rebuildQuestionsForIndustry(input.businessId, clients);
-    if (rebuilt.rebuilt) await markQuestionsUpdated(input.businessId);
+    // Not shown yet (the set the details step started in the background, first-set/dal.ts): dropped without asking Claude
+    // or a notice, and this save starts a set for the new details instead.
+    if ((current ?? 0) < stepNumber("questions")) await retireSuggestions(input.businessId);
+    else {
+      const rebuilt = await rebuildQuestionsForIndustry(input.businessId, clients);
+      if (rebuilt.rebuilt) await markQuestionsUpdated(input.businessId);
+    }
   }
   return true;
+}
+
+/** Removes the suggested questions (the user's own stay), like any other removal: inactive with removed_at. */
+async function retireSuggestions(businessId: string): Promise<void> {
+  const { error } = await createServiceClient()
+    .from("tracked_prompts")
+    .update({ active: false, removed_at: new Date().toISOString() })
+    .eq("business_id", businessId)
+    .neq("source", "custom")
+    .is("removed_at", null);
+  if (error) throw new Error(`Could not remove the old questions: ${error.message}`);
 }
 
 async function markQuestionsUpdated(businessId: string): Promise<void> {

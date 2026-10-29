@@ -18,7 +18,8 @@ export type GuardOptions = { next?: string };
 
 type VerifiedUser = { user: SessionUser; emailConfirmed: boolean };
 
-// One getUser() per request. The confirmed flag stays here so SessionUser keeps only what screens need.
+// The full user from Supabase Auth (a network call), for the admin check only: it needs the confirmed flag, which the
+// session token does not carry. The confirmed flag stays here so SessionUser keeps only what screens need.
 const loadUser = cache(async (): Promise<VerifiedUser | null> => {
   const supabase = await createClient();
   const { data, error } = await supabase.auth.getUser();
@@ -30,19 +31,43 @@ const loadUser = cache(async (): Promise<VerifiedUser | null> => {
   };
 });
 
-export const getCurrentUser = cache(async (): Promise<SessionUser | null> => (await loadUser())?.user ?? null);
+// The signed-in user from the session token. getClaims() checks its signature locally against the project's published
+// key (cached), like proxy.ts, instead of a round trip to Supabase Auth on every page and action.
+const claimsUser = cache(async (): Promise<SessionUser | null> => {
+  const supabase = await createClient();
+  const { data, error } = await supabase.auth.getClaims();
+  if (error && isAuthUnavailable(error)) throw new AuthError("unavailable", { cause: error });
+  const claims = data?.claims;
+  if (error || !claims?.sub) return null;
+  return { id: claims.sub, email: typeof claims.email === "string" && claims.email ? claims.email : null };
+});
+
+type AgencyRow = { id: string; name: string; status: string; is_test: boolean };
+
+const agencyOf = cache(async (userId: string): Promise<AgencyRow | null> => {
+  const supabase = await createClient();
+  const { data, error } = await supabase.from("agencies").select("id, name, status, is_test").eq("owner_user_id", userId).maybeSingle();
+  if (error) throw new AuthError("unavailable", { cause: new Error(`Could not load agency: ${error.message}`) });
+  return data;
+});
+
+/**
+ * Every page and action asks this first. A token outlives a deleted account (its agency goes with it, ON DELETE
+ * CASCADE), so a user with no agency, a new sign-up or a deleted account, is checked with Supabase Auth too and a
+ * deleted one is signed out (BUG-020). Everyone else costs only the agency read the pages make anyway.
+ */
+export const getCurrentUser = cache(async (): Promise<SessionUser | null> => {
+  const user = await claimsUser();
+  if (!user) return null;
+  if (await agencyOf(user.id)) return user;
+  const verified = await loadUser();
+  return verified && verified.user.id === user.id ? user : null;
+});
 
 export const getCurrentAgency = cache(async (): Promise<CurrentAgency | null> => {
   const user = await getCurrentUser();
   if (!user) return null;
-
-  const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("agencies")
-    .select("id, name, status, is_test")
-    .eq("owner_user_id", user.id)
-    .maybeSingle();
-  if (error) throw new AuthError("unavailable", { cause: new Error(`Could not load agency: ${error.message}`) });
+  const data = await agencyOf(user.id);
   return data && { id: data.id, name: data.name, status: data.status, isTest: data.is_test };
 });
 
@@ -100,7 +125,10 @@ export function adminEmails(): string[] {
 // Only ADMIN_EMAILS is trusted, and only for a confirmed address: anyone can sign up with an
 // admin's address before the real owner does. Profile fields are not an admin source.
 async function isAdmin(user: SessionUser): Promise<boolean> {
+  const admins = parseAdminEmails(env.ADMIN_EMAILS);
+  // Most users are not on the list, so Supabase Auth is only asked about an address that is.
+  if (!isAdminEmail(user.email, admins, true)) return false;
   const verified = await loadUser();
   const confirmed = !!verified && verified.user.id === user.id && verified.emailConfirmed;
-  return isAdminEmail(user.email, parseAdminEmails(env.ADMIN_EMAILS), confirmed);
+  return isAdminEmail(verified?.user.email ?? null, admins, confirmed);
 }

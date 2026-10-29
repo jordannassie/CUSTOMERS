@@ -34,7 +34,7 @@ type Props = {
 
 type Failed = { businessId: string; typed: AutofillResult };
 
-// MVP_SPEC 3.1 step 3. Auto-fill runs here and takes a few seconds, so the wait gets its own screen.
+// MVP_SPEC 3.1 step 3. Auto-fill runs here and takes about 15 seconds with a website, so the wait gets its own screen.
 export function WebsiteStep({ defaultDomain, defaultNoWebsite, defaultName = "", defaultCity = "", backHref, plan = null, save, pick }: Props) {
   const router = useRouter();
   const [noWebsite, setNoWebsite] = useState(defaultNoWebsite);
@@ -201,10 +201,16 @@ function newKey(): string | undefined {
   return typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : undefined;
 }
 
+// When each line appears, in ms. The website and Google are read at once; the AI reads the pages once they are back,
+// about 5 seconds in (autofill.ts). Without a website there is only one Google search, about a second.
+const WEBSITE_LINES_AT = [0, 600, 5_000];
+const GOOGLE_LINES_AT = [0, 600];
+
 function Reading({ what, noWebsite }: { what: string; noWebsite: boolean }) {
   const lines = noWebsite
     ? ["Looking you up on Google", "Getting your details ready"]
     : [`Reading ${what}`, "Looking you up on Google", "Getting your details ready"];
+  const at = noWebsite ? GOOGLE_LINES_AT : WEBSITE_LINES_AT;
   return (
     <div role="status" aria-live="polite" className="rounded-md border border-border bg-surface p-6">
       <div className="flex items-center gap-3">
@@ -213,13 +219,14 @@ function Reading({ what, noWebsite }: { what: string; noWebsite: boolean }) {
       </div>
       <ul className="mt-5 flex flex-col gap-3">
         {lines.map((line, i) => (
-          <li key={line} className="flex items-center gap-3 text-sm text-muted-foreground motion-safe:animate-in motion-safe:fade-in" style={{ animationDelay: `${i * 600}ms`, animationFillMode: "both" }}>
+          <li key={line} className="flex items-center gap-3 text-sm text-muted-foreground motion-safe:animate-in motion-safe:fade-in" style={{ animationDelay: `${at[i]}ms`, animationFillMode: "both" }}>
             {i === 0 && !noWebsite ? <Globe aria-hidden className="size-4" /> : <MapPin aria-hidden className="size-4" />}
             {line}
           </li>
         ))}
       </ul>
-      <p className="mt-5 text-xs text-text-hint">This usually takes a few seconds.</p>
+      {/* Measured on the live site: about 15 seconds with a website (2026-10-29). */}
+      <p className="mt-5 text-xs text-text-hint">{noWebsite ? "This usually takes a few seconds." : "This takes about 15 seconds."}</p>
     </div>
   );
 }

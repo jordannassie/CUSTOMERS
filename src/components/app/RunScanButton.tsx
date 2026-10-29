@@ -1,20 +1,17 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { Clock, Loader2, RefreshCw } from "lucide-react";
 import { cn } from "cn";
 import { Button } from "@/components/ui/button";
-import type { ActionResult } from "@/modules/auth";
 import type { ScanStatus, StartScanResult } from "@/modules/jobs";
 import { needsOverdraftConfirm, needsRecentScanConfirm } from "@/modules/jobs/overdraft";
 import { OverdraftDialog } from "./OverdraftDialog";
 import { RecentScanDialog } from "./RecentScanDialog";
+import { latestScanStatus, subscribeScans, watchScan } from "./scan-watch";
 
-type ScanAction = (input: unknown) => Promise<ActionResult<ScanStatus>>;
 type StartAction = (input: unknown) => Promise<StartScanResult>;
 
-const POLL_MS = 3000;
 const ALREADY_RUNNING = "A scan is already running.";
 const FAILED = "The last scan could not finish. Try again in a few minutes.";
 const RETRYING = "The scan hit a problem. We'll try again in a few minutes.";
@@ -27,19 +24,16 @@ export function RunScanButton({
   businessId,
   initial,
   start,
-  getStatus,
   className,
   label = "Run scan",
 }: {
   businessId: string;
   initial: ScanStatus;
   start: StartAction;
-  getStatus: ScanAction;
   /** Placement classes for the button itself, since the wrapper is `contents`. */
   className?: string;
   label?: string;
 }) {
-  const router = useRouter();
   const [status, setStatus] = useState(initial);
   const [note, setNote] = useState<Note>(initial.blockedReason ? { text: initial.blockedReason, tone: "muted" } : null);
   const [pending, startTransition] = useTransition();
@@ -49,26 +43,31 @@ export function RunScanButton({
   const [recent, setRecent] = useState<string | null>(null);
   const [recentConfirmed, setRecentConfirmed] = useState(false);
 
+  // ScanWatcher in the app shell asks for the status while a scan runs (and toasts when it ends, on any page); this
+  // button only shows what it hears.
   useEffect(() => {
-    if (!status.scanning) return;
-    const timer = setTimeout(async () => {
-      const result = await getStatus({ businessId }).catch(() => null);
-      // A dropped poll just tries again; the scan itself carries on.
-      if (!result?.ok) return setStatus((s) => ({ ...s }));
-      setStatus(result.data);
-      if (!result.data.scanning) {
+    if (status.scanning) watchScan(businessId);
+  }, [status.scanning, businessId]);
+
+  const seen = useRef<ScanStatus | undefined>(undefined);
+  useEffect(
+    () =>
+      subscribeScans(() => {
+        const next = latestScanStatus(businessId);
+        if (!next || next === seen.current) return;
+        seen.current = next;
+        setStatus(next);
+        if (next.scanning) return;
         setNote(
-          result.data.lastResult === "failed"
-            ? { text: result.data.failedReason ?? FAILED, tone: "error" }
-            : result.data.blockedReason
-              ? { text: result.data.blockedReason, tone: "muted" }
+          next.lastResult === "failed"
+            ? { text: next.failedReason ?? FAILED, tone: "error" }
+            : next.blockedReason
+              ? { text: next.blockedReason, tone: "muted" }
               : { text: "Scan finished.", tone: "muted" },
         );
-        router.refresh();
-      }
-    }, POLL_MS);
-    return () => clearTimeout(timer);
-  }, [status, businessId, getStatus, router]);
+      }),
+    [businessId],
+  );
 
   const scanning = status.scanning || pending;
   // No worker picked the job up: no spinner, since nothing is being asked right now.

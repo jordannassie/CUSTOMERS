@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Menu } from "lucide-react";
@@ -9,21 +9,26 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetDescription, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { AppBanners, type AppBanner } from "./AppBanners";
 import { AppSidebar, type AppSidebarProps } from "./AppSidebar";
+import { ScanWatcher, type ScanStatusAction } from "./ScanWatcher";
 import { SkipLink } from "./SkipLink";
 
 type AppShellProps = AppSidebarProps & {
   banners: AppBanner[];
   /** Short balance for the phone top bar, so credits stay visible there too. */
   creditsShort: { text: string; empty: boolean } | null;
+  /** Asked while a scan runs, so its end is announced on any app page. */
+  getScanStatus: ScanStatusAction;
   children: React.ReactNode;
 };
 
-export function AppShell({ banners, creditsShort, children, ...sidebar }: AppShellProps) {
+export function AppShell({ banners, creditsShort, getScanStatus, children, ...sidebar }: AppShellProps) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const names = useMemo(() => Object.fromEntries(sidebar.businesses.map((b) => [b.id, b.name])), [sidebar.businesses]);
 
   return (
     <div className="flex min-h-dvh bg-background">
       <SkipLink />
+      <ScanWatcher getStatus={getScanStatus} names={names} activeBusinessId={sidebar.activeBusinessId} />
       <aside className="scroll-quiet sticky top-0 hidden h-dvh w-60 shrink-0 overflow-y-auto border-r border-border bg-muted lg:block">
         <AppSidebar {...sidebar} />
       </aside>

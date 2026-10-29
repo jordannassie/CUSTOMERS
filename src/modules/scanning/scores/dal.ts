@@ -1,5 +1,4 @@
 import "server-only";
-import { createHash } from "node:crypto";
 import { cache } from "react";
 import { requestNow } from "@/lib/request-now";
 import { requireAgency } from "@/modules/auth";
@@ -34,6 +33,9 @@ import { questionAppearances, questionAppearancesByModel, type ModelAppearance }
 const PAGE = 1000;
 const LAST_CHECKS_PER_QUESTION = 10;
 const DAY_MS = 86_400_000;
+// Older answers are read in fixed 30-day stretches counted back from the week before the window, so the reports one
+// request builds (the Overview's 90 days, its chart's 60, the likely reason's none) share the same reads.
+const STRETCH_MS = 30 * DAY_MS;
 
 
 /** The signed-in agency's score for one of its businesses; null when it is not theirs. */
@@ -57,6 +59,14 @@ const windowChecks = cache((businessId: string, sinceMs: number) => readChecks(b
 const olderChecks = cache((businessId: string, fromMs: number, toMs: number) =>
   readOlderChecks(businessId, new Date(fromMs), new Date(toMs)),
 );
+
+/** The checks after `fromMs` up to `toMs`, oldest first, from the request's cached 30-day stretches ending at `toMs`. */
+async function historyChecks(businessId: string, fromMs: number, toMs: number): Promise<ScoreCheck[]> {
+  const stretches: Promise<ScoreCheck[]>[] = [];
+  for (let end = toMs; end > fromMs; end -= STRETCH_MS) stretches.push(olderChecks(businessId, end - STRETCH_MS, end));
+  const read = await Promise.all(stretches);
+  return read.reverse().flat().filter((c) => c.checkedAt.getTime() > fromMs);
+}
 
 export type ReportOptions = {
   /** Days before the 30-day window to read as well, for comparisons with earlier periods. */
@@ -88,7 +98,7 @@ export async function loadScoreReport(
   const [windowed, lastWeek, earlier] = await Promise.all([
     windowChecks(businessId, start),
     olderChecks(businessId, weekBefore, start),
-    historyDays > TREND_DAYS ? olderChecks(businessId, start - historyDays * DAY_MS, weekBefore) : [],
+    historyDays > TREND_DAYS ? historyChecks(businessId, start - historyDays * DAY_MS, weekBefore) : [],
   ]);
   // The same rule for the window and the history before it, so a change compares like with like.
   const tracked = questions.data!.map((q) => ({ ...q, inactiveSince: q.inactive_since }));
@@ -179,20 +189,20 @@ async function readChecks(businessId: string, since: Date): Promise<ScoreCheck[]
 }
 
 /**
- * Checks older than the visibility_checks_30d view keeps, read from the rows that count (migration 044, no
- * sample answers for a real agency) and shaped the same way as migration 032: the same answer key, so an answer
- * repeated across the 30-day line still counts once.
+ * Checks older than the visibility_checks_30d view keeps, from visibility_checks_all (migration 088): the rows that
+ * count (migration 044) with the same answer key as migration 032, so an answer repeated across the 30-day line still
+ * counts once. The answer text itself is never read here.
  */
 export async function readOlderChecks(businessId: string, from: Date, to: Date): Promise<ScoreCheck[]> {
   const checks: ScoreCheck[] = [];
   for (let start = 0; ; start += PAGE) {
     const { data, error } = await createServiceClient()
-      .from("visibility_results_counted")
-      .select("id, provider, tracked_prompt_id, created_at, business_mentioned, competitors_mentioned, answer_text")
+      .from("visibility_checks_all")
+      .select("id, provider, question_id, checked_at, business_mentioned, competitors, answer_key")
       .eq("business_id", businessId)
-      .gt("created_at", from.toISOString())
-      .lte("created_at", to.toISOString())
-      .order("created_at")
+      .gt("checked_at", from.toISOString())
+      .lte("checked_at", to.toISOString())
+      .order("checked_at")
       .order("id")
       .range(start, start + PAGE - 1);
     if (error) throw new Error(`Scores: could not read older checks: ${error.message}`);
@@ -200,19 +210,14 @@ export async function readOlderChecks(businessId: string, from: Date, to: Date):
     for (const r of data) {
       checks.push({
         provider: r.provider as ProviderId,
-        questionId: r.tracked_prompt_id ?? "none",
-        checkedAt: new Date(r.created_at!),
+        questionId: r.question_id!,
+        checkedAt: new Date(r.checked_at!),
         mentioned: r.business_mentioned!,
-        competitorsMentioned: competitorNames(r.competitors_mentioned),
-        answerKey: r.answer_text === null ? r.id! : createHash("md5").update(r.provider! + r.answer_text).digest("hex"),
+        competitorsMentioned: r.competitors ?? [],
+        answerKey: r.answer_key!,
       });
     }
     if (data.length < PAGE) break;
   }
   return checks;
-}
-
-function competitorNames(value: unknown): string[] {
-  if (!Array.isArray(value)) return [];
-  return value.flatMap((c) => (c && typeof c === "object" && typeof c.name === "string" ? [c.name] : []));
 }

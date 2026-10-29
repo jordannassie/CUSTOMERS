@@ -6,6 +6,7 @@ import { viewerTimeZone } from "@/lib/viewer-time-zone";
 import { AppShell } from "@/components/app/AppShell";
 import { AppShellSkeleton, PageSkeleton } from "@/components/app/AppShellSkeleton";
 import { suggestFeature } from "@/modules/feedback";
+import { getScanStatus } from "@/modules/jobs";
 import { draftLabel, draftStep, stepPath } from "@/modules/onboarding";
 import {
   BUY_CREDITS_HREF,
@@ -59,6 +60,7 @@ async function AppFrame({ children }: { children: React.ReactNode }) {
       isAdmin={workspace.isAdmin}
       banners={usage && account ? pickBanners(usage, account, now, await viewerTimeZone()) : []}
       creditsShort={usage ? shortBalance(usage.balance) : null}
+      getScanStatus={getScanStatus}
     >
       <Suspense fallback={<PageSkeleton />}>{children}</Suspense>
     </AppShell>

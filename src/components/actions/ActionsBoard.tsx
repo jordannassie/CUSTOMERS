@@ -10,6 +10,7 @@ import type { ActionResult } from "@/modules/auth";
 import { WHERE_LABEL, type Where } from "@/lib/fix-where";
 import {
   ACTION_STATUSES,
+  OPEN_ACTION_STATUSES,
   PLACE_GROUP,
   STATUS_TEXT,
   WHERE_FILTER_TEXT,
@@ -22,6 +23,7 @@ import {
 import { WHERE_ORDER } from "@/modules/opportunities/where";
 import { ActionCard, IMPACT } from "./ActionCard";
 import { ActionsList } from "./ActionsList";
+import { publishOpenCount } from "./open-count";
 import { dropOverride, overrideKey, pruneOverrides, settleOverride, startOverride, withOverrides, type Overrides, type Patch } from "./board-overrides";
 
 export type MoveAction = (input: { businessId: string; actionId: string; status: ActionStatus }) => Promise<ActionResult<{ status: ActionStatus }>>;
@@ -63,6 +65,11 @@ export function ActionsBoard({
   useEffect(() => {
     serverItems.current = initialItems;
   }, [initialItems]);
+  // The header's "N open." follows the board's own list (OpenCount), since a move no longer renders the page again.
+  useEffect(() => {
+    publishOpenCount(businessId, items.filter((i) => OPEN_ACTION_STATUSES.includes(i.status)).length);
+  }, [businessId, items]);
+  useEffect(() => () => publishOpenCount(businessId, null), [businessId]);
   const [view, setView] = useState<"board" | "list">("board");
   const [impact, setImpact] = useState<Impact | "all">("all");
   const [place, setPlace] = useState<WhereFilter | "all">("all");

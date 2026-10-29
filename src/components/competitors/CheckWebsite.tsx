@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { Globe, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 import { siteHref } from "@/lib/site-href";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -56,7 +57,11 @@ export function CheckWebsite({
       const result = await check({ businessId, competitorId, domain: target }).catch(() => null);
       if (!result) return setError("We couldn't check right now. Try again in a few minutes.");
       if (!result.ok) return setError(result.error);
-      if (result.data.status === "reading") setBusyElsewhere(true);
+      if (result.data.status === "reading") return setBusyElsewhere(true);
+      // About 30 seconds after the click, so the user may have looked away; the toast still shows on this page.
+      if (result.data.status === "read") toast.success(`Checked ${name}'s website.`);
+      else if (result.data.status === "blocked") toast.warning(`${name}'s website blocks readers, so we couldn't check it.`);
+      else toast.warning(`${name}'s website didn't load, so we couldn't check it.`);
     });
   }
 

@@ -127,7 +127,15 @@ export function SharePanel({
           )}
         </>
       ) : (
-        <Button className="w-fit" disabled={pending} onClick={() => run(() => create({ businessId, reportId }), onLink)} data-testid="create-link">
+        <Button className="w-fit" disabled={pending} onClick={() =>
+            run(
+              () => create({ businessId, reportId }),
+              (created) => {
+                onLink(created);
+                toast.success("Share link created. Copy it and send it to your client.");
+              },
+            )
+          } data-testid="create-link">
           {pending ? <Loader2 aria-hidden className="animate-spin" /> : <Link2 aria-hidden />}
           Create link
         </Button>

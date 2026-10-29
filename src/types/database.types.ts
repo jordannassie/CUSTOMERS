@@ -2706,6 +2706,56 @@ export type Database = {
           },
         ]
       }
+      visibility_checks_all: {
+        Row: {
+          answer_key: string | null
+          business_id: string | null
+          business_mentioned: boolean | null
+          checked_at: string | null
+          cited_sources: Json | null
+          competitors: string[] | null
+          competitors_mentioned: Json | null
+          extracted_names: Json | null
+          id: string | null
+          provider: string | null
+          question_id: string | null
+        }
+        Insert: {
+          answer_key?: never
+          business_id?: string | null
+          business_mentioned?: boolean | null
+          checked_at?: string | null
+          cited_sources?: Json | null
+          competitors?: never
+          competitors_mentioned?: Json | null
+          extracted_names?: Json | null
+          id?: string | null
+          provider?: string | null
+          question_id?: never
+        }
+        Update: {
+          answer_key?: never
+          business_id?: string | null
+          business_mentioned?: boolean | null
+          checked_at?: string | null
+          cited_sources?: Json | null
+          competitors?: never
+          competitors_mentioned?: Json | null
+          extracted_names?: Json | null
+          id?: string | null
+          provider?: string | null
+          question_id?: never
+        }
+        Relationships: [
+          {
+            foreignKeyName: "visibility_results_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       visibility_results_counted: {
         Row: {
           answer_text: string | null

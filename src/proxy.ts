@@ -76,7 +76,15 @@ function redirectKeepingCookies(url: URL, from: NextResponse) {
 
 export const config = {
   matcher: [
-    // Skips static files, image optimisation and auth/callback (it exchanges the OAuth code and sets cookies).
-    "/((?!_next/static|_next/image|favicon.ico|auth/callback|.*\\.(?:js|svg|png|jpg|jpeg|gif|webp)$).*)",
+    {
+      // Skips static files, image optimisation and auth/callback (it exchanges the OAuth code and sets cookies).
+      source: "/((?!_next/static|_next/image|favicon.ico|auth/callback|.*\\.(?:js|css|map|svg|png|jpg|jpeg|gif|webp|ico|woff2?|txt|xml|webmanifest)$).*)",
+      // Link prefetches too: the page checks access itself when it is opened, and the real navigation still comes
+      // through here to refresh the session (Next.js 16 proxy matcher docs).
+      missing: [
+        { type: "header", key: "next-router-prefetch" },
+        { type: "header", key: "purpose", value: "prefetch" },
+      ],
+    },
   ],
 };

@@ -3,8 +3,8 @@ import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { maxQuestions } from "@/modules/entitlements";
 import { liveQuestionClients } from "../../dal";
-import { cityLabel } from "../../question-rules";
-import { placeTypesOf, prepareQuestions, type QuestionClients } from "../../questions";
+import type { QuestionClients } from "../../questions";
+import { FIRST_SET_COLUMNS, prepareFirstSet, saveFirstSet, shownQuestions } from "./first-set/dal";
 import { FINISHED_STEP, nextStepNumber, type PlanId } from "../steps";
 import { ownDraftStep, ownStep } from "../dal";
 
@@ -20,9 +20,10 @@ export type QuestionsStep = {
 };
 
 /**
- * Step 6. The first visit prepares 12 questions and saves them at once, so a refresh or a return never
- * asks Claude again. Library candidates (B-33) need no extra record: they are exactly the businesses
- * whose industry has no active question_library templates.
+ * Step 6. The first set is usually saved already: saving the details step starts it (first-set/dal.ts). Otherwise the
+ * first visit prepares 12 questions and saves them at once, so a refresh or a return never asks Claude again. Library
+ * candidates (B-33) need no extra record: they are exactly the businesses whose industry has no active
+ * question_library templates.
  */
 export async function loadQuestionsStep(
   userId: string,
@@ -32,65 +33,30 @@ export async function loadQuestionsStep(
   const supabase = await createClient();
   const { data: b, error } = await supabase
     .from("businesses")
-    .select("name, aliases, domain, industry, services, description, primary_city, primary_region, primary_area, places_id, is_chain, questions_updated_at")
+    .select(`${FIRST_SET_COLUMNS}, onboarding_step, questions_updated_at`)
     .eq("id", businessId)
     .eq("owner_user_id", userId)
     .maybeSingle();
   if (error) throw new Error(`Could not load business: ${error.message}`);
   if (!b) return null;
   if (!b.primary_city) return "no-city";
+  const business = { ...b, primary_city: b.primary_city };
 
   const [rows, limit, rivals] = await Promise.all([
     activeQuestions(businessId),
     questionLimit(businessId),
     supabase.from("business_competitors").select("name, aliases").eq("business_id", businessId),
   ]);
+  const competitors = rivals.data ?? [];
   if (rows.length > 0) {
-    return { businessName: b.name, questions: rows.map((r) => r.prompt), limit, updated: b.questions_updated_at !== null };
+    const questions = shownQuestions(rows, competitors, b.primary_city, b.onboarding_step);
+    return { businessName: b.name, questions, limit, updated: b.questions_updated_at !== null };
   }
 
-  const set = await prepareQuestions(
-    {
-      industry: b.industry,
-      industryText: b.industry ?? undefined,
-      services: b.services,
-      description: b.description ?? "",
-      city: b.primary_city,
-      region: b.primary_region,
-      // Set: about a third of the questions are asked about this neighborhood instead of the whole city.
-      area: b.primary_area,
-      name: b.name,
-      aliases: b.aliases,
-      domain: b.domain,
-      // Competitors' names never appear in a question (2026-10-16).
-      competitors: (rivals.data ?? []).flatMap((c) => [c.name, ...(c.aliases ?? [])]),
-      chain: b.is_chain,
-      // Google's types, read live (D-73): a fast food listing gets fast food questions.
-      ...(await placeTypesOf(b.places_id, clients)),
-    },
-    clients,
-  );
-  if (set.error) console.warn(`Question picking fell back (${set.source}): ${set.error}`);
-  // tracked_prompts.source allows library, custom or legacy, and custom means the user wrote it. Questions
-  // Claude wrote or the fallback made are our suggestions too, so they are stored as library (BUG-9).
-  const source = "library";
-  const location = cityLabel(b.primary_city, b.primary_region);
-  const now = Date.now();
-  // Two loads at once (a refresh, a second tab) each prepare a set; the business row lock in
-  // save_first_questions keeps the first saved one and hands it to the other load too.
-  const { data: saved, error: saveError } = await createServiceClient().rpc("save_first_questions", {
-    p_business_id: businessId,
-    p_owner_user_id: userId,
-    p_questions: set.questions.map((q, i) => ({
-      prompt: q.text,
-      buyer_intent: q.intent,
-      location,
-      source,
-      created_at: inOrder(i, now),
-    })),
-  });
-  if (saveError) throw new Error(`Could not save questions: ${saveError.message}`);
-  return { businessName: b.name, questions: saved.map((r) => r.prompt), limit, updated: false };
+  const set = await prepareFirstSet(business, competitors, clients);
+  // The set saved first: this one, or the background one that finished while this was made.
+  const saved = (await saveFirstSet(userId, businessId, business, set)).map((r) => ({ ...r, source: "library" }));
+  return { businessName: b.name, questions: shownQuestions(saved, competitors, b.primary_city, b.onboarding_step), limit, updated: false };
 }
 
 // Rows saved in one insert share a timestamp, so each gets its own to keep the list in order.
@@ -100,7 +66,7 @@ async function activeQuestions(businessId: string) {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("tracked_prompts")
-    .select("id, prompt")
+    .select("id, prompt, source")
     .eq("business_id", businessId)
     .eq("active", true)
     .order("created_at")
@@ -180,8 +146,11 @@ export type ModelsStep = {
   plan: { name: string; monthlyCredits: number | null } | null;
 };
 
-/** Step 7. The plan is the draft's (draftPlanId): the one picked for it, else on the pricing page, else Starter. */
-export async function loadModelsStep(userId: string, businessId: string, plan: PlanId | null): Promise<ModelsStep | null> {
+/**
+ * Step 7. The plan is the draft's (draftPlanId): the one picked for it, else on the pricing page, else Starter. It may
+ * still be loading, so it is read alongside the business.
+ */
+export async function loadModelsStep(userId: string, businessId: string, plan: PlanId | null | Promise<PlanId | null>): Promise<ModelsStep | null> {
   const supabase = await createClient();
   const { data: b, error } = await supabase
     .from("businesses")
@@ -193,7 +162,7 @@ export async function loadModelsStep(userId: string, businessId: string, plan: P
   if (!b) return null;
   const [rows, planRow] = await Promise.all([
     activeQuestions(businessId),
-    supabase.from("plans").select("name, monthly_credits").eq("id", plan ?? "starter").maybeSingle(),
+    Promise.resolve(plan).then((id) => supabase.from("plans").select("name, monthly_credits").eq("id", id ?? "starter").maybeSingle()),
   ]);
   if (planRow.error) throw new Error(`Could not load plan: ${planRow.error.message}`);
   return {

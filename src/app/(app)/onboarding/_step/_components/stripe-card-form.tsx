@@ -15,15 +15,22 @@ import type { ActionResult } from "@/modules/auth";
 type Props = {
   businessId: string;
   publishableKey: string;
+  /** Made with the page (loadCardStep); without it the session is asked for here. */
+  clientSecret: string | null;
   start: (input: { businessId: string }) => Promise<ActionResult<{ clientSecret: string }>>;
   onAccepted: () => void;
 };
 
-export default function StripeCardForm({ businessId, publishableKey, start, onAccepted }: Props) {
+export default function StripeCardForm({ businessId, publishableKey, clientSecret: made, start, onAccepted }: Props) {
   const [ownError, setOwnError] = useState<string | null>(null);
-  // One Checkout Session per visit to this step, created by our server with the plan and metadata (BUG-105).
-  const key = `card:${businessId}`;
-  const create = useCallback(() => start({ businessId }), [start, businessId]);
+  // One Checkout Session per visit to this step, created by our server with the plan and metadata (BUG-105): usually
+  // with the page, else asked for now. A session made with the page is its own key, so coming back after Change plan
+  // uses the new plan's session, not one kept from the earlier visit.
+  const key = made ? `card:${businessId}:${made}` : `card:${businessId}`;
+  const create = useCallback(
+    (): Promise<ActionResult<{ clientSecret: string }>> => (made ? Promise.resolve({ ok: true, data: { clientSecret: made } }) : start({ businessId })),
+    [made, start, businessId],
+  );
   const session = useCheckoutSession(key, create);
   const clientSecret = useMemo(
     () =>

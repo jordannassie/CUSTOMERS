@@ -27,11 +27,18 @@ async function resolveOne(host: string, resolve: Resolve): Promise<DomainCheck> 
   }
 }
 
-/** "not_found" only when neither the domain nor its www. name exists. */
+/**
+ * "not_found" only when neither the domain nor its www. name exists. "found" as soon as either name resolves: a slow
+ * answer for the other one no longer holds up "Find my business" for up to 3 seconds (2026-10-29).
+ */
 export async function checkDomain(domain: string, resolve: Resolve = (host) => lookup(host)): Promise<DomainCheck> {
-  const [bare, www] = await Promise.all([resolveOne(domain, resolve), resolveOne(`www.${domain}`, resolve)]);
-  if (bare === "found" || www === "found") return "found";
-  return bare === "not_found" && www === "not_found" ? "not_found" : "unknown";
+  const checks = [resolveOne(domain, resolve), resolveOne(`www.${domain}`, resolve)];
+  const firstFound = new Promise<DomainCheck>((done) => checks.forEach((c) => c.then((r) => r === "found" && done("found"))));
+  const both = Promise.all(checks).then(([bare, www]): DomainCheck => {
+    if (bare === "found" || www === "found") return "found";
+    return bare === "not_found" && www === "not_found" ? "not_found" : "unknown";
+  });
+  return Promise.race([firstFound, both]);
 }
 
 export function websiteNotFoundText(domain: string): string {

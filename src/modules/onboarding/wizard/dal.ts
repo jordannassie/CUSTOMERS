@@ -103,7 +103,11 @@ export async function startBusiness(
   gate?: AutofillGate,
 ): Promise<StartBusinessResult> {
   const supabase = await createClient();
-  const agency = await supabase.from("agencies").select("id").eq("owner_user_id", userId).maybeSingle();
+  // Read at once: both need only the user (2026-10-29).
+  const [agency, state] = await Promise.all([
+    supabase.from("agencies").select("id").eq("owner_user_id", userId).maybeSingle(),
+    loadWizardState(userId),
+  ]);
   if (agency.error) throw new Error(`Could not load agency: ${agency.error.message}`);
   if (!agency.data) return { ok: false, status: 409, error: "Add your agency name first." };
   const agencyId = agency.data.id;
@@ -112,7 +116,6 @@ export async function startBusiness(
     "domain" in request
       ? { domain: request.domain, has_website: true }
       : { domain: null, has_website: false, name: request.name, primary_city: request.city };
-  const state = await loadWizardState(userId);
   let draft = state.draft;
   if (!draft) {
     const allowed = await canAddBusiness(agencyId);

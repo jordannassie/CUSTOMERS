@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
-import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { env } from "@/lib/env";
 import { createServiceClient } from "@/lib/supabase/service";
 import type { Database } from "@/types/database.types";
@@ -150,7 +150,17 @@ describe("unconfirmed admin address", () => {
   const adminAddress = "owner@example.test";
   function sessionFor(emailConfirmedAt: string | null) {
     const user = { id: randomUUID(), email: adminAddress, email_confirmed_at: emailConfirmedAt };
-    return { auth: { getUser: async () => ({ data: { user }, error: null }) } } as unknown as SupabaseClient<Database>;
+    // The session token names the user; only the admin check asks Supabase Auth whether the address is confirmed.
+    const claims = { sub: user.id, email: adminAddress };
+    // No agency yet, so the user is also confirmed with Supabase Auth (getCurrentUser).
+    const noRows = { select: () => noRows, eq: () => noRows, maybeSingle: async () => ({ data: null, error: null }) };
+    return {
+      auth: {
+        getClaims: async () => ({ data: { claims }, error: null }),
+        getUser: async () => ({ data: { user }, error: null }),
+      },
+      from: () => noRows,
+    } as unknown as SupabaseClient<Database>;
   }
 
   beforeEach(() => {
@@ -177,9 +187,11 @@ describe("unconfirmed admin address", () => {
 // E2E-0929 BUG-4 and BUG-5: a slow or failing auth server is not a sign-out.
 describe("auth server unavailable", () => {
   let outage: "none" | "network" | "gateway" = "none";
+  // Only Supabase Auth is down; the database still answers.
   const flaky: typeof fetch = async (input, init) => {
-    if (outage === "network") throw new TypeError("fetch failed");
-    if (outage === "gateway") return new Response("upstream timed out", { status: 504 });
+    const auth = new URL(input instanceof Request ? input.url : String(input)).pathname.startsWith("/auth/v1/");
+    if (auth && outage === "network") throw new TypeError("fetch failed");
+    if (auth && outage === "gateway") return new Response("upstream timed out", { status: 504 });
     return fetch(input, init);
   };
 
@@ -197,19 +209,30 @@ describe("auth server unavailable", () => {
     outage = "none";
   });
 
-  it.each(["network", "gateway"] as const)("gives a 503, never a 401 or a login redirect, on a %s failure", async (kind) => {
+  afterEach(() => {
+    adminEnv.emails = "";
+  });
+
+  // The session token is checked locally against the project's published key, so pages keep working.
+  it.each(["network", "gateway"] as const)("a signed-in session still works on a %s failure", async (kind) => {
+    outage = kind;
+    expect(await requireUser({ next: "/questions" })).toEqual({ id: userId, email });
+  });
+
+  // The admin check asks Supabase Auth whether the address is confirmed, so it can still meet the outage.
+  it.each(["network", "gateway"] as const)("the admin check gives a 503, never a 401 or a login redirect, on a %s failure", async (kind) => {
+    adminEnv.emails = email;
     outage = kind;
     const unavailable = { name: "AuthError", reason: "unavailable", status: 503 };
-    await expect(requireUser()).rejects.toMatchObject(unavailable);
-    await expect(requireUser({ next: "/questions" })).rejects.toMatchObject(unavailable);
-    await expect(requireAgency({ next: "/dashboard" })).rejects.toMatchObject(unavailable);
     await expect(requireAdmin()).rejects.toMatchObject(unavailable);
-    await expect(requireUser()).rejects.toThrow("We couldn't check your account just now. Try again in a moment.");
+    await expect(requireAdmin({ next: "/internal/admin" })).rejects.toMatchObject(unavailable);
+    await expect(requireAdmin()).rejects.toThrow("We couldn't check your account just now. Try again in a moment.");
   });
 
   it("an action turns it into a retryable message", async () => {
+    adminEnv.emails = email;
     outage = "network";
-    const result = await requireUser().then(
+    const result = await requireAdmin().then(
       () => null,
       (error: unknown) => authFailure(error),
     );

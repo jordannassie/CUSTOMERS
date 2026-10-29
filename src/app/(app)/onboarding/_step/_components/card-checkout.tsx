@@ -1,8 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { preconnect } from "react-dom";
 import dynamic from "next/dynamic";
 import { StripeFormLoading } from "@/app/(app)/_stripe/form-loading";
+import { getStripeJs } from "@/app/(app)/_stripe/stripe-elements";
 import { SecureNote, SettingUp, TrialSummary, type CardOffer } from "@/components/onboarding/CardBits";
 import { FixtureCardForm } from "@/components/onboarding/FixtureCardForm";
 import type { ActionResult } from "@/modules/auth";
@@ -15,6 +17,8 @@ type Props = {
   offer: CardOffer;
   mode: CardFormMode;
   publishableKey: string | null;
+  /** The Checkout Session made with the page; null when the form asks for one itself. */
+  clientSecret: string | null;
   /** Back from a bank page with ?session_id: only the webhook can finish the step now. */
   returned: boolean;
   start: (input: { businessId: string }) => Promise<ActionResult<{ clientSecret: string }>>;
@@ -22,8 +26,18 @@ type Props = {
 };
 
 // Step 8 (B-41): price and trial terms, the card form, then "Setting up your account" until the webhook lands.
-export function CardCheckout({ businessId, offer, mode, publishableKey, returned, start, check }: Props) {
+export function CardCheckout({ businessId, offer, mode, publishableKey, clientSecret, returned, start, check }: Props) {
   const [accepted, setAccepted] = useState(returned);
+  const stripeForm = !accepted && mode === "stripe" && Boolean(publishableKey);
+  // Stripe's script and API are reached early (2026-10-29): the browser connects while the page loads, and the script
+  // starts loading at once instead of after the card form's own code has arrived.
+  if (stripeForm) {
+    preconnect("https://js.stripe.com");
+    preconnect("https://api.stripe.com");
+  }
+  useEffect(() => {
+    if (stripeForm && publishableKey) getStripeJs(publishableKey).catch(() => null);
+  }, [stripeForm, publishableKey]);
 
   if (accepted) return <SettingUp businessId={businessId} check={check} />;
   return (
@@ -32,7 +46,13 @@ export function CardCheckout({ businessId, offer, mode, publishableKey, returned
       {mode === "fixture" ? (
         <FixtureCardForm businessId={businessId} start={start} onAccepted={() => setAccepted(true)} />
       ) : mode === "stripe" && publishableKey ? (
-        <StripeCardForm businessId={businessId} publishableKey={publishableKey} start={start} onAccepted={() => setAccepted(true)} />
+        <StripeCardForm
+          businessId={businessId}
+          publishableKey={publishableKey}
+          clientSecret={clientSecret}
+          start={start}
+          onAccepted={() => setAccepted(true)}
+        />
       ) : (
         <p role="alert" className="rounded-md bg-low-bg px-3 py-2 text-[13px] text-low-text">
           Card sign up isn&apos;t available right now. Please try again later.

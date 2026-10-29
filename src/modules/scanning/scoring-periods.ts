@@ -11,6 +11,7 @@ import {
   type Mentioned,
   type ScoreCheck,
 } from "./scoring";
+import { namesCompetitor } from "./check-keys";
 
 // Scores over time: one point per scan and changes between periods (D-63, D-64). Pure, over saved checks.
 
@@ -84,7 +85,7 @@ export function competitorWeeklyChange(
   opts: { now: Date; models: readonly ProviderId[] },
 ): Change | null {
   const lower = name.toLowerCase();
-  return periodChange(checks, opts, TREND_DAYS, (c) => c.competitorsMentioned.some((n) => n.toLowerCase() === lower));
+  return periodChange(checks, opts, TREND_DAYS, (c) => namesCompetitor(c, lower));
 }
 
 /** The 30-day score now against the 30-day score `daysBack` days ago, both read exactly as the screen reads them. */
