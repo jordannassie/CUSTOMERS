@@ -105,7 +105,7 @@ describe("pickShares", () => {
   it("gives you the same share as the Overview's rule, a chain as one slice, and the rest as Other competitors", () => {
     expect(view.share.map((s) => [s.name, s.mentions, s.share])).toEqual([
       ["You Co", 2, 29],
-      ["Bennu Coffee (all locations)", 2, 29],
+      ["Bennu Coffee on Congress", 2, 29],
       ["A", 1, 14],
       ["B", 1, 14],
       ["Other competitors", 1, 14],

@@ -70,9 +70,20 @@ export function sourceType(host: string, ownDomain: string | null): SourceType {
 /** Who owns a cited business website (shared with insights/sites.ts, BUG-100). */
 const compact = (text: string) => text.toLowerCase().normalize("NFKD").replace(/[^a-z0-9]/g, "");
 
+// "com" in dominos.com.pk, "co" in example.co.uk: part of the country's ending, never the brand.
+const SECOND_LEVEL = new Set(["com", "co", "net", "org", "gov", "edu", "ac", "biz", "info"]);
+
+/** The domain without its ending, as one word: "dominos.com.pk" and "dominos.com" both give "dominos". */
+function brandLabel(domain: string): string {
+  const labels = domain.toLowerCase().split(".");
+  const ending = labels.pop() ?? "";
+  if (ending.length === 2 && labels.length > 1 && SECOND_LEVEL.has(labels.at(-1)!)) labels.pop();
+  return compact(labels.join(""));
+}
+
 /** The business whose own website this is, when its name matches the domain: abacusplumbing.com is Abacus Plumbing's. */
 export function siteOwner(domain: string, names: string[]): string | null {
-  const label = compact(domain.split(".").slice(0, -1).join(""));
+  const label = brandLabel(domain);
   if (label.length < 4) return null;
   for (const name of names) {
     // "Abacus Plumbing, Air Conditioning & Electrical" starts with abacusplumbing.

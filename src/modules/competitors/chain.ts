@@ -1,5 +1,6 @@
 // A tracked branch whose score is its chain's (MVP_SPEC 5.5): AI answers named "Bennu Coffee", not "Bennu Coffee on
-// Congress", so the row says so instead of giving the branch the chain's number. Pure.
+// Congress". The row is named by the branch you track, the location you compete with (the user, 2026-10-30: no
+// "(all locations)"); sentences about what AI said still use the chain's name (namedAs). Pure.
 
 /** The chain behind a row, and the tracked names it stands for. */
 export type ChainOf = { brand: string; tracked: string[] };
@@ -8,9 +9,9 @@ type Named = { name: string; chain?: ChainOf | null };
 
 const key = (name: string) => name.trim().toLowerCase();
 
-/** "Bennu Coffee (all locations)" for a chain row, else the tracked name. */
+/** The branch you track for a chain row ("Domino's Pizza | Chaklala-III"), else the tracked name. */
 export function rowName(row: Named): string {
-  return row.chain ? `${row.chain.brand} (all locations)` : row.name;
+  return row.chain ? (row.chain.tracked[0] ?? row.chain.brand) : row.name;
 }
 
 /** The name a sentence uses: the chain AI named ("Bennu Coffee"), else the tracked name. */
@@ -18,12 +19,15 @@ export function namedAs(row: Named): string {
   return row.chain?.brand ?? row.name;
 }
 
-/** "You track Bennu Coffee on Congress" under a chain row; null for any other row. */
+/**
+ * "Also counts Bennu Coffee on 5th" when you track two branches of one chain and they share a row (the row is named by
+ * the first); null otherwise, since the row's name is already the branch you track.
+ */
 export function trackedNote(row: Named): string | null {
-  if (!row.chain) return null;
-  const names = row.chain.tracked;
-  const list = names.length > 1 ? `${names.slice(0, -1).join(", ")} and ${names.at(-1)}` : names[0];
-  return `You track ${list}`;
+  const others = row.chain?.tracked.slice(1) ?? [];
+  if (others.length === 0) return null;
+  const list = others.length > 1 ? `${others.slice(0, -1).join(", ")} and ${others.at(-1)}` : others[0];
+  return `Also counts ${list}`;
 }
 
 /**

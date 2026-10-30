@@ -160,7 +160,7 @@ export default async function ComparePage({ searchParams }: { searchParams: Prom
                         </div>
                         {/* Where they beat you on Google, each with its fix: only here, not again on the Summary tab. */}
                         <Suspense fallback={null}>
-                          {/* One listing's Google values: the tracked branch's name, never "(all locations)". */}
+                          {/* One listing's Google values: the tracked branch's name. */}
                           <GoogleReasons
                             name={data.branch}
                             competitorId={data.panel.competitorId}

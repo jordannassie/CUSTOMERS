@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { cn } from "cn";
+import { SiteIcon } from "@/components/app/SiteIcon";
+import { CompetitorWebsite, type SaveWebsiteAction } from "./CompetitorWebsite";
 import { PointsChange } from "@/components/overview/PointsChange";
 import { Badge } from "@/components/ui/badge";
 import { compareHref } from "@/lib/compare-href";
@@ -13,7 +15,19 @@ const STANDING_BADGE = { ahead: "good", behind: "mid", about_same: "secondary" }
  * the last 10 scans, the weekly change, each AI tool, the standing and Compare. Wide, so it scrolls inside its card
  * on a phone. Only the AI tools this business uses get a column.
  */
-export function LeaderTable({ rows }: { rows: TableRow[] }) {
+/**
+ * `ownDomain`: your business's website, for your row's icon. `website`: lets a competitor with no known website get one
+ * typed in right here ("Add website", saved as your own entry, D-73), so its logo shows (2026-10-30).
+ */
+export function LeaderTable({
+  rows,
+  ownDomain = null,
+  website = null,
+}: {
+  rows: TableRow[];
+  ownDomain?: string | null;
+  website?: { businessId: string; save: SaveWebsiteAction } | null;
+}) {
   const tools = TABLE_MODELS.filter((m) => rows.some((r) => m.id in r.byModel));
   return (
     // relative: the sr-only header is absolutely placed, and would otherwise widen the whole page on a phone.
@@ -44,12 +58,18 @@ export function LeaderTable({ rows }: { rows: TableRow[] }) {
               <td className="max-w-[300px] py-3 pr-3 align-top">
                 <span className={cn("flex min-w-0 items-center gap-2 font-medium", r.isYou && "text-primary")} title={r.name}>
                   <span className="size-2.5 shrink-0 rounded-full" style={{ background: r.color }} aria-hidden="true" />
+                  <SiteIcon domain={r.isYou ? ownDomain : r.domain} name={r.name} size="sm" />
                   <span className="truncate">{r.isYou ? `${r.name} (you)` : r.name}</span>
                 </span>
                 {r.note && (
                   <span className="block text-xs text-text-hint" data-testid="chain-note">
                     {r.note}
                   </span>
+                )}
+                {website && !r.isYou && !r.domain && r.competitorId && (
+                  <div className="mt-1 pl-[2.375rem] text-xs" data-testid="leader-add-website">
+                    <CompetitorWebsite businessId={website.businessId} competitorId={r.competitorId} name={r.name} current={null} save={website.save} />
+                  </div>
                 )}
                 {r.topReason && (
                   <span className="mt-0.5 line-clamp-2 block text-xs text-muted-foreground" data-testid="top-reason">

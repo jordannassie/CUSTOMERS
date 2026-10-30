@@ -9,11 +9,11 @@ const row = (name: string, score: number | null, chain: string | null = null, co
 });
 
 describe("chain labels", () => {
-  it("names a chain row as the chain, with the tracked branch below it", () => {
+  it("names a chain row by the branch you track, and sentences about AI by the chain (2026-10-30)", () => {
     const bennu = row("Bennu Coffee on Congress", 25, "Bennu Coffee");
-    expect(rowName(bennu)).toBe("Bennu Coffee (all locations)");
+    expect(rowName(bennu)).toBe("Bennu Coffee on Congress");
     expect(namedAs(bennu)).toBe("Bennu Coffee");
-    expect(trackedNote(bennu)).toBe("You track Bennu Coffee on Congress");
+    expect(trackedNote(bennu)).toBeNull();
   });
 
   it("leaves any other row as tracked", () => {
@@ -30,7 +30,7 @@ describe("mergeChains", () => {
       row("Bennu Coffee East", 28, "Bennu Coffee"),
     ]);
     expect(merged.map((r) => [rowName(r), r.score, trackedNote(r)])).toEqual([
-      ["Bennu Coffee (all locations)", 28, "You track Bennu Coffee on Congress and Bennu Coffee East"],
+      ["Bennu Coffee on Congress", 28, "Also counts Bennu Coffee East"],
       ["Epoch Coffee", 30, null],
     ]);
   });
@@ -39,7 +39,7 @@ describe("mergeChains", () => {
     const merged = mergeChains([row("Bennu Coffee on Congress", 40, "Bennu Coffee", true), row("Bennu Coffee", 25)]);
     expect(merged).toHaveLength(1);
     expect(merged[0]).toMatchObject({ name: "Bennu Coffee", score: 25, collecting: false });
-    expect(trackedNote(merged[0])).toBe("You track Bennu Coffee on Congress and Bennu Coffee");
+    expect(trackedNote(merged[0])).toBe("Also counts Bennu Coffee");
   });
 
   it("leaves rows alone when there is no chain, or no score yet", () => {

@@ -139,21 +139,23 @@ test.afterAll(async () => {
   for (const id of userIds.splice(0)) await db.auth.admin.deleteUser(id);
 });
 
-test("a tracked branch that answers never name shows as its chain (BUG-132)", async ({ page }) => {
-  // The saved answers never say "Congress": AI named the chain, so the number belongs to the chain.
+test("a tracked branch that answers never name keeps its own name, scored by its chain's answers (BUG-132)", async ({ page }) => {
+  // The saved answers never say "Congress": AI named the chain, so the number comes from the chain's answers. The row
+  // is still named by the branch you track (2026-10-30: no "(all locations)").
   await seed(page, {
     competitors: [{ name: "Bean House on Congress", places_id: null }],
     answers: [["Bean House on Congress"], ["Bean House on Congress"], ["Sunrise Coffee Bar"]],
   });
   const board = page.getByTestId("leaderboard");
-  await expect(board.getByTestId("leader-row").first()).toContainText("Bean House (all locations)");
-  await expect(board.getByTestId("chain-note")).toHaveText("You track Bean House on Congress");
-  // The chain row opens Compare too, under the chain's name.
+  await expect(board.getByTestId("leader-row").first()).toContainText("Bean House on Congress");
+  await expect(board.getByTestId("leader-row").first()).not.toContainText("all locations");
+  await expect(board.getByTestId("chain-note")).toHaveCount(0);
+  // The chain row opens Compare too, under the branch's name.
   await board.getByTestId("leader-row").first().getByTestId("compare-link").click();
   await page.waitForURL((url) => url.pathname === "/competitors/compare" && url.searchParams.has("with"), { timeout: 60_000 });
   const compare = page.getByTestId("compare-page");
-  await expect(compare.getByRole("heading", { level: 2, name: "You vs Bean House (all locations)" })).toBeVisible({ timeout: 60_000 });
-  await expect(compare.getByTestId("why-chain-note")).toContainText("You track Bean House on Congress");
+  await expect(compare.getByRole("heading", { level: 2, name: "You vs Bean House on Congress" })).toBeVisible({ timeout: 60_000 });
+  await expect(compare.getByTestId("why-chain-note")).toHaveCount(0);
   await expect(compare.getByTestId("why-versus")).toContainText("Bean House");
 });
 

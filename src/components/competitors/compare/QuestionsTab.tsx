@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { cn } from "cn";
+import { SiteIcon } from "@/components/app/SiteIcon";
 import { Badge } from "@/components/ui/badge";
 import type { WhyPanel } from "@/modules/competitors";
 import { tallyResult, type TallyResult } from "@/modules/standing";
@@ -91,9 +92,12 @@ export function WhereLookedTab({ panel }: { panel: WhyPanel }) {
               return (
                 <tr key={d.host} data-testid="compare-site">
                   <td className={cn(ROW, "font-medium break-all")}>
-                    <Link href={`/questions?site=${encodeURIComponent(d.host)}`} className="hover:underline">
-                      {d.host}
-                    </Link>
+                    <span className="flex items-center gap-2">
+                      <SiteIcon domain={d.host} name={d.host} size="sm" />
+                      <Link href={`/questions?site=${encodeURIComponent(d.host)}`} className="min-w-0 hover:underline">
+                        {d.host}
+                      </Link>
+                    </span>
                   </td>
                   <td className={cn(ROW, "text-right tabular-nums")}>{d.answers}</td>
                   <td className={cn(ROW, "text-right tabular-nums")}>{d.them}</td>

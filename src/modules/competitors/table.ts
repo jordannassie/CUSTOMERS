@@ -35,6 +35,8 @@ export type TableRow = {
   competitorId: string | null;
   /** The business's color on every chart (lib/series-colors). */
   color: string;
+  /** A competitor's known website (typed by the user or cited by AI, D-85), for its icon; null for you and unknown. */
+  domain: string | null;
 };
 
 export type TableKpis = {
@@ -74,6 +76,7 @@ export function leaderTable(view: CompetitorsView, report: ScoreReport, panels: 
       collecting: row.collecting,
       competitorId: panel?.competitorId ?? null,
       color: row.isYou ? colorAt(0) : competitorColor(order, row.name),
+      domain: row.isYou ? null : (panel?.website?.domain ?? null),
     };
   });
   return { rows, kpis: kpisOf(view.leaderboard) };

@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import type { Impact } from "@/modules/sources/listings";
 import type { ListedSite } from "@/modules/sources/rows";
 import { AddToActionsButton, type AddToActions } from "./AddToActionsButton";
-import { SiteInitial } from "./SiteInitial";
+import { SiteIcon } from "@/components/app/SiteIcon";
 
 const IMPACT: Record<Impact, { label: string; variant: "low" | "mid" | "secondary" }> = {
   high: { label: "High", variant: "low" },
@@ -31,7 +31,7 @@ export function ListedFirst({ businessId, listed, add }: Props) {
             {listed.map((s) => (
               <li key={s.host} className="flex flex-col gap-3 py-3 first:pt-0 last:pb-0 sm:flex-row sm:items-center" data-testid="listed-site">
                 <div className="flex min-w-0 flex-1 gap-3">
-                  <SiteInitial host={s.host} />
+                  <SiteIcon domain={s.host} name={s.host} />
                   <div className="flex min-w-0 flex-col gap-0.5">
                     <p className="flex flex-wrap items-center gap-x-2 text-sm">
                       <span className="truncate font-medium" title={s.host}>{s.host}</span>

@@ -49,12 +49,12 @@ describe("leaderTable", () => {
     });
   });
 
-  it("names a chain by its brand only in the tiles, while its row keeps (all locations)", () => {
+  it("names a chain by its brand in the tiles, and its row by the branch you track", () => {
     const chain = { brand: "Domino's", tracked: ["Domino's Pizza Saddar"] };
     const chained = { leaderboard: view.leaderboard.map((r) => (r.name === "Domino's" ? { ...r, chain } : r)) } as CompetitorsView;
     const out = leaderTable(chained, report, []);
     expect(out.kpis.next?.name).toBe("Domino's");
-    expect(out.rows[1].name).toBe("Domino's (all locations)");
+    expect(out.rows[1].name).toBe("Domino's Pizza Saddar");
   });
 
   it("says about the same when the one above is inside the margin", () => {

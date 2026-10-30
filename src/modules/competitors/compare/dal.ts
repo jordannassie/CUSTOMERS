@@ -20,7 +20,7 @@ export type { CompareOption } from "./options";
 export type Comparison = {
   businessId: string;
   businessName: string;
-  /** "Bean House (all locations)" for a chain row. */
+  /** The tracked branch for a chain row ("Bean House on 5th"), as the leaderboard names it. */
   title: string;
   /** "You track Bean House on Congress" for a chain row. */
   note: string | null;

@@ -11,7 +11,7 @@ export const rowFor = (leaderboard: LeaderRow[], tracked: string) =>
   leaderboard.find((r) => !r.isYou && (r.name === tracked || r.chain?.tracked.includes(tracked))) ?? null;
 
 /**
- * One option per leaderboard row: two tracked branches of one chain share a row ("Bean House (all locations)"), so
+ * One option per leaderboard row: two tracked branches of one chain share a row (named by the first tracked branch), so
  * the picker lists it once, under the branch the row's score is from. `idFor` sends either branch's id to that option.
  */
 export function pickerOptions(

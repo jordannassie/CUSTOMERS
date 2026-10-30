@@ -57,7 +57,7 @@ export function Picker({ page, tab, track }: { page: ComparePage; tab: string; t
           {subtitle && <p className="text-sm text-muted-foreground">{subtitle}</p>}
           {selected.note && (
             <p className="text-sm text-muted-foreground" data-testid="why-chain-note">
-              {selected.note}. AI named the chain, so these numbers cover all its locations.
+              {selected.note}.
             </p>
           )}
         </div>

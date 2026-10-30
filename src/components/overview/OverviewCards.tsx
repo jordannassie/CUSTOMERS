@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import Link from "next/link";
 import { ArrowDown, ArrowUp } from "lucide-react";
 import { cn } from "cn";
+import { SiteIcon } from "@/components/app/SiteIcon";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { fixHref } from "@/lib/fix-where";
@@ -177,6 +178,7 @@ export function WhereAiLooks({ rows }: { rows: SourceLine[] }) {
         <ul className="flex flex-col divide-y divide-border">
           {rows.map((r) => (
             <li key={r.host} className="flex items-center gap-3 py-2.5 first:pt-0 last:pb-0">
+              <SiteIcon domain={r.host} name={r.host} size="sm" />
               <span className="min-w-0 flex-1 truncate text-sm">{r.host}</span>
               <span className="text-xs text-muted-foreground tabular-nums">
                 {r.answers} {r.answers === 1 ? "answer" : "answers"}

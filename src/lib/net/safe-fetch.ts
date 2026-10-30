@@ -18,7 +18,8 @@ export type SafeFetchOptions = {
   headers?: Record<string, string>;
 };
 
-export type SafeResponse = { status: number; ok: boolean; url: string; contentType: string; text: string };
+/** `bytes`: the body as read (up to maxBytes), for images; `text` is the same body as UTF-8. */
+export type SafeResponse = { status: number; ok: boolean; url: string; contentType: string; text: string; bytes: Buffer };
 
 export type SafeFetchDeps = {
   resolve: (hostname: string) => Promise<LookupAddress[]>;
@@ -90,7 +91,7 @@ function decoded(res: IncomingMessage): NodeJS.ReadableStream {
 }
 
 // Stops reading at maxBytes of decoded body, so a huge or compressed-bomb page cannot fill memory.
-async function readCapped(res: IncomingMessage, maxBytes: number): Promise<string> {
+async function readCapped(res: IncomingMessage, maxBytes: number): Promise<Buffer> {
   const chunks: Buffer[] = [];
   let size = 0;
   try {
@@ -103,7 +104,7 @@ async function readCapped(res: IncomingMessage, maxBytes: number): Promise<strin
   } finally {
     res.destroy();
   }
-  return Buffer.concat(chunks).toString("utf8");
+  return Buffer.concat(chunks);
 }
 
 /** Builds a GET-only fetch for user-supplied URLs. Tests pass their own resolver and address rule. */
@@ -123,9 +124,9 @@ export function createSafeFetch(deps: SafeFetchDeps = DEFAULT_DEPS) {
         url = checkUrl(new URL(location, url), deps);
         continue;
       }
-      const text = await readCapped(res, maxBytes);
+      const bytes = await readCapped(res, maxBytes);
       const contentType = String(res.headers["content-type"] ?? "");
-      return { status, ok: status >= 200 && status < 300, url: url.toString(), contentType, text };
+      return { status, ok: status >= 200 && status < 300, url: url.toString(), contentType, text: bytes.toString("utf8"), bytes };
     }
   };
 }

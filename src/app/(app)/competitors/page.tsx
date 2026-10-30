@@ -94,7 +94,7 @@ export default async function CompetitorsPage({ searchParams }: { searchParams: 
                 action={{ href: "/dashboard", label: "Go to Overview" }}
               />
             ) : (
-              <LeaderTable rows={table.rows} />
+              <LeaderTable rows={table.rows} ownDomain={business.domain} website={{ businessId: business.id, save: saveCompetitorWebsite }} />
             )}
             {view.leaderboard.some((r) => r.collecting) ? (
               <p className="mt-3 text-xs text-text-hint" data-testid="collecting-note">

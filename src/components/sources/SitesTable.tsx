@@ -12,7 +12,7 @@ import { compareHref } from "@/lib/compare-href";
 import type { SiteRow } from "@/modules/sources/rows";
 import { MENTIONS_LABELS, answersText, type MentionsYou } from "@/modules/sources/service";
 import { AddToActionsButton, type AddToActions } from "./AddToActionsButton";
-import { SiteInitial } from "./SiteInitial";
+import { SiteIcon } from "@/components/app/SiteIcon";
 import { ToolDots, ToolDotsKey } from "./ToolDots";
 
 const FIRST_ROWS = 12;
@@ -64,15 +64,17 @@ export function SitesTable({ businessId, rows, answers, add }: Props) {
           No websites match this filter yet.
         </p>
       ) : (
-        <Table className="min-w-[980px]" data-testid="site-list">
+        // Fits its card at every width (the card stops growing at about 1,100px): the businesses it names always sit
+        // under the website's name, and as the card narrows kind, how often and the mentions move there too, so there
+        // is never a sideways scroll.
+        <Table data-testid="site-list">
           <TableHeader>
             <TableRow>
               <TableHead>Website</TableHead>
-              <TableHead>Kind</TableHead>
-              <TableHead>How often AI used it</TableHead>
-              <TableHead>Used by</TableHead>
-              <TableHead>Mentions you</TableHead>
-              <TableHead>Businesses it names most</TableHead>
+              <TableHead className="hidden xl:table-cell">Kind</TableHead>
+              <TableHead className="hidden xl:table-cell">How often AI used it</TableHead>
+              <TableHead className="hidden 2xl:table-cell">Used by</TableHead>
+              <TableHead className="hidden sm:table-cell">Mentions you</TableHead>
               <TableHead>
                 <span className="sr-only">What to do</span>
               </TableHead>
@@ -81,25 +83,41 @@ export function SitesTable({ businessId, rows, answers, add }: Props) {
           <TableBody>
             {shown.map((r) => (
               <TableRow key={r.host} data-testid="site-row" className={cn(r.kind === "own" && "bg-primary-tint")}>
-                <TableCell className="max-w-[240px]">
+                <TableCell className="max-w-[210px] sm:max-w-[280px]">
                   <a
                     href={`https://${r.host}`}
                     target="_blank"
                     rel="noopener noreferrer nofollow"
                     className="flex min-w-0 items-center gap-2 font-medium hover:text-primary hover:underline"
                   >
-                    <SiteInitial host={r.host} />
+                    <SiteIcon domain={r.host} name={r.host} />
                     <span className="truncate" title={r.host}>{r.host}</span>
                     <ExternalLink className="size-3.5 shrink-0 text-text-hint" aria-hidden="true" />
                     <span className="sr-only">(opens in a new tab)</span>
                   </a>
+                  {/* The businesses it names most, and the columns this width leaves out. */}
+                  <p className="mt-1 truncate pl-10 text-xs text-muted-foreground" title={r.names.join(", ")}>
+                    <span className="xl:hidden">
+                      {r.kindLabel} · {answersText(r.answers, answers)} ·{" "}
+                    </span>
+                    <span className="sm:hidden">
+                      {r.mentions === "own" || r.mentions === "competitor" ? MENTIONS_LABELS[r.mentions] : `Mentions you: ${MENTIONS_LABELS[r.mentions].toLowerCase()}`} ·{" "}
+                    </span>
+                    {r.names.length > 0 ? (
+                      <>
+                        Names <span data-testid="site-names">{r.names.join(", ")}</span>
+                      </>
+                    ) : (
+                      <span data-testid="site-names">Names no business</span>
+                    )}
+                  </p>
                 </TableCell>
-                <TableCell>
+                <TableCell className="hidden xl:table-cell">
                   <Badge variant={r.kind === "own" ? "tint" : "secondary"} title={r.typeLabel} data-testid="site-kind">
                     {r.kindLabel}
                   </Badge>
                 </TableCell>
-                <TableCell>
+                <TableCell className="hidden xl:table-cell">
                   <div className="flex items-center gap-3">
                     <div className="h-1.5 w-16 shrink-0 overflow-hidden rounded-xs bg-muted" aria-hidden="true">
                       <div
@@ -112,16 +130,13 @@ export function SitesTable({ businessId, rows, answers, add }: Props) {
                     </span>
                   </div>
                 </TableCell>
-                <TableCell>
+                <TableCell className="hidden 2xl:table-cell">
                   <ToolDots models={r.models} />
                 </TableCell>
-                <TableCell>
+                <TableCell className="hidden sm:table-cell">
                   <Badge variant={MENTIONS_BADGE[r.mentions]} data-testid="site-mentions">
                     {MENTIONS_LABELS[r.mentions]}
                   </Badge>
-                </TableCell>
-                <TableCell className="max-w-[220px] truncate text-muted-foreground" title={r.names.join(", ")} data-testid="site-names">
-                  {r.names.length > 0 ? r.names.join(", ") : "None named"}
                 </TableCell>
                 <TableCell className="text-right">
                   <RowCta row={r} businessId={businessId} add={add} />
