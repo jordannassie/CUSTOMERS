@@ -59,7 +59,6 @@ export {
   canOpen,
   draftLabel,
   draftStep,
-  isStepSlug,
   resumeStep,
   stepPath,
   visibleSteps,

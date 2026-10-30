@@ -2,6 +2,7 @@ import "server-only";
 import { createServiceClient } from "@/lib/supabase/service";
 import { briefLeadMessage, mirrorLead } from "./lead-mirror";
 import { getVideoAdPackage, type VideoAdPackageId } from "./packages";
+import { isMissingTable } from "@/lib/supabase/missing-table";
 
 export type VideoAdBrief = {
   customerName: string;
@@ -73,10 +74,7 @@ function mapRow(row: OrderRow): VideoAdOrder {
   };
 }
 
-function missingTable(error: { code?: string; message?: string } | null) {
-  if (!error) return false;
-  return error.code === "42P01" || error.code === "PGRST205" || /video_ad_orders/i.test(error.message ?? "");
-}
+const missingTable = (error: { code?: string; message?: string } | null) => isMissingTable(error, /video_ad_orders/i);
 
 export async function getOrderBySession(sessionId: string): Promise<VideoAdOrder | null> {
   const svc = createServiceClient();

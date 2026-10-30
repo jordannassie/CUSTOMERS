@@ -11,6 +11,7 @@ import { AdsSteps } from "@/components/site/video-ads/AdsSteps";
 import { AdsFaq } from "@/components/site/video-ads/AdsFaq";
 import { AdsFinalCta } from "@/components/site/video-ads/AdsFinalCta";
 import { VIDEO_AD_PACKAGES } from "@/modules/video-ads/packages";
+import { jsonLdHtml } from "@/lib/json-ld";
 
 const TITLE = "AI Video Ads for $99 | Customers.Direct";
 const DESCRIPTION =
@@ -79,7 +80,7 @@ async function AdsPageContent({
         <AdsFinalCta checkoutReady={checkoutReady} />
       </main>
       <Footer />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={jsonLdHtml(jsonLd)} />
     </>
   );
 }

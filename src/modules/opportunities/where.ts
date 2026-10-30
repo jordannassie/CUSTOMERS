@@ -2,7 +2,7 @@
 // "Fix on ..." links under likely reasons. Pure.
 import type { Where } from "@/lib/fix-where";
 
-export { fixAnchor, fixCardId, fixHref, whereOf, type Where } from "@/lib/fix-where";
+export { fixCardId, fixHref, whereOf, type Where } from "@/lib/fix-where";
 
 export const WHERE_ORDER: Where[] = ["website", "google_listing", "other_places"];
 

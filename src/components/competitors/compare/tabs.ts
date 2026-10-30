@@ -12,7 +12,5 @@ export const COMPARE_TABS: { id: CompareTabId; label: string }[] = [
 
 export type CompareTab = CompareTabId;
 
-export const isCompareTab = (tab: string | null | undefined): tab is CompareTab => COMPARE_TABS.some((t) => t.id === tab);
-
 /** Any ?tab= value, old names included, as one of these tabs. */
 export const toCompareTab = (tab: string | null | undefined): CompareTab => compareTab(tab);

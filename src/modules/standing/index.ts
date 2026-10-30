@@ -14,7 +14,7 @@ export {
   type Where,
   type WhyInput,
 } from "./service";
-export { WHERE_TEXT, googleFacts } from "./reasons";
+export { googleFacts } from "./reasons";
 export { questionSummaries, type Named, type QuestionSummary, type SiteUse } from "./questions";
 export { theirSite } from "./reasons";
 export { meaningWords, serviceGaps, type TheirWebsite, type YourSite } from "./website";

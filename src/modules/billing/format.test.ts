@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { estimateMonthlyCredits, formatCount, formatUsd } from "./format";
+import { formatCount, formatUsd } from "./format";
 
 describe("pricing format", () => {
   it("formats cents as dollars without trailing zeros", () => {
@@ -11,10 +11,5 @@ describe("pricing format", () => {
 
   it("formats counts with thousands separators", () => {
     expect(formatCount(1200)).toBe("1,200");
-  });
-
-  it("matches the MVP_SPEC 4.3 credit example", () => {
-    expect(estimateMonthlyCredits(12, 3, "weekly")).toBe(155);
-    expect(estimateMonthlyCredits(10, 3, "daily")).toBe(900);
   });
 });

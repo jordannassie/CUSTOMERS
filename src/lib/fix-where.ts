@@ -26,9 +26,6 @@ export function whereOf(fix: { category: string | null; claudePrompt: string | n
   return other ? "other_places" : "website";
 }
 
-/** The anchor of a fix group on the Opportunities page: /opportunities#fix-website. */
-export const fixAnchor = (where: Where) => `fix-${where}`;
-
 /** One fix on the Opportunities page, opened and scrolled to: /opportunities?fix=<id>. */
 export const fixHref = (id: string) => `/actions?fix=${encodeURIComponent(id)}`;
 

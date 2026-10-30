@@ -1,11 +1,9 @@
 import "server-only";
 import { createServiceClient } from "@/lib/supabase/service";
 import type { NewsletterPlacement } from "./signup";
+import { isMissingTable } from "@/lib/supabase/missing-table";
 
-function missingTable(error: { code?: string; message?: string } | null) {
-  if (!error) return false;
-  return error.code === "42P01" || error.code === "PGRST205" || /newsletter_events/i.test(error.message ?? "");
-}
+const missingTable = (error: { code?: string; message?: string } | null) => isMissingTable(error, /newsletter_events/i);
 
 export async function recordNewsletterEvent(input: { event: "impression" | "click" | "confirmed"; placement: NewsletterPlacement }): Promise<void> {
   try {

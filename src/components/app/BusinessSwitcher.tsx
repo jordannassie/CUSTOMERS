@@ -13,14 +13,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { ADD_BUSINESS_PATH } from "@/modules/onboarding/wizard/steps";
 import type { SwitcherScore, SwitcherScores } from "@/modules/workspace";
 
 export type SwitcherBusiness = { id: string; name: string; domain: string | null; logoUrl: string | null };
 /** The agency's unfinished draft: "Finish setting up <name>", linking to the step where it stopped. */
 export type SwitcherDraft = { label: string; href: string };
 
-// Every "Add a business" link: the open draft continues, else a new business starts (ADD_BUSINESS_PATH).
-const ADD_BUSINESS_HREF = "/onboarding?add=1";
 // Switching opens the other business's Overview, so no page is left showing the business it was opened for.
 const OVERVIEW_HREF = "/dashboard";
 export type SwitchBusinessAction = (
@@ -215,7 +214,7 @@ export function BusinessSwitcher({
           </DropdownMenuItem>
         ) : (
           <DropdownMenuItem asChild className="gap-2.5 py-2 text-muted-foreground">
-            <Link href={ADD_BUSINESS_HREF} onClick={onSwitched}>
+            <Link href={ADD_BUSINESS_PATH} onClick={onSwitched}>
               <Plus className="size-4" aria-hidden="true" />
               Add business
             </Link>

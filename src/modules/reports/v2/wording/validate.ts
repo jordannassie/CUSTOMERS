@@ -1,8 +1,7 @@
 // Code checks on each fix the AI rewrites (fix-wording.v1): the right shape and lengths, only numbers and websites
 // the report states, the writing guide (docs/design/WRITING.md) and no promised results. A fix with any issue keeps
 // its template text. The eval grader in evals/report-fix-wording runs these same checks. Pure.
-// The word list and promise patterns follow src/modules/insights/validate.ts, which the insights index does not
-// export; if it starts to, use those instead of these copies.
+// The word list and promise patterns are shared with the explanations (src/lib/writing-rules.ts).
 import {
   MAX_STEPS,
   MIN_STEPS,
@@ -12,46 +11,23 @@ import {
   WHY_MAX_SENTENCES,
   type FixWording,
 } from "@/modules/reports/prompts/fix-wording.v1";
+import { AI_NAMING_PROMISE, promiseIssues as sharedPromiseIssues, writingIssues as sharedWritingIssues } from "@/lib/writing-rules";
 import type { ReportSnapshot } from "../snapshot-schema";
 import { knownNames, NUMBER, normNumber, snapshotNumbers } from "./input";
 
-export const BANNED_WORDS = [
-  "unlock", "unleash", "elevate", "empower", "seamless", "seamlessly", "robust", "leverage", "cutting-edge",
-  "game-changer", "revolutionize", "supercharge", "delve", "harness", "streamline", "next-level", "effortless",
-  "world-class", "landscape", "realm", "testament", "tapestry",
-];
 
-const LONG_DASH = /[\u2013\u2014]/;
-const EMOJI = /\p{Extended_Pictographic}/u;
 const DOMAIN = /\b(?:[a-z0-9-]+\.)+[a-z]{2,}\b/gi;
 // A full stop, question or exclamation mark that ends a sentence: followed by a capital, a digit or the end.
 const SENTENCE_END = /[.!?](?=\s+["'(]?[A-Z0-9]|\s*$)/g;
 
-const PROMISES: [RegExp, string][] = [
-  [
-    /\bguarantee(d|s|ing)?\s+(that\s+)?(you\s+)?((more|new)\s+(customers|clients|leads|calls|bookings|sales|business|traffic|visits|mentions|recommendations)|(the\s+)?results?|(a\s+)?(higher|better|top|first)\s+(rank|ranking|spot|place|position|placement)|(to\s+)?(rank|ranking|rankings|#1|number one)|(to\s+)?(be|get|appear|show up)\s+(recommended|named|mentioned|listed|first|on top))(?!\w)/i,
-    "guarantee",
-  ],
-  [/\bresults?\s+(are\s+)?guaranteed\b/i, "guarantee"],
-  [/\bwill rank\b/i, "will rank"],
-  [/(^|\s)#1\b/, "#1"],
-  [/\brank(s|ed)? first\b/i, "rank first"],
-  [/\btop spot\b/i, "top spot"],
-  [/\bwill (make|get|have)\s+(AI|ChatGPT|Claude|Perplexity|assistants?)\b[^.]{0,40}\b(name|recommend|mention|pick|list)/i, "will make AI name you"],
-];
-
+/** The writing guide, plus no "!" in a fix. */
 export function writingIssues(text: string): string[] {
-  const issues: string[] = [];
-  if (LONG_DASH.test(text)) issues.push("long dash");
-  if (EMOJI.test(text)) issues.push("emoji");
-  if (text.includes("!")) issues.push("exclamation mark");
-  const lower = text.toLowerCase();
-  for (const word of BANNED_WORDS) if (new RegExp(`\\b${word}\\b`).test(lower)) issues.push(`banned word: ${word}`);
-  return issues;
+  return sharedWritingIssues(text, { noExclamation: true });
 }
 
+/** No promised results, including "this will make AI name you". */
 export function promiseIssues(text: string): string[] {
-  return [...new Set(PROMISES.filter(([pattern]) => pattern.test(text)).map(([, word]) => `promises a result: ${word}`))];
+  return sharedPromiseIssues(text, [AI_NAMING_PROMISE]);
 }
 
 /** What every fix is checked against: the report's numbers, names and websites. */

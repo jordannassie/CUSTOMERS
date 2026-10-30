@@ -4,6 +4,7 @@ import { createServiceClient } from "@/lib/supabase/service";
 import { aggregateRatings, snapshotOf, summariesBySlug, toPublicReview } from "../review-service";
 import type { Json } from "@/types/database.types";
 import type { ModerationAction, NativeSummary, PublicReview, ReviewDraft, ReviewStatus, Reviewer, StoredReview } from "../review-types";
+import { isMissingTable } from "@/lib/supabase/missing-table";
 
 type ReviewRow = {
   id: string;
@@ -24,10 +25,7 @@ type ReviewRow = {
   published_at: string | null;
 };
 
-function missingTable(error: { code?: string; message?: string } | null) {
-  if (!error) return false;
-  return error.code === "42P01" || error.code === "PGRST205" || /app_reviews|app_review_/i.test(error.message ?? "");
-}
+const missingTable = (error: { code?: string; message?: string } | null) => isMissingTable(error, /app_reviews|app_review_/i);
 
 function mapReview(row: ReviewRow): StoredReview | null {
   if (row.recommendation !== "yes" && row.recommendation !== "no") return null;

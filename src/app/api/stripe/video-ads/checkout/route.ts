@@ -1,20 +1,24 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { randomBytes } from "node:crypto";
 import { getStripe } from "@/modules/billing";
-import { env } from "@/lib/env";
+import { appUrl } from "@/lib/app-url";
+import { checkRateLimit, clientIp } from "@/modules/rate-limit";
 import { getVideoAdPackage } from "@/modules/video-ads/packages";
 import { packageIdSchema } from "@/modules/video-ads/schema";
 
-function siteBase(request: NextRequest) {
-  return (
-    env.NEXT_PUBLIC_APP_URL ??
-    env.NEXT_PUBLIC_SITE_URL ??
-    `${request.nextUrl.protocol}//${request.nextUrl.host}`
-  );
-}
-
-/** Public one-time checkout. Package price comes from the server catalog. */
+/**
+ * Public one-time checkout. Package price comes from the server catalog. Each call opens a real Stripe session, so it
+ * is rate limited per address, and the return links use the configured site address, never the request's Host header.
+ */
 export async function POST(request: NextRequest) {
+  const limit = await checkRateLimit("video_ad_checkout", clientIp(request.headers));
+  if (limit !== "allowed") {
+    return NextResponse.json(
+      { error: "Checkout could not be started just now. Try again in a few minutes. You have not been charged." },
+      { status: limit === "limited" ? 429 : 503 },
+    );
+  }
+
   let body: unknown;
   try {
     body = await request.json();
@@ -45,7 +49,7 @@ export async function POST(request: NextRequest) {
   }
 
   const token = randomBytes(16).toString("hex");
-  const base = siteBase(request).replace(/\/$/, "");
+  const base = appUrl();
 
   try {
     const session = await stripe.checkout.sessions.create({

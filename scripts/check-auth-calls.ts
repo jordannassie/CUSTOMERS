@@ -18,11 +18,11 @@ const PUBLIC: Record<string, string> = {
   "src/app/auth/signout/route.ts": "signs out the current session",
   "src/app/api/stripe/webhook/route.ts": "Stripe signature check",
   "src/app/api/email/unsubscribe/route.ts": "signed unsubscribe token (B-61)",
-  "src/app/r/[token]/logo/route.ts": "share link logo; the token is the access check (B-59)",
+  "src/app/r/[token]/route.ts": "report share link; the 256-bit token is the access check (B-59, D-90)",
   "src/app/api/alerts/check/route.ts": "pg_cron call, worker secret header (B-69)",
   "src/app/api/email/jobs/route.ts": "pg_cron call, worker secret header (B-62)",
   "src/app/api/dev/scan-worker/route.ts": "local pg_cron call, worker secret header; 404 in production (BUG-167)",
-  "src/app/api/stripe/video-ads/checkout/route.ts": "public one-time checkout, server-side package price",
+  "src/app/api/stripe/video-ads/checkout/route.ts": "public one-time checkout, server-side package price, rate limited per IP",
   "src/app/api/stripe/video-ads/brief/route.ts": "public brief, Stripe session must be paid",
 };
 

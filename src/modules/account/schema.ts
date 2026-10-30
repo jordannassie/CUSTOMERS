@@ -26,5 +26,3 @@ export const deleteBusinessInput = z.object({
 export const deleteAccountInput = z.object({
   confirmName: z.string().max(200),
 });
-
-export const accountPurgeJob = "account_purged";

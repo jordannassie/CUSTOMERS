@@ -7,6 +7,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { DEV_MEASURE_GUARD } from "@/lib/dev/measure-guard";
 import { env } from "@/lib/env";
 import { SITE_NAME, SITE_URL } from "@/lib/site-metadata";
+import { jsonLdHtml } from "@/lib/json-ld";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -56,7 +57,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         {env.NODE_ENV === "development" && <script dangerouslySetInnerHTML={{ __html: DEV_MEASURE_GUARD }} />}
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
+          dangerouslySetInnerHTML={jsonLdHtml(organizationJsonLd)}
         />
       </head>
       <body className="min-h-full flex flex-col">

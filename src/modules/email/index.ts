@@ -2,7 +2,7 @@
 export { sendEmail, type EmailLinks, type SendEmailDeps, type SendEmailInput, type SendEmailResult } from "./send";
 export { renderEmail, type RenderedEmail } from "./render";
 export { createLogEmailClient, type EmailClient } from "./resend";
-export { findEmailKeyStates, findHandledEmailKeys, getMyEmailPreferences, readUnsubscribeToken, recordUnsentEmail, unsubscribeAgency } from "./dal";
+export { findEmailKeyStates, getMyEmailPreferences, readUnsubscribeToken, recordUnsentEmail, unsubscribeAgency } from "./dal";
 export { saveEmailPreferences } from "./actions";
 export { EMAIL_TYPES, UNSUBSCRIBE_TOPICS, type EmailPreferences, type EmailType } from "./schema";
 export { EmailLayout } from "./templates/_components/layout";

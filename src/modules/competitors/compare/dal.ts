@@ -22,7 +22,7 @@ export type Comparison = {
   businessName: string;
   /** The tracked branch for a chain row ("Bean House on 5th"), as the leaderboard names it. */
   title: string;
-  /** "You track Bean House on Congress" for a chain row. */
+  /** "Also counts Bean House East" when two tracked branches of one chain share the row; null otherwise. */
   note: string | null;
   /** The tracked branch, as saved: Google values are this one listing's, never the whole chain's. */
   branch: string;
@@ -105,10 +105,4 @@ export async function getComparePage(businessId: string, competitorId: string | 
       loadSignals: () => base.signals(fetchPlaceSignals, panel.competitorId),
     },
   };
-}
-
-/** The old single-competitor read, kept for callers that have one id. */
-export async function getComparison(businessId: string, competitorId: string): Promise<Comparison | null> {
-  const page = await getComparePage(businessId, competitorId);
-  return page?.selected && page.selected.panel.competitorId === competitorId ? page.selected : null;
 }

@@ -55,7 +55,7 @@ describe("scanStatusView", () => {
     const error = `${NOT_ANSWERING_TEXT} anthropic: anthropic returned 529: overloaded`;
     const failed = scanStatusView({ status: "failed", finishedAt: "2026-10-29T12:00:00Z", error }, ok);
     expect(failed.failedReason).toBe(NOT_ANSWERING_TEXT);
-    expect(NOT_ANSWERING_TEXT).not.toMatch(/[–—]/);
+    expect(NOT_ANSWERING_TEXT).not.toMatch(/[\u2013\u2014]/);
   });
 
   describe("stalled", () => {

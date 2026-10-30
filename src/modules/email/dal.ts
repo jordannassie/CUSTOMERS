@@ -99,11 +99,6 @@ export async function findEmailKeyStates(keys: string[], db: Db = createServiceC
   return { handled, tried };
 }
 
-/** Which of these idempotency keys already have a sent or skipped email. */
-export async function findHandledEmailKeys(keys: string[], db: Db = createServiceClient()): Promise<Set<string>> {
-  return (await findEmailKeyStates(keys, db)).handled;
-}
-
 /**
  * Logs a cron email that was not sent, under its key: "skipped" (nothing to report) marks the key handled for good;
  * "failed" (out of time) only puts the agency last on the next run.

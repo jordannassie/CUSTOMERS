@@ -1,32 +1,38 @@
 import type { NextRequest } from "next/server";
 import { requireUser } from "@/modules/auth";
+import { checkRateLimit } from "@/modules/rate-limit";
 import { fetchSiteIcon, iconQuery } from "@/modules/site-icons";
 
 // A website's icon for the app's lists (Sources, Compare, the leaderboard): GET /api/icon?domain=yelp.com. Signed-in
-// users only, so it is not an open relay; Google is the only server it calls. Icons change rarely, so the browser
-// keeps one for a week and Netlify's CDN for 30 days; a site with no icon is remembered for a day; a failed ask (the
-// network or Google) is never kept, so the next page view asks again.
-const KEEP = "public, max-age=604800, stale-while-revalidate=86400";
-const KEEP_CDN = "public, max-age=2592000, stale-while-revalidate=86400, durable";
-const KEEP_NONE = "public, max-age=86400";
+// users only. It asks Google's and DuckDuckGo's favicon services, then the site's own home page and the icons it
+// declares (which may sit on another host, such as a site builder's CDN), all through safeFetch so only public
+// addresses are reached. Icons change rarely, so the browser keeps one for a week and a site with no icon for a day;
+// a failed ask is never kept, so the next page view asks again. Only the user's browser keeps them ("private"): a
+// shared CDN copy would hand any site's image, under our domain, to people who are not signed in.
+const KEEP = "private, max-age=604800, stale-while-revalidate=86400";
+const KEEP_NONE = "private, max-age=86400";
+const NO_STORE = { "Cache-Control": "no-store" };
 
 export async function GET(request: NextRequest): Promise<Response> {
+  let userId: string;
   try {
-    await requireUser();
+    userId = (await requireUser()).id;
   } catch {
-    return new Response(null, { status: 401, headers: { "Cache-Control": "no-store" } });
+    return new Response(null, { status: 401, headers: NO_STORE });
   }
   const parsed = iconQuery.safeParse({ domain: request.nextUrl.searchParams.get("domain") ?? "" });
-  if (!parsed.success) return new Response(null, { status: 400, headers: { "Cache-Control": "no-store" } });
+  if (!parsed.success) return new Response(null, { status: 400, headers: NO_STORE });
+  // Each icon can mean several outside requests, so a user gets a generous hourly allowance, not an open relay.
+  const limit = await checkRateLimit("site_icon", userId);
+  if (limit !== "allowed") return new Response(null, { status: 429, headers: NO_STORE });
 
   const icon = await fetchSiteIcon(parsed.data.domain);
-  if (icon.kind === "failed") return new Response(null, { status: 503, headers: { "Cache-Control": "no-store" } });
-  if (icon.kind === "none") return new Response(null, { status: 404, headers: { "Cache-Control": KEEP_NONE, "Netlify-CDN-Cache-Control": KEEP_NONE } });
+  if (icon.kind === "failed") return new Response(null, { status: 503, headers: NO_STORE });
+  if (icon.kind === "none") return new Response(null, { status: 404, headers: { "Cache-Control": KEEP_NONE } });
   return new Response(icon.body, {
     headers: {
       "Content-Type": icon.type,
       "Cache-Control": KEEP,
-      "Netlify-CDN-Cache-Control": KEEP_CDN,
       "X-Content-Type-Options": "nosniff",
       // An image only: nothing in it may run, even if opened on its own.
       "Content-Security-Policy": "default-src 'none'; style-src 'unsafe-inline'; sandbox",

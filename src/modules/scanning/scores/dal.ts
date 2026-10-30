@@ -1,7 +1,5 @@
 import "server-only";
 import { cache } from "react";
-import { requestNow } from "@/lib/request-now";
-import { requireAgency } from "@/modules/auth";
 import { createServiceClient } from "@/lib/supabase/service";
 import { loadChains, loadOwnChain } from "../chains/dal";
 import type { ProviderId } from "../providers/types";
@@ -26,7 +24,7 @@ import { ownQuestionsResult, splitByQuestion } from "./counted";
 import type { ScoreReport } from "./report";
 
 export type { ScoreReport } from "./report";
-import { questionAppearances, questionAppearancesByModel, type ModelAppearance } from "./questions";
+import { questionAppearances } from "./questions";
 
 // 30-day score aggregates (B-30 step 2) from the visibility_checks_30d view (migration 032). Only answers to active
 // suggested questions count (counted.ts, BUG-129); answers to the user's own questions are summed on their own.
@@ -36,13 +34,6 @@ const DAY_MS = 86_400_000;
 // Older answers are read in fixed 30-day stretches counted back from the week before the window, so the reports one
 // request builds (the Overview's 90 days, its chart's 60, the likely reason's none) share the same reads.
 const STRETCH_MS = 30 * DAY_MS;
-
-
-/** The signed-in agency's score for one of its businesses; null when it is not theirs. */
-export async function getScoreReport(businessId: string, options: { next?: string } = {}): Promise<ScoreReport | null> {
-  const { agency } = await requireAgency(options);
-  return loadScoreReport(agency.id, businessId, requestNow());
-}
 
 // React's cache lasts one server request: the Overview, its "Who AI picked instead" block and the business switcher
 // all score the active business, and the share page scores it twice, yet each read happens once.
@@ -148,16 +139,6 @@ export async function loadScoreReport(
     ownChain,
     ...(options.charts ? { charts: competitorCharts(all, b.name, competitors.data!.map((c) => c.name), { ...opts, days: options.chartDays }) } : {}),
   };
-}
-
-/** Per question and model: appeared in X of the last Y checks. Callers check the user may see this business first. */
-export async function loadQuestionResults(
-  businessId: string,
-  models: readonly ProviderId[],
-  now: Date,
-): Promise<Map<string, ModelAppearance[]>> {
-  const checks = await readChecks(businessId, new Date(now.getTime() - SCORE_WINDOW_DAYS * DAY_MS));
-  return questionAppearancesByModel(checks, { now, models, last: LAST_CHECKS_PER_QUESTION });
 }
 
 async function readChecks(businessId: string, since: Date): Promise<ScoreCheck[]> {

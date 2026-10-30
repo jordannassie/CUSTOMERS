@@ -6,7 +6,7 @@ export { isMissingSample, NO_SAMPLE_ANSWERS } from "./sample-answers";
 export { liveCheckRunner } from "./runs/dal";
 export { CHECK_MODELS } from "./providers/models";
 export type { CheckResult, ProviderId } from "./providers/types";
-export { getScoreReport, loadQuestionResults, loadScoreReport, type ScoreReport } from "./scores/dal";
+export { loadScoreReport, type ScoreReport } from "./scores/dal";
 export type { ModelAppearance } from "./scores/questions";
 export { countsInScore, isOwnQuestion, splitByQuestion, type OwnQuestionsResult } from "./scores/counted";
 export { loadAlsoRecommended } from "./also-recommended/dal";

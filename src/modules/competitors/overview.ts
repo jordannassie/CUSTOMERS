@@ -10,7 +10,6 @@ import type { CompetitorsView, LeaderRow } from "./service";
 const STAND_ROWS = 4;
 /** Competitors drawn on the Overview chart besides you: five lines in all, each its own color. */
 const MAX_LINES = 4;
-const LABELS: Record<string, string> = { openai: "ChatGPT", anthropic: "Claude", perplexity: "Perplexity" };
 const round = (n: number | null | undefined) => (n === null || n === undefined ? null : Math.round(n));
 
 export type OverviewCompete = {
@@ -133,5 +132,3 @@ export function overviewCompete(view: CompetitorsView, report: ScoreReport, stan
     periodChange: periodChange(period),
   };
 }
-
-export const modelLabel = (id: string) => LABELS[id] ?? id;
