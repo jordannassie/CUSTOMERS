@@ -24,6 +24,7 @@ import { compareHref } from "@/lib/compare-href";
 import { siteHref } from "@/lib/site-href";
 import { checkCompetitorWebsite, getComparePage, saveCompetitorWebsite, trackCompetitor } from "@/modules/competitors";
 import { actionStates, addToActions, moveActionTo } from "@/modules/opportunities";
+import { getNextScan } from "@/modules/overview";
 import { getWorkspace } from "@/modules/workspace";
 
 export const metadata = { title: "Compare", robots: { index: false } };
@@ -47,7 +48,8 @@ export default async function ComparePage({ searchParams }: { searchParams: Prom
   const workspace = await getWorkspace({ next: compareHref(competitorId, tab) });
   const business = workspace.businesses.find((b) => b.id === workspace.activeBusinessId);
   if (!business || business.status === "onboarding") redirect("/dashboard");
-  const page = await getComparePage(business.id, competitorId);
+  // The next scan's day, for the one-scan trend's note.
+  const [page, nextScan] = await Promise.all([getComparePage(business.id, competitorId), getNextScan(business.id, compareHref(competitorId, tab))]);
   if (!page) redirect("/competitors");
   const data = page.selected;
   // Google is asked about the two of you only after "Show Google details" (?google=1), on the Google tab: its table and
@@ -108,7 +110,7 @@ export default async function ComparePage({ searchParams }: { searchParams: Prom
             <Card>
               <CardContent className="flex flex-col gap-6">
                 <Scorecard data={data} />
-                <Trend name={data.title} trend={data.trend} color={data.color} />
+                <Trend name={data.title} trend={data.trend} color={data.color} firstScan={data.firstScan} nextScan={nextScan} />
               </CardContent>
             </Card>
             <CompareTabs

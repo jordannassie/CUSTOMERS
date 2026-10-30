@@ -7,7 +7,7 @@ import { VisibilityTrendChart } from "./VisibilityTrendChart";
 // The Competitors page charts (2026-10-23): the trend under the leaderboard, then the share of AI picks and the per-AI
 // comparison side by side.
 
-export function VisibilityTrendCard({ charts, grow = false }: { charts: CompetitorChartsView; grow?: boolean }) {
+export function VisibilityTrendCard({ charts, grow = false, nextScan = null }: { charts: CompetitorChartsView; grow?: boolean; nextScan?: string | null }) {
   const more = charts.hidden > 0 ? `, ${charts.hidden} more in the list above` : "";
   // Only a drawn chart grows to fill its column; the "after your second scan" note stays short.
   const fill = grow && charts.timeline.length >= 2;
@@ -18,7 +18,7 @@ export function VisibilityTrendCard({ charts, grow = false }: { charts: Competit
         <CardDescription>You and your top competitors at each scan{more}.</CardDescription>
       </CardHeader>
       <CardContent className={fill ? "flex flex-1 flex-col" : undefined}>
-        <VisibilityTrendChart view={charts} />
+        <VisibilityTrendChart view={charts} nextScan={nextScan} />
       </CardContent>
     </Card>
   );

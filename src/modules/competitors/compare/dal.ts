@@ -6,7 +6,7 @@ import { colorOrder, competitorColor } from "@/lib/series-colors";
 import { requestNow } from "@/lib/request-now";
 import { hostOf } from "@/lib/site-type";
 import { requireAgency } from "@/modules/auth";
-import { pairTimeline, type PairPoint } from "../charts";
+import { isFirstScan, pairTimeline, type PairPoint } from "../charts";
 import { rowName, trackedNote } from "../chain";
 import { CHART_DAYS, chainNames, fetchPlaceSignals, loadCompetitorsBase } from "../dal";
 import type { LeaderRow, SignalRow } from "../service";
@@ -38,6 +38,8 @@ export type Comparison = {
   leads: LeadCard[];
   /** You and them at each scan, for the trend. */
   trend: PairPoint[];
+  /** The trend's only scan day is the business's first scan (bars labelled "First scan"). */
+  firstScan: boolean;
   /** Asks Google for the two of you, for this view only: called only after "Show Google details" (2026-10-27). */
   loadSignals: () => Promise<SignalRow[]>;
 };
@@ -98,6 +100,7 @@ export async function getComparePage(businessId: string, competitorId: string | 
       cards: reasonCards(panel.why.allReasons, { id: panel.competitorId, name: panel.why.name, tracked: panel.trackedName }, ownDomain, panel.fixRefs),
       leads: leadCards(panel.why.allLeads),
       trend: pairTimeline(base.report, row?.name ?? panel.trackedName),
+      firstScan: isFirstScan(base.report),
       // Only the two places on this page are looked up, live, for this view only (D-73).
       loadSignals: () => base.signals(fetchPlaceSignals, panel.competitorId),
     },

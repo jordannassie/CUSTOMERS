@@ -16,6 +16,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Skeleton } from "@/components/ui/skeleton";
 import { compareHref } from "@/lib/compare-href";
 import { answersText, getCompetitorsPage, saveCompetitorWebsite, trackCompetitor, type SignalRow, type TableKpis } from "@/modules/competitors";
+import { getNextScan } from "@/modules/overview";
 import { getWorkspace } from "@/modules/workspace";
 
 export const metadata = { title: "Competitors", robots: { index: false } };
@@ -34,7 +35,8 @@ export default async function CompetitorsPage({ searchParams }: { searchParams: 
   const business = workspace.businesses.find((b) => b.id === workspace.activeBusinessId);
   if (!business || business.status === "onboarding") redirect("/dashboard");
 
-  const page = await getCompetitorsPage(business.id, PATH);
+  // The next scan's day, for the one-scan chart's note ("The lines start after your next scan on Nov 6").
+  const [page, nextScan] = await Promise.all([getCompetitorsPage(business.id, PATH), getNextScan(business.id, PATH)]);
   if (!page) notFound();
   const { view, table } = page;
   // The charts need a score and at least one competitor to compare with.
@@ -73,7 +75,7 @@ export default async function CompetitorsPage({ searchParams }: { searchParams: 
 
         {view.count > 0 && view.hasScore && <Kpis kpis={table.kpis} />}
 
-        {charts ? <VisibilityTrendCard charts={charts} /> : null}
+        {charts ? <VisibilityTrendCard charts={charts} nextScan={nextScan} /> : null}
 
         <Card>
           <CardHeader>

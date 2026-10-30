@@ -4,6 +4,7 @@ import { Area, CartesianGrid, ComposedChart, Line, XAxis, YAxis } from "recharts
 import { ChartContainer, ChartTooltip, type ChartConfig } from "@/components/ui/chart";
 import { axisTicks, axisTop } from "@/lib/chart-scale";
 import type { CompetitorChartsView } from "@/modules/competitors";
+import { FirstScanBars } from "@/components/overview/FirstScanBars";
 import { SeriesLegend, SeriesTooltip } from "./SeriesLegend";
 
 type Row = CompetitorChartsView["timeline"][number];
@@ -13,9 +14,15 @@ type Row = CompetitorChartsView["timeline"][number];
  * business, so it moves with real answers; the dashed blue line is your 30-day score, the number the leaderboard shows.
  * The Y axis fits the data, so 5 to 20 isn't drawn flat on a 0 to 100 scale.
  */
-export function VisibilityTrendChart({ view }: { view: CompetitorChartsView }) {
+export function VisibilityTrendChart({ view, nextScan = null }: { view: CompetitorChartsView; nextScan?: string | null }) {
   const { series, timeline } = view;
   const latest = timeline.at(-1);
+  // One scan day: its values as bars in each business's color, so the card shows a real result from the first scan.
+  if (timeline.length === 1 && latest) {
+    const bars = series.map((s) => ({ key: s.key, name: s.name, isYou: s.isYou, value: latest[s.key] as number | null, color: s.color }));
+    const footnote = `Each scan adds a point. The lines start after your next scan${nextScan ? ` on ${nextScan}` : ""}.`;
+    return <FirstScanBars bars={bars} label={latest.label} first={view.firstScan} footnote={footnote} />;
+  }
   if (timeline.length < 2 || !latest) {
     return (
       <p className="text-sm text-muted-foreground" data-testid="trend-waiting">

@@ -7,7 +7,7 @@ import { loadQuestionTrends, loadScoreReport, type QuestionTrends } from "@/modu
 import { createServiceClient } from "@/lib/supabase/service";
 import { loadLastScanFailures } from "./last-scan/dal";
 import { overviewView, type Impact, type OverviewView } from "./service";
-import { HISTORY_DAYS } from "./trend";
+import { HISTORY_DAYS, shortDate } from "./trend";
 
 // Suggested, To do and In progress are still to do; "resolved" and "dismissed" are not.
 const OPEN_STATUSES = OPEN_FIX_STATUSES;
@@ -28,6 +28,25 @@ export async function getQuestionTrends(businessId: string): Promise<QuestionTre
   return loadQuestionTrends(agency.id, businessId, requestNow(), { places: env.SHOW_POSITION === "true" });
 }
 
+// The same rule as the daily enqueue (migration 029): no scan comes for a paused business or a stopped account.
+function scheduledScan(b: { status: string; next_scan_at: string | null; agencies: { status: string } }): Date | null {
+  return b.status !== "paused" && !STOPPED_AGENCIES.includes(b.agencies.status) && b.next_scan_at ? new Date(b.next_scan_at) : null;
+}
+
+/** "Nov 6": the next scheduled scan of one of the signed-in agency's businesses; null when none is coming. */
+export async function getNextScan(businessId: string, next: string): Promise<string | null> {
+  const { agency } = await requireAgency({ next });
+  const { data, error } = await createServiceClient()
+    .from("businesses")
+    .select("status, next_scan_at, agencies!inner(status)")
+    .eq("id", businessId)
+    .eq("agency_id", agency.id)
+    .maybeSingle();
+  if (error) throw new Error(`Overview: could not read the next scan: ${error.message}`);
+  const at = data && scheduledScan(data);
+  return at && at.getTime() > requestNow().getTime() ? shortDate(at) : null;
+}
+
 // Callers check the viewer may see this agency first (the signed-in owner, or a live share link).
 export async function loadOverview(agencyId: string, businessId: string, now: Date): Promise<OverviewView | null> {
   // 90 days of history: the score at each scan (DB-002) and the month-on-month change (DB-012).
@@ -44,10 +63,7 @@ export async function loadOverview(agencyId: string, businessId: string, now: Da
   ]);
   if (opportunities.error) throw new Error(`Overview: could not read opportunities: ${opportunities.error.message}`);
   if (business.error) throw new Error(`Overview: could not read the business: ${business.error.message}`);
-  // The same rule as the daily enqueue (migration 029): no scan comes for a paused business or a stopped account.
-  const scheduled =
-    business.data.status !== "paused" && !STOPPED_AGENCIES.includes(business.data.agencies.status) && business.data.next_scan_at;
-  const nextScanAt = scheduled ? new Date(scheduled) : null;
+  const nextScanAt = scheduledScan(business.data);
 
   return overviewView(
     report,

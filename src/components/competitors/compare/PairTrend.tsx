@@ -3,37 +3,73 @@
 import { Area, CartesianGrid, ComposedChart, Line, XAxis, YAxis } from "recharts";
 import { ChartContainer, ChartTooltip, type ChartConfig } from "@/components/ui/chart";
 import { axisTicks, axisTop } from "@/lib/chart-scale";
+import { FirstScanBars } from "@/components/overview/FirstScanBars";
 import type { PairPoint } from "@/modules/competitors";
 
 
 /** You and them at each scan (Compare): each scan's own share of answers naming you, your 30-day score dashed. */
-export function Trend({ name, trend, color = "var(--chart-2)" }: { name: string; trend: PairPoint[]; color?: string }) {
+export function Trend({
+  name,
+  trend,
+  color = "var(--chart-2)",
+  firstScan = false,
+  nextScan = null,
+}: {
+  name: string;
+  trend: PairPoint[];
+  color?: string;
+  /** The only scan day is the business's first scan. */
+  firstScan?: boolean;
+  /** The next scheduled scan's day, "Nov 6", for the one-scan note. */
+  nextScan?: string | null;
+}) {
+  const one = trend.length === 1;
   const top = axisTop(trend.flatMap((p) => [p.you, p.them, p.youRolling, p.themRolling]));
   const config = { you: { label: "You", color: "var(--chart-1)" }, them: { label: name, color } } satisfies ChartConfig;
   return (
     <figure className="m-0 flex min-w-0 flex-col gap-2" data-testid="pair-trend">
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
         <span className="text-sm font-medium text-foreground">Named at each scan</span>
-        <span className="flex items-center gap-1.5">
-          <svg width="18" height="6" aria-hidden="true">
-            <line x1="1" y1="3" x2="17" y2="3" stroke="var(--chart-1)" strokeWidth="2.5" strokeLinecap="round" />
-          </svg>
-          You
-        </span>
-        <span className="flex min-w-0 items-center gap-1.5">
-          <svg width="18" height="6" aria-hidden="true">
-            <line x1="1" y1="3" x2="17" y2="3" stroke={color} strokeWidth="2" strokeLinecap="round" />
-          </svg>
-          <span className="truncate">{name}</span>
-        </span>
-        <span className="flex items-center gap-1.5">
-          <svg width="18" height="6" aria-hidden="true">
-            <line x1="1" y1="3" x2="17" y2="3" stroke="var(--chart-1)" strokeWidth="1.5" strokeDasharray="3 3" strokeOpacity="0.7" />
-          </svg>
-          Your 30-day score
-        </span>
+        {/* No lines yet with one scan day: the bars carry the names, so the line legend waits for the second day. */}
+        {!one && (
+          <>
+            <span className="flex items-center gap-1.5">
+              <svg width="18" height="6" aria-hidden="true">
+                <line x1="1" y1="3" x2="17" y2="3" stroke="var(--chart-1)" strokeWidth="2.5" strokeLinecap="round" />
+              </svg>
+              You
+            </span>
+            <span className="flex min-w-0 items-center gap-1.5">
+              <svg width="18" height="6" aria-hidden="true">
+                <line x1="1" y1="3" x2="17" y2="3" stroke={color} strokeWidth="2" strokeLinecap="round" />
+              </svg>
+              <span className="truncate">{name}</span>
+            </span>
+            <span className="flex items-center gap-1.5">
+              <svg width="18" height="6" aria-hidden="true">
+                <line x1="1" y1="3" x2="17" y2="3" stroke="var(--chart-1)" strokeWidth="1.5" strokeDasharray="3 3" strokeOpacity="0.7" />
+              </svg>
+              Your 30-day score
+            </span>
+          </>
+        )}
       </div>
-      {trend.length < 2 ? (
+      {one ? (
+        // One scan day: you and them as bars in your colors, so the card shows a real result from the first scan. Kept
+        // narrow, so two columns sit side by side instead of at either edge of the card.
+        <div className="max-w-md">
+          <FirstScanBars
+            bars={[
+              { key: "you", name: "You", isYou: true, value: trend[0].you, color: "var(--chart-1)" },
+              { key: "them", name, isYou: false, value: trend[0].them, color },
+            ]}
+            label={trend[0].label}
+            first={firstScan}
+            footnote={`Each scan adds a point. The trend starts after your next scan${nextScan ? ` on ${nextScan}` : ""}.`}
+            height="h-44"
+          />
+        </div>
+      ) : trend.length < 2 ? (
         <p className="flex min-h-32 items-center rounded-md border border-dashed border-border px-4 text-sm text-muted-foreground">
           The trend starts after your second scan.
         </p>

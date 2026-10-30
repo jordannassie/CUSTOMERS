@@ -53,10 +53,13 @@ export async function ChartSection({ overview, compete, days }: { overview: Over
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Visibility at each scan</CardTitle>
-          <CardDescription>Share of each scan&apos;s answers that named each business, last {days} days. Pick a name to hide or show its line.</CardDescription>
+          <CardDescription>
+            Share of each scan&apos;s answers that named each business, last {days} days.
+            {(c?.timeline.length ?? 0) > 1 && " Pick a name to hide or show its line."}
+          </CardDescription>
         </CardHeader>
         <CardContent>
-          <ScanChart timeline={c?.timeline ?? []} lines={c?.lines ?? []} days={days} earlier={c?.earlierScans ?? false} />
+          <ScanChart timeline={c?.timeline ?? []} lines={c?.lines ?? []} days={days} earlier={c?.earlierScans ?? false} nextScan={overview.nextScan} />
         </CardContent>
       </Card>
       <ToolScores models={overview.models} context={c?.modelContext ?? {}} />

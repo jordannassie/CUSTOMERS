@@ -14,6 +14,8 @@ export type CompetitorChartsView = {
   series: ChartSeries[];
   /** Tracked competitors with a score that the lines and bars leave out. */
   hidden: number;
+  /** One scan day so far and it is the business's first scan: the chart shows it as bars, labelled "First scan". */
+  firstScan: boolean;
   /**
    * One row per scan: `label` for the axis, then each series key's own hit rate on that scan, and `r<key>` its 30-day
    * score as it stood then (the dashed reference). Rounded, null without checks.
@@ -72,6 +74,7 @@ export function competitorChartsView(report: ScoreReport, scored: ReadonlySet<st
   return {
     series: series.map((s) => ({ key: s.key, name: s.name, isYou: s.isYou, color: s.color })),
     hidden: ranked.length - shown.length,
+    firstScan: isFirstScan(report),
     timeline: charts.timeline.map((p) => ({
       date: p.date,
       label: dayLabel(p.date),
@@ -92,6 +95,17 @@ export function competitorChartsView(report: ScoreReport, scored: ReadonlySet<st
  * they stood then for the dashed reference.
  */
 export type PairPoint = { label: string; you: number | null; them: number | null; youRolling: number | null; themRolling: number | null };
+
+/**
+ * The chart's only scan day is the business's first scan: no answers in the period before the chart's days (the
+ * Overview's rule, overview.ts earlierScans) and none earlier in the 30-day window.
+ */
+export function isFirstScan(report: ScoreReport): boolean {
+  const charts = report.charts;
+  const days = charts?.timeline ?? [];
+  if (days.length !== 1 || (charts?.period.prevAnswers ?? 0) > 0) return false;
+  return !report.firstCheckedAt || report.firstCheckedAt.toISOString().slice(0, 10) >= days[0].date;
+}
 
 export function pairTimeline(report: ScoreReport, competitor: string): PairPoint[] {
   const charts = report.charts;

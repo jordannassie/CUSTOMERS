@@ -9,7 +9,7 @@ import {
 } from "@/modules/scanning";
 import { coverageText, MODEL_LABELS, scanNoticeText, type ScanFailures } from "./coverage";
 import { CALIBRATION, methodPanel, type Calibration, type MethodPanel } from "./method";
-import { trendView, type TrendView } from "./trend";
+import { shortDate, trendView, type TrendView } from "./trend";
 
 export { coverageText, MODEL_LABELS, scanFailuresFrom, scanNoticeText, scanSkipsFrom, type ScanFailures } from "./coverage";
 
@@ -77,6 +77,8 @@ export type OverviewView = {
   ownQuestions: string | null;
   /** "Bennu Coffee (all locations): named in 9 of 36 answers..." for a business that is one branch (step 7). */
   ownChain: string | null;
+  /** The next scheduled scan's day, "Nov 5", when one is coming; for "Your trend line starts after your next scan". */
+  nextScan: string | null;
 };
 
 /** DESIGN.md bands: 70 to 100 good, 40 to 69 mid, under 40 low. */
@@ -195,5 +197,6 @@ export function overviewView(
     monthChange: pointsChange(report.monthChange),
     ownQuestions: ownQuestionsText(report.ownQuestions),
     ownChain: ownChainText(report.ownChain),
+    nextScan: nextScanAt && nextScanAt.getTime() > now.getTime() ? shortDate(nextScanAt) : null,
   };
 }

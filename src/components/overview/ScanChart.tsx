@@ -7,6 +7,7 @@ import { ChartContainer, ChartTooltip, type ChartConfig } from "@/components/ui/
 import { axisTicks, axisTop } from "@/lib/chart-scale";
 import type { OverviewCompete } from "@/modules/competitors/overview";
 import { colorAt } from "@/lib/series-colors";
+import { FirstScanBars } from "./FirstScanBars";
 
 type Row = OverviewCompete["timeline"][number];
 type LineInfo = OverviewCompete["lines"][number];
@@ -16,9 +17,32 @@ type LineInfo = OverviewCompete["lines"][number];
  * and every competitor in its own color, with your 30-day score dashed. The legend names every line with its latest
  * value; hovering one brings its line forward, clicking one hides or shows it. The Y axis fits the data.
  */
-export function ScanChart({ timeline, lines, days, earlier = false }: { timeline: Row[]; lines: LineInfo[]; days?: number; earlier?: boolean }) {
+export function ScanChart({
+  timeline,
+  lines,
+  days,
+  earlier = false,
+  nextScan = null,
+}: {
+  timeline: Row[];
+  lines: LineInfo[];
+  days?: number;
+  earlier?: boolean;
+  /** The next scheduled scan's day ("Nov 5"), for the one-scan view's note. */
+  nextScan?: string | null;
+}) {
   const [hidden, setHidden] = useState<Set<string>>(new Set());
   const [focus, setFocus] = useState<string | null>(null);
+  // One scan day: its values as bars, so the card shows a real result from the first scan (a line needs two days).
+  if (timeline.length === 1 && lines.length > 0) {
+    const footnote =
+      earlier && days
+        ? `Only one scan in the last ${days} days. Pick a longer range to see the trend.`
+        : `Each scan adds a point. Your trend line starts after your next scan${nextScan ? ` on ${nextScan}` : ""}.`;
+    const point = timeline[0];
+    const bars = lines.map((l, i) => ({ key: l.key, name: l.name, isYou: l.isYou, value: point[l.key] as number | null, color: colorAt(i) }));
+    return <FirstScanBars bars={bars} label={point.label} first={!earlier} footnote={footnote} />;
+  }
   if (timeline.length < 2) {
     // Scans before the range: a longer range draws the trend, so waiting for a second scan is the wrong advice.
     const text =

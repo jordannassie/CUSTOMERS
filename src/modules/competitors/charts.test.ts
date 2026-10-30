@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { ScoreReport } from "@/modules/scanning";
-import { competitorChartsView, pickShares } from "./charts";
+import { competitorChartsView, isFirstScan, pickShares } from "./charts";
 import type { LeaderRow } from "./service";
 
 const names = ["You Co", "A", "B", "C", "D", "Late"];
@@ -116,5 +116,24 @@ describe("pickShares", () => {
   it("keeps each competitor's leaderboard color", () => {
     expect(view.share.find((s) => s.name === "A")?.color).toBe("var(--cd-series-3)");
     expect(view.share.find((s) => s.isYou)?.color).toBe("var(--chart-1)");
+  });
+});
+
+describe("isFirstScan", () => {
+  const day = (date: string) => ({ date, scores: [10], rolling: [10] });
+  const report = (days: string[], prevAnswers: number, firstCheckedAt: string | null) =>
+    ({ charts: { timeline: days.map(day), period: { prevAnswers } }, firstCheckedAt: firstCheckedAt && new Date(firstCheckedAt) }) as unknown as ScoreReport;
+
+  it("is true for one scan day with nothing before it", () => {
+    expect(isFirstScan(report(["2026-10-30"], 0, "2026-10-30T09:00:00Z"))).toBe(true);
+  });
+
+  it("is false with answers in the period before the chart, or an earlier check in the window", () => {
+    expect(isFirstScan(report(["2026-10-30"], 36, "2026-10-30T09:00:00Z"))).toBe(false);
+    expect(isFirstScan(report(["2026-10-30"], 0, "2026-10-12T09:00:00Z"))).toBe(false);
+  });
+
+  it("is false once there are two scan days", () => {
+    expect(isFirstScan(report(["2026-10-23", "2026-10-30"], 0, "2026-10-23T09:00:00Z"))).toBe(false);
   });
 });
