@@ -59,7 +59,7 @@ export function LeaderTable({
                 <span className={cn("flex min-w-0 items-center gap-2 font-medium", r.isYou && "text-primary")} title={r.name}>
                   <span className="size-2.5 shrink-0 rounded-full" style={{ background: r.color }} aria-hidden="true" />
                   <SiteIcon domain={r.isYou ? ownDomain : r.domain} name={r.name} size="sm" />
-                  <span className="truncate">{r.isYou ? `${r.name} (you)` : r.name}</span>
+                  <span className="truncate" data-testid="leader-name">{r.isYou ? `${r.name} (you)` : r.name}</span>
                 </span>
                 {r.note && (
                   <span className="block text-xs text-text-hint" data-testid="chain-note">
@@ -67,7 +67,7 @@ export function LeaderTable({
                   </span>
                 )}
                 {website && !r.isYou && !r.domain && r.competitorId && (
-                  <div className="mt-1 pl-[2.375rem] text-xs" data-testid="leader-add-website">
+                  <div className="mt-1 pl-[3.125rem] text-xs" data-testid="leader-add-website">
                     <CompetitorWebsite businessId={website.businessId} competitorId={r.competitorId} name={r.name} current={null} save={website.save} />
                   </div>
                 )}

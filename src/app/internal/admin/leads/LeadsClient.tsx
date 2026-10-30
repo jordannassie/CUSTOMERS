@@ -60,16 +60,29 @@ export default function LeadsClient() {
     setLoading(false);
   }
 
+  // Only the newest request is shown: a slow answer for an older filter or search never replaces a newer one.
+  const latestRequest = useRef(0);
+  function load(query: LeadsQuery) {
+    const id = ++latestRequest.current;
+    requestLeads(query).then(
+      (data) => id === latestRequest.current && showLeads(data),
+      (err) => id === latestRequest.current && showLoadError(err),
+    );
+  }
+
   function fetchLeads(opts: Partial<LeadsQuery> = {}) {
     setLoading(true);
     setLoadError(null);
-    requestLeads({ page, search, interest, source, status, unread, ...opts }).then(showLeads, showLoadError);
+    load({ page, search, interest, source, status, unread, ...opts });
   }
 
   // Initial load
   useEffect(() => {
-    requestLeads({ page: 1, search: "", interest: "", source: "", status: "", unread: false })
-      .then(showLeads, showLoadError);
+    const id = ++latestRequest.current;
+    requestLeads({ page: 1, search: "", interest: "", source: "", status: "", unread: false }).then(
+      (data) => id === latestRequest.current && showLeads(data),
+      (err) => id === latestRequest.current && showLoadError(err),
+    );
   }, []);
 
   // Debounced search

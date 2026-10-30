@@ -18,6 +18,7 @@ import { currentReviewer, findOwnReview, listNativeSummaries, listPublishedRevie
 import { softwareReviewJsonLd } from "@/modules/apps-directory/review-service";
 import { NewsletterSignup } from "@/components/site/NewsletterSignup";
 import { env } from "@/lib/env";
+import { jsonLdHtml } from "@/lib/json-ld";
 
 type Params = Promise<{ slug: string }>;
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
@@ -85,7 +86,7 @@ async function AppDetailPageContent({ params, searchParams }: { params: Params; 
     <>
       <Header />
       <main className="min-h-screen bg-[#FAFAF8]">
-        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structured) }} />
+        <script type="application/ld+json" dangerouslySetInnerHTML={jsonLdHtml(structured)} />
         <article className="mx-auto max-w-[880px] px-4 pb-12 pt-2 sm:pt-3">
           <Link href="/apps" className="text-[13px] font-semibold text-[#0866F5]">All apps</Link>
           <section id="overview" className="mt-3 scroll-mt-28 rounded-2xl border border-[#E5E5E1] bg-white p-4 shadow-sm sm:p-6">

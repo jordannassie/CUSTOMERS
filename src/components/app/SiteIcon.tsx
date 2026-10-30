@@ -15,12 +15,15 @@ const IMG = { sm: 16, md: 20 } as const;
  */
 export function SiteIcon({ domain, name, size = "md", className }: { domain: string | null; name: string; size?: keyof typeof BOX; className?: string }) {
   const host = domain ? iconHost(domain) : "";
-  const [state, setState] = useState<"loading" | "loaded" | "failed">("loading");
+  // Kept per host, so a row that switches to another website tries its icon instead of keeping the last one's result.
+  const [seen, setSeen] = useState<{ host: string; state: "loading" | "loaded" | "failed" }>({ host, state: "loading" });
+  const state = seen.host === host ? seen.state : "loading";
+  const setState = (next: "loaded" | "failed") => setSeen({ host, state: next });
   const img = useRef<HTMLImageElement>(null);
   // An icon that loaded or failed before the page's scripts ran never reported it: check once on mount.
   useEffect(() => {
     const el = img.current;
-    if (el?.complete) setState(el.naturalWidth > 0 ? "loaded" : "failed");
+    if (el?.complete) setSeen({ host, state: el.naturalWidth > 0 ? "loaded" : "failed" });
   }, [host]);
 
   const letter = (name || host || "?").trim().charAt(0);

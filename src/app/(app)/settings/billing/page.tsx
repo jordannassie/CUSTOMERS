@@ -13,6 +13,7 @@ import {
   removeBusiness,
   upgradeBusiness,
 } from "@/modules/billing";
+import { ADD_BUSINESS_PATH } from "@/modules/onboarding";
 import { BILLING_HREF, BUY_CREDITS_HREF, CHOOSE_PLAN_HREF } from "@/modules/workspace";
 import { PlanBill } from "./_components/plan-bill";
 import { PortalButton } from "./_components/portal-button";
@@ -22,8 +23,6 @@ import { PageHeader } from "@/components/app/PageHeader";
 export const metadata: Metadata = { title: "Billing", robots: { index: false } };
 
 const USAGE_HREF = "/settings/usage";
-// The open draft first, if any (ADD_BUSINESS_PATH), else a new business on the website step.
-const ADD_BUSINESS_HREF = "/onboarding?add=1";
 
 type Props = { searchParams: Promise<{ portal?: string | string[]; synced?: string | string[] }> };
 
@@ -58,7 +57,7 @@ export default async function BillingPage({ searchParams }: Props) {
               <PlanStatus view={view} keep={keepSubscription} />
               <PlanBill
                 view={view}
-                addBusinessHref={ADD_BUSINESS_HREF}
+                addBusinessHref={ADD_BUSINESS_PATH}
                 actions={{ upgrade: upgradeBusiness, downgrade: downgradeBusiness, remove: removeBusiness, add: addBusiness, keep: keepBusinessPlan }}
               />
               <CreditsPanel buyHref={BUY_CREDITS_HREF} usageHref={USAGE_HREF} />

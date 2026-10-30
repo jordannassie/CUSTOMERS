@@ -1,6 +1,7 @@
 import "server-only";
 import { createServiceClient } from "@/lib/supabase/service";
 import { isCategoryId, type AppCategoryId, type AppSource, type DirectoryApp } from "./types";
+import { isMissingTable } from "@/lib/supabase/missing-table";
 
 type AppRow = {
   slug: string;
@@ -16,10 +17,7 @@ type AppRow = {
   active: boolean;
 };
 
-function missingTable(error: { code?: string; message?: string } | null) {
-  if (!error) return false;
-  return error.code === "42P01" || error.code === "PGRST205" || /directory_apps|directory_clicks/i.test(error.message ?? "");
-}
+const missingTable = (error: { code?: string; message?: string } | null) => isMissingTable(error, /directory_apps|directory_clicks/i);
 
 function mapRow(row: AppRow): DirectoryApp | null {
   const categories = row.categories.filter(isCategoryId);

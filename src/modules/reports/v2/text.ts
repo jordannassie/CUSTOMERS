@@ -21,14 +21,6 @@ const GENERIC = /^(Your |Other |Website|Review sites|Delivery apps|Blogs|Social|
 /** First letter in capitals, the rest as written. */
 export const upperFirst = (text: string) => text.charAt(0).toUpperCase() + text.slice(1);
 
-/** "Fix 3", "Fixes 1, 3 and 5". */
-export function fixesLabel(ns: number[]): string {
-  return ns.length === 1 ? `Fix ${ns[0]}` : `Fixes ${list(ns.map(String))}`;
-}
-
-/** "#3", "#3 and #5". */
-export const fixRefs = (ns: number[]) => list(ns.map((n) => `#${n}`));
-
 /** "Sep 29, 2026", in UTC like the scan days. */
 export function longDate(iso: string): string {
   return new Date(iso.length === 10 ? `${iso}T00:00:00Z` : iso).toLocaleDateString("en-US", {

@@ -1,12 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { authErrorResponse, requireAdmin } from "@/modules/auth";
-import { env } from "@/lib/env";
+import { askNewsModel } from "@/modules/news";
 
 export const maxDuration = 90;
 
 type Weekday = "monday" | "tuesday" | "wednesday" | "thursday" | "friday";
-
-const NEWS_MODEL = env.OPENAI_NEWS_MODEL;
 
 const WEEKDAY_WRITING_ANGLE: Record<Weekday, string> = {
   monday:    "Share a verified AI search development and explain clearly what it means for the agency's clients — what has changed, why it matters for brand visibility, and what they should do next.",
@@ -59,47 +57,10 @@ const ARTICLE_SCHEMA = {
   additionalProperties: false,
 };
 
-function extractAndParseJson(raw: string): unknown {
-  let text = raw.trim();
-  if (text.startsWith("```")) {
-    const nl = text.indexOf("\n");
-    text = nl !== -1 ? text.slice(nl + 1) : text.slice(3);
-    const close = text.lastIndexOf("```");
-    if (close !== -1) text = text.slice(0, close);
-    text = text.trim();
-  }
-  const start = text.indexOf("{");
-  const end   = text.lastIndexOf("}");
-  if (start === -1 || end === -1 || end <= start)
-    throw new Error(`No JSON object found. Preview: ${JSON.stringify(text.slice(0, 300))}`);
-  return JSON.parse(text.slice(start, end + 1));
-}
-
-function classifyOpenAIError(status: number, body: string): string {
-  if (status === 401) return "OpenAI authentication failed. Check your API key configuration.";
-  if (status === 429) return "OpenAI rate limit reached. Please try again in a moment.";
-  if (status === 503 || status === 502) return "OpenAI is temporarily unavailable. Please try again.";
-  try {
-    const parsed = JSON.parse(body) as { error?: { code?: string; message?: string } };
-    const code   = parsed?.error?.code    ?? "";
-    const msg    = parsed?.error?.message ?? "";
-    if (code === "model_not_found" || msg.includes("model"))
-      return `Model "${NEWS_MODEL}" not found. Set OPENAI_NEWS_MODEL to a compatible model.`;
-    if (code === "unsupported_value" || msg.toLowerCase().includes("tool"))
-      return `Web search is not supported for model "${NEWS_MODEL}". Try a different model via OPENAI_NEWS_MODEL.`;
-    if (msg) return `OpenAI error: ${msg.slice(0, 250)}`;
-  } catch { /* not JSON */ }
-  return `Generation failed (HTTP ${status}). Please try again.`;
-}
 
 export async function POST(request: NextRequest) {
   try { await requireAdmin(); }
   catch (error) { return authErrorResponse(error); }
-
-  const apiKey = env.OPENAI_API_KEY;
-  if (!apiKey) {
-    return NextResponse.json({ error: "OpenAI API key is not configured." }, { status: 503 });
-  }
 
   let body: {
     headline?:            unknown;
@@ -225,74 +186,18 @@ Also provide a shorter newsletter-style briefing:
 Return a JSON object with all required fields.
 The linkedinPost field is the primary deliverable — it must follow all structure and style rules above exactly.`;
 
-  let res: Response;
-  try {
-    res = await fetch("https://api.openai.com/v1/responses", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${apiKey}` },
-      body: JSON.stringify({
-        model: NEWS_MODEL,
-        tools: [{ type: "web_search" }],
-        text: {
-          format: {
-            type: "json_schema",
-            name: "generated_article",
-            strict: true,
-            schema: ARTICLE_SCHEMA,
-          },
-        },
-        input: prompt,
-      }),
-      signal: AbortSignal.timeout(85_000),
-    });
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    if (msg.includes("timeout") || msg.toLowerCase().includes("abort"))
-      return NextResponse.json({ error: "Generation timed out. Please try again." }, { status: 504 });
-    console.error(`[news/article] fetch error: ${msg}`);
-    return NextResponse.json({ error: "Could not reach OpenAI. Please try again." }, { status: 502 });
-  }
-
-  if (!res.ok) {
-    const rawBody = await res.text();
-    console.error(`[news/article] OpenAI HTTP ${res.status} | preview=${rawBody.slice(0, 300)}`);
-    return NextResponse.json({ error: classifyOpenAIError(res.status, rawBody) }, { status: 502 });
-  }
-
-  const data = await res.json() as {
-    output?: Array<{ type: string; content?: Array<{ type: string; text: string }> }>;
-  };
-
-  const itemTypes: string[] = [];
-  let rawText = "";
-  let outputTextFound = false;
-
-  for (const item of (data.output ?? [])) {
-    itemTypes.push(item.type);
-    if (item.type === "message") {
-      for (const block of (item.content ?? [])) {
-        if (block.type === "output_text") { rawText += block.text; outputTextFound = true; }
-      }
-    }
-  }
-
-  if (!outputTextFound) {
-    console.error(`[news/article] No output_text | item_types=[${itemTypes.join(", ")}]`);
-    return NextResponse.json({
-      error: itemTypes.length === 0
-        ? "OpenAI returned an empty response. Please try again."
-        : `No text output (types: ${itemTypes.join(", ")}). Please try again.`,
-    }, { status: 502 });
-  }
-
-  let parsed: GeneratedArticle;
-  try {
-    const result = extractAndParseJson(rawText) as GeneratedArticle;
-    if (typeof result.linkedinPost !== "string" || !result.linkedinPost)
-      throw new Error("Required field 'linkedinPost' is missing");
-    parsed = result;
-  } catch (e) {
-    console.error(`[news/article] JSON parse failed: ${e} | preview=${rawText.slice(0, 400)}`);
+  const answer = await askNewsModel({
+    label: "news/article",
+    prompt,
+    schemaName: "generated_article",
+    schema: ARTICLE_SCHEMA,
+    timeoutMs: 85_000,
+    timeoutMessage: "Generation timed out. Please try again.",
+  });
+  if (!answer.ok) return NextResponse.json({ error: answer.error }, { status: answer.status });
+  const parsed = answer.data as GeneratedArticle;
+  if (typeof parsed.linkedinPost !== "string" || !parsed.linkedinPost) {
+    console.error("[news/article] Required field 'linkedinPost' is missing");
     return NextResponse.json({ error: "AI returned an unexpected format. Please try again." }, { status: 502 });
   }
 

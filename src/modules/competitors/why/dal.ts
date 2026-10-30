@@ -4,15 +4,13 @@ import { OPEN_FIX_STATUSES } from "@/lib/fix-status";
 // AI call or Google call happens here; Google lines are added by the page from the values it already fetched (D-73).
 // Callers check the user may see this agency first.
 import { cache } from "react";
-import { requestNow } from "@/lib/request-now";
 import { hostOf } from "@/lib/site-type";
 import { createServiceClient } from "@/lib/supabase/service";
-import { requireAgency } from "@/modules/auth";
 import { competitorWhy, loadStanding, type StandingData } from "@/modules/standing";
 import { loadSavedSites } from "../site/dal";
 import type { SavedSite } from "../site/service";
 import { fixesAbout, openFixRefs, withFixes } from "./fixes";
-import { claimRows, compareRows, ownSite, serviceChips, type WebsiteView, type WhyPanel } from "./service";
+import { claimRows, compareRows, ownSite, serviceChips, type WhyPanel } from "./service";
 
 const OPEN_STATUSES = OPEN_FIX_STATUSES;
 
@@ -93,16 +91,4 @@ export function buildWhyPanels({ data, rows, saved, reading }: WhyInputs, chains
       },
     };
   });
-}
-
-export async function loadWhyPanels(agencyId: string, businessId: string, now: Date, chains: Map<string, string> = new Map()): Promise<WhyPanel[]> {
-  const inputs = await loadWhyInputs(agencyId, businessId, now.getTime());
-  return inputs ? buildWhyPanels(inputs, chains) : [];
-}
-
-/** "Check competitor websites" on Opportunities (B-91): each tracked competitor and where its website check stands. */
-export async function getWebsiteChecks(businessId: string): Promise<{ competitorId: string; name: string; website: WebsiteView }[]> {
-  const { agency } = await requireAgency({ next: "/actions" });
-  const panels = await loadWhyPanels(agency.id, businessId, requestNow());
-  return panels.map((p) => ({ competitorId: p.competitorId, name: p.trackedName, website: p.website }));
 }

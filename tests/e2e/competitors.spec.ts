@@ -130,8 +130,9 @@ async function shot(page: Page, info: TestInfo, name: string) {
   if (process.env.E2E_SHOTS_DIR) await page.screenshot({ path: `${process.env.E2E_SHOTS_DIR}/${name}-${info.project.name}.png`, fullPage: true });
 }
 
-// The leaderboard table's cells (dashboard redesign): the business name, its score and its status, one per row.
-const names = (board: Locator) => board.getByTestId("leader-row").locator("td:nth-child(2) > span:first-child");
+// The leaderboard table's cells (dashboard redesign): the business name (without its icon), its score and its status,
+// one per row.
+const names = (board: Locator) => board.getByTestId("leader-row").getByTestId("leader-name");
 const scores = (board: Locator) => board.getByTestId("leader-row").locator("td:nth-child(3)");
 const statuses = (board: Locator) => board.getByTestId("leader-row").locator("td:nth-last-child(2)");
 

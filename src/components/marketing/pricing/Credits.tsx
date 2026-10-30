@@ -1,5 +1,6 @@
 import { Section, H2, Lead } from "../section";
-import { estimateMonthlyCredits, formatCount, formatUsd, type PublicPack, type PublicPlan } from "@/modules/billing/format";
+import { formatCount, formatUsd, type PublicPack, type PublicPlan } from "@/modules/billing/format";
+import { estimateMonthlyCredits } from "@/modules/credits/estimate";
 
 // The MVP_SPEC 4.3 example business: 12 questions on all 3 AI assistants.
 const QUESTIONS = 12;

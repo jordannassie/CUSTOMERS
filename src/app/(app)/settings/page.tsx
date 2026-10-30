@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { changeEmail, changePassword, deleteAccount, deleteBusiness, getAccountView } from "@/modules/account";
 import { EMAIL_LINK_INVALID_TEXT, EMAIL_LINK_PARAM } from "@/modules/auth";
 import { getMyEmailPreferences, saveEmailPreferences } from "@/modules/email";
+import { ADD_BUSINESS_PATH } from "@/modules/onboarding";
 import { BILLING_HREF } from "@/modules/workspace";
 import { getSettings, saveAgencyName, saveBusinessProfile, saveScanSettings, uploadAgencyLogo } from "@/modules/settings";
 import { PageHeader } from "@/components/app/PageHeader";
@@ -72,7 +73,7 @@ export default async function SettingsPage({ searchParams }: { searchParams: Sea
             <Building2 className="size-5 text-muted-foreground" aria-hidden="true" />
             <p className="text-sm">Add a business to set its profile and AI checks here.</p>
             <Button asChild size="sm">
-              <Link href="/onboarding?add=1">Add a business</Link>
+              <Link href={ADD_BUSINESS_PATH}>Add a business</Link>
             </Button>
           </Panel>
         </SettingsSection>

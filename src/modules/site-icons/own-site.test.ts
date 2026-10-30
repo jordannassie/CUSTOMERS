@@ -24,6 +24,21 @@ describe("iconLinks", () => {
   it("ignores other schemes", () => {
     expect(iconLinks(`<link rel="icon" href="javascript:alert(1)"><link rel="icon" href="file:///etc/passwd">`, "https://x.com/")).toEqual([]);
   });
+
+  it("reads rel, not data-rel", () => {
+    expect(iconLinks(`<link data-rel="icon" rel="stylesheet" href="/a.css"><link data-href="/x.png" rel="icon" href="/fav.png">`, "https://x.com/")).toEqual([
+      "https://x.com/fav.png",
+    ]);
+  });
+});
+
+describe("ownSiteIcon with a broken inline icon", () => {
+  it("skips it and tries the next one", async () => {
+    const html = `<link rel="apple-touch-icon" href="data:image/png,%E0%A4%A"><link rel="icon" href="/fav.png">`;
+    const fetcher = async (url: string) => (url.endsWith("/fav.png") ? file(url, PNG) : page(url, html));
+    const icon = await ownSiteIcon("x.com", fetcher);
+    expect(icon).toMatchObject({ type: "image/png" });
+  });
 });
 
 describe("imageType", () => {

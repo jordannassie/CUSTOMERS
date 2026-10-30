@@ -37,17 +37,6 @@ const NO_SELECT_STAR = {
 
 // Existing files that break a rule below. They get a warning instead of an error until the
 // task that rewrites them removes them from these lists; every new file gets the error.
-const LEGACY_SELECT_STAR = [
-  "src/app/api/geo/businesses/route.ts",
-  "src/app/api/geo/seo/route.ts",
-  "src/app/(app)/dashboard/billing/page.tsx",
-  "src/app/(app)/dashboard/seo/page.tsx",
-  "src/app/internal/admin/accounts/page.tsx",
-  "src/app/internal/admin/billing/page.tsx",
-  "src/lib/billing/accounts.ts",
-  "src/lib/geo/dashboard-aggregator.ts",
-  "src/lib/geo/dashboard-data.ts",
-];
 const LEGACY_SUPABASE_IN_COMPONENTS = [
   "src/components/geo/AuthForm.tsx",
   "src/components/geo/ForgotPasswordForm.tsx",
@@ -56,25 +45,11 @@ const LEGACY_SUPABASE_IN_COMPONENTS = [
 
 const LEGACY_SERVICE_CLIENT = [
   "src/app/api/contact/route.ts",
-  "src/app/api/geo/feature-requests/route.ts",
   "src/app/api/internal/admin/feature-requests/[[]id]/route.ts",
   "src/app/api/internal/admin/leads/route.ts",
-  "src/app/api/stripe/add-business/route.ts",
-  "src/app/api/stripe/cancel-business/route.ts",
-  "src/app/api/stripe/change-plan/route.ts",
-  "src/app/api/stripe/invoices/route.ts",
-  "src/app/api/stripe/portal/route.ts",
   "src/app/api/stripe/webhook/route.ts",
-  "src/app/(app)/dashboard/billing/page.tsx",
-  "src/app/internal/admin/accounts/page.tsx",
-  "src/app/internal/admin/billing/page.tsx",
   "src/app/internal/admin/feature-requests/page.tsx",
   "src/app/internal/admin/page.tsx",
-  "src/app/internal/admin/users/page.tsx",
-  "src/lib/admin/require.ts",
-  "src/lib/billing/accounts.ts",
-  "src/lib/billing/entitlements.ts",
-  "src/lib/billing/usage.ts",
 ];
 
 // The service role key skips RLS, so only a module's dal.ts may create that client (B-15).
@@ -170,10 +145,6 @@ const eslintConfig = defineConfig([
   {
     files: LEGACY_SERVICE_CLIENT,
     rules: { "no-restricted-imports": ["warn", NO_SERVICE_CLIENT] },
-  },
-  {
-    files: LEGACY_SELECT_STAR,
-    rules: { "local/no-select-star": ["warn", NO_SELECT_STAR] },
   },
   {
     files: LEGACY_SUPABASE_IN_COMPONENTS,

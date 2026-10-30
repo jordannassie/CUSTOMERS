@@ -24,6 +24,13 @@ export const LIMITS = {
   site_check: { max: 20, windowMs: HOUR },
   // Each branch search is a paid Google Places Text Search ("Pick your branch on Google", step 6d).
   branch_search: { max: 20, windowMs: HOUR },
+  // Each website icon can mean several outside requests (Sources, Compare, the leaderboard). A busy list shows a few
+  // dozen and the browser keeps them a week, so this only stops someone using the route as a relay.
+  site_icon: { max: 600, windowMs: HOUR },
+  // Each checkout opens a real Stripe session (video ads, anyone can call it).
+  video_ad_checkout: { max: 10, windowMs: HOUR },
+  // Each signup, view or click writes a row (newsletter, anyone can call it).
+  newsletter: { max: 60, windowMs: HOUR },
 } satisfies Record<string, Limit>;
 
 export type Bucket = keyof typeof LIMITS;

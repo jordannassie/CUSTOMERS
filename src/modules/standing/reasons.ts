@@ -1,13 +1,12 @@
 // Likely reasons AI names a competitor more or less than you, from what AI could see: the sites it used in its
 // answers, and Google values shown live (D-73). Pure. We cannot see inside the AI tools, so each one is a likely
 // reason backed by a fact, never "the" reason.
+import type { Where } from "@/lib/fix-where";
 import { compareCount, compareRating, openDays, sideOf } from "@/lib/google-compare";
 import { hostOf, isOwnSite, siteOwner, sourceType } from "@/lib/site-type";
 import { namedIn, type StandingCheck } from "./checks";
 
-import type { Where } from "./where";
-
-export { WHERE_TEXT, type Where } from "./where";
+export type { Where };
 
 /**
  * title and detail: the short form screens show ("More Google reviews", "320 vs your 12"). text: the same fact as one

@@ -9,9 +9,13 @@ type Named = { name: string; chain?: ChainOf | null };
 
 const key = (name: string) => name.trim().toLowerCase();
 
-/** The branch you track for a chain row ("Domino's Pizza | Chaklala-III"), else the tracked name. */
+/**
+ * The branch you track for a chain row ("Domino's Pizza | Chaklala-III"), else the tracked name. When two tracked
+ * branches share a row it is the one whose score, website and Compare link the row shows (mergeChains keeps it).
+ */
 export function rowName(row: Named): string {
-  return row.chain ? (row.chain.tracked[0] ?? row.chain.brand) : row.name;
+  if (!row.chain || row.chain.tracked.includes(row.name)) return row.name;
+  return row.chain.tracked[0] ?? row.chain.brand;
 }
 
 /** The name a sentence uses: the chain AI named ("Bennu Coffee"), else the tracked name. */
@@ -21,10 +25,11 @@ export function namedAs(row: Named): string {
 
 /**
  * "Also counts Bennu Coffee on 5th" when you track two branches of one chain and they share a row (the row is named by
- * the first); null otherwise, since the row's name is already the branch you track.
+ * the one it shows); null otherwise, since the row's name is already the branch you track.
  */
 export function trackedNote(row: Named): string | null {
-  const others = row.chain?.tracked.slice(1) ?? [];
+  const name = rowName(row);
+  const others = row.chain?.tracked.filter((t) => t !== name) ?? [];
   if (others.length === 0) return null;
   const list = others.length > 1 ? `${others.slice(0, -1).join(", ")} and ${others.at(-1)}` : others[0];
   return `Also counts ${list}`;

@@ -30,7 +30,8 @@ describe("mergeChains", () => {
       row("Bennu Coffee East", 28, "Bennu Coffee"),
     ]);
     expect(merged.map((r) => [rowName(r), r.score, trackedNote(r)])).toEqual([
-      ["Bennu Coffee on Congress", 28, "Also counts Bennu Coffee East"],
+      // The row shows East's score, website and Compare link, so it carries East's name.
+      ["Bennu Coffee East", 28, "Also counts Bennu Coffee on Congress"],
       ["Epoch Coffee", 30, null],
     ]);
   });
@@ -39,7 +40,8 @@ describe("mergeChains", () => {
     const merged = mergeChains([row("Bennu Coffee on Congress", 40, "Bennu Coffee", true), row("Bennu Coffee", 25)]);
     expect(merged).toHaveLength(1);
     expect(merged[0]).toMatchObject({ name: "Bennu Coffee", score: 25, collecting: false });
-    expect(trackedNote(merged[0])).toBe("Also counts Bennu Coffee");
+    expect(rowName(merged[0])).toBe("Bennu Coffee");
+    expect(trackedNote(merged[0])).toBe("Also counts Bennu Coffee on Congress");
   });
 
   it("leaves rows alone when there is no chain, or no score yet", () => {

@@ -90,65 +90,6 @@ export function OverviewSkeleton() {
   );
 }
 
-export function QuestionsSkeleton() {
-  return (
-    <Frame>
-      <Header lines={2} />
-      <div className="grid overflow-hidden rounded-md border border-border sm:grid-cols-2">
-        <div className="flex flex-col gap-3 bg-surface p-5">
-          <Skeleton className="h-4 w-28" />
-          <Skeleton className="h-8 w-24" />
-          <Skeleton className="h-1.5 rounded-xs" />
-        </div>
-        <div className="flex flex-col gap-3 bg-muted p-5">
-          <Skeleton className="h-4 w-28 bg-border" />
-          <Skeleton className="h-8 w-40 bg-border" />
-          <Skeleton className="h-4 w-full bg-border" />
-        </div>
-      </div>
-      <Box>
-        <Skeleton className="h-5 w-40" />
-        <div className="flex gap-3">
-          <Skeleton className="h-9 flex-1" />
-          <Skeleton className="h-9 w-36" />
-        </div>
-      </Box>
-      <Box className="gap-0 p-0">
-        <div className="p-5">
-          <Skeleton className="h-5 w-36" />
-        </div>
-        {Array.from({ length: 6 }, (_, i) => (
-          <div key={i} className="grid gap-3 border-t border-border px-5 py-4 lg:grid-cols-[minmax(0,1fr)_repeat(3,112px)_36px]">
-            <Skeleton className="h-5 max-w-md" />
-            {[0, 1, 2].map((m) => (
-              <Skeleton key={m} className="hidden h-8 lg:block" />
-            ))}
-          </div>
-        ))}
-      </Box>
-    </Frame>
-  );
-}
-
-export function SourcesSkeleton() {
-  return (
-    <Frame>
-      <Header lines={2} />
-      <Skeleton className="h-16" />
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start">
-        <Box>
-          <Skeleton className="h-5 w-40" />
-          <Rows rows={8} height="h-10" />
-        </Box>
-        <Box>
-          <Skeleton className="h-5 w-36" />
-          <Bars rows={5} label="w-40" />
-        </Box>
-      </div>
-    </Frame>
-  );
-}
-
 export function CompetitorsSkeleton() {
   return (
     <Frame>

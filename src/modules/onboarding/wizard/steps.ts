@@ -41,10 +41,6 @@ export const FIRST_SCAN_PATH = "/onboarding/first-scan";
 export const PLAN_IDS = ["starter", "pro"] as const;
 export type PlanId = (typeof PLAN_IDS)[number];
 
-export function isStepSlug(value: string): value is StepSlug {
-  return WIZARD_STEPS.some((s) => s.slug === value);
-}
-
 export function stepNumber(slug: StepSlug): number {
   return WIZARD_STEPS.find((s) => s.slug === slug)!.number;
 }

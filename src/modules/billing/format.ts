@@ -27,11 +27,3 @@ export function formatUsd(cents: number): string {
 export function formatCount(n: number): string {
   return new Intl.NumberFormat("en-US").format(n);
 }
-
-// MVP_SPEC 4.3: scans per month for each schedule.
-const SCANS_PER_MONTH = { daily: 30, weekly: 4.3, monthly: 1 } as const;
-
-/** Credits a month for a business: questions × AI models × scans per month, rounded (MVP_SPEC 4.3). */
-export function estimateMonthlyCredits(questions: number, models: number, schedule: keyof typeof SCANS_PER_MONTH): number {
-  return Math.round(questions * models * SCANS_PER_MONTH[schedule]);
-}

@@ -13,7 +13,8 @@ const PAGE_TIMEOUT_MS = 5000;
 const ICON_TIMEOUT_MS = 4000;
 const MAX_TRIES = 4;
 
-const attr = (tag: string, name: string) => tag.match(new RegExp(`\\b${name}\\s*=\\s*(?:"([^"]*)"|'([^']*)'|([^\\s>]+))`, "i"))?.slice(1).find((v) => v !== undefined) ?? null;
+// The attribute must follow a space or quote, so "data-rel" is never read as "rel".
+const attr = (tag: string, name: string) => tag.match(new RegExp(`[\\s"']${name}\\s*=\\s*(?:"([^"]*)"|'([^']*)'|([^\\s>]+))`, "i"))?.slice(1).find((v) => v !== undefined) ?? null;
 
 /** The icons a page declares, best first: apple-touch-icon (larger, usually the logo), then the largest others. */
 export function iconLinks(html: string, base: string): string[] {
@@ -54,7 +55,13 @@ export function imageType(bytes: Buffer, declared: string): string | null {
 function fromDataUrl(url: string): OwnIcon | null {
   const m = url.match(/^data:(image\/[a-z0-9.+-]+)(;base64)?,(.*)$/i);
   if (!m) return null;
-  const bytes = m[2] ? Buffer.from(m[3], "base64") : Buffer.from(decodeURIComponent(m[3]), "utf8");
+  let bytes: Buffer;
+  try {
+    bytes = m[2] ? Buffer.from(m[3], "base64") : Buffer.from(decodeURIComponent(m[3]), "utf8");
+  } catch {
+    // A broken "%" escape: this icon is unusable, the next one may still load.
+    return null;
+  }
   const type = imageType(bytes, m[1]);
   return type && bytes.length > 0 && bytes.length <= ICON_BYTES ? { body: new Uint8Array(bytes).buffer, type } : null;
 }

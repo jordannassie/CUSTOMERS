@@ -68,6 +68,6 @@ describe("outageMessage", () => {
     const text = outageMessage("down");
     expect(text).toContain("Claude is not answering (server errors or timeouts)");
     expect(text).toContain(`try it again after ${CLAUDE_OUTAGE_MINUTES} minutes`);
-    expect(text).not.toMatch(/[–—]/);
+    expect(text).not.toMatch(/[\u2013\u2014]/);
   });
 });
