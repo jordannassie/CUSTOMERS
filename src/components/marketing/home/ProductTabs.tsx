@@ -3,6 +3,7 @@ import { Section, H2, Lead } from "../section";
 import { OverviewExample } from "./OverviewExample";
 import { CompetitorsExample } from "./CompetitorsExample";
 import { FixStepsExample } from "./FixStepsExample";
+import { AnswerExample } from "./AnswerExample";
 
 const TABS = [
   {
@@ -35,6 +36,20 @@ const TABS = [
     ],
     visual: <FixStepsExample />,
   },
+  {
+    value: "answers",
+    label: "AI answers",
+    title: "Read what each AI actually said",
+    body: [
+      "Every score links back to the real answers: which businesses each AI named, in its own words, and whether you were one of them.",
+      "Open any question to read what ChatGPT, Claude and Perplexity each answered.",
+    ],
+    visual: (
+      <div className="mx-auto w-full max-w-[560px]">
+        <AnswerExample />
+      </div>
+    ),
+  },
 ] as const;
 
 export function ProductTabs() {
@@ -46,7 +61,7 @@ export function ProductTabs() {
       </div>
 
       <Tabs defaultValue="visibility" className="mt-10 gap-10">
-        <TabsList variant="line" className="h-auto w-full justify-start gap-0 border-b border-border p-0">
+        <TabsList variant="line" className="scroll-quiet h-auto w-full justify-start gap-0 overflow-x-auto overflow-y-hidden border-b border-border p-0">
           {TABS.map(({ value, label }) => (
             <TabsTrigger key={value} value={value} className="h-11 flex-none px-4 text-[15px] first:pl-0">
               {label}

@@ -43,40 +43,50 @@ export default async function ActionsPage({ searchParams }: { searchParams: Prom
   // refuse it too; this only hides the buttons that would fail.
   const readOnly = workspace.account ? !canEditTracking(workspace.account).allowed : false;
 
+  const description = (
+    <span>
+      Fixes that get AI to name {business.name} more often, most important first. Each one says where to apply it.
+      {board.items.length > 0 && <OpenCount key="open" businessId={business.id} initial={open} />}
+      {/* The banner above the page says why (plan ended or paused) and links to Billing. */}
+      {readOnly && <span key="read-only" data-testid="actions-read-only"> You can read these fixes but not change them right now.</span>}
+    </span>
+  );
+  const add = readOnly ? null : <AddActionDialog key="add" businessId={business.id} add={addToActions} />;
+  // Between the header and the board: the branch picker, the "Get found by AI" card and the "fixes on the way" note.
+  const intro = (
+    <div className="contents">
+      {view.branch && !readOnly && <PickBranch key={`branch-${business.id}`} businessId={business.id} initial={view.branch} search={searchBranches} pick={pickBranch} />}
+
+      {view.checklist && (
+        <GetFoundChecklist
+          key={business.id}
+          businessId={business.id}
+          missing={view.checklist.missing}
+          initialItems={view.checklist.items}
+          setItem={setChecklistItem}
+          readOnly={readOnly}
+          // Open in full while there are no fixes yet; folded to its progress once the board has cards.
+          defaultOpen={board.items.length === 0}
+        />
+      )}
+
+      {fixes.pending ? (
+        <section key="fixes-working" className="rounded-lg border border-border bg-surface p-5" data-testid="fixes-working">
+          <WaitForFixes businessId={business.id} check={checkFixes} />
+          {board.items.length > 0 ? <p className="mt-3 text-sm text-muted-foreground">Below are the fixes from your previous scan until then.</p> : null}
+        </section>
+      ) : null}
+    </div>
+  );
+
   return (
     <PageContainer wide>
-      <div className="flex flex-col gap-6">
-        <PageHeader
-          title="Actions"
-          description={
-            <>
-              Fixes that get AI to name {business.name} more often, most important first. Each one says where to apply it.
-              {board.items.length > 0 && (
-                <OpenCount businessId={business.id} initial={open} />
-              )}
-              {/* The banner above the page says why (plan ended or paused) and links to Billing. */}
-              {readOnly && <span data-testid="actions-read-only"> You can read these fixes but not change them right now.</span>}
-            </>
-          }
-          actions={readOnly ? null : <AddActionDialog businessId={business.id} add={addToActions} />}
-        />
-
-        {view.branch && !readOnly && <PickBranch key={`branch-${business.id}`} businessId={business.id} initial={view.branch} search={searchBranches} pick={pickBranch} />}
-
-        {view.checklist && (
-          <GetFoundChecklist key={business.id} businessId={business.id} missing={view.checklist.missing} initialItems={view.checklist.items} setItem={setChecklistItem} readOnly={readOnly} />
-        )}
-
-        {fixes.pending ? (
-          <section className="rounded-md border border-border bg-surface p-5" data-testid="fixes-working">
-            <WaitForFixes businessId={business.id} check={checkFixes} />
-            {board.items.length > 0 ? <p className="mt-3 text-sm text-muted-foreground">Below are the fixes from your previous scan until then.</p> : null}
-          </section>
-        ) : null}
-
-        {board.items.length === 0 ? (
-          fixes.pending ? null : (
-            <section className="rounded-md border border-border bg-surface p-5" data-testid="no-opportunities">
+      {board.items.length === 0 ? (
+        <div className="flex flex-col gap-6">
+          <PageHeader title="Actions" description={description} actions={add} />
+          {intro}
+          {fixes.pending ? null : (
+            <section className="rounded-lg border border-border bg-surface p-5" data-testid="no-opportunities">
               <h2 className="text-base font-semibold tracking-[-0.02em]">{fixes.everScanned ? "Nothing to fix right now" : "No actions yet"}</h2>
               <p className="mt-3 max-w-[560px] text-sm text-muted-foreground">
                 {fixes.everScanned
@@ -89,19 +99,24 @@ export default async function ActionsPage({ searchParams }: { searchParams: Prom
                 </Button>
               )}
             </section>
-          )
-        ) : (
-          <ActionsBoard
-            key={`board-${business.id}-${pickedId ?? ""}`}
-            businessId={business.id}
-            initialItems={board.items}
-            move={moveActionTo}
-            assign={assignActionToMe}
-            pickedId={pickedId}
-            readOnly={readOnly}
-          />
-        )}
-      </div>
+          )}
+        </div>
+      ) : (
+        <ActionsBoard
+          key={`board-${business.id}-${pickedId ?? ""}`}
+          businessId={business.id}
+          initialItems={board.items}
+          move={moveActionTo}
+          assign={assignActionToMe}
+          pickedId={pickedId}
+          description={description}
+          add={add}
+          siteDomain={business.domain}
+          readOnly={readOnly}
+        >
+          {intro}
+        </ActionsBoard>
+      )}
     </PageContainer>
   );
 }

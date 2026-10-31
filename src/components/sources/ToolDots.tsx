@@ -8,7 +8,7 @@ const DOT: Record<ProviderId, string> = { openai: "bg-chatgpt", anthropic: "bg-c
 export function ToolDots({ models }: { models: ProviderId[] }) {
   const used = TOOLS.filter((t) => models.includes(t.provider)).map((t) => t.label);
   return (
-    <span className="inline-flex items-center gap-1.5" data-testid="tool-dots">
+    <span className="inline-flex items-center gap-1" data-testid="tool-dots">
       {TOOLS.map((t) => {
         const on = models.includes(t.provider);
         return (
@@ -16,7 +16,7 @@ export function ToolDots({ models }: { models: ProviderId[] }) {
             key={t.provider}
             title={`${t.label}: ${on ? "used it" : "did not use it"}`}
             aria-hidden="true"
-            className={cn("size-2.5 rounded-full", on ? DOT[t.provider] : "border border-input bg-surface")}
+            className={cn("size-2 rounded-full", on ? DOT[t.provider] : "bg-competitor-3")}
           />
         );
       })}
@@ -31,7 +31,7 @@ export function ToolDotsKey() {
     <span className="inline-flex flex-wrap items-center gap-x-3 gap-y-1" aria-hidden="true">
       {TOOLS.map((t) => (
         <span key={t.provider} className="inline-flex items-center gap-1.5">
-          <span className={cn("size-2.5 rounded-full", DOT[t.provider])} />
+          <span className={cn("size-2 rounded-full", DOT[t.provider])} />
           {t.label}
         </span>
       ))}

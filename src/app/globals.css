@@ -170,6 +170,31 @@
   }
 }
 
+/* mockup-ui: the logged-in app's frame (PromptWatch-style look). Scoped to .app-v2 so the marketing site and the
+   onboarding wizard keep the D-46 to D-50 look. White pages, softer borders, 8px cards and 6px controls. */
+.app-v2 {
+  --cd-background: #FFFFFF;
+  --cd-muted: #F7F7F5;
+  --cd-border: #EAEAE6;
+  --background: var(--cd-background);
+  --muted: var(--cd-muted);
+  --secondary: var(--cd-muted);
+  --accent: var(--cd-muted);
+  --border: var(--cd-border);
+  --radius: 8px;
+  --radius-sm: 5px;
+  --radius-md: 8px;
+  --radius-lg: 8px;
+  --radius-xl: 10px;
+  --radius-2xl: 12px;
+}
+.app-v2 [data-slot="button"] {
+  border-radius: 6px;
+}
+.app-v2 [data-slot="card"] {
+  border-color: var(--cd-border);
+}
+
 /* A scroll area whose bar stays hidden until the pointer is over it, and thin then (the sidebar on short screens). */
 @utility scroll-quiet {
   scrollbar-width: thin;

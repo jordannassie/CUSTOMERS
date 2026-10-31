@@ -28,36 +28,33 @@ export function Trend({
   const config = { you: { label: "You", color: "var(--chart-1)" }, them: { label: name, color } } satisfies ChartConfig;
   return (
     <figure className="m-0 flex min-w-0 flex-col gap-2" data-testid="pair-trend">
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
-        <span className="text-sm font-medium text-foreground">Named at each scan</span>
-        {/* No lines yet with one scan day: the bars carry the names, so the line legend waits for the second day. */}
-        {!one && (
-          <>
-            <span className="flex items-center gap-1.5">
-              <svg width="18" height="6" aria-hidden="true">
-                <line x1="1" y1="3" x2="17" y2="3" stroke="var(--chart-1)" strokeWidth="2.5" strokeLinecap="round" />
-              </svg>
-              You
-            </span>
-            <span className="flex min-w-0 items-center gap-1.5">
-              <svg width="18" height="6" aria-hidden="true">
-                <line x1="1" y1="3" x2="17" y2="3" stroke={color} strokeWidth="2" strokeLinecap="round" />
-              </svg>
-              <span className="truncate">{name}</span>
-            </span>
-            <span className="flex items-center gap-1.5">
-              <svg width="18" height="6" aria-hidden="true">
-                <line x1="1" y1="3" x2="17" y2="3" stroke="var(--chart-1)" strokeWidth="1.5" strokeDasharray="3 3" strokeOpacity="0.7" />
-              </svg>
-              Your 30-day score
-            </span>
-          </>
-        )}
-      </div>
+      {/* No lines yet with one scan day: the bars carry the names, so the line legend waits for the second day. The
+          card's header says "Named at each scan". */}
+      {!one && (
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
+          <span className="flex items-center gap-1.5">
+            <svg width="18" height="6" aria-hidden="true">
+              <line x1="1" y1="3" x2="17" y2="3" stroke="var(--chart-1)" strokeWidth="2.5" strokeLinecap="round" />
+            </svg>
+            You
+          </span>
+          <span className="flex min-w-0 items-center gap-1.5">
+            <svg width="18" height="6" aria-hidden="true">
+              <line x1="1" y1="3" x2="17" y2="3" stroke={color} strokeWidth="2" strokeLinecap="round" />
+            </svg>
+            <span className="truncate">{name}</span>
+          </span>
+          <span className="flex items-center gap-1.5">
+            <svg width="18" height="6" aria-hidden="true">
+              <line x1="1" y1="3" x2="17" y2="3" stroke="var(--chart-1)" strokeWidth="1.5" strokeDasharray="3 3" strokeOpacity="0.7" />
+            </svg>
+            Your 30-day score
+          </span>
+        </div>
+      )}
       {one ? (
-        // One scan day: you and them as bars in your colors, so the card shows a real result from the first scan. Kept
-        // narrow, so two columns sit side by side instead of at either edge of the card.
-        <div className="max-w-md">
+        // One scan day: you and them as bars in your colors, so the card shows a real result from the first scan.
+        <div>
           <FirstScanBars
             bars={[
               { key: "you", name: "You", isYou: true, value: trend[0].you, color: "var(--chart-1)" },
@@ -74,7 +71,7 @@ export function Trend({
           The trend starts after your second scan.
         </p>
       ) : (
-        <ChartContainer config={config} className="aspect-auto h-36 w-full" aria-hidden="true">
+        <ChartContainer config={config} className="aspect-auto h-44 w-full" aria-hidden="true">
           <ComposedChart data={trend} margin={{ top: 6, right: 8, bottom: 0, left: 0 }}>
             <defs>
               <linearGradient id="pair-you-fill" x1="0" y1="0" x2="0" y2="1">

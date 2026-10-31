@@ -54,7 +54,7 @@ function Fix({ title, where, badge, testId, children }: { title: string; where: 
   return (
     <div className="flex flex-col gap-2 border-t border-border pt-3" data-testid={testId}>
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <span className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">What to do</span>
+        <span className="text-xs font-semibold text-muted-foreground">What to do</span>
         {badge}
       </div>
       <p className="text-[13px] leading-snug font-medium" data-testid="skipped-fix-title">

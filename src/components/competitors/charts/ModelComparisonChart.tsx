@@ -4,11 +4,10 @@ import type React from "react";
 import { cn } from "cn";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import type { CompetitorChartsView } from "@/modules/competitors";
+import { heatFill as fill, heatText } from "../Marks";
 
 const DOT: Record<string, string> = { ChatGPT: "bg-chatgpt", Claude: "bg-claude", Perplexity: "bg-perplexity" };
 
-/** One blue, light to dark with the score, on the card's own white: a sequential scale, never a rainbow. */
-const fill = (v: number) => `color-mix(in oklab, var(--chart-1) ${Math.round(8 + v * 0.84)}%, var(--card))`;
 const STEPS = [0, 25, 50, 75, 100];
 
 /**
@@ -30,7 +29,7 @@ export function ModelComparisonChart({ view }: { view: CompetitorChartsView }) {
       >
         <span role="columnheader" />
         {byModel.map((m) => (
-          <span key={String(m.model)} role="columnheader" className="flex flex-col items-center justify-center gap-1 pb-1 text-[11px] font-medium sm:flex-row sm:gap-1.5 sm:text-xs">
+          <span key={String(m.model)} role="columnheader" className="flex flex-col items-center justify-center gap-1 pb-1 text-[11px] font-medium text-muted-foreground sm:flex-row sm:gap-1.5 sm:text-[11.5px]">
             <span className={cn("size-2 rounded-full", DOT[String(m.model)] ?? "bg-muted-foreground")} aria-hidden="true" />
             {String(m.model)}
           </span>
@@ -39,10 +38,10 @@ export function ModelComparisonChart({ view }: { view: CompetitorChartsView }) {
           <div key={s.key} role="row" className="contents">
             <span
               role="rowheader"
-              className={cn("flex min-w-0 items-center pr-2 text-[13px] leading-tight break-words line-clamp-2", s.isYou ? "font-semibold text-primary" : "text-foreground")}
+              className={cn("flex min-w-0 items-center pr-2 text-[12.5px] leading-tight font-medium break-words line-clamp-2", s.isYou ? "font-semibold text-primary" : "text-foreground")}
               title={s.name}
             >
-              <span className="mr-1.5 inline-block size-2 shrink-0 rounded-full" style={{ background: s.color }} aria-hidden="true" />
+              <span className="mr-2 inline-block size-2 shrink-0 rounded-full" style={{ background: s.color }} aria-hidden="true" />
               {s.isYou ? "You" : s.name}
             </span>
             {byModel.map((m, i) => {
@@ -55,15 +54,15 @@ export function ModelComparisonChart({ view }: { view: CompetitorChartsView }) {
                       role="cell"
                       tabIndex={0}
                       className={cn(
-                        "relative flex h-12 flex-col items-center justify-center rounded-xs text-sm font-semibold tabular-nums outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
-                        v === null ? "bg-muted text-xs font-normal text-text-hint" : v >= 50 ? "text-white" : "text-foreground",
-                        top && "ring-2 ring-foreground ring-inset",
+                        "relative flex h-10 flex-col items-center justify-center rounded-md text-[12.5px] font-semibold tabular-nums outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
+                        v === null ? "bg-muted text-xs font-normal text-text-hint" : heatText(v),
+                        top && "ring-1 ring-foreground/60 ring-inset",
                       )}
                       style={v === null ? undefined : { background: fill(v) }}
                       data-testid="model-cell"
                     >
                       {v === null ? "No checks" : v}
-                      {top && <span className={cn("text-[10px] font-medium leading-none", v >= 50 ? "text-white/85" : "text-muted-foreground")}>Top</span>}
+                      {top && <span className={cn("text-[10px] font-medium leading-none", v >= 80 ? "text-white/85" : "text-muted-foreground")}>Top</span>}
                     </span>
                   </TooltipTrigger>
                   <TooltipContent side="top">
@@ -76,7 +75,7 @@ export function ModelComparisonChart({ view }: { view: CompetitorChartsView }) {
         ))}
       </div>
       <figcaption className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 text-xs text-text-hint">
-        <span>Share of each AI&apos;s answers that named each business, last 30 days.</span>
+        <span>Last 30 days. The highest in each column is marked Top.</span>
         <span className="flex items-center gap-1.5" aria-hidden="true">
           0
           <span className="flex h-2 w-24 overflow-hidden rounded-xs">

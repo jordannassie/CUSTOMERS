@@ -69,7 +69,7 @@ export function ScanChart({
 
   return (
     <figure className="m-0 flex flex-col gap-3" data-testid="scan-chart">
-      <ul className="flex flex-wrap gap-1.5" aria-label="Businesses on the chart">
+      <ul className="-ml-2 flex flex-wrap gap-0.5" aria-label="Businesses on the chart">
         {lines.map((l, i) => {
           const off = hidden.has(l.key);
           return (
@@ -83,19 +83,19 @@ export function ScanChart({
                 onFocus={() => setFocus(l.key)}
                 onBlur={() => setFocus(null)}
                 className={cn(
-                  "flex h-8 max-w-56 items-center gap-2 rounded-md border px-2.5 text-xs transition-colors focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none",
-                  off ? "border-dashed border-border text-text-hint" : "border-border bg-surface hover:bg-muted",
+                  "flex h-7 max-w-56 items-center gap-1.5 rounded-sm border px-2 text-xs transition-colors focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none",
+                  off ? "border-dashed border-border text-text-hint" : "border-transparent text-muted-foreground hover:bg-muted",
                 )}
                 data-testid="scan-line"
               >
-                <span className="size-2.5 shrink-0 rounded-full" style={{ background: off ? "var(--border)" : colorAt(i) }} aria-hidden="true" />
+                <span className="size-2 shrink-0 rounded-full" style={{ background: off ? "var(--border)" : colorAt(i) }} aria-hidden="true" />
                 <span className={cn("truncate", l.isYou && "font-semibold text-primary")}>{l.isYou ? "You" : l.name}</span>
                 <span className="font-semibold tabular-nums text-foreground">{l.latest ?? "None"}</span>
               </button>
             </li>
           );
         })}
-        <li className="flex h-8 items-center gap-1.5 px-1 text-xs text-muted-foreground">
+        <li className="flex h-7 items-center gap-1.5 px-2 text-xs text-muted-foreground">
           <svg width="18" height="6" aria-hidden="true">
             <line x1="1" y1="3" x2="17" y2="3" stroke="var(--chart-1)" strokeWidth="1.5" strokeDasharray="3 3" />
           </svg>
