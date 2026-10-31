@@ -40,19 +40,19 @@ export function FocusAnswers() {
     });
 
   return (
-    <section className="flex flex-col gap-3 rounded-md border border-border bg-surface p-5" data-testid="focus-answers" aria-labelledby="focus-answers-title">
+    <section className="flex flex-col gap-3 rounded-lg border border-border bg-surface p-4" data-testid="focus-answers" aria-labelledby="focus-answers-title">
       <div className="flex flex-col gap-1">
-        <h2 id="focus-answers-title" className="text-base font-semibold tracking-[-0.02em]">
+        <h2 id="focus-answers-title" className="text-[15px] font-semibold tracking-[-0.01em]">
           {answers.length > 0 ? heading(total, focus) : "No answers match this link"}
         </h2>
-        <p className="text-sm text-muted-foreground">
+        <p className="text-[13px] text-muted-foreground">
           {answers.length > 0
             ? `From the last 30 days, on the suggested questions in your score, newest first${total > answers.length ? `, the latest ${answers.length} shown` : ""}. The questions they answered are listed below.`
             : "None of the answers from the last 30 days did all of this. Remove a filter below to see more."}
         </p>
       </div>
       {answers.length > 0 && (
-        <ul className="flex flex-col divide-y divide-border rounded-md border border-border">
+        <ul className="flex flex-col divide-y divide-border rounded-lg border border-border">
           {answers.map((a, i) => {
             const isOpen = open.has(i);
             return (
@@ -61,10 +61,10 @@ export function FocusAnswers() {
                   type="button"
                   aria-expanded={isOpen}
                   onClick={() => toggle(i)}
-                  className="grid w-full grid-cols-[minmax(0,1fr)_1rem] items-center gap-3 px-4 py-3 text-left hover:bg-muted/50 focus-visible:bg-muted/50 focus-visible:outline-none"
+                  className="grid w-full grid-cols-[minmax(0,1fr)_1rem] items-center gap-3 px-3.5 py-2.5 text-left hover:bg-muted/60 focus-visible:bg-muted/60 focus-visible:outline-none"
                 >
                   <span className="flex min-w-0 flex-col gap-0.5">
-                    <span className="text-sm font-medium">{a.question}</span>
+                    <span className="text-[13.5px] font-medium">{a.question}</span>
                     <span className="text-xs text-muted-foreground">
                       {a.label} · <LocalDate iso={a.checkedAt} options={SHORT} />
                     </span>
@@ -72,9 +72,11 @@ export function FocusAnswers() {
                   <ChevronDown className={cn("size-4 text-muted-foreground transition-transform", isOpen && "rotate-180")} aria-hidden="true" />
                 </button>
                 {isOpen && (
-                  <div className="flex flex-col gap-3 px-4 pb-4">
-                    <AnswerPanel answer={a} businessName={view.businessName} when="Answered" />
-                    <Link href={questionsHref({ q: a.questionId })} className="text-sm font-medium text-primary hover:underline">
+                  <div className="flex flex-col gap-3 px-3.5 pb-3.5">
+                    <div className="overflow-hidden rounded-lg border border-border bg-surface">
+                      <AnswerPanel answer={a} businessName={view.businessName} when="Answered" />
+                    </div>
+                    <Link href={questionsHref({ q: a.questionId })} className="text-[13px] font-medium text-primary hover:underline">
                       Open this question
                     </Link>
                   </div>

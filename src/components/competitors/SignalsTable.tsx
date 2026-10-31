@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ExternalLink } from "lucide-react";
 import { cn } from "cn";
+import { SiteIcon } from "@/components/app/SiteIcon";
 import { GoogleAttribution, PlaceRating } from "@/components/onboarding/PlaceBits";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { headToHead, hoursText, matchedNone, reviewsText, websiteAction, websiteLabel, websiteShown, type SignalRow } from "@/modules/competitors";
@@ -53,8 +54,8 @@ export function SignalsTable({ rows, pickBranch = false, edit = null }: { rows: 
       ) : null}
 
       {/* The PDF page is about 720px wide, just under the switch, and the table still fits there, so print forces it. */}
-      <div className="hidden @min-[760px]:block print:block">
-        <Table>
+      <div className="hidden overflow-hidden rounded-md border border-border @min-[760px]:block print:block">
+        <Table className="text-[13px]">
           <TableHeader>
             <TableRow>
               <TableHead>Business</TableHead>
@@ -66,9 +67,13 @@ export function SignalsTable({ rows, pickBranch = false, edit = null }: { rows: 
           </TableHeader>
           <TableBody>
             {rows.map((row) => (
-              <TableRow key={`${row.isYou}-${row.name}`} className={cn(row.isYou && "bg-primary-tint hover:bg-primary-tint")}>
+              <TableRow key={`${row.isYou}-${row.name}`} className={cn(row.isYou && "bg-primary-tint/40 hover:bg-primary-tint/40")}>
                 <TableCell className={cn("max-w-64 min-w-40 font-medium break-words whitespace-normal", row.isYou && "text-primary")}>
-                  {row.isYou ? `${row.name} (you)` : row.name}
+                  <span className="flex min-w-0 items-center gap-2.5">
+                    {/* Only a website the user typed gives the icon: nothing from Google is used beyond showing it (D-73). */}
+                    <SiteIcon domain={row.savedSite ?? null} name={row.name} size="sm" />
+                    <span className="min-w-0">{row.isYou ? `${row.name} (you)` : row.name}</span>
+                  </span>
                 </TableCell>
                 {row.signals ? (
                   <>

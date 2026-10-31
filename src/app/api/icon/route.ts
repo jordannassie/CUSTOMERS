@@ -27,7 +27,9 @@ export async function GET(request: NextRequest): Promise<Response> {
   if (limit !== "allowed") return new Response(null, { status: 429, headers: NO_STORE });
 
   const icon = await fetchSiteIcon(parsed.data.domain);
-  if (icon.kind === "failed") return new Response(null, { status: 503, headers: NO_STORE });
+  // A failed ask is a 204, not a 503: the image falls back to the letter all the same, without a "Failed to load
+  // resource" error in the browser console for every unreachable site (mockup-ui shows icons on every page).
+  if (icon.kind === "failed") return new Response(null, { status: 204, headers: NO_STORE });
   if (icon.kind === "none") return new Response(null, { status: 404, headers: { "Cache-Control": KEEP_NONE } });
   return new Response(icon.body, {
     headers: {

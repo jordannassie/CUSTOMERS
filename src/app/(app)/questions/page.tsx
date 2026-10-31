@@ -9,6 +9,8 @@ import { HeaderActions } from "@/components/questions/HeaderActions";
 import { KpiStrip } from "@/components/questions/KpiStrip";
 import { QuestionsProvider } from "@/components/questions/QuestionsProvider";
 import { QuestionTable } from "@/components/questions/QuestionTable";
+import { ScanNotice } from "@/components/questions/ScanNotice";
+import { SummaryBars } from "@/components/questions/SummaryBars";
 import {
   addQuestion,
   atLimit,
@@ -49,7 +51,7 @@ export default async function QuestionsPage({ searchParams }: { searchParams: Se
     <PageContainer>
       {/* Keyed by the link, so a new ?q= or ?site= starts the list fresh. */}
       <QuestionsProvider key={`${business.id}-${focus.q}-${focus.site}-${focus.named}-${focus.ai}`} view={view} focus={focus} addAction={addToActions}>
-        <div className="flex flex-col gap-6">
+        <div className="flex flex-col gap-5">
           <PageHeader
             title={
               <>
@@ -61,16 +63,16 @@ export default async function QuestionsPage({ searchParams }: { searchParams: Se
           />
 
           {/* Which AIs the last scan could not check, so a gap in the list is never read as "not asked" (BUG-074). */}
-          {view.scanNotice && (
-            <p role="status" className="rounded-md border border-border bg-mid-bg px-4 py-3 text-sm text-mid-text" data-testid="scan-notice">
-              {view.scanNotice}
-            </p>
-          )}
+          {view.scanNotice && <ScanNotice text={view.scanNotice} />}
 
           {/* Opened from "See the answers": the answers the link is about, before the list of questions. */}
           <FocusAnswers />
 
           <KpiStrip view={view} />
+
+          <SummaryBars view={view} />
+
+          <QuestionTable limitMessage={limitMessage} actions={actions} />
 
           <AddQuestionForm
             businessId={view.businessId}
@@ -81,8 +83,6 @@ export default async function QuestionsPage({ searchParams }: { searchParams: Se
             limitMessage={limitMessage}
             add={addQuestion}
           />
-
-          <QuestionTable limitMessage={limitMessage} actions={actions} />
         </div>
       </QuestionsProvider>
     </PageContainer>

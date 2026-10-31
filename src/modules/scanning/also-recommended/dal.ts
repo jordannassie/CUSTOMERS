@@ -3,6 +3,7 @@ import { cache } from "react";
 import { createServiceClient } from "@/lib/supabase/service";
 import { SCORE_WINDOW_DAYS } from "../scoring";
 import { alsoRecommendedNames, type AlsoRecommendedList } from "./names";
+import { citedHosts, siteForName } from "./site-match";
 
 const PAGE = 1000;
 const DAY_MS = 86_400_000;
@@ -31,12 +32,13 @@ const loadOnce = cache(async (agencyId: string, businessId: string, nowMs: numbe
 
   const since = new Date(now.getTime() - SCORE_WINDOW_DAYS * DAY_MS).toISOString();
   const extractions: unknown[] = [];
+  const hosts = new Set<string>();
   const seen = new Set<string>();
   for (let from = 0; ; from += PAGE) {
     const { data, error } = await db
       // The rows that count (migration 044, BUG-075), keyed without their text (migration 088).
       .from("visibility_checks_all")
-      .select("answer_key, extracted_names")
+      .select("answer_key, extracted_names, cited_sources")
       .eq("business_id", businessId)
       .gt("checked_at", since)
       .not("extracted_names", "is", null)
@@ -50,11 +52,12 @@ const loadOnce = cache(async (agencyId: string, businessId: string, nowMs: numbe
       if (seen.has(r.answer_key!)) continue;
       seen.add(r.answer_key!);
       extractions.push(r.extracted_names);
+      for (const host of citedHosts(r.cited_sources)) hosts.add(host);
     }
     if (data.length < PAGE) break;
   }
 
-  return alsoRecommendedNames(
+  const list = alsoRecommendedNames(
     extractions,
     {
       name: b.name,
@@ -66,4 +69,11 @@ const loadOnce = cache(async (agencyId: string, businessId: string, nowMs: numbe
     },
     competitors.data!.map((c) => ({ name: c.name, aliases: c.aliases, website: c.domain, phone: c.phone, city: c.city ?? b.primary_city })),
   );
+  return {
+    ...list,
+    names: list.names.map((n) => {
+      const domain = siteForName(n.name, hosts);
+      return domain ? { ...n, domain } : n;
+    }),
+  };
 });

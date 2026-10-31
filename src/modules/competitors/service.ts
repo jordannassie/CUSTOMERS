@@ -46,7 +46,7 @@ export type CompetitorsView = {
   margin: number | null;
   leaderboard: LeaderRow[];
   signals: SignalRow[];
-  also: { name: string; answers: number }[];
+  also: { name: string; answers: number; domain?: string | null }[];
   /** Answers the "also recommended" counts are out of. */
   answers: number;
   count: number;

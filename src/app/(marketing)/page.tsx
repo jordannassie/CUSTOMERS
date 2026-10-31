@@ -31,7 +31,8 @@ export default async function Home() {
   const [{ plans }, ratings] = await Promise.all([getPublicPricing(), appRatings()]);
 
   return (
-    <>
+    // mockup-ui: the app's new look (white canvas, softer borders, 8px cards) on the homepage too.
+    <div className="app-v2 flex min-h-dvh flex-col bg-background">
       <Header />
       <main className="flex-1">
         <Hero />
@@ -53,6 +54,6 @@ export default async function Home() {
       </main>
       <Footer />
       <ChatWidget />
-    </>
+    </div>
   );
 }

@@ -15,6 +15,9 @@ type State = {
   setFilter: (f: ListFilter) => void;
   topic: string | null;
   setTopic: (t: string | null) => void;
+  /** Words typed in the list's filter box; rows whose question contains them show. */
+  query: string;
+  setQuery: (q: string) => void;
   showPaused: boolean;
   setShowPaused: (v: boolean) => void;
   openId: string | null;
@@ -50,13 +53,16 @@ export function QuestionsProvider({
   const linkedPaused = !!focus.q && view.paused.some((r) => r.id === focus.q);
   const [filter, setFilter] = useState<ListFilter>("all");
   const [topic, setTopic] = useState<string | null>(null);
+  const [query, setQuery] = useState("");
   const [showPaused, setShowPaused] = useState(linkedPaused);
   const [openId, setOpenId] = useState<string | null>(focus.q);
 
   const state = useMemo<State>(() => {
     const opts = { filter, topic, keepId: focus.q };
-    const active = visibleRows(view.active, opts);
-    const paused = showPaused ? visibleRows(view.paused, opts) : [];
+    const words = query.trim().toLowerCase();
+    const typed = (rows: QuestionRow[]) => (words ? rows.filter((r) => r.text.toLowerCase().includes(words)) : rows);
+    const active = typed(visibleRows(view.active, opts));
+    const paused = showPaused ? typed(visibleRows(view.paused, opts)) : [];
     const total = view.active.filter((r) => r.matches).length + (showPaused ? view.paused.filter((r) => r.matches).length : 0);
     return {
       view,
@@ -65,6 +71,8 @@ export function QuestionsProvider({
       setFilter,
       topic,
       setTopic,
+      query,
+      setQuery,
       showPaused,
       setShowPaused,
       openId,
@@ -73,7 +81,7 @@ export function QuestionsProvider({
       total,
       addAction,
     };
-  }, [view, focus, filter, topic, showPaused, openId, addAction]);
+  }, [view, focus, filter, topic, query, showPaused, openId, addAction]);
 
   return <Ctx.Provider value={state}>{children}</Ctx.Provider>;
 }

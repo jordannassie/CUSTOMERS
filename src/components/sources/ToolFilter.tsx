@@ -9,7 +9,7 @@ const OPTIONS: { provider: ProviderId | null; label: string }[] = [{ provider: n
 export function ToolFilter({ tool }: { tool: ProviderId | null }) {
   return (
     <nav aria-label="Filter by AI tool" data-testid="tool-filter">
-      <ul className="inline-flex w-fit flex-wrap gap-1 rounded-md border border-border bg-muted p-1">
+      <ul className="inline-flex w-fit flex-wrap gap-0.5 rounded-[6px] border border-border bg-muted p-0.5">
         {OPTIONS.map((o) => {
           const on = o.provider === tool;
           return (
@@ -19,8 +19,8 @@ export function ToolFilter({ tool }: { tool: ProviderId | null }) {
                 scroll={false}
                 aria-current={on ? "page" : undefined}
                 className={cn(
-                  "inline-flex h-8 items-center rounded-sm px-3 text-[13px] font-medium transition-colors duration-150 ease-out outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
-                  on ? "bg-surface text-foreground shadow-xs" : "text-muted-foreground hover:text-foreground",
+                  "inline-flex h-7 items-center rounded-[4px] px-2.5 text-xs font-medium transition-colors duration-150 ease-out outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
+                  on ? "bg-surface text-foreground shadow-xs ring-1 ring-border" : "text-muted-foreground hover:text-foreground",
                 )}
               >
                 {o.label}

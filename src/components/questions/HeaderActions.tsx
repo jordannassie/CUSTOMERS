@@ -7,7 +7,7 @@ import { useQuestions } from "./QuestionsProvider";
 
 export const NEW_QUESTION_ID = "new-question";
 
-/** Export CSV writes the rows the list shows now; Add question goes to the form under the numbers. */
+/** Export CSV writes the rows the list shows now; Add question goes to the form under the list. */
 export function HeaderActions() {
   const { view, shown } = useQuestions();
   const rows = [...shown.active, ...shown.paused];

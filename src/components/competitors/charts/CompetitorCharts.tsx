@@ -1,49 +1,44 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import type { ReactNode } from "react";
 import type { CompetitorChartsView } from "@/modules/competitors";
+import { CardHead, SectionCard } from "../SectionCard";
 import { ModelComparisonChart } from "./ModelComparisonChart";
 import { ShareOfVoiceChart } from "./ShareOfVoiceChart";
 import { VisibilityTrendChart } from "./VisibilityTrendChart";
 
-// The Competitors page charts (2026-10-23): the trend under the leaderboard, then the share of AI picks and the per-AI
-// comparison side by side.
+// The Competitors page charts (2026-10-23; mockup-ui cards): the trend under the KPI strip, then the share of AI picks
+// and the per-AI comparison side by side.
 
-export function VisibilityTrendCard({ charts, grow = false, nextScan = null }: { charts: CompetitorChartsView; grow?: boolean; nextScan?: string | null }) {
-  const more = charts.hidden > 0 ? `, ${charts.hidden} more in the list above` : "";
-  // Only a drawn chart grows to fill its column; the "after your second scan" note stays short.
-  const fill = grow && charts.timeline.length >= 2;
+/**
+ * The trend in a card. `kpis`: a KpiStrip joined to the top of the same card, its outer border hidden under the
+ * card's own, so the numbers and the chart read as one block (mockup-ui).
+ */
+export function VisibilityTrendCard({ charts, nextScan = null, kpis }: { charts: CompetitorChartsView; nextScan?: string | null; kpis?: ReactNode }) {
+  const more = charts.hidden > 0 ? `, ${charts.hidden} more in the table below` : "";
   return (
-    <Card className={fill ? "flex-1" : undefined}>
-      <CardHeader>
-        <CardTitle className="text-base">Visibility over time</CardTitle>
-        <CardDescription>You and your top competitors at each scan{more}.</CardDescription>
-      </CardHeader>
-      <CardContent className={fill ? "flex flex-1 flex-col" : undefined}>
+    <section className="flex min-w-0 flex-col overflow-hidden rounded-lg border border-border bg-card" data-testid="trend-card">
+      {kpis ? <div className="-m-px *:rounded-none">{kpis}</div> : null}
+      <CardHead title="Visibility over time" help={`You and your top competitors at each scan${more}.`} />
+      <div className="px-[18px] pt-4 pb-3">
         <VisibilityTrendChart view={charts} nextScan={nextScan} />
-      </CardContent>
-    </Card>
+      </div>
+    </section>
   );
 }
 
 export function ShareAndModelCards({ charts }: { charts: CompetitorChartsView }) {
   return (
     // Both cards take the row's height, and the donut sits in the middle of its card, so neither leaves a gap below.
-    <div className="grid items-stretch gap-6 lg:grid-cols-2">
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Your share of AI picks</CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-1 items-center">
-          <ShareOfVoiceChart view={charts} />
-        </CardContent>
-      </Card>
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">By AI model</CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-1 flex-col justify-center">
-          <ModelComparisonChart view={charts} />
-        </CardContent>
-      </Card>
+    <div className="grid items-stretch gap-5 lg:grid-cols-2">
+      <SectionCard
+        title="Your share of AI picks"
+        help="Of every answer that named you or a tracked competitor, the share that named each one, last 30 days."
+        bodyClassName="flex items-center"
+      >
+        <ShareOfVoiceChart view={charts} />
+      </SectionCard>
+      <SectionCard title="By AI model" help="Share of each AI's answers that named each business, last 30 days." bodyClassName="flex flex-col justify-center">
+        <ModelComparisonChart view={charts} />
+      </SectionCard>
     </div>
   );
 }
