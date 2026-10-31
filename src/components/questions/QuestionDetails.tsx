@@ -10,28 +10,29 @@ import type { QuestionRow } from "@/modules/questions/service";
 import { listText } from "@/modules/questions/skipped";
 import { compareHref } from "@/lib/compare-href";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs as TabsPrimitive } from "radix-ui";
 import { AnswerPanel } from "./AnswerPanel";
+import { AnswerRows } from "./AnswerRows";
 
 export type AnswersAction = (input: { businessId: string; questionId: string }) => Promise<ActionResult<{ answers: QuestionAnswer[] }>>;
 
 /** Null while loading. */
 export type AnswersState = { answers: QuestionAnswer[] } | { error: string } | null;
 
-const DOT: Record<string, string> = { openai: "bg-chatgpt", anthropic: "bg-claude", perplexity: "bg-perplexity" };
 
 type Props = { question: QuestionRow; businessName: string; state: AnswersState; controls: React.ReactNode };
 
-// A question opened in the list (replaces the old answers dialog): each AI's latest answer in a tab, every business
-// the AIs named, and the question's own controls.
+// A question opened from the list, in its side panel (mockup-ui): each AI's latest answer as a row, every business the
+// AIs named under them, and the picked answer in its own details pane beside the list. Then the question's controls.
 export function QuestionDetails({ question, businessName, state, controls }: Props) {
   return (
-    <div className="flex flex-col gap-5 border-t border-border bg-background px-5 py-5" data-testid="question-details">
+    <div className="flex flex-col gap-5" data-testid="question-details">
       {state === null ? (
         <div role="status" aria-busy className="flex flex-col gap-3">
           <span className="sr-only">Loading the answers…</span>
-          <Skeleton className="h-9 w-72 max-w-full" />
-          <Skeleton className="h-32" />
+          <Skeleton className="h-8 w-72 max-w-full" />
+          <Skeleton className="h-40" />
+          <Skeleton className="h-24" />
         </div>
       ) : "error" in state ? (
         <p role="alert" className="rounded-md bg-low-bg px-3 py-2 text-[13px] text-low-text">
@@ -43,27 +44,28 @@ export function QuestionDetails({ question, businessName, state, controls }: Pro
         </p>
       ) : (
         <>
-          <Tabs defaultValue={state.answers[0].model} className="gap-4" data-testid="answers">
-            <TabsList className="h-auto! w-full sm:w-fit">
-              {state.answers.map((a) => (
-                <TabsTrigger key={a.model} value={a.model} className="h-auto! flex-col gap-0 px-3 py-1 sm:flex-row sm:gap-1.5">
-                  <span className="inline-flex items-center gap-1.5">
-                    <span className={cn("size-2 rounded-full", DOT[a.model])} aria-hidden="true" />
-                    {a.label}
-                  </span>
-                  <span className={cn("text-xs font-normal", a.namedYou ? "text-good-text" : "text-muted-foreground")}>
-                    {a.namedYou ? "named you" : "not named"}
-                  </span>
-                </TabsTrigger>
-              ))}
-            </TabsList>
+          <TabsPrimitive.Root
+            defaultValue={state.answers[0].model}
+            orientation="vertical"
+            className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] lg:items-start"
+            data-testid="answers"
+          >
+            <div className="flex min-w-0 flex-col gap-5">
+              <AnswerRows answers={state.answers} businessName={businessName} />
+              <AllNamed question={question} answers={state.answers} businessName={businessName} />
+            </div>
             {state.answers.map((a) => (
-              <TabsContent key={a.model} value={a.model} data-testid="answer" data-model={a.model}>
+              <TabsPrimitive.Content
+                key={a.model}
+                value={a.model}
+                data-testid="answer"
+                data-model={a.model}
+                className="min-w-0 rounded-lg border border-border bg-surface outline-none focus-visible:ring-3 focus-visible:ring-ring/50 lg:sticky lg:top-0"
+              >
                 <AnswerPanel answer={a} businessName={businessName} />
-              </TabsContent>
+              </TabsPrimitive.Content>
             ))}
-          </Tabs>
-          <AllNamed question={question} answers={state.answers} businessName={businessName} />
+          </TabsPrimitive.Root>
         </>
       )}
       <div className="flex flex-wrap gap-2 border-t border-border pt-4">{controls}</div>
@@ -87,8 +89,8 @@ function AllNamed({ question, answers, businessName }: { question: QuestionRow; 
   const unread = answers.filter((a) => !a.namesChecked).map((a) => a.label);
   if (names.size === 0 && you === 0 && unread.length === 0) return null;
   return (
-    <div className="flex flex-col gap-2">
-      <p className="text-xs font-medium text-muted-foreground">Businesses named, all tools</p>
+    <div className="flex flex-col gap-2 rounded-lg border border-border px-3.5 py-3">
+      <p className="text-[13px] font-semibold">Businesses named, all tools</p>
       {unread.length > 0 && (
         <p className="text-[13px] text-muted-foreground" data-testid="names-unread">
           We couldn&apos;t read which businesses {listText(unread)} named, so this list may be missing some.
@@ -97,7 +99,7 @@ function AllNamed({ question, answers, businessName }: { question: QuestionRow; 
       {(names.size > 0 || you > 0) && (
       <ul className="flex flex-wrap gap-1.5" data-testid="all-named">
         {you > 0 && (
-          <li className="rounded-xs bg-primary-tint px-2 py-0.5 text-[13px] font-medium text-primary">
+          <li className="inline-flex h-[22px] items-center gap-1 rounded-sm bg-primary-tint px-2 text-xs font-semibold text-primary">
             {businessName} (you){" "}
             <span className="tabular-nums" title={`Named by ${you} of ${answers.length} AI tools`}>
               {you}
@@ -118,7 +120,7 @@ function AllNamed({ question, answers, businessName }: { question: QuestionRow; 
                 </span>
               </>
             );
-            const className = "inline-flex items-center gap-1 rounded-xs border border-border px-2 py-0.5 text-[13px]";
+            const className = "inline-flex h-[22px] items-center gap-1 rounded-sm border border-border px-2 text-xs font-medium";
             return (
               <li key={n.name}>
                 {id ? (

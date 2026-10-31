@@ -18,7 +18,6 @@ import { WebsitesTab } from "@/components/competitors/compare/WebsitesTab";
 import { GoogleTable } from "@/components/competitors/GoogleCompare";
 import { cn } from "cn";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { compareHref } from "@/lib/compare-href";
 import { siteHref } from "@/lib/site-href";
@@ -65,7 +64,7 @@ export default async function ComparePage({ searchParams }: { searchParams: Prom
 
   return (
     <PageContainer>
-      <div className="flex flex-col gap-6" data-testid="compare-page">
+      <div className="flex flex-col gap-5" data-testid="compare-page">
         <PageHeader
           title={
             <span className="flex flex-wrap items-center gap-2">
@@ -95,7 +94,7 @@ export default async function ComparePage({ searchParams }: { searchParams: Prom
         />
 
         {page.options.length === 0 || !data ? (
-          <section className="rounded-md border border-border bg-surface p-5" data-testid="compare-empty">
+          <section className="rounded-lg border border-border bg-card p-5" data-testid="compare-empty">
             <h2 className="text-base font-semibold">Track a competitor to compare</h2>
             <p className="mt-2 max-w-prose text-sm text-muted-foreground">
               Add the businesses you compete with, or track one AI already names. Their facts show here after your next scan.
@@ -107,21 +106,19 @@ export default async function ComparePage({ searchParams }: { searchParams: Prom
         ) : (
           <>
             <Picker page={page} tab={tab} track={trackCompetitor} />
-            <Card>
-              <CardContent className="flex flex-col gap-6">
-                <Scorecard data={data} />
-                <Trend name={data.title} trend={data.trend} color={data.color} firstScan={data.firstScan} nextScan={nextScan} />
-              </CardContent>
-            </Card>
+            <Scorecard
+              data={data}
+              trend={<Trend name={data.title} trend={data.trend} color={data.color} firstScan={data.firstScan} nextScan={nextScan} />}
+            />
             <CompareTabs
               key={data.panel.competitorId}
               initial={tab}
               panels={{
                 summary: (
-                  <div className="flex flex-col gap-8" data-testid="tab-summary">
+                  <div className="flex flex-col gap-7" data-testid="tab-summary">
                     <section className="flex flex-col gap-3">
-                      <div className="flex flex-col gap-1">
-                        <h3 className="text-sm font-semibold">{reasonsHeading(data.standing, data.collecting)}</h3>
+                      <div className="flex flex-col gap-0.5">
+                        <h3 className="text-[14.5px] font-semibold tracking-[-0.01em]">{reasonsHeading(data.standing, data.collecting)}</h3>
                         <p className="text-xs text-muted-foreground">Facts from AI answers in the last 30 days and what we read, biggest first. Each comes with its fix.</p>
                       </div>
                       <ReasonCards
@@ -137,7 +134,7 @@ export default async function ComparePage({ searchParams }: { searchParams: Prom
                     </section>
                     {/* When you lead, where you are ahead comes first. */}
                     <section className={cn("flex flex-col gap-3", data.standing === "ahead" && "order-first")}>
-                      <h3 className="text-sm font-semibold">Where you are ahead</h3>
+                      <h3 className="text-[14.5px] font-semibold tracking-[-0.01em]">Where you are ahead</h3>
                       <LeadCards leads={data.leads} standing={data.collecting ? null : data.standing} />
                     </section>
                     <p className="text-xs text-text-hint">We can&apos;t see inside the AI tools, so these are likely reasons, each backed by the facts shown.</p>

@@ -1,59 +1,63 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Leaderboard } from "@/components/competitors/Leaderboard";
-import type { LeaderRow } from "@/modules/competitors";
+import { LeaderTable } from "@/components/competitors/LeaderTable";
+import { colorAt } from "@/lib/series-colors";
+import type { TableRow } from "@/modules/competitors";
 import { ProductFrame } from "./ProductFrame";
 
-const LEADERBOARD: LeaderRow[] = [
-  { name: "Daily Grind", isYou: false, score: 81, standing: "behind", change: null, collecting: false, shade: 1 },
-  { name: "Bean House", isYou: true, score: 62, standing: null, change: null, collecting: false, shade: null },
-  { name: "Brew Lab", isYou: false, score: 57, standing: "about_same", change: null, collecting: false, shade: 2 },
-  { name: "Cup & Co", isYou: false, score: 22, standing: "ahead", change: null, collecting: false, shade: 3 },
+const row = (r: Partial<TableRow> & Pick<TableRow, "name" | "score" | "rank" | "color">): TableRow => ({
+  isYou: false,
+  note: null,
+  topReason: null,
+  spark: [],
+  change: null,
+  changeKnown: false,
+  byModel: {},
+  standing: null,
+  collecting: false,
+  competitorId: null,
+  domain: null,
+  ...r,
+});
+
+// The made-up coffee shop's leaderboard (MVP_SPEC 12.2), drawn with the app's own table (mockup-ui).
+const ROWS: TableRow[] = [
+  row({ rank: 1, name: "Daily Grind", score: 81, color: colorAt(1), standing: "behind", byModel: { openai: 88, anthropic: 75, perplexity: 80 }, topReason: "AI used yelp.com when it picked them" }),
+  row({ rank: 2, name: "Bean House", isYou: true, score: 62, color: colorAt(0), byModel: { openai: 75, anthropic: 58, perplexity: 53 } }),
+  row({ rank: 3, name: "Brew Lab", score: 57, color: colorAt(2), standing: "about_same", byModel: { openai: 60, anthropic: 52, perplexity: 59 }, topReason: "AI quotes their menu page more" }),
+  row({ rank: 4, name: "Cup & Co", score: 22, color: colorAt(3), standing: "ahead", byModel: { openai: 25, anthropic: 14, perplexity: 27 }, topReason: "More recent Google reviews" }),
 ];
 
-const ANSWERS = 36;
-const ALSO_NAMED = [
+const ALSO = [
   { name: "Orange Roastery", answers: 5 },
   { name: "Plaza Coffee Bar", answers: 3 },
 ];
 
-/** The Competitors screen (B-50): the real leaderboard, with the margin band that decides each verdict. */
+/** The Competitors screen (mockup-ui): the leaderboard with each AI's share, and businesses AI named you don't track. */
 export function CompetitorsExample() {
   return (
     <ProductFrame page="Competitors">
-      <div className="grid gap-3 sm:gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Who AI recommends most</CardTitle>
-            <CardDescription>Share of customer questions where each business was recommended.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Leaderboard view={{ leaderboard: LEADERBOARD, margin: 8 }} />
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Also recommended by AI</CardTitle>
-            <CardDescription>Businesses AI named that you do not track yet.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ul className="flex flex-col divide-y divide-border">
-              {ALSO_NAMED.map((n) => (
-                <li key={n.name} className="flex flex-col gap-1.5 py-3 first:pt-0 last:pb-0">
-                  <span className="text-sm font-medium">{n.name}</span>
-                  <span className="text-xs tabular-nums text-muted-foreground">
-                    Named in {n.answers} of {ANSWERS} answers
-                  </span>
-                  <span className="h-1 overflow-hidden rounded-xs bg-muted" aria-hidden>
-                    <span
-                      className="block h-full rounded-xs bg-competitor-2"
-                      style={{ width: `${(100 * n.answers) / ALSO_NAMED[0].answers}%` }}
-                    />
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </CardContent>
-        </Card>
+      <div className="flex items-center justify-between border-b border-border px-[18px] py-3">
+        <p className="text-[14.5px] font-semibold tracking-[-0.01em]">Who AI recommends most</p>
+        <span className="text-xs text-text-hint">Scores are give or take 8 points</span>
+      </div>
+      <LeaderTable rows={ROWS} />
+      <div className="border-t border-border">
+        <p className="border-b border-border px-[18px] py-3 text-[14.5px] font-semibold tracking-[-0.01em]">Also recommended by AI</p>
+        <ul>
+          {ALSO.map((n) => (
+            <li key={n.name} className="grid grid-cols-[24px_minmax(0,1fr)_minmax(0,1.2fr)] items-center gap-3 border-b border-border/60 px-[18px] py-3 text-[13px] last:border-b-0">
+              <span aria-hidden="true" className="grid size-6 place-items-center rounded-full bg-muted text-[11px] font-semibold text-muted-foreground">
+                {n.name.charAt(0)}
+              </span>
+              <span className="font-medium">{n.name}</span>
+              <span className="flex items-center gap-3 text-xs text-muted-foreground tabular-nums">
+                <span className="h-1.5 flex-1 overflow-hidden rounded-xs bg-muted" aria-hidden="true">
+                  <span className="block h-full rounded-xs bg-competitor-2" style={{ width: `${(100 * n.answers) / 36}%` }} />
+                </span>
+                Named in {n.answers} of 36 answers
+              </span>
+            </li>
+          ))}
+        </ul>
       </div>
     </ProductFrame>
   );

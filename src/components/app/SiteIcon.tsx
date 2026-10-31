@@ -5,7 +5,8 @@ import { cn } from "cn";
 import { iconHost } from "@/modules/site-icons/schema";
 
 const BOX = { sm: "size-6 text-[11px]", md: "size-8 text-[13px]" } as const;
-const IMG = { sm: 16, md: 20 } as const;
+// The icon nearly fills its circle (mockup-ui: round icons, the owner's pick), clipped round so square logos sit well.
+const IMG = { sm: 20, md: 26 } as const;
 
 /**
  * A website's icon (its favicon, through /api/icon) in a small square, or its first letter when there is no website,
@@ -31,7 +32,7 @@ export function SiteIcon({ domain, name, size = "md", className }: { domain: str
   return (
     <span
       className={cn(
-        "relative flex shrink-0 items-center justify-center overflow-hidden rounded-sm font-semibold text-muted-foreground uppercase",
+        "relative flex shrink-0 items-center justify-center overflow-hidden rounded-full font-semibold text-muted-foreground uppercase",
         showIcon && state === "loaded" ? "border border-border bg-surface" : "bg-muted",
         BOX[size],
         className,
@@ -49,7 +50,7 @@ export function SiteIcon({ domain, name, size = "md", className }: { domain: str
           width={IMG[size]}
           height={IMG[size]}
           decoding="async"
-          className={cn("object-contain", state === "loaded" ? "static" : "absolute size-0 opacity-0")}
+          className={cn("rounded-full object-cover", state === "loaded" ? "static" : "absolute size-0 opacity-0")}
           onLoad={() => setState("loaded")}
           onError={() => setState("failed")}
         />

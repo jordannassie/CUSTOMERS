@@ -45,8 +45,8 @@ export function AppSidebar({
 
   return (
     <div className="flex min-h-full flex-col gap-3 p-3">
-      <Link href="/dashboard" onClick={onNavigate} className="px-1.5 pt-2" aria-label="Customers.Direct, go to Overview">
-        <Image src="/images/logos/logo-black.png" alt="" width={96} height={32} loading="eager" className="h-8 w-auto" />
+      <Link href="/dashboard" onClick={onNavigate} className="self-start px-2 pt-2 pb-1" aria-label="Customers.Direct, go to Overview">
+        <Image src="/images/logos/logo-black.png" alt="" width={156} height={52} loading="eager" className="h-[52px] w-auto -my-3" />
       </Link>
 
       {settingUp ? (
@@ -70,7 +70,7 @@ export function AppSidebar({
       <nav aria-label="Main" className="flex flex-col gap-2.5">
         {APP_NAV_GROUPS.map((group) => (
           <div key={group.label ?? "top"} className="flex flex-col gap-0.5">
-            {group.label && <p className="px-2.5 pb-0.5 text-[11px] font-semibold tracking-wide text-text-hint uppercase">{group.label}</p>}
+            {group.label && <p className="px-2.5 pt-1 pb-1 text-[11.5px] font-medium text-text-hint">{group.label}</p>}
             {group.items.map((item) => {
               const active = isNavActive(item, pathname);
               const Icon = item.icon;
@@ -81,11 +81,13 @@ export function AppSidebar({
                   onClick={onNavigate}
                   aria-current={active ? "page" : undefined}
                   className={cn(
-                    "flex items-center gap-2.5 rounded-md px-2.5 py-1.5 text-sm font-medium outline-none transition-colors focus-visible:ring-3 focus-visible:ring-ring/50",
-                    active ? "bg-primary-tint text-primary-hover" : "text-muted-foreground hover:bg-surface hover:text-foreground",
+                    "flex items-center gap-2.5 rounded-md px-2.5 py-[7px] text-[13px] outline-none transition-colors focus-visible:ring-3 focus-visible:ring-ring/50",
+                    active
+                      ? "bg-surface font-medium text-foreground shadow-[0_0_0_1px_var(--cd-border),0_1px_2px_rgb(24_24_27/0.04)]"
+                      : "text-foreground/80 hover:bg-surface/70 hover:text-foreground",
                   )}
                 >
-                  <Icon className={cn("size-4 shrink-0", active ? "text-primary" : "text-text-hint")} aria-hidden="true" />
+                  <Icon className={cn("size-[15px] shrink-0", active ? "text-primary" : "text-muted-foreground")} aria-hidden="true" />
                   {item.label}
                 </Link>
               );

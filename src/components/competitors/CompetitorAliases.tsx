@@ -53,15 +53,17 @@ export function CompetitorAliases({ businessId, competitors, save }: { businessI
   }
 
   return (
-    <section aria-labelledby="competitor-aliases-title" className="mt-12 max-w-2xl border-t border-border pt-8">
-      <h2 id="competitor-aliases-title" className="text-base font-semibold tracking-[-0.02em]">
-        Other names
-      </h2>
-      <p className="mt-3 text-sm text-muted-foreground">
-        Short names, old names or other spellings AI may use for a competitor, separated with commas, up to {ALIASES_MAX} each.
-        Answers that use them count for that competitor.
-      </p>
-      <form onSubmit={submit} className="mt-3 flex flex-col gap-6" aria-label="Competitors' other names" noValidate>
+    <section aria-labelledby="competitor-aliases-title" className="mt-10 max-w-2xl overflow-hidden rounded-lg border border-border bg-card">
+      <div className="flex flex-col gap-1 border-b border-border px-[18px] py-3.5">
+        <h2 id="competitor-aliases-title" className="text-[14.5px] font-semibold tracking-[-0.01em]">
+          Other names
+        </h2>
+        <p className="text-[13px] text-muted-foreground">
+          Short names, old names or other spellings AI may use for a competitor, separated with commas, up to {ALIASES_MAX} each.
+          Answers that use them count for that competitor.
+        </p>
+      </div>
+      <form onSubmit={submit} className="flex flex-col gap-5 px-[18px] py-4" aria-label="Competitors' other names" noValidate>
         {competitors.map((c) => {
           const id = `aliases-${c.id}`;
           return (

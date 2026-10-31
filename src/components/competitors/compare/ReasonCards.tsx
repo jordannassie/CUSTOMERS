@@ -42,7 +42,7 @@ export function ReasonCards({
 }) {
   if (cards.length === 0 && answers === 0) {
     return (
-      <div className="rounded-md border border-dashed border-border p-5" data-testid="no-reasons">
+      <div className="rounded-lg border border-dashed border-border p-5" data-testid="no-reasons">
         <p className="text-sm font-medium">No answers from the last 30 days yet</p>
         <p className="mt-1 text-sm text-muted-foreground">Reasons show here after a scan.</p>
       </div>
@@ -51,7 +51,7 @@ export function ReasonCards({
   if (cards.length === 0) {
     const behind = standing === "behind";
     return (
-      <div className="rounded-md border border-dashed border-border p-5" data-testid="no-reasons">
+      <div className="rounded-lg border border-dashed border-border p-5" data-testid="no-reasons">
         <p className="text-sm font-medium">
           {behind ? "They're ahead, but no single reason has enough answers yet to call it" : <>{name} isn&apos;t ahead of you anywhere we can see right now</>}
         </p>
@@ -64,16 +64,16 @@ export function ReasonCards({
   return (
     <ul className="flex flex-col gap-3" data-testid="reason-cards">
       {cards.map((c) => (
-        <li key={c.key} className="grid gap-4 rounded-md border border-border bg-surface p-4 md:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]" data-testid="reason-card">
+        <li key={c.key} className="grid gap-4 rounded-lg border border-border bg-card p-4 md:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)] md:items-start" data-testid="reason-card">
           <div className="flex min-w-0 flex-col gap-1.5">
             <p className="flex flex-wrap items-center gap-2 text-xs">
-              <Badge variant="outline">{c.tag}</Badge>
+              <Badge variant="secondary" className="font-medium">{c.tag}</Badge>
               <span className="text-muted-foreground" data-testid="reason-basis">
                 {c.basis}
               </span>
             </p>
-            <p className="text-sm font-semibold">{c.title}</p>
-            <p className="text-[13px] text-muted-foreground">{c.fact}</p>
+            <p className="text-[13.5px] leading-snug font-semibold">{c.title}</p>
+            <p className="text-[13px] leading-relaxed text-muted-foreground">{c.fact}</p>
             {c.answersHref && (
               <Link href={c.answersHref} className="mt-1 inline-flex w-fit items-center gap-1 text-xs font-medium text-primary hover:underline">
                 See the answers
@@ -81,9 +81,9 @@ export function ReasonCards({
               </Link>
             )}
           </div>
-          <div className="flex flex-col gap-2 rounded-md bg-muted/60 p-3" data-testid="fix-step">
+          <div className="flex flex-col gap-2 rounded-md border border-border bg-muted/60 p-3" data-testid="fix-step">
             <p className="flex flex-wrap items-center justify-between gap-2">
-              <span className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">What to do</span>
+              <span className="text-xs font-semibold text-foreground">What to do</span>
               <Badge variant={IMPACT[c.impact].variant}>{IMPACT[c.impact].text}</Badge>
             </p>
             <p className="text-[13px] leading-snug" data-testid="fix-action">
@@ -128,7 +128,7 @@ export function LeadCards({ leads, standing = null }: { leads: LeadCard[]; stand
   return (
     <ul className="grid gap-3 md:grid-cols-2" data-testid="lead-cards">
       {leads.map((l) => (
-        <li key={l.title} className="flex items-start gap-3 rounded-md border border-border bg-surface p-3">
+        <li key={l.title} className="flex items-start gap-3 rounded-lg border border-border bg-card p-3.5">
           <span className="flex size-8 shrink-0 items-center justify-center rounded-md bg-good-bg text-good-text" aria-hidden="true">
             <ThumbsUp className="size-4" />
           </span>

@@ -4,14 +4,15 @@ import { PageContainer } from "@/components/app/PageContainer";
 import { PageHeader } from "@/components/app/PageHeader";
 import { SampleDataBadge } from "@/components/app/SampleDataBadge";
 import { ListedFirst } from "@/components/sources/ListedFirst";
+import { SectionCard } from "@/components/sources/SectionCard";
 import { OwnSiteStatus } from "@/components/sources/OwnSiteStatus";
 import { SitesTable } from "@/components/sources/SitesTable";
 import { SourcesEmpty } from "@/components/sources/SourcesEmpty";
 import { SourcesKpis } from "@/components/sources/SourcesKpis";
 import { SourceTypes } from "@/components/sources/SourceTypes";
 import { ToolFilter } from "@/components/sources/ToolFilter";
+import { TopSites } from "@/components/sources/TopSites";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { addToActions } from "@/modules/opportunities";
 import { TOOL_LABELS, getSources, toolFromParam } from "@/modules/sources";
 import { getWorkspace } from "@/modules/workspace";
@@ -37,7 +38,7 @@ export default async function SourcesPage({ searchParams }: Props) {
 
   return (
     <PageContainer>
-      <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-5">
         <PageHeader
           title={
             <>
@@ -54,7 +55,7 @@ export default async function SourcesPage({ searchParams }: Props) {
         />
 
         {paused && sources.answersAllTools > 0 && (
-          <p className="rounded-md border border-border bg-surface px-4 py-3.5 text-sm text-muted-foreground" data-testid="scans-paused">
+          <p className="rounded-lg border border-border bg-muted px-3.5 py-2.5 text-[13px] text-muted-foreground" data-testid="scans-paused">
             Scans are paused for this business, so these numbers stay as they are until scans start again.{" "}
             <Link href="/settings/billing" className="font-medium text-primary hover:underline">
               Go to Billing
@@ -101,32 +102,14 @@ export default async function SourcesPage({ searchParams }: Props) {
               ownSiteAnswers={sources.ownSite.answers}
               competitorSiteTimes={sources.competitorSiteTimes}
             />
-            <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px] lg:items-start">
+            <TopSites sites={sources.sites} answers={sources.answers} />
+            <div className="grid gap-5 xl:grid-cols-2">
+              <SectionCard title="Kinds of websites" aside={`Share of ${answers}`}>
+                <SourceTypes types={sources.types} answers={sources.answers} />
+              </SectionCard>
               <ListedFirst businessId={business.id} listed={sources.listed} add={addToActions} />
-              <Card>
-                <CardHeader>
-                  <CardTitle>Kinds of websites</CardTitle>
-                  <CardDescription>Share of {answers} that used each kind.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <SourceTypes types={sources.types} answers={sources.answers} />
-                </CardContent>
-              </Card>
             </div>
-            <Card className="min-w-0">
-              <CardHeader>
-                <CardTitle>All websites AI used</CardTitle>
-                <CardDescription>Out of {answers}.</CardDescription>
-              </CardHeader>
-              <CardContent className="min-w-0">
-                <SitesTable businessId={business.id} rows={sources.sites} answers={sources.answers} add={addToActions} />
-                {sources.moreSites > 0 && (
-                  <p className="mt-3 text-sm text-muted-foreground" data-testid="more-sites">
-                    {sources.moreSites} more {sources.moreSites === 1 ? "site was" : "sites were"} used less often.
-                  </p>
-                )}
-              </CardContent>
-            </Card>
+            <SitesTable businessId={business.id} rows={sources.sites} answers={sources.answers} moreSites={sources.moreSites} add={addToActions} />
           </>
         )}
       </div>

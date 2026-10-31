@@ -37,9 +37,9 @@ export function CompareTabs({ initial, panels }: { initial: CompareTab; panels: 
   }
 
   return (
-    <div className="flex min-w-0 flex-col gap-6">
+    <div className="flex min-w-0 flex-col gap-5">
       <div className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
-        <div role="tablist" aria-label="Comparison" className="flex w-max gap-1 border-b border-border sm:w-full">
+        <div role="tablist" aria-label="Comparison" className="flex w-max gap-5 border-b border-border sm:w-full">
           {COMPARE_TABS.map((t) => (
             <button
               key={t.id}
@@ -50,9 +50,9 @@ export function CompareTabs({ initial, panels }: { initial: CompareTab; panels: 
               aria-controls={`compare-panel-${t.id}`}
               onClick={() => open(t.id)}
               className={cn(
-                "relative flex h-10 items-center px-3 text-sm whitespace-nowrap transition-colors focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none",
+                "relative flex h-10 items-center px-0.5 text-[13px] whitespace-nowrap transition-colors focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none",
                 t.id === active
-                  ? "font-semibold text-foreground after:absolute after:inset-x-2 after:-bottom-px after:h-0.5 after:bg-primary"
+                  ? "font-medium text-foreground after:absolute after:inset-x-0 after:-bottom-px after:h-0.5 after:rounded-full after:bg-foreground"
                   : "text-muted-foreground hover:text-foreground",
               )}
               data-testid={`compare-tab-${t.id}`}

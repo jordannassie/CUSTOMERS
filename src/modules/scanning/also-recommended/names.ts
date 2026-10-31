@@ -9,6 +9,8 @@ export type AlsoRecommended = {
   name: string;
   /** Answers that named this business. */
   answers: number;
+  /** A cited site whose address spells its name, for its icon (site-match.ts); absent when none fits. */
+  domain?: string | null;
 };
 
 export type AlsoRecommendedList = {

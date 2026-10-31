@@ -13,6 +13,8 @@ const SIZE = {
   // 96px on phones so the sentence fits beside it (DB-015).
   default: { ring: "size-24 sm:size-36", value: "text-3xl sm:text-5xl" },
   small: { ring: "size-24", value: "text-3xl" },
+  // The Overview's headline score (mockup-ui).
+  hero: { ring: "size-28 sm:size-40", value: "text-4xl sm:text-[52px]" },
 } as const;
 
 /**

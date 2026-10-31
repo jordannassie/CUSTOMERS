@@ -14,7 +14,7 @@ const round = (n: number | null | undefined) => (n === null || n === undefined ?
 
 export type OverviewCompete = {
   /** Up to 4 businesses by score, you always among them. */
-  stand: { name: string; isYou: boolean; score: number; standing: LeaderRow["standing"] }[];
+  stand: { name: string; isYou: boolean; score: number; standing: LeaderRow["standing"]; domain: string | null }[];
   /** Your share of every naming of you or a tracked competitor (as the report counts it), and your place by score. */
   share: { percent: number; rank: number; of: number } | null;
   /** Answers that cited your own website, as the report counts them; null without the score's answers. */
@@ -68,6 +68,10 @@ export function overviewCompete(view: CompetitorsView, report: ScoreReport, stan
     isYou: r.isYou,
     score: r.score!,
     standing: r.standing,
+    // For its icon: your website, or the one the user saved for the competitor (never Google's, D-73).
+    domain: r.isYou
+      ? (standing?.domain ?? null)
+      : (view.signals?.find((s) => !s.isYou && (s.name === r.name || r.chain?.tracked.includes(s.name)))?.savedSite ?? null),
   }));
   const leader = ranked.find((r) => !r.isYou) ?? null;
   const shown = ranked.filter((r) => !r.isYou).slice(0, MAX_LINES);

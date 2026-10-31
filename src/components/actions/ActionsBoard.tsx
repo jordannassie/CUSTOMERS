@@ -1,18 +1,16 @@
 "use client";
 
-import { useEffect, useId, useMemo, useRef, useState, useTransition } from "react";
+import { useEffect, useId, useMemo, useRef, useState, useTransition, type ReactNode } from "react";
 import { toast } from "sonner";
 import { cn } from "cn";
+import { PageHeader } from "@/components/app/PageHeader";
 import { SegmentedControl } from "@/components/ui/segmented-control";
 import { Select } from "@/components/ui/select";
-import { fixCardId } from "@/lib/fix-where";
+import { WHERE_LABEL, fixCardId, type Where } from "@/lib/fix-where";
 import type { ActionResult } from "@/modules/auth";
-import { WHERE_LABEL, type Where } from "@/lib/fix-where";
 import {
-  ACTION_STATUSES,
   OPEN_ACTION_STATUSES,
   PLACE_GROUP,
-  STATUS_TEXT,
   WHERE_FILTER_TEXT,
   WHERE_FILTERS,
   inWhere,
@@ -23,6 +21,7 @@ import {
 import { WHERE_ORDER } from "@/modules/opportunities/where";
 import { ActionCard, IMPACT } from "./ActionCard";
 import { ActionsList } from "./ActionsList";
+import { BoardColumns } from "./BoardColumns";
 import { publishOpenCount } from "./open-count";
 import { dropOverride, overrideKey, pruneOverrides, settleOverride, startOverride, withOverrides, type Overrides, type Patch } from "./board-overrides";
 
@@ -40,7 +39,9 @@ const DONE_NOTE: Partial<Record<ActionStatus, string>> = {
 /**
  * The Actions board (dashboard redesign): Suggested, To do, In progress, Done and Dismissed, or one list, filtered by
  * impact and where the fix is made. Moves show at once and are saved in the background. (The "Assigned" filter is
- * off for now, the user's call 2026-10-27; "Assign to me" on a card still works.)
+ * off for now, the user's call 2026-10-27; "Assign to me" on a card still works.) It draws the page header too
+ * (mockup-ui), so the filters and the Board or List switch sit beside the title; `children` go between the header
+ * and the board.
  */
 export function ActionsBoard({
   businessId,
@@ -48,6 +49,10 @@ export function ActionsBoard({
   move,
   assign,
   pickedId,
+  description,
+  add = null,
+  siteDomain = null,
+  children,
   readOnly = false,
 }: {
   businessId: string;
@@ -55,6 +60,13 @@ export function ActionsBoard({
   move: MoveAction;
   assign: AssignAction;
   pickedId: string | null;
+  /** The line under the title. */
+  description: ReactNode;
+  /** The "Add action" button, last in the header row. */
+  add?: ReactNode;
+  /** The business's own website, for the icon of fixes made there. */
+  siteDomain?: string | null;
+  children?: ReactNode;
   /** An ended plan (MVP_SPEC 4.4): fixes can be read and filtered, not moved or assigned. */
   readOnly?: boolean;
 }) {
@@ -132,76 +144,61 @@ export function ActionsBoard({
   }
 
   const card = (i: ActionItem) => (
-    <ActionCard key={i.id} item={i} busy={busy === i.id} picked={pickedId === i.id} onMove={(s) => onMove(i, s)} onAssign={(m) => onAssign(i, m)} readOnly={readOnly} />
+    <ActionCard key={i.id} item={i} busy={busy === i.id} picked={pickedId === i.id} onMove={(s) => onMove(i, s)} onAssign={(m) => onAssign(i, m)} siteDomain={siteDomain} readOnly={readOnly} />
   );
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex flex-wrap items-center gap-2" data-testid="action-filters">
-        <Filter label="Impact" value={impact} onChange={setImpact} options={[["all", "All"], ...(["high", "medium", "low"] as const).map((v) => [v, IMPACT[v].text] as const)]} />
-        <Filter label="Where" value={place} onChange={setPlace} options={[["all", "All"], ...WHERE_FILTERS.map((p) => [p, WHERE_FILTER_TEXT[p]] as const)]} />
-        <SegmentedControl
-          className="sm:ml-auto"
-          aria-label="View"
-          value={view}
-          onValueChange={(v) => setView(v as "board" | "list")}
-          options={[
-            { value: "board", label: "Board" },
-            { value: "list", label: "List" },
-          ]}
-        />
-      </div>
-      {counts.length > 0 && (
-        <p className="flex flex-wrap gap-1.5" data-testid="place-counts">
-          {counts.map((c) => (
-            <button
-              key={c.place}
-              type="button"
-              aria-pressed={place === c.place}
-              onClick={() => setPlace(place === c.place ? "all" : c.place)}
-              className={cn("rounded-xs px-2 py-0.5 text-xs font-medium", place === c.place ? "bg-primary text-primary-foreground" : "bg-muted text-foreground hover:bg-muted/70")}
-            >
-              {WHERE_LABEL[c.place]} {c.n}
-            </button>
-          ))}
-        </p>
-      )}
+    <div className="flex flex-col gap-6">
+      <PageHeader
+        title="Actions"
+        description={description}
+        actions={
+          <div className="flex flex-wrap items-center gap-2 sm:justify-end" data-testid="action-filters">
+            <Filter label="Impact" value={impact} onChange={setImpact} options={[["all", "All"], ...(["high", "medium", "low"] as const).map((v) => [v, IMPACT[v].text] as const)]} />
+            <Filter label="Where" value={place} onChange={setPlace} options={[["all", "All"], ...WHERE_FILTERS.map((p) => [p, WHERE_FILTER_TEXT[p]] as const)]} />
+            <SegmentedControl
+              aria-label="View"
+              value={view}
+              onValueChange={(v) => setView(v as "board" | "list")}
+              options={[
+                { value: "board", label: "Board" },
+                { value: "list", label: "List" },
+              ]}
+            />
+            {add}
+          </div>
+        }
+      >
+        {counts.length > 0 && (
+          <p className="flex flex-wrap gap-1.5" data-testid="place-counts">
+            {counts.map((c) => (
+              <button
+                key={c.place}
+                type="button"
+                aria-pressed={place === c.place}
+                onClick={() => setPlace(place === c.place ? "all" : c.place)}
+                className={cn(
+                  "h-[22px] rounded-sm border px-2 text-xs font-medium tabular-nums transition-colors",
+                  place === c.place ? "border-primary bg-primary text-primary-foreground" : "border-border bg-surface text-foreground hover:bg-muted",
+                )}
+              >
+                {WHERE_LABEL[c.place]} {c.n}
+              </button>
+            ))}
+          </p>
+        )}
+      </PageHeader>
+
+      {children}
 
       {view === "list" ? (
         <ActionsList items={shown} busy={busy} pickedId={pickedId} onMove={onMove} onAssign={onAssign} readOnly={readOnly} />
       ) : (
-        <div className="-mx-4 overflow-x-auto px-4 pb-2 sm:mx-0 sm:px-0" data-testid="action-board">
-          <div className="grid grid-cols-[repeat(5,minmax(200px,1fr))] gap-3">
-            {ACTION_STATUSES.map((status) => {
-              const column = shown.filter((i) => i.status === status);
-              return (
-                <section key={status} className="flex flex-col gap-2.5 rounded-md bg-muted/50 p-2.5" aria-label={STATUS_TEXT[status]} data-testid={`column-${status}`}>
-                  <h2 className="flex items-center gap-2 px-1 pt-1 text-sm font-semibold">
-                    {STATUS_TEXT[status]}
-                    <span className="rounded-xs border border-border bg-surface px-1.5 text-xs font-medium tabular-nums">{column.length}</span>
-                  </h2>
-                  {column.length === 0 ? (
-                    <p className="rounded-md border border-dashed border-border p-5 text-center text-xs text-muted-foreground">{EMPTY[status]}</p>
-                  ) : (
-                    column.map(card)
-                  )}
-                </section>
-              );
-            })}
-          </div>
-        </div>
+        <BoardColumns items={shown} pickedId={pickedId} card={card} />
       )}
     </div>
   );
 }
-
-const EMPTY: Record<ActionStatus, string> = {
-  suggested: "New fixes from your scans show here.",
-  todo: "Accept a suggestion to plan it.",
-  in_progress: "Move a fix here while you work on it.",
-  done: "Finished fixes show here.",
-  dismissed: "No dismissed actions",
-};
 
 function Filter<T extends string>({ label, value, onChange, options }: { label: string; value: T; onChange: (v: T) => void; options: readonly (readonly [T, string])[] }) {
   const id = useId();
@@ -215,7 +212,7 @@ function Filter<T extends string>({ label, value, onChange, options }: { label: 
         placeholder={label}
         value={value}
         onValueChange={(v) => onChange(v as T)}
-        className="h-9 w-auto min-w-36 rounded-md text-[13px]"
+        className="h-8 w-auto max-w-60 min-w-0 gap-1.5 rounded-md px-2.5 text-[13px] md:text-[13px]"
         options={options.map(([v, text]) => ({ value: v, label: `${label}: ${text}` }))}
       />
     </div>

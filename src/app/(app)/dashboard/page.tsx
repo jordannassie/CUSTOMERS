@@ -14,8 +14,9 @@ import { getActionsBoard } from "@/modules/opportunities";
 import { getOverview, getQuestionTrends } from "@/modules/overview";
 import { getSources } from "@/modules/sources";
 import { getWorkspace } from "@/modules/workspace";
-import { ChartSection, HeroSection, MovedSection, StandSection } from "./_components/sections";
-import { ChartSkeleton, HeroSkeleton, PairSkeleton } from "./_components/section-skeletons";
+import { QuestionsMoved } from "@/components/overview/OverviewCards";
+import { SourcesActionsSection, SummarySection, ToolsSection } from "./_components/sections";
+import { PairSkeleton, SummarySkeleton, ToolsSkeleton } from "./_components/section-skeletons";
 
 export const metadata = { title: "Overview", robots: { index: false } };
 
@@ -26,8 +27,9 @@ function later<T>(promise: Promise<T>): Promise<T> {
   return promise;
 }
 
-// B-49, MVP_SPEC 8.1, dashboard redesign (2026-10-27): the score and its movement, where you stand, what to do first,
-// which questions moved and where AI looks. The range changes the charts and counts; the score stays 30 days (D-63).
+// B-49, MVP_SPEC 8.1, mockup-ui redesign: the four numbers and the score's explanation, the chart beside who AI picks
+// most, the score by AI tool, where AI looks and what to do first, then which questions moved. The range changes the
+// charts and counts; the score stays 30 days (D-63).
 export default async function OverviewPage({ searchParams }: { searchParams: Promise<{ range?: string }> }) {
   const asked = Number((await searchParams).range);
   const days = (RANGES as readonly number[]).includes(asked) ? asked : 30;
@@ -60,7 +62,7 @@ export default async function OverviewPage({ searchParams }: { searchParams: Pro
   ].filter(Boolean);
 
   return (
-    <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-6 px-4 py-5 sm:p-8">
+    <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-5 px-4 py-5 sm:p-8">
       <PageHeader
         title={business.name}
         clampTitle={business.name}
@@ -71,13 +73,13 @@ export default async function OverviewPage({ searchParams }: { searchParams: Pro
             {score && <RangeControl days={days} />}
             {score && (
               <>
-                <Button asChild variant="outline">
+                <Button asChild variant="outline" size="sm">
                   <Link href="/reports">
                     <FileText aria-hidden="true" />
                     View report
                   </Link>
                 </Button>
-                <Button asChild variant="outline">
+                <Button asChild variant="outline" size="sm">
                   <Link href="/reports?share=1">
                     <Share2 aria-hidden="true" />
                     Share
@@ -85,13 +87,13 @@ export default async function OverviewPage({ searchParams }: { searchParams: Pro
                 </Button>
               </>
             )}
-            {score && scanStatus.ok && <RunScanButton businessId={business.id} initial={scanStatus.data} start={startScan} />}
+            {score && scanStatus.ok && <RunScanButton businessId={business.id} initial={scanStatus.data} start={startScan} className="h-8 px-3 text-[13px]" />}
           </div>
         }
       />
 
       {scanStatus.ok && scanStatus.data.lastResult === "failed" && !scanStatus.data.scanning && (
-        <p role="status" className="rounded-md border border-border bg-mid-bg px-4 py-3 text-sm text-mid-text">
+        <p role="status" className="rounded-lg border border-border bg-mid-bg px-4 py-2.5 text-[13px] text-mid-text">
           {/* A known reason (test mode with no sample answers) is said as it is: trying again would not help. */}
           {scanStatus.data.failedReason ?? (
             <>
@@ -102,13 +104,13 @@ export default async function OverviewPage({ searchParams }: { searchParams: Pro
       )}
 
       {overview.scanNotice && !(scanStatus.ok && (scanStatus.data.scanning || scanStatus.data.lastResult === "failed")) && (
-        <p role="status" className="rounded-md border border-border bg-mid-bg px-4 py-3 text-sm text-mid-text" data-testid="scan-notice">
+        <p role="status" className="rounded-lg border border-border bg-mid-bg px-4 py-2.5 text-[13px] text-mid-text" data-testid="scan-notice">
           {overview.scanNotice}
         </p>
       )}
 
       {!score ? (
-        <Card>
+        <Card className="py-0">
           <CardContent className="flex flex-col gap-2 py-6" data-testid="no-score">
             <p className="text-xl font-semibold tracking-[-0.02em]">No score yet</p>
             {overview.ownQuestions ? (
@@ -140,22 +142,20 @@ export default async function OverviewPage({ searchParams }: { searchParams: Pro
         </Card>
       ) : (
         <>
-          <Suspense fallback={<HeroSkeleton />}>
-            <HeroSection overview={overview} compete={compete} sources={sources} picked={picked} sample={!!workspace.account?.isTest} />
+          <Suspense fallback={<SummarySkeleton />}>
+            <SummarySection overview={overview} compete={compete} sources={sources} picked={picked} sample={!!workspace.account?.isTest} days={days} />
           </Suspense>
-          <Suspense fallback={<ChartSkeleton />}>
-            <ChartSection overview={overview} compete={compete} days={days} />
-          </Suspense>
-          <Suspense fallback={<PairSkeleton />}>
-            <StandSection businessId={business.id} compete={compete} board={board} fixes={fixes} />
+          <Suspense fallback={<ToolsSkeleton />}>
+            <ToolsSection overview={overview} compete={compete} />
           </Suspense>
           <Suspense fallback={<PairSkeleton />}>
-            <MovedSection trends={trends} compete={compete} sources={sources} />
+            <SourcesActionsSection businessId={business.id} compete={compete} sources={sources} board={board} fixes={fixes} />
           </Suspense>
+          <QuestionsMoved trends={trends} />
         </>
       )}
 
-      <p className="max-w-prose text-xs text-text-hint">
+      <p className="max-w-prose text-[11.5px] text-text-hint">
         Scores come from asking each AI your customers&apos; questions with web search and your location. Answers in the ChatGPT, Claude and Perplexity apps
         can differ. No one can guarantee AI recommendations.
       </p>

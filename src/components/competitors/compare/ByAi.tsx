@@ -26,19 +26,19 @@ function scaleMax(assistants: Assistant[]): number {
 export function ByAi({ name, assistants, color = "var(--cd-competitor-1)" }: { name: string; assistants: Assistant[]; color?: string }) {
   const max = scaleMax(assistants);
   return (
-    <figure className="m-0 flex flex-col gap-4" data-testid="by-ai">
+    <figure className="m-0 flex flex-col gap-3.5" data-testid="by-ai">
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
         <span className="flex items-center gap-1.5">
-          <span className="size-2.5 rounded-[2px] bg-primary" aria-hidden="true" />
+          <span className="size-2 rounded-full bg-primary" aria-hidden="true" />
           You
         </span>
         <span className="flex min-w-0 items-center gap-1.5">
-          <span className="size-2.5 shrink-0 rounded-[2px]" style={{ background: color }} aria-hidden="true" />
+          <span className="size-2 shrink-0 rounded-full" style={{ background: color }} aria-hidden="true" />
           <span className="truncate">{name}</span>
         </span>
       </div>
 
-      <ul className="flex flex-col gap-4">
+      <ul className="flex flex-col gap-3.5">
         {assistants.map((a) => (
           <li key={a.provider} className="flex flex-col gap-2" data-testid="by-ai-row">
             <span className="flex items-baseline justify-between gap-3">
@@ -69,7 +69,7 @@ export function ByAi({ name, assistants, color = "var(--cd-competitor-1)" }: { n
         </span>
         <span />
       </div>
-      <figcaption className="text-xs text-text-hint">Share of each AI&apos;s answers that named each of you, last 30 days.</figcaption>
+      <figcaption className="sr-only">Share of each AI&apos;s answers that named each of you, last 30 days.</figcaption>
     </figure>
   );
 }
@@ -88,11 +88,11 @@ function Bar({ assistant, who, n, of, max, you = false, color }: { assistant: st
           <span className={cn("truncate text-xs", you ? "font-medium text-foreground" : "text-muted-foreground")} title={who}>
             {who}
           </span>
-          <span className="relative h-2.5 rounded-xs bg-muted" aria-hidden="true">
+          <span className="relative h-2 rounded-full bg-muted" aria-hidden="true">
             {/* Grows from zero; a count above zero always shows a sliver, and zero shows the empty track. */}
             {n > 0 && (
               <span
-                className={cn("absolute inset-y-0 left-0 rounded-r-[4px]", you && "bg-primary")}
+                className={cn("absolute inset-y-0 left-0 rounded-full", you && "bg-primary")}
                 style={{ width: `max(${width}%, 4px)`, ...(you ? {} : { background: color }) }}
               />
             )}

@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { ADD_BUSINESS_PATH } from "@/modules/onboarding/wizard/steps";
 import type { SwitcherScore, SwitcherScores } from "@/modules/workspace";
+import { SiteIcon } from "./SiteIcon";
 
 export type SwitcherBusiness = { id: string; name: string; domain: string | null; logoUrl: string | null };
 /** The agency's unfinished draft: "Finish setting up <name>", linking to the step where it stopped. */
@@ -28,7 +29,7 @@ export type SwitchBusinessAction = (
 /** The scores, asked for when the switcher opens so no page load waits on (or pays for) every business's score. */
 export type SwitcherScoresAction = () => Promise<{ ok: true; data: SwitcherScores | null } | { ok: false; error: string }>;
 
-function BusinessMark({ name, logoUrl }: { name: string; logoUrl: string | null }) {
+function BusinessMark({ name, logoUrl, domain }: { name: string; logoUrl: string | null; domain: string | null }) {
   const [failed, setFailed] = useState(false);
   if (logoUrl && !failed) {
     return (
@@ -36,19 +37,13 @@ function BusinessMark({ name, logoUrl }: { name: string; logoUrl: string | null 
       <img
         src={logoUrl}
         alt=""
-        className="size-6 shrink-0 rounded-sm border border-border bg-surface object-contain"
+        className="size-6 shrink-0 rounded-full border border-border bg-surface object-contain p-px"
         onError={() => setFailed(true)}
       />
     );
   }
-  return (
-    <span
-      aria-hidden="true"
-      className="flex size-6 shrink-0 items-center justify-center rounded-sm bg-primary-tint text-xs font-semibold text-primary-hover"
-    >
-      {name.trim().charAt(0).toUpperCase() || "?"}
-    </span>
-  );
+  // No uploaded logo (mockup-ui): the website's own icon, or its first letter while it loads or without a website.
+  return <SiteIcon domain={domain} name={name} size="sm" />;
 }
 
 const DOT = { good: "bg-good", mid: "bg-mid", low: "bg-low" } as const;
@@ -107,7 +102,7 @@ function Items({ businesses, activeId, pending, target, choose, scores }: ItemsP
         title={b.name}
         data-testid="switcher-item"
       >
-        <BusinessMark name={b.name} logoUrl={b.logoUrl} />
+        <BusinessMark name={b.name} logoUrl={b.logoUrl} domain={b.domain} />
         <span className="flex min-w-0 flex-1 flex-col">
           <span className="line-clamp-2 break-words">{b.name}</span>
           {score && <ScoreLine score={score} />}
@@ -182,7 +177,7 @@ export function BusinessSwitcher({
         title={active.name}
         data-testid="business-switcher"
       >
-        <BusinessMark name={active.name} logoUrl={active.logoUrl} />
+        <BusinessMark name={active.name} logoUrl={active.logoUrl} domain={active.domain} />
         {/* Long names get two lines, so the start of the name and the domain both stay readable. */}
         <span className="min-w-0 flex-1">
           <span className="line-clamp-2 text-sm font-medium break-words text-foreground" data-testid="switcher-name">

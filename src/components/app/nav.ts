@@ -63,6 +63,11 @@ export function isNavActive(item: NavItem, pathname: string): boolean {
   return [item.href, ...(item.alsoActiveOn ?? [])].some((p) => under(pathname, p));
 }
 
+/** The menu item the page belongs to, for the breadcrumb. */
+export function activeNavItem(pathname: string): NavItem | null {
+  return APP_NAV.find((item) => isNavActive(item, pathname)) ?? null;
+}
+
 // The first scan runs on the business just finished, which is already the active one (step 6b).
 const FIRST_SCAN = "/onboarding/first-scan";
 

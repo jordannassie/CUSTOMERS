@@ -44,17 +44,11 @@ export function AddQuestionForm({ businessId, example, activeCount, models, freq
   }
 
   return (
-    <form onSubmit={submit} aria-label="Add a question" className="flex flex-col gap-3 rounded-md border border-border bg-surface p-5">
-      <div className="flex flex-col gap-3">
-        <label htmlFor="new-question" className="text-sm font-medium">
+    <form onSubmit={submit} aria-label="Add a question" className="flex flex-col gap-2 rounded-lg border border-border bg-surface px-4 py-3.5">
+      <div className="flex flex-col gap-2 md:flex-row md:items-center md:gap-3">
+        <label htmlFor="new-question" className="shrink-0 text-[13.5px] font-semibold">
           Add your own question
         </label>
-        <p id="new-question-hint" className="text-[13px] text-muted-foreground">
-          Write it the way a customer would ask, and include your city. For example: {example} We check your own
-          questions on every scan and show their results here, but they don&apos;t count in your score.
-        </p>
-      </div>
-      <div className="flex flex-col gap-2 sm:flex-row">
         <Input
           id="new-question"
           value={text}
@@ -63,9 +57,9 @@ export function AddQuestionForm({ businessId, example, activeCount, models, freq
           disabled={full || pending}
           aria-describedby="new-question-hint new-question-effect"
           aria-invalid={error ? true : undefined}
-          className="sm:flex-1"
+          className="h-8 text-[13px] md:flex-1"
         />
-        <Button type="submit" disabled={full || pending} className="sm:w-auto">
+        <Button type="submit" size="sm" disabled={full || pending} className="md:w-auto">
           {pending ? <Loader2 className="animate-spin" aria-hidden="true" /> : <Plus aria-hidden="true" />}
           Add question
         </Button>
@@ -75,12 +69,16 @@ export function AddQuestionForm({ businessId, example, activeCount, models, freq
           {error}
         </p>
       )}
+      <p id="new-question-hint" className="text-xs text-muted-foreground">
+        Write it the way a customer would ask, and include your city. For example: {example} We check your own questions on
+        every scan, but they don&apos;t count in your score.
+      </p>
       {full ? (
-        <p id="new-question-effect" data-testid="question-limit" className="rounded-sm bg-mid-bg px-3 py-2 text-[13px] text-mid-text">
+        <p id="new-question-effect" data-testid="question-limit" className="rounded-sm bg-mid-bg px-2.5 py-1.5 text-xs text-mid-text">
           {limitMessage}
         </p>
       ) : (
-        <p id="new-question-effect" data-testid="add-effect" className="text-[13px] text-muted-foreground tabular-nums">
+        <p id="new-question-effect" data-testid="add-effect" className="text-xs text-muted-foreground tabular-nums">
           {creditChangeText(activeCount, 1, models, frequency)}: {now.toLocaleString("en-US")} now, about{" "}
           {after.toLocaleString("en-US")} with this question.
         </p>
