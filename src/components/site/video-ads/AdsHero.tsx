@@ -11,16 +11,16 @@ const POINTS = [
 
 export function AdsHero({
   checkoutReady,
-  cancelled,
+  canceled,
 }: {
   checkoutReady: boolean;
-  cancelled: boolean;
+  canceled: boolean;
 }) {
   return (
     <section className="mx-auto max-w-[1120px] px-4 pb-16 pt-28 sm:px-6 sm:pb-20 sm:pt-32">
-      {cancelled ? (
+      {canceled ? (
         <p className="mx-auto mb-8 max-w-xl rounded-xl border border-[#E5E5E1] bg-white px-4 py-3 text-center text-[14px] text-[#171717]" role="status">
-          Checkout was cancelled. You have not been charged.
+          Checkout was canceled. You have not been charged.
         </p>
       ) : null}
       {!checkoutReady ? (

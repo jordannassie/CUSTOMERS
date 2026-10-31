@@ -1,0 +1,92 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`methodPanel > reads the same as the approved wording 1`] = `
+{
+  "accuracy": {
+    "label": "Good confidence",
+    "level": "good",
+    "margin": "Give or take 8 points",
+    "note": "Gets sharper with every scan: 117 more different answers for high confidence.",
+  },
+  "calibration": null,
+  "intro": "How often AI recommended you over the last 30 days.",
+  "models": [
+    {
+      "id": "openai",
+      "label": "ChatGPT",
+      "score": 75,
+      "value": "75",
+    },
+    {
+      "id": "anthropic",
+      "label": "Claude",
+      "score": null,
+      "value": "No checks yet",
+    },
+    {
+      "id": "perplexity",
+      "label": "Perplexity",
+      "score": 48,
+      "value": "48",
+    },
+  ],
+  "modelsNote": "Your score counts the answers from all of these together.",
+  "numbers": [
+    {
+      "label": "Time covered",
+      "value": "Last 30 days",
+    },
+    {
+      "hint": "Answers to suggested questions only.",
+      "label": "Answers checked",
+      "value": "1,080",
+    },
+    {
+      "label": "Different answers",
+      "value": "84",
+    },
+  ],
+  "steps": [
+    {
+      "detail": "ChatGPT, Claude and Perplexity, the same way a customer would.",
+      "icon": "ask",
+      "title": "We ask your customer questions",
+    },
+    {
+      "detail": "So it answers like it would for someone near you.",
+      "icon": "search",
+      "title": "Each AI searches the web from your city",
+    },
+    {
+      "detail": "Where you appear in a list doesn't change your score.",
+      "icon": "count",
+      "title": "We count every answer that names you",
+    },
+    {
+      "detail": "Questions you add yourself are tracked on their own.",
+      "icon": "questions",
+      "title": "Suggested questions only",
+    },
+  ],
+  "title": "How your score is calculated",
+}
+`;
+
+exports[`methodPanel > shows the agreement per AI once a calibration result exists 1`] = `
+{
+  "agreement": [
+    {
+      "label": "ChatGPT",
+      "value": "Matched in 85% of questions",
+    },
+    {
+      "label": "Perplexity",
+      "value": "Matched in 90% of questions",
+    },
+  ],
+  "heading": "Tested against the real apps",
+  "paragraphs": [
+    "In November 2026, a person asked the real ChatGPT, Claude and Perplexity apps the same questions and compared the businesses they named with ours.",
+  ],
+}
+`;

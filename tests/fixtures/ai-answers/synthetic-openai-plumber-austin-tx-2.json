@@ -1,0 +1,24 @@
+{
+  "synthetic": true,
+  "provider": "openai",
+  "question": "Which plumber in Austin, TX can fix a leak today?",
+  "answerText": "Here are some well reviewed options in Austin, TX:\n\n1. **Longhorn Leak Repair**: strong local reviews and friendly staff.\n2. **Hill Country Plumbing**: convenient hours and easy parking.\n\nCheck current hours before you go.",
+  "citations": [
+    {
+      "url": "https://longhornleakrepair.example/",
+      "title": "Longhorn Leak Repair"
+    },
+    {
+      "url": "https://hillcountryplumbing.example/",
+      "title": "Hill Country Plumbing"
+    },
+    {
+      "url": "https://www.yelp.com/search?find_desc=plumber&find_loc=Austin%2C%20TX",
+      "title": "Top plumber in Austin, TX"
+    }
+  ],
+  "names": [
+    "Longhorn Leak Repair",
+    "Hill Country Plumbing"
+  ]
+}

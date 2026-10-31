@@ -1,9 +1,11 @@
+import { Suspense } from "react";
+import { PublicPageSkeleton } from "@/components/site/PublicPageSkeleton";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { headers } from "next/headers";
-import SiteHeader from "@/components/site/SiteHeader";
-import SiteFooter from "@/components/site/SiteFooter";
+import Header from "@/components/marketing/Header";
+import Footer from "@/components/marketing/Footer";
 import { AppCard } from "@/components/site/apps/AppCard";
 import { AppRating } from "@/components/site/apps/AppRating";
 import { ReviewList } from "@/components/site/apps/ReviewList";
@@ -12,10 +14,11 @@ import { listDirectoryOverrides, recordAppClick } from "@/modules/apps-directory
 import { utmFromReferer } from "@/modules/apps-directory/schema";
 import { mergeCatalog, relatedApps } from "@/modules/apps-directory/service";
 import { categoryLabel } from "@/modules/apps-directory/types";
-import { currentReviewer, findOwnReview, listNativeSummaries, listPublishedReviews } from "@/modules/apps-directory/review-dal";
+import { currentReviewer, findOwnReview, listNativeSummaries, listPublishedReviews } from "@/modules/apps-directory/reviews/dal";
 import { softwareReviewJsonLd } from "@/modules/apps-directory/review-service";
 import { NewsletterSignup } from "@/components/site/NewsletterSignup";
 import { env } from "@/lib/env";
+import { jsonLdHtml } from "@/lib/json-ld";
 
 type Params = Promise<{ slug: string }>;
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
@@ -50,7 +53,7 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
   };
 }
 
-export default async function AppDetailPage({ params, searchParams }: { params: Params; searchParams: SearchParams }) {
+async function AppDetailPageContent({ params, searchParams }: { params: Params; searchParams: SearchParams }) {
   const { slug } = await params;
   const raw = await searchParams;
   const { app, apps } = await loadApp(slug);
@@ -81,9 +84,9 @@ export default async function AppDetailPage({ params, searchParams }: { params: 
 
   return (
     <>
-      <SiteHeader />
+      <Header />
       <main className="min-h-screen bg-[#FAFAF8]">
-        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structured) }} />
+        <script type="application/ld+json" dangerouslySetInnerHTML={jsonLdHtml(structured)} />
         <article className="mx-auto max-w-[880px] px-4 pb-12 pt-2 sm:pt-3">
           <Link href="/apps" className="text-[13px] font-semibold text-[#0866F5]">All apps</Link>
           <section id="overview" className="mt-3 scroll-mt-28 rounded-2xl border border-[#E5E5E1] bg-white p-4 shadow-sm sm:p-6">
@@ -139,7 +142,17 @@ export default async function AppDetailPage({ params, searchParams }: { params: 
           <NewsletterSignup placement="detail" variant="detail" embedSrc={env.NEXT_PUBLIC_BEEHIIV_EMBED_SRC} formId={env.NEXT_PUBLIC_BEEHIIV_FORM_ID} embed />
         </article>
       </main>
-      <SiteFooter />
+      <Footer />
     </>
+  );
+}
+
+
+// Reads the request (search params, the signed-in user), so it streams inside Suspense (Cache Components).
+export default function AppDetailPage(props: { params: Params; searchParams: SearchParams }) {
+  return (
+    <Suspense fallback={<PublicPageSkeleton />}>
+      <AppDetailPageContent {...props} />
+    </Suspense>
   );
 }

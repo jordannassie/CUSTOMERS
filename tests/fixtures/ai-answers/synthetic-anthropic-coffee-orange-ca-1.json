@@ -1,0 +1,12 @@
+{
+  "synthetic": true,
+  "provider": "anthropic",
+  "question": "What is the best coffee shop in Orange, CA?",
+  "answerText": "Based on recent reviews, Rival Roasters is a popular choice in Orange, CA, known for strong local reviews and friendly staff. Locals also recommend Plaza Pour House and Daily Grind Cafe. I would call ahead to confirm availability.",
+  "citations": [],
+  "names": [
+    "Rival Roasters",
+    "Plaza Pour House",
+    "Daily Grind Cafe"
+  ]
+}

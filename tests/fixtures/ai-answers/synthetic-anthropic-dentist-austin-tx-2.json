@@ -1,0 +1,11 @@
+{
+  "synthetic": true,
+  "provider": "anthropic",
+  "question": "Where can I find an emergency dentist open today in Austin, TX?",
+  "answerText": "Based on recent reviews, Maple Leaf Dental is a popular choice in Austin, TX, known for strong local reviews and friendly staff. Locals also recommend Capitol Family Dentistry. I would call ahead to confirm availability.",
+  "citations": [],
+  "names": [
+    "Maple Leaf Dental",
+    "Capitol Family Dentistry"
+  ]
+}

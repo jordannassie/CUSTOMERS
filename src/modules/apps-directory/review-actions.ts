@@ -2,12 +2,11 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { requireAdmin } from "@/lib/admin/require";
-import { requireUser } from "@/lib/geo/api-auth";
+import { requireAdmin, requireUser } from "@/modules/auth";
 import { DIRECTORY_CATALOG } from "./catalog";
 import { listDirectoryOverrides } from "./dal";
 import { mergeCatalog } from "./service";
-import { addReport, countSince, findOwnReview, getReview, peersFor, saveOwnedReview, setReviewStatus, setVote } from "./review-dal";
+import { addReport, countSince, currentReviewer, findOwnReview, getReview, peersFor, saveOwnedReview, setReviewStatus, setVote } from "./reviews/dal";
 import { blankToNull, moderationSchema, reportSchema, reviewDraftSchema, voteSchema } from "./review-schema";
 import { canSubmitReview, eventForDecision, spamSignals, statusAfterDecision } from "./review-service";
 
@@ -24,7 +23,6 @@ function refresh(slug: string) {
 }
 
 export async function saveAppReviewAction(formData: FormData): Promise<void> {
-  const { user, unauthorized } = await requireUser();
   const parsed = reviewDraftSchema.safeParse({
     slug: formData.get("slug"),
     rating: formData.get("rating"),
@@ -43,8 +41,9 @@ export async function saveAppReviewAction(formData: FormData): Promise<void> {
     redirect(`/apps/${slug}/review?error=${encodeURIComponent(message)}`);
     throw new Error(message);
   }
-  if (!user || unauthorized) redirect(`/login?next=/apps/${slug}/review`);
-  const allowed = canSubmitReview({ signedIn: true, emailConfirmed: Boolean(user.email_confirmed_at) });
+  const user = await requireUser({ next: `/apps/${slug}/review` });
+  const reviewer = await currentReviewer();
+  const allowed = canSubmitReview({ signedIn: true, emailConfirmed: Boolean(reviewer?.emailConfirmed) });
   if (!allowed.ok) fail("Confirm your email before writing a review.");
   const data = parsed.success ? parsed.data : null;
   if (!data) fail("Check the rating, title, and that each text box has a few words.");
@@ -67,16 +66,16 @@ export async function saveAppReviewAction(formData: FormData): Promise<void> {
     role: blankToNull(data.role),
   };
   const saved = await saveOwnedReview({ reviewer: { userId: user.id, emailConfirmed: true }, draft, existing });
-  if (!saved.ok) fail(saved.unavailable ? "Apply migration 027 before saving reviews." : "Could not save that review.");
+  if (!saved.ok) fail(saved.unavailable ? "Reviews are not available yet (migration 074)." : "Could not save that review.");
   refresh(draft.slug);
   redirect(`/apps/${draft.slug}/review?saved=pending`);
 }
 
 export async function reportAppReviewAction(formData: FormData): Promise<void> {
-  const { user, unauthorized } = await requireUser();
   const parsed = reportSchema.safeParse({ reviewId: formData.get("reviewId"), reason: formData.get("reason"), details: formData.get("details") ?? "" });
   const slug = String(formData.get("slug") ?? "");
-  if (!user || unauthorized || !parsed.success) redirect(slug ? `/login?next=/apps/${slug}` : "/login");
+  const user = await requireUser({ next: slug ? `/apps/${slug}` : "/apps" });
+  if (!parsed.success) redirect(slug ? `/apps/${slug}` : "/apps");
   const review = await getReview(parsed.data.reviewId);
   if (!review || review.status !== "published" || review.userId === user.id) redirect(`/apps/${slug || review?.slug || ""}`);
   await addReport({ reviewId: review.id, reporterId: user.id, reason: parsed.data.reason, details: blankToNull(parsed.data.details) });
@@ -85,10 +84,10 @@ export async function reportAppReviewAction(formData: FormData): Promise<void> {
 }
 
 export async function voteAppReviewAction(formData: FormData): Promise<void> {
-  const { user, unauthorized } = await requireUser();
   const parsed = voteSchema.safeParse({ reviewId: formData.get("reviewId"), helpful: formData.get("helpful") });
   const slug = String(formData.get("slug") ?? "");
-  if (!user || unauthorized || !parsed.success) redirect(slug ? `/login?next=/apps/${slug}` : "/login");
+  const user = await requireUser({ next: slug ? `/apps/${slug}` : "/apps" });
+  if (!parsed.success) redirect(slug ? `/apps/${slug}` : "/apps");
   const review = await getReview(parsed.data.reviewId);
   if (!review || review.status !== "published" || review.userId === user.id) redirect(`/apps/${slug || review?.slug || ""}`);
   await setVote({ reviewId: review.id, userId: user.id, helpful: parsed.data.helpful === "yes" });
@@ -112,11 +111,11 @@ export async function moderateAppReviewAction(formData: FormData): Promise<void>
   const saved = await setReviewStatus({
     review,
     status: statusAfterDecision(parsed.data.decision),
-    actorId: admin.userId,
+    actorId: admin.id,
     action: eventForDecision(parsed.data.decision),
     note: note || null,
   });
-  if (!saved.ok) redirect(`/internal/admin/reviews?review=${review.id}&error=${encodeURIComponent(saved.unavailable ? "Apply migration 027 before moderating reviews." : "Could not update that review.")}`);
+  if (!saved.ok) redirect(`/internal/admin/reviews?review=${review.id}&error=${encodeURIComponent(saved.unavailable ? "Apply migration 074 before moderating reviews." : "Could not update that review.")}`);
   refresh(review.slug);
   redirect("/internal/admin/reviews");
 }

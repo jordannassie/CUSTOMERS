@@ -1,0 +1,25 @@
+{
+  "synthetic": true,
+  "provider": "perplexity",
+  "question": "Who is the best plumber in Orange, CA?",
+  "answerText": "Top plumber picks in Orange, CA:\n- Orange County Pipe Co. [1]\n- Plaza Plumbing Pros [2]\n- Santiago Drain and Rooter [3]\n\nThese are based on local directory listings and reviews.",
+  "citations": [
+    {
+      "url": "https://orangecountypipeco.example/",
+      "title": "Orange County Pipe Co."
+    },
+    {
+      "url": "https://plazaplumbingpros.example/",
+      "title": "Plaza Plumbing Pros"
+    },
+    {
+      "url": "https://www.yelp.com/search?find_desc=plumber&find_loc=Orange%2C%20CA",
+      "title": "Top plumber in Orange, CA"
+    }
+  ],
+  "names": [
+    "Orange County Pipe Co.",
+    "Plaza Plumbing Pros",
+    "Santiago Drain and Rooter"
+  ]
+}

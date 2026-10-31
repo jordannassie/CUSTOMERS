@@ -1,0 +1,11 @@
+{
+  "synthetic": true,
+  "provider": "anthropic",
+  "question": "Who is the best dentist in Orange, CA?",
+  "answerText": "Based on recent reviews, Old Towne Dentistry is a popular choice in Orange, CA, known for strong local reviews and friendly staff. Locals also recommend Orange Circle Dental. I would call ahead to confirm availability.",
+  "citations": [],
+  "names": [
+    "Old Towne Dentistry",
+    "Orange Circle Dental"
+  ]
+}

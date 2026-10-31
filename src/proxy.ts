@@ -1,73 +1,90 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { env } from "@/lib/env";
+import { safeNextPath } from "@/lib/safe-next";
+import { isAuthUnavailable } from "@/lib/supabase/auth-errors";
 
-/**
- * Middleware that refreshes the Supabase auth session on every request
- * and forwards updated cookies to both the server and the browser.
- *
- * Add any route-level auth guards below the session refresh block.
- */
+// Quick redirects only (MVP_SPEC 18.1 rule 4). Every page, action and route still checks access
+// itself through src/modules/auth.
+const PROTECTED = [
+  "/dashboard",
+  "/settings",
+  "/sources",
+  "/competitors",
+  "/questions",
+  "/actions",
+  "/reports",
+  // Setup is in the app frame too: the next path keeps a plan picked on the pricing page (?plan=).
+  "/onboarding",
+  "/internal",
+  "/design-preview",
+];
+const AUTH_PAGES = ["/login", "/signup"];
+
 export async function proxy(request: NextRequest) {
-  let supabaseResponse = NextResponse.next({ request });
+  let response = NextResponse.next({ request });
 
-  const supabase = createServerClient(
-    env.NEXT_PUBLIC_SUPABASE_URL,
-    env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll();
-        },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) =>
-            request.cookies.set(name, value)
-          );
-          supabaseResponse = NextResponse.next({ request });
-          cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options)
-          );
-        },
+  const supabase = createServerClient(env.NEXT_PUBLIC_SUPABASE_URL, env.NEXT_PUBLIC_SUPABASE_ANON_KEY, {
+    cookies: {
+      getAll() {
+        return request.cookies.getAll();
       },
-    }
-  );
+      setAll(cookiesToSet) {
+        cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
+        response = NextResponse.next({ request });
+        cookiesToSet.forEach(({ name, value, options }) => response.cookies.set(name, value, options));
+      },
+    },
+  });
 
-  // Refresh session — do NOT remove this line.
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // Also refreshes an expiring session and writes the new cookies; do not remove.
+  const { data, error } = await supabase.auth.getClaims();
+  const signedIn = !!data?.claims;
+  // A check that failed is not a sign-out: let the page run its own check and show its error (BUG-4).
+  const unknown = !signedIn && isAuthUnavailable(error);
 
-  // --- Auth guard: /dashboard requires a signed-in Supabase Auth user ---
-  const { pathname } = request.nextUrl;
+  const { pathname, search } = request.nextUrl;
+  const isProtected = PROTECTED.some((path) => pathname === path || pathname.startsWith(`${path}/`));
 
-  if (!user && (pathname.startsWith("/dashboard") || pathname.startsWith("/internal"))) {
+  if (!signedIn && !unknown && isProtected) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
-    url.searchParams.set("next", pathname);
-    return NextResponse.redirect(url);
-  }
-
-  // Signed-in users hitting /login or /signup go straight to their dashboard.
-  if (user && (pathname === "/login" || pathname === "/signup")) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/dashboard";
     url.search = "";
-    return NextResponse.redirect(url);
+    url.searchParams.set("next", `${pathname}${search}`);
+    return redirectKeepingCookies(url, response);
   }
 
-  return supabaseResponse;
+  // getClaims() only checks the token; a deleted user still has a valid one, and pages send them to
+  // /login, so bouncing them back from here looped (BUG-020). Only these pages pay for the extra call.
+  if (signedIn && AUTH_PAGES.includes(pathname) && (await supabase.auth.getUser()).data.user) {
+    // A plan button on the pricing page, clicked while signed in, goes to Choose plan (BUG-079).
+    const plan = request.nextUrl.searchParams.get("plan");
+    const fallback = plan && /^[a-z0-9_]{1,64}$/.test(plan) ? `/settings/billing/plans?plan=${plan}` : undefined;
+    const target = new URL(safeNextPath(request.nextUrl.searchParams.get("next"), fallback), request.url);
+    return redirectKeepingCookies(target, response);
+  }
+
+  return response;
+}
+
+// A refreshed session must reach the browser even when we redirect.
+function redirectKeepingCookies(url: URL, from: NextResponse) {
+  const redirect = NextResponse.redirect(url);
+  from.cookies.getAll().forEach((cookie) => redirect.cookies.set(cookie));
+  return redirect;
 }
 
 export const config = {
   matcher: [
-    /*
-     * Match every request except:
-     *  - _next/static  (static assets)
-     *  - _next/image   (image optimisation)
-     *  - favicon.ico
-     *  - public folder files
-     *  - auth/callback  (must not be intercepted — it exchanges the OAuth code and sets cookies)
-     */
-    "/((?!_next/static|_next/image|favicon.ico|auth/callback|.*\\.(?:js|svg|png|jpg|jpeg|gif|webp)$).*)",
+    {
+      // Skips static files, image optimisation and auth/callback (it exchanges the OAuth code and sets cookies).
+      source: "/((?!_next/static|_next/image|favicon.ico|auth/callback|.*\\.(?:js|css|map|svg|png|jpg|jpeg|gif|webp|ico|woff2?|txt|xml|webmanifest)$).*)",
+      // Link prefetches too: the page checks access itself when it is opened, and the real navigation still comes
+      // through here to refresh the session (Next.js 16 proxy matcher docs).
+      missing: [
+        { type: "header", key: "next-router-prefetch" },
+        { type: "header", key: "purpose", value: "prefetch" },
+      ],
+    },
   ],
 };

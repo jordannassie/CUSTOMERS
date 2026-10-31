@@ -1,0 +1,12 @@
+{
+  "synthetic": true,
+  "provider": "anthropic",
+  "question": "Who is the best dentist in Austin, TX?",
+  "answerText": "Based on recent reviews, Capitol Family Dentistry is a popular choice in Austin, TX, known for strong local reviews and friendly staff. Locals also recommend Lakeline Dental Care and Bright Smile Austin. I would call ahead to confirm availability.",
+  "citations": [],
+  "names": [
+    "Capitol Family Dentistry",
+    "Lakeline Dental Care",
+    "Bright Smile Austin"
+  ]
+}

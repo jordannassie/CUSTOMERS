@@ -1,122 +1,60 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireAdmin } from "@/lib/admin/require";
-import { createServiceClient } from "@/lib/supabase/service";
-import type { TablesUpdate } from "@/types/database.types";
+import { auditedChange, changed, unchanged } from "@/modules/admin";
+import { AuthError, authErrorResponse, requireAdmin } from "@/modules/auth";
+import { countUnreadLeads, leadsQuery, leadUpdateInput, listLeads, updateLead } from "@/modules/feedback";
 
-const PAGE_SIZE = 30;
-
-// ─── GET /api/internal/admin/leads ────────────────────────────────────────────
-// Query params: page, search, interest, source, status, unread
+// GET /api/internal/admin/leads?page&search&interest&source&status&unread=1&count=1
 export async function GET(req: NextRequest) {
   try {
     await requireAdmin();
-  } catch {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  } catch (error) {
+    return authErrorResponse(error);
   }
 
-  const { searchParams } = new URL(req.url);
-  const page     = Math.max(1, parseInt(searchParams.get("page") ?? "1", 10));
-  const search   = searchParams.get("search")?.trim() ?? "";
-  const interest = searchParams.get("interest") ?? "";
-  const source   = searchParams.get("source") ?? "";
-  const status   = searchParams.get("status") ?? "";
-  const unread   = searchParams.get("unread") === "1";
-  const countOnly = searchParams.get("count") === "1";
-
-  const supabase = createServiceClient();
-
-  if (countOnly) {
-    const { count, error } = await supabase
-      .from("contact_submissions")
-      .select("id", { count: "exact", head: true })
-      .is("read_at", null);
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-    return NextResponse.json({ count: count ?? 0 });
+  const q = leadsQuery.parse(Object.fromEntries(new URL(req.url).searchParams));
+  if (q.count) {
+    const count = await countUnreadLeads();
+    if (count === null) return NextResponse.json({ error: "Failed to load leads." }, { status: 500 });
+    return NextResponse.json({ count });
   }
-
-  let query = supabase
-    .from("contact_submissions")
-    .select(
-      "id, created_at, read_at, name, email, company, website, phone, topic, message, status, source, page_path",
-      { count: "exact" }
-    )
-    .order("created_at", { ascending: false })
-    .range((page - 1) * PAGE_SIZE, page * PAGE_SIZE - 1);
-
-  if (search) {
-    query = query.or(
-      `name.ilike.%${search}%,email.ilike.%${search}%,company.ilike.%${search}%`
-    );
-  }
-  if (interest) query = query.eq("topic", interest);
-  if (source)   query = query.eq("source", source);
-  if (status)   query = query.eq("status", status);
-  if (unread)   query = query.is("read_at", null);
-
-  const { data: leads, count, error } = await query;
-
-  if (error) {
-    console.error("[admin/leads] query error:", error.message);
-    return NextResponse.json({ error: "Failed to load leads." }, { status: 500 });
-  }
-
-  return NextResponse.json({
-    leads: leads ?? [],
-    total: count ?? 0,
-    page,
-    pageSize: PAGE_SIZE,
-    pages: Math.ceil((count ?? 0) / PAGE_SIZE),
-  });
+  const page = await listLeads({ ...q, unread: q.unread === "1" });
+  if (!page) return NextResponse.json({ error: "Failed to load leads." }, { status: 500 });
+  return NextResponse.json(page);
 }
 
-// ─── PATCH /api/internal/admin/leads ──────────────────────────────────────────
-// Body: { id, status?, mark_read? }
+type LeadUpdate = Awaited<ReturnType<typeof updateLead>>;
+
+// PATCH /api/internal/admin/leads with { id, status?, mark_read?, mark_unread? }
 export async function PATCH(req: NextRequest) {
   try {
     await requireAdmin();
-  } catch {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  } catch (error) {
+    return authErrorResponse(error);
   }
 
-  let body: Record<string, unknown>;
+  const parsed = leadUpdateInput.safeParse(await req.json().catch(() => null));
+  if (!parsed.success) return NextResponse.json({ error: "id required." }, { status: 400 });
+  const { id, status, mark_read: markRead, mark_unread: markUnread } = parsed.data;
+
+  // Checked here too, so a request with nothing to change writes no history row.
+  if (!status && !markRead && !markUnread) return NextResponse.json({ error: "Nothing to update." }, { status: 400 });
+
   try {
-    body = await req.json();
-  } catch {
-    return NextResponse.json({ error: "Invalid body." }, { status: 400 });
-  }
-
-  const id = typeof body.id === "string" ? body.id : null;
-  if (!id) return NextResponse.json({ error: "id required." }, { status: 400 });
-
-  const VALID_STATUSES = ["new", "contacted", "qualified", "closed", "in_progress", "resolved"] as const;
-  type LeadStatus = (typeof VALID_STATUSES)[number];
-
-  const updates: TablesUpdate<"contact_submissions"> = {};
-
-  if (typeof body.status === "string" && VALID_STATUSES.includes(body.status as LeadStatus)) {
-    updates.status = body.status;
-  }
-  if (body.mark_read === true) {
-    updates.read_at = new Date().toISOString();
-  }
-  if (body.mark_unread === true) {
-    updates.read_at = null;
-  }
-
-  if (Object.keys(updates).length === 0) {
-    return NextResponse.json({ error: "Nothing to update." }, { status: 400 });
-  }
-
-  const supabase = createServiceClient();
-  const { error } = await supabase
-    .from("contact_submissions")
-    .update(updates)
-    .eq("id", id);
-
-  if (error) {
-    console.error("[admin/leads] update error:", error.message);
+    // The history row is written before the change (BUG-278); it ends with the fields that were saved.
+    const requested = { ...(status && { status }), ...(markRead && { mark_read: true }), ...(markUnread && { mark_unread: true }) };
+    const result = await auditedChange<LeadUpdate>("lead.update", { type: "lead", id }, requested, async () => {
+      const updated = await updateLead(id, { status, markRead, markUnread });
+      return updated.ok ? changed(updated, updated.updates) : unchanged(updated, updated.reason);
+    });
+    if (!result.ok) {
+      return result.reason === "nothing"
+        ? NextResponse.json({ error: "Nothing to update." }, { status: 400 })
+        : NextResponse.json({ error: "Update failed." }, { status: 500 });
+    }
+  } catch (error) {
+    if (error instanceof AuthError) return authErrorResponse(error);
+    console.error("[admin/leads] audited update failed:", error instanceof Error ? error.message : error);
     return NextResponse.json({ error: "Update failed." }, { status: 500 });
   }
-
   return NextResponse.json({ success: true });
 }

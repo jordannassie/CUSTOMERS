@@ -1,0 +1,12 @@
+{
+  "synthetic": true,
+  "provider": "anthropic",
+  "question": "Where can I find a quiet cafe to work from in Orange, CA?",
+  "answerText": "Based on recent reviews, Bean There Coffee is a popular choice in Orange, CA, known for strong local reviews and friendly staff. Locals also recommend Daily Grind Cafe and Citrus Bean Co.. I would call ahead to confirm availability.",
+  "citations": [],
+  "names": [
+    "Bean There Coffee",
+    "Daily Grind Cafe",
+    "Citrus Bean Co."
+  ]
+}

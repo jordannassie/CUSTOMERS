@@ -14,7 +14,7 @@ Phase 7 · M · Depends on: B-49, B-50, B-52 · Blocked by Jordan: no · MVP_SPE
 2. Public route `src/app/r/[token]/page.tsx`: read-only report (score, label, sentence, trend, per-model scores, competitor table with live Places data and attribution, top opportunities, date range) with the agency's logo and name in the header.
 3. `noindex`, no links into the app, no internal IDs in the page.
 4. Print styling so "Print, Save as PDF" in a browser gives a clean document; a `data-report-ready` element appears once charts have rendered (used by B-60).
-5. Revoked or unknown token shows a friendly "This report link is no longer active."
+5. Revoked or unknown token shows a friendly "This report is not available."
 
 **What the user sees**
 - "Share" gives a link the agency can send to their client; the client sees a clean report with the agency's logo, no login needed.
@@ -92,7 +92,7 @@ Phase 7 · M · Depends on: B-61, B-42, B-13, B-30 · Blocked by Jordan: no · M
 ## Phase 7 demo checklist
 
 1. On a business, press "Share": copy the link, open it in a private window. The report shows the agency logo and no login is needed.
-2. Turn the link off and reload: "This report link is no longer active."
+2. Turn the link off and reload: "This report is not available."
 3. Press "Export PDF": a polished PDF downloads with charts.
 4. Sign up a new test account: the welcome email arrives.
 5. The developer triggers trial-ending, payment-failed and low-credit events: each email arrives once and reads clearly.

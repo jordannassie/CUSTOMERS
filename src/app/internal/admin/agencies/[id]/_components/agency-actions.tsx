@@ -1,0 +1,225 @@
+"use client";
+
+import { useId, useState } from "react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { SegmentedControl } from "@/components/ui/segmented-control";
+import { formatDate } from "../../../_components/format";
+import ActionCard, { type Outcome } from "./action-card";
+
+type Base = { agencyId: string; reason: string };
+
+/** A whole number from 1 to max, or the message to show under the field. */
+export function wholeNumberError(value: FormDataEntryValue | null, max: number, what: string): string | undefined {
+  const n = Number(value);
+  if (String(value ?? "").trim() === "" || !Number.isInteger(n) || n < 1 || n > max) {
+    return `Enter a whole number of ${what} from 1 to ${max.toLocaleString("en-US")}.`;
+  }
+}
+
+const DAY = 24 * 60 * 60 * 1000;
+
+// Same rule as the server's extendedTrialEnd: days are added to the later of the trial end and now.
+function newTrialEnd(current: string | null, days: number): string | null {
+  if (!Number.isInteger(days) || days < 1) return null;
+  const from = Math.max(current ? new Date(current).getTime() : 0, Date.now());
+  return formatDate(new Date(from + days * DAY).toISOString(), true);
+}
+type Props = {
+  agency: {
+    id: string;
+    status: string;
+    isTest: boolean;
+    hasSubscription: boolean;
+    canRestore: boolean;
+    trialEndsAt: string | null;
+  };
+  stripeConnected: boolean;
+  maxCredits: number;
+  maxTrialDays: number;
+  actions: {
+    adjustCredits: (input: Base & { delta: number; requestId: string }) => Promise<Outcome>;
+    extendTrial: (input: Base & { days: number }) => Promise<Outcome>;
+    suspendAgency: (input: Base) => Promise<Outcome>;
+    unsuspendAgency: (input: Base) => Promise<Outcome>;
+    restoreAgency: (input: Base) => Promise<Outcome>;
+    markAgencyTest: (input: Base & { isTest: boolean }) => Promise<Outcome>;
+  };
+};
+
+export default function AgencyActions({ agency, stripeConnected, maxCredits, maxTrialDays, actions }: Props) {
+  const agencyId = agency.id;
+  const deleted = agency.status === "deleted";
+  const suspended = agency.status === "suspended";
+  // A new ID per submitted change, so a double click is applied once (D-55). A different amount is a different change:
+  // it gets its own ID, so it is never answered with an earlier request's result (audit, 2026-10-28).
+  const [requestId, setRequestId] = useState(() => crypto.randomUUID());
+  const [sentDelta, setSentDelta] = useState<number | null>(null);
+  const ids = { amount: useId(), days: useId(), preview: useId() };
+  const [trialDays, setTrialDays] = useState("7");
+  const trialPreview = newTrialEnd(agency.trialEndsAt, Number(trialDays));
+  const [openCard, setOpenCard] = useState<string | null>(null);
+  const card = (name: string) => ({ open: openCard === name, onOpenChange: (open: boolean) => setOpenCard(open ? name : null) });
+
+  return (
+    <div className="flex flex-col divide-y divide-border rounded-md border border-border bg-surface">
+      <ActionCard
+        title="Credits"
+        {...card("credits")}
+        note="Added credits never expire and count with plan credits. Removing more than the agency has leaves it overdrawn."
+        openLabel="Add or remove credits"
+        submitLabel="Save credit change"
+        pendingLabel="Saving…"
+        successText="Credits updated."
+        blocked={deleted ? "Restore the account before changing its credits." : null}
+        validate={(form) => ({ amount: wholeNumberError(form.get("amount"), maxCredits, "credits") })}
+        run={async (form, reason) => {
+          const amount = Number(form.get("amount"));
+          const delta = form.get("direction") === "remove" ? -amount : amount;
+          const id = sentDelta !== null && sentDelta !== delta ? crypto.randomUUID() : requestId;
+          if (id !== requestId) setRequestId(id);
+          setSentDelta(delta);
+          const result = await actions.adjustCredits({ agencyId, reason, delta, requestId: id });
+          if (result.ok) {
+            setRequestId(crypto.randomUUID());
+            setSentDelta(null);
+          }
+          return result;
+        }}
+      >
+        {(fields) => (
+          <>
+            <SegmentedControl
+              name="direction"
+              defaultValue="add"
+              aria-label="Add or remove"
+              options={[
+                { value: "add", label: "Add" },
+                { value: "remove", label: "Remove" },
+              ]}
+            />
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor={ids.amount}>Credits</Label>
+              <Input
+                id={ids.amount}
+                name="amount"
+                type="number"
+                inputMode="numeric"
+                min={1}
+                max={maxCredits}
+                step={1}
+                className="max-w-40"
+                onChange={() => fields.clear("amount")}
+                {...fields.props("amount")}
+              />
+              {fields.message("amount")}
+            </div>
+          </>
+        )}
+      </ActionCard>
+
+      <ActionCard
+        title="Trial"
+        {...card("trial")}
+        note="Moves the trial end in Stripe, so the first charge moves with it."
+        openLabel="Extend trial"
+        submitLabel="Extend trial"
+        pendingLabel="Extending…"
+        successText="Trial extended."
+        blocked={
+          agency.status !== "trialing"
+            ? "Only an agency on a trial can have it extended."
+            : !agency.hasSubscription
+              ? "This trial has no Stripe subscription yet."
+              : !stripeConnected
+                ? "Stripe is not connected, so trials cannot be changed here yet."
+                : null
+        }
+        validate={(form) => ({ days: wholeNumberError(form.get("days"), maxTrialDays, "days") })}
+        run={(form, reason) => actions.extendTrial({ agencyId, reason, days: Number(form.get("days")) })}
+      >
+        {(fields) => (
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor={ids.days}>Extra days (1 to {maxTrialDays})</Label>
+            <Input
+              id={ids.days}
+              name="days"
+              type="number"
+              inputMode="numeric"
+              min={1}
+              max={maxTrialDays}
+              step={1}
+              value={trialDays}
+              onChange={(e) => {
+                setTrialDays(e.target.value);
+                fields.clear("days");
+              }}
+              className="max-w-40"
+              {...fields.props("days", ids.preview)}
+            />
+            {fields.message("days")}
+            <p id={ids.preview} className="text-[13px] text-muted-foreground" data-testid="trial-preview">
+              {trialPreview ? `The trial will end on ${trialPreview}.` : "Enter a whole number of days."}
+            </p>
+          </div>
+        )}
+      </ActionCard>
+
+      {/* Keyed: the status change swaps the card, and the old card's message must not carry over. */}
+      {deleted ? (
+        <ActionCard
+          key="restore"
+          {...card("restore")}
+          title="Restore account"
+          note="Brings back a deleted account and its data. The owner picks a plan again, because deleting canceled their subscription."
+          openLabel="Restore account"
+          submitLabel="Restore account"
+          pendingLabel="Restoring…"
+          successText="Account restored."
+          blocked={agency.canRestore ? null : "The waiting period has passed, so this account can no longer be restored."}
+          run={(_form, reason) => actions.restoreAgency({ agencyId, reason })}
+        />
+      ) : suspended ? (
+        <ActionCard
+          key="unsuspend"
+          {...card("unsuspend")}
+          title="Suspension"
+          note="Lets the owner log in again and restarts scheduled scans."
+          openLabel="Unsuspend"
+          submitLabel="Unsuspend agency"
+          pendingLabel="Unsuspending…"
+          successText="Agency unsuspended."
+          run={(_form, reason) => actions.unsuspendAgency({ agencyId, reason })}
+        />
+      ) : (
+        <ActionCard
+          key="suspend"
+          {...card("suspend")}
+          title="Suspension"
+          note="Blocks the owner from logging in and stops scheduled scans. Stripe billing carries on."
+          openLabel="Suspend"
+          submitLabel="Suspend agency"
+          pendingLabel="Suspending…"
+          successText="Agency suspended."
+          destructive
+          run={(_form, reason) => actions.suspendAgency({ agencyId, reason })}
+        />
+      )}
+
+      <ActionCard
+        title="Test account"
+        {...card("test")}
+        note={
+          agency.isTest
+            ? "Test agencies make no real AI calls and are left out of the Overview numbers."
+            : "Marks this as a test agency: no real AI calls, and left out of the Overview numbers."
+        }
+        openLabel={agency.isTest ? "Mark as real" : "Mark as test"}
+        submitLabel={agency.isTest ? "Mark as real" : "Mark as test"}
+        pendingLabel="Saving…"
+        successText={agency.isTest ? "Marked as a real agency." : "Marked as a test agency."}
+        run={(_form, reason) => actions.markAgencyTest({ agencyId, reason, isTest: !agency.isTest })}
+      />
+    </div>
+  );
+}
