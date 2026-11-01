@@ -1,0 +1,24 @@
+{
+  "synthetic": true,
+  "provider": "perplexity",
+  "question": "Who is the best dentist in Austin, TX?",
+  "answerText": "Top dentist picks in Austin, TX:\n- Maple Leaf Dental [1]\n- Lakeline Dental Care [2]\n\nThese are based on local directory listings and reviews.",
+  "citations": [
+    {
+      "url": "https://mapleleafdental.example/",
+      "title": "Maple Leaf Dental"
+    },
+    {
+      "url": "https://lakelinedentalcare.example/",
+      "title": "Lakeline Dental Care"
+    },
+    {
+      "url": "https://www.yelp.com/search?find_desc=dentist&find_loc=Austin%2C%20TX",
+      "title": "Top dentist in Austin, TX"
+    }
+  ],
+  "names": [
+    "Maple Leaf Dental",
+    "Lakeline Dental Care"
+  ]
+}

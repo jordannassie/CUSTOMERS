@@ -1,0 +1,136 @@
+"use client";
+
+import { useEffect, useRef, useState, useTransition } from "react";
+import { Clock, Loader2, RefreshCw } from "lucide-react";
+import { cn } from "cn";
+import { Button } from "@/components/ui/button";
+import type { ScanStatus, StartScanResult } from "@/modules/jobs";
+import { needsOverdraftConfirm, needsRecentScanConfirm } from "@/modules/jobs/overdraft";
+import { OverdraftDialog } from "./OverdraftDialog";
+import { RecentScanDialog } from "./RecentScanDialog";
+import { latestScanStatus, subscribeScans, watchScan } from "./scan-watch";
+
+type StartAction = (input: unknown) => Promise<StartScanResult>;
+
+const ALREADY_RUNNING = "A scan is already running.";
+const FAILED = "The last scan could not finish. Try again in a few minutes.";
+const RETRYING = "The scan hit a problem. We'll try again in a few minutes.";
+const STALLED = "This scan is waiting longer than usual to run. It finishes on its own. If it hasn't within an hour, contact us.";
+
+type Note = { text: string; tone: "muted" | "error" } | null;
+
+/** Run scan (B-29, MVP_SPEC 6.4). The page passes the actions so this stays free of server imports. */
+export function RunScanButton({
+  businessId,
+  initial,
+  start,
+  className,
+  label = "Run scan",
+}: {
+  businessId: string;
+  initial: ScanStatus;
+  start: StartAction;
+  /** Placement classes for the button itself, since the wrapper is `contents`. */
+  className?: string;
+  label?: string;
+}) {
+  const [status, setStatus] = useState(initial);
+  const [note, setNote] = useState<Note>(initial.blockedReason ? { text: initial.blockedReason, tone: "muted" } : null);
+  const [pending, startTransition] = useTransition();
+  // The server's warning when the scan costs more than the balance (D-54); the scan waits for a confirm.
+  const [overdraft, setOverdraft] = useState<string | null>(null);
+  // Asked first when the business was scanned in the last 20 hours (2026-10-15, D-24); a yes carries into the overdraft one.
+  const [recent, setRecent] = useState<string | null>(null);
+  const [recentConfirmed, setRecentConfirmed] = useState(false);
+
+  // ScanWatcher in the app shell asks for the status while a scan runs (and toasts when it ends, on any page); this
+  // button only shows what it hears.
+  useEffect(() => {
+    if (status.scanning) watchScan(businessId);
+  }, [status.scanning, businessId]);
+
+  const seen = useRef<ScanStatus | undefined>(undefined);
+  useEffect(
+    () =>
+      subscribeScans(() => {
+        const next = latestScanStatus(businessId);
+        if (!next || next === seen.current) return;
+        seen.current = next;
+        setStatus(next);
+        if (next.scanning) return;
+        setNote(
+          next.lastResult === "failed"
+            ? { text: next.failedReason ?? FAILED, tone: "error" }
+            : next.blockedReason
+              ? { text: next.blockedReason, tone: "muted" }
+              : { text: "Scan finished.", tone: "muted" },
+        );
+      }),
+    [businessId],
+  );
+
+  const scanning = status.scanning || pending;
+  // No worker picked the job up: no spinner, since nothing is being asked right now.
+  const stalled = status.scanning && status.stalled && !status.retrying && !pending;
+  const blocked = !scanning && status.blockedReason !== null;
+  const text = note?.text ?? (scanning ? (status.retrying ? RETRYING : stalled ? STALLED : "Results appear in about a minute.") : "");
+
+  function run(confirm: { overdraft?: boolean; recent?: boolean } = {}) {
+    if (scanning) return setNote({ text: ALREADY_RUNNING, tone: "muted" });
+    setNote(null);
+    setOverdraft(null);
+    setRecent(null);
+    const confirmRecent = confirm.recent ?? (confirm.overdraft ? recentConfirmed : false);
+    setRecentConfirmed(confirmRecent);
+    startTransition(async () => {
+      const input = { businessId, ...(confirm.overdraft ? { confirmOverdraft: true } : {}), ...(confirmRecent ? { confirmRecent: true } : {}) };
+      const result = await start(input).catch(() => null);
+      if (!result) return setNote({ text: "Could not start the scan. Check your connection and try again.", tone: "error" });
+      if (result.ok) return setStatus(result.data);
+      if (needsRecentScanConfirm(result)) return setRecent(result.error);
+      if (needsOverdraftConfirm(result)) return setOverdraft(result.error);
+      if (result.status === 409) {
+        setStatus((s) => ({ ...s, scanning: true }));
+        return setNote({ text: ALREADY_RUNNING, tone: "muted" });
+      }
+      setNote({ text: result.error, tone: "error" });
+    });
+  }
+
+  // `contents` makes the button and its note items of the page's action row (a grid on phones, a flex row from sm), so
+  // the note takes a full line of its own: under Run scan on a phone, under the whole row (right aligned) from sm up.
+  return (
+    <div className="contents">
+      <Button
+        type="button"
+        onClick={() => run()}
+        disabled={blocked}
+        aria-disabled={scanning || undefined}
+        aria-describedby={text ? `run-scan-note-${businessId}` : undefined}
+        className={cn(scanning && "cursor-progress", className)}
+      >
+        {stalled ? (
+          <Clock aria-hidden="true" />
+        ) : scanning ? (
+          <Loader2 className="animate-spin" aria-hidden="true" />
+        ) : (
+          <RefreshCw aria-hidden="true" />
+        )}
+        {stalled ? "Waiting to run" : scanning ? "Scanning…" : label}
+      </Button>
+      <p
+        id={`run-scan-note-${businessId}`}
+        role="status"
+        className={cn(
+          // Kept mounted (sr-only when empty) so the live region is in place before the first message.
+          text ? "col-span-full -mt-1.5 basis-full text-left text-xs sm:order-last sm:text-right" : "sr-only",
+          note?.tone === "error" ? "text-low-text" : "text-muted-foreground",
+        )}
+      >
+        {text}
+      </p>
+      <RecentScanDialog message={recent} onConfirm={() => run({ recent: true })} onCancel={() => setRecent(null)} />
+      <OverdraftDialog message={overdraft} onConfirm={() => run({ overdraft: true })} onCancel={() => setOverdraft(null)} />
+    </div>
+  );
+}

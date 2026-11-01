@@ -6,7 +6,8 @@ test("app detail shows an empty Customers.Direct rating and a review form gate",
   await expect(page.getByRole("heading", { name: "ChatGPT" })).toBeVisible();
   await expect(page.getByText("Not yet rated").first()).toBeVisible();
   await expect(page.getByRole("link", { name: "Write a Review" }).first()).toBeVisible();
-  await expect(page.getByRole("link", { name: "Get Started" })).toHaveAttribute("href", "/apps/go/chatgpt/detail");
+  // The first "Get Started" is the app's own button; the related app cards below have one each.
+  await expect(page.getByRole("link", { name: "Get Started" }).first()).toHaveAttribute("href", "/apps/go/chatgpt/detail");
   const json = await page.locator('script[type="application/ld+json"]').first().textContent();
   expect(json ?? "").not.toContain("aggregateRating");
 

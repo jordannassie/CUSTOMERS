@@ -1,0 +1,3348 @@
+{
+  "version": 1,
+  "status": "draft",
+  "promptVersion": "question-library.v2",
+  "model": "claude-sonnet-5",
+  "generatedAt": "2026-10-13T12:53:26.803Z",
+  "review": null,
+  "templates": [
+    {
+      "industry": "dentist",
+      "template": "Who is the best dentist in {city} for a full family checkup?",
+      "tags": [
+        "family dentistry",
+        "dental checkup"
+      ],
+      "intent": "best"
+    },
+    {
+      "industry": "dentist",
+      "template": "What's the best cosmetic dentist in {city} for veneers?",
+      "tags": [
+        "cosmetic dentistry",
+        "veneers"
+      ],
+      "intent": "best"
+    },
+    {
+      "industry": "dentist",
+      "template": "I just moved to {city} and need a good family dentist, any recommendations?",
+      "tags": [
+        "family dentistry"
+      ],
+      "intent": "best"
+    },
+    {
+      "industry": "dentist",
+      "template": "Which pediatric dentist in {city} do parents trust most for young kids?",
+      "tags": [
+        "pediatric dentistry"
+      ],
+      "intent": "best"
+    },
+    {
+      "industry": "dentist",
+      "template": "Who's considered the top choice for dental implants in {city}?",
+      "tags": [
+        "dental implants"
+      ],
+      "intent": "best"
+    },
+    {
+      "industry": "dentist",
+      "template": "Can you recommend a great orthodontist in {city} for adult braces?",
+      "tags": [
+        "orthodontics",
+        "braces"
+      ],
+      "intent": "best"
+    },
+    {
+      "industry": "dentist",
+      "template": "Where should I go in {city} for a thorough dental deep cleaning?",
+      "tags": [
+        "deep cleaning"
+      ],
+      "intent": "best"
+    },
+    {
+      "industry": "dentist",
+      "template": "Looking for the best oral surgeon in {city} for wisdom teeth removal, who stands out?",
+      "tags": [
+        "oral surgery",
+        "wisdom teeth removal"
+      ],
+      "intent": "best"
+    },
+    {
+      "industry": "dentist",
+      "template": "My tooth suddenly started throbbing, where can I find same-day care in {city}?",
+      "tags": [
+        "emergency dental care"
+      ],
+      "intent": "urgent"
+    },
+    {
+      "industry": "dentist",
+      "template": "Is there an emergency dentist open right now in {city}?",
+      "tags": [
+        "emergency dental care"
+      ],
+      "intent": "urgent"
+    },
+    {
+      "industry": "dentist",
+      "template": "I chipped my front tooth and need it fixed fast, who in {city} offers urgent appointments?",
+      "tags": [
+        "chipped tooth repair",
+        "emergency dental care"
+      ],
+      "intent": "urgent"
+    },
+    {
+      "industry": "dentist",
+      "template": "My kid just knocked out a tooth, which dentist in {city} handles emergencies for children?",
+      "tags": [
+        "pediatric dentistry",
+        "emergency dental care"
+      ],
+      "intent": "urgent"
+    },
+    {
+      "industry": "dentist",
+      "template": "I have a broken crown and need immediate care, who in {city} takes walk-ins?",
+      "tags": [
+        "crown repair",
+        "emergency dental care"
+      ],
+      "intent": "urgent"
+    },
+    {
+      "industry": "dentist",
+      "template": "Does any dental office in {city} offer weekend emergency appointments for severe pain?",
+      "tags": [
+        "emergency dental care"
+      ],
+      "intent": "urgent"
+    },
+    {
+      "industry": "dentist",
+      "template": "My gums are swollen and bleeding badly, who in {city} can treat this urgently?",
+      "tags": [
+        "gum disease treatment",
+        "emergency dental care"
+      ],
+      "intent": "urgent"
+    },
+    {
+      "industry": "dentist",
+      "template": "Need a dentist in {city} who can see me today for a cracked molar?",
+      "tags": [
+        "emergency dental care",
+        "tooth repair"
+      ],
+      "intent": "urgent"
+    },
+    {
+      "industry": "dentist",
+      "template": "What's an affordable dentist in {city} for routine cleanings without insurance?",
+      "tags": [
+        "affordable dental care",
+        "routine cleanings"
+      ],
+      "intent": "price"
+    },
+    {
+      "industry": "dentist",
+      "template": "Are there dental offices in {city} with payment plans for implants?",
+      "tags": [
+        "dental implants",
+        "payment plans"
+      ],
+      "intent": "price"
+    },
+    {
+      "industry": "dentist",
+      "template": "I'm on a tight budget, who has the cheapest dental checkups in {city}?",
+      "tags": [
+        "dental checkup",
+        "affordable dental care"
+      ],
+      "intent": "price"
+    },
+    {
+      "industry": "dentist",
+      "template": "Can I find financing options for braces at a dentist in {city}?",
+      "tags": [
+        "braces",
+        "financing"
+      ],
+      "intent": "price"
+    },
+    {
+      "industry": "dentist",
+      "template": "What does a root canal typically cost at dentists in {city}?",
+      "tags": [
+        "root canal",
+        "pricing"
+      ],
+      "intent": "price"
+    },
+    {
+      "industry": "dentist",
+      "template": "Do any dentists in {city} offer discounts for new patients without insurance?",
+      "tags": [
+        "new patient discounts",
+        "affordable dental care"
+      ],
+      "intent": "price"
+    },
+    {
+      "industry": "dentist",
+      "template": "I need affordable dentures, who in {city} offers the best pricing?",
+      "tags": [
+        "dentures",
+        "affordable dental care"
+      ],
+      "intent": "price"
+    },
+    {
+      "industry": "dentist",
+      "template": "Who offers low-cost teeth whitening services in {city}?",
+      "tags": [
+        "teeth whitening",
+        "affordable dental care"
+      ],
+      "intent": "price"
+    },
+    {
+      "industry": "dentist",
+      "template": "Which dentist in {city} has the best reviews for gentle treatment?",
+      "tags": [
+        "general"
+      ],
+      "intent": "reviews"
+    },
+    {
+      "industry": "dentist",
+      "template": "What's the most highly rated dental clinic in {city} for anxious patients?",
+      "tags": [
+        "sedation dentistry"
+      ],
+      "intent": "reviews"
+    },
+    {
+      "industry": "dentist",
+      "template": "I want a dentist with great reviews for pediatric visits in {city}, any suggestions?",
+      "tags": [
+        "pediatric dentistry"
+      ],
+      "intent": "reviews"
+    },
+    {
+      "industry": "dentist",
+      "template": "Who has the most trusted reviews for dental implants in {city}?",
+      "tags": [
+        "dental implants"
+      ],
+      "intent": "reviews"
+    },
+    {
+      "industry": "dentist",
+      "template": "Which orthodontist in {city} gets the best feedback from patients wearing clear aligners?",
+      "tags": [
+        "orthodontics",
+        "clear aligners"
+      ],
+      "intent": "reviews"
+    },
+    {
+      "industry": "dentist",
+      "template": "What dental practice in {city} is consistently praised for friendly staff?",
+      "tags": [
+        "general"
+      ],
+      "intent": "reviews"
+    },
+    {
+      "industry": "dentist",
+      "template": "Looking for a well-reviewed dentist in {city} who specializes in sedation dentistry?",
+      "tags": [
+        "sedation dentistry"
+      ],
+      "intent": "reviews"
+    },
+    {
+      "industry": "dentist",
+      "template": "Patients in {city} often recommend which dentist for cosmetic work?",
+      "tags": [
+        "cosmetic dentistry"
+      ],
+      "intent": "reviews"
+    },
+    {
+      "industry": "dentist",
+      "template": "Should I go to a general dentist or a specialist for a root canal in {city}?",
+      "tags": [
+        "root canal"
+      ],
+      "intent": "comparison"
+    },
+    {
+      "industry": "dentist",
+      "template": "Which is better in {city} for straightening teeth, traditional braces or clear aligners?",
+      "tags": [
+        "braces",
+        "clear aligners"
+      ],
+      "intent": "comparison"
+    },
+    {
+      "industry": "dentist",
+      "template": "Is it better to choose a solo dental practice or a larger clinic in {city} for routine care?",
+      "tags": [
+        "general"
+      ],
+      "intent": "comparison"
+    },
+    {
+      "industry": "dentist",
+      "template": "For nervous patients needing sedation, which dentist in {city} is better suited?",
+      "tags": [
+        "sedation dentistry"
+      ],
+      "intent": "comparison"
+    },
+    {
+      "industry": "dentist",
+      "template": "For dental implants, is it better to see a periodontist or a general dentist in {city}?",
+      "tags": [
+        "dental implants"
+      ],
+      "intent": "comparison"
+    },
+    {
+      "industry": "dentist",
+      "template": "Which dentist in {city} is best if I need both cosmetic and restorative work done?",
+      "tags": [
+        "cosmetic dentistry",
+        "restorative dentistry"
+      ],
+      "intent": "comparison"
+    },
+    {
+      "industry": "dentist",
+      "template": "Should I pick a dentist in {city} who focuses on kids or one that treats the whole family?",
+      "tags": [
+        "pediatric dentistry",
+        "family dentistry"
+      ],
+      "intent": "comparison"
+    },
+    {
+      "industry": "dentist",
+      "template": "Which clinic in {city} is better for same-day crowns versus ones needing lab work?",
+      "tags": [
+        "dental crowns"
+      ],
+      "intent": "comparison"
+    },
+    {
+      "industry": "lawyer",
+      "template": "Who is the best divorce lawyer in {city}?",
+      "tags": [
+        "divorce"
+      ],
+      "intent": "best"
+    },
+    {
+      "industry": "lawyer",
+      "template": "Which personal injury attorney in {city} has the strongest track record?",
+      "tags": [
+        "personal injury"
+      ],
+      "intent": "best"
+    },
+    {
+      "industry": "lawyer",
+      "template": "I need a good criminal defense lawyer in {city}, any suggestions?",
+      "tags": [
+        "criminal defense"
+      ],
+      "intent": "best"
+    },
+    {
+      "industry": "lawyer",
+      "template": "What's the best law firm in {city} for handling small business contracts?",
+      "tags": [
+        "business law",
+        "contracts"
+      ],
+      "intent": "best"
+    },
+    {
+      "industry": "lawyer",
+      "template": "Who's considered the top estate planning attorney in {city}?",
+      "tags": [
+        "estate planning",
+        "wills"
+      ],
+      "intent": "best"
+    },
+    {
+      "industry": "lawyer",
+      "template": "Can you recommend a skilled immigration lawyer in {city}?",
+      "tags": [
+        "immigration"
+      ],
+      "intent": "best"
+    },
+    {
+      "industry": "lawyer",
+      "template": "I was just arrested and need a criminal defense lawyer in {city} right away, who should I call?",
+      "tags": [
+        "criminal defense"
+      ],
+      "intent": "urgent"
+    },
+    {
+      "industry": "lawyer",
+      "template": "My landlord is trying to evict me this week, which eviction attorney in {city} can help immediately?",
+      "tags": [
+        "eviction",
+        "tenant rights"
+      ],
+      "intent": "urgent"
+    },
+    {
+      "industry": "lawyer",
+      "template": "Is there a lawyer in {city} who offers emergency consultations after a car accident?",
+      "tags": [
+        "personal injury",
+        "car accident"
+      ],
+      "intent": "urgent"
+    },
+    {
+      "industry": "lawyer",
+      "template": "I need a DUI attorney in {city} who can meet with me today, who's available?",
+      "tags": [
+        "dui"
+      ],
+      "intent": "urgent"
+    },
+    {
+      "industry": "lawyer",
+      "template": "My business just got served legal papers, which attorney in {city} can respond on short notice?",
+      "tags": [
+        "business law"
+      ],
+      "intent": "urgent"
+    },
+    {
+      "industry": "lawyer",
+      "template": "Who can help me file an emergency restraining order in {city} right now?",
+      "tags": [
+        "restraining order",
+        "family law"
+      ],
+      "intent": "urgent"
+    },
+    {
+      "industry": "lawyer",
+      "template": "What does it typically cost to hire a divorce lawyer in {city}?",
+      "tags": [
+        "divorce"
+      ],
+      "intent": "price"
+    },
+    {
+      "industry": "lawyer",
+      "template": "Which personal injury attorney in {city} works on contingency with no upfront fees?",
+      "tags": [
+        "personal injury"
+      ],
+      "intent": "price"
+    },
+    {
+      "industry": "lawyer",
+      "template": "Are there any affordable bankruptcy attorneys in {city}?",
+      "tags": [
+        "bankruptcy"
+      ],
+      "intent": "price"
+    },
+    {
+      "industry": "lawyer",
+      "template": "How much should I expect to pay for a will and estate plan in {city}?",
+      "tags": [
+        "estate planning",
+        "wills"
+      ],
+      "intent": "price"
+    },
+    {
+      "industry": "lawyer",
+      "template": "I'm on a tight budget, which immigration lawyer in {city} offers payment plans?",
+      "tags": [
+        "immigration"
+      ],
+      "intent": "price"
+    },
+    {
+      "industry": "lawyer",
+      "template": "What's a reasonable flat fee for an uncontested divorce in {city}?",
+      "tags": [
+        "divorce"
+      ],
+      "intent": "price"
+    },
+    {
+      "industry": "lawyer",
+      "template": "Which law firm in {city} has the best client reviews for family law cases?",
+      "tags": [
+        "family law"
+      ],
+      "intent": "reviews"
+    },
+    {
+      "industry": "lawyer",
+      "template": "Who are the most trusted criminal defense attorneys in {city}?",
+      "tags": [
+        "criminal defense"
+      ],
+      "intent": "reviews"
+    },
+    {
+      "industry": "lawyer",
+      "template": "I'm looking for a highly rated employment lawyer in {city}, any recommendations?",
+      "tags": [
+        "employment law"
+      ],
+      "intent": "reviews"
+    },
+    {
+      "industry": "lawyer",
+      "template": "What personal injury lawyer in {city} do people recommend most often?",
+      "tags": [
+        "personal injury"
+      ],
+      "intent": "reviews"
+    },
+    {
+      "industry": "lawyer",
+      "template": "Which real estate attorney in {city} has consistently positive reviews?",
+      "tags": [
+        "real estate law"
+      ],
+      "intent": "reviews"
+    },
+    {
+      "industry": "lawyer",
+      "template": "Are there any well-reviewed workers' compensation lawyers in {city}?",
+      "tags": [
+        "workers compensation"
+      ],
+      "intent": "reviews"
+    },
+    {
+      "industry": "lawyer",
+      "template": "Should I hire a solo practitioner or a larger law firm for my divorce in {city}?",
+      "tags": [
+        "divorce"
+      ],
+      "intent": "comparison"
+    },
+    {
+      "industry": "lawyer",
+      "template": "What's the difference between hiring a general attorney versus a specialist for a DUI case in {city}?",
+      "tags": [
+        "dui"
+      ],
+      "intent": "comparison"
+    },
+    {
+      "industry": "lawyer",
+      "template": "For a complex estate, is it better to use an estate planning attorney or a general practice lawyer in {city}?",
+      "tags": [
+        "estate planning"
+      ],
+      "intent": "comparison"
+    },
+    {
+      "industry": "lawyer",
+      "template": "Which type of lawyer in {city} is better for negotiating a business merger versus litigation?",
+      "tags": [
+        "business law"
+      ],
+      "intent": "comparison"
+    },
+    {
+      "industry": "lawyer",
+      "template": "Is it better to hire a local immigration attorney in {city} or one with a national practice?",
+      "tags": [
+        "immigration"
+      ],
+      "intent": "comparison"
+    },
+    {
+      "industry": "lawyer",
+      "template": "Which law firm in {city} is better suited for a slip-and-fall case versus a car accident case?",
+      "tags": [
+        "personal injury"
+      ],
+      "intent": "comparison"
+    },
+    {
+      "industry": "lawyer",
+      "template": "Who's the best attorney in {city} for handling child custody disputes?",
+      "tags": [
+        "child custody",
+        "family law"
+      ],
+      "intent": "best"
+    },
+    {
+      "industry": "lawyer",
+      "template": "Which lawyer in {city} specializes in intellectual property for startups?",
+      "tags": [
+        "intellectual property"
+      ],
+      "intent": "best"
+    },
+    {
+      "industry": "lawyer",
+      "template": "My wages were just garnished without notice, which lawyer in {city} can act fast?",
+      "tags": [
+        "employment law"
+      ],
+      "intent": "urgent"
+    },
+    {
+      "industry": "lawyer",
+      "template": "I need a probate attorney in {city} to handle an urgent inheritance dispute, who can help?",
+      "tags": [
+        "probate"
+      ],
+      "intent": "urgent"
+    },
+    {
+      "industry": "lawyer",
+      "template": "What's the average cost of hiring a lawyer in {city} for a business formation?",
+      "tags": [
+        "business law"
+      ],
+      "intent": "price"
+    },
+    {
+      "industry": "lawyer",
+      "template": "Do any medical malpractice attorneys in {city} offer free initial consultations?",
+      "tags": [
+        "medical malpractice"
+      ],
+      "intent": "price"
+    },
+    {
+      "industry": "lawyer",
+      "template": "Which tax attorney in {city} has the best reputation for resolving IRS disputes?",
+      "tags": [
+        "tax law"
+      ],
+      "intent": "reviews"
+    },
+    {
+      "industry": "lawyer",
+      "template": "I want a well-reviewed attorney in {city} for handling a wrongful termination claim, who stands out?",
+      "tags": [
+        "employment law"
+      ],
+      "intent": "reviews"
+    },
+    {
+      "industry": "lawyer",
+      "template": "When facing a custody battle, should I choose a mediator or a litigation-focused family lawyer in {city}?",
+      "tags": [
+        "child custody",
+        "family law"
+      ],
+      "intent": "comparison"
+    },
+    {
+      "industry": "lawyer",
+      "template": "Is it smarter to hire a real estate attorney or rely on a title company for closing in {city}?",
+      "tags": [
+        "real estate law"
+      ],
+      "intent": "comparison"
+    },
+    {
+      "industry": "restaurant",
+      "template": "What's the best restaurant for a date night in {city}?",
+      "tags": [
+        "romantic restaurant"
+      ],
+      "intent": "best"
+    },
+    {
+      "industry": "restaurant",
+      "template": "Where do locals go for really good pizza in {city}?",
+      "tags": [
+        "pizza"
+      ],
+      "intent": "best"
+    },
+    {
+      "industry": "restaurant",
+      "template": "Who serves the best Indian food in {city}?",
+      "tags": [
+        "indian restaurant"
+      ],
+      "intent": "best"
+    },
+    {
+      "industry": "restaurant",
+      "template": "Is there a must-try sushi spot in {city}?",
+      "tags": [
+        "sushi"
+      ],
+      "intent": "best"
+    },
+    {
+      "industry": "restaurant",
+      "template": "I just moved to {city}, which restaurants are worth checking out first?",
+      "tags": [
+        "general"
+      ],
+      "intent": "best"
+    },
+    {
+      "industry": "restaurant",
+      "template": "Which restaurant in {city} has the best reviews for brunch?",
+      "tags": [
+        "brunch"
+      ],
+      "intent": "reviews"
+    },
+    {
+      "industry": "restaurant",
+      "template": "I want a place that people rave about for steak in {city}. Any suggestions?",
+      "tags": [
+        "steakhouse",
+        "steak"
+      ],
+      "intent": "reviews"
+    },
+    {
+      "industry": "restaurant",
+      "template": "What's the highest rated vegan restaurant in {city}?",
+      "tags": [
+        "vegan restaurant"
+      ],
+      "intent": "reviews"
+    },
+    {
+      "industry": "restaurant",
+      "template": "Who is recommended for seafood in {city}?",
+      "tags": [
+        "seafood restaurant"
+      ],
+      "intent": "reviews"
+    },
+    {
+      "industry": "restaurant",
+      "template": "Where do people say the best burgers are in {city}?",
+      "tags": [
+        "burgers"
+      ],
+      "intent": "reviews"
+    },
+    {
+      "industry": "restaurant",
+      "template": "Which restaurants in {city} are open late for dinner?",
+      "tags": [
+        "late night dining"
+      ],
+      "intent": "urgent"
+    },
+    {
+      "industry": "restaurant",
+      "template": "Where can I get a quick lunch near downtown {city}?",
+      "tags": [
+        "lunch"
+      ],
+      "intent": "urgent"
+    },
+    {
+      "industry": "restaurant",
+      "template": "I need a family-friendly place to eat in {city} right now, any options?",
+      "tags": [
+        "family restaurant"
+      ],
+      "intent": "urgent"
+    },
+    {
+      "industry": "restaurant",
+      "template": "Are there any restaurants in {city} that do same-day reservations for large groups?",
+      "tags": [
+        "group dining"
+      ],
+      "intent": "urgent"
+    },
+    {
+      "industry": "restaurant",
+      "template": "Looking for somewhere in {city} with fast service for a business lunch, any ideas?",
+      "tags": [
+        "business lunch"
+      ],
+      "intent": "urgent"
+    },
+    {
+      "industry": "restaurant",
+      "template": "What's the most affordable Italian restaurant in {city}?",
+      "tags": [
+        "italian restaurant"
+      ],
+      "intent": "price"
+    },
+    {
+      "industry": "restaurant",
+      "template": "Where can I find good food on a budget in {city}?",
+      "tags": [
+        "cheap eats"
+      ],
+      "intent": "price"
+    },
+    {
+      "industry": "restaurant",
+      "template": "Any restaurants in {city} offering lunch specials or deals?",
+      "tags": [
+        "lunch specials"
+      ],
+      "intent": "price"
+    },
+    {
+      "industry": "restaurant",
+      "template": "I’m looking for a buffet in {city} that’s not too expensive. Any recommendations?",
+      "tags": [
+        "buffet"
+      ],
+      "intent": "price"
+    },
+    {
+      "industry": "restaurant",
+      "template": "Which restaurants in {city} have happy hour deals on drinks and food?",
+      "tags": [
+        "happy hour"
+      ],
+      "intent": "price"
+    },
+    {
+      "industry": "restaurant",
+      "template": "Is there a spot in {city} that's great for both brunch and dinner?",
+      "tags": [
+        "brunch",
+        "dinner"
+      ],
+      "intent": "comparison"
+    },
+    {
+      "industry": "restaurant",
+      "template": "For celebrating a birthday in {city}, which restaurant is better for groups or private rooms?",
+      "tags": [
+        "private events"
+      ],
+      "intent": "comparison"
+    },
+    {
+      "industry": "restaurant",
+      "template": "Which has a better wine selection in {city}: a steakhouse or Italian restaurant?",
+      "tags": [
+        "wine selection",
+        "steakhouse",
+        "italian"
+      ],
+      "intent": "comparison"
+    },
+    {
+      "industry": "restaurant",
+      "template": "I can’t decide between sushi or Thai in {city}; which restaurant is more popular?",
+      "tags": [
+        "sushi",
+        "thai"
+      ],
+      "intent": "comparison"
+    },
+    {
+      "industry": "restaurant",
+      "template": "Which place would you choose in {city} for a family dinner: buffet or sit-down service?",
+      "tags": [
+        "buffet",
+        "family restaurant"
+      ],
+      "intent": "comparison"
+    },
+    {
+      "industry": "restaurant",
+      "template": "Who does gluten-free dishes best in {city}?",
+      "tags": [
+        "gluten-free"
+      ],
+      "intent": "best"
+    },
+    {
+      "industry": "restaurant",
+      "template": "Are there any restaurants in {city} popular for having live music?",
+      "tags": [
+        "live music restaurant"
+      ],
+      "intent": "best"
+    },
+    {
+      "industry": "restaurant",
+      "template": "Which Mexican restaurant is a local favorite in {city}?",
+      "tags": [
+        "mexican restaurant"
+      ],
+      "intent": "best"
+    },
+    {
+      "industry": "restaurant",
+      "template": "What's a great spot in {city} for outdoor dining?",
+      "tags": [
+        "outdoor dining"
+      ],
+      "intent": "best"
+    },
+    {
+      "industry": "restaurant",
+      "template": "I love spicy food; which restaurant in {city} should I try?",
+      "tags": [
+        "spicy food"
+      ],
+      "intent": "best"
+    },
+    {
+      "industry": "restaurant",
+      "template": "Is there a Chinese restaurant in {city} everyone recommends?",
+      "tags": [
+        "chinese restaurant"
+      ],
+      "intent": "reviews"
+    },
+    {
+      "industry": "restaurant",
+      "template": "Who makes the best cocktails in {city}?",
+      "tags": [
+        "cocktails"
+      ],
+      "intent": "reviews"
+    },
+    {
+      "industry": "restaurant",
+      "template": "I'd like a cozy café with great coffee in {city}, any top picks?",
+      "tags": [
+        "cafe"
+      ],
+      "intent": "reviews"
+    },
+    {
+      "industry": "restaurant",
+      "template": "Are there any restaurants in {city} good for solo diners?",
+      "tags": [
+        "solo dining"
+      ],
+      "intent": "urgent"
+    },
+    {
+      "industry": "restaurant",
+      "template": "Where can I get breakfast super early in {city}?",
+      "tags": [
+        "breakfast"
+      ],
+      "intent": "urgent"
+    },
+    {
+      "industry": "restaurant",
+      "template": "Are there reasonably priced fine dining options in {city}?",
+      "tags": [
+        "fine dining"
+      ],
+      "intent": "price"
+    },
+    {
+      "industry": "restaurant",
+      "template": "Does any restaurant in {city} offer kid's meals at a good price?",
+      "tags": [
+        "kids meals"
+      ],
+      "intent": "price"
+    },
+    {
+      "industry": "restaurant",
+      "template": "Which restaurants in {city} are best for celebrating anniversaries?",
+      "tags": [
+        "special occasion"
+      ],
+      "intent": "comparison"
+    },
+    {
+      "industry": "restaurant",
+      "template": "For someone new to {city}, which places show off the local food scene best?",
+      "tags": [
+        "local cuisine"
+      ],
+      "intent": "comparison"
+    },
+    {
+      "industry": "coffee_shop",
+      "template": "What's the best coffee shop in {city}?",
+      "tags": [
+        "general"
+      ],
+      "intent": "best"
+    },
+    {
+      "industry": "coffee_shop",
+      "template": "Where can I get a great latte in {city}?",
+      "tags": [
+        "latte"
+      ],
+      "intent": "best"
+    },
+    {
+      "industry": "coffee_shop",
+      "template": "Who serves the best pastries along with coffee in {city}?",
+      "tags": [
+        "pastries",
+        "coffee"
+      ],
+      "intent": "best"
+    },
+    {
+      "industry": "coffee_shop",
+      "template": "I just moved to {city} and I'm looking for a cozy place to have a cappuccino. Any recommendations?",
+      "tags": [
+        "cappuccino"
+      ],
+      "intent": "best"
+    },
+    {
+      "industry": "coffee_shop",
+      "template": "Is there a good spot in {city} to try different single origin coffees?",
+      "tags": [
+        "single origin coffee"
+      ],
+      "intent": "best"
+    },
+    {
+      "industry": "coffee_shop",
+      "template": "Which coffee shop in {city} opens earliest for a morning coffee run?",
+      "tags": [
+        "general"
+      ],
+      "intent": "urgent"
+    },
+    {
+      "industry": "coffee_shop",
+      "template": "My friend and I need a late night coffee in {city}. Where should we go?",
+      "tags": [
+        "general"
+      ],
+      "intent": "urgent"
+    },
+    {
+      "industry": "coffee_shop",
+      "template": "Are there any coffee shops in {city} that offer quick service during the busy lunch hour?",
+      "tags": [
+        "quick service"
+      ],
+      "intent": "urgent"
+    },
+    {
+      "industry": "coffee_shop",
+      "template": "I need to grab a coffee to-go before work in {city}. Which place is the fastest?",
+      "tags": [
+        "to-go coffee"
+      ],
+      "intent": "urgent"
+    },
+    {
+      "industry": "coffee_shop",
+      "template": "What’s a good place in {city} for a last-minute caffeine fix?",
+      "tags": [
+        "general"
+      ],
+      "intent": "urgent"
+    },
+    {
+      "industry": "coffee_shop",
+      "template": "Where can I find affordable coffee shops in {city}?",
+      "tags": [
+        "general"
+      ],
+      "intent": "price"
+    },
+    {
+      "industry": "coffee_shop",
+      "template": "Are there any places in {city} that have coffee specials or deals?",
+      "tags": [
+        "coffee deals"
+      ],
+      "intent": "price"
+    },
+    {
+      "industry": "coffee_shop",
+      "template": "I'm on a budget—what's the cheapest coffee shop in {city}?",
+      "tags": [
+        "general"
+      ],
+      "intent": "price"
+    },
+    {
+      "industry": "coffee_shop",
+      "template": "Do any coffee shops in {city} offer loyalty programs or discounts for regulars?",
+      "tags": [
+        "loyalty program"
+      ],
+      "intent": "price"
+    },
+    {
+      "industry": "coffee_shop",
+      "template": "Where in {city} can I get the best value for coffee and a snack?",
+      "tags": [
+        "coffee with snack"
+      ],
+      "intent": "price"
+    },
+    {
+      "industry": "coffee_shop",
+      "template": "Who has the best reviews for coffee in {city}?",
+      "tags": [
+        "general"
+      ],
+      "intent": "reviews"
+    },
+    {
+      "industry": "coffee_shop",
+      "template": "Which coffee shop in {city} is most recommended for studying or working?",
+      "tags": [
+        "study-friendly"
+      ],
+      "intent": "reviews"
+    },
+    {
+      "industry": "coffee_shop",
+      "template": "Where do locals say is the best spot for brunch and coffee in {city}?",
+      "tags": [
+        "brunch",
+        "coffee"
+      ],
+      "intent": "reviews"
+    },
+    {
+      "industry": "coffee_shop",
+      "template": "I'm looking for a trusted place in {city} for high quality espresso shots. Any suggestions?",
+      "tags": [
+        "espresso"
+      ],
+      "intent": "reviews"
+    },
+    {
+      "industry": "coffee_shop",
+      "template": "Which coffee shop in {city} is best known for their friendly staff and atmosphere?",
+      "tags": [
+        "general"
+      ],
+      "intent": "reviews"
+    },
+    {
+      "industry": "coffee_shop",
+      "template": "I want to compare the top-rated coffee shops in {city} for their pour over coffee. Which are best?",
+      "tags": [
+        "pour over"
+      ],
+      "intent": "comparison"
+    },
+    {
+      "industry": "coffee_shop",
+      "template": "Is there a place in {city} that's better for specialty drinks compared to basic drip coffee?",
+      "tags": [
+        "specialty drinks",
+        "drip coffee"
+      ],
+      "intent": "comparison"
+    },
+    {
+      "industry": "coffee_shop",
+      "template": "Which coffee shop in {city} has the best selection of vegan and dairy-free options?",
+      "tags": [
+        "vegan options",
+        "dairy-free"
+      ],
+      "intent": "comparison"
+    },
+    {
+      "industry": "coffee_shop",
+      "template": "In {city}, which café is better for relaxing vs. getting work done?",
+      "tags": [
+        "general"
+      ],
+      "intent": "comparison"
+    },
+    {
+      "industry": "coffee_shop",
+      "template": "I can't decide between two coffee shops in {city}. Which one is better for an afternoon hangout?",
+      "tags": [
+        "general"
+      ],
+      "intent": "comparison"
+    },
+    {
+      "industry": "coffee_shop",
+      "template": "Where in {city} can I find a coffee shop that’s both kid-friendly and has good coffee?",
+      "tags": [
+        "kid-friendly"
+      ],
+      "intent": "best"
+    },
+    {
+      "industry": "coffee_shop",
+      "template": "Are there any coffee shops in {city} with outdoor seating?",
+      "tags": [
+        "outdoor seating"
+      ],
+      "intent": "best"
+    },
+    {
+      "industry": "coffee_shop",
+      "template": "Which coffee shop in {city} has the best tea selection as well as coffee?",
+      "tags": [
+        "tea",
+        "coffee"
+      ],
+      "intent": "best"
+    },
+    {
+      "industry": "coffee_shop",
+      "template": "Is there a place in {city} that roasts their own beans on site?",
+      "tags": [
+        "coffee roasting",
+        "coffee beans"
+      ],
+      "intent": "best"
+    },
+    {
+      "industry": "coffee_shop",
+      "template": "What’s the best café in {city} to meet up with friends?",
+      "tags": [
+        "general"
+      ],
+      "intent": "best"
+    },
+    {
+      "industry": "coffee_shop",
+      "template": "Which coffee shops in {city} offer same-day delivery or curbside pickup?",
+      "tags": [
+        "delivery",
+        "curbside pickup"
+      ],
+      "intent": "urgent"
+    },
+    {
+      "industry": "coffee_shop",
+      "template": "If I need a caffeine fix early in the morning in {city}, which place should I go to?",
+      "tags": [
+        "general"
+      ],
+      "intent": "urgent"
+    },
+    {
+      "industry": "coffee_shop",
+      "template": "Are there any budget-friendly places for a flat white in {city}?",
+      "tags": [
+        "flat white"
+      ],
+      "intent": "price"
+    },
+    {
+      "industry": "coffee_shop",
+      "template": "Where can I get the most affordable breakfast combo with coffee in {city}?",
+      "tags": [
+        "breakfast combo",
+        "coffee"
+      ],
+      "intent": "price"
+    },
+    {
+      "industry": "coffee_shop",
+      "template": "Which place in {city} is known for their gluten-free pastries and great coffee?",
+      "tags": [
+        "gluten-free",
+        "pastries"
+      ],
+      "intent": "reviews"
+    },
+    {
+      "industry": "coffee_shop",
+      "template": "Where do people in {city} go for the best cozy coffee shop vibes?",
+      "tags": [
+        "general"
+      ],
+      "intent": "reviews"
+    },
+    {
+      "industry": "coffee_shop",
+      "template": "Is there a coffee shop in {city} that’s better for remote workers than just relaxing?",
+      "tags": [
+        "remote work"
+      ],
+      "intent": "comparison"
+    },
+    {
+      "industry": "coffee_shop",
+      "template": "Which café in {city} offers better food options to go with coffee?",
+      "tags": [
+        "food options"
+      ],
+      "intent": "comparison"
+    },
+    {
+      "industry": "coffee_shop",
+      "template": "What’s a good local spot in {city} for large group meetups over coffee?",
+      "tags": [
+        "group meetups"
+      ],
+      "intent": "best"
+    },
+    {
+      "industry": "coffee_shop",
+      "template": "Who has the best matcha lattes in {city}?",
+      "tags": [
+        "matcha latte"
+      ],
+      "intent": "best"
+    },
+    {
+      "industry": "plumber",
+      "template": "Who is the best plumber in {city} for fixing a leaking pipe?",
+      "tags": [
+        "leak repair"
+      ],
+      "intent": "best"
+    },
+    {
+      "industry": "plumber",
+      "template": "What's the top-rated plumbing company in {city} for water heater installation?",
+      "tags": [
+        "water heater installation"
+      ],
+      "intent": "best"
+    },
+    {
+      "industry": "plumber",
+      "template": "Can you recommend a reliable plumber in {city} for a full bathroom remodel?",
+      "tags": [
+        "bathroom remodel plumbing"
+      ],
+      "intent": "best"
+    },
+    {
+      "industry": "plumber",
+      "template": "Local homeowners, which plumbing service in {city} handles sewer line repairs the best?",
+      "tags": [
+        "sewer line repair"
+      ],
+      "intent": "best"
+    },
+    {
+      "industry": "plumber",
+      "template": "I need a trustworthy plumber in {city} to install a new garbage disposal, any suggestions?",
+      "tags": [
+        "garbage disposal installation"
+      ],
+      "intent": "best"
+    },
+    {
+      "industry": "plumber",
+      "template": "Who do locals in {city} trust most for whole-home repiping projects?",
+      "tags": [
+        "repiping"
+      ],
+      "intent": "best"
+    },
+    {
+      "industry": "plumber",
+      "template": "What plumber in {city} has the best reputation for fixing slab leaks?",
+      "tags": [
+        "slab leak repair"
+      ],
+      "intent": "best"
+    },
+    {
+      "industry": "plumber",
+      "template": "Is there a highly recommended plumber in {city} for installing water filtration systems?",
+      "tags": [
+        "water filtration installation"
+      ],
+      "intent": "best"
+    },
+    {
+      "industry": "plumber",
+      "template": "My basement is flooding, which plumber in {city} can come out right now?",
+      "tags": [
+        "emergency plumbing",
+        "flood cleanup"
+      ],
+      "intent": "urgent"
+    },
+    {
+      "industry": "plumber",
+      "template": "Who offers 24-hour emergency plumbing service in {city}?",
+      "tags": [
+        "emergency plumbing"
+      ],
+      "intent": "urgent"
+    },
+    {
+      "industry": "plumber",
+      "template": "I have a burst pipe at midnight, who can help me in {city}?",
+      "tags": [
+        "burst pipe repair"
+      ],
+      "intent": "urgent"
+    },
+    {
+      "industry": "plumber",
+      "template": "Same-day repairs for a clogged main sewer line, which plumber in {city} provides that?",
+      "tags": [
+        "sewer line repair",
+        "drain cleaning"
+      ],
+      "intent": "urgent"
+    },
+    {
+      "industry": "plumber",
+      "template": "My water heater just stopped working and I have no hot water, who can fix it fast in {city}?",
+      "tags": [
+        "water heater repair"
+      ],
+      "intent": "urgent"
+    },
+    {
+      "industry": "plumber",
+      "template": "Is there a plumber in {city} who handles weekend emergency calls for frozen pipes?",
+      "tags": [
+        "frozen pipe repair"
+      ],
+      "intent": "urgent"
+    },
+    {
+      "industry": "plumber",
+      "template": "I smell gas near my stove, which plumber in {city} can respond immediately?",
+      "tags": [
+        "gas line repair"
+      ],
+      "intent": "urgent"
+    },
+    {
+      "industry": "plumber",
+      "template": "My toilet won't stop overflowing, who can send someone out today in {city}?",
+      "tags": [
+        "toilet repair"
+      ],
+      "intent": "urgent"
+    },
+    {
+      "industry": "plumber",
+      "template": "What does it typically cost to hire a plumber in {city} for drain cleaning?",
+      "tags": [
+        "drain cleaning"
+      ],
+      "intent": "price"
+    },
+    {
+      "industry": "plumber",
+      "template": "Which plumbing company in {city} offers the most affordable rates for water heater replacement?",
+      "tags": [
+        "water heater replacement"
+      ],
+      "intent": "price"
+    },
+    {
+      "industry": "plumber",
+      "template": "Are there any plumbers in {city} who offer financing for major repiping work?",
+      "tags": [
+        "repiping"
+      ],
+      "intent": "price"
+    },
+    {
+      "industry": "plumber",
+      "template": "How much should I expect to pay for a sewer line repair in {city}?",
+      "tags": [
+        "sewer line repair"
+      ],
+      "intent": "price"
+    },
+    {
+      "industry": "plumber",
+      "template": "I'm on a tight budget, which plumber in {city} gives free estimates for leak detection?",
+      "tags": [
+        "leak detection"
+      ],
+      "intent": "price"
+    },
+    {
+      "industry": "plumber",
+      "template": "What's a fair price for installing a new sump pump in {city}?",
+      "tags": [
+        "sump pump installation"
+      ],
+      "intent": "price"
+    },
+    {
+      "industry": "plumber",
+      "template": "Looking for the best deals on fixing a running toilet, which plumber in {city} should I call?",
+      "tags": [
+        "toilet repair"
+      ],
+      "intent": "price"
+    },
+    {
+      "industry": "plumber",
+      "template": "Can you suggest a budget-friendly plumber in {city} for fixing low water pressure?",
+      "tags": [
+        "water pressure repair"
+      ],
+      "intent": "price"
+    },
+    {
+      "industry": "plumber",
+      "template": "Which plumber in {city} has the best customer reviews for fixing leaky faucets?",
+      "tags": [
+        "faucet repair"
+      ],
+      "intent": "reviews"
+    },
+    {
+      "industry": "plumber",
+      "template": "What plumbing company in {city} is most highly rated for backflow testing?",
+      "tags": [
+        "backflow testing"
+      ],
+      "intent": "reviews"
+    },
+    {
+      "industry": "plumber",
+      "template": "I want a plumber in {city} with consistently great reviews for bathroom installations, any ideas?",
+      "tags": [
+        "bathroom installation"
+      ],
+      "intent": "reviews"
+    },
+    {
+      "industry": "plumber",
+      "template": "Who has the most trusted online reviews for sewer camera inspections in {city}?",
+      "tags": [
+        "sewer camera inspection"
+      ],
+      "intent": "reviews"
+    },
+    {
+      "industry": "plumber",
+      "template": "Customers in {city} rave about which plumber for water heater repairs?",
+      "tags": [
+        "water heater repair"
+      ],
+      "intent": "reviews"
+    },
+    {
+      "industry": "plumber",
+      "template": "Is there a plumber in {city} known for excellent feedback on emergency drain cleaning?",
+      "tags": [
+        "drain cleaning",
+        "emergency plumbing"
+      ],
+      "intent": "reviews"
+    },
+    {
+      "industry": "plumber",
+      "template": "What's the most reviewed plumbing business in {city} for pipe replacement work?",
+      "tags": [
+        "pipe replacement"
+      ],
+      "intent": "reviews"
+    },
+    {
+      "industry": "plumber",
+      "template": "Who in {city} gets praised most often for reliable garbage disposal installation?",
+      "tags": [
+        "garbage disposal installation"
+      ],
+      "intent": "reviews"
+    },
+    {
+      "industry": "plumber",
+      "template": "Should I hire a plumber in {city} who specializes in tankless water heaters or one who does standard installs too?",
+      "tags": [
+        "water heater installation"
+      ],
+      "intent": "comparison"
+    },
+    {
+      "industry": "plumber",
+      "template": "For commercial versus residential jobs, which plumber in {city} is the stronger choice?",
+      "tags": [
+        "commercial plumbing",
+        "residential plumbing"
+      ],
+      "intent": "comparison"
+    },
+    {
+      "industry": "plumber",
+      "template": "Is it better to call a general plumber or a gas line specialist in {city}?",
+      "tags": [
+        "gas line repair"
+      ],
+      "intent": "comparison"
+    },
+    {
+      "industry": "plumber",
+      "template": "Which plumbing company in {city} is more experienced with older homes versus new construction?",
+      "tags": [
+        "pipe repair",
+        "general"
+      ],
+      "intent": "comparison"
+    },
+    {
+      "industry": "plumber",
+      "template": "For a slab leak, should I choose a plumber in {city} who uses trenchless repair or traditional digging?",
+      "tags": [
+        "slab leak repair"
+      ],
+      "intent": "comparison"
+    },
+    {
+      "industry": "plumber",
+      "template": "Would a local independent plumber or a larger company be better for emergency repairs in {city}?",
+      "tags": [
+        "emergency plumbing"
+      ],
+      "intent": "comparison"
+    },
+    {
+      "industry": "plumber",
+      "template": "Which plumber in {city} would you pick for a quick patch job versus a full pipe replacement?",
+      "tags": [
+        "pipe replacement"
+      ],
+      "intent": "comparison"
+    },
+    {
+      "industry": "plumber",
+      "template": "Is a plumber who focuses on residential work or one who also does commercial jobs better for water heater needs in {city}?",
+      "tags": [
+        "water heater installation",
+        "commercial plumbing"
+      ],
+      "intent": "comparison"
+    },
+    {
+      "industry": "hvac",
+      "template": "Who is the best HVAC company in {city}?",
+      "tags": [
+        "hvac company",
+        "general"
+      ],
+      "intent": "best"
+    },
+    {
+      "industry": "hvac",
+      "template": "What's the top-rated furnace installation service in {city}?",
+      "tags": [
+        "furnace installation"
+      ],
+      "intent": "best"
+    },
+    {
+      "industry": "hvac",
+      "template": "Which heating and cooling contractor do locals trust most in {city}?",
+      "tags": [
+        "heating and cooling",
+        "general"
+      ],
+      "intent": "best"
+    },
+    {
+      "industry": "hvac",
+      "template": "Who installs ductless mini split systems best in {city}?",
+      "tags": [
+        "ductless mini split"
+      ],
+      "intent": "best"
+    },
+    {
+      "industry": "hvac",
+      "template": "Can you recommend a reliable air conditioning company in {city}?",
+      "tags": [
+        "air conditioning installation"
+      ],
+      "intent": "best"
+    },
+    {
+      "industry": "hvac",
+      "template": "Who offers the best heat pump installation in {city}?",
+      "tags": [
+        "heat pump installation"
+      ],
+      "intent": "best"
+    },
+    {
+      "industry": "hvac",
+      "template": "I just moved to {city} and need a good HVAC technician, any suggestions?",
+      "tags": [
+        "hvac technician",
+        "general"
+      ],
+      "intent": "best"
+    },
+    {
+      "industry": "hvac",
+      "template": "Which company handles commercial HVAC work best in {city}?",
+      "tags": [
+        "commercial hvac"
+      ],
+      "intent": "best"
+    },
+    {
+      "industry": "hvac",
+      "template": "My furnace stopped working overnight, who can fix it fast in {city}?",
+      "tags": [
+        "furnace repair",
+        "emergency hvac"
+      ],
+      "intent": "urgent"
+    },
+    {
+      "industry": "hvac",
+      "template": "Is there a 24 hour HVAC repair service in {city}?",
+      "tags": [
+        "emergency hvac",
+        "24 hour repair"
+      ],
+      "intent": "urgent"
+    },
+    {
+      "industry": "hvac",
+      "template": "My AC broke down during this heatwave, who can come same day in {city}?",
+      "tags": [
+        "ac repair",
+        "emergency hvac"
+      ],
+      "intent": "urgent"
+    },
+    {
+      "industry": "hvac",
+      "template": "Is there an HVAC company that offers emergency repairs in {city}?",
+      "tags": [
+        "emergency hvac"
+      ],
+      "intent": "urgent"
+    },
+    {
+      "industry": "hvac",
+      "template": "I smell gas near my furnace, who should I call immediately in {city}?",
+      "tags": [
+        "gas furnace safety",
+        "emergency hvac"
+      ],
+      "intent": "urgent"
+    },
+    {
+      "industry": "hvac",
+      "template": "Need someone to fix a broken heater tonight, who's available in {city}?",
+      "tags": [
+        "heater repair",
+        "emergency hvac"
+      ],
+      "intent": "urgent"
+    },
+    {
+      "industry": "hvac",
+      "template": "My air conditioner is leaking water everywhere, who can help right away in {city}?",
+      "tags": [
+        "ac repair",
+        "emergency hvac"
+      ],
+      "intent": "urgent"
+    },
+    {
+      "industry": "hvac",
+      "template": "Who provides weekend emergency heating repair in {city}?",
+      "tags": [
+        "heating repair",
+        "emergency hvac"
+      ],
+      "intent": "urgent"
+    },
+    {
+      "industry": "hvac",
+      "template": "What's a fair price for AC installation in {city}?",
+      "tags": [
+        "ac installation",
+        "pricing"
+      ],
+      "intent": "price"
+    },
+    {
+      "industry": "hvac",
+      "template": "Which HVAC company offers the most affordable furnace repair in {city}?",
+      "tags": [
+        "furnace repair",
+        "pricing"
+      ],
+      "intent": "price"
+    },
+    {
+      "industry": "hvac",
+      "template": "Are there any HVAC businesses offering financing plans in {city}?",
+      "tags": [
+        "financing",
+        "general"
+      ],
+      "intent": "price"
+    },
+    {
+      "industry": "hvac",
+      "template": "How much should duct cleaning cost in {city}?",
+      "tags": [
+        "duct cleaning",
+        "pricing"
+      ],
+      "intent": "price"
+    },
+    {
+      "industry": "hvac",
+      "template": "Who has the best deals on new AC units in {city}?",
+      "tags": [
+        "ac installation",
+        "deals"
+      ],
+      "intent": "price"
+    },
+    {
+      "industry": "hvac",
+      "template": "What's a reasonable quote for replacing a heat pump in {city}?",
+      "tags": [
+        "heat pump replacement",
+        "pricing"
+      ],
+      "intent": "price"
+    },
+    {
+      "industry": "hvac",
+      "template": "Looking for budget friendly HVAC maintenance plans in {city}, any recommendations?",
+      "tags": [
+        "maintenance plans",
+        "pricing"
+      ],
+      "intent": "price"
+    },
+    {
+      "industry": "hvac",
+      "template": "Which company gives free estimates for heating installation in {city}?",
+      "tags": [
+        "heating installation",
+        "free estimate"
+      ],
+      "intent": "price"
+    },
+    {
+      "industry": "hvac",
+      "template": "Which HVAC contractor has the best reviews in {city}?",
+      "tags": [
+        "hvac contractor",
+        "general"
+      ],
+      "intent": "reviews"
+    },
+    {
+      "industry": "hvac",
+      "template": "What's the most trusted air conditioning repair service in {city}?",
+      "tags": [
+        "ac repair",
+        "general"
+      ],
+      "intent": "reviews"
+    },
+    {
+      "industry": "hvac",
+      "template": "Are there any highly rated furnace technicians in {city}?",
+      "tags": [
+        "furnace repair",
+        "general"
+      ],
+      "intent": "reviews"
+    },
+    {
+      "industry": "hvac",
+      "template": "What HVAC company do people recommend most on local review sites in {city}?",
+      "tags": [
+        "hvac company",
+        "general"
+      ],
+      "intent": "reviews"
+    },
+    {
+      "industry": "hvac",
+      "template": "I'm looking for a well reviewed heating company in {city}, who should I choose?",
+      "tags": [
+        "heating company",
+        "general"
+      ],
+      "intent": "reviews"
+    },
+    {
+      "industry": "hvac",
+      "template": "What HVAC business has the highest customer satisfaction in {city}?",
+      "tags": [
+        "hvac business",
+        "general"
+      ],
+      "intent": "reviews"
+    },
+    {
+      "industry": "hvac",
+      "template": "Which indoor air quality specialist gets the best feedback in {city}?",
+      "tags": [
+        "indoor air quality"
+      ],
+      "intent": "reviews"
+    },
+    {
+      "industry": "hvac",
+      "template": "Who is known for trustworthy HVAC service in {city}?",
+      "tags": [
+        "hvac service",
+        "general"
+      ],
+      "intent": "reviews"
+    },
+    {
+      "industry": "hvac",
+      "template": "Should I choose a ductless mini split or a central AC system for my home in {city}?",
+      "tags": [
+        "ductless mini split",
+        "central air"
+      ],
+      "intent": "comparison"
+    },
+    {
+      "industry": "hvac",
+      "template": "Which is better for an older home, furnace repair or full replacement, in {city}?",
+      "tags": [
+        "furnace repair",
+        "furnace replacement"
+      ],
+      "intent": "comparison"
+    },
+    {
+      "industry": "hvac",
+      "template": "Is it better to hire a small local HVAC company or a larger chain in {city}?",
+      "tags": [
+        "hvac company",
+        "general"
+      ],
+      "intent": "comparison"
+    },
+    {
+      "industry": "hvac",
+      "template": "Which HVAC company is better for commercial buildings versus residential homes in {city}?",
+      "tags": [
+        "commercial hvac",
+        "residential hvac"
+      ],
+      "intent": "comparison"
+    },
+    {
+      "industry": "hvac",
+      "template": "For a two story house, which type of HVAC system works better according to local experts in {city}?",
+      "tags": [
+        "hvac system selection"
+      ],
+      "intent": "comparison"
+    },
+    {
+      "industry": "hvac",
+      "template": "Should I get a heat pump or a traditional furnace installed in {city}?",
+      "tags": [
+        "heat pump",
+        "furnace installation"
+      ],
+      "intent": "comparison"
+    },
+    {
+      "industry": "hvac",
+      "template": "Which company is better suited for emergency repairs versus routine maintenance in {city}?",
+      "tags": [
+        "emergency repairs",
+        "maintenance"
+      ],
+      "intent": "comparison"
+    },
+    {
+      "industry": "hvac",
+      "template": "Is it smarter to repair or replace an aging AC unit, according to local pros in {city}?",
+      "tags": [
+        "ac repair",
+        "ac replacement"
+      ],
+      "intent": "comparison"
+    },
+    {
+      "industry": "med_spa",
+      "template": "Who is the best med spa in {city} for Botox and fillers?",
+      "tags": [
+        "botox",
+        "dermal fillers"
+      ],
+      "intent": "best"
+    },
+    {
+      "industry": "med_spa",
+      "template": "What's the top-rated clinic in {city} for chemical peels?",
+      "tags": [
+        "chemical peel"
+      ],
+      "intent": "best"
+    },
+    {
+      "industry": "med_spa",
+      "template": "Which med spa in {city} has the best reputation for laser hair removal?",
+      "tags": [
+        "laser hair removal"
+      ],
+      "intent": "best"
+    },
+    {
+      "industry": "med_spa",
+      "template": "I'm looking for the best med spa in {city} for microneedling treatments, any suggestions?",
+      "tags": [
+        "microneedling"
+      ],
+      "intent": "best"
+    },
+    {
+      "industry": "med_spa",
+      "template": "Who offers the best results for CoolSculpting in {city}?",
+      "tags": [
+        "coolsculpting",
+        "body contouring"
+      ],
+      "intent": "best"
+    },
+    {
+      "industry": "med_spa",
+      "template": "Any recommendations for the best anti-aging facial spa in {city}?",
+      "tags": [
+        "facial treatments",
+        "anti-aging"
+      ],
+      "intent": "best"
+    },
+    {
+      "industry": "med_spa",
+      "template": "Which clinic in {city} is best known for lip filler injections?",
+      "tags": [
+        "lip fillers"
+      ],
+      "intent": "best"
+    },
+    {
+      "industry": "med_spa",
+      "template": "My skin needs serious help, who's the best med spa in {city} for acne treatment?",
+      "tags": [
+        "acne treatment"
+      ],
+      "intent": "best"
+    },
+    {
+      "industry": "med_spa",
+      "template": "I need a same-day appointment for a Botox touch-up in {city}, where can I go?",
+      "tags": [
+        "botox",
+        "same-day appointment"
+      ],
+      "intent": "urgent"
+    },
+    {
+      "industry": "med_spa",
+      "template": "Is there a med spa in {city} open late for last-minute facial treatments?",
+      "tags": [
+        "facial treatments",
+        "late hours"
+      ],
+      "intent": "urgent"
+    },
+    {
+      "industry": "med_spa",
+      "template": "My face broke out before an event, is there a med spa in {city} that can see me today?",
+      "tags": [
+        "acne treatment",
+        "same-day appointment"
+      ],
+      "intent": "urgent"
+    },
+    {
+      "industry": "med_spa",
+      "template": "Where can I get emergency filler dissolving done in {city}?",
+      "tags": [
+        "filler dissolving",
+        "emergency care"
+      ],
+      "intent": "urgent"
+    },
+    {
+      "industry": "med_spa",
+      "template": "I have a wedding this weekend and need a quick skin treatment, who can fit me in near {city}?",
+      "tags": [
+        "skin treatment",
+        "same-day appointment"
+      ],
+      "intent": "urgent"
+    },
+    {
+      "industry": "med_spa",
+      "template": "Does any med spa in {city} offer walk-in appointments for laser treatments?",
+      "tags": [
+        "laser treatments",
+        "walk-in"
+      ],
+      "intent": "urgent"
+    },
+    {
+      "industry": "med_spa",
+      "template": "I need urgent IV hydration therapy in {city}, who's available right now?",
+      "tags": [
+        "iv hydration therapy"
+      ],
+      "intent": "urgent"
+    },
+    {
+      "industry": "med_spa",
+      "template": "Can anyone in {city} do a rush chemical peel before a big event?",
+      "tags": [
+        "chemical peel",
+        "same-day appointment"
+      ],
+      "intent": "urgent"
+    },
+    {
+      "industry": "med_spa",
+      "template": "What's the average cost of Botox per unit at med spas in {city}?",
+      "tags": [
+        "botox",
+        "pricing"
+      ],
+      "intent": "price"
+    },
+    {
+      "industry": "med_spa",
+      "template": "Which med spa in {city} has the most affordable laser hair removal packages?",
+      "tags": [
+        "laser hair removal",
+        "pricing"
+      ],
+      "intent": "price"
+    },
+    {
+      "industry": "med_spa",
+      "template": "I'm on a budget, where can I find cheap microneedling sessions in {city}?",
+      "tags": [
+        "microneedling",
+        "pricing"
+      ],
+      "intent": "price"
+    },
+    {
+      "industry": "med_spa",
+      "template": "Are there any med spas in {city} offering financing for CoolSculpting?",
+      "tags": [
+        "coolsculpting",
+        "financing"
+      ],
+      "intent": "price"
+    },
+    {
+      "industry": "med_spa",
+      "template": "How much should I expect to pay for lip filler injections in {city}?",
+      "tags": [
+        "lip fillers",
+        "pricing"
+      ],
+      "intent": "price"
+    },
+    {
+      "industry": "med_spa",
+      "template": "Does any med spa in {city} run specials on chemical peels?",
+      "tags": [
+        "chemical peel",
+        "specials"
+      ],
+      "intent": "price"
+    },
+    {
+      "industry": "med_spa",
+      "template": "I want to find the cheapest place in {city} for a full package of facial treatments?",
+      "tags": [
+        "facial treatments",
+        "pricing"
+      ],
+      "intent": "price"
+    },
+    {
+      "industry": "med_spa",
+      "template": "What's a fair price for PRP hair restoration treatments in {city}?",
+      "tags": [
+        "prp hair restoration",
+        "pricing"
+      ],
+      "intent": "price"
+    },
+    {
+      "industry": "med_spa",
+      "template": "Which med spa in {city} has the best online reviews for Botox injections?",
+      "tags": [
+        "botox",
+        "reviews"
+      ],
+      "intent": "reviews"
+    },
+    {
+      "industry": "med_spa",
+      "template": "I want a trusted provider for dermal fillers in {city}, any recommendations?",
+      "tags": [
+        "dermal fillers",
+        "trusted provider"
+      ],
+      "intent": "reviews"
+    },
+    {
+      "industry": "med_spa",
+      "template": "What med spa in {city} do locals recommend most for laser hair removal?",
+      "tags": [
+        "laser hair removal",
+        "reviews"
+      ],
+      "intent": "reviews"
+    },
+    {
+      "industry": "med_spa",
+      "template": "Are there any highly-rated spas in {city} for hormone replacement therapy?",
+      "tags": [
+        "hormone replacement therapy"
+      ],
+      "intent": "reviews"
+    },
+    {
+      "industry": "med_spa",
+      "template": "Which clinic in {city} gets the most praise for skin tightening treatments?",
+      "tags": [
+        "skin tightening"
+      ],
+      "intent": "reviews"
+    },
+    {
+      "industry": "med_spa",
+      "template": "I'm nervous about injectables, which med spa in {city} has the most trustworthy reputation?",
+      "tags": [
+        "injectables",
+        "trusted provider"
+      ],
+      "intent": "reviews"
+    },
+    {
+      "industry": "med_spa",
+      "template": "Who is the most recommended med spa in {city} for weight loss treatments?",
+      "tags": [
+        "weight loss treatments"
+      ],
+      "intent": "reviews"
+    },
+    {
+      "industry": "med_spa",
+      "template": "Where do people in {city} say they had the best experience with microdermabrasion?",
+      "tags": [
+        "microdermabrasion"
+      ],
+      "intent": "reviews"
+    },
+    {
+      "industry": "med_spa",
+      "template": "Which is better for wrinkle reduction in {city}, Botox or microneedling?",
+      "tags": [
+        "botox",
+        "microneedling"
+      ],
+      "intent": "comparison"
+    },
+    {
+      "industry": "med_spa",
+      "template": "Should I choose a dermatologist-run med spa or a standalone spa in {city} for fillers?",
+      "tags": [
+        "dermal fillers",
+        "provider type"
+      ],
+      "intent": "comparison"
+    },
+    {
+      "industry": "med_spa",
+      "template": "What is the difference between laser hair removal and electrolysis offered at spas in {city}?",
+      "tags": [
+        "laser hair removal",
+        "electrolysis"
+      ],
+      "intent": "comparison"
+    },
+    {
+      "industry": "med_spa",
+      "template": "Is CoolSculpting or laser lipo more effective for body contouring at spas in {city}?",
+      "tags": [
+        "coolsculpting",
+        "laser lipo"
+      ],
+      "intent": "comparison"
+    },
+    {
+      "industry": "med_spa",
+      "template": "Which spa in {city} is better suited for sensitive skin treatments?",
+      "tags": [
+        "sensitive skin treatments"
+      ],
+      "intent": "comparison"
+    },
+    {
+      "industry": "med_spa",
+      "template": "For acne scars, is chemical peeling or microneedling the better option in {city}?",
+      "tags": [
+        "chemical peel",
+        "microneedling"
+      ],
+      "intent": "comparison"
+    },
+    {
+      "industry": "med_spa",
+      "template": "Is a membership-based med spa or pay-per-visit model better value in {city}?",
+      "tags": [
+        "membership pricing",
+        "general"
+      ],
+      "intent": "comparison"
+    },
+    {
+      "industry": "med_spa",
+      "template": "Is it better to get IV therapy at a med spa or a wellness clinic in {city}?",
+      "tags": [
+        "iv therapy",
+        "general"
+      ],
+      "intent": "comparison"
+    },
+    {
+      "industry": "real_estate",
+      "template": "Who is the best real estate agent in {city} for first-time homebuyers?",
+      "tags": [
+        "first-time homebuyers"
+      ],
+      "intent": "best"
+    },
+    {
+      "industry": "real_estate",
+      "template": "Which realtor in {city} has the strongest track record selling luxury homes?",
+      "tags": [
+        "luxury home sales"
+      ],
+      "intent": "best"
+    },
+    {
+      "industry": "real_estate",
+      "template": "Who's considered the top real estate agent in {city} for condo sales?",
+      "tags": [
+        "condo sales"
+      ],
+      "intent": "best"
+    },
+    {
+      "industry": "real_estate",
+      "template": "What real estate agent in {city} do locals recommend for investment properties?",
+      "tags": [
+        "investment properties"
+      ],
+      "intent": "best"
+    },
+    {
+      "industry": "real_estate",
+      "template": "Who is the best agent in {city} to help with a smooth relocation?",
+      "tags": [
+        "relocation assistance"
+      ],
+      "intent": "best"
+    },
+    {
+      "industry": "real_estate",
+      "template": "Which real estate agent in {city} is known for getting the highest offers on homes?",
+      "tags": [
+        "home selling"
+      ],
+      "intent": "best"
+    },
+    {
+      "industry": "real_estate",
+      "template": "Who's the go-to realtor in {city} for new construction homes?",
+      "tags": [
+        "new construction"
+      ],
+      "intent": "best"
+    },
+    {
+      "industry": "real_estate",
+      "template": "Can you recommend the best agent in {city} for finding rural or land properties?",
+      "tags": [
+        "land sales"
+      ],
+      "intent": "best"
+    },
+    {
+      "industry": "real_estate",
+      "template": "I need to sell my house fast in {city} — which agent can list it immediately?",
+      "tags": [
+        "home selling",
+        "urgent sale"
+      ],
+      "intent": "urgent"
+    },
+    {
+      "industry": "real_estate",
+      "template": "My lease ends this week, which realtor in {city} can help me find a rental right away?",
+      "tags": [
+        "rental search"
+      ],
+      "intent": "urgent"
+    },
+    {
+      "industry": "real_estate",
+      "template": "Which real estate agent in {city} can handle a same-week closing?",
+      "tags": [
+        "closing assistance"
+      ],
+      "intent": "urgent"
+    },
+    {
+      "industry": "real_estate",
+      "template": "I'm relocating for a new job and need a realtor in {city} who can move fast?",
+      "tags": [
+        "relocation assistance"
+      ],
+      "intent": "urgent"
+    },
+    {
+      "industry": "real_estate",
+      "template": "We're facing foreclosure, which agent in {city} can help us sell quickly?",
+      "tags": [
+        "foreclosure sale"
+      ],
+      "intent": "urgent"
+    },
+    {
+      "industry": "real_estate",
+      "template": "Need an emergency property appraisal in {city} — who can do it on short notice?",
+      "tags": [
+        "property appraisal"
+      ],
+      "intent": "urgent"
+    },
+    {
+      "industry": "real_estate",
+      "template": "Who in {city} can show me available homes this weekend before my offer deadline?",
+      "tags": [
+        "home buying"
+      ],
+      "intent": "urgent"
+    },
+    {
+      "industry": "real_estate",
+      "template": "My landlord is selling, which agent in {city} can find me a new place urgently?",
+      "tags": [
+        "rental search"
+      ],
+      "intent": "urgent"
+    },
+    {
+      "industry": "real_estate",
+      "template": "What's a reasonably priced real estate agent in {city} for a small condo sale?",
+      "tags": [
+        "condo sales",
+        "pricing"
+      ],
+      "intent": "price"
+    },
+    {
+      "industry": "real_estate",
+      "template": "Which realtor in {city} offers the lowest commission rates for sellers?",
+      "tags": [
+        "home selling",
+        "commission rates"
+      ],
+      "intent": "price"
+    },
+    {
+      "industry": "real_estate",
+      "template": "Are there any real estate agents in {city} who offer discounted fees for first-time buyers?",
+      "tags": [
+        "first-time homebuyers",
+        "pricing"
+      ],
+      "intent": "price"
+    },
+    {
+      "industry": "real_estate",
+      "template": "How much should I expect to pay a real estate agent in {city} to sell my home?",
+      "tags": [
+        "home selling",
+        "pricing"
+      ],
+      "intent": "price"
+    },
+    {
+      "industry": "real_estate",
+      "template": "Who offers affordable property management services in {city}?",
+      "tags": [
+        "property management",
+        "pricing"
+      ],
+      "intent": "price"
+    },
+    {
+      "industry": "real_estate",
+      "template": "Which agent in {city} has the best deals for buying investment property?",
+      "tags": [
+        "investment properties",
+        "pricing"
+      ],
+      "intent": "price"
+    },
+    {
+      "industry": "real_estate",
+      "template": "What real estate agent in {city} works on a flat-fee basis instead of commission?",
+      "tags": [
+        "pricing"
+      ],
+      "intent": "price"
+    },
+    {
+      "industry": "real_estate",
+      "template": "Can you recommend a budget-friendly realtor in {city} for renters?",
+      "tags": [
+        "rental search",
+        "pricing"
+      ],
+      "intent": "price"
+    },
+    {
+      "industry": "real_estate",
+      "template": "Who has the best reviews among real estate agents in {city}?",
+      "tags": [
+        "general"
+      ],
+      "intent": "reviews"
+    },
+    {
+      "industry": "real_estate",
+      "template": "Which realtor in {city} is most trusted for handling luxury home sales?",
+      "tags": [
+        "luxury home sales"
+      ],
+      "intent": "reviews"
+    },
+    {
+      "industry": "real_estate",
+      "template": "What agent in {city} do people consistently recommend for first-time buyers?",
+      "tags": [
+        "first-time homebuyers"
+      ],
+      "intent": "reviews"
+    },
+    {
+      "industry": "real_estate",
+      "template": "Who are the highest-rated agents in {city} for property management?",
+      "tags": [
+        "property management"
+      ],
+      "intent": "reviews"
+    },
+    {
+      "industry": "real_estate",
+      "template": "Which real estate agent in {city} gets the most positive feedback from sellers?",
+      "tags": [
+        "home selling"
+      ],
+      "intent": "reviews"
+    },
+    {
+      "industry": "real_estate",
+      "template": "What's the most trusted realtor in {city} for handling short sales?",
+      "tags": [
+        "short sale"
+      ],
+      "intent": "reviews"
+    },
+    {
+      "industry": "real_estate",
+      "template": "Who has a strong reputation in {city} for helping with commercial real estate?",
+      "tags": [
+        "commercial real estate"
+      ],
+      "intent": "reviews"
+    },
+    {
+      "industry": "real_estate",
+      "template": "Which agent in {city} is best reviewed for working with military families relocating?",
+      "tags": [
+        "relocation assistance"
+      ],
+      "intent": "reviews"
+    },
+    {
+      "industry": "real_estate",
+      "template": "Is it better to use a big agency or an independent realtor in {city} for selling a home?",
+      "tags": [
+        "home selling",
+        "comparison"
+      ],
+      "intent": "comparison"
+    },
+    {
+      "industry": "real_estate",
+      "template": "Which is better in {city} for a first-time buyer, a buyer's agent or a dual agent?",
+      "tags": [
+        "first-time homebuyers",
+        "comparison"
+      ],
+      "intent": "comparison"
+    },
+    {
+      "industry": "real_estate",
+      "template": "Should I hire a local real estate agent in {city} or one from a national firm for an investment property?",
+      "tags": [
+        "investment properties",
+        "comparison"
+      ],
+      "intent": "comparison"
+    },
+    {
+      "industry": "real_estate",
+      "template": "What's the difference between agents in {city} who specialize in condos versus single-family homes?",
+      "tags": [
+        "condo sales",
+        "comparison"
+      ],
+      "intent": "comparison"
+    },
+    {
+      "industry": "real_estate",
+      "template": "Which type of realtor in {city} is better suited for senior downsizing versus new families?",
+      "tags": [
+        "senior downsizing",
+        "comparison"
+      ],
+      "intent": "comparison"
+    },
+    {
+      "industry": "real_estate",
+      "template": "Is it smarter to work with a listing agent or a flat-fee service in {city} when selling?",
+      "tags": [
+        "home selling",
+        "comparison"
+      ],
+      "intent": "comparison"
+    },
+    {
+      "industry": "real_estate",
+      "template": "Which agent in {city} is better for vacation home purchases versus year-round residences?",
+      "tags": [
+        "vacation homes",
+        "comparison"
+      ],
+      "intent": "comparison"
+    },
+    {
+      "industry": "real_estate",
+      "template": "Should I choose a realtor in {city} who focuses on rentals or one who handles both rentals and sales?",
+      "tags": [
+        "rental search",
+        "comparison"
+      ],
+      "intent": "comparison"
+    },
+    {
+      "industry": "auto_repair",
+      "template": "Who is the best auto repair shop in {city} for diagnosing check engine lights?",
+      "tags": [
+        "check engine light",
+        "diagnostics"
+      ],
+      "intent": "best"
+    },
+    {
+      "industry": "auto_repair",
+      "template": "I just moved to {city} and need a reliable mechanic for routine maintenance, any recommendations?",
+      "tags": [
+        "routine maintenance"
+      ],
+      "intent": "best"
+    },
+    {
+      "industry": "auto_repair",
+      "template": "Which auto repair shop in {city} do locals trust most for brake repairs?",
+      "tags": [
+        "brake repair"
+      ],
+      "intent": "best"
+    },
+    {
+      "industry": "auto_repair",
+      "template": "What's the best shop in {city} for transmission repair?",
+      "tags": [
+        "transmission repair"
+      ],
+      "intent": "best"
+    },
+    {
+      "industry": "auto_repair",
+      "template": "Can you recommend a good auto repair shop in {city} that handles both foreign and domestic cars?",
+      "tags": [
+        "general"
+      ],
+      "intent": "best"
+    },
+    {
+      "industry": "auto_repair",
+      "template": "Looking for the best mechanic in {city} who specializes in engine rebuilds, who would you suggest?",
+      "tags": [
+        "engine repair"
+      ],
+      "intent": "best"
+    },
+    {
+      "industry": "auto_repair",
+      "template": "Who do people in {city} recommend for suspension and steering work?",
+      "tags": [
+        "suspension repair"
+      ],
+      "intent": "best"
+    },
+    {
+      "industry": "auto_repair",
+      "template": "My car won't start this morning, who can I call for emergency roadside help in {city}?",
+      "tags": [
+        "roadside assistance",
+        "towing"
+      ],
+      "intent": "urgent"
+    },
+    {
+      "industry": "auto_repair",
+      "template": "I'm hearing a loud grinding noise when I brake, which shop in {city} can see me the same day?",
+      "tags": [
+        "brake repair"
+      ],
+      "intent": "urgent"
+    },
+    {
+      "industry": "auto_repair",
+      "template": "Is there an auto repair shop in {city} open late for emergency repairs?",
+      "tags": [
+        "emergency repair"
+      ],
+      "intent": "urgent"
+    },
+    {
+      "industry": "auto_repair",
+      "template": "My car overheated on the highway, who offers urgent cooling system repair in {city}?",
+      "tags": [
+        "cooling system repair"
+      ],
+      "intent": "urgent"
+    },
+    {
+      "industry": "auto_repair",
+      "template": "I need my flat tire fixed right away, which shop in {city} can take walk-ins today?",
+      "tags": [
+        "tire repair"
+      ],
+      "intent": "urgent"
+    },
+    {
+      "industry": "auto_repair",
+      "template": "My check engine light just came on and the car is shaking, where can I get it looked at urgently in {city}?",
+      "tags": [
+        "check engine light",
+        "diagnostics"
+      ],
+      "intent": "urgent"
+    },
+    {
+      "industry": "auto_repair",
+      "template": "Which auto repair shop in {city} offers emergency towing and same-day repairs?",
+      "tags": [
+        "towing",
+        "emergency repair"
+      ],
+      "intent": "urgent"
+    },
+    {
+      "industry": "auto_repair",
+      "template": "What's a fair price for an oil change at an auto repair shop in {city}?",
+      "tags": [
+        "oil change"
+      ],
+      "intent": "price"
+    },
+    {
+      "industry": "auto_repair",
+      "template": "Which auto repair shop in {city} offers the most affordable brake pad replacement?",
+      "tags": [
+        "brake repair"
+      ],
+      "intent": "price"
+    },
+    {
+      "industry": "auto_repair",
+      "template": "I'm on a tight budget, what's the cheapest place in {city} to get a transmission flush?",
+      "tags": [
+        "transmission service"
+      ],
+      "intent": "price"
+    },
+    {
+      "industry": "auto_repair",
+      "template": "Are there any auto shops in {city} that offer financing for major engine repairs?",
+      "tags": [
+        "engine repair",
+        "financing"
+      ],
+      "intent": "price"
+    },
+    {
+      "industry": "auto_repair",
+      "template": "How much should I expect to pay for a wheel alignment in {city}?",
+      "tags": [
+        "wheel alignment"
+      ],
+      "intent": "price"
+    },
+    {
+      "industry": "auto_repair",
+      "template": "Which mechanic in {city} has the best deals on tire rotations and balancing?",
+      "tags": [
+        "tire rotation"
+      ],
+      "intent": "price"
+    },
+    {
+      "industry": "auto_repair",
+      "template": "What's a reasonable cost for a full car inspection before buying a used vehicle in {city}?",
+      "tags": [
+        "pre-purchase inspection"
+      ],
+      "intent": "price"
+    },
+    {
+      "industry": "auto_repair",
+      "template": "What auto repair shop in {city} has the best customer reviews for honest pricing?",
+      "tags": [
+        "general"
+      ],
+      "intent": "reviews"
+    },
+    {
+      "industry": "auto_repair",
+      "template": "What's the most highly rated shop in {city} for AC repair?",
+      "tags": [
+        "ac repair"
+      ],
+      "intent": "reviews"
+    },
+    {
+      "industry": "auto_repair",
+      "template": "I want a mechanic with a solid reputation for electrical diagnostics in {city}, any suggestions?",
+      "tags": [
+        "electrical repair"
+      ],
+      "intent": "reviews"
+    },
+    {
+      "industry": "auto_repair",
+      "template": "What shop in {city} do customers consistently praise for quality brake work?",
+      "tags": [
+        "brake repair"
+      ],
+      "intent": "reviews"
+    },
+    {
+      "industry": "auto_repair",
+      "template": "Can you point me to a well-reviewed shop in {city} for exhaust system repairs?",
+      "tags": [
+        "exhaust repair"
+      ],
+      "intent": "reviews"
+    },
+    {
+      "industry": "auto_repair",
+      "template": "Who has the best reputation in {city} for diagnosing hard-to-find electrical issues?",
+      "tags": [
+        "electrical repair"
+      ],
+      "intent": "reviews"
+    },
+    {
+      "industry": "auto_repair",
+      "template": "I need a trustworthy shop for a pre-purchase vehicle inspection in {city}, who do people recommend?",
+      "tags": [
+        "pre-purchase inspection"
+      ],
+      "intent": "reviews"
+    },
+    {
+      "industry": "auto_repair",
+      "template": "Which is better in {city} for transmission work, a dealership service center or an independent shop?",
+      "tags": [
+        "transmission repair"
+      ],
+      "intent": "comparison"
+    },
+    {
+      "industry": "auto_repair",
+      "template": "Should I go to a general mechanic or a specialist for suspension repair in {city}?",
+      "tags": [
+        "suspension repair"
+      ],
+      "intent": "comparison"
+    },
+    {
+      "industry": "auto_repair",
+      "template": "What's the better option in {city} for someone with a hybrid car needing maintenance?",
+      "tags": [
+        "hybrid maintenance"
+      ],
+      "intent": "comparison"
+    },
+    {
+      "industry": "auto_repair",
+      "template": "Is it better to use a quick-lube chain or a full-service shop for oil changes in {city}?",
+      "tags": [
+        "oil change"
+      ],
+      "intent": "comparison"
+    },
+    {
+      "industry": "auto_repair",
+      "template": "For a diesel truck, which auto repair shop in {city} is better equipped to handle repairs?",
+      "tags": [
+        "diesel repair"
+      ],
+      "intent": "comparison"
+    },
+    {
+      "industry": "auto_repair",
+      "template": "Which shop in {city} is more reliable for European cars versus American-made vehicles?",
+      "tags": [
+        "general"
+      ],
+      "intent": "comparison"
+    },
+    {
+      "industry": "auto_repair",
+      "template": "Between two nearby mechanics, which one in {city} is better known for honest diagnostics?",
+      "tags": [
+        "diagnostics"
+      ],
+      "intent": "comparison"
+    },
+    {
+      "industry": "auto_repair",
+      "template": "Who in {city} is known as the go-to shop for classic car restorations?",
+      "tags": [
+        "classic car repair"
+      ],
+      "intent": "best"
+    },
+    {
+      "industry": "auto_repair",
+      "template": "My battery died and I need a jump start or replacement right away in {city}, who can help?",
+      "tags": [
+        "battery replacement"
+      ],
+      "intent": "urgent"
+    },
+    {
+      "industry": "auto_repair",
+      "template": "Which shop in {city} offers the best price for state emissions testing?",
+      "tags": [
+        "emissions testing"
+      ],
+      "intent": "price"
+    },
+    {
+      "industry": "auto_repair",
+      "template": "What auto repair shop in {city} is known for friendly customer service and fair treatment?",
+      "tags": [
+        "general"
+      ],
+      "intent": "reviews"
+    },
+    {
+      "industry": "auto_repair",
+      "template": "Which is more cost-effective in {city}, repairing an older car's AC or replacing the whole unit?",
+      "tags": [
+        "ac repair"
+      ],
+      "intent": "comparison"
+    },
+    {
+      "industry": "salon",
+      "template": "Who is the best hair salon in {city} for curly hair?",
+      "tags": [
+        "curly hair care"
+      ],
+      "intent": "best"
+    },
+    {
+      "industry": "salon",
+      "template": "What's the best place in {city} to get a balayage done?",
+      "tags": [
+        "balayage",
+        "hair coloring"
+      ],
+      "intent": "best"
+    },
+    {
+      "industry": "salon",
+      "template": "Which salon in {city} is known for the best bridal hair and makeup?",
+      "tags": [
+        "bridal hair",
+        "makeup"
+      ],
+      "intent": "best"
+    },
+    {
+      "industry": "salon",
+      "template": "I'm looking for the best stylist in {city} who specializes in men's haircuts?",
+      "tags": [
+        "men's haircuts"
+      ],
+      "intent": "best"
+    },
+    {
+      "industry": "salon",
+      "template": "Can you recommend the best salon in {city} for natural hair care?",
+      "tags": [
+        "natural hair care"
+      ],
+      "intent": "best"
+    },
+    {
+      "industry": "salon",
+      "template": "Where is the best spot in {city} for eyelash extensions?",
+      "tags": [
+        "eyelash extensions"
+      ],
+      "intent": "best"
+    },
+    {
+      "industry": "salon",
+      "template": "What salon in {city} has the best reputation for keratin treatments?",
+      "tags": [
+        "keratin treatment"
+      ],
+      "intent": "best"
+    },
+    {
+      "industry": "salon",
+      "template": "I need the best place in {city} for a full color correction?",
+      "tags": [
+        "color correction"
+      ],
+      "intent": "best"
+    },
+    {
+      "industry": "salon",
+      "template": "My hair appointment got cancelled, is there a salon in {city} that can fit me in same day?",
+      "tags": [
+        "same-day appointment",
+        "haircut"
+      ],
+      "intent": "urgent"
+    },
+    {
+      "industry": "salon",
+      "template": "Is there a salon in {city} open late tonight for a quick trim?",
+      "tags": [
+        "late hours",
+        "haircut"
+      ],
+      "intent": "urgent"
+    },
+    {
+      "industry": "salon",
+      "template": "I have a wedding tomorrow and need an emergency updo, who in {city} can help?",
+      "tags": [
+        "bridal styling",
+        "updo"
+      ],
+      "intent": "urgent"
+    },
+    {
+      "industry": "salon",
+      "template": "Which salon in {city} offers walk-in appointments for last-minute color fixes?",
+      "tags": [
+        "walk-in",
+        "hair color"
+      ],
+      "intent": "urgent"
+    },
+    {
+      "industry": "salon",
+      "template": "My gel nails chipped badly, is there a nail salon in {city} open right now?",
+      "tags": [
+        "nail repair",
+        "gel nails"
+      ],
+      "intent": "urgent"
+    },
+    {
+      "industry": "salon",
+      "template": "I need a same-day blowout before an event, who in {city} can squeeze me in?",
+      "tags": [
+        "blowout"
+      ],
+      "intent": "urgent"
+    },
+    {
+      "industry": "salon",
+      "template": "Is there a salon in {city} that does emergency hair repair after a bad dye job?",
+      "tags": [
+        "hair repair",
+        "color correction"
+      ],
+      "intent": "urgent"
+    },
+    {
+      "industry": "salon",
+      "template": "Does any salon in {city} stay open on Sundays for last-minute haircuts?",
+      "tags": [
+        "sunday hours",
+        "haircut"
+      ],
+      "intent": "urgent"
+    },
+    {
+      "industry": "salon",
+      "template": "What's an affordable salon in {city} for a basic haircut?",
+      "tags": [
+        "haircut"
+      ],
+      "intent": "price"
+    },
+    {
+      "industry": "salon",
+      "template": "I'm on a budget, which salon in {city} offers cheap highlights?",
+      "tags": [
+        "highlights"
+      ],
+      "intent": "price"
+    },
+    {
+      "industry": "salon",
+      "template": "Are there any salons in {city} with student discounts for hair services?",
+      "tags": [
+        "discounts",
+        "general"
+      ],
+      "intent": "price"
+    },
+    {
+      "industry": "salon",
+      "template": "What's the average cost of a manicure and pedicure in {city}?",
+      "tags": [
+        "manicure",
+        "pedicure"
+      ],
+      "intent": "price"
+    },
+    {
+      "industry": "salon",
+      "template": "Where in {city} can I get the best deals on hair extensions?",
+      "tags": [
+        "hair extensions"
+      ],
+      "intent": "price"
+    },
+    {
+      "industry": "salon",
+      "template": "I just moved to {city} and need a budget-friendly place for regular blowouts?",
+      "tags": [
+        "blowout"
+      ],
+      "intent": "price"
+    },
+    {
+      "industry": "salon",
+      "template": "Does any salon in {city} offer package pricing for bridal beauty services?",
+      "tags": [
+        "bridal packages"
+      ],
+      "intent": "price"
+    },
+    {
+      "industry": "salon",
+      "template": "What's a reasonably priced spot in {city} for facials?",
+      "tags": [
+        "facials"
+      ],
+      "intent": "price"
+    },
+    {
+      "industry": "salon",
+      "template": "Which hair salon in {city} has the best online reviews?",
+      "tags": [
+        "general"
+      ],
+      "intent": "reviews"
+    },
+    {
+      "industry": "salon",
+      "template": "What salon in {city} do locals trust most for color treatments?",
+      "tags": [
+        "hair coloring"
+      ],
+      "intent": "reviews"
+    },
+    {
+      "industry": "salon",
+      "template": "I'm new in {city} and want a highly rated place for eyebrow threading?",
+      "tags": [
+        "eyebrow threading"
+      ],
+      "intent": "reviews"
+    },
+    {
+      "industry": "salon",
+      "template": "Which nail salon in {city} is most recommended by customers?",
+      "tags": [
+        "manicure",
+        "pedicure"
+      ],
+      "intent": "reviews"
+    },
+    {
+      "industry": "salon",
+      "template": "What's the top-reviewed spot in {city} for men's grooming services?",
+      "tags": [
+        "men's grooming"
+      ],
+      "intent": "reviews"
+    },
+    {
+      "industry": "salon",
+      "template": "I'm searching for a well-reviewed salon in {city} that specializes in hair extensions?",
+      "tags": [
+        "hair extensions"
+      ],
+      "intent": "reviews"
+    },
+    {
+      "industry": "salon",
+      "template": "Which spa in {city} gets the best reviews for facials and skincare?",
+      "tags": [
+        "facials",
+        "skincare"
+      ],
+      "intent": "reviews"
+    },
+    {
+      "industry": "salon",
+      "template": "What salon in {city} is most trusted for keratin smoothing treatments?",
+      "tags": [
+        "keratin treatment"
+      ],
+      "intent": "reviews"
+    },
+    {
+      "industry": "salon",
+      "template": "Should I go to a big chain or a local salon in {city} for a haircut?",
+      "tags": [
+        "haircut"
+      ],
+      "intent": "comparison"
+    },
+    {
+      "industry": "salon",
+      "template": "Which type of salon in {city} is better for curly hair, a specialist or a general stylist?",
+      "tags": [
+        "curly hair care"
+      ],
+      "intent": "comparison"
+    },
+    {
+      "industry": "salon",
+      "template": "Is it better to get balayage or traditional highlights done at a salon in {city}?",
+      "tags": [
+        "balayage",
+        "highlights"
+      ],
+      "intent": "comparison"
+    },
+    {
+      "industry": "salon",
+      "template": "For first-time hair extension clients, which type of salon in {city} is better suited?",
+      "tags": [
+        "hair extensions"
+      ],
+      "intent": "comparison"
+    },
+    {
+      "industry": "salon",
+      "template": "For sensitive skin, which spa in {city} would be better for facials?",
+      "tags": [
+        "facials"
+      ],
+      "intent": "comparison"
+    },
+    {
+      "industry": "salon",
+      "template": "Is a mobile hairstylist or a traditional salon in {city} better for bridal parties?",
+      "tags": [
+        "bridal styling"
+      ],
+      "intent": "comparison"
+    },
+    {
+      "industry": "salon",
+      "template": "When it comes to short versus long hair cuts, which salon in {city} is better?",
+      "tags": [
+        "haircut"
+      ],
+      "intent": "comparison"
+    },
+    {
+      "industry": "salon",
+      "template": "For thinning hair, is a specialized salon in {city} better than a regular one?",
+      "tags": [
+        "hair loss treatment"
+      ],
+      "intent": "comparison"
+    }
+  ]
+}

@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { requireAdmin } from "@/lib/admin/require";
+import { requireAdmin } from "@/modules/auth";
 import { saveDirectoryApp } from "./dal";
 import { directoryAppSchema, parseCategoryList } from "./schema";
 
@@ -32,7 +32,7 @@ export async function saveDirectoryAppAction(formData: FormData): Promise<{ erro
     ratingLastUpdated: null,
   });
   if (!saved.ok) {
-    return { error: saved.unavailable ? "Apply migration 025 before saving directory apps." : "Could not save that app." };
+    return { error: saved.unavailable ? "Apply migration 072 before saving directory apps." : "Could not save that app." };
   }
   revalidatePath("/apps");
   revalidatePath("/internal/admin/apps");

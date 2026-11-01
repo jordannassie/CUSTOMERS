@@ -1,5 +1,6 @@
 import { saveAppReviewAction } from "@/modules/apps-directory/review-actions";
 import type { StoredReview } from "@/modules/apps-directory/review-types";
+import { FormSelect } from "./FormSelect";
 
 const field = "mt-1 w-full rounded-xl border border-[#E5E5E1] bg-white px-3 py-2 text-[14px] text-[#171717] outline-none focus:border-[#0866F5]";
 
@@ -9,11 +10,15 @@ export function ReviewForm({ slug, existing, error }: { slug: string; existing: 
       <input type="hidden" name="slug" value={slug} />
       {error ? <p className="rounded-xl border border-[#FECACA] bg-[#FEF2F2] px-3 py-2 text-[13px] text-[#991B1B]">{error}</p> : null}
       {existing ? <p className="text-[13px] text-[#777773]">You already have a {existing.status} review. Saving sends the updated review back for moderation.</p> : null}
-      <label className="text-[13px] font-semibold text-[#171717]">Overall rating
-        <select name="rating" defaultValue={existing?.rating ?? 5} className={field} required>
-          {[5, 4, 3, 2, 1].map((score) => <option key={score} value={score}>{score} out of 5</option>)}
-        </select>
-      </label>
+      <div className="flex flex-col gap-1">
+        <label htmlFor="review-rating" className="text-[13px] font-semibold text-[#171717]">Overall rating</label>
+        <FormSelect
+          id="review-rating"
+          name="rating"
+          defaultValue={String(existing?.rating ?? 5)}
+          options={[5, 4, 3, 2, 1].map((score) => ({ value: String(score), label: `${score} out of 5` }))}
+        />
+      </div>
       <label className="text-[13px] font-semibold text-[#171717]">Review title
         <input name="title" required minLength={4} maxLength={120} defaultValue={existing?.title ?? ""} className={field} />
       </label>

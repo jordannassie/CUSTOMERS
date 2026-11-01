@@ -1,5 +1,14 @@
 import { reportAppReviewAction, voteAppReviewAction } from "@/modules/apps-directory/review-actions";
 import type { PublicReview } from "@/modules/apps-directory/review-types";
+import { FormSelect } from "./FormSelect";
+
+const REPORT_REASONS = [
+  { value: "spam", label: "Spam" },
+  { value: "duplicate", label: "Duplicate" },
+  { value: "not_a_customer", label: "Not a customer" },
+  { value: "offensive", label: "Offensive" },
+  { value: "other", label: "Other" },
+];
 
 export function ReviewList({ slug, reviews, signedIn }: { slug: string; reviews: PublicReview[]; signedIn: boolean }) {
   if (reviews.length === 0) {
@@ -35,13 +44,7 @@ export function ReviewList({ slug, reviews, signedIn }: { slug: string; reviews:
                 <input type="hidden" name="reviewId" value={review.id} />
                 <input type="hidden" name="slug" value={slug} />
                 <label className="sr-only" htmlFor={`reason-${review.id}`}>Report reason</label>
-                <select id={`reason-${review.id}`} name="reason" className="h-8 rounded-lg border border-[#E5E5E1] bg-white px-2 text-[12px]" defaultValue="spam">
-                  <option value="spam">Spam</option>
-                  <option value="duplicate">Duplicate</option>
-                  <option value="not_a_customer">Not a customer</option>
-                  <option value="offensive">Offensive</option>
-                  <option value="other">Other</option>
-                </select>
+                <FormSelect id={`reason-${review.id}`} name="reason" defaultValue="spam" options={REPORT_REASONS} className="h-8 w-44 text-[12px]" />
                 <button type="submit" className="text-[12px] font-semibold text-[#777773]">Report</button>
               </form>
             </div>

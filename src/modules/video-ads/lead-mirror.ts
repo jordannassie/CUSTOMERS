@@ -1,5 +1,6 @@
 import "server-only";
-import { createServiceClient } from "@/lib/supabase/service";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@/types/database.types";
 import { getVideoAdPackage, type VideoAdPackageId } from "./packages";
 
 type BriefCopy = {
@@ -29,8 +30,8 @@ export function briefLeadMessage(packageId: VideoAdPackageId, amountCents: numbe
   return lines.join("\n").slice(0, 5000);
 }
 
-/** Copies the order into Leads so an admin can read it before the orders table exists. */
-export async function mirrorLead(input: {
+/** Copies the order into Leads so an admin can read it before the orders table exists. dal.ts passes the client. */
+export async function mirrorLead(svc: SupabaseClient<Database>, input: {
   sessionId: string;
   name: string;
   email: string;
@@ -39,7 +40,6 @@ export async function mirrorLead(input: {
   message: string;
   mode: "payment" | "brief";
 }) {
-  const svc = createServiceClient();
   const notes = leadNoteKey(input.sessionId);
   const { data: existing, error: readError } = await svc
     .from("contact_submissions")

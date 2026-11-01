@@ -4,7 +4,8 @@ import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 
 const ROOT = join(import.meta.dirname, "..");
-const AUTH_CALL = /\brequire(User|Admin)\s*\(/;
+// activeUser (src/modules/onboarding/guard.ts) calls requireUser() first, then refuses a paused agency.
+const AUTH_CALL = /\b(require(User|Agency|Admin)|activeUser)\s*\(/;
 
 // Reachable without a login on purpose. Each entry says how it protects itself.
 const PUBLIC: Record<string, string> = {
@@ -16,9 +17,13 @@ const PUBLIC: Record<string, string> = {
   "src/app/auth/callback/route.ts": "OAuth and email-link callback",
   "src/app/auth/signout/route.ts": "signs out the current session",
   "src/app/api/stripe/webhook/route.ts": "Stripe signature check",
-  "src/app/api/stripe/video-ads/checkout/route.ts": "public one-time checkout, server-side package price",
+  "src/app/api/email/unsubscribe/route.ts": "signed unsubscribe token (B-61)",
+  "src/app/r/[token]/route.ts": "report share link; the 256-bit token is the access check (B-59, D-90)",
+  "src/app/api/alerts/check/route.ts": "pg_cron call, worker secret header (B-69)",
+  "src/app/api/email/jobs/route.ts": "pg_cron call, worker secret header (B-62)",
+  "src/app/api/dev/scan-worker/route.ts": "local pg_cron call, worker secret header; 404 in production (BUG-167)",
+  "src/app/api/stripe/video-ads/checkout/route.ts": "public one-time checkout, server-side package price, rate limited per IP",
   "src/app/api/stripe/video-ads/brief/route.ts": "public brief, Stripe session must be paid",
-  "src/app/api/geo/cron/run-monitoring/route.ts": "cron secret header",
 };
 
 function walk(dir: string): string[] {
@@ -38,7 +43,7 @@ const missing = targets.filter(
 );
 const stalePublic = Object.keys(PUBLIC).filter((file) => !targets.includes(file));
 
-for (const file of missing) console.log(`FAIL ${file}: no requireUser() or requireAdmin() call and not listed as public`);
+for (const file of missing) console.log(`FAIL ${file}: no requireUser(), requireAgency() or requireAdmin() call and not listed as public`);
 for (const file of stalePublic) console.log(`FAIL ${file}: listed as public but the file no longer exists`);
 
 console.log(`\nChecked ${targets.length} route and action files, ${Object.keys(PUBLIC).length} public.`);

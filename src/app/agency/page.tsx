@@ -1,35 +1,67 @@
 import type { Metadata } from "next";
-import SiteHeader from "@/components/site/SiteHeader";
-import SiteFooter from "@/components/site/SiteFooter";
-import AgencyPageContent from "./AgencyPageContent";
+import Link from "next/link";
+import Header from "@/components/marketing/Header";
+import Footer from "@/components/marketing/Footer";
+import { Button } from "@/components/ui/button";
+import { CTA, Section } from "@/components/marketing/section";
+import { ClientListExample } from "@/components/marketing/home/ForAgencies";
+import { AgencyWorkflow } from "@/components/marketing/agency/AgencyWorkflow";
+import { AgencyBilling } from "@/components/marketing/agency/AgencyBilling";
+import { RevenueExample } from "@/components/marketing/agency/RevenueExample";
+import { getPublicPricing } from "@/modules/billing";
+import { pageMetadata } from "@/lib/site-metadata";
 
-export const metadata: Metadata = {
-  title: "AEO Software for Marketing Agencies | Customers.Direct",
-  description:
-    "Help your agency track client visibility in AI search, compare competitors, identify improvements, and deliver client-ready reports from one dashboard.",
-  openGraph: {
-    type: "website",
-    title: "AEO Software for Marketing Agencies | Customers.Direct",
-    description:
-      "Help your agency track client visibility in AI search, compare competitors, identify improvements, and deliver client-ready reports from one dashboard.",
-    url: "https://customers.direct/agency",
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "AEO Software for Marketing Agencies | Customers.Direct",
-    description:
-      "Help your agency track client visibility in AI search, compare competitors, identify improvements, and deliver client-ready reports from one dashboard.",
-  },
-};
+const title = "For agencies";
+const description =
+  "Check whether ChatGPT, Claude and Perplexity recommend each of your clients, see which competitors win, and send reports with your logo. All clients in one login.";
 
-export default function AgencyPage() {
+export const metadata: Metadata = pageMetadata({ title, description, path: "/agency" });
+
+export default async function AgencyPage() {
+  const { plans } = await getPublicPricing();
+
   return (
     <>
-      <SiteHeader />
-      <main>
-        <AgencyPageContent />
+      <Header />
+      <main className="flex-1">
+        <section className="bg-background">
+          <div className="mx-auto grid max-w-[1120px] gap-12 px-4 pt-12 pb-16 sm:px-6 sm:pt-20 sm:pb-22 lg:grid-cols-[1.25fr_1fr] lg:items-center lg:gap-16">
+            <div className="flex min-w-0 flex-col gap-6">
+              <h1 className="text-[32px] leading-[1.08] font-semibold tracking-[-0.035em] text-balance sm:text-5xl lg:text-6xl">
+                Show every client whether AI recommends them
+              </h1>
+              <p className="max-w-[52ch] text-lg text-muted-foreground text-pretty">
+                Track all your client businesses in one login. See who ChatGPT, Claude and Perplexity name instead of
+                them, work through the fixes, and send reports with your logo.
+              </p>
+              <div className="flex flex-col gap-3 sm:flex-row">
+                <Button asChild size="lg">
+                  <Link href="/signup">Start free trial</Link>
+                </Button>
+                <Button asChild size="lg" variant="outline">
+                  <Link href="/contact?interest=agency">Talk to us</Link>
+                </Button>
+              </div>
+              <p className="text-[13px] text-text-hint">7-day free trial with up to 2 clients. Card needed to start.</p>
+            </div>
+            <ClientListExample />
+          </div>
+        </section>
+
+        <AgencyWorkflow />
+        <RevenueExample />
+        <AgencyBilling plans={plans} />
+
+        <Section>
+          <CTA
+            title="Try it with 2 of your clients"
+            description="Run real scans for 7 days. Cancel before day 7 and you pay nothing."
+            primary={{ label: "Start free trial", href: "/signup" }}
+            secondary={{ label: "See pricing", href: "/pricing" }}
+          />
+        </Section>
       </main>
-      <SiteFooter />
+      <Footer />
     </>
   );
 }

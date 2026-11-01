@@ -1,0 +1,249 @@
+"use client";
+
+import { useEffect, useRef, useState, useTransition } from "react";
+import { Loader2, RotateCw } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import type { ActionResult } from "@/modules/auth";
+import type { ScanStatus, StartScanResult } from "@/modules/jobs";
+import { needsOverdraftConfirm } from "@/modules/jobs/overdraft";
+import {
+  CREDITS_LATE,
+  FIRST_SCAN_FAILED,
+  FIRST_SCAN_STALLED,
+  creditsWaitNext,
+  firstScanPhase,
+  firstScanCopy,
+  firstScanProblem,
+  type FirstScanPhase,
+} from "@/modules/onboarding/first-scan";
+import type { FirstScanSummary, ModelProgress } from "@/modules/onboarding";
+import { FirstScanResult } from "./FirstScanResult";
+import { OverdraftNotice } from "./OverdraftNotice";
+import { ScanProgressList } from "./ScanProgressList";
+
+type ScanAction = (input: unknown) => Promise<ActionResult<ScanStatus>>;
+type StartAction = (input: unknown) => Promise<StartScanResult>;
+type CreditsCheck = () => Promise<ActionResult<{ waiting: boolean }>>;
+type ProgressAction = (input: unknown) => Promise<ActionResult<ModelProgress[]>>;
+type SummaryAction = (input: unknown) => Promise<ActionResult<FirstScanSummary>>;
+
+const POLL_MS = 2000;
+const NO_CONNECTION = "We couldn't start the scan. Check your connection and try again.";
+
+type Props = {
+  businessId: string;
+  businessName: string;
+  models: { id: string; label: string }[];
+  questions: number;
+  initial: ScanStatus | null;
+  /** The subscription is linked but invoice.paid has not granted the trial credits yet (F-48). */
+  awaitingCredits: boolean;
+  start: StartAction;
+  getStatus: ScanAction;
+  checkCredits: CreditsCheck;
+  getProgress: ProgressAction;
+  getSummary: SummaryAction;
+};
+
+function initialPhase(initial: ScanStatus | null, awaitingCredits: boolean): FirstScanPhase {
+  if (initial) return firstScanPhase(initial, awaitingCredits);
+  return awaitingCredits ? "credits" : "start";
+}
+
+// MVP_SPEC 3.1 step 9 (B-38): start the first scan, wait for it, then open the dashboard. A failed scan
+// offers a retry here instead of an empty dashboard (REL-05).
+export function FirstScan(props: Props) {
+  const { businessId, businessName, models, questions, initial, awaitingCredits, start, getStatus, checkCredits } = props;
+  const { getProgress, getSummary } = props;
+  const [phase, setPhase] = useState<FirstScanPhase>(() => initialPhase(initial, awaitingCredits));
+  const [problem, setProblem] = useState<string | null>(initial && phase === "failed" ? firstScanProblem(initial) : null);
+  const [pending, startTransition] = useTransition();
+  // Bumped after each poll that changes nothing, so the next one is scheduled.
+  const [polls, setPolls] = useState(0);
+  const [retrying, setRetrying] = useState(initial?.retrying ?? false);
+  const [stalledJob, setStalledJob] = useState(initial?.stalled ?? false);
+  const [progress, setProgress] = useState<Map<string, ModelProgress> | null>(null);
+  const [summary, setSummary] = useState<FirstScanSummary | null>(null);
+  const started = useRef(false);
+  const creditsSince = useRef<number | null>(null);
+
+  function fail(message: string) {
+    setProblem(message);
+    setPhase("failed");
+  }
+
+  // `confirmOverdraft` once the user has seen that the scan costs more than the balance (D-54).
+  function run(confirmOverdraft = false) {
+    setProblem(null);
+    setPhase("scanning");
+    startTransition(async () => {
+      // The first scan never asks "Scan again?" (that is for Run scan within 24 hours of a finished scan).
+      const result = await start({ businessId, confirmRecent: true, ...(confirmOverdraft ? { confirmOverdraft } : {}) }).catch(() => null);
+      if (!result) return fail(NO_CONNECTION);
+      if (needsOverdraftConfirm(result)) {
+        setProblem(result.error);
+        return setPhase("confirm");
+      }
+      // 409: a scan is already on its way (a second tab, or a double start), so just wait for it.
+      if (!result.ok && result.status !== 409) return fail(result.error);
+    });
+  }
+
+  function waitForCredits() {
+    creditsSince.current = null;
+    setProblem(null);
+    setPhase("credits");
+  }
+
+  // F-48: poll until the webhook grants the trial credits, then start the scan as usual.
+  useEffect(() => {
+    if (phase !== "credits") return;
+    creditsSince.current ??= Date.now();
+    const since = creditsSince.current;
+    const timer = setTimeout(async () => {
+      const result = await checkCredits().catch(() => null);
+      const next = creditsWaitNext(result?.ok ? result.data.waiting : null, Date.now() - since);
+      if (next === "start") return setPhase("start");
+      if (next === "wait") return setPolls((n) => n + 1);
+      setProblem(CREDITS_LATE);
+      setPhase("credits-late");
+    }, POLL_MS);
+    return () => clearTimeout(timer);
+  }, [phase, polls, checkCredits]);
+
+  // Runs once on arrival; the ref stops React's development double effect from starting two scans.
+  useEffect(() => {
+    if (phase !== "start" || started.current) return;
+    started.current = true;
+    run();
+  });
+
+  useEffect(() => {
+    if (phase !== "scanning" || pending) return;
+    const timer = setTimeout(async () => {
+      const [result, saved] = await Promise.all([
+        getStatus({ businessId }).catch(() => null),
+        getProgress({ businessId }).catch(() => null),
+      ]);
+      if (saved?.ok) setProgress(new Map(saved.data.map((m) => [m.id, m])));
+      // A dropped poll just tries again; the scan itself carries on.
+      const next = result?.ok ? firstScanPhase(result.data) : "scanning";
+      if (result?.ok) {
+        setRetrying(result.data.retrying);
+        setStalledJob(result.data.stalled);
+      }
+      if (next === "scanning") return setPolls((n) => n + 1);
+      if (next === "done") return setPhase("done");
+      fail(next === "failed" && result?.ok ? firstScanProblem(result.data) : FIRST_SCAN_FAILED);
+    }, POLL_MS);
+    return () => clearTimeout(timer);
+  }, [phase, pending, polls, businessId, getStatus, getProgress]);
+
+  // DB-010: one summary before the dashboard. If it cannot load, open the dashboard as before.
+  useEffect(() => {
+    if (phase !== "done") return;
+    let live = true;
+    getSummary({ businessId })
+      .catch(() => null)
+      .then((result) => {
+        if (!live) return;
+        // A full load, not router.replace: the app layout was rendered without the app frame during setup, and a
+        // client navigation keeps that layout, leaving the dashboard blank.
+        if (result?.ok) setSummary(result.data);
+        else window.location.replace("/dashboard");
+      });
+    return () => {
+      live = false;
+    };
+  }, [phase, businessId, getSummary]);
+
+  const creditsLate = phase === "credits-late";
+  const failed = phase === "failed" || creditsLate;
+  const waiting = phase === "credits" || creditsLate;
+  // The worker holds the scan for a later try, so nothing is being asked right now (UI-012).
+  const paused = phase === "scanning" && retrying;
+  // No worker picked the scan up (or it died): stop the moving bars and say so, but keep polling in case it starts.
+  const stalled = phase === "scanning" && !retrying && stalledJob;
+  const anyAnswers = !!progress && [...progress.values()].some((m) => m.done > 0);
+  const asked = questions > 0 ? `${questions} ${questions === 1 ? "question" : "questions"}` : "the questions";
+  // Stopped before any AI answered (out of credits, say): nothing ran, so nothing "didn't finish".
+  const notRun = failed && !creditsLate && !anyAnswers;
+  const view = creditsLate ? "credits-late" : notRun ? "not-run" : failed ? "failed" : waiting ? "credits" : stalled ? "stalled" : phase;
+  const copy = firstScanCopy(view, { business: businessName, models: models.map((m) => m.label), asked });
+
+  return (
+    <div className="mx-auto flex w-full max-w-xl flex-col gap-8 px-5 py-10 sm:px-8 sm:py-16">
+      <header className="flex flex-col gap-2">
+        <h1 className="text-2xl font-semibold tracking-[-0.02em] sm:text-[32px] sm:leading-tight">{copy.heading}</h1>
+        <p className="text-[15px] leading-relaxed text-muted-foreground">{copy.intro}</p>
+      </header>
+
+      {summary ? (
+        <FirstScanResult summary={summary} />
+      ) : (
+        <>
+        <ScanProgressList
+          models={models}
+          progress={progress}
+          state={
+            phase === "done"
+              ? "done"
+              : waiting || phase === "confirm" || notRun || (stalled && !anyAnswers)
+                ? "waiting"
+                : failed || paused || stalled
+                  ? "stopped"
+                  : "running"
+          }
+          asking={questions > 0 ? `Asking ${asked}…` : "Asking…"}
+        />
+
+        <div role="status" aria-live="polite" className="flex flex-col gap-4">
+          {failed ? (
+            <>
+              <p className="rounded-md bg-low-bg px-3 py-2 text-[13px] text-low-text" data-testid="first-scan-problem">
+                {problem}
+              </p>
+              <div>
+                <Button onClick={creditsLate ? waitForCredits : () => run()} disabled={pending} className="min-w-32">
+                  {pending ? <Loader2 aria-hidden className="animate-spin" /> : <RotateCw aria-hidden />}
+                  Try again
+                </Button>
+              </div>
+            </>
+          ) : phase === "confirm" ? (
+            <OverdraftNotice message={problem ?? ""} pending={pending} onConfirm={() => run(true)} />
+          ) : waiting ? (
+            <p className="flex items-center gap-2 text-sm text-muted-foreground" data-testid="first-scan-credits">
+              <Loader2 aria-hidden className="size-4 animate-spin" />
+              Adding your trial credits…
+            </p>
+          ) : phase === "done" ? (
+            <p className="text-sm text-muted-foreground">Getting your results…</p>
+          ) : paused || stalled ? (
+            <>
+              <p
+                className="rounded-md bg-mid-bg px-3 py-2 text-[13px] text-mid-text"
+                data-testid={stalled ? "first-scan-stalled" : "first-scan-retrying"}
+              >
+                {stalled
+                  ? FIRST_SCAN_STALLED
+                  : "The scan hit a problem, so we'll try again in a few minutes. You can leave this page. Your score shows on the dashboard when it's done."}
+              </p>
+              <div>
+                {/* A full load, for the same reason as the redirect in the summary effect. */}
+                <Button asChild className="min-w-32">
+                  <a href="/dashboard">Go to dashboard</a>
+                </Button>
+              </div>
+            </>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              This usually takes about a minute. You can leave this page. The scan keeps going and your score shows on the dashboard.
+            </p>
+          )}
+        </div>
+        </>
+      )}
+    </div>
+  );
+}

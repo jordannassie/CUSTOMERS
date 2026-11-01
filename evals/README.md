@@ -1,6 +1,6 @@
 # AI evals
 
-Evals check the quality of the AI parts whenever a prompt or model changes (MVP_SPEC 25, D-81). They run inside Vitest with `vitest-evals`; `autoevals` supplies scorer functions where useful.
+Evals check the quality of the AI parts whenever a prompt or model changes (MVP_SPEC 25, D-81). They run inside Vitest with `vitest-evals`; the graders are our own code, in each suite and in `evals/shared/` (no `autoevals`).
 
 ```bash
 npx vitest run evals        # every suite

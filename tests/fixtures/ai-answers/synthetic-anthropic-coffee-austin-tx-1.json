@@ -1,0 +1,11 @@
+{
+  "synthetic": true,
+  "provider": "anthropic",
+  "question": "What is the best coffee shop in Austin, TX?",
+  "answerText": "Based on recent reviews, Eastside Espresso is a popular choice in Austin, TX, known for strong local reviews and friendly staff. Locals also recommend Lone Star Brew Bar. I would call ahead to confirm availability.",
+  "citations": [],
+  "names": [
+    "Eastside Espresso",
+    "Lone Star Brew Bar"
+  ]
+}

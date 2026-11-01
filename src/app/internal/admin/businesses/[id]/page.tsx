@@ -1,166 +1,133 @@
-import { requireAdmin } from "@/lib/admin/require";
-import { createServiceClient } from "@/lib/supabase/service";
+import { Suspense } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { ChevronLeft } from "lucide-react";
+import { loadBusinessDetail, loadBusinessName, runScanNow, restoreBusiness } from "@/modules/admin";
+import { requireAdmin } from "@/modules/auth";
+import { ScanStatusBadge, TestBadge } from "../../_components/badges";
+import AdminPageHeader from "../../_components/page-header";
+import { DetailSkeleton } from "../../_components/skeletons";
+import { StatGrid, StatTile } from "../../_components/stat";
+import { DeletedBadge } from "../_components/scan-parts";
+import { formatDate } from "../../_components/format";
+import AnswersGrid from "./_components/answers-grid";
+import { Competitors, Opportunities, Questions } from "./_components/lists";
+import Profile from "./_components/profile";
+import RestoreBusiness from "./_components/restore-business";
+import RunScanButton from "./_components/run-scan-button";
+import ScanHistory from "./_components/scan-history";
 
-function fmt(iso: string) {
-  return new Date(iso).toLocaleString("en-US", {
-    month: "short", day: "numeric", year: "numeric",
-    hour: "2-digit", minute: "2-digit",
-  });
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+// "Joe's Coffee | Admin" through the admin title template, so open tabs say which business they are.
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  return { title: (UUID.test(id) && (await loadBusinessName(id))) || "Business" };
 }
 
-function Row({ label, value }: { label: string; value: React.ReactNode }) {
+export default async function AdminBusinessPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  await requireAdmin({ next: `/internal/admin/businesses/${id}` });
+
   return (
-    <div className="flex items-start gap-4 py-2.5 border-b border-white/5">
-      <span className="text-[11.5px] text-white/30 w-36 shrink-0">{label}</span>
-      <span className="text-[12.5px] text-white/80 min-w-0 break-all">{value ?? "—"}</span>
+    <div className="mx-auto flex max-w-6xl flex-col gap-8 px-4 py-8 sm:px-6">
+      <Link
+        href="/internal/admin/businesses"
+        className="inline-flex w-fit items-center gap-1 text-[13px] text-muted-foreground hover:text-foreground"
+      >
+        <ChevronLeft aria-hidden className="size-4" />
+        Businesses
+      </Link>
+      <Suspense fallback={<DetailSkeleton label="Loading business" />}>
+        <Detail id={id} />
+      </Suspense>
     </div>
   );
 }
 
-export default async function AdminBusinessDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  await requireAdmin();
-  const { id } = await params;
-  const svc = createServiceClient();
-
-  const { data: biz } = await svc
-    .from("businesses")
-    .select("*")
-    .eq("id", id)
-    .maybeSingle();
-
-  if (!biz) notFound();
-
-  const { data: authUser } = await svc.auth.admin.getUserById(biz.owner_user_id);
-
-  const [
-    { data: competitors },
-    { data: prompts },
-    { data: scans },
-    { data: opps },
-  ] = await Promise.all([
-    svc.from("business_competitors").select("id, name, domain, source, enrichment_status, created_at").eq("business_id", id).order("created_at", { ascending: false }),
-    svc.from("tracked_prompts").select("id, prompt, active, created_at").eq("business_id", id).order("created_at", { ascending: false }),
-    svc.from("visibility_runs").select("id, provider, status, error, started_at, completed_at, created_at").eq("business_id", id).order("created_at", { ascending: false }).limit(20),
-    svc.from("opportunities").select("id, title, status, impact, created_at").eq("business_id", id).order("created_at", { ascending: false }).limit(10),
-  ]);
+async function Detail({ id }: { id: string }) {
+  const detail = UUID.test(id) ? await loadBusinessDetail(id) : null;
+  if (!detail) notFound();
+  const { business, agency, scans, credits, balance } = detail;
+  const last = scans[0];
 
   return (
-    <div className="max-w-4xl mx-auto px-6 py-8">
-      <div className="mb-6">
-        <Link href="/internal/admin/businesses" className="text-[11px] text-white/30 hover:text-white/60 transition-colors">
-          ← Businesses
-        </Link>
-        <h1 className="text-[22px] font-bold text-white mt-2">{biz.name}</h1>
-        <p className="text-[12px] text-white/30 mt-1">{authUser?.user?.email ?? biz.owner_user_id}</p>
-      </div>
+    <>
+      <AdminPageHeader
+        title={
+          <>
+            <span className="min-w-0 break-words">{business.name}</span>
+            {business.deleted_at && <DeletedBadge />}
+            {agency?.isTest && <TestBadge />}
+          </>
+        }
+        subtitle={
+          <p>
+            {agency ? (
+              <Link href={`/internal/admin/agencies/${agency.id}`} className="text-primary hover:underline">
+                {agency.name}
+              </Link>
+            ) : (
+              "No agency"
+            )}
+            {detail.ownerEmail && `, ${detail.ownerEmail}`}
+          </p>
+        }
+        actions={
+          <RunScanButton
+            businessId={business.id}
+            active={detail.activeScan}
+            blocked={
+              business.deleted_at
+                ? "This business was deleted, so it can't be scanned."
+                : agency === null
+                  ? "No agency, so there are no credits to scan with."
+                  : null
+            }
+            credits={detail.questions.filter((q) => q.active).length * business.models.length}
+            agencyName={agency?.name ?? null}
+            runScanNow={runScanNow}
+          />
+        }
+      />
 
-      {/* Profile */}
-      <div className="bg-[#1E293B] border border-white/8 rounded-xl p-5 mb-6">
-        <h2 className="text-[13px] font-bold text-white mb-3">Business Profile</h2>
-        <Row label="ID"         value={biz.id} />
-        <Row label="Domain"     value={biz.domain} />
-        <Row label="Status"     value={biz.status} />
-        <Row label="City"       value={biz.primary_city} />
-        <Row label="Region"     value={biz.primary_region} />
-        <Row label="Country"    value={biz.primary_country} />
-        <Row label="Industry"   value={biz.industry} />
-        <Row label="Created"    value={fmt(biz.created_at)} />
-      </div>
+      {business.deleted_at && (
+        <RestoreBusiness
+          businessId={business.id}
+          blocked={
+            agency?.status === "deleted"
+              ? "The whole account was deleted. Restore the account first."
+              : !business.purge_after || new Date(business.purge_after) <= new Date()
+                ? "The waiting period has passed, so this business can no longer be restored."
+                : null
+          }
+          restoreBusiness={restoreBusiness}
+        />
+      )}
 
-      <div className="grid md:grid-cols-2 gap-6 mb-6">
-        {/* Competitors */}
-        <div className="bg-[#1E293B] border border-white/8 rounded-xl overflow-hidden">
-          <h2 className="text-[13px] font-bold text-white px-5 py-4 border-b border-white/8">
-            Competitors ({competitors?.length ?? 0})
-          </h2>
-          <div className="divide-y divide-white/5 max-h-60 overflow-y-auto">
-            {(competitors ?? []).map((c) => (
-              <div key={c.id} className="px-5 py-2.5 flex items-center justify-between">
-                <div>
-                  <p className="text-[12px] text-white">{c.name}</p>
-                  <p className="text-[10.5px] text-white/30">{c.domain ?? "no domain"}</p>
-                </div>
-                <span className="text-[10px] text-white/30">{c.source}</span>
-              </div>
-            ))}
-            {!competitors?.length && <p className="px-5 py-3 text-[12px] text-white/30">None</p>}
-          </div>
-        </div>
+      <StatGrid>
+        <StatTile
+          label="Last scan"
+          value={last ? <ScanStatusBadge status={last.state} /> : "Never"}
+          note={last ? formatDate(last.startedAt, true) : undefined}
+        />
+        <StatTile label="Credits used this month" value={credits.thisMonth.toLocaleString("en-US")} />
+        <StatTile label="Credits used in total" value={credits.allTime.toLocaleString("en-US")} />
+        <StatTile
+          label="Agency balance"
+          value={balance ? balance.total.toLocaleString("en-US") : "No agency"}
+          note={balance && balance.held > 0 ? `${balance.held.toLocaleString("en-US")} held for a scan` : undefined}
+        />
+      </StatGrid>
 
-        {/* Prompts */}
-        <div className="bg-[#1E293B] border border-white/8 rounded-xl overflow-hidden">
-          <h2 className="text-[13px] font-bold text-white px-5 py-4 border-b border-white/8">
-            Prompts ({prompts?.length ?? 0})
-          </h2>
-          <div className="divide-y divide-white/5 max-h-60 overflow-y-auto">
-            {(prompts ?? []).map((p) => (
-              <div key={p.id} className="px-5 py-2.5">
-                <p className="text-[12px] text-white truncate">{p.prompt}</p>
-                <p className="text-[10.5px] text-white/30">{p.active ? "active" : "inactive"}</p>
-              </div>
-            ))}
-            {!prompts?.length && <p className="px-5 py-3 text-[12px] text-white/30">None</p>}
-          </div>
-        </div>
+      <Profile detail={detail} />
+      <AnswersGrid results={detail.results} models={business.models} />
+      <ScanHistory scans={scans} />
+      <div className="grid gap-8 lg:grid-cols-2">
+        <Questions questions={detail.questions} />
+        <Competitors competitors={detail.competitors} />
       </div>
-
-      {/* Scans */}
-      <div className="bg-[#1E293B] border border-white/8 rounded-xl overflow-hidden mb-6">
-        <h2 className="text-[13px] font-bold text-white px-5 py-4 border-b border-white/8">
-          Recent Scans
-        </h2>
-        <div className="overflow-x-auto">
-          <table className="w-full text-[12px]">
-            <thead>
-              <tr className="border-b border-white/5 bg-[#0F172A]/40">
-                {["Provider", "Status", "Started", "Error"].map((h) => (
-                  <th key={h} className="text-left px-4 py-2.5 text-[10px] font-semibold text-white/30 uppercase tracking-wider">{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-white/5">
-              {(scans ?? []).map((s) => (
-                <tr key={s.id} className={s.status === "failed" ? "bg-red-900/10" : ""}>
-                  <td className="px-4 py-2.5 text-white/70">{s.provider}</td>
-                  <td className="px-4 py-2.5">
-                    <span className={`text-[10px] font-bold uppercase ${
-                      s.status === "failed" ? "text-red-400" :
-                      s.status === "completed" ? "text-emerald-400" :
-                      "text-yellow-400"
-                    }`}>{s.status}</span>
-                  </td>
-                  <td className="px-4 py-2.5 text-white/30 whitespace-nowrap">{fmt(s.created_at)}</td>
-                  <td className="px-4 py-2.5 text-red-400 truncate max-w-[200px]">{s.error ?? "—"}</td>
-                </tr>
-              ))}
-              {!scans?.length && (
-                <tr><td colSpan={4} className="px-4 py-4 text-[12px] text-white/30">No scans yet.</td></tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* Opportunities */}
-      <div className="bg-[#1E293B] border border-white/8 rounded-xl overflow-hidden">
-        <h2 className="text-[13px] font-bold text-white px-5 py-4 border-b border-white/8">
-          Opportunities ({opps?.length ?? 0})
-        </h2>
-        <div className="divide-y divide-white/5">
-          {(opps ?? []).map((o) => (
-            <div key={o.id} className="px-5 py-2.5 flex items-center justify-between">
-              <p className="text-[12px] text-white truncate">{o.title}</p>
-              <div className="flex items-center gap-2 shrink-0 ml-3">
-                <span className="text-[10px] text-white/30">{o.impact}</span>
-                <span className="text-[10px] font-semibold text-white/50">{o.status}</span>
-              </div>
-            </div>
-          ))}
-          {!opps?.length && <p className="px-5 py-3 text-[12px] text-white/30">None</p>}
-        </div>
-      </div>
-    </div>
+      <Opportunities opportunities={detail.opportunities} />
+    </>
   );
 }

@@ -1,13 +1,15 @@
+import { Suspense } from "react";
+import { PublicPageSkeleton } from "@/components/site/PublicPageSkeleton";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import SiteHeader from "@/components/site/SiteHeader";
-import SiteFooter from "@/components/site/SiteFooter";
+import Header from "@/components/marketing/Header";
+import Footer from "@/components/marketing/Footer";
 import { ReviewForm } from "@/components/site/apps/ReviewForm";
 import { DIRECTORY_CATALOG } from "@/modules/apps-directory/catalog";
 import { listDirectoryOverrides } from "@/modules/apps-directory/dal";
 import { mergeCatalog } from "@/modules/apps-directory/service";
-import { currentReviewer, findOwnReview } from "@/modules/apps-directory/review-dal";
+import { currentReviewer, findOwnReview } from "@/modules/apps-directory/reviews/dal";
 import { canSubmitReview } from "@/modules/apps-directory/review-service";
 
 type Params = Promise<{ slug: string }>;
@@ -23,7 +25,7 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
   };
 }
 
-export default async function WriteReviewPage({ params, searchParams }: { params: Params; searchParams: SearchParams }) {
+async function WriteReviewPageContent({ params, searchParams }: { params: Params; searchParams: SearchParams }) {
   const { slug } = await params;
   const raw = await searchParams;
   const overrides = await listDirectoryOverrides();
@@ -37,7 +39,7 @@ export default async function WriteReviewPage({ params, searchParams }: { params
 
   return (
     <>
-      <SiteHeader />
+      <Header />
       <main className="min-h-screen bg-[#FAFAF8]">
         <article className="mx-auto max-w-[720px] px-4 pb-16 pt-28 sm:pt-32">
           <Link href={`/apps/${app.slug}`} className="text-[13px] font-semibold text-[#0866F5]">Back to {app.name}</Link>
@@ -53,7 +55,17 @@ export default async function WriteReviewPage({ params, searchParams }: { params
           {gate.ok ? <ReviewForm slug={app.slug} existing={existing} error={error} /> : null}
         </article>
       </main>
-      <SiteFooter />
+      <Footer />
     </>
+  );
+}
+
+
+// Reads the request (search params, the signed-in user), so it streams inside Suspense (Cache Components).
+export default function WriteReviewPage(props: { params: Params; searchParams: SearchParams }) {
+  return (
+    <Suspense fallback={<PublicPageSkeleton />}>
+      <WriteReviewPageContent {...props} />
+    </Suspense>
   );
 }

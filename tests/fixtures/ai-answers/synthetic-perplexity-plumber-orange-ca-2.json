@@ -1,0 +1,24 @@
+{
+  "synthetic": true,
+  "provider": "perplexity",
+  "question": "Which plumber in Orange, CA can fix a leak today?",
+  "answerText": "Top plumber picks in Orange, CA:\n- Plaza Plumbing Pros [1]\n- Santiago Drain and Rooter [2]\n\nThese are based on local directory listings and reviews.",
+  "citations": [
+    {
+      "url": "https://plazaplumbingpros.example/",
+      "title": "Plaza Plumbing Pros"
+    },
+    {
+      "url": "https://santiagodrainandrooter.example/",
+      "title": "Santiago Drain and Rooter"
+    },
+    {
+      "url": "https://www.yelp.com/search?find_desc=plumber&find_loc=Orange%2C%20CA",
+      "title": "Top plumber in Orange, CA"
+    }
+  ],
+  "names": [
+    "Plaza Plumbing Pros",
+    "Santiago Drain and Rooter"
+  ]
+}

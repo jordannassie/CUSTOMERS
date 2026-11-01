@@ -1,0 +1,214 @@
+"use server";
+
+import { refresh } from "next/cache";
+import { AuthError, authFailure, requireAdmin, type ActionResult, type SessionUser } from "@/modules/auth";
+import { accountRestoredEmail, sendSafely } from "@/modules/account";
+import { PERIOD_GRACE_MS } from "@/modules/billing";
+import { adminAdjustCredits, extendTrialGrant } from "@/modules/credits";
+import { auditedChange, changed, PartialChangeError, unchanged, type AuditedResult } from "../dal";
+import { changeStatus, ownerEmail, readAgencyState, setTestFlag, setTrialEnd, statusBeforeSuspend, type AgencyState } from "./dal";
+import { adjustCreditsInput, extendTrialInput, markTestInput, reasonInput } from "./schema";
+import { canRestore, extendedTrialEnd, isBillingStatus, statusAfterUnsuspend, type BillingStatus } from "./service";
+import { adminStripeClient } from "./stripe";
+
+// Agency actions (B-65, MVP_SPEC 9.1). Each checks admin access itself, needs a reason and writes its history row
+// before the change (BUG-278).
+
+type Done = ActionResult<{ done: true }>;
+type Ready = { ok: true; admin: SessionUser; state: AgencyState } | { ok: false; status: number; error: string };
+
+const BAD_INPUT = { ok: false, status: 400, error: "Fill in every field, including a reason of at least 3 characters." } as const;
+const NOT_FOUND = { ok: false, status: 404, error: "Agency not found." } as const;
+const CHANGED = { ok: false, status: 409, error: "This agency changed while you were looking. Refresh and try again." } as const;
+const DONE = { ok: true, data: { done: true } } as const;
+// The history note when a status compare-and-set finds the agency already moved on.
+const MOVED_ON = "status changed meanwhile";
+
+async function ready(agencyId: string): Promise<Ready> {
+  const admin = await requireAdmin();
+  const state = await readAgencyState(agencyId);
+  return state ? { ok: true, admin, state } : NOT_FOUND;
+}
+
+/** Runs the change with its history row written first, and refreshes the page when it went through. */
+async function audited<T extends { ok: boolean }>(
+  action: string,
+  agencyId: string,
+  details: Record<string, string | number | boolean | null>,
+  change: () => Promise<AuditedResult<T>>,
+): Promise<T> {
+  const result = await auditedChange(action, { type: "agency", id: agencyId }, details, change);
+  if (result.ok) refresh();
+  return result;
+}
+
+export async function adjustCredits(input: unknown): Promise<ActionResult<{ transactionId: string }>> {
+  try {
+    const parsed = adjustCreditsInput.safeParse(input);
+    if (!parsed.success) return BAD_INPUT;
+    const { agencyId, delta, reason, requestId } = parsed.data;
+    const r = await ready(agencyId);
+    if (!r.ok) return r;
+    if (r.state.status === "deleted") return { ok: false, status: 409, error: "Restore this agency before changing its credits." };
+
+    // The SQL function is the only way credits change (MVP_SPEC 4); removals it cannot cover become overdraft.
+    const adminUserId = r.admin.id;
+    return await audited<ActionResult<{ transactionId: string }>>(
+      "agency.adjust_credits",
+      agencyId,
+      { reason, delta, request_id: requestId },
+      async () => {
+        const transactionId = await adminAdjustCredits({ agencyId, delta, adminUserId, note: reason, requestId });
+        return changed({ ok: true, data: { transactionId } }, { transaction_id: transactionId });
+      },
+    );
+  } catch (error) {
+    return authFailure(error);
+  }
+}
+
+export async function extendTrial(input: unknown): Promise<ActionResult<{ trialEndsAt: string }>> {
+  try {
+    const parsed = extendTrialInput.safeParse(input);
+    if (!parsed.success) return BAD_INPUT;
+    const { agencyId, days, reason } = parsed.data;
+    const r = await ready(agencyId);
+    if (!r.ok) return r;
+    if (r.state.status !== "trialing") return { ok: false, status: 409, error: "Only an agency on a trial can have it extended." };
+    if (!r.state.subscriptionId) {
+      return { ok: false, status: 409, error: "This trial has no Stripe subscription yet, so there is nothing to extend." };
+    }
+    const stripe = adminStripeClient();
+    if (!stripe) return { ok: false, status: 503, error: "Stripe is not connected, so trials cannot be changed here yet." };
+
+    const subscriptionId = r.state.subscriptionId;
+    const trialEnd = extendedTrialEnd(r.state.trialEndsAt, days);
+    // Stripe and both saves run inside the audited change, so the history row exists before Stripe is asked.
+    return await audited<ActionResult<{ trialEndsAt: string }>>(
+      "agency.extend_trial",
+      agencyId,
+      { reason, days, previous_trial_end: r.state.trialEndsAt, new_trial_end: trialEnd.toISOString(), stripe_mode: stripe.mode },
+      async () => {
+        try {
+          await stripe.extendTrial(subscriptionId, trialEnd);
+        } catch (error) {
+          const message = error instanceof Error ? error.message : "unknown error";
+          const refused = `Stripe did not accept the change, so nothing was saved. Stripe said: ${message}`;
+          return unchanged({ ok: false, status: 502, error: refused }, `Stripe refused: ${message}`);
+        }
+        // A3: the trial credits last as long as the trial, plus the grace every trial grant gets (M6).
+        const grantEnd = new Date(trialEnd.getTime() + PERIOD_GRACE_MS);
+        let trialGrantId: string | null;
+        try {
+          await setTrialEnd(agencyId, trialEnd);
+          trialGrantId = await extendTrialGrant(agencyId, grantEnd);
+        } catch (error) {
+          // Stripe already has the new end: history says "result not confirmed", not "did not go through".
+          throw new PartialChangeError(error instanceof Error ? error.message : String(error), { cause: error });
+        }
+        return changed(
+          { ok: true, data: { trialEndsAt: trialEnd.toISOString() } },
+          { trial_grant_id: trialGrantId, trial_grant_expires_at: trialGrantId ? grantEnd.toISOString() : null },
+        );
+      },
+    );
+  } catch (error) {
+    // A4: a failure after Stripe accepted the change is shown in the form, never dropped.
+    if (error instanceof AuthError) return authFailure(error);
+    const message = error instanceof Error ? error.message : String(error);
+    console.error("[admin] extend trial failed", message);
+    return { ok: false, status: 500, error: `The trial may be only partly extended: ${message}. Refresh the page to see what changed.` };
+  }
+}
+
+export async function suspendAgency(input: unknown): Promise<Done> {
+  try {
+    const parsed = reasonInput.safeParse(input);
+    if (!parsed.success) return BAD_INPUT;
+    const { agencyId, reason } = parsed.data;
+    const r = await ready(agencyId);
+    if (!r.ok) return r;
+    if (!isBillingStatus(r.state.status)) return { ok: false, status: 409, error: "This agency is already suspended or deleted." };
+
+    const previous = r.state.status;
+    return await audited<Done>("agency.suspend", agencyId, { reason, previous_status: previous }, async () =>
+      (await changeStatus(agencyId, previous, "suspended")) ? changed(DONE) : unchanged(CHANGED, MOVED_ON),
+    );
+  } catch (error) {
+    return authFailure(error);
+  }
+}
+
+export async function unsuspendAgency(input: unknown): Promise<Done> {
+  try {
+    const parsed = reasonInput.safeParse(input);
+    if (!parsed.success) return BAD_INPUT;
+    const { agencyId, reason } = parsed.data;
+    const r = await ready(agencyId);
+    if (!r.ok) return r;
+    if (r.state.status !== "suspended") return { ok: false, status: 409, error: "This agency is not suspended." };
+
+    // Webhooks leave a suspended agency's status alone, so Stripe is asked what it is now; without Stripe (or with
+    // nothing to go on) the agency gets back the status it had when suspended.
+    let fromStripe: BillingStatus | null = null;
+    const stripe = r.state.subscriptionId ? adminStripeClient() : null;
+    if (stripe && r.state.subscriptionId) {
+      try {
+        fromStripe = await stripe.subscriptionStatus(r.state.subscriptionId);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "unknown error";
+        return { ok: false, status: 502, error: `We couldn't check the subscription in Stripe, so nothing changed. Stripe said: ${message}` };
+      }
+    }
+    const next = fromStripe ?? statusAfterUnsuspend(await statusBeforeSuspend(agencyId));
+    const details = { reason, new_status: next, status_from_stripe: fromStripe !== null };
+    return await audited<Done>("agency.unsuspend", agencyId, details, async () =>
+      (await changeStatus(agencyId, "suspended", next)) ? changed(DONE) : unchanged(CHANGED, MOVED_ON),
+    );
+  } catch (error) {
+    return authFailure(error);
+  }
+}
+
+export async function restoreAgency(input: unknown): Promise<Done> {
+  try {
+    const parsed = reasonInput.safeParse(input);
+    if (!parsed.success) return BAD_INPUT;
+    const { agencyId, reason } = parsed.data;
+    const r = await ready(agencyId);
+    if (!r.ok) return r;
+    if (!canRestore(r.state.status, r.state.purgeAfter)) {
+      return { ok: false, status: 409, error: "Only a deleted account still in its waiting period can be restored." };
+    }
+
+    // Deleting cancels the Stripe subscription (MVP_SPEC 23), so a restored agency starts as canceled and picks a plan again.
+    const details = { reason, deleted_at: r.state.deletedAt, new_status: "canceled" };
+    const result = await audited<Done>("agency.restore", agencyId, details, async () =>
+      (await changeStatus(agencyId, "deleted", "canceled", true)) ? changed(DONE) : unchanged(CHANGED, MOVED_ON),
+    );
+    if (!result.ok) return result;
+    const to = await ownerEmail(r.state.ownerUserId);
+    if (to) await sendSafely(accountRestoredEmail({ to, agencyId, at: new Date() }));
+    return DONE;
+  } catch (error) {
+    return authFailure(error);
+  }
+}
+
+export async function markAgencyTest(input: unknown): Promise<Done> {
+  try {
+    const parsed = markTestInput.safeParse(input);
+    if (!parsed.success) return BAD_INPUT;
+    const { agencyId, reason, isTest } = parsed.data;
+    const r = await ready(agencyId);
+    if (!r.ok) return r;
+    if (r.state.isTest === isTest) return { ok: false, status: 409, error: isTest ? "Already a test agency." : "Already a real agency." };
+
+    return await audited<Done>("agency.mark_test", agencyId, { reason, is_test: isTest }, async () => {
+      await setTestFlag(agencyId, isTest);
+      return changed(DONE);
+    });
+  } catch (error) {
+    return authFailure(error);
+  }
+}
