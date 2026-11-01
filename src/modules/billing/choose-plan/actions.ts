@@ -8,9 +8,10 @@ import { recoverPlanCheckout } from "../checkout-recovery";
 import { getPlanPrice } from "../dal";
 import { appOrigin } from "../origin";
 import { planPriceData } from "../plan-price";
-import { loadChoosePlanAgency, loadChoosePlanRows } from "./dal";
+import { loadChoosePlanAgency, loadChoosePlanRows, releaseMissingPlan, usableCustomerId } from "./dal";
+import { planGoneFromStripe } from "./load";
 import { planSessionParams } from "./params";
-import { choosePlanState, planStarted } from "./service";
+import { choosePlanState, endedRows, planStarted } from "./service";
 
 // Choose plan (BUG-079, BUG-066). Each action checks auth itself; the agency always comes from the session. The agency
 // is marked paid only from what Stripe says, through the webhook's own handlers (MVP_SPEC 11.3, A1).
@@ -30,7 +31,12 @@ export async function startPlanCheckout(input: unknown): Promise<ActionResult<{ 
   const parsed = planInput.safeParse(input);
   if (!parsed.success) return badInput;
 
-  const rows = await loadChoosePlanRows(session.agency.id);
+  let rows = await loadChoosePlanRows(session.agency.id);
+  // A saved plan Stripe no longer has is ended here, so the new subscription's webhook can link it (QA 2026-11-01).
+  if (await planGoneFromStripe(rows)) {
+    await releaseMissingPlan(session.agency.id, rows.agency.subscriptionId!);
+    rows = endedRows(rows);
+  }
   const state = choosePlanState(rows);
   // A second subscription would bill the same businesses twice.
   if (state.kind === "has_plan") return { ok: false, status: 409, error: "You already have a plan. Change it on the Billing page." };
@@ -52,7 +58,8 @@ export async function startPlanCheckout(input: unknown): Promise<ActionResult<{ 
       agencyId: session.agency.id,
       businessIds: rows.businesses.map((b) => b.id),
       price: planPriceData(plan),
-      customerId: rows.agency.customerId,
+      // A customer Stripe no longer has would fail the session; checkout makes a new one from the email.
+      customerId: await usableCustomerId(rows.agency.customerId),
       email: session.user.email,
       trial: state.trial,
       returnUrl: `${await appOrigin()}${CHOOSE_PLAN_HREF}?session_id={CHECKOUT_SESSION_ID}`,

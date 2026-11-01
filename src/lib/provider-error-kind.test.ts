@@ -5,6 +5,7 @@ describe("providerErrorKind", () => {
   it("sorts outside service failures into a few kinds", () => {
     expect(providerErrorKind("Live lookup failed: Places returned 429")).toBe("rate_limit");
     expect(providerErrorKind("Out of credit: Your credit balance is too low")).toBe("billing");
+    expect(providerErrorKind("perplexity returned 403: The Agent API requires paid credits")).toBe("billing");
     expect(providerErrorKind("openai returned 401: invalid api key")).toBe("auth");
     expect(providerErrorKind("anthropic did not answer within 30000 ms (timeout)")).toBe("timeout");
     expect(providerErrorKind("503 Service Unavailable")).toBe("server");

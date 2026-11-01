@@ -25,9 +25,16 @@ export function PlanStatus({ view, keep }: { view: BillingView; keep: ChangeActi
     <div className="flex flex-col gap-3">
       <p className="flex flex-wrap items-center gap-2 text-sm" data-testid="plan-status">
         <Badge variant={status.variant}>{status.label}</Badge>
-        {view.status === "trialing" && view.trialEndsAt && !view.cancelAt && (
+        {view.status === "trialing" && view.trialEndsAt && !view.cancelAt && !view.trialEnded && (
           <span className="text-muted-foreground">
             Your free trial ends on <LocalDate iso={view.trialEndsAt} />. Cancel before then and you won&apos;t be charged.
+          </span>
+        )}
+        {/* QA 2026-11-01: a past date read as still to come. Matches the "trial ended" banner. */}
+        {view.status === "trialing" && view.trialEndsAt && !view.cancelAt && view.trialEnded && (
+          <span className="text-muted-foreground" data-testid="trial-ended">
+            Your free trial ended on <LocalDate iso={view.trialEndsAt} />. Scans are paused until your first payment goes
+            through.
           </span>
         )}
         {view.status === "active" && monthly > 0 && (
@@ -109,17 +116,20 @@ export function CreditsPanel({ buyHref, usageHref }: { buyHref: string; usageHre
   );
 }
 
-export function CancelPanel({ cancel, trialing }: { cancel: ChangeAction; trialing: boolean }) {
+export function CancelPanel({ cancel, trialing, trialEnded = false }: { cancel: ChangeAction; trialing: boolean; trialEnded?: boolean }) {
   return (
     <section aria-labelledby="cancel-heading" className="rounded-md border border-border bg-surface p-5">
       <h2 id="cancel-heading" className="text-base font-semibold tracking-[-0.02em]">
         Cancel plan
       </h2>
       <p className="mt-3 text-sm text-muted-foreground">
-        {trialing
-          ? "Your free trial keeps going until its end date, and you won't be charged."
-          : "Your plan stops at the end of this billing period."}{" "}
-        Your results stay visible, and you can keep your plan any time before then.
+        {trialEnded
+          ? "Your free trial has ended. Cancel now and you won't be charged. Your results stay visible."
+          : `${
+              trialing
+                ? "Your free trial keeps going until its end date, and you won't be charged."
+                : "Your plan stops at the end of this billing period."
+            } Your results stay visible, and you can keep your plan any time before then.`}
       </p>
       <CancelDialog
         label="Cancel plan"
@@ -134,8 +144,48 @@ export function CancelPanel({ cancel, trialing }: { cancel: ChangeAction; triali
   );
 }
 
+type NoPlanProps = {
+  ended: boolean;
+  /** The saved plan is not in Stripe ("missing"), or is in Stripe's other mode ("other_mode", D-43). */
+  gone: "missing" | "other_mode" | null;
+  choosePlanHref: string;
+  supportHref: string;
+};
+
 // BUG-079, BUG-066: both states lead to the Choose plan page, which starts the plan on this site.
-export function NoPlan({ ended, choosePlanHref }: { ended: boolean; choosePlanHref: string }) {
+export function NoPlan({ ended, gone, choosePlanHref, supportHref }: NoPlanProps) {
+  if (gone === "other_mode") {
+    return (
+      <section className="rounded-md border border-dashed border-border bg-surface px-6 py-10 text-center" data-testid="plan-other-mode">
+        <h2 className="text-base font-semibold tracking-[-0.02em]">Your plan is with another payment account</h2>
+        <p className="mx-auto mt-3 max-w-[440px] text-sm text-muted-foreground">
+          This site can&apos;t show or change it. Contact us and we&apos;ll sort it out.
+        </p>
+        <Button asChild className="mt-3">
+          <Link href={supportHref}>Contact support</Link>
+        </Button>
+      </section>
+    );
+  }
+  if (gone === "missing") {
+    return (
+      <section className="rounded-md border border-dashed border-border bg-surface px-6 py-10 text-center" data-testid="plan-missing">
+        <h2 className="text-base font-semibold tracking-[-0.02em]">We couldn&apos;t find your plan</h2>
+        <p className="mx-auto mt-3 max-w-[440px] text-sm text-muted-foreground">
+          Our payment provider has no record of it. Your results are still here. Start your plan again to keep your scans
+          running.
+        </p>
+        <div className="mt-3 flex flex-wrap justify-center gap-2">
+          <Button asChild>
+            <Link href={choosePlanHref}>Start your plan again</Link>
+          </Button>
+          <Button asChild variant="outline">
+            <Link href={supportHref}>Contact support</Link>
+          </Button>
+        </div>
+      </section>
+    );
+  }
   return (
     <section className="rounded-md border border-dashed border-border bg-surface px-6 py-10 text-center" data-testid="no-plan">
       <h2 className="text-base font-semibold tracking-[-0.02em]">{ended ? "Your plan has ended" : "You don't have a plan yet"}</h2>

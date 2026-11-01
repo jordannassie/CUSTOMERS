@@ -1,6 +1,7 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
+import { saveActiveBusiness } from "@/modules/workspace";
 import { duplicateBusiness, type DuplicateKind } from "../../duplicates";
 import { stepNumber } from "../steps";
 
@@ -112,6 +113,5 @@ export async function keepActiveBusiness(userId: string): Promise<void> {
     .maybeSingle();
   if (latest.error) throw new Error(`Could not load businesses: ${latest.error.message}`);
   if (!latest.data) return;
-  const { error } = await supabase.from("profiles").update({ active_business_id: latest.data.id }).eq("id", userId);
-  if (error) throw new Error(`Could not save the active business: ${error.message}`);
+  await saveActiveBusiness(userId, latest.data.id);
 }

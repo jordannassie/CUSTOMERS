@@ -1,7 +1,7 @@
 import type { ActionResult } from "@/modules/auth";
 import type { PlanChangeStripe } from "../plan-change/client";
 import { isCancelling, scheduleIdOf, type PlanChangeContext } from "../plan-change/planner";
-import { isMissingInStripe } from "../stripe-missing";
+import { isMissingInStripe, isOtherStripeMode } from "../stripe-missing";
 import type { BillingRows } from "./dal";
 import type { PortalClient } from "./access";
 import { buildBillingView, type BillingView } from "./summary";
@@ -33,8 +33,9 @@ export async function billingView({ rows, access }: BillingPageDeps): Promise<Bi
     return buildBillingView(rows, { sub, schedule, upcoming });
   } catch (error) {
     if (isMissingInStripe(error)) {
-      console.warn("[billing/account] subscription not in Stripe:", subscriptionId);
-      return buildBillingView(rows, "missing");
+      const other = isOtherStripeMode(error);
+      console.warn(`[billing/account] subscription not in Stripe${other ? " (other mode)" : ""}:`, subscriptionId);
+      return buildBillingView(rows, other ? "other_mode" : "missing");
     }
     const e = error as { type?: string; message?: string };
     console.error("[billing/account] could not load the subscription", e?.type ?? e?.message);
@@ -54,8 +55,11 @@ export async function portalUrl({ client, customerId, returnUrl }: PortalDeps): 
   try {
     return { ok: true, data: { url: await client.createSession(customerId, returnUrl) } };
   } catch (error) {
-    const e = error as { type?: string; statusCode?: number };
-    console.error("[billing/account] portal session failed", e?.type, e?.statusCode);
+    const e = error as { type?: string; statusCode?: number; code?: string };
+    console.error("[billing/account] portal session failed", e?.type, e?.statusCode, e?.code);
+    if (isMissingInStripe(error) && !isOtherStripeMode(error)) {
+      return { ok: false, status: 404, error: "We couldn't find your card details with our payment provider. Start your plan again on this page." };
+    }
     return { ok: false, status: 502, error: "We couldn't open your card and invoice settings. Try again in a minute." };
   }
 }

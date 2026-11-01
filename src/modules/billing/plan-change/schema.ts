@@ -9,7 +9,11 @@ export const CANCEL_REASONS = ["too_expensive", "not_useful", "just_testing", "o
 export type CancelReason = (typeof CANCEL_REASONS)[number];
 const reason = z.enum(CANCEL_REASONS).optional();
 
-export const businessPlanInput = z.object({ businessId: z.uuid(), planId, previewedAt });
+/** Sent back by the browser after the bank's window (3D Secure): the pending invoice, and whether it was paid. */
+export const bankOutcome = z.object({ invoiceId: z.string().regex(/^in_[A-Za-z0-9_]{1,200}$/), paid: z.boolean() });
+export type BankOutcome = z.infer<typeof bankOutcome>;
+
+export const businessPlanInput = z.object({ businessId: z.uuid(), planId, previewedAt, bankStep: bankOutcome.optional() });
 export const removeBusinessInput = z.object({ businessId: z.uuid(), previewedAt, reason });
 export const keepBusinessInput = z.object({ businessId: z.uuid(), previewedAt });
 export const subscriptionInput = z.object({ previewedAt });

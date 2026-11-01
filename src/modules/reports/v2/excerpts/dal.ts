@@ -42,7 +42,7 @@ export async function pickExcerpts(input: ExcerptInput): Promise<{ named: Excerp
   if (questionIds.length === 0) return { named: null, competitor: null };
   const base = () =>
     createServiceClient()
-      .from("visibility_results_counted")
+      .from("visibility_results_unique")
       .select("provider, tracked_prompt_id, created_at, answer_text, competitors_mentioned")
       .eq("business_id", input.businessId)
       .gt("created_at", input.since.toISOString())

@@ -8,10 +8,10 @@ import { LocalDate } from "@/components/ui/local-date";
 
 export type PlanActions = { upgrade: ChangeAction; downgrade: ChangeAction; remove: ChangeAction; add: ChangeAction; keep: ChangeAction };
 
-type Props = { view: BillingView; actions: PlanActions; addBusinessHref: string };
+type Props = { view: BillingView; actions: PlanActions; addBusinessHref: string; supportHref: string };
 
 // The plan read like a bill: one line per business with its price, then the next charge as the total.
-export function PlanBill({ view, actions, addBusinessHref }: Props) {
+export function PlanBill({ view, actions, addBusinessHref, supportHref }: Props) {
   const locked = !view.canChange || view.cancelAt !== null;
   const pastDue = view.status === "past_due";
   // Removing the last business that stays would leave an empty plan; cancelling is the way to stop paying.
@@ -86,12 +86,17 @@ export function PlanBill({ view, actions, addBusinessHref }: Props) {
         </Link>
       </div>
 
-      <NextCharge view={view} />
+      <NextCharge view={view} supportHref={supportHref} />
     </section>
   );
 }
 
-function NextCharge({ view }: { view: BillingView }) {
+function NextCharge({ view, supportHref }: { view: BillingView; supportHref: string }) {
+  const contact = (
+    <Link href={supportHref} className="font-medium text-foreground underline underline-offset-4 hover:text-primary">
+      Contact us
+    </Link>
+  );
   let body: React.ReactNode;
   if (view.nextCharge) {
     const first = view.status === "trialing";
@@ -100,8 +105,14 @@ function NextCharge({ view }: { view: BillingView }) {
         <div>
           <p className="text-sm font-medium">{first ? "First charge" : "Next charge"}</p>
           <p className="mt-0.5 text-[13px] text-muted-foreground">
-            <LocalDate iso={view.nextCharge.at} />
-            {first ? ", when your free trial ends" : ""}
+            {first && view.trialEnded ? (
+              <>Due now. Your free trial ended on <LocalDate iso={view.nextCharge.at} /></>
+            ) : (
+              <>
+                <LocalDate iso={view.nextCharge.at} />
+                {first ? ", when your free trial ends" : ""}
+              </>
+            )}
           </p>
         </div>
         <p className="text-2xl font-semibold tracking-[-0.02em] tabular-nums" data-testid="next-charge">
@@ -118,7 +129,7 @@ function NextCharge({ view }: { view: BillingView }) {
   } else if (view.stripe === "missing") {
     body = (
       <p className="text-sm text-muted-foreground" data-testid="billing-missing">
-        We couldn&apos;t find your plan with our payment provider. Contact us and we&apos;ll sort it out.
+        We couldn&apos;t find your plan with our payment provider. {contact} and we&apos;ll sort it out.
       </p>
     );
   } else if (view.stripe === "error") {
@@ -126,7 +137,7 @@ function NextCharge({ view }: { view: BillingView }) {
   } else if (view.stripe === "unavailable") {
     body = (
       <p className="text-sm text-muted-foreground">
-        Plan changes aren&apos;t available here right now. Contact us and we&apos;ll make the change for you.
+        Plan changes aren&apos;t available here right now. {contact} and we&apos;ll make the change for you.
       </p>
     );
   } else {

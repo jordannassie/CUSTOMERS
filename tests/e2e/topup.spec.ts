@@ -82,6 +82,13 @@ test("buying a pack pays back a negative balance first, then shows the new balan
   // The fixture payment runs the real webhook handler on the dev server; in a full run it took longer than 5s.
   await expect(page.getByTestId("topup-done")).toContainText("500 credits added.", { timeout: 30_000 });
   await expect(page.getByTestId("topup-balance")).toHaveText("485 credits");
+  // BUG-291: once the credits show, the page stops asking. The refresh after "done" used to restart the poll forever.
+  let calls = 0;
+  page.on("request", (r) => {
+    if (r.method() === "POST" && new URL(r.url()).pathname === "/settings/credits") calls++;
+  });
+  await page.waitForTimeout(6_000);
+  expect(calls).toBeLessThanOrEqual(1);
   // E2E agencies are test agencies, so the test mode banner always shows (D-61); no other banner may.
   const banners = page.getByTestId("app-banners").locator("[data-kind]");
   await expect(banners).toHaveCount(1);

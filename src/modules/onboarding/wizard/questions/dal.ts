@@ -2,6 +2,7 @@ import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { maxQuestions } from "@/modules/entitlements";
+import { saveActiveBusiness } from "@/modules/workspace";
 import { liveQuestionClients } from "../../dal";
 import type { QuestionClients } from "../../questions";
 import { FIRST_SET_COLUMNS, prepareFirstSet, saveFirstSet, shownQuestions } from "./first-set/dal";
@@ -192,7 +193,6 @@ export async function saveModels(userId: string, businessId: string, models: str
  */
 export async function finishWizard(userId: string, businessId: string, checks?: { models: string[]; frequency: string }): Promise<boolean> {
   if ((await ownStep(userId, businessId)) === undefined) return false;
-  const supabase = await createClient();
   const { error } = await createServiceClient()
     .from("businesses")
     .update({
@@ -203,8 +203,7 @@ export async function finishWizard(userId: string, businessId: string, checks?: 
     .eq("id", businessId)
     .eq("owner_user_id", userId);
   if (error) throw new Error(`Could not save AI checks: ${error.message}`);
-  const { error: profileError } = await supabase.from("profiles").update({ active_business_id: businessId }).eq("id", userId);
-  if (profileError) throw new Error(`Could not switch business: ${profileError.message}`);
+  await saveActiveBusiness(userId, businessId);
   return true;
 }
 

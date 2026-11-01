@@ -6,10 +6,15 @@ import { useRouter } from "next/navigation";
 import { Check, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { ActionResult } from "@/modules/auth";
-import type { PlanNowView } from "@/modules/billing";
+import type { BankStep, PlanNowView } from "@/modules/billing";
+import { confirmWithBank } from "@/app/(app)/_stripe/stripe-elements";
 import { usePlanStatus, type PlanStatusAction } from "../../_components/use-plan-status";
 
-export type StartPlanNowAction = (input: { attemptId: string }) => Promise<ActionResult<{ alreadyActive: boolean; started: boolean }>>;
+type BankOutcome = { invoiceId: string; paid: boolean };
+export type StartPlanNowAction = (input: {
+  attemptId: string;
+  bankStep?: BankOutcome;
+}) => Promise<ActionResult<{ alreadyActive: boolean; started: boolean } | BankStep>>;
 export type PlanNowStatusAction = PlanStatusAction;
 
 type State = "idle" | "starting" | "waiting";
@@ -40,11 +45,19 @@ export function PlanNow({ view, start, status, continueHref, trialBusinesses, ba
   async function onStart() {
     setState("starting");
     setError(null);
-    const result = await start({ attemptId }).catch(() => null);
-    if (result?.ok) return result.data.started ? goOn() : setState("waiting");
+    let result = await start({ attemptId }).catch(() => null);
+    // A card that needs the bank's confirmation (3D Secure, QA 2026-11-01). Paid: Stripe starts the plan and the
+    // status check picks it up. Not paid: the action drops the pending charge and says why.
+    if (result?.ok && "step" in result.data) {
+      const { clientSecret, invoiceId, publishableKey } = result.data;
+      if (await confirmWithBank(publishableKey, clientSecret)) return setState("waiting");
+      result = await start({ attemptId, bankStep: { invoiceId, paid: false } }).catch(() => null);
+    }
+    if (result?.ok && !("step" in result.data)) return result.data.started ? goOn() : setState("waiting");
+    const failed = result && !result.ok ? result : null;
     setError({
-      text: result?.error ?? "Something went wrong, so nothing was charged. Try again in a minute.",
-      declined: result?.status === 402,
+      text: failed?.error ?? "Something went wrong, so nothing was charged. Try again in a minute.",
+      declined: failed?.status === 402,
     });
     setAttemptId(crypto.randomUUID());
     setState("idle");

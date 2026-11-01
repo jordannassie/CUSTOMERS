@@ -17,6 +17,7 @@ export {
   type PlanChangeResult,
 } from "./plan-change/actions";
 export { endBusinessPlan, type BusinessPlanEnd } from "./plan-change/end-business";
+export type { BankStep } from "./plan-change/payment";
 export { addBusinessAtSetup, previewSetupAddOn, type SetupAddOn, type SetupAddOnResult } from "./plan-change/setup-add-on";
 export { PlanChangeError } from "./plan-change/planner";
 export { isMissingInStripe } from "./stripe-missing";

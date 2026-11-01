@@ -296,6 +296,20 @@ export default function AuthForm({ defaultMode = "login", errorParam = "", notic
             </Button>
           </form>
 
+          {isSignup && (
+            <p data-testid="signup-terms" className="mt-4 text-center text-[13px] text-muted-foreground">
+              By signing up with email or Google, you agree to our{" "}
+              <Link href="/terms" prefetch={false} className="font-medium text-foreground underline underline-offset-4 hover:text-primary">
+                Terms
+              </Link>{" "}
+              and{" "}
+              <Link href="/privacy" prefetch={false} className="font-medium text-foreground underline underline-offset-4 hover:text-primary">
+                Privacy policy
+              </Link>
+              .
+            </p>
+          )}
+
           <p className="mt-5 text-center text-[13px] text-muted-foreground">
             Having trouble signing in?{" "}
             {/* No prefetch on the login and signup pages: each view rendered these pages on the server for nothing. */}

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { planSessionParams } from "./params";
-import { choosePlanState, hasLivePlan, planStarted, type ChoosePlanRows } from "./service";
+import { choosePlanState, endedRows, hasLivePlan, planStarted, type ChoosePlanRows } from "./service";
 
 const plans: ChoosePlanRows["plans"] = [
   { id: "starter", name: "Starter", priceCents: 14900, monthlyCredits: 1200, maxCompetitors: 5, maxQuestions: 25, stripePriceId: "price_s" },
@@ -29,6 +29,12 @@ describe("choosePlanState (BUG-079, BUG-066)", () => {
   it("sends an agency with a running plan to Billing", () => {
     expect(choosePlanState(rows({ status: "active", customerId: "cus_1", subscriptionId: "sub_1" }))).toEqual({ kind: "has_plan" });
     expect(hasLivePlan({ status: "past_due", customerId: "cus_1", subscriptionId: "sub_1" })).toBe(true);
+  });
+
+  it("offers a plan Stripe no longer has as an ended one, without a second trial (QA 2026-11-01)", () => {
+    const stale = rows({ status: "trialing", customerId: "cus_gone", subscriptionId: "sub_gone" });
+    expect(choosePlanState(stale)).toEqual({ kind: "has_plan" });
+    expect(choosePlanState(endedRows(stale))).toMatchObject({ kind: "choose", ended: true, trial: false });
   });
 
   it("asks for a business first when there is none", () => {

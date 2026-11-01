@@ -26,9 +26,14 @@ export async function switchBusiness(input: unknown): Promise<ActionResult<null>
   const parsed = switchBusinessInput.safeParse(input);
   if (!parsed.success) return { ok: false, status: 400, error: "Pick a business from the list." };
 
-  if (!(await setActiveBusiness(parsed.data.businessId))) {
-    return { ok: false, status: 404, error: "Business not found." };
+  let switched: boolean;
+  try {
+    switched = await setActiveBusiness(parsed.data.businessId);
+  } catch (error) {
+    console.error("[switchBusiness]", error instanceof Error ? error.message : error);
+    return { ok: false, status: 500, error: "We couldn't switch business. Try again." };
   }
+  if (!switched) return { ok: false, status: 404, error: "Business not found." };
   refresh();
   return { ok: true, data: null };
 }

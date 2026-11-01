@@ -175,4 +175,8 @@ From `main` (video ads, app directory, app reviews, newsletter). On `main` they 
 
 On live these may already exist from main; if live's history records 024-029 for main's files, run migration repair --status reverted 024-029 before db push. If main's tables and policies are already on live, check they match these files and mark them applied (`supabase migration repair --status applied 071 072 073 074 075 076`) instead of running them, because 074 cannot run twice.
 
+- `089_ensure_profiles.sql` (BUG-288: puts the `on_auth_user_created` trigger back where a database lost it and backfills a `profiles` row for every user; the app also upserts the row when it saves the active business. Additive and safe to run twice)
+- `090_count_reused_answers_once.sql` (BUG-287: new server-only view `visibility_results_unique`, the counted answers with no copies from a Run scan that reused the cache and no rows of a scan still running; `visibility_checks_30d` and `visibility_checks_all` re-created over it with the same columns. Apply with the app version that reads it; its type was added to `database.types.ts` with the same columns as `visibility_results_counted`)
+- `091_close_function_execute.sql` (SEC-11: revokes EXECUTE on every function in public from PUBLIC, anon and authenticated whatever built the database, keeps the service role's grants, and fails if anything is still open. `npm run db:ohio` checks this on every run with `scripts/check-function-grants.sql`; run that query on live before go-live)
+
 Any file added after 043 joins this list.

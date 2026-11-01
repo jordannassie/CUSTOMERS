@@ -52,6 +52,24 @@ export default function PrivacyPage() {
             email, company, website, phone and message. We also keep a record of each email we send you.
           </li>
           <li>
+            <strong className={label}>Video ad orders.</strong> If you order a video ad, Stripe takes the payment and we
+            keep your name, email, business name, website and the brief you send us (product, audience, instructions and
+            any file link).
+          </li>
+          <li>
+            <strong className={label}>App reviews.</strong> If you review an app in our directory, we keep your review,
+            rating and the optional company, industry and job role you add, linked to your account. Reviews are checked by
+            our team before they are published on the app&apos;s page.
+          </li>
+          <li>
+            <strong className={label}>App directory clicks.</strong> We count clicks on app links: which app, which page
+            and any campaign tags in the link. These counts do not include who clicked.
+          </li>
+          <li>
+            <strong className={label}>Newsletter.</strong> If you join our newsletter, your email address goes to Beehiiv,
+            which sends it. We only count how often the signup box is shown and clicked, without knowing who you are.
+          </li>
+          <li>
             <strong className={label}>Technical.</strong> To limit abuse, we keep a scrambled (hashed) form of your IP
             address, not the address itself. Our hosting provider also keeps standard request logs.
           </li>

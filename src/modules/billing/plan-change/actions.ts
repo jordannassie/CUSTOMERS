@@ -7,7 +7,9 @@ import { canAddBusiness, fitsPlan } from "@/modules/entitlements";
 import { billingAccess } from "../account/access";
 import { loadPlanChangeData, raiseScheduleLost, saveCancelReason } from "./dal";
 import { PlanChangeError, type PlanChange } from "./planner";
-import { businessPlanInput, cancelInput, keepBusinessInput, removeBusinessInput, subscriptionInput, type CancelReason } from "./schema";
+import { businessPlanInput, cancelInput, keepBusinessInput, removeBusinessInput, subscriptionInput, type BankOutcome, type CancelReason } from "./schema";
+import { bankFailure, bankStepFor, finishBankStep } from "./bank-step";
+import type { BankStep } from "./payment";
 import { applyPlanChange, previewPlanChange, type PlanChangeDone, type PlanChangePreview } from "./service";
 import { syncAfterChange } from "./sync-after";
 
@@ -15,7 +17,7 @@ import { syncAfterChange } from "./sync-after";
 // previewedAt it returns the price effect to confirm; called again with the preview's previewedAt it applies.
 
 export type PlanChangeResult = ActionResult<
-  ({ step: "preview" } & PlanChangePreview) | ({ step: "done" } & PlanChangeDone)
+  ({ step: "preview" } & PlanChangePreview) | ({ step: "done" } & PlanChangeDone) | BankStep
 >;
 
 const badInput = { ok: false, status: 400, error: "Check your choice and try again." } as const;
@@ -26,6 +28,9 @@ const unavailable = {
 } as const;
 
 function stripeFailure(error: unknown): PlanChangeResult | null {
+  // A card that needs the bank's confirmation (3D Secure) was not declined (QA 2026-11-01).
+  const bank = bankFailure(error);
+  if (bank) return bank;
   const e = error as { type?: string; statusCode?: number };
   if (e?.type === "StripeCardError" || e?.statusCode === 402) {
     return { ok: false, status: 402, error: "Your card was declined, so nothing changed. Update your card and try again." };
@@ -58,9 +63,17 @@ async function run(
   change: PlanChange,
   previewedAt: number | undefined,
   reason?: CancelReason,
+  bank?: BankOutcome,
 ): Promise<PlanChangeResult> {
   try {
     const data = await loadPlanChangeData(agencyId);
+    if (bank) {
+      // The bank's answer for a charge this action started (payment.ts).
+      const access = await billingAccess(data);
+      if (!access) return unavailable;
+      const finished = await finishBankStep(access, access.context.subscriptionId, bank);
+      return finished.ok ? { ok: true, data: { step: "done", message: "Payment confirmed. Your plan is updated." } } : finished;
+    }
     // Only this agency's businesses are in the data, so another agency's business is never read here.
     if (change.kind === "downgrade" && data.context.businesses.some((b) => b.id === change.businessId)) {
       const fits = await fitsPlan(change.businessId, change.planId);
@@ -88,6 +101,8 @@ async function run(
     return { ok: true, data: { step: "done", ...done } };
   } catch (error) {
     if (error instanceof PlanChangeError) return { ok: false, status: error.status, error: error.message };
+    const step = bankStepFor(error);
+    if (step) return { ok: true, data: step };
     const failure = stripeFailure(error);
     if (failure) return failure;
     throw error;
@@ -108,8 +123,8 @@ export async function upgradeBusiness(input: unknown): Promise<PlanChangeResult>
   if (typeof agency !== "string") return agency;
   const parsed = businessPlanInput.safeParse(input);
   if (!parsed.success) return badInput;
-  const { businessId, planId, previewedAt } = parsed.data;
-  return run(agency, { kind: "upgrade", businessId, planId }, previewedAt);
+  const { businessId, planId, previewedAt, bankStep } = parsed.data;
+  return run(agency, { kind: "upgrade", businessId, planId }, previewedAt, undefined, bankStep);
 }
 
 /** Puts a saved business on the plan now, with a prorated charge. */
@@ -118,11 +133,11 @@ export async function addBusiness(input: unknown): Promise<PlanChangeResult> {
   if (typeof agency !== "string") return agency;
   const parsed = businessPlanInput.safeParse(input);
   if (!parsed.success) return badInput;
-  const { businessId, planId, previewedAt } = parsed.data;
+  const { businessId, planId, previewedAt, bankStep } = parsed.data;
   // A set-up business is already in the trial count; a draft is not, so a full trial refuses it (D-16).
-  const allowed = await canAddBusiness(agency, { businessId });
+  const allowed = bankStep ? { allowed: true as const } : await canAddBusiness(agency, { businessId });
   if (!allowed.allowed) return { ok: false, status: 403, error: allowed.reason };
-  return run(agency, { kind: "add", businessId, planId }, previewedAt);
+  return run(agency, { kind: "add", businessId, planId }, previewedAt, undefined, bankStep);
 }
 
 /** Moves a business to a cheaper plan: at the end of the billing period, or now during a trial. */

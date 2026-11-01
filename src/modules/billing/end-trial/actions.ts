@@ -4,6 +4,8 @@ import { authFailure, requireAgency, type ActionResult } from "@/modules/auth";
 import { canAddBusiness } from "@/modules/entitlements";
 import { billingAccess } from "../account/access";
 import { loadPlanChangeData, raiseScheduleLost } from "../plan-change/dal";
+import { bankFailure, bankStepFor, finishBankStep } from "../plan-change/bank-step";
+import type { BankStep } from "../plan-change/payment";
 import { PlanChangeError } from "../plan-change/planner";
 import { startPlanNowInput } from "./schema";
 import { DECLINED, endTrialNow, type PlanNowDone } from "./service";
@@ -20,6 +22,9 @@ const unavailable = {
 } as const;
 
 function stripeFailure(error: unknown): ActionResult<never> | null {
+  // A card that needs the bank's confirmation (3D Secure) was not declined (QA 2026-11-01).
+  const bank = bankFailure(error);
+  if (bank) return bank;
   const e = error as { type?: string; statusCode?: number };
   if (e?.type === "StripeCardError" || e?.statusCode === 402) return { ok: false, status: 402, error: DECLINED };
   if (typeof e?.type === "string" && e.type.startsWith("Stripe")) {
@@ -37,8 +42,12 @@ async function agencyId(): Promise<string | ActionResult<never>> {
   }
 }
 
-/** Ends the trial now and charges the first month, so the agency can add more than the trial's businesses. */
-export async function startPlanNow(input: unknown): Promise<ActionResult<PlanNowDone>> {
+/**
+ * Ends the trial now and charges the first month, so the agency can add more than the trial's businesses. A card that
+ * needs the bank's confirmation gets a BankStep; the page then waits for the plan (paid) or calls again with the
+ * outcome (not paid), which drops the pending change.
+ */
+export async function startPlanNow(input: unknown): Promise<ActionResult<PlanNowDone | BankStep>> {
   const agency = await agencyId();
   if (typeof agency !== "string") return agency;
   const parsed = startPlanNowInput.safeParse(input);
@@ -47,10 +56,16 @@ export async function startPlanNow(input: unknown): Promise<ActionResult<PlanNow
     const data = await loadPlanChangeData(agency);
     const access = await billingAccess(data);
     if (!access) return unavailable;
+    if (parsed.data.bankStep) {
+      const finished = await finishBankStep(access, access.context.subscriptionId, parsed.data.bankStep);
+      return finished.ok ? { ok: true, data: { alreadyActive: false, started: false } } : finished;
+    }
     const deps = { stripe: access.stripe, plansByProduct: data.plansByProduct, now: () => new Date(), sync: access.sync, onScheduleLost: raiseScheduleLost };
     return { ok: true, data: await endTrialNow(access.context, parsed.data.attemptId, deps) };
   } catch (error) {
     if (error instanceof PlanChangeError) return { ok: false, status: error.status, error: error.message };
+    const step = bankStepFor(error);
+    if (step) return { ok: true, data: step };
     const failure = stripeFailure(error);
     if (failure) return failure;
     throw error;

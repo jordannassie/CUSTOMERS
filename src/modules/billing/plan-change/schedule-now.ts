@@ -1,10 +1,11 @@
 import type Stripe from "stripe";
 import type { PlanChangeStripe } from "./client";
+import { CHARGE_NOW, settleCharge } from "./payment";
 import { currentItems, itemSpec, phasesOf, subscriptionItemsFor, type CheckedChange, type ItemSpec, type PlanChangeContext } from "./planner";
 
 // An add or upgrade made now on a paid subscription with a pending change (a scheduled downgrade or removal).
 // A schedule update has no payment_behavior, so a declined card would still apply the change and leave the account
-// past due. Instead the schedule is released, the change is made like any other (error_if_incomplete, so a decline
+// past due. Instead the schedule is released, the change is made like any other (pending_if_incomplete, so a decline
 // changes nothing), and the schedule is made again with the pending change. On a decline the old schedule is put
 // back as it was. During a trial nothing is charged, so trialing subscriptions keep editing the schedule.
 
@@ -79,14 +80,13 @@ export async function changeNowAroundSchedule(input: {
   try {
     updated = await stripe.updateSubscription(
       sub.id,
-      {
-        items: subscriptionItemsFor(checked),
-        proration_behavior: "always_invoice",
-        proration_date: previewedAt,
-        payment_behavior: "error_if_incomplete",
-      },
+      { items: subscriptionItemsFor(checked), proration_behavior: "always_invoice", proration_date: previewedAt, ...CHARGE_NOW },
       `${key}:subscription`,
     );
+    // No bank step here yet: the released schedule would have to wait across requests for the answer. A payment that
+    // needs the bank's confirmation is dropped like a decline (invoice voided, schedule put back), with the bank's
+    // message instead of "declined" (payment.ts, QA 2026-11-01).
+    await settleCharge(stripe, updated, key, false);
   } catch (error) {
     // Nothing changed on the subscription: the pending change goes back exactly as it was.
     const restored = await scheduleAgain(stripe, sub.id, `${key}:restore`, schedule.end_behavior, (start, end) =>

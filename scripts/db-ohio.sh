@@ -25,6 +25,19 @@ case "${OHIO_DB_URL:-}" in *"$OHIO_REF"*) ;; *) echo "Refusing: OHIO_DB_URL is n
 ohio() { docker run --rm -i -e PGURL="$OHIO_DB_URL" --entrypoint sh "$IMAGE" -c "$1"; }
 psql_ohio() { ohio 'psql "$PGURL" -X -q -v ON_ERROR_STOP=1 '"$1"; }
 
+# SEC-11: function privileges can drift from the migrations (a restore without privileges keeps the defaults), so they
+# are checked on every run, including when nothing is pending.
+check_grants() {
+  local open
+  open=$(psql_ohio "-tA -f -" < scripts/check-function-grants.sql)
+  if [ -n "$open" ]; then
+    echo "FAIL functions anon or authenticated can run (apply 091_close_function_execute.sql):"
+    sed 's/^/  /' <<<"$open"
+    exit 1
+  fi
+  echo "ok   no function in public is executable by anon or authenticated"
+}
+
 applied=$(psql_ohio "-tA -c 'select version from supabase_migrations.schema_migrations'")
 pending=()
 for file in supabase/migrations/[0-9]*.sql; do
@@ -34,6 +47,7 @@ done
 
 if [ ${#pending[@]} -eq 0 ]; then
   echo "ok   customers-dev-ohio already has every migration on this branch"
+  check_grants
   exit 0
 fi
 echo "To apply on customers-dev-ohio:"
@@ -59,4 +73,5 @@ for file in "${pending[@]}"; do
   fi
   echo "ok   $name"
 done
+check_grants
 echo "ok   customers-dev-ohio is up to date"
