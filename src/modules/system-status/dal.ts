@@ -47,15 +47,16 @@ export async function getSystemStatus(deps: ProbeDeps = {}): Promise<SystemStatu
   return { checkedAt: now.toISOString(), services: [...withCreditStatus(probes, outOfCredit), worker, ...jobs] };
 }
 
-// The messages real calls log: Anthropic's "credit balance is too low", OpenAI's "exceeded your current quota", and
-// the background jobs' "credit" kind (modules/ai). Never reads a key; only provider names come back.
+// The messages real calls log: Anthropic's "credit balance is too low", OpenAI's "exceeded your current quota",
+// Perplexity's "requires paid credits", and the background jobs' "credit" kind (modules/ai). Never reads a key; only
+// provider names come back.
 async function providersOutOfCredit(now: Date): Promise<Set<string>> {
   const since = new Date(now.getTime() - OUT_OF_CREDIT_WINDOW_MINUTES * 60_000).toISOString();
   const { data, error } = await createServiceClient()
     .from("provider_errors")
     .select("provider")
     .gte("created_at", since)
-    .or("message.ilike.%credit balance%,message.ilike.%exceeded your current quota%,message.ilike.%insufficient_quota%")
+    .or("message.ilike.%credit balance%,message.ilike.%exceeded your current quota%,message.ilike.%insufficient_quota%,message.ilike.%paid credits%")
     .limit(50);
   if (error) return new Set();
   return new Set((data ?? []).map((r) => r.provider));

@@ -32,14 +32,17 @@ export type BillingBusiness = {
 
 /**
  * "none": no plan yet. "unavailable": Stripe is not set up here. "error": Stripe could not be reached. "missing": the
- * saved subscription is not in Stripe (deleted there, or never real).
+ * saved subscription is not in Stripe (deleted there, or never real). "other_mode": it is in Stripe's other mode (a
+ * live plan seen with test keys, or the reverse), so nothing here may change it.
  */
-export type StripeState = "ok" | "none" | "unavailable" | "error" | "missing";
+export type StripeState = "ok" | "none" | "unavailable" | "error" | "missing" | "other_mode";
 
 export type BillingView = {
   status: string;
   stripe: StripeState;
   trialEndsAt: string | null;
+  /** The trial's end date has passed but no payment has made the plan active yet (the banner's "trial ended"). */
+  trialEnded: boolean;
   plans: BillingPlan[];
   onPlan: BillingBusiness[];
   notOnPlan: { id: string; name: string }[];
@@ -82,7 +85,11 @@ function pendingChanges(snapshot: StripeSnapshot, plans: BillingPlan[]): Map<str
   return pending;
 }
 
-export function buildBillingView(rows: BillingRows, stripe: StripeSnapshot | Exclude<StripeState, "ok">): BillingView {
+export function buildBillingView(
+  rows: BillingRows,
+  stripe: StripeSnapshot | Exclude<StripeState, "ok">,
+  now: Date = new Date(),
+): BillingView {
   const snapshot = typeof stripe === "string" ? null : stripe;
   const pending = snapshot ? pendingChanges(snapshot, rows.plans) : new Map<string, PendingChange>();
   const sub = snapshot?.sub ?? null;
@@ -110,10 +117,12 @@ export function buildBillingView(rows: BillingRows, stripe: StripeSnapshot | Exc
     } else if (!b.deleted) notOnPlan.push({ id: b.id, name: b.name });
   }
 
+  const trialEndsAt = rows.agency.status === "trialing" ? (rows.agency.trialEndsAt ?? ends) : null;
   return {
     status: rows.agency.status,
     stripe: snapshot ? "ok" : (stripe as Exclude<StripeState, "ok">),
-    trialEndsAt: rows.agency.status === "trialing" ? (rows.agency.trialEndsAt ?? ends) : null,
+    trialEndsAt,
+    trialEnded: trialEndsAt !== null && Date.parse(trialEndsAt) <= now.getTime(),
     plans: rows.plans,
     onPlan,
     notOnPlan,

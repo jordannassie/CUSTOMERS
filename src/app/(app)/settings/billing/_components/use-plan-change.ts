@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import type { PlanChangeResult } from "@/modules/billing";
+import { confirmWithBank } from "@/app/(app)/_stripe/stripe-elements";
 
 export type ChangeAction = (input: unknown) => Promise<PlanChangeResult>;
 
@@ -48,7 +49,14 @@ export function usePlanChange(action: ChangeAction, input: Record<string, unknow
     if (!preview) return;
     setError(null);
     startSaving(async () => {
-      const result = await action({ ...input, ...extra, previewedAt: preview.previewedAt });
+      let result = await action({ ...input, ...extra, previewedAt: preview.previewedAt });
+      // A card that needs the bank's confirmation (3D Secure): approve it in Stripe's window, then report back so the
+      // change is saved (paid) or dropped (not paid). QA 2026-11-01.
+      if (result.ok && result.data.step === "authenticate") {
+        const { clientSecret, invoiceId, publishableKey } = result.data;
+        const paid = await confirmWithBank(publishableKey, clientSecret);
+        result = await action({ ...input, bankStep: { invoiceId, paid } });
+      }
       if (!result.ok) {
         // Nothing changed; "Try again" fetches a fresh price before another confirm.
         setPreview(null);

@@ -26,7 +26,8 @@ describe("upgrade mid-month", () => {
       items: [{ id: `si_${A}`, price_data: { product: "cd_plan_pro", unit_amount: 24900, currency: "usd", recurring: { interval: "month" } } }],
       proration_behavior: "always_invoice",
       proration_date: preview.previewedAt,
-      payment_behavior: "error_if_incomplete",
+      payment_behavior: "pending_if_incomplete",
+      expand: ["latest_invoice.confirmation_secret"],
     });
   });
 
@@ -37,7 +38,8 @@ describe("upgrade mid-month", () => {
     stripe.declineNextCharge = true;
     await expect(applyPlanChange(ctx, change, preview.previewedAt, deps)).rejects.toMatchObject({ type: "StripeCardError" });
     expect(planOf(stripe, A)).toBe("cd_plan_starter");
-    expect(stripe.invoices).toHaveLength(0);
+    // pending_if_incomplete leaves the declined invoice, voided, so nothing is owed or applied later.
+    expect(stripe.invoices.map((i) => i.status)).toEqual(["void"]);
   });
 
   it("charges once when the same confirm is sent twice", async () => {

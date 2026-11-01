@@ -9,8 +9,9 @@ import type { CheckInput, CheckLocation, Citation, CheckUsage, ProviderId, RunCh
 // Shared answer cache (MVP_SPEC 5.4, D-24). Shared across every business and agency; mentions are still detected per
 // business on the cached answer. 20 hours, not 24 (H1): a scheduled scan lands at least MIN_SCAN_GAP_MS after the
 // business's last scan (schedule.ts), so it never reuses, and pays again for, an answer that business already got.
-// A Run scan within 20 hours of the last scan does reuse answers and is charged: the "Scan again?" dialog says so
-// first (recent-scan.ts in jobs), and the scan history shows how many answers were reused.
+// A Run scan within 20 hours of the last scan does reuse answers, free (D-24): the "Scan again?" dialog says so first
+// (recent-scan.ts in jobs), and the scan history shows how many answers were reused. The copies it saves count once
+// in every score and count (migration 090, BUG-287).
 
 export const CACHE_TTL_MS = 20 * 60 * 60 * 1000;
 

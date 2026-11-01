@@ -4,6 +4,7 @@ import { A, B, C, RENEWAL, setup } from "../plan-change/scenario.test-helpers";
 import type { PortalClient } from "./access";
 import type { BillingRows } from "./dal";
 import { billingView, portalUrl } from "./service";
+import { buildBillingView } from "./summary";
 
 // The billing page's reads (B-46) against the in-memory Stripe: next charge, pending changes, cancel, trial,
 // and what the page says when Stripe is missing or fails. No Stripe calls.
@@ -113,6 +114,26 @@ describe("billingView", () => {
     expect((await billingView({ rows: rows(), access: { context: ctx, stripe: gone as unknown as PlanChangeStripe } })).stripe).toBe("missing");
   });
 
+  // QA 2026-11-01: the preview runs test keys against a database shared with live (D-43), so a live plan reads as
+  // missing there. It must never be offered for a restart.
+  it("tells a plan in Stripe's other mode apart from a missing one", async () => {
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    const { ctx } = setup();
+    const message =
+      "No such subscription: 'sub_live'; a similar object exists in live mode, but a test mode key was used to make this request.";
+    const live = { retrieveSubscription: () => Promise.reject(Object.assign(new Error(message), { code: "resource_missing", statusCode: 404 })) };
+    expect((await billingView({ rows: rows(), access: { context: ctx, stripe: live as unknown as PlanChangeStripe } })).stripe).toBe("other_mode");
+  });
+
+  it("says the trial ended once its date has passed (QA 2026-11-01)", () => {
+    const trial = rows("trialing");
+    const before = new Date(Date.parse(trial.agency.trialEndsAt!) - 60_000);
+    const after = new Date(Date.parse(trial.agency.trialEndsAt!) + 60_000);
+    expect(buildBillingView(trial, "missing", before).trialEnded).toBe(false);
+    expect(buildBillingView(trial, "missing", after).trialEnded).toBe(true);
+    expect(buildBillingView(rows("active"), "missing", after).trialEnded).toBe(false);
+  });
+
   it("a past due plan keeps its lines; an ended one can't be changed", async () => {
     const { stripe, ctx } = setup();
     expect((await billingView({ rows: rows("past_due"), access: { context: ctx, stripe } })).canChange).toBe(true);
@@ -144,6 +165,14 @@ describe("portalUrl", () => {
       ok: false,
       status: 502,
     });
+  });
+
+  it("sends a customer Stripe no longer has to start the plan again, not to try again later", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    const missing = Object.assign(new Error("No such customer: 'cus_gone'"), { code: "resource_missing", statusCode: 404 });
+    const result = await portalUrl({ client: client(missing), customerId: "cus_gone", returnUrl: "x" });
+    expect(result).toMatchObject({ ok: false, status: 404 });
+    expect(result.ok ? "" : result.error).toMatch(/Start your plan again/);
   });
 });
 

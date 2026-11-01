@@ -86,6 +86,28 @@ describe("switchBusiness", () => {
     expect(data!.active_business_id).toBe(target);
     expect((await getWorkspace()).activeBusinessId).toBe(target);
   });
+
+  // QA 2026-11-01: a hosted database lost the signup trigger, so new users had no profile row and the switch
+  // "succeeded" while saving nothing.
+  it("saves the switch for a user with no profile row", async () => {
+    const mine = await createAgency(2);
+    await service.from("profiles").delete().eq("id", mine.userId).throwOnError();
+    await signIn(mine.email, mine.password);
+
+    for (const target of [mine.businessIds[0], mine.businessIds[1]]) {
+      expect(await switchBusiness({ businessId: target })).toEqual({ ok: true, data: null });
+      const { data } = await service.from("profiles").select("active_business_id").eq("id", mine.userId).single();
+      expect(data!.active_business_id).toBe(target);
+      expect((await getWorkspace()).activeBusinessId).toBe(target);
+    }
+  });
+
+  it("refuses a deleted business", async () => {
+    const mine = await createAgency(2);
+    await service.from("businesses").update({ deleted_at: new Date().toISOString() }).eq("id", mine.businessIds[1]).throwOnError();
+    await signIn(mine.email, mine.password);
+    expect(await switchBusiness({ businessId: mine.businessIds[1] })).toMatchObject({ ok: false, status: 404 });
+  });
 });
 
 describe("getWorkspace", () => {

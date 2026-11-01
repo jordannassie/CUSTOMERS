@@ -20,7 +20,7 @@ export async function readHistory(businessId: string, now: Date, days: number): 
   for (let from = 0; ; from += PAGE) {
     const { data, error } = await createServiceClient()
       // The rows that count: no sample answers once the agency is real (migration 044).
-      .from("visibility_results_counted")
+      .from("visibility_results_unique")
       .select("id, run_id, tracked_prompt_id, provider, created_at, business_mentioned")
       .eq("business_id", businessId)
       .gt("created_at", since)

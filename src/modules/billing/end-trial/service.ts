@@ -3,6 +3,7 @@ import { formatCount, formatUsd } from "../format";
 import type { PlanChangeStripe } from "../plan-change/client";
 import { formatDate } from "../plan-change/copy";
 import { currentItems, itemSpec, phasesOf, PlanChangeError, scheduleIdOf, type ItemSpec, type PlanChangeContext } from "../plan-change/planner";
+import { CHARGE_NOW, PaymentNeedsAction, settleCharge } from "../plan-change/payment";
 import { phasesFrom, scheduleAgain } from "../plan-change/schedule-now";
 import type { PlanCredits } from "../webhooks/credits";
 import type { StripeSync } from "../webhooks/sync";
@@ -126,7 +127,7 @@ const inFlight = new Map<string, Promise<PlanNowDone>>();
  * Ends the trial now. Stripe refuses a new trial end on a subscription a schedule controls (A4), so a schedule is
  * released first, with nothing on the subscription changed yet. Then one subscription update ends the trial and, with
  * a change scheduled for the trial end (a downgrade or removal, D-57), puts the scheduled items in place too. It uses
- * payment_behavior error_if_incomplete, so Stripe applies all of it or none of it: a declined card changes nothing,
+ * payment_behavior pending_if_incomplete, so Stripe applies all of it once paid or none of it: a declined card changes nothing,
  * the schedule is made again as it was, and the trial goes on (BUG-282).
  * `attemptId` is new for each try, so a double click charges once and a retry after a decline is a new request.
  * When Stripe already shows the trial ended, nothing is charged again: it only syncs.
@@ -184,18 +185,23 @@ async function endTrial(ctx: PlanChangeContext, key: string, deps: EndTrialDeps)
   const specs = currentItems(ctx, sub);
   const live = sub.items.data.map((item, i) => ({ id: item.id, spec: specs[i] }));
   const params: Stripe.SubscriptionUpdateParams = saved
-    ? { items: itemsToMatchPhase(live, saved.next), proration_behavior: "none", trial_end: "now", payment_behavior: "error_if_incomplete" }
-    : { trial_end: "now", payment_behavior: "error_if_incomplete" };
+    ? { items: itemsToMatchPhase(live, saved.next), proration_behavior: "none", trial_end: "now", ...CHARGE_NOW }
+    : { trial_end: "now", ...CHARGE_NOW };
   let updated: Stripe.Subscription;
   try {
     updated = await deps.stripe.updateSubscription(sub.id, params, `${key}:subscription`);
+    // Applied only once paid (payment.ts). A card that needs the bank's confirmation gets the bank step; with a
+    // released schedule there is no bank step yet, so that payment is dropped and the schedule put back.
+    await settleCharge(deps.stripe, updated, key, !saved);
   } catch (error) {
+    // Waiting on the bank: nothing changed and no schedule was released.
+    if (error instanceof PaymentNeedsAction) throw error;
     // A declined card changed nothing (the action maps it to DECLINED). After any other error Stripe may still have
     // applied the update, so the schedule goes back only while the trial is still running.
     if (saved && (isDecline(error) || (await stillTrialing(sub.id, deps)))) await restore(ctx, sub, saved, key, deps);
     throw error;
   }
-  // error_if_incomplete answers a decline with a 402; anything else that is not active means it was not paid.
+  // Paid and applied means active; anything else was not paid.
   if (updated.status !== "active") {
     if (saved) await restore(ctx, sub, saved, key, deps);
     throw new PlanChangeError(402, DECLINED);

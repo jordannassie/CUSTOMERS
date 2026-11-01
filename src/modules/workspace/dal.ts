@@ -128,7 +128,22 @@ export async function loadSwitcherScores(): Promise<SwitcherScores | null> {
   return getSwitcherScores(data.map((b) => b.id));
 }
 
-/** False when the business is not the user's. */
+/**
+ * Saves the user's active business through their own session. An upsert, not an update: a user whose profile row is
+ * missing (some databases lost the signup trigger) got 0 rows updated and a silent "switched" (QA 2026-11-01). Throws
+ * when nothing was saved, so callers never report a switch that did not happen.
+ */
+export async function saveActiveBusiness(userId: string, businessId: string): Promise<void> {
+  const { data, error } = await (await createClient())
+    .from("profiles")
+    .upsert({ id: userId, active_business_id: businessId }, { onConflict: "id" })
+    .select("active_business_id")
+    .maybeSingle();
+  if (error) throw new Error(`Could not save the active business: ${error.message}`);
+  if (data?.active_business_id !== businessId) throw new Error("Could not save the active business: nothing was saved");
+}
+
+/** False when the business is not the user's or is deleted. Throws when the choice could not be saved. */
 export async function setActiveBusiness(businessId: string): Promise<boolean> {
   const user = await requireUser();
   const supabase = await createClient();
@@ -137,14 +152,11 @@ export async function setActiveBusiness(businessId: string): Promise<boolean> {
     .select("id")
     .eq("id", businessId)
     .eq("owner_user_id", user.id)
+    .is("deleted_at", null)
     .maybeSingle();
   if (error) throw new Error(`Could not load business: ${error.message}`);
   if (!business) return false;
 
-  const { error: updateError } = await supabase
-    .from("profiles")
-    .update({ active_business_id: businessId })
-    .eq("id", user.id);
-  if (updateError) throw new Error(`Could not switch business: ${updateError.message}`);
+  await saveActiveBusiness(user.id, businessId);
   return true;
 }

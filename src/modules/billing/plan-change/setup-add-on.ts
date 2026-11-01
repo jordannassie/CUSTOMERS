@@ -3,6 +3,7 @@ import { viewerTimeZone } from "@/lib/viewer-time-zone";
 import { billingAccess } from "../account/access";
 import { loadPlanChangeData, raiseScheduleLost, type PlanChangeData } from "./dal";
 import { PAST_DUE_REFUSAL } from "./copy";
+import { isBankConfirmation } from "./payment";
 import { PlanChangeError, type PlanChangeContext } from "./planner";
 import { applyPlanChange, previewPlanChange } from "./service";
 import { syncAfterChange } from "./sync-after";
@@ -21,6 +22,10 @@ export type SetupAddOn = {
   /** Send back on finish, so the charge matches what was shown (Stripe proration_date). */
   previewedAt: number;
 };
+
+// QA 2026-11-01: was "Your card was declined" for a card that needs the bank's confirmation (3D Secure).
+const SETUP_BANK_CONFIRM =
+  "Your bank needs to confirm this payment, which setup can't ask for yet. Nothing was charged. Contact us and we'll add this business for you.";
 
 export type SetupAddOnResult = { ok: true } | { ok: false; status: number; error: string };
 
@@ -64,6 +69,8 @@ async function prepare(agencyId: string, businessId: string) {
     now: () => new Date(),
     timeZone: await viewerTimeZone(),
     onScheduleLost: raiseScheduleLost,
+    // Setup has no window for the bank's confirmation yet: such a payment is dropped with the bank's message.
+    bankStep: false,
   };
   return { context: access.context, deps, planId, access };
 }
@@ -104,6 +111,9 @@ export async function addBusinessAtSetup(
     return { ok: true };
   } catch (error) {
     if (error instanceof PlanChangeError) return { ok: false, status: error.status, error: error.message };
+    if (isBankConfirmation(error)) {
+      return { ok: false, status: 402, error: SETUP_BANK_CONFIRM };
+    }
     const e = error as { type?: string; statusCode?: number };
     if (e?.type === "StripeCardError" || e?.statusCode === 402) {
       return { ok: false, status: 402, error: "Your card was declined, so this business wasn't added. Update your card on Billing and try again." };

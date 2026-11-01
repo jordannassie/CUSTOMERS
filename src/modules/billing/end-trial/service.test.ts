@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { at } from "../plan-change/fake-stripe";
 import { monthAfter } from "../plan-change/fake-stripe-objects";
 import { PERIOD_GRACE_MS } from "../webhooks/credits";
+import { isBankConfirmation, PaymentNeedsAction } from "../plan-change/payment";
 import { PlanChangeError } from "../plan-change/planner";
 import { A, B, creditsOf, MID_MONTH, planOf, plansByProduct, setup } from "../plan-change/scenario.test-helpers";
 import { DECLINED, endTrialNow, monthLater, planNowOffer, type EndTrialDeps } from "./service";
@@ -37,7 +38,7 @@ describe("start my plan now", () => {
 
     expect(updates(s)).toEqual([
       expect.objectContaining({
-        params: { trial_end: "now", payment_behavior: "error_if_incomplete" },
+        params: { trial_end: "now", payment_behavior: "pending_if_incomplete", expand: ["latest_invoice.confirmation_secret"] },
         key: `end-trial:agency-1:${ATTEMPT}:subscription`,
       }),
     ]);
@@ -92,7 +93,7 @@ describe("start my plan now", () => {
     s.stripe.declineNextCharge = true;
     await expect(endTrialNow(s.ctx, ATTEMPT, s.deps)).rejects.toMatchObject({ type: "StripeCardError", statusCode: 402 });
     expect(s.stripe.subscription().status).toBe("trialing");
-    expect(s.stripe.invoices).toEqual([]);
+    expect(s.stripe.invoices.map((i) => i.status)).toEqual(["void"]);
 
     expect(await endTrialNow(s.ctx, RETRY, s.deps)).toEqual({ alreadyActive: false, started: false });
     expect(s.stripe.subscription().status).toBe("active");
@@ -124,7 +125,8 @@ describe("start my plan now", () => {
       items: [{ id: `si_${B}`, deleted: true }],
       proration_behavior: "none",
       trial_end: "now",
-      payment_behavior: "error_if_incomplete",
+      payment_behavior: "pending_if_incomplete",
+      expand: ["latest_invoice.confirmation_secret"],
     });
     expect(s.stripe.schedule?.status).toBe("released");
     expect(planOf(s.stripe, A)).toBe("cd_plan_starter");
@@ -149,7 +151,7 @@ describe("start my plan now", () => {
     expect(sub.status).toBe("trialing");
     expect(sub.items.data.map((i) => i.id)).toEqual(itemsBefore);
     expect([planOf(s.stripe, A), planOf(s.stripe, B)]).toEqual(["cd_plan_starter", "cd_plan_starter"]);
-    expect(s.stripe.invoices).toEqual([]);
+    expect(s.stripe.invoices.map((i) => i.status)).toEqual(["void"]);
     // A new schedule, with B still leaving at the trial end and the trial kept on the current phase.
     expect(s.stripe.schedule?.status).toBe("active");
     expect(sub.schedule).toBe(s.stripe.schedule!.id);
@@ -161,7 +163,30 @@ describe("start my plan now", () => {
     // A new try with a good card then starts the plan with the removal.
     await endTrialNow(s.ctx, RETRY, s.deps);
     expect(planOf(s.stripe, B)).toBeUndefined();
-    expect(s.stripe.invoices.map((i) => i.amount_paid)).toEqual([14900]);
+    expect(s.stripe.invoices.filter((i) => i.status === "paid").map((i) => i.amount_paid)).toEqual([14900]);
+  });
+
+  // QA 2026-11-01: a card that needs the bank's confirmation read as "declined" and could never start the plan.
+  it("a card that needs the bank's confirmation waits for it, then starts the plan", async () => {
+    const s = trial();
+    s.stripe.requireActionNextCharge = true;
+    await expect(endTrialNow(s.ctx, ATTEMPT, s.deps)).rejects.toBeInstanceOf(PaymentNeedsAction);
+    expect(s.stripe.subscription().status).toBe("trialing");
+    expect(s.stripe.invoices.map((i) => i.status)).toEqual(["open"]);
+    s.stripe.approvePending();
+    expect(s.stripe.subscription().status).toBe("active");
+  });
+
+  it("with a removal scheduled, a card that needs the bank drops the payment and schedules the removal again", async () => {
+    const s = trial();
+    await s.change({ kind: "remove", businessId: B });
+    s.stripe.requireActionNextCharge = true;
+    const error = await endTrialNow(s.ctx, ATTEMPT, s.deps).catch((e: unknown) => e);
+    expect(error).not.toBeInstanceOf(PaymentNeedsAction);
+    expect(isBankConfirmation(error)).toBe(true);
+    expect(s.stripe.subscription().status).toBe("trialing");
+    expect(s.stripe.invoices.map((i) => i.status)).toEqual(["void"]);
+    expect(s.stripe.schedule!.phases.map((p) => p.items.map((i) => i.metadata.business_id))).toEqual([[A, B], [A]]);
   });
 
   it("after another Stripe error, schedules the removal again only if the trial is still running", async () => {

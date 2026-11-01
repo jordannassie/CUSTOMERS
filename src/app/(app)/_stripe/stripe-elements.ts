@@ -40,3 +40,20 @@ export function confirmErrorMessage(error: { message: string; code: string | nul
   const base = message.replace(TRY_AGAIN, "").trim();
   return `${base}${/[.!?]$/.test(base) ? "" : "."} Nothing was charged. Try another card.`;
 }
+
+/**
+ * Opens the bank's confirmation window (3D Secure) for a charge the server left waiting on it (QA 2026-11-01). True
+ * once the payment went through or is being processed; false when it was closed, failed, or Stripe.js didn't load.
+ */
+export async function confirmWithBank(publishableKey: string | null, clientSecret: string): Promise<boolean> {
+  if (!publishableKey) return false;
+  try {
+    const stripe = await getStripeJs(publishableKey);
+    if (!stripe) return false;
+    const result = await stripe.handleNextAction({ clientSecret });
+    const status = result.paymentIntent?.status;
+    return !result.error && (status === "succeeded" || status === "processing");
+  } catch {
+    return false;
+  }
+}

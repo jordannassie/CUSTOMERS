@@ -14,7 +14,7 @@ import {
   upgradeBusiness,
 } from "@/modules/billing";
 import { ADD_BUSINESS_PATH } from "@/modules/onboarding";
-import { BILLING_HREF, BUY_CREDITS_HREF, CHOOSE_PLAN_HREF } from "@/modules/workspace";
+import { BILLING_HREF, BUY_CREDITS_HREF, CHOOSE_PLAN_HREF, SUPPORT_HREF } from "@/modules/workspace";
 import { PlanBill } from "./_components/plan-bill";
 import { PortalButton } from "./_components/portal-button";
 import { CancelPanel, CreditsPanel, NoPlan, PlanStatus } from "./_components/sections";
@@ -34,7 +34,9 @@ export default async function BillingPage({ searchParams }: Props) {
   // Saved again from Stripe (BUG-121): load once more with fresh reads.
   if (loaded === "resynced") redirect(`${BILLING_HREF}?synced=1`);
   const view = loaded;
-  const hasPlan = view.stripe !== "none" && view.status !== "canceled";
+  // A plan Stripe no longer has can't be changed or paid here: start a new one instead (QA 2026-11-01).
+  const gone = view.stripe === "missing" || view.stripe === "other_mode" ? view.stripe : null;
+  const hasPlan = view.stripe !== "none" && !gone && view.status !== "canceled";
 
   return (
     <PageContainer>
@@ -42,7 +44,7 @@ export default async function BillingPage({ searchParams }: Props) {
         <PageHeader
           title="Billing"
           description="What you pay, for which businesses, and when."
-          actions={view.stripe !== "none" && <PortalButton open={openBillingPortal} variant={view.status === "past_due" ? "default" : "outline"} />}
+          actions={view.stripe !== "none" && !gone && <PortalButton open={openBillingPortal} variant={view.status === "past_due" ? "default" : "outline"} />}
         />
 
         {params.portal === "fixture" && (
@@ -57,14 +59,20 @@ export default async function BillingPage({ searchParams }: Props) {
               <PlanStatus view={view} keep={keepSubscription} />
               <PlanBill
                 view={view}
+                supportHref={SUPPORT_HREF}
                 addBusinessHref={ADD_BUSINESS_PATH}
                 actions={{ upgrade: upgradeBusiness, downgrade: downgradeBusiness, remove: removeBusiness, add: addBusiness, keep: keepBusinessPlan }}
               />
               <CreditsPanel buyHref={BUY_CREDITS_HREF} usageHref={USAGE_HREF} />
-              {view.canChange && !view.cancelAt && <CancelPanel cancel={cancelSubscription} trialing={view.status === "trialing"} />}
+              {view.canChange && !view.cancelAt && <CancelPanel cancel={cancelSubscription} trialing={view.status === "trialing"} trialEnded={view.trialEnded} />}
             </>
           ) : (
-            <NoPlan ended={view.status === "canceled"} choosePlanHref={CHOOSE_PLAN_HREF} />
+            <NoPlan
+              ended={view.status === "canceled"}
+              gone={gone}
+              choosePlanHref={CHOOSE_PLAN_HREF}
+              supportHref={SUPPORT_HREF}
+            />
           )}
         </div>
       </div>

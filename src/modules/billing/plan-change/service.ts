@@ -21,6 +21,7 @@ import {
 } from "./planner";
 import { previewParams, schedulePhases } from "./preview-params";
 import { phasesOnOnePrice, phasesWithoutPending, refuseWhileLeaving } from "./pending";
+import { CHARGE_NOW, settleCharge } from "./payment";
 import { changeNowAroundSchedule } from "./schedule-now";
 import { trialBillCents } from "./trial-bill";
 
@@ -38,6 +39,11 @@ export type PlanChangeDeps = {
   credits?: { plan: number; topup: number };
   /** Raises an admin alert when a pending change could not be put back after a change made now (schedule-now.ts). */
   onScheduleLost?: (message: string) => Promise<void>;
+  /**
+   * False where nothing can show the bank's confirmation window (finishing setup): a payment that needs it is
+   * dropped and refused with the bank's message instead. Defaults to true.
+   */
+  bankStep?: boolean;
 };
 
 export type PlanChangePreview = Copy & {
@@ -188,17 +194,19 @@ export async function applyPlanChange(
     const onePrice = timing === "now" && checked.business ? phasesOnOnePrice(sub, updated, checked.business.id) : null;
     if (onePrice) await deps.stripe.updateSchedule(schedule.id, { phases: onePrice, proration_behavior: "none" }, `${key}:one-price`);
   } else if (timing === "now") {
-    await deps.stripe.updateSubscription(
+    const updated = await deps.stripe.updateSubscription(
       sub.id,
       {
         items: subscriptionItemsFor(checked),
         proration_behavior: "always_invoice",
         proration_date: previewedAt,
-        // A declined card leaves the plan as it was instead of a change the user hasn't paid for.
-        payment_behavior: "error_if_incomplete",
+        // Applied only once paid: a declined card leaves the plan as it was, and a card that needs the bank's
+        // confirmation (3D Secure) gets the bank step instead of "declined" (payment.ts).
+        ...CHARGE_NOW,
       },
       `${key}:subscription`,
     );
+    await settleCharge(deps.stripe, updated, key, deps.bankStep ?? true);
   } else {
     const created = await deps.stripe.createScheduleFromSubscription(sub.id, `${key}:create`);
     const first = created.phases[0];

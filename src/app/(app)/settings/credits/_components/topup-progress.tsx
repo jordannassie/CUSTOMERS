@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useEffectEvent, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { CheckCircle2, Loader2 } from "lucide-react";
@@ -18,18 +18,22 @@ type State = { kind: "waiting" } | { kind: "done"; added: number; balance: numbe
 export function TopupProgress({ sessionId, status }: { sessionId: string; status: StatusAction }) {
   const router = useRouter();
   const [state, setState] = useState<State>({ kind: "waiting" });
+  // Effect events, so the poll loop depends on the session only. The refresh after the credits land hands this
+  // component a new `status` action; when that restarted the effect, it polled and refreshed forever (QA 2026-11-01).
+  const check = useEffectEvent(() => status({ sessionId }));
+  const refresh = useEffectEvent(() => router.refresh());
 
   useEffect(() => {
     let polls = 0;
     let timer: ReturnType<typeof setTimeout>;
     let stopped = false;
     async function poll() {
-      const result = await status({ sessionId }).catch(() => null);
+      const result = await check().catch(() => null);
       if (stopped) return;
       if (result?.ok && result.data.credited !== null) {
         setState({ kind: "done", added: result.data.credited, balance: result.data.balance });
         // Updates the sidebar balance and banners.
-        router.refresh();
+        refresh();
         return;
       }
       if (++polls >= MAX_POLLS) return setState({ kind: "slow" });
@@ -40,7 +44,7 @@ export function TopupProgress({ sessionId, status }: { sessionId: string; status
       stopped = true;
       clearTimeout(timer);
     };
-  }, [sessionId, status, router]);
+  }, [sessionId]);
 
   if (state.kind === "waiting") {
     return (

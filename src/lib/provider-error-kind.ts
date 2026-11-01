@@ -4,7 +4,8 @@
 export type ProviderErrorKind = "billing" | "rate_limit" | "auth" | "timeout" | "server" | "network" | "other";
 
 const RULES: [ProviderErrorKind, RegExp][] = [
-  ["billing", /out of credit|credit balance|insufficient_quota|billing|\b402\b/i],
+  // Perplexity answers 403 "The Agent API requires paid credits" for an empty account: billing, not a bad key (QA 2026-11-01).
+  ["billing", /out of credit|credit balance|insufficient_quota|billing|paid credits|\b402\b/i],
   ["rate_limit", /\b429\b|rate.?limit|too many requests|quota/i],
   ["auth", /\b40[13]\b|unauthori[sz]ed|forbidden|invalid api key|permission/i],
   ["timeout", /time(?:d)?.?out|timeout|aborted/i],

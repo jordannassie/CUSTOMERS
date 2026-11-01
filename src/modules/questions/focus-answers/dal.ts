@@ -61,7 +61,7 @@ export async function readFocusAnswers(
   for (let from = 0; from < MAX_ROWS; from += PAGE) {
     // The rows that count: never sample answers once the agency is real (migration 044).
     const { data, error } = await createServiceClient()
-      .from("visibility_results_counted")
+      .from("visibility_results_unique")
       .select("provider, created_at, tracked_prompt_id, business_mentioned, competitors_mentioned, answer_text, cached, extracted_names, cited_sources")
       .eq("business_id", businessId)
       .in("tracked_prompt_id", questionIds)

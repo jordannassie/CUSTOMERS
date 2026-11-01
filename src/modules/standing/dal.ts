@@ -32,7 +32,7 @@ async function readRows(businessId: string, since: Date) {
   for (let from = 0; ; from += PAGE) {
     const { data, error } = await createServiceClient()
       // The rows that count: no sample answers once the agency is real (migration 044).
-      .from("visibility_results_counted")
+      .from("visibility_results_unique")
       .select("id, provider, tracked_prompt_id, business_mentioned, competitors_mentioned, extracted_names, cited_sources, created_at")
       .eq("business_id", businessId)
       .gt("created_at", since.toISOString())

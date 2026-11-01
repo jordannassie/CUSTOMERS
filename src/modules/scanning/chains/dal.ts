@@ -29,7 +29,7 @@ const branchAnswers = cache(async (businessId: string, name: string, sinceMs: nu
   const answers: string[] = [];
   for (let from = 0; ; from += PAGE) {
     const { data, error } = await createServiceClient()
-      .from("visibility_results_counted")
+      .from("visibility_results_unique")
       .select("answer_text")
       .eq("business_id", businessId)
       .gt("created_at", new Date(sinceMs).toISOString())
@@ -67,7 +67,7 @@ const ownAnswers = cache(async (businessId: string, sinceMs: number): Promise<{ 
   const rows: { text: string | null; questionId: string | null }[] = [];
   for (let from = 0; ; from += PAGE) {
     const { data, error } = await createServiceClient()
-      .from("visibility_results_counted")
+      .from("visibility_results_unique")
       .select("answer_text, tracked_prompt_id")
       .eq("business_id", businessId)
       .gt("created_at", new Date(sinceMs).toISOString())

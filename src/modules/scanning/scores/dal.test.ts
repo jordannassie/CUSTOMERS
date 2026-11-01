@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, describe, expect, it } from "vitest";
-import { createScanAgency, createScanBusiness, deleteScanUsers, service } from "../service.test-helpers";
+import { createScanAgency, createScanBusiness, deleteScanUsers, finishJob, newJob, service } from "../service.test-helpers";
 import { loadScoreReport } from "./dal";
 
 // B-30 step 2: the 30-day aggregates read from saved checks on the local database.
@@ -65,26 +65,97 @@ describe("loadScoreReport", () => {
       .throwOnError();
 
     const report = await loadScoreReport(agency.agencyId, business.businessId, NOW);
+    // The two cached rows are copies of answers this business already had (a Run scan within 20 hours, D-24): each
+    // answer counts once (migration 090), so 4 answers, not 6.
     expect(report?.byModel.map((m) => [m.model, m.estimate.score, m.estimate.checks])).toEqual([
-      ["openai", 75, 4],
+      ["openai", 50, 2],
       ["anthropic", 0, 2],
     ]);
-    // 3 of 6 answers, pooled (D-91). It was 37.5 under D-65, the average of 75 and 0.
+    // 1 of 4 answers, pooled (D-91).
     expect(report?.overall).toMatchObject({
-      score: 50,
-      checks: 6,
+      score: 25,
+      checks: 4,
       uniqueAnswers: 4,
       confidence: "early",
     });
     expect(report?.competitors).toEqual([{ name: "Rival Roasters", score: 50, standing: "about_same", change: null, chain: null }]);
     expect(report?.questions.slice(0, 2).map((q) => [q.appeared, q.checks])).toEqual([
-      [2, 3],
-      [1, 3],
+      [1, 2],
+      [0, 2],
     ]);
     expect(report?.trend).toHaveLength(7);
 
     const other = await createScanAgency({ isTest: true, credits: 0 });
     expect(await loadScoreReport(other.agencyId, business.businessId, NOW)).toBeNull();
+  });
+
+  // QA 2026-11-01: a Run scan within 20 hours saved every reused answer again, doubling every count (migration 090).
+  it("counts a reused answer once, a first-time cached answer fully, and a running scan only once it ends", async () => {
+    const agency = await createScanAgency({ isTest: true, credits: 0 });
+    const business = await createScanBusiness(agency);
+    const { data: prompts } = await service
+      .from("tracked_prompts")
+      .select("id")
+      .eq("business_id", business.businessId)
+      .order("created_at")
+      .throwOnError();
+    const [q1, q2] = prompts.map((p) => p.id);
+    const run = async (jobId: string | null, status = "completed") =>
+      (
+        await service
+          .from("visibility_runs")
+          .insert({ business_id: business.businessId, provider: "scan", status, scan_job_id: jobId })
+          .select("id")
+          .single()
+          .throwOnError()
+      ).data.id;
+    const row = (runId: string, promptId: string, at: string, mentioned: boolean, cached: boolean, text: string) => ({
+      run_id: runId,
+      business_id: business.businessId,
+      tracked_prompt_id: promptId,
+      provider: "openai",
+      created_at: at,
+      business_mentioned: mentioned,
+      competitors_mentioned: [],
+      cached,
+      answer_text: text,
+    });
+    const score = async () => (await loadScoreReport(agency.agencyId, business.businessId, NOW))?.overall;
+
+    // First scan: q1 fresh, q2 a cached answer another business got first (new for this one, so it counts).
+    const first = await run(null);
+    await service
+      .from("visibility_results")
+      .insert([row(first, q1, hoursAgo(5), true, false, "a1"), row(first, q2, hoursAgo(5), false, true, "a2")])
+      .throwOnError();
+    expect(await score()).toMatchObject({ score: 50, checks: 2 });
+
+    // A Run scan 2 hours later reuses both answers: nothing new to count.
+    const again = await run(null);
+    await service
+      .from("visibility_results")
+      .insert([row(again, q1, hoursAgo(3), true, true, "a1"), row(again, q2, hoursAgo(3), false, true, "a2")])
+      .throwOnError();
+    expect(await score()).toMatchObject({ score: 50, checks: 2 });
+
+    // A scan still running: its new answers wait until it finishes.
+    const jobId = await newJob(business);
+    const running = await run(jobId, "running");
+    await service
+      .from("visibility_results")
+      .insert([row(running, q1, hoursAgo(1), true, false, "b1"), row(running, q2, hoursAgo(1), true, false, "b2")])
+      .throwOnError();
+    expect(await score()).toMatchObject({ score: 50, checks: 2 });
+    await finishJob(jobId);
+    await service.from("visibility_runs").update({ status: "completed" }).eq("id", running).throwOnError();
+    expect(await score()).toMatchObject({ score: 75, checks: 4 });
+
+    // A run left running by a job that failed for good still counts: its answers were charged.
+    const failedJob = await newJob(business);
+    const stuck = await run(failedJob, "running");
+    await service.from("visibility_results").insert([row(stuck, q1, hoursAgo(0.5), false, false, "c1")]).throwOnError();
+    await service.from("scan_jobs").update({ status: "failed" }).eq("id", failedJob).throwOnError();
+    expect(await score()).toMatchObject({ score: 60, checks: 5 });
   });
 
   it("counts only suggested questions that are active now, and sums the user's own questions apart (BUG-129)", async () => {

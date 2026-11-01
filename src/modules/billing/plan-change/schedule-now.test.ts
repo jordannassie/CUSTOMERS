@@ -5,7 +5,7 @@ import { A, B, creditsOf, planOf, RENEWAL, setup } from "./scenario.test-helpers
 import { applyPlanChange, previewPlanChange } from "./service";
 
 // An upgrade made now while another business's downgrade is pending. A schedule update can't refuse a declined card
-// (Stripe applies it and leaves the invoice open), so the change goes on the subscription with error_if_incomplete.
+// (Stripe applies it and leaves the invoice open), so the change goes on the subscription with pending_if_incomplete.
 
 const upgradeB: PlanChange = { kind: "upgrade", businessId: B, planId: "pro" };
 
@@ -26,7 +26,7 @@ describe("an upgrade made now with a downgrade pending", () => {
 
     expect(stripe.status).toBe("active");
     expect(planOf(stripe, B)).toBe("cd_plan_starter");
-    expect(stripe.invoices).toHaveLength(0);
+    expect(stripe.invoices.map((i) => i.status)).toEqual(["void"]);
     expect(stripe.schedule?.status).toBe("active");
     expect(pendingFor(stripe.scheduleObject(), A)).toBe("plan");
     expect(pendingFor(stripe.scheduleObject(), B)).toBeNull();
@@ -48,7 +48,8 @@ describe("an upgrade made now with a downgrade pending", () => {
     expect(stripe.calls.find((c) => c.method === "updateSubscription")!.params).toMatchObject({
       proration_behavior: "always_invoice",
       proration_date: preview.previewedAt,
-      payment_behavior: "error_if_incomplete",
+      payment_behavior: "pending_if_incomplete",
+      expand: ["latest_invoice.confirmation_secret"],
     });
     expect(pendingFor(stripe.scheduleObject(), A)).toBe("plan");
     expect(pendingFor(stripe.scheduleObject(), B)).toBeNull();

@@ -11,6 +11,7 @@ const SUBPROCESSORS = [
   { name: "Perplexity", use: "Perplexity checks", data: "Questions and your business location" },
   { name: "Google", use: "Google Maps business details and Google sign-in", data: "Business names or place IDs you search for" },
   { name: "Firecrawl", use: "Reads your website during setup", data: "Your website address" },
+  { name: "Beehiiv", use: "Sends our newsletter", data: "Your email address, if you join the newsletter" },
 ] as const;
 
 export function AiProviders() {

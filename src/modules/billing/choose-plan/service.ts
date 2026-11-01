@@ -50,3 +50,11 @@ export function choosePlanState(rows: ChoosePlanRows): ChoosePlanState {
 export function planStarted(agency: ChoosePlanRows["agency"]): boolean {
   return agency.subscriptionId !== null && (agency.status === "trialing" || agency.status === "active");
 }
+
+/**
+ * The rows as they read once a plan Stripe no longer has is ended (QA 2026-11-01): an ended plan to start again, and
+ * no second trial, since the agency keeps its Stripe ids (F-43).
+ */
+export function endedRows(rows: ChoosePlanRows): ChoosePlanRows {
+  return { ...rows, agency: { ...rows.agency, status: "canceled" } };
+}

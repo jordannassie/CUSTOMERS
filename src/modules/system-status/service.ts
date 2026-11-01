@@ -146,6 +146,7 @@ const OUT_OF_CREDIT_DETAIL: Record<string, string> = {
   anthropic:
     "Out of credit. Claude checks can't run and background jobs use the ChatGPT backup. Top up at console.anthropic.com (Plans & Billing).",
   openai: "Out of credit. ChatGPT checks and the backup for background jobs can't run. Top up at platform.openai.com (Billing).",
+  perplexity: "Out of credit. Perplexity checks can't run. Add credits at perplexity.ai (API settings, Billing).",
 };
 
 /**
