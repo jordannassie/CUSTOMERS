@@ -26,7 +26,7 @@ export default async function ManageCompetitorsPage() {
     <PageContainer>
       <Link
         href="/competitors"
-        className="-mt-2.5 mb-1.5 inline-flex items-center gap-1.5 py-2.5 text-sm text-muted-foreground transition-colors duration-150 ease-out hover:text-foreground"
+        className="-mt-2.5 mb-1.5 inline-flex min-h-11 items-center gap-1.5 rounded-full py-2.5 text-sm text-muted-foreground transition-colors duration-150 ease-out hover:text-foreground"
       >
         <ArrowLeft aria-hidden className="size-4" />
         Back to competitors
@@ -42,6 +42,8 @@ export default async function ManageCompetitorsPage() {
           }
         />
       </div>
+      {/* Check-in theme: the picker sits on a white card on the ground colour. */}
+      <section className="rounded-xl bg-card px-5 py-[22px] sm:px-6" aria-label="Your competitors">
       {/* Keyed by the saved list and the move note: a list changed by a move, or saved for the new place, shows fresh. */}
       <CompetitorPicker
         key={[...step.saved.map((s) => s.placesId ?? s.name), step.locationNote].join("|")}
@@ -55,6 +57,7 @@ export default async function ManageCompetitorsPage() {
         lookup={lookupCompetitorByName}
         save={saveCompetitorList}
       />
+      </section>
       {/* Keyed by the list, so a competitor added or removed above shows here after the save. */}
       <CompetitorAliases key={aliases.map((c) => c.id).join()} businessId={business.id} competitors={aliases} save={saveCompetitorAliases} />
     </PageContainer>

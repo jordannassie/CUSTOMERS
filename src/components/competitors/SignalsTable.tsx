@@ -54,7 +54,7 @@ export function SignalsTable({ rows, pickBranch = false, edit = null }: { rows: 
       ) : null}
 
       {/* The PDF page is about 720px wide, just under the switch, and the table still fits there, so print forces it. */}
-      <div className="hidden overflow-hidden rounded-md border border-border @min-[760px]:block print:block">
+      <div className="hidden overflow-hidden rounded-[14px] border border-border @min-[760px]:block print:block">
         <Table className="text-[13px]">
           <TableHeader>
             <TableRow>
@@ -67,7 +67,7 @@ export function SignalsTable({ rows, pickBranch = false, edit = null }: { rows: 
           </TableHeader>
           <TableBody>
             {rows.map((row) => (
-              <TableRow key={`${row.isYou}-${row.name}`} className={cn(row.isYou && "bg-primary-tint/40 hover:bg-primary-tint/40")}>
+              <TableRow key={`${row.isYou}-${row.name}`} className={cn(row.isYou && "bg-brand-tint-3 hover:bg-brand-tint-3")}>
                 <TableCell className={cn("max-w-64 min-w-40 font-medium break-words whitespace-normal", row.isYou && "text-primary")}>
                   <span className="flex min-w-0 items-center gap-2.5">
                     {/* Only a website the user typed gives the icon: nothing from Google is used beyond showing it (D-73). */}

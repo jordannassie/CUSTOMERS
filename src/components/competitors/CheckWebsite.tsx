@@ -97,7 +97,7 @@ export function CheckWebsite({
           <LocalDate iso={website.checkedAt!} options={SHORT} />
         </p>
       ) : website.domain ? (
-        <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-border px-3 py-2.5">
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-[14px] border border-border px-3 py-2.5">
           <span className="flex min-w-0 items-center gap-1.5 text-[13px]">
             <Globe className="size-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />
             <span className="truncate">{website.domain}</span>

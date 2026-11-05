@@ -22,9 +22,9 @@ type Props = {
   manageHref: string;
   /**
    * "table": a row per business with a share bar, edge to edge in its card (the Competitors page, mockup-ui); "grid": a
-   * card per business; "list" elsewhere.
+   * card per business; "list" elsewhere; "cards": the Check-in design's cards with a pip bar and a Track pill.
    */
-  layout?: "list" | "grid" | "table";
+  layout?: "list" | "grid" | "table" | "cards";
 };
 
 /** Business, named in, share bar, Track. On a phone: the name and count on the left, Track on the right. */
@@ -60,7 +60,7 @@ export function AlsoRecommended({ businessId, names, answers, track, manageHref,
   }
 
   const errorNote = error ? (
-    <p role="alert" className="rounded-md bg-mid-bg px-3 py-2 text-[13px] text-mid-text">
+    <p role="alert" className="rounded-[12px] bg-rival-tint px-3 py-2 text-[13px] text-rival-ink">
       {error.text}
       {error.limit ? (
         <>
@@ -87,12 +87,48 @@ export function AlsoRecommended({ businessId, names, answers, track, manageHref,
       Track
     </Button>
   );
+  if (layout === "cards") {
+    // C-Competitors: 22 pips, filled in proportion to the answers that named the business.
+    const pips = (n: number) => (answers > 0 ? Math.round((22 * n) / answers) : 0);
+    return (
+      <div className="flex flex-col gap-3">
+        <ul className="grid grid-cols-[repeat(auto-fit,minmax(200px,1fr))] gap-2.5" data-testid="also-recommended">
+          {names.map((n) => (
+            <li key={n.name} className="flex flex-col gap-2 rounded-[14px] border border-border p-3.5">
+              <span className="font-semibold break-words" title={n.name}>
+                {n.name}
+              </span>
+              <span className="text-[13px] text-muted-foreground tabular-nums">{n.text}</span>
+              <span className="flex gap-[3px]" aria-hidden="true">
+                {Array.from({ length: 22 }, (_, i) => (
+                  <span key={i} className={cn("h-2.5 flex-1 rounded-[2px]", i < pips(n.answers) ? "bg-brand" : "bg-track")} />
+                ))}
+              </span>
+              <Button
+                type="button"
+                variant="brand"
+                size="sm"
+                className="self-start"
+                disabled={pending}
+                onClick={() => onTrack(n.name)}
+                aria-label={`Track ${n.name}`}
+              >
+                {busy === n.name ? <Loader2 aria-hidden className="animate-spin" /> : <Plus aria-hidden />}
+                Track
+              </Button>
+            </li>
+          ))}
+        </ul>
+        {errorNote}
+      </div>
+    );
+  }
   if (layout === "table") {
     // Each bar is the share of all answers, so the lengths compare across businesses and with the leaderboard.
     const share = (n: number) => (answers > 0 ? Math.round((100 * n) / answers) : 0);
     return (
       <div className="flex flex-col">
-        <div className={cn(ROW, "border-b border-border bg-muted py-2.5 text-xs font-medium text-muted-foreground max-sm:hidden")} aria-hidden="true">
+        <div className={cn(ROW, "border-b border-divider bg-muted py-2.5 text-xs font-medium text-muted-foreground max-sm:hidden")} aria-hidden="true">
           <span>Business</span>
           <span>How often</span>
           <span>Share of answers</span>
@@ -131,7 +167,7 @@ export function AlsoRecommended({ businessId, names, answers, track, manageHref,
         {names.map((n) => (
           <li
             key={n.name}
-            className={layout === "grid" ? "flex items-center gap-3 rounded-md border border-border bg-surface p-3" : "flex items-center gap-3 py-3 first:pt-0 last:pb-0"}
+            className={layout === "grid" ? "flex items-center gap-3 rounded-[14px] border border-border bg-surface p-3" : "flex items-center gap-3 py-3 first:pt-0 last:pb-0"}
           >
             <div className="flex min-w-0 flex-1 flex-col gap-1.5">
               <span className="truncate text-sm font-medium" title={n.name}>{n.name}</span>

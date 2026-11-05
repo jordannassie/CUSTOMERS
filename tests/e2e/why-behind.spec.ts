@@ -266,7 +266,8 @@ test("Competitors names the leader's top reason, and Compare shows every fact wi
   await expect(page.getByTestId("share-of-voice-chart")).toContainText("Bean House leads with 67%");
   // Heat map: a row per business, a column per AI, the top score in each column marked.
   const heat = page.getByTestId("model-comparison-chart");
-  await expect(heat.getByRole("row").filter({ hasText: "You" })).toContainText(/You\s*20/);
+  // Check-in theme: your row reads "<name> (you)".
+  await expect(heat.getByRole("row").filter({ hasText: "(you)" })).toContainText(/\(you\)\s*20/);
   await expect(heat.getByRole("row").filter({ hasText: "Bean House" })).toContainText(/Bean House\s*80\s*Top/);
   // Donut: hovering a row shows that business in the middle; you are back when the pointer leaves.
   const donut = page.getByTestId("share-of-voice-chart");

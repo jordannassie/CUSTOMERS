@@ -53,9 +53,9 @@ export function CompetitorAliases({ businessId, competitors, save }: { businessI
   }
 
   return (
-    <section aria-labelledby="competitor-aliases-title" className="mt-10 max-w-2xl overflow-hidden rounded-lg border border-border bg-card">
-      <div className="flex flex-col gap-1 border-b border-border px-[18px] py-3.5">
-        <h2 id="competitor-aliases-title" className="text-[14.5px] font-semibold tracking-[-0.01em]">
+    <section aria-labelledby="competitor-aliases-title" className="mt-6 max-w-2xl overflow-hidden rounded-xl bg-card">
+      <div className="flex flex-col gap-1 border-b border-divider px-6 py-[18px]">
+        <h2 id="competitor-aliases-title" className="font-serif text-xl font-normal">
           Other names
         </h2>
         <p className="text-[13px] text-muted-foreground">
@@ -63,7 +63,7 @@ export function CompetitorAliases({ businessId, competitors, save }: { businessI
           Answers that use them count for that competitor.
         </p>
       </div>
-      <form onSubmit={submit} className="flex flex-col gap-5 px-[18px] py-4" aria-label="Competitors' other names" noValidate>
+      <form onSubmit={submit} className="flex flex-col gap-5 px-6 py-5" aria-label="Competitors' other names" noValidate>
         {competitors.map((c) => {
           const id = `aliases-${c.id}`;
           return (
@@ -89,7 +89,7 @@ export function CompetitorAliases({ businessId, competitors, save }: { businessI
           );
         })}
         {error ? (
-          <p role="alert" className="rounded-md bg-low-bg px-3 py-2 text-[13px] text-low-text">
+          <p role="alert" className="rounded-[12px] bg-low-bg px-3 py-2 text-[13px] text-low-text">
             {error}
           </p>
         ) : null}

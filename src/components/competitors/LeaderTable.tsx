@@ -10,7 +10,7 @@ import { CompetitorWebsite, type SaveWebsiteAction } from "./CompetitorWebsite";
 import { HeatCell, ScoreRing } from "./Marks";
 import { Sparkline } from "./Sparkline";
 
-const STANDING_BADGE = { ahead: "good", behind: "mid", about_same: "secondary" } as const;
+const STANDING_BADGE = { ahead: "good", behind: "low", about_same: "secondary" } as const;
 /** A website named in a reason ("AI used yelp.com when it picked them"), for its icon. */
 const SITE_IN_TEXT = /\b((?:[a-z0-9-]+\.)+[a-z]{2,})\b/i;
 
@@ -21,7 +21,7 @@ const TD = "px-3 py-3 align-middle";
  * The Competitors leaderboard as a table (dashboard redesign, mockup-ui look): rank, the business, its score as a
  * ring, the last scans, the weekly change, each AI tool as a heat cell, the main likely reason, the standing and
  * Compare. Wide, so it scrolls inside its own box on a phone, never the page. Only the AI tools this business uses get
- * a column. The score stays the third cell and the standing the second to last (e2e tests read them by position).
+ * a column. Columns show by the width of the card holding the table (container queries), not the screen. The score stays the third cell and the standing the second to last (e2e tests read them by position).
  *
  * `ownDomain`: your business's website, for your row's icon. `website`: lets a competitor with no known website get one
  * typed in right here ("Add website", saved as your own entry, D-73), so its logo shows (2026-10-30).
@@ -43,36 +43,36 @@ export function LeaderTable({
     // relative: the sr-only text is absolutely placed, and would otherwise widen the whole page on a phone.
     // No fixed min width (mockup-ui): the table fits its card, and narrower screens hide the less needed columns with
     // CSS only, so every row keeps the same cells (e2e reads Score as the 3rd cell and Status as the second to last).
-    <div className="relative overflow-x-auto">
+    <div className="@container relative overflow-x-auto">
       <table className="w-full border-collapse text-[13px]" data-testid="leaderboard">
         <thead className="bg-muted">
-          <tr className="border-b border-border">
-            <th className={cn(TH, "hidden w-10 pr-0 sm:table-cell")}>#</th>
+          <tr className="border-b border-divider">
+            <th className={cn(TH, "hidden w-10 pr-0 @min-[480px]:table-cell")}>#</th>
             <th className={TH}>Business</th>
             <th className={TH}>{trends ? "Score and last scans" : "Score"}</th>
-            {changes && <th className={cn(TH, "hidden lg:table-cell")}>Change</th>}
+            {changes && <th className={cn(TH, "hidden @min-[640px]:table-cell")}>Change</th>}
             {tools.map((t) => (
-              <th key={t.id} className={cn(TH, "hidden text-center md:table-cell lg:hidden xl:table-cell")}>
+              <th key={t.id} className={cn(TH, "hidden text-center @min-[820px]:table-cell")}>
                 {t.label}
               </th>
             ))}
-            <th className={cn(TH, "hidden xl:table-cell")}>Main reason</th>
-            <th className={cn(TH, "hidden sm:table-cell")}>Status</th>
+            <th className={cn(TH, "hidden @min-[1000px]:table-cell")}>Main reason</th>
+            <th className={cn(TH, "hidden @min-[480px]:table-cell")}>Status</th>
             <th className={TH}>
               <span className="sr-only">Compare</span>
             </th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-border">
+        <tbody className="divide-y divide-divider">
           {rows.map((r) => (
             <tr
               key={`${r.isYou}-${r.name}`}
-              className={cn("transition-colors", r.isYou ? "bg-primary-tint/40" : "hover:bg-muted/40")}
+              className={cn("transition-colors", r.isYou ? "bg-brand-tint-3" : "hover:bg-muted")}
               data-you={r.isYou || undefined}
               data-testid="leader-row"
             >
-              <td className={cn(TD, "hidden pr-0 text-xs text-text-hint tabular-nums sm:table-cell")}>{r.rank ?? ""}</td>
-              <td className={cn(TD, "max-w-[240px] min-w-[110px] sm:min-w-[150px]")}>
+              <td className={cn(TD, "hidden pr-0 text-xs text-text-hint tabular-nums @min-[480px]:table-cell")}>{r.rank ?? ""}</td>
+              <td className={cn(TD, "max-w-[240px] min-w-[110px] @min-[480px]:min-w-[150px]")}>
                 <Business row={r} ownDomain={ownDomain} website={website} />
               </td>
               <td className={TD}>
@@ -80,12 +80,12 @@ export function LeaderTable({
                   <span className="text-xs text-text-hint">Next scan</span>
                 ) : (
                   <span className="flex items-center gap-2">
-                    <span className="hidden sm:inline-flex">
+                    <span className="hidden @min-[480px]:inline-flex">
                       <ScoreRing value={r.score} color={r.color} />
                     </span>
                     <span className="text-[15px] font-semibold tabular-nums">{r.score}</span>
                     {r.spark.filter((v) => v !== null).length >= 2 && (
-                      <span className="ml-1 hidden 2xl:inline-flex">
+                      <span className="ml-1 hidden @min-[960px]:inline-flex">
                         <Sparkline values={r.spark} you={r.isYou} color={r.color} />
                       </span>
                     )}
@@ -93,7 +93,7 @@ export function LeaderTable({
                 )}
               </td>
               {changes && (
-                <td className={cn(TD, "hidden text-xs lg:table-cell")}>
+                <td className={cn(TD, "hidden text-xs @min-[640px]:table-cell")}>
                   {r.change ? (
                     <PointsChange change={r.change} neutral={!r.isYou} />
                   ) : (
@@ -102,14 +102,14 @@ export function LeaderTable({
                 </td>
               )}
               {tools.map((t) => (
-                <td key={t.id} className={cn(TD, "hidden text-center md:table-cell lg:hidden xl:table-cell")}>
+                <td key={t.id} className={cn(TD, "hidden text-center @min-[820px]:table-cell")}>
                   <HeatCell value={r.byModel[t.id]} />
                 </td>
               ))}
-              <td className={cn(TD, "hidden max-w-[220px] min-w-[100px] xl:table-cell")}>
+              <td className={cn(TD, "hidden max-w-[220px] min-w-[100px] @min-[1000px]:table-cell")}>
                 <Reason row={r} />
               </td>
-              <td className={cn(TD, "hidden whitespace-nowrap sm:table-cell")}>
+              <td className={cn(TD, "hidden whitespace-nowrap @min-[480px]:table-cell")}>
                 {r.standing ? (
                   <Badge variant={STANDING_BADGE[r.standing]} data-testid="standing">
                     {STANDING_TEXT[r.standing]}
@@ -120,13 +120,13 @@ export function LeaderTable({
                   </Badge>
                 ) : null}
               </td>
-              <td className={cn(TD, "pl-1 text-right sm:pl-3")}>
+              <td className={cn(TD, "pl-1 text-right @min-[480px]:pl-3")}>
                 {r.competitorId && (
                   <Link
                     href={compareHref(r.competitorId)}
                     // Each row's link says whom it compares: a list of links all named "Compare" is no help to a screen reader.
                     aria-label={`Compare with ${r.name}`}
-                    className="inline-flex h-7 items-center rounded-[6px] border border-border bg-surface px-2.5 text-xs font-medium hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
+                    className="inline-flex h-8 items-center rounded-full border border-border-strong bg-surface px-3 text-xs font-semibold text-brand hover:border-brand hover:bg-brand-tint pointer-coarse:h-11"
                     data-testid="compare-link"
                   >
                     Compare

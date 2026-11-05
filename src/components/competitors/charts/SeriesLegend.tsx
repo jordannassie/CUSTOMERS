@@ -53,7 +53,7 @@ export function SeriesTooltip({
 }) {
   const sorted = [...rows].sort((a, b) => (b.value ?? -1) - (a.value ?? -1));
   return (
-    <div className="min-w-44 rounded-md border border-border bg-surface px-3 py-2 text-xs shadow-md">
+    <div className="min-w-44 rounded-[14px] border border-border bg-popover px-3.5 py-3 text-xs shadow-float">
       <p className="mb-1.5 font-medium text-foreground">{title}</p>
       <ul className="flex flex-col gap-1">
         {sorted.map((r) => (
@@ -66,7 +66,7 @@ export function SeriesTooltip({
           </li>
         ))}
       </ul>
-      {footer && <p className="mt-1.5 border-t border-border pt-1.5 text-muted-foreground">{footer}</p>}
+      {footer && <p className="mt-1.5 border-t border-divider pt-1.5 text-muted-foreground">{footer}</p>}
     </div>
   );
 }

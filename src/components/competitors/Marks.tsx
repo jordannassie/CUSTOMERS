@@ -19,7 +19,7 @@ export function ScoreRing({ value, color, size = 30, className }: { value: numbe
   const v = Math.max(0, Math.min(100, value ?? 0));
   return (
     <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} aria-hidden="true" className={cn("shrink-0", className)}>
-      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--muted)" strokeWidth="3" />
+      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--cd-track)" strokeWidth="3" />
       {v > 0 && (
         <circle
           cx={size / 2}
