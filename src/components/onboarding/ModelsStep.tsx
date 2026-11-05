@@ -84,7 +84,7 @@ export function ModelsStep({ businessId, models, frequency, activeQuestions, pla
                 <label
                   key={model.id}
                   className={cn(
-                    "flex cursor-pointer gap-3 rounded-md border px-4 py-3.5 transition-colors duration-150 ease-out",
+                    "flex cursor-pointer gap-3 rounded-lg border px-4 py-3.5 transition-colors duration-150 ease-out",
                     on ? "border-primary/40 bg-primary-tint" : "border-border bg-surface hover:bg-muted",
                   )}
                 >
@@ -94,7 +94,7 @@ export function ModelsStep({ businessId, models, frequency, activeQuestions, pla
                       <span aria-hidden className={cn("size-2 rounded-full", DOT[model.id])} />
                       {model.label}
                     </span>
-                    <span className={cn("mt-0.5 block text-[13px]", on ? "text-muted-foreground" : "text-mid-text")}>
+                    <span className={cn("mt-0.5 block text-[13px]", on ? "text-muted-foreground" : "text-rival-ink")}>
                       {on ? model.explanation : untickWarning(model.label)}
                     </span>
                   </span>
@@ -123,10 +123,10 @@ export function ModelsStep({ businessId, models, frequency, activeQuestions, pla
           </fieldset>
         </div>
 
-        <aside aria-live="polite" data-testid="credit-estimate" className="self-start rounded-md border border-border bg-muted p-5 md:sticky md:top-8">
+        <aside aria-live="polite" data-testid="credit-estimate" className="self-start rounded-lg bg-muted p-5 md:sticky md:top-8">
           <p className="text-[13px] text-muted-foreground">Estimated use</p>
           <p className="mt-3 leading-none">
-            <span className="text-[32px] font-semibold tracking-[-0.03em] tabular-nums">{count(credits)}</span>
+            <span className="font-serif text-[36px] leading-tight font-normal tabular-nums">{count(credits)}</span>
             <span className="mt-3 block text-sm text-muted-foreground">credits a month</span>
           </p>
           {share !== null ? (
@@ -134,7 +134,7 @@ export function ModelsStep({ businessId, models, frequency, activeQuestions, pla
               <div className="h-1.5 overflow-hidden rounded-[2px] bg-border" aria-hidden>
                 <div className={cn("h-full transition-[width] duration-200 ease-out", over ? "bg-mid" : "bg-primary")} style={{ width: `${share}%` }} />
               </div>
-              <p className={cn("text-xs tabular-nums", over ? "text-mid-text" : "text-muted-foreground")}>
+              <p className={cn("text-xs tabular-nums", over ? "text-rival-ink" : "text-muted-foreground")}>
                 {over
                   ? `More than the ${count(planCredits!)} credits your ${plan!.name} plan adds each month.`
                   : `${share}% of the ${count(planCredits!)} credits your ${plan!.name} plan adds each month.`}
@@ -156,7 +156,7 @@ export function ModelsStep({ businessId, models, frequency, activeQuestions, pla
           choose={planChoice.choose}
         />
       ) : addOn ? (
-        <p data-testid="add-on-note" className="rounded-md border border-border bg-surface px-4 py-3 text-sm">
+        <p data-testid="add-on-note" className="rounded-[14px] border border-border bg-surface px-4 py-3 text-sm">
           {setupAddOnText(addOn)}
         </p>
       ) : null}

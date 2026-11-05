@@ -20,7 +20,7 @@ export function ScanProgressList({
   asking: string;
 }) {
   return (
-    <ul className="rounded-md border border-border bg-surface" data-testid="first-scan-models">
+    <ul className="rounded-lg border border-border bg-surface" data-testid="first-scan-models">
       {models.map((model, i) => {
         const saved = progress?.get(model.id);
         return (

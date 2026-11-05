@@ -13,7 +13,7 @@ const IMPACT = {
 export function FirstScanResult({ summary }: { summary: FirstScanSummary }) {
   return (
     <div className="flex flex-col gap-6" data-testid="first-scan-result">
-      <dl className="flex flex-col divide-y divide-border rounded-md border border-border bg-surface">
+      <dl className="flex flex-col divide-y divide-divider rounded-lg border border-border bg-surface">
         {summary.score && (
           <div className="flex items-center gap-5 px-4 py-4">
             <dt className="sr-only">Your score</dt>

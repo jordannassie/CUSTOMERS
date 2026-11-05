@@ -83,7 +83,7 @@ export function AgencyStep({ defaultName, logoUrl, plan, save, uploadLogo }: Pro
         <span className="text-sm font-medium">
           Logo <span className="font-normal text-muted-foreground">(optional)</span>
         </span>
-        <div className="flex items-center gap-4 rounded-md border border-dashed border-border bg-surface p-4">
+        <div className="flex items-center gap-4 rounded-lg border border-dashed border-border-strong bg-surface p-4">
           <div className="flex size-14 shrink-0 items-center justify-center overflow-hidden rounded-md border border-border bg-muted">
             {logoUrl && !file ? (
               // eslint-disable-next-line @next/next/no-img-element

@@ -1,24 +1,22 @@
 import Link from "next/link";
-import Image from "next/image";
 import { cn } from "cn";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-
-const LOGO = "/images/logos/logo-black.png";
 
 export function AuthLogo() {
   return (
     <div className="mb-8 text-center">
       {/* No prefetch: every login and signup view rendered the whole home page on the server, often twice. */}
-      <Link href="/" prefetch={false} aria-label="Customers.Direct home" className="inline-block rounded-sm focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none">
-        <Image src={LOGO} alt="Customers.Direct" width={148} height={36} preload unoptimized className="mx-auto h-14 w-auto" />
+      {/* Check-in theme: the wordmark in Young Serif, as in the app's sidebar. */}
+      <Link href="/" prefetch={false} aria-label="Customers.Direct home" className="inline-block rounded-md px-1 font-serif text-[26px] text-foreground">
+        Customers.Direct
       </Link>
     </div>
   );
 }
 
 export function AuthCard({ className, children }: { className?: string; children: React.ReactNode }) {
-  return <div className={cn("overflow-hidden rounded-md border border-border bg-surface", className)}>{children}</div>;
+  return <div className={cn("overflow-hidden rounded-xl bg-surface", className)}>{children}</div>;
 }
 
 type FieldProps = React.ComponentProps<"input"> & {
@@ -60,9 +58,9 @@ export function AuthField({ id, label, hint, error, invalid, aside, "aria-descri
 }
 
 export function AuthAlert({ id, tone, children }: { id?: string; tone: "error" | "success" | "warning"; children: React.ReactNode }) {
-  const styles = { error: "bg-low-bg text-low-text", success: "bg-good-bg text-good-text", warning: "bg-mid-bg text-mid-text" }[tone];
+  const styles = { error: "bg-low-bg text-low-text", success: "bg-good-bg text-good-text", warning: "bg-rival-tint text-rival-ink" }[tone];
   return (
-    <div id={id} role={tone === "success" ? "status" : "alert"} className={cn("rounded-md px-3 py-2 text-[13px]", styles)}>
+    <div id={id} role={tone === "success" ? "status" : "alert"} className={cn("rounded-[12px] px-3 py-2 text-[13px]", styles)}>
       {children}
     </div>
   );

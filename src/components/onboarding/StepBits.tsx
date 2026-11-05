@@ -9,7 +9,7 @@ import { BackIcon } from "./LinkPending";
 export function StepError({ message }: { message: string | null }) {
   if (!message) return null;
   return (
-    <p role="alert" className="rounded-md bg-low-bg px-3 py-2 text-[13px] text-low-text">
+    <p role="alert" className="rounded-[12px] bg-low-bg px-3 py-2 text-[13px] text-low-text">
       {message}
     </p>
   );
@@ -30,7 +30,7 @@ export function StepActions({ backHref, onBack, pending, label = "Continue", dis
   phoneSummary?: React.ReactNode;
 }) {
   return (
-    <div className="sticky bottom-0 -mx-4 mt-2 flex items-center justify-between gap-3 border-t border-border bg-background px-4 py-3 sm:static sm:mx-0 sm:border-0 sm:bg-transparent sm:px-0 sm:py-0">
+    <div className="sticky bottom-0 -mx-4 mt-2 flex items-center justify-between gap-3 border-t border-border bg-surface px-4 py-3 sm:static sm:mx-0 sm:border-0 sm:bg-transparent sm:px-0 sm:py-0">
       {phoneSummary ? <div className="min-w-0 sm:hidden">{phoneSummary}</div> : null}
       {backHref ? (
         // sm:-ml-4: the arrow lines up with the step's left edge instead of sitting inside the button's padding.

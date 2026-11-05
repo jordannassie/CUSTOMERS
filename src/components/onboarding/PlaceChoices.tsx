@@ -65,7 +65,7 @@ export function PlaceChoices({ businessId, searched, choices, typed, note, pick,
         <p id="place-choices-hint" className="text-sm text-muted-foreground">
           {note ?? `We searched Google for ${searched}. Pick yours to fill in its details, or choose None of these to keep what you typed.`}
         </p>
-        <div className="rounded-md border border-border bg-surface">
+        <div className="rounded-lg border border-border bg-surface">
           <ul className="divide-y divide-border" data-testid="place-choices">
             {choices.map((c) => (
               <li key={c.placeId}>

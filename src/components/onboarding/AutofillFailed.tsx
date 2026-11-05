@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 export function AutofillFailed({ note, pending, onRetry, onFill }: { note: string; pending: boolean; onRetry: () => void; onFill?: () => void }) {
   return (
     <div className="flex flex-col gap-5" data-testid="autofill-failed">
-      <p role="status" className="rounded-md border border-mid/30 bg-mid-bg px-4 py-3 text-sm text-mid-text">
+      <p role="status" className="rounded-[14px] border border-rival/30 bg-rival-tint px-4 py-3 text-sm text-rival-ink">
         {note}
       </p>
       <div className="flex flex-wrap gap-3">

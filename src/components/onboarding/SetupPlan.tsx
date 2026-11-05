@@ -49,7 +49,7 @@ export function SetupPlan({ businessId, plans, currentId, note, choose }: Props)
   }
 
   return (
-    <section aria-labelledby="setup-plan-heading" data-testid="setup-plan" className="rounded-md border border-border bg-surface p-5">
+    <section aria-labelledby="setup-plan-heading" data-testid="setup-plan" className="rounded-lg border border-border bg-surface p-5">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
         <div className="min-w-0">
           <h2 id="setup-plan-heading" className="text-base font-semibold tracking-[-0.02em]">
@@ -81,7 +81,7 @@ export function SetupPlan({ businessId, plans, currentId, note, choose }: Props)
         </p>
       ) : null}
       {error ? (
-        <p role="alert" className="mt-3 rounded-md bg-low-bg px-3 py-2 text-[13px] text-low-text">
+        <p role="alert" className="mt-3 rounded-[12px] bg-low-bg px-3 py-2 text-[13px] text-low-text">
           {error}
         </p>
       ) : null}

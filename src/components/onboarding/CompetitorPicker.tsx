@@ -125,7 +125,7 @@ export function CompetitorPicker(props: CompetitorPickerProps) {
           </h2>
           <p className="mt-3 text-[13px] text-muted-foreground">Tick the ones customers compare you with.</p>
           {suggestions.length ? (
-            <div className="mt-3 rounded-md border border-border bg-surface">
+            <div className="mt-3 rounded-lg border border-border bg-surface">
               <ul className="divide-y divide-border">
                 {suggestions.map((s) => {
                   const ref = { name: s.name, placesId: s.placeId };
@@ -135,7 +135,7 @@ export function CompetitorPicker(props: CompetitorPickerProps) {
               <GoogleAttribution className="border-t border-border px-4 py-2" />
             </div>
           ) : (
-            <div className="mt-3 flex items-start gap-3 rounded-md border border-dashed border-border bg-surface px-4 py-5">
+            <div className="mt-3 flex items-start gap-3 rounded-lg border border-dashed border-border-strong bg-surface px-4 py-5">
               <MapPin aria-hidden className="mt-0.5 size-4 shrink-0 text-text-hint" />
               <p className="text-sm text-muted-foreground">{note ?? "No suggestions yet. Add competitors by name below."}</p>
             </div>
@@ -152,7 +152,7 @@ export function CompetitorPicker(props: CompetitorPickerProps) {
       </div>
 
       <aside aria-labelledby="list-title" className="self-start lg:sticky lg:top-8">
-        <div className="rounded-md border border-border bg-surface p-5">
+        <div className="rounded-lg border border-border bg-surface p-5">
           <div className="flex items-baseline justify-between gap-3">
             <h2 id="list-title" className="text-base font-semibold tracking-[-0.02em]">
               Your competitors
@@ -176,7 +176,7 @@ export function CompetitorPicker(props: CompetitorPickerProps) {
                 <li key={p.placesId ?? key(p.name)} className="flex items-center gap-2 rounded-md py-1.5 pl-1">
                   <span className="min-w-0 flex-1">
                     <span className="block break-words text-sm">{p.name}</span>
-                    {!p.placesId ? <span className={cn("block text-xs", p.checkNear ? "text-mid-text" : "text-text-hint")}>{p.checkNear ?? "Added by name"}</span> : null}
+                    {!p.placesId ? <span className={cn("block text-xs", p.checkNear ? "text-rival-ink" : "text-text-hint")}>{p.checkNear ?? "Added by name"}</span> : null}
                     {p.aliases?.length ? <FullName google={p.aliases[0]} onUse={() => keepFullName(p)} /> : null}
                   </span>
                   {p.live ? <PlaceRating rating={p.live.rating} reviewCount={p.live.reviewCount} /> : null}
@@ -194,12 +194,12 @@ export function CompetitorPicker(props: CompetitorPickerProps) {
           {picked.some((p) => p.live) ? <GoogleAttribution className="mt-3" /> : null}
 
           {limitHit && limitText ? (
-            <p role="status" className="mt-3 rounded-md bg-mid-bg px-3 py-2 text-[13px] text-mid-text">
+            <p role="status" className="mt-3 rounded-[12px] bg-muted px-3 py-2 text-[13px] text-ink-2">
               {limitText} Remove one to add another.
             </p>
           ) : null}
           {error ? (
-            <p role="alert" className="mt-3 rounded-md bg-low-bg px-3 py-2 text-[13px] text-low-text">
+            <p role="alert" className="mt-3 rounded-[12px] bg-low-bg px-3 py-2 text-[13px] text-low-text">
               {error}
             </p>
           ) : null}

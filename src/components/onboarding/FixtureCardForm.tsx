@@ -44,7 +44,7 @@ export function FixtureCardForm({ businessId, start, onAccepted }: Props) {
 
   if (bankCheck) {
     return (
-      <div role="dialog" aria-label="Confirm with your bank" className="flex flex-col gap-3 rounded-md border border-border bg-surface p-5">
+      <div role="dialog" aria-label="Confirm with your bank" className="flex flex-col gap-3 rounded-lg border border-border bg-surface p-5">
         <p className="text-sm font-medium">Confirm with your bank</p>
         <p className="text-[13px] text-muted-foreground">Test mode: this stands in for your bank&apos;s security check.</p>
         <div className="flex gap-2">
@@ -66,7 +66,7 @@ export function FixtureCardForm({ businessId, start, onAccepted }: Props) {
 
   return (
     <form onSubmit={submit} className="flex flex-col gap-4">
-      <p className="rounded-md bg-mid-bg px-3 py-2 text-[13px] text-mid-text">Test mode. No real card is used and Stripe is not called.</p>
+      <p className="rounded-[12px] bg-muted px-3 py-2 text-[13px] text-ink-2">Test mode. No real card is used and Stripe is not called.</p>
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="card-number">Card number</Label>
         <Input

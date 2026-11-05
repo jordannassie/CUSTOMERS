@@ -195,7 +195,7 @@ export default function AuthForm({ defaultMode = "login", errorParam = "", notic
         </div>
 
         <div className="p-6 sm:p-8">
-          <h1 className="mb-1 text-xl font-semibold tracking-[-0.02em]">
+          <h1 className="mb-1 font-serif text-[26px] leading-tight font-normal">
             {isSignup ? "Check your AI visibility" : "Welcome back"}
           </h1>
           <p className="mb-6 text-sm text-muted-foreground">

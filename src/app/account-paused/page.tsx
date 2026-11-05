@@ -8,9 +8,9 @@ export const metadata = { title: "Account paused", robots: { index: false } };
 export default function AccountPausedPage() {
   return (
     <main className="flex min-h-screen items-center justify-center bg-background px-4 py-16">
-      <div className="w-full max-w-md rounded-lg border border-border bg-card p-8 text-center">
+      <div className="w-full max-w-md rounded-xl bg-card p-8 text-center">
         <PauseCircle className="mx-auto size-10 text-mid" aria-hidden="true" />
-        <h1 className="mt-4 text-xl font-semibold text-foreground">Your account is paused</h1>
+        <h1 className="mt-4 font-serif text-[26px] leading-tight font-normal text-foreground">Your account is paused</h1>
         <p className="mt-2 text-sm text-muted-foreground">
           Contact support to turn it back on. Scans and changes are on hold until then.
         </p>

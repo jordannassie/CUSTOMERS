@@ -212,7 +212,7 @@ function Reading({ what, noWebsite }: { what: string; noWebsite: boolean }) {
     : [`Reading ${what}`, "Looking you up on Google", "Getting your details ready"];
   const at = noWebsite ? GOOGLE_LINES_AT : WEBSITE_LINES_AT;
   return (
-    <div role="status" aria-live="polite" className="rounded-md border border-border bg-surface p-6">
+    <div role="status" aria-live="polite" className="rounded-lg border border-border bg-surface p-6">
       <div className="flex items-center gap-3">
         <Loader2 aria-hidden className="size-5 animate-spin text-primary" />
         <p className="text-[15px] font-medium">Finding {what}</p>

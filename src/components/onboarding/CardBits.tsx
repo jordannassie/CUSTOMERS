@@ -15,7 +15,7 @@ export type CardOffer = { planName: string; priceCents: number; trialEndsAt: str
 export function TrialSummary({ offer }: { offer: CardOffer }) {
   const price = formatUsd(offer.priceCents);
   return (
-    <section aria-label="Your trial" className="rounded-md border border-border bg-muted p-5">
+    <section aria-label="Your trial" className="rounded-lg bg-muted p-5">
       <div className="flex items-baseline justify-between gap-4">
         <p className="text-sm font-medium">
           {offer.planName} plan, 1 business{" "}
@@ -95,7 +95,7 @@ export function SettingUp({ businessId, check }: {
 
   if (late) {
     return (
-      <div role="status" aria-live="polite" className="flex flex-col items-start gap-3 rounded-md border border-border bg-surface p-6">
+      <div role="status" aria-live="polite" className="flex flex-col items-start gap-3 rounded-lg border border-border bg-surface p-6">
         <p className="text-base font-medium">Still setting up your account</p>
         <p className="text-[13px] text-muted-foreground">
           Your card was accepted, and your trial is taking longer than usual to start. Refresh this page in a minute, or{" "}
@@ -109,7 +109,7 @@ export function SettingUp({ businessId, check }: {
     );
   }
   return (
-    <div role="status" aria-live="polite" className="flex flex-col items-start gap-3 rounded-md border border-border bg-surface p-6">
+    <div role="status" aria-live="polite" className="flex flex-col items-start gap-3 rounded-lg border border-border bg-surface p-6">
       <Loader2 aria-hidden className="size-5 animate-spin text-primary" />
       <p className="text-base font-medium">Setting up your account…</p>
       <p className="text-[13px] text-muted-foreground">Your card was accepted. We&apos;re starting your free trial, which takes a few seconds.</p>

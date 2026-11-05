@@ -8,7 +8,7 @@ import { NEW_BUSINESS_PLAN_HREF } from "@/modules/workspace";
 // `draftSaved`: shown on the last setup step, where the draft waits for the plan instead of being lost (D-16).
 export function UpgradeNote({ reason, hasBusinesses, draftSaved = false }: { reason: string; hasBusinesses: boolean; draftSaved?: boolean }) {
   return (
-    <div className="rounded-md border border-border bg-surface p-6" data-testid="upgrade-note">
+    <div className="rounded-lg border border-border bg-surface p-6" data-testid="upgrade-note">
       <Building2 aria-hidden className="size-5 text-primary" />
       <p className="mt-3 text-[15px] font-medium">{reason}</p>
       <p className="mt-3 text-sm text-muted-foreground">

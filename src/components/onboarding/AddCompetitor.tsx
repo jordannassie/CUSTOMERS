@@ -83,7 +83,7 @@ export function AddCompetitor({ businessId, lookup, isPicked, onAdd }: Props) {
       ) : null}
 
       {searched ? (
-        <div className="rounded-md border border-border bg-surface">
+        <div className="rounded-lg border border-border bg-surface">
           {matches.length ? (
             <>
               <ul className="divide-y divide-border" aria-label={`Google matches for ${searched}`}>

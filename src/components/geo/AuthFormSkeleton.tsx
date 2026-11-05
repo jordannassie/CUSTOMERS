@@ -5,8 +5,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 export default function AuthFormSkeleton() {
   return (
     <div className="w-full max-w-[420px]" aria-busy="true" aria-label="Loading">
-      <Skeleton className="h-14 w-40 mx-auto mb-8" />
-      <Skeleton className="h-[480px] w-full rounded-2xl" />
+      <Skeleton className="mx-auto mb-8 h-9 w-56 bg-surface" />
+      <Skeleton className="h-[480px] w-full rounded-xl bg-surface" />
     </div>
   );
 }

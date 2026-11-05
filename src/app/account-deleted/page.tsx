@@ -11,9 +11,9 @@ export default function AccountDeletedPage() {
   const days = deletionWaitDays();
   return (
     <main className="flex min-h-screen items-center justify-center bg-background px-4 py-16">
-      <div className="w-full max-w-md rounded-lg border border-border bg-card p-8 text-center">
+      <div className="w-full max-w-md rounded-xl bg-card p-8 text-center">
         <Trash2 className="mx-auto size-10 text-low" aria-hidden="true" />
-        <h1 className="mt-4 text-xl font-semibold text-foreground">This account was deleted</h1>
+        <h1 className="mt-4 font-serif text-[26px] leading-tight font-normal text-foreground">This account was deleted</h1>
         <p className="mt-2 text-sm text-muted-foreground">
           Its plan is canceled and its AI checks have stopped. We keep the data for {days} days after deletion, then
           remove it for good. We emailed the details to the account owner.

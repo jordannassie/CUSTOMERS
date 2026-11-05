@@ -133,7 +133,7 @@ export async function StepContent({ step, state, plan, returned }: Props) {
     if (!state.needsCard || c.started) return <SettingUp businessId={draftId} check={checkCardStep} />;
     if (!c.offer) {
       return (
-        <p role="alert" className="rounded-md bg-low-bg px-3 py-2 text-[13px] text-low-text">
+        <p role="alert" className="rounded-[12px] bg-low-bg px-3 py-2 text-[13px] text-low-text">
           Your plan isn&apos;t available to start right now. Please contact us and we&apos;ll set it up.
         </p>
       );
@@ -202,7 +202,7 @@ export function StepSkeleton({ step }: { step: StepSlug }) {
       <p className="text-sm text-muted-foreground">
         {label}…{hint ? <span className="mt-1 block text-xs text-text-hint">{hint}</span> : null}
       </p>
-      <div className="rounded-md border border-border bg-surface">
+      <div className="rounded-lg border border-border bg-surface">
         {Array.from({ length: step === "questions" ? 8 : 5 }, (_, i) => (
           <div key={i} className="flex items-center gap-3 border-b border-border px-4 py-3.5 last:border-b-0">
             <Skeleton className="size-4" />

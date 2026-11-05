@@ -172,9 +172,9 @@ export function FirstScan(props: Props) {
   const copy = firstScanCopy(view, { business: businessName, models: models.map((m) => m.label), asked });
 
   return (
-    <div className="mx-auto flex w-full max-w-xl flex-col gap-8 px-5 py-10 sm:px-8 sm:py-16">
+    <div className="mx-auto my-6 flex w-[calc(100%-2rem)] max-w-xl flex-col gap-8 rounded-xl bg-card px-5 py-8 sm:my-12 sm:px-8 sm:py-10">
       <header className="flex flex-col gap-2">
-        <h1 className="text-2xl font-semibold tracking-[-0.02em] sm:text-[32px] sm:leading-tight">{copy.heading}</h1>
+        <h1 className="font-serif text-[26px] leading-tight font-normal sm:text-[32px]">{copy.heading}</h1>
         <p className="text-[15px] leading-relaxed text-muted-foreground">{copy.intro}</p>
       </header>
 
@@ -200,7 +200,7 @@ export function FirstScan(props: Props) {
         <div role="status" aria-live="polite" className="flex flex-col gap-4">
           {failed ? (
             <>
-              <p className="rounded-md bg-low-bg px-3 py-2 text-[13px] text-low-text" data-testid="first-scan-problem">
+              <p className="rounded-[12px] bg-low-bg px-3 py-2 text-[13px] text-low-text" data-testid="first-scan-problem">
                 {problem}
               </p>
               <div>
@@ -222,7 +222,7 @@ export function FirstScan(props: Props) {
           ) : paused || stalled ? (
             <>
               <p
-                className="rounded-md bg-mid-bg px-3 py-2 text-[13px] text-mid-text"
+                className="rounded-[12px] bg-muted px-3 py-2 text-[13px] text-ink-2"
                 data-testid={stalled ? "first-scan-stalled" : "first-scan-retrying"}
               >
                 {stalled

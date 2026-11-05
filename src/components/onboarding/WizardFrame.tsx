@@ -1,4 +1,3 @@
-import Image from "next/image";
 import Link from "next/link";
 import { LogOut } from "lucide-react";
 import { cn } from "cn";
@@ -26,10 +25,10 @@ export function WizardFrame({ steps, title, lead, embedded = false, children }: 
   return (
     <div className={cn("bg-background", embedded ? "" : "min-h-dvh lg:grid lg:grid-cols-[260px_minmax(0,1fr)]")}>
       {!embedded ? (
-        <aside className="hidden border-r border-border bg-muted lg:block">
+        <aside className="hidden lg:block">
           <div className="sticky top-0 flex min-h-dvh flex-col px-6 py-8">
-            <Image src="/images/logos/logo-black.png" alt="Customers.Direct" width={96} height={32} className="h-8 w-auto self-start" />
-            <p className="mt-8 text-[13px] text-muted-foreground">Setting up</p>
+            <p className="self-start px-2 font-serif text-xl text-foreground">Customers.Direct</p>
+            <p className="mt-8 px-2 text-[13px] text-muted-foreground">Setting up</p>
             <ol className="mt-3 flex flex-col gap-1" aria-label="Setup steps">
               {steps.map((s, i) => (
                 <li key={s.slug}>
@@ -37,7 +36,7 @@ export function WizardFrame({ steps, title, lead, embedded = false, children }: 
                 </li>
               ))}
             </ol>
-            <p className="mt-auto text-xs leading-relaxed text-text-hint">Your progress saves after every step, so you can leave and come back.</p>
+            <p className="mt-auto px-2 text-xs leading-relaxed text-muted-foreground">Your progress saves after every step, so you can leave and come back.</p>
             <SignOut className="mt-4" />
           </div>
         </aside>
@@ -47,7 +46,7 @@ export function WizardFrame({ steps, title, lead, embedded = false, children }: 
         {/* Outside the app frame a phone gets a full-width strip; inside it, the bar sits in the step's column, clear of the
             banners above (BUG-239). */}
         {!embedded ? (
-          <div className="border-b border-border bg-surface py-3 lg:hidden">
+          <div className="border-b border-border bg-background py-3 lg:hidden">
             <StepProgress steps={steps} index={index} label={current?.label} className={cn(STEP_COLUMN, "mx-auto")} />
           </div>
         ) : null}
@@ -58,11 +57,14 @@ export function WizardFrame({ steps, title, lead, embedded = false, children }: 
         <div className={embedded ? "mx-auto w-full max-w-[1200px] px-4 py-6 sm:p-8" : cn(STEP_COLUMN, "mx-auto py-8 lg:py-12")}>
           <div className={embedded ? STEP_WIDTH : undefined}>
             {embedded ? <StepProgress steps={steps} index={index} label={current?.label} className="mb-6" /> : null}
+            {/* Check-in theme: each step is one white card on the ground, its title a serif lead sentence. */}
+            <div className="rounded-xl bg-card px-4 py-6 sm:px-8 sm:py-8">
             <header className="mb-6">
-              <h1 className="text-2xl font-semibold tracking-[-0.02em] sm:text-[32px] sm:leading-tight">{title}</h1>
+              <h1 className="font-serif text-[26px] leading-tight font-normal sm:text-[32px]">{title}</h1>
               {lead ? <p className="mt-3 max-w-xl text-[15px] leading-relaxed text-muted-foreground">{lead}</p> : null}
             </header>
             {children}
+            </div>
             {/* Signed up with the wrong account, or on a shared computer: the steps must not trap anyone. */}
             {!embedded ? <SignOut className="mt-10 lg:hidden" /> : null}
           </div>
@@ -90,7 +92,7 @@ function StepProgress({ steps, index, label, className }: { steps: FrameStep[]; 
       </div>
       <div className="mt-2 flex min-w-0 gap-1" aria-hidden>
         {steps.map((s) => (
-          <span key={s.slug} data-segment className={cn("h-1 min-w-0 flex-1 rounded-[2px]", s.state === "todo" ? "bg-border" : "bg-primary")} />
+          <span key={s.slug} data-segment className={cn("h-1.5 min-w-0 flex-1 rounded-full", s.state === "todo" ? "bg-border" : "bg-primary")} />
         ))}
       </div>
     </div>
@@ -115,11 +117,11 @@ function StepLink({ step, number }: { step: FrameStep; number: number }) {
       </span>
     </>
   );
-  const row = "flex items-center gap-3 rounded-md px-2 py-2";
+  const row = "flex min-h-11 items-center gap-3 rounded-[10px] px-2 py-2";
   if (step.state === "done") {
     return (
       // Setup pages render in full before they stream (instant = false): a prefetch of one only got a 404.
-      <Link href={stepPath(step.slug)} prefetch={false} className={cn(row, "transition-colors duration-150 ease-out hover:bg-background")}>
+      <Link href={stepPath(step.slug)} prefetch={false} className={cn(row, "transition-colors duration-150 ease-out hover:bg-surface/60")}>
         {body}
         <span className="sr-only">(done, edit)</span>
       </Link>

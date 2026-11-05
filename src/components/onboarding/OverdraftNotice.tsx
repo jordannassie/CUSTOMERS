@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 export function OverdraftNotice({ message, pending, onConfirm }: { message: string; pending: boolean; onConfirm: () => void }) {
   return (
     <>
-      <p className="rounded-md bg-mid-bg px-3 py-2 text-[13px] text-mid-text" data-testid="first-scan-overdraft">
+      <p className="rounded-[12px] bg-muted px-3 py-2 text-[13px] text-ink-2" data-testid="first-scan-overdraft">
         {message}
       </p>
       <div className="flex flex-col gap-2 sm:flex-row">

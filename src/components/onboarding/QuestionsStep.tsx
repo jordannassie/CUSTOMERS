@@ -70,14 +70,14 @@ export function QuestionsStep({ businessId, questions, limit, updated = false, s
   return (
     <form onSubmit={submit} className="flex flex-col gap-6" noValidate>
       {updated ? (
-        <div role="status" data-testid="questions-updated" className="flex items-start gap-3 rounded-md border border-border bg-primary-tint px-4 py-3">
+        <div role="status" data-testid="questions-updated" className="flex items-start gap-3 rounded-[14px] bg-brand-tint text-brand-ink px-4 py-3">
           <Info aria-hidden className="mt-0.5 size-4 shrink-0 text-primary" />
           <p className="text-sm">We updated your questions to match your new business details. Questions you wrote yourself are kept.</p>
         </div>
       ) : null}
       {/* The note belongs to the list, so it sits closer to it than the rest of the step (12px). */}
       <div className="flex flex-col gap-3">
-        <div className="rounded-md border border-border bg-surface">
+        <div className="rounded-lg border border-border bg-surface">
           <div className="flex items-baseline justify-between gap-3 border-b border-border p-5">
             <h2 className="text-base font-semibold tracking-[-0.02em]">Questions we ask AI</h2>
             <span className="shrink-0 whitespace-nowrap text-[13px] tabular-nums text-muted-foreground">

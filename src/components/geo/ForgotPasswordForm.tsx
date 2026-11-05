@@ -45,7 +45,7 @@ export default function ForgotPasswordForm() {
         {sent ? (
           <div className="text-center">
             <CheckCircle className="mx-auto mb-3 size-8 text-good" aria-hidden="true" />
-            <h1 className="mb-2 text-lg font-semibold tracking-[-0.02em]">Check your email</h1>
+            <h1 className="mb-2 font-serif text-2xl font-normal">Check your email</h1>
             <p className="mb-6 text-sm leading-relaxed text-muted-foreground">
               We sent a password reset link to <strong className="font-semibold text-foreground">{email}</strong>. Click the link in the
               email to set a new password.
@@ -54,7 +54,7 @@ export default function ForgotPasswordForm() {
           </div>
         ) : (
           <>
-            <h1 className="mb-1 text-xl font-semibold tracking-[-0.02em]">Reset password</h1>
+            <h1 className="mb-1 font-serif text-[26px] leading-tight font-normal">Reset password</h1>
             <p className="mb-6 text-sm text-muted-foreground">
               Enter your account email and we&apos;ll send a reset link.
             </p>

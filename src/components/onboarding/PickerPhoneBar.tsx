@@ -29,7 +29,7 @@ export function PickerPhoneBar({
   return (
     <div className="fixed inset-x-0 bottom-0 z-10 border-t border-border bg-surface px-5 py-3 lg:hidden">
       {limitNote ? (
-        <p aria-hidden className="mb-2 rounded-md bg-mid-bg px-3 py-2 text-[13px] text-mid-text">
+        <p aria-hidden className="mb-2 rounded-[12px] bg-muted px-3 py-2 text-[13px] text-ink-2">
           {limitNote}
         </p>
       ) : null}

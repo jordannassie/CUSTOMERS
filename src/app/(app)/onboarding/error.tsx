@@ -6,8 +6,8 @@ import { Button } from "@/components/ui/button";
 // A step that fails to load keeps the saved progress; trying again reloads the same step.
 export default function StepError({ reset }: { error: Error; reset: () => void }) {
   return (
-    <div className="mx-auto flex min-h-[60dvh] max-w-md flex-col justify-center px-4 py-16">
-      <h1 className="text-2xl font-semibold tracking-[-0.02em]">This step didn&apos;t load</h1>
+    <div className="mx-auto my-16 flex w-[calc(100%-2rem)] max-w-md flex-col justify-center rounded-xl bg-card px-6 py-10">
+      <h1 className="font-serif text-[28px] leading-tight font-normal">This step didn&apos;t load</h1>
       <p className="mt-2 text-sm text-muted-foreground">Everything you saved so far is kept. Try again, and if it keeps happening, contact support.</p>
       <div className="mt-6 flex gap-3">
         <Button onClick={reset}>
