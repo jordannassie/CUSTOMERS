@@ -2,11 +2,13 @@ import Link from "next/link";
 import { cn } from "cn";
 import type { OverviewCompete } from "@/modules/competitors";
 import type { SourcesPage } from "@/modules/sources";
-import type { SourceLine } from "./OverviewCards";
 
 // The Overview's range control and its "Where AI gets its answers" lines (dashboard redesign, 2026-10-27).
 
 export const RANGES = [7, 30, 90] as const;
+
+/** One site AI used, and whether those answers named you ("never": your own site, never cited). */
+export type SourceLine = { host: string; answers: number; status: "missing" | "partly" | "named" | "never" };
 
 /**
  * "Where AI gets its answers" from the score's own answers, counted like the report's "Where AI looks" (audit,
@@ -34,18 +36,18 @@ export function sourceLines(sources: SourcesPage | null): SourceLine[] {
   return lines;
 }
 
-/** 7, 30 or 90 days, as links (the server reads the range), in the white-on-muted segmented look (mockup-ui). */
+/** 7, 30 or 90 days, as links (the server reads the range), as Check-in pill tabs: the range shown is brand blue. */
 export function RangeControl({ days }: { days: number }) {
   return (
-    <div className="inline-flex h-8 items-center gap-0.5 rounded-md border border-border bg-muted p-0.5" role="group" aria-label="Date range" data-testid="range">
+    <div className="inline-flex h-9 items-center gap-0.5 rounded-full border border-border bg-surface p-0.5" role="group" aria-label="Date range" data-testid="range">
       {RANGES.map((r) => (
         <Link
           key={r}
           href={r === 30 ? "/dashboard" : `/dashboard?range=${r}`}
           aria-current={r === days ? "true" : undefined}
           className={cn(
-            "flex h-[26px] items-center rounded-[4px] px-2.5 text-xs whitespace-nowrap transition-colors focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none",
-            r === days ? "bg-surface font-medium text-foreground shadow-[0_0_0_1px_var(--border)]" : "text-muted-foreground hover:text-foreground",
+            "flex h-8 items-center rounded-full px-3 text-xs whitespace-nowrap transition-colors",
+            r === days ? "bg-brand font-semibold text-primary-foreground" : "text-muted-foreground hover:text-foreground",
           )}
         >
           {r} days

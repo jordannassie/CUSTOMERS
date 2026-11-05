@@ -2,11 +2,13 @@ import { Suspense } from "react";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { FileText, Share2 } from "lucide-react";
-import { PageHeader } from "@/components/app/PageHeader";
 import { RunScanButton } from "@/components/app/RunScanButton";
+import { ScoreGauge } from "@/components/charts";
+import { AiMessage, CheckInLayout, Composer, DayRule, Explain, FollowUps, RailCard, RailNotice, UserBubble } from "@/components/checkin";
+import { ScoreGlance } from "@/components/overview/checkin/Glance";
 import { RANGES, RangeControl } from "@/components/overview/OverviewKpis";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { compareHref } from "@/lib/compare-href";
 import { getOverviewCompete, getPickedInstead } from "@/modules/competitors";
 import { getFixesState } from "@/modules/insights";
 import { getScanStatus, startScan } from "@/modules/jobs";
@@ -14,9 +16,8 @@ import { getActionsBoard } from "@/modules/opportunities";
 import { getOverview, getQuestionTrends } from "@/modules/overview";
 import { getSources } from "@/modules/sources";
 import { getWorkspace } from "@/modules/workspace";
-import { QuestionsMoved } from "@/components/overview/OverviewCards";
-import { SourcesActionsSection, SummarySection, ToolsSection } from "./_components/sections";
-import { PairSkeleton, SummarySkeleton, ToolsSkeleton } from "./_components/section-skeletons";
+import { ActionsSection, RailSection, ThreadSection } from "./_components/sections";
+import { ActionsSkeleton, RailSkeleton, ThreadSkeleton } from "./_components/section-skeletons";
 
 export const metadata = { title: "Overview", robots: { index: false } };
 
@@ -27,9 +28,10 @@ function later<T>(promise: Promise<T>): Promise<T> {
   return promise;
 }
 
-// B-49, MVP_SPEC 8.1, mockup-ui redesign: the four numbers and the score's explanation, the chart beside who AI picks
-// most, the score by AI tool, where AI looks and what to do first, then which questions moved. The range changes the
-// charts and counts; the score stays 30 days (D-63).
+// B-49, MVP_SPEC 8.1, Check-in theme (docs/design/files/C-Overview.dc.html): the Overview as a conversation. The user
+// asks how AI did; AI messages answer with how often it named you per tool, the line per scan, where AI looks, which
+// questions moved and the top fixes; the rail has the score gauge and the numbers. The range changes the chart and
+// counts; the score stays 30 days (D-63).
 export default async function OverviewPage({ searchParams }: { searchParams: Promise<{ range?: string }> }) {
   const asked = Number((await searchParams).range);
   const days = (RANGES as readonly number[]).includes(asked) ? asked : 30;
@@ -38,8 +40,8 @@ export default async function OverviewPage({ searchParams }: { searchParams: Pro
   // Setup is the onboarding wizard's job (B-36); it resumes where the user stopped.
   if (!business || business.status === "onboarding") redirect("/onboarding");
 
-  // Everything starts at once. The header and notices wait for the reads they show; the competitor blocks, the chart
-  // and the fixes stream in below as each is ready (they share the score's answers through React's cache).
+  // Everything starts at once. The header and notices wait for the reads they show; the messages stream in below as
+  // each is ready (they share the score's answers through React's cache).
   const compete = later(getOverviewCompete(business.id, days));
   // The same likely reason as the report and the weekly email (database reads only, no AI or Google call).
   const picked = later(getPickedInstead(business.id));
@@ -60,40 +62,68 @@ export default async function OverviewPage({ searchParams }: { searchParams: Pro
     tools,
     overview.lastCheckedAt ? `Last scan ${shortDay(overview.lastCheckedAt)}` : "No scans yet",
   ].filter(Boolean);
+  const notes = score
+    ? [
+        score.coverage && { id: "score-coverage", text: score.coverage },
+        score.firstResults && { id: null, text: "First results. Accuracy improves with every scan." },
+        overview.ownQuestions && { id: "own-questions", text: overview.ownQuestions },
+        overview.ownChain && { id: "own-chain", text: overview.ownChain },
+      ].filter((n): n is { id: string | null; text: string } => !!n)
+    : [];
+
+  const rail = score ? (
+    <>
+      <ScoreGlance score={score} sample={!!workspace.account?.isTest} notes={notes} />
+      <Suspense fallback={<RailSkeleton />}>
+        <RailSection compete={compete} sources={sources} />
+      </Suspense>
+      {overview.nextScan && (
+        <RailNotice title="Next check-in" testId="next-scan">
+          Your next scan runs on {overview.nextScan}. Each scan adds a point to your chart.
+        </RailNotice>
+      )}
+    </>
+  ) : (
+    <RailCard title="At a glance">
+      <ScoreGauge value={null} ariaLabel="No visibility score yet" />
+    </RailCard>
+  );
 
   return (
-    <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-5 px-4 py-5 sm:p-8">
-      <PageHeader
-        title={business.name}
-        clampTitle={business.name}
-        description={meta.join(" · ")}
-        descriptionTestId="last-scan"
-        actions={
-          <div className="flex flex-wrap items-center gap-2">
-            {score && <RangeControl days={days} />}
-            {score && (
-              <>
-                <Button asChild variant="outline" size="sm">
-                  <Link href="/reports">
-                    <FileText aria-hidden="true" />
-                    View report
-                  </Link>
-                </Button>
-                <Button asChild variant="outline" size="sm">
-                  <Link href="/reports?share=1">
-                    <Share2 aria-hidden="true" />
-                    Share
-                  </Link>
-                </Button>
-              </>
-            )}
-            {score && scanStatus.ok && <RunScanButton businessId={business.id} initial={scanStatus.data} start={startScan} className="h-8 px-3 text-[13px]" />}
-          </div>
-        }
-      />
+    <CheckInLayout rail={rail}>
+      <header className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="flex min-w-0 flex-col gap-1">
+          <h1 className="line-clamp-2 font-serif text-[26px] leading-tight break-words" title={business.name}>
+            {business.name}
+          </h1>
+          <p className="text-sm text-muted-foreground" data-testid="last-scan">
+            {meta.join(" · ")}
+          </p>
+        </div>
+        <div className="flex shrink-0 flex-wrap items-center gap-2 sm:max-w-[60%] sm:justify-end">
+          {score && <RangeControl days={days} />}
+          {score && (
+            <>
+              <Button asChild variant="outline" size="sm" className="rounded-full">
+                <Link href="/reports">
+                  <FileText aria-hidden="true" />
+                  View report
+                </Link>
+              </Button>
+              <Button asChild variant="outline" size="sm" className="rounded-full">
+                <Link href="/reports?share=1">
+                  <Share2 aria-hidden="true" />
+                  Share
+                </Link>
+              </Button>
+            </>
+          )}
+          {score && scanStatus.ok && <RunScanButton businessId={business.id} initial={scanStatus.data} start={startScan} className="h-8 rounded-full px-3.5 text-[13px]" />}
+        </div>
+      </header>
 
       {scanStatus.ok && scanStatus.data.lastResult === "failed" && !scanStatus.data.scanning && (
-        <p role="status" className="rounded-lg border border-border bg-mid-bg px-4 py-2.5 text-[13px] text-mid-text">
+        <p role="status" className="rounded-[14px] bg-low-bg px-4 py-3 text-sm text-low-text">
           {/* A known reason (test mode with no sample answers) is said as it is: trying again would not help. */}
           {scanStatus.data.failedReason ?? (
             <>
@@ -104,62 +134,77 @@ export default async function OverviewPage({ searchParams }: { searchParams: Pro
       )}
 
       {overview.scanNotice && !(scanStatus.ok && (scanStatus.data.scanning || scanStatus.data.lastResult === "failed")) && (
-        <p role="status" className="rounded-lg border border-border bg-mid-bg px-4 py-2.5 text-[13px] text-mid-text" data-testid="scan-notice">
+        <p role="status" className="rounded-[14px] bg-surface px-4 py-3 text-sm text-ink-2" data-testid="scan-notice">
           {overview.scanNotice}
         </p>
       )}
 
+      {overview.lastCheckedAt && <DayRule>Your check-in, from your {shortDay(overview.lastCheckedAt)} scan</DayRule>}
+      <UserBubble>How did AI do for {business.name} {days === 30 ? "this month" : `in the last ${days} days`}?</UserBubble>
+
       {!score ? (
-        <Card className="py-0">
-          <CardContent className="flex flex-col gap-2 py-6" data-testid="no-score">
-            <p className="text-xl font-semibold tracking-[-0.02em]">No score yet</p>
-            {overview.ownQuestions ? (
-              // Scanned, but only the user's own questions have answers, and those are not part of the score (BUG-129).
-              <p className="max-w-prose text-sm text-muted-foreground">
-                Your score counts suggested questions only, and none have answers from the last 30 days yet. <span data-testid="own-questions">{overview.ownQuestions}</span>
-              </p>
-            ) : (
-              <p className="max-w-prose text-sm text-muted-foreground">
-                Run your first scan to see how often ChatGPT, Claude and Perplexity recommend {business.name} when customers ask for a business like yours.
-              </p>
-            )}
-            {scanStatus.ok && (
-              <div className="mt-3 grid justify-items-start gap-2.5">
-                <RunScanButton
-                  businessId={business.id}
-                  initial={scanStatus.data}
-                  start={startScan}
-                  label={scanStatus.data.lastResult === null ? "Run first scan" : "Run scan"}
-                />
-                {!scanStatus.data.scanning && (
-                  <p className="text-xs text-muted-foreground tabular-nums" data-testid="scan-cost">
-                    Takes about a minute and uses about {overview.scanCredits} {overview.scanCredits === 1 ? "credit" : "credits"}.
-                  </p>
-                )}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+        <AiMessage place="only" lead="No score yet" testId="no-score">
+          {overview.ownQuestions ? (
+            // Scanned, but only the user's own questions have answers, and those are not part of the score (BUG-129).
+            <Explain>
+              Your score counts suggested questions only, and none have answers from the last 30 days yet. <span data-testid="own-questions">{overview.ownQuestions}</span>
+            </Explain>
+          ) : (
+            <Explain>Run your first scan to see how often ChatGPT, Claude and Perplexity recommend {business.name} when customers ask for a business like yours.</Explain>
+          )}
+          {scanStatus.ok && (
+            <div className="grid justify-items-start gap-2.5">
+              <RunScanButton
+                businessId={business.id}
+                initial={scanStatus.data}
+                start={startScan}
+                label={scanStatus.data.lastResult === null ? "Run first scan" : "Run scan"}
+                className="rounded-full"
+              />
+              {!scanStatus.data.scanning && (
+                <p className="text-xs text-muted-foreground tabular-nums" data-testid="scan-cost">
+                  Takes about a minute and uses about {overview.scanCredits} {overview.scanCredits === 1 ? "credit" : "credits"}.
+                </p>
+              )}
+            </div>
+          )}
+        </AiMessage>
       ) : (
         <>
-          <Suspense fallback={<SummarySkeleton />}>
-            <SummarySection overview={overview} compete={compete} sources={sources} picked={picked} sample={!!workspace.account?.isTest} days={days} />
+          <Suspense fallback={<ThreadSkeleton />}>
+            <ThreadSection overview={overview} compete={compete} sources={sources} picked={picked} trends={trends} days={days} />
           </Suspense>
-          <Suspense fallback={<ToolsSkeleton />}>
-            <ToolsSection overview={overview} compete={compete} />
+          <Suspense fallback={<ActionsSkeleton />}>
+            <ActionsSection businessId={business.id} board={board} fixes={fixes} />
           </Suspense>
-          <Suspense fallback={<PairSkeleton />}>
-            <SourcesActionsSection businessId={business.id} compete={compete} sources={sources} board={board} fixes={fixes} />
+          <Suspense fallback={null}>
+            <Followups compete={compete} />
           </Suspense>
-          <QuestionsMoved trends={trends} />
+          <Composer />
         </>
       )}
 
-      <p className="max-w-prose text-[11.5px] text-text-hint">
+      <p className="max-w-prose text-xs text-muted-foreground sm:pl-12">
         Scores come from asking each AI your customers&apos; questions with web search and your location. Answers in the ChatGPT, Claude and Perplexity apps
         can differ. No one can guarantee AI recommendations.
       </p>
-    </div>
+    </CheckInLayout>
+  );
+}
+
+/** Suggested follow-ups: pages that answer the next questions. Compare opens on the business ahead of you by default. */
+async function Followups({ compete }: { compete: Promise<Awaited<ReturnType<typeof getOverviewCompete>>> }) {
+  const c = await compete;
+  const leader = c?.leaderName ?? null;
+  return (
+    <FollowUps
+      items={[
+        { label: "Who's ahead of me, and why?", href: "/competitors" },
+        ...(leader ? [{ label: `How do I compare with ${leader}?`, href: compareHref() }] : []),
+        { label: "Where does AI look?", href: "/sources" },
+        { label: "What should I fix first?", href: "/actions" },
+      ]}
+    />
   );
 }
 

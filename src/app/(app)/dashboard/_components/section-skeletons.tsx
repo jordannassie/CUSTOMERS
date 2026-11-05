@@ -1,109 +1,94 @@
 import { Skeleton } from "@/components/ui/skeleton";
 
-// Placeholders the size of each streamed Overview block (sections.tsx), so the page does not jump as they arrive.
+// Placeholders the size of each streamed Overview block (sections.tsx), in the Check-in shapes, so the thread does not
+// jump as the messages arrive. Skeletons sit on white cards in the sunken colour.
 
-function Head() {
+function Message({ first = false, children }: { first?: boolean; children: React.ReactNode }) {
   return (
-    <div className="flex h-[52px] items-center border-b border-border px-[18px]">
-      <Skeleton className="h-4 w-36" />
+    <div className="flex items-start gap-3" aria-hidden="true">
+      {first ? <Skeleton className="hidden size-9 shrink-0 rounded-full sm:block" /> : <span className="hidden w-9 shrink-0 sm:block" />}
+      <div className={`flex min-w-0 flex-1 flex-col gap-3.5 bg-card px-6 py-[22px] ${first ? "rounded-[6px_20px_20px_20px]" : "rounded-[20px]"}`}>{children}</div>
     </div>
   );
 }
 
-function Rows({ rows }: { rows: number }) {
+export function ThreadSkeleton() {
   return (
-    <div className="flex flex-col">
-      {Array.from({ length: rows }, (_, i) => (
-        <div key={i} className="flex items-center gap-3 border-b border-border/60 px-[18px] py-3 last:border-b-0">
-          <Skeleton className="size-6 shrink-0" />
-          <Skeleton className="h-4 flex-1" />
-          <Skeleton className="h-4 w-10" />
+    <div className="flex flex-col gap-[18px]" role="status" aria-label="Loading your check-in">
+      <Message first>
+        <div className="flex flex-wrap items-center gap-6">
+          <div className="flex min-w-[240px] flex-1 flex-col gap-3">
+            <Skeleton className="h-7 w-full max-w-md" />
+            <Skeleton className="h-7 w-3/4" />
+            <Skeleton className="h-4 w-full max-w-sm" />
+          </div>
+          <Skeleton className="mx-auto size-[200px] rounded-full" />
         </div>
-      ))}
-    </div>
-  );
-}
-
-const CARD = "overflow-hidden rounded-lg border border-border bg-surface";
-
-export function SummarySkeleton() {
-  return (
-    <div className={CARD} aria-hidden="true">
-      <div className="grid grid-cols-2 gap-px border-b border-border bg-border lg:grid-cols-4">
+      </Message>
+      <Message>
+        <Skeleton className="h-6 w-2/3" />
+        <Skeleton className="h-64 rounded-lg" />
+      </Message>
+      <Message>
+        <Skeleton className="h-6 w-1/2" />
         {Array.from({ length: 4 }, (_, i) => (
-          <div key={i} className="flex flex-col gap-2 bg-surface px-[18px] pt-4 pb-3.5">
-            <Skeleton className="h-3 w-24" />
-            <Skeleton className="h-7 w-16" />
-            <Skeleton className="h-3 w-28" />
-          </div>
+          <Skeleton key={i} className="h-9" />
         ))}
-      </div>
-      <div className="flex items-center gap-3 border-b border-border px-[18px] py-3">
-        <Skeleton className="h-5 w-24" />
-        <Skeleton className="h-4 w-full max-w-md" />
-      </div>
-      <div className="grid lg:grid-cols-[minmax(0,1fr)_340px]">
-        <div className="flex flex-col gap-3 p-[18px]">
-          <Skeleton className="h-4 w-40" />
-          <Skeleton className="h-64" />
-        </div>
-        <div className="border-t border-border lg:border-t-0 lg:border-l">
-          <Head />
-          <Rows rows={4} />
-        </div>
-      </div>
+      </Message>
     </div>
   );
 }
 
-export function ToolsSkeleton() {
+export function ActionsSkeleton() {
   return (
-    <div className={CARD} aria-hidden="true">
-      <Head />
-      <div className="grid divide-y divide-border sm:grid-cols-3 sm:divide-x sm:divide-y-0">
-        {Array.from({ length: 3 }, (_, i) => (
-          <div key={i} className="flex flex-col gap-2 px-[18px] py-4">
-            <Skeleton className="h-4 w-20" />
-            <Skeleton className="h-7 w-14" />
-            <Skeleton className="h-1.5" />
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-export function PairSkeleton() {
-  return (
-    <div className="grid gap-5 lg:grid-cols-2" aria-hidden="true">
-      {[5, 3].map((rows, i) => (
-        <div key={i} className={CARD}>
-          <Head />
-          <Rows rows={rows} />
-        </div>
+    <Message>
+      <Skeleton className="h-6 w-1/2" />
+      {Array.from({ length: 3 }, (_, i) => (
+        <Skeleton key={i} className="h-[72px] rounded-lg" />
       ))}
+    </Message>
+  );
+}
+
+export function RailSkeleton() {
+  return (
+    <div className="flex flex-col gap-3.5" aria-hidden="true">
+      <div className="flex flex-col gap-2.5 rounded-xl bg-card p-5">
+        {Array.from({ length: 4 }, (_, i) => (
+          <Skeleton key={i} className="h-5" />
+        ))}
+      </div>
+      <div className="flex flex-col gap-2.5 rounded-xl bg-card p-5">
+        <Skeleton className="h-5 w-32" />
+        {Array.from({ length: 4 }, (_, i) => (
+          <Skeleton key={i} className="h-9" />
+        ))}
+      </div>
     </div>
   );
 }
 
-/** The whole page while it loads (loading.tsx): the header, then each block's placeholder. */
+/** The whole Overview while the page's first reads run: the header, the question bubble, the thread and the rail. */
 export function OverviewLoading() {
   return (
-    <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-5 px-4 py-5 sm:p-8" aria-busy="true">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between" aria-hidden="true">
-        <div className="flex flex-col gap-3">
-          <Skeleton className="h-7 w-48" />
-          <Skeleton className="h-4 w-72 max-w-full" />
+    <div className="flex w-full flex-wrap items-start gap-7 px-4 pt-4 pb-12 sm:px-7 sm:pt-6" aria-busy="true">
+      <div className="mx-auto flex min-w-0 max-w-[820px] flex-[3_1_560px] flex-col gap-[18px]">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between" aria-hidden="true">
+          <div className="flex flex-col gap-2">
+            <Skeleton className="h-8 w-48 bg-surface" />
+            <Skeleton className="h-4 w-72 max-w-full bg-surface" />
+          </div>
+          <div className="flex gap-2">
+            <Skeleton className="h-9 w-40 rounded-full bg-surface" />
+            <Skeleton className="h-9 w-24 rounded-full bg-surface" />
+          </div>
         </div>
-        <div className="flex gap-2">
-          <Skeleton className="h-8 w-40" />
-          <Skeleton className="h-8 w-24" />
-          <Skeleton className="h-8 w-24" />
-        </div>
+        <Skeleton className="h-12 w-72 max-w-[80%] self-end rounded-[20px_20px_6px_20px] bg-brand-tint-2" aria-hidden="true" />
+        <ThreadSkeleton />
       </div>
-      <SummarySkeleton />
-      <ToolsSkeleton />
-      <PairSkeleton />
+      <div className="w-full min-w-0 flex-[1_1_260px] lg:max-w-[340px]">
+        <RailSkeleton />
+      </div>
     </div>
   );
 }
