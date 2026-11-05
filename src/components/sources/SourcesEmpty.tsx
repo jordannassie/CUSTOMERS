@@ -5,8 +5,8 @@ export function SourcesEmpty({ title, testId, children }: { title: string; testI
   return (
     <Card data-testid={testId}>
       <CardContent className="flex flex-col">
-        <h2 className="text-base font-semibold tracking-[-0.02em]">{title}</h2>
-        <div className="mt-3 flex max-w-[560px] flex-col text-sm text-muted-foreground">{children}</div>
+        <h2 className="font-serif text-[22px] leading-snug font-normal">{title}</h2>
+        <div className="mt-3 flex max-w-[560px] flex-col text-[15px] leading-relaxed text-ink-2">{children}</div>
       </CardContent>
     </Card>
   );

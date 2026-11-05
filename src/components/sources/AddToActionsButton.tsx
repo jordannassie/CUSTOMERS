@@ -23,10 +23,12 @@ type Props = {
   add: AddToActions;
   /** "Get listed" in the table, "Add to Actions" in the cards. */
   label?: string;
+  /** Check-in cards use the brand outline pill; the table keeps the quiet outline button. */
+  tone?: "brand" | "outline";
 };
 
 // Adds a site's fix to Actions in To do. Once added it says which column it is in, and links to the board.
-export function AddToActionsButton({ businessId, action, inActions, actionId = null, add, label = "Add to Actions" }: Props) {
+export function AddToActionsButton({ businessId, action, inActions, actionId = null, add, label = "Add to Actions", tone = "outline" }: Props) {
   const [added, setAdded] = useState<ActionStatus | null>(null);
   const [addedId, setAddedId] = useState<string | null>(null);
   const id = addedId ?? actionId;
@@ -39,7 +41,7 @@ export function AddToActionsButton({ businessId, action, inActions, actionId = n
     return (
       <Link
         href={id ? fixHref(id) : "/actions"}
-        className="inline-flex h-8 items-center gap-1.5 text-[13px] font-medium whitespace-nowrap text-good-text hover:underline"
+        className="inline-flex h-9 items-center gap-1.5 rounded-full bg-brand-tint-2 px-3.5 text-[13px] font-semibold whitespace-nowrap text-brand-strong hover:underline"
         data-testid="in-actions"
       >
         <CircleCheck className="size-3.5" aria-hidden="true" />
@@ -66,8 +68,8 @@ export function AddToActionsButton({ businessId, action, inActions, actionId = n
   return (
     <Button
       type="button"
-      size="sm"
-      variant="outline"
+      size={tone === "brand" ? "default" : "sm"}
+      variant={tone === "brand" ? "brand" : "outline"}
       onClick={onAdd}
       disabled={pending}
       data-testid="add-to-actions"

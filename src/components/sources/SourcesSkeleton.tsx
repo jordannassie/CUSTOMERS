@@ -1,68 +1,45 @@
 import { Skeleton } from "@/components/ui/skeleton";
 
-// The Sources page while it loads, shaped like the loaded page (DESIGN.md) so nothing jumps.
+// The Sources page while it loads, shaped like the Check-in conversation (header, question, message cards, right rail)
+// so nothing jumps. White blocks on the ground colour, sunken bars inside them.
 export function SourcesSkeleton() {
   return (
-    <div role="status" aria-label="Loading" className="mx-auto flex w-full max-w-[1200px] flex-col gap-5 px-4 py-5 sm:p-8">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div className="flex flex-col gap-2">
-          <Skeleton className="h-8 w-40" />
-          <Skeleton className="h-4 w-[520px] max-w-full" />
+    <div role="status" aria-label="Loading" className="flex w-full flex-wrap items-start gap-7 px-4 pt-4 pb-12 sm:px-7 sm:pt-6">
+      <div className="mx-auto flex min-w-0 max-w-[820px] flex-[3_1_560px] flex-col gap-[18px]">
+        <div className="flex flex-col gap-3">
+          <Skeleton className="h-8 w-40 bg-surface" />
+          <Skeleton className="h-4 w-[520px] max-w-full bg-surface" />
         </div>
-        <Skeleton className="h-8 w-72 max-w-full" />
-      </div>
-      <div className="grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-border bg-border lg:grid-cols-4">
-        {Array.from({ length: 4 }, (_, i) => (
-          <div key={i} className="flex flex-col gap-2 bg-surface px-[18px] pt-4 pb-3.5">
-            <Skeleton className="h-3 w-24" />
-            <Skeleton className="h-7 w-20" />
-            <Skeleton className="h-3 w-28" />
-          </div>
-        ))}
-      </div>
-      <div className="grid overflow-hidden rounded-lg border border-border xl:grid-cols-[minmax(0,1fr)_320px]">
-        <Rows count={7} bar />
-        <div className="border-t border-border xl:border-t-0 xl:border-l">
-          <Rows count={7} />
-        </div>
-      </div>
-      <div className="grid gap-5 xl:grid-cols-2">
-        <Box>
-          <div className="flex items-center gap-6 p-5">
-            <Skeleton className="size-[140px] shrink-0 rounded-full" />
+        <Skeleton className="h-12 w-[420px] max-w-[80%] self-end rounded-[20px] bg-surface" />
+        <Card>
+          <Skeleton className="h-7 w-3/4" />
+          <Skeleton className="h-11 rounded-[12px]" />
+          {Array.from({ length: 6 }, (_, i) => (
+            <Skeleton key={i} className="h-3.5 rounded-full" style={{ width: `${92 - i * 11}%` }} />
+          ))}
+        </Card>
+        <Card>
+          <div className="flex items-center gap-6">
+            <Skeleton className="size-[160px] shrink-0 rounded-full" />
             <div className="flex flex-1 flex-col gap-3">
-              {Array.from({ length: 3 }, (_, i) => (
+              {Array.from({ length: 4 }, (_, i) => (
                 <Skeleton key={i} className="h-4" />
               ))}
             </div>
           </div>
-        </Box>
-        <Box>
-          <Rows count={3} />
-        </Box>
+        </Card>
       </div>
-      <Box>
-        <Rows count={8} />
-      </Box>
+      <div className="flex w-full min-w-0 flex-[1_1_260px] flex-col gap-3.5 lg:max-w-[340px]">
+        <Card>
+          {Array.from({ length: 6 }, (_, i) => (
+            <Skeleton key={i} className="h-4" />
+          ))}
+        </Card>
+      </div>
     </div>
   );
 }
 
-function Box({ children }: { children: React.ReactNode }) {
-  return <div className="overflow-hidden rounded-lg border border-border">{children}</div>;
-}
-
-function Rows({ count, bar = false }: { count: number; bar?: boolean }) {
-  return (
-    <div className="flex flex-col">
-      <div className="border-b border-border px-[18px] py-4">
-        <Skeleton className="h-4 w-40" />
-      </div>
-      <div className="flex flex-col gap-3 px-[18px] py-4">
-        {Array.from({ length: count }, (_, i) => (
-          <Skeleton key={i} className={bar ? "h-3" : "h-8"} style={bar ? { width: `${90 - i * 10}%` } : undefined} />
-        ))}
-      </div>
-    </div>
-  );
+function Card({ children }: { children: React.ReactNode }) {
+  return <div className="flex flex-col gap-4 rounded-xl bg-surface p-6">{children}</div>;
 }

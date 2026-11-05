@@ -1,10 +1,8 @@
-import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { SiteIcon } from "@/components/app/SiteIcon";
 import type { Impact } from "@/modules/sources/listings";
 import type { ListedSite } from "@/modules/sources/rows";
 import { AddToActionsButton, type AddToActions } from "./AddToActionsButton";
-import { SectionCard } from "./SectionCard";
 
 const IMPACT: Record<Impact, { label: string; variant: "low" | "mid" | "secondary" }> = {
   high: { label: "High", variant: "low" },
@@ -14,53 +12,48 @@ const IMPACT: Record<Impact, { label: string; variant: "low" | "mid" | "secondar
 
 type Props = { businessId: string; listed: ListedSite[]; add: AddToActions };
 
-/** The most used sites that skip the business, each with its fix and an "Add to Actions" button. */
+/**
+ * Check-in "Where I'd act first" (C-Sources): the most used sites that skip the business, each an inner card with its
+ * fix, impact and an "Add to Actions" pill. The card's lead and the "Open Actions" link come from the page.
+ */
 export function ListedFirst({ businessId, listed, add }: Props) {
   return (
-    <SectionCard
-      title="Get listed here first"
-      aside={
-        <Link href="/actions" className="text-[12.5px] font-medium text-primary hover:underline">
-          Open Actions
-        </Link>
-      }
-      testId="listed-first"
-    >
+    <div data-testid="listed-first">
       {listed.length === 0 ? (
-        <p className="px-4 py-5 text-[13px] text-muted-foreground sm:px-[18px]" data-testid="listed-first-empty">
+        <p className="text-[15px] text-ink-2" data-testid="listed-first-empty">
           Every listing site AI used also named you. Keep those listings up to date.
         </p>
       ) : (
-        <ul className="flex flex-col divide-y divide-muted">
+        <ul className="flex flex-col gap-2.5">
           {listed.map((s) => (
             <li
               key={s.host}
-              className="flex flex-col gap-2.5 px-4 py-3 sm:flex-row sm:items-center sm:gap-3 sm:px-[18px]"
+              className="flex flex-wrap items-center gap-3.5 rounded-lg border border-border px-4 py-3.5"
               data-testid="listed-site"
             >
-              <div className="flex min-w-0 flex-1 items-start gap-2.5">
+              <div className="flex min-w-[220px] flex-[1_1_280px] items-start gap-3">
                 <SiteIcon domain={s.host} name={s.host} size="sm" className="mt-px" />
-                <div className="flex min-w-0 flex-col gap-0.5">
-                  <p className="flex min-w-0 items-baseline gap-2 text-[13px]">
-                    <span className="truncate font-medium" title={s.host}>{s.host}</span>
-                    <span className="shrink-0 text-xs text-text-hint">{s.kindLabel}</span>
+                <div className="flex min-w-0 flex-col gap-1">
+                  <p className="flex min-w-0 flex-wrap items-baseline gap-x-2">
+                    <span className="truncate font-bold" title={s.host}>{s.host}</span>
+                    <span className="text-xs text-muted-foreground">{s.kindLabel}</span>
                   </p>
-                  <p className="line-clamp-2 text-xs text-muted-foreground" title={`${s.used} ${s.fix}`}>
+                  <p className="text-sm leading-normal text-ink-2">
                     {s.used} {s.fix}
                   </p>
                 </div>
               </div>
-              <div className="flex shrink-0 items-center gap-2 pl-[34px] sm:pl-0">
+              <div className="flex shrink-0 items-center gap-2.5 pl-9 sm:pl-0">
                 <Badge variant={IMPACT[s.impact].variant} data-testid="impact">
                   <span className="sr-only">Impact: </span>
                   {IMPACT[s.impact].label}
                 </Badge>
-                <AddToActionsButton businessId={businessId} action={s.action} inActions={s.inActions} actionId={s.actionId} add={add} />
+                <AddToActionsButton businessId={businessId} action={s.action} inActions={s.inActions} actionId={s.actionId} add={add} tone="brand" />
               </div>
             </li>
           ))}
         </ul>
       )}
-    </SectionCard>
+    </div>
   );
 }
