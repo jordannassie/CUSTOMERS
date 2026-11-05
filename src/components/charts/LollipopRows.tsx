@@ -38,7 +38,8 @@ export function LollipopRows({ rows, rivalName, ariaLabel, unit = "%" }: Props) 
             const d = both ? Math.round(r.rival as number) - Math.round(r.you as number) : 0;
             const xa = r.you !== null ? LX(r.you) : null;
             const xb = r.rival !== null ? LX(r.rival) : null;
-            const text = !both ? "" : d === 0 ? "Even" : d > 0 ? `${d} pts behind` : `${-d} pts ahead`;
+            // At 0 and 0 the dots sit on each other and the counts below say it, so no label.
+            const text = !both || (r.you === 0 && r.rival === 0) ? "" : d === 0 ? "Even" : d > 0 ? `${d} pts behind` : `${-d} pts ahead`;
             return (
               <g key={r.label} className="animate-rise" style={{ animationDelay: `${0.3 + k * 0.15}s` }}>
                 <text x="20" y={yy + 5} fill={CHART.ink} fontSize="15" fontWeight="600">

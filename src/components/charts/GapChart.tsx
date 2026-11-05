@@ -14,7 +14,7 @@ type Props = {
 const W = 760;
 const H = 260;
 const LEFT = 44;
-const RIGHT = 690;
+const RIGHT = 650;
 const TOP = 20;
 const BOTTOM = 232;
 
@@ -100,7 +100,7 @@ export function GapChart({ labels, you, rival, ariaLabel }: Props) {
           })}
           {lastRival && (
             <text x={RIGHT + 12} y={lastRival[1] + 4} fill={CHART.rivalText} fontSize="13" fontWeight="700">
-              {rival.name.length > 10 ? "Them" : rival.name}
+              {rival.name.length > 12 ? "Them" : rival.name}
             </text>
           )}
           {lastYou && (
@@ -111,11 +111,12 @@ export function GapChart({ labels, you, rival, ariaLabel }: Props) {
         </svg>
       </div>
       <Legend
-        shape="line"
+        shape="square"
         items={[
           { label: "You", color: CHART.you, strong: true },
           { label: rival.name, color: CHART.rival },
-          { label: "Gap in points at each scan", color: fillTint },
+          // The swatch repeats the dotted fill, so it reads as the shaded area.
+          { label: "Gap in points at each scan", color: `radial-gradient(circle, ${fillDot} 0.9px, ${fillTint} 1.2px) 0 0 / 4px 4px` },
         ]}
       />
     </div>

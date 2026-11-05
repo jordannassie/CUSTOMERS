@@ -16,8 +16,10 @@ type Props = {
 };
 
 // Check-in dot matrix (C-Competitors): business by AI tool, the circle's size is the share and the value is printed in
-// it. Zero and "not checked" are a small grey dot (the value stays in the screen reader text).
+// it. Zero and "not checked" are a small grey dot (the value stays in the screen reader text). The largest value in each
+// column is marked "Top" for screen readers, since size alone carries it on screen.
 export function DotMatrix({ columns, rows, ariaLabel, unit = "%" }: Props) {
+  const tops = columns.map((_, j) => Math.max(0, ...rows.map((r) => r.values[j] ?? 0)));
   return (
     <div className="overflow-x-auto">
       <table className="w-full min-w-[480px] border-collapse" aria-label={ariaLabel}>
@@ -47,8 +49,8 @@ export function DotMatrix({ columns, rows, ariaLabel, unit = "%" }: Props) {
                       className={cn("mx-auto flex animate-pop items-center justify-center rounded-full text-xs font-bold", c.dark ? "text-foreground" : "text-white")}
                       style={{ width: size, height: size, background: on ? c.color : "var(--cd-border)", animationDelay: `${0.4 + (k * columns.length + j) * 0.03}s` }}
                     >
-                      {on ? Math.round(v as number) : ""}
-                      <span className="sr-only">{v === null ? "no answers" : `${Math.round(v)}${unit}`}</span>
+                      {on ? Math.round(v as number) : <span className="sr-only">{v === null ? "no answers" : `0${unit}`}</span>}
+                      {on && v === tops[j] && <span className="sr-only"> Top</span>}
                     </span>
                   </td>
                 );

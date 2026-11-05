@@ -2,7 +2,7 @@
 
 import { useId } from "react";
 import { Cell, LabelList, ReferenceArea, ResponsiveContainer, Scatter, ScatterChart, Tooltip, XAxis, YAxis, ZAxis } from "recharts";
-import { CHART } from "./chart-kit";
+import { CHART, niceScale } from "./chart-kit";
 import { ChartTooltipCard } from "./Legend";
 import { useReducedMotion } from "./use-reduced-motion";
 
@@ -35,7 +35,7 @@ export function BubbleChart({ points, ariaLabel, xLabel = "Google rating", yLabe
   const xs = points.map((p) => p.x);
   const xMin = Math.max(1, Math.floor((Math.min(...xs) - 0.2) * 5) / 5);
   const xMax = Math.min(5, Math.ceil((Math.max(...xs) + 0.2) * 5) / 5);
-  const yTop = Math.max(10, Math.ceil(Math.max(...points.map((p) => p.y)) / 10) * 10 + 10);
+  const { top: yTop, ticks: yTicks } = niceScale(Math.max(...points.map((p) => p.y)) + 5);
   const tick = { fill: CHART.axis, fontSize: 12 };
   // Emphasised last, so the current business sits on top.
   const data = [...points].sort((a, b) => Number(!!a.emphasis) - Number(!!b.emphasis));
@@ -73,6 +73,7 @@ export function BubbleChart({ points, ariaLabel, xLabel = "Google rating", yLabe
               type="number"
               dataKey="y"
               domain={[0, yTop]}
+              ticks={yTicks}
               tick={tick}
               axisLine={false}
               tickLine={false}
@@ -100,7 +101,18 @@ export function BubbleChart({ points, ariaLabel, xLabel = "Google rating", yLabe
               {data.map((p) => (
                 <Cell key={p.name} fill={p.color} fillOpacity={p.emphasis ? 0.9 : 0.55} stroke={p.emphasis ? CHART.ink : CHART.surface} strokeWidth={2} />
               ))}
-              <LabelList dataKey="name" position="right" offset={12} fill={CHART.ink} fontSize={13} />
+              {/* Drawn by hand: the default label picks up each bubble's white stroke. */}
+              <LabelList
+                dataKey="name"
+                content={({ viewBox, value }) => {
+                  const b = viewBox as { x: number; y: number; width: number; height: number };
+                  return (
+                    <text x={b.x + b.width + 8} y={b.y + b.height / 2 + 4} fill={CHART.ink} stroke="none" fontSize={13}>
+                      {value}
+                    </text>
+                  );
+                }}
+              />
             </Scatter>
           </ScatterChart>
         </ResponsiveContainer>
