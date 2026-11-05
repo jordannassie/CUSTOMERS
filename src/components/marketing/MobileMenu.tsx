@@ -36,7 +36,7 @@ export function MobileMenu() {
                 <Link
                   href={href}
                   onClick={close}
-                  className="flex h-11 items-center rounded-md px-3 text-[15px] font-medium transition-colors hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
+                  className="flex h-11 items-center rounded-[10px] px-3 text-[15px] font-medium transition-colors hover:bg-muted"
                 >
                   {label}
                 </Link>
@@ -45,12 +45,12 @@ export function MobileMenu() {
           </ul>
         </nav>
         <div className="mt-auto flex flex-col gap-2 border-t border-border p-4">
-          <Button asChild size="lg">
+          <Button asChild size="lg" className="rounded-full">
             <Link href={TRIAL_HREF} onClick={close}>
               {TRIAL_LABEL}
             </Link>
           </Button>
-          <Button asChild variant="outline" size="lg">
+          <Button asChild variant="outline" size="lg" className="rounded-full">
             <Link href={LOGIN_HREF} onClick={close}>
               Log in
             </Link>

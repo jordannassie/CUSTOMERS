@@ -27,7 +27,7 @@ export function AgencyBilling({ plans }: { plans: PublicPlan[] }) {
 
         <div className="flex flex-col gap-6 md:pt-2">
           {plans.length > 0 && (
-            <dl className="rounded-md border border-border bg-surface">
+            <dl className="rounded-xl bg-surface">
               {plans.map((plan) => (
                 <div
                   key={plan.id}
@@ -46,10 +46,10 @@ export function AgencyBilling({ plans }: { plans: PublicPlan[] }) {
             </dl>
           )}
           <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-            <Button asChild size="lg">
+            <Button className="rounded-full" asChild size="lg">
               <Link href="/pricing">See full pricing</Link>
             </Button>
-            <Button asChild size="lg" variant="outline">
+            <Button className="rounded-full" asChild size="lg" variant="outline">
               <Link href="/contact?interest=agency">Ask about a custom plan</Link>
             </Button>
           </div>

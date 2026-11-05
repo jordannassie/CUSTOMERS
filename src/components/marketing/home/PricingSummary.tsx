@@ -25,11 +25,11 @@ export function PricingSummary({ plans }: { plans: PublicPlan[] }) {
 
       <dl className="mt-12 grid gap-8 md:grid-cols-4 md:gap-6">
         {plans.map((plan) => (
-          <div key={plan.id} data-plan-id={plan.id} className="flex flex-col gap-2 border-t-2 border-primary pt-5">
-            <dt className="text-lg font-semibold tracking-[-0.02em]">{plan.name}</dt>
+          <div key={plan.id} data-plan-id={plan.id} className="flex flex-col gap-2 rounded-xl bg-surface px-6 py-[22px]">
+            <dt className="text-lg font-semibold">{plan.name}</dt>
             <dd className="flex flex-col gap-1">
               <span className="text-[15px] text-muted-foreground">
-                <span data-testid="plan-price" className="tabular text-2xl font-semibold tracking-[-0.02em] text-foreground">
+                <span data-testid="plan-price" className="tabular font-serif text-[34px] leading-tight font-normal text-foreground">
                   {formatUsd(plan.priceCents)}
                 </span>{" "}
                 per business a month
@@ -41,18 +41,18 @@ export function PricingSummary({ plans }: { plans: PublicPlan[] }) {
           </div>
         ))}
         {FACTS.map(({ title, body }) => (
-          <div key={title} className="flex flex-col gap-2 border-t border-border pt-5">
-            <dt className="text-lg font-semibold tracking-[-0.02em]">{title}</dt>
-            <dd className="text-[15px] text-muted-foreground">{body}</dd>
+          <div key={title} className="flex flex-col gap-2 rounded-xl bg-brand-tint px-6 py-[22px]">
+            <dt className="text-lg font-semibold text-brand-ink">{title}</dt>
+            <dd className="text-[15px] text-brand-ink">{body}</dd>
           </div>
         ))}
       </dl>
 
       <div className="mt-10 flex flex-col gap-3 sm:flex-row">
-        <Button asChild size="lg">
+        <Button className="rounded-full" asChild size="lg">
           <Link href="/pricing">See plans and prices</Link>
         </Button>
-        <Button asChild size="lg" variant="outline">
+        <Button className="rounded-full" asChild size="lg" variant="outline">
           <Link href="/signup">Start free trial</Link>
         </Button>
       </div>

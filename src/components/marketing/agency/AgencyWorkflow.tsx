@@ -29,14 +29,14 @@ export function AgencyWorkflow() {
 
       <ol className="mt-12 grid gap-8 sm:grid-cols-2 lg:grid-cols-4 lg:gap-6">
         {STEPS.map(({ title, body }, i) => (
-          <li key={title} className="flex flex-col gap-3 border-t-2 border-border pt-5 first:border-primary">
-            <span className="tabular text-[13px] font-medium text-text-hint">Step {i + 1}</span>
-            <h3 className="text-xl font-semibold tracking-[-0.02em]">{title}</h3>
+          <li key={title} className="flex flex-col gap-3 rounded-xl bg-surface px-6 py-[22px]">
+            <span className="tabular text-[13px] font-medium text-muted-foreground">Step {i + 1}</span>
+            <h3 className="font-serif font-normal text-xl">{title}</h3>
             <p className="text-[15px] text-muted-foreground">{body}</p>
           </li>
         ))}
       </ol>
-      <p className="mt-10 max-w-[65ch] text-[13px] text-text-hint">
+      <p className="mt-10 max-w-[65ch] text-[13px] text-muted-foreground">
         We tell you what to fix and how. We do not change client websites for you.
       </p>
     </Section>

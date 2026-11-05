@@ -19,8 +19,8 @@ export function launchKitIntroVideoExists(): boolean {
 
 export default function LaunchKitVideo({ hasVideo }: { hasVideo: boolean }) {
   return (
-    <div className="rounded-2xl overflow-hidden border border-[#E5E5E1] bg-[#171717] shadow-[0_12px_40px_rgba(23,23,23,0.12)]">
-      <div className="relative aspect-video bg-[#111111]">
+    <div className="rounded-xl overflow-hidden bg-foreground">
+      <div className="relative aspect-video bg-foreground">
         {hasVideo ? (
           <video
             className="w-full h-full object-cover"
@@ -39,10 +39,10 @@ export default function LaunchKitVideo({ hasVideo }: { hasVideo: boolean }) {
               sizes="(min-width: 1024px) 700px, 100vw"
               priority
             />
-            <div className="absolute inset-0 bg-[#171717]/45" />
+            <div className="absolute inset-0 bg-foreground/45" />
             <div className="absolute inset-0 flex flex-col items-center justify-center px-6 text-center">
               <div
-                className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-[#0866F5] flex items-center justify-center shadow-lg"
+                className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-brand flex items-center justify-center shadow-lg"
                 aria-hidden="true"
               >
                 <Play size={28} className="text-white ml-1" fill="white" />
@@ -60,7 +60,7 @@ export default function LaunchKitVideo({ hasVideo }: { hasVideo: boolean }) {
       <ul className="divide-y divide-white/10">
         {LESSONS.map((lesson) => (
           <li key={lesson.n} className="flex items-center gap-3 px-4 py-2.5">
-            <span className="text-[11px] font-semibold text-white/40 tabular-nums w-14">
+            <span className="text-[11px] font-semibold text-white/70 tabular-nums w-14">
               Module {lesson.n}
             </span>
             <span className="text-[13px] text-white/85">{lesson.title}</span>

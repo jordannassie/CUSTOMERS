@@ -79,7 +79,7 @@ function BeehiivForm({ placement, src, formId }: { placement: NewsletterPlacemen
     <div className="mt-4 w-full max-w-full">
       <div ref={ref} className="min-h-[88px] w-full max-w-full overflow-hidden" />
       {failed ? (
-        <a href={`/newsletter/go/${placement}`} className="inline-flex h-11 items-center justify-center rounded-full bg-[#0866F5] px-5 text-[14px] font-semibold text-white hover:bg-[#0757D4]">
+        <a href={`/newsletter/go/${placement}`} className="inline-flex h-11 items-center justify-center rounded-full bg-brand px-5 text-[14px] font-semibold text-white hover:bg-brand-strong">
           Join the Free AI Newsletter
         </a>
       ) : null}
@@ -128,19 +128,19 @@ export function NewsletterSignup({
     <section
       ref={sectionRef}
       id={placement === "homepage" ? "newsletter" : `newsletter-${placement}`}
-      className={dark ? "mb-10 rounded-2xl border border-white/10 bg-white/5 px-5 py-5" : variant === "compact" ? "mt-5 rounded-2xl border border-[#BFDBFE] bg-white px-4 py-4" : variant === "detail" ? "mt-4 scroll-mt-28 rounded-2xl border border-[#BFDBFE] bg-[#FAFAF8] p-5 sm:p-6" : "scroll-mt-28 border-b border-[#EEEEEA] bg-white px-4 py-8 sm:py-10"}
+      className={dark ? "mb-10 rounded-2xl border border-white/10 bg-surface/5 px-5 py-5" : variant === "compact" ? "mt-5 rounded-xl bg-brand-tint px-4 py-4" : variant === "detail" ? "mt-4 scroll-mt-28 rounded-xl bg-brand-tint p-5 sm:p-6" : "scroll-mt-28 bg-background px-4 py-8 sm:py-10"}
       aria-label="AI newsletter"
     >
-      <div className={band ? "mx-auto max-w-[880px] rounded-2xl border border-[#BFDBFE] bg-[#FAFAF8] px-5 py-6 sm:px-8 sm:py-8" : ""}>
-        <h2 className={dark ? "text-[20px] font-bold text-white" : variant === "compact" ? "text-[18px] font-bold text-[#171717]" : "text-[28px] font-bold tracking-tight text-[#171717] sm:text-[34px]"}>{copy.title}</h2>
-        <p className={dark ? "mt-1 max-w-xl text-[13px] text-white/60" : "mt-2 max-w-xl text-[15px] text-[#777773]"}>{copy.text}</p>
+      <div className={band ? "mx-auto max-w-[880px] rounded-xl bg-surface px-5 py-6 sm:px-8 sm:py-8" : ""}>
+        <h2 className={dark ? "font-serif text-[20px] font-normal text-white" : variant === "compact" ? "font-serif text-[18px] font-normal text-foreground" : "font-serif text-[28px] font-normal text-foreground sm:text-[34px]"}>{copy.title}</h2>
+        <p className={dark ? "mt-1 max-w-xl text-[13px] text-white/80" : "mt-2 max-w-xl text-[15px] text-muted-foreground"}>{copy.text}</p>
         {embed ? <BeehiivForm placement={placement} src={config.src} formId={config.formId} /> : (
-          <a href={`/newsletter/go/${placement}`} className={`mt-4 inline-flex h-11 items-center justify-center rounded-full px-5 text-[14px] font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0866F5] ${dark ? "bg-white text-[#0866F5]" : "bg-[#0866F5] text-white hover:bg-[#0757D4]"}`}>
+          <a href={`/newsletter/go/${placement}`} className={`mt-4 inline-flex h-11 items-center justify-center rounded-full px-5 text-[14px] font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand ${dark ? "bg-surface text-brand" : "bg-brand text-white hover:bg-brand-strong"}`}>
             Join the Free AI Newsletter
           </a>
         )}
-        <p className={dark ? "mt-3 text-[11px] text-white/40" : "mt-3 text-[12px] text-[#A3A3A0]"}>
-          Beehiiv sends the newsletter and confirms the signup. Read the <Link href="/privacy" className={dark ? "underline" : "font-semibold text-[#0866F5]"}>privacy policy</Link>.
+        <p className={dark ? "mt-3 text-[11px] text-white/75" : "mt-3 text-[12px] text-muted-foreground"}>
+          Beehiiv sends the newsletter and confirms the signup. Read the <Link href="/privacy" className={dark ? "underline" : "font-semibold text-brand"}>privacy policy</Link>.
         </p>
       </div>
     </section>

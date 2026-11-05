@@ -38,9 +38,9 @@ const FAQS = [
 
 export function FaqList({ items }: { items: readonly { q: string; a: string }[] }) {
   return (
-    <div className="border-t border-border">
+    <div className="rounded-xl bg-surface px-6">
       {items.map(({ q, a }) => (
-        <details key={q} className="group border-b border-border">
+        <details key={q} className="group border-b border-divider last:border-b-0">
           <summary className="flex cursor-pointer list-none items-start justify-between gap-4 rounded-sm py-5 text-left text-[15px] font-semibold focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none [&::-webkit-details-marker]:hidden">
             {q}
             <ChevronDown

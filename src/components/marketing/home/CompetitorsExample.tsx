@@ -37,7 +37,7 @@ export function CompetitorsExample() {
     <ProductFrame page="Competitors">
       <div className="flex items-center justify-between border-b border-border px-[18px] py-3">
         <p className="text-[14.5px] font-semibold tracking-[-0.01em]">Who AI recommends most</p>
-        <span className="text-xs text-text-hint">Scores are give or take 8 points</span>
+        <span className="text-xs text-muted-foreground">Scores are give or take 8 points</span>
       </div>
       <LeaderTable rows={ROWS} />
       <div className="border-t border-border">

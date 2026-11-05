@@ -34,9 +34,9 @@ export default function LaunchKitFaq() {
   const [open, setOpen] = useState<number | null>(0);
 
   return (
-    <div className="rounded-2xl border border-[#E5E5E1] bg-white p-5 sm:p-6 shadow-[0_8px_24px_rgba(23,23,23,0.06)] h-full">
-      <h2 className="text-[20px] font-bold text-[#171717]">Frequently asked questions</h2>
-      <div className="mt-4 divide-y divide-[#E5E5E1]">
+    <div className="rounded-xl bg-surface p-5 sm:p-6 h-full">
+      <h2 className="font-serif font-normal text-[20px] text-foreground">Frequently asked questions</h2>
+      <div className="mt-4 divide-y divide-border">
         {ITEMS.map((item, index) => {
           const isOpen = open === index;
           return (
@@ -47,15 +47,15 @@ export default function LaunchKitFaq() {
                 onClick={() => setOpen(isOpen ? null : index)}
                 aria-expanded={isOpen}
               >
-                <span className="text-[14px] font-medium text-[#171717]">{item.q}</span>
+                <span className="text-[14px] font-medium text-foreground">{item.q}</span>
                 {isOpen ? (
-                  <Minus size={16} className="text-[#6B6B67] shrink-0" />
+                  <Minus size={16} className="text-muted-foreground shrink-0" />
                 ) : (
-                  <Plus size={16} className="text-[#6B6B67] shrink-0" />
+                  <Plus size={16} className="text-muted-foreground shrink-0" />
                 )}
               </button>
               {isOpen ? (
-                <p className="pb-3.5 text-[13px] leading-5 text-[#6B6B67]">{item.a}</p>
+                <p className="pb-3.5 text-[13px] leading-5 text-muted-foreground">{item.a}</p>
               ) : null}
             </div>
           );

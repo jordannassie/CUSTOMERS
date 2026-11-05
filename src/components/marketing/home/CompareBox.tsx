@@ -26,7 +26,7 @@ export function CompareBox() {
       onSubmit={handleSubmit}
       noValidate
       aria-describedby="compare-hint"
-      className="flex flex-col gap-4 rounded-md border border-border bg-surface p-4 sm:p-5"
+      className="flex flex-col gap-4 rounded-xl bg-surface p-4 sm:p-5"
     >
       <p className="text-[15px] font-semibold">Free AI readiness check: your website next to a competitor&apos;s</p>
       <div className="grid gap-3 sm:grid-cols-2">
@@ -66,10 +66,10 @@ export function CompareBox() {
         </p>
       )}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-        <Button type="submit" size="lg" className="h-11 px-5">
+        <Button type="submit" size="lg" className="rounded-full h-11 px-5">
           Check free
         </Button>
-        <p id="compare-hint" className="text-[13px] text-text-hint">
+        <p id="compare-hint" className="text-[13px] text-muted-foreground">
           No account needed. Checks how easy each website is for AI to understand; it does not ask the AI apps.
         </p>
       </div>

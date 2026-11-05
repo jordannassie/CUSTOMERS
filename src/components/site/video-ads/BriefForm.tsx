@@ -71,13 +71,13 @@ export function BriefForm({
 
   if (done) {
     return (
-      <div className="rounded-2xl border border-[#E5E5E1] bg-white p-8" role="status">
-        <h1 className="text-[32px] font-bold tracking-tight text-[#171717]">We have your order.</h1>
-        <p className="mt-4 text-[16px] leading-relaxed text-[#777773]">
+      <div className="rounded-xl bg-surface p-8" role="status">
+        <h1 className="font-serif font-normal text-[32px] text-foreground">We have your order.</h1>
+        <p className="mt-4 text-[16px] leading-relaxed text-muted-foreground">
           Payment for the {packageName} package ({priceLabel}) is confirmed, and your brief is saved.
           We&apos;ll confirm your production timeline when your order is accepted.
         </p>
-        <Link href="/ads" className="mt-6 inline-flex text-[15px] font-semibold text-[#0866F5]">
+        <Link href="/ads" className="mt-6 inline-flex text-[15px] font-semibold text-brand">
           Back to AI Video Ads
         </Link>
       </div>
@@ -85,14 +85,14 @@ export function BriefForm({
   }
 
   return (
-    <form onSubmit={onSubmit} className="rounded-2xl border border-[#E5E5E1] bg-white p-6 sm:p-8">
-      <h1 className="text-[32px] font-bold tracking-tight text-[#171717]">Tell us about your brand.</h1>
-      <p className="mt-3 text-[15px] leading-relaxed text-[#777773]">
+    <form onSubmit={onSubmit} className="rounded-xl bg-surface p-6 sm:p-8">
+      <h1 className="font-serif font-normal text-[32px] text-foreground">Tell us about your brand.</h1>
+      <p className="mt-3 text-[15px] leading-relaxed text-muted-foreground">
         Payment for {packageName} ({priceLabel}) is confirmed. This brief is how we make the video.
       </p>
       <div className="mt-8 flex flex-col gap-4">
         {FIELDS.map((field) => (
-          <label key={field.name} className="flex flex-col gap-1.5 text-[13px] font-semibold text-[#171717]">
+          <label key={field.name} className="flex flex-col gap-1.5 text-[13px] font-semibold text-foreground">
             {field.label}
             <input
               name={field.name}
@@ -100,39 +100,39 @@ export function BriefForm({
               autoComplete={"autoComplete" in field ? field.autoComplete : undefined}
               required
               defaultValue={field.name === "customerName" ? defaultName : field.name === "email" ? defaultEmail : undefined}
-              className="rounded-xl border border-[#8F8F8A] px-3 py-2.5 text-[15px] font-normal text-[#171717] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0866F5]"
+              className="rounded-xl border border-input px-3 py-2.5 text-[15px] font-normal text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
             />
           </label>
         ))}
-        <label className="flex flex-col gap-1.5 text-[13px] font-semibold text-[#171717]">
+        <label className="flex flex-col gap-1.5 text-[13px] font-semibold text-foreground">
           Creative instructions
           <textarea
             name="creativeInstructions"
             required
             minLength={10}
             rows={5}
-            className="rounded-xl border border-[#8F8F8A] px-3 py-2.5 text-[15px] font-normal text-[#171717] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0866F5]"
+            className="rounded-xl border border-input px-3 py-2.5 text-[15px] font-normal text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
           />
         </label>
-        <label className="flex flex-col gap-1.5 text-[13px] font-semibold text-[#171717]">
+        <label className="flex flex-col gap-1.5 text-[13px] font-semibold text-foreground">
           Link to product assets (optional)
           <input
             name="assetUrl"
             type="url"
-            className="rounded-xl border border-[#8F8F8A] px-3 py-2.5 text-[15px] font-normal text-[#171717] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0866F5]"
+            className="rounded-xl border border-input px-3 py-2.5 text-[15px] font-normal text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
           />
         </label>
         <input name="_honey" tabIndex={-1} autoComplete="off" className="hidden" aria-hidden="true" />
       </div>
       {error ? (
-        <p className="mt-4 text-[14px] text-[#991B1B]" role="alert">
+        <p className="mt-4 text-[14px] text-danger" role="alert">
           {error}
         </p>
       ) : null}
       <button
         type="submit"
         disabled={pending}
-        className="mt-6 inline-flex items-center justify-center rounded-xl bg-[#0866F5] px-6 py-3.5 text-[15px] font-semibold text-white hover:bg-[#0757D4] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0866F5] focus-visible:ring-offset-2 disabled:opacity-70"
+        className="mt-6 inline-flex items-center justify-center rounded-full bg-brand px-6 py-3.5 text-[15px] font-semibold text-white hover:bg-brand-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 disabled:opacity-70"
       >
         {pending ? "Saving…" : "Submit brief"}
       </button>

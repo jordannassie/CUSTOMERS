@@ -76,7 +76,7 @@ export function PortfolioVideo({
     <figure className="mx-auto w-full">
       <div
         ref={frameRef}
-        className="relative aspect-[9/16] overflow-hidden rounded-2xl border border-[#E5E5E1] bg-[#171717] shadow-sm"
+        className="relative aspect-[9/16] overflow-hidden rounded-xl bg-foreground"
       >
         {failed ? (
           <div className="absolute inset-0 flex items-center justify-center p-6 text-center" role="alert">
@@ -104,14 +104,14 @@ export function PortfolioVideo({
               onClick={togglePlay}
             />
             {ready ? null : (
-              <div className="pointer-events-none absolute inset-0 animate-pulse bg-[#2A2A2A]" aria-hidden="true" />
+              <div className="pointer-events-none absolute inset-0 animate-pulse bg-foreground" aria-hidden="true" />
             )}
             <div className={`absolute inset-x-0 bottom-0 flex gap-2 bg-gradient-to-t from-black/70 to-transparent ${compact ? "p-2" : "p-3"}`}>
               <button
                 type="button"
                 onClick={togglePlay}
                 aria-label={playing ? `Pause ${title}` : `Play ${title}`}
-                className={`inline-flex items-center justify-center rounded-xl bg-white text-[#171717] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white ${compact ? "h-9 w-9" : "h-11 w-11"}`}
+                className={`inline-flex items-center justify-center rounded-full bg-surface text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white ${compact ? "h-9 w-9" : "h-11 w-11"}`}
               >
                 {playing ? <Pause size={compact ? 14 : 18} aria-hidden="true" /> : <Play size={compact ? 14 : 18} aria-hidden="true" />}
               </button>
@@ -119,7 +119,7 @@ export function PortfolioVideo({
                 type="button"
                 onClick={toggleMute}
                 aria-label={muted ? `Unmute ${title}` : `Mute ${title}`}
-                className={`inline-flex items-center justify-center rounded-xl bg-white/15 text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white ${compact ? "h-9 w-9" : "h-11 w-11"}`}
+                className={`inline-flex items-center justify-center rounded-full bg-white/15 text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white ${compact ? "h-9 w-9" : "h-11 w-11"}`}
               >
                 {muted ? <VolumeX size={compact ? 14 : 18} aria-hidden="true" /> : <Volume2 size={compact ? 14 : 18} aria-hidden="true" />}
               </button>
@@ -129,8 +129,8 @@ export function PortfolioVideo({
       </div>
       {compact ? null : (
         <figcaption className="mt-4 text-center">
-          <p className="text-[15px] font-semibold text-[#171717]">{title}</p>
-          <p className="mt-1 text-[13px] leading-relaxed text-[#777773]">{note}</p>
+          <p className="text-[15px] font-semibold text-foreground">{title}</p>
+          <p className="mt-1 text-[13px] leading-relaxed text-muted-foreground">{note}</p>
         </figcaption>
       )}
     </figure>

@@ -15,7 +15,7 @@ import { check, INTERESTS, interestFromParam, MESSAGE_PLACEHOLDERS, type Contact
 export type { ContactSource, InterestValue } from "./contact-fields";
 
 const fieldClass = cn(
-  "w-full rounded-lg border border-input bg-surface px-3 py-2 text-base outline-none placeholder:text-text-hint focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 md:text-sm",
+  "w-full rounded-lg border border-input bg-surface px-3 py-2 text-base outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 md:text-sm",
   INVALID_CLASS,
 );
 
@@ -82,7 +82,7 @@ export default function ContactForm({ initialInterest, source = "contact_page", 
     }
   }
 
-  const box = cn("rounded-md border border-border bg-surface", compact ? "p-4 sm:p-5" : "p-6 sm:p-8");
+  const box = cn("rounded-xl bg-surface", compact ? "p-4 sm:p-5" : "p-6 sm:p-8");
 
   if (success) {
     return (
@@ -212,11 +212,11 @@ export default function ContactForm({ initialInterest, source = "contact_page", 
         </p>
       )}
 
-      <Button type="submit" size="lg" disabled={loading}>
+      <Button className="rounded-full" type="submit" size="lg" disabled={loading}>
         {loading ? <Loader2 className="animate-spin" aria-label="Sending" /> : "Send message"}
       </Button>
 
-      <p className="text-center text-[13px] text-text-hint">
+      <p className="text-center text-[13px] text-muted-foreground">
         We only use your details to reply to you.{" "}
         <Link href="/privacy" className="underline underline-offset-4 hover:text-foreground">
           Privacy policy

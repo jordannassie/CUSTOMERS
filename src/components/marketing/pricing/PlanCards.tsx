@@ -44,7 +44,7 @@ function whenToPickTop(plans: PublicPlan[]): string | null {
 export function PlanCards({ plans }: { plans: PublicPlan[] }) {
   if (plans.length === 0) {
     return (
-      <div className="rounded-md border border-border bg-surface p-6 sm:p-8">
+      <div className="rounded-xl bg-surface p-6 sm:p-8">
         <p className="text-lg font-semibold">Prices are being updated</p>
         <p className="mt-2 text-[15px] text-muted-foreground">
           Check back in a few minutes, or <Link href="/contact" className="text-primary underline-offset-4 hover:underline">send us a message</Link> and
@@ -66,9 +66,9 @@ export function PlanCards({ plans }: { plans: PublicPlan[] }) {
               key={plan.id}
               data-plan-id={plan.id}
               aria-labelledby={`plan-${plan.id}`}
-              className="flex flex-col rounded-md border border-border bg-surface p-6 sm:p-8"
+              className="flex flex-col rounded-xl bg-surface p-6 sm:p-8"
             >
-              <h2 id={`plan-${plan.id}`} className="text-xl font-semibold tracking-[-0.02em]">
+              <h2 id={`plan-${plan.id}`} className="font-serif font-normal text-xl">
                 {plan.name}
               </h2>
               <p className="mt-5 flex items-baseline gap-2">
@@ -96,10 +96,10 @@ export function PlanCards({ plans }: { plans: PublicPlan[] }) {
                 </ul>
               </div>
 
-              <Button asChild size="lg" variant={plan === plans[plans.length - 1] ? "default" : "outline"} className="mt-8 w-full">
+              <Button asChild size="lg" variant={plan === plans[plans.length - 1] ? "default" : "outline"} className="rounded-full mt-8 w-full">
                 <Link href={`/signup?plan=${encodeURIComponent(plan.id)}`}>Choose {plan.name}</Link>
               </Button>
-              <p className="mt-3 text-center text-[13px] text-text-hint">7-day free trial, card needed to start</p>
+              <p className="mt-3 text-center text-[13px] text-muted-foreground">7-day free trial, card needed to start</p>
             </article>
           );
         })}

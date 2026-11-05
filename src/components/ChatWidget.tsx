@@ -174,7 +174,7 @@ export default function ChatWidget() {
                     <button
                       key={choice.value}
                       onClick={() => handleChoice(choice.value)}
-                      className="flex w-full items-center gap-3 rounded-md border border-border bg-surface px-4 py-3 text-left text-sm font-medium text-foreground transition-colors duration-150 ease-out hover:border-primary/40 hover:bg-primary-tint focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+                      className="flex w-full items-center gap-3 rounded-xl bg-surface px-4 py-3 text-left text-sm font-medium text-foreground transition-colors duration-150 ease-out hover:border-primary/40 hover:bg-primary-tint focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
                     >
                       <span className="shrink-0 text-muted-foreground">{choice.icon}</span>
                       {choice.label}

@@ -27,7 +27,7 @@ export default async function AgencyPage() {
         <section className="bg-background">
           <div className="mx-auto grid max-w-[1120px] gap-12 px-4 pt-12 pb-16 sm:px-6 sm:pt-20 sm:pb-22 lg:grid-cols-[1.25fr_1fr] lg:items-center lg:gap-16">
             <div className="flex min-w-0 flex-col gap-6">
-              <h1 className="text-[32px] leading-[1.08] font-semibold tracking-[-0.035em] text-balance sm:text-5xl lg:text-6xl">
+              <h1 className="font-serif font-normal text-[32px] leading-[1.08] text-balance sm:text-5xl lg:text-6xl">
                 Show every client whether AI recommends them
               </h1>
               <p className="max-w-[52ch] text-lg text-muted-foreground text-pretty">
@@ -35,14 +35,14 @@ export default async function AgencyPage() {
                 them, work through the fixes, and send reports with your logo.
               </p>
               <div className="flex flex-col gap-3 sm:flex-row">
-                <Button asChild size="lg">
+                <Button className="rounded-full" asChild size="lg">
                   <Link href="/signup">Start free trial</Link>
                 </Button>
-                <Button asChild size="lg" variant="outline">
+                <Button className="rounded-full" asChild size="lg" variant="outline">
                   <Link href="/contact?interest=agency">Talk to us</Link>
                 </Button>
               </div>
-              <p className="text-[13px] text-text-hint">7-day free trial with up to 2 clients. Card needed to start.</p>
+              <p className="text-[13px] text-muted-foreground">7-day free trial with up to 2 clients. Card needed to start.</p>
             </div>
             <ClientListExample />
           </div>

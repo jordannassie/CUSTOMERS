@@ -28,7 +28,7 @@ export default function StartAiBusinessPage() {
   const hasVideo = launchKitIntroVideoExists();
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-background">
       <Header />
       <main>
         <LaunchKitHero hasVideo={hasVideo} />

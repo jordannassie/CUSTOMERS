@@ -41,7 +41,7 @@ export function ScoreRing({ score, you }: { score: number; you: boolean }) {
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
         <span className="text-[32px] leading-none font-semibold tabular-nums">{shown}</span>
-        <span className="text-xs text-text-hint">of 100</span>
+        <span className="text-xs text-muted-foreground">of 100</span>
       </div>
     </div>
   );

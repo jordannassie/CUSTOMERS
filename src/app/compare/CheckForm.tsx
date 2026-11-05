@@ -35,7 +35,7 @@ export function CheckForm({ initialMine, initialTheirs, loading, onSubmit, serve
       onSubmit={handleSubmit}
       noValidate
       aria-label="AI readiness check"
-      className="flex flex-col gap-4 rounded-md border border-border bg-surface p-4 sm:p-5"
+      className="flex flex-col gap-4 rounded-xl bg-surface p-4 sm:p-5"
     >
       <div className="grid gap-3 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
         <div className="flex flex-col gap-1.5">
@@ -69,7 +69,7 @@ export function CheckForm({ initialMine, initialTheirs, loading, onSubmit, serve
             className="h-11"
           />
         </div>
-        <Button type="submit" size="lg" className="h-11 px-5" disabled={loading || !onSubmit}>
+        <Button type="submit" size="lg" className="rounded-full h-11 px-5" disabled={loading || !onSubmit}>
           {loading && <Loader2 className="animate-spin" aria-hidden="true" />}
           {loading ? "Checking" : "Check both sites"}
         </Button>

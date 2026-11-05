@@ -31,14 +31,14 @@ function SiteScore({ site, you }: { site: SiteResult; you: boolean }) {
       {site.reached ? (
         <ScoreRing score={site.score} you={you} />
       ) : (
-        <div className="flex size-28 shrink-0 items-center justify-center rounded-full border-7 border-muted text-center text-[13px] text-text-hint">
+        <div className="flex size-28 shrink-0 items-center justify-center rounded-full border-7 border-muted text-center text-[13px] text-muted-foreground">
           {site.blocked ? "Blocked us" : "Not reached"}
         </div>
       )}
       <div className="flex min-w-0 flex-col gap-2">
         <p className="text-[13px] text-muted-foreground">{you ? "Your website" : "Competitor"}</p>
         <p className="truncate text-lg font-semibold" title={site.domain}>{site.domain}</p>
-        {site.reached && <span className={cn("w-fit rounded-sm px-2 py-0.5 text-[13px] font-medium", b.className)}>{b.label}</span>}
+        {site.reached && <span className={cn("w-fit rounded-full px-2 py-0.5 text-[13px] font-medium", b.className)}>{b.label}</span>}
         {site.blocked && (
           <p className="text-[13px] text-muted-foreground" data-testid="blocked-note">
             {you
@@ -55,9 +55,9 @@ export function ResultView({ result }: { result: ReadinessCheckResult }) {
   const anyReached = result.mine.reached || result.them.reached;
   return (
     <div className="flex flex-col gap-8">
-      <section aria-labelledby="result-heading" className="rounded-md border border-border bg-surface">
+      <section aria-labelledby="result-heading" className="rounded-xl bg-surface">
         <div className="flex flex-col gap-1 border-b border-border p-5 sm:p-6">
-          <h2 id="result-heading" className="text-2xl leading-tight font-semibold tracking-[-0.02em] text-balance">
+          <h2 id="result-heading" className="font-serif font-normal text-2xl leading-tight text-balance">
             {headline(result)}
           </h2>
           <p className="text-[14px] text-muted-foreground">
@@ -86,7 +86,7 @@ export function ResultView({ result }: { result: ReadinessCheckResult }) {
 export function ResultSkeleton() {
   return (
     <div className="flex flex-col gap-8" aria-label="Checking both websites">
-      <div className="rounded-md border border-border bg-surface">
+      <div className="rounded-xl bg-surface">
         <div className="flex flex-col gap-2 border-b border-border p-5 sm:p-6">
           <Skeleton className="h-7 w-3/4" />
           <Skeleton className="h-4 w-1/2" />

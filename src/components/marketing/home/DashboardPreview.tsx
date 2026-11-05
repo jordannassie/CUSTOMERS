@@ -47,7 +47,7 @@ export function DashboardPreview({ variant = "full" }: { variant?: "hero" | "ful
             <p className={cn("leading-snug font-semibold tracking-[-0.02em] text-balance", hero ? "text-base" : "text-lg")}>
               AI recommended you in about 6 of 10 customer questions this month.
             </p>
-            <span className="inline-flex w-fit items-center gap-1 rounded-sm bg-good-bg px-2 py-0.5 text-xs font-medium text-good-text">
+            <span className="inline-flex w-fit items-center gap-1 rounded-full bg-good-bg px-2 py-0.5 text-xs font-medium text-good-text">
               <ChangeMark up />
               Up 4 points on last week
             </span>
@@ -83,7 +83,7 @@ export function DashboardPreview({ variant = "full" }: { variant?: "hero" | "ful
                 <span className="flex min-w-0 flex-col gap-1">
                   <span className={cn("truncate font-medium", p.you && "text-primary-hover")}>
                     {p.name}
-                    {p.you && <span className="ml-1.5 rounded-sm bg-primary-tint px-1.5 py-px text-[10.5px] text-primary-hover">You</span>}
+                    {p.you && <span className="ml-1.5 rounded-full bg-primary-tint px-1.5 py-px text-[10.5px] text-primary-hover">You</span>}
                   </span>
                   <span className="h-1 overflow-hidden rounded-xs bg-muted" aria-hidden="true">
                     <span className={cn("block h-full rounded-xs", p.color)} style={{ width: `${p.score}%` }} />

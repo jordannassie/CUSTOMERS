@@ -11,13 +11,13 @@ const LEVEL_STYLE: Record<Finding["level"], string> = {
 export function FindingsList({ findings }: { findings: Finding[] }) {
   return (
     <section aria-labelledby="fix-heading" className="flex flex-col gap-4">
-      <h2 id="fix-heading" className="text-xl font-semibold tracking-[-0.02em]">
+      <h2 id="fix-heading" className="font-serif font-normal text-xl">
         What to fix first on your site
       </h2>
-      <ol className="flex flex-col divide-y divide-border rounded-md border border-border bg-surface">
+      <ol className="flex flex-col divide-y divide-border rounded-xl bg-surface">
         {findings.map((f) => (
           <li key={f.title} className="flex flex-col gap-2 p-4 sm:flex-row sm:gap-4 sm:p-5">
-            <span className={cn("h-fit w-fit shrink-0 rounded-sm px-2 py-0.5 text-[13px] font-medium sm:w-28 sm:text-center", LEVEL_STYLE[f.level])}>
+            <span className={cn("h-fit w-fit shrink-0 rounded-full px-2 py-0.5 text-[13px] font-medium sm:w-28 sm:text-center", LEVEL_STYLE[f.level])}>
               {f.level}
             </span>
             <div className="flex flex-col gap-1">
@@ -35,7 +35,7 @@ function Mark({ on, site }: { on: boolean; site: string }) {
   return on ? (
     <Check className="mx-auto size-4 text-primary" aria-label={`${site}: found`} />
   ) : (
-    <Minus className="mx-auto size-4 text-text-hint" aria-label={`${site}: not found`} />
+    <Minus className="mx-auto size-4 text-muted-foreground" aria-label={`${site}: not found`} />
   );
 }
 
@@ -43,10 +43,10 @@ export function ChecksTable({ result }: { result: ReadinessCheckResult }) {
   const { mine, them } = result;
   return (
     <section aria-labelledby="checks-heading" className="flex flex-col gap-4">
-      <h2 id="checks-heading" className="text-xl font-semibold tracking-[-0.02em]">
+      <h2 id="checks-heading" className="font-serif font-normal text-xl">
         What we checked
       </h2>
-      <div className="overflow-hidden rounded-md border border-border bg-surface">
+      <div className="overflow-hidden rounded-xl bg-surface">
         <table className="w-full table-fixed text-left">
           <thead className="bg-muted text-[13px] text-muted-foreground">
             <tr>
@@ -75,7 +75,7 @@ export function ChecksTable({ result }: { result: ReadinessCheckResult }) {
           </tbody>
         </table>
       </div>
-      <p className="text-[13px] text-text-hint">
+      <p className="text-[13px] text-muted-foreground">
         We read each home page once. Pages that load their content with scripts may show fewer items than a visitor sees.
       </p>
     </section>

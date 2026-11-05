@@ -39,32 +39,32 @@ export function FixStepsExample() {
                 <span className="rounded-sm border border-border bg-surface px-1.5 text-[11px] font-medium text-muted-foreground">{items.length}</span>
               </p>
               {items.map((f) => (
-                <div key={f.id} className="flex flex-col gap-2 rounded-lg border border-border bg-surface p-3">
+                <div key={f.id} className="flex flex-col gap-2 rounded-xl bg-surface p-3">
                   <div className="flex items-center justify-between gap-2 text-xs">
                     <span className="truncate font-medium text-primary-hover">{f.where}</span>
-                    <span className={cn("rounded-sm px-1.5 py-px font-medium", f.impact === "High" ? "bg-low-bg text-low-text" : "bg-mid-bg text-mid-text")}>{f.impact}</span>
+                    <span className={cn("rounded-full px-1.5 py-px font-medium", f.impact === "High" ? "bg-low-bg text-low-text" : "bg-mid-bg text-mid-text")}>{f.impact}</span>
                   </div>
                   <p className="text-[13.5px] leading-snug font-semibold">{f.title}</p>
                   <p className="line-clamp-2 text-[12.5px] text-muted-foreground">{f.detail}</p>
                   <div className="flex items-center justify-between gap-2">
-                    <span className="inline-flex items-center gap-1 text-[11.5px] text-text-hint">
+                    <span className="inline-flex items-center gap-1 text-[11.5px] text-muted-foreground">
                       <CalendarDays className="size-3" aria-hidden="true" />
                       Oct 2
                     </span>
                     {f.status === "suggested" && (
-                      <Button size="xs" onClick={() => move(f.id, "doing")}>
+                      <Button className="rounded-full" size="xs" onClick={() => move(f.id, "doing")}>
                         Accept
                       </Button>
                     )}
                     {f.status === "doing" && (
-                      <Button size="xs" variant="outline" onClick={() => move(f.id, "done")}>
+                      <Button className="rounded-full" size="xs" variant="outline" onClick={() => move(f.id, "done")}>
                         Mark done
                       </Button>
                     )}
                   </div>
                 </div>
               ))}
-              {items.length === 0 && <p className="rounded-lg border border-dashed border-border bg-surface px-3 py-5 text-center text-xs text-text-hint">Nothing here yet.</p>}
+              {items.length === 0 && <p className="rounded-xl border border-dashed border-border bg-surface px-3 py-5 text-center text-xs text-muted-foreground">Nothing here yet.</p>}
             </div>
           );
         })}

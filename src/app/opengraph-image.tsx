@@ -4,16 +4,16 @@ export const alt = "Customers.Direct: see if ChatGPT, Claude and Perplexity reco
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
-// ImageResponse cannot read CSS variables, so these copy the DESIGN.md token values.
+// ImageResponse cannot read CSS variables, so these copy the Check-in token values from globals.css.
 const TOKENS = {
-  background: "#FAFAF8",
-  text: "#171717",
-  secondary: "#6B6B67",
+  background: "#EEF2F8",
+  text: "#141B2D",
+  secondary: "#545E70",
   primary: "#2563EB",
-  border: "#E5E5E1",
-  chatgpt: "#10A37F",
-  claude: "#D97757",
-  perplexity: "#20808D",
+  border: "#DCE3EE",
+  chatgpt: "#98A2B3",
+  claude: "#2563EB",
+  perplexity: "#D98C3F",
 };
 
 const MODELS = [

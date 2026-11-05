@@ -14,7 +14,7 @@ type Props = { searchParams: Promise<{ token?: string | string[]; done?: string 
 export default function UnsubscribePage({ searchParams }: Props) {
   return (
     <main className="flex min-h-screen items-center justify-center bg-background px-4 py-16">
-      <div className="w-full max-w-md rounded-lg border border-border bg-card p-8 text-center">
+      <div className="w-full max-w-md rounded-xl bg-card p-8 text-center">
         <Suspense fallback={<UnsubscribeSkeleton />}>
           <UnsubscribeContent searchParams={searchParams} />
         </Suspense>
@@ -41,11 +41,11 @@ async function UnsubscribeContent({ searchParams }: Props) {
     return (
       <>
         <MailX className="mx-auto size-10 text-muted-foreground" aria-hidden="true" />
-        <h1 className="mt-4 text-xl font-semibold text-foreground">This link is not valid</h1>
+        <h1 className="font-serif font-normal mt-4 text-xl text-foreground">This link is not valid</h1>
         <p className="mt-2 text-sm text-muted-foreground">
           Open the link from your latest email again, or turn emails off in your settings.
         </p>
-        <Button asChild className="mt-6">
+        <Button asChild className="rounded-full mt-6">
           <Link href="/settings">Go to settings</Link>
         </Button>
       </>
@@ -56,11 +56,11 @@ async function UnsubscribeContent({ searchParams }: Props) {
     return (
       <>
         <CircleCheck className="mx-auto size-10 text-good" aria-hidden="true" />
-        <h1 className="mt-4 text-xl font-semibold text-foreground">You are unsubscribed</h1>
+        <h1 className="font-serif font-normal mt-4 text-xl text-foreground">You are unsubscribed</h1>
         <p className="mt-2 text-sm text-muted-foreground">
           You will not get the weekly report email any more. You can turn it back on in your settings.
         </p>
-        <Button asChild variant="outline" className="mt-6">
+        <Button asChild variant="outline" className="rounded-full mt-6">
           <Link href="/settings">Go to settings</Link>
         </Button>
       </>
@@ -70,13 +70,13 @@ async function UnsubscribeContent({ searchParams }: Props) {
   return (
     <>
       <MailX className="mx-auto size-10 text-primary" aria-hidden="true" />
-      <h1 className="mt-4 text-xl font-semibold text-foreground">Stop weekly report emails?</h1>
+      <h1 className="font-serif font-normal mt-4 text-xl text-foreground">Stop weekly report emails?</h1>
       <p className="mt-2 text-sm text-muted-foreground">
         You will still get emails about your account, like billing and trial reminders.
       </p>
       <form action="/api/email/unsubscribe" method="post" className="mt-6">
         <input type="hidden" name="token" value={String(token)} />
-        <Button type="submit">Unsubscribe</Button>
+        <Button className="rounded-full" type="submit">Unsubscribe</Button>
       </form>
     </>
   );

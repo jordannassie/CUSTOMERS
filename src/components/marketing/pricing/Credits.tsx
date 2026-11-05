@@ -30,7 +30,7 @@ export function Credits({ plans, packs }: { plans: PublicPlan[]; packs: PublicPa
           </p>
         </div>
 
-        <figure className="self-start rounded-md border border-border bg-surface">
+        <figure className="self-start rounded-xl bg-surface">
           <figcaption className="border-b border-border px-5 py-4">
             <p className="text-sm font-semibold">What a business uses in a month</p>
             <p className="mt-1 text-[13px] text-muted-foreground">
@@ -59,7 +59,7 @@ export function Credits({ plans, packs }: { plans: PublicPlan[]; packs: PublicPa
       {packs.length > 0 && (
         <div id="top-ups" className="mt-16 grid gap-8 border-t border-border pt-12 md:grid-cols-2 md:gap-16">
           <div className="flex flex-col gap-3">
-            <h3 className="text-2xl leading-tight font-semibold tracking-[-0.02em]">Need more? Buy a top-up</h3>
+            <h3 className="font-serif font-normal text-2xl leading-tight">Need more? Buy a top-up</h3>
             <p className="text-[15px] text-muted-foreground">
               Top-up credits never expire and are used after your plan credits. You can spend them while you have a
               plan or trial. Unused top-ups can be refunded within 14 days.
@@ -67,14 +67,14 @@ export function Credits({ plans, packs }: { plans: PublicPlan[]; packs: PublicPa
           </div>
           <ul className="grid gap-4 sm:grid-cols-2">
             {packs.map((pack) => (
-              <li key={pack.id} data-pack-id={pack.id} className="rounded-md border border-border bg-surface p-5">
+              <li key={pack.id} data-pack-id={pack.id} className="rounded-xl bg-surface p-5">
                 <p className="text-[15px] font-medium">
                   <span data-testid="pack-credits" className="tabular">{formatCount(pack.credits)}</span> credits
                 </p>
                 <p data-testid="pack-price" className="tabular mt-2 text-[32px] leading-10 font-semibold tracking-[-0.03em]">
                   {formatUsd(pack.priceCents)}
                 </p>
-                <p className="mt-1 text-[13px] text-text-hint">One-time payment</p>
+                <p className="mt-1 text-[13px] text-muted-foreground">One-time payment</p>
               </li>
             ))}
           </ul>

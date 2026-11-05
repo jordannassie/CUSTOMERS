@@ -51,16 +51,16 @@ const LEGAL = [
 
 // Phones get 44px tall tap areas (UI-003); the list gap shrinks to keep the rhythm.
 const linkClass =
-  "inline-flex min-h-11 items-center rounded-sm text-sm sm:inline sm:min-h-0 text-muted-foreground transition-colors hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none";
+  "inline-flex min-h-11 items-center rounded-sm text-sm sm:inline sm:min-h-0 text-muted-foreground transition-colors hover:text-foreground";
 
 /** Set showGoogleAttribution on any page that shows Google Places data (MVP_SPEC 26). */
 export default function Footer({ showGoogleAttribution = false }: { showGoogleAttribution?: boolean }) {
   return (
-    <footer className="border-t border-border bg-surface">
+    <footer className="bg-surface">
       <div className="mx-auto max-w-[1120px] px-4 py-12 sm:px-6 sm:py-16">
         <div className="grid gap-10 md:grid-cols-[1.4fr_repeat(4,1fr)]">
           <div className="flex flex-col gap-4">
-            <Logo className="h-8 w-auto" />
+            <Logo />
             <p className="max-w-xs text-sm text-muted-foreground">
               See if AI assistants recommend your business, why competitors win, and what to fix.
             </p>
@@ -95,7 +95,7 @@ export default function Footer({ showGoogleAttribution = false }: { showGoogleAt
           </div>
         </div>
 
-        <div className="mt-12 flex flex-col gap-3 border-t border-border pt-6 text-[13px] text-text-hint">
+        <div className="mt-12 flex flex-col gap-3 border-t border-divider pt-6 text-[13px] text-muted-foreground">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <p>© {YEAR} Customers.Direct</p>
             <ul className="flex gap-5">

@@ -18,7 +18,7 @@ export function RevenueExample() {
           </Lead>
         </div>
 
-        <figure className="rounded-md border border-border bg-surface">
+        <figure className="rounded-xl bg-surface">
           <figcaption className="flex items-center justify-between gap-4 border-b border-border px-5 py-4">
             <span className="text-sm font-semibold">
               If you charge {formatUsd(EXAMPLE_RETAINER_CENTS)} a month per client

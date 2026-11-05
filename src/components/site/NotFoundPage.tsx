@@ -13,10 +13,10 @@ export function NotFoundPage({ embedded = false }: { embedded?: boolean }) {
       embedded={embedded}
       actions={
         <>
-          <Button asChild size="lg">
+          <Button className="rounded-full" asChild size="lg">
             <Link href="/">Go to the homepage</Link>
           </Button>
-          <Button asChild size="lg" variant="outline">
+          <Button className="rounded-full" asChild size="lg" variant="outline">
             <Link href="/dashboard">Open your dashboard</Link>
           </Button>
         </>

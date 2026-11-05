@@ -12,7 +12,7 @@ const MODELS: { name: ModelName; score: number }[] = [
 
 export function VisibilityExample() {
   return (
-    <div className="flex flex-col rounded-md border border-border bg-surface">
+    <div className="flex flex-col rounded-xl bg-surface">
       <div className="flex items-center justify-between gap-4 border-b border-border px-4 py-3 sm:px-5">
         <p className="text-sm font-semibold">Bean House, Orange, CA</p>
         <ExampleTag />

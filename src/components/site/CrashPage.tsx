@@ -19,10 +19,10 @@ export function CrashPage({ error, retry }: { error: Error & { digest?: string }
       detail={error.digest ? { label: "Reference for support", value: error.digest } : undefined}
       actions={
         <>
-          <Button size="lg" onClick={() => retry()}>
+          <Button className="rounded-full" size="lg" onClick={() => retry()}>
             Try again
           </Button>
-          <Button asChild size="lg" variant="outline">
+          <Button className="rounded-full" asChild size="lg" variant="outline">
             <Link href="/contact">Contact us</Link>
           </Button>
         </>

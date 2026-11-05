@@ -1,22 +1,16 @@
-import Image from "next/image";
 import Link from "next/link";
+import { cn } from "cn";
 
-// `preload` replaces the `priority` prop, deprecated in Next.js 16.
-export function Logo({ className, preload = false }: { className?: string; preload?: boolean }) {
+// Check-in: the wordmark in Young Serif, the same as the app's sidebar. `preload` stays so callers need no change
+// (the old logo image used it); a text wordmark has nothing to preload.
+export function Logo({ className }: { className?: string; preload?: boolean }) {
   return (
     <Link
       href="/"
       aria-label="Customers.Direct home"
-      className="inline-flex shrink-0 rounded-md focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
+      className={cn("inline-flex shrink-0 rounded-md font-serif text-xl leading-none whitespace-nowrap text-foreground", className)}
     >
-      <Image
-        src="/images/logos/logo-black.png"
-        alt="Customers.Direct"
-        width={2172}
-        height={724}
-        preload={preload}
-        className={className ?? "h-9 w-auto"}
-      />
+      Customers.Direct
     </Link>
   );
 }

@@ -71,7 +71,7 @@ async function AdsPageContent({
   return (
     <>
       <Header />
-      <main className="bg-[#FAFAF8] text-[#171717]">
+      <main className="bg-background text-foreground">
         <AdsHero checkoutReady={checkoutReady} canceled={params.checkout === "canceled"} />
         <AdsPortfolio />
         <AdsPricing checkoutReady={checkoutReady} />
