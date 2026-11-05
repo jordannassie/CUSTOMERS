@@ -14,63 +14,64 @@ Presentation only: no business logic, queries, routes, Stripe, auth or scoring c
 
 ## Order of work
 
-1. [ ] Tokens: re-map `--cd-*` and shadcn variables in `globals.css` to the Check-in palette, radius scale, motion keyframes, focus ring
-2. [ ] Fonts: Figtree (400 to 700) and Young Serif (400) with `next/font/google` as `--font-figtree` and `--font-young-serif`
-3. [ ] Shared UI primitives restyled (list below)
-4. [ ] App shell: 220px left nav, serif wordmark, workspace switcher, white-pill active link, ground background, top bar
-5. [ ] Chart components in `src/components/charts/` (list below)
-6. [ ] Check-in building blocks in `src/components/checkin/` (user bubble, AI message card, follow-up chips, composer, right rail cards, status pill)
-7. [ ] Overview, Competitors, Compare, Sources rebuilt as conversations from the data they already load
-8. [ ] Questions, Actions, Reports, Billing, Settings, onboarding restyled
-9. [ ] Marketing site, auth pages, admin panel restyled
-10. [ ] Hard-coded colour sweep, then typecheck, lint, build, and a click-through at 1440px and 390px
+1. [x] Tokens: re-map `--cd-*` and shadcn variables in `globals.css` to the Check-in palette, radius scale, motion keyframes, focus ring
+2. [x] Fonts: Figtree (400 to 700) and Young Serif (400) with `next/font/google` as `--font-figtree` and `--font-young-serif`
+3. [x] Shared UI primitives restyled (list below)
+4. [x] App shell: 220px left nav, serif wordmark, workspace switcher, white-pill active link, ground background, top bar
+5. [x] Chart components in `src/components/charts/` (list below)
+6. [x] Check-in building blocks in `src/components/checkin/` (user bubble, AI message card, follow-up chips, composer, right rail cards, status pill)
+7. [x] Overview, Competitors, Compare, Sources rebuilt as conversations from the data they already load
+8. [x] Questions, Actions, Reports, Billing, Settings, onboarding restyled
+9. [x] Marketing site, auth pages, admin panel restyled
+10. [x] Hard-coded colour sweep, then typecheck, lint, build, and a click-through at 1440px and 390px
 
 ## Routes and screens
 
 ### Marketing site
-- [ ] `/` home (`src/app/(marketing)/page.tsx`, `components/marketing/home/*`, newsletter section `components/site/NewsletterSignup.tsx`)
-- [ ] `/pricing` (`components/marketing/pricing/*`)
-- [ ] `/agency`
-- [ ] `/apps`, `/apps/[slug]`, `/apps/[slug]/review` (AI apps directory, `components/site/apps/*`)
-- [ ] `/compare` (public readiness check)
-- [ ] `/ads`, `/ads/brief` (video ads, `components/site/video-ads/*`)
-- [ ] `/start-ai-business` (launch kit, `components/site/launch-kit/*`)
-- [ ] `/contact`, `/privacy`, `/terms`, `/email/unsubscribe`
-- [ ] `/account-deleted`, `/account-paused`
-- [ ] Header, footer, mobile menu, logo (`components/marketing/*`)
+- [x] `/` home (`src/app/(marketing)/page.tsx`, `components/marketing/home/*`, newsletter section `components/site/NewsletterSignup.tsx`)
+- [x] `/pricing` (`components/marketing/pricing/*`)
+- [x] `/agency`
+- [x] `/apps`, `/apps/[slug]`, `/apps/[slug]/review` (AI apps directory, `components/site/apps/*`; detail page not seen, no local directory rows)
+- [x] `/compare` (public readiness check)
+- [x] `/ads`, `/ads/brief` (video ads, `components/site/video-ads/*`)
+- [x] `/start-ai-business` (launch kit, `components/site/launch-kit/*`)
+- [x] `/contact`, `/privacy`, `/terms`, `/email/unsubscribe`
+- [x] `/account-deleted`, `/account-paused`
+- [x] Header, footer, mobile menu, logo (`components/marketing/*`)
 
 ### Auth
-- [ ] `/login`, `/signup`, `/forgot-password`, `/reset-password` (`components/geo/*`)
+- [x] `/login`, `/signup`, `/forgot-password`, `/reset-password` (`components/geo/*`)
 
 ### Onboarding (`src/app/(app)/onboarding/*`, `components/onboarding/*`)
-- [ ] start, agency, details, website, competitors, questions, models, card, first-scan
+- [x] start, agency, details, website, competitors, questions, models, card, first-scan (styled; not opened in the browser, see THEME_NOTES.md)
 
 ### Dashboard (`src/app/(app)`)
-- [ ] Overview `/dashboard` (C-Overview)
-- [ ] Competitors `/competitors` (C-Competitors), `/competitors/manage`
-- [ ] Compare `/competitors/compare` (C-Compare)
-- [ ] Sources `/sources` (C-Sources)
-- [ ] Questions `/questions`
-- [ ] Actions `/actions`
-- [ ] Reports `/reports`
-- [ ] Billing `/settings/billing`, `/settings/billing/plans`, `/settings/billing/plans/new-business`, `/settings/credits`, `/settings/usage`
-- [ ] Settings `/settings`
+- [x] Overview `/dashboard` (C-Overview)
+- [x] Competitors `/competitors` (C-Competitors), `/competitors/manage`
+- [x] Compare `/competitors/compare` (C-Compare)
+- [x] Sources `/sources` (C-Sources)
+- [x] Questions `/questions`
+- [x] Actions `/actions`
+- [x] Reports `/reports`
+- [x] Billing `/settings/billing`, `/settings/billing/plans`, `/settings/billing/plans/new-business`, `/settings/credits`, `/settings/usage`
+- [x] Settings `/settings`
 
 ### Admin panel (`src/app/internal/admin`)
-- [ ] overview, agencies, agencies/[id], businesses, businesses/[id], scans, usage, leads, feature-requests, news, reviews, apps, video-ads, settings, not-found
+- [x] overview, agencies, agencies/[id], businesses, businesses/[id], scans, usage, leads, feature-requests, news, reviews, apps, video-ads, settings, not-found
 
 ### States
-- [ ] `error.tsx` (root, app, admin, each dashboard page), `global-error.tsx`, `not-found.tsx` (root, admin)
-- [ ] `loading.tsx` skeletons (`components/app/PageSkeletons.tsx`, `AppShellSkeleton.tsx`, admin skeletons)
-- [ ] Empty states (per page), app banners (`components/app/AppBanners.tsx`), toasts (`ui/sonner.tsx`)
-- [ ] Dialogs: overdraft, recent scan, suggest feature, delete, add action, confirm (admin)
-- [ ] Emails (`src/modules/email/templates`): sent, not rendered in the app; colour constants only
+- [x] `error.tsx` (root, app, admin, each dashboard page), `global-error.tsx`, `not-found.tsx` (root, admin)
+- [x] `loading.tsx` skeletons (`components/app/PageSkeletons.tsx`, `AppShellSkeleton.tsx`, admin skeletons)
+- [x] Empty states (per page), app banners (`components/app/AppBanners.tsx`), toasts (`ui/sonner.tsx`)
+- [x] Dialogs: overdraft, recent scan, suggest feature, delete, add action, confirm (admin)
+- [x] Emails (`src/modules/email/templates`): sent, not rendered in the app; colour constants and corners only
 
 ## Shared components
-- [ ] ui: button, input, textarea, select, label, field, badge, card, tabs, segmented-control, table, dialog, sheet, dropdown-menu, tooltip, sonner, skeleton, progress, switch, separator
-- [ ] app: AppShell, AppSidebar, TopBar, BusinessSwitcher, UsageWidget, PageHeader, PageContainer, AppBanners, KpiTile, SampleDataBadge, PageSkeletons
-- [ ] page cards: competitors/SectionCard, sources/SectionCard, overview/Panel, settings/SettingsSection, admin page-header, stat, badges, filter-tabs
+- [x] ui: button, input, textarea, select, label, field, badge, card, tabs, segmented-control, table, dialog, sheet, dropdown-menu, tooltip, sonner, skeleton, progress, switch, separator
+- [x] app: AppShell, AppSidebar, TopBar, BusinessSwitcher, UsageWidget, PageHeader, PageContainer, AppBanners, KpiTile, SampleDataBadge, PageSkeletons
+- [x] page cards: competitors/SectionCard, sources/SectionCard, overview/Panel, settings/SettingsSection, admin page-header, stat, badges, filter-tabs
 
 ## Chart components (`src/components/charts/`)
-- [ ] LineAreaChart, RadialBars, ScoreGauge, BubbleChart, SlopeChart, GapChart, LollipopRows, RadarChart, StackedShareBar, RankedBars, Donut, Sparkline, ProgressRing
-- [ ] Each: typed props, token colours, `role="img"` with a written summary, legend or direct labels, own scroll container when wide, motion off under reduced motion
+- [x] LineAreaChart, RadialBars, ScoreGauge, BubbleChart, SlopeChart, GapChart, LollipopRows, RadarChart, StackedShareBar, RankedBars, Donut, Sparkline, ProgressRing
+- [x] DotMatrix added (Competitors needs it); Legend and ChartTooltipCard shared
+- [x] Each: typed props, token colours, `role="img"` with a written summary, legend or direct labels, own scroll container when wide, motion off under reduced motion
