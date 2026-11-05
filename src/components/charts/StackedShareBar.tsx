@@ -40,7 +40,8 @@ export function StackedShareBar({ segments, legend, ariaLabel, caption, classNam
               className={cn("flex min-w-0 items-center overflow-hidden px-2 text-xs font-semibold whitespace-nowrap", s.dark ? "text-foreground" : "text-white")}
               style={{ flex: `${s.value} 1 0`, background: s.color }}
             >
-              {s.value / total >= 0.09 ? s.label : ""}
+              {/* Names only where they fit: a wide enough share, and not on a phone (the legend and table name them). */}
+              <span className="hidden truncate sm:inline">{s.value / total >= 0.09 ? s.label : ""}</span>
             </span>
           ))}
       </div>

@@ -13,6 +13,8 @@ export type LineSeries = {
   color: string;
   /** The current business: a thicker line, the gradient area, its name in bold. */
   emphasis?: boolean;
+  /** A reference line (the 30-day score): thinner, dashed, no end label, not drawn in. */
+  dashed?: boolean;
 };
 
 type Props = {
@@ -56,7 +58,7 @@ export function LineAreaChart({ labels, series, ariaLabel, yMax, format = (n) =>
     const last = [...s.values.keys()].reverse().find((i) => s.values[i] !== null);
     return last === undefined ? null : { i: last, v: s.values[last] as number };
   });
-  const endYs = spreadLabels(ends.map((e) => (e ? y(e.v) : BOTTOM)), 15, TOP, BOTTOM);
+  const endYs = spreadLabels(ends.map((e, k) => (e && !ordered[k].dashed ? y(e.v) : BOTTOM + 40)), 15, TOP, BOTTOM + 40);
   const you = ordered.find((s) => s.emphasis);
   const youRuns = you ? knownRuns(you.values).filter((r) => r.length > 1) : [];
 
@@ -113,18 +115,18 @@ export function LineAreaChart({ labels, series, ariaLabel, yMax, format = (n) =>
                       d={smoothPath(run.map(([i, v]) => [x(i), y(v)] as const))}
                       fill="none"
                       stroke={s.color}
-                      strokeWidth={s.emphasis ? 4 : 2.5}
+                      strokeWidth={s.dashed ? 2 : s.emphasis ? 4 : 2.5}
                       strokeLinecap="round"
-                      pathLength={1}
-                      strokeDasharray={1}
-                      className="animate-draw"
+                      pathLength={s.dashed ? undefined : 1}
+                      strokeDasharray={s.dashed ? "5 5" : 1}
+                      className={s.dashed ? "animate-fade" : "animate-draw"}
                       style={{ animationDelay: `${0.3 + k * 0.1}s` }}
                     />
                   ) : (
                     <circle key={r} cx={x(run[0][0])} cy={y(run[0][1])} r="5" fill={s.color} stroke={CHART.surface} strokeWidth="2" />
                   ),
                 )}
-                {ends[k] && (
+                {ends[k] && !s.dashed && (
                   <>
                     <circle cx={x(ends[k]!.i)} cy={y(ends[k]!.v)} r="5" fill={s.color} stroke={CHART.surface} strokeWidth="2" />
                     <text x={RIGHT + 12} y={endYs[k] + 4} fill={CHART.ink} fontSize="13" fontWeight={s.emphasis ? 700 : 600}>

@@ -1,5 +1,6 @@
 "use client";
 
+import { useId } from "react";
 import { Cell, Pie, PieChart } from "recharts";
 import { cn } from "cn";
 import { CHART } from "./chart-kit";
@@ -19,10 +20,12 @@ type Props = {
 // Check-in donut (C-Sources): uses split by status, with one number in the hole. Recharts draws the ring.
 export function Donut({ segments, center, ariaLabel, size = 210, className }: Props) {
   const reduced = useReducedMotion();
+  // A stable id: Recharts otherwise numbers its clip paths from a counter that differs between server and browser.
+  const id = useId();
   const data = segments.filter((s) => s.value > 0);
   return (
     <div className={cn("relative shrink-0", className)} style={{ width: size, height: size }} role="img" aria-label={ariaLabel}>
-      <PieChart width={size} height={size} aria-hidden="true">
+      <PieChart id={id} width={size} height={size} aria-hidden="true">
         <Pie
           data={data.length ? data : [{ label: "none", value: 1, color: CHART.track }]}
           dataKey="value"

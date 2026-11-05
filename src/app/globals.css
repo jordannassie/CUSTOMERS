@@ -358,6 +358,8 @@
   *::before,
   *::after {
     animation-duration: 0.01ms !important;
+    /* Without this a staggered card would stay hidden until its delay ran out. */
+    animation-delay: 0s !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }

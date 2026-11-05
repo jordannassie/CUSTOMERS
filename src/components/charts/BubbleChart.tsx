@@ -1,5 +1,6 @@
 "use client";
 
+import { useId } from "react";
 import { Cell, LabelList, ReferenceArea, ResponsiveContainer, Scatter, ScatterChart, Tooltip, XAxis, YAxis, ZAxis } from "recharts";
 import { CHART } from "./chart-kit";
 import { ChartTooltipCard } from "./Legend";
@@ -30,6 +31,7 @@ type Props = {
 // customers, missed by AI" corner shaded, a tooltip per bubble. Recharts draws it.
 export function BubbleChart({ points, ariaLabel, xLabel = "Google rating", yLabel = "AI visibility", quadrant }: Props) {
   const reduced = useReducedMotion();
+  const id = useId();
   const xs = points.map((p) => p.x);
   const xMin = Math.max(1, Math.floor((Math.min(...xs) - 0.2) * 5) / 5);
   const xMax = Math.min(5, Math.ceil((Math.max(...xs) + 0.2) * 5) / 5);
@@ -42,7 +44,7 @@ export function BubbleChart({ points, ariaLabel, xLabel = "Google rating", yLabe
     <div className="overflow-x-auto" role="img" aria-label={ariaLabel}>
       <div className="h-[360px] min-w-[520px]" aria-hidden="true">
         <ResponsiveContainer width="100%" height="100%">
-          <ScatterChart margin={{ top: 16, right: 96, bottom: 28, left: 0 }}>
+          <ScatterChart id={id} margin={{ top: 16, right: 96, bottom: 28, left: 0 }}>
             {quadrant && (
               <ReferenceArea
                 x1={Math.max(quadrant.xMin, xMin)}
