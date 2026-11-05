@@ -27,7 +27,7 @@ export function UsageWidget({ tone, headline, percentUsed, details, showBuyCredi
       aria-label="Credits"
       data-testid="usage-widget"
       data-tone={tone}
-      className={cn("rounded-md border p-3", empty ? "border-low/40 bg-low-bg" : "border-border bg-surface")}
+      className={cn("rounded-[14px] border p-3", empty ? "border-low/40 bg-low-bg" : "border-transparent bg-surface")}
     >
       <p className={cn("text-[13px] font-medium leading-snug tabular-nums", empty ? "text-low-text" : "text-foreground")}>
         {headline}

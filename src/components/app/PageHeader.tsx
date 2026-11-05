@@ -21,7 +21,7 @@ export function PageHeader({ title, description, descriptionTestId, actions, cla
       <div className="flex min-w-0 flex-1 flex-col gap-3">
         <h1
           className={cn(
-            "text-2xl font-semibold tracking-[-0.02em] break-words",
+            "font-serif text-[28px] leading-tight font-normal break-words",
             clampTitle ? "line-clamp-2" : "flex flex-wrap items-center gap-2",
           )}
           title={clampTitle}
@@ -29,7 +29,7 @@ export function PageHeader({ title, description, descriptionTestId, actions, cla
           {title}
         </h1>
         {description ? (
-          <p className="max-w-[680px] text-[15px] text-muted-foreground" data-testid={descriptionTestId}>
+          <p className="max-w-[680px] text-[15px] leading-relaxed text-muted-foreground" data-testid={descriptionTestId}>
             {description}
           </p>
         ) : null}

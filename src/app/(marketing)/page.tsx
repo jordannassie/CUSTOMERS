@@ -32,7 +32,7 @@ export default async function Home() {
 
   return (
     // mockup-ui: the app's new look (white canvas, softer borders, 8px cards) on the homepage too.
-    <div className="app-v2 flex min-h-dvh flex-col bg-background">
+    <div className="flex min-h-dvh flex-col bg-background">
       <Header />
       <main className="flex-1">
         <Hero />

@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { LogOut, ShieldCheck } from "lucide-react";
@@ -25,7 +24,7 @@ export type AppSidebarProps = {
 };
 
 const FOOTER_ITEM =
-  "flex w-full items-center gap-2.5 rounded-md px-2.5 py-1.5 text-sm text-muted-foreground outline-none transition-colors hover:bg-surface hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 [&_svg]:size-4 [&_svg]:shrink-0";
+  "flex min-h-10 w-full items-center gap-2.5 rounded-[10px] px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-surface/70 hover:text-foreground [&_svg]:size-4 [&_svg]:shrink-0";
 
 export function AppSidebar({
   businesses,
@@ -44,13 +43,14 @@ export function AppSidebar({
   const settingUp = pathname.startsWith("/onboarding");
 
   return (
-    <div className="flex min-h-full flex-col gap-3 p-3">
-      <Link href="/dashboard" onClick={onNavigate} className="self-start px-2 pt-2 pb-1" aria-label="Customers.Direct, go to Overview">
-        <Image src="/images/logos/logo-black.png" alt="" width={156} height={52} loading="eager" className="h-[52px] w-auto -my-3" />
+    <div className="flex min-h-full flex-col gap-[22px] px-4 py-6">
+      {/* Check-in: the wordmark in Young Serif. */}
+      <Link href="/dashboard" onClick={onNavigate} className="self-start rounded-md px-2.5 font-serif text-xl text-foreground" aria-label="Customers.Direct, go to Overview">
+        Customers.Direct
       </Link>
 
       {settingUp ? (
-        <div className="rounded-md border border-border bg-surface px-3 py-2.5" data-testid="setting-up">
+        <div className="rounded-[14px] border border-border bg-surface px-3 py-2.5" data-testid="setting-up">
           <p className="text-[13px] text-muted-foreground">Setting up</p>
           <p className="line-clamp-2 text-sm font-medium break-words">
             {setupLabel(pathname, setupName, businesses.find((b) => b.id === activeBusinessId)?.name ?? null)}
@@ -67,10 +67,10 @@ export function AppSidebar({
         />
       )}
 
-      <nav aria-label="Main" className="flex flex-col gap-2.5">
+      <nav aria-label="Main" className="flex flex-col gap-3">
         {APP_NAV_GROUPS.map((group) => (
           <div key={group.label ?? "top"} className="flex flex-col gap-0.5">
-            {group.label && <p className="px-2.5 pt-1 pb-1 text-[11.5px] font-medium text-text-hint">{group.label}</p>}
+            {group.label && <p className="px-3 pb-1 text-xs font-medium text-muted-foreground">{group.label}</p>}
             {group.items.map((item) => {
               const active = isNavActive(item, pathname);
               const Icon = item.icon;
@@ -81,13 +81,12 @@ export function AppSidebar({
                   onClick={onNavigate}
                   aria-current={active ? "page" : undefined}
                   className={cn(
-                    "flex items-center gap-2.5 rounded-md px-2.5 py-[7px] text-[13px] outline-none transition-colors focus-visible:ring-3 focus-visible:ring-ring/50",
-                    active
-                      ? "bg-surface font-medium text-foreground shadow-[0_0_0_1px_var(--cd-border),0_1px_2px_rgb(24_24_27/0.04)]"
-                      : "text-foreground/80 hover:bg-surface/70 hover:text-foreground",
+                    // Check-in: the page you are on is a white pill on the ground.
+                    "flex min-h-11 items-center gap-2.5 rounded-[10px] px-3 py-[11px] text-[15px] transition-colors",
+                    active ? "bg-surface font-semibold text-foreground" : "text-ink-2 hover:bg-surface/60 hover:text-foreground",
                   )}
                 >
-                  <Icon className={cn("size-[15px] shrink-0", active ? "text-primary" : "text-muted-foreground")} aria-hidden="true" />
+                  <Icon className={cn("size-4 shrink-0", active ? "text-brand" : "text-muted-foreground")} aria-hidden="true" />
                   {item.label}
                 </Link>
               );
@@ -98,7 +97,7 @@ export function AppSidebar({
 
       <div className="mt-auto flex flex-col gap-2.5">
         {usage && <UsageWidget {...usage} />}
-        <div className="flex flex-col gap-0.5 border-t border-border pt-2.5">
+        <div className="flex flex-col gap-0.5 border-t border-border-strong/60 pt-2.5">
           {isAdmin && (
             <Link href="/internal/admin" onClick={onNavigate} className={FOOTER_ITEM}>
               <ShieldCheck aria-hidden="true" />

@@ -48,6 +48,18 @@ function BusinessMark({ name, logoUrl, domain }: { name: string; logoUrl: string
 
 const DOT = { good: "bg-good", mid: "bg-mid", low: "bg-low" } as const;
 
+/** Check-in: the workspace badge, a brand gradient circle with the business's first letter. */
+function WorkspaceBadge({ name }: { name: string }) {
+  return (
+    <span
+      className="flex size-[30px] shrink-0 items-center justify-center rounded-full bg-gradient-ai text-sm font-bold text-white uppercase"
+      aria-hidden="true"
+    >
+      {name.trim().charAt(0) || "?"}
+    </span>
+  );
+}
+
 /** Score with its status dot, the last scan, and a real weekly change (DB-011). */
 function ScoreLine({ score }: { score: SwitcherScore }) {
   return (
@@ -172,15 +184,15 @@ export function BusinessSwitcher({
   return (
     <DropdownMenu onOpenChange={onOpenChange}>
       <DropdownMenuTrigger
-        className="flex w-full items-center gap-2.5 rounded-md border border-border bg-surface px-2.5 py-2 text-left outline-none transition-colors hover:border-input focus-visible:ring-3 focus-visible:ring-ring/50"
+        className="flex min-h-[52px] w-full items-center gap-2.5 rounded-[14px] border border-border bg-surface p-2.5 text-left outline-none transition-colors hover:border-border-strong"
         aria-label={`Business: ${active.name}. Switch business`}
         title={active.name}
         data-testid="business-switcher"
       >
-        <BusinessMark name={active.name} logoUrl={active.logoUrl} domain={active.domain} />
+        <WorkspaceBadge name={active.name} />
         {/* Long names get two lines, so the start of the name and the domain both stay readable. */}
         <span className="min-w-0 flex-1">
-          <span className="line-clamp-2 text-sm font-medium break-words text-foreground" data-testid="switcher-name">
+          <span className="line-clamp-2 text-sm font-semibold break-words text-foreground" data-testid="switcher-name">
             {active.name}
           </span>
           {active.domain && <span className="block truncate text-xs text-muted-foreground" title={active.domain}>{active.domain}</span>}
