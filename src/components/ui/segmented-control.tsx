@@ -19,14 +19,14 @@ function SegmentedControl({
     <RadioGroupPrimitive.Root
       data-slot="segmented-control"
       orientation="horizontal"
-      className={cn("inline-flex w-fit gap-1 rounded-md border border-border bg-muted p-1", className)}
+      className={cn("inline-flex w-fit gap-1 rounded-full border border-border bg-surface p-1", className)}
       {...props}
     >
       {options.map((o) => (
         <RadioGroupPrimitive.Item
           key={o.value}
           value={o.value}
-          className="h-8 rounded-sm px-3 text-[13px] font-medium text-muted-foreground transition-colors duration-150 ease-out outline-none hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 disabled:opacity-50 data-[state=checked]:bg-surface data-[state=checked]:text-foreground data-[state=checked]:shadow-xs"
+          className="h-8 rounded-full px-3.5 text-[13px] font-medium text-muted-foreground transition-colors duration-150 ease-out outline-none hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 disabled:opacity-50 data-[state=checked]:bg-brand data-[state=checked]:text-primary-foreground"
         >
           {o.label}
         </RadioGroupPrimitive.Item>
