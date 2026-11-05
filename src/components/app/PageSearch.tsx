@@ -51,11 +51,11 @@ export function PageSearch() {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="ml-auto hidden h-8 w-[280px] items-center gap-2 rounded-md border border-border bg-muted/60 px-2.5 text-[13px] text-text-hint outline-none transition-colors hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50 md:flex"
+        className="ml-auto hidden h-9 w-[280px] items-center gap-2 rounded-full border border-border bg-surface px-3.5 text-[13px] text-muted-foreground outline-none transition-colors hover:border-border-strong focus-visible:ring-3 focus-visible:ring-ring/50 md:flex"
       >
         <Search className="size-3.5" aria-hidden="true" />
         Search pages
-        <kbd className="ml-auto rounded-sm border border-border bg-surface px-1.5 font-mono text-[10.5px] text-muted-foreground">Ctrl K</kbd>
+        <kbd className="ml-auto rounded-full border border-border bg-muted px-1.5 font-mono text-[10.5px] text-muted-foreground">Ctrl K</kbd>
       </button>
       <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) setQuery(""); }}>
         <DialogContent className="gap-0 overflow-hidden p-0 sm:max-w-lg" showCloseButton={false}>
@@ -87,7 +87,7 @@ export function PageSearch() {
                     type="button"
                     onMouseEnter={() => setIndex(i)}
                     onClick={() => go(e.href)}
-                    className={cn("flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-left text-sm", i === index && "bg-muted")}
+                    className={cn("flex w-full items-center gap-2.5 rounded-[10px] px-2.5 py-2 text-left text-sm", i === index && "bg-brand-tint text-brand-ink")}
                   >
                     {Icon ? <Icon className="size-4 text-muted-foreground" aria-hidden="true" /> : <span className="size-4" />}
                     {e.label}

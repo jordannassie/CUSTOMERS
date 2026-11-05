@@ -1,20 +1,21 @@
-// Email clients ignore CSS variables, so the DESIGN.md tokens are repeated here as plain values.
+// Email clients ignore CSS variables, so the Check-in theme tokens (src/app/globals.css) are repeated here as plain
+// values. Good is the brand blue, so-so is neutral, bad is the danger coral; no green or yellow.
 export const colors = {
-  background: "#FAFAF8",
+  background: "#EEF2F8",
   surface: "#FFFFFF",
-  border: "#E5E5E1",
-  text: "#171717",
-  textSecondary: "#6B6B67",
-  textHint: "#737370",
+  border: "#DCE3EE",
+  text: "#141B2D",
+  textSecondary: "#545E70",
+  textHint: "#667085",
   primary: "#2563EB",
-  primaryTint: "#EFF6FF",
-  goodText: "#15803D",
-  midText: "#B45309",
-  lowText: "#B91C1C",
+  primaryTint: "#EAF1FF",
+  goodText: "#1D4ED8",
+  midText: "#3A4456",
+  lowText: "#B5402A",
 } as const;
 
-// Geist is not installed in mail apps, so the stack falls back to each system's sans serif.
+// Figtree is not installed in mail apps, so the stack falls back to each system's sans serif.
 export const fontFamily =
-  "Geist, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
+  "Figtree, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
 
-export const radius = "4px";
+export const radius = "12px";

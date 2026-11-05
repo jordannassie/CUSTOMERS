@@ -20,9 +20,9 @@ describe("email templates", () => {
     expect(html).toContain("Your first check is ready");
     expect(html).toContain('href="https://app.example/dashboard"');
     expect(html).toContain('href="https://app.example/settings"');
-    // DESIGN.md look: the one blue for the button, 4px corners, no pure black.
+    // Check-in look: the one blue for the button, 12px corners, no pure black.
     expect(html).toContain("#2563EB");
-    expect(html).toContain("border-radius:4px");
+    expect(html).toContain("border-radius:12px");
     expect(html).not.toMatch(/#000000|#000[;"]/i);
 
     expect(text).toContain("YOUR FIRST CHECK IS READY");

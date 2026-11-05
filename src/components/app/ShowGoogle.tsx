@@ -10,7 +10,7 @@ import { ShowGoogleLabel } from "./ShowGoogleLabel";
  */
 export function ShowGoogle({ href, text, testId = "show-google" }: { href: string; text: string; testId?: string }) {
   return (
-    <div className="flex flex-col items-start gap-3 rounded-md border border-dashed border-border p-4 sm:flex-row sm:items-center sm:justify-between" data-testid={testId}>
+    <div className="flex flex-col items-start gap-3 rounded-lg border border-dashed border-border-strong bg-muted p-4 sm:flex-row sm:items-center sm:justify-between" data-testid={testId}>
       <p className="flex items-start gap-2.5 text-sm text-muted-foreground">
         <MapPin className="mt-0.5 size-4 shrink-0 text-text-hint" aria-hidden="true" />
         {text}
