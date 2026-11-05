@@ -2,18 +2,20 @@ import { Suspense } from "react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ExternalLink, Globe } from "lucide-react";
-import { PageContainer } from "@/components/app/PageContainer";
 import { PageHeader } from "@/components/app/PageHeader";
 import { SampleDataBadge } from "@/components/app/SampleDataBadge";
 import { ShowGoogle } from "@/components/app/ShowGoogle";
+import { AiMessage, CheckInLayout, FollowUps, UserBubble } from "@/components/checkin";
+import { ByAi } from "@/components/competitors/compare/ByAi";
 import { CompareTabs } from "@/components/competitors/compare/CompareTabs";
-import { Trend } from "@/components/competitors/compare/PairTrend";
+import { GoogleRail, GoogleRailPrompt } from "@/components/competitors/compare/GoogleRail";
+import { HeadToHead } from "@/components/competitors/compare/HeadToHead";
 import { Picker } from "@/components/competitors/compare/Picker";
 import { QuestionsTab, WhereLookedTab } from "@/components/competitors/compare/QuestionsTab";
 import { GoogleReasons } from "@/components/competitors/compare/GoogleReasons";
 import { LeadCards, ReasonCards } from "@/components/competitors/compare/ReasonCards";
-import { Scorecard } from "@/components/competitors/compare/Scorecard";
-import { toCompareTab } from "@/components/competitors/compare/tabs";
+import { toCompareTab, type CompareTab } from "@/components/competitors/compare/tabs";
+import { WebsiteCard } from "@/components/competitors/compare/WebsiteCard";
 import { WebsitesTab } from "@/components/competitors/compare/WebsitesTab";
 import { GoogleTable } from "@/components/competitors/GoogleCompare";
 import { cn } from "cn";
@@ -37,6 +39,18 @@ function reasonsHeading(standing: string | null, collecting: boolean): string {
   if (standing === "ahead") return "Where they still beat you";
   return "Where they beat you";
 }
+
+/** Check-in: the serif lead over the tabbed message, one per tab. */
+function tabLeads(standing: string | null, collecting: boolean): Record<CompareTab, string> {
+  return {
+    summary:
+      !collecting && standing === "behind" ? "Here's how to close it, biggest first:" : `${reasonsHeading(standing, collecting)}, biggest first:`,
+    questions: "Here's how each customer question went for the two of you.",
+    sources: "Here's where AI looked for each of you.",
+    website: "Here's what each website gives AI.",
+    google: "Here's how the two of you look on Google.",
+  };
+}
 const GOOGLE_KEYS = ["google:reviews", "google:rating", "google:hours", "google:category"];
 
 // Compare (dashboard redesign, 2026-10-27): you against one competitor at a time, every fact with its fix.
@@ -44,7 +58,9 @@ export default async function ComparePage({ searchParams }: { searchParams: Prom
   const params = await searchParams;
   const competitorId = params.with && ID.test(params.with) ? params.with : null;
   const tab = toCompareTab(params.tab);
-  const workspace = await getWorkspace({ next: compareHref(competitorId, tab) });
+  const workspace = await getWorkspace({
+    next: compareHref(competitorId, tab),
+  });
   const business = workspace.businesses.find((b) => b.id === workspace.activeBusinessId);
   if (!business || business.status === "onboarding") redirect("/dashboard");
   // The next scan's day, for the one-scan trend's note.
@@ -59,127 +75,174 @@ export default async function ComparePage({ searchParams }: { searchParams: Prom
   const visit = data?.panel.website.checked ? siteHref(data.panel.website.domain) : null;
   const keys = data ? data.cards.map((c) => c.key) : [];
   const [states, googleStates] = data
-    ? await Promise.all([actionStates(business.id, keys), actionStates(business.id, GOOGLE_KEYS)]).then(([a, b]) => [Object.fromEntries(a), Object.fromEntries(b)])
+    ? await Promise.all([actionStates(business.id, keys), actionStates(business.id, GOOGLE_KEYS)]).then(([a, b]) => [
+        Object.fromEntries(a),
+        Object.fromEntries(b),
+      ])
     : [{}, {}];
 
-  return (
-    <PageContainer>
-      <div className="flex flex-col gap-5" data-testid="compare-page">
-        <PageHeader
-          title={
-            <span className="flex flex-wrap items-center gap-2">
-              Compare <SampleDataBadge show={workspace.account?.isTest} />
-            </span>
-          }
-          description="Pick a competitor to see the facts behind every gap, and what to do about each one."
-          actions={
-            data ? (
-              <Button asChild variant="outline">
-                {visit ? (
-                  <a href={visit} target="_blank" rel="noopener noreferrer">
-                    <Globe aria-hidden="true" />
-                    Their website
-                    <ExternalLink className="size-3.5 text-muted-foreground" aria-hidden="true" />
-                    <span className="sr-only">(opens in a new tab)</span>
-                  </a>
-                ) : (
-                  <Link href={compareHref(data.panel.competitorId, "website")}>
-                    <Globe aria-hidden="true" />
-                    Check their website
-                  </Link>
-                )}
-              </Button>
-            ) : undefined
-          }
-        />
+  const header = (
+    <PageHeader
+      title={
+        <span className="flex flex-wrap items-center gap-2">
+          Compare <SampleDataBadge show={workspace.account?.isTest} />
+        </span>
+      }
+      description="Pick a competitor to see the facts behind every gap, and what to do about each one."
+      actions={
+        data ? (
+          <Button asChild variant="outline">
+            {visit ? (
+              <a href={visit} target="_blank" rel="noopener noreferrer">
+                <Globe aria-hidden="true" />
+                Their website
+                <ExternalLink className="size-3.5 text-muted-foreground" aria-hidden="true" />
+                <span className="sr-only">(opens in a new tab)</span>
+              </a>
+            ) : (
+              <Link href={compareHref(data.panel.competitorId, "website")}>
+                <Globe aria-hidden="true" />
+                Check their website
+              </Link>
+            )}
+          </Button>
+        ) : undefined
+      }
+    />
+  );
 
-        {page.options.length === 0 || !data ? (
-          <section className="rounded-lg border border-border bg-card p-5" data-testid="compare-empty">
-            <h2 className="text-base font-semibold">Track a competitor to compare</h2>
-            <p className="mt-2 max-w-prose text-sm text-muted-foreground">
+  if (page.options.length === 0 || !data) {
+    return (
+      <div data-testid="compare-page">
+        <CheckInLayout>
+          {header}
+          <section className="rounded-xl bg-card p-6" data-testid="compare-empty">
+            <h2 className="font-serif text-[22px] font-normal">Track a competitor to compare</h2>
+            <p className="mt-2 max-w-prose text-[15px] text-muted-foreground">
               Add the businesses you compete with, or track one AI already names. Their facts show here after your next scan.
             </p>
-            <Button asChild className="mt-3 w-fit">
+            <Button asChild className="mt-4 w-fit">
               <Link href="/competitors/manage">Add competitors</Link>
             </Button>
           </section>
-        ) : (
-          <>
-            <Picker page={page} tab={tab} track={trackCompetitor} />
-            <Scorecard
-              data={data}
-              trend={<Trend name={data.title} trend={data.trend} color={data.color} firstScan={data.firstScan} nextScan={nextScan} />}
-            />
-            <CompareTabs
-              key={data.panel.competitorId}
-              initial={tab}
-              panels={{
-                summary: (
-                  <div className="flex flex-col gap-7" data-testid="tab-summary">
-                    <section className="flex flex-col gap-3">
-                      <div className="flex flex-col gap-0.5">
-                        <h3 className="text-[14.5px] font-semibold tracking-[-0.01em]">{reasonsHeading(data.standing, data.collecting)}</h3>
-                        <p className="text-xs text-muted-foreground">Facts from AI answers in the last 30 days and what we read, biggest first. Each comes with its fix.</p>
-                      </div>
-                      <ReasonCards
-                        name={data.title}
-                        businessId={business.id}
-                        cards={data.cards}
-                        states={states}
-                        add={addToActions}
-                        move={moveActionTo}
-                        answers={data.panel.why.answers}
-                        standing={data.collecting ? null : data.standing}
-                      />
-                    </section>
-                    {/* When you lead, where you are ahead comes first. */}
-                    <section className={cn("flex flex-col gap-3", data.standing === "ahead" && "order-first")}>
-                      <h3 className="text-[14.5px] font-semibold tracking-[-0.01em]">Where you are ahead</h3>
-                      <LeadCards leads={data.leads} standing={data.collecting ? null : data.standing} />
-                    </section>
-                    <p className="text-xs text-text-hint">We can&apos;t see inside the AI tools, so these are likely reasons, each backed by the facts shown.</p>
-                  </div>
-                ),
-                questions: <QuestionsTab panel={data.panel} />,
-                sources: <WhereLookedTab panel={data.panel} />,
-                website: (
-                  <WebsitesTab panel={data.panel} businessId={business.id} actions={{ check: checkCompetitorWebsite, save: saveCompetitorWebsite }} />
-                ),
-                google: (
-                  <div data-testid="tab-google">
-                    {signals ? (
-                      <div className="flex flex-col gap-6">
-                        {/* The table stays narrow so the two columns sit close; the fix cards below use the full width. */}
-                        <div className="max-w-xl">
-                          <Suspense fallback={<Skeleton className="h-40 w-full" />}>
-                            <GoogleTable name={data.branch} competitorId={data.panel.competitorId} signals={signals} />
-                          </Suspense>
-                        </div>
-                        {/* Where they beat you on Google, each with its fix: only here, not again on the Summary tab. */}
-                        <Suspense fallback={null}>
-                          {/* One listing's Google values: the tracked branch's name. */}
-                          <GoogleReasons
-                            name={data.branch}
-                            competitorId={data.panel.competitorId}
-                            businessId={business.id}
-                            signals={signals}
-                            states={googleStates}
-                            add={addToActions}
-                            move={moveActionTo}
-                            fixes={data.panel.fixRefs}
-                          />
+        </CheckInLayout>
+      </div>
+    );
+  }
+
+  const rail = (
+    <>
+      <Picker page={page} tab={tab} track={trackCompetitor} />
+      {signals ? (
+        <Suspense fallback={<Skeleton className="h-44 w-full rounded-xl bg-surface" />}>
+          <GoogleRail name={data.branch} competitorId={data.panel.competitorId} signals={signals} />
+        </Suspense>
+      ) : (
+        <GoogleRailPrompt href={askGoogle("google")} />
+      )}
+    </>
+  );
+
+  return (
+    <div data-testid="compare-page">
+      <CheckInLayout rail={rail} railLabel="Pick a competitor">
+        {header}
+        <UserBubble>How do I compare with {data.title}?</UserBubble>
+        <HeadToHead data={data} nextScan={nextScan} />
+        <ByAi data={data} index={1} />
+        <WebsiteCard name={data.title} website={data.panel.website} index={2} />
+        <AiMessage place="last" index={3}>
+          <CompareTabs
+            key={data.panel.competitorId}
+            initial={tab}
+            leads={tabLeads(data.standing, data.collecting)}
+            panels={{
+              summary: (
+                <div className="flex flex-col gap-7" data-testid="tab-summary">
+                  <section className="flex flex-col gap-3">
+                    <div className="flex flex-col gap-0.5">
+                      <h3 className="text-[15px] font-semibold">{reasonsHeading(data.standing, data.collecting)}</h3>
+                      <p className="text-[13px] text-muted-foreground">
+                        Facts from AI answers in the last 30 days and what we read, biggest first. Each comes with its fix.
+                      </p>
+                    </div>
+                    <ReasonCards
+                      name={data.title}
+                      businessId={business.id}
+                      cards={data.cards}
+                      states={states}
+                      add={addToActions}
+                      move={moveActionTo}
+                      answers={data.panel.why.answers}
+                      standing={data.collecting ? null : data.standing}
+                    />
+                  </section>
+                  {/* When you lead, where you are ahead comes first. */}
+                  <section className={cn("flex flex-col gap-3", data.standing === "ahead" && "order-first")}>
+                    <h3 className="text-[15px] font-semibold">Where you are ahead</h3>
+                    <LeadCards leads={data.leads} standing={data.collecting ? null : data.standing} />
+                  </section>
+                  <p className="text-xs text-muted-foreground">
+                    We can&apos;t see inside the AI tools, so these are likely reasons, each backed by the facts shown.
+                  </p>
+                </div>
+              ),
+              questions: <QuestionsTab panel={data.panel} />,
+              sources: <WhereLookedTab panel={data.panel} />,
+              website: (
+                <WebsitesTab
+                  panel={data.panel}
+                  businessId={business.id}
+                  actions={{
+                    check: checkCompetitorWebsite,
+                    save: saveCompetitorWebsite,
+                  }}
+                />
+              ),
+              google: (
+                <div data-testid="tab-google">
+                  {signals ? (
+                    <div className="flex flex-col gap-6">
+                      {/* The table stays narrow so the two columns sit close; the fix cards below use the full width. */}
+                      <div className="max-w-xl">
+                        <Suspense fallback={<Skeleton className="h-40 w-full" />}>
+                          <GoogleTable name={data.branch} competitorId={data.panel.competitorId} signals={signals} />
                         </Suspense>
                       </div>
-                    ) : (
-                      <ShowGoogle href={askGoogle("google")} text="Your Google listing next to theirs: reviews, rating, opening days and category, live from Google." />
-                    )}
-                  </div>
-                ),
-              }}
-            />
-          </>
-        )}
-      </div>
-    </PageContainer>
+                      {/* Where they beat you on Google, each with its fix: only here, not again on the Summary tab. */}
+                      <Suspense fallback={null}>
+                        {/* One listing's Google values: the tracked branch's name. */}
+                        <GoogleReasons
+                          name={data.branch}
+                          competitorId={data.panel.competitorId}
+                          businessId={business.id}
+                          signals={signals}
+                          states={googleStates}
+                          add={addToActions}
+                          move={moveActionTo}
+                          fixes={data.panel.fixRefs}
+                        />
+                      </Suspense>
+                    </div>
+                  ) : (
+                    <ShowGoogle
+                      href={askGoogle("google")}
+                      text="Your Google listing next to theirs: reviews, rating, opening days and category, live from Google."
+                    />
+                  )}
+                </div>
+              ),
+            }}
+          />
+        </AiMessage>
+        <FollowUps
+          items={[
+            { label: "Who's ahead of me, and why?", href: "/competitors" },
+            { label: "Where does AI look?", href: "/sources" },
+            { label: "What should I fix first?", href: "/actions" },
+          ]}
+        />
+      </CheckInLayout>
+    </div>
   );
 }

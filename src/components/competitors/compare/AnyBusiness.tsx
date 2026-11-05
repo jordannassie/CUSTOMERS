@@ -18,7 +18,7 @@ export function AnyBusiness({ businessId, names, track }: { businessId: string; 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
-        className="inline-flex h-8 items-center gap-1.5 rounded-[6px] border border-dashed border-border px-2.5 text-[13px] font-medium text-muted-foreground outline-none hover:bg-muted hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50"
+        className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-[12px] border border-dashed border-border-strong px-3 text-sm font-medium text-muted-foreground hover:border-brand hover:text-brand-strong"
         disabled={pending}
         data-testid="any-business"
       >

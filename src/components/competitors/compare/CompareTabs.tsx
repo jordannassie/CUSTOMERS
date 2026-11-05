@@ -10,7 +10,16 @@ const tabFromUrl = (): CompareTab => toCompareTab(new URLSearchParams(window.loc
  * The comparison's tabs (B-93). Every tab is rendered once on the server, so switching is instant: no new request
  * (2026-10-27: each tab used to reload the whole page). The address still changes, so Back, sharing and links work.
  */
-export function CompareTabs({ initial, panels }: { initial: CompareTab; panels: Record<CompareTab, ReactNode> }) {
+export function CompareTabs({
+  initial,
+  panels,
+  leads,
+}: {
+  initial: CompareTab;
+  panels: Record<CompareTab, ReactNode>;
+  /** Check-in: the serif lead of the message card holding the tabs, one per tab. */
+  leads?: Record<CompareTab, string>;
+}) {
   const [active, setActive] = useState<CompareTab>(initial);
 
   useEffect(() => {
@@ -38,8 +47,9 @@ export function CompareTabs({ initial, panels }: { initial: CompareTab; panels: 
 
   return (
     <div className="flex min-w-0 flex-col gap-5">
-      <div className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
-        <div role="tablist" aria-label="Comparison" className="flex w-max gap-5 border-b border-border sm:w-full">
+      {leads && <h2 className="font-serif text-[20px] leading-[1.35] font-normal sm:text-[22px]">{leads[active]}</h2>}
+      <div className="-mx-5 overflow-x-auto px-5 sm:mx-0 sm:px-0">
+        <div role="tablist" aria-label="Comparison" className="flex w-max flex-nowrap gap-2 sm:w-full sm:flex-wrap">
           {COMPARE_TABS.map((t) => (
             <button
               key={t.id}
@@ -50,10 +60,10 @@ export function CompareTabs({ initial, panels }: { initial: CompareTab; panels: 
               aria-controls={`compare-panel-${t.id}`}
               onClick={() => open(t.id)}
               className={cn(
-                "relative flex h-10 items-center px-0.5 text-[13px] whitespace-nowrap transition-colors focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none",
+                "flex min-h-11 items-center rounded-full border px-4 text-sm whitespace-nowrap transition-colors",
                 t.id === active
-                  ? "font-medium text-foreground after:absolute after:inset-x-0 after:-bottom-px after:h-0.5 after:rounded-full after:bg-foreground"
-                  : "text-muted-foreground hover:text-foreground",
+                  ? "border-brand bg-brand font-semibold text-primary-foreground"
+                  : "border-border-strong bg-surface text-foreground hover:border-brand hover:text-brand-strong",
               )}
               data-testid={`compare-tab-${t.id}`}
             >
