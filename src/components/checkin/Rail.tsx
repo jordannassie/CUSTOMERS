@@ -20,8 +20,9 @@ export function StatRows({ rows }: { rows: StatRow[] }) {
     <dl className="flex flex-col gap-2.5 text-sm">
       {rows.map((r, i) => (
         <div key={i} className="flex justify-between gap-3 border-t border-divider pt-2.5" data-testid={r.testId}>
-          <dt className="text-muted-foreground">{r.label}</dt>
-          <dd className={cn("text-right font-semibold tabular-nums", r.tone === "danger" && "text-danger", r.tone === "brand" && "text-brand")}>{r.value}</dd>
+          <dt className="shrink-0 text-muted-foreground">{r.label}</dt>
+          {/* A long business name with no spaces wraps instead of widening the page. */}
+          <dd className={cn("min-w-0 text-right font-semibold tabular-nums [overflow-wrap:anywhere]", r.tone === "danger" && "text-danger", r.tone === "brand" && "text-brand")}>{r.value}</dd>
         </div>
       ))}
     </dl>

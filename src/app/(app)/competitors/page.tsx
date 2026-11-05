@@ -50,6 +50,20 @@ export default async function CompetitorsPage({ searchParams }: { searchParams: 
   const edit = { businessId: business.id, save: saveCompetitorWebsite };
   let i = 1;
 
+  // Businesses AI named that the user does not track, with Track; its own empty text before the first scan.
+  const also = (index: number) => (
+    <AiMessage place="last" lead={view.also.length > 0 ? "AI also named a few places you don't track yet." : "AI hasn't named anyone else you could track."} index={index}>
+      <AlsoRecommended
+        businessId={business.id}
+        names={view.also.map((n) => ({ ...n, text: answersText(n.answers, view.answers) }))}
+        answers={view.answers}
+        track={trackCompetitor}
+        manageHref={MANAGE}
+        layout="cards"
+      />
+    </AiMessage>
+  );
+
   return (
     <CheckInLayout railLabel="Leaderboard" rail={scored ? <LeaderRail rows={table.rows} kpis={table.kpis} /> : undefined}>
       <header className="flex flex-wrap items-center justify-between gap-3">
@@ -69,10 +83,25 @@ export default async function CompetitorsPage({ searchParams }: { searchParams: 
 
       <UserBubble>Who&apos;s ahead of me, and why?</UserBubble>
 
-      {view.count === 0 ? (
-        <Empty lead="You don't track any competitors yet." text="Add the businesses you compete with to see who AI recommends more often." action={{ href: MANAGE, label: "Add competitors" }} />
-      ) : !view.hasScore ? (
-        <Empty lead="I can't compare you yet." text="Scores appear after your first scan. Run one from the Overview. Results take about a minute." action={{ href: "/dashboard", label: "Go to Overview" }} />
+      {view.count === 0 || !view.hasScore ? (
+        <>
+          {view.count === 0 ? (
+            <Empty lead="You don't track any competitors yet." text="Add the businesses you compete with to see who AI recommends more often." action={{ href: MANAGE, label: "Add competitors" }} />
+          ) : (
+            <Empty lead="I can't compare you yet." text="Scores appear after your first scan. Run one from the Overview. Results take about a minute." action={{ href: "/dashboard", label: "Go to Overview" }} />
+          )}
+          {/* The Google and "also named" messages still say what comes next, as the page did before the redesign. */}
+          {view.count === 0 ? (
+            <AiMessage lead="Side by side on Google" leadSize="md" index={1}>
+              <Explain>Add competitors to compare your Google reviews, ratings and hours with theirs.</Explain>
+            </AiMessage>
+          ) : (
+            <Suspense fallback={<GoogleLoading rows={view.count + 1} />}>
+              <GoogleCard signals={google === "1" ? page.loadSignals() : null} rows={table.rows} pickBranch={view.pickBranch} edit={edit} index={1} />
+            </Suspense>
+          )}
+          {also(2)}
+        </>
       ) : (
         <>
           <SlopeCard rows={table.rows} charts={charts} nextScan={nextScan} />
@@ -111,20 +140,7 @@ export default async function CompetitorsPage({ searchParams }: { searchParams: 
             <GoogleCard signals={google === "1" ? page.loadSignals() : null} rows={table.rows} pickBranch={view.pickBranch} edit={edit} index={i++} />
           </Suspense>
 
-          <AiMessage
-            place="last"
-            lead={view.also.length > 0 ? "AI also named a few places you don't track yet." : "AI hasn't named anyone else you could track."}
-            index={i++}
-          >
-            <AlsoRecommended
-              businessId={business.id}
-              names={view.also.map((n) => ({ ...n, text: answersText(n.answers, view.answers) }))}
-              answers={view.answers}
-              track={trackCompetitor}
-              manageHref={MANAGE}
-              layout="cards"
-            />
-          </AiMessage>
+          {also(i++)}
 
           <FollowUps
             items={[
@@ -153,7 +169,7 @@ function GoogleLoading({ rows }: { rows: number }) {
 
 function Empty({ lead, text, action }: { lead: string; text: string; action: { href: string; label: string } }) {
   return (
-    <AiMessage place="only" leadSize="lg" lead={lead}>
+    <AiMessage place="first" leadSize="lg" lead={lead}>
       <div className="flex flex-col items-start gap-3" data-testid="empty-state">
         <Explain>{text}</Explain>
         <Button asChild>

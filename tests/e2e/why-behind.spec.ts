@@ -402,7 +402,8 @@ test("Actions say where each fix is made and which competitor it is about", asyn
 test("The Overview shows where you stand and opens the competitor who leads", async ({ page }, info) => {
   const businessId = await seed(page, "/dashboard");
   const stand = page.getByTestId("where-you-stand");
-  await expect(stand.getByRole("listitem").first()).toHaveText(/Bean House\s*80\s*You're behind/, { timeout: 60_000 });
+  // Check-in rail: rank, name, standing, then the score.
+  await expect(stand.getByRole("listitem").first()).toHaveText(/Bean House\s*You're behind\s*80/, { timeout: 60_000 });
   await expect(stand.getByRole("listitem").filter({ hasText: "(you)" })).toContainText("20");
   await shot(page, info, "overview");
   await stand.getByRole("link", { name: "All competitors" }).click();

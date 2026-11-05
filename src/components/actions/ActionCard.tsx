@@ -73,7 +73,7 @@ export function ActionCard({
       className={cn(
         "flex scroll-mt-24 flex-col gap-2 rounded-lg border bg-surface p-4",
         // The fix a link opened (?fix=): outlined and pulsing a few times, so it is easy to spot on the board.
-        picked ? "animate-fix-pulse border-brand ring-2 ring-brand/20" : "border-transparent",
+        picked ? "animate-fix-pulse border-primary ring-2 ring-primary/20" : "border-transparent",
       )}
       data-testid="opportunity"
       data-status={item.status}

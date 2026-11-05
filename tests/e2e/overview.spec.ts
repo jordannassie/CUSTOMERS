@@ -313,13 +313,13 @@ test("the chart draws every business in its own color, with its name and latest 
   await expect(chart.getByTestId("scan-line")).toHaveCount(4, { timeout: 60_000 });
   await expect(chart.getByTestId("scan-line").first()).toContainText("You");
   await expect(chart.getByTestId("scan-line").filter({ hasText: "Bean House" })).toHaveCount(1);
-  // Five drawn lines: you, three competitors and your dashed 30-day score.
-  await expect(chart.locator("path.recharts-curve.recharts-line-curve")).toHaveCount(5);
+  // Five drawn lines: you, three competitors and your dashed 30-day score (one chart-line group each).
+  await expect(chart.getByTestId("chart-line")).toHaveCount(5);
   // A name hides its line and shows it again.
   await chart.getByTestId("scan-line").filter({ hasText: "Blue Door Coffee" }).click();
-  await expect(chart.locator("path.recharts-curve.recharts-line-curve")).toHaveCount(4);
+  await expect(chart.getByTestId("chart-line")).toHaveCount(4);
   await chart.getByTestId("scan-line").filter({ hasText: "Blue Door Coffee" }).click();
-  await expect(chart.locator("path.recharts-curve.recharts-line-curve")).toHaveCount(5);
+  await expect(chart.getByTestId("chart-line")).toHaveCount(5);
   await expect(page.getByTestId("where-you-stand")).toContainText("Bean House");
   await shot(page, info, "overview-chart");
 });

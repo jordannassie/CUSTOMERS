@@ -107,7 +107,7 @@ export function LineAreaChart({ labels, series, ariaLabel, yMax, format = (n) =>
               />
             ))}
             {ordered.map((s, k) => (
-              <g key={s.id}>
+              <g key={s.id} data-testid="chart-line" data-series={s.id}>
                 {knownRuns(s.values).map((run, r) =>
                   run.length > 1 ? (
                     <path

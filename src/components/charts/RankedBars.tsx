@@ -25,7 +25,8 @@ type Props = {
 export function RankedBars({ rows, ariaLabel, headers, max, footnote }: Props) {
   const top = max ?? Math.max(1, ...rows.map((r) => r.value));
   const hasTools = rows.some((r) => r.tools?.length);
-  const grid = hasTools ? "grid-cols-[minmax(110px,1fr)_minmax(0,2.2fr)_auto]" : "grid-cols-[minmax(110px,1fr)_minmax(0,2.2fr)]";
+  // minmax(0, ...): a long name with no spaces shrinks and wraps instead of widening the grid past the screen.
+  const grid = hasTools ? "grid-cols-[minmax(0,1fr)_minmax(0,2.2fr)_auto]" : "grid-cols-[minmax(0,1fr)_minmax(0,2.2fr)]";
   return (
     <div className="flex flex-col" role="figure" aria-label={ariaLabel}>
       {headers && (
@@ -38,7 +39,7 @@ export function RankedBars({ rows, ariaLabel, headers, max, footnote }: Props) {
       {rows.map((r, k) => (
         <div key={r.key} className={cn("grid items-center gap-3 border-t border-track py-2.5", grid)}>
           <span className="flex min-w-0 flex-col">
-            <span className="text-sm font-semibold break-words">{r.label}</span>
+            <span className="min-w-0 text-sm font-semibold [overflow-wrap:anywhere]">{r.label}</span>
             {r.sub && <span className="text-xs text-muted-foreground">{r.sub}</span>}
           </span>
           <span className="flex items-center gap-2.5">

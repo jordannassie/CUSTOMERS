@@ -221,11 +221,13 @@
   --shadow-user: var(--cd-shadow-user);
 
   /* Check-in motion. Every one stops under prefers-reduced-motion (the rule at the end of this file). */
-  --animate-rise: rise 0.5s ease-out both;
-  --animate-fade: fade 0.6s ease-out both;
-  --animate-pop: pop 0.6s cubic-bezier(0.3, 1.4, 0.5, 1) both;
-  --animate-grow-x: grow-x 0.8s cubic-bezier(0.2, 0.7, 0.2, 1) both;
-  --animate-draw: draw 1.6s ease-out both;
+  /* "backwards", not "both": hidden while waiting for the delay, then no transform left behind. A transform kept after
+     the animation would make every card a frame for its fixed children (the question panel, menus). */
+  --animate-rise: rise 0.5s ease-out backwards;
+  --animate-fade: fade 0.6s ease-out backwards;
+  --animate-pop: pop 0.6s cubic-bezier(0.3, 1.4, 0.5, 1) backwards;
+  --animate-grow-x: grow-x 0.8s cubic-bezier(0.2, 0.7, 0.2, 1) backwards;
+  --animate-draw: draw 1.6s ease-out backwards;
   @keyframes rise {
     from { opacity: 0; transform: translateY(10px); }
     to { opacity: 1; transform: none; }

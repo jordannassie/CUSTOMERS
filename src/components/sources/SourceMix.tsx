@@ -37,7 +37,7 @@ export function SourceMix({ sites, moreSites }: Props) {
           rows={top.map((s) => ({
             key: s.host,
             label: (
-              <span className="truncate" title={s.host}>
+              <span className="block truncate" title={s.host}>
                 {s.host}
               </span>
             ),

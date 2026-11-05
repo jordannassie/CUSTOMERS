@@ -35,7 +35,7 @@ export function ListedFirst({ businessId, listed, add }: Props) {
                 <SiteIcon domain={s.host} name={s.host} size="sm" className="mt-px" />
                 <div className="flex min-w-0 flex-col gap-1">
                   <p className="flex min-w-0 flex-wrap items-baseline gap-x-2">
-                    <span className="truncate font-bold" title={s.host}>{s.host}</span>
+                    <span className="max-w-full min-w-0 truncate font-bold" title={s.host}>{s.host}</span>
                     <span className="text-xs text-muted-foreground">{s.kindLabel}</span>
                   </p>
                   <p className="text-sm leading-normal text-ink-2">
