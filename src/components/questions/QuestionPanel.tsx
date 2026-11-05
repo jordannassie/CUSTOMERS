@@ -52,7 +52,7 @@ export function QuestionPanel({ open, onClose, container, id, title, position, f
             }}
           >
             <div className="flex h-[52px] shrink-0 items-center justify-between gap-3 border-b border-border px-5">
-              <p className="flex items-baseline gap-2 text-[15px] font-semibold tracking-[-0.01em]">
+              <p className="flex items-baseline gap-2 font-serif text-lg font-normal">
                 Question details
                 {position && <span className="text-xs font-normal text-text-hint tabular-nums">{position}</span>}
               </p>
@@ -76,10 +76,10 @@ export function QuestionPanel({ open, onClose, container, id, title, position, f
               <div className="flex flex-col gap-2 px-5 pt-5">
                 <p className="text-xs font-medium text-muted-foreground">Customer question</p>
                 <div className="flex items-start gap-3">
-                  <span aria-hidden="true" className="grid size-9 shrink-0 place-items-center rounded-full bg-primary-tint text-sm font-semibold text-primary-hover">
+                  <span aria-hidden="true" className="grid size-9 shrink-0 place-items-center rounded-full bg-brand-tint text-sm font-semibold text-brand-ink">
                     ?
                   </span>
-                  <div className="flex min-w-0 items-start gap-2 rounded-2xl rounded-tl-sm bg-muted px-4 py-2.5">
+                  <div className="flex min-w-0 items-start gap-2 rounded-[6px_20px_20px_20px] bg-muted px-4 py-3">
                     <SheetTitle className="text-[15px] leading-snug font-medium wrap-break-word">{title}</SheetTitle>
                     <button
                       type="button"

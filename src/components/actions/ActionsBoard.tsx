@@ -178,8 +178,8 @@ export function ActionsBoard({
                 aria-pressed={place === c.place}
                 onClick={() => setPlace(place === c.place ? "all" : c.place)}
                 className={cn(
-                  "h-[22px] rounded-sm border px-2 text-xs font-medium tabular-nums transition-colors",
-                  place === c.place ? "border-primary bg-primary text-primary-foreground" : "border-border bg-surface text-foreground hover:bg-muted",
+                  "h-8 rounded-full border px-3 text-xs font-medium tabular-nums transition-colors",
+                  place === c.place ? "border-brand bg-brand text-primary-foreground" : "border-border-strong bg-surface text-foreground hover:border-brand hover:text-brand-strong",
                 )}
               >
                 {WHERE_LABEL[c.place]} {c.n}
@@ -212,7 +212,7 @@ function Filter<T extends string>({ label, value, onChange, options }: { label: 
         placeholder={label}
         value={value}
         onValueChange={(v) => onChange(v as T)}
-        className="h-8 w-auto max-w-60 min-w-0 gap-1.5 rounded-md px-2.5 text-[13px] md:text-[13px]"
+        className="h-10 w-auto max-w-60 min-w-0 gap-1.5 rounded-full px-3.5 text-[13px] md:text-[13px]"
         options={options.map(([v, text]) => ({ value: v, label: `${label}: ${text}` }))}
       />
     </div>

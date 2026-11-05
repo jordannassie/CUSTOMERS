@@ -13,7 +13,7 @@ export function SourceChip({ host, url }: { host: string; url: string }) {
       target="_blank"
       rel="noopener noreferrer nofollow"
       title={host}
-      className="mx-0.5 inline-flex max-w-[180px] items-center gap-1 rounded-sm bg-muted px-1.5 align-baseline text-xs text-muted-foreground hover:text-primary"
+      className="mx-0.5 inline-flex max-w-[180px] items-center gap-1 rounded-full bg-muted px-2 align-baseline text-xs text-muted-foreground hover:text-primary"
       data-testid="source-chip"
     >
       <span className="truncate">{host}</span>
@@ -28,11 +28,11 @@ function Marked({ parts }: { parts: Part[] }) {
     <>
       {parts.map((p, i) =>
         p.mark === "you" ? (
-          <mark key={i} className="rounded-xs bg-primary/15 px-0.5 font-semibold text-primary-hover">
+          <mark key={i} className="rounded-[3px] bg-brand-tint-2 px-[3px] font-semibold text-brand-ink">
             {p.text}
           </mark>
         ) : p.mark === "other" ? (
-          <mark key={i} className="rounded-xs bg-mid-bg px-0.5 font-medium text-foreground">
+          <mark key={i} className="rounded-[3px] bg-rival-mark px-[3px] font-medium text-foreground">
             {p.text}
           </mark>
         ) : (

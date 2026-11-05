@@ -3,17 +3,19 @@
 import { useState, type ReactNode } from "react";
 import { ChevronRight, Circle, CircleCheck, CircleDashed, CircleSlash, Contrast, type LucideIcon } from "lucide-react";
 import { cn } from "cn";
+import { StatusPill } from "@/components/checkin";
 import { STATUS_TEXT, type ActionItem, type ActionStatus } from "@/modules/opportunities/board/service";
+import { STATUS_TONE } from "./status-tone";
 
 /** The four working columns, side by side; Dismissed sits folded away under them. */
 const BOARD: ActionStatus[] = ["suggested", "todo", "in_progress", "done"];
 
 const STATUS_ICON: Record<ActionStatus, { icon: LucideIcon; className: string }> = {
-  suggested: { icon: CircleDashed, className: "text-primary" },
-  todo: { icon: Circle, className: "text-muted-foreground" },
-  in_progress: { icon: Contrast, className: "text-mid" },
-  done: { icon: CircleCheck, className: "fill-good text-surface" },
-  dismissed: { icon: CircleSlash, className: "text-text-hint" },
+  suggested: { icon: CircleDashed, className: "" },
+  todo: { icon: Circle, className: "" },
+  in_progress: { icon: Contrast, className: "" },
+  done: { icon: CircleCheck, className: "" },
+  dismissed: { icon: CircleSlash, className: "" },
 };
 
 const EMPTY: Record<ActionStatus, string> = {
@@ -26,17 +28,20 @@ const EMPTY: Record<ActionStatus, string> = {
 
 function ColumnHead({ status, count }: { status: ActionStatus; count: number }) {
   const { icon: Icon, className } = STATUS_ICON[status];
+  // Check-in: each column is named by its status pill, with the count beside it.
   return (
     <>
-      <Icon className={cn("size-[15px] shrink-0", className)} aria-hidden="true" />
-      {STATUS_TEXT[status]}
-      <span className="rounded-xs border border-border bg-surface px-1.5 text-[11px] font-medium text-muted-foreground tabular-nums">{count}</span>
+      <StatusPill tone={STATUS_TONE[status]} className="gap-1.5 py-1.5">
+        <Icon className={cn("size-[15px] shrink-0", className)} aria-hidden="true" />
+        {STATUS_TEXT[status]}
+      </StatusPill>
+      <span className="text-[13px] font-medium text-muted-foreground tabular-nums">{count}</span>
     </>
   );
 }
 
 function Empty({ status }: { status: ActionStatus }) {
-  return <p className="rounded-lg border border-dashed border-border bg-surface px-3 py-5 text-center text-xs text-text-hint">{EMPTY[status]}</p>;
+  return <p className="rounded-lg border border-dashed border-border-strong px-3 py-6 text-center text-xs text-muted-foreground">{EMPTY[status]}</p>;
 }
 
 /**
@@ -56,11 +61,11 @@ export function BoardColumns({ items, pickedId, card }: { items: ActionItem[]; p
             return (
               <section
                 key={status}
-                className="flex min-h-[360px] flex-col gap-2.5 rounded-lg border border-border bg-muted p-2.5"
+                className="flex min-h-[360px] flex-col gap-3 rounded-xl bg-sunken/60 p-2.5"
                 aria-label={STATUS_TEXT[status]}
                 data-testid={`column-${status}`}
               >
-                <h2 className="flex items-center gap-2 px-1 pt-1 pb-0.5 text-[13px] font-semibold">
+                <h2 className="flex items-center gap-2 px-0.5 pt-0.5 text-[13px] font-semibold">
                   <ColumnHead status={status} count={column.length} />
                 </h2>
                 {column.length === 0 ? <Empty status={status} /> : column.map(card)}
@@ -69,11 +74,11 @@ export function BoardColumns({ items, pickedId, card }: { items: ActionItem[]; p
           })}
         </div>
       </div>
-      <section className="rounded-lg border border-border bg-muted p-2.5" aria-label={STATUS_TEXT.dismissed} data-testid="column-dismissed">
+      <section className="rounded-xl bg-card p-3" aria-label={STATUS_TEXT.dismissed} data-testid="column-dismissed">
         <h2 className="text-[13px] font-semibold">
           <button
             type="button"
-            className="flex w-full items-center gap-2 rounded-sm px-1 py-0.5 text-left outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+            className="flex min-h-11 w-full items-center gap-2 rounded-[10px] px-1 py-0.5 text-left"
             aria-expanded={showDismissed}
             onClick={() => setShowDismissed((s) => !s)}
           >

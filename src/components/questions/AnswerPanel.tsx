@@ -71,7 +71,7 @@ export function AnswerPanel({ answer: a, businessName, when = "Latest answer" }:
               {list.map((b, i) => (
                 <li
                   key={b.name}
-                  className={cn("flex gap-2.5 rounded-md border px-3 py-2", b.you ? "border-primary/25 bg-primary-tint" : "border-border bg-surface")}
+                  className={cn("flex gap-2.5 rounded-md border px-3 py-2", b.you ? "border-brand/25 bg-brand-tint" : "border-border bg-surface")}
                   data-you={b.you || undefined}
                 >
                   {showPositions && (
@@ -88,7 +88,7 @@ export function AnswerPanel({ answer: a, businessName, when = "Latest answer" }:
               ))}
             </List>
           ) : (
-            <div className="rounded-lg bg-muted/60 px-3.5 py-3">
+            <div className="rounded-[14px] bg-muted px-3.5 py-3">
               <AnswerText text={a.text} names={names} />
             </div>
           )}
@@ -99,7 +99,7 @@ export function AnswerPanel({ answer: a, businessName, when = "Latest answer" }:
                 {full ? "Hide full answer text" : "Show full answer text"}
               </Button>
               {full && (
-                <div className="rounded-lg bg-muted/60 px-3.5 py-3">
+                <div className="rounded-[14px] bg-muted px-3.5 py-3">
                   <AnswerText text={a.text} names={names} />
                 </div>
               )}
@@ -128,9 +128,9 @@ export function AnswerPanel({ answer: a, businessName, when = "Latest answer" }:
         )}
 
         {!a.namedYou && (
-          <div className="flex flex-col gap-3 rounded-lg border border-border border-l-2 border-l-mid bg-surface px-3.5 py-3" data-testid="why-skipped">
+          <div className="flex flex-col gap-3 rounded-lg border border-border border-l-2 border-l-rival bg-surface px-3.5 py-3" data-testid="why-skipped">
             <div className="flex flex-col gap-1">
-              <p className="text-xs font-semibold text-mid-text">Why you were skipped</p>
+              <p className="text-xs font-semibold text-rival-ink">Why you were skipped</p>
               <p className="text-[13px] leading-relaxed text-foreground">{whySkipped(a)}</p>
             </div>
             <SkippedFix answer={a} />

@@ -56,7 +56,7 @@ function FixDetails({ fix, id }: { fix: ShownFix; id: string }) {
           ))}
         </ol>
       </Block>
-      <p className="border-l-2 border-primary pl-3 text-sm break-words">
+      <p className="border-l-2 border-brand pl-3 text-sm break-words">
         <span className="font-semibold">{fix.goal.label}:</span> {fix.goal.text}
       </p>
     </div>
@@ -70,10 +70,10 @@ function FixDetails({ fix, id }: { fix: ShownFix; id: string }) {
 export function ReportFixes({ fixes, none }: { fixes: ShownFix[]; none: string }) {
   const [open, setOpen] = useState<number | null>(null);
   return (
-    <section aria-labelledby="report-fixes" className="flex flex-col gap-4 rounded-md border border-border bg-surface p-5 sm:p-6" data-testid="report-fixes">
+    <section aria-labelledby="report-fixes" className="report-section flex animate-rise flex-col gap-4 rounded-xl bg-card px-5 py-[22px] [animation-delay:0.4s] sm:px-6" data-testid="report-fixes">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="flex min-w-0 flex-col gap-1">
-          <h2 id="report-fixes" className="text-base font-semibold tracking-[-0.02em]">
+          <h2 id="report-fixes" className="font-serif text-[22px] leading-snug font-normal">
             Fixes
           </h2>
           <p className="text-sm text-muted-foreground">
@@ -87,7 +87,7 @@ export function ReportFixes({ fixes, none }: { fixes: ShownFix[]; none: string }
         )}
       </div>
       {fixes.length > 0 && (
-        <ol className="flex flex-col divide-y divide-border border-t border-border" data-testid="report-top-fixes">
+        <ol className="flex flex-col divide-y divide-divider border-t border-divider" data-testid="report-top-fixes">
           {fixes.map((fix) => {
             const expanded = open === fix.n;
             const detailsId = `report-fix-${fix.n}`;
@@ -99,9 +99,9 @@ export function ReportFixes({ fixes, none }: { fixes: ShownFix[]; none: string }
                   aria-expanded={expanded}
                   aria-controls={detailsId}
                   onClick={() => setOpen(expanded ? null : fix.n)}
-                  className="-mx-2 flex w-[calc(100%+1rem)] items-start gap-3 rounded-md px-2 py-3.5 text-left hover:bg-muted focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none"
+                  className="-mx-2 flex w-[calc(100%+1rem)] items-start gap-3 rounded-[12px] px-2 py-3.5 text-left hover:bg-muted focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none"
                 >
-                  <span className="mt-px flex size-6 shrink-0 items-center justify-center rounded-full bg-primary-tint text-xs font-semibold text-primary-hover tabular-nums">
+                  <span className="mt-px flex size-6 shrink-0 items-center justify-center rounded-full bg-brand-tint text-xs font-semibold text-brand-ink tabular-nums">
                     {fix.n}
                   </span>
                   <span className="flex min-w-0 flex-1 flex-col gap-1">

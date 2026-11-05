@@ -63,27 +63,27 @@ export default async function ReportsPage({ searchParams }: Props) {
                 <ReportFixes key={report.id} fixes={report.fixes} none={report.short.fixes} />
               </>
             ) : shown === "old" ? (
-              <section className="flex flex-col items-start gap-3 rounded-md border border-border bg-surface p-5" data-testid="report-old">
+              <section className="flex flex-col items-start gap-3 rounded-xl bg-card p-6" data-testid="report-old">
                 <FileClock aria-hidden className="size-6 text-muted-foreground" />
-                <h2 className="text-base font-semibold tracking-[-0.02em]">This report uses the old layout</h2>
+                <h2 className="font-serif text-[22px] leading-snug font-normal">This report uses the old layout</h2>
                 <p className="max-w-[560px] text-sm text-muted-foreground">
                   It was saved before reports became PDFs, so it can&apos;t be downloaded. Open the latest report and save a new
                   snapshot to get a PDF.
                 </p>
-                <Button asChild variant="outline" className="w-fit">
+                <Button asChild variant="outline" className="w-fit rounded-full">
                   <Link href="/reports">Open the latest report</Link>
                 </Button>
               </section>
             ) : (
-              <section className="flex flex-col items-start gap-3 rounded-md border border-border bg-surface p-5" data-testid="reports-empty">
+              <section className="flex flex-col items-start gap-3 rounded-xl bg-card p-6" data-testid="reports-empty">
                 <FileText aria-hidden className="size-6 text-muted-foreground" />
-                <h2 className="text-base font-semibold tracking-[-0.02em]">{business.status === "paused" ? "Scans are paused" : "No report yet"}</h2>
+                <h2 className="font-serif text-[22px] leading-snug font-normal">{business.status === "paused" ? "Scans are paused" : "No report yet"}</h2>
                 <p className="max-w-[560px] text-sm text-muted-foreground">
                   {business.status === "paused"
                     ? `Scans are paused for ${business.name}, so there are no answers to report on yet. The report fills in after scans start again.`
                     : `Your first report appears here after the first scan of ${business.name} finishes. Run it from the Overview.`}
                 </p>
-                <Button asChild className="w-fit">
+                <Button asChild className="w-fit rounded-full">
                   <Link href="/dashboard">Go to Overview</Link>
                 </Button>
               </section>

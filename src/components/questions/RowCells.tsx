@@ -50,11 +50,9 @@ export function RowMeta({ question }: { question: QuestionRow }) {
 const R = 13;
 const C = 2 * Math.PI * R;
 
-/** Ring colour by how often AI named you: green from 70%, amber from 40%, blue above 0, a red dot at 0. */
+/** Ring colour (Check-in theme): brand blue when AI named you at all, a coral dot at 0. */
 function ringStroke(pct: number): string {
-  if (pct >= 70) return "stroke-good";
-  if (pct >= 40) return "stroke-mid";
-  return pct > 0 ? "stroke-primary" : "stroke-low";
+  return pct > 0 ? "stroke-brand" : "stroke-rival";
 }
 
 /** The share of answers that named you as a small ring, the number inside. Empty and grey before any answer. */
@@ -64,7 +62,7 @@ export function NamedRing({ pct }: { pct: number | null }) {
   return (
     <span className="relative inline-flex size-[34px] shrink-0 items-center justify-center" aria-hidden="true">
       <svg viewBox="0 0 34 34" className="absolute inset-0 size-full -rotate-90">
-        <circle cx="17" cy="17" r={R} fill="none" strokeWidth="3.5" className="stroke-muted" />
+        <circle cx="17" cy="17" r={R} fill="none" strokeWidth="3.5" className="stroke-track" />
         {pct !== null && (
           <circle
             cx="17"
@@ -121,9 +119,9 @@ function checkSeries(question: QuestionRow): number[] {
 }
 
 const TREND_STYLE = {
-  up: { icon: ArrowUpRight, className: "bg-good-bg text-good-text" },
-  same: { icon: Equal, className: "bg-muted text-muted-foreground" },
-  down: { icon: ArrowDownRight, className: "bg-low-bg text-low-text" },
+  up: { icon: ArrowUpRight, className: "bg-brand-tint-2 text-brand-strong" },
+  same: { icon: Equal, className: "bg-track text-muted-foreground" },
+  down: { icon: ArrowDownRight, className: "bg-rival-tint text-danger" },
 } as const;
 
 /** The recent checks as a small line, and the last scan against the one before. */
@@ -133,7 +131,7 @@ export function TrendCell({ question }: { question: QuestionRow }) {
   const Icon = t ? TREND_STYLE[t].icon : null;
   return (
     <div className={cn("flex items-center gap-2", t === null && series.length < 2 && "max-lg:hidden")} data-testid="question-trend" data-trend={t ?? "none"}>
-      {series.length >= 2 && <Sparkline values={series} color={question.named > 0 ? "var(--chart-1)" : "var(--color-competitor-2)"} />}
+      {series.length >= 2 && <Sparkline values={series} color={question.named > 0 ? "var(--cd-primary)" : "var(--cd-competitor-2)"} />}
       {t === null ? (
         series.length < 2 && (
           <span className="text-xs text-text-hint" title="Shows once this question has 2 scans">
@@ -142,7 +140,7 @@ export function TrendCell({ question }: { question: QuestionRow }) {
         )
       ) : (
         <span
-          className={cn("inline-flex items-center gap-0.5 rounded-sm px-1 py-0.5 text-[11px] font-semibold", TREND_STYLE[t].className)}
+          className={cn("inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[11px] font-semibold", TREND_STYLE[t].className)}
           title="The latest scan of this question against the one before"
         >
           {Icon && <Icon className="size-3" aria-hidden="true" />}

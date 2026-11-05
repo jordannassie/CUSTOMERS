@@ -9,7 +9,7 @@ const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one :
 
 /** The smaller words after a number, like "of 25"; they wrap under it in a narrow tile instead of being cut off. */
 function Unit({ children }: { children: React.ReactNode }) {
-  return <span className="text-sm font-normal tracking-normal whitespace-normal text-muted-foreground"> {children}</span>;
+  return <span className="font-sans text-sm font-normal tracking-normal whitespace-normal text-muted-foreground"> {children}</span>;
 }
 
 // The four numbers over the active questions (dashboard redesign, Questions 2): how many, how many named you at
@@ -54,7 +54,7 @@ export function KpiStrip({ view }: { view: QuestionsView }) {
           label="Estimated use"
           testId="credit-estimate"
           value={
-            <span aria-live="polite">
+            <span aria-live="polite" className="block whitespace-normal">
               About {count(credits)}
               <Unit>credits a month</Unit>
             </span>

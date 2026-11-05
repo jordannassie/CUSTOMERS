@@ -71,7 +71,7 @@ export default async function ActionsPage({ searchParams }: { searchParams: Prom
       )}
 
       {fixes.pending ? (
-        <section key="fixes-working" className="rounded-lg border border-border bg-surface p-5" data-testid="fixes-working">
+        <section key="fixes-working" className="rounded-xl bg-card p-6" data-testid="fixes-working">
           <WaitForFixes businessId={business.id} check={checkFixes} />
           {board.items.length > 0 ? <p className="mt-3 text-sm text-muted-foreground">Below are the fixes from your previous scan until then.</p> : null}
         </section>
@@ -86,8 +86,8 @@ export default async function ActionsPage({ searchParams }: { searchParams: Prom
           <PageHeader title="Actions" description={description} actions={add} />
           {intro}
           {fixes.pending ? null : (
-            <section className="rounded-lg border border-border bg-surface p-5" data-testid="no-opportunities">
-              <h2 className="text-base font-semibold tracking-[-0.02em]">{fixes.everScanned ? "Nothing to fix right now" : "No actions yet"}</h2>
+            <section className="rounded-xl bg-card p-6" data-testid="no-opportunities">
+              <h2 className="font-serif text-[22px] leading-snug font-normal">{fixes.everScanned ? "Nothing to fix right now" : "No actions yet"}</h2>
               <p className="mt-3 max-w-[560px] text-sm text-muted-foreground">
                 {fixes.everScanned
                   ? "Your latest scan found no fixes. New ones appear here when a scan shows why AI picks other businesses, or add one from Compare."

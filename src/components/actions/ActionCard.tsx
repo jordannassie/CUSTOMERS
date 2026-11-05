@@ -71,19 +71,19 @@ export function ActionCard({
     <article
       id={fixCardId(item.id)}
       className={cn(
-        "flex scroll-mt-24 flex-col gap-2 rounded-lg border bg-surface p-3 shadow-xs",
+        "flex scroll-mt-24 flex-col gap-2 rounded-lg border bg-surface p-4",
         // The fix a link opened (?fix=): outlined and pulsing a few times, so it is easy to spot on the board.
-        picked ? "animate-fix-pulse border-primary ring-2 ring-primary/20" : "border-border",
+        picked ? "animate-fix-pulse border-brand ring-2 ring-brand/20" : "border-transparent",
       )}
       data-testid="opportunity"
       data-status={item.status}
       data-picked={picked || undefined}
     >
-      {picked && <span className="text-[11px] font-semibold tracking-wide text-primary uppercase">The fix you opened</span>}
+      {picked && <span className="text-[11px] font-semibold tracking-wide text-brand uppercase">The fix you opened</span>}
       <div className="flex items-center justify-between gap-2">
         <span className="flex min-w-0 items-center gap-1.5">
           <SiteIcon domain={whereDomain(item, siteDomain)} name={item.whereToApply} size="sm" className="size-5 text-[10px]" />
-          <span className="min-w-0 truncate text-xs font-medium text-primary-hover" title={item.whereToApply} data-testid="action-where">
+          <span className="min-w-0 truncate text-xs font-medium text-brand-strong" title={item.whereToApply} data-testid="action-where">
             {item.whereToApply}
           </span>
         </span>
@@ -91,14 +91,14 @@ export function ActionCard({
           {impact.text}
         </Badge>
       </div>
-      <h3 className="text-[13.5px] leading-snug font-semibold">
+      <h3 className="text-[15px] leading-snug font-semibold">
         <button type="button" className="text-left outline-none hover:underline focus-visible:underline" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
           {item.title}
         </button>
       </h3>
       {item.evidence && (
         <p
-          className={cn("text-[12.5px] leading-relaxed text-muted-foreground", open ? "whitespace-pre-line" : "line-clamp-2")}
+          className={cn("text-[13px] leading-relaxed text-muted-foreground", open ? "whitespace-pre-line" : "line-clamp-2")}
           title={open ? undefined : item.evidence}
           data-testid="action-evidence"
         >
@@ -117,7 +117,7 @@ export function ActionCard({
         </Link>
       )}
       {open && (item.whyItMatters || item.steps.length > 0) && (
-        <div className="flex flex-col gap-2 rounded-md bg-muted p-2.5 text-[13px]">
+        <div className="flex flex-col gap-2 rounded-[14px] bg-muted p-3 text-[13px]">
           {item.whyItMatters && <p className="text-muted-foreground">{item.whyItMatters}</p>}
           {item.steps.length > 0 && (
             <ol className="flex list-decimal flex-col gap-1 pl-4 marker:text-muted-foreground">
@@ -154,7 +154,7 @@ export function ActionCard({
       <div className="mt-0.5 flex flex-wrap items-center justify-between gap-2">
         <span className="flex min-w-0 items-center gap-2 text-[11.5px] text-text-hint tabular-nums">
           {item.status === "done" && item.completedAt ? (
-            <span className="flex items-center gap-1 text-good-text" data-testid="action-done">
+            <span className="flex items-center gap-1 rounded-full bg-brand-tint-2 px-2 py-0.5 font-semibold text-brand-strong" data-testid="action-done">
               <CircleCheck className="size-3" aria-hidden="true" />
               Done <LocalDate iso={item.completedAt} options={SHORT_DAY} />
             </span>
@@ -165,7 +165,7 @@ export function ActionCard({
             </span>
           )}
           {item.assignedToYou && (
-            <span className="flex items-center gap-1 rounded-sm bg-primary-tint px-1.5 py-px font-medium text-primary-hover" title="Assigned to you">
+            <span className="flex items-center gap-1 rounded-full bg-brand-tint px-2 py-px font-medium text-brand-ink" title="Assigned to you">
               <UserRound className="size-3" aria-hidden="true" />
               <span className="sr-only">Assigned to </span>You
             </span>
@@ -175,17 +175,17 @@ export function ActionCard({
           <div className="ml-auto flex items-center gap-1.5">
             {item.status === "suggested" ? (
               <>
-                <Button type="button" size="xs" variant="ghost" disabled={busy} onClick={() => onMove("dismissed")}>
+                <Button type="button" size="xs" variant="ghost" className="rounded-full px-2.5" disabled={busy} onClick={() => onMove("dismissed")}>
                   Dismiss
                 </Button>
-                <Button type="button" size="xs" disabled={busy} onClick={() => onMove("todo")} data-testid="accept-action">
+                <Button type="button" size="xs" variant="brand" className="px-3" disabled={busy} onClick={() => onMove("todo")} data-testid="accept-action">
                   Accept
                 </Button>
               </>
             ) : (
               <>
                 {next && (
-                  <Button type="button" size="xs" variant="outline" disabled={busy} onClick={() => onMove(next.to)}>
+                  <Button type="button" size="xs" variant="brand" className="px-3" disabled={busy} onClick={() => onMove(next.to)}>
                     {next.text}
                   </Button>
                 )}

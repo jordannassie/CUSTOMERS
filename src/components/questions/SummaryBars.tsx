@@ -1,19 +1,22 @@
 import { cn } from "cn";
-import { colorAt } from "@/lib/series-colors";
 import { topicsOf } from "@/modules/questions/list";
 import type { QuestionRow, QuestionsView } from "@/modules/questions/service";
 
 type Part = { label: string; count: number; className?: string; color?: string };
 
 const DOT: Record<string, string> = { openai: "bg-chatgpt", anthropic: "bg-claude", perplexity: "bg-perplexity" };
+// Topics are not businesses, so they never use the coral that marks the leading competitor (Check-in theme).
+const TOPIC_COLORS = ["var(--cd-primary)", "var(--cd-primary-lighter)", "var(--cd-competitor-1)", "var(--cd-competitor-2)", "var(--cd-competitor-3)"];
+// Inner panel inside the AI message card: the muted surface, 16px corners, no border.
+const PANEL = "flex flex-col gap-3 rounded-lg bg-muted px-4 pt-3.5 pb-4";
 
 /** A titled card: the legend with counts, and one bar split in the same parts. */
 function SummaryCard({ title, parts, testId }: { title: string; parts: Part[]; testId: string }) {
   const shown = parts.filter((p) => p.count > 0);
   return (
-    <section className="flex flex-col gap-3 rounded-lg border border-border bg-surface px-4 pt-3.5 pb-4" data-testid={testId} aria-label={title}>
+    <section className={PANEL} data-testid={testId} aria-label={title}>
       <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
-        <h2 className="text-[13.5px] font-semibold">{title}</h2>
+        <h3 className="text-sm font-semibold">{title}</h3>
         <ul className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
           {shown.map((p) => (
             <li key={p.label} className="inline-flex items-center gap-1.5">
@@ -23,7 +26,7 @@ function SummaryCard({ title, parts, testId }: { title: string; parts: Part[]; t
           ))}
         </ul>
       </div>
-      <div className="flex h-2 gap-[3px]" aria-hidden="true">
+      <div className="flex h-2.5 origin-left animate-grow-x gap-[3px]" aria-hidden="true">
         {shown.map((p) => (
           <i key={p.label} className={cn("block rounded-full", p.className)} style={{ flex: p.count, ...(p.color ? { background: p.color } : {}) }} />
         ))}
@@ -49,9 +52,9 @@ function resultParts(rows: QuestionRow[], models: number): Part[] {
   const allLabel = models === 1 ? "named you" : models === 2 ? "named by both" : `named by all ${models}`;
   const someLabel = models === 3 ? "named by 1 or 2" : "named by 1";
   return [
-    { label: allLabel, count: all, className: "bg-good" },
-    { label: someLabel, count: some, className: "bg-primary" },
-    { label: "not named", count: none, className: "bg-muted-foreground/25" },
+    { label: allLabel, count: all, className: "bg-brand" },
+    { label: someLabel, count: some, className: "bg-brand-lighter" },
+    { label: "not named", count: none, className: "bg-border-strong" },
     { label: "not checked yet", count: notYet, className: "bg-border" },
   ];
 }
@@ -62,7 +65,7 @@ function topicParts(rows: QuestionRow[]): Part[] {
   const parts: Part[] = topics.map((t, i) => ({
     label: t.toLowerCase(),
     count: rows.filter((r) => r.topic && key(r.topic) === key(t)).length,
-    color: colorAt(i),
+    color: TOPIC_COLORS[i] ?? "var(--cd-competitor-3)",
   }));
   const untagged = rows.filter((r) => !r.topic).length;
   return [...parts, { label: "no topic", count: untagged, className: "bg-border" }];
@@ -71,8 +74,8 @@ function topicParts(rows: QuestionRow[]): Part[] {
 /** Each AI tool's share of answers that named you, over the active questions. */
 function ModelCard({ view }: { view: QuestionsView }) {
   return (
-    <section className="flex flex-col gap-2.5 rounded-lg border border-border bg-surface px-4 pt-3.5 pb-4" data-testid="summary-models" aria-label="Each AI">
-      <h2 className="text-[13.5px] font-semibold">Each AI, recent checks</h2>
+    <section className={PANEL} data-testid="summary-models" aria-label="Each AI">
+      <h3 className="text-sm font-semibold">Each AI, recent checks</h3>
       <ul className="flex flex-col gap-2">
         {view.models.map((m) => {
           const results = view.active.flatMap((r) => r.results.filter((x) => x.model === m.id));
@@ -85,8 +88,8 @@ function ModelCard({ view }: { view: QuestionsView }) {
                 <span className={cn("size-2 rounded-full", DOT[m.id])} aria-hidden="true" />
                 {m.label}
               </span>
-              <span className="h-2 overflow-hidden rounded-full bg-muted" aria-hidden="true">
-                <span className={cn("block h-full rounded-full", DOT[m.id])} style={{ width: `${pct}%` }} />
+              <span className="h-2.5 overflow-hidden rounded-full bg-surface" aria-hidden="true">
+                <span className={cn("block h-full origin-left animate-grow-x rounded-full", DOT[m.id])} style={{ width: `${pct}%` }} />
               </span>
               <span className="text-muted-foreground tabular-nums">{checks ? `${appeared} of ${checks} answers` : "Not checked yet"}</span>
             </li>
@@ -102,7 +105,7 @@ export function SummaryBars({ view }: { view: QuestionsView }) {
   if (view.active.length === 0) return null;
   const hasTopics = view.active.some((r) => r.topic);
   return (
-    <div className="grid gap-4 lg:grid-cols-2">
+    <div className="grid gap-3 lg:grid-cols-2">
       {hasTopics ? <SummaryCard title="Topics" parts={topicParts(view.active)} testId="summary-topics" /> : <ModelCard view={view} />}
       <SummaryCard title="Results" parts={resultParts(view.active, view.models.length)} testId="summary-results" />
     </div>

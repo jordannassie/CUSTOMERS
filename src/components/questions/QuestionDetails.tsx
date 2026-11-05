@@ -99,7 +99,7 @@ function AllNamed({ question, answers, businessName }: { question: QuestionRow; 
       {(names.size > 0 || you > 0) && (
       <ul className="flex flex-wrap gap-1.5" data-testid="all-named">
         {you > 0 && (
-          <li className="inline-flex h-[22px] items-center gap-1 rounded-sm bg-primary-tint px-2 text-xs font-semibold text-primary">
+          <li className="inline-flex h-6 items-center gap-1 rounded-full bg-brand-tint-2 px-2.5 text-xs font-semibold text-brand-ink">
             {businessName} (you){" "}
             <span className="tabular-nums" title={`Named by ${you} of ${answers.length} AI tools`}>
               {you}
@@ -120,7 +120,7 @@ function AllNamed({ question, answers, businessName }: { question: QuestionRow; 
                 </span>
               </>
             );
-            const className = "inline-flex h-[22px] items-center gap-1 rounded-sm border border-border px-2 text-xs font-medium";
+            const className = "inline-flex h-6 items-center gap-1 rounded-full border border-border px-2.5 text-xs font-medium";
             return (
               <li key={n.name}>
                 {id ? (

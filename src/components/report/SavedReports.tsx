@@ -61,16 +61,16 @@ export function SavedReports({
   }
 
   return (
-    <section aria-labelledby="saved-reports" className="flex flex-col gap-3 rounded-md border border-border bg-surface p-5" data-testid="saved-reports">
-      <h2 id="saved-reports" className="text-base font-semibold tracking-[-0.02em]">
+    <section aria-labelledby="saved-reports" className="flex flex-col gap-3 rounded-xl bg-card p-5" data-testid="saved-reports">
+      <h2 id="saved-reports" className="text-[15px] font-semibold">
         Saved reports
       </h2>
       <ul className="-mx-2 flex flex-col gap-1">
-        <li className={cn("flex items-center gap-1 rounded-md", selected === null && "bg-primary-tint")}>
+        <li className={cn("flex items-center gap-1 rounded-[12px]", selected === null && "bg-brand-tint-3")}>
           <Link
             href={hrefOf(null)}
             aria-current={selected === null ? "page" : undefined}
-            className="flex min-w-0 flex-1 flex-col gap-0.5 rounded-md px-2 py-2 hover:bg-muted aria-[current=page]:hover:bg-transparent"
+            className="flex min-w-0 flex-1 flex-col gap-0.5 rounded-[12px] px-2.5 py-2 hover:bg-muted aria-[current=page]:hover:bg-transparent"
             data-testid="saved-report"
           >
             <span className={cn("flex items-center gap-2 text-sm font-medium", selected === null && "text-primary-hover")}>
@@ -95,7 +95,7 @@ export function SavedReports({
           );
           const detail = <span className="text-xs text-muted-foreground">{r.old ? `${r.detail}. No PDF` : r.detail}</span>;
           return (
-            <li key={r.id} className={cn("flex items-center gap-1 rounded-md", current && "bg-primary-tint")}>
+            <li key={r.id} className={cn("flex items-center gap-1 rounded-[12px]", current && "bg-brand-tint-3")}>
               {r.old ? (
                 <div className="flex min-w-0 flex-1 flex-col gap-0.5 px-2 py-2" data-testid="saved-report">
                   {title}
@@ -105,7 +105,7 @@ export function SavedReports({
                 <Link
                   href={hrefOf(r.id)}
                   aria-current={current ? "page" : undefined}
-                  className="flex min-w-0 flex-1 flex-col gap-0.5 rounded-md px-2 py-2 hover:bg-muted aria-[current=page]:hover:bg-transparent"
+                  className="flex min-w-0 flex-1 flex-col gap-0.5 rounded-[12px] px-2.5 py-2 hover:bg-muted aria-[current=page]:hover:bg-transparent"
                   data-testid="saved-report"
                 >
                   {title}

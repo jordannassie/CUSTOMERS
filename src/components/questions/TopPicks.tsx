@@ -1,14 +1,9 @@
 import { cn } from "cn";
 import type { QuestionRow } from "@/modules/questions/service";
 
-// Soft tints for the letter marks; a name always gets the same one, so a business looks the same on every row.
-const TINTS = [
-  "bg-primary-tint text-primary-hover",
-  "bg-mid-bg text-mid-text",
-  "bg-good-bg text-good-text",
-  "bg-low-bg text-low-text",
-  "bg-muted text-muted-foreground",
-];
+// Grey tints for the letter marks (Check-in theme: other businesses are grey; blue is you, coral the leader). A name
+// always gets the same one, so a business looks the same on every row.
+const TINTS = ["bg-track text-ink-2", "bg-border text-ink-2", "bg-border-strong text-foreground", "bg-muted text-muted-foreground"];
 
 function tintOf(name: string): string {
   let h = 0;

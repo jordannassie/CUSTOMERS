@@ -69,7 +69,7 @@ export function GetFoundChecklist({
   }
 
   return (
-    <section className="rounded-lg border border-border bg-surface" data-testid="get-found-checklist">
+    <section className="rounded-xl bg-card" data-testid="get-found-checklist">
       <header className="flex flex-wrap items-center gap-x-4 gap-y-2.5 px-4 py-3.5 sm:px-5">
         <div className="flex min-w-0 flex-wrap items-baseline gap-x-3 gap-y-0.5">
           <h2 className="text-[13.5px] font-semibold">Get found by AI</h2>
@@ -86,8 +86,8 @@ export function GetFoundChecklist({
             <li
               key={item.key}
               className={cn(
-                "inline-flex h-[21px] items-center gap-1 rounded-sm px-1.5 text-[11.5px] font-medium whitespace-nowrap",
-                item.done ? "bg-good-bg text-good-text" : "bg-muted text-muted-foreground",
+                "inline-flex h-6 items-center gap-1 rounded-full px-2.5 text-[11.5px] font-medium whitespace-nowrap",
+                item.done ? "bg-brand-tint-2 text-brand-strong" : "bg-muted text-ink-2",
               )}
               title={item.title}
             >

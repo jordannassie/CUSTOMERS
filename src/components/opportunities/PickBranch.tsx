@@ -47,7 +47,7 @@ export function PickBranch({ businessId, initial, search, pick }: { businessId: 
   }
 
   return (
-    <section id="pick-branch" className="flex flex-col gap-3 rounded-md border border-border bg-surface p-5" data-testid="pick-branch">
+    <section id="pick-branch" className="flex flex-col gap-3 rounded-xl bg-card p-6" data-testid="pick-branch">
       <div className="flex max-w-[620px] flex-col gap-3">
         <h2 className="text-base font-semibold tracking-[-0.02em]">Pick your branch on Google</h2>
         <p className="text-sm text-muted-foreground">
@@ -81,11 +81,11 @@ export function PickBranch({ businessId, initial, search, pick }: { businessId: 
           listing for your branch, add it at business.google.com. That step is in your checklist below.
         </p>
       ) : (
-        <div className="rounded-md border border-border">
+        <div className="overflow-hidden rounded-lg border border-border">
           <ul className="divide-y divide-border" data-testid="branch-choices">
             {result.choices.map((c) => (
               <li key={c.placeId}>
-                <label className="flex cursor-pointer items-start gap-3 px-4 py-3 transition-colors hover:bg-muted/50 has-checked:bg-primary-tint">
+                <label className="flex cursor-pointer items-start gap-3 px-4 py-3 transition-colors hover:bg-muted has-checked:bg-brand-tint">
                   <input
                     type="radio"
                     name="branch"

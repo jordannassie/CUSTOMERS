@@ -6,11 +6,11 @@ import { PageHeader } from "@/components/app/PageHeader";
 import { AddQuestionForm } from "@/components/questions/AddQuestionForm";
 import { FocusAnswers } from "@/components/questions/FocusAnswers";
 import { HeaderActions } from "@/components/questions/HeaderActions";
-import { KpiStrip } from "@/components/questions/KpiStrip";
 import { QuestionsProvider } from "@/components/questions/QuestionsProvider";
 import { QuestionTable } from "@/components/questions/QuestionTable";
 import { ScanNotice } from "@/components/questions/ScanNotice";
-import { SummaryBars } from "@/components/questions/SummaryBars";
+import { QuestionsIntro } from "@/components/questions/QuestionsIntro";
+import { AiMessage, FollowUps } from "@/components/checkin";
 import {
   addQuestion,
   atLimit,
@@ -68,11 +68,12 @@ export default async function QuestionsPage({ searchParams }: { searchParams: Se
           {/* Opened from "See the answers": the answers the link is about, before the list of questions. */}
           <FocusAnswers />
 
-          <KpiStrip view={view} />
+          {/* Check-in: the question, the summary as the first AI message, then every question in the next one. */}
+          <QuestionsIntro view={view} />
 
-          <SummaryBars view={view} />
-
-          <QuestionTable limitMessage={limitMessage} actions={actions} />
+          <AiMessage place="last" lead="Here is every question, and what each AI said." index={1} className="px-3 sm:px-6">
+            <QuestionTable limitMessage={limitMessage} actions={actions} />
+          </AiMessage>
 
           <AddQuestionForm
             businessId={view.businessId}
@@ -82,6 +83,14 @@ export default async function QuestionsPage({ searchParams }: { searchParams: Se
             frequency={view.frequency}
             limitMessage={limitMessage}
             add={addQuestion}
+          />
+
+          <FollowUps
+            items={[
+              { label: "Where does AI look before it names me?", href: "/sources" },
+              { label: "Who's ahead of me, and why?", href: "/competitors" },
+              { label: "What should I fix first?", href: "/actions" },
+            ]}
           />
         </div>
       </QuestionsProvider>

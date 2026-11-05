@@ -24,7 +24,7 @@ export function QuestionTable({ limitMessage, actions }: Props) {
   if (view.active.length === 0 && (view.paused.length === 0 || !showPaused)) {
     const paused = view.paused.length;
     return (
-      <div data-testid="no-questions" className="flex flex-col items-start gap-3 rounded-lg border border-dashed border-border bg-surface px-5 py-8">
+      <div data-testid="no-questions" className="flex flex-col items-start gap-3 rounded-lg border border-dashed border-border-strong bg-muted px-5 py-8">
         <MessageSquarePlus className="size-5 text-text-hint" aria-hidden="true" />
         <h2 className="text-[15px] font-semibold tracking-[-0.01em]">{paused > 0 ? "All your questions are paused" : "No questions yet"}</h2>
         <p className="text-[13px] text-muted-foreground">
@@ -47,12 +47,12 @@ export function QuestionTable({ limitMessage, actions }: Props) {
       </h2>
       <QuestionFilters />
       {noneYet && (
-        <p className="border-b border-border bg-muted/60 px-4 py-2 text-[13px] text-muted-foreground" data-testid="no-answers-yet">
+        <p className="border-b border-divider bg-muted px-4 py-2 text-[13px] text-muted-foreground" data-testid="no-answers-yet">
           No answers yet. Results show here after your next scan.
         </p>
       )}
 
-      <div className={`hidden border-b border-border bg-muted px-4 py-2.5 text-xs font-medium text-muted-foreground lg:grid ${GRID}`} aria-hidden="true">
+      <div className={`hidden border-b border-divider bg-muted px-4 py-2.5 text-xs font-medium text-muted-foreground lg:grid ${GRID}`} aria-hidden="true">
         <span>Named</span>
         <span>Question, click to see the answers</span>
         <span>Each AI</span>
@@ -84,7 +84,7 @@ export function QuestionTable({ limitMessage, actions }: Props) {
       ) : (
         <>
           {shown.active.length > 0 && (
-            <ul data-testid="active-questions" aria-label="Being checked" className="divide-y divide-border">
+            <ul data-testid="active-questions" aria-label="Being checked" className="divide-y divide-divider">
               {rows(shown.active)}
             </ul>
           )}
@@ -93,7 +93,7 @@ export function QuestionTable({ limitMessage, actions }: Props) {
               <p className="bg-muted px-4 py-2 text-xs font-medium text-muted-foreground">
                 Paused: not checked and no credits used. Past results stay until they are 30 days old.
               </p>
-              <ul aria-label="Paused" className="divide-y divide-border border-t border-border">
+              <ul aria-label="Paused" className="divide-y divide-divider border-t border-divider">
                 {rows(shown.paused)}
               </ul>
             </div>
@@ -101,7 +101,7 @@ export function QuestionTable({ limitMessage, actions }: Props) {
         </>
       )}
 
-      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border px-4 py-2.5">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-divider px-4 py-2.5">
         <p className="text-xs text-muted-foreground tabular-nums" data-testid="showing-count">
           Showing {count} of {total} {showPaused ? "questions" : "active questions"}
         </p>

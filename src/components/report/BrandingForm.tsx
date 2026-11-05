@@ -49,7 +49,7 @@ export function BrandingForm({
         <div className="flex items-center gap-2">
           <span
             aria-hidden
-            className="size-9 shrink-0 rounded-md border border-border"
+            className="size-10 shrink-0 rounded-[12px] border border-border"
             // The agency's own colour, shown as a swatch: user data, not a design colour.
             style={{ backgroundColor: accentOk && accent.trim() ? accent.trim() : "transparent" }}
           />

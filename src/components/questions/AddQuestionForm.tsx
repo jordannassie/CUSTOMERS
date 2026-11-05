@@ -44,9 +44,9 @@ export function AddQuestionForm({ businessId, example, activeCount, models, freq
   }
 
   return (
-    <form onSubmit={submit} aria-label="Add a question" className="flex flex-col gap-2 rounded-lg border border-border bg-surface px-4 py-3.5">
+    <form onSubmit={submit} aria-label="Add a question" className="flex flex-col gap-2.5 rounded-xl bg-card px-5 py-5 sm:ml-12 sm:px-6">
       <div className="flex flex-col gap-2 md:flex-row md:items-center md:gap-3">
-        <label htmlFor="new-question" className="shrink-0 text-[13.5px] font-semibold">
+        <label htmlFor="new-question" className="shrink-0 text-[15px] font-semibold">
           Add your own question
         </label>
         <Input
@@ -57,9 +57,9 @@ export function AddQuestionForm({ businessId, example, activeCount, models, freq
           disabled={full || pending}
           aria-describedby="new-question-hint new-question-effect"
           aria-invalid={error ? true : undefined}
-          className="h-8 text-[13px] md:flex-1"
+          className="text-sm md:flex-1"
         />
-        <Button type="submit" size="sm" disabled={full || pending} className="md:w-auto">
+        <Button type="submit" disabled={full || pending} className="rounded-full md:w-auto">
           {pending ? <Loader2 className="animate-spin" aria-hidden="true" /> : <Plus aria-hidden="true" />}
           Add question
         </Button>
@@ -74,7 +74,7 @@ export function AddQuestionForm({ businessId, example, activeCount, models, freq
         every scan, but they don&apos;t count in your score.
       </p>
       {full ? (
-        <p id="new-question-effect" data-testid="question-limit" className="rounded-sm bg-mid-bg px-2.5 py-1.5 text-xs text-mid-text">
+        <p id="new-question-effect" data-testid="question-limit" className="rounded-[10px] bg-muted px-3 py-2 text-xs text-ink-2">
           {limitMessage}
         </p>
       ) : (

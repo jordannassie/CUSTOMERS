@@ -12,7 +12,7 @@ function Stat({ label, value, sub, testId }: { label: string; value: string; sub
   return (
     <div className="flex min-w-0 flex-col gap-1 lg:px-5 lg:first:pl-0 lg:last:pr-0" data-testid={testId}>
       <dt className="text-xs text-muted-foreground">{label}</dt>
-      <dd className="text-2xl leading-tight font-semibold tracking-[-0.02em] tabular-nums">{value}</dd>
+      <dd className="font-serif text-[30px] leading-tight font-normal tabular-nums">{value}</dd>
       <dd className="text-xs text-muted-foreground">{sub}</dd>
     </div>
   );
@@ -33,9 +33,9 @@ export function ReportOverview({ report, saved }: { report: ShownReport; saved: 
     { label: "What to fix first", text: report.short.fixes },
   ];
   return (
-    <section aria-labelledby="report-overview" className="flex flex-col gap-5 rounded-md border border-border bg-surface p-5 sm:p-6" data-testid="report-overview">
+    <section aria-labelledby="report-overview" className="report-section flex animate-rise flex-col gap-5 rounded-xl bg-card px-5 py-[22px] sm:px-6" data-testid="report-overview">
       <div className="flex flex-col gap-1">
-        <h2 id="report-overview" className="text-base font-semibold tracking-[-0.02em] break-words">
+        <h2 id="report-overview" className="text-[15px] font-semibold break-words">
           {summary.business.name}
         </h2>
         <p className="text-sm text-muted-foreground" data-testid="report-period">
@@ -44,24 +44,24 @@ export function ReportOverview({ report, saved }: { report: ShownReport; saved: 
       </div>
 
       <div className="flex flex-col gap-2">
-        <p className="text-lg leading-snug font-semibold tracking-[-0.02em] text-balance break-words" data-testid="report-headline">
+        <p className="font-serif text-[22px] leading-[1.3] font-normal text-balance break-words sm:text-[26px]" data-testid="report-headline">
           {report.headline}
         </p>
-        <p className="max-w-[68ch] text-sm leading-relaxed text-muted-foreground break-words">{report.lead}</p>
+        <p className="max-w-[68ch] text-[15px] leading-relaxed text-ink-2 break-words">{report.lead}</p>
       </div>
 
-      <dl className="grid grid-cols-2 gap-x-4 gap-y-5 border-y border-border py-5 lg:grid-cols-4 lg:gap-x-0 lg:divide-x lg:divide-border">
+      <dl className="grid grid-cols-2 gap-x-4 gap-y-5 border-y border-divider py-5 lg:grid-cols-4 lg:gap-x-0 lg:divide-x lg:divide-divider">
         <Stat label="Visibility score" value={`${score.value}/100`} sub={change} testId="fact-score" />
         <Stat label="Answers naming you" value={`${named.answers} of ${named.total}`} sub={`In ${named.questions} of ${named.questionsAsked} questions`} testId="fact-named" />
         <Stat label={rank ? `Rank among ${rank.of} tracked` : "Rank among tracked"} value={rank ? `#${rank.position}` : "None"} sub={rankSub} testId="fact-rank" />
         <Stat label="Fixes" value={String(report.fixes.length)} sub="Also added to Actions" testId="fact-fixes" />
       </dl>
 
-      <dl className="grid gap-4 sm:grid-cols-3">
+      <dl className="grid gap-3 sm:grid-cols-3">
         {takeaways.map((t) => (
-          <div key={t.label} className="flex min-w-0 flex-col gap-1">
-            <dt className="text-xs font-semibold">{t.label}</dt>
-            <dd className="text-sm text-muted-foreground break-words">{t.text}</dd>
+          <div key={t.label} className="flex min-w-0 flex-col gap-1.5 rounded-[14px] bg-muted px-4 py-3.5">
+            <dt className="text-[13px] font-semibold">{t.label}</dt>
+            <dd className="text-sm leading-relaxed text-ink-2 break-words">{t.text}</dd>
           </div>
         ))}
       </dl>

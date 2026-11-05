@@ -52,9 +52,9 @@ export function SharePanel({
   }
 
   return (
-    <section id="share-panel" aria-labelledby="share-panel-title" className="flex flex-col gap-3 rounded-md border border-border bg-surface p-5" data-testid="share-panel">
+    <section id="share-panel" aria-labelledby="share-panel-title" className="flex flex-col gap-3 rounded-xl bg-card p-5 sm:p-6" data-testid="share-panel">
       <div className="flex flex-col gap-1">
-        <h2 id="share-panel-title" className="text-base font-semibold tracking-[-0.02em]">
+        <h2 id="share-panel-title" className="font-serif text-xl font-normal">
           {link ? "Share link is on" : "Share link is off"}
         </h2>
         <p className="text-sm text-muted-foreground">
@@ -78,14 +78,14 @@ export function SharePanel({
             <div className="flex shrink-0 gap-2">
               <CopyButton text={url} label="Copy" copiedNote="Link copied" />
               {!confirmOff && (
-                <Button variant="ghost" size="sm" className="text-low-text hover:bg-low-bg hover:text-low-text" onClick={() => setConfirmOff(true)} data-testid="revoke-link">
+                <Button variant="ghost" size="sm" className="rounded-full text-danger hover:bg-rival-tint hover:text-danger" onClick={() => setConfirmOff(true)} data-testid="revoke-link">
                   Turn off
                 </Button>
               )}
             </div>
           </div>
           {confirmOff ? (
-            <div role="group" aria-labelledby="revoke-warning" className="flex flex-col gap-3 rounded-md border border-low/30 p-3 sm:flex-row sm:items-center sm:justify-between">
+            <div role="group" aria-labelledby="revoke-warning" className="flex flex-col gap-3 rounded-[14px] border border-rival/30 bg-rival-tint p-3.5 sm:flex-row sm:items-center sm:justify-between">
               <p id="revoke-warning" className="text-sm text-low-text">
                 Clients with this link will lose access.
               </p>

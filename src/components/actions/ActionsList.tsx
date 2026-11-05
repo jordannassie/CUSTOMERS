@@ -6,6 +6,7 @@ import { ChevronDown } from "lucide-react";
 import { cn } from "cn";
 import { GoogleAttribution } from "@/components/onboarding/PlaceBits";
 import { CopyButton } from "@/components/opportunities/CopyButton";
+import { StatusPill } from "@/components/checkin";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { LocalDate } from "@/components/ui/local-date";
@@ -13,15 +14,9 @@ import { compareHref } from "@/lib/compare-href";
 import { fixCardId } from "@/lib/fix-where";
 import { STATUS_TEXT, type ActionItem, type ActionStatus } from "@/modules/opportunities/board/service";
 import { IMPACT, Moves, SHORT_DAY } from "./ActionCard";
+import { STATUS_TONE } from "./status-tone";
 
 const ORDER: ActionStatus[] = ["todo", "in_progress", "suggested", "done", "dismissed"];
-const STATUS_BADGE: Record<ActionStatus, "tint" | "secondary" | "good" | "mid" | "outline"> = {
-  suggested: "outline",
-  todo: "tint",
-  in_progress: "mid",
-  done: "good",
-  dismissed: "secondary",
-};
 
 /**
  * The list view of Actions (dashboard redesign): one full-width table, a row per fix, To do first. Each row says the
@@ -47,8 +42,8 @@ export function ActionsList({
   const rows = ORDER.flatMap((status) => items.filter((i) => i.status === status));
   if (rows.length === 0) return <p className="text-sm text-muted-foreground">No actions match these filters.</p>;
   return (
-    <div className="overflow-hidden rounded-md border border-border bg-surface" data-testid="action-list">
-      <div className="hidden grid-cols-[5.5rem_minmax(0,1fr)_minmax(0,13rem)_7rem_4.5rem_11rem] gap-4 border-b border-border bg-muted/50 px-4 py-2 text-xs font-medium text-muted-foreground lg:grid">
+    <div className="overflow-hidden rounded-xl bg-card" data-testid="action-list">
+      <div className="hidden grid-cols-[5.5rem_minmax(0,1fr)_minmax(0,13rem)_7rem_4.5rem_11rem] gap-4 border-b border-divider bg-muted px-5 py-2.5 text-xs font-medium text-muted-foreground lg:grid">
         <span>Impact</span>
         <span>Fix</span>
         <span>Where to apply</span>
@@ -58,14 +53,14 @@ export function ActionsList({
           <span className="sr-only">Actions</span>
         </span>
       </div>
-      <ul className="divide-y divide-border">
+      <ul className="divide-y divide-divider">
         {rows.map((item) => {
           const expanded = open === item.id;
           return (
               <li
                 key={item.id}
                 id={fixCardId(item.id)}
-                className={cn("scroll-mt-24 px-4 py-3", pickedId === item.id && "animate-fix-pulse bg-primary-tint/40")}
+                className={cn("scroll-mt-24 px-5 py-3.5", pickedId === item.id && "animate-fix-pulse bg-brand-tint/60")}
                 data-testid="opportunity"
                 data-status={item.status}
                 data-picked={pickedId === item.id || undefined}
@@ -74,9 +69,9 @@ export function ActionsList({
                   {/* On a phone the impact, column and date share one line above the fix. */}
                   <span className="flex flex-wrap items-center gap-1.5">
                     <Badge variant={IMPACT[item.impact].variant}>{IMPACT[item.impact].text}</Badge>
-                    <Badge variant={STATUS_BADGE[item.status]} className="lg:hidden">
+                    <StatusPill tone={STATUS_TONE[item.status]} className="py-1 text-xs lg:hidden">
                       {STATUS_TEXT[item.status]}
-                    </Badge>
+                    </StatusPill>
                     <span className="text-xs text-muted-foreground tabular-nums lg:hidden"><LocalDate iso={item.completedAt ?? item.createdAt} options={SHORT_DAY} /></span>
                   </span>
                   <div className="flex min-w-0 flex-col gap-0.5">
@@ -96,16 +91,18 @@ export function ActionsList({
                     {item.whereToApply}
                   </span>
                   <span className="hidden lg:block">
-                    <Badge variant={STATUS_BADGE[item.status]}>{STATUS_TEXT[item.status]}</Badge>
+                    <StatusPill tone={STATUS_TONE[item.status]} className="py-1 text-xs">
+                      {STATUS_TEXT[item.status]}
+                    </StatusPill>
                   </span>
                   <span className="hidden text-xs text-muted-foreground tabular-nums lg:block"><LocalDate iso={item.completedAt ?? item.createdAt} options={SHORT_DAY} /></span>
                   <div className="flex flex-wrap items-center gap-1.5 lg:justify-end">
                     {readOnly ? null : item.status === "suggested" ? (
                       <>
-                        <Button type="button" size="sm" variant="outline" disabled={busy === item.id} onClick={() => onMove(item, "dismissed")}>
+                        <Button type="button" size="sm" variant="ghost" className="rounded-full" disabled={busy === item.id} onClick={() => onMove(item, "dismissed")}>
                           Dismiss
                         </Button>
-                        <Button type="button" size="sm" disabled={busy === item.id} onClick={() => onMove(item, "todo")} data-testid="accept-action">
+                        <Button type="button" size="sm" variant="brand" disabled={busy === item.id} onClick={() => onMove(item, "todo")} data-testid="accept-action">
                           Accept
                         </Button>
                       </>
@@ -115,7 +112,7 @@ export function ActionsList({
                   </div>
                 </div>
                 {expanded && (
-                  <div className="mt-3 flex flex-col gap-3 border-t border-border pt-3 text-[13px] lg:ml-[calc(5.5rem+1rem)]">
+                  <div className="mt-3 flex flex-col gap-3 border-t border-divider pt-3 text-[13px] lg:ml-[calc(5.5rem+1rem)]">
                     {item.evidence && <p className="whitespace-pre-line">{item.evidence}</p>}
                     {item.usesGoogle && <GoogleAttribution what="Review counts and ratings" />}
                     {item.googleHidden && (

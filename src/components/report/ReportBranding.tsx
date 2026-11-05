@@ -19,13 +19,13 @@ export function ReportBranding({
   save: SaveBrandingAction;
 }) {
   return (
-    <section aria-labelledby="report-branding" className="flex flex-col gap-4 rounded-md border border-border bg-surface p-5" data-testid="report-branding">
-      <h2 id="report-branding" className="text-base font-semibold tracking-[-0.02em]">
+    <section aria-labelledby="report-branding" className="flex flex-col gap-4 rounded-xl bg-card p-5" data-testid="report-branding">
+      <h2 id="report-branding" className="text-[15px] font-semibold">
         PDF branding
       </h2>
       <div className="flex flex-col gap-3">
         <div className="flex min-w-0 items-center gap-3">
-          <div className="flex h-10 w-16 shrink-0 items-center justify-center rounded-md border border-border bg-muted">
+          <div className="flex h-10 w-16 shrink-0 items-center justify-center rounded-[12px] bg-muted">
             {logoSrc ? (
               // eslint-disable-next-line @next/next/no-img-element -- the agency's own upload, sized by the box
               <img src={logoSrc} alt="Your agency logo" className="max-h-9 max-w-14 object-contain" />

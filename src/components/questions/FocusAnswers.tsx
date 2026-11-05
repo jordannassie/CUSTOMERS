@@ -40,9 +40,9 @@ export function FocusAnswers() {
     });
 
   return (
-    <section className="flex flex-col gap-3 rounded-lg border border-border bg-surface p-4" data-testid="focus-answers" aria-labelledby="focus-answers-title">
+    <section className="flex flex-col gap-3 rounded-xl bg-card px-5 py-5 sm:px-6" data-testid="focus-answers" aria-labelledby="focus-answers-title">
       <div className="flex flex-col gap-1">
-        <h2 id="focus-answers-title" className="text-[15px] font-semibold tracking-[-0.01em]">
+        <h2 id="focus-answers-title" className="font-serif text-xl font-normal">
           {answers.length > 0 ? heading(total, focus) : "No answers match this link"}
         </h2>
         <p className="text-[13px] text-muted-foreground">
@@ -52,7 +52,7 @@ export function FocusAnswers() {
         </p>
       </div>
       {answers.length > 0 && (
-        <ul className="flex flex-col divide-y divide-border rounded-lg border border-border">
+        <ul className="flex flex-col divide-y divide-divider rounded-lg border border-border">
           {answers.map((a, i) => {
             const isOpen = open.has(i);
             return (
@@ -61,7 +61,7 @@ export function FocusAnswers() {
                   type="button"
                   aria-expanded={isOpen}
                   onClick={() => toggle(i)}
-                  className="grid w-full grid-cols-[minmax(0,1fr)_1rem] items-center gap-3 px-3.5 py-2.5 text-left hover:bg-muted/60 focus-visible:bg-muted/60 focus-visible:outline-none"
+                  className="grid w-full grid-cols-[minmax(0,1fr)_1rem] items-center gap-3 px-3.5 py-2.5 text-left hover:bg-muted focus-visible:bg-muted"
                 >
                   <span className="flex min-w-0 flex-col gap-0.5">
                     <span className="text-[13.5px] font-medium">{a.question}</span>

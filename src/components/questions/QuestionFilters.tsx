@@ -20,7 +20,7 @@ export function QuestionFilters() {
   const topics = topicsOf([...view.active, ...view.paused]);
 
   return (
-    <div className="flex flex-col gap-2.5 border-b border-border px-4 py-2.5" data-testid="question-filters">
+    <div className="flex flex-col gap-2.5 border-b border-divider px-4 py-3" data-testid="question-filters">
       {(focus.site || focus.named) && (
         <div className="flex flex-wrap gap-2">
           {focus.site && (
@@ -43,7 +43,7 @@ export function QuestionFilters() {
             options={LIST_FILTERS.map((f) => ({ value: f, label: `${FILTER_LABELS[f]} (${counts[f]})` }))}
             className="max-w-full flex-wrap p-0.5"
           />
-          <label className="flex h-8 w-full items-center gap-2 rounded-md border border-border bg-surface px-2.5 text-muted-foreground focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50 md:w-60">
+          <label className="flex h-10 w-full items-center gap-2 rounded-full border border-input bg-surface px-3.5 text-muted-foreground focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50 md:w-60">
             <Search className="size-3.5 shrink-0" aria-hidden="true" />
             <input
               type="search"
@@ -88,7 +88,7 @@ function LinkChip({ href, label, testId }: { href: string; label: string; testId
     <Link
       href={href}
       data-testid={testId}
-      className="inline-flex h-7 items-center gap-1.5 rounded-sm border border-primary/30 bg-primary-tint px-2 text-xs font-medium text-primary hover:border-primary"
+      className="inline-flex h-8 items-center gap-1.5 rounded-full border border-brand/30 bg-brand-tint px-3 text-xs font-medium text-brand-ink hover:border-brand"
     >
       {label}
       <X className="size-3.5" aria-hidden="true" />
