@@ -32,7 +32,7 @@ export function AppsAdminForm({ categoryHint }: { categoryHint: string }) {
 
   return (
     <form
-      className="grid gap-4 rounded-md border border-border bg-card p-4 sm:grid-cols-2 sm:p-6"
+      className="grid gap-4 rounded-xl bg-surface p-4 sm:grid-cols-2 sm:p-6"
       action={async (formData) => {
         setPending(true);
         const result = await saveDirectoryAppAction(formData);

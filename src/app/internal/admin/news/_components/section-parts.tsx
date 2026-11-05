@@ -16,7 +16,7 @@ export function PanelSection({ letter, title, action, note, children }: {
   children: ReactNode;
 }) {
   return (
-    <section className="rounded-md border border-border bg-surface p-4">
+    <section className="rounded-lg border border-border bg-surface p-4">
       <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <SectionLetter letter={letter} />

@@ -158,7 +158,7 @@ export default function NewsClient({ initialPeriod }: { initialPeriod: Period })
       {searching && (
         <div
           role="status"
-          className="flex flex-col items-center gap-2 rounded-md border border-border bg-surface px-6 py-12 text-center"
+          className="flex flex-col items-center gap-2 rounded-xl bg-surface px-6 py-12 text-center"
         >
           <Loader2 className="size-5 animate-spin text-primary" aria-hidden="true" />
           <p className="text-[15px] font-semibold">Finding stories for {theme}…</p>

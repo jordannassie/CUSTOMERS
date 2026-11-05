@@ -172,7 +172,7 @@ export default function LeadsClient() {
         onToggleUnread={toggleUnread}
       />
 
-      <div className="flex min-h-[480px] overflow-hidden rounded-md border border-border bg-surface">
+      <div className="flex min-h-[480px] overflow-hidden rounded-xl bg-surface">
         <div
           className={cn(
             "flex-col overflow-y-auto",

@@ -50,7 +50,7 @@ function Rows({ rows, summary }: { rows: AdminBusinessRow[]; summary: string }) 
     <section aria-label="Businesses" className="flex flex-col gap-2">
       <p className="text-[13px] text-muted-foreground">{summary}</p>
 
-      <div className="hidden rounded-md border border-border bg-surface md:block">
+      <div className="hidden overflow-hidden rounded-xl bg-surface md:block [&_[data-slot=table-container]]:max-h-[70vh] [&_[data-slot=table-container]]:overflow-auto [&_thead]:sticky [&_thead]:top-0 [&_thead]:z-10">
         <Table className="text-[13px]">
           <TableHeader>
             <TableRow>
@@ -95,7 +95,7 @@ function Rows({ rows, summary }: { rows: AdminBusinessRow[]; summary: string }) 
         </Table>
       </div>
 
-      <ul className="flex flex-col divide-y divide-border rounded-md border border-border bg-surface md:hidden">
+      <ul className="flex flex-col divide-y divide-divider rounded-xl bg-surface md:hidden">
         {rows.map((r) => (
           <li key={r.id}>
             <Link href={href(r.id)} className="flex flex-col gap-2 px-4 py-3 text-[13px] hover:bg-muted">

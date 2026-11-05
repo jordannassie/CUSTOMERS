@@ -42,7 +42,7 @@ export default function ScansList({ list, status }: { list: AdminScanList; statu
         <Empty status={status} />
       ) : (
         <>
-          <div className="hidden rounded-md border border-border bg-surface md:block">
+          <div className="hidden overflow-hidden rounded-xl bg-surface md:block [&_[data-slot=table-container]]:max-h-[70vh] [&_[data-slot=table-container]]:overflow-auto [&_thead]:sticky [&_thead]:top-0 [&_thead]:z-10">
             <Table className="text-[13px]">
               <TableHeader>
                 <TableRow>
@@ -90,7 +90,7 @@ export default function ScansList({ list, status }: { list: AdminScanList; statu
             </Table>
           </div>
 
-          <ul className="flex flex-col divide-y divide-border rounded-md border border-border bg-surface md:hidden">
+          <ul className="flex flex-col divide-y divide-divider rounded-xl bg-surface md:hidden">
             {rows.map((row) => (
               <li key={row.id} data-job={row.id} data-status={row.status} className="flex flex-col gap-3 p-4">
                 <div className="flex items-start justify-between gap-3">

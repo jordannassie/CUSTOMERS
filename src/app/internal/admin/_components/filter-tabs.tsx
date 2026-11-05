@@ -33,7 +33,7 @@ export default function FilterTabs({
   return (
     // Wraps on phones instead of scrolling, so no filter is ever hidden off the edge.
     <nav aria-label={label}>
-      <ul className="flex w-fit max-w-full flex-wrap gap-1 rounded-md border border-border bg-muted p-1">
+      <ul className="flex w-fit max-w-full flex-wrap gap-1.5">
         {tabs.map((t) => {
           const current = t.key === active;
           return (
@@ -51,14 +51,21 @@ export default function FilterTabs({
                   onSelect(t.key);
                 }}
                 className={cn(
-                  "flex h-8 items-center gap-2 rounded-sm px-3 text-[13px] font-medium whitespace-nowrap transition-colors duration-150 ease-out focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
-                  current ? "bg-surface text-foreground shadow-xs" : "text-muted-foreground hover:text-foreground",
+                  // Check-in: filters as pills, the current one brand blue.
+                  "flex h-8 items-center gap-2 rounded-full border px-3.5 text-[13px] font-medium whitespace-nowrap transition-colors duration-150 ease-out pointer-coarse:h-11",
+                  current ? "border-brand bg-brand text-primary-foreground" : "border-border bg-surface text-ink-2 hover:border-border-strong hover:text-foreground",
                   disabled && "pointer-events-none opacity-50",
                 )}
               >
                 {t.label}
                 {t.count !== undefined && (
-                  <span className={cn("text-[12px] tabular-nums", t.alert && t.count > 0 ? "font-semibold text-low-text" : "text-text-hint")}>
+                  <span
+                    className={cn(
+                      "text-[12px] tabular-nums",
+                      // An alert count stays coral, on a small white badge when its pill is the selected one.
+                      t.alert && t.count > 0 ? cn("font-semibold text-low-text", current && "rounded-full bg-surface px-1.5") : current ? "text-primary-foreground/85" : "text-muted-foreground",
+                    )}
+                  >
                     {t.count}
                   </span>
                 )}

@@ -5,7 +5,7 @@ import { formatDate } from "../_components/format";
 import { TestBadge } from "../_components/badges";
 import { StatusBadge } from "../agencies/_components/agency-parts";
 
-const list = "divide-y divide-border rounded-md border border-border bg-surface text-[13px]";
+const list = "divide-y divide-divider rounded-xl bg-surface text-[13px]";
 
 function ViewAll({ href, children }: { href: string; children: React.ReactNode }) {
   return (

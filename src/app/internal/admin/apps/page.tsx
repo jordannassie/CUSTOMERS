@@ -24,7 +24,7 @@ export default async function AdminAppsPage() {
         subtitle="Saving an app overrides the built-in list for that slug on /apps. Leave the affiliate link empty unless a partnership is approved."
       />
       {overrides.unavailable && (
-        <p className="rounded-md border border-border bg-mid-bg px-4 py-3 text-[14px] text-mid-text">
+        <p className="rounded-[14px] border border-rival/30 bg-rival-tint px-4 py-3 text-[14px] text-rival-ink">
           The directory tables are not in this database yet (migration 072). The public page still uses the built-in list.
         </p>
       )}
@@ -34,7 +34,7 @@ export default async function AdminAppsPage() {
         <h2 className="text-[16px] font-semibold">Apps ({apps.length})</h2>
         <ul className="flex flex-col gap-2">
           {apps.map((app) => (
-            <li key={app.slug} className="flex flex-wrap items-center gap-x-2 gap-y-1 rounded-md border border-border bg-card px-4 py-3 text-[14px]">
+            <li key={app.slug} className="flex flex-wrap items-center gap-x-2 gap-y-1 rounded-xl bg-surface px-4 py-3 text-[14px]">
               <span className="font-medium">{app.name}</span>
               <span className="text-muted-foreground">{app.slug}, {app.categories.join(", ")}</span>
               {app.affiliateUrl && <Badge variant="tint">Affiliate</Badge>}

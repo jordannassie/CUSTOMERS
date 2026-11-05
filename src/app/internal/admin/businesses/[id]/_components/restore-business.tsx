@@ -15,7 +15,7 @@ type Props = {
 export default function RestoreBusiness({ businessId, blocked, restoreBusiness }: Props) {
   const [open, setOpen] = useState(false);
   return (
-    <div className="rounded-md border border-border bg-surface" data-testid="restore-business">
+    <div className="rounded-xl bg-surface" data-testid="restore-business">
       <ActionCard
         title="Restore business"
         note="Brings back the business with its questions, competitors and results. Share links stay off, and its plan still ends as scheduled, so the owner picks a plan again to keep scanning it."

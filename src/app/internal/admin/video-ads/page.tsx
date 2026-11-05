@@ -26,7 +26,7 @@ export default async function VideoAdOrdersPage() {
         }
       />
       {unavailable && (
-        <p className="rounded-md border border-border bg-mid-bg px-4 py-3 text-[14px] text-mid-text">
+        <p className="rounded-[14px] border border-rival/30 bg-rival-tint px-4 py-3 text-[14px] text-rival-ink">
           The video_ad_orders table is not in this database yet (migration 071). Until then, read the briefs in Leads.
         </p>
       )}
@@ -35,7 +35,7 @@ export default async function VideoAdOrdersPage() {
       )}
       <ul className="flex flex-col gap-4">
         {orders.map((order) => (
-          <li key={order.id} className="flex flex-col gap-1 rounded-md border border-border bg-card p-4 text-[14px]">
+          <li key={order.id} className="flex flex-col gap-1 rounded-xl bg-surface p-4 text-[14px]">
             <div className="flex flex-wrap items-center gap-2">
               <span className="font-medium capitalize">{order.packageId}</span>
               <span>{money(order.amountCents / 100)}</span>
@@ -54,7 +54,7 @@ export default async function VideoAdOrdersPage() {
             {order.creativeInstructions ? (
               <p className="mt-2 break-words whitespace-pre-wrap text-muted-foreground">{order.creativeInstructions}</p>
             ) : (
-              <p className="mt-2 text-[13px] text-mid-text">Brief not sent yet.</p>
+              <p className="mt-2 text-[13px] text-rival-ink">Brief not sent yet.</p>
             )}
             {order.assetUrl && <p className="mt-2 text-[13px] break-all text-primary">{order.assetUrl}</p>}
           </li>

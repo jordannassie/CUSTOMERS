@@ -44,7 +44,7 @@ export default function Profile({ detail }: { detail: NonNullable<AdminBusinessD
 
   return (
     <Section title="Profile">
-      <dl className="grid grid-cols-1 rounded-md border border-border bg-surface px-4 py-1 text-[14px] sm:grid-cols-2 sm:gap-x-8">
+      <dl className="grid grid-cols-1 rounded-xl bg-surface px-4 py-1 text-[14px] sm:grid-cols-2 sm:gap-x-8">
         {rows.map(([label, value]) => (
           <div
             key={label}

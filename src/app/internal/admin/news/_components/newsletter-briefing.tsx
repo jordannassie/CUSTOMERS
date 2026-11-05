@@ -14,7 +14,7 @@ function Block({ title, action, tone, children }: {
   children: ReactNode;
 }) {
   return (
-    <div className={cn("rounded-md border p-4", tone === "tint" ? "border-primary bg-primary-tint" : "border-border bg-muted")}>
+    <div className={cn("rounded-lg border p-4", tone === "tint" ? "border-primary bg-primary-tint" : "border-border bg-muted")}>
       <div className="mb-2 flex items-center justify-between gap-2">
         <p className="text-[12px] font-semibold text-muted-foreground">{title}</p>
         {action}
@@ -46,7 +46,7 @@ export function NewsletterBriefing({ article }: { article: GeneratedArticle }) {
   const [open, setOpen] = useState(false);
 
   return (
-    <section className="overflow-hidden rounded-md border border-border">
+    <section className="overflow-hidden rounded-lg border border-border">
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}

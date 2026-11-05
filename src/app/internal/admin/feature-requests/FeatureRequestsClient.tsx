@@ -95,7 +95,7 @@ export default function FeatureRequestsClient({
             </AdminEmpty>
           )
         ) : (
-          <ul className="flex flex-col divide-y divide-border overflow-hidden rounded-md border border-border bg-surface">
+          <ul className="flex flex-col divide-y divide-border overflow-hidden rounded-xl bg-surface">
             {filtered.map((req) => (
               <RequestRow
                 key={req.id}

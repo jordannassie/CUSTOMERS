@@ -15,7 +15,7 @@ function GapRow({ gap }: { gap: LibraryGap }) {
   );
 }
 
-const listClass = "divide-y divide-border rounded-md border border-border bg-surface text-[13px]";
+const listClass = "divide-y divide-divider rounded-xl bg-surface text-[13px]";
 
 // MVP_SPEC 5.3: industries with no question library get questions Claude writes; these are candidates for one.
 // "Other" labels are counted however they were typed, so the most used can become real industries (2026-10-16).

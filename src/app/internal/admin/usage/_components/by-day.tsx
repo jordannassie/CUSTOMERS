@@ -8,7 +8,7 @@ export default function ByDay({ days }: { days: UsageCostReport["byDay"] }) {
   const labelEvery = Math.ceil(days.length / 8);
 
   return (
-    <section aria-labelledby="by-day" className="rounded-md border border-border bg-surface p-5">
+    <section aria-labelledby="by-day" className="rounded-xl bg-surface p-5">
       <h2 id="by-day" className="text-[16px] font-semibold">
         By day
       </h2>
@@ -36,7 +36,7 @@ export default function ByDay({ days }: { days: UsageCostReport["byDay"] }) {
 
       <details className="mt-4 text-[13px]">
         <summary className="cursor-pointer font-medium text-primary hover:underline">Show as a table</summary>
-        <div className="mt-3 max-h-80 overflow-y-auto rounded-md border border-border">
+        <div className="mt-3 max-h-80 overflow-y-auto rounded-lg border border-border">
           <table className="w-full">
             <thead className="sticky top-0 bg-muted text-left text-[12px] text-muted-foreground">
               <tr>

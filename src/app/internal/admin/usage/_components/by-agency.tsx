@@ -6,7 +6,7 @@ import { count, money, percent } from "./format";
 
 export default function ByAgency({ agencies }: { agencies: UsageCostReport["byAgency"] }) {
   return (
-    <section aria-labelledby="by-agency" className="rounded-md border border-border bg-surface">
+    <section aria-labelledby="by-agency" className="rounded-xl bg-surface">
       <header className="px-5 pt-5 pb-3">
         <h2 id="by-agency" className="text-[16px] font-semibold">
           By agency

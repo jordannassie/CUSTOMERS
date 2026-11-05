@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ArrowLeft, Menu } from "lucide-react";
@@ -10,8 +9,6 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { EXTRA_ITEMS, MAIN_ITEMS, isActiveItem, type AdminNavItem } from "./nav-items";
 import { appFetch } from "@/lib/session-expired";
-
-const LOGO = "/images/logos/logo-black.png";
 
 function useUnreadLeads(pathname: string): number {
   const [count, setCount] = useState(0);
@@ -45,10 +42,10 @@ function NavLink({
       onClick={onNavigate}
       aria-current={active ? "page" : undefined}
       className={cn(
-        "flex items-center gap-2.5 rounded-md px-3 py-2 text-[14px] font-medium transition-colors duration-150 ease-out focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
+        "flex min-h-10 items-center gap-2.5 rounded-[10px] px-3 py-2 text-[14px] transition-colors duration-150 ease-out",
         active
-          ? "bg-primary-tint text-primary"
-          : "text-muted-foreground hover:bg-surface hover:text-foreground",
+          ? "bg-surface font-semibold text-foreground [&>svg]:text-brand"
+          : "text-ink-2 hover:bg-surface/60 hover:text-foreground",
       )}
     >
       <Icon className="size-4 shrink-0" aria-hidden="true" />
@@ -56,8 +53,8 @@ function NavLink({
       {badge ? (
         <span
           className={cn(
-            "tabular ml-auto rounded-sm px-1.5 text-[12px] font-medium leading-5",
-            active ? "bg-surface text-primary" : "bg-primary-tint text-primary-hover",
+            "tabular ml-auto rounded-full px-2 text-[12px] font-semibold leading-5",
+            active ? "bg-brand text-primary-foreground" : "bg-brand-tint text-brand-ink",
           )}
         >
           {badge > 99 ? "99+" : badge}
@@ -114,8 +111,8 @@ function NavBody({ adminEmail, onNavigate }: { adminEmail: string; onNavigate?: 
 function Logo() {
   return (
     <Link href="/internal/admin" className="flex items-center gap-2">
-      <Image src={LOGO} alt="Customers.Direct" width={72} height={24} loading="eager" className="h-6 w-auto" />
-      <span className="rounded-sm bg-foreground px-1.5 text-[12px] font-medium leading-5 text-background">Admin</span>
+      <span className="font-serif text-lg text-foreground">Customers.Direct</span>
+      <span className="rounded-full bg-foreground px-2 text-[12px] font-semibold leading-5 text-background">Admin</span>
     </Link>
   );
 }
@@ -125,14 +122,14 @@ export default function AdminNav({ adminEmail }: { adminEmail: string }) {
 
   return (
     <>
-      <aside className="sticky top-0 hidden h-screen w-60 shrink-0 flex-col border-r border-border bg-muted lg:flex">
-        <div className="border-b border-border px-5 py-4">
+      <aside className="sticky top-0 hidden h-screen w-60 shrink-0 flex-col lg:flex">
+        <div className="px-5 pt-6 pb-2">
           <Logo />
         </div>
         <NavBody adminEmail={adminEmail} />
       </aside>
 
-      <header className="sticky top-0 z-40 flex items-center justify-between border-b border-border bg-surface px-4 py-3 lg:hidden">
+      <header className="sticky top-0 z-40 flex items-center justify-between border-b border-border bg-background/95 px-4 py-3 backdrop-blur-sm lg:hidden">
         <Logo />
         <Sheet open={open} onOpenChange={setOpen}>
           <SheetTrigger asChild>
@@ -140,7 +137,7 @@ export default function AdminNav({ adminEmail }: { adminEmail: string }) {
               <Menu aria-hidden="true" />
             </Button>
           </SheetTrigger>
-          <SheetContent side="left" className="w-72 gap-0 bg-muted p-0">
+          <SheetContent side="left" className="w-72 gap-0 bg-background p-0">
             <SheetTitle className="border-b border-border px-5 py-4 text-[14px]">Admin menu</SheetTitle>
             <NavBody adminEmail={adminEmail} onNavigate={() => setOpen(false)} />
           </SheetContent>

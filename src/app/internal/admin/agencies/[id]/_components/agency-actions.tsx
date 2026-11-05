@@ -62,7 +62,7 @@ export default function AgencyActions({ agency, stripeConnected, maxCredits, max
   const card = (name: string) => ({ open: openCard === name, onOpenChange: (open: boolean) => setOpenCard(open ? name : null) });
 
   return (
-    <div className="flex flex-col divide-y divide-border rounded-md border border-border bg-surface">
+    <div className="flex flex-col divide-y divide-divider rounded-xl bg-surface">
       <ActionCard
         title="Credits"
         {...card("credits")}

@@ -21,13 +21,13 @@ export default function AdminEmpty({
     <div
       data-testid="admin-empty"
       className={cn(
-        "flex flex-col items-center gap-2 rounded-md border border-dashed border-border bg-surface px-6 text-center",
+        "flex flex-col items-center gap-2 rounded-xl bg-surface px-6 text-center",
         title ? "py-12" : "py-6",
         className,
       )}
     >
       {Icon && <Icon aria-hidden className="size-6 text-text-hint" />}
-      {title && <p className="text-[15px] font-medium">{title}</p>}
+      {title && <p className="font-serif text-lg">{title}</p>}
       {children && <div className="max-w-md text-[14px] text-muted-foreground">{children}</div>}
     </div>
   );

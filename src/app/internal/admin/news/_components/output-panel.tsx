@@ -15,7 +15,7 @@ export function OutputPanel({ article, weekday, onClose }: {
   const weekdayDef = WEEKDAYS.find((w) => w.key === weekday);
 
   return (
-    <div className="overflow-hidden rounded-md border border-border bg-surface">
+    <div className="overflow-hidden rounded-xl bg-surface">
       <div className="flex items-center justify-between gap-3 border-b border-border bg-muted px-4 py-3 sm:px-6">
         <div>
           <h2 className="text-[15px] font-semibold">LinkedIn post ready</h2>

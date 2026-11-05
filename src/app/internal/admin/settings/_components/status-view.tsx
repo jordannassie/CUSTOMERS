@@ -37,7 +37,7 @@ export default function StatusView({ status, openAlerts = 0 }: { status: SystemS
 
   return (
     <div className="flex flex-col gap-6">
-      <section aria-labelledby="status-summary" className="rounded-md border border-border bg-surface p-5">
+      <section aria-labelledby="status-summary" className="rounded-xl bg-surface p-5">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <h2 id="status-summary" className={cn("text-[20px] font-semibold tracking-[-0.02em]", hasBroken && "text-low-text")}>
@@ -70,7 +70,7 @@ export default function StatusView({ status, openAlerts = 0 }: { status: SystemS
           <h2 id={`group-${group.id}`} className="mb-2 text-[14px] font-semibold">
             {group.title}
           </h2>
-          <ul className="divide-y divide-border rounded-md border border-border bg-surface">
+          <ul className="divide-y divide-divider rounded-xl bg-surface">
             {services
               .filter((s) => s.group === group.id)
               .map((s) => (

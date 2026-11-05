@@ -78,7 +78,7 @@ function AlertRow({ alert, resolve, onResolved }: { alert: AlertRowData; resolve
   }
 
   return (
-    <li className={cn("flex flex-col gap-3 rounded-md border border-l-[3px] border-border bg-surface px-4 py-3", severity.rail)}>
+    <li className={cn("flex flex-col gap-3 rounded-[14px] border-l-[3px] bg-surface px-4 py-3", severity.rail)}>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex min-w-0 flex-col gap-1">
           <span className="flex flex-wrap items-center gap-2">

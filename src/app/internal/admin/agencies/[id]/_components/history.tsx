@@ -54,7 +54,7 @@ export function Businesses({ rows }: { rows: AdminAgencyDetail["businesses"] }) 
       {rows.length === 0 ? (
         <Empty>No businesses yet. They appear here once the owner adds one.</Empty>
       ) : (
-        <ul className="divide-y divide-border rounded-md border border-border bg-surface text-[13px]">
+        <ul className="divide-y divide-divider rounded-xl bg-surface text-[13px]">
           {rows.map((b) => (
             <li key={b.id} className="flex items-start justify-between gap-3 px-4 py-3">
               <span className="min-w-0">
@@ -86,7 +86,7 @@ export function CreditHistory({ rows }: { rows: AdminAgencyDetail["ledger"] }) {
       {rows.length === 0 ? (
         <Empty>No credits granted or changed yet.</Empty>
       ) : (
-        <ul className="divide-y divide-border rounded-md border border-border bg-surface text-[13px]">
+        <ul className="divide-y divide-divider rounded-xl bg-surface text-[13px]">
           {rows.map((l) => (
             <li key={l.id} className="flex items-start justify-between gap-3 px-4 py-3">
               <span className="min-w-0">
@@ -115,7 +115,7 @@ export function AuditLog({ rows }: { rows: AdminAgencyDetail["audit"] }) {
       {rows.length === 0 ? (
         <Empty>No admin has changed this agency yet.</Empty>
       ) : (
-        <ul className="divide-y divide-border rounded-md border border-border bg-surface text-[13px]">
+        <ul className="divide-y divide-divider rounded-xl bg-surface text-[13px]">
           {rows.map((a) => (
             <li key={a.id} className="flex flex-col gap-0.5 px-4 py-3">
               <span className="flex flex-wrap items-baseline gap-x-2">
@@ -148,7 +148,7 @@ export function CancelReasons({ rows }: { rows: AdminAgencyDetail["cancelReasons
       {rows.length === 0 ? (
         <Empty>No reason given yet.</Empty>
       ) : (
-        <ul className="divide-y divide-border rounded-md border border-border bg-surface text-[13px]" data-testid="cancel-reasons">
+        <ul className="divide-y divide-divider rounded-xl bg-surface text-[13px]" data-testid="cancel-reasons">
           {rows.map((r) => (
             <li key={r.id} className="flex flex-col gap-0.5 px-4 py-3">
               <span className="font-medium">{CANCEL_REASONS[r.reason] ?? r.reason}</span>

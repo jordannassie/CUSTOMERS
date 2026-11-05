@@ -22,7 +22,7 @@ export default async function AdminFeatureRequestsPage({ searchParams }: Props) 
     return (
       <div className="mx-auto flex max-w-2xl flex-col gap-6 px-4 py-8 sm:px-6">
         <AdminPageHeader title="Feature requests" subtitle="Ideas people sent with Suggest a feature in the app." />
-        <div className="rounded-md border border-border bg-mid-bg p-4 text-mid-text sm:p-6">
+        <div className="rounded-[14px] border border-rival/30 bg-rival-tint p-4 text-rival-ink sm:p-6">
           <p className="mb-2 text-[14px] font-semibold">Table not yet created on production</p>
           <p className="mb-4 text-[13px]">
             Run the SQL below in your{" "}
@@ -31,7 +31,7 @@ export default async function AdminFeatureRequestsPage({ searchParams }: Props) 
             </a>{" "}
             to create the <code className="rounded-sm bg-surface px-1">feature_requests</code> table:
           </p>
-          <pre className="overflow-x-auto rounded-md border border-border bg-surface p-4 text-[12px] leading-relaxed whitespace-pre-wrap text-foreground">
+          <pre className="overflow-x-auto rounded-xl bg-surface p-4 text-[12px] leading-relaxed whitespace-pre-wrap text-foreground">
 {`create table if not exists public.feature_requests (
   id          uuid        primary key default gen_random_uuid(),
   user_id     uuid        not null references auth.users(id) on delete cascade,

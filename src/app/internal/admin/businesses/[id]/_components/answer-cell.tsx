@@ -46,7 +46,7 @@ export default function AnswerCell({
             <DialogDescription className="wrap-anywhere">{question}</DialogDescription>
           </DialogHeader>
           {answer ? (
-            <p className="max-h-[60vh] overflow-y-auto rounded-md border border-border bg-muted px-4 py-3 text-[14px] leading-relaxed whitespace-pre-wrap wrap-anywhere">
+            <p className="max-h-[60vh] overflow-y-auto rounded-lg bg-muted px-4 py-3 text-[14px] leading-relaxed whitespace-pre-wrap wrap-anywhere">
               {answer}
             </p>
           ) : (

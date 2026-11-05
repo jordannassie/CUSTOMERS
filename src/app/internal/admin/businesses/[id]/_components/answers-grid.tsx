@@ -24,7 +24,7 @@ export default function AnswersGrid({ results, models }: { results: Results; mod
 
   return (
     <Section title="Latest answers" note={results.at ? `Scan of ${formatDate(results.at, true)}. Click Named or Not named to read the answer.` : undefined}>
-      <div className="rounded-md border border-border bg-surface">
+      <div className="rounded-xl bg-surface">
         <Table className="text-[13px]">
           <TableHeader>
             <TableRow>

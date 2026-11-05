@@ -5,7 +5,7 @@ import Section, { Empty } from "./section";
 
 type Detail = NonNullable<AdminBusinessDetail>;
 
-const list = "divide-y divide-border rounded-md border border-border bg-surface text-[14px]";
+const list = "divide-y divide-divider rounded-xl bg-surface text-[14px]";
 
 export function Questions({ questions }: { questions: Detail["questions"] }) {
   const active = questions.filter((q) => q.active).length;

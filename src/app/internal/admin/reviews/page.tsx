@@ -34,10 +34,10 @@ export default async function AdminReviewsPage({ searchParams }: { searchParams:
         subtitle="Reviews of apps on /apps. New ones stay pending until approved here. Treat high and low ratings the same way."
       />
       {typeof raw.error === "string" && (
-        <p role="alert" className="rounded-md border border-border bg-low-bg px-4 py-3 text-[14px] text-low-text">{raw.error}</p>
+        <p role="alert" className="rounded-[14px] border border-danger/20 bg-low-bg px-4 py-3 text-[14px] text-low-text">{raw.error}</p>
       )}
       {queue.unavailable && (
-        <p className="rounded-md border border-border bg-mid-bg px-4 py-3 text-[14px] text-mid-text">
+        <p className="rounded-[14px] border border-rival/30 bg-rival-tint px-4 py-3 text-[14px] text-rival-ink">
           The review tables are not in this database yet (migration 074).
         </p>
       )}
@@ -49,7 +49,7 @@ export default async function AdminReviewsPage({ searchParams }: { searchParams:
         ) : (
           <ul className="flex flex-col gap-2">
             {queue.pending.map((review) => (
-              <li key={review.id} className="rounded-md border border-border bg-card px-4 py-3 text-[14px] break-words">
+              <li key={review.id} className="rounded-xl bg-surface px-4 py-3 text-[14px] break-words">
                 <Link href={`${BASE}?review=${review.id}`} className="font-medium text-primary hover:underline">{review.title}</Link>
                 <span className="text-muted-foreground"> {review.slug}, {review.rating} of 5</span>
               </li>
@@ -65,7 +65,7 @@ export default async function AdminReviewsPage({ searchParams }: { searchParams:
         ) : (
           <ul className="flex flex-col gap-2">
             {queue.reports.map((report) => (
-              <li key={report.id} className="rounded-md border border-border bg-card px-4 py-3 text-[14px] break-words">
+              <li key={report.id} className="rounded-xl bg-surface px-4 py-3 text-[14px] break-words">
                 <Link href={`${BASE}?review=${report.reviewId}`} className="font-medium text-primary hover:underline">{report.reason}</Link>
                 {report.details && <span className="text-muted-foreground"> {report.details}</span>}
               </li>
@@ -75,7 +75,7 @@ export default async function AdminReviewsPage({ searchParams }: { searchParams:
       </section>
 
       {selected && (
-        <section className="flex flex-col gap-2 rounded-md border border-border bg-card p-4 text-[14px] sm:p-6">
+        <section className="flex flex-col gap-2 rounded-xl bg-surface p-4 text-[14px] sm:p-6">
           <h2 className="text-[16px] font-semibold break-words">{selected.title}</h2>
           <div className="flex flex-wrap items-center gap-2 text-[13px] text-muted-foreground">
             <span>{selected.slug}</span>
@@ -84,7 +84,7 @@ export default async function AdminReviewsPage({ searchParams }: { searchParams:
             <span>{selected.recommendation === "yes" ? "Recommends" : "Does not recommend"}</span>
           </div>
           {signals.length > 0 && (
-            <p className="text-[13px] text-mid-text">Signals: {signals.join(", ")}. These do not approve or reject the review.</p>
+            <p className="text-[13px] text-rival-ink">Signals: {signals.join(", ")}. These do not approve or reject the review.</p>
           )}
           <p className="mt-2 break-words">{selected.useCase}</p>
           <p className="break-words"><span className="font-medium">Pros: </span>{selected.pros}</p>

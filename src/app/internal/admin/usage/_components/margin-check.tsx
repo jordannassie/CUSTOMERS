@@ -27,7 +27,7 @@ export default function MarginCheck({
   otherCost: number;
 }) {
   return (
-    <section aria-labelledby="margin-check" className="rounded-md border border-border bg-surface">
+    <section aria-labelledby="margin-check" className="rounded-xl bg-surface">
       <header className="border-b border-border px-5 py-4">
         <h2 id="margin-check" className="text-[16px] font-semibold">
           Is each model still profitable?

@@ -10,7 +10,7 @@ export default function ScanHistory({ scans }: { scans: AdminScan[] }) {
       {scans.length === 0 ? (
         <Empty>This business has never been scanned.</Empty>
       ) : (
-        <div className="rounded-md border border-border bg-surface">
+        <div className="rounded-xl bg-surface">
           <Table className="text-[13px]">
             <TableHeader>
               <TableRow>

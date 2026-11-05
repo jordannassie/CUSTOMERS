@@ -6,8 +6,8 @@ export function PageSkeleton({ label, children }: { label: string; children: Rea
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-8 sm:px-6" aria-busy aria-label={label}>
       <div className="flex flex-col gap-2">
-        <Skeleton className="h-8 w-48" />
-        <Skeleton className="h-4 w-full max-w-md" />
+        <Skeleton className="h-8 w-48 bg-surface" />
+        <Skeleton className="h-4 w-full max-w-md bg-surface" />
       </div>
       {children}
     </div>
@@ -18,8 +18,8 @@ export function PageSkeleton({ label, children }: { label: string; children: Rea
 export function ListSkeleton({ label = "Loading" }: { label?: string }) {
   return (
     <div className="flex flex-col gap-4" aria-busy aria-label={label}>
-      <Skeleton className="h-10 w-full max-w-xl rounded-md" />
-      <Skeleton className="h-[480px] rounded-md" />
+      <Skeleton className="h-10 w-full max-w-xl rounded-full bg-surface" />
+      <Skeleton className="h-[480px] rounded-xl bg-surface" />
     </div>
   );
 }
@@ -28,10 +28,10 @@ export function ListSkeleton({ label = "Loading" }: { label?: string }) {
 export function DetailSkeleton({ label = "Loading" }: { label?: string }) {
   return (
     <div className="flex flex-col gap-8" aria-busy aria-label={label}>
-      <Skeleton className="h-[88px] rounded-md" />
+      <Skeleton className="h-[88px] rounded-xl bg-surface" />
       <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_360px]">
-        <Skeleton className="h-80 rounded-md" />
-        <Skeleton className="h-80 rounded-md" />
+        <Skeleton className="h-80 rounded-xl bg-surface" />
+        <Skeleton className="h-80 rounded-xl bg-surface" />
       </div>
     </div>
   );
@@ -41,9 +41,9 @@ export function DetailSkeleton({ label = "Loading" }: { label?: string }) {
 export function ReportSkeleton({ label = "Loading" }: { label?: string }) {
   return (
     <div className="flex flex-col gap-6" aria-busy aria-label={label}>
-      <Skeleton className="h-[104px] rounded-md" />
-      <Skeleton className="h-[260px] rounded-md" />
-      <Skeleton className="h-[260px] rounded-md" />
+      <Skeleton className="h-[104px] rounded-xl bg-surface" />
+      <Skeleton className="h-[260px] rounded-xl bg-surface" />
+      <Skeleton className="h-[260px] rounded-xl bg-surface" />
     </div>
   );
 }

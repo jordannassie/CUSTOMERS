@@ -28,7 +28,7 @@ export default function MoneyPanel({
       <h2 id="money-heading" className="text-[16px] font-semibold break-words">
         Revenue and AI cost
       </h2>
-      <div className="rounded-md border border-border bg-surface">
+      <div className="rounded-xl bg-surface">
         <div className="grid gap-px bg-border sm:grid-cols-2">
           <div className="flex flex-col gap-1 bg-surface px-5 py-5">
             <p className={STAT_LABEL}>Revenue this month, from Stripe</p>

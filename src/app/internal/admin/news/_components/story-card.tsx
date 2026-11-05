@@ -25,7 +25,7 @@ export function StoryCard({ story, writingId, weekday, onWritePost }: {
   const weekdayDef = WEEKDAYS.find((w) => w.key === weekday);
 
   return (
-    <article className="overflow-hidden rounded-md border border-border bg-surface">
+    <article className="overflow-hidden rounded-xl bg-surface">
       <div className="flex items-start gap-3 border-b border-border px-4 py-4 sm:px-5">
         <span className="flex size-7 shrink-0 items-center justify-center rounded-sm bg-muted text-[12px] font-semibold text-muted-foreground">
           {story.rank}
@@ -43,7 +43,7 @@ export function StoryCard({ story, writingId, weekday, onWritePost }: {
         {story.whatIsNew && <Field label="What changed">{story.whatIsNew}</Field>}
 
         {story.whatItHelpsDo && (
-          <div className="rounded-md border border-primary bg-primary-tint px-4 py-3">
+          <div className="rounded-lg border border-brand/40 bg-brand-tint px-4 py-3">
             <p className="mb-1 text-[12px] font-semibold text-primary-hover">Why agencies should care</p>
             <p className="text-[14px] font-medium leading-snug">{story.whatItHelpsDo}</p>
           </div>
@@ -51,12 +51,12 @@ export function StoryCard({ story, writingId, weekday, onWritePost }: {
 
         <div className="grid gap-3 sm:grid-cols-2">
           {story.bestFor && (
-            <div className="rounded-md border border-border bg-muted px-4 py-3">
+            <div className="rounded-lg bg-muted px-4 py-3">
               <Field label="What it means for clients">{story.bestFor}</Field>
             </div>
           )}
           {story.businessOpportunity && (
-            <div className="rounded-md border border-border bg-muted px-4 py-3">
+            <div className="rounded-lg bg-muted px-4 py-3">
               <Field label={weekdayDef ? `${weekdayDef.theme} angle` : "Suggested post angle"}>
                 {story.businessOpportunity}
               </Field>

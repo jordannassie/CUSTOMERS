@@ -22,7 +22,7 @@ export function WeekdayCards({
             onClick={() => onChange(w.key)}
             aria-pressed={isSelected}
             className={cn(
-              "flex min-h-9 flex-col items-start gap-1 rounded-md border px-3 py-3 text-left transition-colors duration-150 ease-out",
+              "flex min-h-9 flex-col items-start gap-1 rounded-lg border px-3 py-3 text-left transition-colors duration-150 ease-out",
               "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
               "disabled:cursor-not-allowed disabled:opacity-50",
               isSelected

@@ -11,7 +11,7 @@ export default function AdminNotFound({ title, text, backHref, backLabel }: {
 }) {
   return (
     <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
-      <div className="flex flex-col items-center gap-2 rounded-md border border-border bg-surface px-6 py-12 text-center">
+      <div className="flex flex-col items-center gap-2 rounded-xl bg-surface px-6 py-12 text-center">
         <SearchX aria-hidden className="size-6 text-text-hint" />
         <h1 className="text-[15px] font-medium">{title}</h1>
         <p className="max-w-sm text-[14px] text-muted-foreground">{text}</p>

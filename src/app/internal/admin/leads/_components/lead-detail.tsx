@@ -114,7 +114,7 @@ export function LeadDetail({
         </div>
 
         <Field label="Message">
-          <p className="whitespace-pre-wrap rounded-md border border-border bg-muted px-4 py-3 leading-relaxed">
+          <p className="whitespace-pre-wrap rounded-lg bg-muted px-4 py-3 leading-relaxed">
             {lead.message}
           </p>
         </Field>
