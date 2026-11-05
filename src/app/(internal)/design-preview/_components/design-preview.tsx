@@ -54,7 +54,7 @@ export function DesignPreview() {
         <Section id="colours" title="Colours" description="One blue for you and for actions. Status colours fill rings and bars; status text uses the darker text shade.">
           <Palette />
         </Section>
-        <Section id="type" title="Type" description="Geist for everything. Tabular numbers for scores, credits and money.">
+        <Section id="type" title="Type" description="Figtree for the interface, Young Serif for lead sentences, big numbers and titles. Tabular numbers for scores, credits and money.">
           <Typography />
         </Section>
         <Section id="buttons" title="Buttons" description="4px corners. The blue button is the main action on a screen.">
