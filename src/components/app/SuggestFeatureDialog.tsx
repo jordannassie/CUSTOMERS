@@ -80,7 +80,7 @@ export function SuggestFeatureDialog({ businessId, triggerClassName, suggest }: 
               name="description"
               rows={4}
               maxLength={2000}
-              className="w-full resize-none rounded-md border border-input bg-surface px-3 py-2 text-sm outline-none placeholder:text-text-hint focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+              className="w-full resize-none rounded-lg border border-input bg-surface px-3 py-2 text-sm outline-none placeholder:text-text-hint focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
             />
           </div>
           {error && (

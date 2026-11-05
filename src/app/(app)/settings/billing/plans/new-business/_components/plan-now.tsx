@@ -65,7 +65,7 @@ export function PlanNow({ view, start, status, continueHref, trialBusinesses, ba
 
   if (view.kind === "unavailable") {
     return (
-      <section data-testid="plan-now" className="rounded-md border border-border bg-surface px-5 py-5">
+      <section data-testid="plan-now" className="rounded-xl bg-surface px-6 py-6">
         <p className="text-[15px] font-medium">
           Your trial includes {trialBusinesses} businesses. To add another, your paid plan needs to start.
         </p>
@@ -81,8 +81,8 @@ export function PlanNow({ view, start, status, continueHref, trialBusinesses, ba
 
   const busy = state !== "idle";
   return (
-    <section data-testid="plan-now" className="rounded-md border border-border bg-surface px-5 py-5">
-      <h2 className="text-base font-semibold tracking-[-0.02em]">Start your plan now to add more businesses</h2>
+    <section data-testid="plan-now" className="rounded-xl bg-surface px-6 py-6">
+      <h2 className="font-serif text-xl font-normal">Start your plan now to add more businesses</h2>
       <p className="mt-3 text-sm text-muted-foreground">
         Your trial includes {trialBusinesses} businesses. To add another, start your paid plan today.
       </p>
@@ -99,7 +99,7 @@ export function PlanNow({ view, start, status, continueHref, trialBusinesses, ba
         finish setup.
       </p>
       {error && (
-        <p role="alert" className="mt-3 rounded-md border border-low/30 bg-low-bg px-3 py-2 text-sm text-low-text">
+        <p role="alert" className="mt-3 rounded-[12px] border border-danger/20 bg-low-bg px-3 py-2 text-sm text-low-text">
           {error.text}
           {error.declined && (
             <>
@@ -118,7 +118,7 @@ export function PlanNow({ view, start, status, continueHref, trialBusinesses, ba
         </p>
       )}
       {state === "waiting" && slow && (
-        <div role="status" data-testid="plan-now-slow" className="mt-3 flex flex-col items-start gap-3 rounded-md border border-mid/30 bg-mid-bg px-3 py-2 text-sm text-mid-text">
+        <div role="status" data-testid="plan-now-slow" className="mt-3 flex flex-col items-start gap-3 rounded-[14px] border border-rival/30 bg-rival-tint px-3 py-2 text-sm text-rival-ink">
           <p>
             Your payment went through, but your plan is taking longer than usual to start. Check again in a moment. If it
             still hasn&apos;t started, contact us and we&apos;ll sort it out.

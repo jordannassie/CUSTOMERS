@@ -59,7 +59,7 @@ export function ChoosePlan({ state, mode, publishableKey, initialPlanId, returne
         className="flex flex-col gap-5"
       >
         {state.ended && (
-          <p className="rounded-md border border-border bg-surface px-4 py-3 text-sm" data-testid="plan-ended">
+          <p className="rounded-[14px] bg-brand-tint px-4 py-3 text-sm text-brand-ink" data-testid="plan-ended">
             Your plan has ended. Your results are still here, and choosing a plan starts your scans again.
           </p>
         )}
@@ -71,7 +71,7 @@ export function ChoosePlan({ state, mode, publishableKey, initialPlanId, returne
                 key={p.id}
                 data-testid={`plan-${p.id}`}
                 className={cn(
-                  "flex cursor-pointer flex-col gap-2 rounded-md border bg-surface p-4 transition-colors has-focus-visible:ring-3 has-focus-visible:ring-ring/50",
+                  "flex cursor-pointer flex-col gap-2 rounded-lg border bg-surface p-4 transition-colors has-focus-visible:ring-3 has-focus-visible:ring-ring/50",
                   p.id === plan.id ? "border-primary bg-primary-tint" : "border-border hover:border-primary/40",
                 )}
               >
@@ -108,7 +108,7 @@ export function ChoosePlan({ state, mode, publishableKey, initialPlanId, returne
 
   return (
     <div className="flex flex-col gap-5">
-      <div className="flex items-center justify-between gap-3 rounded-md border border-border bg-surface px-4 py-3 text-sm">
+      <div className="flex items-center justify-between gap-3 rounded-[14px] border border-border bg-surface px-4 py-3 text-sm">
         <span data-testid="chosen-plan">
           <span className="font-semibold">{plan.name}</span> for {businesses(state.businessCount)}, {formatUsd(monthly)} a month
         </span>
@@ -149,7 +149,7 @@ function limits(p: Choose["plans"][number]): string[] {
 
 function Unavailable({ text }: { text: string }) {
   return (
-    <p role="alert" className="rounded-md bg-low-bg px-3 py-2 text-[13px] text-low-text">
+    <p role="alert" className="rounded-[12px] bg-low-bg px-3 py-2 text-[13px] text-low-text">
       {text}
     </p>
   );

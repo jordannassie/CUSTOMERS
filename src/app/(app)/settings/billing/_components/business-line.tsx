@@ -41,7 +41,7 @@ export function BusinessLine({
             {plan.monthlyCredits.toLocaleString("en-US")} credits a month
           </p>
           {pending && (
-            <p className="mt-1.5 text-[13px] font-medium text-mid-text" data-testid="pending-change">
+            <p className="mt-1.5 text-[13px] font-medium text-rival-ink" data-testid="pending-change">
               {pending.kind === "remove" ? (
                 <>
                   Comes off your plan on <LocalDate iso={pending.at} />

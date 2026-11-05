@@ -9,13 +9,13 @@ export function BalanceSummary({ balance }: { balance: UsageReport["balance"] })
   const planShare = pool > 0 ? (balance.plan / pool) * 100 : 0;
 
   return (
-    <section aria-labelledby="balance-heading" className="rounded-md border border-border bg-surface p-5">
+    <section aria-labelledby="balance-heading" className="rounded-xl bg-surface p-6">
       <h2 id="balance-heading" className="text-sm font-medium text-muted-foreground">
         Credits left
       </h2>
       <p
         data-testid="balance-total"
-        className={cn("mt-3 text-[32px] font-semibold leading-tight tracking-[-0.02em] tabular-nums", over && "text-low-text")}
+        className={cn("mt-3 font-serif text-[40px] leading-tight font-normal tabular-nums", over && "text-low-text")}
       >
         {over ? `${count(-balance.total)} over` : count(balance.total)}
       </p>

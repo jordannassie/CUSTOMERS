@@ -62,7 +62,7 @@ export function CancelDialog({ label, title, keepLabel, confirmLabel, reasonLabe
           <PreviewBody preview={preview} loading={loading} error={error?.message ?? null} />
 
           {preview?.losses && (
-            <div className="rounded-md border border-border bg-muted/50 px-4 py-3" data-testid="cancel-losses">
+            <div className="rounded-[14px] bg-muted px-4 py-3" data-testid="cancel-losses">
               <p className="text-sm font-medium">{preview.losses.heading}</p>
               <ul className="mt-2 flex list-disc flex-col gap-1 pl-5 text-sm text-muted-foreground">
                 {preview.losses.items.map((item) => (

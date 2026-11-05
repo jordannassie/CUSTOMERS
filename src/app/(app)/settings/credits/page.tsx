@@ -84,7 +84,7 @@ export default async function BuyCreditsPage({ searchParams }: Props) {
 
 function Notice({ children }: { children: React.ReactNode }) {
   return (
-    <p role="alert" data-testid="topup-blocked" className="rounded-md border border-low/30 bg-low-bg px-3.5 py-2.5 text-sm text-low-text">
+    <p role="alert" data-testid="topup-blocked" className="rounded-[12px] border border-danger/20 bg-low-bg px-3.5 py-2.5 text-sm text-low-text">
       {children}
     </p>
   );

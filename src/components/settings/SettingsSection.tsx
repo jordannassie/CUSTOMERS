@@ -1,6 +1,7 @@
 import { cn } from "cn";
 
-// One row of the settings page: what it is on the left, the controls on the right (stacked on a phone).
+// One card of the settings page (Check-in theme): what it is on the left with a serif title, the controls on the
+// right, stacked on a phone.
 export function SettingsSection({
   id,
   title,
@@ -17,16 +18,16 @@ export function SettingsSection({
   return (
     <section
       aria-labelledby={`${id}-title`}
-      className="grid gap-4 border-t border-border py-8 first:border-t-0 first:pt-0 lg:grid-cols-[260px_minmax(0,1fr)] lg:gap-10"
+      className="mb-4 grid scroll-mt-20 gap-4 rounded-xl bg-card px-5 py-[22px] last:mb-0 sm:px-6 lg:grid-cols-[240px_minmax(0,1fr)] lg:gap-10"
     >
       <div className="max-w-prose">
         <h2
           id={`${id}-title`}
-          className={cn("text-base font-semibold tracking-[-0.02em]", tone === "danger" ? "text-low-text" : "text-foreground")}
+          className={cn("font-serif text-xl font-normal", tone === "danger" ? "text-danger" : "text-foreground")}
         >
           {title}
         </h2>
-        <div className="mt-3 text-[13px] leading-relaxed text-muted-foreground">{description}</div>
+        <div className="mt-2 text-sm leading-relaxed text-muted-foreground">{description}</div>
       </div>
       <div className="min-w-0">{children}</div>
     </section>
@@ -34,7 +35,7 @@ export function SettingsSection({
 }
 
 export function Panel({ className, ...props }: React.ComponentProps<"div">) {
-  return <div className={cn("rounded-md border border-border bg-surface p-5", className)} {...props} />;
+  return <div className={cn("rounded-lg border border-border bg-surface p-5", className)} {...props} />;
 }
 
 export const TEXTAREA_CLASS =
@@ -43,7 +44,7 @@ export const TEXTAREA_CLASS =
 export function FormError({ message }: { message: string | null }) {
   if (!message) return null;
   return (
-    <p role="alert" className="rounded-md bg-low-bg px-3 py-2 text-[13px] text-low-text">
+    <p role="alert" className="rounded-[12px] bg-low-bg px-3 py-2 text-[13px] text-low-text">
       {message}
     </p>
   );

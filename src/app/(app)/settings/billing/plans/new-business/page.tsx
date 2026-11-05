@@ -34,7 +34,7 @@ export default async function NewBusinessPlanPage() {
         />
         <div className="mt-6">
           {plans.length === 0 ? (
-            <p className="rounded-md border border-dashed border-border bg-surface px-6 py-10 text-center text-sm text-muted-foreground">
+            <p className="rounded-xl bg-surface px-6 py-10 text-center text-sm text-muted-foreground">
               Prices are being updated. Check back in a few minutes.
             </p>
           ) : (

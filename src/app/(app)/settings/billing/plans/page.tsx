@@ -37,8 +37,8 @@ export default async function ChoosePlanPage({ searchParams }: Props) {
         />
         <div className="mt-6">
           {page.state.kind === "no_business" ? (
-            <section className="rounded-md border border-dashed border-border bg-surface px-6 py-10 text-center" data-testid="no-business">
-              <h2 className="text-base font-semibold tracking-[-0.02em]">Set up a business first</h2>
+            <section className="rounded-xl bg-surface px-6 py-10 text-center" data-testid="no-business">
+              <h2 className="font-serif text-xl font-normal">Set up a business first</h2>
               <p className="mx-auto mt-3 max-w-[440px] text-sm text-muted-foreground">Each plan covers one business. Add yours, then choose its plan.</p>
               <Button asChild className="mt-3">
                 <Link href="/onboarding">Set up a business</Link>

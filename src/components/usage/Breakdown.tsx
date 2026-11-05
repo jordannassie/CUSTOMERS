@@ -6,8 +6,8 @@ export type BreakdownRow = { key: string; label: string; credits: number; dot?: 
 // A ranked list with bars scaled to the month's total, so the rows add up to "used this month".
 export function Breakdown({ title, rows, total, testId }: { title: string; rows: BreakdownRow[]; total: number; testId: string }) {
   return (
-    <section aria-label={title} data-testid={testId} className="min-w-0 rounded-md border border-border bg-surface p-5">
-      <h3 className="text-base font-semibold tracking-[-0.02em]">{title}</h3>
+    <section aria-label={title} data-testid={testId} className="min-w-0 rounded-xl bg-surface p-6">
+      <h3 className="font-serif text-xl font-normal">{title}</h3>
       {rows.length === 0 ? (
         <p className="mt-3 text-sm text-muted-foreground">Nothing yet this month.</p>
       ) : (

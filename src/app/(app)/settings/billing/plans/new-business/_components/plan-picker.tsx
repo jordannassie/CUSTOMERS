@@ -38,7 +38,7 @@ export function NewBusinessPlanPicker({ plans, nextHref, blockedReason, planNow,
               key={p.id}
               data-testid={`plan-${p.id}`}
               className={cn(
-                "flex cursor-pointer flex-col gap-2 rounded-md border bg-surface p-4 transition-colors has-focus-visible:ring-3 has-focus-visible:ring-ring/50",
+                "flex cursor-pointer flex-col gap-2 rounded-lg border bg-surface p-4 transition-colors has-focus-visible:ring-3 has-focus-visible:ring-ring/50",
                 p.id === planId ? "border-primary bg-primary-tint" : "border-border hover:border-primary/40",
               )}
             >
@@ -64,7 +64,7 @@ export function NewBusinessPlanPicker({ plans, nextHref, blockedReason, planNow,
       ) : blockedReason ? (
         // Past due, ended or paused: Billing is where each of those is fixed.
         <div className="flex flex-col gap-4">
-          <p role="status" data-testid="blocked" className="rounded-md border border-border bg-surface px-4 py-3 text-sm">
+          <p role="status" data-testid="blocked" className="rounded-[14px] bg-brand-tint px-4 py-3 text-sm text-brand-ink">
             {blockedReason}
           </p>
           <div>

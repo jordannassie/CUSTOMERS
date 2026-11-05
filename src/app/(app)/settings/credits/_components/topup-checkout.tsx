@@ -53,7 +53,7 @@ export function TopupCheckout({ packs, mode, publishableKey, returnedSessionId, 
                 key={p.id}
                 data-testid={`pack-${p.id}`}
                 className={cn(
-                  "flex cursor-pointer flex-col gap-1 rounded-md border bg-surface p-4 transition-colors has-focus-visible:ring-3 has-focus-visible:ring-ring/50",
+                  "flex cursor-pointer flex-col gap-1 rounded-lg border bg-surface p-4 transition-colors has-focus-visible:ring-3 has-focus-visible:ring-ring/50",
                   p.id === packId ? "border-primary bg-primary-tint" : "border-border hover:border-primary/40",
                 )}
               >
@@ -73,7 +73,7 @@ export function TopupCheckout({ packs, mode, publishableKey, returnedSessionId, 
           </div>
         </fieldset>
         {mode === "off" ? (
-          <p role="alert" className="rounded-md bg-low-bg px-3 py-2 text-[13px] text-low-text">
+          <p role="alert" className="rounded-[12px] bg-low-bg px-3 py-2 text-[13px] text-low-text">
             Buying credits isn&apos;t available right now. Please try again later.
           </p>
         ) : (
@@ -88,7 +88,7 @@ export function TopupCheckout({ packs, mode, publishableKey, returnedSessionId, 
   const label = `Pay ${formatUsd(pack.priceCents)}`;
   return (
     <div className="flex flex-col gap-5">
-      <div className="flex items-center justify-between gap-3 rounded-md border border-border bg-surface px-4 py-3 text-sm">
+      <div className="flex items-center justify-between gap-3 rounded-[14px] border border-border bg-surface px-4 py-3 text-sm">
         <span data-testid="chosen-pack">
           <span className="font-semibold">{formatCount(pack.credits)} credits</span> for {formatUsd(pack.priceCents)}
         </span>

@@ -22,7 +22,7 @@ export function PlanProgress({ status }: { status: StatusAction }) {
 
   if (!started && !slow) {
     return (
-      <p role="status" data-testid="plan-waiting" className="flex items-center gap-2 rounded-md border border-border bg-surface px-4 py-3 text-sm">
+      <p role="status" data-testid="plan-waiting" className="flex items-center gap-2 rounded-[14px] border border-border bg-surface px-4 py-3 text-sm">
         <Loader2 className="size-4 animate-spin text-primary" aria-hidden="true" />
         Card accepted. Setting up your plan…
       </p>
@@ -30,7 +30,7 @@ export function PlanProgress({ status }: { status: StatusAction }) {
   }
   if (!started) {
     return (
-      <div role="status" data-testid="plan-slow" className="flex flex-col items-start gap-3 rounded-md border border-mid/30 bg-mid-bg px-4 py-3 text-sm text-mid-text">
+      <div role="status" data-testid="plan-slow" className="flex flex-col items-start gap-3 rounded-[14px] border border-rival/30 bg-rival-tint px-4 py-3 text-sm text-rival-ink">
         <p>
           Your card was accepted, but your plan is taking longer than usual to start. Check again in a moment. If it still
           hasn&apos;t started, contact us and we&apos;ll sort it out.
@@ -43,7 +43,7 @@ export function PlanProgress({ status }: { status: StatusAction }) {
     );
   }
   return (
-    <section role="status" data-testid="plan-started" className="flex flex-col items-start gap-3 rounded-md border border-border bg-surface px-5 py-5">
+    <section role="status" data-testid="plan-started" className="flex flex-col items-start gap-3 rounded-xl bg-surface px-6 py-6">
       <p className="flex items-center gap-2 text-base font-semibold">
         <CheckCircle2 className="size-5 text-good" aria-hidden="true" />
         Your plan has started

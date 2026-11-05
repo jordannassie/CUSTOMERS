@@ -104,7 +104,7 @@ export default async function SettingsPage({ searchParams }: { searchParams: Sea
 
       <SettingsSection id="account" title="Account" description="How you log in. Changes to your email need a click on the link we send.">
         {emailLinkFailed && (
-          <p role="alert" className="mb-4 rounded-md bg-low-bg px-3 py-2 text-[13px] text-low-text">
+          <p role="alert" className="mb-4 rounded-[12px] bg-low-bg px-3 py-2 text-[13px] text-low-text">
             {EMAIL_LINK_INVALID_TEXT}
           </p>
         )}

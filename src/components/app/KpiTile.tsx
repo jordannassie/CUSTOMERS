@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { cn } from "cn";
-import { Sparkline } from "@/components/competitors/Sparkline";
+import { Sparkline } from "@/components/charts";
 
 type KpiTileProps = {
   label: string;
@@ -19,13 +19,13 @@ type KpiTileProps = {
 export function KpiTile({ label, value, sub, tone, testId, trend, trendColor, change }: KpiTileProps) {
   const showTrend = trend && trend.filter((v) => v !== null).length >= 2;
   return (
-    <div className="flex min-w-0 flex-col gap-1 bg-surface px-[18px] pt-4 pb-3.5" data-testid={testId}>
-      <span className="text-xs text-muted-foreground">{label}</span>
+    <div className="flex min-w-0 flex-col gap-1.5 rounded-xl bg-surface px-5 pt-[18px] pb-4" data-testid={testId}>
+      <span className="text-[13px] text-muted-foreground">{label}</span>
       <div className="flex items-end justify-between gap-2">
         <span
           className={cn(
-            "truncate text-[26px] leading-tight font-semibold tracking-[-0.03em] tabular-nums",
-            tone === "good" && "text-good-text",
+            "truncate font-serif text-[30px] leading-tight font-normal tabular-nums",
+            tone === "good" && "text-brand",
             tone === "mid" && "text-mid-text",
           )}
         >
@@ -47,10 +47,10 @@ export function KpiTile({ label, value, sub, tone, testId, trend, trendColor, ch
   );
 }
 
-/** The tiles joined into one bordered strip, hairlines between them (PromptWatch-style). */
+/** The tiles as a row of white cards on the ground (Check-in theme). */
 export function KpiStrip({ children, testId }: { children: ReactNode; testId?: string }) {
   return (
-    <div className="grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-border bg-border lg:grid-cols-4" data-testid={testId}>
+    <div className="grid grid-cols-2 gap-3 lg:grid-cols-4" data-testid={testId}>
       {children}
     </div>
   );

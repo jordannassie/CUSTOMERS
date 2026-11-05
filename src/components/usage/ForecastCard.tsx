@@ -48,12 +48,12 @@ export function ForecastCard({ forecast: f, buyCreditsHref }: Props) {
       aria-labelledby="forecast-heading"
       data-testid="forecast"
       data-short={short}
-      className={cn("flex flex-col rounded-md border p-5", short ? "border-low/40 bg-low-bg" : "border-border bg-surface")}
+      className={cn("flex flex-col rounded-xl border p-6", short ? "border-danger/25 bg-low-bg" : "border-transparent bg-surface")}
     >
       <h2 id="forecast-heading" className="text-sm font-medium text-muted-foreground">
         Forecast to {f.kind === "trial" ? "trial end" : f.kind === "renewal" ? "renewal" : "the next 30 days"}
       </h2>
-      <p className={cn("mt-3 flex items-start gap-2 text-xl font-semibold tracking-[-0.02em]", short && "text-low-text")}>
+      <p className={cn("mt-3 flex items-start gap-2 font-serif text-[22px] leading-snug font-normal", short && "text-low-text")}>
         {short ? (
           <CircleAlert aria-hidden className="mt-1 size-5 shrink-0" />
         ) : (

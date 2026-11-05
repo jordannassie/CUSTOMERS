@@ -48,7 +48,7 @@ export default async function BillingPage({ searchParams }: Props) {
         />
 
         {params.portal === "fixture" && (
-          <p role="status" data-testid="portal-fixture" className="mt-4 rounded-md border border-border bg-primary-tint px-4 py-3 text-sm">
+          <p role="status" data-testid="portal-fixture" className="mt-4 rounded-[14px] bg-brand-tint px-4 py-3 text-brand-ink text-sm">
             Test mode: Stripe&apos;s card and invoice page opens here in a real run.
           </p>
         )}

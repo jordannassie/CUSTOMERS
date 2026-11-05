@@ -48,7 +48,7 @@ export function TopupProgress({ sessionId, status }: { sessionId: string; status
 
   if (state.kind === "waiting") {
     return (
-      <p role="status" data-testid="topup-waiting" className="flex items-center gap-2 rounded-md border border-border bg-surface px-4 py-3 text-sm">
+      <p role="status" data-testid="topup-waiting" className="flex items-center gap-2 rounded-[14px] border border-border bg-surface px-4 py-3 text-sm">
         <Loader2 className="size-4 animate-spin text-primary" aria-hidden="true" />
         Payment received. Adding your credits…
       </p>
@@ -56,14 +56,14 @@ export function TopupProgress({ sessionId, status }: { sessionId: string; status
   }
   if (state.kind === "slow") {
     return (
-      <p role="status" data-testid="topup-slow" className="rounded-md border border-mid/30 bg-mid-bg px-4 py-3 text-sm text-mid-text">
+      <p role="status" data-testid="topup-slow" className="rounded-[14px] border border-rival/30 bg-rival-tint px-4 py-3 text-sm text-rival-ink">
         Your payment went through, but your credits are taking longer than usual. They will show up on their own. Refresh
         this page in a minute to check.
       </p>
     );
   }
   return (
-    <div role="status" data-testid="topup-done" className="flex flex-col gap-4 rounded-md border border-border bg-surface p-5">
+    <div role="status" data-testid="topup-done" className="flex flex-col gap-4 rounded-xl bg-surface p-6">
       <p className="flex items-start gap-2 text-[15px] font-medium">
         <CheckCircle2 className="mt-0.5 size-5 shrink-0 text-good" aria-hidden="true" />
         {credits(state.added)} added.

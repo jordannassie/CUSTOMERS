@@ -35,7 +35,7 @@ export function AccountForm({ email, pendingEmail, hasPassword, changeEmail, cha
         value={<span data-testid="account-email">{email}</span>}
         note={
           waiting ? (
-            <span className="flex items-start gap-1.5 text-mid-text" data-testid="pending-email">
+            <span className="flex items-start gap-1.5 text-rival-ink" data-testid="pending-email">
               <MailCheck className="mt-0.5 size-3.5 shrink-0" aria-hidden="true" />
               Waiting for you to confirm {waiting}. Check both inboxes for our link.
             </span>
@@ -206,9 +206,9 @@ function PasswordForm({ changePassword, onClose }: { changePassword: ChangePassw
         fields={fields}
       />
       {code !== null && (
-        <div className="flex flex-col gap-1.5 rounded-md bg-mid-bg p-3">
+        <div className="flex flex-col gap-1.5 rounded-[12px] bg-rival-tint p-3">
           <Label htmlFor="reauth-code">Code from your email</Label>
-          <p className="text-[13px] text-mid-text">For your security we emailed you a code. Enter it to finish.</p>
+          <p className="text-[13px] text-rival-ink">For your security we emailed you a code. Enter it to finish.</p>
           <Input id="reauth-code" inputMode="numeric" autoComplete="one-time-code" required value={code} onChange={(e) => setCode(e.target.value)} />
         </div>
       )}

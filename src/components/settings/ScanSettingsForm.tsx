@@ -64,7 +64,7 @@ export function ScanSettingsForm({ businessId, models, frequency, activeQuestion
                 <label
                   key={model.id}
                   className={cn(
-                    "flex cursor-pointer gap-3 rounded-md border px-3.5 py-3 transition-colors",
+                    "flex cursor-pointer gap-3 rounded-lg border px-3.5 py-3 transition-colors",
                     on ? "border-primary/40 bg-primary-tint/50" : "border-border hover:bg-muted",
                   )}
                 >
@@ -154,11 +154,11 @@ function Estimate({
     >
       <p className="text-[13px] text-muted-foreground">Estimated use</p>
       <p className="leading-none">
-        <span className="text-[32px] font-semibold tracking-[-0.02em] tabular-nums">About {count(after)}</span>
+        <span className="font-serif text-[34px] leading-tight font-normal tabular-nums">About {count(after)}</span>
         <span className="mt-1.5 block text-sm text-muted-foreground">credits a month</span>
       </p>
       {dirty && change !== 0 && (
-        <p data-testid="estimate-change" className={cn("text-[13px] font-medium tabular-nums", change > 0 ? "text-mid-text" : "text-good-text")}>
+        <p data-testid="estimate-change" className={cn("text-[13px] font-medium tabular-nums", change > 0 ? "text-rival-ink" : "text-good-text")}>
           {change > 0 ? `${count(change)} more` : `${count(-change)} fewer`} than now ({count(before)})
         </p>
       )}

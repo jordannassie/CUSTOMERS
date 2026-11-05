@@ -85,8 +85,8 @@ function Notice({ tone, testId, children }: { tone: "danger" | "warning"; testId
       data-testid={testId}
       className={
         danger
-          ? "flex gap-3 rounded-md border border-low/30 bg-low-bg px-4 py-3 text-sm text-low-text"
-          : "flex gap-3 rounded-md border border-mid/30 bg-mid-bg px-4 py-3 text-sm text-mid-text"
+          ? "flex gap-3 rounded-[14px] border border-danger/20 bg-low-bg px-4 py-3 text-sm text-low-text"
+          : "flex gap-3 rounded-[14px] bg-brand-tint px-4 py-3 text-sm text-brand-ink"
       }
     >
       <Icon className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
@@ -97,8 +97,8 @@ function Notice({ tone, testId, children }: { tone: "danger" | "warning"; testId
 
 export function CreditsPanel({ buyHref, usageHref }: { buyHref: string; usageHref: string }) {
   return (
-    <section aria-labelledby="credits-heading" className="rounded-md border border-border bg-surface p-5">
-      <h2 id="credits-heading" className="text-base font-semibold tracking-[-0.02em]">
+    <section aria-labelledby="credits-heading" className="rounded-xl bg-surface p-6">
+      <h2 id="credits-heading" className="font-serif text-xl font-normal">
         Credits
       </h2>
       <p className="mt-3 text-sm text-muted-foreground">
@@ -118,8 +118,8 @@ export function CreditsPanel({ buyHref, usageHref }: { buyHref: string; usageHre
 
 export function CancelPanel({ cancel, trialing, trialEnded = false }: { cancel: ChangeAction; trialing: boolean; trialEnded?: boolean }) {
   return (
-    <section aria-labelledby="cancel-heading" className="rounded-md border border-border bg-surface p-5">
-      <h2 id="cancel-heading" className="text-base font-semibold tracking-[-0.02em]">
+    <section aria-labelledby="cancel-heading" className="rounded-xl bg-surface p-6">
+      <h2 id="cancel-heading" className="font-serif text-xl font-normal">
         Cancel plan
       </h2>
       <p className="mt-3 text-sm text-muted-foreground">
@@ -156,8 +156,8 @@ type NoPlanProps = {
 export function NoPlan({ ended, gone, choosePlanHref, supportHref }: NoPlanProps) {
   if (gone === "other_mode") {
     return (
-      <section className="rounded-md border border-dashed border-border bg-surface px-6 py-10 text-center" data-testid="plan-other-mode">
-        <h2 className="text-base font-semibold tracking-[-0.02em]">Your plan is with another payment account</h2>
+      <section className="rounded-xl bg-surface px-6 py-10 text-center" data-testid="plan-other-mode">
+        <h2 className="font-serif text-xl font-normal">Your plan is with another payment account</h2>
         <p className="mx-auto mt-3 max-w-[440px] text-sm text-muted-foreground">
           This site can&apos;t show or change it. Contact us and we&apos;ll sort it out.
         </p>
@@ -169,8 +169,8 @@ export function NoPlan({ ended, gone, choosePlanHref, supportHref }: NoPlanProps
   }
   if (gone === "missing") {
     return (
-      <section className="rounded-md border border-dashed border-border bg-surface px-6 py-10 text-center" data-testid="plan-missing">
-        <h2 className="text-base font-semibold tracking-[-0.02em]">We couldn&apos;t find your plan</h2>
+      <section className="rounded-xl bg-surface px-6 py-10 text-center" data-testid="plan-missing">
+        <h2 className="font-serif text-xl font-normal">We couldn&apos;t find your plan</h2>
         <p className="mx-auto mt-3 max-w-[440px] text-sm text-muted-foreground">
           Our payment provider has no record of it. Your results are still here. Start your plan again to keep your scans
           running.
@@ -187,8 +187,8 @@ export function NoPlan({ ended, gone, choosePlanHref, supportHref }: NoPlanProps
     );
   }
   return (
-    <section className="rounded-md border border-dashed border-border bg-surface px-6 py-10 text-center" data-testid="no-plan">
-      <h2 className="text-base font-semibold tracking-[-0.02em]">{ended ? "Your plan has ended" : "You don't have a plan yet"}</h2>
+    <section className="rounded-xl bg-surface px-6 py-10 text-center" data-testid="no-plan">
+      <h2 className="font-serif text-xl font-normal">{ended ? "Your plan has ended" : "You don't have a plan yet"}</h2>
       <p className="mx-auto mt-3 max-w-[440px] text-sm text-muted-foreground">
         {ended
           ? "Your results are still here to read. Choose a plan to start your scans again."

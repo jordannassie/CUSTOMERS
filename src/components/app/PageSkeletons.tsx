@@ -15,15 +15,15 @@ function Header({ actions = 0, lines = 1 }: { actions?: number; lines?: number }
   return (
     <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
       <div className="flex flex-col gap-2">
-        <Skeleton className="h-8 w-48" />
+        <Skeleton className="h-8 w-48 bg-surface" />
         {Array.from({ length: lines }, (_, i) => (
-          <Skeleton key={i} className={cn("h-4 max-w-full", i === lines - 1 ? "w-64" : "w-[560px]")} />
+          <Skeleton key={i} className={cn("h-4 max-w-full bg-surface", i === lines - 1 ? "w-64" : "w-[560px]")} />
         ))}
       </div>
       {actions > 0 && (
         <div className="flex gap-3">
           {Array.from({ length: actions }, (_, i) => (
-            <Skeleton key={i} className="h-9 w-28" />
+            <Skeleton key={i} className="h-10 w-28 rounded-[12px] bg-surface" />
           ))}
         </div>
       )}
@@ -32,7 +32,7 @@ function Header({ actions = 0, lines = 1 }: { actions?: number; lines?: number }
 }
 
 function Box({ className, children }: { className?: string; children?: React.ReactNode }) {
-  return <div className={cn("flex flex-col gap-4 rounded-md border border-border bg-surface p-5", className)}>{children}</div>;
+  return <div className={cn("flex flex-col gap-4 rounded-xl bg-surface p-6", className)}>{children}</div>;
 }
 
 function Bars({ rows, label = "w-24" }: { rows: number; label?: string }) {
@@ -116,7 +116,7 @@ export function OpportunitiesSkeleton() {
   return (
     <Frame>
       <Header />
-      <Skeleton className="h-11 w-full sm:h-8 sm:w-80" />
+      <Skeleton className="h-11 w-full rounded-full bg-surface sm:h-10 sm:w-80" />
       {Array.from({ length: 3 }, (_, i) => (
         <Box key={i}>
           <Skeleton className="h-5 w-24" />
@@ -136,8 +136,8 @@ export function SettingsSkeleton() {
       {["h-32", "h-24", "h-12"].map((h, i) => (
         <div key={i} className="grid gap-4 border-t border-border pt-8 first:border-t-0 first:pt-0 lg:grid-cols-[260px_minmax(0,1fr)] lg:gap-10">
           <div className="flex flex-col gap-2">
-            <Skeleton className="h-5 w-36" />
-            <Skeleton className="h-12" />
+            <Skeleton className="h-5 w-36 bg-surface" />
+            <Skeleton className="h-12 bg-surface" />
           </div>
           <Box>
             <Skeleton className="h-9" />
@@ -154,7 +154,7 @@ export function BillingSkeleton() {
     <Frame>
       <Header actions={1} />
       <div className="flex max-w-[760px] flex-col gap-6">
-        <Skeleton className="h-6 w-72" />
+        <Skeleton className="h-6 w-72 bg-surface" />
         <Box>
           <Skeleton className="h-5 w-48" />
           <Rows rows={2} height="h-14" />

@@ -44,7 +44,7 @@ export default async function UsagePage() {
 
       <section aria-labelledby="month-heading" className="mt-6">
         <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <h2 id="month-heading" className="text-lg font-semibold tracking-[-0.02em]">
+          <h2 id="month-heading" className="font-serif text-2xl font-normal">
             Used in {monthName(month.startsAt)}
           </h2>
           <p className="text-sm text-muted-foreground">
@@ -55,7 +55,7 @@ export default async function UsagePage() {
           </p>
         </div>
         {month.used === 0 ? (
-          <p data-testid="month-empty" className="mt-3 rounded-md border border-dashed border-border px-5 py-8 text-center text-sm text-muted-foreground">
+          <p data-testid="month-empty" className="mt-3 rounded-xl bg-surface px-5 py-8 text-center text-sm text-muted-foreground">
             No credits used yet this month. Each scan&apos;s checks will show here by business and by AI model.
           </p>
         ) : (

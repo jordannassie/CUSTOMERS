@@ -100,7 +100,7 @@ export function PreviewBody({ preview, loading, error }: { preview: Preview | nu
         </div>
       )}
       {error && (
-        <p role="alert" className="rounded-md border border-low/30 bg-low-bg px-3 py-2 text-sm text-low-text">
+        <p role="alert" className="rounded-[12px] border border-danger/20 bg-low-bg px-3 py-2 text-sm text-low-text">
           {error}
         </p>
       )}

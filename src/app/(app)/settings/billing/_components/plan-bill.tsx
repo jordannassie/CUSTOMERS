@@ -18,16 +18,16 @@ export function PlanBill({ view, actions, addBusinessHref, supportHref }: Props)
   const staying = view.onPlan.filter((b) => b.pending?.kind !== "remove" && !b.deleted).length;
 
   return (
-    <section aria-labelledby="plan-heading" className="rounded-md border border-border bg-surface">
+    <section aria-labelledby="plan-heading" className="overflow-hidden rounded-xl bg-surface">
       <div className="flex flex-wrap items-baseline justify-between gap-3 px-5 pt-5">
-        <h2 id="plan-heading" className="text-base font-semibold tracking-[-0.02em]">
+        <h2 id="plan-heading" className="font-serif text-xl font-normal">
           Businesses on your plan
         </h2>
         <p className="text-[13px] text-muted-foreground">Each business is billed monthly on its own plan.</p>
       </div>
 
       {view.onPlan.length === 0 ? (
-        <p className="mx-5 mt-3 rounded-md border border-dashed border-border px-4 py-6 text-center text-sm text-muted-foreground">
+        <p className="mx-5 mt-3 rounded-lg border border-dashed border-border-strong px-4 py-6 text-center text-sm text-muted-foreground">
           No businesses are on your plan yet. Add one below to start its scans.
         </p>
       ) : (
@@ -115,7 +115,7 @@ function NextCharge({ view, supportHref }: { view: BillingView; supportHref: str
             )}
           </p>
         </div>
-        <p className="text-2xl font-semibold tracking-[-0.02em] tabular-nums" data-testid="next-charge">
+        <p className="font-serif text-[30px] leading-tight font-normal tabular-nums" data-testid="next-charge">
           {formatUsd(view.nextCharge.amountCents)}
         </p>
       </>
@@ -144,7 +144,7 @@ function NextCharge({ view, supportHref }: { view: BillingView; supportHref: str
     return null;
   }
   return (
-    <div className="flex flex-wrap items-end justify-between gap-3 rounded-b-md border-t border-border bg-muted px-5 py-4" data-testid="charge-summary">
+    <div className="flex flex-wrap items-end justify-between gap-3 border-t border-divider bg-muted px-5 py-4" data-testid="charge-summary">
       {body}
     </div>
   );
