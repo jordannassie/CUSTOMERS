@@ -7,7 +7,7 @@ export default function OverviewError({ retry }: { error: Error; retry: () => vo
   return (
     <PageContainer>
       <div role="alert" className="rounded-xl bg-card p-8 text-center">
-        <h1 className="font-serif text-[22px] leading-snug">This page could not load</h1>
+        <h1 className="font-display font-semibold text-[22px] leading-snug">This page could not load</h1>
         <p className="mt-2 text-sm text-muted-foreground">
           Your scans and credits are safe. Try again, and contact support if it keeps happening.
         </p>

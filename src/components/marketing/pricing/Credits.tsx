@@ -59,7 +59,7 @@ export function Credits({ plans, packs }: { plans: PublicPlan[]; packs: PublicPa
       {packs.length > 0 && (
         <div id="top-ups" className="mt-16 grid gap-8 border-t border-border pt-12 md:grid-cols-2 md:gap-16">
           <div className="flex flex-col gap-3">
-            <h3 className="font-serif font-normal text-2xl leading-tight">Need more? Buy a top-up</h3>
+            <h3 className="font-display font-semibold text-2xl leading-tight">Need more? Buy a top-up</h3>
             <p className="text-[15px] text-muted-foreground">
               Top-up credits never expire and are used after your plan credits. You can spend them while you have a
               plan or trial. Unused top-ups can be refunded within 14 days.

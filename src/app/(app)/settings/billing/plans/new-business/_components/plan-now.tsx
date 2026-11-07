@@ -82,7 +82,7 @@ export function PlanNow({ view, start, status, continueHref, trialBusinesses, ba
   const busy = state !== "idle";
   return (
     <section data-testid="plan-now" className="rounded-xl bg-surface px-6 py-6">
-      <h2 className="font-serif text-xl font-normal">Start your plan now to add more businesses</h2>
+      <h2 className="font-display text-xl font-semibold">Start your plan now to add more businesses</h2>
       <p className="mt-3 text-sm text-muted-foreground">
         Your trial includes {trialBusinesses} businesses. To add another, start your paid plan today.
       </p>

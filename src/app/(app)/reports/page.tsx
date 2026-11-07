@@ -65,7 +65,7 @@ export default async function ReportsPage({ searchParams }: Props) {
             ) : shown === "old" ? (
               <section className="flex flex-col items-start gap-3 rounded-xl bg-card p-6" data-testid="report-old">
                 <FileClock aria-hidden className="size-6 text-muted-foreground" />
-                <h2 className="font-serif text-[22px] leading-snug font-normal">This report uses the old layout</h2>
+                <h2 className="font-display text-[22px] leading-snug font-semibold">This report uses the old layout</h2>
                 <p className="max-w-[560px] text-sm text-muted-foreground">
                   It was saved before reports became PDFs, so it can&apos;t be downloaded. Open the latest report and save a new
                   snapshot to get a PDF.
@@ -77,7 +77,7 @@ export default async function ReportsPage({ searchParams }: Props) {
             ) : (
               <section className="flex flex-col items-start gap-3 rounded-xl bg-card p-6" data-testid="reports-empty">
                 <FileText aria-hidden className="size-6 text-muted-foreground" />
-                <h2 className="font-serif text-[22px] leading-snug font-normal">{business.status === "paused" ? "Scans are paused" : "No report yet"}</h2>
+                <h2 className="font-display text-[22px] leading-snug font-semibold">{business.status === "paused" ? "Scans are paused" : "No report yet"}</h2>
                 <p className="max-w-[560px] text-sm text-muted-foreground">
                   {business.status === "paused"
                     ? `Scans are paused for ${business.name}, so there are no answers to report on yet. The report fills in after scans start again.`

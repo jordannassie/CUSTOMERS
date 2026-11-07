@@ -55,7 +55,7 @@ export function CompetitorAliases({ businessId, competitors, save }: { businessI
   return (
     <section aria-labelledby="competitor-aliases-title" className="mt-6 max-w-2xl overflow-hidden rounded-xl bg-card">
       <div className="flex flex-col gap-1 border-b border-divider px-6 py-[18px]">
-        <h2 id="competitor-aliases-title" className="font-serif text-xl font-normal">
+        <h2 id="competitor-aliases-title" className="font-display text-xl font-semibold">
           Other names
         </h2>
         <p className="text-[13px] text-muted-foreground">

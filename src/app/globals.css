@@ -119,9 +119,10 @@
 
 @theme inline {
   --font-sans: var(--font-figtree), ui-sans-serif, system-ui, sans-serif;
-  /* Young Serif: the lead sentence of each AI message, big numbers, page and card titles. One weight (400). */
-  --font-serif: var(--font-young-serif), Georgia, serif;
-  --font-heading: var(--font-young-serif), Georgia, serif;
+  /* Plus Jakarta Sans (semibold): page and card titles, the lead sentence of each AI message, big numbers, the
+     wordmark. Used as font-display; swap the font here and in layout.tsx to change every heading at once. */
+  --font-display: var(--font-jakarta), var(--font-figtree), ui-sans-serif, system-ui, sans-serif;
+  --font-heading: var(--font-jakarta), var(--font-figtree), ui-sans-serif, system-ui, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
 
   --color-background: var(--background);

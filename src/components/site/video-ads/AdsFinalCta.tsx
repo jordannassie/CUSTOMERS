@@ -5,7 +5,7 @@ export function AdsFinalCta({ checkoutReady }: { checkoutReady: boolean }) {
     <section className="pb-20 sm:pb-24">
       <div className="mx-auto max-w-[1120px] px-4 sm:px-6">
         <div className="rounded-xl bg-gradient-user px-6 py-14 text-center shadow-user sm:px-12">
-          <h2 className="font-serif font-normal text-[32px] text-white sm:text-[40px]">
+          <h2 className="font-display font-semibold text-[32px] text-white sm:text-[40px]">
             Your Next Great Ad Starts at $99.
           </h2>
           <p className="mx-auto mt-4 max-w-xl text-[16px] leading-relaxed text-white/90">

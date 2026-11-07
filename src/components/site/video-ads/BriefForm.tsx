@@ -72,7 +72,7 @@ export function BriefForm({
   if (done) {
     return (
       <div className="rounded-xl bg-surface p-8" role="status">
-        <h1 className="font-serif font-normal text-[32px] text-foreground">We have your order.</h1>
+        <h1 className="font-display font-semibold text-[32px] text-foreground">We have your order.</h1>
         <p className="mt-4 text-[16px] leading-relaxed text-muted-foreground">
           Payment for the {packageName} package ({priceLabel}) is confirmed, and your brief is saved.
           We&apos;ll confirm your production timeline when your order is accepted.
@@ -86,7 +86,7 @@ export function BriefForm({
 
   return (
     <form onSubmit={onSubmit} className="rounded-xl bg-surface p-6 sm:p-8">
-      <h1 className="font-serif font-normal text-[32px] text-foreground">Tell us about your brand.</h1>
+      <h1 className="font-display font-semibold text-[32px] text-foreground">Tell us about your brand.</h1>
       <p className="mt-3 text-[15px] leading-relaxed text-muted-foreground">
         Payment for {packageName} ({priceLabel}) is confirmed. This brief is how we make the video.
       </p>

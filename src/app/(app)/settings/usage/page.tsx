@@ -44,7 +44,7 @@ export default async function UsagePage() {
 
       <section aria-labelledby="month-heading" className="mt-6">
         <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <h2 id="month-heading" className="font-serif text-2xl font-normal">
+          <h2 id="month-heading" className="font-display text-2xl font-semibold">
             Used in {monthName(month.startsAt)}
           </h2>
           <p className="text-sm text-muted-foreground">

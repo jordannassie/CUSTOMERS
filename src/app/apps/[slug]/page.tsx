@@ -96,7 +96,7 @@ async function AppDetailPageContent({ params, searchParams }: { params: Params; 
                 <img src={logoUrl(app.websiteUrl, 256)} alt="" width={120} height={120} className="h-full w-full object-contain" />
               </div>
               <div className="min-w-0 flex-1">
-                <h1 className="font-serif font-normal text-[26px] leading-tight text-foreground sm:text-[32px]">{app.name}</h1>
+                <h1 className="font-display font-semibold text-[26px] leading-tight text-foreground sm:text-[32px]">{app.name}</h1>
                 {app.provider !== app.name ? <p className="mt-1 text-[14px] text-muted-foreground">{app.provider}</p> : null}
                 <p className="mt-1.5 text-[13px] font-semibold text-brand">{app.categories.map(categoryLabel).join(" · ")}</p>
                 <p className="mt-2 text-[15px] leading-relaxed text-foreground">{app.description}</p>
@@ -118,7 +118,7 @@ async function AppDetailPageContent({ params, searchParams }: { params: Params; 
 
           <section id="reviews" className="mt-4 scroll-mt-28 rounded-xl bg-surface p-4 sm:p-6">
             <div className="mb-3 flex items-center justify-between gap-3">
-              <h2 className="font-serif font-normal text-[20px] text-foreground">Reviews</h2>
+              <h2 className="font-display font-semibold text-[20px] text-foreground">Reviews</h2>
               <Link href={`/apps/${app.slug}/review`} className="text-[13px] font-semibold text-brand">Write a Review</Link>
             </div>
             {published.summary.count > 0 ? <p className="mb-3 text-[13px] text-muted-foreground">{published.summary.count} published Customers.Direct reviews.</p> : null}
@@ -127,12 +127,12 @@ async function AppDetailPageContent({ params, searchParams }: { params: Params; 
           </section>
 
           <section id="pricing" className="mt-4 scroll-mt-28 rounded-xl bg-surface p-4 sm:p-6">
-            <h2 className="font-serif font-normal text-[20px] text-foreground">Pricing</h2>
+            <h2 className="font-display font-semibold text-[20px] text-foreground">Pricing</h2>
             <p className="mt-2 text-[15px] leading-relaxed text-muted-foreground">Pricing is set by {app.provider}. Customers.Direct does not list a price for this app. Get Started opens the provider site.</p>
           </section>
 
           <section id="alternatives" className="mt-4 scroll-mt-28">
-            <h2 className="font-serif font-normal text-[20px] text-foreground">Alternatives</h2>
+            <h2 className="font-display font-semibold text-[20px] text-foreground">Alternatives</h2>
             {related.length > 0 ? (
               <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
                 {related.map((item) => <AppCard key={item.slug} app={item} source="detail" native={ratings[item.slug]} />)}

@@ -12,7 +12,7 @@ export function LegalPage({ title, intro, children }: { title: string; intro: Re
       <Header />
       <main className="bg-background px-4 py-12 sm:py-16">
         <article className="mx-auto max-w-3xl">
-          <h1 className="font-serif font-normal mb-2 text-[32px] sm:text-5xl">{title}</h1>
+          <h1 className="font-display font-semibold mb-2 text-[32px] sm:text-5xl">{title}</h1>
           <p className="mb-6 text-sm text-muted-foreground">Effective date: to be set after legal review</p>
           <div role="note" className="mb-10 flex gap-3 rounded-md border border-mid/40 bg-mid-bg p-4 text-sm text-mid-text">
             <FileWarning aria-hidden className="mt-0.5 size-4 shrink-0" />

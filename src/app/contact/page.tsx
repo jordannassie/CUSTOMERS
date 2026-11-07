@@ -38,7 +38,7 @@ export default function ContactPage() {
           <div className="flex max-w-[60ch] flex-col items-start gap-5 sm:flex-row sm:items-center">
             <MrDirectAvatar priority className="size-24 shrink-0 border-4 border-primary sm:size-28" />
             <div className="flex flex-col gap-4">
-              <h1 className="font-serif font-normal text-[32px] leading-[1.08] text-balance sm:text-5xl">
+              <h1 className="font-display font-semibold text-[32px] leading-[1.08] text-balance sm:text-5xl">
                 Talk to Mr. Direct
               </h1>
               <p className="text-lg text-muted-foreground text-pretty">

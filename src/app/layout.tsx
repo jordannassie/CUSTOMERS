@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import React from "react";
-import { Figtree, Young_Serif } from "next/font/google";
+import { Figtree, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -9,7 +9,7 @@ import { env } from "@/lib/env";
 import { SITE_NAME, SITE_URL } from "@/lib/site-metadata";
 import { jsonLdHtml } from "@/lib/json-ld";
 
-// Check-in theme: Figtree for the interface, Young Serif for lead sentences, big numbers and titles (globals.css).
+// Check-in theme: Figtree for the interface, Plus Jakarta Sans for headings, lead sentences and big numbers (globals.css).
 const figtree = Figtree({
   variable: "--font-figtree",
   weight: ["400", "500", "600", "700"],
@@ -17,9 +17,9 @@ const figtree = Figtree({
   display: "swap",
 });
 
-const youngSerif = Young_Serif({
-  variable: "--font-young-serif",
-  weight: "400",
+const jakarta = Plus_Jakarta_Sans({
+  variable: "--font-jakarta",
+  weight: ["500", "600", "700"],
   subsets: ["latin"],
   display: "swap",
 });
@@ -56,7 +56,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       lang="en"
       // globals.css sets smooth scrolling; this keeps route changes jumping straight to the top (Next 16).
       data-scroll-behavior="smooth"
-      className={`${figtree.variable} ${youngSerif.variable} h-full antialiased`}
+      className={`${figtree.variable} ${jakarta.variable} h-full antialiased`}
     >
       <head>
         {env.NODE_ENV === "development" && <script dangerouslySetInnerHTML={{ __html: DEV_MEASURE_GUARD }} />}

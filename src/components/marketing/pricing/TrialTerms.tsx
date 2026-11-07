@@ -31,7 +31,7 @@ export function TrialTerms() {
         {STEPS.map(({ when, title, body }) => (
           <li key={when} className="flex flex-col gap-3 border-t-2 border-border pt-5 last:border-primary">
             <span className="tabular text-[13px] font-medium text-muted-foreground">{when}</span>
-            <h3 className="font-serif font-normal text-xl">{title}</h3>
+            <h3 className="font-display font-semibold text-xl">{title}</h3>
             <p className="text-[15px] text-muted-foreground">{body}</p>
           </li>
         ))}

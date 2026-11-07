@@ -27,7 +27,7 @@ export default function AdminEmpty({
       )}
     >
       {Icon && <Icon aria-hidden className="size-6 text-text-hint" />}
-      {title && <p className="font-serif text-lg">{title}</p>}
+      {title && <p className="font-display font-semibold text-lg">{title}</p>}
       {children && <div className="max-w-md text-[14px] text-muted-foreground">{children}</div>}
     </div>
   );

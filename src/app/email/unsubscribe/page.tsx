@@ -41,7 +41,7 @@ async function UnsubscribeContent({ searchParams }: Props) {
     return (
       <>
         <MailX className="mx-auto size-10 text-muted-foreground" aria-hidden="true" />
-        <h1 className="font-serif font-normal mt-4 text-xl text-foreground">This link is not valid</h1>
+        <h1 className="font-display font-semibold mt-4 text-xl text-foreground">This link is not valid</h1>
         <p className="mt-2 text-sm text-muted-foreground">
           Open the link from your latest email again, or turn emails off in your settings.
         </p>
@@ -56,7 +56,7 @@ async function UnsubscribeContent({ searchParams }: Props) {
     return (
       <>
         <CircleCheck className="mx-auto size-10 text-good" aria-hidden="true" />
-        <h1 className="font-serif font-normal mt-4 text-xl text-foreground">You are unsubscribed</h1>
+        <h1 className="font-display font-semibold mt-4 text-xl text-foreground">You are unsubscribed</h1>
         <p className="mt-2 text-sm text-muted-foreground">
           You will not get the weekly report email any more. You can turn it back on in your settings.
         </p>
@@ -70,7 +70,7 @@ async function UnsubscribeContent({ searchParams }: Props) {
   return (
     <>
       <MailX className="mx-auto size-10 text-primary" aria-hidden="true" />
-      <h1 className="font-serif font-normal mt-4 text-xl text-foreground">Stop weekly report emails?</h1>
+      <h1 className="font-display font-semibold mt-4 text-xl text-foreground">Stop weekly report emails?</h1>
       <p className="mt-2 text-sm text-muted-foreground">
         You will still get emails about your account, like billing and trial reminders.
       </p>

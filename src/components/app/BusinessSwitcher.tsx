@@ -29,7 +29,7 @@ export type SwitchBusinessAction = (
 /** The scores, asked for when the switcher opens so no page load waits on (or pays for) every business's score. */
 export type SwitcherScoresAction = () => Promise<{ ok: true; data: SwitcherScores | null } | { ok: false; error: string }>;
 
-function BusinessMark({ name, logoUrl, domain }: { name: string; logoUrl: string | null; domain: string | null }) {
+function BusinessMark({ name, logoUrl, domain, size = "sm" }: { name: string; logoUrl: string | null; domain: string | null; size?: "sm" | "lg" }) {
   const [failed, setFailed] = useState(false);
   if (logoUrl && !failed) {
     return (
@@ -37,28 +37,16 @@ function BusinessMark({ name, logoUrl, domain }: { name: string; logoUrl: string
       <img
         src={logoUrl}
         alt=""
-        className="size-6 shrink-0 rounded-full border border-border bg-surface object-contain p-px"
+        className={cn("shrink-0 rounded-full border border-border bg-surface object-contain p-px", size === "lg" ? "size-[30px]" : "size-6")}
         onError={() => setFailed(true)}
       />
     );
   }
   // No uploaded logo (mockup-ui): the website's own icon, or its first letter while it loads or without a website.
-  return <SiteIcon domain={domain} name={name} size="sm" />;
+  return size === "lg" ? <SiteIcon domain={domain} name={name} className="size-[30px] text-[13px]" /> : <SiteIcon domain={domain} name={name} size="sm" />;
 }
 
 const DOT = { good: "bg-good", mid: "bg-mid", low: "bg-low" } as const;
-
-/** Check-in: the workspace badge, a brand gradient circle with the business's first letter. */
-function WorkspaceBadge({ name }: { name: string }) {
-  return (
-    <span
-      className="flex size-[30px] shrink-0 items-center justify-center rounded-full bg-gradient-ai text-sm font-bold text-white uppercase"
-      aria-hidden="true"
-    >
-      {name.trim().charAt(0) || "?"}
-    </span>
-  );
-}
 
 /** Score with its status dot, the last scan, and a real weekly change (DB-011). */
 function ScoreLine({ score }: { score: SwitcherScore }) {
@@ -189,7 +177,8 @@ export function BusinessSwitcher({
         title={active.name}
         data-testid="business-switcher"
       >
-        <WorkspaceBadge name={active.name} />
+        {/* The business's own mark: its logo, else its website's icon, else its first letter. */}
+        <BusinessMark name={active.name} logoUrl={active.logoUrl} domain={active.domain} size="lg" />
         {/* Long names get two lines, so the start of the name and the domain both stay readable. */}
         <span className="min-w-0 flex-1">
           <span className="line-clamp-2 text-sm font-semibold break-words text-foreground" data-testid="switcher-name">

@@ -29,7 +29,7 @@ export function PricingSummary({ plans }: { plans: PublicPlan[] }) {
             <dt className="text-lg font-semibold">{plan.name}</dt>
             <dd className="flex flex-col gap-1">
               <span className="text-[15px] text-muted-foreground">
-                <span data-testid="plan-price" className="tabular font-serif text-[34px] leading-tight font-normal text-foreground">
+                <span data-testid="plan-price" className="tabular font-display text-[34px] leading-tight font-semibold text-foreground">
                   {formatUsd(plan.priceCents)}
                 </span>{" "}
                 per business a month

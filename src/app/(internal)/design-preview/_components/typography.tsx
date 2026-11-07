@@ -1,10 +1,10 @@
-// Check-in: Young Serif (font-serif, one weight) for numbers, lead sentences and titles; Figtree for everything else.
+// Check-in: Plus Jakarta Sans (font-display, semibold) for numbers, lead sentences and titles; Figtree for everything else.
 const SCALE = [
-  { size: "font-serif text-[52px] leading-none", px: 52, sample: "15" },
-  { size: "font-serif text-[44px] leading-none", px: 44, sample: "38 of 100" },
-  { size: "font-serif text-[26px] leading-[1.3]", px: 26, sample: "You came up in 9 of the 60 answers." },
-  { size: "font-serif text-[22px] leading-[1.35]", px: 22, sample: "Most of the gap comes from Google." },
-  { size: "font-serif text-xl", px: 20, sample: "Customers.Direct" },
+  { size: "font-display font-semibold text-[52px] leading-none", px: 52, sample: "15" },
+  { size: "font-display font-semibold text-[44px] leading-none", px: 44, sample: "38 of 100" },
+  { size: "font-display font-semibold text-[26px] leading-[1.3]", px: 26, sample: "You came up in 9 of the 60 answers." },
+  { size: "font-display font-semibold text-[22px] leading-[1.35]", px: 22, sample: "Most of the gap comes from Google." },
+  { size: "font-display font-semibold text-xl", px: 20, sample: "Customers.Direct" },
   { size: "text-lg", px: 18, sample: "See what ChatGPT, Claude and Perplexity tell your customers." },
   { size: "text-[15px]", px: 15, sample: "Body text. Daily Grind has 320 reviews at 4.7. You have 12 at 4.2." },
   { size: "text-sm", px: 14, sample: "UI default. Buttons, menus, table cells." },

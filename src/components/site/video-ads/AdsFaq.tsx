@@ -29,7 +29,7 @@ export function AdsFaq() {
   return (
     <section id="faq" className="scroll-mt-28 py-20 sm:py-24">
       <div className="mx-auto max-w-[760px] px-4 sm:px-6">
-        <h2 className="font-serif font-normal text-center text-[32px] text-foreground sm:text-[40px]">
+        <h2 className="font-display font-semibold text-center text-[32px] text-foreground sm:text-[40px]">
           FAQ
         </h2>
         <div className="mt-10 flex flex-col gap-3">

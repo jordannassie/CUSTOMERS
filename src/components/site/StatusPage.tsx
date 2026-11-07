@@ -19,7 +19,7 @@ export function StatusPage({ icon: Icon, title, children, actions, detail, embed
       <div className="flex size-10 items-center justify-center rounded-full bg-brand-tint text-brand">
         <Icon aria-hidden className="size-5" />
       </div>
-      <h1 className="font-serif font-normal mt-6 text-2xl sm:text-[32px] sm:leading-tight">{title}</h1>
+      <h1 className="font-display font-semibold mt-6 text-2xl sm:text-[32px] sm:leading-tight">{title}</h1>
       <div className="mt-3 text-[15px] leading-relaxed text-muted-foreground">{children}</div>
       <div className="mt-8 flex flex-wrap gap-3">{actions}</div>
       {detail ? (

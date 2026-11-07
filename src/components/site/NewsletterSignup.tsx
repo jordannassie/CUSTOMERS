@@ -132,7 +132,7 @@ export function NewsletterSignup({
       aria-label="AI newsletter"
     >
       <div className={band ? "mx-auto max-w-[880px] rounded-xl bg-surface px-5 py-6 sm:px-8 sm:py-8" : ""}>
-        <h2 className={dark ? "font-serif text-[20px] font-normal text-white" : variant === "compact" ? "font-serif text-[18px] font-normal text-foreground" : "font-serif text-[28px] font-normal text-foreground sm:text-[34px]"}>{copy.title}</h2>
+        <h2 className={dark ? "font-display text-[20px] font-semibold text-white" : variant === "compact" ? "font-display text-[18px] font-semibold text-foreground" : "font-display text-[28px] font-semibold text-foreground sm:text-[34px]"}>{copy.title}</h2>
         <p className={dark ? "mt-1 max-w-xl text-[13px] text-white/80" : "mt-2 max-w-xl text-[15px] text-muted-foreground"}>{copy.text}</p>
         {embed ? <BeehiivForm placement={placement} src={config.src} formId={config.formId} /> : (
           <a href={`/newsletter/go/${placement}`} className={`mt-4 inline-flex h-11 items-center justify-center rounded-full px-5 text-[14px] font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand ${dark ? "bg-surface text-brand" : "bg-brand text-white hover:bg-brand-strong"}`}>

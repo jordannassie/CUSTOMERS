@@ -5,7 +5,7 @@ import { GROUPS, GROUP_ORDER, groupTotals, plural } from "./status";
 
 type Props = { sites: Site[]; answers: number; moreSites: number; ownSite: { host: string | null; answers: number }; toolLabel: string | null };
 
-const LEAD = "font-serif text-[20px] leading-[1.35] font-normal sm:text-[22px]";
+const LEAD = "font-display text-[20px] leading-[1.35] font-semibold sm:text-[22px]";
 
 // The second Check-in card (C-Sources): uses split by what each site does for you, with your own site's count in
 // the hole, and one plain sentence about your site and the rivals' sites. Every number is from the listed sites.

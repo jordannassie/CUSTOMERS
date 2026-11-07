@@ -155,7 +155,7 @@ test("a tracked branch that answers never name keeps its own name, scored by its
   await board.getByTestId("leader-row").first().getByTestId("compare-link").click();
   await page.waitForURL((url) => url.pathname === "/competitors/compare" && url.searchParams.has("with"), { timeout: 60_000 });
   const compare = page.getByTestId("compare-page");
-  await expect(compare.getByRole("heading", { level: 2, name: "You vs Bean House on Congress" })).toBeVisible({ timeout: 60_000 });
+  await expect(compare.getByRole("heading", { level: 2, name: "Sunrise Coffee Bar vs Bean House on Congress" })).toBeVisible({ timeout: 60_000 });
   await expect(compare.getByTestId("why-chain-note")).toHaveCount(0);
   await expect(compare.getByTestId("why-versus")).toContainText("Bean House");
 });

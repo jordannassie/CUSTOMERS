@@ -43,7 +43,7 @@ async function WriteReviewPageContent({ params, searchParams }: { params: Params
       <main className="min-h-screen bg-background">
         <article className="mx-auto max-w-[720px] px-4 pb-16 pt-28 sm:pt-32">
           <Link href={`/apps/${app.slug}`} className="text-[13px] font-semibold text-brand">Back to {app.name}</Link>
-          <h1 className="font-serif font-normal mt-3 text-[28px] text-foreground">Write a Review</h1>
+          <h1 className="font-display font-semibold mt-3 text-[28px] text-foreground">Write a Review</h1>
           <p className="mt-2 text-[14px] text-muted-foreground">Reviews stay private until a moderator publishes them. A high rating is not published automatically.</p>
           {saved ? <p className="mt-4 rounded-xl border border-brand-tint-2 bg-brand-tint px-3 py-2 text-[14px] text-brand-ink">Your review is pending. It will appear after moderation.</p> : null}
           {!gate.ok && gate.code === "sign-in" ? (

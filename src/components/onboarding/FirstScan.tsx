@@ -174,7 +174,7 @@ export function FirstScan(props: Props) {
   return (
     <div className="mx-auto my-6 flex w-[calc(100%-2rem)] max-w-xl flex-col gap-8 rounded-xl bg-card px-5 py-8 sm:my-12 sm:px-8 sm:py-10">
       <header className="flex flex-col gap-2">
-        <h1 className="font-serif text-[26px] leading-tight font-normal sm:text-[32px]">{copy.heading}</h1>
+        <h1 className="font-display text-[26px] leading-tight font-semibold sm:text-[32px]">{copy.heading}</h1>
         <p className="text-[15px] leading-relaxed text-muted-foreground">{copy.intro}</p>
       </header>
 

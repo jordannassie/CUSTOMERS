@@ -82,7 +82,7 @@ export function AiMessage({
     <div className="flex animate-rise items-start gap-3" style={{ animationDelay: `${0.4 + index * 0.5}s` }} data-testid={testId}>
       {withAvatar ? (
         <span
-          className="hidden size-9 shrink-0 items-center justify-center rounded-full bg-gradient-ai font-serif text-white sm:flex"
+          className="hidden size-9 shrink-0 items-center justify-center rounded-full bg-gradient-ai font-display font-semibold text-white sm:flex"
           aria-hidden="true"
         >
           C
@@ -94,7 +94,7 @@ export function AiMessage({
         {lead || aside ? (
           <div className="flex flex-wrap items-start gap-6">
             {lead ? (
-              <h2 className={cn("min-w-[240px] flex-[1_1_300px] font-serif font-normal", leadSize === "lg" ? "text-[22px] leading-[1.3] sm:text-[26px]" : "text-[20px] leading-[1.35] sm:text-[22px]")}>
+              <h2 className={cn("min-w-[240px] flex-[1_1_300px] font-display font-semibold", leadSize === "lg" ? "text-[22px] leading-[1.3] sm:text-[26px]" : "text-[20px] leading-[1.35] sm:text-[22px]")}>
                 {lead}
               </h2>
             ) : null}

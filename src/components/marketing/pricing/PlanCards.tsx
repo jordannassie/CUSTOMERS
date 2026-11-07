@@ -68,7 +68,7 @@ export function PlanCards({ plans }: { plans: PublicPlan[] }) {
               aria-labelledby={`plan-${plan.id}`}
               className="flex flex-col rounded-xl bg-surface p-6 sm:p-8"
             >
-              <h2 id={`plan-${plan.id}`} className="font-serif font-normal text-xl">
+              <h2 id={`plan-${plan.id}`} className="font-display font-semibold text-xl">
                 {plan.name}
               </h2>
               <p className="mt-5 flex items-baseline gap-2">

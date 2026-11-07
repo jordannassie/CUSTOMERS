@@ -23,7 +23,7 @@ export function SettingsSection({
       <div className="max-w-prose">
         <h2
           id={`${id}-title`}
-          className={cn("font-serif text-xl font-normal", tone === "danger" ? "text-danger" : "text-foreground")}
+          className={cn("font-display text-xl font-semibold", tone === "danger" ? "text-danger" : "text-foreground")}
         >
           {title}
         </h2>

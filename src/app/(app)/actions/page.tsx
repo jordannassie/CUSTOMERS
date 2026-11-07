@@ -87,7 +87,7 @@ export default async function ActionsPage({ searchParams }: { searchParams: Prom
           {intro}
           {fixes.pending ? null : (
             <section className="rounded-xl bg-card p-6" data-testid="no-opportunities">
-              <h2 className="font-serif text-[22px] leading-snug font-normal">{fixes.everScanned ? "Nothing to fix right now" : "No actions yet"}</h2>
+              <h2 className="font-display text-[22px] leading-snug font-semibold">{fixes.everScanned ? "Nothing to fix right now" : "No actions yet"}</h2>
               <p className="mt-3 max-w-[560px] text-sm text-muted-foreground">
                 {fixes.everScanned
                   ? "Your latest scan found no fixes. New ones appear here when a scan shows why AI picks other businesses, or add one from Compare."

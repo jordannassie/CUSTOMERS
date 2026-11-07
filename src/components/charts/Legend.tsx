@@ -35,7 +35,7 @@ export function ChartTooltipCard({ title, rows, className, style }: {
       className={cn("pointer-events-none flex min-w-[170px] flex-col gap-1.5 rounded-[14px] border border-border bg-popover px-3.5 py-3 text-[13px] shadow-float", className)}
       style={style}
     >
-      {title && <span className="font-serif text-[15px]">{title}</span>}
+      {title && <span className="font-display font-semibold text-[15px]">{title}</span>}
       {rows.map((r, i) => (
         <span key={i} className="flex items-center justify-between gap-4">
           <span className="flex items-center gap-2 text-ink-2">

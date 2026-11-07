@@ -17,7 +17,7 @@ export const metadata: Metadata = {
 function Notice({ title, body }: { title: string; body: string }) {
   return (
     <div className="rounded-xl bg-surface p-8">
-      <h1 className="font-serif font-normal text-[28px] text-foreground">{title}</h1>
+      <h1 className="font-display font-semibold text-[28px] text-foreground">{title}</h1>
       <p className="mt-3 text-[15px] leading-relaxed text-muted-foreground">{body}</p>
       <Link href="/ads" className="mt-6 inline-flex text-[15px] font-semibold text-brand">
         Back to AI Video Ads

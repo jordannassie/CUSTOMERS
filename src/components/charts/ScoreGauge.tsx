@@ -10,7 +10,7 @@ type Props = {
   className?: string;
 };
 
-// Check-in gauge (C-Overview right rail): a semicircle with the score out of 100 in Young Serif.
+// Check-in gauge (C-Overview right rail): a semicircle with the score out of 100 in the heading font.
 export function ScoreGauge({ value, max = 100, caption = "visibility, of 100", ariaLabel, className }: Props) {
   const share = value === null ? 0 : Math.max(0, Math.min(1, value / max));
   return (
@@ -29,7 +29,7 @@ export function ScoreGauge({ value, max = 100, caption = "visibility, of 100", a
         />
       )}
       {value !== null && (
-        <text x="130" y="112" textAnchor="middle" className="font-serif" fontSize="44" fill={CHART.ink}>
+        <text x="130" y="112" textAnchor="middle" className="font-display font-semibold" fontSize="44" fill={CHART.ink}>
           {Math.round(value)}
         </text>
       )}

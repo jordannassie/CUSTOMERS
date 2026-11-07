@@ -54,7 +54,7 @@ export async function ThreadSection({
         {/* The lead and its explanation beside the rings, as in C-Overview; the rings go under them on a phone. */}
         <div className="flex flex-wrap items-center gap-6">
           <div className="flex min-w-[240px] flex-[1_1_300px] flex-col gap-3">
-            <h2 className="font-serif text-[22px] leading-[1.3] font-normal sm:text-[26px]">{lead}</h2>
+            <h2 className="font-display text-[22px] leading-[1.3] font-semibold sm:text-[26px]">{lead}</h2>
             {/* The 30-day score's own sentence, kept word for word (MVP_SPEC 8.4). */}
             <Explain>
               <span data-testid="score-sentence">{score.sentence}</span>

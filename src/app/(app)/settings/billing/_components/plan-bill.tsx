@@ -20,7 +20,7 @@ export function PlanBill({ view, actions, addBusinessHref, supportHref }: Props)
   return (
     <section aria-labelledby="plan-heading" className="overflow-hidden rounded-xl bg-surface">
       <div className="flex flex-wrap items-baseline justify-between gap-3 px-5 pt-5">
-        <h2 id="plan-heading" className="font-serif text-xl font-normal">
+        <h2 id="plan-heading" className="font-display text-xl font-semibold">
           Businesses on your plan
         </h2>
         <p className="text-[13px] text-muted-foreground">Each business is billed monthly on its own plan.</p>
@@ -115,7 +115,7 @@ function NextCharge({ view, supportHref }: { view: BillingView; supportHref: str
             )}
           </p>
         </div>
-        <p className="font-serif text-[30px] leading-tight font-normal tabular-nums" data-testid="next-charge">
+        <p className="font-display text-[30px] leading-tight font-semibold tabular-nums" data-testid="next-charge">
           {formatUsd(view.nextCharge.amountCents)}
         </p>
       </>

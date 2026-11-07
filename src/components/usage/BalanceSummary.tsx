@@ -15,7 +15,7 @@ export function BalanceSummary({ balance }: { balance: UsageReport["balance"] })
       </h2>
       <p
         data-testid="balance-total"
-        className={cn("mt-3 font-serif text-[40px] leading-tight font-normal tabular-nums", over && "text-low-text")}
+        className={cn("mt-3 font-display text-[40px] leading-tight font-semibold tabular-nums", over && "text-low-text")}
       >
         {over ? `${count(-balance.total)} over` : count(balance.total)}
       </p>

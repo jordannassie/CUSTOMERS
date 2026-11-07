@@ -14,7 +14,7 @@ export default function StartAiBusinessHomeSection() {
           <p className="text-[11px] font-semibold uppercase tracking-wider text-brand mb-3">
             For entrepreneurs
           </p>
-          <h2 className="font-serif font-normal text-[32px] sm:text-[40px] text-foreground leading-[1.1]">
+          <h2 className="font-display font-semibold text-[32px] sm:text-[40px] text-foreground leading-[1.1]">
             Start your own AI business.
           </h2>
           <p className="mt-3 text-[18px] font-medium text-foreground max-w-[560px]">

@@ -25,7 +25,7 @@ export function SectionCard({ title, aside, className, testId, bare = false, chi
 export function CardHead({ title, aside }: { title: string; aside?: React.ReactNode }) {
   return (
     <div className="flex min-h-[52px] flex-wrap items-center justify-between gap-x-3 gap-y-1 border-b border-divider px-5 py-3 sm:px-6">
-      <h2 className="font-serif text-[20px] leading-[1.35] font-normal sm:text-[22px]">{title}</h2>
+      <h2 className="font-display text-[20px] leading-[1.35] font-semibold sm:text-[22px]">{title}</h2>
       {aside ? <div className="text-xs text-muted-foreground">{aside}</div> : null}
     </div>
   );

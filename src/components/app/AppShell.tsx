@@ -84,7 +84,7 @@ export function AppShell({
             <Link
               href="/dashboard"
               aria-label="Customers.Direct, go to Overview"
-              className="flex-1 font-serif text-lg text-foreground"
+              className="flex-1 font-display font-semibold text-lg text-foreground"
             >
               Customers.Direct
             </Link>

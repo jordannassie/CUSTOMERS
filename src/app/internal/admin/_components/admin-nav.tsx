@@ -111,7 +111,7 @@ function NavBody({ adminEmail, onNavigate }: { adminEmail: string; onNavigate?: 
 function Logo() {
   return (
     <Link href="/internal/admin" className="flex items-center gap-2">
-      <span className="font-serif text-lg text-foreground">Customers.Direct</span>
+      <span className="font-display font-semibold text-lg text-foreground">Customers.Direct</span>
       <span className="rounded-full bg-foreground px-2 text-[12px] font-semibold leading-5 text-background">Admin</span>
     </Link>
   );

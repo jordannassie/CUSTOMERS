@@ -44,8 +44,8 @@ export function AppSidebar({
 
   return (
     <div className="flex min-h-full flex-col gap-[22px] px-4 py-6">
-      {/* Check-in: the wordmark in Young Serif. */}
-      <Link href="/dashboard" onClick={onNavigate} className="self-start rounded-md px-2.5 font-serif text-xl text-foreground" aria-label="Customers.Direct, go to Overview">
+      {/* Check-in: the wordmark in the heading font. */}
+      <Link href="/dashboard" onClick={onNavigate} className="self-start rounded-md px-2.5 font-display font-semibold text-xl text-foreground" aria-label="Customers.Direct, go to Overview">
         Customers.Direct
       </Link>
 

@@ -11,9 +11,9 @@ const PILL = { ahead: "done", behind: "attention", about_same: "neutral" } as co
 
 /**
  * Compare's picker, as the Check-in right rail's "Compare with" card (C-Compare): one row per tracked competitor with
- * its score, the one shown in the brand tint, then "You vs {name}" with the standing.
+ * its score, the one shown in the brand tint, then "{your name} vs {their name}" with both icons and the standing.
  */
-export function Picker({ page, tab, track }: { page: ComparePage; tab: string; track: TrackAction }) {
+export function Picker({ page, tab, track, ownDomain }: { page: ComparePage; tab: string; track: TrackAction; ownDomain: string | null }) {
   const selected = page.selected;
   const subtitle = selected
     ? [selected.panel.why.site, `named in ${selected.panel.why.them} of ${selected.panel.why.answers} answers`].filter(Boolean).join(" · ")
@@ -49,9 +49,15 @@ export function Picker({ page, tab, track }: { page: ComparePage; tab: string; t
       </div>
       {selected && (
         <div className="flex items-start gap-3 border-t border-divider pt-3.5">
-          <SiteIcon domain={selected.panel.website.domain ?? null} name={selected.title} className="mt-0.5" />
+          {/* Your icon, then theirs tucked behind it, so both businesses are named by their own marks. */}
+          <span className="mt-0.5 flex shrink-0 items-center">
+            <SiteIcon domain={ownDomain} name={page.businessName} className="relative z-10 ring-2 ring-card" />
+            <SiteIcon domain={selected.panel.website.domain ?? null} name={selected.title} className="-ml-2.5 ring-2 ring-card" />
+          </span>
           <div className="flex min-w-0 flex-col gap-1.5">
-            <h2 className="font-serif text-lg leading-snug font-normal break-words">You vs {selected.title}</h2>
+            <h2 className="font-display text-lg leading-snug font-semibold break-words">
+              {page.businessName} vs {selected.title}
+            </h2>
             {selected.collecting ? (
               <StatusPill tone="neutral" className="w-fit">
                 Still collecting

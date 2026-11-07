@@ -11,7 +11,7 @@ export default function AdminPageHeader({
   return (
     <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
       <div className="min-w-0">
-        <h1 className="flex flex-wrap items-center gap-2 font-serif text-[28px] leading-tight font-normal break-words">{title}</h1>
+        <h1 className="flex flex-wrap items-center gap-2 font-display text-[28px] leading-tight font-semibold break-words">{title}</h1>
         {subtitle && <div className="mt-1 text-[14px] break-words text-muted-foreground">{subtitle}</div>}
       </div>
       {actions && <div className="flex shrink-0 flex-wrap items-center gap-2">{actions}</div>}

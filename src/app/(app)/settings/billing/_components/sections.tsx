@@ -98,7 +98,7 @@ function Notice({ tone, testId, children }: { tone: "danger" | "warning"; testId
 export function CreditsPanel({ buyHref, usageHref }: { buyHref: string; usageHref: string }) {
   return (
     <section aria-labelledby="credits-heading" className="rounded-xl bg-surface p-6">
-      <h2 id="credits-heading" className="font-serif text-xl font-normal">
+      <h2 id="credits-heading" className="font-display text-xl font-semibold">
         Credits
       </h2>
       <p className="mt-3 text-sm text-muted-foreground">
@@ -119,7 +119,7 @@ export function CreditsPanel({ buyHref, usageHref }: { buyHref: string; usageHre
 export function CancelPanel({ cancel, trialing, trialEnded = false }: { cancel: ChangeAction; trialing: boolean; trialEnded?: boolean }) {
   return (
     <section aria-labelledby="cancel-heading" className="rounded-xl bg-surface p-6">
-      <h2 id="cancel-heading" className="font-serif text-xl font-normal">
+      <h2 id="cancel-heading" className="font-display text-xl font-semibold">
         Cancel plan
       </h2>
       <p className="mt-3 text-sm text-muted-foreground">
@@ -157,7 +157,7 @@ export function NoPlan({ ended, gone, choosePlanHref, supportHref }: NoPlanProps
   if (gone === "other_mode") {
     return (
       <section className="rounded-xl bg-surface px-6 py-10 text-center" data-testid="plan-other-mode">
-        <h2 className="font-serif text-xl font-normal">Your plan is with another payment account</h2>
+        <h2 className="font-display text-xl font-semibold">Your plan is with another payment account</h2>
         <p className="mx-auto mt-3 max-w-[440px] text-sm text-muted-foreground">
           This site can&apos;t show or change it. Contact us and we&apos;ll sort it out.
         </p>
@@ -170,7 +170,7 @@ export function NoPlan({ ended, gone, choosePlanHref, supportHref }: NoPlanProps
   if (gone === "missing") {
     return (
       <section className="rounded-xl bg-surface px-6 py-10 text-center" data-testid="plan-missing">
-        <h2 className="font-serif text-xl font-normal">We couldn&apos;t find your plan</h2>
+        <h2 className="font-display text-xl font-semibold">We couldn&apos;t find your plan</h2>
         <p className="mx-auto mt-3 max-w-[440px] text-sm text-muted-foreground">
           Our payment provider has no record of it. Your results are still here. Start your plan again to keep your scans
           running.
@@ -188,7 +188,7 @@ export function NoPlan({ ended, gone, choosePlanHref, supportHref }: NoPlanProps
   }
   return (
     <section className="rounded-xl bg-surface px-6 py-10 text-center" data-testid="no-plan">
-      <h2 className="font-serif text-xl font-normal">{ended ? "Your plan has ended" : "You don't have a plan yet"}</h2>
+      <h2 className="font-display text-xl font-semibold">{ended ? "Your plan has ended" : "You don't have a plan yet"}</h2>
       <p className="mx-auto mt-3 max-w-[440px] text-sm text-muted-foreground">
         {ended
           ? "Your results are still here to read. Choose a plan to start your scans again."

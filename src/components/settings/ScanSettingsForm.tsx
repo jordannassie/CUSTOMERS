@@ -154,7 +154,7 @@ function Estimate({
     >
       <p className="text-[13px] text-muted-foreground">Estimated use</p>
       <p className="leading-none">
-        <span className="font-serif text-[34px] leading-tight font-normal tabular-nums">About {count(after)}</span>
+        <span className="font-display text-[34px] leading-tight font-semibold tabular-nums">About {count(after)}</span>
         <span className="mt-1.5 block text-sm text-muted-foreground">credits a month</span>
       </p>
       {dirty && change !== 0 && (

@@ -27,7 +27,7 @@ export function H2({ className, ...props }: React.ComponentProps<"h2">) {
   return (
     <h2
       className={cn(
-        "font-serif text-[32px] leading-[1.15] font-normal text-balance sm:text-[44px]",
+        "font-display text-[32px] leading-[1.15] font-semibold text-balance sm:text-[44px]",
         className,
       )}
       {...props}
@@ -55,7 +55,7 @@ export function CTA({
   return (
     <div className="flex flex-col items-start gap-6 rounded-xl bg-gradient-user px-6 py-10 text-primary-foreground shadow-user sm:px-12 sm:py-14 md:flex-row md:items-center md:justify-between">
       <div className="flex max-w-xl flex-col gap-3">
-        <h2 className="font-serif font-normal text-2xl leading-tight text-balance sm:text-[32px]">{title}</h2>
+        <h2 className="font-display font-semibold text-2xl leading-tight text-balance sm:text-[32px]">{title}</h2>
         {description && <p className="text-[15px] text-primary-foreground">{description}</p>}
       </div>
       <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row">

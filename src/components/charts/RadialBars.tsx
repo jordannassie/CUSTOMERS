@@ -42,7 +42,7 @@ export function RadialBars({ items, center, ariaLabel, className }: Props) {
           </g>
         );
       })}
-      <text x="120" y="128" textAnchor="middle" className="font-serif" fontSize="34" fill={CHART.ink}>
+      <text x="120" y="128" textAnchor="middle" className="font-display font-semibold" fontSize="34" fill={CHART.ink}>
         {center.value}
       </text>
       {center.caption && (

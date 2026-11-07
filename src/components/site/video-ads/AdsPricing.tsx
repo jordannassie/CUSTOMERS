@@ -7,7 +7,7 @@ export function AdsPricing({ checkoutReady }: { checkoutReady: boolean }) {
     <section id="pricing" className="scroll-mt-28 py-20 sm:py-24">
       <div className="mx-auto max-w-[1120px] px-4 sm:px-6">
         <div className="mx-auto mb-12 max-w-2xl text-center">
-          <h2 className="font-serif font-normal text-[32px] text-foreground sm:text-[40px]">
+          <h2 className="font-display font-semibold text-[32px] text-foreground sm:text-[40px]">
             Professional AI Ads. Simple Pricing.
           </h2>
           <p className="mt-4 text-[16px] leading-relaxed text-muted-foreground">
@@ -29,7 +29,7 @@ export function AdsPricing({ checkoutReady }: { checkoutReady: boolean }) {
               ) : (
                 <p className="mb-4 text-[11px] font-bold uppercase tracking-widest text-muted-foreground">One-time</p>
               )}
-              <h3 className="font-serif font-normal text-[20px] text-foreground">{pack.name}</h3>
+              <h3 className="font-display font-semibold text-[20px] text-foreground">{pack.name}</h3>
               <p className="mt-2 text-[40px] font-bold tabular-nums tracking-tight text-foreground">{pack.priceLabel}</p>
               <p className="mt-1 text-[13px] text-muted-foreground">One-time payment</p>
               <ul className="mt-6 flex flex-1 flex-col gap-3">

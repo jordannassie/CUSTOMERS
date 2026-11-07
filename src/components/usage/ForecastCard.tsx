@@ -53,7 +53,7 @@ export function ForecastCard({ forecast: f, buyCreditsHref }: Props) {
       <h2 id="forecast-heading" className="text-sm font-medium text-muted-foreground">
         Forecast to {f.kind === "trial" ? "trial end" : f.kind === "renewal" ? "renewal" : "the next 30 days"}
       </h2>
-      <p className={cn("mt-3 flex items-start gap-2 font-serif text-[22px] leading-snug font-normal", short && "text-low-text")}>
+      <p className={cn("mt-3 flex items-start gap-2 font-display text-[22px] leading-snug font-semibold", short && "text-low-text")}>
         {short ? (
           <CircleAlert aria-hidden className="mt-1 size-5 shrink-0" />
         ) : (

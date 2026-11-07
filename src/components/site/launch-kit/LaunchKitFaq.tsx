@@ -35,7 +35,7 @@ export default function LaunchKitFaq() {
 
   return (
     <div className="rounded-xl bg-surface p-5 sm:p-6 h-full">
-      <h2 className="font-serif font-normal text-[20px] text-foreground">Frequently asked questions</h2>
+      <h2 className="font-display font-semibold text-[20px] text-foreground">Frequently asked questions</h2>
       <div className="mt-4 divide-y divide-border">
         {ITEMS.map((item, index) => {
           const isOpen = open === index;

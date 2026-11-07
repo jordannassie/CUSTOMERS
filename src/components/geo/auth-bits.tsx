@@ -7,8 +7,8 @@ export function AuthLogo() {
   return (
     <div className="mb-8 text-center">
       {/* No prefetch: every login and signup view rendered the whole home page on the server, often twice. */}
-      {/* Check-in theme: the wordmark in Young Serif, as in the app's sidebar. */}
-      <Link href="/" prefetch={false} aria-label="Customers.Direct home" className="inline-block rounded-md px-1 font-serif text-[26px] text-foreground">
+      {/* Check-in theme: the wordmark in the heading font, as in the app's sidebar. */}
+      <Link href="/" prefetch={false} aria-label="Customers.Direct home" className="inline-block rounded-md px-1 font-display font-semibold text-[26px] text-foreground">
         Customers.Direct
       </Link>
     </div>

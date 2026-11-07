@@ -126,7 +126,7 @@ export function ModelsStep({ businessId, models, frequency, activeQuestions, pla
         <aside aria-live="polite" data-testid="credit-estimate" className="self-start rounded-lg bg-muted p-5 md:sticky md:top-8">
           <p className="text-[13px] text-muted-foreground">Estimated use</p>
           <p className="mt-3 leading-none">
-            <span className="font-serif text-[36px] leading-tight font-normal tabular-nums">{count(credits)}</span>
+            <span className="font-display text-[36px] leading-tight font-semibold tabular-nums">{count(credits)}</span>
             <span className="mt-3 block text-sm text-muted-foreground">credits a month</span>
           </p>
           {share !== null ? (

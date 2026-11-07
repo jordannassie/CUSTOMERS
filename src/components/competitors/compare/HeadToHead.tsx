@@ -85,7 +85,7 @@ function Score({ label, value, sub, tone }: { label: string; value: number | nul
       <span className="max-w-[9rem] truncate text-[13px] text-muted-foreground" title={label}>
         {label}
       </span>
-      <span className={tone === "you" ? "font-serif text-[48px] leading-none text-brand" : "font-serif text-[48px] leading-none text-rival-text"}>
+      <span className={tone === "you" ? "font-display font-semibold text-[48px] leading-none text-brand" : "font-display font-semibold text-[48px] leading-none text-rival-text"}>
         {value ?? <span className="text-base">Not checked</span>}
       </span>
       <span className="mt-1 text-xs text-muted-foreground tabular-nums">{sub}</span>

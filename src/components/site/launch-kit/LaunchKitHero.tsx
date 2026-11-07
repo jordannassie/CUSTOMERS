@@ -18,7 +18,7 @@ export default function LaunchKitHero({ hasVideo }: { hasVideo: boolean }) {
           <p className="inline-flex text-[11px] font-semibold tracking-wider uppercase text-brand bg-brand-tint border border-brand-tint-2 rounded-full px-3 py-1">
             AI Business Launch Kit
           </p>
-          <h1 className="font-serif font-normal mt-4 text-[32px] sm:text-[44px] lg:text-[48px] leading-[1.08] text-foreground">
+          <h1 className="font-display font-semibold mt-4 text-[32px] sm:text-[44px] lg:text-[48px] leading-[1.08] text-foreground">
             Get the AI Business Launch Kit for{" "}
             <span className="text-brand">$97</span>.
           </h1>

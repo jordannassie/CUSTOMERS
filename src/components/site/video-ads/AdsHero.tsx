@@ -32,7 +32,7 @@ export function AdsHero({
         <p className="mb-5 inline-flex rounded-full border border-border bg-surface px-3 py-1 text-[11px] font-semibold tracking-[0.14em] text-muted-foreground">
           AI VIDEO ADS FOR BRANDS
         </p>
-        <h1 className="font-serif font-normal text-[40px] leading-[1.05] text-foreground sm:text-[60px]">
+        <h1 className="font-display font-semibold text-[40px] leading-[1.05] text-foreground sm:text-[60px]">
           Scroll-Stopping AI Video Ads.
         </h1>
         <p className="mt-4 text-[32px] font-bold tracking-tight text-brand sm:text-[44px]">Just $99.</p>

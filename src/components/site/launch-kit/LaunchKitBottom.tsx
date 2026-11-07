@@ -16,7 +16,7 @@ export default function LaunchKitBottom() {
           <p className="inline-flex self-start text-[11px] font-semibold uppercase tracking-wider text-brand bg-surface border border-brand-tint-2 rounded-full px-3 py-1">
             Get started today
           </p>
-          <h2 className="font-serif font-normal mt-4 text-[28px] sm:text-[32px] text-foreground">
+          <h2 className="font-display font-semibold mt-4 text-[28px] sm:text-[32px] text-foreground">
             Start your AI business for only $97.
           </h2>
           <p className="mt-3 text-[15px] text-muted-foreground">

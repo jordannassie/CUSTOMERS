@@ -68,7 +68,7 @@ export default async function CompetitorsPage({ searchParams }: { searchParams: 
     <CheckInLayout railLabel="Leaderboard" rail={scored ? <LeaderRail rows={table.rows} kpis={table.kpis} /> : undefined}>
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-col gap-1">
-          <h1 className="flex flex-wrap items-center gap-2 font-serif text-[28px] leading-tight font-normal">
+          <h1 className="flex flex-wrap items-center gap-2 font-display text-[28px] leading-tight font-semibold">
             Competitors <SampleDataBadge show={workspace.account?.isTest} />
           </h1>
           <p className="text-sm text-muted-foreground">How often AI picks you and the businesses you track, last 30 days.</p>

@@ -49,7 +49,7 @@ function FeaturedBanner() {
   return (
     <section className="mt-5 flex flex-col items-start justify-between gap-4 overflow-hidden rounded-xl bg-gradient-user px-5 py-5 text-white sm:px-6 md:h-[168px] md:flex-row md:items-center md:py-0">
       <div className="max-w-xl">
-        <h2 className="font-serif font-normal text-[20px] leading-snug sm:text-[22px]">Discover the Best AI Tools to Grow Your Business.</h2>
+        <h2 className="font-display font-semibold text-[20px] leading-snug sm:text-[22px]">Discover the Best AI Tools to Grow Your Business.</h2>
         <p className="mt-1 text-[13.5px] text-white/85">Explore powerful AI apps, software, and services, all in one place.</p>
         <a href="#app-listings" className="mt-3 inline-flex h-9 items-center rounded-full bg-surface px-4 text-[13px] font-semibold text-brand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-brand">
           Explore AI Tools <span aria-hidden="true" className="ml-1">→</span>
@@ -71,7 +71,7 @@ function PopularStrip({ apps }: { apps: DirectoryApp[] }) {
   if (apps.length === 0) return null;
   return (
     <section className="mb-8" aria-label="Popular Apps">
-      <h2 className="font-serif font-normal mb-3 text-[18px] text-foreground">Popular Apps</h2>
+      <h2 className="font-display font-semibold mb-3 text-[18px] text-foreground">Popular Apps</h2>
       <div className="flex gap-2.5 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {apps.map((app) => (
           <a
@@ -93,7 +93,7 @@ export function AppsBrowse({ query, result, ratings = {}, embedSrc = null, formI
   const pills = [{ id: "all", label: "All" }, ...APP_CATEGORIES.map((category) => ({ id: category.id, label: category.label }))];
   return (
     <div className="mx-auto max-w-[1360px] px-4 pb-16 pt-28 sm:pt-32">
-      <h1 className="font-serif font-normal text-[32px] text-foreground sm:text-[40px]">AI Apps</h1>
+      <h1 className="font-display font-semibold text-[32px] text-foreground sm:text-[40px]">AI Apps</h1>
       <p className="mt-1.5 max-w-2xl text-[15px] text-muted-foreground">Search AI tools, apps, and software for growing a business.</p>
 
       <form action="/apps" method="get" className="relative mt-5" role="search">
@@ -133,7 +133,7 @@ export function AppsBrowse({ query, result, ratings = {}, embedSrc = null, formI
             <>
               {result.featured.length > 0 ? (
                 <section className="mb-8">
-                  <h2 className="font-serif font-normal mb-3 text-[18px] text-foreground">Featured Apps</h2>
+                  <h2 className="font-display font-semibold mb-3 text-[18px] text-foreground">Featured Apps</h2>
                   <AppGrid apps={result.featured} ratings={ratings} badge />
                 </section>
               ) : null}
@@ -141,7 +141,7 @@ export function AppsBrowse({ query, result, ratings = {}, embedSrc = null, formI
               {result.pageItems.length > 0 ? (
                 <section>
                   <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-                    <h2 className="font-serif font-normal text-[18px] text-foreground">All Apps</h2>
+                    <h2 className="font-display font-semibold text-[18px] text-foreground">All Apps</h2>
                     <div className="flex gap-3 text-[13px]">
                       <Link href={appsHref({ ...query, sort: "name", page: 1 })} className={query.sort === "name" ? "font-semibold text-brand" : "text-muted-foreground"}>Name</Link>
                       <Link href={appsHref({ ...query, sort: "provider", page: 1 })} className={query.sort === "provider" ? "font-semibold text-brand" : "text-muted-foreground"}>Provider</Link>

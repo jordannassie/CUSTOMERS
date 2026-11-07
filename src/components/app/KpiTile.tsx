@@ -24,7 +24,7 @@ export function KpiTile({ label, value, sub, tone, testId, trend, trendColor, ch
       <div className="flex items-end justify-between gap-2">
         <span
           className={cn(
-            "truncate font-serif text-[30px] leading-tight font-normal tabular-nums",
+            "truncate font-display text-[30px] leading-tight font-semibold tabular-nums",
             tone === "good" && "text-brand",
             tone === "mid" && "text-mid-text",
           )}

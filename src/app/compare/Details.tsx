@@ -11,7 +11,7 @@ const LEVEL_STYLE: Record<Finding["level"], string> = {
 export function FindingsList({ findings }: { findings: Finding[] }) {
   return (
     <section aria-labelledby="fix-heading" className="flex flex-col gap-4">
-      <h2 id="fix-heading" className="font-serif font-normal text-xl">
+      <h2 id="fix-heading" className="font-display font-semibold text-xl">
         What to fix first on your site
       </h2>
       <ol className="flex flex-col divide-y divide-border rounded-xl bg-surface">
@@ -43,7 +43,7 @@ export function ChecksTable({ result }: { result: ReadinessCheckResult }) {
   const { mine, them } = result;
   return (
     <section aria-labelledby="checks-heading" className="flex flex-col gap-4">
-      <h2 id="checks-heading" className="font-serif font-normal text-xl">
+      <h2 id="checks-heading" className="font-display font-semibold text-xl">
         What we checked
       </h2>
       <div className="overflow-hidden rounded-xl bg-surface">

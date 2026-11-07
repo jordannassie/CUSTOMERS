@@ -28,7 +28,7 @@ export function ScanHistory({ scans }: { scans: UsageReport["scans"] }) {
   return (
     <section aria-labelledby="history-heading" className="overflow-hidden rounded-xl bg-surface">
       <div className="px-5 pt-5 pb-3">
-        <h2 id="history-heading" className="font-serif text-xl font-normal">
+        <h2 id="history-heading" className="font-display text-xl font-semibold">
           Scan history
         </h2>
         <p className="mt-3 text-sm text-muted-foreground">

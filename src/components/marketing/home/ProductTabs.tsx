@@ -71,7 +71,7 @@ export function ProductTabs() {
         {TABS.map(({ value, title, body, visual }) => (
           <TabsContent key={value} value={value} className="flex flex-col gap-8">
             <div className="grid gap-4 md:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] md:gap-16">
-              <h3 className="font-serif font-normal text-2xl leading-tight text-balance">{title}</h3>
+              <h3 className="font-display font-semibold text-2xl leading-tight text-balance">{title}</h3>
               <div className="flex flex-col gap-3 text-[15px] text-muted-foreground">
                 {body.map((p) => (
                   <p key={p}>{p}</p>

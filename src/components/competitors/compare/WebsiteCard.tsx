@@ -43,7 +43,7 @@ export function WebsiteCard({ name, website, index }: { name: string; website: W
     <AiMessage index={index}>
       <div className="flex flex-wrap items-center gap-6">
         <div className="flex min-w-0 flex-[1_1_300px] flex-col gap-3">
-          <h2 className="font-serif text-[20px] leading-[1.35] font-normal sm:text-[22px]">{lead}</h2>
+          <h2 className="font-display text-[20px] leading-[1.35] font-semibold sm:text-[22px]">{lead}</h2>
           {(explain || website.checkedAt) && (
             <Explain>
               {explain}

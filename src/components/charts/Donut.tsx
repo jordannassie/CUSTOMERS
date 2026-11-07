@@ -45,7 +45,7 @@ export function Donut({ segments, center, ariaLabel, size = 210, className }: Pr
         </Pie>
       </PieChart>
       <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center px-10 text-center">
-        <span className={cn("font-serif text-[38px] leading-none", center.tone === "danger" ? "text-danger" : "text-foreground")}>{center.value}</span>
+        <span className={cn("font-display font-semibold text-[38px] leading-none", center.tone === "danger" ? "text-danger" : "text-foreground")}>{center.value}</span>
         {center.caption && <span className="mt-1 text-[11px] leading-tight text-muted-foreground break-all">{center.caption}</span>}
       </div>
     </div>

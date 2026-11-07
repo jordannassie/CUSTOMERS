@@ -73,7 +73,7 @@ export function ReportFixes({ fixes, none }: { fixes: ShownFix[]; none: string }
     <section aria-labelledby="report-fixes" className="report-section flex animate-rise flex-col gap-4 rounded-xl bg-card px-5 py-[22px] [animation-delay:0.4s] sm:px-6" data-testid="report-fixes">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="flex min-w-0 flex-col gap-1">
-          <h2 id="report-fixes" className="font-serif text-[22px] leading-snug font-normal">
+          <h2 id="report-fixes" className="font-display text-[22px] leading-snug font-semibold">
             Fixes
           </h2>
           <p className="text-sm text-muted-foreground">

@@ -12,7 +12,7 @@ function Stat({ label, value, sub, testId }: { label: string; value: string; sub
   return (
     <div className="flex min-w-0 flex-col gap-1 lg:px-5 lg:first:pl-0 lg:last:pr-0" data-testid={testId}>
       <dt className="text-xs text-muted-foreground">{label}</dt>
-      <dd className="font-serif text-[30px] leading-tight font-normal tabular-nums">{value}</dd>
+      <dd className="font-display text-[30px] leading-tight font-semibold tabular-nums">{value}</dd>
       <dd className="text-xs text-muted-foreground">{sub}</dd>
     </div>
   );
@@ -44,7 +44,7 @@ export function ReportOverview({ report, saved }: { report: ShownReport; saved: 
       </div>
 
       <div className="flex flex-col gap-2">
-        <p className="font-serif text-[22px] leading-[1.3] font-normal text-balance break-words sm:text-[26px]" data-testid="report-headline">
+        <p className="font-display text-[22px] leading-[1.3] font-semibold text-balance break-words sm:text-[26px]" data-testid="report-headline">
           {report.headline}
         </p>
         <p className="max-w-[68ch] text-[15px] leading-relaxed text-ink-2 break-words">{report.lead}</p>

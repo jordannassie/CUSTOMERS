@@ -57,7 +57,7 @@ export function ResultView({ result }: { result: ReadinessCheckResult }) {
     <div className="flex flex-col gap-8">
       <section aria-labelledby="result-heading" className="rounded-xl bg-surface">
         <div className="flex flex-col gap-1 border-b border-border p-5 sm:p-6">
-          <h2 id="result-heading" className="font-serif font-normal text-2xl leading-tight text-balance">
+          <h2 id="result-heading" className="font-display font-semibold text-2xl leading-tight text-balance">
             {headline(result)}
           </h2>
           <p className="text-[14px] text-muted-foreground">

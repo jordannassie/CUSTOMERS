@@ -52,7 +52,7 @@ export function QuestionPanel({ open, onClose, container, id, title, position, f
             }}
           >
             <div className="flex h-[52px] shrink-0 items-center justify-between gap-3 border-b border-border px-5">
-              <p className="flex items-baseline gap-2 font-serif text-lg font-normal">
+              <p className="flex items-baseline gap-2 font-display text-lg font-semibold">
                 Question details
                 {position && <span className="text-xs font-normal text-text-hint tabular-nums">{position}</span>}
               </p>

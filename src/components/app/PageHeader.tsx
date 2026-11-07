@@ -21,7 +21,7 @@ export function PageHeader({ title, description, descriptionTestId, actions, cla
       <div className="flex min-w-0 flex-1 flex-col gap-3">
         <h1
           className={cn(
-            "font-serif text-[28px] leading-tight font-normal break-words",
+            "font-display text-[28px] leading-tight font-semibold break-words",
             clampTitle ? "line-clamp-2" : "flex flex-wrap items-center gap-2",
           )}
           title={clampTitle}

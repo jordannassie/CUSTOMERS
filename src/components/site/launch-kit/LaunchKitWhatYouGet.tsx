@@ -23,7 +23,7 @@ export default function LaunchKitWhatYouGet() {
         <p className="text-[11px] font-semibold uppercase tracking-wider text-brand mb-2">
           What you get
         </p>
-        <h2 className="font-serif font-normal text-[28px] sm:text-[34px] text-foreground max-w-[640px]">
+        <h2 className="font-display font-semibold text-[28px] sm:text-[34px] text-foreground max-w-[640px]">
           Everything you need to get your first client.
         </h2>
         <p className="mt-3 text-[15px] leading-6 text-muted-foreground max-w-[640px]">

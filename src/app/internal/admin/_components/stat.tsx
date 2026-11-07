@@ -2,7 +2,7 @@ import { cn } from "cn";
 
 // One size for every admin number (Overview, Usage, agency and business detail).
 export const STAT_LABEL = "text-[13px] text-muted-foreground";
-export const STAT_VALUE = "font-serif text-[28px] leading-tight font-normal tabular-nums";
+export const STAT_VALUE = "font-display text-[28px] leading-tight font-semibold tabular-nums";
 
 /** A row of numbers as white cards on the ground: two across on phones, `columns` across from lg. */
 export function StatGrid({ label, columns = 4, children }: { label?: string; columns?: 4 | 5; children: React.ReactNode }) {

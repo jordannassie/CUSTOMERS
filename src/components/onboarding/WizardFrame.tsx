@@ -27,7 +27,7 @@ export function WizardFrame({ steps, title, lead, embedded = false, children }: 
       {!embedded ? (
         <aside className="hidden lg:block">
           <div className="sticky top-0 flex min-h-dvh flex-col px-6 py-8">
-            <p className="self-start px-2 font-serif text-xl text-foreground">Customers.Direct</p>
+            <p className="self-start px-2 font-display font-semibold text-xl text-foreground">Customers.Direct</p>
             <p className="mt-8 px-2 text-[13px] text-muted-foreground">Setting up</p>
             <ol className="mt-3 flex flex-col gap-1" aria-label="Setup steps">
               {steps.map((s, i) => (
@@ -60,7 +60,7 @@ export function WizardFrame({ steps, title, lead, embedded = false, children }: 
             {/* Check-in theme: each step is one white card on the ground, its title a serif lead sentence. */}
             <div className="rounded-xl bg-card px-4 py-6 sm:px-8 sm:py-8">
             <header className="mb-6">
-              <h1 className="font-serif text-[26px] leading-tight font-normal sm:text-[32px]">{title}</h1>
+              <h1 className="font-display text-[26px] leading-tight font-semibold sm:text-[32px]">{title}</h1>
               {lead ? <p className="mt-3 max-w-xl text-[15px] leading-relaxed text-muted-foreground">{lead}</p> : null}
             </header>
             {children}

@@ -42,7 +42,7 @@ export function FocusAnswers() {
   return (
     <section className="flex flex-col gap-3 rounded-xl bg-card px-5 py-5 sm:px-6" data-testid="focus-answers" aria-labelledby="focus-answers-title">
       <div className="flex flex-col gap-1">
-        <h2 id="focus-answers-title" className="font-serif text-xl font-normal">
+        <h2 id="focus-answers-title" className="font-display text-xl font-semibold">
           {answers.length > 0 ? heading(total, focus) : "No answers match this link"}
         </h2>
         <p className="text-[13px] text-muted-foreground">

@@ -15,9 +15,9 @@ Presentation only: no business logic, queries, routes, Stripe, auth or scoring c
 ## Order of work
 
 1. [x] Tokens: re-map `--cd-*` and shadcn variables in `globals.css` to the Check-in palette, radius scale, motion keyframes, focus ring
-2. [x] Fonts: Figtree (400 to 700) and Young Serif (400) with `next/font/google` as `--font-figtree` and `--font-young-serif`
+2. [x] Fonts: Figtree (400 to 700) and Plus Jakarta Sans (500 to 700, headings; replaced Young Serif on 2026-11-07) with `next/font/google` as `--font-figtree` and `--font-jakarta`
 3. [x] Shared UI primitives restyled (list below)
-4. [x] App shell: 220px left nav, serif wordmark, workspace switcher, white-pill active link, ground background, top bar
+4. [x] App shell: 220px left nav, heading-font wordmark, workspace switcher, white-pill active link, ground background, top bar
 5. [x] Chart components in `src/components/charts/` (list below)
 6. [x] Check-in building blocks in `src/components/checkin/` (user bubble, AI message card, follow-up chips, composer, right rail cards, status pill)
 7. [x] Overview, Competitors, Compare, Sources rebuilt as conversations from the data they already load

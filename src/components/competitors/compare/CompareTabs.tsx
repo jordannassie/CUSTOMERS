@@ -47,7 +47,7 @@ export function CompareTabs({
 
   return (
     <div className="flex min-w-0 flex-col gap-5">
-      {leads && <h2 className="font-serif text-[20px] leading-[1.35] font-normal sm:text-[22px]">{leads[active]}</h2>}
+      {leads && <h2 className="font-display text-[20px] leading-[1.35] font-semibold sm:text-[22px]">{leads[active]}</h2>}
       <div className="-mx-5 overflow-x-auto px-5 sm:mx-0 sm:px-0">
         <div role="tablist" aria-label="Comparison" className="flex w-max flex-nowrap gap-2 sm:w-full sm:flex-wrap">
           {COMPARE_TABS.map((t) => (

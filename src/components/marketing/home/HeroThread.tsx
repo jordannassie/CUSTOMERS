@@ -44,7 +44,7 @@ export function HeroThread() {
       <ol className="flex flex-col gap-3">
         {ANSWERS.map(({ model, named, mentioned }, i) => (
           <li key={model} className="flex animate-rise items-start gap-3" style={{ animationDelay: `${0.4 + i * 0.35}s` }}>
-            <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-gradient-ai font-serif text-white" aria-hidden="true">
+            <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-gradient-ai font-display font-semibold text-white" aria-hidden="true">
               {AVATAR[model]}
             </span>
             <div className={cn("flex min-w-0 flex-1 flex-col gap-2 bg-surface px-5 py-4", CORNER[i])}>
@@ -65,7 +65,7 @@ export function HeroThread() {
                   </span>
                 )}
               </div>
-              <p className="font-serif text-[17px] leading-relaxed">
+              <p className="font-display font-semibold text-[17px] leading-relaxed">
                 <NameList names={named} />
               </p>
             </div>

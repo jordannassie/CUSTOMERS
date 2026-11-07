@@ -14,7 +14,7 @@ export default function AppError({ error, retry }: { error: Error & { digest?: s
   return (
     <PageContainer>
       <div role="alert" className="rounded-xl bg-surface p-8">
-        <h1 className="font-serif text-2xl font-normal">This page didn&apos;t load</h1>
+        <h1 className="font-display text-2xl font-semibold">This page didn&apos;t load</h1>
         <p className="mt-2 max-w-[60ch] text-sm text-muted-foreground">
           Something went wrong on our side. Your scans, credits and settings are safe. Try again, and if it keeps
           happening, contact us{error.digest ? " with the reference below" : ""}.

@@ -12,7 +12,7 @@ export default function AdminError({ error, retry }: { error: Error & { digest?:
   return (
     <div className="mx-auto flex max-w-6xl flex-col px-4 py-8 sm:px-6">
       <div role="alert" className="rounded-xl bg-surface p-8" data-testid="admin-error">
-        <h1 className="font-serif text-2xl font-normal">This page didn&apos;t load</h1>
+        <h1 className="font-display text-2xl font-semibold">This page didn&apos;t load</h1>
         <p className="mt-2 max-w-[60ch] text-sm text-muted-foreground">
           Something went wrong reading this page. Nothing was changed. Try again, and if it keeps happening, look up the
           reference below in the server log.

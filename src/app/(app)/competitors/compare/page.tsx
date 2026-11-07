@@ -117,7 +117,7 @@ export default async function ComparePage({ searchParams }: { searchParams: Prom
         <CheckInLayout>
           {header}
           <section className="rounded-xl bg-card p-6" data-testid="compare-empty">
-            <h2 className="font-serif text-[22px] font-normal">Track a competitor to compare</h2>
+            <h2 className="font-display text-[22px] font-semibold">Track a competitor to compare</h2>
             <p className="mt-2 max-w-prose text-[15px] text-muted-foreground">
               Add the businesses you compete with, or track one AI already names. Their facts show here after your next scan.
             </p>
@@ -132,7 +132,7 @@ export default async function ComparePage({ searchParams }: { searchParams: Prom
 
   const rail = (
     <>
-      <Picker page={page} tab={tab} track={trackCompetitor} />
+      <Picker page={page} tab={tab} track={trackCompetitor} ownDomain={business.domain} />
       {signals ? (
         <Suspense fallback={<Skeleton className="h-44 w-full rounded-xl bg-surface" />}>
           <GoogleRail name={data.branch} competitorId={data.panel.competitorId} signals={signals} />

@@ -54,7 +54,7 @@ export function SharePanel({
   return (
     <section id="share-panel" aria-labelledby="share-panel-title" className="flex flex-col gap-3 rounded-xl bg-card p-5 sm:p-6" data-testid="share-panel">
       <div className="flex flex-col gap-1">
-        <h2 id="share-panel-title" className="font-serif text-xl font-normal">
+        <h2 id="share-panel-title" className="font-display text-xl font-semibold">
           {link ? "Share link is on" : "Share link is off"}
         </h2>
         <p className="text-sm text-muted-foreground">

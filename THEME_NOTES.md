@@ -9,7 +9,7 @@ Plan and checklist: `THEME_PLAN.md`.
 | Library | Version | Status |
 |---|---|---|
 | recharts | 2.15.4 | Already installed, kept. Its peer dependencies list React 19 (`node_modules/recharts/package.json`). Used for the bubble chart, the radar and the donut. |
-| next/font/google (Next.js 16.3.0) | built in | Figtree (400, 500, 600, 700) as `--font-figtree`, Young Serif (400) as `--font-young-serif`. Replaces Geist and Geist Mono. |
+| next/font/google (Next.js 16.3.0) | built in | Figtree (400, 500, 600, 700) as `--font-figtree`, Plus Jakarta Sans (500, 600, 700) as `--font-jakarta`, used for headings through the `font-display` class. Replaces Geist and Geist Mono. |
 
 Nothing new was installed. `package.json` and `package-lock.json` are unchanged.
 
@@ -45,6 +45,9 @@ Focus: every link, button and tab gets a 3px brand outline on keyboard focus.
 
 ## Decisions
 
+- Headings (2026-11-07, the user's call): Young Serif from the mockups is replaced everywhere by Plus Jakarta Sans in semibold. The class is `font-display` (was `font-serif`); to try another heading font, change the font in `src/app/layout.tsx` and `--font-display` / `--font-heading` in `globals.css`.
+- Favicons (2026-11-07): the switcher shows the business's own logo or website icon instead of a letter badge, and Compare's rail shows both businesses' icons with "{your business} vs {competitor}". Two e2e lines read the new heading.
+
 - Branch base: `fix/qa-blockers`, as asked. (An earlier, interrupted command had created `theme/check-in` from `origin/release/go-live`; it was reset to `fix/qa-blockers` before any work. The two have the same files. That earlier command also ran one `git fetch`, before the no-remote rule arrived; nothing else talked to a remote.)
 - DECISIONS.md items D-46 to D-50 (4px corners, the old palette) are superseded by this theme at the user's request. DECISIONS.md and DESIGN.md were not edited; update them if this theme is accepted.
 - Input borders use #8A94A6 instead of the mockup's #C9D3E3, which is 1.5:1 on white and fails WCAG 1.4.11 for a field's edge. Decorative borders use the mockup colours.
@@ -61,7 +64,7 @@ Focus: every link, button and tab gets a 3px brand outline on keyboard focus.
 |---|---|---|
 | Tokens, fonts, motion, focus | `src/app/globals.css`, `src/app/layout.tsx`, `src/app/global-error.tsx` | Palette, radius scale, gradients, keyframes, 3px focus outline, Figtree and Young Serif |
 | shadcn primitives | `src/components/ui/*` | Buttons (12px, plus `brand` and `chip` pill variants, 44px on touch screens), 20px cards, pill badges, tabs and segmented controls, 16px inputs, white tooltips, 20px dialogs, toasts, skeletons, progress |
-| App shell | `src/components/app/*` | 220px nav on the ground colour, serif wordmark, gradient workspace badge, white-pill current page, quiet top bar, serif page titles, banners (coral trouble, brand-wash info), KPI tiles, skeletons |
+| App shell | `src/components/app/*` | 220px nav on the ground colour, heading-font wordmark, the business's own icon in the switcher, white-pill current page, quiet top bar, serif page titles, banners (coral trouble, brand-wash info), KPI tiles, skeletons |
 | Charts | `src/components/charts/*` | LineAreaChart, RadialBars, ScoreGauge, BubbleChart, SlopeChart, GapChart, LollipopRows, RadarChart, StackedShareBar, RankedBars, Donut, DotMatrix, Sparkline, ProgressRing, Legend |
 | Check-in pieces | `src/components/checkin/*` | CheckInLayout (column plus right rail), DayRule, UserBubble, AiMessage, Explain, FollowUps, Composer, RailCard, StatRows, RailNotice, StatusPill |
 | Overview | `src/app/(app)/dashboard/*`, `src/components/overview/*` | Conversation per C-Overview |
@@ -69,9 +72,9 @@ Focus: every link, button and tab gets a 3px brand outline on keyboard focus.
 | Compare | `src/app/(app)/competitors/compare/*`, `src/components/competitors/compare/*` | Conversation per C-Compare |
 | Sources | `src/app/(app)/sources/*`, `src/components/sources/*` | Conversation per C-Sources |
 | Questions, Actions, Reports | their pages and `components/{questions,actions,opportunities,report}` | Questions as a conversation; Actions as a board of white cards with status pills; Reports as printable serif cards |
-| Billing, Settings, credits, usage | `src/app/(app)/settings/*`, `components/{settings,usage}` | White cards, serif titles and numbers, plan choices with brand tint, brand-wash notices |
-| Auth and onboarding | `components/geo`, `components/onboarding`, `app/{login,signup,...}`, `app/(app)/onboarding` | Centred white cards, serif headings and wordmark |
-| Admin | `src/app/internal/admin/**` | Dense tables with sticky headers, pill filters, serif stat numbers |
+| Billing, Settings, credits, usage | `src/app/(app)/settings/*`, `components/{settings,usage}` | White cards, heading-font titles and numbers, plan choices with brand tint, brand-wash notices |
+| Auth and onboarding | `components/geo`, `components/onboarding`, `app/{login,signup,...}`, `app/(app)/onboarding` | Centred white cards, heading-font headings and wordmark |
+| Admin | `src/app/internal/admin/**` | Dense tables with sticky headers, pill filters, heading-font stat numbers |
 | Marketing and public pages | `src/app/(marketing)`, `pricing`, `agency`, `apps`, `compare`, `ads`, `start-ai-business`, `contact`, `privacy`, `terms`, `components/{marketing,site,legal}` | Same palette and fonts, hero as a mini check-in thread, about 370 hard-coded colours replaced with tokens |
 | Emails | `src/modules/email/templates/_components/theme.ts` | Theme colours and 12px corners |
 | Design preview | `src/app/(internal)/design-preview` | Lists the new tokens and type scale |

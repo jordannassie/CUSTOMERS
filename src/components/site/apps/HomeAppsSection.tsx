@@ -22,7 +22,7 @@ export function HomeAppsSection({ ratings = {} }: { ratings?: Record<string, Nat
       <div className="mx-auto max-w-[1240px]">
         <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
           <div>
-            <h2 className="font-serif font-normal text-[28px] text-foreground sm:text-[34px]">Discover the Best AI Tools</h2>
+            <h2 className="font-display font-semibold text-[28px] text-foreground sm:text-[34px]">Discover the Best AI Tools</h2>
             <p className="mt-1 text-[15px] text-muted-foreground">Find the right AI tools to grow your business.</p>
           </div>
           <Link href="/apps" className="text-[14px] font-semibold text-brand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2">

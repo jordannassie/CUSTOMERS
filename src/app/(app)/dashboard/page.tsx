@@ -93,7 +93,7 @@ export default async function OverviewPage({ searchParams }: { searchParams: Pro
     <CheckInLayout rail={rail}>
       <header className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex min-w-0 flex-col gap-1">
-          <h1 className="line-clamp-2 font-serif text-[26px] leading-tight break-words" title={business.name}>
+          <h1 className="line-clamp-2 font-display font-semibold text-[26px] leading-tight break-words" title={business.name}>
             {business.name}
           </h1>
           <p className="text-sm text-muted-foreground" data-testid="last-scan">
