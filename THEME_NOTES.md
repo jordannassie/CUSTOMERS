@@ -110,5 +110,5 @@ Tests touched: `src/modules/email/render.test.ts` (12px corners instead of 4px);
 - Seen only in code, not in the browser: the Billing page with a live plan (the demo's Stripe ids are fake, so it shows the "couldn't find your plan" state), the onboarding wizard steps (opening them would create a draft business), `/apps/[slug]` (no directory rows locally), and the Overview "no score yet" state.
 - The PDF report keeps its own print design.
 - DECISIONS.md D-46 to D-50 and docs/design/DESIGN.md still describe the old look; they need updating if this theme is accepted.
-- `docs/design/files/` (the reference mockups) is left untracked; add it if the team wants it in the repo.
+- The reference mockups are committed in `docs/design/files/` (C-Overview, C-Competitors, C-Compare, C-Sources).
 - One intermittent 404 for a resource showed in the console on some app pages during screenshots; it did not repeat on reload.

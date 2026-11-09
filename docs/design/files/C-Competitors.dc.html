@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Check-in: Competitors</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&amp;family=Young+Serif&amp;display=swap">
+<style>
+body{margin:0;background:#EEF2F8}
+a{color:#2563EB}a:hover{color:#1E3A8A}
+@keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@keyframes draw{from{stroke-dashoffset:800}to{stroke-dashoffset:0}}
+@keyframes pop{from{transform:scale(0);opacity:0}to{transform:scale(1);opacity:1}}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+@media (prefers-reduced-motion: reduce){*{animation-duration:0.01ms !important;animation-delay:0s !important}}
+button:focus-visible,a:focus-visible,input:focus-visible{outline:3px solid #2563EB;outline-offset:2px}
+</style>
+</helmet>
+<div style="min-height: 100vh; background: #EEF2F8; color: #141B2D; font-family: 'Figtree', system-ui, sans-serif; font-size: 15px; display: flex; flex-wrap: wrap">
+
+<aside style="flex: 1 1 220px; box-sizing: border-box; padding: 24px 16px; display: flex; flex-direction: column; gap: 22px">
+<span style="font-family: 'Young Serif', Georgia, serif; font-size: 20px; padding: 0 10px">Customers.Direct</span>
+<button style="display: flex; align-items: center; gap: 10px; background: #FFFFFF; border: 1px solid #D7DEEA; border-radius: 14px; padding: 10px; font-family: inherit; min-height: 52px; text-align: left; cursor: pointer"><span style="width: 30px; height: 30px; border-radius: 50%; background: linear-gradient(135deg, #60A5FA, #2563EB); color: #FFFFFF; font-weight: 700; display: flex; align-items: center; justify-content: center">C</span><span style="display: flex; flex-direction: column"><span style="font-weight: 600">Cheezious</span><span style="color: #545E70; font-size: 12px">Rawalpindi</span></span></button>
+<nav aria-label="Main" style="display: flex; flex-direction: column; gap: 2px">
+<a href="C-Overview.dc.html" style="padding: 11px 12px; border-radius: 10px; color: #3A4456; text-decoration: none">Check-in</a>
+<a href="C-Competitors.dc.html" style="padding: 11px 12px; border-radius: 10px; background: #FFFFFF; color: #141B2D; font-weight: 600; text-decoration: none">Competitors</a>
+<a href="C-Compare.dc.html" style="padding: 11px 12px; border-radius: 10px; color: #3A4456; text-decoration: none">Compare</a>
+<a href="C-Sources.dc.html" style="padding: 11px 12px; border-radius: 10px; color: #3A4456; text-decoration: none">Sources</a>
+<a href="#" style="padding: 11px 12px; border-radius: 10px; color: #3A4456; text-decoration: none">Questions</a>
+<a href="#" style="padding: 11px 12px; border-radius: 10px; color: #3A4456; text-decoration: none">To-do</a>
+<a href="#" style="padding: 11px 12px; border-radius: 10px; color: #3A4456; text-decoration: none">Billing</a>
+</nav>
+</aside>
+
+<main style="flex: 999 1 560px; min-width: 0; box-sizing: border-box; padding: 24px 28px 48px; display: flex; flex-wrap: wrap; gap: 28px; align-items: flex-start">
+<div style="flex: 3 1 560px; min-width: 0; max-width: 820px; margin: 0 auto; display: flex; flex-direction: column; gap: 18px">
+<div style="align-self: flex-end; max-width: 80%; background: linear-gradient(135deg, #3B82F6, #1D4ED8); color: #FFFFFF; border-radius: 20px 20px 6px 20px; box-shadow: 0 8px 20px rgba(37,99,235,0.25); padding: 14px 18px; animation: rise 0.45s ease-out 0.1s both">Who's ahead of me, and why?</div>
+
+<div style="display: flex; gap: 12px; align-items: flex-start; animation: rise 0.5s ease-out 0.6s both">
+<span style="flex: none; width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, #60A5FA, {{accent}}); color: #FFFFFF; font-family: 'Young Serif', Georgia, serif; display: flex; align-items: center; justify-content: center">C</span>
+<div style="flex: 1; min-width: 0; background: #FFFFFF; border-radius: 6px 20px 20px 20px; padding: 22px 24px; display: flex; flex-direction: column; gap: 12px">
+<p style="margin: 0; font-family: 'Young Serif', Georgia, serif; font-size: 24px; line-height: 1.3">Three places are named more often than you. Domino's gained the most this month.</p>
+<p style="margin: 0; color: #3A4456; line-height: 1.6">Here's each business's visibility at your first scan and your latest one.</p>
+<div style="overflow-x: auto"><svg viewBox="0 0 640 310" style="width: 100%; min-width: 520px; height: auto; display: block" role="img" aria-label="Slope chart from Oct 8 to Oct 17. Pizza Hut 37 to 40. Domino's 23 to 33. Slice Theory 27 to 27. Cheezious 12 to 17. Dampukh and The Monal 0 to 0.">
+<line x1="190" x2="190" y1="24" y2="282" stroke="#DCE3EE"></line>
+<line x1="450" x2="450" y1="24" y2="282" stroke="#DCE3EE"></line>
+<text x="190" y="14" text-anchor="middle" fill="#545E70" font-size="12" font-family="Figtree, sans-serif">Oct 8</text>
+<text x="450" y="14" text-anchor="middle" fill="#545E70" font-size="12" font-family="Figtree, sans-serif">Oct 17</text>
+<sc-for list="{{slope}}" as="s" hint-placeholder-count="5"><g>
+<line x1="190" y1="{{s.y1}}" x2="450" y2="{{s.y2}}" stroke="{{s.c}}" stroke-width="{{s.w}}" stroke-linecap="round" stroke-dasharray="800" style="animation: draw 1.2s ease-out {{s.delay}}s both"></line>
+<circle cx="190" cy="{{s.y1}}" r="6" fill="{{s.c}}" stroke="#FFFFFF" stroke-width="2"></circle>
+<circle cx="450" cy="{{s.y2}}" r="6" fill="{{s.c}}" stroke="#FFFFFF" stroke-width="2"></circle>
+<text x="176" y="{{s.ly1}}" text-anchor="end" fill="{{s.tc}}" font-size="13" font-weight="{{s.fw}}" font-family="Figtree, sans-serif">{{s.name}} {{s.a}}</text>
+<text x="464" y="{{s.ly2}}" fill="{{s.tc}}" font-size="13" font-weight="{{s.fw}}" font-family="Figtree, sans-serif">{{s.b}} {{s.delta}}</text>
+</g></sc-for>
+</svg></div>
+</div>
+</div>
+
+<div style="display: flex; gap: 12px; align-items: flex-start; animation: rise 0.5s ease-out 1.5s both">
+<span style="flex: none; width: 36px"></span>
+<div style="flex: 1; min-width: 0; background: #FFFFFF; border-radius: 20px; padding: 22px 24px; display: flex; flex-direction: column; gap: 12px">
+<p style="margin: 0; font-family: 'Young Serif', Georgia, serif; font-size: 22px; line-height: 1.35">The odd part: customers rate you higher than anyone on this list.</p>
+<p style="margin: 0; color: #3A4456; line-height: 1.6">Your 4.6 stars across 3,618 Google reviews is the best of the six. AI just isn't connecting those reviews to you yet. Bubble size is the number of reviews.</p>
+<div style="overflow-x: auto"><div style="position: relative; min-width: 560px" onMouseLeave="{{clearB}}">
+<svg viewBox="0 0 760 380" style="width: 100%; height: auto; display: block" role="img" aria-label="Bubble chart of Google rating against AI visibility. Cheezious has the highest rating, 4.6, but visibility of 15.">
+<rect x="400" y="210" width="330" height="120" rx="12" fill="{{accent}}" fill-opacity="0.07"></rect>
+<sc-for list="{{bx}}" as="t" hint-placeholder-count="7"><text x="{{t.x}}" y="352" fill="#667085" font-size="12" text-anchor="middle" font-family="Figtree, sans-serif">{{t.label}}</text></sc-for>
+<sc-for list="{{by}}" as="t" hint-placeholder-count="5"><g><line x1="60" x2="730" y1="{{t.y}}" y2="{{t.y}}" stroke="#EDF1F7"></line><text x="50" y="{{t.ty}}" fill="#667085" font-size="12" text-anchor="end" font-family="Figtree, sans-serif">{{t.v}}</text></g></sc-for>
+<text x="395" y="374" fill="#545E70" font-size="12" text-anchor="middle" font-family="Figtree, sans-serif">Google rating</text>
+<text x="718" y="320" fill="{{accent}}" font-size="13" font-weight="600" text-anchor="end" font-family="Figtree, sans-serif">Loved by customers, missed by AI</text>
+<sc-for list="{{bubbles}}" as="b" hint-placeholder-count="6"><g onMouseEnter="{{b.enter}}" style="cursor: pointer">
+<circle cx="{{b.x}}" cy="{{b.y}}" r="{{b.r}}" fill="{{b.fill}}" fill-opacity="{{b.op}}" stroke="{{b.stroke}}" stroke-width="2" style="transform-origin: {{b.x}}px {{b.y}}px; animation: pop 0.6s cubic-bezier(.3,1.4,.5,1) {{b.delay}}s both"></circle>
+<text x="{{b.lx}}" y="{{b.ly}}" fill="#141B2D" font-size="13" font-weight="{{b.fw}}" font-family="Figtree, sans-serif">{{b.name}}</text>
+</g></sc-for>
+</svg>
+<sc-if value="{{hasB}}" hint-placeholder-val="{{ false }}">
+<div style="position: absolute; left: {{bl}}%; top: {{bt}}%; transform: translate(-50%, calc(-100% - 12px)); background: #FFFFFF; border: 1px solid #D7DEEA; border-radius: 14px; padding: 12px 14px; font-size: 13px; display: flex; flex-direction: column; gap: 4px; pointer-events: none; min-width: 180px; box-shadow: 0 12px 30px rgba(20,27,45,0.14)">
+<span style="font-family: 'Young Serif', Georgia, serif; font-size: 15px">{{tip.name}}</span>
+<span style="display: flex; justify-content: space-between"><span style="color: #545E70">AI visibility</span><strong>{{tip.v}}</strong></span>
+<span style="display: flex; justify-content: space-between"><span style="color: #545E70">Google rating</span><strong>{{tip.r}}</strong></span>
+<span style="display: flex; justify-content: space-between"><span style="color: #545E70">Reviews</span><strong>{{tip.n}}</strong></span>
+</div>
+</sc-if>
+</div></div>
+</div>
+</div>
+
+<div style="display: flex; gap: 12px; align-items: flex-start; animation: rise 0.5s ease-out 2.4s both">
+<span style="flex: none; width: 36px"></span>
+<div style="flex: 1; min-width: 0; background: #FFFFFF; border-radius: 20px; padding: 22px 24px; display: flex; flex-direction: column; gap: 14px">
+<p style="margin: 0; font-family: 'Young Serif', Georgia, serif; font-size: 22px; line-height: 1.35">Each AI app has its own favourites.</p>
+<p style="margin: 0; color: #3A4456; line-height: 1.6">ChatGPT leans on Slice Theory and Pizza Hut. Claude spreads its picks evenly, and that's where you do best.</p>
+<div style="overflow-x: auto"><div style="display: grid; grid-template-columns: minmax(150px, 1.4fr) repeat(3, minmax(90px, 1fr)); min-width: 480px; align-items: center">
+<span></span><span style="text-align: center; color: #545E70; font-size: 13px; padding-bottom: 8px">ChatGPT</span><span style="text-align: center; color: #545E70; font-size: 13px; padding-bottom: 8px">Claude</span><span style="text-align: center; color: #545E70; font-size: 13px; padding-bottom: 8px">Perplexity</span>
+<sc-for list="{{dots}}" as="r" hint-placeholder-count="6">
+<span style="font-weight: {{r.fw}}; color: {{r.tc}}; padding: 8px 0; border-top: 1px solid #EDF1F7; height: 56px; display: flex; align-items: center">{{r.name}}</span>
+<sc-for list="{{r.cells}}" as="c" hint-placeholder-count="3"><span style="height: 56px; border-top: 1px solid #EDF1F7; display: flex; align-items: center; justify-content: center; padding: 8px 0"><span style="width: {{c.s}}px; height: {{c.s}}px; border-radius: 50%; background: {{c.bg}}; color: {{c.fg}}; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; animation: pop 0.5s ease-out {{c.delay}}s both">{{c.v}}</span></span></sc-for>
+</sc-for>
+</div></div>
+</div>
+</div>
+
+<div style="display: flex; gap: 12px; align-items: flex-start; animation: rise 0.5s ease-out 3.2s both">
+<span style="flex: none; width: 36px"></span>
+<div style="flex: 1; min-width: 0; background: #FFFFFF; border-radius: 20px 20px 20px 6px; padding: 22px 24px; display: flex; flex-direction: column; gap: 14px">
+<p style="margin: 0; font-family: 'Young Serif', Georgia, serif; font-size: 22px; line-height: 1.35">AI also named a few places you don't track yet.</p>
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px">
+<sc-for list="{{also}}" as="a" hint-placeholder-count="6">
+<div style="border: 1px solid #DCE3EE; border-radius: 14px; padding: 12px 14px; display: flex; flex-direction: column; gap: 8px">
+<span style="display: flex; justify-content: space-between; gap: 8px"><span style="font-weight: 600">{{a.name}}</span><span style="color: #545E70; font-size: 13px; white-space: nowrap">{{a.n}} of 66</span></span>
+<span style="display: flex; gap: 3px"><sc-for list="{{a.pips}}" as="p" hint-placeholder-count="20"><span style="flex: 1; height: 10px; border-radius: 2px; background: {{p.bg}}"></span></sc-for></span>
+<button style="align-self: flex-start; border: 1px solid {{accent}}; background: #FFFFFF; color: {{accent}}; border-radius: 999px; padding: 8px 14px; font-family: inherit; font-weight: 600; font-size: 13px; min-height: 36px; cursor: pointer">Track</button>
+</div>
+</sc-for>
+</div>
+</div>
+</div>
+
+<div style="display: flex; flex-wrap: wrap; gap: 8px; padding-left: 48px; animation: rise 0.5s ease-out 4s both">
+<a href="C-Compare.dc.html" style="background: #FFFFFF; border: 1px solid #C9D3E3; border-radius: 999px; padding: 11px 14px; font-size: 14px; color: #141B2D; text-decoration: none">How do I compare with Pizza Hut?</a>
+<a href="#" style="background: #FFFFFF; border: 1px solid #C9D3E3; border-radius: 999px; padding: 11px 14px; font-size: 14px; color: #141B2D; text-decoration: none">Why does ChatGPT prefer Slice Theory?</a>
+<a href="C-Sources.dc.html" style="background: #FFFFFF; border: 1px solid #C9D3E3; border-radius: 999px; padding: 11px 14px; font-size: 14px; color: #141B2D; text-decoration: none">Where does AI look?</a>
+</div>
+</div>
+
+<aside aria-label="Leaderboard" style="flex: 1 1 260px; max-width: 340px; display: flex; flex-direction: column; gap: 14px">
+<div style="background: #FFFFFF; border-radius: 20px; padding: 20px; display: flex; flex-direction: column; gap: 4px">
+<span style="font-weight: 600; margin-bottom: 8px">Leaderboard</span>
+<sc-for list="{{board}}" as="b" hint-placeholder-count="6">
+<div style="display: grid; grid-template-columns: 20px minmax(0, 1fr) 70px 30px; gap: 10px; align-items: center; padding: 10px 8px; border-radius: 12px; background: {{b.bg}}">
+<span style="color: #545E70; font-size: 13px">{{b.rank}}</span>
+<span style="font-weight: {{b.fw}}; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{b.name}}</span>
+<svg viewBox="0 0 70 24" width="70" height="24" aria-hidden="true"><path d="{{b.sp}}" fill="none" stroke="{{b.c}}" stroke-width="2" stroke-linecap="round"></path></svg>
+<span style="font-weight: 700; text-align: right">{{b.score}}</span>
+</div>
+</sc-for>
+<a href="C-Compare.dc.html" style="margin-top: 10px; text-align: center; border: 1px solid {{accent}}; border-radius: 999px; padding: 11px; font-weight: 600; text-decoration: none">Compare side by side</a>
+</div>
+</aside>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#2563EB","options":["#2563EB","#1D4ED8","#3B82F6","#4F46E5"]},"$preview":{"width":1440,"height":2000}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const st = this.state || {};
+    const accent = this.props.accent ?? '#2563EB';
+    const smooth = (pts) => { let d = 'M' + pts[0][0] + ',' + pts[0][1]; for (let i = 0; i < pts.length - 1; i++) { const p0 = pts[i - 1] || pts[i], p1 = pts[i], p2 = pts[i + 1], p3 = pts[i + 2] || p2; d += ' C' + (p1[0] + (p2[0] - p0[0]) / 6).toFixed(1) + ',' + (p1[1] + (p2[1] - p0[1]) / 6).toFixed(1) + ' ' + (p2[0] - (p3[0] - p1[0]) / 6).toFixed(1) + ',' + (p2[1] - (p3[1] - p1[1]) / 6).toFixed(1) + ' ' + p2[0].toFixed(1) + ',' + p2[1].toFixed(1); } return d; };
+    const biz = [
+      { name: 'Pizza Hut', score: 38, rating: 3.8, reviews: 1307, tools: [75, 40, 0], v: [37, 38, 38, 39, 39, 40], c: '#D9735A' },
+      { name: "Domino's Pizza", score: 28, rating: 4.0, reviews: 1667, tools: [15, 40, 30], v: [23, 25, 27, 29, 31, 33], c: '#5B6475' },
+      { name: 'Slice Theory', score: 27, rating: 4.1, reviews: 7, tools: [80, 0, 0], v: [27, 27, 26, 27, 27, 27], c: '#AAB2BF' },
+      { name: 'Cheezious', score: 15, rating: 4.6, reviews: 3618, tools: [0, 40, 5], v: [12, 13, 13, 15, 16, 17], c: accent, you: true },
+      { name: 'Dampukh', score: 0, rating: 4.0, reviews: 2172, tools: [0, 0, 0], v: [0, 0, 0, 0, 0, 0], c: '#C9B6D6' },
+      { name: 'The Monal', score: 0, rating: 4.3, reviews: 12913, tools: [0, 0, 0], v: [0, 0, 0, 0, 0, 0], c: '#C3CBD8' }
+    ];
+    const SY = (v) => 270 - v * 6;
+    const slope = biz.filter((b) => b.name !== 'The Monal').map((b, k) => { const a = b.v[0], z = b.v[5]; const d = z - a; const zero = b.name === 'Dampukh';
+      return { name: zero ? 'Dampukh, The Monal' : b.name, a, b: z, delta: d > 0 ? '(+' + d + ')' : '', y1: SY(a), y2: SY(z), ly1: SY(a) + 4 + (b.name === 'Slice Theory' ? -6 : 0), ly2: SY(z) + 4, c: b.c, w: b.you ? 5 : 3, tc: b.you ? accent : '#141B2D', fw: b.you ? 700 : 500, delay: (0.8 + k * 0.12).toFixed(2) }; });
+    const X = (r) => 60 + (r - 3.6) / 1.2 * 670, Y = (v) => 330 - v * 6.6;
+    const hb = typeof st.hb === 'number' ? st.hb : -1;
+    const bubbles = biz.map((b, k) => { const x = X(b.rating), y = Y(b.score), r = 5 + Math.sqrt(b.reviews) * 0.28;
+      return { name: b.name, x, y, r: r.toFixed(1), fill: b.you ? accent : b.c, op: b.you ? 0.9 : (hb === k ? 0.9 : 0.55), stroke: hb === k || b.you ? '#141B2D' : '#FFFFFF', lx: x + r + 6, ly: y + 4, fw: b.you ? 700 : 500, delay: (1.6 + k * 0.08).toFixed(2), enter: () => this.setState({ hb: k }) }; });
+    const bt = hb >= 0 ? biz[hb] : null;
+    const toolC = ['#5B6475', accent, '#D98C3F'];
+    const also = [['Pizzeria 360 Original', 19], ['JFC Pizza & Fast Food', 15], ['Fresco Pizza, Saddar', 12], ['Pappasallis Panj Sarki', 12], ['Broadway Pizza', 11], ['Pizza Square', 11]].map(([name, n]) => ({ name, n, pips: Array.from({ length: 22 }, (_, i) => ({ bg: i < Math.round(n / 3) ? accent : '#EDF1F7' })) }));
+    return {
+      accent, slope, bubbles,
+      bx: [3.6, 3.8, 4.0, 4.2, 4.4, 4.6, 4.8].map((r) => ({ x: X(r), label: r.toFixed(1) })),
+      by: [0, 10, 20, 30, 40].map((v) => ({ y: Y(v), ty: Y(v) + 4, v })),
+      hasB: hb >= 0, clearB: () => this.setState({ hb: -1 }),
+      bl: bt ? (X(bt.rating) / 760 * 100).toFixed(2) : 0, bt: bt ? ((Y(bt.score) - 5 - Math.sqrt(bt.reviews) * 0.28) / 380 * 100).toFixed(2) : 0,
+      tip: bt ? { name: bt.name, v: bt.score + ' of 100', r: bt.rating.toFixed(1) + ' stars', n: bt.reviews.toLocaleString('en-US') } : { name: '', v: '', r: '', n: '' },
+      dots: biz.map((b, k) => ({ name: b.you ? 'Cheezious (you)' : b.name, fw: b.you ? 700 : 500, tc: b.you ? accent : '#141B2D',
+        cells: b.tools.map((v, j) => ({ v: v || '0', s: v ? Math.round(18 + v * 0.42) : 10, bg: v ? toolC[j] : '#E2E7F0', fg: v ? '#FFFFFF' : 'transparent', delay: (2.6 + (k * 3 + j) * 0.03).toFixed(2) })) })),
+      also,
+      board: biz.map((b, k) => ({ rank: k + 1, name: b.you ? 'Cheezious (you)' : b.name, score: b.score, c: b.c, fw: b.you ? 700 : 500, bg: b.you ? '#E6EEFF' : 'transparent', sp: smooth(b.v.map((v, i) => [3 + i * 12.8, 21 - v * 0.45])) }))
+    };
+  }
+}
+</script>
+</body>
+</html>
