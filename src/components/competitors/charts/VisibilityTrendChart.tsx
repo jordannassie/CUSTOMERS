@@ -37,7 +37,7 @@ export function VisibilityTrendChart({ view, nextScan = null }: { view: Competit
     // Grows with its card, so it fills the space beside a long "Also recommended" list (never under 224px).
     <figure className="m-0 flex h-full flex-col gap-3" data-testid="competitor-trend-chart">
       <SeriesLegend series={series} />
-      <ChartContainer config={config} className="aspect-auto h-64 w-full" aria-hidden="true">
+      <ChartContainer config={config} className="aspect-auto h-48 w-full" aria-hidden="true">
         <ComposedChart data={timeline} margin={{ top: 8, right: 16, bottom: 0, left: -20 }}>
           <defs>
             <linearGradient id="trend-you-fill" x1="0" y1="0" x2="0" y2="1">

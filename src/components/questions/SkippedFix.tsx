@@ -2,21 +2,14 @@
 
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
+import { cn } from "cn";
+import { PILL_BOX, PILL_CLASS } from "@/components/app/pills";
 import { AddToActionsButton } from "@/components/actions/AddToActionsButton";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { fixHref } from "@/lib/fix-where";
-import { STATUS_TEXT, toActionStatus, type ActionStatus } from "@/modules/opportunities/board/service";
+import { STATUS_TEXT, toActionStatus } from "@/modules/opportunities/board/service";
 import type { QuestionAnswer } from "@/modules/questions/answers";
 import { useQuestions } from "./QuestionsProvider";
-
-const STATUS_BADGE: Record<ActionStatus, "secondary" | "mid" | "good"> = {
-  suggested: "secondary",
-  todo: "mid",
-  in_progress: "mid",
-  done: "good",
-  dismissed: "secondary",
-};
 
 /**
  * "What to do" under "Why you were skipped", laid out like Compare's: the fix for a site this answer used, where to
@@ -28,7 +21,7 @@ export function SkippedFix({ answer: a }: { answer: QuestionAnswer }) {
   if (a.fix) {
     const status = toActionStatus(a.fix.status ?? "open");
     return (
-      <Fix title={a.fix.title} where={a.fix.host} badge={<Badge variant={STATUS_BADGE[status]}>In Actions · {STATUS_TEXT[status]}</Badge>}>
+      <Fix title={a.fix.title} where={a.fix.host} badge={<span className={cn(PILL_BOX, PILL_CLASS.inActions)}>In Actions · {STATUS_TEXT[status]}</span>}>
         <Button asChild size="sm" variant="outline" className="w-fit">
           <Link href={fixHref(a.fix.id)} data-testid="skipped-fix-link">
             Open in Actions

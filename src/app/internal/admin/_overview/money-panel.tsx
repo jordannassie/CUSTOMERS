@@ -70,11 +70,12 @@ export default function MoneyPanel({
           <div
             role="img"
             aria-label={share === null ? "No revenue to compare with yet" : `AI cost is ${Math.round(share * 100)}% of revenue`}
-            className="h-3 overflow-hidden rounded-sm bg-good-bg"
+            className="h-3 overflow-hidden rounded-sm bg-muted"
           >
             {share !== null && (
+              // Blue while AI costs less than revenue, red only when it costs more (the app's pill colours).
               <div
-                className={share >= 1 ? "h-full bg-low" : share >= 0.5 ? "h-full bg-mid" : "h-full bg-primary"}
+                className={share >= 1 ? "h-full bg-low" : "h-full bg-primary"}
                 style={{ width: `${Math.min(share, 1) * 100}%` }}
               />
             )}

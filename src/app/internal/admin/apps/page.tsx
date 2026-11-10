@@ -18,7 +18,7 @@ export default async function AdminAppsPage() {
   const apps = mergeCatalog(DIRECTORY_CATALOG, overrides.apps).sort((a, b) => a.name.localeCompare(b.name));
 
   return (
-    <div className="mx-auto flex max-w-4xl flex-col gap-6 px-4 py-8 sm:px-6">
+    <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-4 px-4 py-4 sm:px-6 sm:py-5">
       <AdminPageHeader
         title="AI apps directory"
         subtitle="Saving an app overrides the built-in list for that slug on /apps. Leave the affiliate link empty unless a partnership is approved."

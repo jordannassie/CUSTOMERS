@@ -4,7 +4,6 @@ import { redirect } from "next/navigation";
 import { ExternalLink, Globe } from "lucide-react";
 import { PageContainer } from "@/components/app/PageContainer";
 import { PageHeader } from "@/components/app/PageHeader";
-import { SampleDataBadge } from "@/components/app/SampleDataBadge";
 import { ShowGoogle } from "@/components/app/ShowGoogle";
 import { CompareTabs } from "@/components/competitors/compare/CompareTabs";
 import { Trend } from "@/components/competitors/compare/PairTrend";
@@ -64,11 +63,11 @@ export default async function ComparePage({ searchParams }: { searchParams: Prom
 
   return (
     <PageContainer>
-      <div className="flex flex-col gap-5" data-testid="compare-page">
+      <div className="flex flex-col gap-4" data-testid="compare-page">
         <PageHeader
           title={
             <span className="flex flex-wrap items-center gap-2">
-              Compare <SampleDataBadge show={workspace.account?.isTest} />
+              Compare
             </span>
           }
           description="Pick a competitor to see the facts behind every gap, and what to do about each one."
@@ -115,10 +114,10 @@ export default async function ComparePage({ searchParams }: { searchParams: Prom
               initial={tab}
               panels={{
                 summary: (
-                  <div className="flex flex-col gap-7" data-testid="tab-summary">
+                  <div className="flex flex-col gap-5" data-testid="tab-summary">
                     <section className="flex flex-col gap-3">
                       <div className="flex flex-col gap-0.5">
-                        <h3 className="text-[14.5px] font-semibold tracking-[-0.01em]">{reasonsHeading(data.standing, data.collecting)}</h3>
+                        <h3 className="text-[14px] font-semibold tracking-[-0.01em]">{reasonsHeading(data.standing, data.collecting)}</h3>
                         <p className="text-xs text-muted-foreground">Facts from AI answers in the last 30 days and what we read, biggest first. Each comes with its fix.</p>
                       </div>
                       <ReasonCards
@@ -134,7 +133,7 @@ export default async function ComparePage({ searchParams }: { searchParams: Prom
                     </section>
                     {/* When you lead, where you are ahead comes first. */}
                     <section className={cn("flex flex-col gap-3", data.standing === "ahead" && "order-first")}>
-                      <h3 className="text-[14.5px] font-semibold tracking-[-0.01em]">Where you are ahead</h3>
+                      <h3 className="text-[14px] font-semibold tracking-[-0.01em]">Where you are ahead</h3>
                       <LeadCards leads={data.leads} standing={data.collecting ? null : data.standing} />
                     </section>
                     <p className="text-xs text-text-hint">We can&apos;t see inside the AI tools, so these are likely reasons, each backed by the facts shown.</p>

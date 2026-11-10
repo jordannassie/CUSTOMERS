@@ -7,14 +7,15 @@ import type { Tone } from "@/modules/overview";
 const R = 44;
 const C = 2 * Math.PI * R;
 
-const STROKE: Record<Tone, string> = { good: "stroke-good", mid: "stroke-mid", low: "stroke-low" };
+// One calm colour for every score; the number says how good it is (colour cleanup, 2026-11-10).
+const STROKE: Record<Tone, string> = { good: "stroke-primary", mid: "stroke-primary", low: "stroke-primary" };
 
 const SIZE = {
   // 96px on phones so the sentence fits beside it (DB-015).
   default: { ring: "size-24 sm:size-36", value: "text-3xl sm:text-5xl" },
   small: { ring: "size-24", value: "text-3xl" },
   // The Overview's headline score (mockup-ui).
-  hero: { ring: "size-28 sm:size-40", value: "text-4xl sm:text-[52px]" },
+  hero: { ring: "size-24 sm:size-28", value: "text-3xl sm:text-[38px]" },
 } as const;
 
 /**

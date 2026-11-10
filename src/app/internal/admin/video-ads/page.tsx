@@ -14,7 +14,7 @@ export default async function VideoAdOrdersPage() {
   const { orders, unavailable } = await listRecentOrders();
 
   return (
-    <div className="mx-auto flex max-w-3xl flex-col gap-6 px-4 py-8 sm:px-6">
+    <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-4 px-4 py-4 sm:px-6 sm:py-5">
       <AdminPageHeader
         title="AI video ad orders"
         subtitle={

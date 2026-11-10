@@ -9,7 +9,7 @@ export function BalanceSummary({ balance }: { balance: UsageReport["balance"] })
   const planShare = pool > 0 ? (balance.plan / pool) * 100 : 0;
 
   return (
-    <section aria-labelledby="balance-heading" className="rounded-md border border-border bg-surface p-5">
+    <section aria-labelledby="balance-heading" className="rounded-md border border-border bg-surface p-4">
       <h2 id="balance-heading" className="text-sm font-medium text-muted-foreground">
         Credits left
       </h2>

@@ -4,7 +4,7 @@ import { cn } from "cn";
 import { formatDate } from "../../_components/format";
 
 export function DeletedBadge() {
-  return <Badge variant="low">Deleted</Badge>;
+  return <Badge variant="secondary">Deleted</Badge>;
 }
 
 /** When a deleted business's data is removed for good, from purge_after; `short` fits a list cell next to the badge. */

@@ -36,9 +36,9 @@ function Cell({ value, gap = false }: { value: boolean | number | null; gap?: bo
   return (
     <td className="py-2">
       {value ? (
-        <Check className="size-4 text-good-text" aria-label="Yes" />
+        <Check className="size-4 text-foreground" aria-label="Yes" />
       ) : (
-        <Minus className={cn("size-4", gap ? "text-mid-text" : "text-text-hint")} aria-label="Not found" />
+        <Minus className={cn("size-4", gap ? "text-foreground" : "text-text-hint")} aria-label="Not found" />
       )}
     </td>
   );

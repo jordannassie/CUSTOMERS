@@ -20,26 +20,16 @@ const BILLING_PATHS = ["/settings/billing", "/settings/credits", "/settings/usag
 /** The comparison page. /compare is the public readiness check, so it lives under Competitors with its own item. */
 export const COMPARE_PATH = "/competitors/compare";
 
-// Grouped sidebar (dashboard redesign, 2026-10-27; order the user's): how you compete, what to do, what AI sees, the account.
+// Two plain groups (sidebar redesign, 2026-11-10): every page in "Main" in the user's order, then the account pages.
 export const APP_NAV_GROUPS: NavGroup[] = [
-  { label: null, items: [{ label: "Overview", href: "/dashboard", icon: LayoutDashboard }] },
   {
-    label: "Compete",
+    label: "Main",
     items: [
+      { label: "Overview", href: "/dashboard", icon: LayoutDashboard },
       { label: "Competitors", href: "/competitors", icon: Users, notActiveOn: [COMPARE_PATH] },
       { label: "Compare", href: COMPARE_PATH, icon: GitCompareArrows },
-    ],
-  },
-  {
-    label: "Improve",
-    items: [
       { label: "Actions", href: "/actions", icon: ListChecks },
       { label: "Reports", href: "/reports", icon: FileText },
-    ],
-  },
-  {
-    label: "Visibility",
-    items: [
       { label: "Questions", href: "/questions", icon: MessageCircleQuestion },
       { label: "Sources", href: "/sources", icon: Link2 },
     ],

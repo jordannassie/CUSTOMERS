@@ -75,7 +75,7 @@ export function SavedReports({
           >
             <span className={cn("flex items-center gap-2 text-sm font-medium", selected === null && "text-primary-hover")}>
               Latest report
-              <Badge variant="good">Live</Badge>
+              <Badge variant="tint">Live</Badge>
             </span>
             <span className="text-xs text-muted-foreground">Last 30 days, updates after each scan</span>
           </Link>

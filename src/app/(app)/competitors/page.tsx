@@ -5,7 +5,6 @@ import { GitCompareArrows, Settings2 } from "lucide-react";
 import { KpiStrip, KpiTile } from "@/components/app/KpiTile";
 import { PageContainer } from "@/components/app/PageContainer";
 import { PageHeader } from "@/components/app/PageHeader";
-import { SampleDataBadge } from "@/components/app/SampleDataBadge";
 import { ShowGoogle } from "@/components/app/ShowGoogle";
 import { PointsChange } from "@/components/overview/PointsChange";
 import { AlsoRecommended } from "@/components/competitors/AlsoRecommended";
@@ -48,11 +47,11 @@ export default async function CompetitorsPage({ searchParams }: { searchParams: 
 
   return (
     <PageContainer>
-      <div className="flex flex-col gap-5">
+      <div className="flex flex-col gap-4">
         <PageHeader
           title={
             <>
-              Competitors <SampleDataBadge show={workspace.account?.isTest} />
+              Competitors
             </>
           }
           description="How often AI picks you and the businesses you track, last 30 days."
@@ -173,7 +172,6 @@ function Kpis({ kpis, rows }: { kpis: TableKpis; rows: TableRow[] }) {
         value={kpis.rank ? `#${kpis.rank.place}` : "No score yet"}
         sub={kpis.rank ? `of ${kpis.rank.of} tracked businesses` : undefined}
         trend={you?.spark}
-        trendColor={you?.color}
         testId="kpi-rank"
       />
       <KpiTile
@@ -181,7 +179,6 @@ function Kpis({ kpis, rows }: { kpis: TableKpis; rows: TableRow[] }) {
         value={kpis.leader ? (kpis.leader.isYou ? "You" : kpis.leader.name) : "No one yet"}
         sub={kpis.leader ? `Score ${kpis.leader.score}` : undefined}
         trend={leader?.spark}
-        trendColor={leader?.color}
         change={leader?.change ? <PointsChange change={leader.change} neutral={!leader.isYou} /> : undefined}
         testId="kpi-leader"
       />
@@ -189,9 +186,7 @@ function Kpis({ kpis, rows }: { kpis: TableKpis; rows: TableRow[] }) {
         label="Gap to the leader"
         value={kpis.gap === null ? "Not compared yet" : kpis.gap === 0 ? "You lead" : level ? "About the same" : `${kpis.gap} pts`}
         sub={level && kpis.gap ? `${kpis.gap} pts, inside the margin of error` : undefined}
-        tone={kpis.gap === 0 ? "good" : kpis.gap && !level ? "mid" : undefined}
         trend={gapTrend}
-        trendColor="var(--cd-text-hint)"
         testId="kpi-gap"
       />
       <KpiTile
@@ -199,7 +194,6 @@ function Kpis({ kpis, rows }: { kpis: TableKpis; rows: TableRow[] }) {
         value={kpis.next ? kpis.next.name : "No one"}
         sub={kpis.next ? (nextLevel ? `About the same, ${kpis.next.points} pts above you` : `${kpis.next.points} pts ahead of you`) : "No one is ahead of you"}
         trend={next?.spark}
-        trendColor={next?.color}
         testId="kpi-next"
       />
     </KpiStrip>

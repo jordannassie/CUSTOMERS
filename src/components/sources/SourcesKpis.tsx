@@ -30,14 +30,12 @@ export function SourcesKpis(p: Props) {
         label={`Top ${p.topMentioning.of} sources that mention you`}
         value={`${p.topMentioning.count} of ${p.topMentioning.of}`}
         sub={<span title={mentioning}>{mentioning}</span>}
-        tone={p.topMentioning.count === 0 ? "mid" : undefined}
         testId="kpi-mention-you"
       />
       <KpiTile
         label="Your website used"
         value={p.ownSiteHost ? times(p.ownSiteAnswers) : "No website"}
         sub={<span title={competitors}>{competitors}</span>}
-        tone={p.ownSiteHost && p.ownSiteAnswers === 0 ? "mid" : undefined}
         testId="kpi-own-site"
       />
     </KpiStrip>

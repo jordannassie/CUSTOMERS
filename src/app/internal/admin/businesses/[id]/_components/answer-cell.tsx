@@ -28,7 +28,7 @@ export default function AnswerCell({
         className="inline-flex items-center gap-1 rounded-sm underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
       >
         {value ? (
-          <span className="inline-flex items-center gap-1 text-good-text">
+          <span className="inline-flex items-center gap-1 font-medium text-primary">
             <Check aria-hidden className="size-4" />
             Named
           </span>

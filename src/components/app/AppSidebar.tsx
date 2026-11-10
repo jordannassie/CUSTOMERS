@@ -24,8 +24,12 @@ export type AppSidebarProps = {
   suggestFeature: SuggestFeatureAction;
 };
 
-const FOOTER_ITEM =
-  "flex w-full items-center gap-2.5 rounded-md px-2.5 py-1.5 text-sm text-muted-foreground outline-none transition-colors hover:bg-surface hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 [&_svg]:size-4 [&_svg]:shrink-0";
+// One row style for menu links and footer links: 32px tall, 16px icon, a light blue tint on the page you are on.
+const ROW =
+  "flex h-8 w-full items-center gap-2.5 rounded-md px-2.5 text-[12.5px] outline-none transition-colors focus-visible:ring-3 focus-visible:ring-ring/50";
+const ROW_IDLE = "text-foreground/75 hover:bg-foreground/5 hover:text-foreground";
+const FOOTER_ITEM = cn(ROW, ROW_IDLE, "[&_svg]:size-4 [&_svg]:shrink-0 [&_svg]:stroke-[1.75] [&_svg]:text-muted-foreground");
+const GROUP_LABEL = "px-2.5 pb-1 text-[11px] font-medium text-text-hint";
 
 export function AppSidebar({
   businesses,
@@ -44,15 +48,18 @@ export function AppSidebar({
   const settingUp = pathname.startsWith("/onboarding");
 
   return (
-    <div className="flex min-h-full flex-col gap-3 p-3">
-      <Link href="/dashboard" onClick={onNavigate} className="self-start px-2 pt-2 pb-1" aria-label="Customers.Direct, go to Overview">
-        <Image src="/images/logos/logo-black.png" alt="" width={156} height={52} loading="eager" className="h-[52px] w-auto -my-3" />
-      </Link>
+    <div className="flex min-h-full flex-col px-3 pb-3">
+      {/* The logo centred, level with the window's top bar, from a copy trimmed of the file's empty margins. */}
+      <div className="mt-2 mb-2 flex h-12 shrink-0 items-center justify-center">
+        <Link href="/dashboard" onClick={onNavigate} aria-label="Customers.Direct, go to Overview" className="rounded-sm outline-none focus-visible:ring-3 focus-visible:ring-ring/50">
+          <Image src="/images/logos/logo-black-sidebar.png" alt="" width={640} height={89} loading="eager" className="h-5 w-auto" />
+        </Link>
+      </div>
 
       {settingUp ? (
-        <div className="rounded-md border border-border bg-surface px-3 py-2.5" data-testid="setting-up">
-          <p className="text-[13px] text-muted-foreground">Setting up</p>
-          <p className="line-clamp-2 text-sm font-medium break-words">
+        <div className="rounded-md border border-border bg-surface px-2.5 py-1.5" data-testid="setting-up">
+          <p className="text-[11px] text-muted-foreground">Setting up</p>
+          <p className="line-clamp-2 text-[13px] font-medium break-words">
             {setupLabel(pathname, setupName, businesses.find((b) => b.id === activeBusinessId)?.name ?? null)}
           </p>
         </div>
@@ -67,10 +74,10 @@ export function AppSidebar({
         />
       )}
 
-      <nav aria-label="Main" className="flex flex-col gap-2.5">
+      <nav aria-label="Main" className="mt-4 flex flex-col gap-4">
         {APP_NAV_GROUPS.map((group) => (
           <div key={group.label ?? "top"} className="flex flex-col gap-0.5">
-            {group.label && <p className="px-2.5 pt-1 pb-1 text-[11.5px] font-medium text-text-hint">{group.label}</p>}
+            {group.label && <p className={GROUP_LABEL}>{group.label}</p>}
             {group.items.map((item) => {
               const active = isNavActive(item, pathname);
               const Icon = item.icon;
@@ -80,14 +87,12 @@ export function AppSidebar({
                   href={item.href}
                   onClick={onNavigate}
                   aria-current={active ? "page" : undefined}
-                  className={cn(
-                    "flex items-center gap-2.5 rounded-md px-2.5 py-[7px] text-[13px] outline-none transition-colors focus-visible:ring-3 focus-visible:ring-ring/50",
-                    active
-                      ? "bg-surface font-medium text-foreground shadow-[0_0_0_1px_var(--cd-border),0_1px_2px_rgb(24_24_27/0.04)]"
-                      : "text-foreground/80 hover:bg-surface/70 hover:text-foreground",
-                  )}
+                  className={cn(ROW, active ? "bg-primary-tint font-medium text-primary" : ROW_IDLE)}
                 >
-                  <Icon className={cn("size-[15px] shrink-0", active ? "text-primary" : "text-muted-foreground")} aria-hidden="true" />
+                  <Icon
+                    className={cn("size-4 shrink-0 stroke-[1.75]", active ? "text-primary" : "text-muted-foreground")}
+                    aria-hidden="true"
+                  />
                   {item.label}
                 </Link>
               );
@@ -96,7 +101,7 @@ export function AppSidebar({
         ))}
       </nav>
 
-      <div className="mt-auto flex flex-col gap-2.5">
+      <div className="mt-auto flex flex-col gap-2.5 pt-5">
         {usage && <UsageWidget {...usage} />}
         <div className="flex flex-col gap-0.5 border-t border-border pt-2.5">
           {isAdmin && (

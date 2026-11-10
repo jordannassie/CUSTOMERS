@@ -90,7 +90,7 @@ function CardFields({ label, onPaid }: { label: string; onPaid: () => void }) {
   }
 
   return (
-    <form onSubmit={submit} className="flex flex-col gap-5">
+    <form onSubmit={submit} className="flex flex-col gap-4">
       <PaymentElement options={{ layout: "tabs" }} />
       <FormError message={error} />
       <Button type="submit" disabled={pending} className="self-start">

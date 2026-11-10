@@ -3,11 +3,12 @@ import { Badge } from "@/components/ui/badge";
 import { THIN_MARGIN, type ModelMargin, type Verdict } from "@/modules/admin";
 import { count, money, percent } from "./format";
 
-const VERDICT: Record<Verdict, { label: string; badge: "good" | "mid" | "low" | "outline"; bar: string }> = {
-  profitable: { label: "Profitable", badge: "good", bar: "bg-good" },
-  thin: { label: "Thin margin", badge: "mid", bar: "bg-mid" },
+// The app's pill colours (src/components/app/pills.ts): grey when fine, blue when thin, red only when losing money.
+const VERDICT: Record<Verdict, { label: string; badge: "low" | "tint" | "secondary"; bar: string }> = {
+  profitable: { label: "Profitable", badge: "secondary", bar: "bg-primary" },
+  thin: { label: "Thin margin", badge: "tint", bar: "bg-primary" },
   losing: { label: "Losing money", badge: "low", bar: "bg-low" },
-  no_data: { label: "No checks yet", badge: "outline", bar: "bg-competitor-3" },
+  no_data: { label: "No checks yet", badge: "secondary", bar: "bg-competitor-3" },
 };
 
 const DOT: Record<ModelMargin["model"], string> = {

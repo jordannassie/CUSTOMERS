@@ -36,10 +36,7 @@ export function Scorecard({ data, trend }: { data: Comparison; trend: ReactNode 
         </div>
         <Tile label="Gap" className={cn(margin === null && "col-span-2 lg:col-span-1")}>
           <span
-            className={cn(
-              "text-[22px] leading-tight font-semibold tracking-[-0.03em] tabular-nums",
-              data.standing === "ahead" ? "text-good-text" : data.standing === "behind" ? "text-mid-text" : "text-foreground",
-            )}
+            className="text-[22px] leading-tight font-semibold tracking-[-0.03em] tabular-nums"
             data-testid="gap"
           >
             {gapText}
@@ -56,11 +53,11 @@ export function Scorecard({ data, trend }: { data: Comparison; trend: ReactNode 
       <div className="grid border-t border-border lg:grid-cols-2">
         <div className="flex min-w-0 flex-col">
           <CardHead title="Named at each scan" help="Each score is the share of all answers that named that business. Each point is one scan." />
-          <div className="px-[18px] py-4">{trend}</div>
+          <div className="px-4 py-4">{trend}</div>
         </div>
         <div className="flex min-w-0 flex-col border-t border-border lg:border-t-0 lg:border-l">
           <CardHead title="By AI tool" help="Share of each AI's answers that named each of you, last 30 days." />
-          <div className="px-[18px] py-4">
+          <div className="px-4 py-4">
             {why.assistants.length > 0 ? (
               <ByAi name={data.title} assistants={why.assistants} color={data.color} />
             ) : (
@@ -75,7 +72,7 @@ export function Scorecard({ data, trend }: { data: Comparison; trend: ReactNode 
 
 function Tile({ label, className, children }: { label: string; className?: string; children: ReactNode }) {
   return (
-    <div className={cn("flex min-w-0 flex-col gap-1 bg-card px-[18px] pt-4 pb-3.5", className)}>
+    <div className={cn("flex min-w-0 flex-col gap-1 bg-card px-4 pt-4 pb-3.5", className)}>
       <span className="text-xs text-muted-foreground">{label}</span>
       {children}
     </div>
@@ -98,7 +95,7 @@ function Stat({
   you?: boolean;
 }) {
   return (
-    <div className="flex min-w-0 flex-col gap-1 bg-card px-[18px] pt-4 pb-3.5">
+    <div className="flex min-w-0 flex-col gap-1 bg-card px-4 pt-4 pb-3.5">
       <span className={cn("flex min-w-0 items-center gap-1.5 text-xs", you ? "font-medium text-primary" : "text-muted-foreground")} title={label}>
         <span className="size-2 shrink-0 rounded-full" style={{ background: color }} aria-hidden="true" />
         <span className="truncate">{label}</span>

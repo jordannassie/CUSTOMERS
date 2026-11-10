@@ -1,6 +1,7 @@
 import { SessionWatcher } from "@/app/_components/session-watcher";
 import { SkipLink } from "@/components/app/SkipLink";
 import AdminNav from "./_components/admin-nav";
+import AdminTopBar from "./_components/admin-top-bar";
 import { requireAdmin } from "@/modules/auth";
 
 export const metadata = { title: { default: "Admin", template: "%s | Admin" }, robots: { index: false } };
@@ -13,14 +14,20 @@ export const instant = false;
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const admin = await requireAdmin({ next: "/internal/admin" });
 
+  // The app's frame (AppShell, 2026-11-10): the menu on the grey frame, then a white rounded window with a top bar.
   return (
-    <div className="flex min-h-screen flex-col bg-background lg:flex-row">
+    <div className="app-v2 app-compact flex min-h-dvh flex-col bg-muted lg:flex-row">
       <SkipLink />
       <SessionWatcher />
       <AdminNav adminEmail={admin.email ?? ""} />
-      <main id="main" tabIndex={-1} className="min-w-0 flex-1 outline-none">
-        {children}
-      </main>
+      <div className="flex min-w-0 flex-1 flex-col lg:py-2 lg:pr-2">
+        <div className="flex min-h-full flex-1 flex-col bg-background lg:rounded-xl lg:border lg:border-border">
+          <AdminTopBar />
+          <main id="main" tabIndex={-1} className="min-w-0 flex-1 outline-none">
+            {children}
+          </main>
+        </div>
+      </div>
     </div>
   );
 }

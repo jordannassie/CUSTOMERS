@@ -3,14 +3,13 @@ import { MessageSquareText } from "lucide-react";
 import { cn } from "cn";
 import { SiteIcon } from "@/components/app/SiteIcon";
 import { PointsChange } from "@/components/overview/PointsChange";
-import { Badge } from "@/components/ui/badge";
 import { compareHref } from "@/lib/compare-href";
 import { COLLECTING_TEXT, STANDING_TEXT, TABLE_MODELS, type TableRow } from "@/modules/competitors";
 import { CompetitorWebsite, type SaveWebsiteAction } from "./CompetitorWebsite";
 import { HeatCell, ScoreRing } from "./Marks";
 import { Sparkline } from "./Sparkline";
+import { PILL_BOX, PILL_CLASS } from "@/components/app/pills";
 
-const STANDING_BADGE = { ahead: "good", behind: "mid", about_same: "secondary" } as const;
 /** A website named in a reason ("AI used yelp.com when it picked them"), for its icon. */
 const SITE_IN_TEXT = /\b((?:[a-z0-9-]+\.)+[a-z]{2,})\b/i;
 
@@ -38,7 +37,8 @@ export function LeaderTable({
   const tools = TABLE_MODELS.filter((m) => rows.some((r) => m.id in r.byModel));
   // With one scan every row would say "Not enough scans" and "Not enough history": those columns wait for more scans.
   const trends = rows.some((r) => r.spark.filter((v) => v !== null).length >= 2);
-  const changes = rows.some((r) => r.change || r.changeKnown);
+  // Only when some business moved: a column of "No change" and blanks says nothing.
+  const changes = rows.some((r) => r.change);
   return (
     // relative: the sr-only text is absolutely placed, and would otherwise widen the whole page on a phone.
     // No fixed min width (mockup-ui): the table fits its card, and narrower screens hide the less needed columns with
@@ -96,8 +96,11 @@ export function LeaderTable({
                 <td className={cn(TD, "hidden text-xs lg:table-cell")}>
                   {r.change ? (
                     <PointsChange change={r.change} neutral={!r.isYou} />
+                  ) : r.changeKnown ? (
+                    <span className="text-xs text-text-hint">No change</span>
                   ) : (
-                    <span className="text-xs text-text-hint">{r.changeKnown ? "No change" : "Not enough history"}</span>
+                    // Too few scans to compare: an empty cell, not the same note on every row.
+                    <span className="sr-only">Not enough history</span>
                   )}
                 </td>
               )}
@@ -111,13 +114,13 @@ export function LeaderTable({
               </td>
               <td className={cn(TD, "hidden whitespace-nowrap sm:table-cell")}>
                 {r.standing ? (
-                  <Badge variant={STANDING_BADGE[r.standing]} data-testid="standing">
+                  <span className={cn(PILL_BOX, r.standing === "behind" ? PILL_CLASS.attention : PILL_CLASS.plain)} data-testid="standing">
                     {STANDING_TEXT[r.standing]}
-                  </Badge>
+                  </span>
                 ) : r.collecting ? (
-                  <Badge variant="outline" data-testid="collecting">
+                  <span className={cn(PILL_BOX, PILL_CLASS.plain)} data-testid="collecting">
                     {COLLECTING_TEXT}
-                  </Badge>
+                  </span>
                 ) : null}
               </td>
               <td className={cn(TD, "pl-1 text-right sm:pl-3")}>
@@ -191,7 +194,7 @@ function Reason({ row: r }: { row: TableRow }) {
         </span>
       )}
       <span className="line-clamp-2 min-w-0 text-[12.5px] leading-snug" data-testid="top-reason">
-        {lead ? <span className="font-medium text-good-text">You lead: </span> : <span className="sr-only">Top reason: </span>}
+        {lead ? <span className="font-medium text-foreground">You lead: </span> : <span className="sr-only">Top reason: </span>}
         {r.topReason}
       </span>
     </span>

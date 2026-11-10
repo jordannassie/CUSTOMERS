@@ -56,7 +56,7 @@ export function ChoosePlan({ state, mode, publishableKey, initialPlanId, returne
           e.preventDefault();
           setPaying(true);
         }}
-        className="flex flex-col gap-5"
+        className="flex flex-col gap-4"
       >
         {state.ended && (
           <p className="rounded-md border border-border bg-surface px-4 py-3 text-sm" data-testid="plan-ended">
@@ -65,7 +65,7 @@ export function ChoosePlan({ state, mode, publishableKey, initialPlanId, returne
         )}
         <fieldset>
           <legend className="sr-only">Plans</legend>
-          <div className="mt-3 grid gap-3 sm:grid-cols-2">
+          <div className={cn("grid gap-3 sm:grid-cols-2", state.plans.length >= 3 && "lg:grid-cols-3")}>
             {state.plans.map((p) => (
               <label
                 key={p.id}
@@ -106,8 +106,9 @@ export function ChoosePlan({ state, mode, publishableKey, initialPlanId, returne
     );
   }
 
+  // The card step stays at a readable width; the plan cards above use the page's.
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex max-w-[640px] flex-col gap-4">
       <div className="flex items-center justify-between gap-3 rounded-md border border-border bg-surface px-4 py-3 text-sm">
         <span data-testid="chosen-plan">
           <span className="font-semibold">{plan.name}</span> for {businesses(state.businessCount)}, {formatUsd(monthly)} a month

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { countChange, lastDays, monthBounds, percentChange, sumDays } from "./service";
+import { countChange, lastDays, monthBounds, percentChange, sumDays, overdueBefore, scheduledTestFlags } from "./service";
 
 describe("monthBounds", () => {
   it("lines this month up with the same stretch of last month, cut at a shorter month's end", () => {
@@ -35,5 +35,18 @@ describe("percentChange and countChange", () => {
     expect(percentChange(2357, 10).text).toBe("About 236 times the same days last month");
     expect(countChange(12, 9, new Date("2026-10-01T00:00:00Z"))).toEqual({ direction: "up", text: "Up 3 since Oct 1" });
     expect(countChange(9, 9, new Date("2026-10-01T00:00:00Z")).text).toBe("No change since Oct 1");
+  });
+});
+
+describe("overdue scheduled scans (2026-11-10)", () => {
+  it("counts a scan as overdue 26 hours after its date, past the next daily 02:00 run", () => {
+    expect(overdueBefore(new Date("2026-11-10T12:00:00Z")).toISOString()).toBe("2026-11-09T10:00:00.000Z");
+  });
+
+  it("only looks at agencies the scheduler includes: test ones before the go-live switch", () => {
+    expect(scheduledTestFlags(false, [false])).toEqual([]);
+    expect(scheduledTestFlags(false, [false, true])).toEqual([true]);
+    expect(scheduledTestFlags(true, [false])).toEqual([false]);
+    expect(scheduledTestFlags(true, [false, true])).toEqual([false, true]);
   });
 });

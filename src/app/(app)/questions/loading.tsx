@@ -19,7 +19,7 @@ export default function QuestionsLoading() {
         </div>
         <div className="grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-border bg-border lg:grid-cols-4">
           {[0, 1, 2, 3].map((i) => (
-            <div key={i} className="flex flex-col gap-2 bg-surface px-[18px] pt-4 pb-3.5">
+            <div key={i} className="flex flex-col gap-2 bg-surface px-4 pt-4 pb-3.5">
               <Skeleton className="h-3.5 w-24" />
               <Skeleton className="h-7 w-16" />
               <Skeleton className="h-3 w-32 max-w-full" />

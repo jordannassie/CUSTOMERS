@@ -5,10 +5,15 @@ import { AddToActionsButton, type AddToActionsAction } from "@/components/action
 import { Badge } from "@/components/ui/badge";
 import type { LeadCard, LeaderRow, ReasonCard } from "@/modules/competitors";
 import { toActionStatus, type ActionState } from "@/modules/opportunities/board/service";
+import { PILL_VARIANT } from "@/components/app/pills";
 
 type Standing = NonNullable<LeaderRow["standing"]>;
 
-const IMPACT = { high: { text: "High impact", variant: "low" }, medium: { text: "Medium impact", variant: "mid" }, low: { text: "Low impact", variant: "secondary" } } as const;
+const IMPACT = {
+  high: { text: "High impact", variant: PILL_VARIANT.attention },
+  medium: { text: "Medium impact", variant: PILL_VARIANT.plain },
+  low: { text: "Low impact", variant: PILL_VARIANT.plain },
+} as const;
 
 /**
  * The reasons on Compare (dashboard redesign; heading by standing): one card per likely reason, biggest evidence first. The fact
@@ -67,7 +72,7 @@ export function ReasonCards({
         <li key={c.key} className="grid gap-4 rounded-lg border border-border bg-card p-4 md:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)] md:items-start" data-testid="reason-card">
           <div className="flex min-w-0 flex-col gap-1.5">
             <p className="flex flex-wrap items-center gap-2 text-xs">
-              <Badge variant="secondary" className="font-medium">{c.tag}</Badge>
+              <Badge variant={PILL_VARIANT.plain} className="font-medium">{c.tag}</Badge>
               <span className="text-muted-foreground" data-testid="reason-basis">
                 {c.basis}
               </span>
@@ -129,7 +134,7 @@ export function LeadCards({ leads, standing = null }: { leads: LeadCard[]; stand
     <ul className="grid gap-3 md:grid-cols-2" data-testid="lead-cards">
       {leads.map((l) => (
         <li key={l.title} className="flex items-start gap-3 rounded-lg border border-border bg-card p-3.5">
-          <span className="flex size-8 shrink-0 items-center justify-center rounded-md bg-good-bg text-good-text" aria-hidden="true">
+          <span className="flex size-8 shrink-0 items-center justify-center rounded-md bg-muted text-foreground" aria-hidden="true">
             <ThumbsUp className="size-4" />
           </span>
           <span className="flex min-w-0 flex-col gap-0.5">

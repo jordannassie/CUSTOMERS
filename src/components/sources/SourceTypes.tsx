@@ -17,7 +17,7 @@ export function SourceTypes({ types, answers }: { types: SourcesView["types"]; a
   const sum = types.reduce((n, t) => n + t.answers, 0);
   const overlap = sum > answers;
   return (
-    <div className="flex flex-col gap-4 px-4 py-5 sm:px-[18px]">
+    <div className="flex flex-col gap-4 px-4 py-5 sm:px-4">
       <div className="flex flex-col items-center gap-6 sm:flex-row sm:items-center">
         <Donut types={types} sum={sum} answers={answers} />
         <ul className="flex w-full min-w-0 flex-1 flex-col gap-3" data-testid="source-types">

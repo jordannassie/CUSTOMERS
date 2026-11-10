@@ -4,11 +4,12 @@ import { Badge } from "@/components/ui/badge";
 import type { ServiceStatus, StatusState, SystemStatus } from "@/modules/system-status";
 import RecheckButton from "./recheck-button";
 
-const STATE: Record<StatusState, { label: string; badge: "good" | "low" | "mid" | "outline"; dot: string }> = {
-  ok: { label: "Working", badge: "good", dot: "bg-good" },
+// The app's pill colours (src/components/app/pills.ts): grey when fine, blue when it needs a look, red only when broken.
+const STATE: Record<StatusState, { label: string; badge: "low" | "tint" | "secondary"; dot: string }> = {
+  ok: { label: "Working", badge: "secondary", dot: "bg-primary" },
   error: { label: "Not working", badge: "low", dot: "bg-low" },
-  unknown: { label: "Unknown", badge: "mid", dot: "bg-mid" },
-  not_configured: { label: "Not set up", badge: "outline", dot: "bg-competitor-3" },
+  unknown: { label: "Unknown", badge: "tint", dot: "bg-primary/35" },
+  not_configured: { label: "Not set up", badge: "secondary", dot: "bg-competitor-3" },
 };
 
 const GROUPS: { id: ServiceStatus["group"]; title: string }[] = [

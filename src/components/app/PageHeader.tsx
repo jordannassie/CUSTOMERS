@@ -18,10 +18,10 @@ type Props = {
 export function PageHeader({ title, description, descriptionTestId, actions, clampTitle, children }: Props) {
   return (
     <header className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
-      <div className="flex min-w-0 flex-1 flex-col gap-3">
+      <div className="flex min-w-0 flex-1 flex-col gap-1.5">
         <h1
           className={cn(
-            "text-2xl font-semibold tracking-[-0.02em] break-words",
+            "text-xl font-semibold tracking-[-0.02em] break-words",
             clampTitle ? "line-clamp-2" : "flex flex-wrap items-center gap-2",
           )}
           title={clampTitle}
@@ -29,7 +29,7 @@ export function PageHeader({ title, description, descriptionTestId, actions, cla
           {title}
         </h1>
         {description ? (
-          <p className="max-w-[680px] text-[15px] text-muted-foreground" data-testid={descriptionTestId}>
+          <p className="max-w-[680px] text-sm text-muted-foreground" data-testid={descriptionTestId}>
             {description}
           </p>
         ) : null}

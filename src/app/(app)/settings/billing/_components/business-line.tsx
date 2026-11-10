@@ -29,7 +29,7 @@ export function BusinessLine({
   const { plan, pending } = business;
   if (business.notCharged) return <RemovedLine id={business.id} name={business.name} />;
   return (
-    <li className="px-5 py-4" data-testid={`plan-line-${business.id}`}>
+    <li className="px-4 py-4" data-testid={`plan-line-${business.id}`}>
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
           <p className="flex flex-wrap items-center gap-2">

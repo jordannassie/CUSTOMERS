@@ -19,7 +19,7 @@ export function PlanBill({ view, actions, addBusinessHref, supportHref }: Props)
 
   return (
     <section aria-labelledby="plan-heading" className="rounded-md border border-border bg-surface">
-      <div className="flex flex-wrap items-baseline justify-between gap-3 px-5 pt-5">
+      <div className="flex flex-wrap items-baseline justify-between gap-3 px-4 pt-4">
         <h2 id="plan-heading" className="text-base font-semibold tracking-[-0.02em]">
           Businesses on your plan
         </h2>
@@ -47,7 +47,7 @@ export function PlanBill({ view, actions, addBusinessHref, supportHref }: Props)
       )}
 
       {view.notOnPlan.length > 0 && (
-        <div className="border-t border-border px-5 py-4" data-testid="not-on-plan">
+        <div className="border-t border-border px-4 py-4" data-testid="not-on-plan">
           <h3 className="text-sm font-medium">Not on your plan yet</h3>
           <ul className="mt-3 flex flex-col gap-3">
             {view.notOnPlan.map((b) => (
@@ -76,7 +76,7 @@ export function PlanBill({ view, actions, addBusinessHref, supportHref }: Props)
         </div>
       )}
 
-      <div className="border-t border-border px-5 py-3">
+      <div className="border-t border-border px-4 py-3">
         <Link
           href={addBusinessHref}
           className="inline-flex items-center gap-1.5 text-[13px] font-medium text-primary underline-offset-4 hover:underline"
@@ -144,7 +144,7 @@ function NextCharge({ view, supportHref }: { view: BillingView; supportHref: str
     return null;
   }
   return (
-    <div className="flex flex-wrap items-end justify-between gap-3 rounded-b-md border-t border-border bg-muted px-5 py-4" data-testid="charge-summary">
+    <div className="flex flex-wrap items-end justify-between gap-3 rounded-b-md border-t border-border bg-muted px-4 py-4" data-testid="charge-summary">
       {body}
     </div>
   );

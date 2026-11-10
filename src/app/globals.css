@@ -226,6 +226,11 @@
     @apply font-sans;
     scroll-behavior: smooth;
   }
+  /* The logged-in app runs a little smaller than the marketing site (2026-11-10, the user's call): every rem-based
+     size (text, padding, gaps, buttons, icons, cards, charts) scales by 15/16. Pages, menus and dialogs alike. */
+  html:has(.app-compact) {
+    font-size: 15px;
+  }
   body {
     @apply bg-background text-foreground;
     /* A long business name, domain or email breaks onto the next line instead of running off a phone screen. */

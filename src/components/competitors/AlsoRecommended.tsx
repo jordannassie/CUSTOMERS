@@ -28,7 +28,7 @@ type Props = {
 };
 
 /** Business, named in, share bar, Track. On a phone: the name and count on the left, Track on the right. */
-const ROW = "grid text-[13px] grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-0.5 px-[18px] sm:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)_minmax(0,1.2fr)_5.5rem]";
+const ROW = "grid text-[13px] grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-0.5 px-4 sm:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)_minmax(0,1.2fr)_5.5rem]";
 
 // Businesses AI keeps naming that the user does not track (MVP_SPEC 8.1, D-74), one click to track each.
 export function AlsoRecommended({ businessId, names, answers, track, manageHref, layout = "list" }: Props) {
@@ -118,7 +118,7 @@ export function AlsoRecommended({ businessId, names, answers, track, manageHref,
             </li>
           ))}
         </ul>
-        {error ? <div className="border-t border-border px-[18px] py-3">{errorNote}</div> : null}
+        {error ? <div className="border-t border-border px-4 py-3">{errorNote}</div> : null}
       </div>
     );
   }

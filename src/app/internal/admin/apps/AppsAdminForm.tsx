@@ -64,7 +64,7 @@ export function AppsAdminForm({ categoryHint }: { categoryHint: string }) {
       <div className="flex flex-wrap items-center gap-3 sm:col-span-2">
         <Button type="submit" disabled={pending}>{pending ? "Saving" : "Save app"}</Button>
         {error && <p role="alert" className="text-[13px] text-low-text">{error}</p>}
-        {saved && !error && <p className="text-[13px] text-good-text">Saved.</p>}
+        {saved && !error && <p className="text-[13px] text-foreground">Saved.</p>}
       </div>
     </form>
   );

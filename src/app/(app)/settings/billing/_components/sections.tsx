@@ -10,13 +10,13 @@ import { LocalDate } from "@/components/ui/local-date";
 
 const STATUS: Record<string, { label: string; variant: "tint" | "good" | "low" | "secondary" }> = {
   trialing: { label: "Free trial", variant: "tint" },
-  active: { label: "Active", variant: "good" },
+  active: { label: "Active", variant: "secondary" },
   past_due: { label: "Payment failed", variant: "low" },
   canceled: { label: "Ended", variant: "secondary" },
 };
 
 export function PlanStatus({ view, keep }: { view: BillingView; keep: ChangeAction }) {
-  const status = STATUS[view.status] ?? { label: "Active", variant: "good" as const };
+  const status = STATUS[view.status] ?? { label: "Active", variant: "secondary" as const };
   const billed = view.onPlan.filter((b) => !b.notCharged);
   // What the businesses are charged now, which can be an older amount than the plan's price (D-93).
   const monthly = billed.reduce((sum, b) => sum + b.priceCents, 0);
@@ -97,7 +97,7 @@ function Notice({ tone, testId, children }: { tone: "danger" | "warning"; testId
 
 export function CreditsPanel({ buyHref, usageHref }: { buyHref: string; usageHref: string }) {
   return (
-    <section aria-labelledby="credits-heading" className="rounded-md border border-border bg-surface p-5">
+    <section aria-labelledby="credits-heading" className="rounded-md border border-border bg-surface p-4">
       <h2 id="credits-heading" className="text-base font-semibold tracking-[-0.02em]">
         Credits
       </h2>
@@ -118,7 +118,7 @@ export function CreditsPanel({ buyHref, usageHref }: { buyHref: string; usageHre
 
 export function CancelPanel({ cancel, trialing, trialEnded = false }: { cancel: ChangeAction; trialing: boolean; trialEnded?: boolean }) {
   return (
-    <section aria-labelledby="cancel-heading" className="rounded-md border border-border bg-surface p-5">
+    <section aria-labelledby="cancel-heading" className="rounded-md border border-border bg-surface p-4">
       <h2 id="cancel-heading" className="text-base font-semibold tracking-[-0.02em]">
         Cancel plan
       </h2>

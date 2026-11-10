@@ -49,8 +49,8 @@ export function Competitors({ competitors }: { competitors: Detail["competitors"
 }
 
 const IMPACT = {
-  high: { variant: "low", label: "High impact" },
-  medium: { variant: "mid", label: "Medium impact" },
+  high: { variant: "tint", label: "High impact" },
+  medium: { variant: "secondary", label: "Medium impact" },
   low: { variant: "secondary", label: "Low impact" },
 } as const;
 // The Actions board's names for each saved status (migration 078 added To do).

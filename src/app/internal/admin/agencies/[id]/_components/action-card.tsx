@@ -161,7 +161,7 @@ export default function ActionCard(props: Props) {
 
       <p
         aria-live="polite"
-        className={cn("text-[13px] empty:hidden", message?.tone === "error" ? "text-low-text" : "text-good-text")}
+        className={cn("text-[13px] empty:hidden", message?.tone === "error" ? "text-low-text" : "text-foreground")}
       >
         {message?.text}
       </p>

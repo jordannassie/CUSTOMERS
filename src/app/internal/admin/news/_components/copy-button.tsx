@@ -20,7 +20,7 @@ export function CopyButton({ label, text, getText }: { label: string; text?: str
 
   return (
     <Button type="button" variant="outline" size="sm" onClick={handleCopy}>
-      {copied ? <Check className="text-good-text" aria-hidden="true" /> : <Copy aria-hidden="true" />}
+      {copied ? <Check className="text-foreground" aria-hidden="true" /> : <Copy aria-hidden="true" />}
       {copied ? "Copied" : label}
     </Button>
   );

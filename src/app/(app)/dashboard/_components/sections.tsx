@@ -24,24 +24,20 @@ export async function SummarySection({
   compete,
   sources,
   picked,
-  sample,
   days,
 }: {
   overview: Overview;
   compete: Compete;
   sources: Sources;
   picked: Promise<Awaited<ReturnType<typeof getPickedInstead>>>;
-  sample: boolean;
   days: number;
 }) {
   const [c, p] = await Promise.all([compete, picked]);
   return (
     <OverviewSummary
       score={overview.score!}
-      trend={overview.trend.points.map((t) => t.score)}
       compete={c}
       sources={sources}
-      sample={sample}
       ownQuestions={overview.ownQuestions}
       ownChain={overview.ownChain}
       reason={likelyReason(p)}
@@ -72,7 +68,7 @@ export async function SourcesActionsSection({
   const [c, b, f] = await Promise.all([compete, board, fixes]);
   const open = (b?.items ?? []).filter((a) => OPEN.has(a.status));
   return (
-    <div className="grid gap-5 lg:grid-cols-2">
+    <div className="grid gap-4 lg:grid-cols-2">
       {/* Counted like the report's "Where AI looks"; the Sources page has every question. */}
       <WhereAiLooks rows={standingSourceLines(c?.sites ?? null, c?.ownSite ?? null, sources?.ownSite.host ?? null) ?? sourceLines(sources)} />
       <TopActions

@@ -1,6 +1,8 @@
 "use client";
 
 import { useId, useState, useTransition } from "react";
+import Link from "next/link";
+import { AlertTriangle, ChevronDown } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { FieldMessage, useFieldErrors } from "@/components/ui/field-errors";
@@ -35,25 +37,90 @@ const SEVERITY = {
   info: { label: "Info", badge: "tint", rail: "border-l-primary" },
 } as const;
 
-export default function OpenAlerts({ rows, resolve }: { rows: AlertRowData[]; resolve: Resolve }) {
+export type OverdueData = { count: number; businesses: { id: string; name: string; due: string }[] };
+
+/**
+ * Open alerts and overdue scheduled scans as one slim bar ("2 open alerts · 1 urgent · 1 scheduled scan overdue") that
+ * opens the full list (2026-11-10: the alert boxes pushed the numbers down). With nothing open, the usual empty note.
+ */
+export default function OpenAlerts({ rows, resolve, overdue = null }: { rows: AlertRowData[]; resolve: Resolve; overdue?: OverdueData | null }) {
   const [done, setDone] = useState<string | null>(null);
-  const note = rows.length > 0 ? `${rows.length} open. Checked every 15 minutes.` : undefined;
+  const [expanded, setExpanded] = useState(false);
+  const listId = useId();
+
+  if (rows.length === 0 && !overdue) {
+    return (
+      <Section title="Open alerts">
+        <Empty>No open alerts. Failed scans, provider errors or a cost spike will show here, and admins get an email.</Empty>
+      </Section>
+    );
+  }
+  const urgent = rows.filter((r) => r.severity === "critical").length;
+  const summary = [
+    rows.length > 0 && `${rows.length} open ${rows.length === 1 ? "alert" : "alerts"}`,
+    urgent > 0 && `${urgent} urgent`,
+    overdue && `${overdue.count} scheduled ${overdue.count === 1 ? "scan" : "scans"} overdue`,
+  ]
+    .filter(Boolean)
+    .join(" · ");
 
   return (
-    <Section title="Open alerts" note={note}>
-      {rows.length === 0 ? (
-        <Empty>No open alerts. Failed scans, provider errors or a cost spike will show here, and admins get an email.</Empty>
-      ) : (
-        <ul className="flex flex-col gap-2 text-[13px]">
+    <section aria-label="Open alerts" className="flex flex-col gap-2" data-testid="open-alerts">
+      <button
+        type="button"
+        aria-expanded={expanded}
+        aria-controls={listId}
+        onClick={() => setExpanded((e) => !e)}
+        className="flex w-full items-center gap-3 rounded-md border border-border bg-surface px-3 py-2 text-left text-[13px] outline-none transition-colors hover:bg-muted/50 focus-visible:ring-3 focus-visible:ring-ring/50"
+      >
+        <AlertTriangle className={cn("size-4 shrink-0", urgent > 0 ? "text-low" : "text-muted-foreground")} aria-hidden="true" />
+        <span className="min-w-0 flex-1 font-medium">{summary}</span>
+        <span className="hidden text-xs text-text-hint sm:inline">Checked every 15 minutes</span>
+        <span className="inline-flex items-center gap-1 font-medium text-primary">
+          {expanded ? "Hide" : "Show"}
+          <ChevronDown className={cn("size-3.5 transition-transform", expanded && "rotate-180")} aria-hidden="true" />
+        </span>
+      </button>
+      {expanded && (
+        <ul id={listId} className="flex flex-col gap-2 text-[13px]">
+          {overdue && <OverdueRow overdue={overdue} />}
           {rows.map((a) => (
             <AlertRow key={a.id} alert={a} resolve={resolve} onResolved={() => setDone("Alert resolved and saved in the audit log.")} />
           ))}
         </ul>
       )}
-      <p aria-live="polite" className="text-[13px] text-good-text empty:hidden">
+      <p aria-live="polite" className="text-[13px] text-foreground empty:hidden">
         {done}
       </p>
-    </Section>
+    </section>
+  );
+}
+
+/** Businesses whose scheduled scan is more than a day late: no Resolve, it clears once they are scanned. */
+function OverdueRow({ overdue }: { overdue: OverdueData }) {
+  const more = overdue.count - overdue.businesses.length;
+  return (
+    <li className="flex flex-col gap-1 rounded-md border border-l-[3px] border-border border-l-primary bg-surface px-4 py-3" data-testid="overdue-scans">
+      <span className="flex flex-wrap items-center gap-2">
+        <Badge variant="tint">Check</Badge>
+        <span className="font-medium text-muted-foreground">Scheduled scans overdue</span>
+      </span>
+      <p className="text-[14px] text-foreground">
+        {overdue.count === 1 ? "1 business has" : `${overdue.count} businesses have`} not been scanned for more than a day after
+        their scheduled date. Scans are queued daily at 02:00 UTC; check the scan worker and the agency&apos;s credits.
+      </p>
+      <ul className="flex flex-col gap-0.5 text-text-hint">
+        {overdue.businesses.map((b) => (
+          <li key={b.id}>
+            <Link href={`/internal/admin/businesses/${b.id}`} className="font-medium text-primary hover:underline">
+              {b.name}
+            </Link>{" "}
+            due {b.due}
+          </li>
+        ))}
+        {more > 0 && <li>and {more} more</li>}
+      </ul>
+    </li>
   );
 }
 

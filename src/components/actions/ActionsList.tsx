@@ -13,14 +13,16 @@ import { compareHref } from "@/lib/compare-href";
 import { fixCardId } from "@/lib/fix-where";
 import { STATUS_TEXT, type ActionItem, type ActionStatus } from "@/modules/opportunities/board/service";
 import { IMPACT, Moves, SHORT_DAY } from "./ActionCard";
+import { PILL_VARIANT } from "@/components/app/pills";
 
 const ORDER: ActionStatus[] = ["todo", "in_progress", "suggested", "done", "dismissed"];
-const STATUS_BADGE: Record<ActionStatus, "tint" | "secondary" | "good" | "mid" | "outline"> = {
-  suggested: "outline",
-  todo: "tint",
-  in_progress: "mid",
-  done: "good",
-  dismissed: "secondary",
+// Statuses are plain labels: one grey pill for all of them (pills.ts).
+const STATUS_BADGE: Record<ActionStatus, "secondary"> = {
+  suggested: PILL_VARIANT.plain,
+  todo: PILL_VARIANT.plain,
+  in_progress: PILL_VARIANT.plain,
+  done: PILL_VARIANT.plain,
+  dismissed: PILL_VARIANT.plain,
 };
 
 /**

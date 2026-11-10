@@ -9,10 +9,10 @@ import { STATUS_TEXT, type ActionItem, type ActionStatus } from "@/modules/oppor
 const BOARD: ActionStatus[] = ["suggested", "todo", "in_progress", "done"];
 
 const STATUS_ICON: Record<ActionStatus, { icon: LucideIcon; className: string }> = {
-  suggested: { icon: CircleDashed, className: "text-primary" },
+  suggested: { icon: CircleDashed, className: "text-muted-foreground" },
   todo: { icon: Circle, className: "text-muted-foreground" },
-  in_progress: { icon: Contrast, className: "text-mid" },
-  done: { icon: CircleCheck, className: "fill-good text-surface" },
+  in_progress: { icon: Contrast, className: "text-primary" },
+  done: { icon: CircleCheck, className: "fill-primary text-surface" },
   dismissed: { icon: CircleSlash, className: "text-text-hint" },
 };
 

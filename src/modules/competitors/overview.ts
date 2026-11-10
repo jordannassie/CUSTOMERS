@@ -15,8 +15,11 @@ const round = (n: number | null | undefined) => (n === null || n === undefined ?
 export type OverviewCompete = {
   /** Up to 4 businesses by score, you always among them. */
   stand: { name: string; isYou: boolean; score: number; standing: LeaderRow["standing"]; domain: string | null }[];
-  /** Your share of every naming of you or a tracked competitor (as the report counts it), and your place by score. */
-  share: { percent: number; rank: number; of: number } | null;
+  /**
+   * Your share of every naming of you or a tracked competitor (as the report counts it), your place by score, and every
+   * business's share (largest first, named as on the chart, you always included) for the Overview's donut.
+   */
+  share: { percent: number; rank: number; of: number; parts: SharePart[] } | null;
   /** Answers that cited your own website, as the report counts them; null without the score's answers. */
   ownSite: { cited: number; answers: number; hasSite: boolean } | null;
   /** The sites AI used most, counted like the report's "Where AI looks"; null without the score's answers. */
@@ -36,6 +39,10 @@ export type OverviewCompete = {
 };
 
 export type PeriodChange = { direction: "up" | "down" | "same"; text: string };
+export type SharePart = { name: string; isYou: boolean; percent: number };
+
+/** Largest share first; a business with none is left out, except you. Ties keep their order. */
+const sortParts = (parts: SharePart[]) => parts.filter((p) => p.isYou || p.percent > 0).sort((a, b) => b.percent - a.percent);
 
 const rate = (named: number, answers: number) => Math.round((100 * named) / answers);
 
@@ -94,10 +101,12 @@ export function overviewCompete(view: CompetitorsView, report: ScoreReport, stan
     const rows = view.leaderboard;
     const picks = shares(standing.checks, rows.map((r) => ({ isYou: r.isYou, names: r.chain?.tracked ?? [r.name] })));
     const mine = picks[rows.findIndex((r) => r.isYou)];
-    if (mine !== null && mine !== undefined) share = { percent: mine, rank: place.place, of: place.of };
+    const parts = rows.map((r, i) => ({ name: r.isYou ? r.name : rowName(r), isYou: r.isYou, percent: picks[i] ?? 0 }));
+    if (mine !== null && mine !== undefined) share = { percent: mine, rank: place.place, of: place.of, parts: sortParts(parts) };
   } else if (tracksAny && charts && place && charts.share.some((s) => s.mentions > 0)) {
     // Without the score's answers (an older caller), the chart's own count; the place is still by score.
-    share = { percent: Math.round(charts.share[0].share), rank: place.place, of: place.of };
+    const parts = charts.share.map((s, i) => ({ name: charts.names[i] ?? "", isYou: i === 0, percent: Math.round(s.share) }));
+    share = { percent: Math.round(charts.share[0].share), rank: place.place, of: place.of, parts: sortParts(parts) };
   }
   const ownSite = standing ? citations(standing.checks, standing.domain) : null;
   const sites = standing ? siteRows(standing.checks, standing.domain, 8) : null;

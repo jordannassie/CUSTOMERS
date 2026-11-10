@@ -141,9 +141,10 @@ export type ServiceAlertChanges = {
 };
 
 /**
- * "error" opens (or refreshes) the service's alert and "ok" closes it. Unknown (a timeout, a rate limit) and not set
- * up leave it as it is, so one slow answer does not open or close anything. Data services only warn: scans, payments
- * and background jobs stop without the others.
+ * "error" opens (or refreshes) the service's alert; "ok" and "not set up" close it, since either way the failure it
+ * reported is gone ("not set up" is a known state, like the worker settings before the go-live switch, 2026-11-10).
+ * Unknown (a timeout, a rate limit) leaves it as it is, so one slow answer does not open or close anything. Data
+ * services only warn: scans, payments and background jobs stop without the others.
  */
 export function serviceAlertChanges(services: ServiceCheck[]): ServiceAlertChanges {
   return {
@@ -155,6 +156,6 @@ export function serviceAlertChanges(services: ServiceCheck[]): ServiceAlertChang
         message: `${s.name} is not working. ${s.detail.trim().replace(/([^.])$/, "$1.")} Found by the Settings check.`,
         serviceId: s.id,
       })),
-    resolve: services.filter((s) => s.state === "ok").map((s) => serviceCheckKind(s.id)),
+    resolve: services.filter((s) => s.state === "ok" || s.state === "not_configured").map((s) => serviceCheckKind(s.id)),
   };
 }

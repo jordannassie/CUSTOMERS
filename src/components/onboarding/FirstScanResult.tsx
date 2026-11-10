@@ -2,11 +2,12 @@ import { ScoreRing } from "@/components/overview/ScoreRing";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import type { FirstScanSummary } from "@/modules/onboarding";
+import { PILL_VARIANT } from "@/components/app/pills";
 
 const IMPACT = {
-  high: { label: "High impact", variant: "low" },
-  medium: { label: "Medium impact", variant: "mid" },
-  low: { label: "Low impact", variant: "secondary" },
+  high: { label: "High impact", variant: PILL_VARIANT.attention },
+  medium: { label: "Medium impact", variant: PILL_VARIANT.plain },
+  low: { label: "Low impact", variant: PILL_VARIANT.plain },
 } as const;
 
 /** The one screen between the first scan and the dashboard (DB-010): score, who AI named most, the first fix. */

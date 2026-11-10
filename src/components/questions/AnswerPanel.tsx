@@ -14,6 +14,7 @@ import { LocalDate } from "@/components/ui/local-date";
 import { AnswerText } from "./AnswerText";
 import { useQuestions } from "./QuestionsProvider";
 import { SkippedFix } from "./SkippedFix";
+import { PILL_VARIANT } from "@/components/app/pills";
 
 const DATE: Intl.DateTimeFormatOptions = { month: "short", day: "numeric", year: "numeric" };
 const DOT: Record<string, string> = { openai: "bg-chatgpt", anthropic: "bg-claude", perplexity: "bg-perplexity" };
@@ -35,13 +36,13 @@ export function AnswerPanel({ answer: a, businessName, when = "Latest answer" }:
   return (
     <div className="flex flex-col">
       <div className="flex items-center justify-between gap-2 border-b border-border px-4 py-3">
-        <p className="inline-flex items-center gap-2 text-[14.5px] font-semibold tracking-[-0.01em]">
+        <p className="inline-flex items-center gap-2 text-[14px] font-semibold tracking-[-0.01em]">
           <span className={cn("size-2 rounded-full", DOT[a.model])} aria-hidden="true" />
           {a.label} answer
           <span className="text-xs font-normal text-muted-foreground">{when}</span>
         </p>
         {a.reused && (
-          <Badge variant="outline" title="This answer was reused from an earlier check of the same question in the last 20 hours.">
+          <Badge variant={PILL_VARIANT.plain} title="This answer was reused from an earlier check of the same question in the last 20 hours.">
             Reused answer
           </Badge>
         )}
@@ -49,7 +50,7 @@ export function AnswerPanel({ answer: a, businessName, when = "Latest answer" }:
 
       <dl className="grid grid-cols-2 gap-x-4 gap-y-3 border-b border-border px-4 py-3 sm:grid-cols-4">
         <Fact label="Named you">
-          <Badge variant={a.namedYou ? "good" : "secondary"}>{a.namedYou ? "Named you" : "Did not name you"}</Badge>
+          <Badge variant={a.namedYou ? PILL_VARIANT.plain : PILL_VARIANT.attention}>{a.namedYou ? "Named you" : "Did not name you"}</Badge>
         </Fact>
         <Fact label="AI">
           <span className="inline-flex items-center gap-1.5 font-medium">
@@ -130,7 +131,7 @@ export function AnswerPanel({ answer: a, businessName, when = "Latest answer" }:
         {!a.namedYou && (
           <div className="flex flex-col gap-3 rounded-lg border border-border border-l-2 border-l-mid bg-surface px-3.5 py-3" data-testid="why-skipped">
             <div className="flex flex-col gap-1">
-              <p className="text-xs font-semibold text-mid-text">Why you were skipped</p>
+              <p className="text-xs font-semibold text-foreground">Why you were skipped</p>
               <p className="text-[13px] leading-relaxed text-foreground">{whySkipped(a)}</p>
             </div>
             <SkippedFix answer={a} />

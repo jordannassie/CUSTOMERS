@@ -29,7 +29,7 @@ export async function GoogleTable({ name, competitorId, signals }: { name: strin
     { label: "Open days", them: days(theirDays), you: days(yourDays), lead: leader(compareCount(theirDays, yourDays, 0)) },
     { label: "Category", them: theirs.categories[0] ?? "Not listed", you: yours.categories[0] ?? "Not listed", lead: null },
   ];
-  const lead = "font-semibold text-good-text";
+  const lead = "font-semibold text-foreground";
   return (
     <div className="flex flex-col gap-1" data-testid="why-google">
       <table className="w-full table-fixed text-sm">

@@ -6,8 +6,9 @@ import { STANDING_TEXT, type ComparePage } from "@/modules/competitors";
 import { AnyBusiness } from "./AnyBusiness";
 import { ChipLink } from "./ChipLink";
 import type { TrackAction } from "../AlsoRecommended";
+import { PILL_VARIANT } from "@/components/app/pills";
 
-const BADGE = { ahead: "good", behind: "mid", about_same: "secondary" } as const;
+const BADGE = { ahead: PILL_VARIANT.plain, behind: PILL_VARIANT.attention, about_same: PILL_VARIANT.plain } as const;
 
 /** Compare's picker (dashboard redesign): a chip per tracked competitor with its score, then "You vs {name}". */
 export function Picker({ page, tab, track }: { page: ComparePage; tab: string; track: TrackAction }) {
@@ -17,7 +18,7 @@ export function Picker({ page, tab, track }: { page: ComparePage; tab: string; t
     : null;
   return (
     <section className="flex flex-col overflow-hidden rounded-lg border border-border bg-card" data-testid="compare-picker">
-      <div className="flex flex-col gap-3 px-[18px] py-3.5">
+      <div className="flex flex-col gap-3 px-4 py-3.5">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <span className="text-xs text-muted-foreground">Compare {page.businessName} with</span>
           <Link href="/competitors/manage" className="text-xs font-medium text-primary hover:underline">
@@ -48,7 +49,7 @@ export function Picker({ page, tab, track }: { page: ComparePage; tab: string; t
         </div>
       </div>
       {selected && (
-        <div className="flex items-start gap-3 border-t border-border px-[18px] py-3.5">
+        <div className="flex items-start gap-3 border-t border-border px-4 py-3.5">
           <SiteIcon domain={selected.panel.website.domain ?? null} name={selected.title} className="mt-0.5" />
           <div className="flex min-w-0 flex-col gap-0.5">
             <div className="flex flex-wrap items-center gap-2">

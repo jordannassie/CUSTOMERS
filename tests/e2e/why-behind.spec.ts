@@ -264,10 +264,9 @@ test("Competitors names the leader's top reason, and Compare shows every fact wi
   // Share of AI picks: your share as the headline, no hover card over it (2026-10-27).
   await expect(page.getByTestId("share-you")).toHaveText("17%");
   await expect(page.getByTestId("share-of-voice-chart")).toContainText("Bean House leads with 67%");
-  // Heat map: a row per business, a column per AI, the top score in each column marked.
-  const heat = page.getByTestId("model-comparison-chart");
-  await expect(heat.getByRole("row").filter({ hasText: "You" })).toContainText(/You\s*20/);
-  await expect(heat.getByRole("row").filter({ hasText: "Bean House" })).toContainText(/Bean House\s*80\s*Top/);
+  // Your place on each AI: a line per AI tool with your rank there and the gap to its leader (2026-11-10).
+  const places = page.getByTestId("model-place-chart").getByTestId("model-place");
+  await expect(places.first()).toContainText(/#\d of \d · .*Bean House/);
   // Donut: hovering a row shows that business in the middle; you are back when the pointer leaves.
   const donut = page.getByTestId("share-of-voice-chart");
   await donut.getByTestId("share-row").filter({ hasText: "Bean House" }).hover();

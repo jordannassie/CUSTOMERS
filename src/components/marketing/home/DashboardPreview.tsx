@@ -3,7 +3,7 @@ import { cn } from "cn";
 import { Badge } from "@/components/ui/badge";
 import { ChangeMark } from "@/components/overview/Panel";
 import { ScoreRing } from "@/components/overview/ScoreRing";
-import { StatRow } from "@/components/overview/StatRow";
+import { StatRow } from "@/components/overview/StatCards";
 import { TrendChart } from "@/components/overview/TrendChart";
 import type { OverviewView } from "@/modules/overview";
 import { ProductFrame } from "./ProductFrame";

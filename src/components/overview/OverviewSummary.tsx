@@ -1,13 +1,13 @@
 import type { ReactNode } from "react";
-import { cn } from "cn";
 import { Globe, MessageSquareText, PieChart } from "lucide-react";
 import type { OverviewCompete } from "@/modules/competitors";
 import type { OverviewView } from "@/modules/overview";
 import type { SourcesPage } from "@/modules/sources";
+import { colorAt, OTHER_SERIES_COLOR } from "@/lib/series-colors";
 import { ChangeMark } from "./Panel";
 import { ScanChart } from "./ScanChart";
 import { ScoreCard } from "./ScoreCard";
-import { StatRow } from "./StatRow";
+import { AnswerDots, CitationBars, ShareDonut, StatRow, citedText, skippedText } from "./StatCards";
 import { WhoAiPicks } from "./WhoAiPicks";
 
 type Score = NonNullable<OverviewView["score"]>;
@@ -19,10 +19,8 @@ type Score = NonNullable<OverviewView["score"]>;
  */
 export function OverviewSummary({
   score,
-  trend,
   compete,
   sources,
-  sample,
   ownQuestions,
   ownChain,
   reason = null,
@@ -31,10 +29,8 @@ export function OverviewSummary({
 }: {
   score: Score;
   /** The score at each scan, oldest first, for the score's small line. */
-  trend: number[];
   compete: OverviewCompete | null;
   sources: SourcesPage | null;
-  sample: boolean;
   ownQuestions: string | null;
   ownChain: string | null;
   /** The same likely reason the report and weekly email give (competitors likelyReason). */
@@ -46,8 +42,8 @@ export function OverviewSummary({
   return (
     <section className="overflow-hidden rounded-lg border border-border bg-surface" data-testid="overview-hero">
       {/* Both rows share one column grid, so the dividers line up (the owner's ask). */}
-      <div className="grid border-b border-border xl:grid-cols-[minmax(0,1fr)_340px]">
-        <ScoreCard score={score} trend={trend} sample={sample} reason={reason} ownQuestions={ownQuestions} ownChain={ownChain} />
+      <div className="grid border-b border-border xl:grid-cols-[minmax(0,1fr)_320px]">
+        <ScoreCard score={score} reason={reason} ownQuestions={ownQuestions} ownChain={ownChain} />
         {/* The other three numbers: a row of tiles under the score, a column beside it on a wide screen. */}
         <div
           className="grid gap-px border-t border-border bg-border sm:grid-cols-3 xl:grid-cols-1 xl:grid-rows-3 xl:border-t-0 xl:border-l"
@@ -56,10 +52,10 @@ export function OverviewSummary({
           <Kpis compete={compete} sources={sources} />
         </div>
       </div>
-      <div className="grid xl:grid-cols-[minmax(0,1fr)_340px]">
-        <div className="flex min-w-0 flex-col gap-3 px-[18px] py-4">
+      <div className="grid xl:grid-cols-[minmax(0,1fr)_320px]">
+        <div className="flex min-w-0 flex-col gap-2 px-4 py-3">
           <div className="flex flex-col gap-0.5">
-            <h2 className="text-[14.5px] font-semibold tracking-[-0.01em]">Visibility at each scan</h2>
+            <h2 className="text-[14px] font-semibold tracking-[-0.01em]">Visibility at each scan</h2>
             <p className="text-xs text-muted-foreground">
               Share of each scan&apos;s answers that named each business, last {days} days.
               {timeline.length > 1 && " Pick a name to hide or show its line."}
@@ -79,50 +75,61 @@ function Kpis({ compete, sources }: { compete: OverviewCompete | null; sources: 
   const period = compete?.period ?? null;
   // Counted like the report (the score's answers), falling back to the Sources count.
   const cited = compete?.ownSite ? compete.ownSite.cited : sources ? sources.ownSite.answers : null;
-  const others = sources?.competitorSiteTimes;
+  const others = sources?.competitorSiteTimes ?? 0;
+  const noSite = compete?.ownSite ? !compete.ownSite.hasSite : sources ? sources.ownSite.host === null : false;
   const line = periodLine(compete);
+  // Each business in its colour on the "Visibility at each scan" chart; one not drawn there is grey (as WhoAiPicks).
+  const color = (name: string) => {
+    const i = (compete?.lines ?? []).findIndex((l) => l.name === name);
+    return i >= 0 ? colorAt(i) : OTHER_SERIES_COLOR;
+  };
+  const parts = (compete?.share?.parts ?? []).map((p) => ({ ...p, color: color(p.name) }));
   return (
     <>
       <StatRow
         icon={PieChart}
-        label="Share of AI picks, last 30 days"
+        label="Share of AI picks"
         testId="kpi-share"
         value={compete?.share ? `${compete.share.percent}%` : <Word>Not yet</Word>}
         sub={compete?.share ? placeText(compete.share) : "Track competitors to compare"}
+        visual={<ShareDonut parts={parts} percent={compete?.share?.percent ?? null} />}
       />
       <StatRow
         icon={MessageSquareText}
-        label={`Answers that named you, last ${period?.days ?? 30} days`}
+        label="Answers that named you"
         testId="kpi-named"
         value={period ? `${period.named} of ${period.answers}` : <Word>None yet</Word>}
         sub={
-          line.change ? (
+          period && period.answers > 0 ? (
             <>
               {line.change}
-              <span>{line.sub}</span>
+              <span>{skippedText(period.named, period.answers)}</span>
             </>
           ) : undefined
         }
+        visual={period && period.answers > 0 ? <AnswerDots named={period.named} total={period.answers} /> : undefined}
       />
       <StatRow
         icon={Globe}
-        label="Your website cited by AI, last 30 days"
+        label="Website cited by AI"
         testId="kpi-own-site"
-        tone={cited === 0 ? "mid" : undefined}
-        value={
-          compete?.ownSite && !compete.ownSite.hasSite ? (
-            <Word>No website saved</Word>
-          ) : cited === null ? (
-            <Word>Not yet</Word>
-          ) : (
-            `${cited} ${cited === 1 ? "time" : "times"}`
-          )
-        }
-        sub={others === undefined ? undefined : `Competitor sites: ${others} ${others === 1 ? "time" : "times"}`}
+        value={noSite ? <Word>No website saved</Word> : cited === null ? <Word>Not yet</Word> : `${cited} ${cited === 1 ? "time" : "times"}`}
+        sub={noSite || cited === null ? undefined : citedText(cited, others)}
+        visual={noSite || cited === null ? undefined : <CitationBars yours={cited} theirs={others} />}
       />
     </>
   );
 }
+
+/** "#2 by score of 4 businesses"; before any competitor has a score, there is no place to give yet. */
+function placeText(share: NonNullable<OverviewCompete["share"]>): string {
+  if (share.of < 2) return "No competitor has a score yet";
+  return `#${share.rank} by score of ${share.of} businesses`;
+}
+
+/** A word in place of a number, a size down so it fits the tile. */
+const Word = ({ children }: { children: ReactNode }) => <span className="text-lg tracking-[-0.02em]">{children}</span>;
+
 
 /** The answers' rate against the days before, in points, so a range with more answers never reads as a gain. */
 function periodLine(compete: OverviewCompete | null): { sub: string; change?: ReactNode } {
@@ -137,7 +144,7 @@ function periodLine(compete: OverviewCompete | null): { sub: string; change?: Re
   return {
     sub: `vs the ${period.days} days before`,
     change: (
-      <span className={cn("inline-flex shrink-0 items-center gap-1 font-medium tabular-nums", up ? "text-good-text" : "text-low-text")} title={moved.text}>
+      <span className={"inline-flex shrink-0 items-center gap-1 font-medium tabular-nums text-foreground"} title={moved.text}>
         <ChangeMark up={up} />
         {points} {points === 1 ? "pt" : "pts"}
         <span className="sr-only">, {moved.text}</span>
@@ -145,12 +152,3 @@ function periodLine(compete: OverviewCompete | null): { sub: string; change?: Re
     ),
   };
 }
-
-/** "#2 by score of 4 businesses"; before any competitor has a score, there is no place to give yet. */
-function placeText(share: NonNullable<OverviewCompete["share"]>): string {
-  if (share.of < 2) return "No competitor has a score yet";
-  return `#${share.rank} by score of ${share.of} businesses`;
-}
-
-/** A word in place of a number, a size down so it fits the tile. */
-const Word = ({ children }: { children: ReactNode }) => <span className="text-lg tracking-[-0.02em]">{children}</span>;

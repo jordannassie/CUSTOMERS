@@ -1,6 +1,5 @@
 import { addToActions } from "@/modules/opportunities";
 import { notFound, redirect } from "next/navigation";
-import { SampleDataBadge } from "@/components/app/SampleDataBadge";
 import { PageContainer } from "@/components/app/PageContainer";
 import { PageHeader } from "@/components/app/PageHeader";
 import { AddQuestionForm } from "@/components/questions/AddQuestionForm";
@@ -51,11 +50,11 @@ export default async function QuestionsPage({ searchParams }: { searchParams: Se
     <PageContainer>
       {/* Keyed by the link, so a new ?q= or ?site= starts the list fresh. */}
       <QuestionsProvider key={`${business.id}-${focus.q}-${focus.site}-${focus.named}-${focus.ai}`} view={view} focus={focus} addAction={addToActions}>
-        <div className="flex flex-col gap-5">
+        <div className="flex flex-col gap-4">
           <PageHeader
             title={
               <>
-                Questions <SampleDataBadge show={workspace.account?.isTest} />
+                Questions
               </>
             }
             description={<>What we ask {asked} for you on every scan, and what each one answered.</>}

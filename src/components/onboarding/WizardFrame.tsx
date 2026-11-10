@@ -55,7 +55,7 @@ export function WizardFrame({ steps, title, lead, embedded = false, children }: 
         {/* One column for every step and every part of it (bar, heading, form, Back and Continue), so the edges and the
             Continue button stay put from step to step. Inside the app frame it sits in the page column, under the
             banners' left edge, like every other app page. */}
-        <div className={embedded ? "mx-auto w-full max-w-[1200px] px-4 py-6 sm:p-8" : cn(STEP_COLUMN, "mx-auto py-8 lg:py-12")}>
+        <div className={embedded ? "mx-auto w-full max-w-[1200px] px-4 py-4 sm:px-6 sm:py-5" : cn(STEP_COLUMN, "mx-auto py-8 lg:py-12")}>
           <div className={embedded ? STEP_WIDTH : undefined}>
             {embedded ? <StepProgress steps={steps} index={index} label={current?.label} className="mb-6" /> : null}
             <header className="mb-6">

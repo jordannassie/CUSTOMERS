@@ -1,17 +1,18 @@
 import { Badge } from "@/components/ui/badge";
 
-type Variant = "good" | "mid" | "low" | "tint" | "secondary";
+// The app's pill colours (src/components/app/pills.ts): blue for what needs a look, red only for a failed payment.
+type Variant = "low" | "tint" | "secondary";
 
 export const STATUS: Record<string, { label: string; variant: Variant }> = {
   trialing: { label: "On trial", variant: "tint" },
   // Display statuses (modules/admin displayStatus): a trial that never reached Stripe, or one past its end.
-  trial_ended: { label: "Trial ended", variant: "mid" },
+  trial_ended: { label: "Trial ended", variant: "secondary" },
   signup_unfinished: { label: "Signup not finished", variant: "secondary" },
-  active: { label: "Paying", variant: "good" },
+  active: { label: "Paying", variant: "secondary" },
   past_due: { label: "Payment failed", variant: "low" },
   canceled: { label: "Canceled", variant: "secondary" },
-  suspended: { label: "Suspended", variant: "mid" },
-  deleted: { label: "Deleted", variant: "low" },
+  suspended: { label: "Suspended", variant: "tint" },
+  deleted: { label: "Deleted", variant: "secondary" },
 };
 
 // A business's own plan (business_subscriptions.status), which has a few more states than the agency.

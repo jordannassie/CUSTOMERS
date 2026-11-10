@@ -41,16 +41,16 @@ export function AppShell({
     [sidebar.businesses],
   );
 
-  // mockup-ui frame: one sidebar with every page on the grey frame, then a white window with the top bar and the page.
+  // mockup-ui frame: the sidebar on the grey frame, then a white rounded window with the top bar and the page.
   return (
-    <div className="app-v2 flex min-h-dvh bg-muted">
+    <div className="app-v2 app-compact flex min-h-dvh bg-muted">
       <SkipLink />
       <ScanWatcher
         getStatus={getScanStatus}
         names={names}
         activeBusinessId={sidebar.activeBusinessId}
       />
-      <aside className="scroll-quiet sticky top-0 hidden h-dvh w-[256px] shrink-0 overflow-y-auto lg:block">
+      <aside className="scroll-quiet sticky top-0 hidden h-dvh w-[212px] shrink-0 overflow-y-auto lg:block">
         <AppSidebar {...sidebar} />
       </aside>
 

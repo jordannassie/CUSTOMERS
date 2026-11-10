@@ -35,7 +35,7 @@ export function TrendChart({
             data-testid="trend-change"
             className={cn(
               "inline-flex items-center gap-1 rounded-sm px-1.5 py-0.5 text-xs font-medium",
-              trend.change.direction === "up" ? "bg-good-bg text-good-text" : "bg-low-bg text-low-text",
+              "bg-muted text-foreground",
             )}
           >
             {trend.change.direction === "up" ? (
@@ -62,7 +62,7 @@ function Chart({ trend }: { trend: TrendView }) {
   const summary = `Visibility score at each scan: ${trend.points.map((p) => `${p.label} ${p.score}`).join(", ")}.`;
   return (
     <figure className="m-0 flex flex-col gap-2" data-testid="trend-chart">
-      <ChartContainer config={config} className="aspect-auto h-44 w-full" aria-hidden="true">
+      <ChartContainer config={config} className="aspect-auto h-40 w-full" aria-hidden="true">
         <ComposedChart data={trend.points} margin={{ top: 8, right: 16, bottom: 0, left: -20 }}>
           <CartesianGrid vertical={false} />
           <XAxis dataKey="label" tickLine={false} axisLine={false} tickMargin={8} interval="preserveStartEnd" minTickGap={24} />

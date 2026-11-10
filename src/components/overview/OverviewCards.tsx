@@ -7,19 +7,20 @@ import { fixHref } from "@/lib/fix-where";
 import type { ActionItem } from "@/modules/opportunities/board/service";
 import type { QuestionTrends } from "@/modules/scanning";
 import { Panel, ROW } from "./Panel";
+import { PILL_BOX, PILL_CLASS } from "@/components/app/pills";
 
 // The Overview's lower cards (mockup-ui), each a short summary with a link to the page that has it all.
 
-const CHIP = "inline-flex h-5 shrink-0 items-center rounded-sm px-1.5 text-[11.5px] font-medium whitespace-nowrap";
+const CHIP = PILL_BOX;
 const IMPACT = {
-  high: { text: "High", tone: "bg-low-bg text-low-text" },
-  medium: { text: "Medium", tone: "bg-mid-bg text-mid-text" },
-  low: { text: "Low", tone: "bg-muted text-muted-foreground" },
+  high: { text: "High", tone: PILL_CLASS.attention },
+  medium: { text: "Medium", tone: PILL_CLASS.plain },
+  low: { text: "Low", tone: PILL_CLASS.plain },
 } as const;
 const PLACE_ICON: Record<ActionItem["place"], typeof Globe> = { website: Globe, google_listing: MapPin, review_sites: Star, social: Share2, content: FileText };
 
 function Empty({ children }: { children: ReactNode }) {
-  return <p className="px-[18px] py-6 text-[13px] text-muted-foreground">{children}</p>;
+  return <p className="px-4 py-6 text-[13px] text-muted-foreground">{children}</p>;
 }
 
 /** "Top actions": the most important open fixes, each with where to apply it. */
@@ -27,7 +28,7 @@ export function TopActions({ items, total, wait = null }: { items: ActionItem[];
   return (
     <Panel title="Top actions" link={total > 0 ? { href: "/actions", text: `All ${total} actions` } : undefined} testId="top-opportunities">
       {/* Between a finished scan and its saved fixes (MVP_SPEC 7.2), as on Actions. */}
-      {wait && <div className="border-b border-border/60 px-[18px] py-3">{wait}</div>}
+      {wait && <div className="border-b border-border/60 px-4 py-3">{wait}</div>}
       {items.length === 0 && wait ? null : items.length === 0 ? (
         <Empty>No open actions. New ones come from your scans, or from Compare.</Empty>
       ) : (
@@ -71,10 +72,9 @@ export function QuestionsMoved({ trends }: { trends: QuestionTrends | null }) {
         <ul className="flex flex-col">
           {moved.map((m) => {
             const up = m.change > 0;
-            const tone = up ? "text-good-text" : "text-low-text";
             return (
               <li key={m.id} className={cn(ROW, "grid grid-cols-[28px_minmax(0,1fr)] items-center gap-3")}>
-                <span className={cn("flex size-7 items-center justify-center rounded-md", up ? "bg-good-bg" : "bg-low-bg", tone)}>
+                <span className="flex size-7 items-center justify-center rounded-md bg-muted text-foreground">
                   {up ? <ArrowUp className="size-3.5" aria-hidden="true" /> : <ArrowDown className="size-3.5" aria-hidden="true" />}
                   <span className="sr-only">{up ? "Up" : "Down"}</span>
                 </span>
@@ -87,7 +87,7 @@ export function QuestionsMoved({ trends }: { trends: QuestionTrends | null }) {
                       Named in {m.then.named} of {m.then.checked} on {day(m.thenAt)}
                     </span>
                     <ChevronRight className="size-3" aria-hidden="true" />
-                    <span className={cn("font-medium", tone)}>
+                    <span className="font-medium text-foreground">
                       {m.now.named} of {m.now.checked} now
                     </span>
                   </span>
@@ -102,11 +102,12 @@ export function QuestionsMoved({ trends }: { trends: QuestionTrends | null }) {
 }
 
 export type SourceLine = { host: string; answers: number; status: "missing" | "partly" | "named" | "never" };
+// Blue only where AI skipped you; grey for the rest (pills.ts).
 const SOURCE_CHIP = {
-  missing: { text: "Skips you", tone: "bg-low-bg text-low-text" },
-  partly: { text: "Names you sometimes", tone: "bg-mid-bg text-mid-text" },
-  named: { text: "Names you", tone: "bg-good-bg text-good-text" },
-  never: { text: "Never cited", tone: "bg-mid-bg text-mid-text" },
+  missing: { text: "Skips you", tone: PILL_CLASS.attention },
+  partly: { text: "Names you sometimes", tone: PILL_CLASS.plain },
+  named: { text: "Names you", tone: PILL_CLASS.plain },
+  never: { text: "Never cited", tone: PILL_CLASS.plain },
 } as const;
 
 /** "Where AI gets its answers": the five sites AI used most, and whether those answers named you. */

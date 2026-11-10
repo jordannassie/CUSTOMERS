@@ -27,12 +27,12 @@ export default async function NewBusinessPlanPage() {
 
   return (
     <PageContainer>
-      <div className="max-w-[760px]">
+      <>
         <PageHeader
           title="Choose a plan"
           description="Pick a plan for the business you're about to set up. You can change it any time on Billing."
         />
-        <div className="mt-6">
+        <div className="mt-4">
           {plans.length === 0 ? (
             <p className="rounded-md border border-dashed border-border bg-surface px-6 py-10 text-center text-sm text-muted-foreground">
               Prices are being updated. Check back in a few minutes.
@@ -51,7 +51,7 @@ export default async function NewBusinessPlanPage() {
             />
           )}
         </div>
-      </div>
+      </>
     </PageContainer>
   );
 }

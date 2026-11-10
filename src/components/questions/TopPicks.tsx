@@ -1,20 +1,8 @@
 import { cn } from "cn";
 import type { QuestionRow } from "@/modules/questions/service";
 
-// Soft tints for the letter marks; a name always gets the same one, so a business looks the same on every row.
-const TINTS = [
-  "bg-primary-tint text-primary-hover",
-  "bg-mid-bg text-mid-text",
-  "bg-good-bg text-good-text",
-  "bg-low-bg text-low-text",
-  "bg-muted text-muted-foreground",
-];
-
-function tintOf(name: string): string {
-  let h = 0;
-  for (const ch of name.toLowerCase()) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
-  return TINTS[h % TINTS.length];
-}
+// Grey letter marks: the names are in the tooltip, and five tints per row read as noise (colour cleanup, 2026-11-10).
+const TINT = "bg-muted text-foreground/80";
 
 /** The businesses AI named most on this question, as overlapping letter marks; the names are in the tooltip. */
 export function TopPicks({ question }: { question: QuestionRow }) {
@@ -29,7 +17,7 @@ export function TopPicks({ question }: { question: QuestionRow }) {
           className={cn(
             "grid size-5 shrink-0 place-items-center rounded-full text-[10px] font-semibold uppercase ring-2 ring-surface",
             i > 0 && "-ml-1",
-            tintOf(n.name),
+            TINT,
           )}
         >
           {n.name.trim().charAt(0)}

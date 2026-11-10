@@ -1,16 +1,18 @@
 import { Suspense } from "react";
+import Link from "next/link";
 import { ArrowDown, ArrowUp } from "lucide-react";
 import type { MonthChange } from "@/modules/admin";
 import { Skeleton } from "@/components/ui/skeleton";
 import AdminPageHeader from "./_components/page-header";
 import { ReportSkeleton } from "./_components/skeletons";
 import { StatGrid, StatTile } from "./_components/stat";
-import { alertWording, isServiceCheckKind, loadLibraryGaps, loadOverview, resolveAlert } from "@/modules/admin";
+import { alertWording, includeTestFilter, isServiceCheckKind, loadLibraryGaps, loadOverview, resolveAlert } from "@/modules/admin";
 import { requestNow } from "@/lib/request-now";
 import { requireAdmin } from "@/modules/auth";
 import { formatDate } from "./_components/format";
 import { credits } from "./agencies/_components/agency-parts";
 import Sparkline from "./_overview/sparkline";
+import { TenSquares, TwoBars } from "@/components/overview/StatVisuals";
 import MoneyPanel from "./_overview/money-panel";
 import { FailedScans, RecentSignups } from "./_overview/lists";
 import OpenAlerts from "./_overview/open-alerts";
@@ -19,20 +21,24 @@ import LibraryGaps from "./_overview/library-gaps";
 // The admin layout's title template only reaches pages below it, so its own page names the pattern itself.
 export const metadata = { title: { absolute: "Overview | Admin" } };
 
-export default async function AdminOverviewPage() {
+type Props = { searchParams: Promise<{ test?: string | string[] }> };
+
+export default async function AdminOverviewPage({ searchParams }: Props) {
   await requireAdmin({ next: "/internal/admin" });
 
   return (
-    <div className="mx-auto flex max-w-6xl flex-col gap-8 px-4 py-8 sm:px-6">
+    <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-5 px-4 py-4 sm:px-6 sm:py-5">
       <Suspense fallback={<OverviewSkeleton />}>
-        <Overview />
+        <Overview searchParams={searchParams} />
       </Suspense>
     </div>
   );
 }
 
-async function Overview() {
-  const [o, gaps] = await Promise.all([loadOverview(), loadLibraryGaps()]);
+async function Overview({ searchParams }: Props) {
+  // "Include test agencies", like Usage and cost: off by default, so the numbers are real customers only (D-61).
+  const includeTest = includeTestFilter.parse((await searchParams).test);
+  const [o, gaps] = await Promise.all([loadOverview(undefined, undefined, { includeTest }), loadLibraryGaps()]);
   const now = requestNow();
   const alerts = o.openAlerts.map((a) => ({
     ...a,
@@ -41,21 +47,48 @@ async function Overview() {
     lastSeen: formatDate(a.lastSeenAt, true),
     serviceCheck: isServiceCheckKind(a.kind),
   }));
+  const overdue = o.overdueScans
+    ? { count: o.overdueScans.count, businesses: o.overdueScans.businesses.map((b) => ({ ...b, due: formatDate(b.dueAt) })) }
+    : null;
   return (
     <>
-      <AdminPageHeader title="Overview" subtitle={`This month so far, since ${formatDate(o.monthStart)}. Test agencies are not counted.`} />
+      <AdminPageHeader
+        title="Overview"
+        subtitle={`This month so far, since ${formatDate(o.monthStart)}. ${includeTest ? "Test agencies are counted." : "Test agencies are not counted."}`}
+        actions={
+          <Link
+            href={includeTest ? "/internal/admin" : "/internal/admin?test=1"}
+            className="text-[13px] font-medium text-primary hover:underline"
+            data-testid="overview-include-test"
+          >
+            {includeTest ? "Leave out test agencies" : "Include test agencies"}
+          </Link>
+        }
+      />
 
-      {/* Problems come first while there are any; an empty list sits at the bottom. */}
-      {alerts.length > 0 && <OpenAlerts rows={alerts} resolve={resolveAlert} />}
+      {/* Problems come first while there are any, as one slim bar; an empty list sits at the bottom. */}
+      {(alerts.length > 0 || overdue) && <OpenAlerts rows={alerts} resolve={resolveAlert} overdue={overdue} />}
 
       <StatGrid>
-        <StatTile label="Agencies" value={credits(o.agencies)} note={<Change change={o.vsLastMonth.agencies} />} />
+        {/* Small pictures like the app Overview's (StatVisuals): each draws only the numbers written beside it. */}
+        <StatTile
+          label="Agencies"
+          value={credits(o.agencies)}
+          note={<Change change={o.vsLastMonth.agencies} />}
+          visual={<TwoBars yours={o.agencies} theirs={o.agenciesAtMonthStart} labels={["Now", "1st"]} />}
+        />
         <StatTile
           label="Active trials"
           value={credits(o.activeTrials)}
           note={`${o.vsLastMonth.trialsStarted.thisMonth} started this month, ${o.vsLastMonth.trialsStarted.lastMonth} by this day last month`}
+          visual={<TwoBars yours={o.vsLastMonth.trialsStarted.thisMonth} theirs={o.vsLastMonth.trialsStarted.lastMonth} labels={["This", "Last"]} />}
         />
-        <StatTile label="Paying businesses" value={credits(o.payingBusinesses)} />
+        <StatTile
+          label="Paying businesses"
+          value={credits(o.payingBusinesses)}
+          note={`of ${credits(o.businesses)} ${o.businesses === 1 ? "business" : "businesses"}`}
+          visual={<TenSquares named={o.payingBusinesses} answers={o.businesses} />}
+        />
         <StatTile label="Credits used" value={credits(o.creditsUsed)} note={<Change change={o.vsLastMonth.credits} />}>
           <Sparkline
             points={o.spark.map((d) => ({ day: d.day, value: d.credits }))}
@@ -80,7 +113,7 @@ async function Overview() {
 
       <LibraryGaps loaded={gaps.loaded} rows={gaps.gaps} />
 
-      {alerts.length === 0 && <OpenAlerts rows={alerts} resolve={resolveAlert} />}
+      {alerts.length === 0 && !overdue && <OpenAlerts rows={alerts} resolve={resolveAlert} />}
     </>
   );
 }

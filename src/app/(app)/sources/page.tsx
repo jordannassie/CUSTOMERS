@@ -2,7 +2,6 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { PageContainer } from "@/components/app/PageContainer";
 import { PageHeader } from "@/components/app/PageHeader";
-import { SampleDataBadge } from "@/components/app/SampleDataBadge";
 import { ListedFirst } from "@/components/sources/ListedFirst";
 import { SectionCard } from "@/components/sources/SectionCard";
 import { OwnSiteStatus } from "@/components/sources/OwnSiteStatus";
@@ -38,11 +37,11 @@ export default async function SourcesPage({ searchParams }: Props) {
 
   return (
     <PageContainer>
-      <div className="flex flex-col gap-5">
+      <div className="flex flex-col gap-4">
         <PageHeader
           title={
             <>
-              Sources <SampleDataBadge show={workspace.account?.isTest} />
+              Sources
             </>
           }
           description={
@@ -103,7 +102,7 @@ export default async function SourcesPage({ searchParams }: Props) {
               competitorSiteTimes={sources.competitorSiteTimes}
             />
             <TopSites sites={sources.sites} answers={sources.answers} />
-            <div className="grid gap-5 xl:grid-cols-2">
+            <div className="grid gap-4 xl:grid-cols-2">
               <SectionCard title="Kinds of websites" aside={`Share of ${answers}`}>
                 <SourceTypes types={sources.types} answers={sources.answers} />
               </SectionCard>

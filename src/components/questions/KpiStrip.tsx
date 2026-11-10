@@ -35,7 +35,6 @@ export function KpiStrip({ view }: { view: QuestionsView }) {
         <KpiTile
           label="Questions that named you"
           testId="kpi-named"
-          tone={k.namedOnce > 0 ? "good" : undefined}
           value={
             <>
               {k.namedOnce}

@@ -80,7 +80,7 @@ export function QuoteRow({
   tone?: "gap";
 }) {
   return (
-    <li className={cn(tone === "gap" && "bg-mid-bg/25")} data-testid={testId}>
+    <li className={cn(tone === "gap" && "bg-muted/50")} data-testid={testId}>
       <button
         type="button"
         aria-expanded={open}

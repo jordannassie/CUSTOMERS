@@ -56,7 +56,7 @@ export default async function BuyCreditsPage({ searchParams }: Props) {
         </p>
       </PageHeader>
 
-      <div className="mt-6 max-w-[640px]">
+      <div className="mt-4">
         {!spend.allowed && !returned ? (
           <Notice>
             {spend.reason}{" "}

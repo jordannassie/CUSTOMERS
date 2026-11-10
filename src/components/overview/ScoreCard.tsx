@@ -1,8 +1,4 @@
 import { Fragment } from "react";
-import { cn } from "cn";
-import { SampleDataBadge } from "@/components/app/SampleDataBadge";
-import { Sparkline } from "@/components/competitors/Sparkline";
-import { Badge } from "@/components/ui/badge";
 import type { OverviewView } from "@/modules/overview";
 import { ChangeMark } from "./Panel";
 import { ScoreDetails } from "./ScoreDetails";
@@ -17,16 +13,11 @@ type Score = NonNullable<OverviewView["score"]>;
  */
 export function ScoreCard({
   score,
-  trend,
-  sample,
   reason,
   ownQuestions,
   ownChain,
 }: {
   score: Score;
-  /** The score at each scan, oldest first. */
-  trend: number[];
-  sample: boolean;
   reason: string | null;
   ownQuestions: string | null;
   ownChain: string | null;
@@ -42,20 +33,20 @@ export function ScoreCard({
 
   return (
     <div
-      className="flex flex-col items-start gap-5 bg-primary-tint/40 px-[18px] py-5 sm:flex-row sm:items-center sm:gap-8 sm:px-[18px] sm:py-7"
+      className="flex flex-col items-start gap-4 px-4 py-4 sm:flex-row sm:items-center sm:gap-6 sm:py-5"
       data-testid="score-summary"
     >
       {/* The ring on a white disc, so the score is the first thing the eye lands on. */}
-      <div className="rounded-full bg-surface p-2.5 shadow-[0_0_0_1px_var(--cd-border),0_8px_24px_-12px_rgb(37_99_235/0.35)]">
+      <div className="rounded-full bg-surface p-1.5 shadow-[0_0_0_1px_var(--cd-border),0_8px_24px_-12px_rgb(37_99_235/0.35)]">
         <ScoreRing score={score.value} tone={score.tone} size="hero" />
       </div>
       <div className="flex min-w-0 flex-1 flex-col gap-2.5">
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-xs font-medium text-muted-foreground">Visibility score, last 30 days</span>
-          <Badge variant="tint" data-testid="confidence-label">
+          <span className="text-xs text-text-hint" aria-hidden="true">·</span>
+          <span className="text-xs text-muted-foreground" data-testid="confidence-label">
             {score.label}
-          </Badge>
-          <SampleDataBadge show={sample} />
+          </span>
         </div>
         <p className="text-lg leading-snug font-semibold tracking-[-0.02em] text-balance" data-testid="score-sentence">
           {score.sentence}
@@ -64,19 +55,10 @@ export function ScoreCard({
           {score.change && (
             <span
               data-testid="score-change"
-              className={cn(
-                "inline-flex items-center gap-1 rounded-sm px-2 py-0.5 text-xs font-medium",
-                up ? "bg-good-bg text-good-text" : "bg-low-bg text-low-text",
-              )}
+              className="inline-flex items-center gap-1 rounded-sm bg-muted px-2 py-0.5 text-xs font-medium text-foreground"
             >
               <ChangeMark up={up} />
               {score.change.text}
-            </span>
-          )}
-          {trend.length >= 2 && (
-            <span className="inline-flex items-center gap-2 text-xs text-muted-foreground">
-              <Sparkline values={trend} color="var(--chart-1)" />
-              Each scan
             </span>
           )}
           {score.details && (

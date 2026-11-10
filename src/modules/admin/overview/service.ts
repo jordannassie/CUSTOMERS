@@ -62,3 +62,18 @@ export function countChange(current: number, atMonthStart: number, monthStart: D
   if (gap === 0) return { direction: "same", text: `No change since ${since}` };
   return { direction: gap > 0 ? "up" : "down", text: `${gap > 0 ? "Up" : "Down"} ${Math.abs(gap)} since ${since}` };
 }
+
+/**
+ * A scheduled scan is overdue when its date passed more than a day ago: the daily 02:00 UTC run queues every business
+ * due by then, so after 26 hours one that is still due was missed (2026-11-10, admin "Scheduled scans overdue").
+ */
+export const OVERDUE_HOURS = 26;
+export const overdueBefore = (now: Date) => new Date(now.getTime() - OVERDUE_HOURS * 3_600_000);
+
+/**
+ * Which agencies the scheduler is meant to scan: test ones only before the go-live switch (enqueue_due_scans(false)),
+ * then real ones too; narrowed to what the Overview shows. Empty means nothing can be overdue.
+ */
+export function scheduledTestFlags(includeReal: boolean, shown: boolean[]): boolean[] {
+  return shown.filter((isTest) => isTest || includeReal);
+}

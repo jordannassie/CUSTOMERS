@@ -16,6 +16,7 @@ import { useQuestions } from "./QuestionsProvider";
 import { ResultChip } from "./ResultChip";
 import { NamedCell, RowMeta, TrendCell } from "./RowCells";
 import { TopPicks } from "./TopPicks";
+import { PILL_VARIANT } from "@/components/app/pills";
 
 export type QuestionActions = { edit: EditAction; setActive: QuestionAction; remove: QuestionAction; answers: AnswersAction };
 
@@ -108,7 +109,7 @@ export function QuestionItem({ question, limitMessage, actions, gridClass }: Pro
       {/* The whole row opens the question for a mouse; the question's own button does it for a keyboard. */}
       <div
         className={cn(
-          "relative grid cursor-pointer grid-cols-[40px_minmax(0,1fr)] gap-x-3 gap-y-2.5 px-4 py-3.5 transition-colors duration-150 hover:bg-muted/60 lg:items-center lg:gap-y-0",
+          "relative grid cursor-pointer grid-cols-[40px_minmax(0,1fr)] gap-x-3 gap-y-2.5 px-4 py-2.5 transition-colors duration-150 hover:bg-muted/60 lg:items-center lg:gap-y-0",
           open && "bg-primary-tint hover:bg-primary-tint",
           gridClass,
         )}
@@ -176,14 +177,14 @@ export function QuestionItem({ question, limitMessage, actions, gridClass }: Pro
         position={at >= 0 && list.length > 1 ? `Question ${at + 1} of ${list.length}` : null}
         returnFocus={() => opener.current?.focus()}
         facts={[
-          { label: "Topic", value: question.topic ? <Badge variant="tint">{question.topic}</Badge> : <span className="text-text-hint">None</span> },
+          { label: "Topic", value: question.topic ? <Badge variant={PILL_VARIANT.plain}>{question.topic}</Badge> : <span className="text-text-hint">None</span> },
           {
             label: "Named you",
             value:
               pct === null ? (
                 <span className="text-text-hint">Not checked yet</span>
               ) : (
-                <Badge variant={pct > 0 ? "good" : "low"}>
+                <Badge variant={pct > 0 ? PILL_VARIANT.plain : PILL_VARIANT.attention}>
                   {pct}% of answers ({question.named} of {question.answers})
                 </Badge>
               ),

@@ -30,12 +30,12 @@ export default async function ChoosePlanPage({ searchParams }: Props) {
 
   return (
     <PageContainer>
-      <div className="max-w-[760px]">
+      <>
         <PageHeader
           title={page.state.kind === "choose" && page.state.ended ? "Start your plan again" : "Choose a plan"}
           description="One plan for each of your businesses. You can change it any time on Billing."
         />
-        <div className="mt-6">
+        <div className="mt-4">
           {page.state.kind === "no_business" ? (
             <section className="rounded-md border border-dashed border-border bg-surface px-6 py-10 text-center" data-testid="no-business">
               <h2 className="text-base font-semibold tracking-[-0.02em]">Set up a business first</h2>
@@ -56,7 +56,7 @@ export default async function ChoosePlanPage({ searchParams }: Props) {
             />
           )}
         </div>
-      </div>
+      </>
     </PageContainer>
   );
 }

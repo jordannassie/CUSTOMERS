@@ -71,9 +71,9 @@ describe("serviceAlertChanges (Settings checks open and close alerts)", () => {
     ]);
   });
 
-  it("closes the alert of a working service and leaves unknown or not set up ones alone", () => {
+  it("closes the alert of a working or not set up service and leaves unknown ones alone", () => {
     const changes = serviceAlertChanges([svc("openai", "ai", "ok"), svc("perplexity", "ai", "unknown"), svc("resend", "data", "not_configured")]);
-    expect(changes).toEqual({ raise: [], resolve: ["service_check:openai"] });
+    expect(changes).toEqual({ raise: [], resolve: ["service_check:openai", "service_check:resend"] });
     expect(isServiceCheckKind("service_check:openai")).toBe(true);
     expect(isServiceCheckKind("failed_scans")).toBe(false);
   });

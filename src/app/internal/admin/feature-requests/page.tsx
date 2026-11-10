@@ -20,7 +20,7 @@ export default async function AdminFeatureRequestsPage({ searchParams }: Props) 
   // Show migration instructions
   if (fetchError) {
     return (
-      <div className="mx-auto flex max-w-2xl flex-col gap-6 px-4 py-8 sm:px-6">
+      <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-4 px-4 py-4 sm:px-6 sm:py-5">
         <AdminPageHeader title="Feature requests" subtitle="Ideas people sent with Suggest a feature in the app." />
         <div className="rounded-md border border-border bg-mid-bg p-4 text-mid-text sm:p-6">
           <p className="mb-2 text-[14px] font-semibold">Table not yet created on production</p>
@@ -60,7 +60,7 @@ create policy "feature_requests_select_own" on public.feature_requests
   const requests = "requests" in result ? result.requests : [];
 
   return (
-    <div className="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-8 sm:px-6">
+    <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-4 px-4 py-4 sm:px-6 sm:py-5">
       <FeatureRequestsClient
         requests={requests}
         filter={featureFilter((await searchParams).status)}

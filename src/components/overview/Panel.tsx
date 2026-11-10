@@ -36,8 +36,8 @@ export function Panel({
 
 export function PanelHead({ title, help, right, link }: { title: string; help?: string; right?: ReactNode; link?: { href: string; text: string } }) {
   return (
-    <div className="flex min-h-[52px] flex-wrap items-center justify-between gap-x-3 gap-y-1 border-b border-border px-[18px] py-3">
-      <h2 className="flex items-center gap-1.5 text-[14.5px] font-semibold tracking-[-0.01em]">
+    <div className="flex min-h-11 flex-wrap items-center justify-between gap-x-3 gap-y-1 border-b border-border px-4 py-2">
+      <h2 className="flex items-center gap-1.5 text-[14px] font-semibold tracking-[-0.01em]">
         {title}
         {help && <HelpTip label={`About ${title.toLowerCase()}`} text={help} />}
       </h2>
@@ -71,4 +71,4 @@ export function ChangeMark({ up, className }: { up: boolean; className?: string 
 }
 
 /** List rows: hairlines between them, 12px up and down. */
-export const ROW = "border-b border-border/60 px-[18px] py-3 last:border-b-0";
+export const ROW = "border-b border-border/60 px-4 py-2.5 last:border-b-0";

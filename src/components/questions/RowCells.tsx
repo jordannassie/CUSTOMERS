@@ -4,6 +4,7 @@ import { namedPercent, skippedSites, topPick, TREND_TEXT } from "@/modules/quest
 import type { QuestionRow } from "@/modules/questions/service";
 import { Badge } from "@/components/ui/badge";
 import { Sparkline } from "@/components/competitors/Sparkline";
+import { PILL_CLASS, PILL_VARIANT } from "@/components/app/pills";
 
 function summaryTitle(pick: string | null, sites: string[]): string {
   return [pick && `Top pick: ${pick}`, sites.length > 0 && `Sites AI used when it skipped you: ${sites.join(", ")}`].filter(Boolean).join(". ");
@@ -30,13 +31,13 @@ export function RowMeta({ question }: { question: QuestionRow }) {
       {badges && (
         <div className="flex flex-wrap gap-1.5">
           {question.topic && (
-            <Badge variant="tint" data-testid="question-topic">
+            <Badge variant={PILL_VARIANT.plain} data-testid="question-topic">
               {question.topic}
             </Badge>
           )}
-          {question.custom && <Badge variant="outline">Added by you</Badge>}
+          {question.custom && <Badge variant={PILL_VARIANT.plain}>Added by you</Badge>}
           {question.custom && (
-            <Badge variant="outline" data-testid="not-in-score">
+            <Badge variant={PILL_VARIANT.plain} data-testid="not-in-score">
               Not counted in your score
             </Badge>
           )}
@@ -50,11 +51,9 @@ export function RowMeta({ question }: { question: QuestionRow }) {
 const R = 13;
 const C = 2 * Math.PI * R;
 
-/** Ring colour by how often AI named you: green from 70%, amber from 40%, blue above 0, a red dot at 0. */
+/** Ring colour: blue whenever AI named you, a grey dot at 0. The number inside says how much (colour cleanup). */
 function ringStroke(pct: number): string {
-  if (pct >= 70) return "stroke-good";
-  if (pct >= 40) return "stroke-mid";
-  return pct > 0 ? "stroke-primary" : "stroke-low";
+  return pct > 0 ? "stroke-primary" : "stroke-muted-foreground";
 }
 
 /** The share of answers that named you as a small ring, the number inside. Empty and grey before any answer. */
@@ -121,9 +120,9 @@ function checkSeries(question: QuestionRow): number[] {
 }
 
 const TREND_STYLE = {
-  up: { icon: ArrowUpRight, className: "bg-good-bg text-good-text" },
-  same: { icon: Equal, className: "bg-muted text-muted-foreground" },
-  down: { icon: ArrowDownRight, className: "bg-low-bg text-low-text" },
+  up: { icon: ArrowUpRight, className: PILL_CLASS.plain },
+  same: { icon: Equal, className: PILL_CLASS.plain },
+  down: { icon: ArrowDownRight, className: PILL_CLASS.attention },
 } as const;
 
 /** The recent checks as a small line, and the last scan against the one before. */
@@ -133,7 +132,7 @@ export function TrendCell({ question }: { question: QuestionRow }) {
   const Icon = t ? TREND_STYLE[t].icon : null;
   return (
     <div className={cn("flex items-center gap-2", t === null && series.length < 2 && "max-lg:hidden")} data-testid="question-trend" data-trend={t ?? "none"}>
-      {series.length >= 2 && <Sparkline values={series} color={question.named > 0 ? "var(--chart-1)" : "var(--color-competitor-2)"} />}
+      {series.length >= 2 && <Sparkline values={series} color={question.named > 0 ? "var(--chart-1)" : "var(--cd-text-hint)"} />}
       {t === null ? (
         series.length < 2 && (
           <span className="text-xs text-text-hint" title="Shows once this question has 2 scans">

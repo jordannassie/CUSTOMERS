@@ -7,12 +7,14 @@ export function TestBadge() {
 }
 
 // One set of words for a scan on the Scans and Business pages. Older runs without a job map onto the same five.
-export const SCAN_STATUS: Record<ScanStatus, { label: string; variant: "good" | "mid" | "low" | "tint" | "outline" }> = {
-  queued: { label: "Waiting", variant: "tint" },
-  running: { label: "Running", variant: "mid" },
-  done: { label: "Done", variant: "good" },
+// The app's pill colours (src/components/app/pills.ts): blue for a scan still going, red only for a failure, grey
+// for the rest.
+export const SCAN_STATUS: Record<ScanStatus, { label: string; variant: "low" | "tint" | "secondary" }> = {
+  queued: { label: "Waiting", variant: "secondary" },
+  running: { label: "Running", variant: "tint" },
+  done: { label: "Done", variant: "secondary" },
   failed: { label: "Failed", variant: "low" },
-  skipped: { label: "Skipped", variant: "outline" },
+  skipped: { label: "Skipped", variant: "secondary" },
 };
 
 export function ScanStatusBadge({ status }: { status: ScanStatus }) {

@@ -22,8 +22,8 @@ export function SectionCard({ title, aside, className, testId, children }: Props
 /** The header row on its own, for a card split into two halves. */
 export function CardHead({ title, aside }: { title: string; aside?: React.ReactNode }) {
   return (
-    <div className="flex min-h-[52px] flex-wrap items-center justify-between gap-x-3 gap-y-1 border-b border-border px-4 py-3 sm:px-[18px]">
-      <h2 className="text-[14.5px] font-semibold tracking-[-0.01em]">{title}</h2>
+    <div className="flex min-h-11 flex-wrap items-center justify-between gap-x-3 gap-y-1 border-b border-border px-4 py-2">
+      <h2 className="text-[14px] font-semibold tracking-[-0.01em]">{title}</h2>
       {aside ? <div className="text-xs text-text-hint">{aside}</div> : null}
     </div>
   );

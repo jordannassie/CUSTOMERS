@@ -42,7 +42,7 @@ export default async function ReportsPage({ searchParams }: Props) {
 
   return (
     <PageContainer>
-      <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-4">
         <ReportsHeader
           key={`${business.id}-${reportId ?? "latest"}`}
           businessId={business.id}
@@ -55,8 +55,8 @@ export default async function ReportsPage({ searchParams }: Props) {
           exportPdf={exportPdf}
         />
 
-        <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
-          <div className="flex min-w-0 flex-col gap-6">
+        <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
+          <div className="flex min-w-0 flex-col gap-4">
             {report ? (
               <>
                 <ReportOverview report={report} saved={reportId !== null} />
@@ -89,7 +89,7 @@ export default async function ReportsPage({ searchParams }: Props) {
               </section>
             )}
           </div>
-          <aside className="flex min-w-0 flex-col gap-6" aria-label="Saved reports and branding">
+          <aside className="flex min-w-0 flex-col gap-4" aria-label="Saved reports and branding">
             <SavedReports
               key={business.id}
               businessId={business.id}

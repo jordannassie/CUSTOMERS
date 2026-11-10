@@ -40,7 +40,7 @@ export default async function BillingPage({ searchParams }: Props) {
 
   return (
     <PageContainer>
-      <div className="max-w-[760px]">
+      <>
         <PageHeader
           title="Billing"
           description="What you pay, for which businesses, and when."
@@ -53,7 +53,7 @@ export default async function BillingPage({ searchParams }: Props) {
           </p>
         )}
 
-        <div className="mt-6 flex flex-col gap-6">
+        <div className="mt-4 flex flex-col gap-4">
           {hasPlan ? (
             <>
               <PlanStatus view={view} keep={keepSubscription} />
@@ -63,8 +63,10 @@ export default async function BillingPage({ searchParams }: Props) {
                 addBusinessHref={ADD_BUSINESS_PATH}
                 actions={{ upgrade: upgradeBusiness, downgrade: downgradeBusiness, remove: removeBusiness, add: addBusiness, keep: keepBusinessPlan }}
               />
-              <CreditsPanel buyHref={BUY_CREDITS_HREF} usageHref={USAGE_HREF} />
-              {view.canChange && !view.cancelAt && <CancelPanel cancel={cancelSubscription} trialing={view.status === "trialing"} trialEnded={view.trialEnded} />}
+              <div className="grid items-start gap-4 lg:grid-cols-2">
+                <CreditsPanel buyHref={BUY_CREDITS_HREF} usageHref={USAGE_HREF} />
+                {view.canChange && !view.cancelAt && <CancelPanel cancel={cancelSubscription} trialing={view.status === "trialing"} trialEnded={view.trialEnded} />}
+              </div>
             </>
           ) : (
             <NoPlan
@@ -75,7 +77,7 @@ export default async function BillingPage({ searchParams }: Props) {
             />
           )}
         </div>
-      </div>
+      </>
     </PageContainer>
   );
 }

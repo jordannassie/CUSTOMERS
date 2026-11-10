@@ -33,8 +33,8 @@ export function SectionCard({
   return (
     <section className={cn("flex min-w-0 flex-col overflow-hidden rounded-lg border border-border bg-card", className)} data-testid={testId}>
       <CardHead title={title} help={help} actions={actions} />
-      <div className={cn("min-w-0 flex-1", !flush && "px-[18px] py-4", bodyClassName)}>{children}</div>
-      {footer ? <div className="border-t border-border px-[18px] py-2.5 text-xs text-text-hint">{footer}</div> : null}
+      <div className={cn("min-w-0 flex-1", !flush && "px-4 py-3", bodyClassName)}>{children}</div>
+      {footer ? <div className="border-t border-border px-4 py-2.5 text-xs text-text-hint">{footer}</div> : null}
     </section>
   );
 }
@@ -42,10 +42,10 @@ export function SectionCard({
 /** The header row on its own, for a card that lays out its own body. */
 export function CardHead({ title, help, actions, className }: { title: ReactNode; help?: string; actions?: ReactNode; className?: string }) {
   return (
-    <div className={cn("flex min-h-[54px] flex-wrap items-center justify-between gap-x-3 gap-y-2 border-b border-border px-[18px] py-3", className)}>
+    <div className={cn("flex min-h-11 flex-wrap items-center justify-between gap-x-3 gap-y-2 border-b border-border px-4 py-2", className)}>
       {/* The help icon sits beside the heading, not in it, so the heading's name stays just the title. */}
       <div className="flex min-w-0 items-center gap-1.5">
-        <h2 className="min-w-0 text-[14.5px] font-semibold tracking-[-0.01em]">{title}</h2>
+        <h2 className="min-w-0 text-[14px] font-semibold tracking-[-0.01em]">{title}</h2>
         {help ? <Help text={help} /> : null}
       </div>
       {actions ? <div className="flex min-w-0 flex-wrap items-center gap-2">{actions}</div> : null}

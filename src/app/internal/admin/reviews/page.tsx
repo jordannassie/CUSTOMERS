@@ -28,7 +28,7 @@ export default async function AdminReviewsPage({ searchParams }: { searchParams:
   const signals = selected ? spamSignals(selected, await peersFor(selected.slug, selected.id)) : [];
 
   return (
-    <div className="mx-auto flex max-w-4xl flex-col gap-6 px-4 py-8 sm:px-6">
+    <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-4 px-4 py-4 sm:px-6 sm:py-5">
       <AdminPageHeader
         title="App reviews"
         subtitle="Reviews of apps on /apps. New ones stay pending until approved here. Treat high and low ratings the same way."
@@ -79,7 +79,7 @@ export default async function AdminReviewsPage({ searchParams }: { searchParams:
           <h2 className="text-[16px] font-semibold break-words">{selected.title}</h2>
           <div className="flex flex-wrap items-center gap-2 text-[13px] text-muted-foreground">
             <span>{selected.slug}</span>
-            <Badge variant="outline" className="capitalize">{selected.status}</Badge>
+            <Badge variant="secondary" className="capitalize">{selected.status}</Badge>
             <span>{selected.rating} of 5</span>
             <span>{selected.recommendation === "yes" ? "Recommends" : "Does not recommend"}</span>
           </div>

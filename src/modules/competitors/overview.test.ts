@@ -26,7 +26,15 @@ describe("overviewCompete", () => {
 
   it("says your share, place, each tool's leaders, and the period counts", () => {
     // The place is by score, like the Competitors tiles and the report: You Co has the lowest score.
-    expect(out.share).toEqual({ percent: 10, rank: 5, of: 5 });
+    expect(out.share).toMatchObject({ percent: 10, rank: 5, of: 5 });
+    // Every business's share for the donut, largest first, you among them.
+    expect(out.share?.parts.map((p) => [p.name, p.percent, p.isYou])).toEqual([
+      ["A", 40, false],
+      ["B", 25, false],
+      ["C", 15, false],
+      ["You Co", 10, true],
+      ["D", 10, false],
+    ]);
     expect(out.modelContext.openai).toBe("A 75 · B 15");
     expect(out.lines.map((l) => [l.key, l.name, l.latest])).toEqual([
       ["s0", "You Co", 12],
@@ -46,7 +54,13 @@ describe("overviewCompete", () => {
     const checks = [check(true, ["A"], ["youco.com"]), check(false, ["A", "B"]), check(true, [])];
     const shared = overviewCompete(view, report, { checks, domain: "youco.com" });
     // You 2, A 2, B 1 of 5 namings.
-    expect(shared.share).toEqual({ percent: 40, rank: 5, of: 5 });
+    expect(shared.share).toMatchObject({ percent: 40, rank: 5, of: 5 });
+    // C and D were never named, so the donut leaves them out.
+    expect(shared.share?.parts.map((p) => [p.name, p.percent])).toEqual([
+      ["A", 40],
+      ["You Co", 40],
+      ["B", 20],
+    ]);
     expect(shared.ownSite).toEqual({ cited: 1, answers: 3, hasSite: true });
   });
 

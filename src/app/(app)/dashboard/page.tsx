@@ -17,6 +17,7 @@ import { getWorkspace } from "@/modules/workspace";
 import { QuestionsMoved } from "@/components/overview/OverviewCards";
 import { SourcesActionsSection, SummarySection, ToolsSection } from "./_components/sections";
 import { PairSkeleton, SummarySkeleton, ToolsSkeleton } from "./_components/section-skeletons";
+import { HideableNotice } from "@/components/app/HideableNotice";
 
 export const metadata = { title: "Overview", robots: { index: false } };
 
@@ -62,7 +63,7 @@ export default async function OverviewPage({ searchParams }: { searchParams: Pro
   ].filter(Boolean);
 
   return (
-    <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-5 px-4 py-5 sm:p-8">
+    <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-4 px-4 py-4 sm:px-6 sm:py-5">
       <PageHeader
         title={business.name}
         clampTitle={business.name}
@@ -93,20 +94,18 @@ export default async function OverviewPage({ searchParams }: { searchParams: Pro
       />
 
       {scanStatus.ok && scanStatus.data.lastResult === "failed" && !scanStatus.data.scanning && (
-        <p role="status" className="rounded-lg border border-border bg-mid-bg px-4 py-2.5 text-[13px] text-mid-text">
-          {/* A known reason (test mode with no sample answers) is said as it is: trying again would not help. */}
-          {scanStatus.data.failedReason ?? (
-            <>
-              The last scan could not finish.{score ? " Your score uses the results from earlier scans." : ""} Try again in a few minutes.
-            </>
-          )}
-        </p>
+        // A known reason (test mode with no sample answers) is said as it is: trying again would not help.
+        <HideableNotice
+          id="scan-failed"
+          text={
+            scanStatus.data.failedReason ??
+            `The last scan could not finish.${score ? " Your score uses the results from earlier scans." : ""} Try again in a few minutes.`
+          }
+        />
       )}
 
       {overview.scanNotice && !(scanStatus.ok && (scanStatus.data.scanning || scanStatus.data.lastResult === "failed")) && (
-        <p role="status" className="rounded-lg border border-border bg-mid-bg px-4 py-2.5 text-[13px] text-mid-text" data-testid="scan-notice">
-          {overview.scanNotice}
-        </p>
+        <HideableNotice id="scan-notice" text={overview.scanNotice} testId="scan-notice" />
       )}
 
       {!score ? (
@@ -143,7 +142,7 @@ export default async function OverviewPage({ searchParams }: { searchParams: Pro
       ) : (
         <>
           <Suspense fallback={<SummarySkeleton />}>
-            <SummarySection overview={overview} compete={compete} sources={sources} picked={picked} sample={!!workspace.account?.isTest} days={days} />
+            <SummarySection overview={overview} compete={compete} sources={sources} picked={picked} days={days} />
           </Suspense>
           <Suspense fallback={<ToolsSkeleton />}>
             <ToolsSection overview={overview} compete={compete} />

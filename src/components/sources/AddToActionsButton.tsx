@@ -10,6 +10,8 @@ import { fixHref } from "@/lib/fix-where";
 import type { ActionResult } from "@/modules/auth";
 import { STATUS_TEXT, type ActionState, type ActionStatus } from "@/modules/opportunities/board/service";
 import type { SiteAction } from "@/modules/sources/listings";
+import { PILL_CLASS } from "@/components/app/pills";
+import { cn } from "cn";
 
 /** The addToActions server action, passed in by the page. */
 export type AddToActions = (input: unknown) => Promise<ActionResult<ActionState>>;
@@ -39,7 +41,7 @@ export function AddToActionsButton({ businessId, action, inActions, actionId = n
     return (
       <Link
         href={id ? fixHref(id) : "/actions"}
-        className="inline-flex h-8 items-center gap-1.5 text-[13px] font-medium whitespace-nowrap text-good-text hover:underline"
+        className={cn("inline-flex h-7 items-center gap-1.5 rounded-md px-2.5 text-[12.5px] font-medium whitespace-nowrap hover:underline", PILL_CLASS.inActions)}
         data-testid="in-actions"
       >
         <CircleCheck className="size-3.5" aria-hidden="true" />

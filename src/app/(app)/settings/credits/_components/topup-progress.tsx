@@ -63,7 +63,7 @@ export function TopupProgress({ sessionId, status }: { sessionId: string; status
     );
   }
   return (
-    <div role="status" data-testid="topup-done" className="flex flex-col gap-4 rounded-md border border-border bg-surface p-5">
+    <div role="status" data-testid="topup-done" className="flex flex-col gap-4 rounded-md border border-border bg-surface p-4">
       <p className="flex items-start gap-2 text-[15px] font-medium">
         <CheckCircle2 className="mt-0.5 size-5 shrink-0 text-good" aria-hidden="true" />
         {credits(state.added)} added.

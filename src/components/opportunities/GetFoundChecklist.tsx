@@ -9,6 +9,7 @@ import { Progress } from "@/components/ui/progress";
 import type { ActionResult } from "@/modules/auth";
 import type { ChecklistItem, ChecklistKey } from "@/modules/opportunities";
 import { CopyButton } from "./CopyButton";
+import { PILL_BOX, PILL_CLASS } from "@/components/app/pills";
 
 type SetChecklist = (input: { businessId: string; key: ChecklistKey; done: boolean }) => Promise<ActionResult<{ done: boolean }>>;
 
@@ -86,8 +87,9 @@ export function GetFoundChecklist({
             <li
               key={item.key}
               className={cn(
-                "inline-flex h-[21px] items-center gap-1 rounded-sm px-1.5 text-[11.5px] font-medium whitespace-nowrap",
-                item.done ? "bg-good-bg text-good-text" : "bg-muted text-muted-foreground",
+                PILL_BOX,
+                "gap-1",
+                item.done ? PILL_CLASS.plain : PILL_CLASS.attention,
               )}
               title={item.title}
             >

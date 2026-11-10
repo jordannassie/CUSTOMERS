@@ -1,39 +1,32 @@
 import type { ReactNode } from "react";
-import { cn } from "cn";
 import { Sparkline } from "@/components/competitors/Sparkline";
 
 type KpiTileProps = {
   label: string;
   value: ReactNode;
   sub?: ReactNode;
-  tone?: "good" | "mid";
   testId?: string;
   /** The last scans, drawn as a small line to the right of the value (mockup-ui). Hidden with fewer than 2 scans. */
   trend?: (number | null)[];
-  trendColor?: string;
   /** A change chip (PointsChange) shown on the context line. */
   change?: ReactNode;
 };
 
 /** One number at the top of a page: a label, the value, an optional trend line, and one line of context. */
-export function KpiTile({ label, value, sub, tone, testId, trend, trendColor, change }: KpiTileProps) {
+// Values in plain text and trend lines in one blue, so the strip reads calmly (colour cleanup, 2026-11-10).
+export function KpiTile({ label, value, sub, testId, trend, change }: KpiTileProps) {
   const showTrend = trend && trend.filter((v) => v !== null).length >= 2;
   return (
-    <div className="flex min-w-0 flex-col gap-1 bg-surface px-[18px] pt-4 pb-3.5" data-testid={testId}>
+    <div className="flex min-w-0 flex-col gap-1 bg-surface px-4 pt-3 pb-2.5" data-testid={testId}>
       <span className="text-xs text-muted-foreground">{label}</span>
       <div className="flex items-end justify-between gap-2">
-        <span
-          className={cn(
-            "truncate text-[26px] leading-tight font-semibold tracking-[-0.03em] tabular-nums",
-            tone === "good" && "text-good-text",
-            tone === "mid" && "text-mid-text",
-          )}
-        >
+        <span className="truncate text-[20px] leading-tight font-semibold tracking-[-0.03em] tabular-nums">
           {value}
         </span>
         {showTrend && (
-          <span className="shrink-0 pb-1">
-            <Sparkline values={trend} color={trendColor ?? "var(--chart-1)"} />
+          // Hidden on a phone, where the value needs the whole tile.
+          <span className="hidden shrink-0 pb-1 sm:block">
+            <Sparkline values={trend} color="var(--chart-1)" />
           </span>
         )}
       </div>

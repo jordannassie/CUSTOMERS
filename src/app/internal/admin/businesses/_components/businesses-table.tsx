@@ -132,7 +132,7 @@ function planText(r: AdminBusinessRow): string | null {
 }
 
 function DraftBadge() {
-  return <Badge variant="outline">Draft</Badge>;
+  return <Badge variant="secondary">Draft</Badge>;
 }
 
 function AgencyCell({ agency }: { agency: AdminBusinessRow["agency"] }) {

@@ -14,11 +14,12 @@ import { LocalDate } from "@/components/ui/local-date";
 import { compareHref } from "@/lib/compare-href";
 import { fixCardId } from "@/lib/fix-where";
 import { ACTION_STATUSES, STATUS_TEXT, type ActionItem, type ActionStatus } from "@/modules/opportunities/board/service";
+import { PILL_VARIANT } from "@/components/app/pills";
 
 export const IMPACT = {
-  high: { text: "High", variant: "low" },
-  medium: { text: "Medium", variant: "mid" },
-  low: { text: "Low", variant: "secondary" },
+  high: { text: "High", variant: PILL_VARIANT.attention },
+  medium: { text: "Medium", variant: PILL_VARIANT.plain },
+  low: { text: "Low", variant: PILL_VARIANT.plain },
 } as const;
 
 /** "Oct 27", in the viewer's own time zone without a hydration mismatch (LocalDate). */
@@ -154,7 +155,7 @@ export function ActionCard({
       <div className="mt-0.5 flex flex-wrap items-center justify-between gap-2">
         <span className="flex min-w-0 items-center gap-2 text-[11.5px] text-text-hint tabular-nums">
           {item.status === "done" && item.completedAt ? (
-            <span className="flex items-center gap-1 text-good-text" data-testid="action-done">
+            <span className="flex items-center gap-1 text-muted-foreground" data-testid="action-done">
               <CircleCheck className="size-3" aria-hidden="true" />
               Done <LocalDate iso={item.completedAt} options={SHORT_DAY} />
             </span>

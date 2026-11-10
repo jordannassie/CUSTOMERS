@@ -5,7 +5,6 @@ import type { QuestionRow, QuestionsView } from "@/modules/questions/service";
 
 type Part = { label: string; count: number; className?: string; color?: string };
 
-const DOT: Record<string, string> = { openai: "bg-chatgpt", anthropic: "bg-claude", perplexity: "bg-perplexity" };
 
 /** A titled card: the legend with counts, and one bar split in the same parts. */
 function SummaryCard({ title, parts, testId }: { title: string; parts: Part[]; testId: string }) {
@@ -49,8 +48,8 @@ function resultParts(rows: QuestionRow[], models: number): Part[] {
   const allLabel = models === 1 ? "named you" : models === 2 ? "named by both" : `named by all ${models}`;
   const someLabel = models === 3 ? "named by 1 or 2" : "named by 1";
   return [
-    { label: allLabel, count: all, className: "bg-good" },
-    { label: someLabel, count: some, className: "bg-primary" },
+    { label: allLabel, count: all, className: "bg-primary" },
+    { label: someLabel, count: some, className: "bg-primary/45" },
     { label: "not named", count: none, className: "bg-muted-foreground/25" },
     { label: "not checked yet", count: notYet, className: "bg-border" },
   ];
@@ -81,12 +80,9 @@ function ModelCard({ view }: { view: QuestionsView }) {
           const pct = checks ? Math.round((appeared / checks) * 100) : 0;
           return (
             <li key={m.id} className="grid grid-cols-[96px_minmax(0,1fr)_auto] items-center gap-3 text-xs">
-              <span className="inline-flex items-center gap-1.5 font-medium">
-                <span className={cn("size-2 rounded-full", DOT[m.id])} aria-hidden="true" />
-                {m.label}
-              </span>
+              <span className="font-medium">{m.label}</span>
               <span className="h-2 overflow-hidden rounded-full bg-muted" aria-hidden="true">
-                <span className={cn("block h-full rounded-full", DOT[m.id])} style={{ width: `${pct}%` }} />
+                <span className="block h-full rounded-full bg-primary" style={{ width: `${pct}%` }} />
               </span>
               <span className="text-muted-foreground tabular-nums">{checks ? `${appeared} of ${checks} answers` : "Not checked yet"}</span>
             </li>

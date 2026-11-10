@@ -54,8 +54,8 @@ export function CompetitorAliases({ businessId, competitors, save }: { businessI
 
   return (
     <section aria-labelledby="competitor-aliases-title" className="mt-10 max-w-2xl overflow-hidden rounded-lg border border-border bg-card">
-      <div className="flex flex-col gap-1 border-b border-border px-[18px] py-3.5">
-        <h2 id="competitor-aliases-title" className="text-[14.5px] font-semibold tracking-[-0.01em]">
+      <div className="flex flex-col gap-1 border-b border-border px-4 py-3.5">
+        <h2 id="competitor-aliases-title" className="text-[14px] font-semibold tracking-[-0.01em]">
           Other names
         </h2>
         <p className="text-[13px] text-muted-foreground">
@@ -63,7 +63,7 @@ export function CompetitorAliases({ businessId, competitors, save }: { businessI
           Answers that use them count for that competitor.
         </p>
       </div>
-      <form onSubmit={submit} className="flex flex-col gap-5 px-[18px] py-4" aria-label="Competitors' other names" noValidate>
+      <form onSubmit={submit} className="flex flex-col gap-5 px-4 py-4" aria-label="Competitors' other names" noValidate>
         {competitors.map((c) => {
           const id = `aliases-${c.id}`;
           return (

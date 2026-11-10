@@ -43,11 +43,11 @@ export function TopupCheckout({ packs, mode, publishableKey, returnedSessionId, 
           e.preventDefault();
           setPaying(true);
         }}
-        className="flex flex-col gap-5"
+        className="flex flex-col gap-4"
       >
         <fieldset>
           <legend className="text-sm font-medium">Choose a pack</legend>
-          <div className="mt-3 grid gap-3 sm:grid-cols-2">
+          <div className={cn("mt-3 grid gap-3 sm:grid-cols-2", packs.length >= 3 && "lg:grid-cols-3")}>
             {packs.map((p) => (
               <label
                 key={p.id}
@@ -87,7 +87,7 @@ export function TopupCheckout({ packs, mode, publishableKey, returnedSessionId, 
 
   const label = `Pay ${formatUsd(pack.priceCents)}`;
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex max-w-[640px] flex-col gap-4">
       <div className="flex items-center justify-between gap-3 rounded-md border border-border bg-surface px-4 py-3 text-sm">
         <span data-testid="chosen-pack">
           <span className="font-semibold">{formatCount(pack.credits)} credits</span> for {formatUsd(pack.priceCents)}

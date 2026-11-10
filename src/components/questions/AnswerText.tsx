@@ -32,7 +32,7 @@ function Marked({ parts }: { parts: Part[] }) {
             {p.text}
           </mark>
         ) : p.mark === "other" ? (
-          <mark key={i} className="rounded-xs bg-mid-bg px-0.5 font-medium text-foreground">
+          <mark key={i} className="rounded-xs bg-primary-tint px-0.5 font-medium text-foreground">
             {p.text}
           </mark>
         ) : (

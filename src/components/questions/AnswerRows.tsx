@@ -5,6 +5,7 @@ import { Tabs as TabsPrimitive } from "radix-ui";
 import { cn } from "cn";
 import { LocalDate } from "@/components/ui/local-date";
 import type { QuestionAnswer } from "@/modules/questions/answers";
+import { PILL_CLASS } from "@/components/app/pills";
 
 const SHORT: Intl.DateTimeFormatOptions = { month: "short", day: "numeric" };
 const DOT: Record<string, string> = { openai: "bg-chatgpt", anthropic: "bg-claude", perplexity: "bg-perplexity" };
@@ -42,7 +43,7 @@ export function AnswerRows({ answers, businessName }: { answers: QuestionAnswer[
               <span
                 className={cn(
                   "inline-flex w-fit items-center gap-1 rounded-sm px-1.5 py-0.5 text-xs font-medium",
-                  a.namedYou ? "bg-good-bg text-good-text" : "bg-muted text-muted-foreground",
+                  a.namedYou ? PILL_CLASS.plain : PILL_CLASS.attention,
                 )}
               >
                 {a.namedYou ? <Check className="size-3" aria-hidden="true" /> : <Minus className="size-3" aria-hidden="true" />}
@@ -63,7 +64,7 @@ export function AnswerRows({ answers, businessName }: { answers: QuestionAnswer[
                     className={cn(
                       "grid size-6 place-items-center rounded-full border-2 border-surface text-[10px] font-semibold",
                       i > 0 && "-ml-1.5",
-                      n === businessName && a.namedYou ? "bg-primary-tint text-primary-hover" : "bg-muted text-muted-foreground",
+                      n === businessName && a.namedYou ? PILL_CLASS.plain : PILL_CLASS.attention,
                     )}
                   >
                     {n.trim().charAt(0).toUpperCase()}

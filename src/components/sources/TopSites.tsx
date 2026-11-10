@@ -1,5 +1,4 @@
 import { SiteIcon } from "@/components/app/SiteIcon";
-import { OTHER_SERIES_COLOR, SERIES_COLORS } from "@/lib/series-colors";
 import type { Site } from "@/modules/sources/service";
 import { CardHead } from "./SectionCard";
 
@@ -9,30 +8,22 @@ type Props = { sites: Site[]; answers: number };
 
 const pct = (n: number, total: number) => Math.round((n / Math.max(total, 1)) * 100);
 
-/** Your own site in the brand blue, the others in the chart hues by rank, grey past the fifth. */
-function colors(sites: Site[]): Map<string, string> {
-  const others = sites.filter((s) => s.kind !== "own");
-  return new Map(sites.map((s) => [s.host, s.kind === "own" ? SERIES_COLORS[0] : (SERIES_COLORS[others.indexOf(s) + 1] ?? OTHER_SERIES_COLOR)]));
-}
-
 /**
- * The top card: the websites AI used most, each bar split into answers that named you and answers that did not,
- * and beside it each site's share of all answers.
+ * The top card: the websites AI used most, each bar split into answers that named you and answers that did not, with
+ * the count and its share of all answers. (A second "Share of answers" list repeated the same sites; removed 2026-11-10.)
  */
 export function TopSites({ sites, answers }: Props) {
   const top = [...sites].sort((a, b) => b.answers - a.answers).slice(0, TOP);
   const max = Math.max(...top.map((s) => s.answers), 1);
-  const color = colors(top);
   return (
-    <section className="grid min-w-0 overflow-hidden rounded-lg border border-border bg-surface xl:grid-cols-[minmax(0,1fr)_320px]" data-testid="top-sites">
+    <section className="min-w-0 overflow-hidden rounded-lg border border-border bg-surface" data-testid="top-sites">
       <div className="flex min-w-0 flex-col">
         <CardHead title="Websites AI used most" aside={<Legend />} />
-        {/* Spread to the height of the share list beside it, so the rows roughly line up. */}
-        <ul className="flex flex-1 flex-col justify-around gap-3.5 px-4 py-4 sm:px-[18px]">
+        <ul className="flex flex-col gap-3.5 px-4 py-4 sm:px-4">
           {top.map((s) => {
             const named = s.answers - s.answersWithoutYou;
             return (
-              <li key={s.host} className="grid grid-cols-[minmax(0,9rem)_minmax(0,1fr)_2rem] items-center gap-3 text-[13px] sm:grid-cols-[minmax(0,12rem)_minmax(0,1fr)_2.5rem]">
+              <li key={s.host} className="grid grid-cols-[minmax(0,9rem)_minmax(0,1fr)_3.5rem] items-center gap-3 text-[13px] sm:grid-cols-[minmax(0,12rem)_minmax(0,1fr)_4.5rem]">
                 <span className="flex min-w-0 items-center gap-2">
                   <SiteIcon domain={s.host} name={s.host} size="sm" />
                   <span className="truncate" title={s.host}>{s.host}</span>
@@ -41,34 +32,17 @@ export function TopSites({ sites, answers }: Props) {
                   {named > 0 && <span className="h-full bg-primary" style={{ width: `${(named / s.answers) * 100}%` }} />}
                   {s.answersWithoutYou > 0 && <span className="h-full flex-1 bg-competitor-3" />}
                 </span>
-                <span className="text-right font-medium tabular-nums">
+                <span className="text-right font-medium whitespace-nowrap tabular-nums">
                   {s.answers}
                   <span className="sr-only">
                     {" "}
-                    {s.answers === 1 ? "answer" : "answers"}, {named} named you
+                    {s.answers === 1 ? "answer" : "answers"}, {named} named you,
                   </span>
+                  <span className="ml-1.5 hidden text-xs font-normal text-text-hint sm:inline">{pct(s.answers, answers)}%</span>
                 </span>
               </li>
             );
           })}
-        </ul>
-      </div>
-      <div className="min-w-0 border-t border-border xl:border-t-0 xl:border-l">
-        <CardHead title="Share of answers" aside="Last 30 days" />
-        <ul className="flex flex-col divide-y divide-muted">
-          {top.map((s) => (
-            <li key={s.host} className="grid grid-cols-[8px_24px_minmax(0,1fr)_auto] items-center gap-2.5 px-4 py-2.5 text-[13px] sm:px-[18px]">
-              <span className="size-2 rounded-full" style={{ background: color.get(s.host) }} aria-hidden="true" />
-              <SiteIcon domain={s.host} name={s.host} size="sm" />
-              <span className="truncate font-medium" title={s.host}>{s.host}</span>
-              <span className="flex flex-col items-end gap-px">
-                <b className="font-semibold tabular-nums">{pct(s.answers, answers)}%</b>
-                <small className="text-[11.5px] whitespace-nowrap text-text-hint tabular-nums">
-                  {s.answers} {s.answers === 1 ? "answer" : "answers"}
-                </small>
-              </span>
-            </li>
-          ))}
         </ul>
       </div>
     </section>

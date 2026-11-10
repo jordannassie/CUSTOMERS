@@ -102,7 +102,7 @@ export function ScanChart({
           Your 30-day score
         </li>
       </ul>
-      <ChartContainer config={config} className="aspect-auto h-64 w-full" aria-hidden="true">
+      <ChartContainer config={config} className="aspect-auto h-48 w-full" aria-hidden="true">
         <ComposedChart data={timeline} margin={{ top: 8, right: 12, bottom: 0, left: 0 }}>
           <defs>
             <linearGradient id="overview-you-fill" x1="0" y1="0" x2="0" y2="1">

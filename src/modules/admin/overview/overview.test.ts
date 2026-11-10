@@ -108,9 +108,9 @@ describe("admin overview (B-65)", () => {
       scope.agencyIds = null;
     });
     expect(overview).toMatchObject({ agencies: 4, activeTrials: 1, payingBusinesses: 0 });
+    // Test agencies are left out of the list like the counts (2026-11-10); "Include test agencies" brings them back.
     expect(overview.recentSignups.map((a) => [a.id, a.status])).toEqual([
       [realWithBusiness.agencyId, "active"],
-      [test.agencyId, "active"],
       [ended, "trial_ended"],
       [unfinished, "signup_unfinished"],
       [real, "trialing"],

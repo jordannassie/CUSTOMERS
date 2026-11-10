@@ -12,7 +12,7 @@ type Props = { searchParams: Promise<{ status?: string | string[] }> };
 // The admin check runs inside Suspense too: awaiting it at the top would block every filter change.
 export default function AdminScansPage({ searchParams }: Props) {
   return (
-    <div className="mx-auto flex max-w-7xl flex-col gap-6 px-4 py-8 sm:px-6">
+    <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-4 px-4 py-4 sm:px-6 sm:py-5">
       <AdminPageHeader
         title="Scans"
         subtitle="Every scan job, newest first. Real cost is what the AI providers charged us; cached answers cost nothing."

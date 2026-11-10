@@ -7,12 +7,13 @@ import { cn } from "cn";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import type { ShownFix } from "@/modules/reports";
+import { PILL_VARIANT } from "@/components/app/pills";
 
 const PRIORITY = {
-  critical: { text: "Critical", variant: "low" },
-  high: { text: "High priority", variant: "low" },
-  medium: { text: "Medium priority", variant: "mid" },
-  low: { text: "Low priority", variant: "secondary" },
+  critical: { text: "Critical", variant: PILL_VARIANT.attention },
+  high: { text: "High priority", variant: PILL_VARIANT.attention },
+  medium: { text: "Medium priority", variant: PILL_VARIANT.plain },
+  low: { text: "Low priority", variant: PILL_VARIANT.plain },
 } as const;
 const LEVEL = { high: "High", medium: "Medium", low: "Low" } as const;
 

@@ -12,9 +12,9 @@ export default async function AdminSettingsPage() {
   await requireAdmin({ next: "/internal/admin/settings" });
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
+    <div className="mx-auto w-full max-w-[1200px] px-4 py-4 sm:px-6 sm:py-5">
       {/* Same outer width as every admin page; the status list itself reads best narrow, so it stays left aligned. */}
-      <div className="flex max-w-3xl flex-col gap-8">
+      <div className="flex flex-col gap-6">
         <AdminPageHeader
           title="Settings"
           subtitle="Whether every service the app depends on is connected and working. Keys are changed in Netlify and Supabase."

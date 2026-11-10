@@ -5,11 +5,12 @@ import type { Impact } from "@/modules/sources/listings";
 import type { ListedSite } from "@/modules/sources/rows";
 import { AddToActionsButton, type AddToActions } from "./AddToActionsButton";
 import { SectionCard } from "./SectionCard";
+import { PILL_VARIANT } from "@/components/app/pills";
 
-const IMPACT: Record<Impact, { label: string; variant: "low" | "mid" | "secondary" }> = {
-  high: { label: "High", variant: "low" },
-  medium: { label: "Medium", variant: "mid" },
-  low: { label: "Low", variant: "secondary" },
+const IMPACT: Record<Impact, { label: string; variant: "tint" | "secondary" }> = {
+  high: { label: "High", variant: PILL_VARIANT.attention },
+  medium: { label: "Medium", variant: PILL_VARIANT.plain },
+  low: { label: "Low", variant: PILL_VARIANT.plain },
 };
 
 type Props = { businessId: string; listed: ListedSite[]; add: AddToActions };
@@ -27,7 +28,7 @@ export function ListedFirst({ businessId, listed, add }: Props) {
       testId="listed-first"
     >
       {listed.length === 0 ? (
-        <p className="px-4 py-5 text-[13px] text-muted-foreground sm:px-[18px]" data-testid="listed-first-empty">
+        <p className="px-4 py-5 text-[13px] text-muted-foreground sm:px-4" data-testid="listed-first-empty">
           Every listing site AI used also named you. Keep those listings up to date.
         </p>
       ) : (
@@ -35,7 +36,7 @@ export function ListedFirst({ businessId, listed, add }: Props) {
           {listed.map((s) => (
             <li
               key={s.host}
-              className="flex flex-col gap-2.5 px-4 py-3 sm:flex-row sm:items-center sm:gap-3 sm:px-[18px]"
+              className="flex flex-col gap-2.5 px-4 py-3 sm:flex-row sm:items-center sm:gap-3 sm:px-4"
               data-testid="listed-site"
             >
               <div className="flex min-w-0 flex-1 items-start gap-2.5">

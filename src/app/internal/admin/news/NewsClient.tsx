@@ -122,7 +122,7 @@ export default function NewsClient({ initialPeriod }: { initialPeriod: Period })
   const periodLabel = PERIOD_OPTIONS.find((p) => p.value === period)?.label;
 
   return (
-    <div className="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-8 sm:px-6">
+    <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-4 px-4 py-4 sm:px-6 sm:py-5">
       <AdminPageHeader
         title="LinkedIn studio"
         subtitle="Turn AI search news into LinkedIn posts that help agencies win and serve clients."

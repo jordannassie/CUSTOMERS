@@ -97,7 +97,7 @@ export function CreditHistory({ rows }: { rows: AdminAgencyDetail["ledger"] }) {
                   {l.by && `, by ${l.by}`}
                 </span>
               </span>
-              <span className={l.delta < 0 ? "shrink-0 tabular-nums text-low-text" : "shrink-0 tabular-nums text-good-text"}>
+              <span className="shrink-0 font-medium tabular-nums text-foreground">
                 {l.delta > 0 ? "+" : ""}
                 {credits(l.delta)}
               </span>

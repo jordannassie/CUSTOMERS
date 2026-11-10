@@ -5,15 +5,16 @@ import { cn } from "cn";
 import { Badge } from "@/components/ui/badge";
 import type { ClaimRow, ServiceChip } from "@/modules/competitors";
 import { QuoteBox, QuoteRow, Said, useOpenRows } from "./QuoteRows";
+import { PILL_VARIANT } from "@/components/app/pills";
 
 const sentence = (label: string) => label.charAt(0).toUpperCase() + label.slice(1);
 
 type Yours = ServiceChip["yours"];
 const STATUS = {
-  missing: { text: "Not on your site", variant: "mid" },
-  mentioned: { text: "Mentioned only", variant: "secondary" },
-  listed: { text: "On your site", variant: "good" },
-  unknown: { text: "Not checked", variant: "secondary" },
+  missing: { text: "Not on your site", variant: PILL_VARIANT.attention },
+  mentioned: { text: "Mentioned only", variant: PILL_VARIANT.plain },
+  listed: { text: "On your site", variant: PILL_VARIANT.plain },
+  unknown: { text: "Not checked", variant: PILL_VARIANT.plain },
 } as const;
 const statusOf = (y: Yours): keyof typeof STATUS => (y === null ? "unknown" : y === false ? "missing" : y === "mentioned" ? "mentioned" : "listed");
 // Gaps first: what they list and you don't is what to act on.
@@ -147,9 +148,9 @@ function Mark({ value, gap = false }: { value: boolean; gap?: boolean }) {
   return (
     <span className="flex justify-center">
       {value ? (
-        <Check className="size-4 text-good-text" aria-label="Says it" />
+        <Check className="size-4 text-foreground" aria-label="Says it" />
       ) : (
-        <Minus className={cn("size-4", gap ? "text-mid-text" : "text-text-hint")} aria-label="Not found" />
+        <Minus className={cn("size-4", gap ? "text-foreground" : "text-text-hint")} aria-label="Not found" />
       )}
     </span>
   );

@@ -37,12 +37,12 @@ export default async function UsagePage() {
         }
       />
 
-      <div className="mt-6 grid gap-6 lg:grid-cols-2">
+      <div className="mt-4 grid gap-4 lg:grid-cols-2">
         <BalanceSummary balance={report.balance} />
         <ForecastCard forecast={report.forecast} buyCreditsHref={BUY_CREDITS_HREF} />
       </div>
 
-      <section aria-labelledby="month-heading" className="mt-6">
+      <section aria-labelledby="month-heading" className="mt-4">
         <div className="flex flex-wrap items-baseline justify-between gap-2">
           <h2 id="month-heading" className="text-lg font-semibold tracking-[-0.02em]">
             Used in {monthName(month.startsAt)}
@@ -59,7 +59,7 @@ export default async function UsagePage() {
             No credits used yet this month. Each scan&apos;s checks will show here by business and by AI model.
           </p>
         ) : (
-          <div className="mt-3 grid gap-6 lg:grid-cols-2">
+          <div className="mt-3 grid gap-4 lg:grid-cols-2">
             <Breakdown
               title="By business"
               testId="by-business"
@@ -76,7 +76,7 @@ export default async function UsagePage() {
         )}
       </section>
 
-      <div className="mt-6">
+      <div className="mt-4">
         <ScanHistory scans={report.scans} />
       </div>
     </PageContainer>

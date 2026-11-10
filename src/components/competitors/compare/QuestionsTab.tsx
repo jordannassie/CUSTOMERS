@@ -4,13 +4,14 @@ import { SiteIcon } from "@/components/app/SiteIcon";
 import { Badge } from "@/components/ui/badge";
 import type { WhyPanel } from "@/modules/competitors";
 import { tallyResult, type TallyResult } from "@/modules/standing";
+import { PILL_VARIANT } from "@/components/app/pills";
 
 // Who wins needs a gap bigger than the margin and at least 2 answers (tallyResult), not any difference.
-const RESULT: Record<TallyResult, { text: string; variant: "mid" | "secondary" | "good" }> = {
-  they_win: { text: "They win", variant: "mid" },
-  tie: { text: "About the same", variant: "secondary" },
-  you_win: { text: "You win", variant: "good" },
-  too_few: { text: "Too few answers", variant: "secondary" },
+const RESULT: Record<TallyResult, { text: string; variant: "tint" | "secondary" }> = {
+  they_win: { text: "They win", variant: PILL_VARIANT.attention },
+  tie: { text: "About the same", variant: PILL_VARIANT.plain },
+  you_win: { text: "You win", variant: PILL_VARIANT.plain },
+  too_few: { text: "Too few answers", variant: PILL_VARIANT.plain },
 };
 
 // Less padding on a phone, so four columns fit 358px; the usual 12px from sm up.

@@ -9,8 +9,8 @@ const badgeVariants = cva(
     variants: {
       variant: {
         default: "bg-primary text-primary-foreground [a]:hover:bg-primary-hover",
-        secondary:
-          "bg-secondary text-secondary-foreground [a]:hover:bg-secondary/80",
+        // The app's light grey pill (src/components/app/pills.ts); tint is its light blue one.
+        secondary: "bg-border/70 text-foreground/80 [a]:hover:bg-border",
         destructive: "bg-low-bg text-low-text",
         good: "bg-good-bg text-good-text",
         mid: "bg-mid-bg text-mid-text",

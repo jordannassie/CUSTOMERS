@@ -29,10 +29,10 @@ export function NewBusinessPlanPicker({ plans, nextHref, blockedReason, planNow,
   const [planId, setPlanId] = useState(plans[0]?.id ?? "");
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-4">
       <fieldset>
         <legend className="sr-only">Plans</legend>
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className={cn("grid gap-3 sm:grid-cols-2", plans.length >= 3 && "lg:grid-cols-3")}>
           {plans.map((p) => (
             <label
               key={p.id}

@@ -172,7 +172,7 @@ export function BusinessSwitcher({
   return (
     <DropdownMenu onOpenChange={onOpenChange}>
       <DropdownMenuTrigger
-        className="flex w-full items-center gap-2.5 rounded-md border border-border bg-surface px-2.5 py-2 text-left outline-none transition-colors hover:border-input focus-visible:ring-3 focus-visible:ring-ring/50"
+        className="flex w-full items-center gap-2 rounded-md border border-border bg-surface px-2 py-1.5 text-left outline-none transition-colors hover:border-input focus-visible:ring-3 focus-visible:ring-ring/50"
         aria-label={`Business: ${active.name}. Switch business`}
         title={active.name}
         data-testid="business-switcher"
@@ -180,15 +180,15 @@ export function BusinessSwitcher({
         <BusinessMark name={active.name} logoUrl={active.logoUrl} domain={active.domain} />
         {/* Long names get two lines, so the start of the name and the domain both stay readable. */}
         <span className="min-w-0 flex-1">
-          <span className="line-clamp-2 text-sm font-medium break-words text-foreground" data-testid="switcher-name">
+          <span className="line-clamp-2 text-[13px] leading-snug font-medium break-words text-foreground" data-testid="switcher-name">
             {active.name}
           </span>
-          {active.domain && <span className="block truncate text-xs text-muted-foreground" title={active.domain}>{active.domain}</span>}
+          {active.domain && <span className="block truncate text-[11px] leading-snug text-muted-foreground" title={active.domain}>{active.domain}</span>}
         </span>
         {pending ? (
-          <Loader2 className="size-4 shrink-0 animate-spin text-muted-foreground" aria-label="Switching" />
+          <Loader2 className="size-3.5 shrink-0 animate-spin text-muted-foreground" aria-label="Switching" />
         ) : (
-          <ChevronsUpDown className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+          <ChevronsUpDown className="size-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />
         )}
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="w-[min(20rem,calc(100vw-2rem))]">

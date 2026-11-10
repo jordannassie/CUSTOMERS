@@ -49,7 +49,7 @@ export function SitesTable({ businessId, rows, answers, moreSites, add }: Props)
 
   return (
     <SectionCard title="All websites AI used" aside={`Out of ${answers} ${answers === 1 ? "answer" : "answers"}.`}>
-      <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-[18px]">
+      <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-4">
         <SegmentedControl
           aria-label="Show websites"
           options={FILTERS.map((f) => ({ value: f.value, label: f.label }))}
@@ -63,7 +63,7 @@ export function SitesTable({ businessId, rows, answers, moreSites, add }: Props)
         </span>
       </div>
       {matching.length === 0 ? (
-        <p className="border-t border-border px-4 py-6 text-[13px] text-muted-foreground sm:px-[18px]" data-testid="no-matching-sites">
+        <p className="border-t border-border px-4 py-6 text-[13px] text-muted-foreground sm:px-4" data-testid="no-matching-sites">
           No websites match this filter yet.
         </p>
       ) : (
@@ -146,7 +146,7 @@ export function SitesTable({ businessId, rows, answers, moreSites, add }: Props)
           </TableBody>
         </Table>
       )}
-      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border px-4 py-3 text-xs text-text-hint sm:px-[18px]">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border px-4 py-3 text-xs text-text-hint sm:px-4">
         <span>
           Showing {shown.length} of {matching.length}.
           {moreSites > 0 && (

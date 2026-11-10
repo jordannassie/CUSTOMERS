@@ -10,6 +10,8 @@ import { fixHref } from "@/lib/fix-where";
 import type { ActionResult } from "@/modules/auth";
 import { STATUS_TEXT, type ActionState } from "@/modules/opportunities/board/service";
 import type { MoveAction } from "./ActionsBoard";
+import { PILL_CLASS } from "@/components/app/pills";
+import { cn } from "cn";
 
 /** What "Add to Actions" saves (addActionInput); the page fills it from a reason or a site. */
 export type NewActionInput = {
@@ -73,7 +75,7 @@ export function AddToActionsButton({
     const link = (
       <Link
         href={fixHref(state.id)}
-        className="inline-flex h-9 w-fit items-center gap-1.5 rounded-md bg-good-bg px-3 text-[13px] font-medium text-good-text outline-none hover:underline focus-visible:ring-3 focus-visible:ring-ring/50"
+        className={cn("inline-flex h-9 w-fit items-center gap-1.5 rounded-md px-3 text-[13px] font-medium outline-none hover:underline focus-visible:ring-3 focus-visible:ring-ring/50", PILL_CLASS.inActions)}
         data-testid="in-actions"
       >
         <Check className="size-3.5" aria-hidden="true" />

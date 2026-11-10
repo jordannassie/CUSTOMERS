@@ -5,7 +5,7 @@ import { count, credits } from "./format";
 import { LocalDayAndTime } from "./LocalTime";
 
 const STATUS = {
-  done: { label: "Finished", variant: "good" },
+  done: { label: "Finished", variant: "secondary" },
   running: { label: "Running", variant: "tint" },
   queued: { label: "Waiting", variant: "secondary" },
   failed: { label: "Failed", variant: "low" },
@@ -27,7 +27,7 @@ function Reused({ n }: { n: number }) {
 export function ScanHistory({ scans }: { scans: UsageReport["scans"] }) {
   return (
     <section aria-labelledby="history-heading" className="rounded-md border border-border bg-surface">
-      <div className="px-5 pt-5 pb-3">
+      <div className="px-4 pt-4 pb-3">
         <h2 id="history-heading" className="text-base font-semibold tracking-[-0.02em]">
           Scan history
         </h2>
@@ -37,7 +37,7 @@ export function ScanHistory({ scans }: { scans: UsageReport["scans"] }) {
         </p>
       </div>
       {scans.length === 0 ? (
-        <p data-testid="history-empty" className="border-t border-border px-5 py-8 text-center text-sm text-muted-foreground">
+        <p data-testid="history-empty" className="border-t border-border px-4 py-8 text-center text-sm text-muted-foreground">
           No scans yet. Once your first scan runs, you will see what each one cost here.
         </p>
       ) : (
@@ -47,7 +47,7 @@ export function ScanHistory({ scans }: { scans: UsageReport["scans"] }) {
             {scans.map((scan) => {
               const status = statusOf(scan.status);
               return (
-                <li key={scan.id} className="flex items-center justify-between gap-3 px-5 py-3">
+                <li key={scan.id} className="flex items-center justify-between gap-3 px-4 py-3">
                   <div className="min-w-0">
                     <p className="truncate text-sm" title={scan.businessName}>{scan.businessName}</p>
                     <p className="mt-0.5 text-xs tabular-nums text-muted-foreground">

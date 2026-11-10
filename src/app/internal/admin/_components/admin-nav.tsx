@@ -11,7 +11,7 @@ import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/s
 import { EXTRA_ITEMS, MAIN_ITEMS, isActiveItem, type AdminNavItem } from "./nav-items";
 import { appFetch } from "@/lib/session-expired";
 
-const LOGO = "/images/logos/logo-black.png";
+const LOGO = "/images/logos/logo-black-sidebar.png";
 
 function useUnreadLeads(pathname: string): number {
   const [count, setCount] = useState(0);
@@ -25,6 +25,12 @@ function useUnreadLeads(pathname: string): number {
   }, [pathname]);
   return count;
 }
+
+// The same row style as the app's sidebar (AppSidebar): 32px tall, 16px icon, a light blue tint on the page you are on.
+const ROW =
+  "flex h-8 w-full items-center gap-2.5 rounded-md px-2.5 text-[12.5px] outline-none transition-colors focus-visible:ring-3 focus-visible:ring-ring/50";
+const ROW_IDLE = "text-foreground/75 hover:bg-foreground/5 hover:text-foreground";
+const GROUP_LABEL = "px-2.5 pb-1 text-[11px] font-medium text-text-hint";
 
 function NavLink({
   item,
@@ -44,19 +50,14 @@ function NavLink({
       href={item.href}
       onClick={onNavigate}
       aria-current={active ? "page" : undefined}
-      className={cn(
-        "flex items-center gap-2.5 rounded-md px-3 py-2 text-[14px] font-medium transition-colors duration-150 ease-out focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
-        active
-          ? "bg-primary-tint text-primary"
-          : "text-muted-foreground hover:bg-surface hover:text-foreground",
-      )}
+      className={cn(ROW, active ? "bg-primary-tint font-medium text-primary" : ROW_IDLE)}
     >
-      <Icon className="size-4 shrink-0" aria-hidden="true" />
+      <Icon className={cn("size-4 shrink-0 stroke-[1.75]", active ? "text-primary" : "text-muted-foreground")} aria-hidden="true" />
       <span className="truncate" title={item.label}>{item.label}</span>
       {badge ? (
         <span
           className={cn(
-            "tabular ml-auto rounded-sm px-1.5 text-[12px] font-medium leading-5",
+            "tabular ml-auto rounded-sm px-1.5 text-[11px] font-medium leading-5",
             active ? "bg-surface text-primary" : "bg-primary-tint text-primary-hover",
           )}
         >
@@ -73,37 +74,40 @@ function NavBody({ adminEmail, onNavigate }: { adminEmail: string; onNavigate?: 
   const unread = useUnreadLeads(pathname);
 
   return (
-    <div className="flex h-full flex-col">
-      <nav aria-label="Admin" className="flex-1 overflow-y-auto px-3 py-4">
-        <ul className="flex flex-col gap-0.5">
-          {MAIN_ITEMS.map((item) => (
-            <li key={item.href}>
-              <NavLink item={item} pathname={pathname} onNavigate={onNavigate} />
-            </li>
-          ))}
-        </ul>
-        <ul aria-label="Other tools" className="mt-6 flex flex-col gap-0.5 border-t border-border pt-4">
-          {EXTRA_ITEMS.map((item) => (
-            <li key={item.href}>
-              <NavLink
-                item={item}
-                pathname={pathname}
-                badge={item.label === "Leads" ? unread : undefined}
-                onNavigate={onNavigate}
-              />
-            </li>
-          ))}
-        </ul>
+    <div className="flex flex-1 flex-col px-3 pb-3">
+      <nav aria-label="Admin" className="mt-2 flex flex-col gap-4">
+        <div className="flex flex-col gap-0.5">
+          <p className={GROUP_LABEL}>Main</p>
+          <ul className="flex flex-col gap-0.5">
+            {MAIN_ITEMS.map((item) => (
+              <li key={item.href}>
+                <NavLink item={item} pathname={pathname} onNavigate={onNavigate} />
+              </li>
+            ))}
+          </ul>
+        </div>
+        <div className="flex flex-col gap-0.5">
+          <p className={GROUP_LABEL}>Other tools</p>
+          <ul aria-label="Other tools" className="flex flex-col gap-0.5">
+            {EXTRA_ITEMS.map((item) => (
+              <li key={item.href}>
+                <NavLink
+                  item={item}
+                  pathname={pathname}
+                  badge={item.label === "Leads" ? unread : undefined}
+                  onNavigate={onNavigate}
+                />
+              </li>
+            ))}
+          </ul>
+        </div>
       </nav>
-      <div className="border-t border-border px-4 py-4">
-        <Link
-          href="/dashboard"
-          className="mb-3 flex items-center gap-2 text-[13px] text-muted-foreground transition-colors duration-150 ease-out hover:text-primary"
-        >
-          <ArrowLeft className="size-3.5" aria-hidden="true" />
+      <div className="mt-auto flex flex-col gap-1 border-t border-border pt-2.5">
+        <Link href="/dashboard" onClick={onNavigate} className={cn(ROW, ROW_IDLE)}>
+          <ArrowLeft className="size-4 shrink-0 stroke-[1.75] text-muted-foreground" aria-hidden="true" />
           Back to dashboard
         </Link>
-        <p className="truncate text-[12px] text-text-hint" title={adminEmail}>
+        <p className="truncate px-2.5 text-[11px] text-text-hint" title={adminEmail}>
           Signed in as {adminEmail}
         </p>
       </div>
@@ -111,11 +115,16 @@ function NavBody({ adminEmail, onNavigate }: { adminEmail: string; onNavigate?: 
   );
 }
 
+// The app's centred logo (the trimmed copy), with a small dark "Admin" tag beside it.
 function Logo() {
   return (
-    <Link href="/internal/admin" className="flex items-center gap-2">
-      <Image src={LOGO} alt="Customers.Direct" width={72} height={24} loading="eager" className="h-6 w-auto" />
-      <span className="rounded-sm bg-foreground px-1.5 text-[12px] font-medium leading-5 text-background">Admin</span>
+    <Link
+      href="/internal/admin"
+      className="flex items-center gap-2 rounded-sm outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+      aria-label="Customers.Direct admin, go to Overview"
+    >
+      <Image src={LOGO} alt="" width={640} height={89} loading="eager" className="h-[18px] w-auto" />
+      <span className="rounded-sm bg-foreground px-1.5 text-[11px] font-medium leading-5 text-background">Admin</span>
     </Link>
   );
 }
@@ -125,14 +134,15 @@ export default function AdminNav({ adminEmail }: { adminEmail: string }) {
 
   return (
     <>
-      <aside className="sticky top-0 hidden h-screen w-60 shrink-0 flex-col border-r border-border bg-muted lg:flex">
-        <div className="border-b border-border px-5 py-4">
+      {/* The app's frame (AppShell): the menu on the grey frame, no divider, level with the window's top bar. */}
+      <aside className="scroll-quiet sticky top-0 hidden h-dvh w-[212px] shrink-0 flex-col overflow-y-auto lg:flex">
+        <div className="mt-2 mb-2 flex h-12 shrink-0 items-center justify-center px-3">
           <Logo />
         </div>
         <NavBody adminEmail={adminEmail} />
       </aside>
 
-      <header className="sticky top-0 z-40 flex items-center justify-between border-b border-border bg-surface px-4 py-3 lg:hidden">
+      <header className="sticky top-0 z-40 flex h-14 items-center justify-between border-b border-border bg-surface px-4 lg:hidden">
         <Logo />
         <Sheet open={open} onOpenChange={setOpen}>
           <SheetTrigger asChild>
@@ -140,8 +150,8 @@ export default function AdminNav({ adminEmail }: { adminEmail: string }) {
               <Menu aria-hidden="true" />
             </Button>
           </SheetTrigger>
-          <SheetContent side="left" className="w-72 gap-0 bg-muted p-0">
-            <SheetTitle className="border-b border-border px-5 py-4 text-[14px]">Admin menu</SheetTitle>
+          <SheetContent side="left" className="scroll-quiet w-72 gap-0 overflow-y-auto bg-muted p-0">
+            <SheetTitle className="flex h-14 items-center px-5 text-[13px]">Admin menu</SheetTitle>
             <NavBody adminEmail={adminEmail} onNavigate={() => setOpen(false)} />
           </SheetContent>
         </Sheet>
