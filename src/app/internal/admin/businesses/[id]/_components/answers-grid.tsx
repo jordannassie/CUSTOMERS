@@ -25,7 +25,7 @@ export default function AnswersGrid({ results, models }: { results: Results; mod
   return (
     <Section title="Latest answers" note={results.at ? `Scan of ${formatDate(results.at, true)}. Click Named or Not named to read the answer.` : undefined}>
       <div className="rounded-md border border-border bg-surface">
-        <Table className="text-[13px]">
+        <Table className="text-[length:calc(13px*var(--px,1))]">
           <TableHeader>
             <TableRow>
               <TableHead className="w-full">Question</TableHead>
@@ -39,7 +39,7 @@ export default function AnswersGrid({ results, models }: { results: Results; mod
           <TableBody>
             {results.rows.map((r) => (
               <TableRow key={r.question}>
-                <TableCell className="min-w-[200px] whitespace-normal wrap-anywhere">{r.question}</TableCell>
+                <TableCell className="min-w-[calc(200px*var(--px,1))] whitespace-normal wrap-anywhere">{r.question}</TableCell>
                 {columns.map((m) => (
                   <TableCell key={m} className="text-center">
                     <AnswerCell value={r.mentioned[m]} question={r.question} model={modelLabel(m)} answer={r.answers[m]} />

@@ -26,14 +26,14 @@ function FilterSelect({
 }) {
   return (
     <div className="flex min-w-0 flex-col gap-1 sm:w-44">
-      <Label htmlFor={id} className="text-[13px]">{label}</Label>
+      <Label htmlFor={id} className="text-[length:calc(13px*var(--px,1))]">{label}</Label>
       <Select
         id={id}
         value={value || ALL}
         onValueChange={(v) => onChange(v === ALL ? "" : v)}
         options={[{ value: ALL, label: allLabel }, ...options.map(([v, l]) => ({ value: v, label: l }))]}
         placeholder={allLabel}
-        className="h-9 text-[14px] md:text-[14px]"
+        className="h-9 text-[length:calc(14px*var(--px,1))] md:text-[length:calc(14px*var(--px,1))]"
       />
     </div>
   );
@@ -63,7 +63,7 @@ export function LeadsFilters({
     // nothing scrolls sideways at 360px (2026-10-16). From sm up they sit in one row as before.
     <div className="grid grid-cols-2 items-end gap-3 sm:flex sm:flex-wrap sm:gap-4">
       <div className="col-span-2 flex min-w-0 flex-col gap-1 sm:w-64">
-        <Label htmlFor="leads-search" className="text-[13px]">Search</Label>
+        <Label htmlFor="leads-search" className="text-[length:calc(13px*var(--px,1))]">Search</Label>
         <Input
           id="leads-search"
           type="search"

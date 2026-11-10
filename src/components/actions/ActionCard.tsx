@@ -80,10 +80,10 @@ export function ActionCard({
       data-status={item.status}
       data-picked={picked || undefined}
     >
-      {picked && <span className="text-[11px] font-semibold tracking-wide text-primary uppercase">The fix you opened</span>}
+      {picked && <span className="text-[length:calc(11px*var(--px,1))] font-semibold tracking-wide text-primary uppercase">The fix you opened</span>}
       <div className="flex items-center justify-between gap-2">
         <span className="flex min-w-0 items-center gap-1.5">
-          <SiteIcon domain={whereDomain(item, siteDomain)} name={item.whereToApply} size="sm" className="size-5 text-[10px]" />
+          <SiteIcon domain={whereDomain(item, siteDomain)} name={item.whereToApply} size="sm" className="size-5 text-[length:calc(10px*var(--px,1))]" />
           <span className="min-w-0 truncate text-xs font-medium text-primary-hover" title={item.whereToApply} data-testid="action-where">
             {item.whereToApply}
           </span>
@@ -92,14 +92,14 @@ export function ActionCard({
           {impact.text}
         </Badge>
       </div>
-      <h3 className="text-[13.5px] leading-snug font-semibold">
+      <h3 className="text-[length:calc(13.5px*var(--px,1))] leading-snug font-semibold">
         <button type="button" className="text-left outline-none hover:underline focus-visible:underline" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
           {item.title}
         </button>
       </h3>
       {item.evidence && (
         <p
-          className={cn("text-[12.5px] leading-relaxed text-muted-foreground", open ? "whitespace-pre-line" : "line-clamp-2")}
+          className={cn("text-[length:calc(12.5px*var(--px,1))] leading-relaxed text-muted-foreground", open ? "whitespace-pre-line" : "line-clamp-2")}
           title={open ? undefined : item.evidence}
           data-testid="action-evidence"
         >
@@ -118,7 +118,7 @@ export function ActionCard({
         </Link>
       )}
       {open && (item.whyItMatters || item.steps.length > 0) && (
-        <div className="flex flex-col gap-2 rounded-md bg-muted p-2.5 text-[13px]">
+        <div className="flex flex-col gap-2 rounded-md bg-muted p-2.5 text-[length:calc(13px*var(--px,1))]">
           {item.whyItMatters && <p className="text-muted-foreground">{item.whyItMatters}</p>}
           {item.steps.length > 0 && (
             <ol className="flex list-decimal flex-col gap-1 pl-4 marker:text-muted-foreground">
@@ -153,7 +153,7 @@ export function ActionCard({
         </div>
       )}
       <div className="mt-0.5 flex flex-wrap items-center justify-between gap-2">
-        <span className="flex min-w-0 items-center gap-2 text-[11.5px] text-text-hint tabular-nums">
+        <span className="flex min-w-0 items-center gap-2 text-[length:calc(11.5px*var(--px,1))] text-text-hint tabular-nums">
           {item.status === "done" && item.completedAt ? (
             <span className="flex items-center gap-1 text-muted-foreground" data-testid="action-done">
               <CircleCheck className="size-3" aria-hidden="true" />

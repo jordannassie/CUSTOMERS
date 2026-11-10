@@ -174,8 +174,8 @@ export function FirstScan(props: Props) {
   return (
     <div className="mx-auto flex w-full max-w-xl flex-col gap-8 px-5 py-10 sm:px-8 sm:py-16">
       <header className="flex flex-col gap-2">
-        <h1 className="text-2xl font-semibold tracking-[-0.02em] sm:text-[32px] sm:leading-tight">{copy.heading}</h1>
-        <p className="text-[15px] leading-relaxed text-muted-foreground">{copy.intro}</p>
+        <h1 className="text-2xl font-semibold tracking-[-0.02em] sm:text-[length:calc(32px*var(--px,1))] sm:leading-tight">{copy.heading}</h1>
+        <p className="text-[length:calc(15px*var(--px,1))] leading-relaxed text-muted-foreground">{copy.intro}</p>
       </header>
 
       {summary ? (
@@ -200,7 +200,7 @@ export function FirstScan(props: Props) {
         <div role="status" aria-live="polite" className="flex flex-col gap-4">
           {failed ? (
             <>
-              <p className="rounded-md bg-low-bg px-3 py-2 text-[13px] text-low-text" data-testid="first-scan-problem">
+              <p className="rounded-md bg-low-bg px-3 py-2 text-[length:calc(13px*var(--px,1))] text-low-text" data-testid="first-scan-problem">
                 {problem}
               </p>
               <div>
@@ -222,7 +222,7 @@ export function FirstScan(props: Props) {
           ) : paused || stalled ? (
             <>
               <p
-                className="rounded-md bg-mid-bg px-3 py-2 text-[13px] text-mid-text"
+                className="rounded-md bg-mid-bg px-3 py-2 text-[length:calc(13px*var(--px,1))] text-mid-text"
                 data-testid={stalled ? "first-scan-stalled" : "first-scan-retrying"}
               >
                 {stalled

@@ -9,7 +9,7 @@ import { BackIcon } from "./LinkPending";
 export function StepError({ message }: { message: string | null }) {
   if (!message) return null;
   return (
-    <p role="alert" className="rounded-md bg-low-bg px-3 py-2 text-[13px] text-low-text">
+    <p role="alert" className="rounded-md bg-low-bg px-3 py-2 text-[length:calc(13px*var(--px,1))] text-low-text">
       {message}
     </p>
   );
@@ -59,7 +59,7 @@ export function StepActions({ backHref, onBack, pending, label = "Continue", dis
 
 export function FieldHint({ id, children }: { id?: string; children: React.ReactNode }) {
   return (
-    <p id={id} className="text-[13px] text-muted-foreground">
+    <p id={id} className="text-[length:calc(13px*var(--px,1))] text-muted-foreground">
       {children}
     </p>
   );

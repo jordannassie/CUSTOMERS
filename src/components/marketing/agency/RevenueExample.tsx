@@ -25,7 +25,7 @@ export function RevenueExample() {
             </span>
             <ExampleTag />
           </figcaption>
-          <table className="w-full text-[15px]">
+          <table className="w-full text-[length:calc(15px*var(--px,1))]">
             <thead className="sr-only">
               <tr>
                 <th scope="col">Clients</th>
@@ -43,7 +43,7 @@ export function RevenueExample() {
               ))}
             </tbody>
           </table>
-          <p className="border-t border-border px-5 py-4 text-[13px] text-muted-foreground">
+          <p className="border-t border-border px-5 py-4 text-[length:calc(13px*var(--px,1))] text-muted-foreground">
             Revenue before your costs and your Customers.Direct plans. Not a forecast or a promise of earnings.
           </p>
         </figure>

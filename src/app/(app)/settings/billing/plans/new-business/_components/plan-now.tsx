@@ -66,7 +66,7 @@ export function PlanNow({ view, start, status, continueHref, trialBusinesses, ba
   if (view.kind === "unavailable") {
     return (
       <section data-testid="plan-now" className="rounded-md border border-border bg-surface px-5 py-5">
-        <p className="text-[15px] font-medium">
+        <p className="text-[length:calc(15px*var(--px,1))] font-medium">
           Your trial includes {trialBusinesses} businesses. To add another, your paid plan needs to start.
         </p>
         <p className="mt-3 text-sm text-muted-foreground">{view.message}</p>

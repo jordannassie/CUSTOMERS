@@ -28,9 +28,9 @@ function useUnreadLeads(pathname: string): number {
 
 // The same row style as the app's sidebar (AppSidebar): 32px tall, 16px icon, a light blue tint on the page you are on.
 const ROW =
-  "flex h-8 w-full items-center gap-2.5 rounded-md px-2.5 text-[12.5px] outline-none transition-colors focus-visible:ring-3 focus-visible:ring-ring/50";
+  "flex h-8 w-full items-center gap-2.5 rounded-md px-2.5 text-[length:calc(12.5px*var(--px,1))] outline-none transition-colors focus-visible:ring-3 focus-visible:ring-ring/50";
 const ROW_IDLE = "text-foreground/75 hover:bg-foreground/5 hover:text-foreground";
-const GROUP_LABEL = "px-2.5 pb-1 text-[11px] font-medium text-text-hint";
+const GROUP_LABEL = "px-2.5 pb-1 text-[length:calc(11px*var(--px,1))] font-medium text-text-hint";
 
 function NavLink({
   item,
@@ -57,7 +57,7 @@ function NavLink({
       {badge ? (
         <span
           className={cn(
-            "tabular ml-auto rounded-sm px-1.5 text-[11px] font-medium leading-5",
+            "tabular ml-auto rounded-sm px-1.5 text-[length:calc(11px*var(--px,1))] font-medium leading-5",
             active ? "bg-surface text-primary" : "bg-primary-tint text-primary-hover",
           )}
         >
@@ -107,7 +107,7 @@ function NavBody({ adminEmail, onNavigate }: { adminEmail: string; onNavigate?: 
           <ArrowLeft className="size-4 shrink-0 stroke-[1.75] text-muted-foreground" aria-hidden="true" />
           Back to dashboard
         </Link>
-        <p className="truncate px-2.5 text-[11px] text-text-hint" title={adminEmail}>
+        <p className="truncate px-2.5 text-[length:calc(11px*var(--px,1))] text-text-hint" title={adminEmail}>
           Signed in as {adminEmail}
         </p>
       </div>
@@ -123,8 +123,8 @@ function Logo() {
       className="flex items-center gap-2 rounded-sm outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
       aria-label="Customers.Direct admin, go to Overview"
     >
-      <Image src={LOGO} alt="" width={640} height={89} loading="eager" className="h-[18px] w-auto" />
-      <span className="rounded-sm bg-foreground px-1.5 text-[11px] font-medium leading-5 text-background">Admin</span>
+      <Image src={LOGO} alt="" width={640} height={89} loading="eager" className="h-[calc(18px*var(--px,1))] w-auto" />
+      <span className="rounded-sm bg-foreground px-1.5 text-[length:calc(11px*var(--px,1))] font-medium leading-5 text-background">Admin</span>
     </Link>
   );
 }
@@ -135,7 +135,7 @@ export default function AdminNav({ adminEmail }: { adminEmail: string }) {
   return (
     <>
       {/* The app's frame (AppShell): the menu on the grey frame, no divider, level with the window's top bar. */}
-      <aside className="scroll-quiet sticky top-0 hidden h-dvh w-[212px] shrink-0 flex-col overflow-y-auto lg:flex">
+      <aside className="scroll-quiet sticky top-0 hidden h-dvh w-[calc(212px*var(--px,1))] shrink-0 flex-col overflow-y-auto lg:flex">
         <div className="mt-2 mb-2 flex h-12 shrink-0 items-center justify-center px-3">
           <Logo />
         </div>
@@ -151,7 +151,7 @@ export default function AdminNav({ adminEmail }: { adminEmail: string }) {
             </Button>
           </SheetTrigger>
           <SheetContent side="left" className="scroll-quiet w-72 gap-0 overflow-y-auto bg-muted p-0">
-            <SheetTitle className="flex h-14 items-center px-5 text-[13px]">Admin menu</SheetTitle>
+            <SheetTitle className="flex h-14 items-center px-5 text-[length:calc(13px*var(--px,1))]">Admin menu</SheetTitle>
             <NavBody adminEmail={adminEmail} onNavigate={() => setOpen(false)} />
           </SheetContent>
         </Sheet>

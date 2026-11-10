@@ -30,15 +30,15 @@ export default function ContactPage() {
     <>
       <Header />
       <main className="flex-1 bg-background">
-        <section className="mx-auto max-w-[1120px] px-4 pt-12 pb-16 sm:px-6 sm:pt-20 sm:pb-22">
+        <section className="mx-auto max-w-[calc(1120px*var(--px,1))] px-4 pt-12 pb-16 sm:px-6 sm:pt-20 sm:pb-22">
           <div className="mb-10 overflow-hidden rounded-md border border-border">
             {/* eslint-disable-next-line @next/next/no-img-element -- a wide photo from storage, shown once at its own size */}
-            <img src={TEAM_PHOTO} alt="The Customers.Direct team" className="max-h-[400px] w-full object-cover object-top" />
+            <img src={TEAM_PHOTO} alt="The Customers.Direct team" className="max-h-[calc(400px*var(--px,1))] w-full object-cover object-top" />
           </div>
           <div className="flex max-w-[60ch] flex-col items-start gap-5 sm:flex-row sm:items-center">
             <MrDirectAvatar priority className="size-24 shrink-0 border-4 border-primary sm:size-28" />
             <div className="flex flex-col gap-4">
-              <h1 className="text-[32px] leading-[1.08] font-semibold tracking-[-0.035em] text-balance sm:text-5xl">
+              <h1 className="text-[length:calc(32px*var(--px,1))] leading-[1.08] font-semibold tracking-[-0.035em] text-balance sm:text-5xl">
                 Talk to Mr. Direct
               </h1>
               <p className="text-lg text-muted-foreground text-pretty">
@@ -48,9 +48,9 @@ export default function ContactPage() {
             </div>
           </div>
 
-          <div className="mt-12 grid items-start gap-10 md:grid-cols-[1fr_320px]">
+          <div className="mt-12 grid items-start gap-10 md:grid-cols-[1fr_calc(320px*var(--px,1))]">
             {/* ContactForm reads ?interest= with useSearchParams, which needs a Suspense boundary. */}
-            <Suspense fallback={<Skeleton className="h-[520px] w-full rounded-md" />}>
+            <Suspense fallback={<Skeleton className="h-[calc(520px*var(--px,1))] w-full rounded-md" />}>
               <ContactForm source="contact_page" />
             </Suspense>
 
@@ -60,7 +60,7 @@ export default function ContactPage() {
                 <ul className="mt-3 flex flex-col divide-y divide-border border-y border-border">
                   {TOPICS.map(({ title, body }) => (
                     <li key={title} className="py-4">
-                      <p className="text-[15px] font-medium">{title}</p>
+                      <p className="text-[length:calc(15px*var(--px,1))] font-medium">{title}</p>
                       <p className="mt-1 text-sm text-muted-foreground">{body}</p>
                     </li>
                   ))}

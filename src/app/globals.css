@@ -226,10 +226,12 @@
     @apply font-sans;
     scroll-behavior: smooth;
   }
-  /* The logged-in app runs a little smaller than the marketing site (2026-11-10, the user's call): every rem-based
-     size (text, padding, gaps, buttons, icons, cards, charts) scales by 15/16. Pages, menus and dialogs alike. */
+  /* The logged-in app and admin size (2026-11-10, the user's call, 10% up from the compact 15px): every rem-based size
+     (text, padding, gaps, buttons, icons, cards, charts) and every fixed pixel size written as calc(Npx*var(--px,1))
+     scale together, pages, menus and dialogs alike. Elsewhere --px is unset, so those stay at their pixel size. */
   html:has(.app-compact) {
-    font-size: 15px;
+    font-size: 16.5px;
+    --px: 1.1;
   }
   body {
     @apply bg-background text-foreground;

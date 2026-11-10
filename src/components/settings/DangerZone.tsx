@@ -99,7 +99,7 @@ function DangerRow({ title, text, children }: { title: string; text: string; chi
     <div className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
       <div className="min-w-0">
         <p className="text-sm font-medium">{title}</p>
-        <p className="mt-0.5 text-[13px] text-muted-foreground">{text}</p>
+        <p className="mt-0.5 text-[length:calc(13px*var(--px,1))] text-muted-foreground">{text}</p>
       </div>
       <div className="shrink-0">{children}</div>
     </div>

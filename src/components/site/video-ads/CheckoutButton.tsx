@@ -27,7 +27,7 @@ export function CheckoutButton({
 }) {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const className = `inline-flex items-center justify-center gap-2 rounded-xl px-6 py-3.5 text-[15px] font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0866F5] focus-visible:ring-offset-2 disabled:cursor-wait disabled:opacity-70 ${variants[variant]} ${wide ? "w-full" : ""}`;
+  const className = `inline-flex items-center justify-center gap-2 rounded-xl px-6 py-3.5 text-[length:calc(15px*var(--px,1))] font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0866F5] focus-visible:ring-offset-2 disabled:cursor-wait disabled:opacity-70 ${variants[variant]} ${wide ? "w-full" : ""}`;
 
   if (!checkoutReady) {
     return (
@@ -67,7 +67,7 @@ export function CheckoutButton({
         {pending ? null : <ArrowRight size={16} aria-hidden="true" />}
       </button>
       {error ? (
-        <p className="mt-2 text-[13px] text-[#991B1B]" role="alert">
+        <p className="mt-2 text-[length:calc(13px*var(--px,1))] text-[#991B1B]" role="alert">
           {error}
         </p>
       ) : null}

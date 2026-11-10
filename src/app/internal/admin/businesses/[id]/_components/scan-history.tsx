@@ -11,7 +11,7 @@ export default function ScanHistory({ scans }: { scans: AdminScan[] }) {
         <Empty>This business has never been scanned.</Empty>
       ) : (
         <div className="rounded-md border border-border bg-surface">
-          <Table className="text-[13px]">
+          <Table className="text-[length:calc(13px*var(--px,1))]">
             <TableHeader>
               <TableRow>
                 <TableHead>Started</TableHead>
@@ -32,7 +32,7 @@ export default function ScanHistory({ scans }: { scans: AdminScan[] }) {
                     {s.checks === null ? "" : `${s.checks - (s.checksFailed ?? 0)} of ${s.checks}`}
                   </TableCell>
                   <TableCell className="text-right tabular-nums">{s.credits}</TableCell>
-                  <TableCell className="min-w-[220px] whitespace-normal text-muted-foreground">{details(s)}</TableCell>
+                  <TableCell className="min-w-[calc(220px*var(--px,1))] whitespace-normal text-muted-foreground">{details(s)}</TableCell>
                 </TableRow>
               ))}
             </TableBody>

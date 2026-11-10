@@ -24,8 +24,8 @@ export default async function PricingPage() {
       <Header />
       <main className="flex-1">
         <section className="bg-background">
-          <div className="mx-auto flex max-w-[1120px] flex-col gap-6 px-4 pt-12 pb-16 sm:px-6 sm:pt-20 sm:pb-22">
-            <h1 className="max-w-[18ch] text-[32px] leading-[1.08] font-semibold tracking-[-0.035em] text-balance sm:text-5xl lg:text-6xl">
+          <div className="mx-auto flex max-w-[calc(1120px*var(--px,1))] flex-col gap-6 px-4 pt-12 pb-16 sm:px-6 sm:pt-20 sm:pb-22">
+            <h1 className="max-w-[18ch] text-[length:calc(32px*var(--px,1))] leading-[1.08] font-semibold tracking-[-0.035em] text-balance sm:text-5xl lg:text-6xl">
               Pay for each business you track
             </h1>
             <p className="max-w-[56ch] text-lg text-muted-foreground text-pretty">
@@ -35,7 +35,7 @@ export default async function PricingPage() {
             <div className="mt-6">
               <PlanCards plans={plans} />
             </div>
-            <p className="text-[15px] text-muted-foreground">
+            <p className="text-[length:calc(15px*var(--px,1))] text-muted-foreground">
               Prices are in US dollars. Managing many businesses?{" "}
               <Link href="/contact?interest=agency" className="text-primary underline-offset-4 hover:underline">
                 Ask us about a custom plan

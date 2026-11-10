@@ -13,7 +13,7 @@ export function SourceChip({ host, url }: { host: string; url: string }) {
       target="_blank"
       rel="noopener noreferrer nofollow"
       title={host}
-      className="mx-0.5 inline-flex max-w-[180px] items-center gap-1 rounded-sm bg-muted px-1.5 align-baseline text-xs text-muted-foreground hover:text-primary"
+      className="mx-0.5 inline-flex max-w-[calc(180px*var(--px,1))] items-center gap-1 rounded-sm bg-muted px-1.5 align-baseline text-xs text-muted-foreground hover:text-primary"
       data-testid="source-chip"
     >
       <span className="truncate">{host}</span>
@@ -62,7 +62,7 @@ function ListTag({ ordered, children }: { ordered: boolean; children: React.Reac
 /** The whole answer in its own words: paragraphs and lists, names marked, addresses as chips. */
 export function AnswerText({ text, names }: { text: string; names: Names }) {
   return (
-    <div className="flex flex-col gap-2.5 text-[13px] leading-relaxed text-foreground/85 wrap-break-word" data-testid="answer-text">
+    <div className="flex flex-col gap-2.5 text-[length:calc(13px*var(--px,1))] leading-relaxed text-foreground/85 wrap-break-word" data-testid="answer-text">
       {answerBlocks(text).map((b, i) =>
         b.kind === "p" ? (
           <p key={i}>

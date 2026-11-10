@@ -80,7 +80,7 @@ export function PortfolioVideo({
       >
         {failed ? (
           <div className="absolute inset-0 flex items-center justify-center p-6 text-center" role="alert">
-            <p className="text-[14px] leading-relaxed text-white">
+            <p className="text-[length:calc(14px*var(--px,1))] leading-relaxed text-white">
               This video could not be loaded. Refresh the page to try again.
             </p>
           </div>
@@ -129,8 +129,8 @@ export function PortfolioVideo({
       </div>
       {compact ? null : (
         <figcaption className="mt-4 text-center">
-          <p className="text-[15px] font-semibold text-[#171717]">{title}</p>
-          <p className="mt-1 text-[13px] leading-relaxed text-[#777773]">{note}</p>
+          <p className="text-[length:calc(15px*var(--px,1))] font-semibold text-[#171717]">{title}</p>
+          <p className="mt-1 text-[length:calc(13px*var(--px,1))] leading-relaxed text-[#777773]">{note}</p>
         </figcaption>
       )}
     </figure>

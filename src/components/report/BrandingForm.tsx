@@ -60,7 +60,7 @@ export function BrandingForm({
             placeholder="#1F4FD1"
             maxLength={7}
             aria-invalid={!accentOk}
-            className="font-mono text-[13px]"
+            className="font-mono text-[length:calc(13px*var(--px,1))]"
           />
         </div>
         <p className="text-xs text-text-hint">Used for section labels and step numbers in the PDF.</p>

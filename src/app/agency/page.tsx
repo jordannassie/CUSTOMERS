@@ -25,9 +25,9 @@ export default async function AgencyPage() {
       <Header />
       <main className="flex-1">
         <section className="bg-background">
-          <div className="mx-auto grid max-w-[1120px] gap-12 px-4 pt-12 pb-16 sm:px-6 sm:pt-20 sm:pb-22 lg:grid-cols-[1.25fr_1fr] lg:items-center lg:gap-16">
+          <div className="mx-auto grid max-w-[calc(1120px*var(--px,1))] gap-12 px-4 pt-12 pb-16 sm:px-6 sm:pt-20 sm:pb-22 lg:grid-cols-[1.25fr_1fr] lg:items-center lg:gap-16">
             <div className="flex min-w-0 flex-col gap-6">
-              <h1 className="text-[32px] leading-[1.08] font-semibold tracking-[-0.035em] text-balance sm:text-5xl lg:text-6xl">
+              <h1 className="text-[length:calc(32px*var(--px,1))] leading-[1.08] font-semibold tracking-[-0.035em] text-balance sm:text-5xl lg:text-6xl">
                 Show every client whether AI recommends them
               </h1>
               <p className="max-w-[52ch] text-lg text-muted-foreground text-pretty">
@@ -42,7 +42,7 @@ export default async function AgencyPage() {
                   <Link href="/contact?interest=agency">Talk to us</Link>
                 </Button>
               </div>
-              <p className="text-[13px] text-text-hint">7-day free trial with up to 2 clients. Card needed to start.</p>
+              <p className="text-[length:calc(13px*var(--px,1))] text-text-hint">7-day free trial with up to 2 clients. Card needed to start.</p>
             </div>
             <ClientListExample />
           </div>

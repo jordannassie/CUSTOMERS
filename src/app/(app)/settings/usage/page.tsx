@@ -48,7 +48,7 @@ export default async function UsagePage() {
             Used in {monthName(month.startsAt)}
           </h2>
           <p className="text-sm text-muted-foreground">
-            <span data-testid="month-used" className="text-[15px] font-semibold text-foreground tabular-nums">
+            <span data-testid="month-used" className="text-[length:calc(15px*var(--px,1))] font-semibold text-foreground tabular-nums">
               {count(month.used)}
             </span>{" "}
             {month.used === 1 ? "credit" : "credits"} since {day(month.startsAt)}

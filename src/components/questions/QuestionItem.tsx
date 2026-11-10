@@ -109,7 +109,7 @@ export function QuestionItem({ question, limitMessage, actions, gridClass }: Pro
       {/* The whole row opens the question for a mouse; the question's own button does it for a keyboard. */}
       <div
         className={cn(
-          "relative grid cursor-pointer grid-cols-[40px_minmax(0,1fr)] gap-x-3 gap-y-2.5 px-4 py-2.5 transition-colors duration-150 hover:bg-muted/60 lg:items-center lg:gap-y-0",
+          "relative grid cursor-pointer grid-cols-[calc(40px*var(--px,1))_minmax(0,1fr)] gap-x-3 gap-y-2.5 px-4 py-2.5 transition-colors duration-150 hover:bg-muted/60 lg:items-center lg:gap-y-0",
           open && "bg-primary-tint hover:bg-primary-tint",
           gridClass,
         )}
@@ -138,14 +138,14 @@ export function QuestionItem({ question, limitMessage, actions, gridClass }: Pro
               onClick={() => toggle(question.id)}
               className="w-fit rounded-xs text-left outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
             >
-              <span data-testid="question-text" className={cn("block text-[13.5px] leading-snug wrap-break-word", question.active && "font-medium text-foreground")}>
+              <span data-testid="question-text" className={cn("block text-[length:calc(13.5px*var(--px,1))] leading-snug wrap-break-word", question.active && "font-medium text-foreground")}>
                 {question.text}
               </span>
             </button>
           )}
           {!editing && <RowMeta question={question} />}
           {error && (
-            <p role="alert" className="text-[13px] text-low-text">
+            <p role="alert" className="text-[length:calc(13px*var(--px,1))] text-low-text">
               {error}
             </p>
           )}

@@ -55,10 +55,10 @@ export function CompetitorAliases({ businessId, competitors, save }: { businessI
   return (
     <section aria-labelledby="competitor-aliases-title" className="mt-10 max-w-2xl overflow-hidden rounded-lg border border-border bg-card">
       <div className="flex flex-col gap-1 border-b border-border px-4 py-3.5">
-        <h2 id="competitor-aliases-title" className="text-[14px] font-semibold tracking-[-0.01em]">
+        <h2 id="competitor-aliases-title" className="text-[length:calc(14px*var(--px,1))] font-semibold tracking-[-0.01em]">
           Other names
         </h2>
-        <p className="text-[13px] text-muted-foreground">
+        <p className="text-[length:calc(13px*var(--px,1))] text-muted-foreground">
           Short names, old names or other spellings AI may use for a competitor, separated with commas, up to {ALIASES_MAX} each.
           Answers that use them count for that competitor.
         </p>
@@ -89,7 +89,7 @@ export function CompetitorAliases({ businessId, competitors, save }: { businessI
           );
         })}
         {error ? (
-          <p role="alert" className="rounded-md bg-low-bg px-3 py-2 text-[13px] text-low-text">
+          <p role="alert" className="rounded-md bg-low-bg px-3 py-2 text-[length:calc(13px*var(--px,1))] text-low-text">
             {error}
           </p>
         ) : null}

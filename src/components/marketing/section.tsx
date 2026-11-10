@@ -17,7 +17,7 @@ export function Section({
 }: React.ComponentProps<"section"> & { tone?: keyof typeof TONES }) {
   return (
     <section id={id} className={cn("scroll-mt-16 border-t border-border py-16 sm:py-22", TONES[tone], className)} {...props}>
-      <div className="mx-auto max-w-[1120px] px-4 sm:px-6">{children}</div>
+      <div className="mx-auto max-w-[calc(1120px*var(--px,1))] px-4 sm:px-6">{children}</div>
     </section>
   );
 }
@@ -26,7 +26,7 @@ export function H2({ className, ...props }: React.ComponentProps<"h2">) {
   return (
     <h2
       className={cn(
-        "text-[32px] leading-[1.15] font-semibold tracking-[-0.02em] text-balance sm:text-5xl sm:tracking-[-0.035em]",
+        "text-[length:calc(32px*var(--px,1))] leading-[1.15] font-semibold tracking-[-0.02em] text-balance sm:text-5xl sm:tracking-[-0.035em]",
         className,
       )}
       {...props}
@@ -54,8 +54,8 @@ export function CTA({
   return (
     <div className="flex flex-col items-start gap-6 rounded-md bg-primary px-6 py-10 text-primary-foreground sm:px-12 sm:py-14 md:flex-row md:items-center md:justify-between">
       <div className="flex max-w-xl flex-col gap-3">
-        <h2 className="text-2xl leading-tight font-semibold tracking-[-0.02em] text-balance sm:text-[32px]">{title}</h2>
-        {description && <p className="text-[15px] text-primary-foreground">{description}</p>}
+        <h2 className="text-2xl leading-tight font-semibold tracking-[-0.02em] text-balance sm:text-[length:calc(32px*var(--px,1))]">{title}</h2>
+        {description && <p className="text-[length:calc(15px*var(--px,1))] text-primary-foreground">{description}</p>}
       </div>
       <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
         <Button asChild size="lg" variant="outline" className="border-transparent bg-surface text-primary hover:bg-primary-tint hover:text-primary-hover">

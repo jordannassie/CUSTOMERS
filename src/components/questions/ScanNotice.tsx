@@ -8,7 +8,7 @@ export function ScanNotice({ text }: { text: string }) {
       id="questions-scan-notice"
       text={text}
       className="rounded-md"
-      icon={<TriangleAlert className="mt-[5px] size-3.5 shrink-0" aria-hidden="true" />}
+      icon={<TriangleAlert className="mt-[calc(5px*var(--px,1))] size-3.5 shrink-0" aria-hidden="true" />}
       testId="scan-notice"
     />
   );

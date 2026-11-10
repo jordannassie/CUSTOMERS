@@ -5,7 +5,7 @@ import Section, { Empty } from "./section";
 
 type Detail = NonNullable<AdminBusinessDetail>;
 
-const list = "divide-y divide-border rounded-md border border-border bg-surface text-[14px]";
+const list = "divide-y divide-border rounded-md border border-border bg-surface text-[length:calc(14px*var(--px,1))]";
 
 export function Questions({ questions }: { questions: Detail["questions"] }) {
   const active = questions.filter((q) => q.active).length;
@@ -37,7 +37,7 @@ export function Competitors({ competitors }: { competitors: Detail["competitors"
           {competitors.map((c) => (
             <li key={c.id} className="px-4 py-2.5">
               <span className="block break-words">{c.name}</span>
-              <span className="block text-[13px] break-words text-text-hint">
+              <span className="block text-[length:calc(13px*var(--px,1))] break-words text-text-hint">
                 {[c.domain ?? "No website", c.city].filter(Boolean).join(", ")}
               </span>
             </li>
@@ -73,7 +73,7 @@ export function Opportunities({ opportunities }: { opportunities: Detail["opport
           {opportunities.map((o) => (
             <li key={o.id} className="flex flex-col gap-1.5 px-4 py-2.5 sm:flex-row sm:items-center sm:justify-between">
               <span className="min-w-0 break-words">{o.title}</span>
-              <span className="flex shrink-0 items-center gap-2 text-[13px] text-muted-foreground">
+              <span className="flex shrink-0 items-center gap-2 text-[length:calc(13px*var(--px,1))] text-muted-foreground">
                 <ImpactBadge impact={o.impact} />
                 {OPPORTUNITY_STATUS[o.status] ?? o.status}
               </span>

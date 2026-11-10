@@ -1,5 +1,6 @@
 import { Check, Minus } from "lucide-react";
 import { ExampleTag, MODEL_DOT, type ModelName } from "./example";
+import { PILL_CLASS } from "@/components/app/pills";
 
 type Answer = { model: ModelName; named: string[]; mentioned: boolean };
 
@@ -19,8 +20,8 @@ export function AnswerExample() {
     <figure className="flex min-w-0 flex-col rounded-md border border-border bg-surface">
       <div className="flex items-start justify-between gap-4 border-b border-border p-4 sm:p-5">
         <div className="flex min-w-0 flex-col gap-1">
-          <figcaption className="text-[13px] text-text-hint">A customer asks AI</figcaption>
-          <p className="text-[15px] font-semibold text-pretty">&ldquo;{QUESTION}&rdquo;</p>
+          <figcaption className="text-[length:calc(13px*var(--px,1))] text-text-hint">A customer asks AI</figcaption>
+          <p className="text-[length:calc(15px*var(--px,1))] font-semibold text-pretty">&ldquo;{QUESTION}&rdquo;</p>
         </div>
         <ExampleTag />
       </div>
@@ -34,12 +35,12 @@ export function AnswerExample() {
                 {model}
               </span>
               {mentioned ? (
-                <span className="inline-flex items-center gap-1 rounded-sm bg-good-bg px-2 py-0.5 text-xs font-semibold text-good-text">
+                <span className={`inline-flex items-center gap-1 rounded-sm px-2 py-0.5 text-xs font-semibold ${PILL_CLASS.plain}`}>
                   <Check className="size-3" aria-hidden="true" />
                   Named you
                 </span>
               ) : (
-                <span className="inline-flex items-center gap-1 rounded-sm bg-muted px-2 py-0.5 text-xs font-semibold text-muted-foreground">
+                <span className={`inline-flex items-center gap-1 rounded-sm px-2 py-0.5 text-xs font-semibold ${PILL_CLASS.attention}`}>
                   <Minus className="size-3" aria-hidden="true" />
                   Not named
                 </span>
@@ -51,8 +52,8 @@ export function AnswerExample() {
                   key={name}
                   className={
                     name === YOU
-                      ? "rounded-sm bg-primary-tint px-2 py-0.5 text-[13px] font-semibold text-primary-hover"
-                      : "rounded-sm border border-border px-2 py-0.5 text-[13px] text-muted-foreground"
+                      ? "rounded-sm bg-primary-tint px-2 py-0.5 text-[length:calc(13px*var(--px,1))] font-semibold text-primary-hover"
+                      : "rounded-sm border border-border px-2 py-0.5 text-[length:calc(13px*var(--px,1))] text-muted-foreground"
                   }
                 >
                   {name}

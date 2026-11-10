@@ -74,7 +74,7 @@ export function ModelsStep({ businessId, models, frequency, activeQuestions, pla
 
   return (
     <form onSubmit={submit} className="flex flex-col gap-6">
-      <div className="grid gap-6 md:grid-cols-[minmax(0,1fr)_260px] md:gap-8">
+      <div className="grid gap-6 md:grid-cols-[minmax(0,1fr)_calc(260px*var(--px,1))] md:gap-8">
         <div className="flex flex-col gap-6">
           <fieldset className="flex flex-col gap-2">
             <legend className="mb-2 text-sm font-medium">Which AI should we check?</legend>
@@ -94,7 +94,7 @@ export function ModelsStep({ businessId, models, frequency, activeQuestions, pla
                       <span aria-hidden className={cn("size-2 rounded-full", DOT[model.id])} />
                       {model.label}
                     </span>
-                    <span className={cn("mt-0.5 block text-[13px]", on ? "text-muted-foreground" : "text-mid-text")}>
+                    <span className={cn("mt-0.5 block text-[length:calc(13px*var(--px,1))]", on ? "text-muted-foreground" : "text-mid-text")}>
                       {on ? model.explanation : untickWarning(model.label)}
                     </span>
                   </span>
@@ -119,14 +119,14 @@ export function ModelsStep({ businessId, models, frequency, activeQuestions, pla
                 </label>
               ))}
             </div>
-            <p className="mt-2 text-[13px] text-muted-foreground">Weekly suits most businesses. You can change this any time in Settings.</p>
+            <p className="mt-2 text-[length:calc(13px*var(--px,1))] text-muted-foreground">Weekly suits most businesses. You can change this any time in Settings.</p>
           </fieldset>
         </div>
 
         <aside aria-live="polite" data-testid="credit-estimate" className="self-start rounded-md border border-border bg-muted p-5 md:sticky md:top-8">
-          <p className="text-[13px] text-muted-foreground">Estimated use</p>
+          <p className="text-[length:calc(13px*var(--px,1))] text-muted-foreground">Estimated use</p>
           <p className="mt-3 leading-none">
-            <span className="text-[32px] font-semibold tracking-[-0.03em] tabular-nums">{count(credits)}</span>
+            <span className="text-[length:calc(32px*var(--px,1))] font-semibold tracking-[-0.03em] tabular-nums">{count(credits)}</span>
             <span className="mt-3 block text-sm text-muted-foreground">credits a month</span>
           </p>
           {share !== null ? (
@@ -161,7 +161,7 @@ export function ModelsStep({ businessId, models, frequency, activeQuestions, pla
         </p>
       ) : null}
       {addOnError && (
-        <div role="alert" data-testid="add-on-error" className="flex flex-wrap items-center justify-between gap-3 rounded-md bg-low-bg px-4 py-3 text-[13px] text-low-text">
+        <div role="alert" data-testid="add-on-error" className="flex flex-wrap items-center justify-between gap-3 rounded-md bg-low-bg px-4 py-3 text-[length:calc(13px*var(--px,1))] text-low-text">
           <span>{addOnError}</span>
           <Button type="button" size="sm" variant="outline" onClick={() => router.refresh()}>
             Try again
@@ -175,7 +175,7 @@ export function ModelsStep({ businessId, models, frequency, activeQuestions, pla
         label={finishLabel}
         disabled={chosen.length === 0 || addOnError !== null}
         phoneSummary={
-          <p data-testid="credit-estimate-phone" className="text-[13px] leading-tight text-muted-foreground">
+          <p data-testid="credit-estimate-phone" className="text-[length:calc(13px*var(--px,1))] leading-tight text-muted-foreground">
             <span className="block text-base font-semibold tabular-nums text-foreground">{count(credits)}</span>
             credits a month
           </p>

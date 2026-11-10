@@ -20,8 +20,8 @@ export function ProductFrame({
 }) {
   return (
     <div className={cn("overflow-hidden rounded-xl border border-border bg-surface shadow-[0_24px_60px_-28px_rgb(23_23_23/0.28)]", className)}>
-      <div className="flex h-11 items-center gap-2 border-b border-border bg-surface px-4 text-[13px]">
-        <span aria-hidden="true" className="grid size-5 place-items-center rounded-full bg-primary-tint text-[10px] font-semibold text-primary-hover">
+      <div className="flex h-11 items-center gap-2 border-b border-border bg-surface px-4 text-[length:calc(13px*var(--px,1))]">
+        <span aria-hidden="true" className="grid size-5 place-items-center rounded-full bg-primary-tint text-[length:calc(10px*var(--px,1))] font-semibold text-primary-hover">
           B
         </span>
         <span className="font-medium">Bean House</span>

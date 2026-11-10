@@ -22,12 +22,12 @@ export function ResultChip({ result }: { result: QuestionResult }) {
       <span
         aria-hidden="true"
         className={cn(
-          "grid h-[22px] w-6 shrink-0 place-items-center rounded-sm border",
+          "grid h-[calc(22px*var(--px,1))] w-6 shrink-0 place-items-center rounded-sm border",
           named ? "border-transparent bg-primary-tint" : "border-border bg-surface",
           (!checked || result.failedLastScan) && "border-dashed",
         )}
       >
-        {checked && <span className={cn("size-[7px] rounded-full", named ? "bg-primary" : "bg-muted-foreground/25")} />}
+        {checked && <span className={cn("size-[calc(7px*var(--px,1))] rounded-full", named ? "bg-primary" : "bg-muted-foreground/25")} />}
       </span>
       <span className="text-xs text-muted-foreground tabular-nums lg:sr-only" aria-hidden="true">
         {result.label} {checked ? `${result.appeared} of ${result.checks}` : result.failedLastScan ? "couldn't check" : "not checked yet"}

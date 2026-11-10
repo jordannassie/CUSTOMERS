@@ -48,10 +48,10 @@ function summary(total: number, deleted: number, scanning: number | null, search
 function Rows({ rows, summary }: { rows: AdminBusinessRow[]; summary: string }) {
   return (
     <section aria-label="Businesses" className="flex flex-col gap-2">
-      <p className="text-[13px] text-muted-foreground">{summary}</p>
+      <p className="text-[length:calc(13px*var(--px,1))] text-muted-foreground">{summary}</p>
 
       <div className="hidden rounded-md border border-border bg-surface md:block">
-        <Table className="text-[13px]">
+        <Table className="text-[length:calc(13px*var(--px,1))]">
           <TableHeader>
             <TableRow>
               <TableHead className={`${STICKY} bg-muted`}>Business</TableHead>
@@ -66,7 +66,7 @@ function Rows({ rows, summary }: { rows: AdminBusinessRow[]; summary: string }) 
           <TableBody>
             {rows.map((r) => (
               <TableRow key={r.id}>
-                <TableCell className={`${STICKY} max-w-[260px] min-w-44 whitespace-normal`}>
+                <TableCell className={`${STICKY} max-w-[calc(260px*var(--px,1))] min-w-44 whitespace-normal`}>
                   <span className="flex items-start gap-2">
                     <Link href={href(r.id)} className="line-clamp-2 min-w-0 break-words font-medium text-primary hover:underline" title={r.name}>
                       {r.name}
@@ -77,7 +77,7 @@ function Rows({ rows, summary }: { rows: AdminBusinessRow[]; summary: string }) 
                     {r.deleted ? deletedNote(r.deleted.at, r.deleted.purgeAfter, true) : r.location || "No location"}
                   </span>
                 </TableCell>
-                <TableCell className="max-w-[260px] min-w-44 whitespace-normal">
+                <TableCell className="max-w-[calc(260px*var(--px,1))] min-w-44 whitespace-normal">
                   <AgencyCell agency={r.agency} />
                 </TableCell>
                 <TableCell>{planText(r) ?? <span className="text-text-hint">No plan</span>}</TableCell>
@@ -98,11 +98,11 @@ function Rows({ rows, summary }: { rows: AdminBusinessRow[]; summary: string }) 
       <ul className="flex flex-col divide-y divide-border rounded-md border border-border bg-surface md:hidden">
         {rows.map((r) => (
           <li key={r.id}>
-            <Link href={href(r.id)} className="flex flex-col gap-2 px-4 py-3 text-[13px] hover:bg-muted">
+            <Link href={href(r.id)} className="flex flex-col gap-2 px-4 py-3 text-[length:calc(13px*var(--px,1))] hover:bg-muted">
               <span className="flex items-start justify-between gap-3">
                 <span className="min-w-0">
                   <span className="flex items-start gap-2">
-                    <span className="line-clamp-2 min-w-0 break-words text-[14px] font-medium text-primary" title={r.name}>{r.name}</span>
+                    <span className="line-clamp-2 min-w-0 break-words text-[length:calc(14px*var(--px,1))] font-medium text-primary" title={r.name}>{r.name}</span>
                     {r.deleted ? <DeletedBadge /> : r.draft && <DraftBadge />}
                   </span>
                   <span className="block truncate text-text-hint" title={r.agency?.name ?? "No agency"}>{r.agency?.name ?? "No agency"}</span>

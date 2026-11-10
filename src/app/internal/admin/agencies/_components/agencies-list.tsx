@@ -59,7 +59,7 @@ export default function AgenciesList({ list, status, search }: { list: AdminAgen
       ) : (
         <>
           <div className="hidden rounded-md border border-border bg-surface md:block">
-            <Table className="text-[13px]">
+            <Table className="text-[length:calc(13px*var(--px,1))]">
               <TableHeader>
                 <TableRow>
                   <TableHead className={`${STICKY} bg-muted`}>Agency</TableHead>
@@ -73,7 +73,7 @@ export default function AgenciesList({ list, status, search }: { list: AdminAgen
               <TableBody>
                 {rows.map((r) => (
                   <TableRow key={r.id}>
-                    <TableCell className={`${STICKY} max-w-[260px] min-w-44 whitespace-normal`}>
+                    <TableCell className={`${STICKY} max-w-[calc(260px*var(--px,1))] min-w-44 whitespace-normal`}>
                       <span className="flex items-start gap-2">
                         <Link href={href(r.id)} className="line-clamp-2 min-w-0 break-words font-medium text-primary hover:underline" title={r.name}>
                           {r.name}
@@ -85,7 +85,7 @@ export default function AgenciesList({ list, status, search }: { list: AdminAgen
                     <TableCell>
                       <StatusCell row={r} />
                     </TableCell>
-                    <TableCell className="max-w-[200px]">
+                    <TableCell className="max-w-[calc(200px*var(--px,1))]">
                       <span className="tabular-nums">{r.businesses}</span>
                       <span className="block truncate text-text-hint" title={r.planMix || "No plan yet"}>{r.planMix || "No plan yet"}</span>
                     </TableCell>
@@ -103,11 +103,11 @@ export default function AgenciesList({ list, status, search }: { list: AdminAgen
           <ul className="flex flex-col divide-y divide-border rounded-md border border-border bg-surface md:hidden">
             {rows.map((r) => (
               <li key={r.id}>
-                <Link href={href(r.id)} className="flex flex-col gap-2 px-4 py-3 text-[13px] hover:bg-muted">
+                <Link href={href(r.id)} className="flex flex-col gap-2 px-4 py-3 text-[length:calc(13px*var(--px,1))] hover:bg-muted">
                   <span className="flex items-start justify-between gap-3">
                     <span className="min-w-0">
                       <span className="flex items-start gap-2">
-                        <span className="line-clamp-2 min-w-0 break-words text-[14px] font-medium text-primary" title={r.name}>{r.name}</span>
+                        <span className="line-clamp-2 min-w-0 break-words text-[length:calc(14px*var(--px,1))] font-medium text-primary" title={r.name}>{r.name}</span>
                         {r.isTest && <TestBadge />}
                       </span>
                       <span className="block truncate text-text-hint" title={r.ownerEmail ?? "Owner email unknown"}>{r.ownerEmail ?? "Owner email unknown"}</span>

@@ -42,11 +42,11 @@ export function ByAi({ name, assistants, color = "var(--cd-competitor-1)" }: { n
         {assistants.map((a) => (
           <li key={a.provider} className="flex flex-col gap-2" data-testid="by-ai-row">
             <span className="flex items-baseline justify-between gap-3">
-              <span className="flex items-center gap-1.5 text-[13px] font-medium">
+              <span className="flex items-center gap-1.5 text-[length:calc(13px*var(--px,1))] font-medium">
                 <span className={cn("size-2 shrink-0 rounded-full", DOT[a.provider] ?? "bg-muted-foreground")} aria-hidden="true" />
                 {a.assistant}
               </span>
-              <span className="text-[11px] tabular-nums text-text-hint">{a.answers === 1 ? "1 answer" : `${a.answers} answers`}</span>
+              <span className="text-[length:calc(11px*var(--px,1))] tabular-nums text-text-hint">{a.answers === 1 ? "1 answer" : `${a.answers} answers`}</span>
             </span>
             {a.answers === 0 ? (
               <span className="text-xs text-muted-foreground">No answers from {a.assistant} in the last 30 days.</span>
@@ -60,7 +60,7 @@ export function ByAi({ name, assistants, color = "var(--cd-competitor-1)" }: { n
         ))}
       </ul>
 
-      <div className={cn(ROW, "text-[11px] tabular-nums text-text-hint")} aria-hidden="true">
+      <div className={cn(ROW, "text-[length:calc(11px*var(--px,1))] tabular-nums text-text-hint")} aria-hidden="true">
         <span />
         <span className="flex justify-between">
           <span>0%</span>

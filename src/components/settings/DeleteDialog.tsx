@@ -82,17 +82,17 @@ export function DeleteDialog({ name, openLabel, title, steps, confirmLabel, pend
               {steps.map((step, i) => (
                 // Two steps can share a time ("Now" twice during a trial), so the key is the whole step.
                 <li key={`${step.when}: ${step.what}`} className="relative flex gap-3 pb-4 last:pb-0">
-                  {i < steps.length - 1 && <span className="absolute top-3 left-[5px] h-full w-px bg-border" aria-hidden="true" />}
+                  {i < steps.length - 1 && <span className="absolute top-3 left-[calc(5px*var(--px,1))] h-full w-px bg-border" aria-hidden="true" />}
                   <span
                     className={cn(
-                      "relative mt-1.5 size-[11px] shrink-0 rounded-full border-2",
+                      "relative mt-1.5 size-[calc(11px*var(--px,1))] shrink-0 rounded-full border-2",
                       i === 0 ? "border-low bg-low" : "border-border bg-surface",
                     )}
                     aria-hidden="true"
                   />
                   <div className="min-w-0">
-                    <p className="text-[13px] font-semibold">{step.when}</p>
-                    <p className="text-[13px] leading-relaxed text-muted-foreground">{step.what}</p>
+                    <p className="text-[length:calc(13px*var(--px,1))] font-semibold">{step.when}</p>
+                    <p className="text-[length:calc(13px*var(--px,1))] leading-relaxed text-muted-foreground">{step.what}</p>
                   </div>
                 </li>
               ))}

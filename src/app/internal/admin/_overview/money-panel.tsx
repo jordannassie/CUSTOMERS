@@ -25,7 +25,7 @@ export default function MoneyPanel({
     // A visible heading like the other Overview sections, free to wrap on a phone (2026-10-16: it read as clipped at
     // 430px while it was screen-reader only).
     <section aria-labelledby="money-heading" className="flex min-w-0 flex-col gap-2">
-      <h2 id="money-heading" className="text-[16px] font-semibold break-words">
+      <h2 id="money-heading" className="text-[length:calc(16px*var(--px,1))] font-semibold break-words">
         Revenue and AI cost
       </h2>
       <div className="rounded-md border border-border bg-surface">
@@ -35,14 +35,14 @@ export default function MoneyPanel({
             {revenueUsd !== null ? (
               <>
                 <p className={STAT_VALUE}>{money(revenueUsd)}</p>
-                {revenueChange && <p className="text-[13px] text-text-hint">{revenueChange}</p>}
+                {revenueChange && <p className="text-[length:calc(13px*var(--px,1))] text-text-hint">{revenueChange}</p>}
               </>
             ) : (
-              <p className="text-[20px] font-semibold text-muted-foreground">
+              <p className="text-[length:calc(20px*var(--px,1))] font-semibold text-muted-foreground">
                 {revenue.state === "error" ? "Could not reach Stripe" : "Stripe not connected"}
               </p>
             )}
-            <p className="text-[13px] text-text-hint">
+            <p className="text-[length:calc(13px*var(--px,1))] text-text-hint">
               {revenue.state === "ok"
                 ? revenue.mode === "fixture"
                   ? "Test mode: no real Stripe account is used."
@@ -55,9 +55,9 @@ export default function MoneyPanel({
           <div className="flex flex-col gap-1 bg-surface px-5 py-5">
             <p className={STAT_LABEL}>Real AI cost this month</p>
             <p className={STAT_VALUE}>{money(aiCostUsd)}</p>
-            {aiCostChange && <p className="text-[13px] text-text-hint">{aiCostChange}</p>}
+            {aiCostChange && <p className="text-[length:calc(13px*var(--px,1))] text-text-hint">{aiCostChange}</p>}
             {aiCostSpark && <Sparkline points={aiCostSpark} label="Real AI cost per day" format={money} />}
-            <p className="text-[13px] text-text-hint">
+            <p className="text-[length:calc(13px*var(--px,1))] text-text-hint">
               What OpenAI, Anthropic and Perplexity charged us.{" "}
               <Link href="/internal/admin/usage?days=month" className="text-primary hover:underline">
                 See by model
@@ -80,7 +80,7 @@ export default function MoneyPanel({
               />
             )}
           </div>
-          <p className="text-[14px]">
+          <p className="text-[length:calc(14px*var(--px,1))]">
             {share === null
               ? "No revenue to compare with yet, so there is no margin to show."
               : share >= 1

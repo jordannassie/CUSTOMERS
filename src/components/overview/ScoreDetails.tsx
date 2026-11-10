@@ -48,7 +48,7 @@ export function ScoreDetails({ panel }: { panel: MethodPanel }) {
                     <span className={cn("size-2 rounded-full", DOT[m.id])} aria-hidden="true" />
                     {m.label}
                   </span>
-                  <span className={cn("tabular-nums", m.score !== null ? "text-xl font-semibold" : "text-[13px] text-muted-foreground")}>
+                  <span className={cn("tabular-nums", m.score !== null ? "text-xl font-semibold" : "text-[length:calc(13px*var(--px,1))] text-muted-foreground")}>
                     {m.value}
                   </span>
                   <span className="h-1.5 rounded-xs bg-muted" aria-hidden="true">
@@ -71,7 +71,7 @@ export function ScoreDetails({ panel }: { panel: MethodPanel }) {
                     </span>
                     <span className="flex flex-col gap-0.5">
                       <span className="font-medium">{s.title}</span>
-                      <span className="text-[13px] text-muted-foreground">{s.detail}</span>
+                      <span className="text-[length:calc(13px*var(--px,1))] text-muted-foreground">{s.detail}</span>
                     </span>
                   </li>
                 );
@@ -95,7 +95,7 @@ export function ScoreDetails({ panel }: { panel: MethodPanel }) {
             <div className="flex flex-col gap-3 rounded-md border border-border p-3" data-testid="score-accuracy">
               <div className="flex items-baseline justify-between gap-3">
                 <span className="font-medium">{panel.accuracy.label}</span>
-                <span className="text-[13px] tabular-nums text-muted-foreground">{panel.accuracy.margin}</span>
+                <span className="text-[length:calc(13px*var(--px,1))] tabular-nums text-muted-foreground">{panel.accuracy.margin}</span>
               </div>
               <ol className="grid grid-cols-3 gap-1.5" aria-label="Confidence levels">
                 {LEVELS.map((l, i) => (
@@ -105,7 +105,7 @@ export function ScoreDetails({ panel }: { panel: MethodPanel }) {
                   </li>
                 ))}
               </ol>
-              <p className="text-[13px] text-muted-foreground">{panel.accuracy.note}</p>
+              <p className="text-[length:calc(13px*var(--px,1))] text-muted-foreground">{panel.accuracy.note}</p>
             </div>
           </Section>
 

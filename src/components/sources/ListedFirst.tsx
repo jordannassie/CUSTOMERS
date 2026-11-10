@@ -21,14 +21,14 @@ export function ListedFirst({ businessId, listed, add }: Props) {
     <SectionCard
       title="Get listed here first"
       aside={
-        <Link href="/actions" className="text-[12.5px] font-medium text-primary hover:underline">
+        <Link href="/actions" className="text-[length:calc(12.5px*var(--px,1))] font-medium text-primary hover:underline">
           Open Actions
         </Link>
       }
       testId="listed-first"
     >
       {listed.length === 0 ? (
-        <p className="px-4 py-5 text-[13px] text-muted-foreground sm:px-4" data-testid="listed-first-empty">
+        <p className="px-4 py-5 text-[length:calc(13px*var(--px,1))] text-muted-foreground sm:px-4" data-testid="listed-first-empty">
           Every listing site AI used also named you. Keep those listings up to date.
         </p>
       ) : (
@@ -42,7 +42,7 @@ export function ListedFirst({ businessId, listed, add }: Props) {
               <div className="flex min-w-0 flex-1 items-start gap-2.5">
                 <SiteIcon domain={s.host} name={s.host} size="sm" className="mt-px" />
                 <div className="flex min-w-0 flex-col gap-0.5">
-                  <p className="flex min-w-0 items-baseline gap-2 text-[13px]">
+                  <p className="flex min-w-0 items-baseline gap-2 text-[length:calc(13px*var(--px,1))]">
                     <span className="truncate font-medium" title={s.host}>{s.host}</span>
                     <span className="shrink-0 text-xs text-text-hint">{s.kindLabel}</span>
                   </p>
@@ -51,7 +51,7 @@ export function ListedFirst({ businessId, listed, add }: Props) {
                   </p>
                 </div>
               </div>
-              <div className="flex shrink-0 items-center gap-2 pl-[34px] sm:pl-0">
+              <div className="flex shrink-0 items-center gap-2 pl-[calc(34px*var(--px,1))] sm:pl-0">
                 <Badge variant={IMPACT[s.impact].variant} data-testid="impact">
                   <span className="sr-only">Impact: </span>
                   {IMPACT[s.impact].label}

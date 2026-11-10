@@ -61,7 +61,7 @@ export function PlaceChoices({ businessId, searched, choices, typed, note, pick,
   return (
     <form onSubmit={submit} className="flex flex-col gap-6" noValidate>
       <fieldset className="flex min-w-0 flex-col gap-3" aria-describedby="place-choices-hint">
-        <legend className="mb-1 text-[15px] font-medium">Is one of these your business?</legend>
+        <legend className="mb-1 text-[length:calc(15px*var(--px,1))] font-medium">Is one of these your business?</legend>
         <p id="place-choices-hint" className="text-sm text-muted-foreground">
           {note ?? `We searched Google for ${searched}. Pick yours to fill in its details, or choose None of these to keep what you typed.`}
         </p>
@@ -71,7 +71,7 @@ export function PlaceChoices({ businessId, searched, choices, typed, note, pick,
               <li key={c.placeId}>
                 <Option value={c.placeId} chosen={chosen} onSelect={select}>
                   <span className="block text-sm font-medium break-words">{c.name}</span>
-                  {c.address ? <span className="block text-[13px] break-words text-muted-foreground">{c.address}</span> : null}
+                  {c.address ? <span className="block text-[length:calc(13px*var(--px,1))] break-words text-muted-foreground">{c.address}</span> : null}
                 </Option>
               </li>
             ))}

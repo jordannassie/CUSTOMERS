@@ -16,7 +16,7 @@ export function LinkedInPostEditor({ initialPost }: { initialPost: string }) {
     <div className="flex flex-col gap-2">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex flex-wrap items-center gap-2">
-          <span className={cn("text-[12px] font-medium tabular-nums", isOver ? "text-low-text" : "text-muted-foreground")}>
+          <span className={cn("text-[length:calc(12px*var(--px,1))] font-medium tabular-nums", isOver ? "text-low-text" : "text-muted-foreground")}>
             {charCount.toLocaleString()} / {LINKEDIN_LIMIT.toLocaleString()} characters
           </span>
           {isOver && <Badge variant="low">Over LinkedIn limit, trim before posting</Badge>}
@@ -29,9 +29,9 @@ export function LinkedInPostEditor({ initialPost }: { initialPost: string }) {
         rows={14}
         aria-label="Editable LinkedIn post"
         aria-invalid={isOver || undefined}
-        className="resize-y px-4 py-3 text-[14px] leading-relaxed md:text-[14px]"
+        className="resize-y px-4 py-3 text-[length:calc(14px*var(--px,1))] leading-relaxed md:text-[length:calc(14px*var(--px,1))]"
       />
-      <p className="text-[12px] italic text-muted-foreground">
+      <p className="text-[length:calc(12px*var(--px,1))] italic text-muted-foreground">
         Review all facts and source attributions before posting. AI-generated content may contain errors.
       </p>
     </div>

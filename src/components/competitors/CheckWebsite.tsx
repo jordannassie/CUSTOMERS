@@ -67,7 +67,7 @@ export function CheckWebsite({
 
   if (pending) {
     return (
-      <p role="status" className="flex items-center gap-2 text-[13px] text-muted-foreground" data-testid="website-checking">
+      <p role="status" className="flex items-center gap-2 text-[length:calc(13px*var(--px,1))] text-muted-foreground" data-testid="website-checking">
         <Loader2 className="size-4 animate-spin text-primary" aria-hidden="true" />
         Reading their website. This takes about 30 seconds.
       </p>
@@ -78,12 +78,12 @@ export function CheckWebsite({
   return (
     <div className="flex flex-col gap-2" data-testid="check-website">
       {!checked && (website.checking || busyElsewhere) ? (
-        <p className="flex items-center gap-2 text-[13px] text-muted-foreground" data-testid="website-being-checked">
+        <p className="flex items-center gap-2 text-[length:calc(13px*var(--px,1))] text-muted-foreground" data-testid="website-being-checked">
           <Loader2 className="size-4 animate-spin text-primary" aria-hidden="true" />
           Being checked now. The results show here when you reload in a minute.
         </p>
       ) : checked ? (
-        <p className="flex flex-wrap items-center gap-x-1.5 text-[13px] text-muted-foreground">
+        <p className="flex flex-wrap items-center gap-x-1.5 text-[length:calc(13px*var(--px,1))] text-muted-foreground">
           <Globe className="size-3.5" aria-hidden="true" />
           {siteHref(website.domain) ? (
             <a href={siteHref(website.domain)!} target="_blank" rel="noopener noreferrer" className="text-foreground underline-offset-2 hover:underline">
@@ -98,7 +98,7 @@ export function CheckWebsite({
         </p>
       ) : website.domain ? (
         <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-border px-3 py-2.5">
-          <span className="flex min-w-0 items-center gap-1.5 text-[13px]">
+          <span className="flex min-w-0 items-center gap-1.5 text-[length:calc(13px*var(--px,1))]">
             <Globe className="size-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />
             <span className="truncate">{website.domain}</span>
           </span>
@@ -120,7 +120,7 @@ export function CheckWebsite({
             placeholder="theirsite.com"
             aria-label={`Website for ${name}`}
             maxLength={200}
-            className="h-8 w-44 max-w-full min-w-0 text-[13px]"
+            className="h-8 w-44 max-w-full min-w-0 text-[length:calc(13px*var(--px,1))]"
           />
           <Button type="submit" size="sm" className="h-8" disabled={!value.trim()}>
             Check their website
@@ -128,7 +128,7 @@ export function CheckWebsite({
         </form>
       )}
       {error && (
-        <p role="alert" className="text-[13px] text-low-text">
+        <p role="alert" className="text-[length:calc(13px*var(--px,1))] text-low-text">
           {error}
         </p>
       )}

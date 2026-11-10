@@ -46,11 +46,11 @@ export default function AnswerCell({
             <DialogDescription className="wrap-anywhere">{question}</DialogDescription>
           </DialogHeader>
           {answer ? (
-            <p className="max-h-[60vh] overflow-y-auto rounded-md border border-border bg-muted px-4 py-3 text-[14px] leading-relaxed whitespace-pre-wrap wrap-anywhere">
+            <p className="max-h-[60vh] overflow-y-auto rounded-md border border-border bg-muted px-4 py-3 text-[length:calc(14px*var(--px,1))] leading-relaxed whitespace-pre-wrap wrap-anywhere">
               {answer}
             </p>
           ) : (
-            <p className="text-[14px] text-muted-foreground">No answer text was saved for this check.</p>
+            <p className="text-[length:calc(14px*var(--px,1))] text-muted-foreground">No answer text was saved for this check.</p>
           )}
         </DialogContent>
       </Dialog>

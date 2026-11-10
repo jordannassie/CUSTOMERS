@@ -30,10 +30,10 @@ export default async function AdminBusinessPage({ params }: { params: Promise<{ 
   await requireAdmin({ next: `/internal/admin/businesses/${id}` });
 
   return (
-    <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-5 px-4 py-4 sm:px-6 sm:py-5">
+    <div className="mx-auto flex w-full max-w-[calc(1200px*var(--px,1))] flex-col gap-5 px-4 py-4 sm:px-6 sm:py-5">
       <Link
         href="/internal/admin/businesses"
-        className="inline-flex w-fit items-center gap-1 text-[13px] text-muted-foreground hover:text-foreground"
+        className="inline-flex w-fit items-center gap-1 text-[length:calc(13px*var(--px,1))] text-muted-foreground hover:text-foreground"
       >
         <ChevronLeft aria-hidden className="size-4" />
         Businesses

@@ -31,7 +31,7 @@ export function CompetitorWebsite({
 
   if (!open) {
     return (
-      <Button type="button" variant="link" size="sm" className="h-auto self-start p-0 text-[13px]" onClick={() => setOpen(true)} data-testid="add-website">
+      <Button type="button" variant="link" size="sm" className="h-auto self-start p-0 text-[length:calc(13px*var(--px,1))]" onClick={() => setOpen(true)} data-testid="add-website">
         {current ? "Edit" : "Add website"}
       </Button>
     );
@@ -57,7 +57,7 @@ export function CompetitorWebsite({
           placeholder="theirsite.com"
           aria-label={`Website for ${name}`}
           maxLength={200}
-          className="h-8 w-40 max-w-full min-w-0 text-[13px]"
+          className="h-8 w-40 max-w-full min-w-0 text-[length:calc(13px*var(--px,1))]"
           autoFocus
         />
         <Button type="submit" size="sm" className="h-8" disabled={pending}>
@@ -69,7 +69,7 @@ export function CompetitorWebsite({
         </Button>
       </div>
       {error ? (
-        <p role="alert" className="text-[12px] text-low-text">
+        <p role="alert" className="text-[length:calc(12px*var(--px,1))] text-low-text">
           {error}
         </p>
       ) : null}

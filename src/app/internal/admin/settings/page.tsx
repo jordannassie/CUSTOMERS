@@ -12,7 +12,7 @@ export default async function AdminSettingsPage() {
   await requireAdmin({ next: "/internal/admin/settings" });
 
   return (
-    <div className="mx-auto w-full max-w-[1200px] px-4 py-4 sm:px-6 sm:py-5">
+    <div className="mx-auto w-full max-w-[calc(1200px*var(--px,1))] px-4 py-4 sm:px-6 sm:py-5">
       {/* Same outer width as every admin page; the status list itself reads best narrow, so it stays left aligned. */}
       <div className="flex flex-col gap-6">
         <AdminPageHeader
@@ -37,7 +37,7 @@ async function LiveStatus() {
 function StatusSkeleton() {
   return (
     <div className="flex flex-col gap-6" aria-busy aria-label="Checking services">
-      <Skeleton className="h-[116px] rounded-md" />
+      <Skeleton className="h-[calc(116px*var(--px,1))] rounded-md" />
       {[3, 4, 1, 2].map((rows, i) => (
         <div key={i} className="flex flex-col gap-2">
           <Skeleton className="h-4 w-32" />

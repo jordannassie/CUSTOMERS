@@ -23,7 +23,7 @@ export function SourceTypes({ types, answers }: { types: SourcesView["types"]; a
         <ul className="flex w-full min-w-0 flex-1 flex-col gap-3" data-testid="source-types">
           {types.map((t) => (
             // The label comes first and the answers line right after it in reading order; the percent sits top right.
-            <li key={t.type} className="grid grid-cols-[8px_minmax(0,1fr)_auto] items-center gap-x-2.5 gap-y-0.5 text-[13px]">
+            <li key={t.type} className="grid grid-cols-[calc(8px*var(--px,1))_minmax(0,1fr)_auto] items-center gap-x-2.5 gap-y-0.5 text-[length:calc(13px*var(--px,1))]">
               <span className="row-start-1 size-2 rounded-[2px]" style={{ background: COLOR[t.type] }} aria-hidden="true" />
               <span className="col-start-2 row-start-1 truncate font-medium">{t.label}</span>
               <span className="col-start-2 row-start-2 truncate text-xs text-text-hint" title={t.kinds.join(", ")}>
@@ -72,10 +72,10 @@ function Donut({ types, sum, answers }: { types: SourcesView["types"]; sum: numb
           />
         );
       })}
-      <text x="70" y="70" textAnchor="middle" className="fill-foreground text-[24px] font-semibold tabular-nums">
+      <text x="70" y="70" textAnchor="middle" className="fill-foreground text-[length:calc(24px*var(--px,1))] font-semibold tabular-nums">
         {answers}
       </text>
-      <text x="70" y="88" textAnchor="middle" className="fill-muted-foreground text-[11px]">
+      <text x="70" y="88" textAnchor="middle" className="fill-muted-foreground text-[length:calc(11px*var(--px,1))]">
         {answers === 1 ? "answer" : "answers"}
       </text>
     </svg>

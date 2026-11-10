@@ -280,7 +280,7 @@ test("Competitors names the leader's top reason, and Compare shows every fact wi
   await page.waitForURL((url) => url.pathname === "/competitors/compare" && url.searchParams.get("with") === bean, { timeout: 60_000 });
 
   const compare = page.getByTestId("compare-page");
-  await expect(compare.getByRole("heading", { level: 2, name: "You vs Bean House" })).toBeVisible({ timeout: 60_000 });
+  await expect(compare.getByRole("heading", { level: 2, name: /vs Bean House$/ })).toBeVisible({ timeout: 60_000 });
   await expect(compare.getByTestId("why-versus")).toHaveText(/You\s*20\s*3 of 15 answers\s*Bean House\s*80\s*12 of 15 answers/);
   await expect(compare.getByTestId("gap")).toHaveText("60 pts behind");
   await expect(compare.getByTestId("by-ai")).toContainText("ChatGPT");
@@ -412,7 +412,7 @@ test("The Overview shows where you stand and opens the competitor who leads", as
   await row.getByTestId("compare-link").click();
   await page.waitForURL((url) => url.pathname === "/competitors/compare", { timeout: 60_000 });
   expect(new URL(page.url()).searchParams.get("with")).toBe(await competitorId(businessId, "Bean House"));
-  await expect(page.getByTestId("compare-page").getByRole("heading", { level: 2, name: "You vs Bean House" })).toBeVisible({ timeout: 60_000 });
+  await expect(page.getByTestId("compare-page").getByRole("heading", { level: 2, name: /vs Bean House$/ })).toBeVisible({ timeout: 60_000 });
 });
 
 test("Competitors: the trend chart draws a line for you and each competitor", async ({ page }, info) => {

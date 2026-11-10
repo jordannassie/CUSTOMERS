@@ -29,7 +29,7 @@ export function PageHeader({ title, description, descriptionTestId, actions, cla
           {title}
         </h1>
         {description ? (
-          <p className="max-w-[680px] text-sm text-muted-foreground" data-testid={descriptionTestId}>
+          <p className="max-w-[calc(680px*var(--px,1))] text-sm text-muted-foreground" data-testid={descriptionTestId}>
             {description}
           </p>
         ) : null}

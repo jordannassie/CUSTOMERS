@@ -10,10 +10,10 @@ const POINTS = [
 ];
 
 const CLIENTS = [
-  { name: "Bean House", place: "Orange, CA", score: 62, tone: "bg-mid" },
-  { name: "Harbor Dental", place: "Long Beach, CA", score: 78, tone: "bg-good" },
-  { name: "Summit Roofing", place: "Tustin, CA", score: 31, tone: "bg-low" },
-  { name: "Lotus Nail Spa", place: "Irvine, CA", score: 55, tone: "bg-mid" },
+  { name: "Bean House", place: "Orange, CA", score: 62, tone: "bg-primary" },
+  { name: "Harbor Dental", place: "Long Beach, CA", score: 78, tone: "bg-primary" },
+  { name: "Summit Roofing", place: "Tustin, CA", score: 31, tone: "bg-primary" },
+  { name: "Lotus Nail Spa", place: "Irvine, CA", score: 55, tone: "bg-primary" },
 ];
 
 /** A made-up agency client list, also used on /agency. */
@@ -29,7 +29,7 @@ export function ClientListExample() {
           <li key={name} className="flex items-center justify-between gap-4 px-4 py-3 sm:px-5">
             <div className="min-w-0">
               <p className="truncate text-sm font-medium">{name}</p>
-              <p className="text-[13px] text-text-hint">{place}</p>
+              <p className="text-[length:calc(13px*var(--px,1))] text-text-hint">{place}</p>
             </div>
             <span className="flex items-center gap-2 text-sm">
               <span className={`size-2 rounded-full ${tone}`} aria-hidden="true" />
@@ -49,7 +49,7 @@ export function ForAgencies() {
       <div className="grid items-center gap-10 md:grid-cols-2 md:gap-16">
         <div className="flex flex-col gap-4">
           <H2>All your clients, one login</H2>
-          <ul className="mt-2 flex flex-col gap-3 text-[15px] text-muted-foreground">
+          <ul className="mt-2 flex flex-col gap-3 text-[length:calc(15px*var(--px,1))] text-muted-foreground">
             {POINTS.map((p) => (
               <li key={p} className="border-l-2 border-primary pl-4">
                 {p}

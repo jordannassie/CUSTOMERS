@@ -172,7 +172,7 @@ export default function AuthForm({ defaultMode = "login", errorParam = "", notic
   const passwordInvalid = invalid === "password" || invalid === "both";
 
   return (
-    <div className="w-full max-w-[420px]">
+    <div className="w-full max-w-[calc(420px*var(--px,1))]">
       <AuthLogo />
 
       <AuthCard>
@@ -244,7 +244,7 @@ export default function AuthForm({ defaultMode = "login", errorParam = "", notic
 
           <div className="my-5 flex items-center gap-3">
             <div className="h-px flex-1 bg-border" />
-            <span className="text-[13px] text-muted-foreground">or continue with email</span>
+            <span className="text-[length:calc(13px*var(--px,1))] text-muted-foreground">or continue with email</span>
             <div className="h-px flex-1 bg-border" />
           </div>
 
@@ -297,7 +297,7 @@ export default function AuthForm({ defaultMode = "login", errorParam = "", notic
           </form>
 
           {isSignup && (
-            <p data-testid="signup-terms" className="mt-4 text-center text-[13px] text-muted-foreground">
+            <p data-testid="signup-terms" className="mt-4 text-center text-[length:calc(13px*var(--px,1))] text-muted-foreground">
               By signing up with email or Google, you agree to our{" "}
               <Link href="/terms" prefetch={false} className="font-medium text-foreground underline underline-offset-4 hover:text-primary">
                 Terms
@@ -310,7 +310,7 @@ export default function AuthForm({ defaultMode = "login", errorParam = "", notic
             </p>
           )}
 
-          <p className="mt-5 text-center text-[13px] text-muted-foreground">
+          <p className="mt-5 text-center text-[length:calc(13px*var(--px,1))] text-muted-foreground">
             Having trouble signing in?{" "}
             {/* No prefetch on the login and signup pages: each view rendered these pages on the server for nothing. */}
             <Link href="/contact?topic=support" prefetch={false} className="font-medium text-foreground underline underline-offset-4 hover:text-primary">
@@ -320,7 +320,7 @@ export default function AuthForm({ defaultMode = "login", errorParam = "", notic
         </div>
       </AuthCard>
 
-      <p className="mt-4 text-center text-[13px] text-muted-foreground">
+      <p className="mt-4 text-center text-[length:calc(13px*var(--px,1))] text-muted-foreground">
         7-day free trial. Credit card required.
       </p>
     </div>

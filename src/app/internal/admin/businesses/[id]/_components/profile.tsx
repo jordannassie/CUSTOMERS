@@ -36,7 +36,7 @@ export default function Profile({ detail }: { detail: NonNullable<AdminBusinessD
     ["Added", formatDate(b.created_at)],
     [
       "Business ID",
-      <span key="id" className="font-mono text-[12px] break-all">
+      <span key="id" className="font-mono text-[length:calc(12px*var(--px,1))] break-all">
         {b.id}
       </span>,
     ],
@@ -44,7 +44,7 @@ export default function Profile({ detail }: { detail: NonNullable<AdminBusinessD
 
   return (
     <Section title="Profile">
-      <dl className="grid grid-cols-1 rounded-md border border-border bg-surface px-4 py-1 text-[14px] sm:grid-cols-2 sm:gap-x-8">
+      <dl className="grid grid-cols-1 rounded-md border border-border bg-surface px-4 py-1 text-[length:calc(14px*var(--px,1))] sm:grid-cols-2 sm:gap-x-8">
         {rows.map(([label, value]) => (
           <div
             key={label}

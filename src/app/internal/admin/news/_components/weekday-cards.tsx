@@ -31,11 +31,11 @@ export function WeekdayCards({
             )}
           >
             <span className="flex w-full items-center justify-between gap-2">
-              <span className="text-[12px] font-medium text-muted-foreground">{w.short}</span>
+              <span className="text-[length:calc(12px*var(--px,1))] font-medium text-muted-foreground">{w.short}</span>
               {w.key === today && <Badge variant="tint">Today</Badge>}
             </span>
-            <span className="text-[14px] font-semibold leading-tight text-foreground">{w.theme}</span>
-            <span className="text-[12px] leading-snug text-muted-foreground">{w.desc}</span>
+            <span className="text-[length:calc(14px*var(--px,1))] font-semibold leading-tight text-foreground">{w.theme}</span>
+            <span className="text-[length:calc(12px*var(--px,1))] leading-snug text-muted-foreground">{w.desc}</span>
           </button>
         );
       })}

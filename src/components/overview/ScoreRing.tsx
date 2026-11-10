@@ -15,7 +15,7 @@ const SIZE = {
   default: { ring: "size-24 sm:size-36", value: "text-3xl sm:text-5xl" },
   small: { ring: "size-24", value: "text-3xl" },
   // The Overview's headline score (mockup-ui).
-  hero: { ring: "size-24 sm:size-28", value: "text-3xl sm:text-[38px]" },
+  hero: { ring: "size-24 sm:size-28", value: "text-3xl sm:text-[length:calc(38px*var(--px,1))]" },
 } as const;
 
 /**

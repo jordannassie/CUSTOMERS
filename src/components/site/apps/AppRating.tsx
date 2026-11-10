@@ -17,7 +17,7 @@ function StarMark({ fill }: { fill: number }) {
 
 function ScoreLine({ rating, count, label, compact }: { rating: number; count: number | null; label: string; compact: boolean }) {
   return (
-    <p className={`flex flex-wrap items-center gap-1 text-[#777773] ${compact ? "justify-center text-[10px]" : "text-[12px]"}`}>
+    <p className={`flex flex-wrap items-center gap-1 text-[#777773] ${compact ? "justify-center text-[length:calc(10px*var(--px,1))]" : "text-[length:calc(12px*var(--px,1))]"}`}>
       <span className="inline-flex items-center gap-0.5" aria-hidden="true">
         {ratingStars(rating, 5).map((fill, index) => (
           <StarMark key={index} fill={fill} />
@@ -58,7 +58,7 @@ export function AppRating({
       {nativeRated && native?.average !== null && native?.average !== undefined ? (
         <ScoreLine rating={native.average} count={nativeCount} label="Customers.Direct" compact={compact} />
       ) : null}
-      {showEmpty && !nativeRated ? <p className="text-[14px] text-[#777773]">Not yet rated.</p> : null}
+      {showEmpty && !nativeRated ? <p className="text-[length:calc(14px*var(--px,1))] text-[#777773]">Not yet rated.</p> : null}
       {licensed && app.rating !== null && app.reviewSource ? (
         <ScoreLine rating={app.rating} count={app.reviewCount} label={reviewSourceLabel(app.reviewSource)} compact={compact} />
       ) : null}
@@ -67,7 +67,7 @@ export function AppRating({
           href={`/apps/go/${app.slug}/review/${source}`}
           target="_blank"
           rel="noopener noreferrer"
-          className={`relative z-10 inline-flex font-semibold text-[#0866F5] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0866F5] ${compact ? "mt-1 text-[11px]" : "mt-1 text-[12px]"}`}
+          className={`relative z-10 inline-flex font-semibold text-[#0866F5] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0866F5] ${compact ? "mt-1 text-[length:calc(11px*var(--px,1))]" : "mt-1 text-[length:calc(12px*var(--px,1))]"}`}
         >
           {sourceLabel} reviews <span aria-hidden="true">↗</span>
         </a>

@@ -41,7 +41,7 @@ export function AddToActionsButton({ businessId, action, inActions, actionId = n
     return (
       <Link
         href={id ? fixHref(id) : "/actions"}
-        className={cn("inline-flex h-7 items-center gap-1.5 rounded-md px-2.5 text-[12.5px] font-medium whitespace-nowrap hover:underline", PILL_CLASS.inActions)}
+        className={cn("inline-flex h-7 items-center gap-1.5 rounded-md px-2.5 text-[length:calc(12.5px*var(--px,1))] font-medium whitespace-nowrap hover:underline", PILL_CLASS.inActions)}
         data-testid="in-actions"
       >
         <CircleCheck className="size-3.5" aria-hidden="true" />

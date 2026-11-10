@@ -50,7 +50,7 @@ export function AppShell({
         names={names}
         activeBusinessId={sidebar.activeBusinessId}
       />
-      <aside className="scroll-quiet sticky top-0 hidden h-dvh w-[212px] shrink-0 overflow-y-auto lg:block">
+      <aside className="scroll-quiet sticky top-0 hidden h-dvh w-[calc(212px*var(--px,1))] shrink-0 overflow-y-auto lg:block">
         <AppSidebar {...sidebar} />
       </aside>
 

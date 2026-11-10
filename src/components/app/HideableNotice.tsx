@@ -50,7 +50,7 @@ export function HideableNotice({
   return (
     <div
       role="status"
-      className={cn("flex items-start gap-2 rounded-lg border border-border bg-muted/60 py-1.5 pr-1.5 pl-3 text-[13px] text-foreground", className)}
+      className={cn("flex items-start gap-2 rounded-lg border border-border bg-muted/60 py-1.5 pr-1.5 pl-3 text-[length:calc(13px*var(--px,1))] text-foreground", className)}
       data-testid={testId}
     >
       {icon}

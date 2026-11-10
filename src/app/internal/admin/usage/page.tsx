@@ -22,7 +22,7 @@ const BASE = "/internal/admin/usage";
 // The admin check runs inside Suspense too: awaiting it at the top would block every period change.
 export default function AdminUsagePage({ searchParams }: Props) {
   return (
-    <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-4 px-4 py-4 sm:px-6 sm:py-5">
+    <div className="mx-auto flex w-full max-w-[calc(1200px*var(--px,1))] flex-col gap-4 px-4 py-4 sm:px-6 sm:py-5">
       <AdminPageHeader
         title="Usage and cost"
         subtitle="Credits customers used, from the credit ledger, against what the AI providers charged us, from the usage log."
@@ -75,7 +75,7 @@ function Filters({ days, includeTest }: { days: PeriodDays; includeTest: boolean
         active={String(days)}
         tabs={PERIODS.map((d) => ({ key: String(d), label: d === "month" ? "This month" : `Last ${d} days`, href: href(d, includeTest) }))}
       />
-      <Link href={href(days, !includeTest)} className="text-[13px] font-medium text-primary hover:underline">
+      <Link href={href(days, !includeTest)} className="text-[length:calc(13px*var(--px,1))] font-medium text-primary hover:underline">
         {includeTest ? "Leave out test agencies" : "Include test agencies"}
       </Link>
     </div>

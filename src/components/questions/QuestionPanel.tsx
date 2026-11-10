@@ -51,8 +51,8 @@ export function QuestionPanel({ open, onClose, container, id, title, position, f
               returnFocus();
             }}
           >
-            <div className="flex h-[52px] shrink-0 items-center justify-between gap-3 border-b border-border px-5">
-              <p className="flex items-baseline gap-2 text-[15px] font-semibold tracking-[-0.01em]">
+            <div className="flex h-[calc(52px*var(--px,1))] shrink-0 items-center justify-between gap-3 border-b border-border px-5">
+              <p className="flex items-baseline gap-2 text-[length:calc(15px*var(--px,1))] font-semibold tracking-[-0.01em]">
                 Question details
                 {position && <span className="text-xs font-normal text-text-hint tabular-nums">{position}</span>}
               </p>
@@ -67,8 +67,8 @@ export function QuestionPanel({ open, onClose, container, id, title, position, f
               <dl className="grid grid-cols-2 gap-x-6 gap-y-3 border-b border-border px-5 py-4 sm:grid-cols-3 lg:grid-cols-5">
                 {facts.map((f) => (
                   <div key={f.label} className="flex min-w-0 flex-col gap-1.5">
-                    <dt className="text-[11px] font-medium tracking-[0.04em] text-text-hint uppercase">{f.label}</dt>
-                    <dd className="text-[13px] tabular-nums">{f.value}</dd>
+                    <dt className="text-[length:calc(11px*var(--px,1))] font-medium tracking-[0.04em] text-text-hint uppercase">{f.label}</dt>
+                    <dd className="text-[length:calc(13px*var(--px,1))] tabular-nums">{f.value}</dd>
                   </div>
                 ))}
               </dl>
@@ -80,7 +80,7 @@ export function QuestionPanel({ open, onClose, container, id, title, position, f
                     ?
                   </span>
                   <div className="flex min-w-0 items-start gap-2 rounded-2xl rounded-tl-sm bg-muted px-4 py-2.5">
-                    <SheetTitle className="text-[15px] leading-snug font-medium wrap-break-word">{title}</SheetTitle>
+                    <SheetTitle className="text-[length:calc(15px*var(--px,1))] leading-snug font-medium wrap-break-word">{title}</SheetTitle>
                     <button
                       type="button"
                       onClick={copy}

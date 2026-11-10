@@ -133,7 +133,7 @@ export async function StepContent({ step, state, plan, returned }: Props) {
     if (!state.needsCard || c.started) return <SettingUp businessId={draftId} check={checkCardStep} />;
     if (!c.offer) {
       return (
-        <p role="alert" className="rounded-md bg-low-bg px-3 py-2 text-[13px] text-low-text">
+        <p role="alert" className="rounded-md bg-low-bg px-3 py-2 text-[length:calc(13px*var(--px,1))] text-low-text">
           Your plan isn&apos;t available to start right now. Please contact us and we&apos;ll set it up.
         </p>
       );

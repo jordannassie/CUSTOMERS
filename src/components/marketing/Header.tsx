@@ -8,7 +8,7 @@ import { LOGIN_HREF, NAV_LINKS, TRIAL_HREF, TRIAL_LABEL } from "./nav";
 export default function Header() {
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-background">
-      <div className="mx-auto flex h-16 max-w-[1120px] items-center gap-8 px-4 sm:px-6">
+      <div className="mx-auto flex h-16 max-w-[calc(1120px*var(--px,1))] items-center gap-8 px-4 sm:px-6">
         <Logo preload />
 
         <nav aria-label="Main" className="hidden flex-1 lg:block">

@@ -158,7 +158,7 @@ export default function AgencyActions({ agency, stripeConnected, maxCredits, max
               {...fields.props("days", ids.preview)}
             />
             {fields.message("days")}
-            <p id={ids.preview} className="text-[13px] text-muted-foreground" data-testid="trial-preview">
+            <p id={ids.preview} className="text-[length:calc(13px*var(--px,1))] text-muted-foreground" data-testid="trial-preview">
               {trialPreview ? `The trial will end on ${trialPreview}.` : "Enter a whole number of days."}
             </p>
           </div>

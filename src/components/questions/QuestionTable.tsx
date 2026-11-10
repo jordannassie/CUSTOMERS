@@ -10,7 +10,7 @@ import { QuestionItem, type QuestionActions } from "./QuestionItem";
 import { useQuestions } from "./QuestionsProvider";
 
 // Named (ring), question, each AI, top picks, recent checks, menu. The header and every row share it.
-const GRID = "lg:grid-cols-[84px_minmax(0,1fr)_96px_80px_112px_36px] lg:gap-x-4";
+const GRID = "lg:grid-cols-[calc(84px*var(--px,1))_minmax(0,1fr)_calc(96px*var(--px,1))_calc(80px*var(--px,1))_calc(112px*var(--px,1))_calc(36px*var(--px,1))] lg:gap-x-4";
 
 type Props = { limitMessage: string | null; actions: QuestionActions };
 
@@ -26,8 +26,8 @@ export function QuestionTable({ limitMessage, actions }: Props) {
     return (
       <div data-testid="no-questions" className="flex flex-col items-start gap-3 rounded-lg border border-dashed border-border bg-surface px-5 py-8">
         <MessageSquarePlus className="size-5 text-text-hint" aria-hidden="true" />
-        <h2 className="text-[15px] font-semibold tracking-[-0.01em]">{paused > 0 ? "All your questions are paused" : "No questions yet"}</h2>
-        <p className="text-[13px] text-muted-foreground">
+        <h2 className="text-[length:calc(15px*var(--px,1))] font-semibold tracking-[-0.01em]">{paused > 0 ? "All your questions are paused" : "No questions yet"}</h2>
+        <p className="text-[length:calc(13px*var(--px,1))] text-muted-foreground">
           {paused > 0 ? "Scans check nothing until you resume a question or add a new one." : "Add a question below and the next scan will check it."}
         </p>
         {paused > 0 && (
@@ -47,7 +47,7 @@ export function QuestionTable({ limitMessage, actions }: Props) {
       </h2>
       <QuestionFilters />
       {noneYet && (
-        <p className="border-b border-border bg-muted/60 px-4 py-2 text-[13px] text-muted-foreground" data-testid="no-answers-yet">
+        <p className="border-b border-border bg-muted/60 px-4 py-2 text-[length:calc(13px*var(--px,1))] text-muted-foreground" data-testid="no-answers-yet">
           No answers yet. Results show here after your next scan.
         </p>
       )}
@@ -63,7 +63,7 @@ export function QuestionTable({ limitMessage, actions }: Props) {
 
       {count === 0 ? (
         <div className="flex flex-col items-start gap-3 px-4 py-6" data-testid="no-matches">
-          <p className="text-[13px] text-muted-foreground">
+          <p className="text-[length:calc(13px*var(--px,1))] text-muted-foreground">
             {focus.site ? `No answers in the last 30 days used ${focus.site} for these questions.` : "No questions match these filters."}
           </p>
           <Button

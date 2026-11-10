@@ -37,13 +37,13 @@ export function Panel({
 export function PanelHead({ title, help, right, link }: { title: string; help?: string; right?: ReactNode; link?: { href: string; text: string } }) {
   return (
     <div className="flex min-h-11 flex-wrap items-center justify-between gap-x-3 gap-y-1 border-b border-border px-4 py-2">
-      <h2 className="flex items-center gap-1.5 text-[14px] font-semibold tracking-[-0.01em]">
+      <h2 className="flex items-center gap-1.5 text-[length:calc(14px*var(--px,1))] font-semibold tracking-[-0.01em]">
         {title}
         {help && <HelpTip label={`About ${title.toLowerCase()}`} text={help} />}
       </h2>
       {right && <div className="text-xs text-text-hint">{right}</div>}
       {link && (
-        <Link href={link.href} className="text-[12.5px] font-medium text-primary hover:underline">
+        <Link href={link.href} className="text-[length:calc(12.5px*var(--px,1))] font-medium text-primary hover:underline">
           {link.text}
         </Link>
       )}

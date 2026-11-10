@@ -73,7 +73,7 @@ export function TopupCheckout({ packs, mode, publishableKey, returnedSessionId, 
           </div>
         </fieldset>
         {mode === "off" ? (
-          <p role="alert" className="rounded-md bg-low-bg px-3 py-2 text-[13px] text-low-text">
+          <p role="alert" className="rounded-md bg-low-bg px-3 py-2 text-[length:calc(13px*var(--px,1))] text-low-text">
             Buying credits isn&apos;t available right now. Please try again later.
           </p>
         ) : (
@@ -87,7 +87,7 @@ export function TopupCheckout({ packs, mode, publishableKey, returnedSessionId, 
 
   const label = `Pay ${formatUsd(pack.priceCents)}`;
   return (
-    <div className="flex max-w-[640px] flex-col gap-4">
+    <div className="flex max-w-[calc(640px*var(--px,1))] flex-col gap-4">
       <div className="flex items-center justify-between gap-3 rounded-md border border-border bg-surface px-4 py-3 text-sm">
         <span data-testid="chosen-pack">
           <span className="font-semibold">{formatCount(pack.credits)} credits</span> for {formatUsd(pack.priceCents)}

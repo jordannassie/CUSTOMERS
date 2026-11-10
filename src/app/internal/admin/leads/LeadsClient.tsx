@@ -144,7 +144,7 @@ export default function LeadsClient() {
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-4 px-4 py-4 sm:px-6 sm:py-5">
+    <div className="mx-auto flex w-full max-w-[calc(1200px*var(--px,1))] flex-col gap-4 px-4 py-4 sm:px-6 sm:py-5">
       <AdminPageHeader
         title={
           <>
@@ -172,7 +172,7 @@ export default function LeadsClient() {
         onToggleUnread={toggleUnread}
       />
 
-      <div className="flex min-h-[480px] overflow-hidden rounded-md border border-border bg-surface">
+      <div className="flex min-h-[calc(480px*var(--px,1))] overflow-hidden rounded-md border border-border bg-surface">
         <div
           className={cn(
             "flex-col overflow-y-auto",
@@ -180,7 +180,7 @@ export default function LeadsClient() {
           )}
         >
           {loading && (
-            <div className="flex flex-1 items-center justify-center py-20 text-[13px] text-muted-foreground">
+            <div className="flex flex-1 items-center justify-center py-20 text-[length:calc(13px*var(--px,1))] text-muted-foreground">
               Loading leads…
             </div>
           )}

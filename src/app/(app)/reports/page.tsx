@@ -55,7 +55,7 @@ export default async function ReportsPage({ searchParams }: Props) {
           exportPdf={exportPdf}
         />
 
-        <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
+        <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_calc(320px*var(--px,1))]">
           <div className="flex min-w-0 flex-col gap-4">
             {report ? (
               <>
@@ -66,7 +66,7 @@ export default async function ReportsPage({ searchParams }: Props) {
               <section className="flex flex-col items-start gap-3 rounded-md border border-border bg-surface p-5" data-testid="report-old">
                 <FileClock aria-hidden className="size-6 text-muted-foreground" />
                 <h2 className="text-base font-semibold tracking-[-0.02em]">This report uses the old layout</h2>
-                <p className="max-w-[560px] text-sm text-muted-foreground">
+                <p className="max-w-[calc(560px*var(--px,1))] text-sm text-muted-foreground">
                   It was saved before reports became PDFs, so it can&apos;t be downloaded. Open the latest report and save a new
                   snapshot to get a PDF.
                 </p>
@@ -78,7 +78,7 @@ export default async function ReportsPage({ searchParams }: Props) {
               <section className="flex flex-col items-start gap-3 rounded-md border border-border bg-surface p-5" data-testid="reports-empty">
                 <FileText aria-hidden className="size-6 text-muted-foreground" />
                 <h2 className="text-base font-semibold tracking-[-0.02em]">{business.status === "paused" ? "Scans are paused" : "No report yet"}</h2>
-                <p className="max-w-[560px] text-sm text-muted-foreground">
+                <p className="max-w-[calc(560px*var(--px,1))] text-sm text-muted-foreground">
                   {business.status === "paused"
                     ? `Scans are paused for ${business.name}, so there are no answers to report on yet. The report fills in after scans start again.`
                     : `Your first report appears here after the first scan of ${business.name} finishes. Run it from the Overview.`}

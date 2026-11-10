@@ -55,7 +55,7 @@ export function AppsAdminForm({ categoryHint }: { categoryHint: string }) {
       ))}
       <div className="flex flex-wrap gap-x-6 gap-y-2 sm:col-span-2">
         {FLAGS.map((flag) => (
-          <label key={flag.name} className="flex items-center gap-2 text-[14px]">
+          <label key={flag.name} className="flex items-center gap-2 text-[length:calc(14px*var(--px,1))]">
             <input type="checkbox" name={flag.name} defaultChecked={flag.checked} className="size-4 accent-primary" />
             {flag.label}
           </label>
@@ -63,8 +63,8 @@ export function AppsAdminForm({ categoryHint }: { categoryHint: string }) {
       </div>
       <div className="flex flex-wrap items-center gap-3 sm:col-span-2">
         <Button type="submit" disabled={pending}>{pending ? "Saving" : "Save app"}</Button>
-        {error && <p role="alert" className="text-[13px] text-low-text">{error}</p>}
-        {saved && !error && <p className="text-[13px] text-foreground">Saved.</p>}
+        {error && <p role="alert" className="text-[length:calc(13px*var(--px,1))] text-low-text">{error}</p>}
+        {saved && !error && <p className="text-[length:calc(13px*var(--px,1))] text-foreground">Saved.</p>}
       </div>
     </form>
   );

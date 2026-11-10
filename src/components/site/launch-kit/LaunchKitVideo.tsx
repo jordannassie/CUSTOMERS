@@ -47,10 +47,10 @@ export default function LaunchKitVideo({ hasVideo }: { hasVideo: boolean }) {
               >
                 <Play size={28} className="text-white ml-1" fill="white" />
               </div>
-              <p className="mt-5 text-[16px] sm:text-[18px] font-semibold text-white">
+              <p className="mt-5 text-[length:calc(16px*var(--px,1))] sm:text-[length:calc(18px*var(--px,1))] font-semibold text-white">
                 Watch: How the AI business model works
               </p>
-              <p className="mt-1 text-[12px] uppercase tracking-wider text-white/80">
+              <p className="mt-1 text-[length:calc(12px*var(--px,1))] uppercase tracking-wider text-white/80">
                 Launch Kit preview
               </p>
             </div>
@@ -60,10 +60,10 @@ export default function LaunchKitVideo({ hasVideo }: { hasVideo: boolean }) {
       <ul className="divide-y divide-white/10">
         {LESSONS.map((lesson) => (
           <li key={lesson.n} className="flex items-center gap-3 px-4 py-2.5">
-            <span className="text-[11px] font-semibold text-white/40 tabular-nums w-14">
+            <span className="text-[length:calc(11px*var(--px,1))] font-semibold text-white/40 tabular-nums w-14">
               Module {lesson.n}
             </span>
-            <span className="text-[13px] text-white/85">{lesson.title}</span>
+            <span className="text-[length:calc(13px*var(--px,1))] text-white/85">{lesson.title}</span>
           </li>
         ))}
       </ul>

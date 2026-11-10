@@ -41,14 +41,14 @@ export default function StatusView({ status, openAlerts = 0 }: { status: SystemS
       <section aria-labelledby="status-summary" className="rounded-md border border-border bg-surface p-5">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <h2 id="status-summary" className={cn("text-[20px] font-semibold tracking-[-0.02em]", hasBroken && "text-low-text")}>
+            <h2 id="status-summary" className={cn("text-[length:calc(20px*var(--px,1))] font-semibold tracking-[-0.02em]", hasBroken && "text-low-text")}>
               {summary(services)}
             </h2>
-            <p className="mt-1 text-[13px] text-muted-foreground">
+            <p className="mt-1 text-[length:calc(13px*var(--px,1))] text-muted-foreground">
               Checked live at <span className="tabular">{checkedAt}</span> UTC. Nothing here is cached.
             </p>
             {openAlerts > 0 && (
-              <p className="mt-1 text-[13px] text-muted-foreground" data-testid="service-alerts-note">
+              <p className="mt-1 text-[length:calc(13px*var(--px,1))] text-muted-foreground" data-testid="service-alerts-note">
                 {openAlerts === 1 ? "An alert is open" : `${openAlerts} alerts are open`} on the{" "}
                 <Link href="/internal/admin" className="text-primary hover:underline">
                   Overview
@@ -68,7 +68,7 @@ export default function StatusView({ status, openAlerts = 0 }: { status: SystemS
 
       {GROUPS.map((group) => (
         <section key={group.id} aria-labelledby={`group-${group.id}`}>
-          <h2 id={`group-${group.id}`} className="mb-2 text-[14px] font-semibold">
+          <h2 id={`group-${group.id}`} className="mb-2 text-[length:calc(14px*var(--px,1))] font-semibold">
             {group.title}
           </h2>
           <ul className="divide-y divide-border rounded-md border border-border bg-surface">
@@ -90,7 +90,7 @@ function ServiceRow({ service }: { service: ServiceStatus }) {
     <li data-service={service.id} data-state={service.state} className="flex items-start gap-3 px-4 py-3">
       <span aria-hidden className={cn("mt-1.5 size-2 shrink-0 rounded-full", state.dot)} />
       <div className="min-w-0 flex-1">
-        <p className="flex flex-wrap items-center gap-2 text-[14px] font-medium">
+        <p className="flex flex-wrap items-center gap-2 text-[length:calc(14px*var(--px,1))] font-medium">
           {service.name}
           {service.mode && (
             <Badge variant={service.mode === "live" ? "tint" : "outline"}>
@@ -98,7 +98,7 @@ function ServiceRow({ service }: { service: ServiceStatus }) {
             </Badge>
           )}
         </p>
-        <p className="mt-0.5 text-[13px] text-muted-foreground">{service.detail}</p>
+        <p className="mt-0.5 text-[length:calc(13px*var(--px,1))] text-muted-foreground">{service.detail}</p>
       </div>
       <Badge variant={state.badge} className="mt-0.5">
         {state.label}

@@ -44,7 +44,7 @@ export function LeaderTable({
     // No fixed min width (mockup-ui): the table fits its card, and narrower screens hide the less needed columns with
     // CSS only, so every row keeps the same cells (e2e reads Score as the 3rd cell and Status as the second to last).
     <div className="relative overflow-x-auto">
-      <table className="w-full border-collapse text-[13px]" data-testid="leaderboard">
+      <table className="w-full border-collapse text-[length:calc(13px*var(--px,1))]" data-testid="leaderboard">
         <thead className="bg-muted">
           <tr className="border-b border-border">
             <th className={cn(TH, "hidden w-10 pr-0 sm:table-cell")}>#</th>
@@ -72,7 +72,7 @@ export function LeaderTable({
               data-testid="leader-row"
             >
               <td className={cn(TD, "hidden pr-0 text-xs text-text-hint tabular-nums sm:table-cell")}>{r.rank ?? ""}</td>
-              <td className={cn(TD, "max-w-[240px] min-w-[110px] sm:min-w-[150px]")}>
+              <td className={cn(TD, "max-w-[calc(240px*var(--px,1))] min-w-[calc(110px*var(--px,1))] sm:min-w-[calc(150px*var(--px,1))]")}>
                 <Business row={r} ownDomain={ownDomain} website={website} />
               </td>
               <td className={TD}>
@@ -83,7 +83,7 @@ export function LeaderTable({
                     <span className="hidden sm:inline-flex">
                       <ScoreRing value={r.score} color={r.color} />
                     </span>
-                    <span className="text-[15px] font-semibold tabular-nums">{r.score}</span>
+                    <span className="text-[length:calc(15px*var(--px,1))] font-semibold tabular-nums">{r.score}</span>
                     {r.spark.filter((v) => v !== null).length >= 2 && (
                       <span className="ml-1 hidden 2xl:inline-flex">
                         <Sparkline values={r.spark} you={r.isYou} color={r.color} />
@@ -109,7 +109,7 @@ export function LeaderTable({
                   <HeatCell value={r.byModel[t.id]} />
                 </td>
               ))}
-              <td className={cn(TD, "hidden max-w-[220px] min-w-[100px] xl:table-cell")}>
+              <td className={cn(TD, "hidden max-w-[calc(220px*var(--px,1))] min-w-[calc(100px*var(--px,1))] xl:table-cell")}>
                 <Reason row={r} />
               </td>
               <td className={cn(TD, "hidden whitespace-nowrap sm:table-cell")}>
@@ -163,11 +163,11 @@ function Business({
           {r.isYou ? `${r.name} (you)` : r.name}
         </span>
         {r.note ? (
-          <span className="truncate text-[11.5px] text-text-hint" data-testid="chain-note">
+          <span className="truncate text-[length:calc(11.5px*var(--px,1))] text-text-hint" data-testid="chain-note">
             {r.note}
           </span>
         ) : domain ? (
-          <span className="truncate text-[11.5px] text-text-hint">{domain}</span>
+          <span className="truncate text-[length:calc(11.5px*var(--px,1))] text-text-hint">{domain}</span>
         ) : null}
         {website && !r.isYou && !r.domain && r.competitorId && (
           <span className="text-xs" data-testid="leader-add-website">
@@ -193,7 +193,7 @@ function Reason({ row: r }: { row: TableRow }) {
           <MessageSquareText className="size-3" />
         </span>
       )}
-      <span className="line-clamp-2 min-w-0 text-[12.5px] leading-snug" data-testid="top-reason">
+      <span className="line-clamp-2 min-w-0 text-[length:calc(12.5px*var(--px,1))] leading-snug" data-testid="top-reason">
         {lead ? <span className="font-medium text-foreground">You lead: </span> : <span className="sr-only">Top reason: </span>}
         {r.topReason}
       </span>

@@ -54,7 +54,7 @@ export function CardCheckout({ businessId, offer, mode, publishableKey, clientSe
           onAccepted={() => setAccepted(true)}
         />
       ) : (
-        <p role="alert" className="rounded-md bg-low-bg px-3 py-2 text-[13px] text-low-text">
+        <p role="alert" className="rounded-md bg-low-bg px-3 py-2 text-[length:calc(13px*var(--px,1))] text-low-text">
           Card sign up isn&apos;t available right now. Please try again later.
         </p>
       )}

@@ -59,7 +59,7 @@ export default function FeatureRequestsClient({
         title="Feature requests"
         subtitle="Ideas people sent with Suggest a feature in the app. Open one to read it and set where it stands."
         actions={
-          <p className="text-[13px] text-muted-foreground" data-testid="feature-request-counts">
+          <p className="text-[length:calc(13px*var(--px,1))] text-muted-foreground" data-testid="feature-request-counts">
             {requests.length} total, {newCount} new
           </p>
         }
@@ -79,7 +79,7 @@ export default function FeatureRequestsClient({
         />
 
         {capped !== null && (
-          <p className="text-[13px] text-muted-foreground" data-testid="feature-request-cap">
+          <p className="text-[length:calc(13px*var(--px,1))] text-muted-foreground" data-testid="feature-request-cap">
             Showing the newest {capped} requests. Older ones are not listed or counted here.
           </p>
         )}

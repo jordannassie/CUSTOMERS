@@ -28,7 +28,7 @@ export function CompareBox() {
       aria-describedby="compare-hint"
       className="flex flex-col gap-4 rounded-md border border-border bg-surface p-4 sm:p-5"
     >
-      <p className="text-[15px] font-semibold">Free AI readiness check: your website next to a competitor&apos;s</p>
+      <p className="text-[length:calc(15px*var(--px,1))] font-semibold">Free AI readiness check: your website next to a competitor&apos;s</p>
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="compare-mine">Your website</Label>
@@ -61,7 +61,7 @@ export function CompareBox() {
         </div>
       </div>
       {error && (
-        <p role="alert" className="text-[13px] text-low-text">
+        <p role="alert" className="text-[length:calc(13px*var(--px,1))] text-low-text">
           {error}
         </p>
       )}
@@ -69,7 +69,7 @@ export function CompareBox() {
         <Button type="submit" size="lg" className="h-11 px-5">
           Check free
         </Button>
-        <p id="compare-hint" className="text-[13px] text-text-hint">
+        <p id="compare-hint" className="text-[length:calc(13px*var(--px,1))] text-text-hint">
           No account needed. Checks how easy each website is for AI to understand; it does not ask the AI apps.
         </p>
       </div>

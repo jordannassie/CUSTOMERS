@@ -75,7 +75,7 @@ export function AddToActionsButton({
     const link = (
       <Link
         href={fixHref(state.id)}
-        className={cn("inline-flex h-9 w-fit items-center gap-1.5 rounded-md px-3 text-[13px] font-medium outline-none hover:underline focus-visible:ring-3 focus-visible:ring-ring/50", PILL_CLASS.inActions)}
+        className={cn("inline-flex h-9 w-fit items-center gap-1.5 rounded-md px-3 text-[length:calc(13px*var(--px,1))] font-medium outline-none hover:underline focus-visible:ring-3 focus-visible:ring-ring/50", PILL_CLASS.inActions)}
         data-testid="in-actions"
       >
         <Check className="size-3.5" aria-hidden="true" />

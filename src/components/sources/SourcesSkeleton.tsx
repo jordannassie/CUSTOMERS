@@ -3,11 +3,11 @@ import { Skeleton } from "@/components/ui/skeleton";
 // The Sources page while it loads, shaped like the loaded page (DESIGN.md) so nothing jumps.
 export function SourcesSkeleton() {
   return (
-    <div role="status" aria-label="Loading" className="mx-auto flex w-full max-w-[1200px] flex-col gap-4 px-4 py-4 sm:px-6 sm:py-5">
+    <div role="status" aria-label="Loading" className="mx-auto flex w-full max-w-[calc(1200px*var(--px,1))] flex-col gap-4 px-4 py-4 sm:px-6 sm:py-5">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex flex-col gap-2">
           <Skeleton className="h-8 w-40" />
-          <Skeleton className="h-4 w-[520px] max-w-full" />
+          <Skeleton className="h-4 w-[calc(520px*var(--px,1))] max-w-full" />
         </div>
         <Skeleton className="h-8 w-72 max-w-full" />
       </div>
@@ -20,7 +20,7 @@ export function SourcesSkeleton() {
           </div>
         ))}
       </div>
-      <div className="grid overflow-hidden rounded-lg border border-border xl:grid-cols-[minmax(0,1fr)_320px]">
+      <div className="grid overflow-hidden rounded-lg border border-border xl:grid-cols-[minmax(0,1fr)_calc(320px*var(--px,1))]">
         <Rows count={7} bar />
         <div className="border-t border-border xl:border-t-0 xl:border-l">
           <Rows count={7} />
@@ -29,7 +29,7 @@ export function SourcesSkeleton() {
       <div className="grid gap-5 xl:grid-cols-2">
         <Box>
           <div className="flex items-center gap-6 p-5">
-            <Skeleton className="size-[140px] shrink-0 rounded-full" />
+            <Skeleton className="size-[calc(140px*var(--px,1))] shrink-0 rounded-full" />
             <div className="flex flex-1 flex-col gap-3">
               {Array.from({ length: 3 }, (_, i) => (
                 <Skeleton key={i} className="h-4" />

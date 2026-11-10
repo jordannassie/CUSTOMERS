@@ -14,6 +14,6 @@ export const PILL_CLASS = {
 } as const;
 
 /** The pill box itself, for spans: 20px tall, small medium-weight text. */
-export const PILL_BOX = "inline-flex h-5 shrink-0 items-center rounded-sm px-1.5 text-[11.5px] font-medium whitespace-nowrap";
+export const PILL_BOX = "inline-flex h-5 shrink-0 items-center rounded-sm px-1.5 text-[length:calc(11.5px*var(--px,1))] font-medium whitespace-nowrap";
 
 export type PillTone = keyof typeof PILL_CLASS;

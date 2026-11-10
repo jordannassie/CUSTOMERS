@@ -27,7 +27,7 @@ export default async function AdminOverviewPage({ searchParams }: Props) {
   await requireAdmin({ next: "/internal/admin" });
 
   return (
-    <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-5 px-4 py-4 sm:px-6 sm:py-5">
+    <div className="mx-auto flex w-full max-w-[calc(1200px*var(--px,1))] flex-col gap-5 px-4 py-4 sm:px-6 sm:py-5">
       <Suspense fallback={<OverviewSkeleton />}>
         <Overview searchParams={searchParams} />
       </Suspense>
@@ -58,7 +58,7 @@ async function Overview({ searchParams }: Props) {
         actions={
           <Link
             href={includeTest ? "/internal/admin" : "/internal/admin?test=1"}
-            className="text-[13px] font-medium text-primary hover:underline"
+            className="text-[length:calc(13px*var(--px,1))] font-medium text-primary hover:underline"
             data-testid="overview-include-test"
           >
             {includeTest ? "Leave out test agencies" : "Include test agencies"}

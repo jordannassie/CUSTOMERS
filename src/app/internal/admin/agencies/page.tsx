@@ -12,7 +12,7 @@ type Props = { searchParams: Promise<{ status?: string | string[]; q?: string | 
 // The admin check runs inside Suspense too: awaiting it at the top would block every filter change.
 export default function AdminAgenciesPage({ searchParams }: Props) {
   return (
-    <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-4 px-4 py-4 sm:px-6 sm:py-5">
+    <div className="mx-auto flex w-full max-w-[calc(1200px*var(--px,1))] flex-col gap-4 px-4 py-4 sm:px-6 sm:py-5">
       <AdminPageHeader
         title="Agencies"
         subtitle="Every customer account. Open one to change credits, extend a trial, suspend or restore it."

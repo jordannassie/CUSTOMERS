@@ -45,7 +45,7 @@ export function CardHead({ title, help, actions, className }: { title: ReactNode
     <div className={cn("flex min-h-11 flex-wrap items-center justify-between gap-x-3 gap-y-2 border-b border-border px-4 py-2", className)}>
       {/* The help icon sits beside the heading, not in it, so the heading's name stays just the title. */}
       <div className="flex min-w-0 items-center gap-1.5">
-        <h2 className="min-w-0 text-[14px] font-semibold tracking-[-0.01em]">{title}</h2>
+        <h2 className="min-w-0 text-[length:calc(14px*var(--px,1))] font-semibold tracking-[-0.01em]">{title}</h2>
         {help ? <Help text={help} /> : null}
       </div>
       {actions ? <div className="flex min-w-0 flex-wrap items-center gap-2">{actions}</div> : null}

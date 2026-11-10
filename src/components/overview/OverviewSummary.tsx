@@ -42,7 +42,7 @@ export function OverviewSummary({
   return (
     <section className="overflow-hidden rounded-lg border border-border bg-surface" data-testid="overview-hero">
       {/* Both rows share one column grid, so the dividers line up (the owner's ask). */}
-      <div className="grid border-b border-border xl:grid-cols-[minmax(0,1fr)_320px]">
+      <div className="grid border-b border-border xl:grid-cols-[minmax(0,1fr)_calc(320px*var(--px,1))]">
         <ScoreCard score={score} reason={reason} ownQuestions={ownQuestions} ownChain={ownChain} />
         {/* The other three numbers: a row of tiles under the score, a column beside it on a wide screen. */}
         <div
@@ -52,10 +52,10 @@ export function OverviewSummary({
           <Kpis compete={compete} sources={sources} />
         </div>
       </div>
-      <div className="grid xl:grid-cols-[minmax(0,1fr)_320px]">
+      <div className="grid xl:grid-cols-[minmax(0,1fr)_calc(320px*var(--px,1))]">
         <div className="flex min-w-0 flex-col gap-2 px-4 py-3">
           <div className="flex flex-col gap-0.5">
-            <h2 className="text-[14px] font-semibold tracking-[-0.01em]">Visibility at each scan</h2>
+            <h2 className="text-[length:calc(14px*var(--px,1))] font-semibold tracking-[-0.01em]">Visibility at each scan</h2>
             <p className="text-xs text-muted-foreground">
               Share of each scan&apos;s answers that named each business, last {days} days.
               {timeline.length > 1 && " Pick a name to hide or show its line."}

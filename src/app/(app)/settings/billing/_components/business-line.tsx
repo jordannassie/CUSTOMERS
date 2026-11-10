@@ -33,15 +33,15 @@ export function BusinessLine({
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
           <p className="flex flex-wrap items-center gap-2">
-            <span className="text-[15px] font-medium">{business.name}</span>
+            <span className="text-[length:calc(15px*var(--px,1))] font-medium">{business.name}</span>
             <Badge variant="tint">{plan.name}</Badge>
             {business.deleted && <Badge variant="secondary">Deleted</Badge>}
           </p>
-          <p className="mt-1 text-[13px] text-muted-foreground">
+          <p className="mt-1 text-[length:calc(13px*var(--px,1))] text-muted-foreground">
             {plan.monthlyCredits.toLocaleString("en-US")} credits a month
           </p>
           {pending && (
-            <p className="mt-1.5 text-[13px] font-medium text-mid-text" data-testid="pending-change">
+            <p className="mt-1.5 text-[length:calc(13px*var(--px,1))] font-medium text-mid-text" data-testid="pending-change">
               {pending.kind === "remove" ? (
                 <>
                   Comes off your plan on <LocalDate iso={pending.at} />
@@ -55,13 +55,13 @@ export function BusinessLine({
           )}
         </div>
         <div className="shrink-0 text-right">
-          <p className="text-[15px] font-medium tabular-nums" data-testid="line-price">
+          <p className="text-[length:calc(15px*var(--px,1))] font-medium tabular-nums" data-testid="line-price">
             {formatUsd(business.priceCents)}
-            <span className="block text-[13px] font-normal text-muted-foreground sm:inline"> a month</span>
+            <span className="block text-[length:calc(13px*var(--px,1))] font-normal text-muted-foreground sm:inline"> a month</span>
           </p>
           {business.newPrice && (
             // An older amount moves to the plan's price at the renewal (D-93); the owner was emailed about it.
-            <p className="mt-1 text-[13px] text-muted-foreground tabular-nums" data-testid="new-price">
+            <p className="mt-1 text-[length:calc(13px*var(--px,1))] text-muted-foreground tabular-nums" data-testid="new-price">
               {formatUsd(business.newPrice.cents)} from <LocalDate iso={business.newPrice.at} options={SHORT_DATE} />
             </p>
           )}

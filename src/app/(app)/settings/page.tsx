@@ -104,7 +104,7 @@ export default async function SettingsPage({ searchParams }: { searchParams: Sea
 
       <SettingsSection id="account" title="Account" description="How you log in. Changes to your email need a click on the link we send.">
         {emailLinkFailed && (
-          <p role="alert" className="mb-4 rounded-md bg-low-bg px-3 py-2 text-[13px] text-low-text">
+          <p role="alert" className="mb-4 rounded-md bg-low-bg px-3 py-2 text-[length:calc(13px*var(--px,1))] text-low-text">
             {EMAIL_LINK_INVALID_TEXT}
           </p>
         )}
@@ -143,7 +143,7 @@ function LinkRow({ href, title, text }: { href: string; title: string; text: str
     <Link href={href} className="group flex items-center justify-between gap-4 px-5 py-4 transition-colors hover:bg-muted">
       <span>
         <span className="block text-sm font-medium">{title}</span>
-        <span className="mt-0.5 block text-[13px] text-muted-foreground">{text}</span>
+        <span className="mt-0.5 block text-[length:calc(13px*var(--px,1))] text-muted-foreground">{text}</span>
       </span>
       <ChevronRight className="size-4 shrink-0 text-muted-foreground group-hover:text-primary" aria-hidden="true" />
     </Link>

@@ -23,7 +23,7 @@ export function TopSites({ sites, answers }: Props) {
           {top.map((s) => {
             const named = s.answers - s.answersWithoutYou;
             return (
-              <li key={s.host} className="grid grid-cols-[minmax(0,9rem)_minmax(0,1fr)_3.5rem] items-center gap-3 text-[13px] sm:grid-cols-[minmax(0,12rem)_minmax(0,1fr)_4.5rem]">
+              <li key={s.host} className="grid grid-cols-[minmax(0,9rem)_minmax(0,1fr)_3.5rem] items-center gap-3 text-[length:calc(13px*var(--px,1))] sm:grid-cols-[minmax(0,12rem)_minmax(0,1fr)_4.5rem]">
                 <span className="flex min-w-0 items-center gap-2">
                   <SiteIcon domain={s.host} name={s.host} size="sm" />
                   <span className="truncate" title={s.host}>{s.host}</span>

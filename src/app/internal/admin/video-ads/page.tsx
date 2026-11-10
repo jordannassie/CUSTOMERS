@@ -14,7 +14,7 @@ export default async function VideoAdOrdersPage() {
   const { orders, unavailable } = await listRecentOrders();
 
   return (
-    <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-4 px-4 py-4 sm:px-6 sm:py-5">
+    <div className="mx-auto flex w-full max-w-[calc(1200px*var(--px,1))] flex-col gap-4 px-4 py-4 sm:px-6 sm:py-5">
       <AdminPageHeader
         title="AI video ad orders"
         subtitle={
@@ -26,7 +26,7 @@ export default async function VideoAdOrdersPage() {
         }
       />
       {unavailable && (
-        <p className="rounded-md border border-border bg-mid-bg px-4 py-3 text-[14px] text-mid-text">
+        <p className="rounded-md border border-border bg-mid-bg px-4 py-3 text-[length:calc(14px*var(--px,1))] text-mid-text">
           The video_ad_orders table is not in this database yet (migration 071). Until then, read the briefs in Leads.
         </p>
       )}
@@ -35,7 +35,7 @@ export default async function VideoAdOrdersPage() {
       )}
       <ul className="flex flex-col gap-4">
         {orders.map((order) => (
-          <li key={order.id} className="flex flex-col gap-1 rounded-md border border-border bg-card p-4 text-[14px]">
+          <li key={order.id} className="flex flex-col gap-1 rounded-md border border-border bg-card p-4 text-[length:calc(14px*var(--px,1))]">
             <div className="flex flex-wrap items-center gap-2">
               <span className="font-medium capitalize">{order.packageId}</span>
               <span>{money(order.amountCents / 100)}</span>
@@ -43,20 +43,20 @@ export default async function VideoAdOrdersPage() {
                 {order.status === "brief_submitted" ? "Brief sent" : "Paid, brief pending"}
               </Badge>
             </div>
-            <p className="text-[13px] text-muted-foreground">{formatDate(order.createdAt, true)}</p>
+            <p className="text-[length:calc(13px*var(--px,1))] text-muted-foreground">{formatDate(order.createdAt, true)}</p>
             <p className="mt-2 break-words">
               {order.customerName ?? "Name pending"}, {order.email ?? "email pending"}
             </p>
             {order.businessName && <p className="break-words">{order.businessName}</p>}
-            {order.websiteUrl && <p className="text-[13px] break-all text-primary">{order.websiteUrl}</p>}
+            {order.websiteUrl && <p className="text-[length:calc(13px*var(--px,1))] break-all text-primary">{order.websiteUrl}</p>}
             {order.product && <p className="mt-2 break-words">Product: {order.product}</p>}
             {order.audience && <p className="break-words">Audience: {order.audience}</p>}
             {order.creativeInstructions ? (
               <p className="mt-2 break-words whitespace-pre-wrap text-muted-foreground">{order.creativeInstructions}</p>
             ) : (
-              <p className="mt-2 text-[13px] text-mid-text">Brief not sent yet.</p>
+              <p className="mt-2 text-[length:calc(13px*var(--px,1))] text-mid-text">Brief not sent yet.</p>
             )}
-            {order.assetUrl && <p className="mt-2 text-[13px] break-all text-primary">{order.assetUrl}</p>}
+            {order.assetUrl && <p className="mt-2 text-[length:calc(13px*var(--px,1))] break-all text-primary">{order.assetUrl}</p>}
           </li>
         ))}
       </ul>

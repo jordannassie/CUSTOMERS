@@ -9,7 +9,7 @@ export function TenSquares({ named, answers }: { named: number; answers: number 
   // At least one square for any naming at all, so a small share never reads as none.
   const filled = named === 0 ? 0 : Math.max(1, Math.round((named / answers) * 10));
   return (
-    <span className="grid grid-cols-5 gap-[3px]" aria-hidden="true" data-testid="kpi-visual">
+    <span className="grid grid-cols-5 gap-[calc(3px*var(--px,1))]" aria-hidden="true" data-testid="kpi-visual">
       {Array.from({ length: 10 }, (_, i) => (
         <span key={i} className={cn("size-2.5 rounded-[2px]", i < filled ? "bg-primary" : "bg-border")} />
       ))}
@@ -29,13 +29,13 @@ export function TwoBars({ yours, theirs, labels = ["You", "Rivals"] }: { yours: 
         <span className="flex h-8 w-3 items-end">
           <span className="w-full rounded-t-[2px] bg-primary" style={{ height: height(yours) }} />
         </span>
-        <span className="text-[10px] leading-none text-text-hint">{labels[0]}</span>
+        <span className="text-[length:calc(10px*var(--px,1))] leading-none text-text-hint">{labels[0]}</span>
       </span>
       <span className="flex flex-col items-center gap-1">
         <span className="flex h-8 w-3 items-end">
           <span className="w-full rounded-t-[2px] bg-border" style={{ height: height(theirs) }} />
         </span>
-        <span className="text-[10px] leading-none text-text-hint">{labels[1]}</span>
+        <span className="text-[length:calc(10px*var(--px,1))] leading-none text-text-hint">{labels[1]}</span>
       </span>
     </span>
   );

@@ -108,7 +108,7 @@ export function ChoosePlan({ state, mode, publishableKey, initialPlanId, returne
 
   // The card step stays at a readable width; the plan cards above use the page's.
   return (
-    <div className="flex max-w-[640px] flex-col gap-4">
+    <div className="flex max-w-[calc(640px*var(--px,1))] flex-col gap-4">
       <div className="flex items-center justify-between gap-3 rounded-md border border-border bg-surface px-4 py-3 text-sm">
         <span data-testid="chosen-plan">
           <span className="font-semibold">{plan.name}</span> for {businesses(state.businessCount)}, {formatUsd(monthly)} a month
@@ -150,7 +150,7 @@ function limits(p: Choose["plans"][number]): string[] {
 
 function Unavailable({ text }: { text: string }) {
   return (
-    <p role="alert" className="rounded-md bg-low-bg px-3 py-2 text-[13px] text-low-text">
+    <p role="alert" className="rounded-md bg-low-bg px-3 py-2 text-[length:calc(13px*var(--px,1))] text-low-text">
       {text}
     </p>
   );

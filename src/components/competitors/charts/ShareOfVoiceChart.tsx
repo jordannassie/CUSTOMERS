@@ -74,7 +74,7 @@ export function ShareOfVoiceChart({ view }: { view: CompetitorChartsView }) {
             <span className="max-w-[7.5rem] truncate text-xs font-medium text-foreground" title={shown.name}>
               {shown.isYou ? "You" : shown.name}
             </span>
-            <span className="text-[11px] tabular-nums text-muted-foreground">{times(shown.mentions)}</span>
+            <span className="text-[length:calc(11px*var(--px,1))] tabular-nums text-muted-foreground">{times(shown.mentions)}</span>
           </div>
         </div>
 

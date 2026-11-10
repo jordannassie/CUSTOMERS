@@ -17,12 +17,12 @@ export function FindingsList({ findings }: { findings: Finding[] }) {
       <ol className="flex flex-col divide-y divide-border rounded-md border border-border bg-surface">
         {findings.map((f) => (
           <li key={f.title} className="flex flex-col gap-2 p-4 sm:flex-row sm:gap-4 sm:p-5">
-            <span className={cn("h-fit w-fit shrink-0 rounded-sm px-2 py-0.5 text-[13px] font-medium sm:w-28 sm:text-center", LEVEL_STYLE[f.level])}>
+            <span className={cn("h-fit w-fit shrink-0 rounded-sm px-2 py-0.5 text-[length:calc(13px*var(--px,1))] font-medium sm:w-28 sm:text-center", LEVEL_STYLE[f.level])}>
               {f.level}
             </span>
             <div className="flex flex-col gap-1">
-              <p className="text-[15px] font-semibold">{f.title}</p>
-              <p className="max-w-[70ch] text-[14px] text-muted-foreground">{f.detail}</p>
+              <p className="text-[length:calc(15px*var(--px,1))] font-semibold">{f.title}</p>
+              <p className="max-w-[70ch] text-[length:calc(14px*var(--px,1))] text-muted-foreground">{f.detail}</p>
             </div>
           </li>
         ))}
@@ -48,7 +48,7 @@ export function ChecksTable({ result }: { result: ReadinessCheckResult }) {
       </h2>
       <div className="overflow-hidden rounded-md border border-border bg-surface">
         <table className="w-full table-fixed text-left">
-          <thead className="bg-muted text-[13px] text-muted-foreground">
+          <thead className="bg-muted text-[length:calc(13px*var(--px,1))] text-muted-foreground">
             <tr>
               <th scope="col" className="px-4 py-3 font-medium">Check</th>
               <th scope="col" className="w-20 truncate px-2 py-3 text-center font-medium sm:w-40" title={mine.domain}>
@@ -65,8 +65,8 @@ export function ChecksTable({ result }: { result: ReadinessCheckResult }) {
             {result.checks.map((c) => (
               <tr key={c.label}>
                 <th scope="row" className="px-4 py-3 font-normal">
-                  <p className="text-[14px] font-medium">{c.label}</p>
-                  <p className="text-[13px] text-muted-foreground">{c.detail}</p>
+                  <p className="text-[length:calc(14px*var(--px,1))] font-medium">{c.label}</p>
+                  <p className="text-[length:calc(13px*var(--px,1))] text-muted-foreground">{c.detail}</p>
                 </th>
                 <td className="px-2 py-3">{mine.reached ? <Mark on={c.mine} site={mine.domain} /> : null}</td>
                 <td className="px-2 py-3">{them.reached ? <Mark on={c.them} site={them.domain} /> : null}</td>
@@ -75,7 +75,7 @@ export function ChecksTable({ result }: { result: ReadinessCheckResult }) {
           </tbody>
         </table>
       </div>
-      <p className="text-[13px] text-text-hint">
+      <p className="text-[length:calc(13px*var(--px,1))] text-text-hint">
         We read each home page once. Pages that load their content with scripts may show fewer items than a visitor sees.
       </p>
     </section>

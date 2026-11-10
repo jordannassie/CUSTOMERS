@@ -8,17 +8,17 @@ export default function ByAgency({ agencies }: { agencies: UsageCostReport["byAg
   return (
     <section aria-labelledby="by-agency" className="rounded-md border border-border bg-surface">
       <header className="px-5 pt-5 pb-3">
-        <h2 id="by-agency" className="text-[16px] font-semibold">
+        <h2 id="by-agency" className="text-[length:calc(16px*var(--px,1))] font-semibold">
           By agency
         </h2>
-        <p className="mt-1 text-[13px] text-muted-foreground">Margin compares the credits used, at the cheapest credit price, with our real AI cost.</p>
+        <p className="mt-1 text-[length:calc(13px*var(--px,1))] text-muted-foreground">Margin compares the credits used, at the cheapest credit price, with our real AI cost.</p>
       </header>
       {agencies.length === 0 ? (
-        <p className="px-5 pb-5 text-[13px] text-muted-foreground">No agency used any credits in this period.</p>
+        <p className="px-5 pb-5 text-[length:calc(13px*var(--px,1))] text-muted-foreground">No agency used any credits in this period.</p>
       ) : (
         <div className="overflow-x-auto">
-          <table className="w-full text-[13px]">
-            <thead className="border-y border-border bg-muted text-left text-[12px] text-muted-foreground">
+          <table className="w-full text-[length:calc(13px*var(--px,1))]">
+            <thead className="border-y border-border bg-muted text-left text-[length:calc(12px*var(--px,1))] text-muted-foreground">
               <tr>
                 <th className="px-4 py-2 font-medium sm:px-5">Agency</th>
                 <th className="px-2 py-2 text-right font-medium sm:px-3">Credits used</th>

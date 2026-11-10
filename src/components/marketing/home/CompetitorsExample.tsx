@@ -35,17 +35,17 @@ const ALSO = [
 export function CompetitorsExample() {
   return (
     <ProductFrame page="Competitors">
-      <div className="flex items-center justify-between border-b border-border px-[18px] py-3">
-        <p className="text-[14.5px] font-semibold tracking-[-0.01em]">Who AI recommends most</p>
+      <div className="flex items-center justify-between border-b border-border px-[calc(18px*var(--px,1))] py-3">
+        <p className="text-[length:calc(14.5px*var(--px,1))] font-semibold tracking-[-0.01em]">Who AI recommends most</p>
         <span className="text-xs text-text-hint">Scores are give or take 8 points</span>
       </div>
       <LeaderTable rows={ROWS} />
       <div className="border-t border-border">
-        <p className="border-b border-border px-[18px] py-3 text-[14.5px] font-semibold tracking-[-0.01em]">Also recommended by AI</p>
+        <p className="border-b border-border px-[calc(18px*var(--px,1))] py-3 text-[length:calc(14.5px*var(--px,1))] font-semibold tracking-[-0.01em]">Also recommended by AI</p>
         <ul>
           {ALSO.map((n) => (
-            <li key={n.name} className="grid grid-cols-[24px_minmax(0,1fr)_minmax(0,1.2fr)] items-center gap-3 border-b border-border/60 px-[18px] py-3 text-[13px] last:border-b-0">
-              <span aria-hidden="true" className="grid size-6 place-items-center rounded-full bg-muted text-[11px] font-semibold text-muted-foreground">
+            <li key={n.name} className="grid grid-cols-[calc(24px*var(--px,1))_minmax(0,1fr)_minmax(0,1.2fr)] items-center gap-3 border-b border-border/60 px-[calc(18px*var(--px,1))] py-3 text-[length:calc(13px*var(--px,1))] last:border-b-0">
+              <span aria-hidden="true" className="grid size-6 place-items-center rounded-full bg-muted text-[length:calc(11px*var(--px,1))] font-semibold text-muted-foreground">
                 {n.name.charAt(0)}
               </span>
               <span className="font-medium">{n.name}</span>

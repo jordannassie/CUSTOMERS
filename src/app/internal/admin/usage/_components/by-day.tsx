@@ -21,16 +21,16 @@ export default function ByDay({ days }: { days: UsageCostReport["byDay"] }) {
       aria-labelledby="by-day"
       className="rounded-md border border-border bg-surface p-4"
     >
-      <h2 id="by-day" className="text-[16px] font-semibold">
+      <h2 id="by-day" className="text-[length:calc(16px*var(--px,1))] font-semibold">
         By day
       </h2>
-      <p className="mt-1 text-[13px] text-muted-foreground">
+      <p className="mt-1 text-[length:calc(13px*var(--px,1))] text-muted-foreground">
         Credits used each day (UTC).
       </p>
 
       <div aria-hidden className="mt-4 flex gap-2">
         {/* The scale: the top, the middle and 0, each with a faint line across the chart. */}
-        <div className="flex h-40 w-10 shrink-0 flex-col justify-between text-right text-[11px] text-text-hint tabular-nums">
+        <div className="flex h-40 w-10 shrink-0 flex-col justify-between text-right text-[length:calc(11px*var(--px,1))] text-text-hint tabular-nums">
           <span className="-translate-y-1/2">{count(max)}</span>
           <span>{count(max / 2)}</span>
           <span className="translate-y-1/2">0</span>
@@ -62,7 +62,7 @@ export default function ByDay({ days }: { days: UsageCostReport["byDay"] }) {
       </div>
       <div
         aria-hidden
-        className="mt-2 ml-12 flex gap-px overflow-hidden text-[12px] text-text-hint sm:gap-0.5"
+        className="mt-2 ml-12 flex gap-px overflow-hidden text-[length:calc(12px*var(--px,1))] text-text-hint sm:gap-0.5"
       >
         {days.map((d, i) => (
           // Phones show every other label so they do not run into each other; the hidden ones are clipped, since they
@@ -80,13 +80,13 @@ export default function ByDay({ days }: { days: UsageCostReport["byDay"] }) {
         ))}
       </div>
 
-      <details className="mt-4 text-[13px]">
+      <details className="mt-4 text-[length:calc(13px*var(--px,1))]">
         <summary className="cursor-pointer font-medium text-primary hover:underline">
           Show as a table
         </summary>
         <div className="mt-3 max-h-80 overflow-y-auto rounded-md border border-border">
           <table className="w-full">
-            <thead className="sticky top-0 bg-muted text-left text-[12px] text-muted-foreground">
+            <thead className="sticky top-0 bg-muted text-left text-[length:calc(12px*var(--px,1))] text-muted-foreground">
               <tr>
                 <th className="px-3 py-2 font-medium">Day</th>
                 <th className="px-3 py-2 text-right font-medium">

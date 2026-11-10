@@ -43,7 +43,7 @@ export function FixtureTopupForm({ packId, label, buy, completeFixture, onPaid }
 
   return (
     <form onSubmit={submit} className="flex flex-col gap-4">
-      <p className="rounded-md bg-mid-bg px-3 py-2 text-[13px] text-mid-text">Test mode. No real card is used and Stripe is not called.</p>
+      <p className="rounded-md bg-mid-bg px-3 py-2 text-[length:calc(13px*var(--px,1))] text-mid-text">Test mode. No real card is used and Stripe is not called.</p>
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="card-number">Card number</Label>
         <Input

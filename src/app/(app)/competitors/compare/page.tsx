@@ -117,7 +117,7 @@ export default async function ComparePage({ searchParams }: { searchParams: Prom
                   <div className="flex flex-col gap-5" data-testid="tab-summary">
                     <section className="flex flex-col gap-3">
                       <div className="flex flex-col gap-0.5">
-                        <h3 className="text-[14px] font-semibold tracking-[-0.01em]">{reasonsHeading(data.standing, data.collecting)}</h3>
+                        <h3 className="text-[length:calc(14px*var(--px,1))] font-semibold tracking-[-0.01em]">{reasonsHeading(data.standing, data.collecting)}</h3>
                         <p className="text-xs text-muted-foreground">Facts from AI answers in the last 30 days and what we read, biggest first. Each comes with its fix.</p>
                       </div>
                       <ReasonCards
@@ -133,7 +133,7 @@ export default async function ComparePage({ searchParams }: { searchParams: Prom
                     </section>
                     {/* When you lead, where you are ahead comes first. */}
                     <section className={cn("flex flex-col gap-3", data.standing === "ahead" && "order-first")}>
-                      <h3 className="text-[14px] font-semibold tracking-[-0.01em]">Where you are ahead</h3>
+                      <h3 className="text-[length:calc(14px*var(--px,1))] font-semibold tracking-[-0.01em]">Where you are ahead</h3>
                       <LeadCards leads={data.leads} standing={data.collecting ? null : data.standing} />
                     </section>
                     <p className="text-xs text-text-hint">We can&apos;t see inside the AI tools, so these are likely reasons, each backed by the facts shown.</p>

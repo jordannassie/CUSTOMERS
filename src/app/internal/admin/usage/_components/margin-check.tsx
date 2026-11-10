@@ -30,10 +30,10 @@ export default function MarginCheck({
   return (
     <section aria-labelledby="margin-check" className="rounded-md border border-border bg-surface">
       <header className="border-b border-border px-5 py-4">
-        <h2 id="margin-check" className="text-[16px] font-semibold">
+        <h2 id="margin-check" className="text-[length:calc(16px*var(--px,1))] font-semibold">
           Is each model still profitable?
         </h2>
-        <p className="mt-1 text-[13px] text-muted-foreground">
+        <p className="mt-1 text-[length:calc(13px*var(--px,1))] text-muted-foreground">
           {creditPrice === null
             ? "No active plan has a price, so there is no credit price to compare with."
             : `Every check costs the customer 1 credit, worth at least ${money(creditPrice)} on the cheapest plan. The bar shows how much of that the AI call costs us. Under ${percent(THIN_MARGIN)} margin is flagged.`}
@@ -45,7 +45,7 @@ export default function MarginCheck({
         ))}
       </ul>
       {otherCost > 0 && (
-        <p className="border-t border-border px-5 py-3 text-[13px] text-muted-foreground">
+        <p className="border-t border-border px-5 py-3 text-[length:calc(13px*var(--px,1))] text-muted-foreground">
           Other AI work (name extraction, writing questions) cost <span className="tabular font-medium text-foreground">{money(otherCost)}</span>{" "}
           in this period. It is included in the totals above, not in the per-model cost.
         </p>
@@ -59,9 +59,9 @@ function ModelRow({ m, creditPrice }: { m: ModelMargin; creditPrice: number | nu
   const share = creditPrice && m.costPerCheck !== null ? Math.min(m.costPerCheck / creditPrice, 1) : 0;
 
   return (
-    <li data-model={m.model} data-verdict={m.verdict} className="grid gap-3 px-5 py-4 lg:grid-cols-[160px_1fr_auto] lg:items-center lg:gap-6">
+    <li data-model={m.model} data-verdict={m.verdict} className="grid gap-3 px-5 py-4 lg:grid-cols-[calc(160px*var(--px,1))_1fr_auto] lg:items-center lg:gap-6">
       <div className="flex items-center justify-between gap-3 lg:block">
-        <p className="flex items-center gap-2 text-[15px] font-medium">
+        <p className="flex items-center gap-2 text-[length:calc(15px*var(--px,1))] font-medium">
           <span aria-hidden className={cn("size-2.5 rounded-full", DOT[m.model])} />
           {m.label}
         </p>
@@ -78,7 +78,7 @@ function ModelRow({ m, creditPrice }: { m: ModelMargin; creditPrice: number | nu
         >
           <div className={cn("h-full rounded-xs", verdict.bar)} style={{ width: `${share * 100}%` }} />
         </div>
-        <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-[13px] sm:grid-cols-4">
+        <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-[length:calc(13px*var(--px,1))] sm:grid-cols-4">
           <Fact label="Cost per check" value={money(m.costPerCheck)} />
           <Fact label="Cost per API call" value={money(m.costPerCall)} />
           <Fact label="Checks" value={count(m.checks)} />
@@ -87,10 +87,10 @@ function ModelRow({ m, creditPrice }: { m: ModelMargin; creditPrice: number | nu
       </div>
 
       <div className="flex items-baseline gap-2 lg:block lg:text-right">
-        <p className={cn("tabular text-[24px] font-semibold tracking-[-0.02em]", m.verdict === "losing" && "text-low-text")}>
+        <p className={cn("tabular text-[length:calc(24px*var(--px,1))] font-semibold tracking-[-0.02em]", m.verdict === "losing" && "text-low-text")}>
           {percent(m.margin) || "-"}
         </p>
-        <p className="text-[12px] text-muted-foreground">margin</p>
+        <p className="text-[length:calc(12px*var(--px,1))] text-muted-foreground">margin</p>
       </div>
     </li>
   );

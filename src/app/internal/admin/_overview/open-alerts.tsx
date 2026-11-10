@@ -71,7 +71,7 @@ export default function OpenAlerts({ rows, resolve, overdue = null }: { rows: Al
         aria-expanded={expanded}
         aria-controls={listId}
         onClick={() => setExpanded((e) => !e)}
-        className="flex w-full items-center gap-3 rounded-md border border-border bg-surface px-3 py-2 text-left text-[13px] outline-none transition-colors hover:bg-muted/50 focus-visible:ring-3 focus-visible:ring-ring/50"
+        className="flex w-full items-center gap-3 rounded-md border border-border bg-surface px-3 py-2 text-left text-[length:calc(13px*var(--px,1))] outline-none transition-colors hover:bg-muted/50 focus-visible:ring-3 focus-visible:ring-ring/50"
       >
         <AlertTriangle className={cn("size-4 shrink-0", urgent > 0 ? "text-low" : "text-muted-foreground")} aria-hidden="true" />
         <span className="min-w-0 flex-1 font-medium">{summary}</span>
@@ -82,14 +82,14 @@ export default function OpenAlerts({ rows, resolve, overdue = null }: { rows: Al
         </span>
       </button>
       {expanded && (
-        <ul id={listId} className="flex flex-col gap-2 text-[13px]">
+        <ul id={listId} className="flex flex-col gap-2 text-[length:calc(13px*var(--px,1))]">
           {overdue && <OverdueRow overdue={overdue} />}
           {rows.map((a) => (
             <AlertRow key={a.id} alert={a} resolve={resolve} onResolved={() => setDone("Alert resolved and saved in the audit log.")} />
           ))}
         </ul>
       )}
-      <p aria-live="polite" className="text-[13px] text-foreground empty:hidden">
+      <p aria-live="polite" className="text-[length:calc(13px*var(--px,1))] text-foreground empty:hidden">
         {done}
       </p>
     </section>
@@ -105,7 +105,7 @@ function OverdueRow({ overdue }: { overdue: OverdueData }) {
         <Badge variant="tint">Check</Badge>
         <span className="font-medium text-muted-foreground">Scheduled scans overdue</span>
       </span>
-      <p className="text-[14px] text-foreground">
+      <p className="text-[length:calc(14px*var(--px,1))] text-foreground">
         {overdue.count === 1 ? "1 business has" : `${overdue.count} businesses have`} not been scanned for more than a day after
         their scheduled date. Scans are queued daily at 02:00 UTC; check the scan worker and the agency&apos;s credits.
       </p>
@@ -152,7 +152,7 @@ function AlertRow({ alert, resolve, onResolved }: { alert: AlertRowData; resolve
             <Badge variant={severity.badge}>{severity.label}</Badge>
             <span className="font-medium text-muted-foreground">{KIND_LABEL[alert.kind] ?? (alert.serviceCheck ? "Service check" : alert.kind)}</span>
           </span>
-          <p className="text-[14px] break-words text-foreground">{alert.message}</p>
+          <p className="text-[length:calc(14px*var(--px,1))] break-words text-foreground">{alert.message}</p>
           <p className="text-text-hint">
             Started {alert.started}. Last seen {alert.lastSeen}.{alert.stale ? " Nothing new since." : ""}
           </p>

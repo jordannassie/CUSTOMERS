@@ -37,7 +37,7 @@ export default function SearchBox({ id, label, placeholder }: { id: string; labe
 
   return (
     <div className="flex w-full min-w-0 flex-col gap-1 sm:w-72">
-      <Label htmlFor={id} className="text-[13px]">
+      <Label htmlFor={id} className="text-[length:calc(13px*var(--px,1))]">
         {label}
       </Label>
       <div className="relative">

@@ -8,8 +8,8 @@ import { WEEKDAYS, categoryTone, formatDate, type Weekday } from "./news-config"
 function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div>
-      <p className="mb-1 text-[12px] font-semibold text-muted-foreground">{label}</p>
-      <p className="text-[14px] leading-relaxed">{children}</p>
+      <p className="mb-1 text-[length:calc(12px*var(--px,1))] font-semibold text-muted-foreground">{label}</p>
+      <p className="text-[length:calc(14px*var(--px,1))] leading-relaxed">{children}</p>
     </div>
   );
 }
@@ -27,15 +27,15 @@ export function StoryCard({ story, writingId, weekday, onWritePost }: {
   return (
     <article className="overflow-hidden rounded-md border border-border bg-surface">
       <div className="flex items-start gap-3 border-b border-border px-4 py-4 sm:px-5">
-        <span className="flex size-7 shrink-0 items-center justify-center rounded-sm bg-muted text-[12px] font-semibold text-muted-foreground">
+        <span className="flex size-7 shrink-0 items-center justify-center rounded-sm bg-muted text-[length:calc(12px*var(--px,1))] font-semibold text-muted-foreground">
           {story.rank}
         </span>
         <div className="min-w-0 flex-1">
           <div className="mb-2 flex flex-wrap items-center gap-2">
             <Badge variant={categoryTone(story.category)}>{story.category}</Badge>
-            {pubDate && <span className="text-[12px] text-muted-foreground">{pubDate}</span>}
+            {pubDate && <span className="text-[length:calc(12px*var(--px,1))] text-muted-foreground">{pubDate}</span>}
           </div>
-          <h3 className="text-[15px] font-semibold leading-snug">{story.headline}</h3>
+          <h3 className="text-[length:calc(15px*var(--px,1))] font-semibold leading-snug">{story.headline}</h3>
         </div>
       </div>
 
@@ -44,8 +44,8 @@ export function StoryCard({ story, writingId, weekday, onWritePost }: {
 
         {story.whatItHelpsDo && (
           <div className="rounded-md border border-primary bg-primary-tint px-4 py-3">
-            <p className="mb-1 text-[12px] font-semibold text-primary-hover">Why agencies should care</p>
-            <p className="text-[14px] font-medium leading-snug">{story.whatItHelpsDo}</p>
+            <p className="mb-1 text-[length:calc(12px*var(--px,1))] font-semibold text-primary-hover">Why agencies should care</p>
+            <p className="text-[length:calc(14px*var(--px,1))] font-medium leading-snug">{story.whatItHelpsDo}</p>
           </div>
         )}
 
@@ -68,7 +68,7 @@ export function StoryCard({ story, writingId, weekday, onWritePost }: {
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border px-4 py-3 sm:px-5">
-        <span className="text-[12px] font-medium text-muted-foreground">{story.sourceName}</span>
+        <span className="text-[length:calc(12px*var(--px,1))] font-medium text-muted-foreground">{story.sourceName}</span>
         <div className="flex flex-wrap items-center gap-2">
           {story.sourceUrl && (
             <Button asChild variant="outline" size="sm">

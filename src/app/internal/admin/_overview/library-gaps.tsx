@@ -15,7 +15,7 @@ function GapRow({ gap }: { gap: LibraryGap }) {
   );
 }
 
-const listClass = "divide-y divide-border rounded-md border border-border bg-surface text-[13px]";
+const listClass = "divide-y divide-border rounded-md border border-border bg-surface text-[length:calc(13px*var(--px,1))]";
 
 // MVP_SPEC 5.3: industries with no question library get questions Claude writes; these are candidates for one.
 // "Other" labels are counted however they were typed, so the most used can become real industries (2026-10-16).
@@ -34,7 +34,7 @@ export default function LibraryGaps({ loaded, rows }: { loaded: boolean; rows: L
         <Empty>Every business&apos;s industry has a question library.</Empty>
       ) : (
         <div className="flex flex-col gap-2">
-          <p className="text-[13px] text-muted-foreground">
+          <p className="text-[length:calc(13px*var(--px,1))] text-muted-foreground">
             Claude writes these businesses&apos; questions directly. Labels typed under Other are counted however they were spelled. The ones at the top are
             the best candidates for a new library or industry.
           </p>
@@ -44,7 +44,7 @@ export default function LibraryGaps({ loaded, rows }: { loaded: boolean; rows: L
             ))}
           </ul>
           {rest.length > 0 && (
-            <details className="text-[13px]">
+            <details className="text-[length:calc(13px*var(--px,1))]">
               <summary className="cursor-pointer py-1 text-primary">Show {rest.length} more</summary>
               <ul className={`mt-2 ${listClass}`} data-testid="library-gaps-more">
                 {rest.map((g) => (

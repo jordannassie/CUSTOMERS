@@ -46,7 +46,7 @@ export function AddQuestionForm({ businessId, example, activeCount, models, freq
   return (
     <form onSubmit={submit} aria-label="Add a question" className="flex flex-col gap-2 rounded-lg border border-border bg-surface px-4 py-3.5">
       <div className="flex flex-col gap-2 md:flex-row md:items-center md:gap-3">
-        <label htmlFor="new-question" className="shrink-0 text-[13.5px] font-semibold">
+        <label htmlFor="new-question" className="shrink-0 text-[length:calc(13.5px*var(--px,1))] font-semibold">
           Add your own question
         </label>
         <Input
@@ -57,7 +57,7 @@ export function AddQuestionForm({ businessId, example, activeCount, models, freq
           disabled={full || pending}
           aria-describedby="new-question-hint new-question-effect"
           aria-invalid={error ? true : undefined}
-          className="h-8 text-[13px] md:flex-1"
+          className="h-8 text-[length:calc(13px*var(--px,1))] md:flex-1"
         />
         <Button type="submit" size="sm" disabled={full || pending} className="md:w-auto">
           {pending ? <Loader2 className="animate-spin" aria-hidden="true" /> : <Plus aria-hidden="true" />}
@@ -65,7 +65,7 @@ export function AddQuestionForm({ businessId, example, activeCount, models, freq
         </Button>
       </div>
       {error && (
-        <p role="alert" className="text-[13px] text-low-text">
+        <p role="alert" className="text-[length:calc(13px*var(--px,1))] text-low-text">
           {error}
         </p>
       )}

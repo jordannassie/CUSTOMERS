@@ -4,7 +4,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 function Head() {
   return (
-    <div className="flex h-[52px] items-center border-b border-border px-4">
+    <div className="flex h-[calc(52px*var(--px,1))] items-center border-b border-border px-4">
       <Skeleton className="h-4 w-36" />
     </div>
   );
@@ -42,8 +42,8 @@ export function SummarySkeleton() {
         <Skeleton className="h-5 w-24" />
         <Skeleton className="h-4 w-full max-w-md" />
       </div>
-      <div className="grid lg:grid-cols-[minmax(0,1fr)_340px]">
-        <div className="flex flex-col gap-3 p-[18px]">
+      <div className="grid lg:grid-cols-[minmax(0,1fr)_calc(340px*var(--px,1))]">
+        <div className="flex flex-col gap-3 p-[calc(18px*var(--px,1))]">
           <Skeleton className="h-4 w-40" />
           <Skeleton className="h-64" />
         </div>
@@ -89,7 +89,7 @@ export function PairSkeleton() {
 /** The whole page while it loads (loading.tsx): the header, then each block's placeholder. */
 export function OverviewLoading() {
   return (
-    <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-4 px-4 py-4 sm:px-6 sm:py-5" aria-busy="true">
+    <div className="mx-auto flex w-full max-w-[calc(1200px*var(--px,1))] flex-col gap-4 px-4 py-4 sm:px-6 sm:py-5" aria-busy="true">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between" aria-hidden="true">
         <div className="flex flex-col gap-3">
           <Skeleton className="h-7 w-48" />

@@ -46,12 +46,12 @@ export function AuthField({ id, label, hint, error, invalid, aside, "aria-descri
       </div>
       <Input id={id} aria-invalid={error || invalid ? true : undefined} aria-describedby={ids} className="h-11 text-base" {...input} />
       {error ? (
-        <p id={errorId} className="text-[13px] text-low-text">
+        <p id={errorId} className="text-[length:calc(13px*var(--px,1))] text-low-text">
           {error}
         </p>
       ) : null}
       {hintId ? (
-        <p id={hintId} className="text-[13px] text-muted-foreground">
+        <p id={hintId} className="text-[length:calc(13px*var(--px,1))] text-muted-foreground">
           {hint}
         </p>
       ) : null}
@@ -62,11 +62,11 @@ export function AuthField({ id, label, hint, error, invalid, aside, "aria-descri
 export function AuthAlert({ id, tone, children }: { id?: string; tone: "error" | "success" | "warning"; children: React.ReactNode }) {
   const styles = { error: "bg-low-bg text-low-text", success: "bg-good-bg text-good-text", warning: "bg-mid-bg text-mid-text" }[tone];
   return (
-    <div id={id} role={tone === "success" ? "status" : "alert"} className={cn("rounded-md px-3 py-2 text-[13px]", styles)}>
+    <div id={id} role={tone === "success" ? "status" : "alert"} className={cn("rounded-md px-3 py-2 text-[length:calc(13px*var(--px,1))]", styles)}>
       {children}
     </div>
   );
 }
 
 export const authLinkClass =
-  "rounded-sm text-[13px] text-primary underline-offset-4 hover:underline focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none";
+  "rounded-sm text-[length:calc(13px*var(--px,1))] text-primary underline-offset-4 hover:underline focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none";

@@ -28,28 +28,28 @@ export default async function AdminReviewsPage({ searchParams }: { searchParams:
   const signals = selected ? spamSignals(selected, await peersFor(selected.slug, selected.id)) : [];
 
   return (
-    <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-4 px-4 py-4 sm:px-6 sm:py-5">
+    <div className="mx-auto flex w-full max-w-[calc(1200px*var(--px,1))] flex-col gap-4 px-4 py-4 sm:px-6 sm:py-5">
       <AdminPageHeader
         title="App reviews"
         subtitle="Reviews of apps on /apps. New ones stay pending until approved here. Treat high and low ratings the same way."
       />
       {typeof raw.error === "string" && (
-        <p role="alert" className="rounded-md border border-border bg-low-bg px-4 py-3 text-[14px] text-low-text">{raw.error}</p>
+        <p role="alert" className="rounded-md border border-border bg-low-bg px-4 py-3 text-[length:calc(14px*var(--px,1))] text-low-text">{raw.error}</p>
       )}
       {queue.unavailable && (
-        <p className="rounded-md border border-border bg-mid-bg px-4 py-3 text-[14px] text-mid-text">
+        <p className="rounded-md border border-border bg-mid-bg px-4 py-3 text-[length:calc(14px*var(--px,1))] text-mid-text">
           The review tables are not in this database yet (migration 074).
         </p>
       )}
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-[16px] font-semibold">Pending</h2>
+        <h2 className="text-[length:calc(16px*var(--px,1))] font-semibold">Pending</h2>
         {queue.pending.length === 0 ? (
           <AdminEmpty icon={MessageSquareText} title="No pending reviews">New reviews show here until approved or rejected.</AdminEmpty>
         ) : (
           <ul className="flex flex-col gap-2">
             {queue.pending.map((review) => (
-              <li key={review.id} className="rounded-md border border-border bg-card px-4 py-3 text-[14px] break-words">
+              <li key={review.id} className="rounded-md border border-border bg-card px-4 py-3 text-[length:calc(14px*var(--px,1))] break-words">
                 <Link href={`${BASE}?review=${review.id}`} className="font-medium text-primary hover:underline">{review.title}</Link>
                 <span className="text-muted-foreground"> {review.slug}, {review.rating} of 5</span>
               </li>
@@ -59,13 +59,13 @@ export default async function AdminReviewsPage({ searchParams }: { searchParams:
       </section>
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-[16px] font-semibold">Open reports</h2>
+        <h2 className="text-[length:calc(16px*var(--px,1))] font-semibold">Open reports</h2>
         {queue.reports.length === 0 ? (
           <AdminEmpty>No open reports.</AdminEmpty>
         ) : (
           <ul className="flex flex-col gap-2">
             {queue.reports.map((report) => (
-              <li key={report.id} className="rounded-md border border-border bg-card px-4 py-3 text-[14px] break-words">
+              <li key={report.id} className="rounded-md border border-border bg-card px-4 py-3 text-[length:calc(14px*var(--px,1))] break-words">
                 <Link href={`${BASE}?review=${report.reviewId}`} className="font-medium text-primary hover:underline">{report.reason}</Link>
                 {report.details && <span className="text-muted-foreground"> {report.details}</span>}
               </li>
@@ -75,16 +75,16 @@ export default async function AdminReviewsPage({ searchParams }: { searchParams:
       </section>
 
       {selected && (
-        <section className="flex flex-col gap-2 rounded-md border border-border bg-card p-4 text-[14px] sm:p-6">
-          <h2 className="text-[16px] font-semibold break-words">{selected.title}</h2>
-          <div className="flex flex-wrap items-center gap-2 text-[13px] text-muted-foreground">
+        <section className="flex flex-col gap-2 rounded-md border border-border bg-card p-4 text-[length:calc(14px*var(--px,1))] sm:p-6">
+          <h2 className="text-[length:calc(16px*var(--px,1))] font-semibold break-words">{selected.title}</h2>
+          <div className="flex flex-wrap items-center gap-2 text-[length:calc(13px*var(--px,1))] text-muted-foreground">
             <span>{selected.slug}</span>
             <Badge variant="secondary" className="capitalize">{selected.status}</Badge>
             <span>{selected.rating} of 5</span>
             <span>{selected.recommendation === "yes" ? "Recommends" : "Does not recommend"}</span>
           </div>
           {signals.length > 0 && (
-            <p className="text-[13px] text-mid-text">Signals: {signals.join(", ")}. These do not approve or reject the review.</p>
+            <p className="text-[length:calc(13px*var(--px,1))] text-mid-text">Signals: {signals.join(", ")}. These do not approve or reject the review.</p>
           )}
           <p className="mt-2 break-words">{selected.useCase}</p>
           <p className="break-words"><span className="font-medium">Pros: </span>{selected.pros}</p>
@@ -101,11 +101,11 @@ export default async function AdminReviewsPage({ searchParams }: { searchParams:
               <Button name="decision" value="remove" variant="destructive">Remove</Button>
             </div>
           </form>
-          <h3 className="mt-6 text-[15px] font-semibold">Edit history</h3>
+          <h3 className="mt-6 text-[length:calc(15px*var(--px,1))] font-semibold">Edit history</h3>
           {events.length === 0 ? (
-            <p className="text-[13px] text-muted-foreground">No history yet.</p>
+            <p className="text-[length:calc(13px*var(--px,1))] text-muted-foreground">No history yet.</p>
           ) : (
-            <ol className="flex flex-col gap-2 text-[13px]">
+            <ol className="flex flex-col gap-2 text-[length:calc(13px*var(--px,1))]">
               {events.map((event, index) => (
                 <li key={`${event.createdAt}-${index}`} className="break-words">
                   <span className="font-medium capitalize">{event.action}</span>

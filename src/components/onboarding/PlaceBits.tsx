@@ -24,7 +24,7 @@ const reviews = (n: number) => `${n.toLocaleString("en-US")} ${n === 1 ? "review
 export function PlaceRating({ rating, reviewCount }: { rating: number | null; reviewCount: number | null }) {
   if (rating === null) return <span className="shrink-0 text-xs text-text-hint">No Google rating</span>;
   return (
-    <span className="flex shrink-0 items-center gap-1 text-[13px] tabular-nums" aria-label={`${rating.toFixed(1)} stars from ${reviews(reviewCount ?? 0)}`}>
+    <span className="flex shrink-0 items-center gap-1 text-[length:calc(13px*var(--px,1))] tabular-nums" aria-label={`${rating.toFixed(1)} stars from ${reviews(reviewCount ?? 0)}`}>
       <Star aria-hidden className="size-3.5 fill-mid text-mid" />
       <span className="font-medium text-foreground">{rating.toFixed(1)}</span>
       <span className="text-muted-foreground">({(reviewCount ?? 0).toLocaleString("en-US")})</span>

@@ -36,7 +36,7 @@ export function AnswerPanel({ answer: a, businessName, when = "Latest answer" }:
   return (
     <div className="flex flex-col">
       <div className="flex items-center justify-between gap-2 border-b border-border px-4 py-3">
-        <p className="inline-flex items-center gap-2 text-[14px] font-semibold tracking-[-0.01em]">
+        <p className="inline-flex items-center gap-2 text-[length:calc(14px*var(--px,1))] font-semibold tracking-[-0.01em]">
           <span className={cn("size-2 rounded-full", DOT[a.model])} aria-hidden="true" />
           {a.label} answer
           <span className="text-xs font-normal text-muted-foreground">{when}</span>
@@ -76,10 +76,10 @@ export function AnswerPanel({ answer: a, businessName, when = "Latest answer" }:
                   data-you={b.you || undefined}
                 >
                   {showPositions && (
-                    <span className={cn("w-4 shrink-0 text-[13px] font-semibold tabular-nums", b.you ? "text-primary" : "text-text-hint")}>{i + 1}</span>
+                    <span className={cn("w-4 shrink-0 text-[length:calc(13px*var(--px,1))] font-semibold tabular-nums", b.you ? "text-primary" : "text-text-hint")}>{i + 1}</span>
                   )}
                   <span className="flex min-w-0 flex-col gap-0.5">
-                    <span className={cn("text-[13px] font-semibold", b.you && "text-primary")}>
+                    <span className={cn("text-[length:calc(13px*var(--px,1))] font-semibold", b.you && "text-primary")}>
                       {b.name}
                       {b.you && " (you)"}
                     </span>
@@ -132,7 +132,7 @@ export function AnswerPanel({ answer: a, businessName, when = "Latest answer" }:
           <div className="flex flex-col gap-3 rounded-lg border border-border border-l-2 border-l-mid bg-surface px-3.5 py-3" data-testid="why-skipped">
             <div className="flex flex-col gap-1">
               <p className="text-xs font-semibold text-foreground">Why you were skipped</p>
-              <p className="text-[13px] leading-relaxed text-foreground">{whySkipped(a)}</p>
+              <p className="text-[length:calc(13px*var(--px,1))] leading-relaxed text-foreground">{whySkipped(a)}</p>
             </div>
             <SkippedFix answer={a} />
           </div>
@@ -145,8 +145,8 @@ export function AnswerPanel({ answer: a, businessName, when = "Latest answer" }:
 function Fact({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="flex min-w-0 flex-col gap-1">
-      <dt className="text-[11px] font-medium tracking-[0.04em] text-text-hint uppercase">{label}</dt>
-      <dd className="text-[13px] tabular-nums">{children}</dd>
+      <dt className="text-[length:calc(11px*var(--px,1))] font-medium tracking-[0.04em] text-text-hint uppercase">{label}</dt>
+      <dd className="text-[length:calc(13px*var(--px,1))] tabular-nums">{children}</dd>
     </div>
   );
 }

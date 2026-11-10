@@ -54,7 +54,7 @@ export default async function SourcesPage({ searchParams }: Props) {
         />
 
         {paused && sources.answersAllTools > 0 && (
-          <p className="rounded-lg border border-border bg-muted px-3.5 py-2.5 text-[13px] text-muted-foreground" data-testid="scans-paused">
+          <p className="rounded-lg border border-border bg-muted px-3.5 py-2.5 text-[length:calc(13px*var(--px,1))] text-muted-foreground" data-testid="scans-paused">
             Scans are paused for this business, so these numbers stay as they are until scans start again.{" "}
             <Link href="/settings/billing" className="font-medium text-primary hover:underline">
               Go to Billing

@@ -41,7 +41,7 @@ export function ScoreRing({ value, color, size = 30, className }: { value: numbe
 export function HeatCell({ value, suffix = "%" }: { value: number | null | undefined; suffix?: string }) {
   if (value === null || value === undefined) return <span className="text-xs text-text-hint">Not checked</span>;
   return (
-    <span className={cn("inline-grid h-[26px] min-w-[46px] place-items-center rounded-md px-1.5 text-[12.5px] font-semibold tabular-nums", heatText(value))} style={heatStyle(value)}>
+    <span className={cn("inline-grid h-[calc(26px*var(--px,1))] min-w-[calc(46px*var(--px,1))] place-items-center rounded-md px-1.5 text-[length:calc(12.5px*var(--px,1))] font-semibold tabular-nums", heatText(value))} style={heatStyle(value)}>
       {value}
       {suffix}
     </span>

@@ -95,9 +95,9 @@ export function EditQuestionForm({ businessId, question, edit, onDone, topics = 
           </Button>
         </div>
       </form>
-      {startsOver && textChanged && <p className="text-[13px] text-muted-foreground">{newQuestionWarning(question.active)}</p>}
+      {startsOver && textChanged && <p className="text-[length:calc(13px*var(--px,1))] text-muted-foreground">{newQuestionWarning(question.active)}</p>}
       {error && (
-        <p role="alert" className="text-[13px] text-low-text">
+        <p role="alert" className="text-[length:calc(13px*var(--px,1))] text-low-text">
           {error}
         </p>
       )}

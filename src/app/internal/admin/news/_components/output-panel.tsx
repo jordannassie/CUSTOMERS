@@ -18,8 +18,8 @@ export function OutputPanel({ article, weekday, onClose }: {
     <div className="overflow-hidden rounded-md border border-border bg-surface">
       <div className="flex items-center justify-between gap-3 border-b border-border bg-muted px-4 py-3 sm:px-6">
         <div>
-          <h2 className="text-[15px] font-semibold">LinkedIn post ready</h2>
-          {weekdayDef && <p className="text-[12px] text-muted-foreground">{weekdayDef.label}, {weekdayDef.theme}</p>}
+          <h2 className="text-[length:calc(15px*var(--px,1))] font-semibold">LinkedIn post ready</h2>
+          {weekdayDef && <p className="text-[length:calc(12px*var(--px,1))] text-muted-foreground">{weekdayDef.label}, {weekdayDef.theme}</p>}
         </div>
         <Button type="button" variant="ghost" size="icon" onClick={onClose} aria-label="Close output panel">
           <X aria-hidden="true" />
@@ -39,7 +39,7 @@ export function OutputPanel({ article, weekday, onClose }: {
             action={<CopyButton label="Copy image prompt" text={article.imagePrompt} />}
             note="Paste this into ChatGPT or Midjourney to generate a 1080×1080 LinkedIn image."
           >
-            <p className="whitespace-pre-wrap text-[14px] italic leading-relaxed">{article.imagePrompt}</p>
+            <p className="whitespace-pre-wrap text-[length:calc(14px*var(--px,1))] italic leading-relaxed">{article.imagePrompt}</p>
           </PanelSection>
         )}
 
@@ -50,7 +50,7 @@ export function OutputPanel({ article, weekday, onClose }: {
             action={<CopyButton label="Copy sources" text={article.sources} />}
             note="Keep sources separate from the post. Review to confirm verified facts vs. interpretation."
           >
-            <p className="whitespace-pre-wrap text-[13px] leading-relaxed">{article.sources}</p>
+            <p className="whitespace-pre-wrap text-[length:calc(13px*var(--px,1))] leading-relaxed">{article.sources}</p>
           </PanelSection>
         )}
 
@@ -60,7 +60,7 @@ export function OutputPanel({ article, weekday, onClose }: {
           action={<CopyButton label="Copy reply + link" text={AEO_REPLY} />}
           note={<>Send this manually to anyone who comments &ldquo;AEO&rdquo; on your post.</>}
         >
-          <p className="whitespace-pre-wrap text-[14px] font-medium leading-relaxed">{AEO_REPLY}</p>
+          <p className="whitespace-pre-wrap text-[length:calc(14px*var(--px,1))] font-medium leading-relaxed">{AEO_REPLY}</p>
         </PanelSection>
 
         <NewsletterBriefing article={article} />

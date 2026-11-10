@@ -54,7 +54,7 @@ export function ScanSettingsForm({ businessId, models, frequency, activeQuestion
 
   return (
     <Panel className="p-0">
-      <form onSubmit={submit} aria-label="AI checks" className="grid md:grid-cols-[minmax(0,1fr)_240px]">
+      <form onSubmit={submit} aria-label="AI checks" className="grid md:grid-cols-[minmax(0,1fr)_calc(240px*var(--px,1))]">
         <div className="flex flex-col gap-6 p-5">
           <fieldset className="flex flex-col gap-2">
             <legend className="mb-2 text-sm font-medium">AI models</legend>
@@ -81,7 +81,7 @@ export function ScanSettingsForm({ businessId, models, frequency, activeQuestion
                       <span aria-hidden="true" className={cn("size-2 rounded-full", DOT[model.id])} />
                       {model.label}
                     </span>
-                    <span className="mt-0.5 block text-[13px] text-muted-foreground">
+                    <span className="mt-0.5 block text-[length:calc(13px*var(--px,1))] text-muted-foreground">
                       {on ? model.explanation : untickWarning(model.label)}
                     </span>
                   </span>
@@ -152,13 +152,13 @@ function Estimate({
       data-testid="credit-estimate"
       className="flex flex-col gap-3 border-t border-border bg-muted p-5 md:border-t-0 md:border-l"
     >
-      <p className="text-[13px] text-muted-foreground">Estimated use</p>
+      <p className="text-[length:calc(13px*var(--px,1))] text-muted-foreground">Estimated use</p>
       <p className="leading-none">
-        <span className="text-[32px] font-semibold tracking-[-0.02em] tabular-nums">About {count(after)}</span>
+        <span className="text-[length:calc(32px*var(--px,1))] font-semibold tracking-[-0.02em] tabular-nums">About {count(after)}</span>
         <span className="mt-1.5 block text-sm text-muted-foreground">credits a month</span>
       </p>
       {dirty && change !== 0 && (
-        <p data-testid="estimate-change" className={cn("text-[13px] font-medium tabular-nums", change > 0 ? "text-mid-text" : "text-good-text")}>
+        <p data-testid="estimate-change" className={cn("text-[length:calc(13px*var(--px,1))] font-medium tabular-nums", change > 0 ? "text-mid-text" : "text-good-text")}>
           {change > 0 ? `${count(change)} more` : `${count(-change)} fewer`} than now ({count(before)})
         </p>
       )}

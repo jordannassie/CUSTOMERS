@@ -43,7 +43,7 @@ export function SignalsTable({ rows, pickBranch = false, edit = null }: { rows: 
     // The table needs about 720px; below that its own box, not the screen, switches to the stacked list.
     <div className="@container flex flex-col gap-4">
       {unrefreshed ? (
-        <p className="text-[13px] text-muted-foreground" data-testid="signals-not-refreshed">
+        <p className="text-[length:calc(13px*var(--px,1))] text-muted-foreground" data-testid="signals-not-refreshed">
           {NOT_REFRESHED}
         </p>
       ) : null}
@@ -55,7 +55,7 @@ export function SignalsTable({ rows, pickBranch = false, edit = null }: { rows: 
 
       {/* The PDF page is about 720px wide, just under the switch, and the table still fits there, so print forces it. */}
       <div className="hidden overflow-hidden rounded-md border border-border @min-[760px]:block print:block">
-        <Table className="text-[13px]">
+        <Table className="text-[length:calc(13px*var(--px,1))]">
           <TableHeader>
             <TableRow>
               <TableHead>Business</TableHead>
@@ -113,8 +113,8 @@ export function SignalsTable({ rows, pickBranch = false, edit = null }: { rows: 
             </span>
             {row.signals ? (
               <>
-                <span className="text-[13px] tabular-nums">{reviewsText(row.signals)}</span>
-                <span className="text-[13px] text-muted-foreground">
+                <span className="text-[length:calc(13px*var(--px,1))] tabular-nums">{reviewsText(row.signals)}</span>
+                <span className="text-[length:calc(13px*var(--px,1))] text-muted-foreground">
                   {[row.signals.categories[0], hoursText(row.signals.hours)].filter(Boolean).join(". ")}
                 </span>
                 <WebsiteCell row={row} edit={edit} />
@@ -137,7 +137,7 @@ export function SignalsTable({ rows, pickBranch = false, edit = null }: { rows: 
 function NoSignals({ row, pickBranch }: { row: SignalRow; pickBranch: boolean }) {
   if (row.isYou && row.status === "missing" && pickBranch) {
     return (
-      <Link href={PICK_BRANCH} className="text-[13px] font-medium text-primary hover:underline" data-testid="signals-pick-branch">
+      <Link href={PICK_BRANCH} className="text-[length:calc(13px*var(--px,1))] font-medium text-primary hover:underline" data-testid="signals-pick-branch">
         Pick your branch on Google
       </Link>
     );
@@ -146,7 +146,7 @@ function NoSignals({ row, pickBranch }: { row: SignalRow; pickBranch: boolean })
 }
 
 function Hint({ children }: { children: React.ReactNode }) {
-  return <span className="text-[13px] text-text-hint">{children}</span>;
+  return <span className="text-[length:calc(13px*var(--px,1))] text-text-hint">{children}</span>;
 }
 
 /**
@@ -165,7 +165,7 @@ function WebsiteCell({ row, edit }: { row: SignalRow; edit: WebsiteEdit | null }
     return (
       <span className="flex flex-wrap items-center gap-x-2 gap-y-1" data-testid="saved-website">
         <WebsiteLink url={`https://${shown.domain}`} />
-        <span className="text-[12px] text-text-hint">added by you</span>
+        <span className="text-[length:calc(12px*var(--px,1))] text-text-hint">added by you</span>
         {action}
       </span>
     );
@@ -185,7 +185,7 @@ function WebsiteLink({ url }: { url: string }) {
       href={url}
       target="_blank"
       rel="noopener noreferrer nofollow"
-      className="inline-flex max-w-48 items-center gap-1 text-[13px] text-primary hover:underline"
+      className="inline-flex max-w-48 items-center gap-1 text-[length:calc(13px*var(--px,1))] text-primary hover:underline"
     >
       <span className="truncate" title={websiteLabel(url)}>
         {websiteLabel(url)}

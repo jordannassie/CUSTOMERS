@@ -46,7 +46,7 @@ export function PlanCards({ plans }: { plans: PublicPlan[] }) {
     return (
       <div className="rounded-md border border-border bg-surface p-6 sm:p-8">
         <p className="text-lg font-semibold">Prices are being updated</p>
-        <p className="mt-2 text-[15px] text-muted-foreground">
+        <p className="mt-2 text-[length:calc(15px*var(--px,1))] text-muted-foreground">
           Check back in a few minutes, or <Link href="/contact" className="text-primary underline-offset-4 hover:underline">send us a message</Link> and
           we will tell you the current prices.
         </p>
@@ -75,7 +75,7 @@ export function PlanCards({ plans }: { plans: PublicPlan[] }) {
                 <span data-testid="plan-price" className="tabular text-5xl font-semibold tracking-[-0.035em]">
                   {formatUsd(plan.priceCents)}
                 </span>
-                <span className="text-[15px] text-muted-foreground">per business a month</span>
+                <span className="text-[length:calc(15px*var(--px,1))] text-muted-foreground">per business a month</span>
               </p>
               <p className="mt-2 text-sm text-muted-foreground">
                 <span data-testid="plan-credits" className="tabular font-medium text-foreground">
@@ -84,7 +84,7 @@ export function PlanCards({ plans }: { plans: PublicPlan[] }) {
                 credits included each month
               </p>
 
-              <div className="mt-6 flex flex-1 flex-col gap-3 border-t border-border pt-6 text-[15px]">
+              <div className="mt-6 flex flex-1 flex-col gap-3 border-t border-border pt-6 text-[length:calc(15px*var(--px,1))]">
                 {prev && <p className="font-medium">Everything in {prev.name}, plus</p>}
                 <ul className="flex flex-col gap-3">
                   {(prev ? additions(plan, prev) : limits(plan)).map((line) => (
@@ -99,12 +99,12 @@ export function PlanCards({ plans }: { plans: PublicPlan[] }) {
               <Button asChild size="lg" variant={plan === plans[plans.length - 1] ? "default" : "outline"} className="mt-8 w-full">
                 <Link href={`/signup?plan=${encodeURIComponent(plan.id)}`}>Choose {plan.name}</Link>
               </Button>
-              <p className="mt-3 text-center text-[13px] text-text-hint">7-day free trial, card needed to start</p>
+              <p className="mt-3 text-center text-[length:calc(13px*var(--px,1))] text-text-hint">7-day free trial, card needed to start</p>
             </article>
           );
         })}
       </div>
-      {pickTop && <p className="text-[15px] font-medium">{pickTop}</p>}
+      {pickTop && <p className="text-[length:calc(15px*var(--px,1))] font-medium">{pickTop}</p>}
     </div>
   );
 }

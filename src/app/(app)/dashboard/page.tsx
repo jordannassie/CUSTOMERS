@@ -63,7 +63,7 @@ export default async function OverviewPage({ searchParams }: { searchParams: Pro
   ].filter(Boolean);
 
   return (
-    <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-4 px-4 py-4 sm:px-6 sm:py-5">
+    <div className="mx-auto flex w-full max-w-[calc(1200px*var(--px,1))] flex-col gap-4 px-4 py-4 sm:px-6 sm:py-5">
       <PageHeader
         title={business.name}
         clampTitle={business.name}
@@ -88,7 +88,7 @@ export default async function OverviewPage({ searchParams }: { searchParams: Pro
                 </Button>
               </>
             )}
-            {score && scanStatus.ok && <RunScanButton businessId={business.id} initial={scanStatus.data} start={startScan} className="h-8 px-3 text-[13px]" />}
+            {score && scanStatus.ok && <RunScanButton businessId={business.id} initial={scanStatus.data} start={startScan} className="h-8 px-3 text-[length:calc(13px*var(--px,1))]" />}
           </div>
         }
       />
@@ -154,7 +154,7 @@ export default async function OverviewPage({ searchParams }: { searchParams: Pro
         </>
       )}
 
-      <p className="max-w-prose text-[11.5px] text-text-hint">
+      <p className="max-w-prose text-[length:calc(11.5px*var(--px,1))] text-text-hint">
         Scores come from asking each AI your customers&apos; questions with web search and your location. Answers in the ChatGPT, Claude and Perplexity apps
         can differ. No one can guarantee AI recommendations.
       </p>

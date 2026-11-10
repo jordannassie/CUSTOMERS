@@ -40,7 +40,7 @@ export function SkippedFix({ answer: a }: { answer: QuestionAnswer }) {
     );
   }
 
-  return <p className="text-[13px] text-muted-foreground">This answer used no site you can get listed on, so there is no one place to fix it.</p>;
+  return <p className="text-[length:calc(13px*var(--px,1))] text-muted-foreground">This answer used no site you can get listed on, so there is no one place to fix it.</p>;
 }
 
 function Fix({ title, where, badge, testId, children }: { title: string; where: string; badge?: React.ReactNode; testId?: string; children: React.ReactNode }) {
@@ -50,7 +50,7 @@ function Fix({ title, where, badge, testId, children }: { title: string; where: 
         <span className="text-xs font-semibold text-muted-foreground">What to do</span>
         {badge}
       </div>
-      <p className="text-[13px] leading-snug font-medium" data-testid="skipped-fix-title">
+      <p className="text-[length:calc(13px*var(--px,1))] leading-snug font-medium" data-testid="skipped-fix-title">
         {title}
       </p>
       <p className="text-xs text-muted-foreground">Where: {where}</p>

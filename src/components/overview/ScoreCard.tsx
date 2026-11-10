@@ -51,7 +51,7 @@ export function ScoreCard({
         <p className="text-lg leading-snug font-semibold tracking-[-0.02em] text-balance" data-testid="score-sentence">
           {score.sentence}
         </p>
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-[13px]">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-[length:calc(13px*var(--px,1))]">
           {score.change && (
             <span
               data-testid="score-change"
@@ -62,13 +62,13 @@ export function ScoreCard({
             </span>
           )}
           {score.details && (
-            <span className="[&_button]:text-[13px]">
+            <span className="[&_button]:text-[length:calc(13px*var(--px,1))]">
               <ScoreDetails panel={score.details} />
             </span>
           )}
         </div>
         {notes.length > 0 && (
-          <p className="max-w-[640px] text-xs leading-relaxed text-muted-foreground tabular-nums">
+          <p className="max-w-[calc(640px*var(--px,1))] text-xs leading-relaxed text-muted-foreground tabular-nums">
             {notes.map((n, i) => (
               <Fragment key={n.text}>
                 {i > 0 && " "}

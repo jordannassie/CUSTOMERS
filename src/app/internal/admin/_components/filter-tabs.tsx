@@ -51,14 +51,14 @@ export default function FilterTabs({
                   onSelect(t.key);
                 }}
                 className={cn(
-                  "flex h-8 items-center gap-2 rounded-sm px-3 text-[13px] font-medium whitespace-nowrap transition-colors duration-150 ease-out focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
+                  "flex h-8 items-center gap-2 rounded-sm px-3 text-[length:calc(13px*var(--px,1))] font-medium whitespace-nowrap transition-colors duration-150 ease-out focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
                   current ? "bg-surface text-foreground shadow-xs" : "text-muted-foreground hover:text-foreground",
                   disabled && "pointer-events-none opacity-50",
                 )}
               >
                 {t.label}
                 {t.count !== undefined && (
-                  <span className={cn("text-[12px] tabular-nums", t.alert && t.count > 0 ? "font-semibold text-low-text" : "text-text-hint")}>
+                  <span className={cn("text-[length:calc(12px*var(--px,1))] tabular-nums", t.alert && t.count > 0 ? "font-semibold text-low-text" : "text-text-hint")}>
                     {t.count}
                   </span>
                 )}

@@ -2,7 +2,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 export function PageSkeleton() {
   return (
-    <div role="status" aria-label="Loading" className="mx-auto flex w-full max-w-[1200px] flex-col gap-4 px-4 py-4 sm:px-6 sm:py-5">
+    <div role="status" aria-label="Loading" className="mx-auto flex w-full max-w-[calc(1200px*var(--px,1))] flex-col gap-4 px-4 py-4 sm:px-6 sm:py-5">
       <Skeleton className="h-6 w-48" />
       <Skeleton className="h-4 w-72 max-w-full" />
       <div className="grid gap-4 sm:grid-cols-3">
@@ -19,9 +19,9 @@ export function PageSkeleton() {
 export function AppShellSkeleton() {
   return (
     <div className="app-v2 app-compact flex min-h-dvh bg-muted">
-      <aside className="hidden h-dvh w-[212px] shrink-0 flex-col gap-3 px-3 pb-3 lg:flex">
+      <aside className="hidden h-dvh w-[calc(212px*var(--px,1))] shrink-0 flex-col gap-3 px-3 pb-3 lg:flex">
         <div className="mt-2 flex h-12 items-center">
-          <Skeleton className="mx-auto h-[22px] w-40 bg-border" />
+          <Skeleton className="mx-auto h-[calc(22px*var(--px,1))] w-40 bg-border" />
         </div>
         <Skeleton className="h-11 bg-border/70" />
         <div className="mt-2 flex flex-col gap-1">

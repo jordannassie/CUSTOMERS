@@ -45,7 +45,7 @@ export function useFieldErrors<K extends string>(prefix: string) {
 export function FieldMessage({ id, message }: { id: string; message?: string | null }) {
   if (!message) return null;
   return (
-    <p id={id} className="text-[13px] text-low-text">
+    <p id={id} className="text-[length:calc(13px*var(--px,1))] text-low-text">
       {message}
     </p>
   );

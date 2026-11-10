@@ -73,12 +73,12 @@ export function GetFoundChecklist({
     <section className="rounded-lg border border-border bg-surface" data-testid="get-found-checklist">
       <header className="flex flex-wrap items-center gap-x-4 gap-y-2.5 px-4 py-3.5 sm:px-5">
         <div className="flex min-w-0 flex-wrap items-baseline gap-x-3 gap-y-0.5">
-          <h2 className="text-[13.5px] font-semibold">Get found by AI</h2>
-          <span className="text-[13px] text-muted-foreground">The basics AI checks first</span>
+          <h2 className="text-[length:calc(13.5px*var(--px,1))] font-semibold">Get found by AI</h2>
+          <span className="text-[length:calc(13px*var(--px,1))] text-muted-foreground">The basics AI checks first</span>
         </div>
         <div className="flex min-w-40 flex-1 items-center gap-3">
           <Progress value={(done / items.length) * 100} aria-label={`${done} of ${items.length} done`} className="h-1.5 flex-1 *:data-[slot=progress-indicator]:bg-good" />
-          <span className="shrink-0 text-[13px] font-semibold tabular-nums" data-testid="checklist-progress">
+          <span className="shrink-0 text-[length:calc(13px*var(--px,1))] font-semibold tabular-nums" data-testid="checklist-progress">
             {done} of {items.length} done
           </span>
         </div>
@@ -107,7 +107,7 @@ export function GetFoundChecklist({
 
       {open && (
         <div className="border-t border-border px-4 pt-4 pb-1 sm:px-5">
-          <p className="max-w-[680px] text-sm text-muted-foreground">
+          <p className="max-w-[calc(680px*var(--px,1))] text-sm text-muted-foreground">
             {/* "Couldn't confirm", not "no record": a Google profile is also unconfirmed when Google could not be reached at
                 setup, or its listing did not match the website (2026-10-14). */}
             We couldn&apos;t confirm {missingText(missing)} for your business. AI assistants lean on these basics, so check them
@@ -131,7 +131,7 @@ export function GetFoundChecklist({
                   <label htmlFor={`check-${item.key}`} className={cn("cursor-pointer text-sm font-medium", item.done && "text-muted-foreground line-through")}>
                     {item.title}
                   </label>
-                  <p className="max-w-[640px] text-[13px] text-muted-foreground">{item.detail}</p>
+                  <p className="max-w-[calc(640px*var(--px,1))] text-[length:calc(13px*var(--px,1))] text-muted-foreground">{item.detail}</p>
                   {item.copy && !item.done && (
                     <div className="mt-1.5">
                       <CopyButton

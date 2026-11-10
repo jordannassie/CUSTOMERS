@@ -23,7 +23,7 @@ export function SectionCard({ title, aside, className, testId, children }: Props
 export function CardHead({ title, aside }: { title: string; aside?: React.ReactNode }) {
   return (
     <div className="flex min-h-11 flex-wrap items-center justify-between gap-x-3 gap-y-1 border-b border-border px-4 py-2">
-      <h2 className="text-[14px] font-semibold tracking-[-0.01em]">{title}</h2>
+      <h2 className="text-[length:calc(14px*var(--px,1))] font-semibold tracking-[-0.01em]">{title}</h2>
       {aside ? <div className="text-xs text-text-hint">{aside}</div> : null}
     </div>
   );

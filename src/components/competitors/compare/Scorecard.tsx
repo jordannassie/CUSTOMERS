@@ -36,7 +36,7 @@ export function Scorecard({ data, trend }: { data: Comparison; trend: ReactNode 
         </div>
         <Tile label="Gap" className={cn(margin === null && "col-span-2 lg:col-span-1")}>
           <span
-            className="text-[22px] leading-tight font-semibold tracking-[-0.03em] tabular-nums"
+            className="text-[length:calc(22px*var(--px,1))] leading-tight font-semibold tracking-[-0.03em] tabular-nums"
             data-testid="gap"
           >
             {gapText}
@@ -45,7 +45,7 @@ export function Scorecard({ data, trend }: { data: Comparison; trend: ReactNode 
         </Tile>
         {margin !== null && (
           <Tile label="Margin of error">
-            <span className="text-[22px] leading-tight font-semibold tracking-[-0.03em] tabular-nums">About {Math.round(margin)} pts</span>
+            <span className="text-[length:calc(22px*var(--px,1))] leading-tight font-semibold tracking-[-0.03em] tabular-nums">About {Math.round(margin)} pts</span>
             <span className="text-xs text-text-hint">A smaller gap is about the same</span>
           </Tile>
         )}
@@ -103,7 +103,7 @@ function Stat({
       <span className="flex items-end justify-between gap-2">
         <span className="flex items-center gap-2">
           {value !== null && <ScoreRing value={value} color={color} size={28} />}
-          <span className={cn("text-[26px] leading-tight font-semibold tracking-[-0.03em] tabular-nums", you && "text-primary")}>{value ?? "Not checked"}</span>
+          <span className={cn("text-[length:calc(26px*var(--px,1))] leading-tight font-semibold tracking-[-0.03em] tabular-nums", you && "text-primary")}>{value ?? "Not checked"}</span>
         </span>
         {/* With fewer than two scans the line would only say "Not enough scans": left out. */}
         {known(spark) && (

@@ -43,7 +43,7 @@ export default function RunScanButton({ businessId, active, blocked, credits, ag
       </Button>
       <p
         aria-live="polite"
-        className={cn("text-[13px]", message?.tone === "error" ? "text-low-text" : "text-muted-foreground")}
+        className={cn("text-[length:calc(13px*var(--px,1))]", message?.tone === "error" ? "text-low-text" : "text-muted-foreground")}
       >
         {message?.text ?? (active ? "A scan is already queued or running." : blocked)}
       </p>

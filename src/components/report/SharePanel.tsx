@@ -72,7 +72,7 @@ export function SharePanel({
               value={url}
               aria-label="Share link"
               onFocus={(e) => e.currentTarget.select()}
-              className="font-mono text-[13px]"
+              className="font-mono text-[length:calc(13px*var(--px,1))]"
               data-testid="share-url"
             />
             <div className="flex shrink-0 gap-2">

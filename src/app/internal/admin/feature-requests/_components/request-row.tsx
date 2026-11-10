@@ -22,16 +22,16 @@ export function RequestRow({ req, expanded, saving, onToggle, onStatus }: Props)
         onClick={onToggle}
         className="flex w-full items-start gap-3 px-4 py-3 text-left transition-colors duration-150 ease-out hover:bg-muted focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring"
       >
-        <span className="grid min-w-0 flex-1 gap-1 md:grid-cols-[1fr_180px_190px] md:items-center md:gap-3">
+        <span className="grid min-w-0 flex-1 gap-1 md:grid-cols-[1fr_calc(180px*var(--px,1))_calc(190px*var(--px,1))] md:items-center md:gap-3">
           <span className="min-w-0">
-            <span className="block truncate text-[14px] font-medium" title={req.title}>{req.title}</span>
-            <span className="block truncate text-[13px] text-text-hint">
+            <span className="block truncate text-[length:calc(14px*var(--px,1))] font-medium" title={req.title}>{req.title}</span>
+            <span className="block truncate text-[length:calc(13px*var(--px,1))] text-text-hint">
               {req.email}
               {req.businessName && `, ${req.businessName}`}
             </span>
           </span>
-          <span className="truncate text-[13px] text-text-hint" title={req.pageContext ?? "-"}>{req.pageContext ?? "-"}</span>
-          <span className="text-[13px] text-text-hint">{formatDate(req.createdAt, true)}</span>
+          <span className="truncate text-[length:calc(13px*var(--px,1))] text-text-hint" title={req.pageContext ?? "-"}>{req.pageContext ?? "-"}</span>
+          <span className="text-[length:calc(13px*var(--px,1))] text-text-hint">{formatDate(req.createdAt, true)}</span>
         </span>
         {/* Fixed width so the date column lines up whatever the badge says. */}
         <span className="flex shrink-0 items-center justify-end gap-3 md:w-32">
@@ -48,10 +48,10 @@ export function RequestRow({ req, expanded, saving, onToggle, onStatus }: Props)
 
       {expanded && (
         <div id={panelId} className="border-t border-border bg-muted px-4 py-4">
-          <p className="mb-2 text-[12px] font-medium text-muted-foreground">Description</p>
-          <p className="mb-5 text-[14px] leading-relaxed whitespace-pre-wrap">{req.description}</p>
+          <p className="mb-2 text-[length:calc(12px*var(--px,1))] font-medium text-muted-foreground">Description</p>
+          <p className="mb-5 text-[length:calc(14px*var(--px,1))] leading-relaxed whitespace-pre-wrap">{req.description}</p>
 
-          <div className="mb-5 flex flex-wrap gap-x-4 gap-y-1 text-[13px] text-muted-foreground">
+          <div className="mb-5 flex flex-wrap gap-x-4 gap-y-1 text-[length:calc(13px*var(--px,1))] text-muted-foreground">
             <Meta label="User" value={req.email} />
             {req.businessName && <Meta label="Business" value={req.businessName} />}
             {req.pageContext && <Meta label="Page" value={req.pageContext} />}
@@ -59,7 +59,7 @@ export function RequestRow({ req, expanded, saving, onToggle, onStatus }: Props)
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            <span className="mr-1 text-[13px] text-muted-foreground">Update status:</span>
+            <span className="mr-1 text-[length:calc(13px*var(--px,1))] text-muted-foreground">Update status:</span>
             {(Object.keys(STATUS_LABELS) as Status[]).map((s) => {
               const current = req.status === s;
               return (
@@ -77,7 +77,7 @@ export function RequestRow({ req, expanded, saving, onToggle, onStatus }: Props)
                 </Button>
               );
             })}
-            {saving && <span className="ml-1 text-[13px] text-text-hint">Saving…</span>}
+            {saving && <span className="ml-1 text-[length:calc(13px*var(--px,1))] text-text-hint">Saving…</span>}
           </div>
         </div>
       )}

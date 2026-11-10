@@ -16,8 +16,8 @@ function toneFor(score: number): Tone {
 }
 
 function ScoreRing({ score, size = "lg" }: { score: number; size?: "lg" | "sm" }) {
-  const outer = size === "lg" ? "size-[92px]" : "size-12";
-  const inner = size === "lg" ? "size-[72px] text-2xl" : "size-9 text-xs";
+  const outer = size === "lg" ? "size-[calc(92px*var(--px,1))]" : "size-12";
+  const inner = size === "lg" ? "size-[calc(72px*var(--px,1))] text-2xl" : "size-9 text-xs";
   return (
     <div
       role="img"
@@ -32,7 +32,7 @@ function ScoreRing({ score, size = "lg" }: { score: number; size?: "lg" | "sm" }
 
 function Bar({ label, value, fill, you }: { label: string; value: number; fill: string; you?: boolean }) {
   return (
-    <div className="grid grid-cols-[110px_1fr_44px] items-center gap-3 text-sm">
+    <div className="grid grid-cols-[calc(110px*var(--px,1))_1fr_calc(44px*var(--px,1))] items-center gap-3 text-sm">
       <span className={you ? "truncate font-semibold text-primary" : "truncate"}>{label}</span>
       <div className="h-2 overflow-hidden rounded-xs bg-muted">
         <div className={`h-full rounded-xs ${fill}`} style={{ width: `${value}%` }} />
@@ -52,7 +52,7 @@ export function DataDisplay() {
   return (
     <div className="flex flex-col gap-4">
       <p className="text-right text-xs text-text-hint">Example data</p>
-      <div className="grid gap-4 lg:grid-cols-[280px_1fr]">
+      <div className="grid gap-4 lg:grid-cols-[calc(280px*var(--px,1))_1fr]">
         <div className="flex flex-col gap-4">
           <Card>
             <CardHeader>
@@ -65,7 +65,7 @@ export function DataDisplay() {
                   <Badge variant="good" className="tabular">
                     +8 this week
                   </Badge>
-                  <p className="mt-1.5 text-[13px] text-text-hint">Mentioned in 22 of 36 checks</p>
+                  <p className="mt-1.5 text-[length:calc(13px*var(--px,1))] text-text-hint">Mentioned in 22 of 36 checks</p>
                 </div>
               </div>
               <div className="flex gap-3" aria-label="Score colours">
@@ -77,12 +77,12 @@ export function DataDisplay() {
           </Card>
           <Card>
             <CardContent>
-              <div className="mb-2 flex justify-between text-[13px] text-muted-foreground">
+              <div className="mb-2 flex justify-between text-[length:calc(13px*var(--px,1))] text-muted-foreground">
                 <span>Credits</span>
                 <span className="tabular">620 of 1,200</span>
               </div>
               <Progress value={52} aria-label="Credits used" />
-              <p className="mt-2 text-[13px] text-text-hint">Renews in 12 days</p>
+              <p className="mt-2 text-[length:calc(13px*var(--px,1))] text-text-hint">Renews in 12 days</p>
             </CardContent>
           </Card>
         </div>

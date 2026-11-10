@@ -34,7 +34,7 @@ export function FixturePlanForm({ planId, label, start, onAccepted }: Props) {
 
   return (
     <form onSubmit={submit} className="flex flex-col gap-4">
-      <p className="rounded-md bg-mid-bg px-3 py-2 text-[13px] text-mid-text">Test mode. No real card is used and Stripe is not called.</p>
+      <p className="rounded-md bg-mid-bg px-3 py-2 text-[length:calc(13px*var(--px,1))] text-mid-text">Test mode. No real card is used and Stripe is not called.</p>
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="card-number">Card number</Label>
         <Input
@@ -47,7 +47,7 @@ export function FixturePlanForm({ planId, label, start, onAccepted }: Props) {
         />
       </div>
       {error && (
-        <p role="alert" className="rounded-md bg-low-bg px-3 py-2 text-[13px] text-low-text">
+        <p role="alert" className="rounded-md bg-low-bg px-3 py-2 text-[length:calc(13px*var(--px,1))] text-low-text">
           {error}
         </p>
       )}

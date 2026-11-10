@@ -100,14 +100,14 @@ export default function ActionCard(props: Props) {
   return (
     <section aria-labelledby={headingId} className="flex flex-col gap-3 px-4 py-4">
       <div>
-        <h3 id={headingId} className="text-[14px] font-semibold">
+        <h3 id={headingId} className="text-[length:calc(14px*var(--px,1))] font-semibold">
           {title}
         </h3>
-        <p className="mt-0.5 text-[13px] text-muted-foreground">{note}</p>
+        <p className="mt-0.5 text-[length:calc(13px*var(--px,1))] text-muted-foreground">{note}</p>
       </div>
 
       {blocked ? (
-        <p className="text-[13px] text-text-hint">{blocked}</p>
+        <p className="text-[length:calc(13px*var(--px,1))] text-text-hint">{blocked}</p>
       ) : open ? (
         <form
           ref={formRef}
@@ -161,7 +161,7 @@ export default function ActionCard(props: Props) {
 
       <p
         aria-live="polite"
-        className={cn("text-[13px] empty:hidden", message?.tone === "error" ? "text-low-text" : "text-foreground")}
+        className={cn("text-[length:calc(13px*var(--px,1))] empty:hidden", message?.tone === "error" ? "text-low-text" : "text-foreground")}
       >
         {message?.text}
       </p>

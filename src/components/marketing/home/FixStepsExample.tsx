@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { CalendarDays, Check, CircleDashed, CircleDot } from "lucide-react";
 import { cn } from "cn";
+import { PILL_CLASS } from "@/components/app/pills";
 import { Button } from "@/components/ui/button";
 import { ProductFrame } from "./ProductFrame";
 
@@ -17,9 +18,9 @@ const FIXES: Fix[] = [
 ];
 
 const COLUMNS: { status: Status; label: string; icon: typeof Check; tone: string }[] = [
-  { status: "suggested", label: "Suggested", icon: CircleDashed, tone: "text-primary" },
-  { status: "doing", label: "In progress", icon: CircleDot, tone: "text-mid" },
-  { status: "done", label: "Done", icon: Check, tone: "text-good" },
+  { status: "suggested", label: "Suggested", icon: CircleDashed, tone: "text-muted-foreground" },
+  { status: "doing", label: "In progress", icon: CircleDot, tone: "text-primary" },
+  { status: "done", label: "Done", icon: Check, tone: "text-primary" },
 ];
 
 /** The Actions board (mockup-ui) with made-up fixes; Accept and Mark done move cards in the browser only. */
@@ -33,21 +34,21 @@ export function FixStepsExample() {
           const items = fixes.filter((f) => f.status === c.status);
           return (
             <div key={c.status} className="flex min-w-0 flex-col gap-2.5 rounded-lg border border-border bg-muted p-2.5">
-              <p className="flex items-center gap-2 px-1 text-[13px] font-semibold">
+              <p className="flex items-center gap-2 px-1 text-[length:calc(13px*var(--px,1))] font-semibold">
                 <c.icon className={cn("size-4", c.tone)} aria-hidden="true" />
                 {c.label}
-                <span className="rounded-sm border border-border bg-surface px-1.5 text-[11px] font-medium text-muted-foreground">{items.length}</span>
+                <span className="rounded-sm border border-border bg-surface px-1.5 text-[length:calc(11px*var(--px,1))] font-medium text-muted-foreground">{items.length}</span>
               </p>
               {items.map((f) => (
                 <div key={f.id} className="flex flex-col gap-2 rounded-lg border border-border bg-surface p-3">
                   <div className="flex items-center justify-between gap-2 text-xs">
                     <span className="truncate font-medium text-primary-hover">{f.where}</span>
-                    <span className={cn("rounded-sm px-1.5 py-px font-medium", f.impact === "High" ? "bg-low-bg text-low-text" : "bg-mid-bg text-mid-text")}>{f.impact}</span>
+                    <span className={cn("rounded-sm px-1.5 py-px font-medium", f.impact === "High" ? PILL_CLASS.attention : PILL_CLASS.plain)}>{f.impact}</span>
                   </div>
-                  <p className="text-[13.5px] leading-snug font-semibold">{f.title}</p>
-                  <p className="line-clamp-2 text-[12.5px] text-muted-foreground">{f.detail}</p>
+                  <p className="text-[length:calc(13.5px*var(--px,1))] leading-snug font-semibold">{f.title}</p>
+                  <p className="line-clamp-2 text-[length:calc(12.5px*var(--px,1))] text-muted-foreground">{f.detail}</p>
                   <div className="flex items-center justify-between gap-2">
-                    <span className="inline-flex items-center gap-1 text-[11.5px] text-text-hint">
+                    <span className="inline-flex items-center gap-1 text-[length:calc(11.5px*var(--px,1))] text-text-hint">
                       <CalendarDays className="size-3" aria-hidden="true" />
                       Oct 2
                     </span>

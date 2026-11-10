@@ -15,7 +15,7 @@ export function TopPicks({ question }: { question: QuestionRow }) {
         <span
           key={n.name}
           className={cn(
-            "grid size-5 shrink-0 place-items-center rounded-full text-[10px] font-semibold uppercase ring-2 ring-surface",
+            "grid size-5 shrink-0 place-items-center rounded-full text-[length:calc(10px*var(--px,1))] font-semibold uppercase ring-2 ring-surface",
             i > 0 && "-ml-1",
             TINT,
           )}

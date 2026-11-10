@@ -75,7 +75,7 @@ export function CheckForm({ initialMine, initialTheirs, loading, onSubmit, serve
         </Button>
       </div>
       {shown && (
-        <p role="alert" className="text-[13px] text-low-text">
+        <p role="alert" className="text-[length:calc(13px*var(--px,1))] text-low-text">
           {shown}
         </p>
       )}

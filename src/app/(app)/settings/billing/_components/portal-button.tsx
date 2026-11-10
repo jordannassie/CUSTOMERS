@@ -17,7 +17,7 @@ export function PortalButton({ open, variant = "outline" }: Props) {
         Manage card and invoices
       </Button>
       {result && !result.ok && (
-        <p role="alert" className="max-w-[320px] text-[13px] text-low-text sm:text-right">
+        <p role="alert" className="max-w-[calc(320px*var(--px,1))] text-[length:calc(13px*var(--px,1))] text-low-text sm:text-right">
           {result.error}
         </p>
       )}

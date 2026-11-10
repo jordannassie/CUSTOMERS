@@ -4,7 +4,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 export function PageSkeleton({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-4 px-4 py-4 sm:px-6 sm:py-5" aria-busy aria-label={label}>
+    <div className="mx-auto flex w-full max-w-[calc(1200px*var(--px,1))] flex-col gap-4 px-4 py-4 sm:px-6 sm:py-5" aria-busy aria-label={label}>
       <div className="flex flex-col gap-2">
         <Skeleton className="h-8 w-48" />
         <Skeleton className="h-4 w-full max-w-md" />
@@ -19,7 +19,7 @@ export function ListSkeleton({ label = "Loading" }: { label?: string }) {
   return (
     <div className="flex flex-col gap-4" aria-busy aria-label={label}>
       <Skeleton className="h-10 w-full max-w-xl rounded-md" />
-      <Skeleton className="h-[480px] rounded-md" />
+      <Skeleton className="h-[calc(480px*var(--px,1))] rounded-md" />
     </div>
   );
 }
@@ -28,8 +28,8 @@ export function ListSkeleton({ label = "Loading" }: { label?: string }) {
 export function DetailSkeleton({ label = "Loading" }: { label?: string }) {
   return (
     <div className="flex flex-col gap-8" aria-busy aria-label={label}>
-      <Skeleton className="h-[88px] rounded-md" />
-      <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_360px]">
+      <Skeleton className="h-[calc(88px*var(--px,1))] rounded-md" />
+      <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_calc(360px*var(--px,1))]">
         <Skeleton className="h-80 rounded-md" />
         <Skeleton className="h-80 rounded-md" />
       </div>
@@ -41,9 +41,9 @@ export function DetailSkeleton({ label = "Loading" }: { label?: string }) {
 export function ReportSkeleton({ label = "Loading" }: { label?: string }) {
   return (
     <div className="flex flex-col gap-6" aria-busy aria-label={label}>
-      <Skeleton className="h-[104px] rounded-md" />
-      <Skeleton className="h-[260px] rounded-md" />
-      <Skeleton className="h-[260px] rounded-md" />
+      <Skeleton className="h-[calc(104px*var(--px,1))] rounded-md" />
+      <Skeleton className="h-[calc(260px*var(--px,1))] rounded-md" />
+      <Skeleton className="h-[calc(260px*var(--px,1))] rounded-md" />
     </div>
   );
 }

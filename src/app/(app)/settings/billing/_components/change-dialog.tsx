@@ -89,7 +89,7 @@ export function PreviewBody({ preview, loading, error }: { preview: Preview | nu
       )}
       {preview && (
         <div data-testid="change-preview">
-          <p className="text-[15px] font-semibold leading-snug">{preview.headline}</p>
+          <p className="text-[length:calc(15px*var(--px,1))] font-semibold leading-snug">{preview.headline}</p>
           {preview.details.length > 0 && (
             <ul className="mt-3 flex flex-col gap-1.5 text-sm text-muted-foreground">
               {preview.details.map((d) => (

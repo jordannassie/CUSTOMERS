@@ -10,7 +10,7 @@ export function UpgradeNote({ reason, hasBusinesses, draftSaved = false }: { rea
   return (
     <div className="rounded-md border border-border bg-surface p-6" data-testid="upgrade-note">
       <Building2 aria-hidden className="size-5 text-primary" />
-      <p className="mt-3 text-[15px] font-medium">{reason}</p>
+      <p className="mt-3 text-[length:calc(15px*var(--px,1))] font-medium">{reason}</p>
       <p className="mt-3 text-sm text-muted-foreground">
         {draftSaved
           ? "This business is saved. Start your plan, then come back here to finish setting it up."

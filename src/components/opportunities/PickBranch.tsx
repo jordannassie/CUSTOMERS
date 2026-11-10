@@ -48,7 +48,7 @@ export function PickBranch({ businessId, initial, search, pick }: { businessId: 
 
   return (
     <section id="pick-branch" className="flex flex-col gap-3 rounded-md border border-border bg-surface p-5" data-testid="pick-branch">
-      <div className="flex max-w-[620px] flex-col gap-3">
+      <div className="flex max-w-[calc(620px*var(--px,1))] flex-col gap-3">
         <h2 className="text-base font-semibold tracking-[-0.02em]">Pick your branch on Google</h2>
         <p className="text-sm text-muted-foreground">
           Your website belongs to a business with several locations, so we didn&apos;t pick one for you. Choose the branch
@@ -96,7 +96,7 @@ export function PickBranch({ businessId, initial, search, pick }: { businessId: 
                   />
                   <span className="min-w-0 flex-1">
                     <span className="block text-sm font-medium break-words">{c.name}</span>
-                    {c.address ? <span className="block text-[13px] break-words text-muted-foreground">{c.address}</span> : null}
+                    {c.address ? <span className="block text-[length:calc(13px*var(--px,1))] break-words text-muted-foreground">{c.address}</span> : null}
                   </span>
                 </label>
               </li>
@@ -107,7 +107,7 @@ export function PickBranch({ businessId, initial, search, pick }: { businessId: 
       )}
 
       {error ? (
-        <p role="alert" className="rounded-md bg-low-bg px-3 py-2 text-[13px] text-low-text">
+        <p role="alert" className="rounded-md bg-low-bg px-3 py-2 text-[length:calc(13px*var(--px,1))] text-low-text">
           {error}
         </p>
       ) : null}

@@ -45,7 +45,7 @@ const TABS = [
       "Open any question to read what ChatGPT, Claude and Perplexity each answered.",
     ],
     visual: (
-      <div className="mx-auto w-full max-w-[560px]">
+      <div className="mx-auto w-full max-w-[calc(560px*var(--px,1))]">
         <AnswerExample />
       </div>
     ),
@@ -63,7 +63,7 @@ export function ProductTabs() {
       <Tabs defaultValue="visibility" className="mt-10 gap-10">
         <TabsList variant="line" className="scroll-quiet h-auto w-full justify-start gap-0 overflow-x-auto overflow-y-hidden border-b border-border p-0">
           {TABS.map(({ value, label }) => (
-            <TabsTrigger key={value} value={value} className="h-11 flex-none px-4 text-[15px] first:pl-0">
+            <TabsTrigger key={value} value={value} className="h-11 flex-none px-4 text-[length:calc(15px*var(--px,1))] first:pl-0">
               {label}
             </TabsTrigger>
           ))}
@@ -72,7 +72,7 @@ export function ProductTabs() {
           <TabsContent key={value} value={value} className="flex flex-col gap-8">
             <div className="grid gap-4 md:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] md:gap-16">
               <h3 className="text-2xl leading-tight font-semibold tracking-[-0.02em] text-balance">{title}</h3>
-              <div className="flex flex-col gap-3 text-[15px] text-muted-foreground">
+              <div className="flex flex-col gap-3 text-[length:calc(15px*var(--px,1))] text-muted-foreground">
                 {body.map((p) => (
                   <p key={p}>{p}</p>
                 ))}

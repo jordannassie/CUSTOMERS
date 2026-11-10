@@ -24,8 +24,8 @@ export function LeadListEmpty({ filtered }: { filtered: boolean }) {
 export function LeadListError({ message, onRetry }: { message: string; onRetry: () => void }) {
   return (
     <div role="alert" className="m-4 rounded-md bg-low-bg px-4 py-3 text-low-text">
-      <p className="text-[14px] font-medium">Failed to load leads</p>
-      <p className="mt-1 text-[13px]">{message}</p>
+      <p className="text-[length:calc(14px*var(--px,1))] font-medium">Failed to load leads</p>
+      <p className="mt-1 text-[length:calc(13px*var(--px,1))]">{message}</p>
       <Button type="button" variant="outline" size="sm" className="mt-3" onClick={onRetry}>
         Retry
       </Button>
@@ -68,22 +68,22 @@ export function LeadRows({
                   />
                 )}
                 <div className="min-w-0">
-                  <p className={cn("truncate text-[14px]", lead.read_at ? "text-foreground" : "font-semibold")}>
+                  <p className={cn("truncate text-[length:calc(14px*var(--px,1))]", lead.read_at ? "text-foreground" : "font-semibold")}>
                     {lead.name}
                   </p>
-                  <p className="truncate text-[12px] text-muted-foreground" title={lead.email}>{lead.email}</p>
-                  {lead.company && <p className="truncate text-[12px] text-muted-foreground" title={lead.company}>{lead.company}</p>}
+                  <p className="truncate text-[length:calc(12px*var(--px,1))] text-muted-foreground" title={lead.email}>{lead.email}</p>
+                  {lead.company && <p className="truncate text-[length:calc(12px*var(--px,1))] text-muted-foreground" title={lead.company}>{lead.company}</p>}
                 </div>
               </div>
               <div className="flex shrink-0 flex-col items-end gap-1">
                 <Badge variant="secondary">{INTEREST_LABELS[lead.topic] ?? lead.topic}</Badge>
-                <span className="text-[12px] text-text-hint">
+                <span className="text-[length:calc(12px*var(--px,1))] text-text-hint">
                   {formatDate(lead.created_at, true)}
                 </span>
                 <Badge variant={statusVariant(lead.status)}>{statusLabel(lead.status)}</Badge>
               </div>
             </div>
-            {!compact && <p className="mt-2 line-clamp-1 w-full pl-4 text-left text-[12px] text-muted-foreground">{lead.message}</p>}
+            {!compact && <p className="mt-2 line-clamp-1 w-full pl-4 text-left text-[length:calc(12px*var(--px,1))] text-muted-foreground">{lead.message}</p>}
           </button>
         </li>
       ))}
@@ -115,7 +115,7 @@ export function LeadPagination({
       >
         <ChevronLeft aria-hidden className="size-4" />
       </Button>
-      <span className="text-[13px] text-muted-foreground">
+      <span className="text-[length:calc(13px*var(--px,1))] text-muted-foreground">
         Page {page} of {pages}
       </span>
       <Button

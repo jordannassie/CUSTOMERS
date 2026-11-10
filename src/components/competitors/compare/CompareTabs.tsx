@@ -50,7 +50,7 @@ export function CompareTabs({ initial, panels }: { initial: CompareTab; panels: 
               aria-controls={`compare-panel-${t.id}`}
               onClick={() => open(t.id)}
               className={cn(
-                "relative flex h-10 items-center px-0.5 text-[13px] whitespace-nowrap transition-colors focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none",
+                "relative flex h-10 items-center px-0.5 text-[length:calc(13px*var(--px,1))] whitespace-nowrap transition-colors focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none",
                 t.id === active
                   ? "font-medium text-foreground after:absolute after:inset-x-0 after:-bottom-px after:h-0.5 after:rounded-full after:bg-foreground"
                   : "text-muted-foreground hover:text-foreground",

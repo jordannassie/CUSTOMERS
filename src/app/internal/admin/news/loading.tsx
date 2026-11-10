@@ -10,7 +10,7 @@ export default function Loading() {
         ))}
       </div>
       <Skeleton className="h-10 w-full max-w-lg rounded-md" />
-      <Skeleton className="h-[240px] rounded-md" />
+      <Skeleton className="h-[calc(240px*var(--px,1))] rounded-md" />
     </PageSkeleton>
   );
 }

@@ -20,7 +20,7 @@ export function KpiTile({ label, value, sub, testId, trend, change }: KpiTilePro
     <div className="flex min-w-0 flex-col gap-1 bg-surface px-4 pt-3 pb-2.5" data-testid={testId}>
       <span className="text-xs text-muted-foreground">{label}</span>
       <div className="flex items-end justify-between gap-2">
-        <span className="truncate text-[20px] leading-tight font-semibold tracking-[-0.03em] tabular-nums">
+        <span className="truncate text-[length:calc(20px*var(--px,1))] leading-tight font-semibold tracking-[-0.03em] tabular-nums">
           {value}
         </span>
         {showTrend && (

@@ -16,7 +16,7 @@ export function AgencyBilling({ plans }: { plans: PublicPlan[] }) {
       <div className="grid gap-10 md:grid-cols-2 md:gap-16">
         <div className="flex flex-col gap-4">
           <H2 className="max-w-[18ch]">You pay per client business</H2>
-          <ul className="mt-2 flex flex-col gap-3 text-[15px] text-muted-foreground">
+          <ul className="mt-2 flex flex-col gap-3 text-[length:calc(15px*var(--px,1))] text-muted-foreground">
             {POINTS.map((p) => (
               <li key={p} className="border-l-2 border-primary pl-4">
                 {p}
@@ -35,7 +35,7 @@ export function AgencyBilling({ plans }: { plans: PublicPlan[] }) {
                   className="flex items-baseline justify-between gap-4 border-b border-border px-5 py-4 last:border-b-0"
                 >
                   <dt className="font-semibold">{plan.name}</dt>
-                  <dd className="text-right text-[15px] text-muted-foreground">
+                  <dd className="text-right text-[length:calc(15px*var(--px,1))] text-muted-foreground">
                     <span data-testid="plan-price" className="tabular font-semibold text-foreground">
                       {formatUsd(plan.priceCents)}
                     </span>{" "}

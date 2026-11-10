@@ -13,10 +13,10 @@ export default function Section({
   return (
     <section aria-labelledby={id} className="flex min-w-0 flex-col gap-2">
       <div className="flex flex-wrap items-baseline justify-between gap-x-3">
-        <h2 id={id} className="text-[16px] font-semibold">
+        <h2 id={id} className="text-[length:calc(16px*var(--px,1))] font-semibold">
           {title}
         </h2>
-        {note && <p className="text-[13px] text-muted-foreground">{note}</p>}
+        {note && <p className="text-[length:calc(13px*var(--px,1))] text-muted-foreground">{note}</p>}
       </div>
       {children}
     </section>

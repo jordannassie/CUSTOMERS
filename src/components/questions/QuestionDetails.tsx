@@ -35,7 +35,7 @@ export function QuestionDetails({ question, businessName, state, controls }: Pro
           <Skeleton className="h-24" />
         </div>
       ) : "error" in state ? (
-        <p role="alert" className="rounded-md bg-low-bg px-3 py-2 text-[13px] text-low-text">
+        <p role="alert" className="rounded-md bg-low-bg px-3 py-2 text-[length:calc(13px*var(--px,1))] text-low-text">
           {state.error}
         </p>
       ) : state.answers.length === 0 ? (
@@ -90,16 +90,16 @@ function AllNamed({ question, answers, businessName }: { question: QuestionRow; 
   if (names.size === 0 && you === 0 && unread.length === 0) return null;
   return (
     <div className="flex flex-col gap-2 rounded-lg border border-border px-3.5 py-3">
-      <p className="text-[13px] font-semibold">Businesses named, all tools</p>
+      <p className="text-[length:calc(13px*var(--px,1))] font-semibold">Businesses named, all tools</p>
       {unread.length > 0 && (
-        <p className="text-[13px] text-muted-foreground" data-testid="names-unread">
+        <p className="text-[length:calc(13px*var(--px,1))] text-muted-foreground" data-testid="names-unread">
           We couldn&apos;t read which businesses {listText(unread)} named, so this list may be missing some.
         </p>
       )}
       {(names.size > 0 || you > 0) && (
       <ul className="flex flex-wrap gap-1.5" data-testid="all-named">
         {you > 0 && (
-          <li className="inline-flex h-[22px] items-center gap-1 rounded-sm bg-primary-tint px-2 text-xs font-semibold text-primary">
+          <li className="inline-flex h-[calc(22px*var(--px,1))] items-center gap-1 rounded-sm bg-primary-tint px-2 text-xs font-semibold text-primary">
             {businessName} (you){" "}
             <span className="tabular-nums" title={`Named by ${you} of ${answers.length} AI tools`}>
               {you}
@@ -120,7 +120,7 @@ function AllNamed({ question, answers, businessName }: { question: QuestionRow; 
                 </span>
               </>
             );
-            const className = "inline-flex h-[22px] items-center gap-1 rounded-sm border border-border px-2 text-xs font-medium";
+            const className = "inline-flex h-[calc(22px*var(--px,1))] items-center gap-1 rounded-sm border border-border px-2 text-xs font-medium";
             return (
               <li key={n.name}>
                 {id ? (
@@ -136,7 +136,7 @@ function AllNamed({ question, answers, businessName }: { question: QuestionRow; 
       </ul>
       )}
       {pick?.competitorId && (
-        <Link href={compareHref(pick.competitorId, "questions")} className="inline-flex w-fit items-center gap-1 text-[13px] font-medium text-primary hover:underline">
+        <Link href={compareHref(pick.competitorId, "questions")} className="inline-flex w-fit items-center gap-1 text-[length:calc(13px*var(--px,1))] font-medium text-primary hover:underline">
           Compare with {pick.name}
           <ArrowRight className="size-3.5" aria-hidden="true" />
         </Link>

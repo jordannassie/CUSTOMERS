@@ -77,8 +77,8 @@ export function ReasonCards({
                 {c.basis}
               </span>
             </p>
-            <p className="text-[13.5px] leading-snug font-semibold">{c.title}</p>
-            <p className="text-[13px] leading-relaxed text-muted-foreground">{c.fact}</p>
+            <p className="text-[length:calc(13.5px*var(--px,1))] leading-snug font-semibold">{c.title}</p>
+            <p className="text-[length:calc(13px*var(--px,1))] leading-relaxed text-muted-foreground">{c.fact}</p>
             {c.answersHref && (
               <Link href={c.answersHref} className="mt-1 inline-flex w-fit items-center gap-1 text-xs font-medium text-primary hover:underline">
                 See the answers
@@ -91,7 +91,7 @@ export function ReasonCards({
               <span className="text-xs font-semibold text-foreground">What to do</span>
               <Badge variant={IMPACT[c.impact].variant}>{IMPACT[c.impact].text}</Badge>
             </p>
-            <p className="text-[13px] leading-snug" data-testid="fix-action">
+            <p className="text-[length:calc(13px*var(--px,1))] leading-snug" data-testid="fix-action">
               {c.whatToDo}
             </p>
             <p className="text-xs text-muted-foreground" data-testid="fix-where">
@@ -139,7 +139,7 @@ export function LeadCards({ leads, standing = null }: { leads: LeadCard[]; stand
           </span>
           <span className="flex min-w-0 flex-col gap-0.5">
             <span className="text-sm font-medium">{l.title}</span>
-            <span className="text-[13px] text-muted-foreground">{l.fact}</span>
+            <span className="text-[length:calc(13px*var(--px,1))] text-muted-foreground">{l.fact}</span>
           </span>
         </li>
       ))}

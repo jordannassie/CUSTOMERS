@@ -90,7 +90,7 @@ export default function ContactForm({ initialInterest, source = "contact_page", 
         <CheckCircle2 className="size-8 text-good" aria-hidden="true" />
         <div>
           <h2 className="text-lg font-semibold">Thanks, we have your message</h2>
-          <p className="mt-1 text-[15px] text-muted-foreground">We will reply to you by email.</p>
+          <p className="mt-1 text-[length:calc(15px*var(--px,1))] text-muted-foreground">We will reply to you by email.</p>
         </div>
       </div>
     );
@@ -216,7 +216,7 @@ export default function ContactForm({ initialInterest, source = "contact_page", 
         {loading ? <Loader2 className="animate-spin" aria-label="Sending" /> : "Send message"}
       </Button>
 
-      <p className="text-center text-[13px] text-text-hint">
+      <p className="text-center text-[length:calc(13px*var(--px,1))] text-text-hint">
         We only use your details to reply to you.{" "}
         <Link href="/privacy" className="underline underline-offset-4 hover:text-foreground">
           Privacy policy

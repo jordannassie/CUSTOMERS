@@ -18,7 +18,7 @@ function ErrorBox({ message }: { message: string }) {
   return (
     <div role="alert" className="flex items-start gap-3 rounded-md bg-low-bg px-4 py-3 text-low-text">
       <AlertTriangle className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
-      <p className="text-[14px] font-medium">{message}</p>
+      <p className="text-[length:calc(14px*var(--px,1))] font-medium">{message}</p>
     </div>
   );
 }
@@ -122,7 +122,7 @@ export default function NewsClient({ initialPeriod }: { initialPeriod: Period })
   const periodLabel = PERIOD_OPTIONS.find((p) => p.value === period)?.label;
 
   return (
-    <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-4 px-4 py-4 sm:px-6 sm:py-5">
+    <div className="mx-auto flex w-full max-w-[calc(1200px*var(--px,1))] flex-col gap-4 px-4 py-4 sm:px-6 sm:py-5">
       <AdminPageHeader
         title="LinkedIn studio"
         subtitle="Turn AI search news into LinkedIn posts that help agencies win and serve clients."
@@ -149,7 +149,7 @@ export default function NewsClient({ initialPeriod }: { initialPeriod: Period })
         </Button>
 
         {!searching && (
-          <span className="text-[13px] text-muted-foreground">
+          <span className="text-[length:calc(13px*var(--px,1))] text-muted-foreground">
             {theme}, {periodLabel}
           </span>
         )}
@@ -161,8 +161,8 @@ export default function NewsClient({ initialPeriod }: { initialPeriod: Period })
           className="flex flex-col items-center gap-2 rounded-md border border-border bg-surface px-6 py-12 text-center"
         >
           <Loader2 className="size-5 animate-spin text-primary" aria-hidden="true" />
-          <p className="text-[15px] font-semibold">Finding stories for {theme}…</p>
-          <p className="text-[13px] text-muted-foreground">
+          <p className="text-[length:calc(15px*var(--px,1))] font-semibold">Finding stories for {theme}…</p>
+          <p className="text-[length:calc(13px*var(--px,1))] text-muted-foreground">
             Searching for agency-relevant AI stories from the {periodLabel?.toLowerCase()}. Usually takes 15 to 30
             seconds.
           </p>
@@ -180,11 +180,11 @@ export default function NewsClient({ initialPeriod }: { initialPeriod: Period })
       {stories.length > 0 && !searching && (
         <div className="flex flex-col gap-4">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <p className="text-[13px] font-semibold text-muted-foreground">
+            <p className="text-[length:calc(13px*var(--px,1))] font-semibold text-muted-foreground">
               {stories.length} {stories.length === 1 ? "story" : "stories"}: {theme}
             </p>
             {writingId && (
-              <p className="animate-pulse text-[13px] font-medium text-primary">
+              <p className="animate-pulse text-[length:calc(13px*var(--px,1))] font-medium text-primary">
                 Researching and writing LinkedIn post…
               </p>
             )}

@@ -7,7 +7,10 @@ import { cn } from "cn";
 // and divs on the design tokens, every number from props, an empty state each. The pictures repeat the words, so they
 // are hidden from screen readers.
 
-/** One card: icon, label, value, the line under it, and the picture on the right. */
+/**
+ * One card: icon, label, value, the line under it, and the picture on the right. `stacked` puts the picture under the
+ * words and drops the icon, for a narrow column (the home page hero's three cards side by side).
+ */
 export function StatRow({
   icon: Icon,
   label,
@@ -15,6 +18,7 @@ export function StatRow({
   sub,
   visual,
   testId,
+  stacked = false,
 }: {
   icon: LucideIcon;
   label: string;
@@ -22,7 +26,24 @@ export function StatRow({
   sub?: ReactNode;
   visual?: ReactNode;
   testId?: string;
+  stacked?: boolean;
 }) {
+  if (stacked) {
+    return (
+      <div className="flex min-w-0 flex-col items-start gap-2 bg-surface px-4 py-3" data-testid={testId}>
+        <div className="flex min-w-0 flex-col gap-0.5">
+          <span className="text-xs text-muted-foreground">{label}</span>
+          <span className="text-xl leading-tight font-semibold tracking-[-0.02em] tabular-nums">{value}</span>
+          {sub && <span className="text-xs text-muted-foreground">{sub}</span>}
+        </div>
+        {visual && (
+          <div className="flex w-full items-center" aria-hidden="true" data-testid="kpi-visual">
+            {visual}
+          </div>
+        )}
+      </div>
+    );
+  }
   return (
     <div className="flex min-w-0 items-center gap-3 bg-surface px-4 py-3" data-testid={testId}>
       {/* Hidden on a tablet, where the three sit side by side and the words need the room. */}
@@ -35,7 +56,7 @@ export function StatRow({
         {sub && <span className="flex min-w-0 flex-wrap items-center gap-x-1.5 text-xs text-muted-foreground">{sub}</span>}
       </div>
       {visual && (
-        <div className="flex w-[90px] shrink-0 items-center justify-end" aria-hidden="true" data-testid="kpi-visual">
+        <div className="flex w-[calc(84px*var(--px,1))] shrink-0 items-center justify-end" aria-hidden="true" data-testid="kpi-visual">
           {visual}
         </div>
       )}
@@ -69,7 +90,7 @@ export function donutSegments(parts: DonutPart[]): { part: DonutPart; length: nu
 export function ShareDonut({ parts, percent }: { parts: DonutPart[]; percent: number | null }) {
   const segments = donutSegments(parts);
   return (
-    <span className="relative inline-grid size-[52px] shrink-0 place-items-center">
+    <span className="relative inline-grid size-[calc(52px*var(--px,1))] shrink-0 place-items-center">
       <svg viewBox="0 0 52 52" className="absolute inset-0 size-full -rotate-90">
         <circle cx="26" cy="26" r={R} fill="none" strokeWidth="7" className="stroke-muted" />
         {segments.map(({ part, length, offset }) => (
@@ -86,7 +107,7 @@ export function ShareDonut({ parts, percent }: { parts: DonutPart[]; percent: nu
           />
         ))}
       </svg>
-      <span className="relative text-[11px] font-semibold tabular-nums">{percent === null ? "" : `${percent}%`}</span>
+      <span className="relative text-[length:calc(11px*var(--px,1))] font-semibold tabular-nums">{percent === null ? "" : `${percent}%`}</span>
     </span>
   );
 }
@@ -108,9 +129,9 @@ export function AnswerDots({ named, total }: { named: number; total: number }) {
   const { dots, filled } = dotScale(named, total);
   if (dots === 0) return null;
   return (
-    <span className="grid gap-[2px]" style={{ gridTemplateColumns: `repeat(${DOT_COLUMNS}, 5px)` }} title={`${named} of ${total} answers named you`}>
+    <span className="grid gap-[calc(2px*var(--px,1))]" style={{ gridTemplateColumns: `repeat(${DOT_COLUMNS}, calc(5px*var(--px,1)))` }} title={`${named} of ${total} answers named you`}>
       {Array.from({ length: dots }, (_, i) => (
-        <span key={i} className={cn("size-[5px] rounded-full", i < filled ? "bg-primary" : "bg-border")} />
+        <span key={i} className={cn("size-[calc(5px*var(--px,1))] rounded-full", i < filled ? "bg-primary" : "bg-border")} />
       ))}
     </span>
   );
@@ -124,7 +145,7 @@ function MiniBar({ value, max, you }: { value: number; max: number; you: boolean
       <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
         <span className={cn("block h-full rounded-full", you ? "bg-primary" : "bg-muted-foreground/40")} style={{ width: `${width}%` }} />
       </span>
-      <span className="w-6 text-right text-[11px] font-medium tabular-nums">{value.toLocaleString("en-US")}</span>
+      <span className="w-6 text-right text-[length:calc(11px*var(--px,1))] font-medium tabular-nums">{value.toLocaleString("en-US")}</span>
     </span>
   );
 }

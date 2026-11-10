@@ -61,7 +61,7 @@ export function NamedRing({ pct }: { pct: number | null }) {
   // At 0 a tiny arc with round ends draws a dot at the top, so 0 reads as checked, not as missing.
   const arc = pct === null ? 0 : pct === 0 ? 0.01 : (pct / 100) * C;
   return (
-    <span className="relative inline-flex size-[34px] shrink-0 items-center justify-center" aria-hidden="true">
+    <span className="relative inline-flex size-[calc(34px*var(--px,1))] shrink-0 items-center justify-center" aria-hidden="true">
       <svg viewBox="0 0 34 34" className="absolute inset-0 size-full -rotate-90">
         <circle cx="17" cy="17" r={R} fill="none" strokeWidth="3.5" className="stroke-muted" />
         {pct !== null && (
@@ -77,7 +77,7 @@ export function NamedRing({ pct }: { pct: number | null }) {
           />
         )}
       </svg>
-      <span className={cn("relative text-[10.5px] font-semibold tabular-nums", pct === null && "text-text-hint")}>{pct ?? ""}</span>
+      <span className={cn("relative text-[length:calc(10.5px*var(--px,1))] font-semibold tabular-nums", pct === null && "text-text-hint")}>{pct ?? ""}</span>
     </span>
   );
 }
@@ -96,7 +96,7 @@ export function NamedCell({ question }: { question: QuestionRow }) {
           </span>
           {/* The count behind the share, so a small number of checks is plain to see (MVP_SPEC 5.6). */}
           <span
-            className="text-[11.5px] text-muted-foreground tabular-nums"
+            className="text-[length:calc(11.5px*var(--px,1))] text-muted-foreground tabular-nums"
             aria-hidden="true"
             data-testid="question-named-count"
             title={`Named you in ${question.named} of ${question.answers} answers in the last 30 days`}
@@ -141,7 +141,7 @@ export function TrendCell({ question }: { question: QuestionRow }) {
         )
       ) : (
         <span
-          className={cn("inline-flex items-center gap-0.5 rounded-sm px-1 py-0.5 text-[11px] font-semibold", TREND_STYLE[t].className)}
+          className={cn("inline-flex items-center gap-0.5 rounded-sm px-1 py-0.5 text-[length:calc(11px*var(--px,1))] font-semibold", TREND_STYLE[t].className)}
           title="The latest scan of this question against the one before"
         >
           {Icon && <Icon className="size-3" aria-hidden="true" />}

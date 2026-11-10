@@ -51,7 +51,7 @@ export function QuestionFilters() {
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Filter by question"
               aria-label="Filter questions by words"
-              className="h-full min-w-0 flex-1 bg-transparent text-[13px] text-foreground outline-none placeholder:text-text-hint"
+              className="h-full min-w-0 flex-1 bg-transparent text-[length:calc(13px*var(--px,1))] text-foreground outline-none placeholder:text-text-hint"
             />
           </label>
         </div>

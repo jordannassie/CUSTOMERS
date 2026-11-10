@@ -28,7 +28,7 @@ type Props = {
 };
 
 /** Business, named in, share bar, Track. On a phone: the name and count on the left, Track on the right. */
-const ROW = "grid text-[13px] grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-0.5 px-4 sm:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)_minmax(0,1.2fr)_5.5rem]";
+const ROW = "grid text-[length:calc(13px*var(--px,1))] grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-0.5 px-4 sm:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)_minmax(0,1.2fr)_5.5rem]";
 
 // Businesses AI keeps naming that the user does not track (MVP_SPEC 8.1, D-74), one click to track each.
 export function AlsoRecommended({ businessId, names, answers, track, manageHref, layout = "list" }: Props) {
@@ -60,7 +60,7 @@ export function AlsoRecommended({ businessId, names, answers, track, manageHref,
   }
 
   const errorNote = error ? (
-    <p role="alert" className="rounded-md bg-mid-bg px-3 py-2 text-[13px] text-mid-text">
+    <p role="alert" className="rounded-md bg-mid-bg px-3 py-2 text-[length:calc(13px*var(--px,1))] text-mid-text">
       {error.text}
       {error.limit ? (
         <>
@@ -107,7 +107,7 @@ export function AlsoRecommended({ businessId, names, answers, track, manageHref,
                   {n.name}
                 </span>
               </span>
-              <span className="text-[13px] text-muted-foreground tabular-nums max-sm:col-start-1 max-sm:row-start-2 max-sm:pl-[34px] max-sm:text-xs">{n.text}</span>
+              <span className="text-[length:calc(13px*var(--px,1))] text-muted-foreground tabular-nums max-sm:col-start-1 max-sm:row-start-2 max-sm:pl-[calc(34px*var(--px,1))] max-sm:text-xs">{n.text}</span>
               <span className="flex items-center gap-2.5 max-sm:hidden" aria-hidden="true">
                 <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
                   <span className="block h-full rounded-full bg-competitor-2" style={{ width: `${Math.max(share(n.answers), 2)}%` }} />

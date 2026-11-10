@@ -36,7 +36,7 @@ export function MobileMenu() {
                 <Link
                   href={href}
                   onClick={close}
-                  className="flex h-11 items-center rounded-md px-3 text-[15px] font-medium transition-colors hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
+                  className="flex h-11 items-center rounded-md px-3 text-[length:calc(15px*var(--px,1))] font-medium transition-colors hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
                 >
                   {label}
                 </Link>

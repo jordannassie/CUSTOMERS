@@ -20,7 +20,7 @@ export function TrialSummary({ offer }: { offer: CardOffer }) {
         <p className="text-sm font-medium">
           {offer.planName} plan, 1 business{" "}
           {/* The plan is picked on the step before (BUG-244). */}
-          <Link href="/onboarding/models" prefetch={false} className="ml-1 text-[13px] font-medium text-primary underline-offset-2 hover:underline">
+          <Link href="/onboarding/models" prefetch={false} className="ml-1 text-[length:calc(13px*var(--px,1))] font-medium text-primary underline-offset-2 hover:underline">
             Change plan
           </Link>
         </p>
@@ -28,15 +28,15 @@ export function TrialSummary({ offer }: { offer: CardOffer }) {
           <span className="font-semibold">$0</span> <span className="text-muted-foreground">today</span>
         </p>
       </div>
-      <p data-testid="trial-terms" className="mt-3 text-[13px] leading-relaxed text-muted-foreground">
+      <p data-testid="trial-terms" className="mt-3 text-[length:calc(13px*var(--px,1))] leading-relaxed text-muted-foreground">
         7 days free, then {price} per business per month. Cancel anytime before <LocalDate iso={offer.trialEndsAt} /> and
         you won&apos;t be charged.
       </p>
-      <ul data-testid="renewal-terms" className="mt-3 flex list-disc flex-col gap-1 pl-4 text-[13px] leading-relaxed text-muted-foreground">
+      <ul data-testid="renewal-terms" className="mt-3 flex list-disc flex-col gap-1 pl-4 text-[length:calc(13px*var(--px,1))] leading-relaxed text-muted-foreground">
         <li>After the trial, your plan renews every month on the same date until you cancel.</li>
         <li>Cancel online anytime in Settings, under Billing. Plans are not refunded once charged.</li>
       </ul>
-      <p className="mt-3 text-[13px]">
+      <p className="mt-3 text-[length:calc(13px*var(--px,1))]">
         <Link href="/terms#trial" target="_blank" rel="noopener" className="font-medium text-primary underline-offset-2 hover:underline">
           Read the trial and billing terms<span className="sr-only"> (opens in a new tab)</span>
         </Link>
@@ -97,7 +97,7 @@ export function SettingUp({ businessId, check }: {
     return (
       <div role="status" aria-live="polite" className="flex flex-col items-start gap-3 rounded-md border border-border bg-surface p-6">
         <p className="text-base font-medium">Still setting up your account</p>
-        <p className="text-[13px] text-muted-foreground">
+        <p className="text-[length:calc(13px*var(--px,1))] text-muted-foreground">
           Your card was accepted, and your trial is taking longer than usual to start. Refresh this page in a minute, or{" "}
           <Link href="/contact?topic=support" className="font-medium text-primary underline-offset-2 hover:underline">
             contact us
@@ -112,7 +112,7 @@ export function SettingUp({ businessId, check }: {
     <div role="status" aria-live="polite" className="flex flex-col items-start gap-3 rounded-md border border-border bg-surface p-6">
       <Loader2 aria-hidden className="size-5 animate-spin text-primary" />
       <p className="text-base font-medium">Setting up your account…</p>
-      <p className="text-[13px] text-muted-foreground">Your card was accepted. We&apos;re starting your free trial, which takes a few seconds.</p>
+      <p className="text-[length:calc(13px*var(--px,1))] text-muted-foreground">Your card was accepted. We&apos;re starting your free trial, which takes a few seconds.</p>
       <StepError message={error} />
     </div>
   );

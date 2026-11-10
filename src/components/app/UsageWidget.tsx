@@ -29,7 +29,7 @@ export function UsageWidget({ tone, headline, percentUsed, details, showBuyCredi
       data-tone={tone}
       className={cn("rounded-md border px-3 py-2.5", empty ? "border-low/40 bg-low-bg" : "border-border bg-surface")}
     >
-      <p className={cn("text-[13px] font-medium leading-snug tabular-nums", empty ? "text-low-text" : "text-foreground")}>
+      <p className={cn("text-[length:calc(13px*var(--px,1))] font-medium leading-snug tabular-nums", empty ? "text-low-text" : "text-foreground")}>
         {headline}
       </p>
       {percentUsed !== null && (

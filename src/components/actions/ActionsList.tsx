@@ -93,7 +93,7 @@ export function ActionsList({
                     </button>
                     {item.evidence && <p className="line-clamp-2 pl-5.5 text-xs text-muted-foreground">{item.evidence.split("\n")[0]}</p>}
                   </div>
-                  <span className="truncate text-[13px] font-medium text-primary-hover" title={item.whereToApply} data-testid="action-where">
+                  <span className="truncate text-[length:calc(13px*var(--px,1))] font-medium text-primary-hover" title={item.whereToApply} data-testid="action-where">
                     <span className="text-muted-foreground lg:hidden">Where: </span>
                     {item.whereToApply}
                   </span>
@@ -117,7 +117,7 @@ export function ActionsList({
                   </div>
                 </div>
                 {expanded && (
-                  <div className="mt-3 flex flex-col gap-3 border-t border-border pt-3 text-[13px] lg:ml-[calc(5.5rem+1rem)]">
+                  <div className="mt-3 flex flex-col gap-3 border-t border-border pt-3 text-[length:calc(13px*var(--px,1))] lg:ml-[calc(5.5rem+1rem)]">
                     {item.evidence && <p className="whitespace-pre-line">{item.evidence}</p>}
                     {item.usesGoogle && <GoogleAttribution what="Review counts and ratings" />}
                     {item.googleHidden && (

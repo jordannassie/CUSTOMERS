@@ -24,12 +24,12 @@ export function WizardFrame({ steps, title, lead, embedded = false, children }: 
   const Main = embedded ? "div" : "main";
 
   return (
-    <div className={cn("bg-background", embedded ? "" : "min-h-dvh lg:grid lg:grid-cols-[260px_minmax(0,1fr)]")}>
+    <div className={cn("bg-background", embedded ? "" : "min-h-dvh lg:grid lg:grid-cols-[calc(260px*var(--px,1))_minmax(0,1fr)]")}>
       {!embedded ? (
         <aside className="hidden border-r border-border bg-muted lg:block">
           <div className="sticky top-0 flex min-h-dvh flex-col px-6 py-8">
             <Image src="/images/logos/logo-black.png" alt="Customers.Direct" width={96} height={32} className="h-8 w-auto self-start" />
-            <p className="mt-8 text-[13px] text-muted-foreground">Setting up</p>
+            <p className="mt-8 text-[length:calc(13px*var(--px,1))] text-muted-foreground">Setting up</p>
             <ol className="mt-3 flex flex-col gap-1" aria-label="Setup steps">
               {steps.map((s, i) => (
                 <li key={s.slug}>
@@ -55,12 +55,12 @@ export function WizardFrame({ steps, title, lead, embedded = false, children }: 
         {/* One column for every step and every part of it (bar, heading, form, Back and Continue), so the edges and the
             Continue button stay put from step to step. Inside the app frame it sits in the page column, under the
             banners' left edge, like every other app page. */}
-        <div className={embedded ? "mx-auto w-full max-w-[1200px] px-4 py-4 sm:px-6 sm:py-5" : cn(STEP_COLUMN, "mx-auto py-8 lg:py-12")}>
+        <div className={embedded ? "mx-auto w-full max-w-[calc(1200px*var(--px,1))] px-4 py-4 sm:px-6 sm:py-5" : cn(STEP_COLUMN, "mx-auto py-8 lg:py-12")}>
           <div className={embedded ? STEP_WIDTH : undefined}>
             {embedded ? <StepProgress steps={steps} index={index} label={current?.label} className="mb-6" /> : null}
             <header className="mb-6">
-              <h1 className="text-2xl font-semibold tracking-[-0.02em] sm:text-[32px] sm:leading-tight">{title}</h1>
-              {lead ? <p className="mt-3 max-w-xl text-[15px] leading-relaxed text-muted-foreground">{lead}</p> : null}
+              <h1 className="text-2xl font-semibold tracking-[-0.02em] sm:text-[length:calc(32px*var(--px,1))] sm:leading-tight">{title}</h1>
+              {lead ? <p className="mt-3 max-w-xl text-[length:calc(15px*var(--px,1))] leading-relaxed text-muted-foreground">{lead}</p> : null}
             </header>
             {children}
             {/* Signed up with the wrong account, or on a shared computer: the steps must not trap anyone. */}
@@ -73,18 +73,18 @@ export function WizardFrame({ steps, title, lead, embedded = false, children }: 
 }
 
 // Every step's content width, and the column around it with the same side padding as the app banners.
-const STEP_WIDTH = "max-w-[832px]";
-const STEP_COLUMN = "w-full max-w-[896px] px-4 sm:px-8";
+const STEP_WIDTH = "max-w-[calc(832px*var(--px,1))]";
+const STEP_COLUMN = "w-full max-w-[calc(896px*var(--px,1))] px-4 sm:px-8";
 
 /** "Step 2 of 5" and one segment per step. Segments share the row (min-w-0), so any number of steps fits any width. */
 function StepProgress({ steps, index, label, className }: { steps: FrameStep[]; index: number; label?: string; className?: string }) {
   return (
     <div className={className} data-testid="step-progress">
       <div className="flex min-w-0 items-baseline justify-between gap-3">
-        <p className="shrink-0 text-[13px] font-medium tabular-nums">
+        <p className="shrink-0 text-[length:calc(13px*var(--px,1))] font-medium tabular-nums">
           Step {index + 1} of {steps.length}
         </p>
-        <p className="min-w-0 truncate text-[13px] text-muted-foreground" title={label}>
+        <p className="min-w-0 truncate text-[length:calc(13px*var(--px,1))] text-muted-foreground" title={label}>
           {label}
         </p>
       </div>

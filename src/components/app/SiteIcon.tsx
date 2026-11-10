@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { cn } from "cn";
 import { iconHost } from "@/modules/site-icons/schema";
 
-const BOX = { sm: "size-6 text-[11px]", md: "size-8 text-[13px]" } as const;
+const BOX = { sm: "size-6 text-[length:calc(11px*var(--px,1))]", md: "size-8 text-[length:calc(13px*var(--px,1))]" } as const;
 // The icon nearly fills its circle (mockup-ui: round icons, the owner's pick), clipped round so square logos sit well.
 const IMG = { sm: 20, md: 26 } as const;
 

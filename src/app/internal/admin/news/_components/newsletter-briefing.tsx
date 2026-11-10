@@ -16,7 +16,7 @@ function Block({ title, action, tone, children }: {
   return (
     <div className={cn("rounded-md border p-4", tone === "tint" ? "border-primary bg-primary-tint" : "border-border bg-muted")}>
       <div className="mb-2 flex items-center justify-between gap-2">
-        <p className="text-[12px] font-semibold text-muted-foreground">{title}</p>
+        <p className="text-[length:calc(12px*var(--px,1))] font-semibold text-muted-foreground">{title}</p>
         {action}
       </div>
       {children}
@@ -56,8 +56,8 @@ export function NewsletterBriefing({ article }: { article: GeneratedArticle }) {
       >
         <span className="flex flex-wrap items-center gap-2">
           <SectionLetter letter="E" />
-          <span className="text-[14px] font-semibold">Optional newsletter briefing</span>
-          <span className="text-[12px] text-muted-foreground">(email subject, article body, key takeaways)</span>
+          <span className="text-[length:calc(14px*var(--px,1))] font-semibold">Optional newsletter briefing</span>
+          <span className="text-[length:calc(12px*var(--px,1))] text-muted-foreground">(email subject, article body, key takeaways)</span>
         </span>
         <ChevronDown
           className={cn("size-4 shrink-0 text-muted-foreground transition-transform duration-150", open && "rotate-180")}
@@ -68,34 +68,34 @@ export function NewsletterBriefing({ article }: { article: GeneratedArticle }) {
         <div id="newsletter-briefing" className="flex flex-col gap-4 p-4">
           <div className="border-b border-border pb-4">
             <div className="flex flex-wrap items-start justify-between gap-3">
-              <h3 className="min-w-0 flex-1 text-[18px] font-semibold leading-tight">{article.headline}</h3>
+              <h3 className="min-w-0 flex-1 text-[length:calc(18px*var(--px,1))] font-semibold leading-tight">{article.headline}</h3>
               <CopyButton label="Copy headline" text={article.headline} />
             </div>
-            {article.subheadline && <p className="mt-1 text-[14px] text-muted-foreground">{article.subheadline}</p>}
+            {article.subheadline && <p className="mt-1 text-[length:calc(14px*var(--px,1))] text-muted-foreground">{article.subheadline}</p>}
           </div>
 
           <div className="grid gap-3 sm:grid-cols-2">
             {article.emailSubject && (
               <Block title="Email subject" action={<CopyButton label="Copy" text={article.emailSubject} />}>
-                <p className="text-[14px] font-medium">{article.emailSubject}</p>
+                <p className="text-[length:calc(14px*var(--px,1))] font-medium">{article.emailSubject}</p>
               </Block>
             )}
             {article.previewText && (
               <Block title="Preview text" action={<CopyButton label="Copy" text={article.previewText} />}>
-                <p className="text-[14px]">{article.previewText}</p>
+                <p className="text-[length:calc(14px*var(--px,1))]">{article.previewText}</p>
               </Block>
             )}
           </div>
 
           {article.articleBody && (
             <Block title="Article body" action={<CopyButton label="Copy article" text={buildNewsletter(article)} />}>
-              <div className="whitespace-pre-wrap text-[14px] leading-relaxed">{article.articleBody}</div>
+              <div className="whitespace-pre-wrap text-[length:calc(14px*var(--px,1))] leading-relaxed">{article.articleBody}</div>
             </Block>
           )}
 
           {article.whyItMatters && (
             <Block title="Why this matters" tone="tint">
-              <p className="text-[14px] leading-relaxed">{article.whyItMatters}</p>
+              <p className="text-[length:calc(14px*var(--px,1))] leading-relaxed">{article.whyItMatters}</p>
             </Block>
           )}
 
@@ -104,10 +104,10 @@ export function NewsletterBriefing({ article }: { article: GeneratedArticle }) {
               <ol className="flex flex-col gap-2">
                 {article.keyTakeaways.map((t, i) => (
                   <li key={i} className="flex items-start gap-3">
-                    <span className="flex size-5 shrink-0 items-center justify-center rounded-sm bg-primary text-[12px] font-semibold text-primary-foreground">
+                    <span className="flex size-5 shrink-0 items-center justify-center rounded-sm bg-primary text-[length:calc(12px*var(--px,1))] font-semibold text-primary-foreground">
                       {i + 1}
                     </span>
-                    <p className="text-[14px] leading-relaxed">{t}</p>
+                    <p className="text-[length:calc(14px*var(--px,1))] leading-relaxed">{t}</p>
                   </li>
                 ))}
               </ol>
@@ -116,7 +116,7 @@ export function NewsletterBriefing({ article }: { article: GeneratedArticle }) {
 
           {article.instagramCaption && (
             <Block title="Instagram caption" action={<CopyButton label="Copy Instagram" text={article.instagramCaption} />}>
-              <p className="whitespace-pre-wrap text-[14px] leading-relaxed">{article.instagramCaption}</p>
+              <p className="whitespace-pre-wrap text-[length:calc(14px*var(--px,1))] leading-relaxed">{article.instagramCaption}</p>
             </Block>
           )}
         </div>

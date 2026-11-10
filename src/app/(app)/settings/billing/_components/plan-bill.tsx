@@ -23,7 +23,7 @@ export function PlanBill({ view, actions, addBusinessHref, supportHref }: Props)
         <h2 id="plan-heading" className="text-base font-semibold tracking-[-0.02em]">
           Businesses on your plan
         </h2>
-        <p className="text-[13px] text-muted-foreground">Each business is billed monthly on its own plan.</p>
+        <p className="text-[length:calc(13px*var(--px,1))] text-muted-foreground">Each business is billed monthly on its own plan.</p>
       </div>
 
       {view.onPlan.length === 0 ? (
@@ -54,7 +54,7 @@ export function PlanBill({ view, actions, addBusinessHref, supportHref }: Props)
               <li key={b.id} className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                 <span className="text-sm">{b.name}</span>
                 {pastDue && !locked && (
-                  <span className="text-[13px] text-muted-foreground">Update your card first, then you can add it.</span>
+                  <span className="text-[length:calc(13px*var(--px,1))] text-muted-foreground">Update your card first, then you can add it.</span>
                 )}
                 {!locked && !pastDue && (
                   <span className="flex flex-wrap gap-2">
@@ -79,7 +79,7 @@ export function PlanBill({ view, actions, addBusinessHref, supportHref }: Props)
       <div className="border-t border-border px-4 py-3">
         <Link
           href={addBusinessHref}
-          className="inline-flex items-center gap-1.5 text-[13px] font-medium text-primary underline-offset-4 hover:underline"
+          className="inline-flex items-center gap-1.5 text-[length:calc(13px*var(--px,1))] font-medium text-primary underline-offset-4 hover:underline"
         >
           <Plus className="size-3.5" aria-hidden="true" />
           Set up another business
@@ -104,7 +104,7 @@ function NextCharge({ view, supportHref }: { view: BillingView; supportHref: str
       <>
         <div>
           <p className="text-sm font-medium">{first ? "First charge" : "Next charge"}</p>
-          <p className="mt-0.5 text-[13px] text-muted-foreground">
+          <p className="mt-0.5 text-[length:calc(13px*var(--px,1))] text-muted-foreground">
             {first && view.trialEnded ? (
               <>Due now. Your free trial ended on <LocalDate iso={view.nextCharge.at} /></>
             ) : (

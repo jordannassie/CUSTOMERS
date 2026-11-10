@@ -9,7 +9,7 @@ import { PILL_CLASS } from "@/components/app/pills";
 
 const SHORT: Intl.DateTimeFormatOptions = { month: "short", day: "numeric" };
 const DOT: Record<string, string> = { openai: "bg-chatgpt", anthropic: "bg-claude", perplexity: "bg-perplexity" };
-const COLS = "grid grid-cols-[64px_minmax(0,1fr)_auto] items-center gap-3 sm:grid-cols-[72px_minmax(0,1fr)_88px_52px]";
+const COLS = "grid grid-cols-[calc(64px*var(--px,1))_minmax(0,1fr)_auto] items-center gap-3 sm:grid-cols-[calc(72px*var(--px,1))_minmax(0,1fr)_calc(88px*var(--px,1))_calc(52px*var(--px,1))]";
 
 /** The answer's first words, without markdown marks, for its row. */
 const preview = (text: string) => text.replace(/[*#_`>|]/g, "").replace(/\s+/g, " ").trim();
@@ -37,7 +37,7 @@ export function AnswerRows({ answers, businessName }: { answers: QuestionAnswer[
               aria-label={`${a.label} ${a.namedYou ? "named you" : "not named"}`}
               className={cn(
                 COLS,
-                "w-full border-b border-border/60 px-3.5 py-3 text-left text-[13px] outline-none last:border-b-0 hover:bg-muted/50 focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:ring-inset data-[state=active]:bg-primary-tint/50 data-[state=active]:shadow-[inset_2px_0_0_var(--primary)]",
+                "w-full border-b border-border/60 px-3.5 py-3 text-left text-[length:calc(13px*var(--px,1))] outline-none last:border-b-0 hover:bg-muted/50 focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:ring-inset data-[state=active]:bg-primary-tint/50 data-[state=active]:shadow-[inset_2px_0_0_var(--primary)]",
               )}
             >
               <span
@@ -62,7 +62,7 @@ export function AnswerRows({ answers, businessName }: { answers: QuestionAnswer[
                     key={n}
                     aria-hidden="true"
                     className={cn(
-                      "grid size-6 place-items-center rounded-full border-2 border-surface text-[10px] font-semibold",
+                      "grid size-6 place-items-center rounded-full border-2 border-surface text-[length:calc(10px*var(--px,1))] font-semibold",
                       i > 0 && "-ml-1.5",
                       n === businessName && a.namedYou ? PILL_CLASS.plain : PILL_CLASS.attention,
                     )}

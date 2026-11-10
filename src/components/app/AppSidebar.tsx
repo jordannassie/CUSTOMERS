@@ -26,10 +26,10 @@ export type AppSidebarProps = {
 
 // One row style for menu links and footer links: 32px tall, 16px icon, a light blue tint on the page you are on.
 const ROW =
-  "flex h-8 w-full items-center gap-2.5 rounded-md px-2.5 text-[12.5px] outline-none transition-colors focus-visible:ring-3 focus-visible:ring-ring/50";
+  "flex h-8 w-full items-center gap-2.5 rounded-md px-2.5 text-[length:calc(12.5px*var(--px,1))] outline-none transition-colors focus-visible:ring-3 focus-visible:ring-ring/50";
 const ROW_IDLE = "text-foreground/75 hover:bg-foreground/5 hover:text-foreground";
 const FOOTER_ITEM = cn(ROW, ROW_IDLE, "[&_svg]:size-4 [&_svg]:shrink-0 [&_svg]:stroke-[1.75] [&_svg]:text-muted-foreground");
-const GROUP_LABEL = "px-2.5 pb-1 text-[11px] font-medium text-text-hint";
+const GROUP_LABEL = "px-2.5 pb-1 text-[length:calc(11px*var(--px,1))] font-medium text-text-hint";
 
 export function AppSidebar({
   businesses,
@@ -58,8 +58,8 @@ export function AppSidebar({
 
       {settingUp ? (
         <div className="rounded-md border border-border bg-surface px-2.5 py-1.5" data-testid="setting-up">
-          <p className="text-[11px] text-muted-foreground">Setting up</p>
-          <p className="line-clamp-2 text-[13px] font-medium break-words">
+          <p className="text-[length:calc(11px*var(--px,1))] text-muted-foreground">Setting up</p>
+          <p className="line-clamp-2 text-[length:calc(13px*var(--px,1))] font-medium break-words">
             {setupLabel(pathname, setupName, businesses.find((b) => b.id === activeBusinessId)?.name ?? null)}
           </p>
         </div>

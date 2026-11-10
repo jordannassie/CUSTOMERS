@@ -8,10 +8,10 @@ import { MrDirectAvatar } from "@/components/site/MrDirectAvatar";
 type Stage = "opening" | "form" | "done";
 
 const CHAT_CHOICES: { value: InterestValue; label: string; icon: React.ReactNode }[] = [
-  { value: "ai_visibility", label: "AI visibility",  icon: <BarChart3 className="size-[18px]" aria-hidden="true" /> },
-  { value: "agency",        label: "Join as an agency", icon: <Building2 className="size-[18px]" aria-hidden="true" /> },
-  { value: "book_demo",     label: "Book a demo call", icon: <Calendar className="size-[18px]" aria-hidden="true" /> },
-  { value: "other",         label: "Other",          icon: <MessageSquare className="size-[18px]" aria-hidden="true" /> },
+  { value: "ai_visibility", label: "AI visibility",  icon: <BarChart3 className="size-[calc(18px*var(--px,1))]" aria-hidden="true" /> },
+  { value: "agency",        label: "Join as an agency", icon: <Building2 className="size-[calc(18px*var(--px,1))]" aria-hidden="true" /> },
+  { value: "book_demo",     label: "Book a demo call", icon: <Calendar className="size-[calc(18px*var(--px,1))]" aria-hidden="true" /> },
+  { value: "other",         label: "Other",          icon: <MessageSquare className="size-[calc(18px*var(--px,1))]" aria-hidden="true" /> },
 ];
 
 // The chat speaks as Mr. Direct, the site's guide (merged from main).
@@ -37,7 +37,7 @@ const iconButton =
   "flex size-8 items-center justify-center rounded-md text-muted-foreground transition-colors duration-150 ease-out hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50";
 
 const textButton =
-  "rounded-sm text-[13px] text-muted-foreground transition-colors duration-150 ease-out hover:text-foreground focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50";
+  "rounded-sm text-[length:calc(13px*var(--px,1))] text-muted-foreground transition-colors duration-150 ease-out hover:text-foreground focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50";
 
 const enter = "motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-2 duration-200 ease-out";
 
@@ -106,13 +106,13 @@ export default function ChatWidget() {
       {/* Only on wide screens, where it sits in the empty margin beside the content. */}
       {showMsg && !open && showLauncher && (
         <div
-          className={`fixed bottom-20 right-6 z-50 hidden max-w-[160px] cursor-pointer rounded-md border border-border bg-surface px-4 py-3 text-[13px] text-foreground shadow-float min-[1400px]:block ${enter}`}
+          className={`fixed bottom-20 right-6 z-50 hidden max-w-[calc(160px*var(--px,1))] cursor-pointer rounded-md border border-border bg-surface px-4 py-3 text-[length:calc(13px*var(--px,1))] text-foreground shadow-float min-[1400px]:block ${enter}`}
           onClick={handleToggle}
           role="button"
           aria-label="Open chat"
         >
           {GREETING}
-          <div className="absolute -bottom-[5px] right-6 size-2.5 rotate-45 border-r border-b border-border bg-surface" />
+          <div className="absolute -bottom-[calc(5px*var(--px,1))] right-6 size-2.5 rotate-45 border-r border-b border-border bg-surface" />
         </div>
       )}
 
@@ -139,7 +139,7 @@ export default function ChatWidget() {
           className={[
             "fixed z-50 flex flex-col overflow-hidden border border-border bg-surface shadow-float",
             "inset-x-0 bottom-0 max-h-[min(90dvh,90vh)] rounded-t-md",
-            "sm:bottom-20 sm:right-6 sm:left-auto sm:w-[380px] sm:max-h-[80vh] sm:rounded-md",
+            "sm:bottom-20 sm:right-6 sm:left-auto sm:w-[calc(380px*var(--px,1))] sm:max-h-[80vh] sm:rounded-md",
             enter,
           ].join(" ")}
         >
@@ -155,7 +155,7 @@ export default function ChatWidget() {
               </button>
             )}
             <button onClick={() => setOpen(false)} aria-label="Close chat" className={iconButton}>
-              <X className="size-[18px]" aria-hidden="true" />
+              <X className="size-[calc(18px*var(--px,1))]" aria-hidden="true" />
             </button>
           </div>
 
@@ -192,7 +192,7 @@ export default function ChatWidget() {
                     Back
                   </button>
                   <span className="h-3.5 w-px bg-border" aria-hidden="true" />
-                  <span className="text-[13px] font-medium text-foreground">
+                  <span className="text-[length:calc(13px*var(--px,1))] font-medium text-foreground">
                     {CHAT_CHOICES.find((c) => c.value === interest)?.label}
                   </span>
                 </div>
@@ -213,8 +213,8 @@ export default function ChatWidget() {
                   <Check className="size-6" aria-hidden="true" />
                 </div>
                 <div>
-                  <p className="mb-1 text-[15px] font-semibold text-foreground">Thanks, we got your message.</p>
-                  <p className="text-[13px] text-muted-foreground">We&apos;ll be in touch within 24 hours.</p>
+                  <p className="mb-1 text-[length:calc(15px*var(--px,1))] font-semibold text-foreground">Thanks, we got your message.</p>
+                  <p className="text-[length:calc(13px*var(--px,1))] text-muted-foreground">We&apos;ll be in touch within 24 hours.</p>
                 </div>
                 <button onClick={reset} className={`mt-2 underline ${textButton}`}>
                   Send another message

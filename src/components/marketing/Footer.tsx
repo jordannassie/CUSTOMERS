@@ -57,7 +57,7 @@ const linkClass =
 export default function Footer({ showGoogleAttribution = false }: { showGoogleAttribution?: boolean }) {
   return (
     <footer className="border-t border-border bg-surface">
-      <div className="mx-auto max-w-[1120px] px-4 py-12 sm:px-6 sm:py-16">
+      <div className="mx-auto max-w-[calc(1120px*var(--px,1))] px-4 py-12 sm:px-6 sm:py-16">
         <div className="grid gap-10 md:grid-cols-[1.4fr_repeat(4,1fr)]">
           <div className="flex flex-col gap-4">
             <Logo className="h-8 w-auto" />
@@ -65,10 +65,10 @@ export default function Footer({ showGoogleAttribution = false }: { showGoogleAt
               See if AI assistants recommend your business, why competitors win, and what to fix.
             </p>
             <div>
-              <p className="text-[13px] font-medium">Tracks ChatGPT, Claude and Perplexity</p>
+              <p className="text-[length:calc(13px*var(--px,1))] font-medium">Tracks ChatGPT, Claude and Perplexity</p>
               <ul className="mt-2 flex flex-wrap gap-x-4 gap-y-1" aria-label="AI assistants we track">
                 {MODELS.map(({ name, dot }) => (
-                  <li key={name} className="flex items-center gap-1.5 text-[13px] text-muted-foreground">
+                  <li key={name} className="flex items-center gap-1.5 text-[length:calc(13px*var(--px,1))] text-muted-foreground">
                     <span className={`size-2 rounded-full ${dot}`} aria-hidden="true" />
                     {name}
                   </li>
@@ -80,7 +80,7 @@ export default function Footer({ showGoogleAttribution = false }: { showGoogleAt
           <div className="grid grid-cols-2 gap-8 sm:grid-cols-4 md:contents">
             {COLUMNS.map(({ heading, links }) => (
               <nav key={heading} aria-label={heading}>
-                <h2 className="text-[13px] font-semibold">{heading}</h2>
+                <h2 className="text-[length:calc(13px*var(--px,1))] font-semibold">{heading}</h2>
                 <ul className="mt-1 flex flex-col sm:mt-3 sm:gap-2.5">
                   {links.map(({ label, href }) => (
                     <li key={href}>
@@ -95,7 +95,7 @@ export default function Footer({ showGoogleAttribution = false }: { showGoogleAt
           </div>
         </div>
 
-        <div className="mt-12 flex flex-col gap-3 border-t border-border pt-6 text-[13px] text-text-hint">
+        <div className="mt-12 flex flex-col gap-3 border-t border-border pt-6 text-[length:calc(13px*var(--px,1))] text-text-hint">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <p>© {YEAR} Customers.Direct</p>
             <ul className="flex gap-5">

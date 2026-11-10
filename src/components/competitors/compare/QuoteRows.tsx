@@ -119,11 +119,11 @@ export function Said({
       </figcaption>
       {quote ? (
         <>
-          <blockquote className="m-0 text-[13px] leading-relaxed text-foreground">&ldquo;{quoteAround(quote, about)}&rdquo;</blockquote>
+          <blockquote className="m-0 text-[length:calc(13px*var(--px,1))] leading-relaxed text-foreground">&ldquo;{quoteAround(quote, about)}&rdquo;</blockquote>
           {page !== undefined && <span className="text-xs text-text-hint">{pageName(page ?? null)}</span>}
         </>
       ) : (
-        <span className="text-[13px] text-muted-foreground">{fallback}</span>
+        <span className="text-[length:calc(13px*var(--px,1))] text-muted-foreground">{fallback}</span>
       )}
     </figure>
   );

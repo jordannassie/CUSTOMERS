@@ -1,4 +1,5 @@
-import { ExampleTag, MODEL_DOT, type ModelName } from "./example";
+import { ArrowUp } from "lucide-react";
+import { ExampleTag, type ModelName } from "./example";
 import { MiniChart } from "./TrendChart";
 
 const SCORE = 62;
@@ -23,37 +24,37 @@ export function VisibilityExample() {
           role="img"
           aria-label={`Visibility score ${SCORE} of 100`}
           style={{ "--v": SCORE } as React.CSSProperties}
-          className="grid size-[88px] shrink-0 place-items-center rounded-full bg-[conic-gradient(var(--cd-mid)_calc(var(--v)*1%),var(--cd-muted)_0)]"
+          className="grid size-[calc(88px*var(--px,1))] shrink-0 place-items-center rounded-full bg-[conic-gradient(var(--cd-primary)_calc(var(--v)*1%),var(--cd-muted)_0)]"
         >
-          <span className="tabular grid size-[70px] place-items-center rounded-full bg-surface text-2xl font-bold">
+          <span className="tabular grid size-[calc(70px*var(--px,1))] place-items-center rounded-full bg-surface text-2xl font-bold">
             {SCORE}
           </span>
         </div>
         <div className="flex min-w-0 flex-col gap-1">
           <p className="text-sm font-semibold">Good confidence</p>
-          <p className="text-[13px] text-muted-foreground">
+          <p className="text-[length:calc(13px*var(--px,1))] text-muted-foreground">
             AI recommended you in about 6 of 10 customer questions this month.
           </p>
         </div>
       </div>
 
       <div className="border-t border-border px-4 pt-4 sm:px-5">
-        <div className="flex items-baseline justify-between text-[13px]">
+        <div className="flex items-baseline justify-between text-[length:calc(13px*var(--px,1))]">
           <span className="font-medium">Score at each scan</span>
-          <span className="text-good-text">Up 9 points since Sep 2</span>
+          <span className="inline-flex items-center gap-1 font-medium text-foreground">
+            <ArrowUp className="size-3.5" aria-hidden="true" />
+            Up 9 points since Sep 2
+          </span>
         </div>
         <MiniChart values={SCANS} label="Visibility score at each weekly scan, rising from 53 to 62" />
       </div>
 
       <ul className="flex flex-col gap-2.5 border-t border-border p-4 sm:p-5" aria-label="Score by AI">
         {MODELS.map(({ name, score }) => (
-          <li key={name} className="grid grid-cols-[96px_1fr_36px] items-center gap-3 text-sm">
-            <span className="flex items-center gap-2">
-              <span className={`size-2 rounded-full ${MODEL_DOT[name]}`} aria-hidden="true" />
-              {name}
-            </span>
-            <span className="h-2 overflow-hidden rounded-xs bg-muted" aria-hidden="true">
-              <span className={`block h-full rounded-xs ${MODEL_DOT[name]}`} style={{ width: `${score}%` }} />
+          <li key={name} className="grid grid-cols-[calc(96px*var(--px,1))_1fr_calc(36px*var(--px,1))] items-center gap-3 text-sm">
+            <span>{name}</span>
+            <span className="h-2 overflow-hidden rounded-full bg-muted" aria-hidden="true">
+              <span className="block h-full rounded-full bg-primary" style={{ width: `${score}%` }} />
             </span>
             <span className="tabular text-right">{score}</span>
           </li>

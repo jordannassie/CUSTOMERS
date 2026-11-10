@@ -24,7 +24,7 @@ export function Credits({ plans, packs }: { plans: PublicPlan[]; packs: PublicPa
             location. Each new answer uses 1 credit, whichever AI gives it. Answers reused from a recent scan are free, and
             if a check fails on our side, you are not charged.
           </Lead>
-          <p className="text-[15px] text-muted-foreground">
+          <p className="text-[length:calc(15px*var(--px,1))] text-muted-foreground">
             Every business on your account adds its monthly credits to one shared pool, so a busy client can use what a
             quiet one does not. Plan credits reset at each renewal.
           </p>
@@ -33,15 +33,15 @@ export function Credits({ plans, packs }: { plans: PublicPlan[]; packs: PublicPa
         <figure className="self-start rounded-md border border-border bg-surface">
           <figcaption className="border-b border-border px-5 py-4">
             <p className="text-sm font-semibold">What a business uses in a month</p>
-            <p className="mt-1 text-[13px] text-muted-foreground">
+            <p className="mt-1 text-[length:calc(13px*var(--px,1))] text-muted-foreground">
               {QUESTIONS} questions × {MODELS} AI assistants × scans per month
             </p>
           </figcaption>
           <dl className="divide-y divide-border">
             {SCHEDULES.map(({ key, label }) => (
               <div key={key} className="flex items-baseline justify-between gap-4 px-5 py-4">
-                <dt className="text-[15px]">Scan {label.toLowerCase()}</dt>
-                <dd className="text-[15px]">
+                <dt className="text-[length:calc(15px*var(--px,1))]">Scan {label.toLowerCase()}</dt>
+                <dd className="text-[length:calc(15px*var(--px,1))]">
                   <span className="tabular font-semibold">{formatCount(estimateMonthlyCredits(QUESTIONS, MODELS, key))}</span>{" "}
                   <span className="text-muted-foreground">credits</span>
                 </dd>
@@ -49,7 +49,7 @@ export function Credits({ plans, packs }: { plans: PublicPlan[]; packs: PublicPa
             ))}
           </dl>
           {smallest && (
-            <p className="border-t border-border px-5 py-4 text-[13px] text-muted-foreground">
+            <p className="border-t border-border px-5 py-4 text-[length:calc(13px*var(--px,1))] text-muted-foreground">
               {smallest.name} includes {formatCount(smallest.monthlyCredits)} credits a month per business.
             </p>
           )}
@@ -60,7 +60,7 @@ export function Credits({ plans, packs }: { plans: PublicPlan[]; packs: PublicPa
         <div id="top-ups" className="mt-16 grid gap-8 border-t border-border pt-12 md:grid-cols-2 md:gap-16">
           <div className="flex flex-col gap-3">
             <h3 className="text-2xl leading-tight font-semibold tracking-[-0.02em]">Need more? Buy a top-up</h3>
-            <p className="text-[15px] text-muted-foreground">
+            <p className="text-[length:calc(15px*var(--px,1))] text-muted-foreground">
               Top-up credits never expire and are used after your plan credits. You can spend them while you have a
               plan or trial. Unused top-ups can be refunded within 14 days.
             </p>
@@ -68,13 +68,13 @@ export function Credits({ plans, packs }: { plans: PublicPlan[]; packs: PublicPa
           <ul className="grid gap-4 sm:grid-cols-2">
             {packs.map((pack) => (
               <li key={pack.id} data-pack-id={pack.id} className="rounded-md border border-border bg-surface p-5">
-                <p className="text-[15px] font-medium">
+                <p className="text-[length:calc(15px*var(--px,1))] font-medium">
                   <span data-testid="pack-credits" className="tabular">{formatCount(pack.credits)}</span> credits
                 </p>
-                <p data-testid="pack-price" className="tabular mt-2 text-[32px] leading-10 font-semibold tracking-[-0.03em]">
+                <p data-testid="pack-price" className="tabular mt-2 text-[length:calc(32px*var(--px,1))] leading-10 font-semibold tracking-[-0.03em]">
                   {formatUsd(pack.priceCents)}
                 </p>
-                <p className="mt-1 text-[13px] text-text-hint">One-time payment</p>
+                <p className="mt-1 text-[length:calc(13px*var(--px,1))] text-text-hint">One-time payment</p>
               </li>
             ))}
           </ul>

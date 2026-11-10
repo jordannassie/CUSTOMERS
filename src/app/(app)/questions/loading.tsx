@@ -43,9 +43,9 @@ export default function QuestionsLoading() {
           {Array.from({ length: 6 }, (_, i) => (
             <div
               key={i}
-              className="grid grid-cols-[40px_minmax(0,1fr)] items-center gap-3 border-b border-border px-4 py-3.5 last:border-b-0 lg:grid-cols-[84px_minmax(0,1fr)_96px_80px_112px_36px] lg:gap-x-4"
+              className="grid grid-cols-[calc(40px*var(--px,1))_minmax(0,1fr)] items-center gap-3 border-b border-border px-4 py-3.5 last:border-b-0 lg:grid-cols-[calc(84px*var(--px,1))_minmax(0,1fr)_calc(96px*var(--px,1))_calc(80px*var(--px,1))_calc(112px*var(--px,1))_calc(36px*var(--px,1))] lg:gap-x-4"
             >
-              <Skeleton className="size-[34px] rounded-full" />
+              <Skeleton className="size-[calc(34px*var(--px,1))] rounded-full" />
               <Skeleton className="h-5 max-w-md" />
               <Skeleton className="hidden h-5 lg:block" />
               <Skeleton className="hidden h-5 lg:block" />

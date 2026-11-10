@@ -43,13 +43,13 @@ export default function ScansList({ list, status }: { list: AdminScanList; statu
       ) : (
         <>
           <div className="hidden rounded-md border border-border bg-surface md:block">
-            <Table className="text-[13px]">
+            <Table className="text-[length:calc(13px*var(--px,1))]">
               <TableHeader>
                 <TableRow>
                   {["Business", "Status", "Models", "Credits", "Real cost", "Duration", "Started", "Error", ""].map((h, i) => (
                     <TableHead
                       key={h || i}
-                      className={cn("px-2 text-[12px] font-medium text-muted-foreground", (h === "Credits" || h === "Real cost" || h === "Duration") && "text-right")}
+                      className={cn("px-2 text-[length:calc(12px*var(--px,1))] font-medium text-muted-foreground", (h === "Credits" || h === "Real cost" || h === "Duration") && "text-right")}
                     >
                       {h}
                     </TableHead>
@@ -59,7 +59,7 @@ export default function ScansList({ list, status }: { list: AdminScanList; statu
               <TableBody>
                 {rows.map((row) => (
                   <TableRow key={row.id} data-job={row.id} data-status={row.status} className={cn(row.status === "failed" && "bg-low-bg/40")}>
-                    <TableCell className="px-2 max-w-[200px]">
+                    <TableCell className="px-2 max-w-[calc(200px*var(--px,1))]">
                       <BusinessCell row={row} />
                     </TableCell>
                     <TableCell className="px-2">
@@ -72,7 +72,7 @@ export default function ScansList({ list, status }: { list: AdminScanList; statu
                     <TableCell className="px-2 tabular text-right">{money(row.costUsd) || <Dash />}</TableCell>
                     <TableCell className="px-2 tabular text-right">{formatDuration(row.durationMs) || <Dash />}</TableCell>
                     <TableCell className="px-2 tabular whitespace-nowrap text-muted-foreground">{formatDate(row.createdAt, true)}</TableCell>
-                    <TableCell className="px-2 max-w-[240px]">
+                    <TableCell className="px-2 max-w-[calc(240px*var(--px,1))]">
                       {row.error ? (
                         <p title={row.error} className="line-clamp-2 whitespace-normal text-low-text">
                           {row.error}
@@ -97,15 +97,15 @@ export default function ScansList({ list, status }: { list: AdminScanList; statu
                   <BusinessCell row={row} />
                   <ScanStatusBadge status={row.status} />
                 </div>
-                <ModelList models={row.models} className="text-[13px]" />
-                <dl className="grid grid-cols-3 gap-2 text-[13px]">
+                <ModelList models={row.models} className="text-[length:calc(13px*var(--px,1))]" />
+                <dl className="grid grid-cols-3 gap-2 text-[length:calc(13px*var(--px,1))]">
                   <Stat label="Credits" value={String(row.creditsCharged)} />
                   <Stat label="Real cost" value={money(row.costUsd)} />
                   <Stat label="Duration" value={formatDuration(row.durationMs)} />
                 </dl>
-                {row.error && <p className="text-[13px] text-low-text">{row.error}</p>}
+                {row.error && <p className="text-[length:calc(13px*var(--px,1))] text-low-text">{row.error}</p>}
                 <div className="flex items-center justify-between gap-3">
-                  <span className="tabular text-[12px] text-text-hint">{formatDate(row.createdAt, true)}</span>
+                  <span className="tabular text-[length:calc(12px*var(--px,1))] text-text-hint">{formatDate(row.createdAt, true)}</span>
                   {canRetry(row) && <Retry row={row} />}
                 </div>
               </li>
@@ -113,7 +113,7 @@ export default function ScansList({ list, status }: { list: AdminScanList; statu
           </ul>
 
           {total > rows.length && (
-            <p className="text-[13px] text-muted-foreground">
+            <p className="text-[length:calc(13px*var(--px,1))] text-muted-foreground">
               Showing the newest {SCAN_LIST_LIMIT} of <span className="tabular">{total}</span> scans.
             </p>
           )}
@@ -134,12 +134,12 @@ function BusinessCell({ row }: { row: AdminScanRow }) {
     <div className="min-w-0">
       <Link
         href={`/internal/admin/businesses/${row.businessId}`}
-        className="block truncate text-[14px] font-medium text-primary hover:underline"
+        className="block truncate text-[length:calc(14px*var(--px,1))] font-medium text-primary hover:underline"
         title={row.businessName}
       >
         {row.businessName}
       </Link>
-      <p className="flex items-center gap-1.5 truncate text-[12px] text-muted-foreground">
+      <p className="flex items-center gap-1.5 truncate text-[length:calc(12px*var(--px,1))] text-muted-foreground">
         {row.agencyId ? (
           <Link href={`/internal/admin/agencies/${row.agencyId}`} className="truncate hover:text-primary hover:underline" title={row.agencyName}>
             {row.agencyName}
@@ -157,7 +157,7 @@ function BusinessCell({ row }: { row: AdminScanRow }) {
 function Stat({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <dt className="text-[12px] text-muted-foreground">{label}</dt>
+      <dt className="text-[length:calc(12px*var(--px,1))] text-muted-foreground">{label}</dt>
       <dd className="tabular font-medium">{value || <Dash />}</dd>
     </div>
   );

@@ -158,7 +158,7 @@ export function NoPlan({ ended, gone, choosePlanHref, supportHref }: NoPlanProps
     return (
       <section className="rounded-md border border-dashed border-border bg-surface px-6 py-10 text-center" data-testid="plan-other-mode">
         <h2 className="text-base font-semibold tracking-[-0.02em]">Your plan is with another payment account</h2>
-        <p className="mx-auto mt-3 max-w-[440px] text-sm text-muted-foreground">
+        <p className="mx-auto mt-3 max-w-[calc(440px*var(--px,1))] text-sm text-muted-foreground">
           This site can&apos;t show or change it. Contact us and we&apos;ll sort it out.
         </p>
         <Button asChild className="mt-3">
@@ -171,7 +171,7 @@ export function NoPlan({ ended, gone, choosePlanHref, supportHref }: NoPlanProps
     return (
       <section className="rounded-md border border-dashed border-border bg-surface px-6 py-10 text-center" data-testid="plan-missing">
         <h2 className="text-base font-semibold tracking-[-0.02em]">We couldn&apos;t find your plan</h2>
-        <p className="mx-auto mt-3 max-w-[440px] text-sm text-muted-foreground">
+        <p className="mx-auto mt-3 max-w-[calc(440px*var(--px,1))] text-sm text-muted-foreground">
           Our payment provider has no record of it. Your results are still here. Start your plan again to keep your scans
           running.
         </p>
@@ -189,7 +189,7 @@ export function NoPlan({ ended, gone, choosePlanHref, supportHref }: NoPlanProps
   return (
     <section className="rounded-md border border-dashed border-border bg-surface px-6 py-10 text-center" data-testid="no-plan">
       <h2 className="text-base font-semibold tracking-[-0.02em]">{ended ? "Your plan has ended" : "You don't have a plan yet"}</h2>
-      <p className="mx-auto mt-3 max-w-[440px] text-sm text-muted-foreground">
+      <p className="mx-auto mt-3 max-w-[calc(440px*var(--px,1))] text-sm text-muted-foreground">
         {ended
           ? "Your results are still here to read. Choose a plan to start your scans again."
           : "Choose a plan for your businesses to keep your scans running."}

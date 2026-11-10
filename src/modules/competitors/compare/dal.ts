@@ -47,6 +47,8 @@ export type Comparison = {
 export type ComparePage = {
   businessId: string;
   businessName: string;
+  /** Your website, for your icon beside the competitor's in the "{you} vs {them}" heading. */
+  businessDomain: string | null;
   options: CompareOption[];
   /** Businesses AI named that you don't track, for "+ Any business AI named". */
   also: { name: string; answers: number }[];
@@ -78,7 +80,7 @@ export async function getComparePage(businessId: string, competitorId: string | 
   const asked = competitorId ? idFor.get(competitorId) : undefined;
   const pick = asked ?? defaultPick(options);
   const panel = panels.find((p) => p.competitorId === pick);
-  const page = { businessId, businessName: view.businessName, options, also: view.also };
+  const page = { businessId, businessName: view.businessName, businessDomain: inputs.data.you.domain ?? null, options, also: view.also };
   if (!panel) return { ...page, selected: null };
 
   const row = rowFor(view.leaderboard, panel.trackedName);

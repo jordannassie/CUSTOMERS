@@ -71,9 +71,9 @@ function Row(props: { title: string; value: React.ReactNode; note?: React.ReactN
     <div className="flex flex-col gap-4 px-5 py-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-[13px] text-muted-foreground">{props.title}</p>
+          <p className="text-[length:calc(13px*var(--px,1))] text-muted-foreground">{props.title}</p>
           <p className="truncate text-sm font-medium" title={typeof props.value === "string" ? props.value : undefined}>{props.value}</p>
-          {props.note && <p className="mt-1 text-[13px]">{props.note}</p>}
+          {props.note && <p className="mt-1 text-[length:calc(13px*var(--px,1))]">{props.note}</p>}
         </div>
         {props.action}
       </div>
@@ -140,7 +140,7 @@ function EmailForm(props: { hasPassword: boolean; changeEmail: ChangeEmailAction
           fields={fields}
         />
       )}
-      <p className="text-[13px] text-muted-foreground">We email a link to confirm the change. Until you click it, you keep logging in with your current email.</p>
+      <p className="text-[length:calc(13px*var(--px,1))] text-muted-foreground">We email a link to confirm the change. Until you click it, you keep logging in with your current email.</p>
       <FormError message={error} />
       <Actions saving={saving} submitLabel="Send confirmation link" onCancel={props.onCancel} />
     </form>
@@ -208,7 +208,7 @@ function PasswordForm({ changePassword, onClose }: { changePassword: ChangePassw
       {code !== null && (
         <div className="flex flex-col gap-1.5 rounded-md bg-mid-bg p-3">
           <Label htmlFor="reauth-code">Code from your email</Label>
-          <p className="text-[13px] text-mid-text">For your security we emailed you a code. Enter it to finish.</p>
+          <p className="text-[length:calc(13px*var(--px,1))] text-mid-text">For your security we emailed you a code. Enter it to finish.</p>
           <Input id="reauth-code" inputMode="numeric" autoComplete="one-time-code" required value={code} onChange={(e) => setCode(e.target.value)} />
         </div>
       )}

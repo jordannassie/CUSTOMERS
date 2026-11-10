@@ -12,7 +12,7 @@ function SummaryCard({ title, parts, testId }: { title: string; parts: Part[]; t
   return (
     <section className="flex flex-col gap-3 rounded-lg border border-border bg-surface px-4 pt-3.5 pb-4" data-testid={testId} aria-label={title}>
       <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
-        <h2 className="text-[13.5px] font-semibold">{title}</h2>
+        <h2 className="text-[length:calc(13.5px*var(--px,1))] font-semibold">{title}</h2>
         <ul className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
           {shown.map((p) => (
             <li key={p.label} className="inline-flex items-center gap-1.5">
@@ -22,7 +22,7 @@ function SummaryCard({ title, parts, testId }: { title: string; parts: Part[]; t
           ))}
         </ul>
       </div>
-      <div className="flex h-2 gap-[3px]" aria-hidden="true">
+      <div className="flex h-2 gap-[calc(3px*var(--px,1))]" aria-hidden="true">
         {shown.map((p) => (
           <i key={p.label} className={cn("block rounded-full", p.className)} style={{ flex: p.count, ...(p.color ? { background: p.color } : {}) }} />
         ))}
@@ -71,7 +71,7 @@ function topicParts(rows: QuestionRow[]): Part[] {
 function ModelCard({ view }: { view: QuestionsView }) {
   return (
     <section className="flex flex-col gap-2.5 rounded-lg border border-border bg-surface px-4 pt-3.5 pb-4" data-testid="summary-models" aria-label="Each AI">
-      <h2 className="text-[13.5px] font-semibold">Each AI, recent checks</h2>
+      <h2 className="text-[length:calc(13.5px*var(--px,1))] font-semibold">Each AI, recent checks</h2>
       <ul className="flex flex-col gap-2">
         {view.models.map((m) => {
           const results = view.active.flatMap((r) => r.results.filter((x) => x.model === m.id));
@@ -79,7 +79,7 @@ function ModelCard({ view }: { view: QuestionsView }) {
           const appeared = results.reduce((n, x) => n + x.appeared, 0);
           const pct = checks ? Math.round((appeared / checks) * 100) : 0;
           return (
-            <li key={m.id} className="grid grid-cols-[96px_minmax(0,1fr)_auto] items-center gap-3 text-xs">
+            <li key={m.id} className="grid grid-cols-[calc(96px*var(--px,1))_minmax(0,1fr)_auto] items-center gap-3 text-xs">
               <span className="font-medium">{m.label}</span>
               <span className="h-2 overflow-hidden rounded-full bg-muted" aria-hidden="true">
                 <span className="block h-full rounded-full bg-primary" style={{ width: `${pct}%` }} />

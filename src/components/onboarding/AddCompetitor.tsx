@@ -77,7 +77,7 @@ export function AddCompetitor({ businessId, lookup, isPicked, onAdd }: Props) {
       </form>
 
       {message ? (
-        <p role="status" className="text-[13px] text-muted-foreground">
+        <p role="status" className="text-[length:calc(13px*var(--px,1))] text-muted-foreground">
           {message}
         </p>
       ) : null}
@@ -94,7 +94,7 @@ export function AddCompetitor({ businessId, lookup, isPicked, onAdd }: Props) {
                       <span className="min-w-0 flex-1">
                         <span className="block truncate text-sm font-medium" title={m.name}>{m.name}</span>
                         {m.address || m.distance ? (
-                          <span className="block truncate text-[13px] text-muted-foreground" title={m.address ?? undefined}>
+                          <span className="block truncate text-[length:calc(13px*var(--px,1))] text-muted-foreground" title={m.address ?? undefined}>
                             {[m.distance, m.address].filter(Boolean).join(" · ")}
                           </span>
                         ) : null}
@@ -118,7 +118,7 @@ export function AddCompetitor({ businessId, lookup, isPicked, onAdd }: Props) {
               <GoogleAttribution className="border-t border-border px-4 py-2" />
             </>
           ) : (
-            <p className="px-4 py-3 text-[13px] text-muted-foreground">No Google listing matched &ldquo;{searched}&rdquo;.</p>
+            <p className="px-4 py-3 text-[length:calc(13px*var(--px,1))] text-muted-foreground">No Google listing matched &ldquo;{searched}&rdquo;.</p>
           )}
           <div className="border-t border-border px-4 py-2">
             <Button type="button" variant="link" size="sm" className="h-auto px-0" disabled={typedPicked} onClick={addTyped}>

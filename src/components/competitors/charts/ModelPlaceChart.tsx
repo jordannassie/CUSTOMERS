@@ -46,7 +46,7 @@ export function ModelPlaceChart({ view }: { view: CompetitorChartsView }) {
           return (
             <li key={String(row.model)} className="flex flex-col gap-2" data-testid="model-place">
               <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5">
-                <span className="text-[13px] font-medium">{String(row.model)}</span>
+                <span className="text-[length:calc(13px*var(--px,1))] font-medium">{String(row.model)}</span>
                 <span className="text-xs text-muted-foreground tabular-nums">{summary(p)}</span>
               </div>
               <div className="relative h-4" role="img" aria-label={`${String(row.model)}: ${summary(p)}`}>

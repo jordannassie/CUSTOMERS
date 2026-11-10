@@ -75,7 +75,7 @@ export function AppBanners({ banners: all }: { banners: AppBanner[] }) {
     <div
       className={cn(
         "mx-auto flex w-full flex-col gap-2 px-4 pt-3 sm:px-6 sm:pt-4",
-        wide ? "max-w-[1440px]" : "max-w-[1200px]",
+        wide ? "max-w-[calc(1440px*var(--px,1))]" : "max-w-[calc(1200px*var(--px,1))]",
       )}
       data-testid="app-banners"
     >
@@ -97,7 +97,7 @@ export function AppBanners({ banners: all }: { banners: AppBanner[] }) {
                 key={banner.kind}
                 role={banner.tone === "info" ? "status" : "alert"}
                 data-kind={banner.kind}
-                className="flex items-start gap-2 py-1.5 pr-1.5 pl-3 text-[13px] sm:items-center"
+                className="flex items-start gap-2 py-1.5 pr-1.5 pl-3 text-[length:calc(13px*var(--px,1))] sm:items-center"
               >
                 <div className="flex min-w-0 flex-1 flex-col gap-2 py-0.5 sm:flex-row sm:items-center">
                   <p className="flex flex-1 items-start gap-2">

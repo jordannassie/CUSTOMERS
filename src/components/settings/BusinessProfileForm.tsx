@@ -148,7 +148,7 @@ export function BusinessProfileForm({ business, save }: { business: SettingsBusi
         {websiteChanged && business.website && (
           <div
             data-testid="website-warning"
-            className="flex gap-3 rounded-md border border-mid/40 bg-mid-bg px-4 py-3 text-[13px] text-mid-text"
+            className="flex gap-3 rounded-md border border-mid/40 bg-mid-bg px-4 py-3 text-[length:calc(13px*var(--px,1))] text-mid-text"
           >
             <AlertTriangle className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
             <p>

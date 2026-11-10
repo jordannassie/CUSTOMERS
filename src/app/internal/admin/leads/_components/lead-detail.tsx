@@ -31,8 +31,8 @@ function CopyButton({ text, label }: { text: string; label: string }) {
 function Field({ label, children, className }: { label: string; children: React.ReactNode; className?: string }) {
   return (
     <div className={className}>
-      <p className="mb-1 text-[12px] font-medium text-text-hint">{label}</p>
-      <div className="text-[13px] text-foreground">{children}</div>
+      <p className="mb-1 text-[length:calc(12px*var(--px,1))] font-medium text-text-hint">{label}</p>
+      <div className="text-[length:calc(13px*var(--px,1))] text-foreground">{children}</div>
     </div>
   );
 }
@@ -82,21 +82,21 @@ export function LeadDetail({
 
       <div className="flex flex-1 flex-col gap-5 overflow-y-auto px-5 py-5">
         <div className="flex flex-col gap-1">
-          <h2 className="text-[15px] font-semibold text-foreground">{lead.name}</h2>
+          <h2 className="text-[length:calc(15px*var(--px,1))] font-semibold text-foreground">{lead.name}</h2>
           <div className="flex flex-wrap items-center gap-2">
-            <a href={`mailto:${lead.email}`} className="text-[13px] text-primary hover:underline">{lead.email}</a>
+            <a href={`mailto:${lead.email}`} className="text-[length:calc(13px*var(--px,1))] text-primary hover:underline">{lead.email}</a>
             <CopyButton text={lead.email} label="Copy email" />
           </div>
-          {lead.company && <p className="text-[13px] text-muted-foreground">{lead.company}</p>}
+          {lead.company && <p className="text-[length:calc(13px*var(--px,1))] text-muted-foreground">{lead.company}</p>}
           {lead.phone && (
-            <a href={`tel:${lead.phone}`} className="block text-[13px] text-foreground">{lead.phone}</a>
+            <a href={`tel:${lead.phone}`} className="block text-[length:calc(13px*var(--px,1))] text-foreground">{lead.phone}</a>
           )}
           {lead.website && (
             <a
               href={/^https?:\/\//i.test(lead.website) ? lead.website : `https://${lead.website}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="block truncate text-[13px] text-primary hover:underline"
+              className="block truncate text-[length:calc(13px*var(--px,1))] text-primary hover:underline"
             >
               {lead.website}
             </a>

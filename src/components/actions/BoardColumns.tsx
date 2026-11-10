@@ -28,9 +28,9 @@ function ColumnHead({ status, count }: { status: ActionStatus; count: number }) 
   const { icon: Icon, className } = STATUS_ICON[status];
   return (
     <>
-      <Icon className={cn("size-[15px] shrink-0", className)} aria-hidden="true" />
+      <Icon className={cn("size-[calc(15px*var(--px,1))] shrink-0", className)} aria-hidden="true" />
       {STATUS_TEXT[status]}
-      <span className="rounded-xs border border-border bg-surface px-1.5 text-[11px] font-medium text-muted-foreground tabular-nums">{count}</span>
+      <span className="rounded-xs border border-border bg-surface px-1.5 text-[length:calc(11px*var(--px,1))] font-medium text-muted-foreground tabular-nums">{count}</span>
     </>
   );
 }
@@ -50,17 +50,17 @@ export function BoardColumns({ items, pickedId, card }: { items: ActionItem[]; p
   return (
     <div className="flex flex-col gap-4">
       <div className="-mx-4 overflow-x-auto px-4 pb-2 sm:mx-0 sm:px-0" data-testid="action-board">
-        <div className="grid grid-cols-[repeat(4,minmax(245px,1fr))] gap-3">
+        <div className="grid grid-cols-[repeat(4,minmax(calc(245px*var(--px,1)),1fr))] gap-3">
           {BOARD.map((status) => {
             const column = items.filter((i) => i.status === status);
             return (
               <section
                 key={status}
-                className="flex min-h-[360px] flex-col gap-2.5 rounded-lg border border-border bg-muted p-2.5"
+                className="flex min-h-[calc(360px*var(--px,1))] flex-col gap-2.5 rounded-lg border border-border bg-muted p-2.5"
                 aria-label={STATUS_TEXT[status]}
                 data-testid={`column-${status}`}
               >
-                <h2 className="flex items-center gap-2 px-1 pt-1 pb-0.5 text-[13px] font-semibold">
+                <h2 className="flex items-center gap-2 px-1 pt-1 pb-0.5 text-[length:calc(13px*var(--px,1))] font-semibold">
                   <ColumnHead status={status} count={column.length} />
                 </h2>
                 {column.length === 0 ? <Empty status={status} /> : column.map(card)}
@@ -70,7 +70,7 @@ export function BoardColumns({ items, pickedId, card }: { items: ActionItem[]; p
         </div>
       </div>
       <section className="rounded-lg border border-border bg-muted p-2.5" aria-label={STATUS_TEXT.dismissed} data-testid="column-dismissed">
-        <h2 className="text-[13px] font-semibold">
+        <h2 className="text-[length:calc(13px*var(--px,1))] font-semibold">
           <button
             type="button"
             className="flex w-full items-center gap-2 rounded-sm px-1 py-0.5 text-left outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
@@ -82,7 +82,7 @@ export function BoardColumns({ items, pickedId, card }: { items: ActionItem[]; p
           </button>
         </h2>
         {/* The cards stay on the page while folded, so a move to Dismissed is counted and found like any column's. */}
-        <div className={cn("mt-2.5 grid grid-cols-[repeat(auto-fill,minmax(245px,1fr))] gap-3", !showDismissed && "hidden")}>
+        <div className={cn("mt-2.5 grid grid-cols-[repeat(auto-fill,minmax(calc(245px*var(--px,1)),1fr))] gap-3", !showDismissed && "hidden")}>
           {dismissed.length === 0 ? <Empty status="dismissed" /> : dismissed.map(card)}
         </div>
       </section>

@@ -28,13 +28,13 @@ export function PricingSummary({ plans }: { plans: PublicPlan[] }) {
           <div key={plan.id} data-plan-id={plan.id} className="flex flex-col gap-2 border-t-2 border-primary pt-5">
             <dt className="text-lg font-semibold tracking-[-0.02em]">{plan.name}</dt>
             <dd className="flex flex-col gap-1">
-              <span className="text-[15px] text-muted-foreground">
+              <span className="text-[length:calc(15px*var(--px,1))] text-muted-foreground">
                 <span data-testid="plan-price" className="tabular text-2xl font-semibold tracking-[-0.02em] text-foreground">
                   {formatUsd(plan.priceCents)}
                 </span>{" "}
                 per business a month
               </span>
-              <span className="text-[15px] text-muted-foreground">
+              <span className="text-[length:calc(15px*var(--px,1))] text-muted-foreground">
                 <span data-testid="plan-credits" className="tabular">{formatCount(plan.monthlyCredits)}</span> credits a month
               </span>
             </dd>
@@ -43,7 +43,7 @@ export function PricingSummary({ plans }: { plans: PublicPlan[] }) {
         {FACTS.map(({ title, body }) => (
           <div key={title} className="flex flex-col gap-2 border-t border-border pt-5">
             <dt className="text-lg font-semibold tracking-[-0.02em]">{title}</dt>
-            <dd className="text-[15px] text-muted-foreground">{body}</dd>
+            <dd className="text-[length:calc(15px*var(--px,1))] text-muted-foreground">{body}</dd>
           </div>
         ))}
       </dl>

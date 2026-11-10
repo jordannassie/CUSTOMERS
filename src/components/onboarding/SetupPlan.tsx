@@ -61,7 +61,7 @@ export function SetupPlan({ businessId, plans, currentId, note, choose }: Props)
             </Badge>
             <span className="text-sm tabular-nums">{formatUsd(current.priceCents)} a month</span>
           </p>
-          <p className="mt-3 text-[13px] text-muted-foreground">
+          <p className="mt-3 text-[length:calc(13px*var(--px,1))] text-muted-foreground">
             {formatCount(current.monthlyCredits)} credits a month
             {current.maxCompetitors ? `, up to ${current.maxCompetitors} competitors` : ""}
           </p>
@@ -81,7 +81,7 @@ export function SetupPlan({ businessId, plans, currentId, note, choose }: Props)
         </p>
       ) : null}
       {error ? (
-        <p role="alert" className="mt-3 rounded-md bg-low-bg px-3 py-2 text-[13px] text-low-text">
+        <p role="alert" className="mt-3 rounded-md bg-low-bg px-3 py-2 text-[length:calc(13px*var(--px,1))] text-low-text">
           {error}
         </p>
       ) : null}

@@ -10,7 +10,7 @@ export default function AdminError({ error, retry }: { error: Error & { digest?:
   }, [error]);
 
   return (
-    <div className="mx-auto flex w-full max-w-[1200px] flex-col px-4 py-4 sm:px-6 sm:py-5">
+    <div className="mx-auto flex w-full max-w-[calc(1200px*var(--px,1))] flex-col px-4 py-4 sm:px-6 sm:py-5">
       <div role="alert" className="rounded-md border border-border bg-surface p-8" data-testid="admin-error">
         <h1 className="text-lg font-semibold tracking-[-0.02em]">This page didn&apos;t load</h1>
         <p className="mt-2 max-w-[60ch] text-sm text-muted-foreground">
@@ -21,7 +21,7 @@ export default function AdminError({ error, retry }: { error: Error & { digest?:
           <Button onClick={() => retry()}>Try again</Button>
         </div>
         {error.digest ? (
-          <p className="mt-6 text-[13px] text-text-hint">
+          <p className="mt-6 text-[length:calc(13px*var(--px,1))] text-text-hint">
             Reference: <span className="font-mono text-foreground">{error.digest}</span>
           </p>
         ) : null}

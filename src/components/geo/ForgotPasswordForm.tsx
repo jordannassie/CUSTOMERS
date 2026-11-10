@@ -38,7 +38,7 @@ export default function ForgotPasswordForm() {
   }
 
   return (
-    <div className="w-full max-w-[420px]">
+    <div className="w-full max-w-[calc(420px*var(--px,1))]">
       <AuthLogo />
 
       <AuthCard className="p-6 sm:p-8">
@@ -108,7 +108,7 @@ function BackToLogin() {
   return (
     <Link
       href="/login"
-      className="mx-auto flex w-fit items-center justify-center gap-1 rounded-sm text-[13px] text-muted-foreground transition-colors hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
+      className="mx-auto flex w-fit items-center justify-center gap-1 rounded-sm text-[length:calc(13px*var(--px,1))] text-muted-foreground transition-colors hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
     >
       <ArrowLeft className="size-3.5" aria-hidden="true" /> Back to login
     </Link>

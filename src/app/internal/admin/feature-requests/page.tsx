@@ -20,18 +20,18 @@ export default async function AdminFeatureRequestsPage({ searchParams }: Props) 
   // Show migration instructions
   if (fetchError) {
     return (
-      <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-4 px-4 py-4 sm:px-6 sm:py-5">
+      <div className="mx-auto flex w-full max-w-[calc(1200px*var(--px,1))] flex-col gap-4 px-4 py-4 sm:px-6 sm:py-5">
         <AdminPageHeader title="Feature requests" subtitle="Ideas people sent with Suggest a feature in the app." />
         <div className="rounded-md border border-border bg-mid-bg p-4 text-mid-text sm:p-6">
-          <p className="mb-2 text-[14px] font-semibold">Table not yet created on production</p>
-          <p className="mb-4 text-[13px]">
+          <p className="mb-2 text-[length:calc(14px*var(--px,1))] font-semibold">Table not yet created on production</p>
+          <p className="mb-4 text-[length:calc(13px*var(--px,1))]">
             Run the SQL below in your{" "}
             <a href="https://app.supabase.com" target="_blank" rel="noreferrer" className="underline">
               Supabase SQL Editor
             </a>{" "}
             to create the <code className="rounded-sm bg-surface px-1">feature_requests</code> table:
           </p>
-          <pre className="overflow-x-auto rounded-md border border-border bg-surface p-4 text-[12px] leading-relaxed whitespace-pre-wrap text-foreground">
+          <pre className="overflow-x-auto rounded-md border border-border bg-surface p-4 text-[length:calc(12px*var(--px,1))] leading-relaxed whitespace-pre-wrap text-foreground">
 {`create table if not exists public.feature_requests (
   id          uuid        primary key default gen_random_uuid(),
   user_id     uuid        not null references auth.users(id) on delete cascade,
@@ -50,9 +50,9 @@ alter table public.feature_requests enable row level security;
 create policy "feature_requests_select_own" on public.feature_requests
   for select to authenticated using (user_id = auth.uid());`}
           </pre>
-          <p className="mt-3 text-[13px]">After running, refresh this page.</p>
+          <p className="mt-3 text-[length:calc(13px*var(--px,1))]">After running, refresh this page.</p>
         </div>
-        <p className="text-[13px] text-text-hint">Error: {fetchError.message}</p>
+        <p className="text-[length:calc(13px*var(--px,1))] text-text-hint">Error: {fetchError.message}</p>
       </div>
     );
   }
@@ -60,7 +60,7 @@ create policy "feature_requests_select_own" on public.feature_requests
   const requests = "requests" in result ? result.requests : [];
 
   return (
-    <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-4 px-4 py-4 sm:px-6 sm:py-5">
+    <div className="mx-auto flex w-full max-w-[calc(1200px*var(--px,1))] flex-col gap-4 px-4 py-4 sm:px-6 sm:py-5">
       <FeatureRequestsClient
         requests={requests}
         filter={featureFilter((await searchParams).status)}

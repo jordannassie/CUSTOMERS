@@ -34,7 +34,7 @@ export default function Pagination({
   const first = (page - 1) * pageSize + 1;
   const last = Math.min(page * pageSize, total);
   return (
-    <nav aria-label="Pages" className="flex flex-wrap items-center justify-between gap-3 text-[13px] text-muted-foreground">
+    <nav aria-label="Pages" className="flex flex-wrap items-center justify-between gap-3 text-[length:calc(13px*var(--px,1))] text-muted-foreground">
       <p className="tabular-nums">
         {first.toLocaleString("en-US")} to {last.toLocaleString("en-US")} of {total.toLocaleString("en-US")} {noun}
       </p>

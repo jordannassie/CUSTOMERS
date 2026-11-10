@@ -116,14 +116,14 @@ export function CompetitorPicker(props: CompetitorPickerProps) {
 
   // One column on phones that never grows past the screen: a long name in the list widened the page (2026-10-15).
   return (
-    <div className="grid grid-cols-[minmax(0,1fr)] gap-6 pb-20 lg:grid-cols-[minmax(0,1fr)_340px] lg:pb-0">
+    <div className="grid grid-cols-[minmax(0,1fr)] gap-6 pb-20 lg:grid-cols-[minmax(0,1fr)_calc(340px*var(--px,1))] lg:pb-0">
       {locationNote ? <CompetitorLocationNote text={locationNote} /> : null}
       <div className="flex min-w-0 flex-col gap-6">
         <section aria-labelledby="suggested-title">
           <h2 id="suggested-title" className="text-base font-semibold tracking-[-0.02em]">
             Near you on Google
           </h2>
-          <p className="mt-3 text-[13px] text-muted-foreground">Tick the ones customers compare you with.</p>
+          <p className="mt-3 text-[length:calc(13px*var(--px,1))] text-muted-foreground">Tick the ones customers compare you with.</p>
           {suggestions.length ? (
             <div className="mt-3 rounded-md border border-border bg-surface">
               <ul className="divide-y divide-border">
@@ -146,7 +146,7 @@ export function CompetitorPicker(props: CompetitorPickerProps) {
           <h2 id="add-title" className="text-base font-semibold tracking-[-0.02em]">
             Add one we missed
           </h2>
-          <p className="mb-3 mt-3 text-[13px] text-muted-foreground">Search Google by name, or add the name as you type it.</p>
+          <p className="mb-3 mt-3 text-[length:calc(13px*var(--px,1))] text-muted-foreground">Search Google by name, or add the name as you type it.</p>
           <AddCompetitor businessId={businessId} lookup={lookup} isPicked={isTaken} onAdd={add} />
         </section>
       </div>
@@ -157,7 +157,7 @@ export function CompetitorPicker(props: CompetitorPickerProps) {
             <h2 id="list-title" className="text-base font-semibold tracking-[-0.02em]">
               Your competitors
             </h2>
-            <span className="text-[13px] tabular-nums text-muted-foreground">{count}</span>
+            <span className="text-[length:calc(13px*var(--px,1))] tabular-nums text-muted-foreground">{count}</span>
           </div>
           {limit !== null && limit <= 10 ? (
             <div className="mt-3 flex gap-1" aria-hidden>
@@ -194,12 +194,12 @@ export function CompetitorPicker(props: CompetitorPickerProps) {
           {picked.some((p) => p.live) ? <GoogleAttribution className="mt-3" /> : null}
 
           {limitHit && limitText ? (
-            <p role="status" className="mt-3 rounded-md bg-mid-bg px-3 py-2 text-[13px] text-mid-text">
+            <p role="status" className="mt-3 rounded-md bg-mid-bg px-3 py-2 text-[length:calc(13px*var(--px,1))] text-mid-text">
               {limitText} Remove one to add another.
             </p>
           ) : null}
           {error ? (
-            <p role="alert" className="mt-3 rounded-md bg-low-bg px-3 py-2 text-[13px] text-low-text">
+            <p role="alert" className="mt-3 rounded-md bg-low-bg px-3 py-2 text-[length:calc(13px*var(--px,1))] text-low-text">
               {error}
             </p>
           ) : null}

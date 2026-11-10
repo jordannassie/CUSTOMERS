@@ -31,16 +31,16 @@ function SiteScore({ site, you }: { site: SiteResult; you: boolean }) {
       {site.reached ? (
         <ScoreRing score={site.score} you={you} />
       ) : (
-        <div className="flex size-28 shrink-0 items-center justify-center rounded-full border-7 border-muted text-center text-[13px] text-text-hint">
+        <div className="flex size-28 shrink-0 items-center justify-center rounded-full border-7 border-muted text-center text-[length:calc(13px*var(--px,1))] text-text-hint">
           {site.blocked ? "Blocked us" : "Not reached"}
         </div>
       )}
       <div className="flex min-w-0 flex-col gap-2">
-        <p className="text-[13px] text-muted-foreground">{you ? "Your website" : "Competitor"}</p>
+        <p className="text-[length:calc(13px*var(--px,1))] text-muted-foreground">{you ? "Your website" : "Competitor"}</p>
         <p className="truncate text-lg font-semibold" title={site.domain}>{site.domain}</p>
-        {site.reached && <span className={cn("w-fit rounded-sm px-2 py-0.5 text-[13px] font-medium", b.className)}>{b.label}</span>}
+        {site.reached && <span className={cn("w-fit rounded-sm px-2 py-0.5 text-[length:calc(13px*var(--px,1))] font-medium", b.className)}>{b.label}</span>}
         {site.blocked && (
-          <p className="text-[13px] text-muted-foreground" data-testid="blocked-note">
+          <p className="text-[length:calc(13px*var(--px,1))] text-muted-foreground" data-testid="blocked-note">
             {you
               ? "Many AI tools read websites the same way we do. If your site turns us away, ask whoever runs it to let AI readers in."
               : "Many AI tools are turned away the same way, so they may not be able to read this site either."}
@@ -60,7 +60,7 @@ export function ResultView({ result }: { result: ReadinessCheckResult }) {
           <h2 id="result-heading" className="text-2xl leading-tight font-semibold tracking-[-0.02em] text-balance">
             {headline(result)}
           </h2>
-          <p className="text-[14px] text-muted-foreground">
+          <p className="text-[length:calc(14px*var(--px,1))] text-muted-foreground">
             Readiness score out of 100, from the checks below. It measures the website, not what AI tools say.
           </p>
         </div>

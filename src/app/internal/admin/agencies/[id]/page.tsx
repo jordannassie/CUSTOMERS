@@ -40,10 +40,10 @@ export default async function AdminAgencyPage({ params }: { params: Promise<{ id
   await requireAdmin({ next: `/internal/admin/agencies/${id}` });
 
   return (
-    <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-5 px-4 py-4 sm:px-6 sm:py-5">
+    <div className="mx-auto flex w-full max-w-[calc(1200px*var(--px,1))] flex-col gap-5 px-4 py-4 sm:px-6 sm:py-5">
       <Link
         href="/internal/admin/agencies"
-        className="inline-flex w-fit items-center gap-1 text-[13px] text-muted-foreground hover:text-foreground"
+        className="inline-flex w-fit items-center gap-1 text-[length:calc(13px*var(--px,1))] text-muted-foreground hover:text-foreground"
       >
         <ChevronLeft aria-hidden className="size-4" />
         Agencies
@@ -104,7 +104,7 @@ async function Detail({ id }: { id: string }) {
         />
       </StatGrid>
 
-      <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start">
+      <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_calc(360px*var(--px,1))] lg:items-start">
         <div className="flex min-w-0 flex-col gap-8">
           <Businesses rows={detail.businesses} />
           <CancelReasons rows={detail.cancelReasons} />
@@ -112,7 +112,7 @@ async function Detail({ id }: { id: string }) {
           <CreditHistory rows={detail.ledger} />
         </div>
         <aside aria-label="Actions" className="order-first flex flex-col gap-2 lg:sticky lg:top-6 lg:order-none">
-          <h2 className="text-[16px] font-semibold">Actions</h2>
+          <h2 className="text-[length:calc(16px*var(--px,1))] font-semibold">Actions</h2>
           <AgencyActions
             agency={agency}
             stripeConnected={adminStripeConnected()}
@@ -120,7 +120,7 @@ async function Detail({ id }: { id: string }) {
             maxTrialDays={MAX_TRIAL_DAYS}
             actions={ACTIONS}
           />
-          <p className="text-[12px] text-text-hint">
+          <p className="text-[length:calc(12px*var(--px,1))] text-text-hint">
             {agency.stripeLinked ? "Linked to Stripe." : "Not linked to Stripe yet."} Every action is saved in the admin log.
           </p>
         </aside>

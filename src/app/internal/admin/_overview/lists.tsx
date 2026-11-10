@@ -5,11 +5,11 @@ import { formatDate } from "../_components/format";
 import { TestBadge } from "../_components/badges";
 import { StatusBadge } from "../agencies/_components/agency-parts";
 
-const list = "divide-y divide-border rounded-md border border-border bg-surface text-[13px]";
+const list = "divide-y divide-border rounded-md border border-border bg-surface text-[length:calc(13px*var(--px,1))]";
 
 function ViewAll({ href, children }: { href: string; children: React.ReactNode }) {
   return (
-    <Link href={href} className="text-[13px] font-medium text-primary hover:underline">
+    <Link href={href} className="text-[length:calc(13px*var(--px,1))] font-medium text-primary hover:underline">
       {children}
     </Link>
   );

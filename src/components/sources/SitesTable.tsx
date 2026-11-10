@@ -34,7 +34,7 @@ const MATCH: Record<Filter, (r: SiteRow) => boolean> = {
 };
 
 // The table runs edge to edge in its card; the first and last columns line up with the card's header text.
-const EDGE = "first:pl-4 last:pr-4 sm:first:pl-[18px] sm:last:pr-[18px]";
+const EDGE = "first:pl-4 last:pr-4 sm:first:pl-[calc(18px*var(--px,1))] sm:last:pr-[calc(18px*var(--px,1))]";
 const KIND = "hidden xl:table-cell";
 const TOOLS = "hidden min-[1360px]:table-cell";
 
@@ -63,13 +63,13 @@ export function SitesTable({ businessId, rows, answers, moreSites, add }: Props)
         </span>
       </div>
       {matching.length === 0 ? (
-        <p className="border-t border-border px-4 py-6 text-[13px] text-muted-foreground sm:px-4" data-testid="no-matching-sites">
+        <p className="border-t border-border px-4 py-6 text-[length:calc(13px*var(--px,1))] text-muted-foreground sm:px-4" data-testid="no-matching-sites">
           No websites match this filter yet.
         </p>
       ) : (
         // Fits its card at every width: the businesses it names always sit under the website's name, and as the card
         // narrows kind, how often and the mentions move there too, so there is never a sideways scroll.
-        <Table data-testid="site-list" className="text-[13px]">
+        <Table data-testid="site-list" className="text-[length:calc(13px*var(--px,1))]">
           <TableHeader className="border-t border-border">
             <TableRow className="hover:bg-transparent">
               <TableHead className={EDGE}>Website</TableHead>
@@ -83,7 +83,7 @@ export function SitesTable({ businessId, rows, answers, moreSites, add }: Props)
           <TableBody>
             {shown.map((r) => (
               <TableRow key={r.host} data-testid="site-row" className={cn("border-muted", r.kind === "own" && "bg-primary-tint/60")}>
-                <TableCell className={cn(EDGE, "max-w-[220px] sm:max-w-[300px]")}>
+                <TableCell className={cn(EDGE, "max-w-[calc(220px*var(--px,1))] sm:max-w-[calc(300px*var(--px,1))]")}>
                   <div className="flex min-w-0 items-center gap-2.5">
                     <SiteIcon domain={r.host} name={r.host} size="sm" />
                     <div className="min-w-0">

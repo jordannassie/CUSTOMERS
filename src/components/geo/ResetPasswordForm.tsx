@@ -51,7 +51,7 @@ export default function ResetPasswordForm() {
   }
 
   return (
-    <div className="w-full max-w-[420px]">
+    <div className="w-full max-w-[calc(420px*var(--px,1))]">
       <AuthLogo />
 
       <AuthCard className="p-6 sm:p-8">

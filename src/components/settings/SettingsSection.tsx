@@ -17,7 +17,7 @@ export function SettingsSection({
   return (
     <section
       aria-labelledby={`${id}-title`}
-      className="grid gap-4 border-t border-border py-8 first:border-t-0 first:pt-0 lg:grid-cols-[260px_minmax(0,1fr)] lg:gap-10"
+      className="grid gap-4 border-t border-border py-8 first:border-t-0 first:pt-0 lg:grid-cols-[calc(260px*var(--px,1))_minmax(0,1fr)] lg:gap-10"
     >
       <div className="max-w-prose">
         <h2
@@ -26,7 +26,7 @@ export function SettingsSection({
         >
           {title}
         </h2>
-        <div className="mt-3 text-[13px] leading-relaxed text-muted-foreground">{description}</div>
+        <div className="mt-3 text-[length:calc(13px*var(--px,1))] leading-relaxed text-muted-foreground">{description}</div>
       </div>
       <div className="min-w-0">{children}</div>
     </section>
@@ -43,7 +43,7 @@ export const TEXTAREA_CLASS =
 export function FormError({ message }: { message: string | null }) {
   if (!message) return null;
   return (
-    <p role="alert" className="rounded-md bg-low-bg px-3 py-2 text-[13px] text-low-text">
+    <p role="alert" className="rounded-md bg-low-bg px-3 py-2 text-[length:calc(13px*var(--px,1))] text-low-text">
       {message}
     </p>
   );

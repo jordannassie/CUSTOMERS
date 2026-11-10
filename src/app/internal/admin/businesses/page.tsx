@@ -12,7 +12,7 @@ type Props = { searchParams: Promise<{ q?: string | string[]; page?: string | st
 // The admin check runs inside Suspense too: awaiting it at the top would block every search.
 export default function AdminBusinessesPage({ searchParams }: Props) {
   return (
-    <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-4 px-4 py-4 sm:px-6 sm:py-5">
+    <div className="mx-auto flex w-full max-w-[calc(1200px*var(--px,1))] flex-col gap-4 px-4 py-4 sm:px-6 sm:py-5">
       <AdminPageHeader
         title="Businesses"
         subtitle="Every business across all agencies. Open one to see its setup, answers and scans, or to rescan it."

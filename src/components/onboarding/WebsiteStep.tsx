@@ -215,7 +215,7 @@ function Reading({ what, noWebsite }: { what: string; noWebsite: boolean }) {
     <div role="status" aria-live="polite" className="rounded-md border border-border bg-surface p-6">
       <div className="flex items-center gap-3">
         <Loader2 aria-hidden className="size-5 animate-spin text-primary" />
-        <p className="text-[15px] font-medium">Finding {what}</p>
+        <p className="text-[length:calc(15px*var(--px,1))] font-medium">Finding {what}</p>
       </div>
       <ul className="mt-5 flex flex-col gap-3">
         {lines.map((line, i) => (

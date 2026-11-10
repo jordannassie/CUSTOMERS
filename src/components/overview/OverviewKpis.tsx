@@ -44,7 +44,7 @@ export function RangeControl({ days }: { days: number }) {
           href={r === 30 ? "/dashboard" : `/dashboard?range=${r}`}
           aria-current={r === days ? "true" : undefined}
           className={cn(
-            "flex h-[26px] items-center rounded-[4px] px-2.5 text-xs whitespace-nowrap transition-colors focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none",
+            "flex h-[calc(26px*var(--px,1))] items-center rounded-[4px] px-2.5 text-xs whitespace-nowrap transition-colors focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none",
             r === days ? "bg-surface font-medium text-foreground shadow-[0_0_0_1px_var(--border)]" : "text-muted-foreground hover:text-foreground",
           )}
         >

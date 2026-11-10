@@ -41,14 +41,14 @@ export function FaqList({ items }: { items: readonly { q: string; a: string }[] 
     <div className="border-t border-border">
       {items.map(({ q, a }) => (
         <details key={q} className="group border-b border-border">
-          <summary className="flex cursor-pointer list-none items-start justify-between gap-4 rounded-sm py-5 text-left text-[15px] font-semibold focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none [&::-webkit-details-marker]:hidden">
+          <summary className="flex cursor-pointer list-none items-start justify-between gap-4 rounded-sm py-5 text-left text-[length:calc(15px*var(--px,1))] font-semibold focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none [&::-webkit-details-marker]:hidden">
             {q}
             <ChevronDown
               className="mt-0.5 size-4 shrink-0 text-muted-foreground transition-transform duration-200 group-open:rotate-180 motion-reduce:transition-none"
               aria-hidden="true"
             />
           </summary>
-          <p className="max-w-[65ch] pb-5 text-[15px] text-muted-foreground">{a}</p>
+          <p className="max-w-[65ch] pb-5 text-[length:calc(15px*var(--px,1))] text-muted-foreground">{a}</p>
         </details>
       ))}
     </div>

@@ -30,7 +30,7 @@ export function ScanProgressList({
                 <span aria-hidden className={cn("size-2 rounded-full", DOT[model.id] ?? "bg-primary")} />
                 {model.label}
               </span>
-              <span className="text-[13px] text-muted-foreground">
+              <span className="text-[length:calc(13px*var(--px,1))] text-muted-foreground">
                 {state === "done" ? (
                   <Check aria-label="Done" className="size-4 text-good" />
                 ) : state === "waiting" ? (
@@ -62,7 +62,7 @@ export function ScanProgressList({
               )}
             </div>
             {state === "running" && saved?.asking && (
-              <p className="truncate text-[13px] text-muted-foreground" data-testid="first-scan-asking">
+              <p className="truncate text-[length:calc(13px*var(--px,1))] text-muted-foreground" data-testid="first-scan-asking">
                 Asking {model.label}: {saved.asking}
               </p>
             )}

@@ -10,7 +10,7 @@ import { PILL_VARIANT } from "@/components/app/pills";
 
 const BADGE = { ahead: PILL_VARIANT.plain, behind: PILL_VARIANT.attention, about_same: PILL_VARIANT.plain } as const;
 
-/** Compare's picker (dashboard redesign): a chip per tracked competitor with its score, then "You vs {name}". */
+/** Compare's picker (dashboard redesign): a chip per tracked competitor with its score, then "{your business} vs {name}". */
 export function Picker({ page, tab, track }: { page: ComparePage; tab: string; track: TrackAction }) {
   const selected = page.selected;
   const subtitle = selected
@@ -35,7 +35,7 @@ export function Picker({ page, tab, track }: { page: ComparePage; tab: string; t
                 tab={tab}
                 current={on}
                 className={cn(
-                  "inline-flex h-8 items-center gap-2 rounded-[6px] border px-2.5 text-[13px] font-medium outline-none transition-colors focus-visible:ring-3 focus-visible:ring-ring/50",
+                  "inline-flex h-8 items-center gap-2 rounded-[6px] border px-2.5 text-[length:calc(13px*var(--px,1))] font-medium outline-none transition-colors focus-visible:ring-3 focus-visible:ring-ring/50",
                   on ? "border-primary/50 bg-primary-tint text-primary-hover" : "border-border bg-surface hover:bg-muted",
                 )}
               >
@@ -50,19 +50,25 @@ export function Picker({ page, tab, track }: { page: ComparePage; tab: string; t
       </div>
       {selected && (
         <div className="flex items-start gap-3 border-t border-border px-4 py-3.5">
-          <SiteIcon domain={selected.panel.website.domain ?? null} name={selected.title} className="mt-0.5" />
+          {/* Your icon and theirs side by side, overlapping a little, like the heading's two names (2026-11-10). */}
+          <span className="mt-0.5 flex shrink-0 items-center" aria-hidden="true">
+            <SiteIcon domain={page.businessDomain} name={page.businessName} className="ring-2 ring-card" />
+            <SiteIcon domain={selected.panel.website.domain ?? null} name={selected.title} className="-ml-2 ring-2 ring-card" />
+          </span>
           <div className="flex min-w-0 flex-col gap-0.5">
             <div className="flex flex-wrap items-center gap-2">
-              <h2 className="text-lg font-semibold tracking-[-0.02em]">You vs {selected.title}</h2>
+              <h2 className="text-lg font-semibold tracking-[-0.02em]">
+                {page.businessName} vs {selected.title}
+              </h2>
               {selected.collecting ? (
                 <Badge variant="secondary">Still collecting</Badge>
               ) : (
                 selected.standing && <Badge variant={BADGE[selected.standing]}>{STANDING_TEXT[selected.standing]}</Badge>
               )}
             </div>
-            {subtitle && <p className="text-[13px] text-muted-foreground">{subtitle}</p>}
+            {subtitle && <p className="text-[length:calc(13px*var(--px,1))] text-muted-foreground">{subtitle}</p>}
             {selected.note && (
-              <p className="text-[13px] text-muted-foreground" data-testid="why-chain-note">
+              <p className="text-[length:calc(13px*var(--px,1))] text-muted-foreground" data-testid="why-chain-note">
                 {selected.note}.
               </p>
             )}

@@ -20,7 +20,7 @@ const IMPACT = {
 const PLACE_ICON: Record<ActionItem["place"], typeof Globe> = { website: Globe, google_listing: MapPin, review_sites: Star, social: Share2, content: FileText };
 
 function Empty({ children }: { children: ReactNode }) {
-  return <p className="px-4 py-6 text-[13px] text-muted-foreground">{children}</p>;
+  return <p className="px-4 py-6 text-[length:calc(13px*var(--px,1))] text-muted-foreground">{children}</p>;
 }
 
 /** "Top actions": the most important open fixes, each with where to apply it. */
@@ -37,12 +37,12 @@ export function TopActions({ items, total, wait = null }: { items: ActionItem[];
             const Icon = PLACE_ICON[a.place] ?? Globe;
             const why = a.evidence?.split("\n")[0];
             return (
-              <li key={a.id} className={cn(ROW, "grid grid-cols-[24px_minmax(0,1fr)_auto] items-center gap-3")}>
+              <li key={a.id} className={cn(ROW, "grid grid-cols-[calc(24px*var(--px,1))_minmax(0,1fr)_auto] items-center gap-3")}>
                 <span className="flex size-6 items-center justify-center rounded-sm bg-muted text-muted-foreground" aria-hidden="true">
                   <Icon className="size-3.5" />
                 </span>
                 <span className="flex min-w-0 flex-col gap-0.5">
-                  <Link href={fixHref(a.id)} className="truncate text-[13px] font-medium hover:underline">
+                  <Link href={fixHref(a.id)} className="truncate text-[length:calc(13px*var(--px,1))] font-medium hover:underline">
                     {a.title}
                   </Link>
                   <span className="truncate text-xs text-muted-foreground" title={why ?? undefined}>
@@ -73,13 +73,13 @@ export function QuestionsMoved({ trends }: { trends: QuestionTrends | null }) {
           {moved.map((m) => {
             const up = m.change > 0;
             return (
-              <li key={m.id} className={cn(ROW, "grid grid-cols-[28px_minmax(0,1fr)] items-center gap-3")}>
+              <li key={m.id} className={cn(ROW, "grid grid-cols-[calc(28px*var(--px,1))_minmax(0,1fr)] items-center gap-3")}>
                 <span className="flex size-7 items-center justify-center rounded-md bg-muted text-foreground">
                   {up ? <ArrowUp className="size-3.5" aria-hidden="true" /> : <ArrowDown className="size-3.5" aria-hidden="true" />}
                   <span className="sr-only">{up ? "Up" : "Down"}</span>
                 </span>
                 <span className="flex min-w-0 flex-col gap-0.5">
-                  <Link href={`/questions?q=${m.id}`} className="truncate text-[13px] font-medium hover:underline" title={m.prompt}>
+                  <Link href={`/questions?q=${m.id}`} className="truncate text-[length:calc(13px*var(--px,1))] font-medium hover:underline" title={m.prompt}>
                     {m.prompt}
                   </Link>
                   <span className="flex flex-wrap items-center gap-x-1.5 text-xs text-text-hint tabular-nums">
@@ -119,15 +119,15 @@ export function WhereAiLooks({ rows }: { rows: SourceLine[] }) {
       ) : (
         <ul className="flex flex-col">
           {rows.map((r) => (
-            <li key={r.host} className={cn(ROW, "grid grid-cols-[24px_minmax(0,1fr)_auto] items-center gap-3")}>
+            <li key={r.host} className={cn(ROW, "grid grid-cols-[calc(24px*var(--px,1))_minmax(0,1fr)_auto] items-center gap-3")}>
               <SiteIcon domain={r.host} name={r.host} size="sm" />
               <span className="flex min-w-0 flex-col items-start gap-1">
-                <span className="max-w-full truncate text-[13px] font-medium">{r.host}</span>
+                <span className="max-w-full truncate text-[length:calc(13px*var(--px,1))] font-medium">{r.host}</span>
                 <span className={cn(CHIP, SOURCE_CHIP[r.status].tone)}>{SOURCE_CHIP[r.status].text}</span>
               </span>
               <span className="flex flex-col items-end text-right">
-                <strong className="text-[13.5px] font-semibold tabular-nums">{r.answers}</strong>
-                <span className="text-[11.5px] text-text-hint">{r.answers === 1 ? "answer" : "answers"}</span>
+                <strong className="text-[length:calc(13.5px*var(--px,1))] font-semibold tabular-nums">{r.answers}</strong>
+                <span className="text-[length:calc(11.5px*var(--px,1))] text-text-hint">{r.answers === 1 ? "answer" : "answers"}</span>
               </span>
             </li>
           ))}

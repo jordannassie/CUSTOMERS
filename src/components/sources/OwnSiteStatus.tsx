@@ -5,7 +5,7 @@ import { HideableNotice } from "@/components/app/HideableNotice";
 
 type Props = { host: string | null; cited: number; toolLabel: string | null };
 
-const ROW = "flex flex-col gap-2 rounded-lg border px-3.5 py-2.5 text-[13px] sm:flex-row sm:items-center sm:justify-between sm:gap-4";
+const ROW = "flex flex-col gap-2 rounded-lg border px-3.5 py-2.5 text-[length:calc(13px*var(--px,1))] sm:flex-row sm:items-center sm:justify-between sm:gap-4";
 const LINK = "shrink-0 font-medium whitespace-nowrap text-primary hover:underline";
 
 /**
@@ -37,7 +37,7 @@ export function OwnSiteStatus({ host, cited, toolLabel }: Props) {
       id="own-site-unused"
       text={lead}
       className="py-2"
-      icon={<CircleAlert className="mt-[3px] size-4 shrink-0 text-muted-foreground" aria-hidden="true" />}
+      icon={<CircleAlert className="mt-[calc(3px*var(--px,1))] size-4 shrink-0 text-muted-foreground" aria-hidden="true" />}
       testId="own-site"
     >
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4">

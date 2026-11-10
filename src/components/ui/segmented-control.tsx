@@ -26,7 +26,7 @@ function SegmentedControl({
         <RadioGroupPrimitive.Item
           key={o.value}
           value={o.value}
-          className="h-8 rounded-sm px-3 text-[13px] font-medium text-muted-foreground transition-colors duration-150 ease-out outline-none hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 disabled:opacity-50 data-[state=checked]:bg-surface data-[state=checked]:text-foreground data-[state=checked]:shadow-xs"
+          className="h-8 rounded-sm px-3 text-[length:calc(13px*var(--px,1))] font-medium text-muted-foreground transition-colors duration-150 ease-out outline-none hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 disabled:opacity-50 data-[state=checked]:bg-surface data-[state=checked]:text-foreground data-[state=checked]:shadow-xs"
         >
           {o.label}
         </RadioGroupPrimitive.Item>

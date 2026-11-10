@@ -22,7 +22,7 @@ export function DesignPreview() {
   return (
     <div className="min-h-screen bg-background">
       <header className="sticky top-0 z-40 border-b border-border bg-background">
-        <div className="mx-auto flex h-14 max-w-[1120px] items-center gap-6 px-4 sm:px-6">
+        <div className="mx-auto flex h-14 max-w-[calc(1120px*var(--px,1))] items-center gap-6 px-4 sm:px-6">
           <p className="shrink-0 font-bold tracking-[-0.02em]">
             Customers<span className="text-primary">.</span>Direct
           </p>
@@ -40,10 +40,10 @@ export function DesignPreview() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-[1120px] px-4 pb-24 sm:px-6">
+      <main className="mx-auto max-w-[calc(1120px*var(--px,1))] px-4 pb-24 sm:px-6">
         <div className="py-12">
           <Badge variant="tint">Team only</Badge>
-          <h1 className="mt-4 text-[32px] leading-tight font-bold tracking-[-0.02em] sm:text-5xl sm:tracking-[-0.035em]">
+          <h1 className="mt-4 text-[length:calc(32px*var(--px,1))] leading-tight font-bold tracking-[-0.02em] sm:text-5xl sm:tracking-[-0.035em]">
             Design preview
           </h1>
           <p className="mt-3 max-w-2xl text-lg text-muted-foreground">

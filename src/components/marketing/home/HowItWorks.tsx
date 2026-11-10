@@ -30,9 +30,9 @@ export function HowItWorks() {
       <ol className="mt-12 grid gap-8 sm:grid-cols-2 lg:grid-cols-4 lg:gap-6">
         {STEPS.map(({ title, body }, i) => (
           <li key={title} className="flex flex-col gap-3 border-t-2 border-border pt-5 first:border-primary">
-            <span className="tabular text-[13px] font-medium text-text-hint">Step {i + 1}</span>
+            <span className="tabular text-[length:calc(13px*var(--px,1))] font-medium text-text-hint">Step {i + 1}</span>
             <h3 className="text-xl font-semibold tracking-[-0.02em]">{title}</h3>
-            <p className="text-[15px] text-muted-foreground">{body}</p>
+            <p className="text-[length:calc(15px*var(--px,1))] text-muted-foreground">{body}</p>
           </li>
         ))}
       </ol>

@@ -80,7 +80,7 @@ export function QuestionsStep({ businessId, questions, limit, updated = false, s
         <div className="rounded-md border border-border bg-surface">
           <div className="flex items-baseline justify-between gap-3 border-b border-border p-5">
             <h2 className="text-base font-semibold tracking-[-0.02em]">Questions we ask AI</h2>
-            <span className="shrink-0 whitespace-nowrap text-[13px] tabular-nums text-muted-foreground">
+            <span className="shrink-0 whitespace-nowrap text-[length:calc(13px*var(--px,1))] tabular-nums text-muted-foreground">
               {kept.length} of {limit}
             </span>
           </div>
@@ -144,7 +144,7 @@ export function QuestionsStep({ businessId, questions, limit, updated = false, s
           )}
         </div>
         {/* Questions the user writes could raise the score at will, so only suggested ones count (BUG-129). */}
-        <p className="text-[13px] text-muted-foreground" data-testid="own-questions-note">
+        <p className="text-[length:calc(13px*var(--px,1))] text-muted-foreground" data-testid="own-questions-note">
           Your score counts the suggested questions. Questions you add or reword are checked too, but they don&apos;t count in
           your score.
         </p>

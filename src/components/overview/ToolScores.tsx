@@ -27,10 +27,10 @@ export function ToolScores({ models, context }: { models: OverviewView["models"]
       <ul className={cn("grid divide-y divide-border sm:divide-x sm:divide-y-0", models.length >= 3 ? "sm:grid-cols-3" : "sm:grid-cols-2")}>
         {models.map((m) => (
           <li key={m.id} className="flex min-w-0 flex-col gap-2 px-4 py-4" data-testid="model-score">
-            <span className="text-[13px] font-medium">{m.label}</span>
+            <span className="text-[length:calc(13px*var(--px,1))] font-medium">{m.label}</span>
             <span className="flex items-baseline justify-between gap-3">
               {m.score === null ? (
-                <span className="py-1.5 text-[13px] text-text-hint">{emptyLabel(m)}</span>
+                <span className="py-1.5 text-[length:calc(13px*var(--px,1))] text-text-hint">{emptyLabel(m)}</span>
               ) : (
                 <span className="text-2xl leading-tight font-semibold tracking-[-0.03em] tabular-nums">
                   {m.score}

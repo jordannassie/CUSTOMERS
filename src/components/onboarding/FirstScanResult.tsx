@@ -19,12 +19,12 @@ export function FirstScanResult({ summary }: { summary: FirstScanSummary }) {
           <div className="flex items-center gap-5 px-4 py-4">
             <dt className="sr-only">Your score</dt>
             <ScoreRing score={summary.score.value} tone={summary.score.tone} size="small" />
-            <dd className="text-[15px] leading-snug font-semibold tracking-[-0.01em]">{summary.score.sentence}</dd>
+            <dd className="text-[length:calc(15px*var(--px,1))] leading-snug font-semibold tracking-[-0.01em]">{summary.score.sentence}</dd>
           </div>
         )}
         {summary.namedMost && (
           <div className="flex flex-col gap-1 px-4 py-3.5">
-            <dt className="text-[13px] text-muted-foreground">Named most by AI</dt>
+            <dt className="text-[length:calc(13px*var(--px,1))] text-muted-foreground">Named most by AI</dt>
             <dd className="text-sm" data-testid="named-most">
               {summary.namedMost}
             </dd>
@@ -32,7 +32,7 @@ export function FirstScanResult({ summary }: { summary: FirstScanSummary }) {
         )}
         {summary.firstFix && (
           <div className="flex flex-col gap-1.5 px-4 py-3.5">
-            <dt className="text-[13px] text-muted-foreground">Fix this first</dt>
+            <dt className="text-[length:calc(13px*var(--px,1))] text-muted-foreground">Fix this first</dt>
             <dd className="flex flex-col items-start gap-1.5 sm:flex-row sm:items-center sm:gap-3" data-testid="first-fix">
               <Badge variant={IMPACT[summary.firstFix.impact].variant}>{IMPACT[summary.firstFix.impact].label}</Badge>
               <span className="text-sm font-medium">{summary.firstFix.title}</span>

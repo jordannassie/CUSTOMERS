@@ -9,9 +9,9 @@ function Card({
   children: ReactNode;
 }) {
   return (
-    <div className="rounded-2xl border border-[#E5E5E1] bg-white p-4 shadow-[0_8px_24px_rgba(23,23,23,0.06)] flex flex-col min-h-[220px]">
+    <div className="rounded-2xl border border-[#E5E5E1] bg-white p-4 shadow-[0_8px_24px_rgba(23,23,23,0.06)] flex flex-col min-h-[calc(220px*var(--px,1))]">
       <div className="flex-1">{children}</div>
-      <h3 className="mt-3 text-[14px] font-semibold text-[#171717]">{title}</h3>
+      <h3 className="mt-3 text-[length:calc(14px*var(--px,1))] font-semibold text-[#171717]">{title}</h3>
     </div>
   );
 }
@@ -19,14 +19,14 @@ function Card({
 export default function LaunchKitWhatYouGet() {
   return (
     <section className="bg-[#FAFAF8] border-t border-[#E5E5E1]">
-      <div className="max-w-[1120px] mx-auto px-4 sm:px-6 py-14 sm:py-16">
-        <p className="text-[11px] font-semibold uppercase tracking-wider text-[#0866F5] mb-2">
+      <div className="max-w-[calc(1120px*var(--px,1))] mx-auto px-4 sm:px-6 py-14 sm:py-16">
+        <p className="text-[length:calc(11px*var(--px,1))] font-semibold uppercase tracking-wider text-[#0866F5] mb-2">
           What you get
         </p>
-        <h2 className="text-[28px] sm:text-[34px] font-bold tracking-tight text-[#171717] max-w-[640px]">
+        <h2 className="text-[length:calc(28px*var(--px,1))] sm:text-[length:calc(34px*var(--px,1))] font-bold tracking-tight text-[#171717] max-w-[calc(640px*var(--px,1))]">
           Everything you need to get your first client.
         </h2>
-        <p className="mt-3 text-[15px] leading-6 text-[#6B6B67] max-w-[640px]">
+        <p className="mt-3 text-[length:calc(15px*var(--px,1))] leading-6 text-[#6B6B67] max-w-[calc(640px*var(--px,1))]">
           Step-by-step training, proven templates and live software to help you start
           and grow your AI business.
         </p>
@@ -39,9 +39,9 @@ export default function LaunchKitWhatYouGet() {
                   <Play size={16} className="text-white ml-0.5" fill="white" />
                 </span>
               </div>
-              <p className="absolute bottom-2 left-2 text-[10px] text-white/80">Preview</p>
+              <p className="absolute bottom-2 left-2 text-[length:calc(10px*var(--px,1))] text-white/80">Preview</p>
             </div>
-            <p className="mt-2 text-[12px] text-[#6B6B67] leading-4">
+            <p className="mt-2 text-[length:calc(12px*var(--px,1))] text-[#6B6B67] leading-4">
               Simple step-by-step videos showing how the model works.
             </p>
           </Card>
@@ -55,7 +55,7 @@ export default function LaunchKitWhatYouGet() {
               ].map(([name, price]) => (
                 <div
                   key={name}
-                  className={`flex justify-between text-[11px] px-2 py-1.5 rounded-lg ${
+                  className={`flex justify-between text-[length:calc(11px*var(--px,1))] px-2 py-1.5 rounded-lg ${
                     name === "Growth" ? "bg-[#EFF6FF] text-[#0866F5] font-semibold" : "text-[#171717]"
                   }`}
                 >
@@ -64,17 +64,17 @@ export default function LaunchKitWhatYouGet() {
                 </div>
               ))}
             </div>
-            <p className="mt-2 text-[12px] text-[#6B6B67] leading-4">
+            <p className="mt-2 text-[length:calc(12px*var(--px,1))] text-[#6B6B67] leading-4">
               Exactly what service to sell and how to explain it.
             </p>
           </Card>
 
           <Card title="Prospecting Scripts">
-            <div className="rounded-xl border border-[#E5E5E1] bg-[#FAFAF8] p-3 text-[11px] leading-4 text-[#6B6B67]">
+            <div className="rounded-xl border border-[#E5E5E1] bg-[#FAFAF8] p-3 text-[length:calc(11px*var(--px,1))] leading-4 text-[#6B6B67]">
               Hi. I checked how your business appears in ChatGPT. A few competitors
               are showing up ahead of you. Want the report?
             </div>
-            <p className="mt-2 text-[12px] text-[#6B6B67] leading-4">
+            <p className="mt-2 text-[length:calc(12px*var(--px,1))] text-[#6B6B67] leading-4">
               DM, email and text templates for reaching local businesses.
             </p>
           </Card>
@@ -83,7 +83,7 @@ export default function LaunchKitWhatYouGet() {
             <div className="rounded-xl border border-[#E5E5E1] bg-white p-3 shadow-inner">
               <div className="flex items-center gap-2 mb-2">
                 <FileText size={14} className="text-[#0866F5]" />
-                <span className="text-[11px] font-semibold text-[#171717]">AI visibility proposal</span>
+                <span className="text-[length:calc(11px*var(--px,1))] font-semibold text-[#171717]">AI visibility proposal</span>
               </div>
               <div className="space-y-1">
                 <div className="h-1.5 bg-[#E5E5E1] rounded w-full" />
@@ -91,7 +91,7 @@ export default function LaunchKitWhatYouGet() {
                 <div className="h-1.5 bg-[#EFF6FF] rounded w-3/5" />
               </div>
             </div>
-            <p className="mt-2 text-[12px] text-[#6B6B67] leading-4">
+            <p className="mt-2 text-[length:calc(12px*var(--px,1))] text-[#6B6B67] leading-4">
               A copy-and-paste proposal you can send to clients.
             </p>
           </Card>
@@ -103,7 +103,7 @@ export default function LaunchKitWhatYouGet() {
                 ["Growth", "$1,000/mo"],
                 ["Pro", "$2,000/mo"],
               ].map(([name, price]) => (
-                <div key={name} className="flex justify-between text-[12px] text-[#171717]">
+                <div key={name} className="flex justify-between text-[length:calc(12px*var(--px,1))] text-[#171717]">
                   <span className="flex items-center gap-1.5">
                     <DollarSign size={12} className="text-[#0866F5]" />
                     {name}
@@ -112,28 +112,28 @@ export default function LaunchKitWhatYouGet() {
                 </div>
               ))}
             </div>
-            <p className="mt-2 text-[12px] text-[#6B6B67] leading-4">
+            <p className="mt-2 text-[length:calc(12px*var(--px,1))] text-[#6B6B67] leading-4">
               How to create your monthly packages and position your value.
             </p>
           </Card>
 
           <Card title="Live Software Access">
             <div className="rounded-xl border border-[#E5E5E1] p-3">
-              <p className="text-[10px] font-semibold uppercase tracking-wide text-[#6B6B67] mb-2">
+              <p className="text-[length:calc(10px*var(--px,1))] font-semibold uppercase tracking-wide text-[#6B6B67] mb-2">
                 AI visibility comparison
               </p>
               <div className="grid grid-cols-2 gap-2">
                 <div className="rounded-lg bg-[#F5F5F2] p-2 text-center">
-                  <p className="text-[18px] font-bold tabular-nums text-[#6B6B67]">42%</p>
-                  <p className="text-[10px] text-[#737370]">You</p>
+                  <p className="text-[length:calc(18px*var(--px,1))] font-bold tabular-nums text-[#6B6B67]">42%</p>
+                  <p className="text-[length:calc(10px*var(--px,1))] text-[#737370]">You</p>
                 </div>
                 <div className="rounded-lg bg-[#EFF6FF] p-2 text-center">
-                  <p className="text-[18px] font-bold tabular-nums text-[#0866F5]">81%</p>
-                  <p className="text-[10px] text-[#737370]">Top competitor</p>
+                  <p className="text-[length:calc(18px*var(--px,1))] font-bold tabular-nums text-[#0866F5]">81%</p>
+                  <p className="text-[length:calc(10px*var(--px,1))] text-[#737370]">Top competitor</p>
                 </div>
               </div>
             </div>
-            <p className="mt-2 text-[12px] text-[#6B6B67] leading-4">
+            <p className="mt-2 text-[length:calc(12px*var(--px,1))] text-[#6B6B67] leading-4">
               Use Customers.Direct to run reports and find opportunities.
             </p>
           </Card>
@@ -147,7 +147,7 @@ export default function LaunchKitWhatYouGet() {
                 "Show the report",
                 "Close your first client",
               ].map((item) => (
-                <li key={item} className="flex items-start gap-1.5 text-[11px] text-[#171717]">
+                <li key={item} className="flex items-start gap-1.5 text-[length:calc(11px*var(--px,1))] text-[#171717]">
                   <Check size={12} className="text-[#0866F5] mt-0.5 shrink-0" />
                   {item}
                 </li>
@@ -165,7 +165,7 @@ export default function LaunchKitWhatYouGet() {
               ].map((item) => (
                 <div
                   key={item}
-                  className="rounded-lg border border-[#E5E5E1] bg-[#FAFAF8] px-2 py-2 text-[10px] leading-3 text-[#171717] flex items-start gap-1"
+                  className="rounded-lg border border-[#E5E5E1] bg-[#FAFAF8] px-2 py-2 text-[length:calc(10px*var(--px,1))] leading-3 text-[#171717] flex items-start gap-1"
                 >
                   <MessageSquare size={10} className="text-[#0866F5] mt-0.5 shrink-0" />
                   {item}

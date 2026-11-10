@@ -180,10 +180,10 @@ export function BusinessSwitcher({
         <BusinessMark name={active.name} logoUrl={active.logoUrl} domain={active.domain} />
         {/* Long names get two lines, so the start of the name and the domain both stay readable. */}
         <span className="min-w-0 flex-1">
-          <span className="line-clamp-2 text-[13px] leading-snug font-medium break-words text-foreground" data-testid="switcher-name">
+          <span className="line-clamp-2 text-[length:calc(13px*var(--px,1))] leading-snug font-medium break-words text-foreground" data-testid="switcher-name">
             {active.name}
           </span>
-          {active.domain && <span className="block truncate text-[11px] leading-snug text-muted-foreground" title={active.domain}>{active.domain}</span>}
+          {active.domain && <span className="block truncate text-[length:calc(11px*var(--px,1))] leading-snug text-muted-foreground" title={active.domain}>{active.domain}</span>}
         </span>
         {pending ? (
           <Loader2 className="size-3.5 shrink-0 animate-spin text-muted-foreground" aria-label="Switching" />

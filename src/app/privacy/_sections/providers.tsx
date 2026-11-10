@@ -53,7 +53,7 @@ export function Subprocessors() {
       <p>We use these companies to run the service. Each one only gets what it needs for its job.</p>
       {/* Stacked on phones so the "receives" column is never hidden behind a sideways scroll. */}
       <div className="sm:overflow-hidden sm:rounded-md sm:border sm:border-border">
-        <table className="w-full text-left text-[13px]">
+        <table className="w-full text-left text-[length:calc(13px*var(--px,1))]">
           <thead className="hidden bg-muted text-muted-foreground sm:table-header-group">
             <tr>
               <th scope="col" className="px-3 py-2 font-medium">Company</th>
