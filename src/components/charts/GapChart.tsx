@@ -1,6 +1,10 @@
+"use client";
+
 import { useId } from "react";
 import { CHART, niceScale, smoothPath } from "./chart-kit";
 import { Legend } from "./Legend";
+import { useChartWidth } from "./use-chart-width";
+import { ScrollX } from "./ScrollX";
 
 type Line = { name: string; values: (number | null)[] };
 
@@ -11,18 +15,43 @@ type Props = {
   ariaLabel: string;
 };
 
-const W = 760;
-const H = 260;
+// Fixed height; the width is the chart's real width (useChartWidth), so a wider card gives a wider chart, not a taller
+// one. 760 is the design width used before the first measure.
+const H = 240;
 const LEFT = 44;
-const RIGHT = 650;
+const LINE = 15;
+const CHARS = 13;
+
+/** A name split into at most two lines of about 13 characters, the rest cut with an ellipsis. */
+function endLabel(name: string): string[] {
+  const lines: string[] = [];
+  let line = "";
+  for (const word of name.trim().split(/\s+/)) {
+    const next = line ? `${line} ${word}` : word;
+    if (next.length <= CHARS || !line) line = next;
+    else {
+      lines.push(line);
+      line = word;
+    }
+  }
+  if (line) lines.push(line);
+  const cut = (t: string) => (t.length > CHARS ? `${t.slice(0, CHARS - 1)}…` : t);
+  if (lines.length <= 2) return lines.map(cut);
+  // Three lines or more: the first, then the rest cut to one line with an ellipsis.
+  const rest = lines.slice(1).join(" ");
+  return [cut(lines[0]), `${rest.slice(0, CHARS - 1)}…`];
+}
 const TOP = 20;
-const BOTTOM = 232;
+const BOTTOM = 212;
 
 // Check-in gap chart (C-Compare): you and one competitor over time, the space between the lines filled with a dotted
 // coral pattern, and the gap labelled at each scan where both were checked. Hand-built SVG: Recharts cannot fill
 // between two lines.
 export function GapChart({ labels, you, rival, ariaLabel }: Props) {
   const patternId = `gap${useId().replace(/:/g, "")}`;
+  const [box, W] = useChartWidth<HTMLDivElement>(760, 560);
+  // Room on the right for the two end labels (a name on up to two lines, about 13 characters each).
+  const RIGHT = W - 110;
   const n = labels.length;
   const all = [...you.values, ...rival.values].filter((v): v is number => v !== null);
   const { top, ticks } = niceScale(Math.max(0, ...all));
@@ -35,6 +64,15 @@ export function GapChart({ labels, you, rival, ariaLabel }: Props) {
   const gap = both.length > 1 ? `${smoothPath(rp)} ${smoothPath([...yp].reverse()).replace("M", "L")} Z` : "";
   const lastYou = yp.at(-1);
   const lastRival = rp.at(-1);
+  // The competitor's name at the end of its line, on up to two lines (it used to fall back to "Them"), centred on the
+  // point; "You" moves clear of it when the lines end close together.
+  const rivalLines = endLabel(rival.name);
+  const rivalTop = lastRival ? lastRival[1] + 4 - ((rivalLines.length - 1) * LINE) / 2 : 0;
+  const rivalBottom = rivalTop + (rivalLines.length - 1) * LINE;
+  let youY = lastYou ? lastYou[1] + 4 : 0;
+  if (lastYou && lastRival && youY > rivalTop - LINE && youY < rivalBottom + LINE) {
+    youY = lastYou[1] >= lastRival[1] ? rivalBottom + LINE + 2 : rivalTop - LINE - 2;
+  }
   // Coral while they lead at the latest scan, brand blue once you do.
   const lastBoth = both.at(-1);
   const behind = lastBoth === undefined || (rival.values[lastBoth] as number) >= (you.values[lastBoth] as number);
@@ -43,8 +81,9 @@ export function GapChart({ labels, you, rival, ariaLabel }: Props) {
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="overflow-x-auto">
-        <svg viewBox={`0 0 ${W} ${H}`} className="block h-auto w-full min-w-[560px]" role="img" aria-label={ariaLabel}>
+      <ScrollX>
+        <div ref={box} className="min-w-[560px]">
+        <svg viewBox={`0 0 ${W} ${H}`} className="block h-auto w-full" role="img" aria-label={ariaLabel}>
           <defs>
             <pattern id={patternId} width="7" height="7" patternUnits="userSpaceOnUse">
               <rect width="7" height="7" fill={fillTint} />
@@ -99,17 +138,22 @@ export function GapChart({ labels, you, rival, ariaLabel }: Props) {
             );
           })}
           {lastRival && (
-            <text x={RIGHT + 12} y={lastRival[1] + 4} fill={CHART.rivalText} fontSize="13" fontWeight="700">
-              {rival.name.length > 12 ? "Them" : rival.name}
+            <text x={RIGHT + 12} y={rivalTop} fill={CHART.rivalText} fontSize="13" fontWeight="700">
+              {rivalLines.map((line, k) => (
+                <tspan key={k} x={RIGHT + 12} dy={k === 0 ? 0 : LINE}>
+                  {line}
+                </tspan>
+              ))}
             </text>
           )}
           {lastYou && (
-            <text x={RIGHT + 12} y={lastYou[1] + (lastRival && Math.abs(lastRival[1] - lastYou[1]) < 16 ? 18 : 4)} fill={CHART.you} fontSize="13" fontWeight="700">
+            <text x={RIGHT + 12} y={youY} fill={CHART.you} fontSize="13" fontWeight="700">
               You
             </text>
           )}
         </svg>
-      </div>
+        </div>
+      </ScrollX>
       <Legend
         shape="square"
         items={[

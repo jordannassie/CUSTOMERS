@@ -3,6 +3,7 @@ import { ArrowRight, ThumbsUp } from "lucide-react";
 import type { MoveAction } from "@/components/actions/ActionsBoard";
 import { AddToActionsButton, type AddToActionsAction } from "@/components/actions/AddToActionsButton";
 import { StatusPill, type PillTone } from "@/components/checkin";
+import { ShowMoreList } from "@/components/checkin/ShowMoreList";
 import type { LeadCard, LeaderRow, ReasonCard } from "@/modules/competitors";
 import { STATUS_TEXT, toActionStatus, type ActionState, type ActionStatus } from "@/modules/opportunities/board/service";
 
@@ -64,8 +65,11 @@ export function ReasonCards({
     );
   }
   return (
-    <ol className="flex flex-col gap-3" data-testid="reason-cards">
-      {cards.map((c) => {
+    // The first four, biggest first; "Show all" opens the rest (a long list buried the top fixes).
+    <ShowMoreList
+      testId="reason-cards"
+      noun="fixes"
+      items={cards.map((c) => {
         const state = states[c.key] ?? (c.fix ? { id: c.fix.id, status: toActionStatus(c.fix.status) } : null);
         return (
           <li key={c.key} className="flex flex-col gap-3 rounded-lg border border-border bg-card p-4" data-testid="reason-card">
@@ -120,7 +124,7 @@ export function ReasonCards({
           </li>
         );
       })}
-    </ol>
+    />
   );
 }
 

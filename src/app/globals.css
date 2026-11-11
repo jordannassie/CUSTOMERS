@@ -45,7 +45,7 @@
   --cd-rival-ink: #8A3B26;
   --cd-rival-tint: #FBEDE8;
   --cd-rival-mark: #F7D9D3;
-  --cd-danger: #B5402A;
+  --cd-danger: var(--cd-rival-ink); /* problems use the coral family, no separate red (2026-11-10) */
 
   /* States: good is the brand blue, so-so is neutral, bad is coral. */
   --cd-good: var(--cd-primary);

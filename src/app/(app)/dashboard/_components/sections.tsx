@@ -2,7 +2,7 @@ import { AiMessage, Explain } from "@/components/checkin";
 import { NumbersGlance, PicksGlance } from "@/components/overview/checkin/Glance";
 import { ActionsMessage, MovedMessage, SourcesMessage } from "@/components/overview/checkin/Messages";
 import { ScanLines } from "@/components/overview/checkin/ScanLines";
-import { ToolList, ToolRingsChart, toolsSentence } from "@/components/overview/checkin/ToolRings";
+import { ToolList, ToolRingsChart } from "@/components/overview/checkin/ToolRings";
 import { sourceLines, standingSourceLines } from "@/components/overview/OverviewKpis";
 import { WaitForFixes } from "@/components/opportunities/WaitForFixes";
 import { likelyReason, type getOverviewCompete, type getPickedInstead } from "@/modules/competitors";
@@ -44,21 +44,21 @@ export async function ThreadSection({
     period && period.answers > 0
       ? `You came up in ${period.named} of the ${period.answers} answers AI gave your customers${days === 30 ? "" : ` in the last ${days} days`}.`
       : score.sentence;
-  const tools = toolsSentence(overview.models);
   const timeline = c?.timeline ?? [];
   const lines = c?.lines ?? [];
 
   return (
     <>
       <AiMessage place="first" index={0}>
-        {/* The lead and its explanation beside the rings, as in C-Overview; the rings go under them on a phone. */}
-        <div className="flex flex-wrap items-center gap-6">
+        {/* The lead and its explanation beside the rings, top-aligned so the lead starts at the top of the card; the rings
+            go under them on a phone. */}
+        <div className="flex flex-wrap items-start gap-6">
           <div className="flex min-w-[240px] flex-[1_1_300px] flex-col gap-3">
             <h2 className="font-display text-[22px] leading-[1.3] font-semibold sm:text-[26px]">{lead}</h2>
-            {/* The 30-day score's own sentence, kept word for word (MVP_SPEC 8.4). */}
+            {/* The 30-day score's own sentence, kept word for word (MVP_SPEC 8.4). Each AI's share is in the rings and the
+                tool cards below, so it is not repeated here. */}
             <Explain>
               <span data-testid="score-sentence">{score.sentence}</span>
-              {tools ? ` ${tools}` : ""}
             </Explain>
           </div>
           <ToolRingsChart models={overview.models} center={period ? { value: String(period.named), caption: `of ${period.answers}` } : { value: `${score.value}`, caption: "of 100" }} />

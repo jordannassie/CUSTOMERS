@@ -52,7 +52,7 @@ export function LeaderTable({
             <th className={TH}>{trends ? "Score and last scans" : "Score"}</th>
             {changes && <th className={cn(TH, "hidden @min-[640px]:table-cell")}>Change</th>}
             {tools.map((t) => (
-              <th key={t.id} className={cn(TH, "hidden text-center @min-[820px]:table-cell")}>
+              <th key={t.id} className={cn(TH, "hidden text-center @min-[1080px]:table-cell")}>
                 {t.label}
               </th>
             ))}
@@ -102,7 +102,7 @@ export function LeaderTable({
                 </td>
               )}
               {tools.map((t) => (
-                <td key={t.id} className={cn(TD, "hidden text-center @min-[820px]:table-cell")}>
+                <td key={t.id} className={cn(TD, "hidden text-center @min-[1080px]:table-cell")}>
                   <HeatCell value={r.byModel[t.id]} />
                 </td>
               ))}

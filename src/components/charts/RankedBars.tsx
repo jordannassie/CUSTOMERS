@@ -26,9 +26,13 @@ export function RankedBars({ rows, ariaLabel, headers, max, footnote }: Props) {
   const top = max ?? Math.max(1, ...rows.map((r) => r.value));
   const hasTools = rows.some((r) => r.tools?.length);
   // minmax(0, ...): a long name with no spaces shrinks and wraps instead of widening the grid past the screen.
-  const grid = hasTools ? "grid-cols-[minmax(0,1fr)_minmax(0,2.2fr)_auto]" : "grid-cols-[minmax(0,1fr)_minmax(0,2.2fr)]";
+  // Names get more of the row while this chart is narrow (a phone, or a half-width card), so a usual domain fits on one
+  // line; measured on the chart's own width.
+  const grid = hasTools
+    ? "grid-cols-[minmax(0,1.5fr)_minmax(0,1.5fr)_auto] @min-[560px]:grid-cols-[minmax(0,1fr)_minmax(0,2.2fr)_auto]"
+    : "grid-cols-[minmax(0,1.5fr)_minmax(0,1.5fr)] @min-[560px]:grid-cols-[minmax(0,1fr)_minmax(0,2.2fr)]";
   return (
-    <div className="flex flex-col" role="figure" aria-label={ariaLabel}>
+    <div className="@container flex flex-col" role="figure" aria-label={ariaLabel}>
       {headers && (
         <div className={cn("grid gap-3 pb-1.5 text-xs text-muted-foreground", grid)}>
           <span>{headers.label}</span>

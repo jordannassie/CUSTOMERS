@@ -2,6 +2,7 @@ import { Check, Lock, Shield } from "lucide-react";
 import Image from "next/image";
 import LaunchKitBuyButton from "@/components/site/LaunchKitBuyButton";
 import { LAUNCH_KIT_AD_IMAGE } from "@/config/launch-kit-assets";
+import { BrandLogo } from "@/components/app/BrandLogo";
 
 const INCLUDED = [
   "Step-by-step video training",
@@ -18,7 +19,10 @@ export default function LaunchKitOfferCard() {
   return (
     <aside className="rounded-xl overflow-hidden bg-surface">
       <div className="bg-brand px-5 py-3 flex items-center justify-between text-white">
-        <span className="text-[13px] font-semibold">Customers.Direct</span>
+        <span>
+          <BrandLogo height={15} tone="light" />
+          <span className="sr-only">Customers.Direct</span>
+        </span>
         <span className="flex items-center gap-1.5 text-[11px] font-medium text-white/90">
           <Lock size={12} aria-hidden="true" />
           Secure checkout

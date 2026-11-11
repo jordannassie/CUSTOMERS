@@ -5,7 +5,10 @@ import { cn } from "cn";
 // message cards on the left, then follow-up chips and the composer. Presentation only; every word in a card comes
 // from data the page already loaded.
 
-/** Page frame: the conversation column (max 820px) and the right rail (260 to 340px), wrapping under on a phone. */
+/**
+ * Page frame: the conversation column takes all the room the rail leaves (up to 1120px), and the right rail is a fixed
+ * 280px beside it on wide screens; below 1280px the rail goes under the column.
+ */
 export function CheckInLayout({ children, rail, railLabel = "At a glance", className }: {
   children: React.ReactNode;
   rail?: React.ReactNode;
@@ -13,10 +16,10 @@ export function CheckInLayout({ children, rail, railLabel = "At a glance", class
   className?: string;
 }) {
   return (
-    <div className={cn("flex w-full flex-wrap items-start gap-7 px-4 pt-4 pb-12 sm:px-7 sm:pt-6", className)}>
-      <div className="mx-auto flex min-w-0 max-w-[820px] flex-[3_1_560px] flex-col gap-[18px]">{children}</div>
+    <div className={cn("flex w-full flex-wrap items-start gap-6 px-4 pt-4 pb-12 sm:px-7 sm:pt-6", className)}>
+      <div className="mx-auto flex min-w-0 max-w-[1120px] flex-[1_1_560px] flex-col gap-[18px]">{children}</div>
       {rail ? (
-        <aside aria-label={railLabel} className="flex w-full min-w-0 flex-[1_1_260px] flex-col gap-3.5 lg:max-w-[340px]">
+        <aside aria-label={railLabel} className="flex w-full min-w-0 flex-col gap-3.5 xl:w-[280px] xl:flex-none">
           {rail}
         </aside>
       ) : null}
@@ -35,26 +38,18 @@ export function DayRule({ children }: { children: React.ReactNode }) {
   );
 }
 
-/** The user's question: a gradient bubble on the right with a 6px corner on its tail. */
-export function UserBubble({ children }: { children: React.ReactNode }) {
-  return (
-    <p className="max-w-[80%] animate-rise self-end rounded-[20px_20px_6px_20px] bg-gradient-user px-[18px] py-3.5 text-[15px] text-white shadow-user [animation-delay:0.1s]">
-      {children}
-    </p>
-  );
-}
-
 type Place = "first" | "middle" | "last" | "only";
+// Every message card has the same 20px corners: the cards line up with the page title, no avatar beside them.
 const CORNERS: Record<Place, string> = {
-  first: "rounded-[6px_20px_20px_20px]",
-  middle: "rounded-[20px]",
-  last: "rounded-[20px_20px_20px_6px]",
-  only: "rounded-[6px_20px_20px_6px]",
+  first: "rounded-xl",
+  middle: "rounded-xl",
+  last: "rounded-xl",
+  only: "rounded-xl",
 };
 
 /**
- * One AI message card. The first carries the avatar and a 6px corner by it; the last has its 6px corner at the
- * bottom. `lead` is the serif headline sentence; `children` the plain explanation and the chart.
+ * One AI message card, full width of the conversation column so it lines up with the page title. `place` is kept
+ * for callers; every card has the same corners. `lead` is the headline sentence; `children` the explanation and chart.
  */
 export function AiMessage({
   place = "middle",
@@ -77,19 +72,8 @@ export function AiMessage({
   className?: string;
   testId?: string;
 }) {
-  const withAvatar = place === "first" || place === "only";
   return (
-    <div className="flex animate-rise items-start gap-3" style={{ animationDelay: `${0.4 + index * 0.5}s` }} data-testid={testId}>
-      {withAvatar ? (
-        <span
-          className="hidden size-9 shrink-0 items-center justify-center rounded-full bg-gradient-ai font-display font-semibold text-white sm:flex"
-          aria-hidden="true"
-        >
-          C
-        </span>
-      ) : (
-        <span className="hidden w-9 shrink-0 sm:block" aria-hidden="true" />
-      )}
+    <div className="flex animate-rise items-stretch" style={{ animationDelay: `${0.4 + index * 0.5}s` }} data-testid={testId}>
       <section className={cn("flex min-w-0 flex-1 flex-col gap-3.5 bg-card px-5 py-[22px] sm:px-6", CORNERS[place], className)}>
         {lead || aside ? (
           <div className="flex flex-wrap items-start gap-6">
@@ -107,6 +91,19 @@ export function AiMessage({
   );
 }
 
+/**
+ * Two message cards side by side when the conversation column has room (700px or more of its own width), one under the
+ * other when it does not. Measured on the column, so it also works when the right rail wraps under it. Paired cards
+ * stretch to the same height.
+ */
+export function CardPair({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="@container">
+      <div className="grid gap-[18px] @min-[700px]:grid-cols-2">{children}</div>
+    </div>
+  );
+}
+
 /** The plain-language line under a lead. */
 export function Explain({ children, className }: { children: React.ReactNode; className?: string }) {
   return <p className={cn("max-w-prose text-[15px] leading-relaxed text-ink-2", className)}>{children}</p>;
@@ -116,7 +113,7 @@ export function Explain({ children, className }: { children: React.ReactNode; cl
 export function FollowUps({ items }: { items: { label: string; href: string }[] }) {
   if (items.length === 0) return null;
   return (
-    <nav aria-label="Suggested questions" className="flex animate-rise flex-wrap gap-2 sm:pl-12" style={{ animationDelay: "1.2s" }}>
+    <nav aria-label="Suggested questions" className="flex animate-rise flex-wrap gap-2" style={{ animationDelay: "1.2s" }}>
       {items.map((i) => (
         <Link
           key={i.href + i.label}

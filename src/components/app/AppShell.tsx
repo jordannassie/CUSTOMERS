@@ -17,6 +17,7 @@ import { AppSidebar, type AppSidebarProps } from "./AppSidebar";
 import { ScanWatcher, type ScanStatusAction } from "./ScanWatcher";
 import { SkipLink } from "./SkipLink";
 import { TopBar } from "./TopBar";
+import { BrandLogo } from "./BrandLogo";
 
 type AppShellProps = AppSidebarProps & {
   banners: AppBanner[];
@@ -49,7 +50,7 @@ export function AppShell({
         names={names}
         activeBusinessId={sidebar.activeBusinessId}
       />
-      <aside className="scroll-quiet sticky top-0 hidden h-dvh w-[220px] shrink-0 overflow-y-auto lg:block">
+      <aside className="scroll-quiet sticky top-0 hidden h-dvh w-[220px] shrink-0 overflow-y-auto border-r border-border bg-surface lg:block">
         <AppSidebar {...sidebar} />
       </aside>
 
@@ -69,7 +70,7 @@ export function AppShell({
               </SheetTrigger>
               <SheetContent
                 side="left"
-                className="scroll-quiet w-72 gap-0 overflow-y-auto bg-background p-0"
+                className="scroll-quiet w-72 gap-0 overflow-y-auto bg-surface p-0"
               >
                 <SheetTitle className="sr-only">Menu</SheetTitle>
                 <SheetDescription className="sr-only">
@@ -84,9 +85,9 @@ export function AppShell({
             <Link
               href="/dashboard"
               aria-label="Customers.Direct, go to Overview"
-              className="flex-1 font-display font-semibold text-lg text-foreground"
+              className="flex min-w-0 flex-1 items-center py-2"
             >
-              Customers.Direct
+              <BrandLogo height={18} priority />
             </Link>
             {creditsShort && (
               <span

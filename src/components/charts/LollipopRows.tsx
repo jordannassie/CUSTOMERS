@@ -1,5 +1,9 @@
+"use client";
+
 import { CHART } from "./chart-kit";
 import { Legend } from "./Legend";
+import { ScrollX } from "./ScrollX";
+import { useChartWidth } from "./use-chart-width";
 
 export type LollipopRow = { label: string; /** 0 to 100 */ you: number | null; rival: number | null };
 
@@ -11,18 +15,20 @@ type Props = {
   unit?: string;
 };
 
-const W = 720;
-const LX = (v: number) => 160 + (v / 100) * 520;
 
 // Check-in paired dots (C-Compare): you and one competitor per AI tool, joined by a line, with how far ahead or
 // behind you are. A side with no answers from that tool shows no dot. Hand-built SVG.
 export function LollipopRows({ rows, rivalName, ariaLabel, unit = "%" }: Props) {
-  const H = 50 + rows.length * 64;
+  // Drawn at its real width (fixed row height), so a wider card does not make the rows taller.
+  const [box, W] = useChartWidth<HTMLDivElement>(720, 520);
+  const LX = (v: number) => 160 + (v / 100) * (W - 200);
+  const H = 44 + rows.length * 56;
   const base = H - 30;
   return (
     <div className="flex flex-col gap-3">
-      <div className="overflow-x-auto">
-        <svg viewBox={`0 0 ${W} ${H}`} className="block h-auto w-full min-w-[520px]" role="img" aria-label={ariaLabel}>
+      <ScrollX>
+        <div ref={box} className="min-w-[520px]">
+        <svg viewBox={`0 0 ${W} ${H}`} className="block h-auto w-full" role="img" aria-label={ariaLabel}>
           {[0, 25, 50, 75, 100].map((t) => (
             <g key={t}>
               <line x1={LX(t)} x2={LX(t)} y1="20" y2={base - 4} stroke={CHART.grid} />
@@ -33,7 +39,7 @@ export function LollipopRows({ rows, rivalName, ariaLabel, unit = "%" }: Props) 
             </g>
           ))}
           {rows.map((r, k) => {
-            const yy = 50 + k * 64;
+            const yy = 46 + k * 56;
             const both = r.you !== null && r.rival !== null;
             const d = both ? Math.round(r.rival as number) - Math.round(r.you as number) : 0;
             const xa = r.you !== null ? LX(r.you) : null;
@@ -67,7 +73,8 @@ export function LollipopRows({ rows, rivalName, ariaLabel, unit = "%" }: Props) 
             );
           })}
         </svg>
-      </div>
+        </div>
+      </ScrollX>
       <Legend
         items={[
           { label: "You", color: CHART.you, strong: true },

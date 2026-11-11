@@ -5,6 +5,7 @@ import { Cell, LabelList, ReferenceArea, ResponsiveContainer, Scatter, ScatterCh
 import { CHART, niceScale } from "./chart-kit";
 import { ChartTooltipCard } from "./Legend";
 import { useReducedMotion } from "./use-reduced-motion";
+import { ScrollX } from "./ScrollX";
 
 export type Bubble = {
   name: string;
@@ -41,7 +42,8 @@ export function BubbleChart({ points, ariaLabel, xLabel = "Google rating", yLabe
   const data = [...points].sort((a, b) => Number(!!a.emphasis) - Number(!!b.emphasis));
 
   return (
-    <div className="overflow-x-auto" role="img" aria-label={ariaLabel}>
+    <ScrollX>
+      <div role="img" aria-label={ariaLabel}>
       <div className="h-[360px] min-w-[520px]" aria-hidden="true">
         <ResponsiveContainer width="100%" height="100%">
           <ScatterChart id={id} margin={{ top: 16, right: 96, bottom: 28, left: 0 }}>
@@ -118,5 +120,6 @@ export function BubbleChart({ points, ariaLabel, xLabel = "Google rating", yLabe
         </ResponsiveContainer>
       </div>
     </div>
+      </ScrollX>
   );
 }

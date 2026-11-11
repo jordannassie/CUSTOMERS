@@ -63,16 +63,15 @@ export function ScoreGlance({ score, sample, notes }: { score: Score; sample: bo
 
 const ordinal = (n: number) => `${n}${n % 10 === 1 && n % 100 !== 11 ? "st" : n % 10 === 2 && n % 100 !== 12 ? "nd" : n % 10 === 3 && n % 100 !== 13 ? "rd" : "th"}`;
 
-/** The numbers under the score: share of AI picks and place, answers that named you, your site and rivals' sites cited. */
+/** The numbers under the score: share of AI picks and place, your site and rivals' sites cited. (Answers that named you
+ * is the first card's headline, so it is not repeated here.) */
 export function NumbersGlance({ compete, sources }: { compete: OverviewCompete | null; sources: SourcesPage | null }) {
-  const period = compete?.period ?? null;
   const cited = compete?.ownSite ? compete.ownSite.cited : sources ? sources.ownSite.answers : null;
   const others = sources?.competitorSiteTimes;
   const times = (n: number) => `${n} ${n === 1 ? "time" : "times"}`;
   const rows: StatRow[] = [
     { label: "Share of AI picks", value: compete?.share ? `${compete.share.percent}%` : "Not yet", testId: "kpi-share" },
     ...(compete?.share && compete.share.of >= 2 ? [{ label: "Rank by score", value: `${ordinal(compete.share.rank)} of ${compete.share.of}` }] : []),
-    { label: `Answers that named you, ${period?.days ?? 30} days`, value: period ? `${period.named} of ${period.answers}` : "None yet", testId: "kpi-named" },
     {
       label: "Your site cited",
       value: compete?.ownSite && !compete.ownSite.hasSite ? "No website saved" : cited === null ? "Not yet" : times(cited),

@@ -3,6 +3,7 @@ import { LogOut } from "lucide-react";
 import { cn } from "cn";
 import { stepPath, type StepSlug } from "@/modules/onboarding/wizard/steps";
 import { DoneStepIcon } from "./LinkPending";
+import { BrandLogo } from "@/components/app/BrandLogo";
 
 export type FrameStep = { slug: StepSlug; label: string; state: "done" | "current" | "todo" };
 
@@ -27,7 +28,10 @@ export function WizardFrame({ steps, title, lead, embedded = false, children }: 
       {!embedded ? (
         <aside className="hidden lg:block">
           <div className="sticky top-0 flex min-h-dvh flex-col px-6 py-8">
-            <p className="self-start px-2 font-display font-semibold text-xl text-foreground">Customers.Direct</p>
+            <p className="self-start px-2 py-1">
+              <BrandLogo height={21} priority />
+              <span className="sr-only">Customers.Direct</span>
+            </p>
             <p className="mt-8 px-2 text-[13px] text-muted-foreground">Setting up</p>
             <ol className="mt-3 flex flex-col gap-1" aria-label="Setup steps">
               {steps.map((s, i) => (

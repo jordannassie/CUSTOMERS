@@ -35,9 +35,11 @@ export function ShareOfVoiceChart({ view }: { view: CompetitorChartsView }) {
   const active = slices.findIndex((s) => s.key === shown.key);
 
   return (
-    <figure className="m-0 flex w-full flex-col gap-4" data-testid="share-of-voice-chart">
-      <div className="grid items-center gap-6 sm:grid-cols-[minmax(0,13rem)_minmax(0,1fr)]">
-        <div className="relative mx-auto aspect-square w-full max-w-52" onMouseLeave={() => setFocus(null)}>
+    <figure className="@container m-0 flex w-full flex-col gap-4" data-testid="share-of-voice-chart">
+      {/* Donut beside the list: a smaller donut in a half-width card, the full size when the card is wide. Only a very
+          narrow card (a phone) puts the list under it. */}
+      <div className="grid items-center gap-5 @min-[340px]:grid-cols-[minmax(0,8.5rem)_minmax(0,1fr)] @min-[520px]:grid-cols-[minmax(0,13rem)_minmax(0,1fr)]">
+        <div className="relative mx-auto aspect-square w-full max-w-52 @min-[340px]:max-w-34 @min-[520px]:max-w-52" onMouseLeave={() => setFocus(null)}>
           <ChartContainer config={CONFIG} className="aspect-square h-full w-full" aria-hidden="true">
             <PieChart>
               <Pie
@@ -74,7 +76,7 @@ export function ShareOfVoiceChart({ view }: { view: CompetitorChartsView }) {
             <span className="max-w-[7.5rem] truncate text-xs font-medium text-foreground" title={shown.name}>
               {shown.isYou ? "You" : shown.name}
             </span>
-            <span className="text-[11px] tabular-nums text-muted-foreground">{times(shown.mentions)}</span>
+            <span className="text-[11px] tabular-nums text-muted-foreground @max-[519px]:hidden">{times(shown.mentions)}</span>
           </div>
         </div>
 

@@ -19,15 +19,15 @@ export function PageSkeleton() {
 export function AppShellSkeleton() {
   return (
     <div className="flex min-h-dvh bg-background">
-      <aside className="hidden h-dvh w-[220px] shrink-0 flex-col gap-[22px] px-4 py-6 lg:flex">
-        <Skeleton className="mx-2.5 h-7 w-40 bg-surface" />
-        <Skeleton className="h-[52px] rounded-[14px] bg-surface" />
-        <div className="flex flex-col gap-2">
+      <aside className="hidden h-dvh w-[220px] shrink-0 flex-col gap-4 border-r border-border bg-surface px-3 py-5 lg:flex">
+        <Skeleton className="mx-2 h-6 w-36" />
+        <Skeleton className="h-12 rounded-[12px]" />
+        <div className="flex flex-col gap-1">
           {Array.from({ length: 9 }, (_, i) => (
-            <Skeleton key={i} className="h-10 rounded-[10px] bg-surface/70" />
+            <Skeleton key={i} className="h-8 rounded-[8px]" />
           ))}
         </div>
-        <Skeleton className="mt-auto h-20 rounded-[14px] bg-surface/70" />
+        <Skeleton className="mt-auto h-16 rounded-[12px]" />
       </aside>
       <div className="flex min-w-0 flex-1 flex-col">
         <div className="flex flex-1 flex-col">

@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { EXTRA_ITEMS, MAIN_ITEMS, isActiveItem, type AdminNavItem } from "./nav-items";
 import { appFetch } from "@/lib/session-expired";
+import { BrandLogo } from "@/components/app/BrandLogo";
 
 function useUnreadLeads(pathname: string): number {
   const [count, setCount] = useState(0);
@@ -111,7 +112,8 @@ function NavBody({ adminEmail, onNavigate }: { adminEmail: string; onNavigate?: 
 function Logo() {
   return (
     <Link href="/internal/admin" className="flex items-center gap-2">
-      <span className="font-display font-semibold text-lg text-foreground">Customers.Direct</span>
+      <BrandLogo height={19} />
+      <span className="sr-only">Customers.Direct</span>
       <span className="rounded-full bg-foreground px-2 text-[12px] font-semibold leading-5 text-background">Admin</span>
     </Link>
   );

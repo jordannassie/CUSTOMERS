@@ -86,8 +86,8 @@ export function ScanLines({
                 data-testid="scan-line"
               >
                 <span className="h-[3px] w-3.5 shrink-0 rounded-full" style={{ background: off ? "var(--cd-border-strong)" : colorAt(i) }} aria-hidden="true" />
+                {/* The latest value is at the end of each line on the chart, so the legend shows names only. */}
                 <span className={cn("truncate", l.isYou && "font-semibold text-foreground")}>{l.isYou ? "You" : l.name}</span>
-                <span className="font-semibold tabular-nums text-foreground">{l.latest ?? "None"}</span>
               </button>
             </li>
           );

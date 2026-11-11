@@ -1,4 +1,5 @@
 import { CHART, signed, spreadLabels } from "./chart-kit";
+import { ScrollX } from "./ScrollX";
 
 export type SlopeRow = { name: string; from: number | null; to: number | null; color: string; emphasis?: boolean };
 
@@ -28,7 +29,7 @@ export function SlopeChart({ fromLabel, toLabel, rows, ariaLabel, format = (n) =
   const ordered = rows.map((r, i) => ({ r, i })).sort((a, b) => Number(!!a.r.emphasis) - Number(!!b.r.emphasis));
 
   return (
-    <div className="overflow-x-auto">
+    <ScrollX>
       <svg viewBox={`0 0 ${W} ${H}`} className="block h-auto w-full min-w-[520px]" role="img" aria-label={ariaLabel}>
         <line x1={X1} x2={X1} y1={TOP - 6} y2={BOTTOM + 2} stroke={CHART.border} />
         <line x1={X2} x2={X2} y1={TOP - 6} y2={BOTTOM + 2} stroke={CHART.border} />
@@ -72,6 +73,6 @@ export function SlopeChart({ fromLabel, toLabel, rows, ariaLabel, format = (n) =
           );
         })}
       </svg>
-    </div>
+    </ScrollX>
   );
 }

@@ -53,11 +53,8 @@ export default async function QuestionsPage({ searchParams }: { searchParams: Se
       <QuestionsProvider key={`${business.id}-${focus.q}-${focus.site}-${focus.named}-${focus.ai}`} view={view} focus={focus} addAction={addToActions}>
         <div className="flex flex-col gap-5">
           <PageHeader
-            title={
-              <>
-                Questions <SampleDataBadge show={workspace.account?.isTest} />
-              </>
-            }
+            title="Questions"
+            badge={<SampleDataBadge show={workspace.account?.isTest} />}
             description={<>What we ask {asked} for you on every scan, and what each one answered.</>}
             actions={<HeaderActions />}
           />

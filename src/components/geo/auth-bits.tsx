@@ -2,14 +2,14 @@ import Link from "next/link";
 import { cn } from "cn";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { BrandLogo } from "@/components/app/BrandLogo";
 
 export function AuthLogo() {
   return (
     <div className="mb-8 text-center">
       {/* No prefetch: every login and signup view rendered the whole home page on the server, often twice. */}
-      {/* Check-in theme: the wordmark in the heading font, as in the app's sidebar. */}
-      <Link href="/" prefetch={false} aria-label="Customers.Direct home" className="inline-block rounded-md px-1 font-display font-semibold text-[26px] text-foreground">
-        Customers.Direct
+      <Link href="/" prefetch={false} aria-label="Customers.Direct home" className="inline-block rounded-md px-1 py-1">
+        <BrandLogo height={26} priority />
       </Link>
     </div>
   );

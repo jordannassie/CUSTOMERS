@@ -1,16 +1,12 @@
 import Link from "next/link";
 import { cn } from "cn";
+import { BrandLogo } from "@/components/app/BrandLogo";
 
-// Check-in: the wordmark in Plus Jakarta Sans, the same as the app's sidebar. `preload` stays so callers need no change
-// (the old logo image used it); a text wordmark has nothing to preload.
-export function Logo({ className }: { className?: string; preload?: boolean }) {
+// The Customers.Direct logo linking home (header, footer, status pages). `preload` loads it first above the fold.
+export function Logo({ className, preload = false, tone = "dark" }: { className?: string; preload?: boolean; tone?: "dark" | "light" }) {
   return (
-    <Link
-      href="/"
-      aria-label="Customers.Direct home"
-      className={cn("inline-flex shrink-0 rounded-md font-display font-semibold text-xl leading-none whitespace-nowrap text-foreground", className)}
-    >
-      Customers.Direct
+    <Link href="/" aria-label="Customers.Direct home" className={cn("inline-flex shrink-0 items-center rounded-md py-1", className)}>
+      <BrandLogo height={22} tone={tone} priority={preload} />
     </Link>
   );
 }

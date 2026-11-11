@@ -4,7 +4,7 @@ import { notFound, redirect } from "next/navigation";
 import { FileText, Share2 } from "lucide-react";
 import { RunScanButton } from "@/components/app/RunScanButton";
 import { ScoreGauge } from "@/components/charts";
-import { AiMessage, CheckInLayout, Composer, DayRule, Explain, FollowUps, RailCard, RailNotice, UserBubble } from "@/components/checkin";
+import { AiMessage, CheckInLayout, DayRule, Explain, FollowUps, RailCard, RailNotice } from "@/components/checkin";
 import { ScoreGlance } from "@/components/overview/checkin/Glance";
 import { RANGES, RangeControl } from "@/components/overview/OverviewKpis";
 import { Button } from "@/components/ui/button";
@@ -139,8 +139,12 @@ export default async function OverviewPage({ searchParams }: { searchParams: Pro
         </p>
       )}
 
-      {overview.lastCheckedAt && <DayRule>Your check-in, from your {shortDay(overview.lastCheckedAt)} scan</DayRule>}
-      <UserBubble>How did AI do for {business.name} {days === 30 ? "this month" : `in the last ${days} days`}?</UserBubble>
+      {/* What this check-in covers, said once in the quiet divider line (no chat bubble). */}
+      {overview.lastCheckedAt && (
+        <DayRule>
+          How AI did for {business.name} {days === 30 ? "this month" : `in the last ${days} days`}, from your {shortDay(overview.lastCheckedAt)} scan
+        </DayRule>
+      )}
 
       {!score ? (
         <AiMessage place="only" lead="No score yet" testId="no-score">
@@ -180,11 +184,11 @@ export default async function OverviewPage({ searchParams }: { searchParams: Pro
           <Suspense fallback={null}>
             <Followups compete={compete} />
           </Suspense>
-          <Composer />
+          {/* The "Ask about your results" box (checkin/Composer) is hidden until something can answer it (D-97). */}
         </>
       )}
 
-      <p className="max-w-prose text-xs text-muted-foreground sm:pl-12">
+      <p className="max-w-prose text-xs text-muted-foreground">
         Scores come from asking each AI your customers&apos; questions with web search and your location. Answers in the ChatGPT, Claude and Perplexity apps
         can differ. No one can guarantee AI recommendations.
       </p>

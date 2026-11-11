@@ -38,7 +38,7 @@ export function HeroThread() {
         <figcaption className="text-[13px] text-muted-foreground">A customer asks AI</figcaption>
         <ExampleTag />
       </div>
-      <p className="max-w-[88%] animate-rise self-end rounded-[20px_20px_6px_20px] bg-gradient-user px-[18px] py-3.5 text-[15px] text-white shadow-user [animation-delay:0.1s]">
+      <p className="animate-rise rounded-[16px] border border-border-strong bg-surface px-4 py-3 text-[15px] font-medium text-foreground [animation-delay:0.1s]">
         {QUESTION}
       </p>
       <ol className="flex flex-col gap-3">

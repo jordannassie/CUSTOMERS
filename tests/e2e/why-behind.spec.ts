@@ -583,6 +583,10 @@ test("Check their website: on Compare's Website tab only, read once, compared si
   // Steps 1 and 2 add likely reasons on the first tab, each with its fix.
   await page.getByTestId("compare-tab-summary").click();
   const why = page.getByTestId("tab-summary");
+  // The list shows the first four fixes; "Show all" opens the rest.
+  const more = why.getByRole("button", { name: /^Show all \d+ fixes$/ });
+  await expect(why.getByTestId("reason-card").first()).toBeVisible({ timeout: 60_000 });
+  if (await more.isVisible()) await more.click();
   await expect(why.getByTestId("reason-card").filter({ hasText: "Their website lists office catering" })).toContainText("Based on the website check", { timeout: 60_000 });
   await expect(why).toContainText("Your website blocks some AI tools");
   await expect(why).toContainText("GPTBot and ClaudeBot");

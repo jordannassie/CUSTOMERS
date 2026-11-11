@@ -3,12 +3,12 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { Settings2 } from "lucide-react";
 import { SampleDataBadge } from "@/components/app/SampleDataBadge";
-import { AiMessage, CheckInLayout, Explain, FollowUps, UserBubble } from "@/components/checkin";
+import { AiMessage, CardPair, CheckInLayout, Explain, FollowUps } from "@/components/checkin";
 import { AlsoRecommended } from "@/components/competitors/AlsoRecommended";
 import { ShareOfVoiceChart } from "@/components/competitors/charts/ShareOfVoiceChart";
 import { GoogleCard } from "@/components/competitors/checkin/GoogleCard";
 import { LeaderRail } from "@/components/competitors/checkin/LeaderRail";
-import { SlopeCard, TrendCard, slopeScans } from "@/components/competitors/checkin/SlopeCard";
+import { SlopeCard } from "@/components/competitors/checkin/SlopeCard";
 import { ToolFavourites } from "@/components/competitors/checkin/ToolFavourites";
 import { LeaderTable } from "@/components/competitors/LeaderTable";
 import { Button } from "@/components/ui/button";
@@ -65,13 +65,13 @@ export default async function CompetitorsPage({ searchParams }: { searchParams: 
   );
 
   return (
-    <CheckInLayout railLabel="Leaderboard" rail={scored ? <LeaderRail rows={table.rows} kpis={table.kpis} /> : undefined}>
+    <CheckInLayout railLabel="At a glance" rail={scored ? <LeaderRail kpis={table.kpis} /> : undefined}>
       <header className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-col gap-1">
+        <div className="flex min-w-0 flex-col gap-1">
           <h1 className="flex flex-wrap items-center gap-2 font-display text-[28px] leading-tight font-semibold">
             Competitors <SampleDataBadge show={workspace.account?.isTest} />
           </h1>
-          <p className="text-sm text-muted-foreground">How often AI picks you and the businesses you track, last 30 days.</p>
+          <p className="text-[15px] leading-relaxed text-muted-foreground">How often AI picks you and the businesses you track, last 30 days.</p>
         </div>
         <Button asChild variant="outline" className="rounded-full">
           <Link href={MANAGE}>
@@ -80,8 +80,6 @@ export default async function CompetitorsPage({ searchParams }: { searchParams: 
           </Link>
         </Button>
       </header>
-
-      <UserBubble>Who&apos;s ahead of me, and why?</UserBubble>
 
       {view.count === 0 || !view.hasScore ? (
         <>
@@ -105,7 +103,6 @@ export default async function CompetitorsPage({ searchParams }: { searchParams: 
       ) : (
         <>
           <SlopeCard rows={table.rows} charts={charts} nextScan={nextScan} />
-          {charts && slopeScans(table.rows, charts) && <TrendCard charts={charts} nextScan={nextScan} index={i++} />}
 
           <AiMessage lead="Here's everyone you track, ranked over the last 30 days." index={i++} testId="leader-card">
             <Explain>
@@ -127,14 +124,16 @@ export default async function CompetitorsPage({ searchParams }: { searchParams: 
             )}
           </AiMessage>
 
-          {charts && (
-            <AiMessage lead={you ? `Of the times AI named any of you, ${you.share}% were you.` : "Here's how AI shares its picks."} index={i++}>
-              <Explain>Of every answer that named you or a tracked competitor, the share that named each one, last 30 days.</Explain>
-              <ShareOfVoiceChart view={charts} />
-            </AiMessage>
-          )}
-
-          <ToolFavourites rows={table.rows} index={i++} />
+          {/* Share of picks beside each AI's favourites when there is room. */}
+          <CardPair>
+            {charts && (
+              <AiMessage lead={you ? `Of the times AI named any of you, ${you.share}% were you.` : "Here's how AI shares its picks."} index={i++}>
+                <Explain>Of every answer that named you or a tracked competitor, the share that named each one, last 30 days.</Explain>
+                <ShareOfVoiceChart view={charts} />
+              </AiMessage>
+            )}
+            <ToolFavourites rows={table.rows} index={i++} />
+          </CardPair>
 
           <Suspense fallback={<GoogleLoading rows={view.count + 1} />}>
             <GoogleCard signals={google === "1" ? page.loadSignals() : null} rows={table.rows} pickBranch={view.pickBranch} edit={edit} index={i++} />

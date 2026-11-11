@@ -10,7 +10,9 @@ import { ShowGoogleLabel } from "./ShowGoogleLabel";
  */
 export function ShowGoogle({ href, text, testId = "show-google" }: { href: string; text: string; testId?: string }) {
   return (
-    <div className="flex flex-col items-start gap-3 rounded-lg border border-dashed border-border-strong bg-muted p-4 sm:flex-row sm:items-center sm:justify-between" data-testid={testId}>
+    // Text beside the button only when the box itself is wide; in a narrow card the button goes under the text.
+    <div className="@container rounded-lg border border-dashed border-border-strong bg-muted p-4" data-testid={testId}>
+      <div className="flex flex-col items-start gap-3 @min-[480px]:flex-row @min-[480px]:items-center @min-[480px]:justify-between">
       <p className="flex items-start gap-2.5 text-sm text-muted-foreground">
         <MapPin className="mt-0.5 size-4 shrink-0 text-text-hint" aria-hidden="true" />
         {text}
@@ -20,6 +22,7 @@ export function ShowGoogle({ href, text, testId = "show-google" }: { href: strin
           <ShowGoogleLabel />
         </Link>
       </Button>
+      </div>
     </div>
   );
 }

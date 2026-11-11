@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { PageHeader } from "@/components/app/PageHeader";
 import { SampleDataBadge } from "@/components/app/SampleDataBadge";
-import { AiMessage, CheckInLayout, FollowUps, UserBubble } from "@/components/checkin/Conversation";
+import { AiMessage, CheckInLayout, FollowUps } from "@/components/checkin/Conversation";
 import { ListedFirst } from "@/components/sources/ListedFirst";
 import { SitesTable } from "@/components/sources/SitesTable";
 import { SourceDonut } from "@/components/sources/SourceDonut";
@@ -43,11 +43,8 @@ export default async function SourcesPage({ searchParams }: Props) {
 
   const header = (
     <PageHeader
-      title={
-        <>
-          Sources <SampleDataBadge show={workspace.account?.isTest} />
-        </>
-      }
+      title="Sources"
+      badge={<SampleDataBadge show={workspace.account?.isTest} />}
       description={
         <>
           Websites AI used in the last 30 days to answer customer questions{where}. Being listed on them helps AI
@@ -116,7 +113,6 @@ export default async function SourcesPage({ searchParams }: Props) {
         </SourcesEmpty>
       ) : (
         <>
-          <UserBubble>Where does {toolLabel ?? "AI"} look before it names a business like mine?</UserBubble>
 
           <AiMessage
             place="first"

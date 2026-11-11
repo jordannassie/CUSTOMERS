@@ -1,4 +1,4 @@
-import { AiMessage, Explain, UserBubble } from "@/components/checkin";
+import { AiMessage, Explain } from "@/components/checkin";
 import { questionKpis } from "@/modules/questions/list";
 import type { QuestionsView } from "@/modules/questions/service";
 import { KpiStrip } from "./KpiStrip";
@@ -39,7 +39,6 @@ export function QuestionsIntro({ view }: { view: QuestionsView }) {
   const tools = byTool(view);
   return (
     <>
-      <UserBubble>Which customer questions name me?</UserBubble>
       <AiMessage place="first" leadSize="lg" lead={lead(view)} index={0} testId="questions-lead">
         {k.active === 0 ? (
           <Explain>Add a question below and the next scan will check it.</Explain>

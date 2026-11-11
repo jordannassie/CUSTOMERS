@@ -172,7 +172,7 @@ export function BusinessSwitcher({
   return (
     <DropdownMenu onOpenChange={onOpenChange}>
       <DropdownMenuTrigger
-        className="flex min-h-[52px] w-full items-center gap-2.5 rounded-[14px] border border-border bg-surface p-2.5 text-left outline-none transition-colors hover:border-border-strong"
+        className="flex min-h-12 w-full items-center gap-2.5 rounded-[12px] border border-border bg-surface p-2 text-left outline-none transition-colors hover:border-border-strong"
         aria-label={`Business: ${active.name}. Switch business`}
         title={active.name}
         data-testid="business-switcher"

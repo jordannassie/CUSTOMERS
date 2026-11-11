@@ -16,7 +16,7 @@ type Props = {
 export function RadialBars({ items, center, ariaLabel, className }: Props) {
   const rings = items.slice(0, 3);
   return (
-    <svg viewBox="0 0 240 240" className={cn("size-[200px] shrink-0 sm:size-[230px]", className)} role="img" aria-label={ariaLabel}>
+    <svg viewBox="0 0 240 240" className={cn("size-[180px] shrink-0 sm:size-[200px]", className)} role="img" aria-label={ariaLabel}>
       {rings.map((t, k) => {
         const r = 96 - k * 24;
         const pct = Math.max(0, Math.min(100, t.value ?? 0));
@@ -36,7 +36,8 @@ export function RadialBars({ items, center, ariaLabel, className }: Props) {
                 style={{ animationDelay: `${0.6 + k * 0.2}s` }}
               />
             )}
-            <text x="112" y={120 - r + 4} fill={CHART.muted} fontSize="11" textAnchor="end">
+            {/* Ends before the arc's round cap (8 units left of its start), so the name never touches the ring. */}
+            <text x="104" y={120 - r + 4} fill={CHART.muted} fontSize="11" textAnchor="end">
               {t.label}
             </text>
           </g>

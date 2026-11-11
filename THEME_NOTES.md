@@ -30,7 +30,7 @@ All colours live in `:root` as `--cd-*` variables and are mapped into Tailwind v
 | Brand / strong / light / lighter | `--cd-primary`, `--cd-primary-hover`, `--cd-primary-light`, `--cd-primary-lighter` | #2563EB, #1D4ED8, #3B82F6, #60A5FA |
 | Brand wash / tint / tint soft / ink | `--cd-primary-tint`, `-tint-2`, `-tint-3`, `--cd-primary-ink` | #EAF1FF, #DBE7FE, #E6EEFF, #1E3A8A |
 | Leading competitor | `--cd-rival`, `--cd-rival-text`, `--cd-rival-ink`, `--cd-rival-tint`, `--cd-rival-mark` | #D9735A, #B9553D, #8A3B26, #FBEDE8, #F7D9D3 |
-| Danger text | `--cd-danger` | #B5402A |
+| Danger text | `--cd-danger` | #8A3B26 (coral ink; no separate red since 2026-11-10) |
 | Other competitors | `--cd-competitor-1..3`, `--cd-series-3..5` | #5B6475, #AAB2BF, #C3CBD8 |
 | AI tools | `--cd-chatgpt`, `--cd-chatgpt-strong`, `--cd-claude`, `--cd-perplexity` | #98A2B3, #5B6475, brand, #D98C3F |
 
@@ -54,7 +54,7 @@ Focus: every link, button and tab gets a 3px brand outline on keyboard focus.
 - Contrast fixes against the mockup: "Done" pills use brand-strong text (#2563EB on #DBE7FE is 4.15:1); Perplexity-orange and coral fills carry dark ink text, not white (white on them is 2.7:1 and 3.2:1).
 - The grey competitor colours fail a generic categorical palette check on purpose: they mean "everyone else". Every chart therefore names its series beside the marks or in a legend.
 - Nav keeps the "Overview" and "Actions" labels (the design says "Check-in" and "To-do") because the rest of the app's copy says "Go to Overview" and "Add to Actions". URLs are unchanged either way. Nav keeps its Lucide icons and group labels.
-- The composer ("Ask about your results") is disabled with "coming soon": there is no endpoint that answers questions. The follow-up chips link to existing pages.
+- The composer ("Ask about your results") is hidden (owner, 2026-11-09): there is no endpoint that answers questions. The component stays for later; the follow-up chips link to existing pages.
 - The PDF report (`src/modules/reports/v2/pdf`) keeps its own print design (black and white friendly, the agency's accent colour). Not restyled.
 - Emails: colour constants and corner radius follow the theme (`src/modules/email/templates/_components/theme.ts`); fonts fall back to the system sans because mail apps do not load web fonts.
 
@@ -88,7 +88,7 @@ Tests touched: `src/modules/email/render.test.ts` (12px corners instead of 4px);
 - Competitors: the bubble chart (Google rating against visibility) shows only after "Show Google details", because ratings and reviews come live from Google Places and are never stored. Without a Places match a business is left off the chart. The slope chart's left side is the oldest of the last 10 scans the page loads, not always the very first scan; its sentence names that date.
 - Compare: the website radar has 4 axes, not 5; the existing website check measures four things. The 30-day score line from the old trend chart is not drawn on the gap chart. "On Google" fills in only after "Show Google details".
 - Sources: the industry word ("a pizza place") is not stored, so the question reads "a business like mine". The mix bar and donut count the listed sites (at most 50). There is no per-site "Done" state, so a site already on the board shows "In Actions" with its column.
-- The composer cannot answer questions; it is disabled and says "coming soon".
+- The composer cannot answer questions, so it is hidden until an endpoint exists.
 - The share link (`/r/[token]`) redirects to the PDF, so there is no share page to theme.
 
 ## Checks run

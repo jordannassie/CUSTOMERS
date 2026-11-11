@@ -1,4 +1,5 @@
 import { cn } from "cn";
+import { ScrollX } from "./ScrollX";
 
 export type DotMatrixRow = {
   key: string;
@@ -21,8 +22,8 @@ type Props = {
 export function DotMatrix({ columns, rows, ariaLabel, unit = "%" }: Props) {
   const tops = columns.map((_, j) => Math.max(0, ...rows.map((r) => r.values[j] ?? 0)));
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full min-w-[480px] border-collapse" aria-label={ariaLabel}>
+    <ScrollX>
+      <table className="w-full min-w-[320px] border-collapse" aria-label={ariaLabel}>
         <thead>
           <tr>
             <th className="w-[38%]" />
@@ -36,7 +37,7 @@ export function DotMatrix({ columns, rows, ariaLabel, unit = "%" }: Props) {
         <tbody>
           {rows.map((r, k) => (
             <tr key={r.key} className="border-t border-track">
-              <th scope="row" className={cn("h-14 py-2 text-left text-[15px]", r.emphasis ? "font-bold text-brand" : "font-medium")}>
+              <th scope="row" className={cn("h-11 py-2 text-left text-[15px]", r.emphasis ? "font-bold text-brand" : "font-medium")}>
                 {r.label}
               </th>
               {r.values.map((v, j) => {
@@ -44,7 +45,7 @@ export function DotMatrix({ columns, rows, ariaLabel, unit = "%" }: Props) {
                 const on = v !== null && v > 0;
                 const size = on ? Math.round(18 + (v as number) * 0.42) : 10;
                 return (
-                  <td key={j} className="h-14 py-2 text-center">
+                  <td key={j} className="h-11 py-2 text-center">
                     <span
                       className={cn("mx-auto flex animate-pop items-center justify-center rounded-full text-xs font-bold", c.dark ? "text-foreground" : "text-white")}
                       style={{ width: size, height: size, background: on ? c.color : "var(--cd-border)", animationDelay: `${0.4 + (k * columns.length + j) * 0.03}s` }}
@@ -59,6 +60,6 @@ export function DotMatrix({ columns, rows, ariaLabel, unit = "%" }: Props) {
           ))}
         </tbody>
       </table>
-    </div>
+    </ScrollX>
   );
 }

@@ -4,6 +4,8 @@ import { useId, useState } from "react";
 import { cn } from "cn";
 import { CHART, knownRuns, niceScale, smoothPath, spreadLabels } from "./chart-kit";
 import { ChartTooltipCard, Legend } from "./Legend";
+import { ScrollX } from "./ScrollX";
+import { useChartWidth } from "./use-chart-width";
 
 export type LineSeries = {
   id: string;
@@ -32,12 +34,12 @@ type Props = {
   className?: string;
 };
 
-const W = 760;
-const H = 280;
+// Fixed height; the width is the chart's real width (useChartWidth), so a wider card gives a wider chart, not a taller
+// one. 760 is the design width used before the first measure.
+const H = 250;
 const LEFT = 44;
-const RIGHT = 690;
-const TOP = 20;
-const BOTTOM = 250;
+const TOP = 16;
+const BOTTOM = 222;
 
 // Check-in line chart (C-Overview): smooth lines, a brand gradient under the current business, each line's last value
 // at its end, and a hover column with every business sorted by value. Hand-built SVG: Recharts has no end labels that
@@ -45,6 +47,8 @@ const BOTTOM = 250;
 export function LineAreaChart({ labels, series, ariaLabel, yMax, format = (n) => String(Math.round(n)), tooltipTitle, showLegend = true, className }: Props) {
   const gradientId = useId().replace(/:/g, "");
   const [hover, setHover] = useState(-1);
+  const [box, W] = useChartWidth<HTMLDivElement>(760, 560);
+  const RIGHT = W - 70;
   const n = labels.length;
   const all = series.flatMap((s) => s.values.filter((v): v is number => v !== null));
   const { top, ticks } = niceScale(yMax ?? Math.max(0, ...all));
@@ -75,8 +79,8 @@ export function LineAreaChart({ labels, series, ariaLabel, yMax, format = (n) =>
       {showLegend && series.length > 1 && (
         <Legend shape="line" items={series.map((s) => ({ label: s.name, color: s.color, strong: s.emphasis }))} />
       )}
-      <div className="overflow-x-auto">
-        <div className="relative min-w-[560px]" onMouseLeave={() => setHover(-1)}>
+      <ScrollX>
+        <div ref={box} className="relative min-w-[560px]" onMouseLeave={() => setHover(-1)}>
           <svg viewBox={`0 0 ${W} ${H}`} className="block h-auto w-full" role="img" aria-label={ariaLabel}>
             <defs>
               <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
@@ -158,7 +162,7 @@ export function LineAreaChart({ labels, series, ariaLabel, yMax, format = (n) =>
             />
           )}
         </div>
-      </div>
+      </ScrollX>
     </div>
   );
 }

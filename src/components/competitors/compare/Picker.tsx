@@ -15,9 +15,8 @@ const PILL = { ahead: "done", behind: "attention", about_same: "neutral" } as co
  */
 export function Picker({ page, tab, track, ownDomain }: { page: ComparePage; tab: string; track: TrackAction; ownDomain: string | null }) {
   const selected = page.selected;
-  const subtitle = selected
-    ? [selected.panel.why.site, `named in ${selected.panel.why.them} of ${selected.panel.why.answers} answers`].filter(Boolean).join(" · ")
-    : null;
+  // Their website only: how often each was named is the big numbers at the top of the page.
+  const subtitle = selected?.panel.why.site ?? null;
   return (
     <section className="flex flex-col gap-3 rounded-xl bg-card p-5" data-testid="compare-picker">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
@@ -49,10 +48,10 @@ export function Picker({ page, tab, track, ownDomain }: { page: ComparePage; tab
       </div>
       {selected && (
         <div className="flex items-start gap-3 border-t border-divider pt-3.5">
-          {/* Your icon, then theirs tucked behind it, so both businesses are named by their own marks. */}
-          <span className="mt-0.5 flex shrink-0 items-center">
-            <SiteIcon domain={ownDomain} name={page.businessName} className="relative z-10 ring-2 ring-card" />
-            <SiteIcon domain={selected.panel.website.domain ?? null} name={selected.title} className="-ml-2.5 ring-2 ring-card" />
+          {/* Your icon and theirs side by side, so both businesses are named by their own marks. */}
+          <span className="mt-0.5 flex shrink-0 items-center gap-1">
+            <SiteIcon domain={ownDomain} name={page.businessName} />
+            <SiteIcon domain={selected.panel.website.domain ?? null} name={selected.title} />
           </span>
           <div className="flex min-w-0 flex-col gap-1.5">
             <h2 className="font-display text-lg leading-snug font-semibold break-words">

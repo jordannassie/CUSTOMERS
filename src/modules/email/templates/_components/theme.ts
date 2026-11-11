@@ -11,7 +11,7 @@ export const colors = {
   primaryTint: "#EAF1FF",
   goodText: "#1D4ED8",
   midText: "#3A4456",
-  lowText: "#B5402A",
+  lowText: "#8A3B26",
 } as const;
 
 // Figtree is not installed in mail apps, so the stack falls back to each system's sans serif.

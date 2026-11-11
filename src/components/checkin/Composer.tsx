@@ -4,7 +4,7 @@ import { ArrowRight } from "lucide-react";
 // stays disabled and says so (THEME_NOTES.md). The chips above it link to the pages that answer common questions.
 export function Composer() {
   return (
-    <div className="flex items-center gap-2 rounded-lg border border-border-strong bg-surface py-1.5 pr-1.5 pl-4 sm:ml-12" data-testid="ask-composer">
+    <div className="flex items-center gap-2 rounded-lg border border-border-strong bg-surface py-1.5 pr-1.5 pl-4" data-testid="ask-composer">
       <label htmlFor="ask-results" className="sr-only">
         Ask about your results
       </label>

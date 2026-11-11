@@ -5,7 +5,7 @@ import { ExternalLink, Globe } from "lucide-react";
 import { PageHeader } from "@/components/app/PageHeader";
 import { SampleDataBadge } from "@/components/app/SampleDataBadge";
 import { ShowGoogle } from "@/components/app/ShowGoogle";
-import { AiMessage, CheckInLayout, FollowUps, UserBubble } from "@/components/checkin";
+import { AiMessage, CheckInLayout, FollowUps } from "@/components/checkin";
 import { ByAi } from "@/components/competitors/compare/ByAi";
 import { CompareTabs } from "@/components/competitors/compare/CompareTabs";
 import { GoogleRail, GoogleRailPrompt } from "@/components/competitors/compare/GoogleRail";
@@ -15,7 +15,6 @@ import { QuestionsTab, WhereLookedTab } from "@/components/competitors/compare/Q
 import { GoogleReasons } from "@/components/competitors/compare/GoogleReasons";
 import { LeadCards, ReasonCards } from "@/components/competitors/compare/ReasonCards";
 import { toCompareTab, type CompareTab } from "@/components/competitors/compare/tabs";
-import { WebsiteCard } from "@/components/competitors/compare/WebsiteCard";
 import { WebsitesTab } from "@/components/competitors/compare/WebsitesTab";
 import { GoogleTable } from "@/components/competitors/GoogleCompare";
 import { cn } from "cn";
@@ -83,11 +82,8 @@ export default async function ComparePage({ searchParams }: { searchParams: Prom
 
   const header = (
     <PageHeader
-      title={
-        <span className="flex flex-wrap items-center gap-2">
-          Compare <SampleDataBadge show={workspace.account?.isTest} />
-        </span>
-      }
+      title="Compare"
+      badge={<SampleDataBadge show={workspace.account?.isTest} />}
       description="Pick a competitor to see the facts behind every gap, and what to do about each one."
       actions={
         data ? (
@@ -147,10 +143,9 @@ export default async function ComparePage({ searchParams }: { searchParams: Prom
     <div data-testid="compare-page">
       <CheckInLayout rail={rail} railLabel="Pick a competitor">
         {header}
-        <UserBubble>How do I compare with {data.title}?</UserBubble>
         <HeadToHead data={data} nextScan={nextScan} />
         <ByAi data={data} index={1} />
-        <WebsiteCard name={data.title} website={data.panel.website} index={2} />
+        {/* The website check (radar and checklist) lives on the Website tab below; it is not repeated as its own card. */}
         <AiMessage place="last" index={3}>
           <CompareTabs
             key={data.panel.competitorId}
