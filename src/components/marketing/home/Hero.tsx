@@ -1,7 +1,7 @@
 import { CompareBox } from "./CompareBox";
-import { HeroThread } from "./HeroThread";
+import { HeroPhoto } from "./HeroPhoto";
 
-// Check-in: the headline and the free check on the left, the example as a short AI thread on the right.
+// Check-in: the headline and the free check on the left, Mr. Direct (from the live site) on the right.
 export function Hero() {
   return (
     <section className="bg-background">
@@ -17,7 +17,7 @@ export function Hero() {
           <CompareBox />
         </div>
         <div className="min-w-0">
-          <HeroThread />
+          <HeroPhoto />
         </div>
       </div>
     </section>
