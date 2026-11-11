@@ -4,6 +4,10 @@ import Header from "@/components/marketing/Header";
 import Footer from "@/components/marketing/Footer";
 import ChatWidget from "@/components/ChatWidget";
 import { Hero } from "@/components/marketing/home/Hero";
+import { HeroDashboard } from "@/components/marketing/home/HeroDashboard";
+import { VideoSection } from "@/components/marketing/home/VideoSection";
+import { BannerRotation } from "@/components/marketing/home/BannerRotation";
+import { MrDirectPrompts } from "@/components/marketing/home/MrDirectPrompts";
 import { HowItWorks } from "@/components/marketing/home/HowItWorks";
 import { ProductTabs } from "@/components/marketing/home/ProductTabs";
 import { ForAgencies } from "@/components/marketing/home/ForAgencies";
@@ -36,6 +40,7 @@ export default async function Home() {
       <Header />
       <main className="flex-1">
         <Hero />
+        <HeroDashboard />
         <NewsletterSignup
           placement="homepage"
           variant="hero"
@@ -44,6 +49,10 @@ export default async function Home() {
           embed
         />
         <HomeAppsSection ratings={ratings} />
+        {/* Video, storefront pictures and Mr. Direct brought over from the live homepage, in its order. */}
+        <VideoSection />
+        <BannerRotation />
+        <MrDirectPrompts />
         <HowItWorks />
         <ProductTabs />
         <ForAgencies />

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Section, H2 } from "../section";
+import { AgencyWorkspaceDemo } from "./AgencyWorkspaceDemo";
 import { ExampleTag } from "./example";
 
 const POINTS = [
@@ -61,7 +62,7 @@ export function ForAgencies() {
           </Button>
         </div>
 
-        <ClientListExample />
+        <AgencyWorkspaceDemo />
       </div>
     </Section>
   );

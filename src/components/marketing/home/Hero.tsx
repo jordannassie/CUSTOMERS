@@ -1,7 +1,7 @@
 import { CompareBox } from "./CompareBox";
-import { DashboardPreview } from "./DashboardPreview";
+import { HeroPhoto } from "./HeroPhoto";
 
-// mockup-ui: the headline and the free check on the left, the redesigned Overview (example data) on the right.
+// mockup-ui: the headline and the free check on the left, Mr. Direct (from the live site) on the right.
 export function Hero() {
   return (
     <section className="bg-background">
@@ -17,7 +17,7 @@ export function Hero() {
           <CompareBox />
         </div>
         <div className="min-w-0">
-          <DashboardPreview variant="hero" />
+          <HeroPhoto />
         </div>
       </div>
     </section>

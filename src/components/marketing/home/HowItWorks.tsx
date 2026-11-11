@@ -1,4 +1,6 @@
+import Image from "next/image";
 import { Section, H2, Lead } from "../section";
+import { STEP_PICTURES } from "./media";
 
 const STEPS = [
   {
@@ -29,10 +31,15 @@ export function HowItWorks() {
 
       <ol className="mt-12 grid gap-8 sm:grid-cols-2 lg:grid-cols-4 lg:gap-6">
         {STEPS.map(({ title, body }, i) => (
-          <li key={title} className="flex flex-col gap-3 border-t-2 border-border pt-5 first:border-primary">
-            <span className="tabular text-[length:calc(13px*var(--px,1))] font-medium text-text-hint">Step {i + 1}</span>
-            <h3 className="text-xl font-semibold tracking-[-0.02em]">{title}</h3>
-            <p className="text-[length:calc(15px*var(--px,1))] text-muted-foreground">{body}</p>
+          <li key={title} className="group flex flex-col gap-5">
+            <div className="relative aspect-square overflow-hidden rounded-xl border border-border bg-muted">
+              <Image src={STEP_PICTURES[title].src} alt={STEP_PICTURES[title].alt} fill sizes="(min-width: 1024px) 260px, (min-width: 640px) 50vw, 100vw" className="object-cover" />
+            </div>
+            <div className="flex flex-col gap-3 border-t-2 border-border pt-5 group-first:border-primary">
+              <span className="tabular text-[length:calc(13px*var(--px,1))] font-medium text-text-hint">Step {i + 1}</span>
+              <h3 className="text-xl font-semibold tracking-[-0.02em]">{title}</h3>
+              <p className="text-[length:calc(15px*var(--px,1))] text-muted-foreground">{body}</p>
+            </div>
           </li>
         ))}
       </ol>
