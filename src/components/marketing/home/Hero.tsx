@@ -1,7 +1,10 @@
+import Link from "next/link";
+import { ArrowRight } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { CompareBox } from "./CompareBox";
 import { HeroPhoto } from "./HeroPhoto";
 
-// mockup-ui: the headline and the free check on the left, Mr. Direct (from the live site) on the right.
+// mockup-ui: the headline, the free check and Book a demo (from the live site) on the left, Mr. Direct on the right.
 export function Hero() {
   return (
     <section className="bg-background">
@@ -15,6 +18,13 @@ export function Hero() {
             competitors win, and what to fix.
           </p>
           <CompareBox />
+          {/* Opens the contact form with "Booking a demo call" already chosen. */}
+          <Button asChild size="lg" variant="outline" className="w-fit">
+            <Link href="/contact?interest=book_demo">
+              Book a demo
+              <ArrowRight aria-hidden data-icon="inline-end" />
+            </Link>
+          </Button>
         </div>
         <div className="min-w-0">
           <HeroPhoto />
