@@ -12,31 +12,36 @@ const APPS = [
 ];
 const GIVES = ["See your AI visibility", "Find what to fix", "Track your competitors", "Get a shareable report"];
 
-export function HeroHighlights() {
+/** The AI apps as logo chips. */
+export function AppChips() {
   return (
-    <div className="flex flex-col gap-4">
-      <ul className="flex flex-wrap gap-2" aria-label="AI apps">
-        {APPS.map((app) => (
-          <li
-            key={app.name}
-            className="inline-flex items-center gap-1.5 rounded-sm border border-border bg-surface px-2.5 py-1 text-[length:calc(13px*var(--px,1))] font-medium text-muted-foreground"
-          >
-            {/* eslint-disable-next-line @next/next/no-img-element -- a small logo file, shown at its own size */}
-            <img src={app.logo} alt="" width={14} height={14} className="size-3.5" />
-            {app.name}
-          </li>
-        ))}
-      </ul>
-      <ul className="grid gap-2.5 sm:grid-cols-2">
-        {GIVES.map((item) => (
-          <li key={item} className="flex items-center gap-2.5 text-[length:calc(15px*var(--px,1))] font-medium">
-            <span className="grid size-5 shrink-0 place-items-center rounded-full bg-primary text-primary-foreground">
-              <Check aria-hidden className="size-3" strokeWidth={3} />
-            </span>
-            {item}
-          </li>
-        ))}
-      </ul>
-    </div>
+    <ul className="flex flex-wrap gap-2" aria-label="AI apps">
+      {APPS.map((app) => (
+        <li
+          key={app.name}
+          className="inline-flex items-center gap-1.5 rounded-sm border border-border bg-surface px-2.5 py-1 text-[length:calc(13px*var(--px,1))] font-medium text-muted-foreground"
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element -- a small logo file, shown at its own size */}
+          <img src={app.logo} alt="" width={14} height={14} className="size-3.5" />
+          {app.name}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+/** What a check gives you: one line on wide screens, two columns on tablets, a list on phones. */
+export function HeroChecklist() {
+  return (
+    <ul className="grid gap-2.5 sm:grid-cols-2 lg:flex lg:flex-wrap lg:gap-x-10" aria-label="What you get">
+      {GIVES.map((item) => (
+        <li key={item} className="flex items-center gap-2.5 text-[length:calc(15px*var(--px,1))] font-medium">
+          <span className="grid size-5 shrink-0 place-items-center rounded-full bg-primary text-primary-foreground">
+            <Check aria-hidden className="size-3" strokeWidth={3} />
+          </span>
+          {item}
+        </li>
+      ))}
+    </ul>
   );
 }
