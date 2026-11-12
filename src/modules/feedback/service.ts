@@ -33,11 +33,3 @@ export function hashIp(ip: string | null): string | null {
   if (!ip || ip === "unknown") return null;
   return createHash("sha256").update(ip).digest("hex");
 }
-
-/**
- * The admin's search text for a PostgREST `or` filter: its commas, brackets and wildcards would otherwise change the
- * filter itself, so they are taken out.
- */
-export function searchTerm(search: string): string {
-  return search.replace(/[,()%*\\]/g, " ").replace(/\s+/g, " ").trim();
-}

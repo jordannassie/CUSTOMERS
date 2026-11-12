@@ -1,18 +1,14 @@
-import Link from "next/link";
-import { ScanSearch } from "lucide-react";
 import { cn } from "cn";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { formatDuration, retryScan, SCAN_PAGE_SIZE, type AdminScanList, type AdminScanRow, type ScanFilterOptions, type ScanListQuery, type ScanStatus } from "@/modules/admin";
-import AdminEmpty from "../../_components/admin-empty";
-import { SCAN_STATUS, ScanStatusBadge, TestBadge } from "../../_components/badges";
+import { SCAN_PAGE_SIZE, type AdminScanList, type AdminScanRow, type ScanFilterOptions, type ScanListQuery, type ScanStatus } from "@/modules/admin";
+import { SCAN_STATUS, ScanStatusBadge } from "../../_components/badges";
 import FilterTabs from "../../_components/filter-tabs";
 import Pagination from "../../_components/pagination";
+import { formatDate } from "../../_components/format";
 import ScanFilters from "./scan-filters";
 import { SCANS_BASE, scansHref } from "./scan-href";
-import RetryButton from "./retry-button";
-import { formatDate, money } from "../../_components/format";
-import { ModelList } from "./scan-parts";
-import ScanError from "../../_components/scan-error";
+import { costCell, durationParts, durationText } from "./scan-cells";
+import { BusinessCell, Cost, Dash, ModelList, Outcome, ScansEmpty } from "./scan-parts";
 
 const FILTERS: { status: ScanStatus | undefined; label: string }[] = [
   { status: undefined, label: "All" },
@@ -23,6 +19,8 @@ const FILTERS: { status: ScanStatus | undefined; label: string }[] = [
   { status: "done", label: SCAN_STATUS.done.label },
 ];
 
+const RIGHT = new Set(["Credits", "Real cost", "Duration"]);
+
 export default function ScansList({ list, query, options }: { list: AdminScanList; query: ScanListQuery; options: ScanFilterOptions }) {
   const { rows, counts } = list;
   const status = query.status;
@@ -31,7 +29,7 @@ export default function ScansList({ list, query, options }: { list: AdminScanLis
 
   return (
     <div className="flex flex-col gap-4">
-      <ScanFilters query={query} options={options} agencyName={list.agencyName} />
+      <ScanFilters query={query} options={options} agencyName={list.agencyName} business={list.business} />
       <FilterTabs
         label="Filter by status"
         active={status ?? "all"}
@@ -45,18 +43,15 @@ export default function ScansList({ list, query, options }: { list: AdminScanLis
       />
 
       {rows.length === 0 ? (
-        <Empty status={status} />
+        <ScansEmpty query={query} />
       ) : (
         <>
           <div className="hidden rounded-md border border-border bg-surface md:block">
             <Table className="text-[length:calc(13px*var(--px,1))]">
               <TableHeader>
                 <TableRow>
-                  {["Business", "Status", "Models", "Credits", "Real cost", "Duration", "Started", "Error"].map((h, i) => (
-                    <TableHead
-                      key={h || i}
-                      className={cn("px-2 text-[length:calc(12px*var(--px,1))] font-medium text-muted-foreground", (h === "Credits" || h === "Real cost" || h === "Duration") && "text-right")}
-                    >
+                  {["Business", "Status", "Models", "Credits", "Real cost", "Duration", "Started", "Error"].map((h) => (
+                    <TableHead key={h} className={cn("px-2 text-[length:calc(12px*var(--px,1))] font-medium text-muted-foreground", RIGHT.has(h) && "text-right")}>
                       {h}
                     </TableHead>
                   ))}
@@ -78,17 +73,17 @@ export default function ScansList({ list, query, options }: { list: AdminScanLis
                       <ModelList models={row.models} className="w-[calc(150px*var(--px,1))]" />
                     </TableCell>
                     <TableCell className="px-2 tabular text-right">{row.creditsCharged}</TableCell>
-                    <TableCell className="px-2 tabular text-right">{money(row.costUsd) || <Dash />}</TableCell>
-                    <TableCell className="px-2 tabular text-right">{formatDuration(row.durationMs) || <Dash />}</TableCell>
+                    <TableCell className="px-2 tabular text-right">
+                      <Cost row={row} />
+                    </TableCell>
+                    <TableCell className="px-2 tabular text-right">
+                      <Duration row={row} />
+                    </TableCell>
                     <TableCell className="px-2 tabular whitespace-normal text-muted-foreground">
                       <span className="block w-[calc(110px*var(--px,1))]">{formatDate(row.createdAt, true)}</span>
                     </TableCell>
-                    {/* Retry sits under the reason it fixes, so the table needs no extra column and fits at 1440px. */}
                     <TableCell className="px-2">
-                      <div className="flex w-[calc(250px*var(--px,1))] flex-col items-start gap-2">
-                        {row.error ? <ScanError error={row.error} clamp /> : <Dash />}
-                        {canRetry(row) && <Retry row={row} />}
-                      </div>
+                      <Outcome row={row} clamp className="w-[calc(250px*var(--px,1))]" />
                     </TableCell>
                   </TableRow>
                 ))}
@@ -106,14 +101,11 @@ export default function ScansList({ list, query, options }: { list: AdminScanLis
                 <ModelList models={row.models} className="text-[length:calc(13px*var(--px,1))]" />
                 <dl className="grid grid-cols-3 gap-2 text-[length:calc(13px*var(--px,1))]">
                   <Stat label="Credits" value={String(row.creditsCharged)} />
-                  <Stat label="Real cost" value={money(row.costUsd)} />
-                  <Stat label="Duration" value={formatDuration(row.durationMs)} />
+                  <Stat label="Real cost" value={costCell(row).text} muted={costCell(row).muted} />
+                  <Stat label="Duration" value={durationText(row)} />
                 </dl>
-                {row.error && <ScanError error={row.error} className="text-[length:calc(13px*var(--px,1))]" />}
-                <div className="flex items-center justify-between gap-3">
-                  <span className="tabular text-[length:calc(12px*var(--px,1))] text-text-hint">{formatDate(row.createdAt, true)}</span>
-                  {canRetry(row) && <Retry row={row} />}
-                </div>
+                <span className="tabular text-[length:calc(12px*var(--px,1))] text-text-hint">{formatDate(row.createdAt, true)}</span>
+                <Outcome row={row} className="text-[length:calc(13px*var(--px,1))]" />
               </li>
             ))}
           </ul>
@@ -125,65 +117,23 @@ export default function ScansList({ list, query, options }: { list: AdminScanLis
   );
 }
 
-const canRetry = (row: AdminScanRow) => row.status === "failed" || row.status === "skipped";
-
-function Retry({ row }: { row: AdminScanRow }) {
-  return <RetryButton jobId={row.id} businessName={row.businessName} credits={row.scanCredits} agencyName={row.agencyName} retry={retryScan} />;
-}
-
-function BusinessCell({ row }: { row: AdminScanRow }) {
+/** "3m 26s", or "3m 26s" with "retried over 8 days" under it, so the column stays narrow. */
+function Duration({ row }: { row: AdminScanRow }) {
+  const { main, retried } = durationParts(row);
+  if (!main) return <Dash />;
   return (
-    <div className="min-w-0">
-      <Link
-        href={`/internal/admin/businesses/${row.businessId}`}
-        className="block truncate text-[length:calc(14px*var(--px,1))] font-medium text-primary hover:underline"
-        title={row.businessName}
-      >
-        {row.businessName}
-      </Link>
-      <p className="flex items-center gap-1.5 truncate text-[length:calc(12px*var(--px,1))] text-muted-foreground">
-        {row.agencyId ? (
-          <Link href={`/internal/admin/agencies/${row.agencyId}`} className="truncate hover:text-primary hover:underline" title={row.agencyName}>
-            {row.agencyName}
-          </Link>
-        ) : (
-          <span className="truncate">No agency</span>
-        )}
-        {row.isTest && <TestBadge />}
-        {row.attempts > 1 && <span className="tabular whitespace-nowrap">{row.attempts} tries</span>}
-      </p>
-    </div>
-  );
-}
-
-function Stat({ label, value }: { label: string; value: string }) {
-  return (
-    <div>
-      <dt className="text-[length:calc(12px*var(--px,1))] text-muted-foreground">{label}</dt>
-      <dd className="tabular font-medium">{value || <Dash />}</dd>
-    </div>
-  );
-}
-
-function Dash() {
-  return (
-    <span aria-label="None" className="text-text-hint">
-      -
+    <span className="flex flex-col items-end">
+      <span className={cn(row.durationMs === null && "text-muted-foreground")}>{main}</span>
+      {retried && <span className="text-[length:calc(12px*var(--px,1))] whitespace-nowrap text-muted-foreground">{retried}</span>}
     </span>
   );
 }
 
-function Empty({ status }: { status: ScanStatus | undefined }) {
-  if (!status) {
-    return (
-      <AdminEmpty icon={ScanSearch} title="No scans yet">
-        Scans show up here as soon as a business is queued for one.
-      </AdminEmpty>
-    );
-  }
+function Stat({ label, value, muted = false }: { label: string; value: string; muted?: boolean }) {
   return (
-    <AdminEmpty icon={ScanSearch} title={`No ${SCAN_STATUS[status].label.toLowerCase()} scans`}>
-      {status === "failed" ? "Every scan finished or is still on its way." : "Nothing matches this filter. Pick All to see every scan."}
-    </AdminEmpty>
+    <div>
+      <dt className="text-[length:calc(12px*var(--px,1))] text-muted-foreground">{label}</dt>
+      <dd className={cn("tabular font-medium", muted && "font-normal text-text-hint")}>{value || <Dash />}</dd>
+    </div>
   );
 }

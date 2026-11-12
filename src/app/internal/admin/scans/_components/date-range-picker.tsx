@@ -16,7 +16,7 @@ const fullDay = (day: string) =>
 /**
  * Pick a date range by clicking, no typing (2026-11-12): a quick choice, or two days on the calendar (first click
  * starts the range, second ends it). `onChange` runs as soon as a range is complete. Only the last 12 months up to
- * today can be picked, and it always opens on the chosen range or this month.
+ * today can be picked, and it always opens on the chosen range or this month. Days are UTC days, and it says so.
  */
 export default function DateRangePicker({ value, onChange }: { value: DayRange; onChange: (range: DayRange) => void }) {
   const [open, setOpen] = useState(false);
@@ -132,6 +132,8 @@ export default function DateRangePicker({ value, onChange }: { value: DayRange; 
               </tbody>
             </table>
             <p className="text-text-hint">{picking ? "Now pick the last day." : "Pick the first day, then the last."}</p>
+            {/* Scans are filtered by UTC day, like every admin date (BUG-070); up to 12 months back. */}
+            <p className="text-text-hint">Days are in UTC. You can go back up to 12 months.</p>
           </div>
         </Popover.Content>
       </Popover.Portal>

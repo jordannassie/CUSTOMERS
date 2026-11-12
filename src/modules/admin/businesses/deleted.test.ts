@@ -98,7 +98,9 @@ describe("admin businesses: deleted ones", () => {
     // The owner's email is unique to this run, so the search finds this file's businesses only.
     const list = await listBusinesses({ search: ownerEmail });
     const rows = list.rows;
-    expect(list.deleted).toBeGreaterThanOrEqual(1);
+    // Each tab counts its own businesses for the search: the deleted one is on Deleted, the draft on Being set up.
+    expect(list.counts).toMatchObject({ all: 2, deleted: 1, setup: 1, live: 0, paused: 0, test: 2 });
+    expect((await listBusinesses({ search: ownerEmail, filter: "deleted" })).rows.map((r) => r.id)).toEqual([deletedId]);
     expect(rows.find((r) => r.id === deletedId)?.deleted).toEqual({
       at: expect.stringMatching(/^2026-10-01T12:00:00/),
       purgeAfter: expect.stringMatching(/^2026-10-31T12:00:00/),

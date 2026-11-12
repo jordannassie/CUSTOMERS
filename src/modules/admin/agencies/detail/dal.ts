@@ -3,6 +3,7 @@ import { requireAdmin } from "@/modules/auth";
 import { createServiceClient } from "@/lib/supabase/service";
 import { emailsOf, unique } from "../../businesses/dal";
 import { canRestore, displayStatus, restoreDeadline } from "../service";
+import { stripeDashboardUrl } from "./recent/dal";
 
 const HISTORY = 20;
 
@@ -21,9 +22,13 @@ export type AdminAgencyDetail = {
     stripeLinked: boolean;
     hasSubscription: boolean;
     createdAt: string;
+    /** When the account was deleted; null unless it is deleted. */
+    deletedAt: string | null;
     restoreUntil: string | null;
     canRestore: boolean;
   };
+  /** Links into the Stripe dashboard, in the mode of the key in use (test keys open the test dashboard). */
+  stripe: { customerUrl: string | null; subscriptionUrl: string | null };
   ownerEmail: string | null;
   balance: { plan: number; topup: number; held: number; overdraft: number; total: number };
   businesses: {
@@ -34,8 +39,20 @@ export type AdminAgencyDetail = {
     planStatus: string | null;
     deleted: { at: string; purgeAfter: string | null } | null;
   }[];
-  /** source is the grant's (trial, plan, topup, admin, promo, refund) for grants and expiries, else null. */
-  ledger: { id: string; delta: number; kind: string; source: string | null; note: string | null; by: string | null; createdAt: string }[];
+  /**
+   * source is the grant's (trial, plan, topup, admin, promo, refund) for grants and expiries, else null; business is
+   * the business a plan grant was for, when the grant names one.
+   */
+  ledger: {
+    id: string;
+    delta: number;
+    kind: string;
+    source: string | null;
+    business: string | null;
+    note: string | null;
+    by: string | null;
+    createdAt: string;
+  }[];
   /** outcome (BUG-278): 'started' when the result was never confirmed, 'failed' when the change did not happen. */
   audit: { id: string; action: string; reason: string | null; by: string | null; createdAt: string; outcome: AuditOutcome }[];
   /** Reasons given in the "Before you cancel" dialog (migration 062), newest first. */
@@ -60,7 +77,7 @@ export async function loadAgencyDetail(agencyId: string, now = new Date()): Prom
   const { data: a, error } = await db
     .from("agencies")
     .select(
-      "id, name, owner_user_id, status, is_test, trial_ends_at, current_period_end, stripe_customer_id, stripe_subscription_id, created_at, purge_after",
+      "id, name, owner_user_id, status, is_test, trial_ends_at, current_period_end, stripe_customer_id, stripe_subscription_id, created_at, deleted_at, purge_after",
     )
     .eq("id", agencyId)
     .maybeSingle();
@@ -80,7 +97,7 @@ export async function loadAgencyDetail(agencyId: string, now = new Date()): Prom
       .order("created_at"),
     db
       .from("credit_transactions")
-      .select("id, delta, kind, note, admin_user_id, created_at, credit_grants(source)")
+      .select("id, delta, kind, note, admin_user_id, created_at, credit_grants(source, businesses(name))")
       .eq("agency_id", agencyId)
       // Scan spending has its own pages; this list is grants, expiries and admin changes.
       .not("kind", "in", "(capture,release)")
@@ -123,8 +140,13 @@ export async function loadAgencyDetail(agencyId: string, now = new Date()): Prom
       stripeLinked: a.stripe_customer_id !== null,
       hasSubscription: a.stripe_subscription_id !== null,
       createdAt: a.created_at,
+      deletedAt: a.status === "deleted" ? a.deleted_at : null,
       restoreUntil: restoreDeadline(a.status, a.purge_after)?.toISOString() ?? null,
       canRestore: canRestore(a.status, a.purge_after, now),
+    },
+    stripe: {
+      customerUrl: stripeDashboardUrl("customers", a.stripe_customer_id),
+      subscriptionUrl: stripeDashboardUrl("subscriptions", a.stripe_subscription_id),
     },
     ownerEmail: emails.get(a.owner_user_id) ?? null,
     balance: {
@@ -147,6 +169,7 @@ export async function loadAgencyDetail(agencyId: string, now = new Date()): Prom
       delta: l.delta,
       kind: l.kind,
       source: l.credit_grants?.source ?? null,
+      business: l.credit_grants?.businesses?.name ?? null,
       note: l.note,
       by: l.admin_user_id ? (emails.get(l.admin_user_id) ?? "Removed admin") : null,
       createdAt: l.created_at,

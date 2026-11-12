@@ -15,9 +15,12 @@ const REFUSED = {
   },
   deleted: { status: 409, error: "This business was deleted, so it can't be scanned." },
   agency_deleted: { status: 409, error: "This account was deleted. Restore it before running a scan." },
+  setup: { status: 409, error: "This business is still being set up, so it has no plan or questions to scan yet." },
+  paused: { status: 409, error: "This business is paused, so a scan would be skipped." },
+  // "Waiting" is the word the scan status badge uses for a queued scan.
   already_active: {
     status: 409,
-    error: "A scan is already queued or running for this business.",
+    error: "A scan is already waiting or running for this business.",
   },
 } as const;
 

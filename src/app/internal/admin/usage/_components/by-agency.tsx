@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import type { UsageCostReport } from "@/modules/admin";
 import { TestBadge } from "../../_components/badges";
-import { count, money, percent } from "./format";
+import { count, money, percent, plural } from "./format";
 
 type Agency = UsageCostReport["byAgency"][number];
 
@@ -41,8 +41,13 @@ function Share({ share }: { share: number }) {
   );
 }
 
+/** Only paid credits are revenue: an agency on trial credits alone has no margin to show, which is not the same as none used. */
 function Margin({ agency }: { agency: Agency }) {
-  if (agency.margin === null) return <span className="text-text-hint">No credits used</span>;
+  if (agency.margin === null) {
+    // Deleted accounts' credits cannot be traced to a purchase, so they are not counted as paid (migration 093).
+    const why = agency.credits === 0 ? "No credits used" : agency.id === null ? "Not counted as paid" : "Free credits only";
+    return <span className="text-text-hint">{why}</span>;
+  }
   return <span className={cn("tabular-nums", agency.margin < 0 && "font-medium text-mid-text")}>{percent(agency.margin)}</span>;
 }
 
@@ -60,7 +65,8 @@ export default function ByAgency({ agencies }: { agencies: UsageCostReport["byAg
           By agency
         </h2>
         <p className="mt-1 text-[length:calc(13px*var(--px,1))] text-muted-foreground">
-          Highest real AI cost first. Margin compares the credits used, at the cheapest credit price, with our real AI cost.
+          Highest real AI cost first. Margin compares the agency&apos;s paid credits, at the lowest credit price, with all its
+          real AI cost. Free trial credits bring in nothing, so they are not counted as income.
         </p>
       </header>
 
@@ -128,7 +134,7 @@ export default function ByAgency({ agencies }: { agencies: UsageCostReport["byAg
           {sorted.length > SHOWN && (
             <div className="flex items-center justify-between gap-3 border-t border-border px-5 py-3 text-[length:calc(13px*var(--px,1))]">
               <span className="text-muted-foreground">
-                Showing {rows.length} of <span className="tabular-nums">{sorted.length}</span> agencies
+                Showing {rows.length} of <span className="tabular-nums">{plural(sorted.length, "agency", "agencies")}</span>
               </span>
               <Button type="button" variant="outline" size="sm" onClick={() => setAll((v) => !v)} aria-expanded={all}>
                 {all ? "Show the top 10" : `Show all ${sorted.length}`}

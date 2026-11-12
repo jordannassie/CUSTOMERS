@@ -19,6 +19,9 @@ export function wholeNumberError(value: FormDataEntryValue | null, max: number, 
 
 const DAY = 24 * 60 * 60 * 1000;
 
+// Test agencies still make some paid AI calls (admin audit 2026-11-12): only scans use saved answers.
+const TEST_SETUP_AI = "Set-up steps like writing questions and filling in business details still use AI.";
+
 // Same rule as the server's extendedTrialEnd: days are added to the later of the trial end and now.
 function newTrialEnd(current: string | null, days: number): string | null {
   if (!Number.isInteger(days) || days < 1) return null;
@@ -29,6 +32,8 @@ type Props = {
   agency: {
     id: string;
     status: string;
+    /** The status as admin shows it: "trial_ended" for a trial past its end. */
+    displayStatus: string;
     isTest: boolean;
     hasSubscription: boolean;
     canRestore: boolean;
@@ -129,7 +134,9 @@ export default function AgencyActions({ agency, stripeConnected, maxCredits, max
         blocked={
           agency.status !== "trialing"
             ? "Only an agency on a trial can have it extended."
-            : !agency.hasSubscription
+            : agency.displayStatus === "trial_ended"
+              ? "This trial has already ended, so it can no longer be extended."
+              : !agency.hasSubscription
               ? "This trial has no Stripe subscription yet."
               : !stripeConnected
                 ? "Stripe is not connected, so trials cannot be changed here yet."
@@ -211,8 +218,8 @@ export default function AgencyActions({ agency, stripeConnected, maxCredits, max
         {...card("test")}
         note={
           agency.isTest
-            ? "Test agencies make no real AI calls and are left out of the Overview numbers."
-            : "Marks this as a test agency: no real AI calls, and left out of the Overview numbers."
+            ? `Scans for test agencies use saved sample answers, so they cost nothing. ${TEST_SETUP_AI} Test agencies are left out of the Overview numbers.`
+            : `Marks this as a test agency: its scans use saved sample answers and cost nothing, and it is left out of the Overview numbers. ${TEST_SETUP_AI}`
         }
         openLabel={agency.isTest ? "Mark as real" : "Mark as test"}
         submitLabel={agency.isTest ? "Mark as real" : "Mark as test"}

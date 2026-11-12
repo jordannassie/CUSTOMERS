@@ -77,18 +77,23 @@ async function Overview({ searchParams }: Props) {
           note={<Change change={o.vsLastMonth.agencies} />}
           visual={<TwoBars yours={o.agencies} theirs={o.agenciesAtMonthStart} labels={["Now", "1st"]} />}
         />
+        {/* The number is what the bars draw (admin audit 2026-11-12: "0" sat next to a tall bar of trials started). */}
         <StatTile
-          label="Active trials"
-          value={credits(o.activeTrials)}
-          note={`${o.vsLastMonth.trialsStarted.thisMonth} started this month, ${o.vsLastMonth.trialsStarted.lastMonth} by this day last month`}
+          label="Trials started this month"
+          value={credits(o.vsLastMonth.trialsStarted.thisMonth)}
+          note={`${credits(o.vsLastMonth.trialsStarted.lastMonth)} by this day last month. ${credits(o.activeTrials)} on trial now.`}
           visual={<TwoBars yours={o.vsLastMonth.trialsStarted.thisMonth} theirs={o.vsLastMonth.trialsStarted.lastMonth} labels={["This", "Last"]} />}
         />
+        {/* The squares sit under the words: beside them, a phone tile broke "businesses" mid-word (admin audit 2026-11-12). */}
         <StatTile
           label="Paying businesses"
           value={credits(o.payingBusinesses)}
           note={`of ${credits(o.businesses)} ${o.businesses === 1 ? "business" : "businesses"}`}
-          visual={<TenSquares named={o.payingBusinesses} answers={o.businesses} />}
-        />
+        >
+          <span className="inline-flex pt-1">
+            <TenSquares named={o.payingBusinesses} answers={o.businesses} />
+          </span>
+        </StatTile>
         <StatTile label="Credits used" value={credits(o.creditsUsed)} note={<Change change={o.vsLastMonth.credits} />}>
           <Sparkline
             points={o.spark.map((d) => ({ day: d.day, value: d.credits }))}
@@ -99,6 +104,7 @@ async function Overview({ searchParams }: Props) {
       </StatGrid>
 
       <MoneyPanel
+        includeTest={includeTest}
         revenue={o.revenue}
         aiCostUsd={o.aiCostUsd}
         revenueChange={o.vsLastMonth.revenue && <Change change={o.vsLastMonth.revenue} />}
@@ -108,7 +114,7 @@ async function Overview({ searchParams }: Props) {
 
       <div className="grid gap-8 lg:grid-cols-2">
         <RecentSignups rows={o.recentSignups} />
-        <FailedScans rows={o.recentFailedScans} />
+        <FailedScans rows={o.recentFailedScans} includeTest={includeTest} />
       </div>
 
       <LibraryGaps loaded={gaps.loaded} rows={gaps.gaps} />

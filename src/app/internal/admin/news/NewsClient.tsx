@@ -9,7 +9,7 @@ import { appFetch } from "@/lib/session-expired";
 import AdminEmpty from "../_components/admin-empty";
 import FilterTabs, { replaceQuery } from "../_components/filter-tabs";
 import AdminPageHeader from "../_components/page-header";
-import { PERIOD_OPTIONS, WEEKDAYS, getTodayWeekday, type Period, type Weekday } from "./_components/news-config";
+import { PERIOD_OPTIONS, WEEKDAYS, getTodayWeekday, weekdayBadge, type Period, type Weekday } from "./_components/news-config";
 import { OutputPanel } from "./_components/output-panel";
 import { StoryCard } from "./_components/story-card";
 import { WeekdayCards } from "./_components/weekday-cards";
@@ -24,8 +24,8 @@ function ErrorBox({ message }: { message: string }) {
 }
 
 export default function NewsClient({ initialPeriod }: { initialPeriod: Period }) {
-  const [weekday, setWeekday] = useState<Weekday>(getTodayWeekday);
-  const [todayKey] = useState<Weekday>(getTodayWeekday);
+  const [weekday, setWeekday] = useState<Weekday>(() => getTodayWeekday());
+  const [todayBadge] = useState(() => weekdayBadge());
   const [period, setPeriod] = useState<Period>(initialPeriod);
   const [searching, setSearching] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
@@ -128,7 +128,7 @@ export default function NewsClient({ initialPeriod }: { initialPeriod: Period })
         subtitle="Turn AI search news into LinkedIn posts that help agencies win and serve clients."
       />
 
-      <WeekdayCards selected={weekday} today={todayKey} onChange={handleWeekdayChange} disabled={isBusy} />
+      <WeekdayCards selected={weekday} today={todayBadge} onChange={handleWeekdayChange} disabled={isBusy} />
 
       <div className="flex flex-wrap items-center gap-3">
         <FilterTabs

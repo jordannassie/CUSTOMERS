@@ -1,16 +1,18 @@
 import { MessageSquareText } from "lucide-react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { requireAdmin } from "@/modules/auth";
-import { moderateAppReviewAction } from "@/modules/apps-directory/review-actions";
-import { getReview, listEvents, listModerationQueue, peersFor } from "@/modules/apps-directory/reviews/dal";
+import { DIRECTORY_CATALOG } from "@/modules/apps-directory/catalog";
+import { listDirectoryOverrides } from "@/modules/apps-directory/dal";
+import { getReview, listEvents, listModerationQueue, listReviewsByStatus, peersFor } from "@/modules/apps-directory/reviews/dal";
 import { spamSignals } from "@/modules/apps-directory/review-service";
+import type { StoredReview } from "@/modules/apps-directory/review-types";
 import AdminEmpty from "../_components/admin-empty";
-import { formatDate } from "../_components/format";
+import FilterTabs from "../_components/filter-tabs";
 import AdminPageHeader from "../_components/page-header";
+import { adminApps, appName } from "../apps/_components/admin-apps";
+import { ReviewDetail } from "./_components/review-detail";
+import { REVIEW_TABS, STATUS_LABELS, TAB_LABELS, reportLabel, reviewTab, type ReviewTab } from "./_components/review-tabs";
 
 export const metadata = { title: "App reviews" };
 
@@ -18,14 +20,25 @@ type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
 const BASE = "/internal/admin/reviews";
 
+const tabHref = (tab: ReviewTab) => (tab === "pending" ? BASE : `${BASE}?status=${tab}`);
+
 export default async function AdminReviewsPage({ searchParams }: { searchParams: SearchParams }) {
   await requireAdmin({ next: BASE });
   const raw = await searchParams;
+  const tab = reviewTab(raw.status);
   const selectedId = typeof raw.review === "string" ? raw.review : "";
-  const queue = await listModerationQueue();
+  const [queue, decided, overrides] = await Promise.all([
+    listModerationQueue(),
+    tab === "pending" ? Promise.resolve([] as StoredReview[]) : listReviewsByStatus(tab),
+    listDirectoryOverrides(),
+  ]);
+  const list = tab === "pending" ? queue.pending : decided;
   const selected = selectedId ? await getReview(selectedId) : null;
   const events = selected ? await listEvents(selected.id) : [];
   const signals = selected ? spamSignals(selected, await peersFor(selected.slug, selected.id)) : [];
+  // The app's name ("Canva"), not its slug ("canva").
+  const apps = adminApps(DIRECTORY_CATALOG, overrides.apps);
+  const reviewHref = (id: string) => `${tabHref(tab)}${tab === "pending" ? "?" : "&"}review=${encodeURIComponent(id)}`;
 
   return (
     <div className="mx-auto flex w-full max-w-[calc(1200px*var(--px,1))] flex-col gap-4 px-4 py-4 sm:px-6 sm:py-5">
@@ -42,81 +55,50 @@ export default async function AdminReviewsPage({ searchParams }: { searchParams:
         </p>
       )}
 
+      <FilterTabs
+        label="Filter by status"
+        active={tab}
+        tabs={REVIEW_TABS.map((t) => ({ key: t, label: TAB_LABELS[t], href: tabHref(t), ...(t === "pending" && { count: queue.pending.length }) }))}
+      />
+
       <section className="flex flex-col gap-3">
-        <h2 className="text-[length:calc(16px*var(--px,1))] font-semibold">Pending</h2>
-        {queue.pending.length === 0 ? (
-          <AdminEmpty icon={MessageSquareText} title="No pending reviews">New reviews show here until approved or rejected.</AdminEmpty>
+        <h2 className="text-[length:calc(16px*var(--px,1))] font-semibold">{TAB_LABELS[tab]}</h2>
+        {list.length === 0 ? (
+          <AdminEmpty icon={MessageSquareText} title={tab === "pending" ? "No pending reviews" : `No ${tab === "all" ? "" : `${TAB_LABELS[tab].toLowerCase()} `}reviews`}>
+            {tab === "pending" ? "New reviews show here until approved or rejected." : "Reviews show here once they have this status."}
+          </AdminEmpty>
         ) : (
           <ul className="flex flex-col gap-2">
-            {queue.pending.map((review) => (
-              <li key={review.id} className="rounded-md border border-border bg-card px-4 py-3 text-[length:calc(14px*var(--px,1))] break-words">
-                <Link href={`${BASE}?review=${review.id}`} className="font-medium text-primary hover:underline">{review.title}</Link>
-                <span className="text-muted-foreground"> {review.slug}, {review.rating} of 5</span>
+            {list.map((review) => (
+              <li key={review.id} className="flex flex-wrap items-center gap-x-2 gap-y-1 rounded-md border border-border bg-card px-4 py-3 text-[length:calc(14px*var(--px,1))] break-words">
+                <Link href={reviewHref(review.id)} className="font-medium text-primary hover:underline">{review.title}</Link>
+                <span className="text-muted-foreground">{appName(apps, review.slug)}, {review.rating} of 5</span>
+                {tab === "all" && <Badge variant="secondary">{STATUS_LABELS[review.status]}</Badge>}
               </li>
             ))}
           </ul>
         )}
       </section>
 
-      <section className="flex flex-col gap-3">
-        <h2 className="text-[length:calc(16px*var(--px,1))] font-semibold">Open reports</h2>
-        {queue.reports.length === 0 ? (
-          <AdminEmpty>No open reports.</AdminEmpty>
-        ) : (
-          <ul className="flex flex-col gap-2">
-            {queue.reports.map((report) => (
-              <li key={report.id} className="rounded-md border border-border bg-card px-4 py-3 text-[length:calc(14px*var(--px,1))] break-words">
-                <Link href={`${BASE}?review=${report.reviewId}`} className="font-medium text-primary hover:underline">{report.reason}</Link>
-                {report.details && <span className="text-muted-foreground"> {report.details}</span>}
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
-
-      {selected && (
-        <section className="flex flex-col gap-2 rounded-md border border-border bg-card p-4 text-[length:calc(14px*var(--px,1))] sm:p-6">
-          <h2 className="text-[length:calc(16px*var(--px,1))] font-semibold break-words">{selected.title}</h2>
-          <div className="flex flex-wrap items-center gap-2 text-[length:calc(13px*var(--px,1))] text-muted-foreground">
-            <span>{selected.slug}</span>
-            <Badge variant="secondary" className="capitalize">{selected.status}</Badge>
-            <span>{selected.rating} of 5</span>
-            <span>{selected.recommendation === "yes" ? "Recommends" : "Does not recommend"}</span>
-          </div>
-          {signals.length > 0 && (
-            <p className="text-[length:calc(13px*var(--px,1))] text-mid-text">Signals: {signals.join(", ")}. These do not approve or reject the review.</p>
-          )}
-          <p className="mt-2 break-words">{selected.useCase}</p>
-          <p className="break-words"><span className="font-medium">Pros: </span>{selected.pros}</p>
-          <p className="break-words"><span className="font-medium">Cons: </span>{selected.cons}</p>
-          <form action={moderateAppReviewAction} className="mt-4 flex flex-col gap-3">
-            <input type="hidden" name="reviewId" value={selected.id} />
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="review-note">Note</Label>
-              <Input id="review-note" name="note" maxLength={500} />
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <Button name="decision" value="approve">Approve</Button>
-              <Button name="decision" value="reject" variant="outline">Reject</Button>
-              <Button name="decision" value="remove" variant="destructive">Remove</Button>
-            </div>
-          </form>
-          <h3 className="mt-6 text-[length:calc(15px*var(--px,1))] font-semibold">Edit history</h3>
-          {events.length === 0 ? (
-            <p className="text-[length:calc(13px*var(--px,1))] text-muted-foreground">No history yet.</p>
+      {tab === "pending" && (
+        <section className="flex flex-col gap-3">
+          <h2 className="text-[length:calc(16px*var(--px,1))] font-semibold">Open reports</h2>
+          {queue.reports.length === 0 ? (
+            <AdminEmpty>No open reports.</AdminEmpty>
           ) : (
-            <ol className="flex flex-col gap-2 text-[length:calc(13px*var(--px,1))]">
-              {events.map((event, index) => (
-                <li key={`${event.createdAt}-${index}`} className="break-words">
-                  <span className="font-medium capitalize">{event.action}</span>
-                  <span className="text-muted-foreground"> {formatDate(event.createdAt, true)}</span>
-                  {event.note && <span> {event.note}</span>}
+            <ul className="flex flex-col gap-2">
+              {queue.reports.map((report) => (
+                <li key={report.id} className="rounded-md border border-border bg-card px-4 py-3 text-[length:calc(14px*var(--px,1))] break-words">
+                  <Link href={reviewHref(report.reviewId)} className="font-medium text-primary hover:underline">{reportLabel(report.reason)}</Link>
+                  {report.details && <span className="text-muted-foreground"> {report.details}</span>}
                 </li>
               ))}
-            </ol>
+            </ul>
           )}
         </section>
       )}
+
+      {selected && <ReviewDetail review={selected} appName={appName(apps, selected.slug)} signals={signals} events={events} />}
     </div>
   );
 }

@@ -6,7 +6,7 @@ import { accountRestoredEmail, sendSafely } from "@/modules/account";
 import { PERIOD_GRACE_MS, type PauseOutcome } from "@/modules/billing";
 import { adminAdjustCredits, extendTrialGrant } from "@/modules/credits";
 import { auditedChange, changed, PartialChangeError, unchanged, type AuditedResult } from "../dal";
-import { changeStatus, ownerEmail, readAgencyState, setTestFlag, setTrialEnd, statusBeforeSuspend, type AgencyState } from "./dal";
+import { changeStatus, ownerEmail, readAgencyState, setTestFlag, setTrialEnd, statusBeforeSuspend, type AgencyState } from "./state/dal";
 import { adjustCreditsInput, extendTrialInput, markTestInput, reasonInput } from "./schema";
 import { canRestore, extendedTrialEnd, isBillingStatus, statusAfterUnsuspend, type BillingStatus } from "./service";
 import { adminStripeClient } from "./stripe";
@@ -67,6 +67,8 @@ export async function adjustCredits(input: unknown): Promise<ActionResult<{ tran
   }
 }
 
+const TRIAL_ENDED = "This trial has already ended, so it can no longer be extended.";
+
 export async function extendTrial(input: unknown): Promise<ActionResult<{ trialEndsAt: string }>> {
   try {
     const parsed = extendTrialInput.safeParse(input);
@@ -75,6 +77,8 @@ export async function extendTrial(input: unknown): Promise<ActionResult<{ trialE
     const r = await ready(agencyId);
     if (!r.ok) return r;
     if (r.state.status !== "trialing") return { ok: false, status: 409, error: "Only an agency on a trial can have it extended." };
+    // An ended trial's credits are already gone (6-hour grace) and Stripe has moved on, so there is nothing to extend.
+    if (r.state.trialEndsAt && new Date(r.state.trialEndsAt) <= new Date()) return { ok: false, status: 409, error: TRIAL_ENDED };
     if (!r.state.subscriptionId) {
       return { ok: false, status: 409, error: "This trial has no Stripe subscription yet, so there is nothing to extend." };
     }

@@ -1,11 +1,11 @@
-import { ChevronLeft, ChevronRight, Inbox } from "lucide-react";
+import { ChevronLeft, ChevronRight, Inbox, SearchX, X } from "lucide-react";
 import { cn } from "cn";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { looksLikeCode, withoutCode } from "@/lib/submitted-text";
 import AdminEmpty from "../../_components/admin-empty";
 import { SpamBadge } from "../../_components/submitted-code";
-import { INTEREST_LABELS, formatDate, statusLabel, statusVariant, type Lead } from "./lead-types";
+import { formatDate, interestLabel, leadStage, stageLabel, stageVariant, type Lead } from "./lead-types";
 
 export function LeadListEmpty({ filtered }: { filtered: boolean }) {
   return (
@@ -16,7 +16,8 @@ export function LeadListEmpty({ filtered }: { filtered: boolean }) {
         </AdminEmpty>
       ) : (
         <AdminEmpty icon={Inbox} title="No leads yet" className="w-full border-0">
-          A lead shows up here as soon as someone sends the contact form, the chat widget or the agency page form.
+          A lead shows up here as soon as someone sends the contact form, the chat widget or the agency page form, or
+          sends a brief for a paid AI video ad.
         </AdminEmpty>
       )}
     </div>
@@ -35,21 +36,43 @@ export function LeadListError({ message, onRetry }: { message: string; onRetry: 
   );
 }
 
+/** A shared lead link (?lead=) for a lead that is gone or never existed. */
+export function LeadNotFound({ onClose }: { onClose: () => void }) {
+  return (
+    <div className="flex flex-1 flex-col">
+      <div className="flex justify-end px-5 py-4">
+        <Button type="button" variant="ghost" size="icon-sm" onClick={onClose} aria-label="Close">
+          <X aria-hidden className="size-4" />
+        </Button>
+      </div>
+      <div className="flex flex-1 items-start justify-center p-4">
+        <AdminEmpty icon={SearchX} title="Lead not found" className="w-full border-0">
+          This link points to a lead that is not here any more. Pick one from the list.
+        </AdminEmpty>
+      </div>
+    </div>
+  );
+}
+
 export function LeadRows({
   leads,
   selectedId,
   compact,
+  unsaved,
   onOpen,
 }: {
   leads: Lead[];
   selectedId: string | undefined;
   compact: boolean;
+  /** Leads with an internal note typed but not saved yet. */
+  unsaved: Record<string, string>;
   onOpen: (lead: Lead) => void;
 }) {
   return (
     <ul className="flex flex-col divide-y divide-border">
       {leads.map((lead) => {
         const spam = looksLikeCode(lead.name, lead.company, lead.message, lead.website, lead.page_path);
+        const stage = leadStage(lead);
         return (
         <li key={lead.id}>
           <button
@@ -75,20 +98,25 @@ export function LeadRows({
                   <p className={cn("truncate text-[length:calc(14px*var(--px,1))]", lead.read_at ? "text-foreground" : "font-semibold")}>
                     {withoutCode(lead.name) || "No name"}
                   </p>
-                  <p className="truncate text-[length:calc(12px*var(--px,1))] text-muted-foreground" title={lead.email}>{lead.email}</p>
+                  {/* Wraps instead of being cut off on a phone (admin audit 2026-11-12). */}
+                  <p className="text-[length:calc(12px*var(--px,1))] break-all text-muted-foreground">{lead.email}</p>
                   {lead.company && withoutCode(lead.company) && (
                     <p className="truncate text-[length:calc(12px*var(--px,1))] text-muted-foreground">{withoutCode(lead.company)}</p>
+                  )}
+                  {lead.handled_by && (
+                    <p className="text-[length:calc(12px*var(--px,1))] break-all text-text-hint">Handled by {lead.handled_by}</p>
                   )}
                 </div>
               </div>
               <div className="flex shrink-0 flex-col items-end gap-1">
-                <Badge variant="secondary">{INTEREST_LABELS[lead.topic] ?? lead.topic}</Badge>
+                <Badge variant="secondary">{interestLabel(lead.topic)}</Badge>
                 <span className="text-[length:calc(12px*var(--px,1))] text-text-hint">
                   {formatDate(lead.created_at, true)}
                 </span>
-                <Badge variant={statusVariant(lead.status)}>{statusLabel(lead.status)}</Badge>
+                <Badge variant={stageVariant(stage)}>{stageLabel(stage)}</Badge>
                 {spam && <SpamBadge />}
                 {lead.replied_at && <Badge variant="secondary">Replied</Badge>}
+                {unsaved[lead.id] !== undefined && <Badge variant="mid">Note not saved</Badge>}
               </div>
             </div>
             {!compact && <p className="mt-2 line-clamp-1 w-full pl-4 text-left text-[length:calc(12px*var(--px,1))] text-muted-foreground">{withoutCode(lead.message)}</p>}

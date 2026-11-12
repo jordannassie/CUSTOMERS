@@ -1,6 +1,7 @@
 import AdminNotFound from "./_components/admin-not-found";
 
-// Inside the admin layout, so the admin menu stays and the admin can move on (UI-033).
+// Inside the admin layout, so the admin menu stays and the admin can move on (UI-033). The breadcrumb reads
+// "Admin / Page not found" and no menu item is marked, even under a real section's address (/internal/admin/leads/abc).
 export default function AdminPageNotFound() {
   return (
     <AdminNotFound
@@ -8,6 +9,7 @@ export default function AdminPageNotFound() {
       text="There is no admin page at this address. Check the link, or pick a page from the menu."
       backHref="/internal/admin"
       backLabel="Back to Overview"
+      unknownAddress
     />
   );
 }

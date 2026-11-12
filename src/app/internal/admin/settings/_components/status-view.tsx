@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { cn } from "cn";
 import { Badge } from "@/components/ui/badge";
-import type { ServiceStatus, StatusState, SystemStatus } from "@/modules/system-status";
+import { statusSummary, type ServiceStatus, type StatusState, type SystemStatus } from "@/modules/system-status";
 import RecheckButton from "./recheck-button";
 
 // Grey labels, and the dashboard's light orange warning for anything broken. Dots: dark
@@ -21,15 +21,9 @@ const GROUPS: { id: ServiceStatus["group"]; title: string }[] = [
   { id: "jobs", title: "Background jobs" },
 ];
 
-function summary(services: ServiceStatus[]): string {
-  const broken = services.filter((s) => s.state === "error").length;
-  const working = services.filter((s) => s.state === "ok").length;
-  if (broken > 0) return `${broken} of ${services.length} services ${broken === 1 ? "is" : "are"} not working`;
-  return `${working} of ${services.length} services working`;
-}
-
 export default function StatusView({ status, openAlerts = 0, recheck }: { status: SystemStatus; openAlerts?: number; recheck: () => Promise<unknown> }) {
   const { services } = status;
+  const summary = statusSummary(services);
   const checkedAt = new Date(status.checkedAt).toLocaleTimeString("en-US", {
     hour: "numeric",
     minute: "2-digit",
@@ -43,11 +37,12 @@ export default function StatusView({ status, openAlerts = 0, recheck }: { status
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <h2 id="status-summary" className="text-[length:calc(20px*var(--px,1))] font-semibold tracking-[-0.02em]">
-              {summary(services)}
+              {summary.title}
             </h2>
+            {summary.offNote && <p className="mt-1 text-[length:calc(13px*var(--px,1))] text-muted-foreground">{summary.offNote}</p>}
             <p className="mt-1 text-[length:calc(13px*var(--px,1))] text-muted-foreground">
-              Checked at <span className="tabular">{checkedAt}</span> UTC. Every service is checked every 15 minutes; Check
-              again checks them now.
+              Checked at <span className="tabular">{checkedAt}</span> UTC. Every service is checked every 15 minutes. To check
+              now, use Check again.
             </p>
             {openAlerts > 0 && (
               <p className="mt-1 text-[length:calc(13px*var(--px,1))] text-muted-foreground" data-testid="service-alerts-note">
@@ -103,7 +98,8 @@ function ServiceRow({ service }: { service: ServiceStatus }) {
         <p className="mt-0.5 text-[length:calc(13px*var(--px,1))] text-muted-foreground">{service.detail}</p>
         {service.fix && service.state !== "ok" && (
           <p className="mt-1 text-[length:calc(12px*var(--px,1))] text-text-hint">
-            <span className="font-medium">How to fix: </span>
+            {/* Off on purpose is not a fault, so its note is not a fix. */}
+            {service.state !== "off" && <span className="font-medium">How to fix: </span>}
             {service.fix}
           </p>
         )}

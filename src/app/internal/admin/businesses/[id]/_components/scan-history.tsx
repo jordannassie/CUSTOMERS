@@ -1,13 +1,15 @@
+import Link from "next/link";
+import { ArrowRight } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ADMIN_SCAN_PRIORITY, type AdminScan } from "@/modules/admin";
 import { ScanStatusBadge } from "../../../_components/badges";
-import { formatDate } from "../../../_components/format";
+import { formatDate, plural } from "../../../_components/format";
 import ScanError from "../../../_components/scan-error";
 import Section, { Empty } from "./section";
 
-export default function ScanHistory({ scans }: { scans: AdminScan[] }) {
+export default function ScanHistory({ scans, total, businessId }: { scans: AdminScan[]; total: number; businessId: string }) {
   return (
-    <Section title="Scan history" note={scanCount(scans.length)}>
+    <Section title="Scan history" note={scanCount(scans.length, total)}>
       {scans.length === 0 ? (
         <Empty>This business has never been scanned.</Empty>
       ) : (
@@ -21,8 +23,8 @@ export default function ScanHistory({ scans }: { scans: AdminScan[] }) {
                 <ScanStatusBadge status={s.state} />
               </div>
               <p className="tabular text-muted-foreground">
-                {s.checks === null ? "" : `${s.checks - (s.checksFailed ?? 0)} of ${s.checks} checks. `}
-                {s.credits} credits.
+                {s.checks === null ? `${noChecks(s)}. ` : `${s.checks - (s.checksFailed ?? 0)} of ${plural(s.checks, "check", "checks")}. `}
+                {plural(s.credits, "credit", "credits")}.
               </p>
               <p className="text-muted-foreground">{details(s)}</p>
               <ScanError error={s.error} />
@@ -48,7 +50,7 @@ export default function ScanHistory({ scans }: { scans: AdminScan[] }) {
                     <ScanStatusBadge status={s.state} />
                   </TableCell>
                   <TableCell className="tabular-nums whitespace-nowrap">
-                    {s.checks === null ? "" : `${s.checks - (s.checksFailed ?? 0)} of ${s.checks}`}
+                    {s.checks === null ? <span className="text-text-hint">{noChecks(s)}</span> : `${s.checks - (s.checksFailed ?? 0)} of ${s.checks}`}
                   </TableCell>
                   <TableCell className="text-right tabular-nums">{s.credits}</TableCell>
                   <TableCell className="min-w-[calc(220px*var(--px,1))] whitespace-normal text-muted-foreground">
@@ -60,16 +62,29 @@ export default function ScanHistory({ scans }: { scans: AdminScan[] }) {
             </TableBody>
           </Table>
         </div>
+        <Link
+          href={`/internal/admin/scans?business=${businessId}`}
+          className="inline-flex w-fit items-center gap-1 text-[length:calc(13px*var(--px,1))] text-primary hover:underline"
+        >
+          See all scans for this business
+          <ArrowRight aria-hidden className="size-4" />
+        </Link>
         </>
       )}
     </Section>
   );
 }
 
-// "1 scan", "12 scans, newest first"; the list keeps the newest 20.
-function scanCount(n: number): string | undefined {
-  if (n === 0) return undefined;
-  return n === 1 ? "1 scan" : `${n} scans, newest first`;
+// "1 scan", "12 scans, newest first", or "Showing the newest 20 of 34" once the list stops short of every scan.
+export function scanCount(shown: number, total: number): string | undefined {
+  if (shown === 0) return undefined;
+  if (total > shown) return `Showing the newest ${shown} of ${total.toLocaleString("en-US")}`;
+  return shown === 1 ? "1 scan" : `${shown} scans, newest first`;
+}
+
+// Scans from before the job queue did not record their checks; a job with no run stopped before asking anything.
+function noChecks(s: AdminScan): string {
+  return s.priority === null ? "Checks not recorded" : "No checks";
 }
 
 function details(s: AdminScan): string {

@@ -2,19 +2,19 @@
 
 import { useId, useState, useTransition } from "react";
 import Link from "next/link";
-import { AlertTriangle, ChevronDown } from "lucide-react";
+import { AlertTriangle, ChevronDown, ExternalLink } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { FieldMessage, useFieldErrors } from "@/components/ui/field-errors";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import type { ActionResult } from "@/modules/auth";
-import type { OpenAlert } from "@/modules/admin";
+import type { AdminOverview } from "@/modules/admin";
 import { cn } from "cn";
 import Section, { Empty } from "../businesses/[id]/_components/section";
 
 // Dates arrive formatted: the shared date helper lives beside server-only code.
-export type AlertRowData = OpenAlert & { started: string; lastSeen: string; stale: boolean; serviceCheck: boolean };
+export type AlertRowData = AdminOverview["openAlerts"][number] & { started: string; lastSeen: string; stale: boolean; serviceCheck: boolean };
 type Resolve = (input: { alertId: string; reason: string }) => Promise<ActionResult<unknown>>;
 
 const KIND_LABEL: Record<string, string> = {
@@ -31,6 +31,11 @@ const KIND_LABEL: Record<string, string> = {
   schedule_lost: "Scheduled change lost",
   topup_refund_unrecovered: "Refunded credits not taken back",
 };
+/** The alert's name in plain words; a kind this page does not know is "Other alert", never its internal code. */
+export function alertKindLabel(kind: string, serviceCheck: boolean): string {
+  return KIND_LABEL[kind] ?? (serviceCheck ? "Service check" : "Other alert");
+}
+
 const SEVERITY = {
   // The dashboard's light orange warning for urgent and warning alerts, grey for the rest.
   critical: { label: "Urgent", badge: "mid", rail: "border-l-mid" },
@@ -152,12 +157,13 @@ function AlertRow({ alert, resolve, onResolved }: { alert: AlertRowData; resolve
         <div className="flex min-w-0 flex-col gap-1">
           <span className="flex flex-wrap items-center gap-2">
             <Badge variant={severity.badge}>{severity.label}</Badge>
-            <span className="font-medium text-muted-foreground">{KIND_LABEL[alert.kind] ?? (alert.serviceCheck ? "Service check" : alert.kind)}</span>
+            <span className="font-medium text-muted-foreground">{alertKindLabel(alert.kind, alert.serviceCheck)}</span>
           </span>
           <p className="text-[length:calc(14px*var(--px,1))] break-words text-foreground">{alert.message}</p>
           <p className="text-text-hint">
             Started {alert.started}. Last seen {alert.lastSeen}.{alert.stale ? " Nothing new since." : ""}
           </p>
+          {alert.links.length > 0 && <AlertLinks links={alert.links} />}
         </div>
         {!open && (
           <Button type="button" variant="outline" size="sm" className="w-fit shrink-0" onClick={() => setOpen(true)}>
@@ -191,5 +197,26 @@ function AlertRow({ alert, resolve, onResolved }: { alert: AlertRowData; resolve
         </form>
       )}
     </li>
+  );
+}
+
+/** Where to go about the alert: an admin page, or the Stripe dashboard in a new tab. */
+function AlertLinks({ links }: { links: AlertRowData["links"] }) {
+  return (
+    <p className="flex flex-wrap gap-x-4 gap-y-1 font-medium">
+      {links.map((l) =>
+        l.external ? (
+          <a key={l.href} href={l.href} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-primary hover:underline">
+            {l.label}
+            <ExternalLink aria-hidden className="size-3.5" />
+            <span className="sr-only">(opens in a new tab)</span>
+          </a>
+        ) : (
+          <Link key={l.href} href={l.href} className="text-primary hover:underline">
+            {l.label}
+          </Link>
+        ),
+      )}
+    </p>
   );
 }

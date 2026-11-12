@@ -1,4 +1,6 @@
 import { Badge } from "@/components/ui/badge";
+import type { AdminAgencyRow } from "@/modules/admin";
+import { formatDate } from "../../_components/format";
 
 // The app's pill colours (src/components/app/pills.ts): blue for what needs a look, red only for a failed payment.
 type Variant = "mid" | "tint" | "secondary";
@@ -36,3 +38,18 @@ export function StatusBadge({ status }: { status: string }) {
 }
 
 export const credits = (n: number) => n.toLocaleString("en-US");
+
+/**
+ * "Ends Nov 20, 2026 UTC" for a running trial, "Ended Oct 27, 2026 UTC" for one past its end; null when the agency is
+ * not on a trial. The same rule on phones and desktop.
+ */
+export function trialText(row: Pick<AdminAgencyRow, "status" | "displayStatus" | "trialEndsAt">): string | null {
+  if (row.status !== "trialing" || !row.trialEndsAt) return null;
+  return `${row.displayStatus === "trial_ended" ? "Ended" : "Ends"} ${formatDate(row.trialEndsAt)}`;
+}
+
+/** The hint under the status: until when a deleted agency can come back, or that Stripe has never seen it. */
+export function statusNote(row: Pick<AdminAgencyRow, "restoreUntil" | "stripeLinked">): string | null {
+  if (row.restoreUntil) return `Restorable until ${formatDate(row.restoreUntil)}`;
+  return row.stripeLinked ? null : "Not linked to Stripe";
+}

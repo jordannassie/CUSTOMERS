@@ -59,7 +59,58 @@ describe("usage and cost rules (B-67)", () => {
     expect(report.totals.margin).toBeCloseTo(0.5, 6);
     expect(report.byAgency[0].margin).toBeCloseTo(0.5, 6);
     expect(report.byModel[0]).toMatchObject({ credits: 10, checks: 10 });
-    expect(report.byModel[0].costPerCheck).toBeCloseTo(0.03, 6);
+    expect(report.byModel[0].costPerCredit).toBeCloseTo(0.03, 6);
+    // The 6 paid credits bought checks that cost 6 x $0.03 = $0.18: 70% on paid checks alone.
+    expect(report.totals.paidCheckCostUsd).toBeCloseTo(0.18, 6);
+    expect(report.totals.paidMargin).toBeCloseTo(0.7, 6);
+  });
+
+  it("prices a model by credits charged, so free cache hits do not flatter its margin", () => {
+    // 10 checks, 5 answered from the cache (free, no credit), 5 new answers at $0.04 each: $0.20 for 5 credits.
+    const report = buildReport({
+      from: new Date("2026-09-26T00:00:00Z"),
+      to: new Date("2026-09-26T12:00:00Z"),
+      creditPriceUsd: 0.1,
+      captures: [{ agencyId: "a1", provider: "openai", paid: true, credits: 5, createdAt: "2026-09-26" }],
+      usage: [
+        { agencyId: "a1", usageType: "ai_visibility_check", provider: "openai", cached: false, costUsd: 0.2, events: 5, createdAt: "2026-09-26" },
+        { agencyId: "a1", usageType: "ai_visibility_check", provider: "openai", cached: true, costUsd: 0, events: 5, createdAt: "2026-09-26" },
+      ],
+      agencies: new Map([["a1", { name: "North", isTest: false }]]),
+    });
+    const openai = report.byModel[0];
+    expect(openai).toMatchObject({ checks: 10, cached: 5, credits: 5 });
+    // $0.04 a credit, a 60% margin ("thin"); dividing by all 10 checks said $0.02 and 80% ("profitable").
+    expect(openai.costPerCredit).toBeCloseTo(0.04, 6);
+    expect(openai.margin).toBeCloseTo(0.6, 6);
+    expect(openai.verdict).toBe("thin");
+  });
+
+  it("splits the AI cost of paid checks from free trials and other AI work", () => {
+    // 2 paid and 8 trial credits on $0.02 checks, plus $0.50 of explanations: paying customers are profitable even
+    // though the margin after all AI cost is far below zero.
+    const report = buildReport({
+      from: new Date("2026-09-26T00:00:00Z"),
+      to: new Date("2026-09-26T12:00:00Z"),
+      creditPriceUsd: 0.1,
+      captures: [
+        { agencyId: "a1", provider: "anthropic", paid: true, credits: 2, createdAt: "2026-09-26" },
+        { agencyId: "a2", provider: "anthropic", paid: false, credits: 8, createdAt: "2026-09-26" },
+        // A paid credit whose model is not known is priced at the average cost per credit.
+        { agencyId: "a1", provider: null, paid: true, credits: 1, createdAt: "2026-09-26" },
+      ],
+      usage: [
+        { agencyId: null, usageType: "ai_visibility_check", provider: "anthropic", cached: false, costUsd: 0.22, events: 11, createdAt: "2026-09-26" },
+        { agencyId: "a1", usageType: "other", provider: "anthropic", cached: false, costUsd: 0.5, events: 3, createdAt: "2026-09-26" },
+      ],
+      agencies: new Map(),
+    });
+    expect(report.totals.paidCheckCostUsd).toBeCloseTo(0.06, 6);
+    expect(report.totals.paidMargin).toBeCloseTo(0.8, 6);
+    // $0.30 of paid credits against $0.72 of all AI cost.
+    expect(report.totals.margin).toBeCloseTo((0.3 - 0.72) / 0.3, 6);
+    expect(report.otherCostUsd).toBeCloseTo(0.5, 6);
+    expect(report.byAgency.find((a) => a.id === "a2")).toMatchObject({ credits: 8, margin: null });
   });
 
   it("splits credits and cost by day, model and agency, and counts cache hits", () => {
@@ -101,9 +152,9 @@ describe("usage and cost rules (B-67)", () => {
 
     const openai = report.byModel.find((m) => m.model === "openai")!;
     expect(openai).toMatchObject({ credits: 2, checks: 2, cached: 1, verdict: "profitable" });
-    expect(openai.costPerCheck).toBeCloseTo(0.015, 6);
-    expect(openai.costPerCall).toBeCloseTo(0.03, 6);
-    expect(openai.margin).toBeCloseTo(0.85, 6);
+    // 1 new answer at $0.03 and 1 free cache hit: $0.03 for the 1 credit charged, 70% at $0.10 a credit.
+    expect(openai.costPerCredit).toBeCloseTo(0.03, 6);
+    expect(openai.margin).toBeCloseTo(0.7, 6);
     expect(report.byModel.find((m) => m.model === "anthropic")).toMatchObject({ credits: 1, verdict: "losing" });
     expect(report.byModel.find((m) => m.model === "perplexity")).toMatchObject({ checks: 0, verdict: "no_data", margin: null });
     expect(report.otherCostUsd).toBeCloseTo(0.002, 6);

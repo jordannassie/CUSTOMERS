@@ -51,7 +51,7 @@ export const AEO_REPLY = `Thanks for commenting AEO! Here's the link: https://cu
 Enter your client's website and a competitor's website to compare their AI search visibility. Which client are you checking first?`;
 
 // Weekends fall back to Monday's angle.
-export function getTodayWeekday(): Weekday {
+export function getTodayWeekday(now: Date = new Date()): Weekday {
   const map: Record<number, Weekday> = {
     0: "monday",
     1: "monday",
@@ -61,7 +61,16 @@ export function getTodayWeekday(): Weekday {
     5: "friday",
     6: "monday",
   };
-  return map[new Date().getDay()];
+  return map[now.getDay()];
+}
+
+/**
+ * The badge on the weekday cards: "Today" on a weekday; at the weekend Monday's card says "Next", since there is no
+ * weekend angle (admin audit 2026-11-12: Monday said Today on a Saturday).
+ */
+export function weekdayBadge(now: Date = new Date()): { day: Weekday; label: "Today" | "Next" } {
+  const weekend = now.getDay() === 0 || now.getDay() === 6;
+  return { day: getTodayWeekday(now), label: weekend ? "Next" : "Today" };
 }
 
 const CATEGORY_TONES: Record<string, BadgeTone> = {

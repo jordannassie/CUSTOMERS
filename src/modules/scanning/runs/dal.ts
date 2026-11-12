@@ -219,15 +219,12 @@ export async function insertExtractionUsage(row: {
   accountUserId: string;
   businessId: string;
   model: string;
-  inputTokens: number;
-  outputTokens: number;
+  inputTokens: number; outputTokens: number;
   costUsd: number;
   /** Who answered: Claude, or the ChatGPT backup (D-84). */
   provider?: "anthropic" | "openai";
-  fellBack?: boolean;
-  primaryError?: string | null;
-  /** The scan run, so admin Scans counts this cost in the scan's real cost (2026-11-12). */
-  runId?: string | null;
+  fellBack?: boolean; primaryError?: string | null;
+  runId?: string | null; // the scan run, so admin Scans counts it in the scan's real cost
 }): Promise<void> {
   const { error } = await createServiceClient().from("usage_events").insert({
     account_user_id: row.accountUserId,

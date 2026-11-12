@@ -19,7 +19,9 @@ const HOUR_MS = 60 * 60 * 1000;
 
 // The database writes some alerts with developer names (migration 058); the Overview reads them in plain words.
 const PLAIN_ALERT_WORDS: [RegExp, string][] = [
-  [/\bStripe webhook events?\b/g, "payment updates from Stripe"],
+  // "1 Stripe webhook event failed" stays singular (admin audit 2026-11-12: it read "1 payment updates").
+  [/\bStripe webhook events\b/g, "payment updates from Stripe"],
+  [/\bStripe webhook event\b/g, "payment update from Stripe"],
   [/\bStripe webhooks?\b/g, "payment updates from Stripe"],
   [/\bCheck that the worker is running\./g, "Check Scan worker and Automatic scans on the System status page."],
   // "Anthropic (Claude)" is the System status check's name; it becomes "Claude", never "Claude (Claude)".
@@ -40,6 +42,36 @@ export function alertWording(alert: Pick<OpenAlert, "kind" | "message" | "lastSe
   const stale = HOURLY_KINDS.has(alert.kind) && now.getTime() - Date.parse(alert.lastSeenAt) > HOUR_MS;
   const message = plainAlertText(alert.message);
   return { message: stale ? message.replace(/\bin the last hour\b/g, "in one hour") : message, stale };
+}
+
+/** Somewhere to act on an alert: a page in admin, or the Stripe dashboard (external). */
+export type AlertLink = { label: string; href: string; external?: boolean };
+
+const SYSTEM_STATUS: AlertLink = { label: "Open System status", href: "/internal/admin/settings" };
+
+/**
+ * Where to go about an alert (admin audit 2026-11-12: alerts gave nothing to act on). `stripeWebhooks` is the Stripe
+ * dashboard's webhooks page in the mode of the key in use. Kinds with no page that helps get no link.
+ */
+export function alertLinks(kind: string, stripeWebhooks: string): AlertLink[] {
+  if (isServiceCheckKind(kind)) return [SYSTEM_STATUS];
+  switch (kind) {
+    case "failed_scans":
+      return [{ label: "See failed scans", href: "/internal/admin/scans?status=failed" }];
+    case "stuck_jobs":
+      return [{ label: "See running scans", href: "/internal/admin/scans?status=running" }, SYSTEM_STATUS];
+    case "webhook_failures":
+      return [SYSTEM_STATUS, { label: "Open webhooks in Stripe", href: stripeWebhooks, external: true }];
+    case "provider_errors":
+    case "anthropic_credit":
+    case "ai_fallback":
+    case "claude_unavailable":
+      return [SYSTEM_STATUS];
+    case "daily_ai_cost":
+      return [{ label: "See AI cost by model", href: "/internal/admin/usage?days=7" }];
+    default:
+      return [];
+  }
 }
 
 // Raised by scans when Anthropic rejects the key, the account has no credit, or every Claude check in a scan failed

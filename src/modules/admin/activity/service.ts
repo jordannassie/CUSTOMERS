@@ -46,16 +46,34 @@ export const activityQuery = z.object({
 });
 export type ActivityQuery = z.infer<typeof activityQuery>;
 
-/** Where a logged change can be opened, or null when the page has nowhere to send the admin. */
-export function targetHref(type: string | null, id: string | null): string | null {
+/**
+ * Where a logged change can be opened, or null when the page has nowhere to send the admin. A scan opens the Scans
+ * list filtered to its business (`businessId`); a resolved alert is off the Overview, so it has no link.
+ */
+export function targetHref(type: string | null, id: string | null, businessId?: string | null): string | null {
   if (!id) return null;
-  if (type === "agency") return `/internal/admin/agencies/${id}`;
-  if (type === "business") return `/internal/admin/businesses/${id}`;
-  return null;
+  switch (type) {
+    case "agency":
+      return `/internal/admin/agencies/${id}`;
+    case "business":
+      return `/internal/admin/businesses/${id}`;
+    case "lead":
+      return `/internal/admin/leads?lead=${encodeURIComponent(id)}`;
+    case "scan_job":
+      return businessId ? `/internal/admin/scans?business=${encodeURIComponent(businessId)}` : null;
+    case "feature_request":
+      return "/internal/admin/feature-requests";
+    case "app_review":
+    case "review":
+      return `/internal/admin/reviews?review=${encodeURIComponent(id)}`;
+    default:
+      return null;
+  }
 }
 
-/** The reason an admin typed, from the row's details, if any. */
-export function reasonOf(details: unknown): string | null {
+/** The reason an admin typed, from the row's details, if any. Stripe rows have none: their note is written by the app. */
+export function reasonOf(details: unknown, action = ""): string | null {
+  if (action.startsWith("stripe.")) return null;
   if (!details || typeof details !== "object" || Array.isArray(details)) return null;
   const reason = (details as Record<string, unknown>).reason;
   return typeof reason === "string" && reason.trim() ? reason.trim() : null;

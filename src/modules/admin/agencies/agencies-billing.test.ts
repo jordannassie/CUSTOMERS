@@ -95,5 +95,15 @@ describe("suspend and Stripe billing", () => {
     expect((await actions.suspendAgency({ agencyId: agency.agencyId, reason: REASON })).ok).toBe(true);
     expect(setBillingPaused).not.toHaveBeenCalled();
   });
+});
 
+describe("extend trial", () => {
+  it("refuses a trial that has already ended and asks Stripe nothing (admin audit 2026-11-12)", async () => {
+    await setAgency({ status: "trialing", trial_ends_at: new Date(Date.now() - 86_400_000).toISOString(), stripe_subscription_id: `sub_${randomUUID()}` });
+    stripe.client = fakeStripe();
+    const result = await actions.extendTrial({ agencyId: agency.agencyId, days: 7, reason: REASON });
+    expect(result).toMatchObject({ ok: false, status: 409, error: expect.stringContaining("already ended") });
+    expect(stripe.client.extendTrial).not.toHaveBeenCalled();
+    expect(await auditRows("agency.extend_trial")).toEqual([]);
+  });
 });

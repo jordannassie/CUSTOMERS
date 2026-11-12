@@ -2,6 +2,7 @@
 export { auditedChange, changed, PartialChangeError, unchanged, type AuditedResult } from "./dal";
 export type { AdminActionDetails, AdminTarget } from "./schema";
 export { ADMIN_PAGE_SIZE, pageParam, searchParam } from "./schema";
+export { pastLastPage, readPage } from "./paging";
 export { listBusinesses, type AdminBusinessList, type AdminBusinessRow } from "./businesses/list/dal";
 export { businessFilter, BUSINESS_FILTERS, type BusinessFilter } from "./businesses/schema";
 export { loadBusinessDetail, loadBusinessName, type AdminBusinessDetail, type AdminScan, type ResultRow } from "./businesses/detail/dal";

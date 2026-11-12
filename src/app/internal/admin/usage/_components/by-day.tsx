@@ -1,7 +1,7 @@
 import { cn } from "cn";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import type { UsageCostReport } from "@/modules/admin";
-import { count, money, shortDay } from "./format";
+import { count, money, plural, shortDay } from "./format";
 
 /** A round top for the scale (1, 2 or 5 times a power of ten), so the axis reads 0, 500, 1,000 and not 0, 487, 974. */
 function niceTop(n: number): number {
@@ -42,7 +42,7 @@ export default function ByDay({ days }: { days: UsageCostReport["byDay"] }) {
           {days.map((d) => (
             <div
               key={d.day}
-              title={`${shortDay(d.day)}: ${count(d.credits)} credits, ${money(d.costUsd)} real cost`}
+              title={`${shortDay(d.day)}: ${plural(d.credits, "credit", "credits")}, ${money(d.costUsd)} real cost`}
               className="relative flex h-full flex-1 items-end"
             >
               <div

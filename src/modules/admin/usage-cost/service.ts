@@ -1,5 +1,5 @@
 // Pure rules for admin Usage and cost (B-67, MVP_SPEC 9.1): credits from credit_transactions, real AI cost
-// from usage_events, and whether each model still earns more per check than it costs (D-23).
+// from usage_events, and whether each model still earns more per credit than it costs (D-23).
 
 const DAY = 24 * 60 * 60 * 1000;
 // "month" is this calendar month (UTC), the same stretch the Overview reports, so both pages show the same numbers.
@@ -39,10 +39,11 @@ export type ModelMargin = {
   checks: number;
   cached: number;
   costUsd: number;
-  /** Real cost per charged check, cache hits included (they cost 0). */
-  costPerCheck: number | null;
-  /** Cost of one real API call, what a check costs when the cache does not help. */
-  costPerCall: number | null;
+  /**
+   * Real cost per credit charged: the model's cost over its checks with a new answer. Cache hits charge no credit
+   * (D-24), so dividing by every check made margins look better than they are (admin audit 2026-11-12).
+   */
+  costPerCredit: number | null;
   margin: number | null;
   verdict: Verdict;
 };
@@ -53,8 +54,22 @@ export type UsageCostReport = {
   creditPriceUsd: number | null;
   /** The plan or top-up pack that price comes from, so the page can say what the floor is. */
   creditPriceBasis: string | null;
-  /** freeCredits: credits from trial, promo and admin grants, left out of what credits are worth. */
-  totals: { credits: number; freeCredits: number; costUsd: number; checks: number; cached: number; cacheHitRate: number | null; margin: number | null };
+  /**
+   * freeCredits: credits from trial, promo and admin grants, left out of what credits are worth. margin: paid credits
+   * against ALL AI cost. paidCheckCostUsd: the AI cost of the checks paid credits bought, and paidMargin the margin on
+   * those alone, so an admin can tell paying customers' margin from the cost of free trials and other AI work.
+   */
+  totals: {
+    credits: number;
+    freeCredits: number;
+    costUsd: number;
+    paidCheckCostUsd: number;
+    checks: number;
+    cached: number;
+    cacheHitRate: number | null;
+    margin: number | null;
+    paidMargin: number | null;
+  };
   byDay: { day: string; credits: number; costUsd: number }[];
   byModel: ModelMargin[];
   otherCostUsd: number;
@@ -133,8 +148,8 @@ export function buildReport(input: {
     const calls = rows.filter((u) => !u.cached);
     const [rowCount, callCount] = [count(rows), count(calls)];
     const modelCost = sum(rows, (u) => u.costUsd);
-    const costPerCheck = rowCount > 0 ? modelCost / rowCount : null;
-    const margin = price !== null && costPerCheck !== null ? (price - costPerCheck) / price : null;
+    const costPerCredit = callCount > 0 ? modelCost / callCount : null;
+    const margin = price !== null && costPerCredit !== null ? (price - costPerCredit) / price : null;
     return {
       model,
       label: MODEL_LABELS[model],
@@ -142,13 +157,21 @@ export function buildReport(input: {
       checks: rowCount,
       cached: rowCount - callCount,
       costUsd: modelCost,
-      costPerCheck,
-      costPerCall: callCount > 0 ? sum(calls, (u) => u.costUsd) / callCount : null,
+      costPerCredit,
       margin,
       verdict: verdictFor(margin),
     };
   });
   const checkCost = sum(byModel, (m) => m.costUsd);
+  // What the checks bought with paid credits cost us: each paid credit at its model's cost per credit (the average
+  // over all models when the model is not known), never more than all checks cost.
+  const callCount = checkCount - cached;
+  const averagePerCredit = callCount > 0 ? checkCost / callCount : 0;
+  const perCredit = new Map(byModel.map((m) => [m.model as string, m.costPerCredit]));
+  const paidCheckCost = Math.min(
+    checkCost,
+    sum(paidOnly, (c) => c.credits * (perCredit.get(providerOf(c) ?? "") ?? averagePerCredit)),
+  );
 
   const creditsByAgency = totals(captures, (c) => c.agencyId, (c) => c.credits);
   const paidByAgency = totals(paidOnly, (c) => c.agencyId, (c) => c.credits);
@@ -180,11 +203,13 @@ export function buildReport(input: {
       credits,
       freeCredits: credits - paidCredits,
       costUsd,
+      paidCheckCostUsd: paidCheckCost,
       checks: checkCount,
       cached,
       cacheHitRate: checkCount > 0 ? cached / checkCount : null,
       // Only paid credits are revenue: trial and admin credits cost us AI but bring in nothing.
       margin: marginOf(revenue(paidCredits), costUsd),
+      paidMargin: marginOf(revenue(paidCredits), paidCheckCost),
     },
     byDay,
     byModel,

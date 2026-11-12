@@ -44,7 +44,8 @@ export type MonthChange = { direction: "up" | "down" | "same"; text: string };
 export function percentChange(current: number, previous: number): MonthChange {
   // Nothing to compare with, so no arrow: "up" from zero says nothing.
   if (previous === 0) {
-    return current === 0 ? { direction: "same", text: "None last month either" } : { direction: "same", text: "New this month" };
+    // "New this month" read oddly on money (admin audit 2026-11-12); say plainly there is nothing to compare with.
+    return { direction: "same", text: current === 0 ? "Nothing last month either" : "Nothing on the same days last month" };
   }
   // A percent in the thousands reads as noise; early in a month small numbers make it common.
   if (current >= previous * 10) {

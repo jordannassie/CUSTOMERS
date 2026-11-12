@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import {
+  alertLinks,
   alertWording,
   foldClaudeAlerts,
   isServiceCheckKind,
@@ -130,5 +131,33 @@ describe("foldClaudeAlerts (one Claude alert while it is unavailable)", () => {
 
   it("changes nothing while Claude is not marked unavailable", () => {
     expect(foldClaudeAlerts(others)).toEqual(others);
+  });
+});
+
+describe("one failed payment update (admin audit 2026-11-12)", () => {
+  it("stays singular instead of reading '1 payment updates'", () => {
+    const one = { kind: "webhook_failures", message: "1 Stripe webhook event failed in the last hour. Customers may not get their credits or plan changes." };
+    expect(alertWording({ ...one, lastSeenAt: "2026-10-11T18:30:00Z" }, new Date("2026-10-14T12:00:00Z")).message).toBe(
+      "1 payment update from Stripe failed in one hour. Customers may not get their credits or plan changes.",
+    );
+  });
+});
+
+describe("alertLinks", () => {
+  const webhooks = "https://dashboard.stripe.com/test/webhooks";
+  it("sends the Stripe alert to System status and the Stripe webhooks page", () => {
+    expect(alertLinks("webhook_failures", webhooks)).toEqual([
+      { label: "Open System status", href: "/internal/admin/settings" },
+      { label: "Open webhooks in Stripe", href: webhooks, external: true },
+    ]);
+  });
+  it("sends AI tool and service check alerts to System status, and scan alerts to the Scans page", () => {
+    for (const kind of ["provider_errors", "anthropic_credit", "claude_unavailable", "service_check:stripe"]) {
+      expect(alertLinks(kind, webhooks)).toEqual([{ label: "Open System status", href: "/internal/admin/settings" }]);
+    }
+    expect(alertLinks("failed_scans", webhooks)[0].href).toBe("/internal/admin/scans?status=failed");
+  });
+  it("gives no link for a kind it does not know", () => {
+    expect(alertLinks("qa_probe", webhooks)).toEqual([]);
   });
 });

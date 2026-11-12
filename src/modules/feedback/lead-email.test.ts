@@ -12,13 +12,13 @@ const lead: NewLead = {
 };
 
 describe("new lead email to admins", () => {
-  it("names the person, how to reply, what it is about and links to Leads", async () => {
+  it("names the person, how to reply, what it is about and links to the lead itself", async () => {
     const email = newLeadEmail(lead, "Admin@Example.com");
     expect(email).toMatchObject({ type: "system_alert", to: "Admin@Example.com", subject: "New lead: Sarah Ortiz (Bloom Salon)", agencyId: null });
     const html = JSON.stringify(email.template({ baseUrl: "https://customers.direct/", unsubscribeUrl: null }).props);
     expect(html).toContain("Sarah Ortiz (Bloom Salon) sent a message from the contact page. Reply to sarah@bloomsalon.com.");
     expect(html).toContain("About: Booking a demo call.");
-    expect(html).toContain("https://customers.direct/internal/admin/leads");
+    expect(html).toContain("https://customers.direct/internal/admin/leads?lead=lead-1");
   });
 
   it("is sent once per lead and admin, whatever the case of the address", () => {

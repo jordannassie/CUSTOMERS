@@ -1,14 +1,30 @@
+"use client";
+
+import { useEffect } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { SearchX } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { setMissingPath } from "./nav-items";
 
-/** Not found inside the admin shell, pointing back to the list the admin came from (UI-033). */
-export default function AdminNotFound({ title, text, backHref, backLabel }: {
+/**
+ * Not found inside the admin shell, pointing back to the list the admin came from (UI-033). With `unknownAddress`
+ * (no admin page at this address at all), the menu and the breadcrumb stop pointing at the section in the address.
+ */
+export default function AdminNotFound({ title, text, backHref, backLabel, unknownAddress = false }: {
   title: string;
   text: string;
   backHref: string;
   backLabel: string;
+  unknownAddress?: boolean;
 }) {
+  const pathname = usePathname();
+  useEffect(() => {
+    if (!unknownAddress) return;
+    setMissingPath(pathname);
+    return () => setMissingPath(null);
+  }, [unknownAddress, pathname]);
+
   return (
     <div className="mx-auto w-full max-w-[calc(1200px*var(--px,1))] px-4 py-4 sm:px-6 sm:py-5">
       <div className="flex flex-col items-center gap-2 rounded-md border border-border bg-surface px-6 py-12 text-center">

@@ -57,7 +57,8 @@ export function newLeadEmail(lead: NewLead, to: string): SendEmailInput {
           `About: ${about}.`,
           message,
         ],
-        action: { label: "Open the lead", href: `${baseUrl.replace(/\/$/, "")}/internal/admin/leads` },
+        // The lead itself opens (?lead=), not just the list (admin audit 2026-11-12).
+        action: { label: "Open the lead", href: `${baseUrl.replace(/\/$/, "")}/internal/admin/leads?lead=${encodeURIComponent(lead.id)}` },
         baseUrl,
       }),
   };

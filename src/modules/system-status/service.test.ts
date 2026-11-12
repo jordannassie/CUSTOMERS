@@ -116,12 +116,12 @@ describe("workerStatus", () => {
   it("is green with the last run time", () => {
     expect(workerStatus({ lastFinishedAt: "2026-09-27T11:57:00Z", overdueJobs: 0 }, now)).toEqual({
       state: "ok",
-      detail: "Last scan finished 3 min ago.",
+      detail: "Last scan finished 3 minutes ago.",
     });
   });
 
   it("formats longer gaps", () => {
-    expect(timeAgo(new Date("2026-09-27T09:00:00Z"), now)).toBe("3 h ago");
+    expect(timeAgo(new Date("2026-09-27T09:00:00Z"), now)).toBe("3 hours ago");
     expect(timeAgo(new Date("2026-09-20T12:00:00Z"), now)).toBe("7 days ago");
   });
 });

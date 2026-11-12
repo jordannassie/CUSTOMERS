@@ -8,7 +8,7 @@ import { ArrowLeft, Menu } from "lucide-react";
 import { cn } from "cn";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import { EXTRA_ITEMS, MAIN_ITEMS, isActiveItem, type AdminNavItem } from "./nav-items";
+import { EXTRA_ITEMS, MAIN_ITEMS, isActiveItem, usePageMissing, type AdminNavItem } from "./nav-items";
 import { appFetch } from "@/lib/session-expired";
 
 const LOGO = "/images/logos/logo-black-sidebar.png";
@@ -52,15 +52,18 @@ const GROUP_LABEL = "px-2.5 pb-1 text-[length:calc(11px*var(--px,1))] font-mediu
 function NavLink({
   item,
   pathname,
+  missing,
   badge,
   onNavigate,
 }: {
   item: AdminNavItem;
   pathname: string;
+  /** The page is the admin's Page not found, so no item is marked. */
+  missing: boolean;
   badge?: number;
   onNavigate?: () => void;
 }) {
-  const active = isActiveItem(item, pathname);
+  const active = !missing && isActiveItem(item, pathname);
   const Icon = item.icon;
   return (
     <Link
@@ -73,13 +76,14 @@ function NavLink({
       <span className="truncate" title={item.label}>{item.label}</span>
       {badge ? (
         <span
+          title="Unread leads: nobody has opened them yet"
           className={cn(
             "tabular ml-auto rounded-sm px-1.5 text-[length:calc(11px*var(--px,1))] font-medium leading-5",
             active ? "bg-surface text-primary" : "bg-primary-tint text-primary-hover",
           )}
         >
           {badge > 99 ? "99+" : badge}
-          <span className="sr-only"> unread</span>
+          <span className="sr-only"> unread, nobody has opened them yet</span>
         </span>
       ) : null}
     </Link>
@@ -88,6 +92,7 @@ function NavLink({
 
 function NavBody({ adminEmail, onNavigate }: { adminEmail: string; onNavigate?: () => void }) {
   const pathname = usePathname();
+  const missing = usePageMissing(pathname);
   const unread = useUnreadLeads();
 
   return (
@@ -98,7 +103,7 @@ function NavBody({ adminEmail, onNavigate }: { adminEmail: string; onNavigate?: 
           <ul className="flex flex-col gap-0.5">
             {MAIN_ITEMS.map((item) => (
               <li key={item.href}>
-                <NavLink item={item} pathname={pathname} onNavigate={onNavigate} />
+                <NavLink item={item} pathname={pathname} missing={missing} onNavigate={onNavigate} />
               </li>
             ))}
           </ul>
@@ -111,6 +116,7 @@ function NavBody({ adminEmail, onNavigate }: { adminEmail: string; onNavigate?: 
                 <NavLink
                   item={item}
                   pathname={pathname}
+                  missing={missing}
                   badge={item.label === "Leads" ? unread : undefined}
                   onNavigate={onNavigate}
                 />
@@ -124,8 +130,9 @@ function NavBody({ adminEmail, onNavigate }: { adminEmail: string; onNavigate?: 
           <ArrowLeft className="size-4 shrink-0 stroke-[1.75] text-muted-foreground" aria-hidden="true" />
           Back to dashboard
         </Link>
-        <p className="truncate px-2.5 text-[length:calc(11px*var(--px,1))] text-text-hint" title={adminEmail}>
-          Signed in as {adminEmail}
+        {/* The whole address shows, on a second line if needed, instead of being cut off (admin audit 2026-11-12). */}
+        <p className="px-2.5 text-[length:calc(11px*var(--px,1))] leading-snug text-text-hint">
+          Signed in as <span className="block break-all text-muted-foreground">{adminEmail}</span>
         </p>
       </div>
     </div>

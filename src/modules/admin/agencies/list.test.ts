@@ -78,6 +78,20 @@ describe("admin agencies list and detail", () => {
     }
   });
 
+  it("shows the last page for a page past the end, also with a search (admin audit 2026-11-12)", async () => {
+    const search = await named();
+    const list = await listAgencies({ search, page: 5 });
+    expect(list.page).toBe(1);
+    expect(ids(list)).toEqual([agency.agencyId]);
+  });
+
+  it("counts live businesses only, not deleted ones waiting to be removed", async () => {
+    const search = await named();
+    expect((await listAgencies({ search })).rows[0]?.businesses).toBe(1);
+    await service.from("businesses").update({ deleted_at: new Date().toISOString() }).eq("id", agency.businessId).throwOnError();
+    expect((await listAgencies({ search })).rows[0]?.businesses).toBe(0);
+  });
+
   it("names where granted credits came from in the credit history", async () => {
     await grantCredits({ agencyId: agency.agencyId, source: "trial", sourceId: `trial-${randomUUID()}`, amount: 100, expiresAt: new Date(Date.now() + DAY) });
     await grantCredits({ agencyId: agency.agencyId, source: "topup", sourceId: `cs-${randomUUID()}`, amount: 50, expiresAt: null });

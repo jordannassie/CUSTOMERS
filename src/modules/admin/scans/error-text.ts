@@ -1,3 +1,4 @@
+import { REASONS } from "@/modules/entitlements";
 import { MODEL_LABELS } from "../usage-cost/service";
 
 // Turns the error text a scan job stores (scan_jobs.error) into plain words for the admin pages. The stored text is
@@ -9,6 +10,41 @@ export type ScanErrorText = {
   summary: string;
   /** The stored text, unchanged, for a developer. Null when the summary already is the stored text. */
   technical: string | null;
+  /** Why Retry is not offered, when retrying cannot change the outcome (a skip for billing). Null otherwise. */
+  noRetry?: string | null;
+};
+
+// The worker's skip text for the scanning module's Claude outage (scanning/claude-outage CLAUDE_SKIPPED).
+const CLAUDE_SKIPPED = "Claude unavailable, skipped";
+
+// A skipped scan stores the reason the customer sees ("Your free trial has ended..."). Admins read what happened to
+// the agency instead, and whether Retry can help (admin audit 2026-11-12). The stored text stays as technical details.
+const SKIPS: Record<string, { summary: string; noRetry?: string }> = {
+  [REASONS.trialOver]: {
+    summary: "Skipped: the agency's free trial ended and it has not paid yet.",
+    noRetry: "Retrying won't help. Scans start again on their own once the agency pays.",
+  },
+  [REASONS.pastDue]: {
+    summary: "Skipped: the agency's last payment didn't go through.",
+    noRetry: "Retrying won't help. Scans start again once the agency updates its card.",
+  },
+  [REASONS.canceled]: { summary: "Skipped: the agency's plan has ended.", noRetry: "Retrying won't help until the agency picks a plan again." },
+  [REASONS.readOnly]: {
+    summary: "Skipped: the agency's plan has ended, so its account is read-only.",
+    noRetry: "Retrying won't help until the agency picks a plan again.",
+  },
+  [REASONS.paused]: { summary: "Skipped: the agency's account is paused.", noRetry: "Retrying won't help until the account is turned back on." },
+  [REASONS.setupUnfinished]: {
+    summary: "Skipped: the agency hasn't finished setting up its first business.",
+    noRetry: "Retrying won't help until the agency finishes setup.",
+  },
+  [REASONS.offPlan]: {
+    summary: "Skipped: this business is off the agency's plan.",
+    noRetry: "Retrying won't help until the business is back on the plan.",
+  },
+  [REASONS.outOfCredits]: { summary: "Skipped: the agency was out of credits. Retry once it has more credits." },
+  [REASONS.scanAlreadyQueued]: { summary: "Skipped: this business already had a scan waiting or running." },
+  [CLAUDE_SKIPPED]: { summary: "Skipped: Claude was unavailable, and it is the only AI tool this business checks. Retry once Claude is back." },
 };
 
 type Provider = keyof typeof MODEL_LABELS;
@@ -60,6 +96,9 @@ const unique = (sentences: string[]) => [...new Set(sentences)].join(" ");
 export function explainScanError(raw: string | null | undefined): ScanErrorText | null {
   const text = raw?.trim();
   if (!text) return null;
+
+  const skip = SKIPS[text];
+  if (skip) return { summary: skip.summary, technical: text, noRetry: skip.noRetry ?? null };
 
   if (text.startsWith(NOT_ANSWERING)) {
     const reasons = providerParts(text).map((p) => explainProvider(p.provider, p.text));

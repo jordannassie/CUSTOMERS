@@ -2,8 +2,12 @@ import "server-only";
 import { requireAdmin } from "@/modules/auth";
 import { createServiceClient } from "@/lib/supabase/service";
 import { allRows, inChunks } from "../businesses/dal";
+import { readPage } from "../paging";
+import { explainScanError } from "./error-text";
 import { SCAN_STATUSES, type ScanListQuery, type ScanStatus } from "./schema";
-import { durationMs, jobModels } from "./service";
+import { jobModels, partialNote, replacedBy, retryState, scanTiming } from "./service";
+
+export { listScanFilterOptions, type ScanFilterOptions } from "./options/dal";
 
 /** Scans a page; the list used to stop at the newest 100 with no way further back. */
 export const SCAN_PAGE_SIZE = 50;
@@ -20,11 +24,21 @@ export type AdminScanRow = {
   isTest: boolean;
   models: string[];
   creditsCharged: number;
+  /** Whether the scan got as far as a run. A skipped scan never does, so it has no cost or checks. */
+  hasRun: boolean;
+  /** What the AI tools charged us for it. Null when it has no run, or nothing was logged for it. */
   costUsd: number | null;
   durationMs: number | null;
+  /** Set when the tries were spread out over this long (retries); the duration is then the last try's. */
+  retriedOverMs: number | null;
   createdAt: string;
   attempts: number;
   error: string | null;
+  /** A done scan with checks missing: "12 of 36 checks failed (Perplexity)." */
+  note: string | null;
+  canRetry: boolean;
+  /** Why a failed or skipped scan has no Retry: a newer scan replaced it, or retrying cannot change the outcome. */
+  retryNote: string | null;
   /** What running it again charges: the business's active questions times its models (one credit per check). */
   scanCredits: number;
 };
@@ -34,10 +48,13 @@ export type AdminScanList = {
   /** Per status, with the date, agency and test filters applied. */
   counts: Record<ScanStatus | "all", number>;
   total: number;
+  /** The page shown: the last one when the address asked for a page past the end. */
   page: number;
   pages: number;
-  /** The agency filtered to, for the "Agency: … ×" chip. */
+  /** The agency filtered to, for the agency filter when it is not in the list. */
   agencyName: string | null;
+  /** The business filtered to, even when it was deleted, for the business filter. */
+  business: { name: string; deleted: boolean } | null;
 };
 
 type Filters = Omit<ScanListQuery, "status" | "page">;
@@ -65,35 +82,49 @@ export async function listScanJobs(query: ScanListQuery): Promise<AdminScanList>
   const { status, page, ...f } = query;
   // An inner join only when filtering on the agency's test flag: a job whose agency is gone still lists otherwise.
   const agencies = f.test === "all" ? "agencies(name, is_test)" : "agencies!inner(name, is_test)";
+  // A fresh query for each read: readPage may read twice when the page is past the end.
+  const pageOf = (from: number, to: number) => {
+    let list = filtered(
+      db
+        .from("scan_jobs")
+        .select(
+          `id, status, business_id, agency_id, attempts, credits_charged, error, created_at, locked_at, finished_at, businesses(name, models, deleted_at), ${agencies}`,
+          { count: "exact" },
+        ),
+      f,
+    );
+    if (status) list = list.eq("status", status);
+    return list.order("created_at", { ascending: false }).order("id").range(from, to);
+  };
 
-  let list = filtered(
-    db
-      .from("scan_jobs")
-      .select(
-        `id, status, business_id, agency_id, attempts, credits_charged, error, created_at, locked_at, finished_at, businesses(name, models), ${agencies}`,
-        { count: "exact" },
-      ),
-    f,
-  );
-  if (status) list = list.eq("status", status);
-  const from = (page - 1) * SCAN_PAGE_SIZE;
-
-  const [jobs, counts, agency] = await Promise.all([
-    list.order("created_at", { ascending: false }).order("id").range(from, from + SCAN_PAGE_SIZE - 1),
+  const [{ result: jobs, page: shown }, counts, agency, business] = await Promise.all([
+    readPage(page, SCAN_PAGE_SIZE, pageOf),
     countByStatus(f),
     f.agency ? db.from("agencies").select("name").eq("id", f.agency).maybeSingle() : null,
+    f.business ? db.from("businesses").select("name, deleted_at").eq("id", f.business).maybeSingle() : null,
   ]);
   if (jobs.error) throw new Error(`Scans: ${jobs.error.message}`);
 
-  const [runs, questions, cost] = await Promise.all([
+  const stoppedJobs = jobs.data.filter((j) => j.status === "failed" || j.status === "skipped");
+  const [runs, questions, cost, newest] = await Promise.all([
     runsOfJobs(jobs.data.map((j) => j.id)),
     activeQuestions([...new Set(jobs.data.map((j) => j.business_id))]),
     costOfJobs(jobs.data.map((j) => j.id)),
+    newestScans([...new Set(stoppedJobs.map((j) => j.business_id))]),
   ]);
   const runByJob = new Map(runs.map((r) => [r.scan_job_id!, r]));
 
   const rows = jobs.data.map((j): AdminScanRow => {
     const run = runByJob.get(j.id);
+    const timing = scanTiming({ runStart: run?.started_at ?? null, runEnd: run?.completed_at ?? null, lockedAt: j.locked_at, finishedAt: j.finished_at, hasRun: !!run });
+    const stopped = j.status === "failed" || j.status === "skipped";
+    const retry = retryState({
+      status: j.status,
+      error: j.error,
+      businessDeleted: !j.businesses || j.businesses.deleted_at !== null,
+      newer: stopped ? replacedBy(j.created_at, newest.newest.get(j.business_id), newest.active.get(j.business_id)) : null,
+      blocked: stopped ? (explainScanError(j.error)?.noRetry ?? null) : null,
+    });
     return {
       id: j.id,
       status: j.status as ScanStatus,
@@ -104,17 +135,30 @@ export async function listScanJobs(query: ScanListQuery): Promise<AdminScanList>
       isTest: j.agencies?.is_test ?? false,
       models: jobModels(run?.provider ?? null, j.businesses?.models ?? []),
       creditsCharged: j.credits_charged,
-      costUsd: run ? (cost.get(j.id) ?? 0) : null,
-      // The run times the scan itself; a job that never got a run (skipped) falls back to the job times.
-      durationMs: run ? durationMs(run.started_at, run.completed_at) : durationMs(j.locked_at, j.finished_at),
+      hasRun: !!run,
+      costUsd: run ? (cost.get(j.id) ?? null) : null,
+      ...timing,
       createdAt: j.created_at,
       attempts: j.attempts,
       error: j.error,
+      note:
+        j.status === "done" && run
+          ? partialNote({ checksTotal: run.checks_total, checksFailed: run.checks_failed, failedByProvider: run.failed_by_provider, error: run.error })
+          : null,
+      ...retry,
       scanCredits: (questions.get(j.business_id) ?? 0) * (j.businesses?.models.length ?? 0),
     };
   });
   const total = jobs.count ?? 0;
-  return { rows, counts, total, page, pages: Math.max(1, Math.ceil(total / SCAN_PAGE_SIZE)), agencyName: agency?.data?.name ?? null };
+  return {
+    rows,
+    counts,
+    total,
+    page: shown,
+    pages: Math.max(1, Math.ceil(total / SCAN_PAGE_SIZE)),
+    agencyName: agency?.data?.name ?? null,
+    business: business?.data ? { name: business.data.name, deleted: business.data.deleted_at !== null } : null,
+  };
 }
 
 async function countByStatus(f: Filters): Promise<AdminScanList["counts"]> {
@@ -156,7 +200,7 @@ async function runsOfJobs(jobIds: string[]) {
   if (jobIds.length === 0) return [];
   const { data, error } = await createServiceClient()
     .from("visibility_runs")
-    .select("id, scan_job_id, provider, started_at, completed_at")
+    .select("id, scan_job_id, provider, started_at, completed_at, checks_total, checks_failed, failed_by_provider, error")
     .in("scan_job_id", jobIds);
   if (error) throw new Error(`Scans: ${error.message}`);
   return data;
@@ -164,33 +208,41 @@ async function runsOfJobs(jobIds: string[]) {
 
 // Real AI cost of each job from the usage log, the same source as Usage and cost and the Overview (migration 092), so
 // the three pages agree. It includes the scan's other AI work (reading names, explanations), not only the checks.
+// Migration 093: a scan with nothing logged has no cost (null), never $0.00.
 async function costOfJobs(jobIds: string[]): Promise<Map<string, number>> {
   if (jobIds.length === 0) return new Map();
   const { data, error } = await createServiceClient().rpc("admin_scan_costs", { p_job_ids: jobIds });
   if (error) throw new Error(`Scans: ${error.message}`);
-  return new Map(data.map((r) => [r.scan_job_id, Number(r.cost_usd)]));
+  const known = data.filter((r) => (r.cost_usd as number | null) !== null);
+  return new Map(known.map((r) => [r.scan_job_id, Number(r.cost_usd)]));
 }
 
-export type ScanFilterOptions = {
-  agencies: { id: string; name: string }[];
-  businesses: { id: string; name: string; agencyId: string | null }[];
-};
-
-// Enough for every agency and business today; the lists are for picking one, so they stay light (id and name).
-const OPTION_LIMIT = 1000;
-
-/** The agencies and businesses the Scans page can filter to, by name. */
-export async function listScanFilterOptions(): Promise<ScanFilterOptions> {
-  await requireAdmin();
+/**
+ * Each business's latest done, waiting or running scan, and its waiting or running one, to spot a failed or skipped
+ * scan that another scan replaced. One small read per business (at most a page's worth), and one for the active jobs.
+ */
+async function newestScans(businessIds: string[]) {
   const db = createServiceClient();
-  const [agencies, businesses] = await Promise.all([
-    db.from("agencies").select("id, name").neq("status", "deleted").order("name").limit(OPTION_LIMIT),
-    db.from("businesses").select("id, name, agency_id").is("deleted_at", null).order("name").limit(OPTION_LIMIT),
+  const [latest, active] = await Promise.all([
+    Promise.all(
+      businessIds.map((id) =>
+        db
+          .from("scan_jobs")
+          .select("business_id, status, created_at")
+          .eq("business_id", id)
+          .in("status", ["done", "queued", "running"])
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle(),
+      ),
+    ),
+    businessIds.length ? db.from("scan_jobs").select("business_id, status").in("business_id", businessIds).in("status", ["queued", "running"]) : null,
   ]);
-  if (agencies.error) throw new Error(`Scans: ${agencies.error.message}`);
-  if (businesses.error) throw new Error(`Scans: ${businesses.error.message}`);
-  return {
-    agencies: agencies.data.map((a) => ({ id: a.id, name: a.name })),
-    businesses: businesses.data.map((b) => ({ id: b.id, name: b.name, agencyId: b.agency_id })),
-  };
+  const newest = new Map<string, { status: string; createdAt: string }>();
+  for (const { data, error } of latest) {
+    if (error) throw new Error(`Scans: ${error.message}`);
+    if (data) newest.set(data.business_id, { status: data.status, createdAt: data.created_at });
+  }
+  if (active?.error) throw new Error(`Scans: ${active.error.message}`);
+  return { newest, active: new Map((active?.data ?? []).map((j) => [j.business_id, { status: j.status }])) };
 }

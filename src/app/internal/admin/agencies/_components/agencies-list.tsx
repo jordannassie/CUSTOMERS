@@ -8,7 +8,7 @@ import FilterTabs from "../../_components/filter-tabs";
 import Pagination, { pageHref } from "../../_components/pagination";
 import SearchBox from "../../_components/search-box";
 import { TestBadge } from "../../_components/badges";
-import { STATUS, StatusBadge, credits } from "./agency-parts";
+import { STATUS, StatusBadge, credits, statusNote, trialText } from "./agency-parts";
 
 const BASE = "/internal/admin/agencies";
 const href = (id: string) => `${BASE}/${id}`;
@@ -66,7 +66,7 @@ export default function AgenciesList({ list, status, search }: { list: AdminAgen
                   <TableHead>Status</TableHead>
                   <TableHead>Businesses</TableHead>
                   <TableHead>Credits (plan / top-up)</TableHead>
-                  <TableHead>Trial ends</TableHead>
+                  <TableHead>Trial</TableHead>
                   <TableHead>Signed up</TableHead>
                 </TableRow>
               </TableHeader>
@@ -92,7 +92,7 @@ export default function AgenciesList({ list, status, search }: { list: AdminAgen
                     <TableCell>
                       <CreditsCell row={r} />
                     </TableCell>
-                    <TableCell>{trialEnd(r) ?? <span className="text-text-hint">None</span>}</TableCell>
+                    <TableCell>{trialText(r) ?? <span className="text-text-hint">None</span>}</TableCell>
                     <TableCell className="text-muted-foreground">{formatDate(r.createdAt)}</TableCell>
                   </TableRow>
                 ))}
@@ -118,8 +118,15 @@ export default function AgenciesList({ list, status, search }: { list: AdminAgen
                     {r.businesses} {r.businesses === 1 ? "business" : "businesses"}
                     {r.planMix && ` (${r.planMix})`}, {credits(r.credits.plan)} plan and {credits(r.credits.topup)} top-up
                     credits
-                    {trialEnd(r) && `, trial ${r.displayStatus === "trial_ended" ? "ended" : "ends"} ${formatDate(r.trialEndsAt!)}`}
+                    {trialText(r) && `. Trial ${trialText(r)!.replace(/^E/, "e")}`}
                   </span>
+                  {/* The same notes the desktop table shows under the status and the credits. */}
+                  {(statusNote(r) || r.credits.overdraft > 0) && (
+                    <span className="flex flex-col text-text-hint">
+                      {statusNote(r) && <span>{statusNote(r)}</span>}
+                      {r.credits.overdraft > 0 && <span className="font-medium text-mid-text">{credits(r.credits.overdraft)} credits overdrawn</span>}
+                    </span>
+                  )}
                 </Link>
               </li>
             ))}
@@ -131,20 +138,12 @@ export default function AgenciesList({ list, status, search }: { list: AdminAgen
   );
 }
 
-/** The trial end, for an agency still on a trial (the same rule on phones and desktop). */
-function trialEnd(row: AdminAgencyRow): string | null {
-  return row.status === "trialing" && row.trialEndsAt ? formatDate(row.trialEndsAt) : null;
-}
-
 function StatusCell({ row }: { row: AdminAgencyRow }) {
+  const note = statusNote(row);
   return (
     <span className="flex flex-col items-start gap-0.5">
       <StatusBadge status={row.displayStatus} />
-      {row.restoreUntil ? (
-        <span className="text-text-hint">Restorable until {formatDate(row.restoreUntil)}</span>
-      ) : (
-        !row.stripeLinked && <span className="text-text-hint">Not linked to Stripe</span>
-      )}
+      {note && <span className="text-text-hint">{note}</span>}
     </span>
   );
 }

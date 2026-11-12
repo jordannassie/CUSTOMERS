@@ -30,6 +30,18 @@ describe("admin menu (B-64)", () => {
     expect(activeLabels(pathname)).toEqual([label]);
   });
 
+  it("names each extra page once, as its heading and tab title do (admin audit 2026-11-12)", () => {
+    expect(EXTRA_ITEMS.map((item) => item.label)).toEqual([
+      "Leads",
+      "Feature requests",
+      "Admin activity",
+      "LinkedIn studio",
+      "AI apps",
+      "App reviews",
+      "Video ad orders",
+    ]);
+  });
+
   it("does not match a longer path that only shares a prefix", () => {
     expect(activeLabels("/internal/admin/usage-old")).toEqual([]);
   });

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { NO_HANDLER } from "./lead-rules";
 
 // Inputs of the contact form, the feature request widget and their admin screens (2026-10-14: these routes validated
 // by hand and wrote to the database inline).
@@ -41,6 +42,12 @@ export const FEATURE_DESCRIPTION_MAX = 2000;
 
 export const featureStatusInput = z.object({ id: z.uuid(), status: z.enum(FEATURE_STATUSES) });
 
+// Values only older leads carry (admin audit 2026-11-12). The filters offer them as "Older: ..." while a lead uses one.
+export const OLD_LEAD_TOPICS = ["product", "support", "enterprise", "chatgpt_ads"] as const;
+export const OLD_LEAD_SOURCES = ["ads_page"] as const;
+export const OLD_LEAD_STATUSES = ["in_progress", "resolved"] as const;
+
+
 export const leadsQuery = z.object({
   page: z.coerce.number().int().min(1).catch(1),
   search: text(200).catch(""),
@@ -48,8 +55,14 @@ export const leadsQuery = z.object({
   source: text(40).catch(""),
   status: text(40).catch(""),
   unread: z.literal("1").optional().catch(undefined),
+  // Follow-up filters (admin audit 2026-11-12): replied yes or no, and who handles it (an admin's email or "none").
+  replied: z.enum(["yes", "no"]).optional().catch(undefined),
+  handler: z.union([z.email().max(320), z.literal(NO_HANDLER)]).optional().catch(undefined),
+  // One lead by id, for a shared link (?lead=) that is not on the first page.
+  id: z.uuid().optional().catch(undefined),
   count: z.literal("1").optional().catch(undefined),
 });
+export type LeadsQuery = z.infer<typeof leadsQuery>;
 
 // The statuses offered today, one pipeline. in_progress and resolved are older ones still on some rows.
 export const LEAD_PIPELINE = ["new", "contacted", "qualified", "closed"] as const;

@@ -4,10 +4,8 @@ import { env } from "@/lib/env";
 import { createServiceClient } from "@/lib/supabase/service";
 import { adminEmails } from "@/modules/auth";
 import { createLogEmailClient, sendEmail } from "@/modules/email";
-import type { TablesUpdate } from "@/types/database.types";
-import type { ContactInput, FeatureRequestInput, FEATURE_STATUSES, LEAD_STATUSES } from "./schema";
+import type { ContactInput, FeatureRequestInput, FEATURE_STATUSES } from "./schema";
 import { newLeadEmail, shouldEmailAdmins, type NewLead } from "./lead-email";
-import { searchTerm } from "./service";
 
 // Contact messages (contact_submissions) and feature requests, with the service role: the tables have no policies
 // for these writes. Callers check who may do this first: the public form is rate limited, the widget needs a signed-in
@@ -102,6 +100,9 @@ export type FeatureRequestRow = {
   createdAt: string;
   email: string;
   businessName: string | null;
+  /** The sender's agency (the business's, else the one they own), so the admin can open it. */
+  agencyId: string | null;
+  agencyName: string | null;
 };
 
 /** The admin list, newest first, with each sender's email; `error` when the table cannot be read. */
@@ -109,13 +110,24 @@ export async function listFeatureRequests(): Promise<{ requests: FeatureRequestR
   const db = createServiceClient();
   const { data, error } = await db
     .from("feature_requests")
-    .select("id, user_id, business_id, title, description, page_context, status, created_at, businesses ( name )")
+    .select("id, user_id, business_id, title, description, page_context, status, created_at, businesses ( name, agency_id )")
     .order("created_at", { ascending: false })
     .limit(200);
   if (error) return { error: error.message };
   // Every sender's email in one call (migration 092), instead of one Auth request per sender in turn.
-  const { data: users } = await db.rpc("admin_user_emails", { p_ids: [...new Set(data.map((r) => r.user_id))] });
+  const userIds = [...new Set(data.map((r) => r.user_id))];
+  const business = (r: (typeof data)[number]) => (Array.isArray(r.businesses) ? r.businesses[0] : r.businesses) ?? null;
+  const [{ data: users }, { data: agencies }] = await Promise.all([
+    db.rpc("admin_user_emails", { p_ids: userIds }),
+    db.from("agencies").select("id, name, owner_user_id").in("owner_user_id", userIds),
+  ]);
   const emails = new Map((users ?? []).map((u) => [u.id, u.email]));
+  const agencyById = new Map((agencies ?? []).map((a) => [a.id, a]));
+  const agencyByOwner = new Map((agencies ?? []).map((a) => [a.owner_user_id, a]));
+  const agencyOf = (r: (typeof data)[number]) => {
+    const id = business(r)?.agency_id;
+    return (id && agencyById.get(id)) || agencyByOwner.get(r.user_id) || (id ? { id, name: null } : null);
+  };
   return {
     requests: data.map((r) => ({
       id: r.id,
@@ -127,66 +139,9 @@ export async function listFeatureRequests(): Promise<{ requests: FeatureRequestR
       status: r.status,
       createdAt: r.created_at,
       email: emails.get(r.user_id) ?? "unknown",
-      businessName: (Array.isArray(r.businesses) ? r.businesses[0] : r.businesses)?.name ?? null,
+      businessName: business(r)?.name ?? null,
+      agencyId: agencyOf(r)?.id ?? null,
+      agencyName: agencyOf(r)?.name ?? null,
     })),
   };
-}
-
-const LEADS_PAGE_SIZE = 30;
-const LEAD_COLUMNS =
-  "id, created_at, read_at, name, email, company, website, phone, topic, message, status, source, page_path, admin_notes, handled_by, replied_at";
-
-export async function countUnreadLeads(): Promise<number | null> {
-  const { count, error } = await createServiceClient().from("contact_submissions").select("id", { count: "exact", head: true }).is("read_at", null);
-  if (error) console.error("[admin/leads] count error:", error.message);
-  return error ? null : (count ?? 0);
-}
-
-export async function listLeads(q: { page: number; search: string; interest: string; source: string; status: string; unread: boolean }) {
-  let query = createServiceClient()
-    .from("contact_submissions")
-    .select(LEAD_COLUMNS, { count: "exact" })
-    .order("created_at", { ascending: false })
-    .range((q.page - 1) * LEADS_PAGE_SIZE, q.page * LEADS_PAGE_SIZE - 1);
-  const search = searchTerm(q.search);
-  if (search) query = query.or(`name.ilike.%${search}%,email.ilike.%${search}%,company.ilike.%${search}%`);
-  if (q.interest) query = query.eq("topic", q.interest);
-  if (q.source) query = query.eq("source", q.source);
-  if (q.status) query = query.eq("status", q.status);
-  if (q.unread) query = query.is("read_at", null);
-  const { data, count, error } = await query;
-  if (error) {
-    console.error("[admin/leads] query error:", error.message);
-    return null;
-  }
-  const total = count ?? 0;
-  return { leads: data ?? [], total, page: q.page, pageSize: LEADS_PAGE_SIZE, pages: Math.ceil(total / LEADS_PAGE_SIZE) };
-}
-
-export async function updateLead(
-  id: string,
-  change: {
-    status?: (typeof LEAD_STATUSES)[number];
-    markRead?: boolean;
-    markUnread?: boolean;
-    adminNotes?: string;
-    handledBy?: string;
-    replied?: boolean;
-  },
-  now = new Date(),
-): Promise<{ ok: true; updates: TablesUpdate<"contact_submissions"> } | { ok: false; reason: "nothing" | "failed" }> {
-  const updates: TablesUpdate<"contact_submissions"> = {};
-  if (change.status) updates.status = change.status;
-  if (change.markRead) updates.read_at = now.toISOString();
-  if (change.markUnread) updates.read_at = null;
-  if (change.adminNotes !== undefined) updates.admin_notes = change.adminNotes || null;
-  if (change.handledBy !== undefined) updates.handled_by = change.handledBy.toLowerCase() || null;
-  if (change.replied !== undefined) updates.replied_at = change.replied ? now.toISOString() : null;
-  if (Object.keys(updates).length === 0) return { ok: false, reason: "nothing" };
-  const { error } = await createServiceClient().from("contact_submissions").update(updates).eq("id", id);
-  if (error) {
-    console.error("[admin/leads] update error:", error.message);
-    return { ok: false, reason: "failed" };
-  }
-  return { ok: true, updates };
 }

@@ -1,4 +1,4 @@
-export { money } from "../../_components/format";
+export { money, plural, unitPrice } from "../../_components/format";
 
 export function percent(value: number | null): string {
   return value === null ? "" : `${Math.round(value * 100)}%`;

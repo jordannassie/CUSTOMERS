@@ -23,7 +23,7 @@ export default function AdminActivityPage({ searchParams }: Props) {
     <div className="mx-auto flex w-full max-w-[calc(1200px*var(--px,1))] flex-col gap-4 px-4 py-4 sm:px-6 sm:py-5">
       <AdminPageHeader
         title="Admin activity"
-        subtitle="Every change an admin made, newest first, with the reason they gave. Changes that did not go through are marked."
+        subtitle="Every change an admin made, newest first, with the reason they gave. Changes that did not go through say why."
       />
       <Suspense fallback={<ListSkeleton label="Loading admin activity" />}>
         <Activity searchParams={searchParams} />
@@ -58,7 +58,7 @@ async function Activity({ searchParams }: Props) {
         ]}
       />
       <Link href={href(query, { failed: query.failed ? undefined : "1" })} className="w-fit text-[length:calc(13px*var(--px,1))] font-medium text-primary hover:underline">
-        {query.failed ? "Show every change" : "Show only changes that did not go through"}
+        {query.failed ? "Show every change" : "Only problems: failed or not confirmed"}
       </Link>
       <Rows list={list} query={query} />
     </div>
@@ -69,9 +69,17 @@ const OUTCOME = { failed: "Did not go through", started: "Result not confirmed" 
 
 function Rows({ list, query }: { list: ActivityList; query: ActivityQuery }) {
   if (list.rows.length === 0) {
+    const filtered = !!(query.area || query.failed);
     return (
-      <AdminEmpty icon={History} title={query.area || query.failed ? "No changes match these filters" : "No admin changes yet"}>
-        {query.area || query.failed ? "Pick All to see every change." : "Credit changes, suspensions, retries and resolved alerts show here."}
+      <AdminEmpty icon={History} title={filtered ? "No changes match these filters" : "No admin changes yet"}>
+        {filtered ? (
+          // Clears the area and "only problems" together; "All" alone left the second one on.
+          <Link href={BASE} className="font-medium text-primary hover:underline">
+            Clear filters to see every change
+          </Link>
+        ) : (
+          "Credit changes, suspensions, retries and resolved alerts show here."
+        )}
       </AdminEmpty>
     );
   }
@@ -94,6 +102,8 @@ function Rows({ list, query }: { list: ActivityList; query: ActivityQuery }) {
                   ))}
                 {r.outcome !== "done" && <Badge variant="mid">{OUTCOME[r.outcome]}</Badge>}
               </p>
+              {r.change && <p className="break-words">{r.change}</p>}
+              {r.problem && <p className="break-words text-muted-foreground">Why: {r.problem}</p>}
               {r.reason && <p className="break-words text-muted-foreground">Reason: {r.reason}</p>}
               <p className="text-text-hint">By {r.by}</p>
             </div>

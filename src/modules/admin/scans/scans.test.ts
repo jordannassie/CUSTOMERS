@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { grantCredits, holdCredits, releaseHold } from "@/modules/credits";
+import { REASONS } from "@/modules/entitlements";
 import { createAgencyWithBusiness, deleteTestUsers, service, signInAs, type TestSession } from "../admin.test-helpers";
 
 // Runs against the local database `npm test` rebuilds, signed in as a real test user.
@@ -13,7 +14,7 @@ vi.mock("@/lib/env", async (importOriginal) => {
 vi.mock("next/cache", () => ({ refresh: vi.fn() }));
 
 const { retryScan } = await import("./actions");
-const { listScanJobs } = await import("./dal");
+const { listScanFilterOptions, listScanJobs } = await import("./dal");
 const { scanListQuery } = await import("./schema");
 
 // Below anything the worker tests queue, so their claims reach these jobs last.
@@ -141,5 +142,75 @@ describe("admin Scans (B-67)", () => {
     await signInAs(session, "scans-admin", { admin: true });
     expect(await retryScan({ jobId: "not-a-uuid" })).toMatchObject({ ok: false, status: 400 });
     await service.from("scan_jobs").delete().eq("id", jobId);
+  });
+
+  it("shows the last page for a page past the end, and says which page it shows (admin audit 2026-11-12)", async () => {
+    await signInAs(session, "scans-admin", { admin: true });
+    const { jobId } = await failedJob();
+    const list = await listScanJobs(scanListQuery.parse({ agency: agency.agencyId, page: "40" }));
+    expect(list.page).toBe(1);
+    expect(list.rows.map((r) => r.id)).toContain(jobId);
+    await service.from("scan_jobs").delete().eq("id", jobId);
+  });
+
+  it("drops Retry for a scan a newer one replaced, and for a skip retrying cannot fix; notes a done scan's failed checks", async () => {
+    await signInAs(session, "scans-admin", { admin: true });
+    const old = new Date(Date.now() - 2 * 86_400_000).toISOString();
+    const insert = async (row: { status: string; error?: string | null; created_at?: string }) => {
+      const { data, error } = await service
+        .from("scan_jobs")
+        .insert({ agency_id: agency.agencyId, business_id: agency.businessId, priority: LOW_PRIORITY, attempts: 1, finished_at: new Date().toISOString(), ...row })
+        .select("id")
+        .single();
+      if (error) throw error;
+      return data.id;
+    };
+    const failed = await insert({ status: "failed", error: "Every check failed: timeout", created_at: old });
+    const trial = await insert({ status: "skipped", error: REASONS.trialOver, created_at: old });
+    const done = await insert({ status: "done" });
+    await service
+      .from("visibility_runs")
+      .insert({
+        business_id: agency.businessId,
+        scan_job_id: done,
+        provider: "openai,anthropic,perplexity",
+        status: "completed",
+        completed_at: new Date().toISOString(),
+        checks_total: 36,
+        checks_failed: 12,
+        failed_by_provider: { perplexity: { failed: 12, reason: "timeout" } },
+      })
+      .throwOnError();
+
+    const rows = new Map((await listScanJobs(scanListQuery.parse({ agency: agency.agencyId }))).rows.map((r) => [r.id, r]));
+    expect(rows.get(failed)).toMatchObject({ canRetry: false, retryNote: "A newer scan of this business finished, so this one needs no retry." });
+    expect(rows.get(trial)).toMatchObject({ canRetry: false, retryNote: expect.stringContaining("A newer scan") });
+    // A test agency's run with nothing logged: no cost recorded, shown as $0.00 on the page.
+    expect(rows.get(done)).toMatchObject({ hasRun: true, costUsd: null, isTest: true, note: "12 of 36 checks failed (Perplexity).", canRetry: false });
+
+    // With the newer scan gone, the failed one can be retried again; the trial skip still cannot.
+    await service.from("scan_jobs").delete().eq("id", done);
+    const after = new Map((await listScanJobs(scanListQuery.parse({ agency: agency.agencyId }))).rows.map((r) => [r.id, r]));
+    expect(after.get(failed)).toMatchObject({ canRetry: true, retryNote: null });
+    expect(after.get(trial)).toMatchObject({ canRetry: false, retryNote: expect.stringContaining("once the agency pays") });
+    await service.from("scan_jobs").delete().in("id", [failed, trial]);
+  });
+
+  it("names a deleted business filtered to, and tells repeated names apart in the filter lists", async () => {
+    await signInAs(session, "scans-admin", { admin: true });
+    const twin = await createAgencyWithBusiness("Scans twin");
+    const twin2 = await createAgencyWithBusiness("Scans twin");
+    await service.from("businesses").update({ deleted_at: new Date().toISOString() }).eq("id", twin2.businessId).throwOnError();
+
+    const list = await listScanJobs(scanListQuery.parse({ business: twin2.businessId }));
+    expect(list.business).toEqual({ name: "Scans twin Coffee", deleted: true });
+    expect(list.total).toBe(0);
+
+    const options = await listScanFilterOptions();
+    const twins = options.agencies.filter((a) => a.id === twin.agencyId || a.id === twin2.agencyId).map((a) => a.label);
+    expect(twins).toHaveLength(2);
+    expect(twins.every((l) => /^Scans twin \(.+@.+\)$/.test(l))).toBe(true);
+    expect(new Set(twins).size).toBe(2);
+    expect(options.businesses.some((b) => b.id === twin2.businessId)).toBe(false);
   });
 });

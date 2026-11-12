@@ -132,13 +132,15 @@ export function workerStatus(snapshot: WorkerSnapshot, now: Date): ProbeResult {
   return { state: "ok", detail: `Last scan finished ${timeAgo(new Date(snapshot.lastFinishedAt), now)}.` };
 }
 
+/** "just now", "1 minute ago", "10 hours ago", "3 days ago": written out, never "10 h ago" (admin audit 2026-11-12). */
 export function timeAgo(then: Date, now: Date): string {
   const minutes = Math.max(0, Math.round((now.getTime() - then.getTime()) / 60_000));
+  const ago = (n: number, unit: string) => `${n} ${unit}${n === 1 ? "" : "s"} ago`;
   if (minutes < 1) return "just now";
-  if (minutes < 60) return `${minutes} min ago`;
+  if (minutes < 60) return ago(minutes, "minute");
   const hours = Math.round(minutes / 60);
-  if (hours < 48) return `${hours} h ago`;
-  return `${Math.round(hours / 24)} days ago`;
+  if (hours < 48) return ago(hours, "hour");
+  return ago(Math.round(hours / 24), "day");
 }
 
 /** How recent a credit error must be to mark the provider out of credit; a top-up clears it within the hour. */

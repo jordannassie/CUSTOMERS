@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auditedChange, changed, unchanged } from "@/modules/admin";
 import { adminEmails, AuthError, authErrorResponse, requireAdmin } from "@/modules/auth";
-import { countUnreadLeads, leadsQuery, leadUpdateInput, listLeads, updateLead } from "@/modules/feedback";
+import { countUnreadLeads, getLead, leadsQuery, leadUpdateInput, listLeads, updateLead } from "@/modules/feedback";
 
-// GET /api/internal/admin/leads?page&search&interest&source&status&unread=1&count=1
+// GET /api/internal/admin/leads?page&search&interest&source&status&unread=1&replied=yes|no&handler&count=1, or ?id= for one lead
 export async function GET(req: NextRequest) {
   try {
     await requireAdmin();
@@ -17,6 +17,11 @@ export async function GET(req: NextRequest) {
     if (count === null) return NextResponse.json({ error: "Failed to load leads." }, { status: 500 });
     return NextResponse.json({ count });
   }
+  if (q.id) {
+    const lead = await getLead(q.id);
+    return lead ? NextResponse.json({ lead }) : NextResponse.json({ error: "Lead not found." }, { status: 404 });
+  }
+  // A page past the end answers with the last page (readPage), not an error.
   const page = await listLeads({ ...q, unread: q.unread === "1" });
   if (!page) return NextResponse.json({ error: "Failed to load leads." }, { status: 500 });
   return NextResponse.json(page);
@@ -24,7 +29,7 @@ export async function GET(req: NextRequest) {
 
 type LeadUpdate = Awaited<ReturnType<typeof updateLead>>;
 
-// PATCH /api/internal/admin/leads with { id, status?, mark_read?, mark_unread? }
+// PATCH /api/internal/admin/leads with { id, status?, mark_read?, mark_unread?, admin_notes?, handled_by?, replied? }
 export async function PATCH(req: NextRequest) {
   try {
     await requireAdmin();
@@ -68,10 +73,11 @@ export async function PATCH(req: NextRequest) {
         ? NextResponse.json({ error: "Nothing to update." }, { status: 400 })
         : NextResponse.json({ error: "Update failed." }, { status: 500 });
     }
+    // The status the lead has now: marking as replied may have moved it from New to Contacted.
+    return NextResponse.json({ success: true, status: result.updates.status ?? null });
   } catch (error) {
     if (error instanceof AuthError) return authErrorResponse(error);
     console.error("[admin/leads] audited update failed:", error instanceof Error ? error.message : error);
     return NextResponse.json({ error: "Update failed." }, { status: 500 });
   }
-  return NextResponse.json({ success: true });
 }

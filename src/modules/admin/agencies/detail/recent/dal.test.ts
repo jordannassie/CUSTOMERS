@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { stripeDashboardUrl } from "./dal";
+import { stripeDashboardPage, stripeDashboardUrl } from "./dal";
 
 describe("Stripe links on the agency page (admin review 2026-11-12)", () => {
   it("opens the test dashboard with a test key and the live one with a live key", () => {
@@ -9,5 +9,10 @@ describe("Stripe links on the agency page (admin review 2026-11-12)", () => {
 
   it("links nothing when the agency is not in Stripe", () => {
     expect(stripeDashboardUrl("customers", null, "sk_test_abc")).toBeNull();
+  });
+
+  it("opens the webhooks page in the same mode, for the Stripe alert on the Overview", () => {
+    expect(stripeDashboardPage("webhooks", "sk_test_abc")).toBe("https://dashboard.stripe.com/test/webhooks");
+    expect(stripeDashboardPage("webhooks", "sk_live_abc")).toBe("https://dashboard.stripe.com/webhooks");
   });
 });

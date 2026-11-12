@@ -2,8 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/modules/auth";
-import { saveDirectoryApp } from "./dal";
-import { directoryAppSchema, parseCategoryList } from "./schema";
+import { deleteDirectoryApp, saveDirectoryApp } from "./dal";
+import { directoryAppSchema, directorySlugSchema, parseCategoryList } from "./schema";
 
 export async function saveDirectoryAppAction(formData: FormData): Promise<{ error?: string }> {
   await requireAdmin();
@@ -35,6 +35,21 @@ export async function saveDirectoryAppAction(formData: FormData): Promise<{ erro
     return { error: saved.unavailable ? "Apply migration 072 before saving directory apps." : "Could not save that app." };
   }
   revalidatePath("/apps");
+  revalidatePath("/internal/admin/apps");
+  return {};
+}
+
+/** Removes an app's saved version (admin audit 2026-11-12): a built-in app goes back to the built-in values. */
+export async function removeDirectoryAppAction(slug: string): Promise<{ error?: string }> {
+  await requireAdmin();
+  const parsed = directorySlugSchema.safeParse(slug);
+  if (!parsed.success) return { error: "Pick an app first." };
+  const removed = await deleteDirectoryApp(parsed.data);
+  if (!removed.ok) {
+    return { error: removed.unavailable ? "Apply migration 072 before changing directory apps." : "Could not remove that change. Try again." };
+  }
+  revalidatePath("/apps");
+  revalidatePath(`/apps/${parsed.data}`);
   revalidatePath("/internal/admin/apps");
   return {};
 }

@@ -221,3 +221,13 @@ export async function peersFor(slug: string, exceptId: string | null): Promise<P
   if (error || !data) return [];
   return data.filter((row) => row.id !== exceptId).map((row) => ({ title: row.title, pros: row.pros, cons: row.cons }));
 }
+
+/** Reviews already decided, for the admin's Published, Rejected, Removed and All tabs; newest change first. */
+export async function listReviewsByStatus(status: ReviewStatus | "all", limit = 100): Promise<StoredReview[]> {
+  const svc = createServiceClient();
+  let query = svc.from("app_reviews").select("id, slug, user_id, status, rating, title, use_case, pros, cons, recommendation, company, industry, job_role, created_at, updated_at, published_at").order("updated_at", { ascending: false }).limit(limit);
+  if (status !== "all") query = query.eq("status", status);
+  const { data, error } = await query;
+  if (error || !data) return [];
+  return data.map((row) => mapReview(row as ReviewRow)).filter((review): review is StoredReview => Boolean(review));
+}

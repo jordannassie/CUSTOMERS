@@ -31,6 +31,7 @@ const ownerEmail = `vitest-owner-biz-${randomUUID()}@example.test`;
 const userIds: string[] = [];
 let agencyId: string;
 let businessId: string;
+let jobCreatedAt: string;
 
 async function createUser(email: string) {
   const { data, error } = await service.auth.admin.createUser({ email, password, email_confirm: true });
@@ -82,22 +83,18 @@ beforeAll(async () => {
         .single(),
     )
   ).id;
-  await must(
-    service
-      .from("tracked_prompts")
-      .insert({ business_id: businessId, prompt: "best plumber in Testburg" })
-      .select("id"),
-  );
+  await must(service.from("tracked_prompts").insert({ business_id: businessId, prompt: "best plumber in Testburg" }).select("id"));
   await grantCredits({ agencyId, source: "topup", sourceId: `cs-${randomUUID()}`, amount: 50, expiresAt: null });
 
   // One finished scan: two checks, one naming the business, both charged.
   const job = await must(
     service
       .from("scan_jobs")
-      .insert({ agency_id: agencyId, business_id: businessId, status: "running" })
-      .select("id")
+      .insert({ agency_id: agencyId, business_id: businessId, status: "running", created_at: "2026-09-17T10:00:00Z" })
+      .select("id, created_at")
       .single(),
   );
+  jobCreatedAt = job.created_at;
   const holdId = await holdCredits(agencyId, 2, job.id);
   const run = await must(
     service
@@ -136,13 +133,7 @@ beforeAll(async () => {
       .select("id"),
   );
   for (const r of results) await captureCredit(holdId, r.id);
-  await must(
-    service
-      .from("scan_jobs")
-      .update({ status: "done", finished_at: new Date().toISOString() })
-      .eq("id", job.id)
-      .select("id"),
-  );
+  await must(service.from("scan_jobs").update({ status: "done", finished_at: new Date().toISOString() }).eq("id", job.id).select("id"));
 });
 
 afterAll(async () => {
@@ -153,7 +144,7 @@ describe("admin businesses (B-66)", () => {
   it("lists the business with its agency, models, last scan and credits this month", async () => {
     // The owner's email is unique to this run, so the search finds this business only.
     const list = await listBusinesses({ search: ownerEmail });
-    expect(list).toMatchObject({ total: 1, page: 1, pages: 1, scanning: null });
+    expect(list).toMatchObject({ total: 1, page: 1, pages: 1, counts: { all: 1, setup: 1, live: 0, paused: 0, deleted: 0, test: 1 } });
     const row = list.rows.find((b) => b.id === businessId);
     expect(row).toMatchObject({
       name: "Admin Test Plumbing",
@@ -161,14 +152,17 @@ describe("admin businesses (B-66)", () => {
       plan: null,
       frequency: "weekly",
       models: ["openai", "anthropic"],
-      lastScan: { state: "done" },
+      // When the scan started (its job's created_at), the date the business page and Scans page show too.
+      lastScan: { state: "done", at: jobCreatedAt },
       creditsThisMonth: 2,
       // Inserted with the default status, so it is still a setup draft.
       draft: true,
       deleted: null,
     });
     await must(service.from("businesses").update({ status: "active" }).eq("id", businessId).select("id"));
-    expect((await listBusinesses({ search: ownerEmail })).rows.find((b) => b.id === businessId)?.draft).toBe(false);
+    const live = await listBusinesses({ search: ownerEmail });
+    expect(live.rows.find((b) => b.id === businessId)).toMatchObject({ draft: false, paused: false });
+    expect(live.counts).toMatchObject({ live: 1, setup: 0 });
     // Found by its agency's name and its own name too, in any case.
     expect((await listBusinesses({ search: "ADMIN TEST AGENCY" })).rows.map((b) => b.id)).toContain(businessId);
     expect((await listBusinesses({ search: "admin test plumbing" })).rows.map((b) => b.id)).toContain(businessId);
@@ -190,7 +184,13 @@ describe("admin businesses (B-66)", () => {
             answers: { openai: "Admin Test Plumbing is the best plumber in Testburg.", anthropic: null },
           },
         ],
+        // The run's provider ("multi") names no model, so the answers say which were asked.
+        asked: ["openai", "anthropic"],
+        at: jobCreatedAt,
+        older: false,
       },
+      scanTotal: 1,
+      runScan: { blocked: null, credits: 2, warnings: [] },
     });
     expect(detail!.scans[0]).toMatchObject({ state: "done", checks: 2, checksFailed: 0, credits: 2 });
     expect(await loadBusinessDetail(randomUUID())).toBeNull();

@@ -15,6 +15,31 @@ const STATUS: Record<string, string> = {
 // Older businesses kept free-text industries; only the listed ones have a label.
 const industryLabel = (value: string) => (isIndustry(value) ? INDUSTRY_LABELS[value] : value);
 
+type Business = NonNullable<AdminBusinessDetail>["business"];
+
+const Hint = ({ children }: { children: React.ReactNode }) => <span className="text-text-hint">{children}</span>;
+
+// Only a live business scans on its schedule: not one that is deleted, still being set up, or paused.
+const scansOn = (b: Business) => !b.deleted_at && b.status !== "onboarding" && b.status !== "paused";
+const notScanning = (b: Business) => (b.deleted_at ? "deleted" : b.status === "paused" ? "paused" : "being set up");
+
+/**
+ * The next scheduled scan. A date already past means the scan was due and has not run (on a preview site the
+ * schedule only scans test agencies until go-live), so it says "Due since" in the warning colour, never a plain date.
+ */
+function NextScan({ business: b }: { business: Business }) {
+  if (!scansOn(b)) return <Hint>None while {notScanning(b)}</Hint>;
+  if (!b.next_scan_at) return <Hint>Not scheduled</Hint>;
+  if (new Date(b.next_scan_at) <= new Date()) {
+    return (
+      <span className="text-mid-text" title="The scan was due then and has not run yet.">
+        Due since {formatDate(b.next_scan_at, true)}
+      </span>
+    );
+  }
+  return formatDate(b.next_scan_at, true);
+}
+
 export default function Profile({ detail }: { detail: NonNullable<AdminBusinessDetail> }) {
   const { business: b, plan, agency } = detail;
   // The neighborhood or area leads when set: "East Austin, Austin, TX, US". A row of its own would leave the grid uneven.
@@ -30,9 +55,9 @@ export default function Profile({ detail }: { detail: NonNullable<AdminBusinessD
     ["Status", b.deleted_at ? deletedNote(b.deleted_at, b.purge_after) : (STATUS[b.status] ?? b.status)],
     ["Plan", plan ? `${plan.name ?? "Unknown plan"}, ${planStatusLabel(plan.status).toLowerCase()}` : "No plan"],
     ["Agency status", agency ? agencyStatusLabel(agency.status) : "No agency"],
-    ["Scan frequency", frequencyLabel(b.scan_frequency)],
+    ["Scan frequency", scansOn(b) ? frequencyLabel(b.scan_frequency) : <Hint key="frequency">None while {notScanning(b)}</Hint>],
     ["Models", <ModelList key="models" models={b.models} />],
-    ["Next scan", b.next_scan_at ? formatDate(b.next_scan_at, true) : "Not scheduled"],
+    ["Next scan", <NextScan key="next" business={b} />],
     ["Added", formatDate(b.created_at)],
     [
       "Business ID",

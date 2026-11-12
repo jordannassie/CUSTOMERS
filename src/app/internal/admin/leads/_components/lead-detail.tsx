@@ -10,7 +10,7 @@ import { appFetch } from "@/lib/session-expired";
 import { looksLikeCode, websiteHref, withoutCode } from "@/lib/submitted-text";
 import { CodeNotice } from "../../_components/submitted-code";
 import { LeadFollowUp } from "./lead-followup";
-import { INTEREST_LABELS, SOURCE_LABELS, STATUS_OPTIONS, formatDate, type Lead } from "./lead-types";
+import { STATUS_OPTIONS, formatDate, interestLabel, leadStage, sourceLabel, stageStatus, type Lead } from "./lead-types";
 
 function CopyButton({ text, label }: { text: string; label: string }) {
   const [copied, setCopied] = useState(false);
@@ -43,15 +43,22 @@ function Field({ label, children, className }: { label: string; children: React.
 export function LeadDetail({
   lead,
   admins,
+  draft,
+  onDraft,
   onUpdate,
   onClose,
 }: {
   lead: Lead;
   admins: string[];
+  /** The internal note typed but not saved yet, kept per lead by the page. */
+  draft: string | undefined;
+  onDraft: (text: string | null) => void;
   onUpdate: (id: string, updates: Partial<Lead>) => void;
   onClose: () => void;
 }) {
   const [saving, setSaving] = useState(false);
+  // The Status button that is on: an opened lead is still New, a replied one Contacted.
+  const currentStatus = stageStatus(leadStage(lead));
 
   async function patch(payload: Record<string, unknown>): Promise<boolean> {
     setSaving(true);
@@ -62,6 +69,9 @@ export function LeadDetail({
         body: JSON.stringify({ id: lead.id, ...payload }),
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      // Marking as replied may also have moved the lead from New to Contacted.
+      const saved = (await res.json().catch(() => null)) as { status?: string | null } | null;
+      if (saved?.status && !payload.status) onUpdate(lead.id, { status: saved.status });
       if (payload.mark_read) onUpdate(lead.id, { read_at: new Date().toISOString() });
       if (payload.mark_unread) onUpdate(lead.id, { read_at: null });
       if (payload.status) onUpdate(lead.id, { status: payload.status as string });
@@ -82,7 +92,7 @@ export function LeadDetail({
     <div className="flex h-full flex-col">
       <div className="flex shrink-0 items-center justify-between border-b border-border px-5 py-4">
         <div className="flex items-center gap-2">
-          <Badge variant="secondary">{INTEREST_LABELS[lead.topic] ?? lead.topic}</Badge>
+          <Badge variant="secondary">{interestLabel(lead.topic)}</Badge>
           {!lead.read_at && <Badge variant="tint">Unread</Badge>}
         </div>
         <Button type="button" variant="ghost" size="icon-sm" onClick={onClose} aria-label="Close">
@@ -100,12 +110,20 @@ export function LeadDetail({
         <div className="flex flex-col gap-1">
           <h2 className="text-[length:calc(15px*var(--px,1))] font-semibold text-foreground">{withoutCode(lead.name) || "No name"}</h2>
           <div className="flex flex-wrap items-center gap-2">
-            <a href={`mailto:${lead.email}`} className="text-[length:calc(13px*var(--px,1))] text-primary hover:underline">{lead.email}</a>
+            <a href={`mailto:${lead.email}`} className="min-w-0 text-[length:calc(13px*var(--px,1))] break-all text-primary hover:underline">{lead.email}</a>
             <CopyButton text={lead.email} label="Copy email" />
           </div>
-          {lead.company && withoutCode(lead.company) && <p className="text-[length:calc(13px*var(--px,1))] text-muted-foreground">{withoutCode(lead.company)}</p>}
+          {/* Labelled, so a short company or phone ("Co", "123") never reads as a stray word (admin audit 2026-11-12). */}
+          {lead.company && withoutCode(lead.company) && (
+            <p className="text-[length:calc(13px*var(--px,1))] break-words text-muted-foreground">
+              Company: <span className="text-foreground">{withoutCode(lead.company)}</span>
+            </p>
+          )}
           {lead.phone && (
-            <a href={`tel:${lead.phone}`} className="block text-[length:calc(13px*var(--px,1))] text-foreground">{lead.phone}</a>
+            <p className="text-[length:calc(13px*var(--px,1))] text-muted-foreground">
+              Phone:{" "}
+              <a href={`tel:${lead.phone}`} className="text-foreground hover:underline">{lead.phone}</a>
+            </p>
           )}
           {/* Only a real web address becomes a link; anything else (a script URL from a security test) doesn't show. */}
           {websiteHref(lead.website) && (
@@ -122,7 +140,7 @@ export function LeadDetail({
 
         <div className="grid grid-cols-2 gap-4">
           <Field label="Received">{formatDate(lead.created_at, true)}</Field>
-          <Field label="Source">{SOURCE_LABELS[lead.source ?? ""] ?? lead.source ?? "-"}</Field>
+          <Field label="Source">{sourceLabel(lead.source)}</Field>
           {lead.page_path && (
             <Field label="Page" className="col-span-2">
               <span className="block truncate">{withoutCode(lead.page_path)}</span>
@@ -139,7 +157,7 @@ export function LeadDetail({
         <Field label="Status">
           <div className="flex flex-wrap gap-2">
             {STATUS_OPTIONS.map((opt) => {
-              const current = lead.status === opt.value;
+              const current = currentStatus === opt.value;
               return (
                 <Button
                   key={opt.value}
@@ -158,12 +176,15 @@ export function LeadDetail({
           </div>
         </Field>
 
-        <LeadFollowUp key={lead.id} lead={lead} admins={admins} saving={saving} save={patch} />
+        <LeadFollowUp key={lead.id} lead={lead} admins={admins} saving={saving} save={patch} draft={draft} onDraft={onDraft} />
 
         <div className="flex flex-col gap-2">
           <Button asChild variant="outline">
             <a href={`mailto:${lead.email}?subject=Re: your Customers.Direct inquiry`}>Reply by email</a>
           </Button>
+          <p className="text-center text-[length:calc(12px*var(--px,1))] text-text-hint">
+            {lead.replied_at ? "Marked as replied." : "Mark as replied after you send it."}
+          </p>
           <Button
             type="button"
             variant="ghost"

@@ -14,8 +14,10 @@ export type DirectorySearch = z.infer<typeof directorySearchSchema>;
 
 const httpsUrl = z.string().trim().url().refine((value) => value.startsWith("https://"), "Use an https link.");
 
+export const directorySlugSchema = z.string().trim().max(80).regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "Use lowercase letters, numbers, and hyphens.");
+
 export const directoryAppSchema = z.object({
-  slug: z.string().trim().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "Use lowercase letters, numbers, and hyphens."),
+  slug: directorySlugSchema,
   name: z.string().trim().min(1).max(80),
   provider: z.string().trim().min(1).max(80),
   description: z.string().trim().min(1).max(180),

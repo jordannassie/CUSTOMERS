@@ -1,153 +1,102 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { usePathname, useSearchParams } from "next/navigation";
 import { RefreshCw } from "lucide-react";
 import { cn } from "cn";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { appFetch } from "@/lib/session-expired";
 import { LEADS_CHANGED } from "../_components/admin-nav";
 import AdminPageHeader from "../_components/page-header";
 import { LeadDetail } from "./_components/lead-detail";
-import { LeadListEmpty, LeadListError, LeadPagination, LeadRows } from "./_components/lead-list";
-import { LeadsFilters } from "./_components/leads-filters";
-import type { Lead, LeadsQuery, LeadsResponse } from "./_components/lead-types";
+import { LeadListEmpty, LeadListError, LeadNotFound, LeadPagination, LeadRows } from "./_components/lead-list";
+import { LeadsFilters, type FilterKey } from "./_components/leads-filters";
+import { isFiltered, leadIdFromParams, viewFromParams, viewQuery, type LeadsView } from "./_components/lead-query";
+import { filterOptions, type Lead, type LeadsResponse, type OldValuesInUse } from "./_components/lead-types";
+import { useLeadsList, useOpenLead } from "./_components/use-leads";
 
-async function requestLeads(q: LeadsQuery): Promise<LeadsResponse> {
-  const params = new URLSearchParams({
-    page: String(q.page),
-    search: q.search,
-    interest: q.interest,
-    source: q.source,
-    status: q.status,
-    unread: q.unread ? "1" : "0",
-  });
-  const res = await appFetch(`/api/internal/admin/leads?${params}`);
-  if (!res.ok) {
-    throw new Error(
-      res.status === 401 || res.status === 403
-        ? "Your admin session has ended. Log in again to see the leads."
-        : "Something went wrong on our side. Try again in a moment.",
-    );
-  }
-  return res.json();
-}
+export default function LeadsClient({
+  admins,
+  initialView,
+  initialList,
+  initialLead,
+  old,
+}: {
+  admins: string[];
+  initialView: LeadsView;
+  initialList: LeadsResponse | null;
+  initialLead: Lead | null;
+  old: OldValuesInUse;
+}) {
+  const pathname = usePathname();
+  const params = useSearchParams();
+  const view = useMemo(() => viewFromParams(params), [params]);
+  const leadId = leadIdFromParams(params);
 
-export default function LeadsClient({ admins }: { admins: string[] }) {
-  const [leads,      setLeads]      = useState<Lead[]>([]);
-  const [total,      setTotal]      = useState(0);
-  const [pages,      setPages]      = useState(1);
-  const [page,       setPage]       = useState(1);
-  const [loading,    setLoading]    = useState(true);
-  const [loadError,  setLoadError]  = useState<string | null>(null);
-  const [selected,   setSelected]   = useState<Lead | null>(null);
+  const { list, error, loading, refresh, patchLead } = useLeadsList(view, leadId, initialList, initialView);
+  const inList = leadId ? list?.leads.find((l) => l.id === leadId) : undefined;
+  const { selected, notFound, patchOpen } = useOpenLead(leadId, inList, initialLead, patchLead);
 
-  // Filters
-  const [search,   setSearch]   = useState("");
-  const [interest, setInterest] = useState("");
-  const [source,   setSource]   = useState("");
-  const [status,   setStatus]   = useState("");
-  const [unread,   setUnread]   = useState(false);
-
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  function showLeads(data: LeadsResponse) {
-    setLeads(data.leads);
-    setTotal(data.total);
-    setPages(data.pages);
-    setPage(data.page);
-    setLoading(false);
-  }
-
-  function showLoadError(err: unknown) {
-    setLoadError(err instanceof Error && !/fetch|network/i.test(err.message) ? err.message : "Check your internet connection and try again.");
-    setLoading(false);
-  }
-
-  // Only the newest request is shown: a slow answer for an older filter or search never replaces a newer one.
-  const latestRequest = useRef(0);
-  function load(query: LeadsQuery) {
-    const id = ++latestRequest.current;
-    requestLeads(query).then(
-      (data) => id === latestRequest.current && showLeads(data),
-      (err) => id === latestRequest.current && showLoadError(err),
-    );
-  }
-
-  function fetchLeads(opts: Partial<LeadsQuery> = {}) {
-    setLoading(true);
-    setLoadError(null);
-    load({ page, search, interest, source, status, unread, ...opts });
-  }
-
-  // Initial load
+  // Unsaved internal notes, per lead, so opening another lead or closing this one never loses one (admin audit).
+  const [drafts, setDrafts] = useState<Record<string, string>>({});
+  const unsaved = Object.keys(drafts).length > 0;
   useEffect(() => {
-    const id = ++latestRequest.current;
-    requestLeads({ page: 1, search: "", interest: "", source: "", status: "", unread: false }).then(
-      (data) => id === latestRequest.current && showLeads(data),
-      (err) => id === latestRequest.current && showLoadError(err),
-    );
+    if (!unsaved) return;
+    const warn = (e: BeforeUnloadEvent) => e.preventDefault();
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [unsaved]);
+
+  function setDraft(id: string, text: string | null) {
+    setDrafts((prev) => {
+      const next = { ...prev };
+      if (text === null) delete next[id];
+      else next[id] = text;
+      return next;
+    });
+  }
+
+  // Filters and paging add a history entry, so Back returns to the list before; typing a search replaces it.
+  function go(next: LeadsView, lead: string | null, replace = false) {
+    const url = `${pathname}${viewQuery(next, lead)}`;
+    if (replace) window.history.replaceState(null, "", url);
+    else window.history.pushState(null, "", url);
+  }
+
+  // The search box keeps what is typed and follows the address when Back changes it.
+  const [searchText, setSearchText] = useState(view.search);
+  const [searchFrom, setSearchFrom] = useState(view.search);
+  if (view.search !== searchFrom) {
+    setSearchFrom(view.search);
+    setSearchText(view.search);
+  }
+  const debounce = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => {
+    if (debounce.current) clearTimeout(debounce.current);
   }, []);
 
-  // Debounced search
-  function handleSearchChange(val: string) {
-    setSearch(val);
-    setPage(1);
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => {
-      fetchLeads({ search: val, page: 1 });
+  function handleSearch(text: string) {
+    setSearchText(text);
+    if (debounce.current) clearTimeout(debounce.current);
+    debounce.current = setTimeout(() => {
+      const search = text.trim().slice(0, 200);
+      setSearchFrom(search);
+      go({ ...view, search, page: 1 }, leadId, true);
     }, 350);
   }
 
-  function applyFilter(key: "interest" | "source" | "status", val: string) {
-    const next = { interest, source, status, [key]: val };
-    if (key === "interest") setInterest(val);
-    if (key === "source")   setSource(val);
-    if (key === "status")   setStatus(val);
-    setPage(1);
-    fetchLeads({ ...next, page: 1 });
-  }
-
-  function toggleUnread() {
-    const next = !unread;
-    setUnread(next);
-    setPage(1);
-    fetchLeads({ unread: next, page: 1 });
-  }
-
-  function goToPage(p: number) {
-    setPage(p);
-    fetchLeads({ page: p });
-  }
-
-  // Open a lead and mark it read automatically
-  async function openLead(lead: Lead) {
-    setSelected(lead);
-    if (!lead.read_at) {
-      try {
-        const res = await appFetch("/api/internal/admin/leads", {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ id: lead.id, mark_read: true }),
-        });
-        if (res.ok) {
-          setLeads((prev) =>
-            prev.map((l) => l.id === lead.id ? { ...l, read_at: new Date().toISOString() } : l)
-          );
-          setSelected((prev) =>
-            prev?.id === lead.id ? { ...prev, read_at: new Date().toISOString() } : prev
-          );
-          window.dispatchEvent(new Event(LEADS_CHANGED));
-        }
-      } catch { /* ignore */ }
-    }
+  function applyFilter(key: FilterKey, value: string) {
+    go({ ...view, [key]: key === "unread" ? value === "1" : value, page: 1 }, leadId);
   }
 
   function updateLead(id: string, updates: Partial<Lead>) {
     if ("read_at" in updates) window.dispatchEvent(new Event(LEADS_CHANGED));
-    setLeads((prev) => prev.map((l) => l.id === id ? { ...l, ...updates } : l));
-    setSelected((prev) => prev?.id === id ? { ...prev, ...updates } as Lead : prev);
+    patchLead(id, updates);
+    patchOpen(id, updates);
   }
+
+  const options = filterOptions(old);
+  const total = list?.total ?? 0;
 
   return (
     <div className="mx-auto flex w-full max-w-[calc(1200px*var(--px,1))] flex-col gap-4 px-4 py-4 sm:px-6 sm:py-5">
@@ -158,53 +107,71 @@ export default function LeadsClient({ admins }: { admins: string[] }) {
             {total > 0 && <Badge variant="secondary">{total.toLocaleString("en-US")} total</Badge>}
           </>
         }
-        subtitle="Messages people sent from the contact page, the chat widget and the agency page. Open one to reply or change its status."
+        subtitle={
+          <>
+            Messages from the contact page, the chat widget, the agency page and paid AI video ad briefs. A lead is New
+            until someone opens it, and Contacted once you mark it as replied. The number in the menu counts unread
+            leads, the ones nobody has opened yet.
+          </>
+        }
         actions={
-          <Button type="button" variant="outline" onClick={() => fetchLeads()} disabled={loading}>
+          <Button type="button" variant="outline" onClick={refresh} disabled={loading}>
             <RefreshCw aria-hidden className={cn("size-4", loading && "motion-safe:animate-spin")} />
             Refresh
           </Button>
         }
       />
 
-      <LeadsFilters
-        search={search}
-        interest={interest}
-        source={source}
-        status={status}
-        unread={unread}
-        onSearch={handleSearchChange}
-        onFilter={applyFilter}
-        onToggleUnread={toggleUnread}
-      />
+      <LeadsFilters view={view} search={searchText} admins={admins} options={options} onSearch={handleSearch} onFilter={applyFilter} />
 
       <div className="flex min-h-[calc(480px*var(--px,1))] overflow-hidden rounded-md border border-border bg-surface">
         <div
+          aria-busy={loading || undefined}
           className={cn(
             "flex-col overflow-y-auto",
-            selected ? "hidden border-r border-border md:flex md:w-80 md:shrink-0" : "flex flex-1",
+            leadId ? "hidden border-r border-border md:flex md:w-80 md:shrink-0" : "flex flex-1",
           )}
         >
-          {loading && (
+          {error ? (
+            <LeadListError message={error} onRetry={refresh} />
+          ) : !list || (loading && list.leads.length === 0) ? (
             <div className="flex flex-1 items-center justify-center py-20 text-[length:calc(13px*var(--px,1))] text-muted-foreground">
               Loading leads…
             </div>
-          )}
-          {!loading && loadError && <LeadListError message={loadError} onRetry={() => fetchLeads()} />}
-          {!loading && !loadError && leads.length === 0 && (
-            <LeadListEmpty filtered={Boolean(search || interest || source || status || unread)} />
-          )}
-          {!loading && !loadError && leads.length > 0 && (
-            <>
-              <LeadRows leads={leads} selectedId={selected?.id} compact={Boolean(selected)} onOpen={openLead} />
-              <LeadPagination page={page} pages={pages} loading={loading} onGo={goToPage} />
-            </>
+          ) : list.leads.length === 0 ? (
+            <LeadListEmpty filtered={isFiltered(view)} />
+          ) : (
+            <div className={cn("flex flex-col transition-opacity", loading && "opacity-60")}>
+              <LeadRows
+                leads={list.leads}
+                selectedId={leadId ?? undefined}
+                compact={Boolean(leadId)}
+                unsaved={drafts}
+                onOpen={(lead) => go(view, lead.id)}
+              />
+              <LeadPagination page={list.page} pages={list.pages} loading={loading} onGo={(page) => go({ ...view, page }, leadId)} />
+            </div>
           )}
         </div>
 
-        {selected && (
+        {leadId && (
           <div className="flex min-w-0 flex-1 flex-col overflow-hidden bg-surface">
-            <LeadDetail lead={selected} admins={admins} onUpdate={updateLead} onClose={() => setSelected(null)} />
+            {selected ? (
+              <LeadDetail
+                lead={selected}
+                admins={admins}
+                draft={drafts[selected.id]}
+                onDraft={(text) => setDraft(selected.id, text)}
+                onUpdate={updateLead}
+                onClose={() => go(view, null)}
+              />
+            ) : notFound ? (
+              <LeadNotFound onClose={() => go(view, null)} />
+            ) : (
+              <div className="flex flex-1 items-center justify-center py-20 text-[length:calc(13px*var(--px,1))] text-muted-foreground">
+                Loading the lead…
+              </div>
+            )}
           </div>
         )}
       </div>

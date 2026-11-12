@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { contactInput, featureRequestInput, featureStatusInput, leadsQuery, leadUpdateInput } from "./schema";
-import { contactProblem, contactTopic, hashIp, searchTerm } from "./service";
+import { contactProblem, contactTopic, hashIp } from "./service";
 
 describe("contact messages", () => {
   it("trims and cuts the fields as the form always did, and says what is missing", () => {
@@ -40,8 +40,10 @@ describe("admin leads", () => {
     expect(leadUpdateInput.parse({ id: crypto.randomUUID(), status: "bogus", mark_read: true })).toMatchObject({ status: undefined, mark_read: true });
   });
 
-  it("takes out what would change the search filter itself", () => {
-    expect(searchTerm("sam,email.eq.x)")).toBe("sam email.eq.x");
-    expect(searchTerm("100% (real)")).toBe("100 real");
+  it("reads the follow-up filters and a lead id, dropping anything else", () => {
+    const id = crypto.randomUUID();
+    expect(leadsQuery.parse({ replied: "yes", handler: "Ann@Example.com", id })).toMatchObject({ replied: "yes", handler: "Ann@Example.com", id });
+    expect(leadsQuery.parse({ handler: "none" })).toMatchObject({ handler: "none" });
+    expect(leadsQuery.parse({ replied: "maybe", handler: "bob", id: "x" })).toMatchObject({ replied: undefined, handler: undefined, id: undefined });
   });
 });

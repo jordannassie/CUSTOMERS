@@ -6,7 +6,8 @@ export function WeekdayCards({
   selected, today, onChange, disabled,
 }: {
   selected: Weekday;
-  today: Weekday;
+  /** The card that gets a badge: today's, or Monday's ("Next") at the weekend. */
+  today: { day: Weekday; label: string };
   onChange: (w: Weekday) => void;
   disabled: boolean;
 }) {
@@ -32,7 +33,7 @@ export function WeekdayCards({
           >
             <span className="flex w-full items-center justify-between gap-2">
               <span className="text-[length:calc(12px*var(--px,1))] font-medium text-muted-foreground">{w.short}</span>
-              {w.key === today && <Badge variant="tint">Today</Badge>}
+              {w.key === today.day && <Badge variant="tint">{today.label}</Badge>}
             </span>
             <span className="text-[length:calc(14px*var(--px,1))] font-semibold leading-tight text-foreground">{w.theme}</span>
             <span className="text-[length:calc(12px*var(--px,1))] leading-snug text-muted-foreground">{w.desc}</span>

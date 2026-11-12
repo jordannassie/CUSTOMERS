@@ -3,22 +3,27 @@
 import { useState } from "react";
 import { Inbox } from "lucide-react";
 import { toast } from "sonner";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { appFetch } from "@/lib/session-expired";
 import AdminEmpty from "../_components/admin-empty";
 import FilterTabs, { replaceQuery } from "../_components/filter-tabs";
 import AdminPageHeader from "../_components/page-header";
 import { RequestRow } from "./_components/request-row";
-import { FEATURE_FILTERS, STATUS_LABELS, type FeatureFilter, type FeatureRequest, type Status } from "./_components/request-parts";
+import { FEATURE_FILTERS, STATUS_LABELS, matchesSearch, type FeatureFilter, type FeatureRequest, type Status } from "./_components/request-parts";
 
 const BASE = "/internal/admin/feature-requests";
 
 export default function FeatureRequestsClient({
   requests: initial,
   filter: initialFilter,
+  search: initialSearch,
   capped,
 }: {
   requests: FeatureRequest[];
   filter: FeatureFilter;
+  /** ?q= from the address. */
+  search: string;
   /** The list holds the newest `capped` requests only, so older ones are not shown. */
   capped: number | null;
 }) {
@@ -26,10 +31,16 @@ export default function FeatureRequestsClient({
   const [expanded, setExpanded] = useState<string | null>(null);
   const [updating, setUpdating] = useState<string | null>(null);
   const [filter, setFilter] = useState<FeatureFilter>(initialFilter);
+  const [search, setSearch] = useState(initialSearch);
 
-  const filtered = filter === "all" ? requests : requests.filter((r) => r.status === filter);
-  // From the list as it is now, so the counts move as soon as a status is saved.
-  const newCount = requests.filter((r) => r.status === "new").length;
+  // The tab counts follow the search, so they always add up to what the list can show.
+  const found = requests.filter((r) => matchesSearch(r, search));
+  const filtered = filter === "all" ? found : found.filter((r) => r.status === filter);
+
+  function searchFor(text: string) {
+    setSearch(text);
+    replaceQuery("q", text.trim() || null);
+  }
 
   function selectFilter(next: string) {
     setFilter(next as FeatureFilter);
@@ -58,14 +69,21 @@ export default function FeatureRequestsClient({
       <AdminPageHeader
         title="Feature requests"
         subtitle="Ideas people sent with Suggest a feature in the app. Open one to read it and set where it stands."
-        actions={
-          <p className="text-[length:calc(13px*var(--px,1))] text-muted-foreground" data-testid="feature-request-counts">
-            {requests.length} total, {newCount} new
-          </p>
-        }
       />
 
       <div className="flex flex-col gap-4">
+        <div className="flex w-full min-w-0 flex-col gap-1 sm:w-72">
+          <Label htmlFor="feature-search" className="text-[length:calc(13px*var(--px,1))]">Search</Label>
+          <Input
+            id="feature-search"
+            type="search"
+            value={search}
+            maxLength={200}
+            placeholder="Search title, text, email or business"
+            onChange={(e) => searchFor(e.target.value)}
+          />
+        </div>
+
         <FilterTabs
           label="Filter by status"
           active={filter}
@@ -74,7 +92,7 @@ export default function FeatureRequestsClient({
             key: s,
             label: s === "all" ? "All" : STATUS_LABELS[s],
             href: s === "all" ? BASE : `${BASE}?status=${s}`,
-            count: s === "all" ? requests.length : requests.filter((r) => r.status === s).length,
+            count: s === "all" ? found.length : found.filter((r) => r.status === s).length,
           }))}
         />
 
@@ -90,8 +108,8 @@ export default function FeatureRequestsClient({
               A request shows up here as soon as someone sends one with Suggest a feature.
             </AdminEmpty>
           ) : (
-            <AdminEmpty icon={Inbox} title="No requests match this filter">
-              Pick All to see every request.
+            <AdminEmpty icon={Inbox} title="No requests match">
+              {search.trim() ? "Clear the search or pick All to see every request." : "Pick All to see every request."}
             </AdminEmpty>
           )
         ) : (

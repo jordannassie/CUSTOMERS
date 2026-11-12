@@ -7,11 +7,19 @@ export function DeletedBadge() {
   return <Badge variant="secondary">Deleted</Badge>;
 }
 
-/** When a deleted business's data is removed for good, from purge_after; `short` fits a list cell next to the badge. */
-export function deletedNote(deletedAt: string, purgeAfter: string | null, short = false): string {
+export function PausedBadge() {
+  return <Badge variant="secondary">Paused</Badge>;
+}
+
+/**
+ * When a deleted business's data is removed for good, from purge_after; `short` fits a list cell next to the badge.
+ * A date still ahead says "will be" (admin audit 2026-11-12: a future date read like something already done).
+ */
+export function deletedNote(deletedAt: string, purgeAfter: string | null, short = false, now = new Date()): string {
   if (!purgeAfter) return `Deleted ${formatDate(deletedAt)}`;
-  if (short) return `Removed for good ${formatDate(purgeAfter)}`;
-  return `Deleted ${formatDate(deletedAt)}, removed for good ${formatDate(purgeAfter)}`;
+  const removal = new Date(purgeAfter) > now ? `will be removed for good on ${formatDate(purgeAfter)}` : `removed for good on ${formatDate(purgeAfter)}`;
+  if (short) return removal.charAt(0).toUpperCase() + removal.slice(1);
+  return `Deleted ${formatDate(deletedAt)}, ${removal}`;
 }
 
 const MODEL_DOT: Record<string, string> = { openai: "bg-chatgpt", anthropic: "bg-claude", perplexity: "bg-perplexity" };

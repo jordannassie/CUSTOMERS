@@ -2,12 +2,14 @@ import "server-only";
 import { createServiceClient } from "@/lib/supabase/service";
 import { requireAdmin } from "@/modules/auth";
 import { getBalance } from "@/modules/credits";
-import { allRows, emailsOf, readCaptures, unique } from "../dal";
-import { isActive, startOfMonthUtc, sumBy, toScanState, type ScanState } from "../service";
+import { emailsOf, readCaptures, unique } from "../dal";
+import { latestResults, newestFinished } from "../results/dal";
+import { explainScanError } from "../../scans/error-text";
+import { isActive, runScanCheck, startOfMonthUtc, sumBy, toScanState, type ScanState } from "../service";
 
 // Everything about one business for the admin detail page (B-66). Each read checks admin access itself (BUG-286).
 
-const HISTORY_LIMIT = 20;
+export const HISTORY_LIMIT = 20;
 // The newest opportunities are what support needs; the full list is on the customer's Actions page.
 const OPPORTUNITY_LIMIT = 100;
 
@@ -30,6 +32,7 @@ export type AdminScan = {
 };
 
 export type AdminBusinessDetail = Awaited<ReturnType<typeof loadBusinessDetail>>;
+export type { ResultRow } from "../results/dal";
 
 /** Just the name, for the page title ("Joe's Coffee | Admin"). Null for an unknown id. */
 export async function loadBusinessName(id: string): Promise<string | null> {
@@ -54,7 +57,7 @@ export async function loadBusinessDetail(id: string, now = new Date()) {
 
   const monthStart = startOfMonthUtc(now).toISOString();
   // Only the scans the page shows and the newest finished one: the history used to be read in full on every visit.
-  const [agency, subscription, competitors, questions, jobsResult, lastDoneResult, oldRuns, opportunities, monthCredits, allCredits] = await Promise.all([
+  const [agency, subscription, competitors, questions, jobsResult, lastDoneResult, oldRuns, lastOldDoneResult, jobCount, oldRunCount, opportunities, monthCredits, allCredits] = await Promise.all([
     business.agency_id
       ? db
           .from("agencies")
@@ -72,14 +75,27 @@ export async function loadBusinessDetail(id: string, now = new Date()) {
       .order("created_at", { ascending: false })
       .order("id")
       .limit(HISTORY_LIMIT),
-    db.from("scan_jobs").select("id").eq("business_id", id).eq("status", "done").order("created_at", { ascending: false }).limit(1).maybeSingle(),
+    db.from("scan_jobs").select("id, created_at").eq("business_id", id).eq("status", "done").order("created_at", { ascending: false }).limit(1).maybeSingle(),
     db
       .from("visibility_runs")
-      .select("id, status, error, created_at, completed_at")
+      .select("id, status, error, created_at, completed_at, checks_total, checks_failed")
       .eq("business_id", id)
       .is("scan_job_id", null)
       .order("created_at", { ascending: false })
       .limit(HISTORY_LIMIT),
+    // Scans from before the job queue are runs alone; the newest finished one may be newer than any finished job.
+    db
+      .from("visibility_runs")
+      .select("id, created_at, provider, failed_by_provider")
+      .eq("business_id", id)
+      .is("scan_job_id", null)
+      .in("status", ["completed", "done"])
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+    // Every scan this business had, for "Showing the newest 20 of 34".
+    db.from("scan_jobs").select("id", { count: "exact", head: true }).eq("business_id", id),
+    db.from("visibility_runs").select("id", { count: "exact", head: true }).eq("business_id", id).is("scan_job_id", null),
     db
       .from("opportunities")
       .select("id, title, impact, status, category")
@@ -91,6 +107,8 @@ export async function loadBusinessDetail(id: string, now = new Date()) {
   ]);
   const jobs = must("scan jobs", jobsResult) ?? [];
   const lastDone = must("the last finished scan", lastDoneResult);
+  const lastOldDone = must("the last finished older scan", lastOldDoneResult);
+  if (jobCount.error || oldRunCount.error) throw new Error(`Admin business: could not count scans: ${(jobCount.error ?? oldRunCount.error)!.message}`);
   const creditTotal = (r: typeof monthCredits) => Number(must("credits", r)?.[0]?.credits ?? 0);
   const agencyRow = must("the agency", agency);
   const shown = jobs;
@@ -99,7 +117,7 @@ export async function loadBusinessDetail(id: string, now = new Date()) {
     readCaptures({ holdIds: unique(shown.map((j) => j.hold_id)) }),
     db
       .from("visibility_runs")
-      .select("id, scan_job_id, checks_total, checks_failed")
+      .select("id, scan_job_id, checks_total, checks_failed, provider, failed_by_provider, created_at")
       .in("scan_job_id", unique([...shown.map((j) => j.id), lastDone?.id ?? null])),
     emailsOf([agencyRow?.owner_user_id ?? business.owner_user_id]),
     agencyRow ? getBalance(agencyRow.id) : null,
@@ -133,8 +151,8 @@ export async function loadBusinessDetail(id: string, now = new Date()) {
       finishedAt: r.completed_at,
       priority: null,
       attempts: null,
-      checks: null,
-      checksFailed: null,
+      checks: r.checks_total,
+      checksFailed: r.checks_failed,
       credits: 0,
       error: r.error,
     })),
@@ -144,6 +162,7 @@ export async function loadBusinessDetail(id: string, now = new Date()) {
 
   const ownerId = agencyRow?.owner_user_id ?? business.owner_user_id;
   const sub = must("the plan", subscription);
+  const activeQuestions = (must("questions", questions) ?? []).filter((q) => q.active).length;
   return {
     business,
     ownerEmail: emails.get(ownerId) ?? null,
@@ -161,42 +180,27 @@ export async function loadBusinessDetail(id: string, now = new Date()) {
     questions: must("questions", questions) ?? [],
     opportunities: must("opportunities", opportunities) ?? [],
     scans,
+    /** Every scan this business had; the history shows the newest HISTORY_LIMIT. */
+    scanTotal: (jobCount.count ?? 0) + (oldRunCount.count ?? 0),
     activeScan: jobs.some((j) => isActive(toScanState(j.status))),
+    // Whether "Run scan now" can do anything useful, and what to know first (admin audit 2026-11-12).
+    runScan: runScanCheck(
+      {
+        deleted: business.deleted_at !== null,
+        agency: agencyRow ? { name: agencyRow.name, status: agencyRow.status } : null,
+        status: business.status,
+        city: business.primary_city,
+        activeQuestions,
+        models: business.models,
+        balance: balance ? (balance.balance ?? 0) : null,
+        lastScan: scans[0] ? { state: scans[0].state, error: scans[0].error } : null,
+      },
+      (error) => explainScanError(error)?.summary ?? null,
+    ),
     credits: {
       thisMonth: creditTotal(monthCredits),
       allTime: creditTotal(allCredits),
     },
-    results: await latestResults(lastDone?.id, runOfJob),
+    results: await latestResults(newestFinished(lastDone, runOfJob, lastOldDone)),
   };
-}
-
-export type ResultRow = {
-  question: string;
-  mentioned: Partial<Record<string, boolean>>;
-  /** The saved answer per model, null when the check kept no text. */
-  answers: Partial<Record<string, string | null>>;
-};
-
-/** Per-question, per-model answers of the newest finished scan (B-26 results). */
-async function latestResults(jobId: string | undefined, runOfJob: Map<string, { id: string }>) {
-  const runId = jobId ? runOfJob.get(jobId)?.id : undefined;
-  if (!runId) return null;
-  const rows = await allRows("check results", (from, to) =>
-    createServiceClient()
-      .from("visibility_results")
-      .select("id, question, provider, business_mentioned, answer_text, created_at")
-      .eq("run_id", runId)
-      .order("created_at")
-      .order("id")
-      .range(from, to),
-  );
-  const byQuestion = new Map<string, ResultRow>();
-  for (const r of rows) {
-    const question = r.question ?? "Question not recorded";
-    const row = byQuestion.get(question) ?? { question, mentioned: {}, answers: {} };
-    row.mentioned[r.provider] = r.business_mentioned;
-    row.answers[r.provider] = r.answer_text;
-    byQuestion.set(question, row);
-  }
-  return { at: rows[0]?.created_at ?? null, rows: [...byQuestion.values()] };
 }

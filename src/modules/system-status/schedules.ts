@@ -29,7 +29,6 @@ const JOB_LABELS: Record<string, string> = {
 };
 
 const list = (names: string[]) => names.map((n) => JOB_LABELS[n] ?? n.replace(/[-_]+/g, " ")).join(", ");
-const MIGRATIONS = "See the worker section of supabase/migrations/README.md.";
 
 /** Whether the scheduled jobs exist and their last runs went through. */
 export function schedulesStatus(jobs: CronJob[], now: Date): ProbeResult {
@@ -58,14 +57,14 @@ export function jobSettingsStatus(s: JobSettings): ProbeResult {
     return {
       state: "error",
       detail: "Scheduled scans and retries can't start, because the database doesn't know where the scan worker is. Scans started with Run scan still work.",
-      fix: `Set scan_worker_url and scan_worker_secret in Supabase Vault. ${MIGRATIONS}`,
+      fix: "A developer needs to set scan_worker_url and scan_worker_secret in Supabase Vault.",
     };
   }
   if (!s.scheduledScansIncludeReal) {
     return {
       state: "off",
       detail: "Daily and weekly scans run by themselves for test accounts only. Customers' scheduled scans start at launch. Scans started with Run scan work for everyone.",
-      fix: `Turn them on for everyone with the go-live switch. ${MIGRATIONS}`,
+      fix: "Off on purpose until launch. A developer turns them on at go-live.",
     };
   }
   const missing = [!s.alertsUrlSet && "problem alerts", !s.emailJobsUrlSet && "scheduled emails"].filter((m): m is string => !!m);
@@ -74,7 +73,7 @@ export function jobSettingsStatus(s: JobSettings): ProbeResult {
     return {
       state: "not_configured",
       detail: `Scans run on schedule, but ${missing.join(" and ")} can't reach the app, so they don't go out.`,
-      fix: `Set ${vault.join(" and ")} in Supabase Vault. ${MIGRATIONS}`,
+      fix: `A developer needs to set ${vault.join(" and ")} in Supabase Vault.`,
     };
   }
   return { state: "ok", detail: "Scans run on schedule for every account, and alert and email jobs can reach the app." };

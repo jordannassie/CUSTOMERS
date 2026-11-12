@@ -88,14 +88,14 @@ export async function readCaptures(filter: { since?: Date; holdIds?: string[] })
 
 export type EnqueueResult =
   | { ok: true; jobId: string }
-  | { ok: false; reason: "not_found" | "no_agency" | "deleted" | "agency_deleted" | "already_active" };
+  | { ok: false; reason: "not_found" | "no_agency" | "deleted" | "agency_deleted" | "setup" | "paused" | "already_active" };
 
 /** Queues a high-priority scan; the worker (B-27) holds credits and runs it. */
 export async function enqueueScan(businessId: string): Promise<EnqueueResult> {
   const db = createServiceClient();
   const { data: business, error } = await db
     .from("businesses")
-    .select("agency_id, deleted_at, agencies(status)")
+    .select("agency_id, deleted_at, status, agencies(status)")
     .eq("id", businessId)
     .maybeSingle();
   if (error) fail("the business", error);
@@ -104,6 +104,9 @@ export async function enqueueScan(businessId: string): Promise<EnqueueResult> {
   // The worker's claim does not look at deleted_at, so a job queued here would spend credits on deleted data.
   if (business.deleted_at) return { ok: false, reason: "deleted" };
   if (business.agencies?.status === "deleted") return { ok: false, reason: "agency_deleted" };
+  // The worker skips both, so a job would only say "Skipped" (admin audit 2026-11-12).
+  if (business.status === "onboarding") return { ok: false, reason: "setup" };
+  if (business.status === "paused") return { ok: false, reason: "paused" };
 
   const insert = await db
     .from("scan_jobs")

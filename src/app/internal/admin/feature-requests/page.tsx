@@ -9,7 +9,7 @@ export const metadata = { title: "Feature requests" };
 // listFeatureRequests (modules/feedback) returns the newest 200; a full list means older ones were left out.
 const LIST_CAP = 200;
 
-type Props = { searchParams: Promise<{ status?: string | string[] }> };
+type Props = { searchParams: Promise<{ status?: string | string[]; q?: string | string[] }> };
 
 export default async function AdminFeatureRequestsPage({ searchParams }: Props) {
   await requireAdmin({ next: "/internal/admin/feature-requests" });
@@ -36,12 +36,14 @@ export default async function AdminFeatureRequestsPage({ searchParams }: Props) 
   }
 
   const requests = "requests" in result ? result.requests : [];
+  const params = await searchParams;
 
   return (
     <div className="mx-auto flex w-full max-w-[calc(1200px*var(--px,1))] flex-col gap-4 px-4 py-4 sm:px-6 sm:py-5">
       <FeatureRequestsClient
         requests={requests}
-        filter={featureFilter((await searchParams).status)}
+        filter={featureFilter(params.status)}
+        search={(Array.isArray(params.q) ? params.q[0] : params.q)?.slice(0, 200) ?? ""}
         capped={requests.length >= LIST_CAP ? LIST_CAP : null}
       />
     </div>

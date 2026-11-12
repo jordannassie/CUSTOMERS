@@ -63,8 +63,20 @@ describe("admin overview (B-65)", () => {
   it("reads revenue since the first of the month from Stripe", async () => {
     const revenueSince = vi.fn(async () => 123_400);
     const overview = await loadOverview(new Date("2026-09-29T12:00:00Z"), stripeWith(revenueSince));
-    expect(revenueSince).toHaveBeenCalledWith(new Date("2026-09-01T00:00:00Z"));
+    expect(revenueSince).toHaveBeenCalledWith(new Date("2026-09-01T00:00:00Z"), undefined, expect.any(Array));
     expect(overview.revenue).toEqual({ state: "ok", cents: 123_400, mode: "stripe" });
+  });
+
+  it("leaves test agencies' Stripe customers out of revenue unless test agencies are counted (admin audit 2026-11-12)", async () => {
+    const { agencyId } = await createAgencyWithBusiness("Overview Revenue");
+    const customer = `cus_test_${agencyId}`;
+    await service.from("agencies").update({ is_test: true, stripe_customer_id: customer }).eq("id", agencyId).throwOnError();
+    const revenueSince = vi.fn(async () => 0);
+    await loadOverview(new Date("2026-09-29T12:00:00Z"), stripeWith(revenueSince));
+    expect(revenueSince).toHaveBeenCalledWith(new Date("2026-09-01T00:00:00Z"), undefined, expect.arrayContaining([customer]));
+    revenueSince.mockClear();
+    await loadOverview(new Date("2026-09-29T12:00:00Z"), stripeWith(revenueSince), { includeTest: true });
+    expect(revenueSince).toHaveBeenCalledWith(new Date("2026-09-01T00:00:00Z"), undefined, []);
   });
 
   it("counts a running real trial but no test agency, unfinished signup or ended trial, and lists recent signups and real failed scans", async () => {

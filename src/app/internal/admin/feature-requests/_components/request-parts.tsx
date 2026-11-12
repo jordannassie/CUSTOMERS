@@ -21,6 +21,16 @@ export interface FeatureRequest {
   createdAt: string;
   email: string;
   businessName: string | null;
+  agencyId: string | null;
+  agencyName: string | null;
+}
+
+/** The search box: title, description, sender, business, agency or page, ignoring case. */
+export function matchesSearch(req: FeatureRequest, search: string): boolean {
+  const needle = search.trim().toLowerCase();
+  if (!needle) return true;
+  return [req.title, req.description, req.email, req.businessName, req.agencyName, req.pageContext]
+    .some((text) => text?.toLowerCase().includes(needle));
 }
 
 export const STATUS_LABELS: Record<Status, string> = {

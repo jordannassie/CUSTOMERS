@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useState } from "react";
+import { useId } from "react";
 import { Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -19,14 +19,20 @@ export function LeadFollowUp({
   admins,
   saving,
   save,
+  draft,
+  onDraft,
 }: {
   lead: Lead;
   admins: string[];
   saving: boolean;
   save: (payload: { handled_by?: string; replied?: boolean; admin_notes?: string }) => Promise<boolean>;
+  /** A note typed earlier and not saved: kept by the page, so opening another lead or closing this one keeps it. */
+  draft: string | undefined;
+  onDraft: (text: string | null) => void;
 }) {
-  const [notes, setNotes] = useState(lead.admin_notes ?? "");
-  const [savedNotes, setSavedNotes] = useState(lead.admin_notes ?? "");
+  const savedNotes = lead.admin_notes ?? "";
+  const notes = draft ?? savedNotes;
+  const dirty = notes.trim() !== savedNotes.trim();
   const ids = { handler: useId(), notes: useId() };
   // A handler no longer in ADMIN_EMAILS still shows, so the select never hides who it was.
   const options = [...new Set([...admins, ...(lead.handled_by ? [lead.handled_by] : [])])];
@@ -74,20 +80,30 @@ export function LeadFollowUp({
           maxLength={4000}
           rows={3}
           placeholder="Only admins see this. For example: called back, wants a demo next week."
-          onChange={(e) => setNotes(e.target.value)}
+          onChange={(e) => onDraft(e.target.value.trim() === savedNotes.trim() ? null : e.target.value)}
         />
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          className="w-fit"
-          disabled={saving || notes.trim() === savedNotes.trim()}
-          onClick={async () => {
-            if (await save({ admin_notes: notes })) setSavedNotes(notes);
-          }}
-        >
-          Save notes
-        </Button>
+        <div className="flex flex-wrap items-center gap-3">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="w-fit"
+            disabled={saving || !dirty}
+            onClick={async () => {
+              if (await save({ admin_notes: notes })) onDraft(null);
+            }}
+          >
+            Save notes
+          </Button>
+          {dirty && (
+            <>
+              <span className="text-[length:calc(12px*var(--px,1))] text-mid-text">Not saved yet</span>
+              <Button type="button" variant="ghost" size="sm" disabled={saving} onClick={() => onDraft(null)}>
+                Discard
+              </Button>
+            </>
+          )}
+        </div>
       </div>
     </div>
   );

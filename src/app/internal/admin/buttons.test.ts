@@ -4,19 +4,18 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { featureFilter } from "./feature-requests/_components/request-parts";
+import { EMPTY_VIEW } from "./leads/_components/lead-query";
 import { LeadsFilters } from "./leads/_components/leads-filters";
 
 const filters = (unread: boolean) =>
   renderToStaticMarkup(
     createElement(LeadsFilters, {
+      view: { ...EMPTY_VIEW, unread },
       search: "",
-      interest: "",
-      source: "",
-      status: "",
-      unread,
+      admins: [],
+      options: { interest: [], source: [], status: [] },
       onSearch: () => {},
       onFilter: () => {},
-      onToggleUnread: () => {},
     }),
   );
 

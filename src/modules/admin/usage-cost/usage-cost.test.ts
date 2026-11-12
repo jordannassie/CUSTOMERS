@@ -110,8 +110,8 @@ describe("admin Usage and cost numbers (B-67)", () => {
       ["anthropic", 1, 1, 0],
       ["perplexity", 1, 1, 0],
     ]);
-    expect(report.byModel[0].costPerCheck).toBeCloseTo(0.015, 6);
-    expect(report.byModel[0].costPerCall).toBeCloseTo(0.03, 6);
+    // The cache hit charged no credit, so ChatGPT's $0.03 is spread over 1 credit, not 2 checks.
+    expect(report.byModel[0].costPerCredit).toBeCloseTo(0.03, 6);
     expect(report.otherCostUsd).toBeCloseTo(0.0014, 6);
     expect(report.totals.cacheHitRate).toBeCloseTo(0.25, 6);
 

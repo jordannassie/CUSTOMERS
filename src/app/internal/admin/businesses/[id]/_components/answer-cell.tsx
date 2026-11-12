@@ -3,21 +3,29 @@
 import { useState } from "react";
 import { Check, Minus } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { plainAnswer } from "./answer-text";
 
-/** Named or Not named for one question and model; clicking it shows the answer the model gave, as saved. */
+/**
+ * Named or Not named for one question and model; selecting it shows the answer the model gave, as plain text.
+ * With no answer it says Failed when the scan asked this model (the check failed or kept nothing), else Not asked.
+ */
 export default function AnswerCell({
   value,
+  asked,
   question,
   model,
   answer,
 }: {
   value: boolean | undefined;
+  asked: boolean;
   question: string;
   model: string;
   answer: string | null | undefined;
 }) {
   const [open, setOpen] = useState(false);
-  if (value === undefined) return <span className="text-text-hint">Not asked</span>;
+  if (value === undefined) {
+    return asked ? <span className="font-medium text-mid-text">Failed</span> : <span className="text-text-hint">Not asked</span>;
+  }
 
   return (
     <>
@@ -47,7 +55,7 @@ export default function AnswerCell({
           </DialogHeader>
           {answer ? (
             <p className="max-h-[60vh] overflow-y-auto rounded-md border border-border bg-muted px-4 py-3 text-[length:calc(14px*var(--px,1))] leading-relaxed whitespace-pre-wrap wrap-anywhere">
-              {answer}
+              {plainAnswer(answer)}
             </p>
           ) : (
             <p className="text-[length:calc(14px*var(--px,1))] text-muted-foreground">No answer text was saved for this check.</p>

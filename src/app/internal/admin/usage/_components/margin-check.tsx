@@ -1,7 +1,7 @@
 import { cn } from "cn";
 import { Badge } from "@/components/ui/badge";
 import { THIN_MARGIN, type ModelMargin, type Verdict } from "@/modules/admin";
-import { count, money, percent } from "./format";
+import { count, money, percent, unitPrice } from "./format";
 
 // The app's pill colours (src/components/app/pills.ts): grey when fine, blue when thin, red only when losing money.
 const VERDICT: Record<Verdict, { label: string; badge: "mid" | "tint" | "secondary"; bar: string }> = {
@@ -17,7 +17,7 @@ const DOT: Record<ModelMargin["model"], string> = {
   perplexity: "bg-perplexity",
 };
 
-/** One row per model: how much of each credit's price the AI call eats (D-23). */
+/** One row per model: how much of each credit's price the AI call eats (D-23). Cache hits charge no credit, so cost is per credit charged. */
 export default function MarginCheck({
   models,
   creditPrice,
@@ -39,7 +39,7 @@ export default function MarginCheck({
         <p className="mt-1 text-[length:calc(13px*var(--px,1))] text-muted-foreground">
           {creditPrice === null
             ? "No active plan has a price, so there is no credit price to compare with."
-            : `Every check costs the customer 1 credit, worth at least ${money(creditPrice)}${creditBasis ? `, the price on ${creditBasis}` : ""}, the cheapest way to buy credits. The bar shows how much of that the AI call costs us. Under ${percent(THIN_MARGIN)} margin is flagged.`}
+            : `Each check with a new answer costs the customer 1 credit. Answers reused from the cache are free. A credit is worth at least ${unitPrice(creditPrice)}${creditBasis ? `, the price on ${creditBasis}` : ""}, the cheapest way to buy credits. The bar shows how much of that the AI costs us. A margin under ${percent(THIN_MARGIN)} is flagged.`}
         </p>
       </header>
       <ul className="divide-y divide-border">
@@ -49,8 +49,9 @@ export default function MarginCheck({
       </ul>
       {otherCost > 0 && (
         <p className="border-t border-border px-5 py-3 text-[length:calc(13px*var(--px,1))] text-muted-foreground">
-          Other AI work (name extraction, writing questions) cost <span className="tabular font-medium text-foreground">{money(otherCost)}</span>{" "}
-          in this period. It is included in the totals above, not in the per-model cost.
+          Other AI work (explanations of why competitors win, reading business names, auto-fill and writing questions) cost{" "}
+          <span className="tabular font-medium text-foreground">{money(otherCost)}</span> in this period. It is in the totals above, not in
+          the cost per credit.
         </p>
       )}
     </section>
@@ -59,7 +60,7 @@ export default function MarginCheck({
 
 function ModelRow({ m, creditPrice }: { m: ModelMargin; creditPrice: number | null }) {
   const verdict = VERDICT[m.verdict];
-  const share = creditPrice && m.costPerCheck !== null ? Math.min(m.costPerCheck / creditPrice, 1) : 0;
+  const share = creditPrice && m.costPerCredit !== null ? Math.min(m.costPerCredit / creditPrice, 1) : 0;
 
   return (
     <li data-model={m.model} data-verdict={m.verdict} className="grid gap-3 px-5 py-4 lg:grid-cols-[calc(160px*var(--px,1))_1fr_auto] lg:items-center lg:gap-6">
@@ -76,16 +77,16 @@ function ModelRow({ m, creditPrice }: { m: ModelMargin; creditPrice: number | nu
       <div className="flex flex-col gap-2">
         <div
           role="img"
-          aria-label={`${m.label}: costs ${money(m.costPerCheck) || "nothing yet"} per check against a ${money(creditPrice)} credit`}
+          aria-label={`${m.label}: costs ${unitPrice(m.costPerCredit) || "nothing yet"} per credit against a ${unitPrice(creditPrice)} credit`}
           className="h-2 overflow-hidden rounded-xs bg-muted"
         >
           <div className={cn("h-full rounded-xs", verdict.bar)} style={{ width: `${share * 100}%` }} />
         </div>
         <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-[length:calc(13px*var(--px,1))] sm:grid-cols-4">
-          <Fact label="Cost per check" value={money(m.costPerCheck)} />
-          <Fact label="Cost per AI request" value={money(m.costPerCall)} />
+          <Fact label="Cost per credit" value={unitPrice(m.costPerCredit)} />
           <Fact label="Checks" value={count(m.checks)} />
-          <Fact label="Answered from cache" value={m.checks > 0 ? percent(m.cached / m.checks) : ""} />
+          <Fact label="Checks charged" value={count(m.checks - m.cached)} />
+          <Fact label="From cache, free" value={m.checks > 0 ? percent(m.cached / m.checks) : ""} />
         </dl>
       </div>
 

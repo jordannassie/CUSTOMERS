@@ -6,12 +6,15 @@ import Sparkline from "./sparkline";
 
 /** Revenue and real AI cost side by side, with the cost drawn as a share of what customers paid. */
 export default function MoneyPanel({
+  includeTest = false,
   revenue,
   aiCostUsd,
   revenueChange,
   aiCostChange,
   aiCostSpark,
 }: {
+  /** Whether test agencies' payments are counted, as the Overview's "Include test agencies" link says. */
+  includeTest?: boolean;
   revenue: Revenue;
   aiCostUsd: number;
   revenueChange?: React.ReactNode;
@@ -46,7 +49,9 @@ export default function MoneyPanel({
               {revenue.state === "ok"
                 ? revenue.mode === "fixture"
                   ? "Test mode: no real Stripe account is used."
-                  : "Payments collected, after refunds."
+                  : includeTest
+                    ? "Payments collected, after refunds. Test agencies' payments included."
+                    : "Payments collected, after refunds. Test agencies' payments left out."
                 : revenue.state === "error"
                   ? "Refresh in a minute. The rest of this page is still correct."
                   : "Revenue shows here once a Stripe key is set."}

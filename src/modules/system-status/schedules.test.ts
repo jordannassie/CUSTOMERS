@@ -17,7 +17,7 @@ describe("schedulesStatus", () => {
   it("is ok with the job count and the latest run", () => {
     expect(schedulesStatus([job("call-scan-worker"), job("expire-grants", { lastRunAt: null, lastStatus: null })], now)).toEqual({
       state: "ok",
-      detail: "2 jobs scheduled. Last run 2 min ago.",
+      detail: "2 jobs scheduled. Last run 2 minutes ago.",
     });
   });
 
@@ -54,7 +54,7 @@ describe("jobSettingsStatus", () => {
   it("says scheduled scans cover test accounts only before the go-live switch", () => {
     // Off on purpose before launch: not "Not set up", which read as broken while scans worked.
     expect(jobSettingsStatus({ ...settings, scheduledScansIncludeReal: false })).toMatchObject({ state: "off" });
-    expect(jobSettingsStatus({ ...settings, scheduledScansIncludeReal: false }).fix).toContain("go-live switch");
+    expect(jobSettingsStatus({ ...settings, scheduledScansIncludeReal: false }).fix).toBe("Off on purpose until launch. A developer turns them on at go-live.");
   });
 
   it("names a missing alerts or email jobs URL", () => {

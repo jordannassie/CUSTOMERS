@@ -77,14 +77,7 @@ async function Detail({ id }: { id: string }) {
           <RunScanButton
             businessId={business.id}
             active={detail.activeScan}
-            blocked={
-              business.deleted_at
-                ? "This business was deleted, so it can't be scanned."
-                : agency === null
-                  ? "No agency, so there are no credits to scan with."
-                  : null
-            }
-            credits={detail.questions.filter((q) => q.active).length * business.models.length}
+            check={detail.runScan}
             agencyName={agency?.name ?? null}
             runScanNow={runScanNow}
           />
@@ -109,7 +102,7 @@ async function Detail({ id }: { id: string }) {
         <StatTile
           label="Last scan"
           value={last ? <ScanStatusBadge status={last.state} /> : "Never"}
-          note={last ? formatDate(last.startedAt, true) : undefined}
+          note={last ? `Started ${formatDate(last.startedAt, true)}` : undefined}
         />
         <StatTile label="Credits used this month" value={credits.thisMonth.toLocaleString("en-US")} />
         <StatTile label="Credits used in total" value={credits.allTime.toLocaleString("en-US")} />
@@ -122,7 +115,7 @@ async function Detail({ id }: { id: string }) {
 
       <Profile detail={detail} />
       <AnswersGrid results={detail.results} models={business.models} />
-      <ScanHistory scans={scans} />
+      <ScanHistory scans={scans} total={detail.scanTotal} businessId={business.id} />
       <div className="grid gap-8 lg:grid-cols-2">
         <Questions questions={detail.questions} />
         <Competitors competitors={detail.competitors} />

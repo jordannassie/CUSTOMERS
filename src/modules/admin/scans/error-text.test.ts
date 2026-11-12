@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { REASONS } from "@/modules/entitlements";
 import { explainScanError } from "./error-text";
 
 const PERPLEXITY_CREDIT =
@@ -76,5 +77,27 @@ describe("explainScanError", () => {
       summary: "The scan stopped because of an unexpected problem. Retry it. If it fails again, send the technical details to the developer.",
       technical: raw,
     });
+  });
+
+  it("says what happened to the agency for a skip, not the customer's message, and keeps the stored text", () => {
+    expect(explainScanError(REASONS.trialOver)).toEqual({
+      summary: "Skipped: the agency's free trial ended and it has not paid yet.",
+      technical: REASONS.trialOver,
+      noRetry: "Retrying won't help. Scans start again on their own once the agency pays.",
+    });
+    expect(explainScanError(REASONS.pastDue)?.noRetry).toMatch(/won't help/);
+  });
+
+  it("still allows Retry for a skip that a retry can fix", () => {
+    expect(explainScanError(REASONS.outOfCredits)).toMatchObject({ summary: expect.stringMatching(/^Skipped: the agency was out of credits/), noRetry: null });
+    expect(explainScanError("Claude unavailable, skipped")).toMatchObject({ summary: expect.stringMatching(/^Skipped: Claude was unavailable/), noRetry: null });
+    expect(explainScanError("Every check failed: timeout")?.noRetry).toBeUndefined();
+  });
+
+  it("never uses long dashes", () => {
+    for (const reason of Object.values(REASONS).filter(Boolean)) {
+      const text = explainScanError(reason);
+      expect(`${text?.summary} ${text?.noRetry ?? ""}`).not.toMatch(/[\u2013\u2014]/);
+    }
   });
 });

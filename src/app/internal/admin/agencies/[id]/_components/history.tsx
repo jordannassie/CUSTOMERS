@@ -1,10 +1,9 @@
 import Link from "next/link";
 import { actionLabel, type AdminAgencyDetail } from "@/modules/admin";
-import { DeletedBadge, deletedNote } from "../../../businesses/_components/scan-parts";
+import { DeletedBadge } from "../../../businesses/_components/scan-parts";
 import { formatDate } from "../../../_components/format";
 import Section, { Empty } from "../../../businesses/[id]/_components/section";
 import { credits, planStatusLabel } from "../../_components/agency-parts";
-
 
 // Shown next to an admin action that did not end as done (BUG-278).
 const OUTCOME_NOTES: Record<string, string> = {
@@ -30,20 +29,49 @@ const SOURCES: Record<string, string> = {
   refund: "Refund",
 };
 
-/** "Trial", "Plan", "Top-up" or "Admin" for a grant; "Trial credits expired" for an expiry; else what the row did. */
-export function ledgerLabel(row: { kind: string; source: string | null }): string {
+/**
+ * "Trial", "Plan", "Top-up" or "Admin" for a grant; "Trial credits expired" for an expiry; else what the row did.
+ * Admin credits no admin gave (seed data, the system) say so instead of "Admin" (admin audit 2026-11-12).
+ */
+export function ledgerLabel(row: { kind: string; source: string | null; delta?: number; by?: string | null }): string {
+  const byNoAdmin = row.by === null && (row.kind === "admin_adjust" || (row.kind === "grant" && row.source === "admin"));
+  if (byNoAdmin) return (row.delta ?? 0) < 0 ? "Removed by the system" : "Added by the system";
   const source = row.source ? SOURCES[row.source] : undefined;
   if (row.kind === "grant" && source) return source;
   if (row.kind === "expire" && source) return `${source} credits expired`;
   return KINDS[row.kind] ?? row.kind;
 }
 
-export function Businesses({ rows }: { rows: AdminAgencyDetail["businesses"] }) {
+/**
+ * When a deleted business is removed for good: "Will be removed for good on Nov 30, 2026 UTC" while that is ahead
+ * (admin audit 2026-11-12: "Removed for good" with a future date read as done).
+ */
+export function removalNote(deleted: { at: string; purgeAfter: string | null }, now: Date): string {
+  if (!deleted.purgeAfter) return `Deleted ${formatDate(deleted.at)}`;
+  const when = formatDate(deleted.purgeAfter);
+  return new Date(deleted.purgeAfter) > now ? `Will be removed for good on ${when}` : `Removed for good on ${when}`;
+}
+
+/** A business's plan status as the list shows it: a trial the agency has run past reads "Trial ended", like its badge. */
+export function businessPlanStatus(planStatus: string, agencyDisplayStatus: string): string {
+  return planStatus === "trialing" && agencyDisplayStatus === "trial_ended" ? "Trial ended" : planStatusLabel(planStatus);
+}
+
+export function Businesses({
+  rows,
+  agencyStatus,
+  now,
+}: {
+  rows: AdminAgencyDetail["businesses"];
+  /** The agency's display status (trial_ended, deleted...). */
+  agencyStatus: string;
+  now: Date;
+}) {
   const deleted = rows.filter((b) => b.deleted).length;
   return (
     <Section title="Businesses" note={`${rows.length} in total${deleted > 0 ? `, ${deleted} deleted` : ""}`}>
       {rows.length === 0 ? (
-        <Empty>No businesses yet. They appear here once the owner adds one.</Empty>
+        <Empty>{agencyStatus === "deleted" ? "This account has no businesses." : "No businesses yet. They appear here once the owner adds one."}</Empty>
       ) : (
         <ul className="divide-y divide-border rounded-md border border-border bg-surface text-[length:calc(13px*var(--px,1))]">
           {rows.map((b) => (
@@ -56,12 +84,14 @@ export function Businesses({ rows }: { rows: AdminAgencyDetail["businesses"] }) 
                   {b.deleted && <DeletedBadge />}
                 </span>
                 <span className="block truncate text-text-hint">
-                  {b.deleted ? deletedNote(b.deleted.at, b.deleted.purgeAfter, true) : b.location || "No location"}
+                  {b.deleted ? removalNote(b.deleted, now) : b.location || "No location"}
                 </span>
               </span>
               <span className="shrink-0 text-right text-muted-foreground">
                 {b.plan ?? "No plan"}
-                {b.planStatus && b.planStatus !== "active" && <span className="block text-text-hint">{planStatusLabel(b.planStatus)}</span>}
+                {b.planStatus && b.planStatus !== "active" && (
+                  <span className="block text-text-hint">{businessPlanStatus(b.planStatus, agencyStatus)}</span>
+                )}
               </span>
             </li>
           ))}
@@ -82,6 +112,7 @@ export function CreditHistory({ rows }: { rows: AdminAgencyDetail["ledger"] }) {
             <li key={l.id} className="flex items-start justify-between gap-3 px-4 py-3">
               <span className="min-w-0">
                 <span className="block font-medium">{ledgerLabel(l)}</span>
+                {l.business && <span className="block break-words text-muted-foreground">For {l.business}</span>}
                 {l.note && <span className="block break-words text-muted-foreground">{l.note}</span>}
                 <span className="block text-text-hint">
                   {formatDate(l.createdAt, true)}
@@ -104,7 +135,7 @@ export function AuditLog({ rows }: { rows: AdminAgencyDetail["audit"] }) {
   return (
     <Section title="Admin actions" note="Who did what, latest 20">
       {rows.length === 0 ? (
-        <Empty>No admin has changed this agency yet.</Empty>
+        <Empty>No admin action is saved for this agency yet.</Empty>
       ) : (
         <ul className="divide-y divide-border rounded-md border border-border bg-surface text-[length:calc(13px*var(--px,1))]">
           {rows.map((a) => (

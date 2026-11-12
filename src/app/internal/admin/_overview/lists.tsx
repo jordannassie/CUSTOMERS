@@ -47,12 +47,13 @@ export function RecentSignups({ rows }: { rows: AdminOverview["recentSignups"] }
   );
 }
 
-export function FailedScans({ rows }: { rows: AdminOverview["recentFailedScans"] }) {
+/** The newest failed scans, by when each started (as on the Scans page); the link opens the same set of agencies. */
+export function FailedScans({ rows, includeTest }: { rows: AdminOverview["recentFailedScans"]; includeTest: boolean }) {
   return (
     <div className="flex min-w-0 flex-col gap-2">
       <Section title="Recent failed scans">
         {rows.length === 0 ? (
-          <Empty>No failed scans for real agencies. Nothing to retry.</Empty>
+          <Empty>{includeTest ? "No failed scans. Nothing to retry." : "No failed scans for real agencies. Nothing to retry."}</Empty>
         ) : (
           <ul className={list}>
             {rows.map((j) => (
@@ -70,7 +71,7 @@ export function FailedScans({ rows }: { rows: AdminOverview["recentFailedScans"]
           </ul>
         )}
       </Section>
-      <ViewAll href="/internal/admin/scans?status=failed">See failed scans</ViewAll>
+      <ViewAll href={includeTest ? "/internal/admin/scans?status=failed" : "/internal/admin/scans?status=failed&test=real"}>See failed scans</ViewAll>
     </div>
   );
 }
