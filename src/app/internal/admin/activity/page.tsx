@@ -94,18 +94,18 @@ function Rows({ list, query }: { list: ActivityList; query: ActivityQuery }) {
                 <span className="font-medium">{r.label}</span>
                 {r.target.name &&
                   (r.target.href ? (
-                    <Link href={r.target.href} className="text-primary hover:underline">
+                    <Link href={r.target.href} className="min-w-0 text-primary [overflow-wrap:anywhere] hover:underline">
                       {r.target.name}
                     </Link>
                   ) : (
-                    <span>{r.target.name}</span>
+                    <span className="min-w-0 [overflow-wrap:anywhere]">{r.target.name}</span>
                   ))}
                 {r.outcome !== "done" && <Badge variant="mid">{OUTCOME[r.outcome]}</Badge>}
               </p>
-              {r.change && <p className="break-words">{r.change}</p>}
-              {r.problem && <p className="break-words text-muted-foreground">Why: {r.problem}</p>}
-              {r.reason && <p className="break-words text-muted-foreground">Reason: {r.reason}</p>}
-              <p className="text-text-hint">By {r.by}</p>
+              {r.change && <p className="[overflow-wrap:anywhere]">{r.change}</p>}
+              {r.problem && <p className="text-muted-foreground [overflow-wrap:anywhere]">Why: {r.problem}</p>}
+              {r.reason && <p className="text-muted-foreground [overflow-wrap:anywhere]">Reason: {r.reason}</p>}
+              <p className="text-text-hint [overflow-wrap:anywhere]">By {r.by}</p>
             </div>
             <span className="shrink-0 text-text-hint tabular-nums">{formatDate(r.at, true)}</span>
           </li>
