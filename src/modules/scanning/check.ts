@@ -68,7 +68,7 @@ export async function runOneCheck(task: CheckTask, ctx: CheckContext): Promise<C
   }
   // Outside the try: a database error here throws out of the scan like saveCheckResult's, and the worker runs the job
   // again. The answer is normally cached by then, so the retry asks no model.
-  if (!ctx.isTest) await recordCheckUsage({ accountUserId: ctx.ownerUserId, businessId: ctx.businessId, input, answer });
+  if (!ctx.isTest) await recordCheckUsage({ accountUserId: ctx.ownerUserId, businessId: ctx.businessId, input, answer, runId: ctx.runId });
 
   const extraction = await namesFor(input, answer, ctx);
   const matched = extraction ? matchNames(extraction.names, ctx.business, ctx.competitors) : null;
@@ -146,6 +146,7 @@ async function namesFor(input: CheckInput, answer: CheckAnswer, ctx: CheckContex
       provider: extraction.provider,
       fellBack: extraction.fellBack,
       primaryError: extraction.primaryError,
+      runId: ctx.runId,
     }).catch((err) => console.error(`check ${ctx.runId}: could not record the name extraction cost: ${errorText(err)}`));
   }
   return toStoredExtraction(extraction);

@@ -124,11 +124,13 @@ export async function recordCheckUsage(params: {
   businessId: string | null;
   input: CheckInput;
   answer: CheckAnswer;
+  runId?: string | null;
 }): Promise<void> {
   const { answer } = params;
   await insertCheckUsage({
     accountUserId: params.accountUserId,
     businessId: params.businessId,
+    runId: params.runId ?? null,
     provider: providerOf(params.input.model),
     model: answer.model,
     inputTokens: answer.usage?.inputTokens ?? null,

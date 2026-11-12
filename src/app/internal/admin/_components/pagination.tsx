@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { singular } from "./format";
 
 /** The page's address with another page number, keeping the filter and search. */
 export function pageHref(base: string, params: Record<string, string | undefined>, page: number): string {
@@ -36,7 +37,7 @@ export default function Pagination({
   return (
     <nav aria-label="Pages" className="flex flex-wrap items-center justify-between gap-3 text-[length:calc(13px*var(--px,1))] text-muted-foreground">
       <p className="tabular-nums">
-        {first.toLocaleString("en-US")} to {last.toLocaleString("en-US")} of {total.toLocaleString("en-US")} {noun}
+        {first.toLocaleString("en-US")} to {last.toLocaleString("en-US")} of {total.toLocaleString("en-US")} {total === 1 ? singular(noun) : noun}
       </p>
       {pages > 1 && (
         <div className="flex items-center gap-2">

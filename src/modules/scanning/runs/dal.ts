@@ -226,10 +226,13 @@ export async function insertExtractionUsage(row: {
   provider?: "anthropic" | "openai";
   fellBack?: boolean;
   primaryError?: string | null;
+  /** The scan run, so admin Scans counts this cost in the scan's real cost (2026-11-12). */
+  runId?: string | null;
 }): Promise<void> {
   const { error } = await createServiceClient().from("usage_events").insert({
     account_user_id: row.accountUserId,
     business_id: row.businessId,
+    visibility_run_id: row.runId ?? null,
     usage_type: "other",
     provider: row.provider ?? "anthropic",
     metadata: aiUsageMetadata({ task: "extract_names", fellBack: row.fellBack ?? false, primaryError: row.primaryError ?? null }),

@@ -71,10 +71,13 @@ export async function insertCheckUsage(row: {
   outputTokens: number | null;
   costUsd: number;
   cached: boolean;
+  /** The scan run the check belongs to, so admin Scans can show each scan's real cost (2026-11-12). */
+  runId?: string | null;
 }): Promise<void> {
   const { error } = await createServiceClient().from("usage_events").insert({
     account_user_id: row.accountUserId,
     business_id: row.businessId,
+    visibility_run_id: row.runId ?? null,
     usage_type: "ai_visibility_check",
     provider: row.provider,
     model: row.model,

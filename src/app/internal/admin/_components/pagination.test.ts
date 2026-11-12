@@ -19,4 +19,9 @@ describe("admin pagination (50 a page)", () => {
     expect(html).toContain('href="/internal/admin/businesses"');
     expect(html).toContain('href="/internal/admin/businesses?page=3"');
   });
+
+  it("says '1 to 1 of 1 agency', not 'agencies' (2026-11-12)", () => {
+    const html = renderToStaticMarkup(createElement(Pagination, { base: "/x", params: {}, page: 1, pages: 1, total: 1, pageSize: 50, noun: "agencies" }));
+    expect(html).toContain("1 to 1 of 1 agency");
+  });
 });
