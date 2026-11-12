@@ -1,7 +1,5 @@
-import { Check } from "lucide-react";
-
-// From the live site's hero (2026-11-12): the AI apps, as logos, and what a check gives you. The same five apps as
-// the live site. Logos are the live site's files, used as they are.
+// From the live site's hero (2026-11-12): the AI apps as logo chips, the same five as the live site. Logos are the
+// live site's files, used as they are.
 const AI_ICONS = "https://wsxusvapciexemfvtadm.supabase.co/storage/v1/object/public/STORAGE/images/icons/New%20AI%20Icons";
 const APPS = [
   { name: "ChatGPT", logo: "/icons/ai-platforms/chatgpt.svg" },
@@ -10,7 +8,6 @@ const APPS = [
   { name: "Gemini", logo: `${AI_ICONS}/Gemini.svg` },
   { name: "Google AI", logo: `${AI_ICONS}/GoogleAI.svg` },
 ];
-const GIVES = ["See your AI visibility", "Find what to fix", "Track your competitors", "Get a shareable report"];
 
 /** The AI apps as logo chips. */
 export function AppChips() {
@@ -24,22 +21,6 @@ export function AppChips() {
           {/* eslint-disable-next-line @next/next/no-img-element -- a small logo file, shown at its own size */}
           <img src={app.logo} alt="" width={14} height={14} className="size-3.5" />
           {app.name}
-        </li>
-      ))}
-    </ul>
-  );
-}
-
-/** What a check gives you: one line on wide screens, two columns on tablets, a list on phones. */
-export function HeroChecklist() {
-  return (
-    <ul className="grid gap-2.5 sm:grid-cols-2 lg:flex lg:flex-wrap lg:gap-x-10" aria-label="What you get">
-      {GIVES.map((item) => (
-        <li key={item} className="flex items-center gap-2.5 text-[length:calc(15px*var(--px,1))] font-medium">
-          <span className="grid size-5 shrink-0 place-items-center rounded-full bg-primary text-primary-foreground">
-            <Check aria-hidden className="size-3" strokeWidth={3} />
-          </span>
-          {item}
         </li>
       ))}
     </ul>
