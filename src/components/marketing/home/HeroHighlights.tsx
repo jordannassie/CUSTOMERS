@@ -1,19 +1,21 @@
 import { Check } from "lucide-react";
 
-// From the live site's hero (2026-11-12): the AI apps we check, as logos, and what a check gives you. Only the three
-// apps we ask are shown, to match the headline. Logos are the live site's files, used as they are.
+// From the live site's hero (2026-11-12): the AI apps, as logos, and what a check gives you. The same five apps as
+// the live site. Logos are the live site's files, used as they are.
 const AI_ICONS = "https://wsxusvapciexemfvtadm.supabase.co/storage/v1/object/public/STORAGE/images/icons/New%20AI%20Icons";
 const APPS = [
   { name: "ChatGPT", logo: "/icons/ai-platforms/chatgpt.svg" },
   { name: "Claude", logo: `${AI_ICONS}/Claude.svg` },
   { name: "Perplexity", logo: `${AI_ICONS}/Perplexity.svg` },
+  { name: "Gemini", logo: `${AI_ICONS}/Gemini.svg` },
+  { name: "Google AI", logo: `${AI_ICONS}/GoogleAI.svg` },
 ];
 const GIVES = ["See your AI visibility", "Find what to fix", "Track your competitors", "Get a shareable report"];
 
 export function HeroHighlights() {
   return (
     <div className="flex flex-col gap-4">
-      <ul className="flex flex-wrap gap-2" aria-label="AI apps we check">
+      <ul className="flex flex-wrap gap-2" aria-label="AI apps">
         {APPS.map((app) => (
           <li
             key={app.name}
