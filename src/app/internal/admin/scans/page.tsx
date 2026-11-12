@@ -1,13 +1,13 @@
 import { Suspense } from "react";
 import { requireAdmin } from "@/modules/auth";
-import { listScanJobs, scanFilter } from "@/modules/admin";
+import { listScanFilterOptions, listScanJobs, scanListQuery } from "@/modules/admin";
 import AdminPageHeader from "../_components/page-header";
 import { ListSkeleton } from "../_components/skeletons";
 import ScansList from "./_components/scans-list";
 
 export const metadata = { title: "Scans" };
 
-type Props = { searchParams: Promise<{ status?: string | string[] }> };
+type Props = { searchParams: Promise<Record<string, string | string[] | undefined>> };
 
 // The admin check runs inside Suspense too: awaiting it at the top would block every filter change.
 export default function AdminScansPage({ searchParams }: Props) {
@@ -15,7 +15,7 @@ export default function AdminScansPage({ searchParams }: Props) {
     <div className="mx-auto flex w-full max-w-[calc(1200px*var(--px,1))] flex-col gap-4 px-4 py-4 sm:px-6 sm:py-5">
       <AdminPageHeader
         title="Scans"
-        subtitle="Every scan job, newest first. Real cost is what the AI providers charged us; cached answers cost nothing."
+        subtitle="Every scan job, newest first. Real cost is what the AI providers charged us for the scan, from the same usage log as Usage and cost; cached answers cost nothing."
       />
       <Suspense fallback={<ListSkeleton label="Loading scans" />}>
         <LiveScans searchParams={searchParams} />
@@ -26,6 +26,9 @@ export default function AdminScansPage({ searchParams }: Props) {
 
 async function LiveScans({ searchParams }: Props) {
   await requireAdmin({ next: "/internal/admin/scans" });
-  const status = scanFilter.parse((await searchParams).status);
-  return <ScansList list={await listScanJobs(status)} status={status} />;
+  const raw = await searchParams;
+  const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v);
+  const query = scanListQuery.parse(Object.fromEntries(Object.entries(raw).map(([k, v]) => [k, one(v)])));
+  const [list, options] = await Promise.all([listScanJobs(query), listScanFilterOptions()]);
+  return <ScansList list={list} query={query} options={options} />;
 }

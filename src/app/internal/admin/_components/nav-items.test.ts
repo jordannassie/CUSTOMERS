@@ -13,7 +13,7 @@ describe("admin menu (B-64)", () => {
       "Businesses",
       "Scans",
       "Usage and cost",
-      "Settings",
+      "System status",
     ]);
   });
 
@@ -24,7 +24,7 @@ describe("admin menu (B-64)", () => {
     ["/internal/admin/businesses/abc", "Businesses"],
     ["/internal/admin/scans", "Scans"],
     ["/internal/admin/usage", "Usage and cost"],
-    ["/internal/admin/settings", "Settings"],
+    ["/internal/admin/settings", "System status"],
     ["/internal/admin/news", "LinkedIn studio"],
   ])("highlights exactly one item on %s", (pathname, label) => {
     expect(activeLabels(pathname)).toEqual([label]);

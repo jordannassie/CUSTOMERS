@@ -20,11 +20,11 @@ type Resolve = (input: { alertId: string; reason: string }) => Promise<ActionRes
 const KIND_LABEL: Record<string, string> = {
   failed_scans: "Failed scans",
   stuck_jobs: "Stuck scans",
-  webhook_failures: "Stripe webhooks",
-  provider_errors: "Provider errors",
+  webhook_failures: "Stripe payment updates",
+  provider_errors: "AI tool errors",
   negative_balances: "Negative balances",
   daily_ai_cost: "AI cost",
-  anthropic_credit: "Anthropic out of credit",
+  anthropic_credit: "Claude out of credit",
   ai_fallback: "ChatGPT backup in use",
   claude_unavailable: "Claude unavailable",
   paid_not_active: "Paid but still on trial",
@@ -32,9 +32,10 @@ const KIND_LABEL: Record<string, string> = {
   topup_refund_unrecovered: "Refunded credits not taken back",
 };
 const SEVERITY = {
-  critical: { label: "Urgent", badge: "low", rail: "border-l-low" },
-  warning: { label: "Warning", badge: "mid", rail: "border-l-mid" },
-  info: { label: "Info", badge: "tint", rail: "border-l-primary" },
+  // The dashboard's light orange warning for urgent and warning alerts, grey for the rest.
+  critical: { label: "Urgent", badge: "mid", rail: "border-l-mid" },
+  warning: { label: "Warning", badge: "mid", rail: "border-l-mid/50" },
+  info: { label: "Info", badge: "secondary", rail: "border-l-border" },
 } as const;
 
 export type OverdueData = { count: number; businesses: { id: string; name: string; due: string }[] };
@@ -66,21 +67,22 @@ export default function OpenAlerts({ rows, resolve, overdue = null }: { rows: Al
 
   return (
     <section aria-label="Open alerts" className="flex flex-col gap-2" data-testid="open-alerts">
-      <button
-        type="button"
-        aria-expanded={expanded}
-        aria-controls={listId}
-        onClick={() => setExpanded((e) => !e)}
-        className="flex w-full items-center gap-3 rounded-md border border-border bg-surface px-3 py-2 text-left text-[length:calc(13px*var(--px,1))] outline-none transition-colors hover:bg-muted/50 focus-visible:ring-3 focus-visible:ring-ring/50"
-      >
-        <AlertTriangle className={cn("size-4 shrink-0", urgent > 0 ? "text-low" : "text-muted-foreground")} aria-hidden="true" />
+      {/* The admin's one orange warning, in the app's warning banner style (AppBanners); the list opens with Show. */}
+      <div role="alert" className="flex items-center gap-2 rounded-md border border-mid/30 bg-mid-bg py-1.5 pr-1.5 pl-3 text-[length:calc(13px*var(--px,1))] text-mid-text">
+        <AlertTriangle className="size-4 shrink-0" aria-hidden="true" />
         <span className="min-w-0 flex-1 font-medium">{summary}</span>
-        <span className="hidden text-xs text-text-hint sm:inline">Checked every 15 minutes</span>
-        <span className="inline-flex items-center gap-1 font-medium text-primary">
-          {expanded ? "Hide" : "Show"}
+        <span className="hidden text-xs sm:inline">Checked every 15 minutes</span>
+        <button
+          type="button"
+          aria-expanded={expanded}
+          aria-controls={listId}
+          onClick={() => setExpanded((e) => !e)}
+          className="inline-flex shrink-0 items-center gap-1 rounded-sm px-1 font-medium underline underline-offset-4 outline-none hover:no-underline focus-visible:ring-3 focus-visible:ring-ring/50"
+        >
+          {expanded ? "Hide list" : "Show"}
           <ChevronDown className={cn("size-3.5 transition-transform", expanded && "rotate-180")} aria-hidden="true" />
-        </span>
-      </button>
+        </button>
+      </div>
       {expanded && (
         <ul id={listId} className="flex flex-col gap-2 text-[length:calc(13px*var(--px,1))]">
           {overdue && <OverdueRow overdue={overdue} />}
@@ -100,9 +102,9 @@ export default function OpenAlerts({ rows, resolve, overdue = null }: { rows: Al
 function OverdueRow({ overdue }: { overdue: OverdueData }) {
   const more = overdue.count - overdue.businesses.length;
   return (
-    <li className="flex flex-col gap-1 rounded-md border border-l-[3px] border-border border-l-primary bg-surface px-4 py-3" data-testid="overdue-scans">
+    <li className="flex flex-col gap-1 rounded-md border border-l-[3px] border-border border-l-mid bg-surface px-4 py-3" data-testid="overdue-scans">
       <span className="flex flex-wrap items-center gap-2">
-        <Badge variant="tint">Check</Badge>
+        <Badge variant="mid">Check</Badge>
         <span className="font-medium text-muted-foreground">Scheduled scans overdue</span>
       </span>
       <p className="text-[length:calc(14px*var(--px,1))] text-foreground">

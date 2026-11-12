@@ -9,7 +9,7 @@ export type FilterTab = {
   /** The URL with this filter on, so it can be shared, reloaded and opened in a new tab. */
   href: string;
   count?: number;
-  /** Counts that need a look (failed, payment failed) turn red above 0. */
+  /** Counts that need a look (failed, payment failed) turn the warning orange above 0. */
   alert?: boolean;
 };
 
@@ -33,11 +33,11 @@ export default function FilterTabs({
   return (
     // Wraps on phones instead of scrolling, so no filter is ever hidden off the edge.
     <nav aria-label={label}>
-      <ul className="flex w-fit max-w-full flex-wrap gap-1 rounded-md border border-border bg-muted p-1">
+      <ul className="flex w-full flex-wrap gap-0.5 rounded-md border border-border bg-muted p-1">
         {tabs.map((t) => {
           const current = t.key === active;
           return (
-            <li key={t.key}>
+            <li key={t.key} className="flex-auto">
               <Link
                 href={t.href}
                 scroll={false}
@@ -51,14 +51,14 @@ export default function FilterTabs({
                   onSelect(t.key);
                 }}
                 className={cn(
-                  "flex h-8 items-center gap-2 rounded-sm px-3 text-[length:calc(13px*var(--px,1))] font-medium whitespace-nowrap transition-colors duration-150 ease-out focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
+                  "flex h-8 items-center justify-center gap-1.5 rounded-sm px-2 text-[length:calc(13px*var(--px,1))] font-medium whitespace-nowrap transition-colors duration-150 ease-out focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
                   current ? "bg-surface text-foreground shadow-xs" : "text-muted-foreground hover:text-foreground",
                   disabled && "pointer-events-none opacity-50",
                 )}
               >
                 {t.label}
                 {t.count !== undefined && (
-                  <span className={cn("text-[length:calc(12px*var(--px,1))] tabular-nums", t.alert && t.count > 0 ? "font-semibold text-low-text" : "text-text-hint")}>
+                  <span className={cn("text-[length:calc(12px*var(--px,1))] tabular-nums", t.alert && t.count > 0 ? "font-semibold text-mid-text" : "text-text-hint")}>
                     {t.count}
                   </span>
                 )}

@@ -1,12 +1,12 @@
 import { Suspense } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { syncServiceAlerts } from "@/modules/admin";
+import { recheckServices, syncServiceAlerts } from "@/modules/admin";
 import { requireAdmin } from "@/modules/auth";
-import { getSystemStatus } from "@/modules/system-status";
+import { getSavedSystemStatus, getSystemStatus } from "@/modules/system-status";
 import AdminPageHeader from "../_components/page-header";
 import StatusView from "./_components/status-view";
 
-export const metadata = { title: "Settings" };
+export const metadata = { title: "System status" };
 
 export default async function AdminSettingsPage() {
   await requireAdmin({ next: "/internal/admin/settings" });
@@ -16,7 +16,7 @@ export default async function AdminSettingsPage() {
       {/* Same outer width as every admin page; the status list itself reads best narrow, so it stays left aligned. */}
       <div className="flex flex-col gap-6">
         <AdminPageHeader
-          title="Settings"
+          title="System status"
           subtitle="Whether every service the app depends on is connected and working. Keys are changed in Netlify and Supabase."
         />
 
@@ -28,10 +28,17 @@ export default async function AdminSettingsPage() {
   );
 }
 
-// A failing check opens an alert on the Overview, and a passing one closes it (modules/admin syncServiceAlerts).
+// The last saved check opens at once (the 15-minute alerts job saves one). Only when there is none, or it is older
+// than 20 minutes, are the seven services called live here; that live check also opens and closes their alerts.
+const FRESH_MS = 20 * 60 * 1000;
+
 async function LiveStatus() {
+  const saved = await getSavedSystemStatus(FRESH_MS);
+  if (saved) {
+    return <StatusView status={saved} openAlerts={saved.services.filter((s) => s.state === "error").length} recheck={recheckServices} />;
+  }
   const status = await getSystemStatus();
-  return <StatusView status={status} openAlerts={await syncServiceAlerts(status.services)} />;
+  return <StatusView status={status} openAlerts={await syncServiceAlerts(status.services)} recheck={recheckServices} />;
 }
 
 function StatusSkeleton() {

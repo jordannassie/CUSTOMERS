@@ -4,12 +4,14 @@ import { Badge } from "@/components/ui/badge";
 import type { ServiceStatus, StatusState, SystemStatus } from "@/modules/system-status";
 import RecheckButton from "./recheck-button";
 
-// The app's pill colours (src/components/app/pills.ts): grey when fine, blue when it needs a look, red only when broken.
-const STATE: Record<StatusState, { label: string; badge: "low" | "tint" | "secondary"; dot: string }> = {
-  ok: { label: "Working", badge: "secondary", dot: "bg-primary" },
-  error: { label: "Not working", badge: "low", dot: "bg-low" },
-  unknown: { label: "Unknown", badge: "tint", dot: "bg-primary/35" },
+// Grey labels, and the dashboard's light orange warning for anything broken. Dots: dark
+// grey working, orange broken (the dashboard's warning colour), mid grey unknown, light grey not set up or off.
+const STATE: Record<StatusState, { label: string; badge: "mid" | "secondary"; dot: string }> = {
+  ok: { label: "Working", badge: "secondary", dot: "bg-competitor-1" },
+  error: { label: "Not working", badge: "mid", dot: "bg-mid" },
+  unknown: { label: "Unknown", badge: "secondary", dot: "bg-competitor-2" },
   not_configured: { label: "Not set up", badge: "secondary", dot: "bg-competitor-3" },
+  off: { label: "Off", badge: "secondary", dot: "bg-competitor-3" },
 };
 
 const GROUPS: { id: ServiceStatus["group"]; title: string }[] = [
@@ -22,13 +24,12 @@ const GROUPS: { id: ServiceStatus["group"]; title: string }[] = [
 function summary(services: ServiceStatus[]): string {
   const broken = services.filter((s) => s.state === "error").length;
   const working = services.filter((s) => s.state === "ok").length;
-  if (broken > 0) return `${broken} of ${services.length} ${broken === 1 ? "service is" : "services are"} not working`;
+  if (broken > 0) return `${broken} of ${services.length} services ${broken === 1 ? "is" : "are"} not working`;
   return `${working} of ${services.length} services working`;
 }
 
-export default function StatusView({ status, openAlerts = 0 }: { status: SystemStatus; openAlerts?: number }) {
+export default function StatusView({ status, openAlerts = 0, recheck }: { status: SystemStatus; openAlerts?: number; recheck: () => Promise<unknown> }) {
   const { services } = status;
-  const hasBroken = services.some((s) => s.state === "error");
   const checkedAt = new Date(status.checkedAt).toLocaleTimeString("en-US", {
     hour: "numeric",
     minute: "2-digit",
@@ -41,11 +42,12 @@ export default function StatusView({ status, openAlerts = 0 }: { status: SystemS
       <section aria-labelledby="status-summary" className="rounded-md border border-border bg-surface p-5">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <h2 id="status-summary" className={cn("text-[length:calc(20px*var(--px,1))] font-semibold tracking-[-0.02em]", hasBroken && "text-low-text")}>
+            <h2 id="status-summary" className="text-[length:calc(20px*var(--px,1))] font-semibold tracking-[-0.02em]">
               {summary(services)}
             </h2>
             <p className="mt-1 text-[length:calc(13px*var(--px,1))] text-muted-foreground">
-              Checked live at <span className="tabular">{checkedAt}</span> UTC. Nothing here is cached.
+              Checked at <span className="tabular">{checkedAt}</span> UTC. Every service is checked every 15 minutes; Check
+              again checks them now.
             </p>
             {openAlerts > 0 && (
               <p className="mt-1 text-[length:calc(13px*var(--px,1))] text-muted-foreground" data-testid="service-alerts-note">
@@ -57,7 +59,7 @@ export default function StatusView({ status, openAlerts = 0 }: { status: SystemS
               </p>
             )}
           </div>
-          <RecheckButton />
+          <RecheckButton recheck={recheck} />
         </div>
         <ul aria-hidden className="mt-4 flex gap-1">
           {services.map((s) => (
@@ -99,6 +101,12 @@ function ServiceRow({ service }: { service: ServiceStatus }) {
           )}
         </p>
         <p className="mt-0.5 text-[length:calc(13px*var(--px,1))] text-muted-foreground">{service.detail}</p>
+        {service.fix && service.state !== "ok" && (
+          <p className="mt-1 text-[length:calc(12px*var(--px,1))] text-text-hint">
+            <span className="font-medium">How to fix: </span>
+            {service.fix}
+          </p>
+        )}
       </div>
       <Badge variant={state.badge} className="mt-0.5">
         {state.label}

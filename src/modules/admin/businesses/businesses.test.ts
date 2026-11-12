@@ -200,7 +200,7 @@ describe("admin businesses (B-66)", () => {
     adminEnv.emails = "someone-else@example.test";
     await expect(listBusinesses({ search: ownerEmail })).rejects.toMatchObject({ reason: "forbidden", status: 403 });
     await expect(loadBusinessDetail(businessId)).rejects.toMatchObject({ reason: "forbidden", status: 403 });
-    expect(await runScanNow({ businessId })).toMatchObject({ ok: false, status: 403 });
+    expect(await runScanNow({ businessId, reason: "Support ticket 42" })).toMatchObject({ ok: false, status: 403 });
     const { count } = await service
       .from("scan_jobs")
       .select("id", { count: "exact", head: true })
@@ -212,8 +212,10 @@ describe("admin businesses (B-66)", () => {
   it("queues one high-priority scan, logs it, and refuses a second while it is active", async () => {
     adminEnv.emails = adminEmail;
     expect(await runScanNow({ businessId: "not-a-uuid" })).toMatchObject({ ok: false, status: 400 });
+    // It spends credits, so it needs a reason like every other admin change.
+    expect(await runScanNow({ businessId, reason: " " })).toMatchObject({ ok: false, status: 400, field: "reason" });
 
-    const first = await runScanNow({ businessId });
+    const first = await runScanNow({ businessId, reason: "Support ticket 42" });
     expect(first.ok).toBe(true);
     const jobId = first.ok ? first.data.jobId : "";
     const job = await must(service.from("scan_jobs").select("status, priority, agency_id").eq("id", jobId).single());
@@ -222,9 +224,9 @@ describe("admin businesses (B-66)", () => {
     const log = await must(
       service.from("admin_audit_log").select("action, target_type, details, outcome").eq("target_id", businessId),
     );
-    expect(log).toEqual([{ action: "business.run_scan", target_type: "business", details: { job_id: jobId }, outcome: "done" }]);
+    expect(log).toEqual([{ action: "business.run_scan", target_type: "business", details: { reason: "Support ticket 42", job_id: jobId }, outcome: "done" }]);
 
-    expect(await runScanNow({ businessId })).toMatchObject({ ok: false, status: 409 });
+    expect(await runScanNow({ businessId, reason: "Support ticket 42" })).toMatchObject({ ok: false, status: 409 });
     const { count } = await service
       .from("scan_jobs")
       .select("id", { count: "exact", head: true })
@@ -236,6 +238,6 @@ describe("admin businesses (B-66)", () => {
 
   it("says a missing business was not found", async () => {
     adminEnv.emails = adminEmail;
-    expect(await runScanNow({ businessId: randomUUID() })).toMatchObject({ ok: false, status: 404 });
+    expect(await runScanNow({ businessId: randomUUID(), reason: "Support ticket 42" })).toMatchObject({ ok: false, status: 404 });
   });
 });

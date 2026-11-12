@@ -1,4 +1,5 @@
 import { cn } from "cn";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import type { UsageCostReport } from "@/modules/admin";
 import { count, money, shortDay } from "./format";
 
@@ -84,33 +85,28 @@ export default function ByDay({ days }: { days: UsageCostReport["byDay"] }) {
         <summary className="cursor-pointer font-medium text-primary hover:underline">
           Show as a table
         </summary>
+        {/* The same table as every other admin list, newest day first, every column left-aligned. */}
         <div className="mt-3 max-h-80 overflow-y-auto rounded-md border border-border">
-          <table className="w-full">
-            <thead className="sticky top-0 bg-muted text-left text-[length:calc(12px*var(--px,1))] text-muted-foreground">
-              <tr>
-                <th className="px-3 py-2 font-medium">Day</th>
-                <th className="px-3 py-2 text-right font-medium">
-                  Credits used
-                </th>
-                <th className="px-3 py-2 text-right font-medium">
-                  Real AI cost
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
+          <Table className="text-[length:calc(13px*var(--px,1))]">
+            <TableHeader className="sticky top-0">
+              <TableRow>
+                {["Day", "Credits used", "Real AI cost"].map((h) => (
+                  <TableHead key={h} className="px-4 text-[length:calc(12px*var(--px,1))] font-medium text-muted-foreground">
+                    {h}
+                  </TableHead>
+                ))}
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {[...days].reverse().map((d) => (
-                <tr key={d.day}>
-                  <td className="tabular px-3 py-2">{shortDay(d.day)}</td>
-                  <td className="tabular px-3 py-2 text-right">
-                    {count(d.credits)}
-                  </td>
-                  <td className="tabular px-3 py-2 text-right">
-                    {money(d.costUsd)}
-                  </td>
-                </tr>
+                <TableRow key={d.day}>
+                  <TableCell className="px-4 tabular-nums">{shortDay(d.day)}</TableCell>
+                  <TableCell className={cn("px-4 tabular-nums", d.credits === 0 && "text-text-hint")}>{count(d.credits)}</TableCell>
+                  <TableCell className={cn("px-4 tabular-nums", d.costUsd === 0 && "text-text-hint")}>{money(d.costUsd)}</TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
       </details>
     </section>

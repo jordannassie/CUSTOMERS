@@ -1,19 +1,10 @@
 import Link from "next/link";
-import type { AdminAgencyDetail } from "@/modules/admin";
+import { actionLabel, type AdminAgencyDetail } from "@/modules/admin";
 import { DeletedBadge, deletedNote } from "../../../businesses/_components/scan-parts";
 import { formatDate } from "../../../_components/format";
 import Section, { Empty } from "../../../businesses/[id]/_components/section";
 import { credits, planStatusLabel } from "../../_components/agency-parts";
 
-const ACTIONS: Record<string, string> = {
-  "agency.adjust_credits": "Changed credits",
-  "agency.extend_trial": "Extended trial",
-  "agency.suspend": "Suspended",
-  "agency.unsuspend": "Unsuspended",
-  "agency.restore": "Restored account",
-  "agency.mark_test": "Changed test flag",
-  "stripe.topup_refund": "Top-up refunded in Stripe",
-};
 
 // Shown next to an admin action that did not end as done (BUG-278).
 const OUTCOME_NOTES: Record<string, string> = {
@@ -119,7 +110,7 @@ export function AuditLog({ rows }: { rows: AdminAgencyDetail["audit"] }) {
           {rows.map((a) => (
             <li key={a.id} className="flex flex-col gap-0.5 px-4 py-3">
               <span className="flex flex-wrap items-baseline gap-x-2">
-                <span className="font-medium">{ACTIONS[a.action] ?? a.action}</span>
+                <span className="font-medium">{actionLabel(a.action)}</span>
                 {OUTCOME_NOTES[a.outcome] && <span className="text-text-hint">{OUTCOME_NOTES[a.outcome]}</span>}
               </span>
               {a.reason && <span className="break-words text-muted-foreground">{a.reason}</span>}

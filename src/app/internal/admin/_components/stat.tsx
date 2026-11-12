@@ -42,7 +42,7 @@ export function StatTile({
       <dt className={STAT_LABEL}>{label}</dt>
       <div className="flex items-end justify-between gap-3">
         <div className="flex min-w-0 flex-col gap-1">
-          <dd className={cn(STAT_VALUE, tone === "bad" && "text-low-text")}>{value}</dd>
+          <dd className={cn(STAT_VALUE, tone === "bad" && "text-mid-text")}>{value}</dd>
           {note && <dd className="text-xs text-text-hint tabular-nums">{note}</dd>}
         </div>
         {visual && <dd className="shrink-0 pb-0.5">{visual}</dd>}

@@ -16,7 +16,6 @@ import {
 const PAGE = 1000;
 // Keeps each .in() filter well inside the URL length limit.
 const ID_CHUNK = 200;
-const PARALLEL_READS = 4;
 
 export type UsageCostOptions = { days: PeriodDays; includeTest: boolean };
 
@@ -31,76 +30,67 @@ export async function loadUsageCost({ days, includeTest }: UsageCostOptions, now
   return loadUsageCostSince(periodStart(now, days), includeTest, now);
 }
 
-/** Same report from any start date; the admin Overview uses the start of the month. Callers check admin access. */
-export async function loadUsageCostSince(from: Date, includeTest: boolean, now: Date): Promise<UsageCostReport> {
+/**
+ * Same report from any start date; the admin Overview uses the start of last month. The sums are made in the database
+ * (migration 092): grouped rows by day, agency and model come back instead of every capture and usage event of the
+ * period, which made 90 days slow. Callers check admin access.
+ */
+export async function loadUsageCostSince(from: Date, includeTest: boolean, now: Date, agencyId?: string): Promise<UsageCostReport> {
   const db = createServiceClient();
-  const [fromIso, toIso] = [from.toISOString(), now.toISOString()];
-  const [agencyRows, businessRows, planRows, captureRows, usageRows] = await Promise.all([
-    readAll((a, b) => db.from("agencies").select("id, name, is_test, owner_user_id").order("id").range(a, b)),
-    readAll((a, b) => db.from("businesses").select("id, agency_id").order("id").range(a, b)),
-    readAll((a, b) => db.from("plans").select("price_cents, monthly_credits").eq("active", true).order("id").range(a, b)),
+  const args = { p_from: from.toISOString(), p_to: now.toISOString(), p_include_test: includeTest, ...(agencyId && { p_agency_id: agencyId }) };
+  const [planRows, packRows, creditRows, costRows] = await Promise.all([
+    readAll((a, b) => db.from("plans").select("name, price_cents, monthly_credits").eq("active", true).order("id").range(a, b)),
+    // Top-up packs too: one can sell credits cheaper than any plan, and the floor must be the real lowest price.
+    readAll((a, b) => db.from("topup_packs").select("name, price_cents, credits").eq("active", true).order("id").range(a, b)),
+    readAll((a, b) => db.rpc("admin_usage_credits", args).order("day").order("agency_id").order("provider").order("paid").range(a, b)),
     readAll((a, b) =>
-      db
-        .from("credit_transactions")
-        .select("agency_id, source_id, delta, created_at, from_test_agency")
-        .eq("kind", "capture")
-        .gte("created_at", fromIso)
-        .lte("created_at", toIso)
-        .order("id")
-        .range(a, b),
-    ),
-    readAll((a, b) =>
-      db
-        .from("usage_events")
-        .select("account_user_id, business_id, usage_type, provider, cached, estimated_cost_usd, created_at, metadata")
-        .gte("created_at", fromIso)
-        .lte("created_at", toIso)
-        .order("id")
-        .range(a, b),
+      db.rpc("admin_usage_costs", args).order("day").order("agency_id").order("usage_type").order("provider").order("cached").range(a, b),
     ),
   ]);
 
-  const agencies = new Map<string, AgencyInfo>(agencyRows.map((a) => [a.id, { name: a.name, isTest: a.is_test }]));
-  const agencyOfOwner = new Map(agencyRows.map((a) => [a.owner_user_id, a.id]));
-  const agencyOfBusiness = new Map(businessRows.map((b) => [b.id, b.agency_id]));
-  const keep = (agencyId: string | null) => includeTest || !(agencyId && agencies.get(agencyId)?.isTest);
+  // RPC rows type their columns as non-null; a deleted account's rows really have no agency or model.
+  const captures: Capture[] = creditRows.map((r) => ({
+    agencyId: (r.agency_id as string | null) ?? null,
+    provider: (r.provider as string | null) ?? null,
+    paid: r.paid,
+    credits: Number(r.credits),
+    createdAt: r.day,
+  }));
+  const usage: UsageRow[] = costRows.map((r) => ({
+    agencyId: (r.agency_id as string | null) ?? null,
+    usageType: r.usage_type,
+    provider: (r.provider as string | null) ?? null,
+    cached: r.cached,
+    costUsd: Number(r.cost_usd),
+    events: Number(r.events),
+    createdAt: r.day,
+  }));
 
-  const captures: Capture[] = captureRows
-    // A purged test agency's ledger rows have no agency left but keep that it was a test one (migration 060).
-    .filter((r) => includeTest || !r.from_test_agency)
-    .map((r) => ({ agencyId: r.agency_id, checkId: r.source_id, credits: -r.delta, createdAt: r.created_at }))
-    .filter((c) => keep(c.agencyId));
-  const usage: UsageRow[] = usageRows
-    // A purged account's rows have no user or business left (migration 059, BUG-160): they count under "Deleted
-    // accounts", except a test agency's, which stay out like its other costs.
-    .filter((r) => includeTest || !deletedTestAccount(r.metadata))
-    .map((r) => ({
-      // usage_events has no agency column: the business's agency, else the agency the user owns.
-      agencyId: (r.business_id && agencyOfBusiness.get(r.business_id)) || (r.account_user_id && agencyOfOwner.get(r.account_user_id)) || null,
-      usageType: r.usage_type,
-      provider: r.provider,
-      cached: r.cached,
-      costUsd: Number(r.estimated_cost_usd),
-      createdAt: r.created_at,
-    }))
-    .filter((u) => keep(u.agencyId));
-
+  const cheapest = lowestCreditPrice([
+    ...planRows.map((p) => ({ name: `the ${p.name} plan`, priceCents: p.price_cents, credits: p.monthly_credits })),
+    ...packRows.map((p) => ({ name: `the ${p.name} top-up`, priceCents: p.price_cents, credits: p.credits })),
+  ]);
   return buildReport({
     from,
     to: now,
-    creditPriceUsd: lowestCreditPrice(
-      planRows.map((p) => ({ priceCents: p.price_cents, monthlyCredits: p.monthly_credits })),
-    ),
+    creditPriceUsd: cheapest?.usd ?? null,
+    creditPriceBasis: cheapest?.name ?? null,
     captures,
-    checkProvider: await providerOfChecks(captures.map((c) => c.checkId)),
     usage,
-    agencies,
+    agencies: await agencyNames([...captures, ...usage].map((r) => r.agencyId)),
   });
 }
 
-/** True for a cost row anonymised when a test agency was purged (migration 059). */
-export function deletedTestAccount(metadata: unknown): boolean {
-  return typeof metadata === "object" && metadata !== null && (metadata as Record<string, unknown>).testAccount === true;
+/** Names and test flags of only the agencies in the report, not the whole table. */
+async function agencyNames(ids: (string | null)[]): Promise<Map<string, AgencyInfo>> {
+  const wanted = [...new Set(ids.filter((id): id is string => !!id))];
+  const rows: { id: string; name: string; is_test: boolean }[] = [];
+  for (let i = 0; i < wanted.length; i += ID_CHUNK) {
+    const { data, error } = await createServiceClient().from("agencies").select("id, name, is_test").in("id", wanted.slice(i, i + ID_CHUNK));
+    if (error) throw new Error(`Usage and cost: ${error.message}`);
+    rows.push(...data);
+  }
+  return new Map(rows.map((a) => [a.id, { name: a.name, isTest: a.is_test }]));
 }
 
 async function readAll<T>(
@@ -113,24 +103,4 @@ async function readAll<T>(
     rows.push(...data!);
     if (data!.length < PAGE) return rows;
   }
-}
-
-// A capture's source_id is its check's visibility_results row, which records the model that answered.
-async function providerOfChecks(checkIds: string[]): Promise<Map<string, string>> {
-  const unique = [...new Set(checkIds)];
-  const chunks = Array.from({ length: Math.ceil(unique.length / ID_CHUNK) }, (_, i) => unique.slice(i * ID_CHUNK, (i + 1) * ID_CHUNK));
-  // A few requests at a time: with many checks, one request per chunk all at once swamps the database gateway and
-  // every read fails ("fetch failed"), the Overview included (audit, 2026-10-28).
-  const rows: { id: string; provider: string }[] = [];
-  for (let i = 0; i < chunks.length; i += PARALLEL_READS) {
-    const batch = await Promise.all(
-      chunks.slice(i, i + PARALLEL_READS).map(async (chunk) => {
-        const { data, error } = await createServiceClient().from("visibility_results").select("id, provider").in("id", chunk);
-        if (error) throw new Error(`Usage and cost: ${error.message}`);
-        return data;
-      }),
-    );
-    rows.push(...batch.flat());
-  }
-  return new Map(rows.map((r) => [r.id, r.provider]));
 }

@@ -16,10 +16,10 @@ export function LinkedInPostEditor({ initialPost }: { initialPost: string }) {
     <div className="flex flex-col gap-2">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex flex-wrap items-center gap-2">
-          <span className={cn("text-[length:calc(12px*var(--px,1))] font-medium tabular-nums", isOver ? "text-low-text" : "text-muted-foreground")}>
+          <span className={cn("text-[length:calc(12px*var(--px,1))] font-medium tabular-nums", isOver ? "text-mid-text" : "text-muted-foreground")}>
             {charCount.toLocaleString()} / {LINKEDIN_LIMIT.toLocaleString()} characters
           </span>
-          {isOver && <Badge variant="low">Over LinkedIn limit, trim before posting</Badge>}
+          {isOver && <Badge variant="mid">Over LinkedIn limit, trim before posting</Badge>}
         </div>
         <CopyButton label="Copy LinkedIn post" getText={() => text} />
       </div>

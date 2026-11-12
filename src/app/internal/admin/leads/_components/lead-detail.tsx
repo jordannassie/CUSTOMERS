@@ -7,6 +7,9 @@ import { cn } from "cn";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { appFetch } from "@/lib/session-expired";
+import { looksLikeCode, websiteHref, withoutCode } from "@/lib/submitted-text";
+import { CodeNotice } from "../../_components/submitted-code";
+import { LeadFollowUp } from "./lead-followup";
 import { INTEREST_LABELS, SOURCE_LABELS, STATUS_OPTIONS, formatDate, type Lead } from "./lead-types";
 
 function CopyButton({ text, label }: { text: string; label: string }) {
@@ -39,16 +42,18 @@ function Field({ label, children, className }: { label: string; children: React.
 
 export function LeadDetail({
   lead,
+  admins,
   onUpdate,
   onClose,
 }: {
   lead: Lead;
+  admins: string[];
   onUpdate: (id: string, updates: Partial<Lead>) => void;
   onClose: () => void;
 }) {
   const [saving, setSaving] = useState(false);
 
-  async function patch(payload: Record<string, unknown>) {
+  async function patch(payload: Record<string, unknown>): Promise<boolean> {
     setSaving(true);
     try {
       const res = await appFetch("/api/internal/admin/leads", {
@@ -60,9 +65,14 @@ export function LeadDetail({
       if (payload.mark_read) onUpdate(lead.id, { read_at: new Date().toISOString() });
       if (payload.mark_unread) onUpdate(lead.id, { read_at: null });
       if (payload.status) onUpdate(lead.id, { status: payload.status as string });
+      if (typeof payload.handled_by === "string") onUpdate(lead.id, { handled_by: payload.handled_by || null });
+      if (typeof payload.replied === "boolean") onUpdate(lead.id, { replied_at: payload.replied ? new Date().toISOString() : null });
+      if (typeof payload.admin_notes === "string") onUpdate(lead.id, { admin_notes: payload.admin_notes.trim() || null });
+      return true;
     } catch {
       // The lead keeps what it showed before, so the screen never claims a change that was not saved.
       toast.error(payload.status ? "The status was not saved. Try again." : "That change was not saved. Try again.");
+      return false;
     } finally {
       setSaving(false);
     }
@@ -81,19 +91,26 @@ export function LeadDetail({
       </div>
 
       <div className="flex flex-1 flex-col gap-5 overflow-y-auto px-5 py-5">
+        {looksLikeCode(lead.name, lead.company, lead.message, lead.website, lead.page_path) && (
+          <CodeNotice
+            what="message"
+            original={{ Name: lead.name, Company: lead.company, Website: lead.website, Page: lead.page_path, Message: lead.message }}
+          />
+        )}
         <div className="flex flex-col gap-1">
-          <h2 className="text-[length:calc(15px*var(--px,1))] font-semibold text-foreground">{lead.name}</h2>
+          <h2 className="text-[length:calc(15px*var(--px,1))] font-semibold text-foreground">{withoutCode(lead.name) || "No name"}</h2>
           <div className="flex flex-wrap items-center gap-2">
             <a href={`mailto:${lead.email}`} className="text-[length:calc(13px*var(--px,1))] text-primary hover:underline">{lead.email}</a>
             <CopyButton text={lead.email} label="Copy email" />
           </div>
-          {lead.company && <p className="text-[length:calc(13px*var(--px,1))] text-muted-foreground">{lead.company}</p>}
+          {lead.company && withoutCode(lead.company) && <p className="text-[length:calc(13px*var(--px,1))] text-muted-foreground">{withoutCode(lead.company)}</p>}
           {lead.phone && (
             <a href={`tel:${lead.phone}`} className="block text-[length:calc(13px*var(--px,1))] text-foreground">{lead.phone}</a>
           )}
-          {lead.website && (
+          {/* Only a real web address becomes a link; anything else (a script URL from a security test) doesn't show. */}
+          {websiteHref(lead.website) && (
             <a
-              href={/^https?:\/\//i.test(lead.website) ? lead.website : `https://${lead.website}`}
+              href={websiteHref(lead.website)!}
               target="_blank"
               rel="noopener noreferrer"
               className="block truncate text-[length:calc(13px*var(--px,1))] text-primary hover:underline"
@@ -108,14 +125,14 @@ export function LeadDetail({
           <Field label="Source">{SOURCE_LABELS[lead.source ?? ""] ?? lead.source ?? "-"}</Field>
           {lead.page_path && (
             <Field label="Page" className="col-span-2">
-              <span className="block truncate" title={lead.page_path}>{lead.page_path}</span>
+              <span className="block truncate">{withoutCode(lead.page_path)}</span>
             </Field>
           )}
         </div>
 
         <Field label="Message">
           <p className="whitespace-pre-wrap rounded-md border border-border bg-muted px-4 py-3 leading-relaxed">
-            {lead.message}
+            {withoutCode(lead.message) || "No message"}
           </p>
         </Field>
 
@@ -140,6 +157,8 @@ export function LeadDetail({
             })}
           </div>
         </Field>
+
+        <LeadFollowUp key={lead.id} lead={lead} admins={admins} saving={saving} save={patch} />
 
         <div className="flex flex-col gap-2">
           <Button asChild variant="outline">

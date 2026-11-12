@@ -66,7 +66,8 @@ export default function ContactForm({ initialInterest, source = "contact_page", 
       const res = await fetch("/api/contact", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, company, website, phone, interest, message, source, page_path: pathname ?? undefined, _honey: honey }),
+        // Sent from the agency page (?from=agency), it counts as an agency page lead in admin Leads.
+        body: JSON.stringify({ name, email, company, website, phone, interest, message, source: searchParams?.get("from") === "agency" ? "agency" : source, page_path: pathname ?? undefined, _honey: honey }),
       });
       const data = await res.json();
       if (!res.ok) {

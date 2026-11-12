@@ -24,7 +24,7 @@ export default async function AdminAppsPage() {
         subtitle="Saving an app overrides the built-in list for that slug on /apps. Leave the affiliate link empty unless a partnership is approved."
       />
       {overrides.unavailable && (
-        <p className="rounded-md border border-border bg-mid-bg px-4 py-3 text-[length:calc(14px*var(--px,1))] text-mid-text">
+        <p className="rounded-md bg-primary-tint px-4 py-3 text-[length:calc(14px*var(--px,1))] text-foreground">
           The directory tables are not in this database yet (migration 072). The public page still uses the built-in list.
         </p>
       )}

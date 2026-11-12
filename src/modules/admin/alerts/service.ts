@@ -17,13 +17,29 @@ export type OpenAlert = {
 const HOURLY_KINDS = new Set(["failed_scans", "webhook_failures", "provider_errors"]);
 const HOUR_MS = 60 * 60 * 1000;
 
+// The database writes some alerts with developer names (migration 058); the Overview reads them in plain words.
+const PLAIN_ALERT_WORDS: [RegExp, string][] = [
+  [/\bStripe webhook events?\b/g, "payment updates from Stripe"],
+  [/\bStripe webhooks?\b/g, "payment updates from Stripe"],
+  [/\bCheck that the worker is running\./g, "Check Scan worker and Automatic scans on the System status page."],
+  // "Anthropic (Claude)" is the System status check's name; it becomes "Claude", never "Claude (Claude)".
+  [/\b(?:openai|OpenAI)(?: \(ChatGPT\))?/g, "ChatGPT"],
+  [/\b(?:anthropic|Anthropic)(?: \(Claude\))?/g, "Claude"],
+  [/\bperplexity\b/g, "Perplexity"],
+];
+
+export function plainAlertText(message: string): string {
+  return PLAIN_ALERT_WORDS.reduce((text, [pattern, words]) => text.replace(pattern, words), message);
+}
+
 /**
  * What the Overview shows for an open alert. An hourly alert not seen for over an hour says "in one hour" instead of
  * "in the last hour", and `stale` adds "Nothing new since" next to when it was last seen.
  */
 export function alertWording(alert: Pick<OpenAlert, "kind" | "message" | "lastSeenAt">, now: Date): { message: string; stale: boolean } {
   const stale = HOURLY_KINDS.has(alert.kind) && now.getTime() - Date.parse(alert.lastSeenAt) > HOUR_MS;
-  return { message: stale ? alert.message.replace(/\bin the last hour\b/g, "in one hour") : alert.message, stale };
+  const message = plainAlertText(alert.message);
+  return { message: stale ? message.replace(/\bin the last hour\b/g, "in one hour") : message, stale };
 }
 
 // Raised by scans when Anthropic rejects the key, the account has no credit, or every Claude check in a scan failed
@@ -33,7 +49,7 @@ const ANTHROPIC_ONLY_ERRORS = /^Errors in the (last|one) hour from Anthropic \(\
 
 /**
  * While "Claude unavailable" is open it is the one Claude alert on the Overview: the backup notice, the credit alert,
- * the Settings check of the Anthropic key and a provider error count that only names Anthropic say the same thing, so
+ * the System status check of the Anthropic key and a provider error count that only names Anthropic say the same thing, so
  * they are left out of the list. The one left keeps the most serious severity among them.
  */
 export function foldClaudeAlerts(alerts: OpenAlert[]): OpenAlert[] {
@@ -153,9 +169,9 @@ export function serviceAlertChanges(services: ServiceCheck[]): ServiceAlertChang
       .map((s) => ({
         kind: serviceCheckKind(s.id),
         severity: s.group === "data" ? "warning" : "critical",
-        message: `${s.name} is not working. ${s.detail.trim().replace(/([^.])$/, "$1.")} Found by the Settings check.`,
+        message: `${s.name} is not working. ${s.detail.trim().replace(/([^.])$/, "$1.")} Found by the System status check.`,
         serviceId: s.id,
       })),
-    resolve: services.filter((s) => s.state === "ok" || s.state === "not_configured").map((s) => serviceCheckKind(s.id)),
+    resolve: services.filter((s) => s.state === "ok" || s.state === "not_configured" || s.state === "off").map((s) => serviceCheckKind(s.id)),
   };
 }

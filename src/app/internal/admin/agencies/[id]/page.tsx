@@ -23,6 +23,7 @@ import { DetailSkeleton } from "../../_components/skeletons";
 import { StatGrid, StatTile } from "../../_components/stat";
 import { StatusBadge, credits } from "../_components/agency-parts";
 import AgencyActions from "./_components/agency-actions";
+import AgencyRecent, { AgencyRecentSkeleton } from "./_components/recent";
 import { AuditLog, Businesses, CancelReasons, CreditHistory } from "./_components/history";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -76,7 +77,7 @@ async function Detail({ id }: { id: string }) {
               {detail.ownerEmail ?? "Owner email unknown"}, signed up {formatDate(agency.createdAt)}
             </p>
             {agency.restoreUntil && (
-              <p className="mt-2 text-low-text">
+              <p className="mt-2 font-medium text-mid-text">
                 {agency.canRestore
                   ? `Deleted. Can be restored until ${formatDate(agency.restoreUntil)}.`
                   : "Deleted more than 30 days ago."}
@@ -106,6 +107,9 @@ async function Detail({ id }: { id: string }) {
 
       <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_calc(360px*var(--px,1))] lg:items-start">
         <div className="flex min-w-0 flex-col gap-8">
+          <Suspense fallback={<AgencyRecentSkeleton />}>
+            <AgencyRecent agencyId={agency.id} />
+          </Suspense>
           <Businesses rows={detail.businesses} />
           <CancelReasons rows={detail.cancelReasons} />
           <AuditLog rows={detail.audit} />

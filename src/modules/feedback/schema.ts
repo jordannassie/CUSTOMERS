@@ -51,9 +51,16 @@ export const leadsQuery = z.object({
   count: z.literal("1").optional().catch(undefined),
 });
 
+// The statuses offered today, one pipeline. in_progress and resolved are older ones still on some rows.
+export const LEAD_PIPELINE = ["new", "contacted", "qualified", "closed"] as const;
+
 export const leadUpdateInput = z.object({
   id: z.uuid(),
-  status: z.enum(LEAD_STATUSES).optional().catch(undefined),
+  status: z.enum(LEAD_PIPELINE).optional().catch(undefined),
   mark_read: z.literal(true).optional().catch(undefined),
   mark_unread: z.literal(true).optional().catch(undefined),
+  // Follow-up (admin review 2026-11-12): an internal note, which admin handles it ("" for nobody), and a replied mark.
+  admin_notes: z.string().trim().max(4000).optional(),
+  handled_by: z.union([z.email().max(320), z.literal("")]).optional(),
+  replied: z.boolean().optional(),
 });

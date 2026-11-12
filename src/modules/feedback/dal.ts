@@ -1,8 +1,12 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
+import { env } from "@/lib/env";
 import { createServiceClient } from "@/lib/supabase/service";
+import { adminEmails } from "@/modules/auth";
+import { createLogEmailClient, sendEmail } from "@/modules/email";
 import type { TablesUpdate } from "@/types/database.types";
 import type { ContactInput, FeatureRequestInput, FEATURE_STATUSES, LEAD_STATUSES } from "./schema";
+import { newLeadEmail, shouldEmailAdmins, type NewLead } from "./lead-email";
 import { searchTerm } from "./service";
 
 // Contact messages (contact_submissions) and feature requests, with the service role: the tables have no policies
@@ -13,7 +17,7 @@ export type SaveResult = { ok: true } | { ok: false };
 
 export async function saveContactMessage(
   input: Omit<ContactInput, "interest" | "topic" | "_honey"> & { topic: string; ipHash: string | null },
-): Promise<SaveResult> {
+): Promise<{ ok: true; id: string } | { ok: false }> {
   // Linked to the signed-in user when there is one; the form is public, so none is fine.
   let userId: string | null = null;
   try {
@@ -22,7 +26,7 @@ export async function saveContactMessage(
   } catch {
     userId = null;
   }
-  const { error } = await createServiceClient().from("contact_submissions").insert({
+  const { data, error } = await createServiceClient().from("contact_submissions").insert({
     name: input.name,
     email: input.email,
     company: input.company,
@@ -34,9 +38,27 @@ export async function saveContactMessage(
     page_path: input.page_path,
     ip_hash: input.ipHash,
     user_id: userId,
-  });
+  }).select("id").single();
   if (error) console.error("[contact] insert error:", error.message);
-  return error ? { ok: false } : { ok: true };
+  // The id lets the admin email link to the lead and be sent once per lead.
+  return error || !data ? { ok: false } : { ok: true, id: data.id };
+}
+
+/**
+ * Emails every admin about a new lead (one per lead and admin, kept by email_log). Runs after the visitor has their
+ * answer, and never throws: a failed email must not lose the lead, which is already saved. Outside production the
+ * email is logged, not sent, like the admin alerts (.env.local may hold a real key).
+ */
+export async function notifyAdminsOfLead(lead: NewLead): Promise<void> {
+  if (!shouldEmailAdmins(lead)) return;
+  const client = env.NODE_ENV === "production" ? undefined : createLogEmailClient();
+  for (const to of adminEmails()) {
+    try {
+      await sendEmail(newLeadEmail(lead, to), client ? { client } : {});
+    } catch (err) {
+      console.error("[contact] new lead email failed:", err instanceof Error ? err.message : err);
+    }
+  }
 }
 
 /** A signed-in user's idea; the business is linked only when it is theirs. */
@@ -91,11 +113,9 @@ export async function listFeatureRequests(): Promise<{ requests: FeatureRequestR
     .order("created_at", { ascending: false })
     .limit(200);
   if (error) return { error: error.message };
-  const emails = new Map<string, string>();
-  for (const uid of new Set(data.map((r) => r.user_id))) {
-    const { data: user } = await db.auth.admin.getUserById(uid).catch(() => ({ data: null }));
-    if (user?.user?.email) emails.set(uid, user.user.email);
-  }
+  // Every sender's email in one call (migration 092), instead of one Auth request per sender in turn.
+  const { data: users } = await db.rpc("admin_user_emails", { p_ids: [...new Set(data.map((r) => r.user_id))] });
+  const emails = new Map((users ?? []).map((u) => [u.id, u.email]));
   return {
     requests: data.map((r) => ({
       id: r.id,
@@ -113,7 +133,8 @@ export async function listFeatureRequests(): Promise<{ requests: FeatureRequestR
 }
 
 const LEADS_PAGE_SIZE = 30;
-const LEAD_COLUMNS = "id, created_at, read_at, name, email, company, website, phone, topic, message, status, source, page_path";
+const LEAD_COLUMNS =
+  "id, created_at, read_at, name, email, company, website, phone, topic, message, status, source, page_path, admin_notes, handled_by, replied_at";
 
 export async function countUnreadLeads(): Promise<number | null> {
   const { count, error } = await createServiceClient().from("contact_submissions").select("id", { count: "exact", head: true }).is("read_at", null);
@@ -144,13 +165,23 @@ export async function listLeads(q: { page: number; search: string; interest: str
 
 export async function updateLead(
   id: string,
-  change: { status?: (typeof LEAD_STATUSES)[number]; markRead?: boolean; markUnread?: boolean },
+  change: {
+    status?: (typeof LEAD_STATUSES)[number];
+    markRead?: boolean;
+    markUnread?: boolean;
+    adminNotes?: string;
+    handledBy?: string;
+    replied?: boolean;
+  },
   now = new Date(),
 ): Promise<{ ok: true; updates: TablesUpdate<"contact_submissions"> } | { ok: false; reason: "nothing" | "failed" }> {
   const updates: TablesUpdate<"contact_submissions"> = {};
   if (change.status) updates.status = change.status;
   if (change.markRead) updates.read_at = now.toISOString();
   if (change.markUnread) updates.read_at = null;
+  if (change.adminNotes !== undefined) updates.admin_notes = change.adminNotes || null;
+  if (change.handledBy !== undefined) updates.handled_by = change.handledBy.toLowerCase() || null;
+  if (change.replied !== undefined) updates.replied_at = change.replied ? now.toISOString() : null;
   if (Object.keys(updates).length === 0) return { ok: false, reason: "nothing" };
   const { error } = await createServiceClient().from("contact_submissions").update(updates).eq("id", id);
   if (error) {

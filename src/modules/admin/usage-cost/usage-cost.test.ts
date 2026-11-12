@@ -127,11 +127,17 @@ describe("admin Usage and cost numbers (B-67)", () => {
     expect(report.totals.credits).toBe(0);
   });
 
-  it("prices a credit at the cheapest active plan", async () => {
+  it("prices a credit at the cheapest active plan or top-up pack", async () => {
     const report = await loadUsageCost({ days: 7, includeTest: true }, NOW);
-    const { data } = await service.from("plans").select("price_cents, monthly_credits").eq("active", true);
-    const cheapest = Math.min(...data!.filter((p) => p.price_cents && p.monthly_credits).map((p) => p.price_cents! / 100 / p.monthly_credits!));
-    expect(report.creditPriceUsd).toBeCloseTo(cheapest, 8);
+    const { data: plans } = await service.from("plans").select("price_cents, monthly_credits").eq("active", true);
+    const { data: packs } = await service.from("topup_packs").select("price_cents, credits").eq("active", true);
+    const prices = [
+      ...plans!.filter((p) => p.price_cents && p.monthly_credits).map((p) => p.price_cents! / 100 / p.monthly_credits!),
+      ...packs!.map((p) => p.price_cents / 100 / p.credits),
+    ];
+    expect(report.creditPriceUsd).toBeCloseTo(Math.min(...prices), 8);
+    // Top-ups were left out before, which put the floor above what customers really pay (2,000 credits for $180).
+    expect(report.creditPriceBasis).toBeTruthy();
   });
 });
 

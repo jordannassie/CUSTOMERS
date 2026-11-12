@@ -2,8 +2,16 @@ import "server-only";
 import { createServiceClient } from "@/lib/supabase/service";
 import { requireAdmin } from "@/modules/auth";
 import { ADMIN_PAGE_SIZE } from "../../schema";
-import { allRows, emailsOf, inChunks, inList, readCaptures, unique, userIdsByEmail } from "../dal";
-import { firstBy, startOfMonthUtc, sumBy, toScanState, type ScanState } from "../service";
+import { allRows, emailsOf, inChunks, inList, unique, userIdsByEmail } from "../dal";
+import { startOfMonthUtc, toScanState, type ScanState } from "../service";
+import type { BusinessFilter } from "../schema";
+
+async function testAgencyIds(): Promise<string[]> {
+  const rows = await allRows("test agencies", (from, to) =>
+    createServiceClient().from("agencies").select("id").eq("is_test", true).order("id").range(from, to),
+  );
+  return rows.map((r) => r.id);
+}
 
 // The admin Businesses list (B-66), 50 a page with a search box. It checks admin access itself (BUG-286).
 
@@ -52,21 +60,32 @@ async function searchCondition(search: string): Promise<string | null> {
 
 /** One page of businesses across every agency, newest first, for a search (business, agency or owner email). */
 export async function listBusinesses(
-  { search = "", page = 1 }: { search?: string; page?: number } = {},
+  { search = "", page = 1, filter = "all" }: { search?: string; page?: number; filter?: BusinessFilter } = {},
   now = new Date(),
 ): Promise<AdminBusinessList> {
   await requireAdmin();
   const db = createServiceClient();
   const condition = await searchCondition(search);
   const scoped = <Q extends { or: (filters: string) => Q }>(query: Q) => (condition ? query.or(condition) : query);
+  // The tab: live, being set up (onboarding), deleted, or of a test agency.
+  const testAgencies = filter === "test" ? await testAgencyIds() : [];
+  const tab = <Q extends { is: (c: string, v: null) => Q; not: (c: string, o: string, v: null) => Q; eq: (c: string, v: string) => Q; neq: (c: string, v: string) => Q; or: (f: string) => Q }>(query: Q) => {
+    if (filter === "live") return query.is("deleted_at", null).neq("status", "onboarding");
+    if (filter === "setup") return query.is("deleted_at", null).eq("status", "onboarding");
+    if (filter === "deleted") return query.not("deleted_at", "is", null);
+    if (filter === "test") return query.or(`agency_id.in.${inList(testAgencies)}`);
+    return query;
+  };
 
   const [pageResult, deletedCount, scanningCount] = await Promise.all([
-    scoped(
-      db
-        .from("businesses")
-        .select("id, name, primary_city, primary_region, agency_id, status, scan_frequency, models, created_at, deleted_at, purge_after", {
-          count: "exact",
-        }),
+    tab(
+      scoped(
+        db
+          .from("businesses")
+          .select("id, name, primary_city, primary_region, agency_id, status, scan_frequency, models, created_at, deleted_at, purge_after", {
+            count: "exact",
+          }),
+      ),
     )
       .order("created_at", { ascending: false })
       .order("id")
@@ -82,7 +101,9 @@ export async function listBusinesses(
 
   const ids = businesses.map((b) => b.id);
   const agencyIds = unique(businesses.map((b) => b.agency_id));
-  const [agencies, subscriptions, jobs, runs] = await Promise.all([
+  // The last scan and this month's credits come back already worked out, one row per business (migration 092),
+  // instead of every scan and credit the page's 50 businesses ever had.
+  const [agencies, subscriptions, lastScans, monthCredits] = await Promise.all([
     inChunks(agencyIds, async (chunk) => {
       const { data, error } = await db.from("agencies").select("id, name, owner_user_id, is_test").in("id", chunk);
       if (error) fail("agencies", error);
@@ -93,46 +114,25 @@ export async function listBusinesses(
       if (error) fail("plans", error);
       return data;
     }),
-    inChunks(ids, (chunk) =>
-      allRows("scan jobs", (from, to) =>
-        db
-          .from("scan_jobs")
-          .select("business_id, status, hold_id, created_at, finished_at")
-          .in("business_id", chunk)
-          .order("created_at", { ascending: false })
-          .order("id")
-          .range(from, to),
-      ),
-    ),
-    // Businesses scanned before the job queue existed only have runs.
-    inChunks(ids, (chunk) =>
-      allRows("scan runs", (from, to) =>
-        db
-          .from("visibility_runs")
-          .select("business_id, status, created_at, completed_at")
-          .in("business_id", chunk)
-          .is("scan_job_id", null)
-          .order("created_at", { ascending: false })
-          .order("id")
-          .range(from, to),
-      ),
-    ),
+    inChunks(ids, async (chunk) => {
+      const { data, error } = await db.rpc("admin_last_scans", { p_business_ids: chunk });
+      if (error) fail("last scans", error);
+      return data;
+    }),
+    inChunks(ids, async (chunk) => {
+      const { data, error } = await db.rpc("admin_business_credits", { p_business_ids: chunk, p_since: startOfMonthUtc(now).toISOString() });
+      if (error) fail("credits this month", error);
+      return data;
+    }),
   ]);
-  const [captures, emails] = await Promise.all([
-    readCaptures({ since: startOfMonthUtc(now), holdIds: unique(jobs.map((j) => j.hold_id)) }),
-    emailsOf(agencies.map((a) => a.owner_user_id)),
-  ]);
+  const emails = await emailsOf(agencies.map((a) => a.owner_user_id));
 
   const agencyById = new Map(agencies.map((a) => [a.id, a]));
   const planOf = new Map(subscriptions.map((s) => [s.business_id, s.plans?.name ?? null]));
-  const lastJob = firstBy(jobs, (j) => j.business_id);
-  const lastRun = firstBy(runs, (r) => r.business_id);
-  const businessOfHold = new Map(jobs.filter((j) => j.hold_id).map((j) => [j.hold_id!, j.business_id]));
-  const credits = sumBy(
-    captures,
-    (c) => c.holdId && businessOfHold.get(c.holdId),
-    (c) => c.credits,
-  );
+  // Businesses scanned before the job queue existed only have runs.
+  const lastJob = new Map(lastScans.filter((r) => r.kind === "job").map((r) => [r.business_id, r]));
+  const lastRun = new Map(lastScans.filter((r) => r.kind === "run").map((r) => [r.business_id, r]));
+  const credits = new Map(monthCredits.map((c) => [c.business_id, Number(c.credits)]));
 
   const rows = businesses.map((b): AdminBusinessRow => {
     const agency = b.agency_id ? agencyById.get(b.agency_id) : undefined;
@@ -146,7 +146,7 @@ export async function listBusinesses(
       : run
         ? {
             state: toScanState(run.status),
-            at: run.completed_at ?? run.created_at,
+            at: run.finished_at ?? run.created_at,
           }
         : null;
     return {

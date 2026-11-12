@@ -1,6 +1,7 @@
 import "server-only";
+import { cacheLife } from "next/cache";
 import { env } from "@/lib/env";
-import { extendSubscriptionTrial, getStripe, isStripeConfigured, subscriptionAgencyStatus } from "@/modules/billing";
+import { extendSubscriptionTrial, getStripe, isStripeConfigured, setSubscriptionPaused, subscriptionAgencyStatus, type PauseOutcome } from "@/modules/billing";
 import type { BillingStatus } from "./service";
 
 /** The Stripe calls the admin makes. Injected, so tests and Playwright never reach Stripe. */
@@ -14,6 +15,8 @@ export type AdminStripeClient = {
    * there is nothing to go on (fixtures, or a first payment still in progress).
    */
   subscriptionStatus(subscriptionId: string): Promise<BillingStatus | null>;
+  /** Stops (or restarts) charging the subscription while the agency is suspended; see billing/pause-billing.ts. */
+  setBillingPaused(subscriptionId: string, paused: boolean): Promise<PauseOutcome>;
 };
 
 // Same flag as checkout and top-ups (B-41, B-43); refused in production so it can never stand in for Stripe there.
@@ -28,23 +31,38 @@ const fixtureClient: AdminStripeClient = {
   async subscriptionStatus() {
     return null;
   },
+  async setBillingPaused() {
+    return "nothing_in_stripe";
+  },
 };
+
+/**
+ * Money collected between two times, kept for 5 minutes: the Overview asked Stripe for every charge of the month, twice,
+ * on each visit (admin review 2026-11-12). The end is rounded down to 5 minutes, so repeat visits hit the cache.
+ */
+async function collectedCents(sinceIso: string, untilIso: string | null): Promise<number> {
+  "use cache";
+  cacheLife({ stale: 60, revalidate: 300, expire: 900 });
+  let cents = 0;
+  const created = { gte: Math.floor(Date.parse(sinceIso) / 1000), ...(untilIso && { lt: Math.floor(Date.parse(untilIso) / 1000) }) };
+  // Charges cover both plan invoices and one-time top-ups.
+  for await (const charge of getStripe().charges.list({ created, limit: 100 })) {
+    if (charge.paid && charge.status === "succeeded" && charge.currency === "usd") {
+      cents += charge.amount - charge.amount_refunded;
+    }
+  }
+  return cents;
+}
+
+const FIVE_MINUTES = 5 * 60 * 1000;
+const roundDown = (d: Date) => new Date(Math.floor(d.getTime() / FIVE_MINUTES) * FIVE_MINUTES).toISOString();
 
 const stripeClient: AdminStripeClient = {
   mode: "stripe",
   extendTrial: extendSubscriptionTrial,
-  async revenueSince(since, until) {
-    let cents = 0;
-    const created = { gte: Math.floor(since.getTime() / 1000), ...(until && { lt: Math.floor(until.getTime() / 1000) }) };
-    // Charges cover both plan invoices and one-time top-ups.
-    for await (const charge of getStripe().charges.list({ created, limit: 100 })) {
-      if (charge.paid && charge.status === "succeeded" && charge.currency === "usd") {
-        cents += charge.amount - charge.amount_refunded;
-      }
-    }
-    return cents;
-  },
+  revenueSince: (since, until) => collectedCents(since.toISOString(), until ? roundDown(until) : null),
   subscriptionStatus: subscriptionAgencyStatus,
+  setBillingPaused: setSubscriptionPaused,
 };
 
 /** Null when neither fixtures nor a Stripe key are set, so screens can say Stripe is not connected. */

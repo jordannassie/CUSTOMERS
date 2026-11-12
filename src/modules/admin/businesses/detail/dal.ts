@@ -8,6 +8,8 @@ import { isActive, startOfMonthUtc, sumBy, toScanState, type ScanState } from ".
 // Everything about one business for the admin detail page (B-66). Each read checks admin access itself (BUG-286).
 
 const HISTORY_LIMIT = 20;
+// The newest opportunities are what support needs; the full list is on the customer's Actions page.
+const OPPORTUNITY_LIMIT = 100;
 
 function must<T>(what: string, result: { data: T | null; error: { message: string } | null }): T | null {
   if (result.error) throw new Error(`Admin business: could not load ${what}: ${result.error.message}`);
@@ -50,7 +52,9 @@ export async function loadBusinessDetail(id: string, now = new Date()) {
   if (error) throw new Error(`Admin business: could not load the business: ${error.message}`);
   if (!business) return null;
 
-  const [agency, subscription, competitors, questions, jobs, oldRuns, opportunities] = await Promise.all([
+  const monthStart = startOfMonthUtc(now).toISOString();
+  // Only the scans the page shows and the newest finished one: the history used to be read in full on every visit.
+  const [agency, subscription, competitors, questions, jobsResult, lastDoneResult, oldRuns, opportunities, monthCredits, allCredits] = await Promise.all([
     business.agency_id
       ? db
           .from("agencies")
@@ -61,15 +65,14 @@ export async function loadBusinessDetail(id: string, now = new Date()) {
     db.from("business_subscriptions").select("status, plans(name)").eq("business_id", id).maybeSingle(),
     db.from("business_competitors").select("id, name, domain, city").eq("business_id", id).order("created_at"),
     db.from("tracked_prompts").select("id, prompt, active").eq("business_id", id).is("removed_at", null).order("created_at"),
-    allRows("scan jobs", (from, to) =>
-      db
-        .from("scan_jobs")
-        .select("id, status, priority, attempts, hold_id, error, created_at, finished_at")
-        .eq("business_id", id)
-        .order("created_at", { ascending: false })
-        .order("id")
-        .range(from, to),
-    ),
+    db
+      .from("scan_jobs")
+      .select("id, status, priority, attempts, hold_id, error, created_at, finished_at")
+      .eq("business_id", id)
+      .order("created_at", { ascending: false })
+      .order("id")
+      .limit(HISTORY_LIMIT),
+    db.from("scan_jobs").select("id").eq("business_id", id).eq("status", "done").order("created_at", { ascending: false }).limit(1).maybeSingle(),
     db
       .from("visibility_runs")
       .select("id, status, error, created_at, completed_at")
@@ -81,14 +84,19 @@ export async function loadBusinessDetail(id: string, now = new Date()) {
       .from("opportunities")
       .select("id, title, impact, status, category")
       .eq("business_id", id)
-      .order("created_at", { ascending: false }),
+      .order("created_at", { ascending: false })
+      .limit(OPPORTUNITY_LIMIT),
+    db.rpc("admin_business_credits", { p_business_ids: [id], p_since: monthStart }),
+    db.rpc("admin_business_credits", { p_business_ids: [id] }),
   ]);
+  const jobs = must("scan jobs", jobsResult) ?? [];
+  const lastDone = must("the last finished scan", lastDoneResult);
+  const creditTotal = (r: typeof monthCredits) => Number(must("credits", r)?.[0]?.credits ?? 0);
   const agencyRow = must("the agency", agency);
-  const shown = jobs.slice(0, HISTORY_LIMIT);
-  const lastDone = jobs.find((j) => j.status === "done");
+  const shown = jobs;
 
   const [captures, runs, emails, balance] = await Promise.all([
-    readCaptures({ holdIds: unique(jobs.map((j) => j.hold_id)) }),
+    readCaptures({ holdIds: unique(shown.map((j) => j.hold_id)) }),
     db
       .from("visibility_runs")
       .select("id, scan_job_id, checks_total, checks_failed")
@@ -102,8 +110,6 @@ export async function loadBusinessDetail(id: string, now = new Date()) {
     (c) => c.holdId,
     (c) => c.credits,
   );
-  const monthStart = startOfMonthUtc(now).toISOString();
-
   const scans: AdminScan[] = [
     ...shown.map((j) => {
       const run = runOfJob.get(j.id);
@@ -157,8 +163,8 @@ export async function loadBusinessDetail(id: string, now = new Date()) {
     scans,
     activeScan: jobs.some((j) => isActive(toScanState(j.status))),
     credits: {
-      thisMonth: captures.filter((c) => c.createdAt >= monthStart).reduce((sum, c) => sum + c.credits, 0),
-      allTime: captures.reduce((sum, c) => sum + c.credits, 0),
+      thisMonth: creditTotal(monthCredits),
+      allTime: creditTotal(allCredits),
     },
     results: await latestResults(lastDone?.id, runOfJob),
   };

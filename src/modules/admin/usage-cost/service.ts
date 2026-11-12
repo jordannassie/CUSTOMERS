@@ -13,13 +13,20 @@ export const MODEL_KEYS = ["openai", "anthropic", "perplexity"] as const;
 export type ModelKey = (typeof MODEL_KEYS)[number];
 export const MODEL_LABELS: Record<ModelKey, string> = { openai: "ChatGPT", anthropic: "Claude", perplexity: "Perplexity" };
 
-export type Capture = { agencyId: string | null; checkId: string; credits: number; createdAt: string };
+/**
+ * Credits used. From the database a row is already a sum (one day, agency and model), with `provider` set; `paid` is
+ * false for credits from a free grant (trial, promo, admin), which are not revenue. A row with only `checkId` is one
+ * check whose model comes from `checkProvider`.
+ */
+export type Capture = { agencyId: string | null; checkId?: string; provider?: string | null; paid?: boolean; credits: number; createdAt: string };
+/** Real AI cost. A row from the database sums `events` calls (default 1) of one day, agency, kind, model and cache hit. */
 export type UsageRow = {
   agencyId: string | null;
   usageType: string;
   provider: string | null;
   cached: boolean;
   costUsd: number;
+  events?: number;
   createdAt: string;
 };
 export type AgencyInfo = { name: string; isTest: boolean };
@@ -44,7 +51,10 @@ export type UsageCostReport = {
   from: string;
   to: string;
   creditPriceUsd: number | null;
-  totals: { credits: number; costUsd: number; checks: number; cached: number; cacheHitRate: number | null; margin: number | null };
+  /** The plan or top-up pack that price comes from, so the page can say what the floor is. */
+  creditPriceBasis: string | null;
+  /** freeCredits: credits from trial, promo and admin grants, left out of what credits are worth. */
+  totals: { credits: number; freeCredits: number; costUsd: number; checks: number; cached: number; cacheHitRate: number | null; margin: number | null };
   byDay: { day: string; credits: number; costUsd: number }[];
   byModel: ModelMargin[];
   otherCostUsd: number;
@@ -60,12 +70,22 @@ export function periodStart(now: Date, days: PeriodDays): Date {
   return new Date(today - (days - 1) * DAY);
 }
 
-/** Lowest price a customer pays for one credit across the active plans; the worst case for margin. */
-export function lowestCreditPrice(plans: { priceCents: number | null; monthlyCredits: number | null }[]): number | null {
-  const prices = plans
-    .filter((p) => p.priceCents !== null && p.monthlyCredits)
-    .map((p) => p.priceCents! / 100 / p.monthlyCredits!);
-  return prices.length > 0 ? Math.min(...prices) : null;
+/** One way a customer buys credits: a plan's monthly credits or a one-time top-up pack. */
+export type CreditOffer = { name: string; priceCents: number | null; credits: number | null };
+
+/**
+ * Lowest price a customer pays for one credit across active plans AND top-up packs; the worst case for margin. Top-ups
+ * can be cheaper per credit than any plan (2,000 for $180 is $0.09, the Pro plan $0.0996), so leaving them out
+ * overstated every margin.
+ */
+export function lowestCreditPrice(offers: CreditOffer[]): { usd: number; name: string } | null {
+  let best: { usd: number; name: string } | null = null;
+  for (const o of offers) {
+    if (o.priceCents === null || !o.credits) continue;
+    const usd = o.priceCents / 100 / o.credits;
+    if (!best || usd < best.usd) best = { usd, name: o.name };
+  }
+  return best;
 }
 
 export function marginOf(revenueUsd: number, costUsd: number): number | null {
@@ -82,17 +102,23 @@ export function buildReport(input: {
   from: Date;
   to: Date;
   creditPriceUsd: number | null;
+  creditPriceBasis?: string | null;
   captures: Capture[];
-  checkProvider: Map<string, string>;
+  checkProvider?: Map<string, string>;
   usage: UsageRow[];
   agencies: Map<string, AgencyInfo>;
 }): UsageCostReport {
   const { captures, usage, creditPriceUsd: price } = input;
   const revenue = (credits: number) => (price === null ? 0 : credits * price);
+  const paidOnly = captures.filter((c) => c.paid !== false);
+  const providerOf = (c: Capture) => c.provider ?? (c.checkId ? input.checkProvider?.get(c.checkId) : undefined) ?? null;
+  const count = (rows: UsageRow[]) => sum(rows, (u) => u.events ?? 1);
   const credits = sum(captures, (c) => c.credits);
+  const paidCredits = sum(paidOnly, (c) => c.credits);
   const costUsd = sum(usage, (u) => u.costUsd);
   const checks = usage.filter(isCheck);
-  const cached = checks.filter((u) => u.cached).length;
+  const checkCount = count(checks);
+  const cached = count(checks.filter((u) => u.cached));
 
   const creditsByDay = totals(captures, (c) => c.createdAt.slice(0, 10), (c) => c.credits);
   const costByDay = totals(usage, (u) => u.createdAt.slice(0, 10), (u) => u.costUsd);
@@ -105,18 +131,19 @@ export function buildReport(input: {
   const byModel = MODEL_KEYS.map((model): ModelMargin => {
     const rows = checks.filter((u) => u.provider === model);
     const calls = rows.filter((u) => !u.cached);
+    const [rowCount, callCount] = [count(rows), count(calls)];
     const modelCost = sum(rows, (u) => u.costUsd);
-    const costPerCheck = rows.length > 0 ? modelCost / rows.length : null;
+    const costPerCheck = rowCount > 0 ? modelCost / rowCount : null;
     const margin = price !== null && costPerCheck !== null ? (price - costPerCheck) / price : null;
     return {
       model,
       label: MODEL_LABELS[model],
-      credits: sum(captures.filter((c) => input.checkProvider.get(c.checkId) === model), (c) => c.credits),
-      checks: rows.length,
-      cached: rows.length - calls.length,
+      credits: sum(captures.filter((c) => providerOf(c) === model), (c) => c.credits),
+      checks: rowCount,
+      cached: rowCount - callCount,
       costUsd: modelCost,
       costPerCheck,
-      costPerCall: calls.length > 0 ? sum(calls, (u) => u.costUsd) / calls.length : null,
+      costPerCall: callCount > 0 ? sum(calls, (u) => u.costUsd) / callCount : null,
       margin,
       verdict: verdictFor(margin),
     };
@@ -124,6 +151,7 @@ export function buildReport(input: {
   const checkCost = sum(byModel, (m) => m.costUsd);
 
   const creditsByAgency = totals(captures, (c) => c.agencyId, (c) => c.credits);
+  const paidByAgency = totals(paidOnly, (c) => c.agencyId, (c) => c.credits);
   const costByAgency = totals(usage, (u) => u.agencyId, (u) => u.costUsd);
   const agencyIds = new Set([...creditsByAgency.keys(), ...costByAgency.keys()]);
   const byAgency = [...agencyIds]
@@ -138,7 +166,7 @@ export function buildReport(input: {
         isTest: info?.isTest ?? false,
         credits: agencyCredits,
         costUsd: agencyCost,
-        margin: marginOf(revenue(agencyCredits), agencyCost),
+        margin: marginOf(revenue(paidByAgency.get(id) ?? 0), agencyCost),
       };
     })
     .sort((a, b) => b.credits - a.credits || b.costUsd - a.costUsd);
@@ -147,13 +175,16 @@ export function buildReport(input: {
     from: input.from.toISOString(),
     to: input.to.toISOString(),
     creditPriceUsd: price,
+    creditPriceBasis: input.creditPriceBasis ?? null,
     totals: {
       credits,
+      freeCredits: credits - paidCredits,
       costUsd,
-      checks: checks.length,
+      checks: checkCount,
       cached,
-      cacheHitRate: checks.length > 0 ? cached / checks.length : null,
-      margin: marginOf(revenue(credits), costUsd),
+      cacheHitRate: checkCount > 0 ? cached / checkCount : null,
+      // Only paid credits are revenue: trial and admin credits cost us AI but bring in nothing.
+      margin: marginOf(revenue(paidCredits), costUsd),
     },
     byDay,
     byModel,

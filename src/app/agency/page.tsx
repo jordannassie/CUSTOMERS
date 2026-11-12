@@ -39,7 +39,7 @@ export default async function AgencyPage() {
                   <Link href="/signup">Start free trial</Link>
                 </Button>
                 <Button asChild size="lg" variant="outline">
-                  <Link href="/contact?interest=agency">Talk to us</Link>
+                  <Link href="/contact?interest=agency&from=agency">Talk to us</Link>
                 </Button>
               </div>
               <p className="text-[length:calc(13px*var(--px,1))] text-text-hint">7-day free trial with up to 2 clients. Card needed to start.</p>

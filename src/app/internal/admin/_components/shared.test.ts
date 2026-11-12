@@ -41,7 +41,7 @@ describe("shared admin components (2026-10-19)", () => {
     expect(out).toContain('href="/internal/admin/scans?status=failed"');
     expect(out.match(/aria-current="page"/g)).toHaveLength(1);
     expect(out.match(/class="flex h-8 /g)).toHaveLength(2);
-    expect(out).toContain("text-low-text");
+    expect(out).toContain("text-mid-text");
   });
 
   it("one set of scan words on every page", () => {

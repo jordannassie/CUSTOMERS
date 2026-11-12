@@ -12,6 +12,10 @@ export interface Lead {
   status: string;
   source: string | null;
   page_path: string | null;
+  /** Follow-up (admin review 2026-11-12). */
+  admin_notes: string | null;
+  handled_by: string | null;
+  replied_at: string | null;
 }
 
 export interface LeadsResponse {
@@ -31,7 +35,8 @@ export interface LeadsQuery {
   unread: boolean;
 }
 
-export type StatusVariant = "tint" | "mid" | "good" | "secondary";
+// The dashboard's two pill colours (src/components/app/pills.ts).
+export type StatusVariant = "tint" | "secondary";
 
 export const INTEREST_LABELS: Record<string, string> = {
   ai_visibility: "AI visibility",
@@ -55,21 +60,22 @@ export const SOURCE_LABELS: Record<string, string> = {
   video_ad: "AI video ads",
 };
 
+// One pipeline (admin review 2026-11-12): only these are offered. Older rows may still say in_progress or resolved,
+// which keep their names below so nothing reads as a raw code.
 export const STATUS_OPTIONS: { value: string; label: string; variant: StatusVariant }[] = [
   { value: "new", label: "New", variant: "tint" },
-  { value: "contacted", label: "Contacted", variant: "mid" },
-  { value: "qualified", label: "Qualified", variant: "tint" },
-  { value: "closed", label: "Closed", variant: "good" },
-  { value: "in_progress", label: "In progress", variant: "mid" },
-  { value: "resolved", label: "Resolved", variant: "secondary" },
+  { value: "contacted", label: "Contacted", variant: "secondary" },
+  { value: "qualified", label: "Qualified", variant: "secondary" },
+  { value: "closed", label: "Closed", variant: "secondary" },
 ];
+const OLD_STATUS_LABELS: Record<string, string> = { in_progress: "In progress", resolved: "Resolved" };
 
 export function statusVariant(s: string): StatusVariant {
   return STATUS_OPTIONS.find((o) => o.value === s)?.variant ?? "secondary";
 }
 
 export function statusLabel(s: string) {
-  return STATUS_OPTIONS.find((o) => o.value === s)?.label ?? s;
+  return STATUS_OPTIONS.find((o) => o.value === s)?.label ?? OLD_STATUS_LABELS[s] ?? s.replace(/_/g, " ");
 }
 
 export { formatDate } from "../../_components/format";

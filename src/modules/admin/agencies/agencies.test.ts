@@ -31,6 +31,7 @@ function fakeStripe(overrides: Partial<AdminStripeClient> = {}): AdminStripeClie
     extendTrial: vi.fn(async () => {}),
     revenueSince: vi.fn(async () => 0),
     subscriptionStatus: vi.fn(async () => null),
+    setBillingPaused: vi.fn(async (_id: string, paused: boolean) => (paused ? "paused" : "resumed")),
     ...overrides,
   } as never;
 }
@@ -62,7 +63,6 @@ async function auditRows(action: string) {
 }
 
 let adminId: string;
-
 beforeAll(async () => {
   adminId = (await signInAs(session, "admin-agency", { admin: true })).id;
 });

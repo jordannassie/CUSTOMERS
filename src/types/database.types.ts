@@ -772,9 +772,11 @@ export type Database = {
       }
       contact_submissions: {
         Row: {
+          admin_notes: string | null
           company: string | null
           created_at: string
           email: string
+          handled_by: string | null
           id: string
           ip_hash: string | null
           message: string
@@ -783,6 +785,7 @@ export type Database = {
           page_path: string | null
           phone: string | null
           read_at: string | null
+          replied_at: string | null
           source: string | null
           status: string
           topic: string
@@ -790,9 +793,11 @@ export type Database = {
           website: string | null
         }
         Insert: {
+          admin_notes?: string | null
           company?: string | null
           created_at?: string
           email: string
+          handled_by?: string | null
           id?: string
           ip_hash?: string | null
           message: string
@@ -801,6 +806,7 @@ export type Database = {
           page_path?: string | null
           phone?: string | null
           read_at?: string | null
+          replied_at?: string | null
           source?: string | null
           status?: string
           topic?: string
@@ -808,9 +814,11 @@ export type Database = {
           website?: string | null
         }
         Update: {
+          admin_notes?: string | null
           company?: string | null
           created_at?: string
           email?: string
+          handled_by?: string | null
           id?: string
           ip_hash?: string | null
           message?: string
@@ -819,6 +827,7 @@ export type Database = {
           page_path?: string | null
           phone?: string | null
           read_at?: string | null
+          replied_at?: string | null
           source?: string | null
           status?: string
           topic?: string
@@ -1850,6 +1859,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      service_status_snapshots: {
+        Row: {
+          checked_at: string
+          id: string
+          services: Json
+        }
+        Insert: {
+          checked_at: string
+          id?: string
+          services: Json
+        }
+        Update: {
+          checked_at?: string
+          id?: string
+          services?: Json
+        }
+        Relationships: []
       }
       stripe_webhook_events: {
         Row: {
@@ -2964,6 +2991,75 @@ export type Database = {
           p_request_id: string
         }
         Returns: string
+      }
+      admin_business_credits: {
+        Args: { p_business_ids: string[]; p_since?: string }
+        Returns: {
+          business_id: string
+          credits: number
+        }[]
+      }
+      admin_last_scans: {
+        Args: { p_business_ids: string[] }
+        Returns: {
+          business_id: string
+          created_at: string
+          finished_at: string
+          kind: string
+          status: string
+        }[]
+      }
+      admin_scan_costs: {
+        Args: { p_job_ids: string[] }
+        Returns: {
+          cost_usd: number
+          scan_job_id: string
+        }[]
+      }
+      admin_usage_costs: {
+        Args: {
+          p_agency_id?: string
+          p_from: string
+          p_include_test?: boolean
+          p_to: string
+        }
+        Returns: {
+          agency_id: string
+          cached: boolean
+          cost_usd: number
+          day: string
+          events: number
+          provider: string
+          usage_type: string
+        }[]
+      }
+      admin_usage_credits: {
+        Args: {
+          p_agency_id?: string
+          p_from: string
+          p_include_test?: boolean
+          p_to: string
+        }
+        Returns: {
+          agency_id: string
+          credits: number
+          day: string
+          paid: boolean
+          provider: string
+        }[]
+      }
+      admin_user_emails: {
+        Args: { p_ids: string[] }
+        Returns: {
+          email: string
+          id: string
+        }[]
+      }
+      admin_user_ids_by_email: {
+        Args: { p_limit?: number; p_search: string }
+        Returns: {
+          id: string
+        }[]
       }
       call_scan_worker: { Args: never; Returns: number }
       capture_credit: {

@@ -1,8 +1,9 @@
-export type AuthFailure = "not_signed_in" | "forbidden" | "no_agency" | "agency_paused" | "agency_deleted" | "unavailable";
+export type AuthFailure = "not_signed_in" | "forbidden" | "second_factor" | "no_agency" | "agency_paused" | "agency_deleted" | "unavailable";
 
 const MESSAGES: Record<AuthFailure, string> = {
   not_signed_in: "Please log in to continue.",
   forbidden: "You do not have access to this.",
+  second_factor: "Confirm it's you with the code from your authenticator app first, then try again.",
   no_agency: "Finish setting up your account first.",
   agency_paused: "Your account is paused. Contact support to turn it back on.",
   agency_deleted: "This account was deleted.",
@@ -12,6 +13,7 @@ const MESSAGES: Record<AuthFailure, string> = {
 const STATUS: Record<AuthFailure, 401 | 403 | 503> = {
   not_signed_in: 401,
   forbidden: 403,
+  second_factor: 403,
   no_agency: 403,
   agency_paused: 403,
   agency_deleted: 403,

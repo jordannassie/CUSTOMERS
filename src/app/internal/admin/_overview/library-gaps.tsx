@@ -27,8 +27,8 @@ export default function LibraryGaps({ loaded, rows }: { loaded: boolean; rows: L
       {/* An empty library would list every industry; one note says what is actually wrong. */}
       {!loaded ? (
         <Empty>
-          Question library not loaded yet. It has no active questions, so every business gets questions Claude writes. Run
-          the question library seed to load it.
+          The question library is empty on this site, so every business gets questions Claude writes for it. Ask the
+          developer to load the question library.
         </Empty>
       ) : rows.length === 0 ? (
         <Empty>Every business&apos;s industry has a question library.</Empty>

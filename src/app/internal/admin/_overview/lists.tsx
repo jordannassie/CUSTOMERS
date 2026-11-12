@@ -3,6 +3,7 @@ import type { AdminOverview } from "@/modules/admin";
 import Section, { Empty } from "../businesses/[id]/_components/section";
 import { formatDate } from "../_components/format";
 import { TestBadge } from "../_components/badges";
+import ScanError from "../_components/scan-error";
 import { StatusBadge } from "../agencies/_components/agency-parts";
 
 const list = "divide-y divide-border rounded-md border border-border bg-surface text-[length:calc(13px*var(--px,1))]";
@@ -63,7 +64,7 @@ export function FailedScans({ rows }: { rows: AdminOverview["recentFailedScans"]
                   <span className="shrink-0 text-text-hint">{formatDate(j.at)}</span>
                 </span>
                 {j.agencyName && <span className="truncate text-muted-foreground" title={j.agencyName}>{j.agencyName}</span>}
-                <span className="line-clamp-2 break-words text-low-text">{j.error ?? "No error message"}</span>
+                {j.error ? <ScanError error={j.error} clamp className="mt-1" /> : <span className="text-muted-foreground">No reason was saved for this scan.</span>}
               </li>
             ))}
           </ul>

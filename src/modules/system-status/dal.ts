@@ -3,6 +3,7 @@ import { requireAdmin } from "@/modules/auth";
 import { env } from "@/lib/env";
 import { createServiceClient } from "@/lib/supabase/service";
 import { jobSettingsStatus, schedulesStatus, type CronJob } from "./schedules";
+import type { Json } from "@/types/database.types";
 import type { ServiceStatus, SystemStatus } from "./schema";
 import {
   OUT_OF_CREDIT_WINDOW_MINUTES,
@@ -26,8 +27,40 @@ const KEYS: Record<string, string | undefined> = {
 };
 
 /** Checks every service live on each call (B-68); nothing here is cached. */
+/** Checks every service live now and saves the result for the System status page (B-68). Admins only. */
 export async function getSystemStatus(deps: ProbeDeps = {}): Promise<SystemStatus> {
   await requireAdmin();
+  return checkAndSave(deps);
+}
+
+/**
+ * The same live check for the 15-minute alerts job (migration 037), which has no signed-in user: its route checks the
+ * worker secret first. Services are checked even when nobody opens the page, so a key that breaks overnight is
+ * seen (admin review 2026-11-12).
+ */
+export async function runScheduledServiceCheck(deps: ProbeDeps = {}): Promise<SystemStatus> {
+  return checkAndSave(deps);
+}
+
+/** The last saved check while it is younger than `maxAgeMs`, else null. Admins only; nothing outside is called. */
+export async function getSavedSystemStatus(maxAgeMs: number): Promise<SystemStatus | null> {
+  await requireAdmin();
+  const { data, error } = await createServiceClient().from("service_status_snapshots").select("checked_at, services").eq("id", "latest").maybeSingle();
+  if (error || !data || Date.now() - Date.parse(data.checked_at) > maxAgeMs) return null;
+  return { checkedAt: data.checked_at, services: data.services as unknown as ServiceStatus[] };
+}
+
+async function checkAndSave(deps: ProbeDeps): Promise<SystemStatus> {
+  const status = await checkServices(deps);
+  const { error } = await createServiceClient()
+    .from("service_status_snapshots")
+    .upsert({ id: "latest", checked_at: status.checkedAt, services: status.services as unknown as Json });
+  // A failed save only means the next visit checks live again.
+  if (error) console.error(`[system-status] could not save the check: ${error.message}`);
+  return status;
+}
+
+async function checkServices(deps: ProbeDeps): Promise<SystemStatus> {
   const now = new Date();
 
   const [probes, worker, jobs, outOfCredit] = await Promise.all([
@@ -64,8 +97,8 @@ async function providersOutOfCredit(now: Date): Promise<Set<string>> {
 
 /** pg_cron's jobs and their last runs, and the Vault settings they need (BUG-108). Never reads a secret's value. */
 async function checkSchedules(now: Date): Promise<ServiceStatus[]> {
-  const schedules = { id: "schedules", name: "Scheduled jobs (pg_cron)", group: "jobs" } as const;
-  const settings = { id: "job_settings", name: "Scan worker settings", group: "jobs" } as const;
+  const schedules = { id: "schedules", name: "Scheduled jobs", group: "jobs" } as const;
+  const settings = { id: "job_settings", name: "Automatic scans", group: "jobs" } as const;
   const svc = createServiceClient();
   const [cron, vault] = await Promise.all([svc.rpc("cron_job_status"), svc.rpc("job_settings_status").maybeSingle()]);
 
@@ -77,10 +110,10 @@ async function checkSchedules(now: Date): Promise<ServiceStatus[]> {
   }));
   return [
     cron.error
-      ? { ...schedules, state: "unknown", detail: "Could not read the schedules from the database." }
+      ? { ...schedules, state: "unknown", detail: "Couldn't check the scheduled jobs right now. Try Check again." }
       : { ...schedules, ...schedulesStatus(jobs, now) },
     vault.error || !vault.data
-      ? { ...settings, state: "unknown", detail: "Could not read the worker settings from the database." }
+      ? { ...settings, state: "unknown", detail: "Couldn't check the automatic scan settings right now. Try Check again." }
       : {
           ...settings,
           ...jobSettingsStatus({

@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import { listBusinesses, pageParam, searchParam } from "@/modules/admin";
+import { businessFilter, listBusinesses, pageParam, searchParam } from "@/modules/admin";
 import { requireAdmin } from "@/modules/auth";
 import AdminPageHeader from "../_components/page-header";
 import { ListSkeleton } from "../_components/skeletons";
@@ -7,7 +7,7 @@ import BusinessesTable from "./_components/businesses-table";
 
 export const metadata = { title: "Businesses" };
 
-type Props = { searchParams: Promise<{ q?: string | string[]; page?: string | string[] }> };
+type Props = { searchParams: Promise<{ q?: string | string[]; page?: string | string[]; filter?: string | string[] }> };
 
 // The admin check runs inside Suspense too: awaiting it at the top would block every search.
 export default function AdminBusinessesPage({ searchParams }: Props) {
@@ -28,5 +28,6 @@ async function BusinessList({ searchParams }: Props) {
   await requireAdmin({ next: "/internal/admin/businesses" });
   const params = await searchParams;
   const search = searchParam.parse(params.q);
-  return <BusinessesTable list={await listBusinesses({ search, page: pageParam.parse(params.page) })} search={search} />;
+  const filter = businessFilter.parse(Array.isArray(params.filter) ? params.filter[0] : params.filter);
+  return <BusinessesTable list={await listBusinesses({ search, page: pageParam.parse(params.page), filter })} search={search} filter={filter} />;
 }

@@ -24,6 +24,7 @@ export { isMissingInStripe } from "./stripe-missing";
 export { TRIAL_DAYS, trialAllowed } from "./checkout";
 export { PERIOD_GRACE_MS, TRIAL_CREDITS } from "./webhooks/credits";
 export { extendSubscriptionTrial } from "./trial-extend";
+export { setSubscriptionPaused, type PauseOutcome } from "./pause-billing";
 export { createTrialCheckout, getTrialOffer, type CardFormMode, type StartTrialResult, type TrialOffer } from "./trial";
 export { openBillingPortal } from "./account/actions";
 export { loadBillingPage } from "./account/load";

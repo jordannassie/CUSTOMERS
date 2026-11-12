@@ -55,6 +55,9 @@ export const env = createEnv({
     WORKER_IN_PROCESS: flag,
 
     ADMIN_EMAILS: optional,
+    // "true" makes admins confirm each sign-in with an authenticator app code (aal2). Turn on only after authenticator
+    // apps (TOTP) are switched on in Supabase Auth, or no admin can finish signing in.
+    ADMIN_REQUIRE_MFA: flag,
     // Admins get an alert when real AI cost for the UTC day passes this (B-69). Unset turns that check off.
     ALERT_DAILY_COST_USD: z.coerce.number().positive().optional(),
     // Days between deleting an account or business and removing its data for good; admins can restore an account
@@ -108,6 +111,7 @@ export const env = createEnv({
     WORKER_URL: process.env.WORKER_URL,
     WORKER_IN_PROCESS: process.env.WORKER_IN_PROCESS,
     ADMIN_EMAILS: process.env.ADMIN_EMAILS,
+    ADMIN_REQUIRE_MFA: process.env.ADMIN_REQUIRE_MFA,
     ALERT_DAILY_COST_USD: process.env.ALERT_DAILY_COST_USD,
     DELETION_WAIT_DAYS: process.env.DELETION_WAIT_DAYS,
     SHOW_POSITION: process.env.SHOW_POSITION,

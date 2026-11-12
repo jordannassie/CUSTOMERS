@@ -75,7 +75,7 @@ export default function MoneyPanel({
             {share !== null && (
               // Blue while AI costs less than revenue, red only when it costs more (the app's pill colours).
               <div
-                className={share >= 1 ? "h-full bg-low" : "h-full bg-primary"}
+                className={share >= 1 ? "h-full bg-mid" : "h-full bg-primary"}
                 style={{ width: `${Math.min(share, 1) * 100}%` }}
               />
             )}

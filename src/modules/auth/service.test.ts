@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isAdminEmail, isRecentRecovery } from "./service";
+import { adminVerifyPathFor, isAdminEmail, isRecentRecovery, needsSecondFactor } from "./service";
 
 const NOW = 1_800_000_000;
 
@@ -33,5 +33,19 @@ describe("isAdminEmail", () => {
     expect(isAdminEmail("boss@example.test", ["boss@example.test"], false)).toBe(false);
     expect(isAdminEmail("other@example.test", ["boss@example.test"], true)).toBe(false);
     expect(isAdminEmail(null, ["boss@example.test"], true)).toBe(false);
+  });
+});
+
+describe("admin second factor (ADMIN_REQUIRE_MFA)", () => {
+  it("asks for the app code only when it is required and the session has a password only", () => {
+    expect(needsSecondFactor(true, "aal1")).toBe(true);
+    expect(needsSecondFactor(true, undefined)).toBe(true);
+    expect(needsSecondFactor(true, "aal2")).toBe(false);
+    // Off by default: nothing changes for admins until the setting is turned on.
+    expect(needsSecondFactor(false, "aal1")).toBe(false);
+  });
+
+  it("sends the admin to the verify page and back to where they were going", () => {
+    expect(adminVerifyPathFor("/internal/admin/scans?status=failed")).toBe("/admin-verify?next=%2Finternal%2Fadmin%2Fscans%3Fstatus%3Dfailed");
   });
 });

@@ -25,7 +25,10 @@ describe("runProbe", () => {
 
   it.each(PROBES.map((p) => [p.id]))("%s: a broken key shows red", async (id) => {
     const result = await runProbe(probe(id), "bad-key", { fetch: respond(401, '{"error":"invalid key"}') });
-    expect(result).toEqual({ state: "error", detail: "The key was rejected (401)." });
+    expect(result).toMatchObject({ state: "error", detail: `${probe(id).name} turned down our key, so nothing that uses it works.` });
+    // The status code is for whoever fixes it, never in the sentence the admin reads first.
+    expect(result.detail).not.toMatch(/401/);
+    expect(result.fix).toContain("401");
   });
 
   it.each(PROBES.map((p) => [p.id]))("%s: a timeout shows unknown", async (id) => {
@@ -35,7 +38,7 @@ describe("runProbe", () => {
 
   it.each(PROBES.map((p) => [p.id]))("%s: no key shows not configured and makes no call", async (id) => {
     const fetch = respond(200);
-    expect(await runProbe(probe(id), undefined, { fetch })).toEqual({ state: "not_configured", detail: "No key is set." });
+    expect(await runProbe(probe(id), undefined, { fetch })).toMatchObject({ state: "not_configured", detail: "Not connected: no key is set on this site." });
     expect(fetch).not.toHaveBeenCalled();
   });
 

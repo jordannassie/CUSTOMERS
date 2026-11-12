@@ -1,10 +1,19 @@
 import { NextRequest } from "next/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const insert = vi.fn(async () => ({ error: null }));
+// insert().select("id").single(), as saveContactMessage calls it.
+const insert = vi.fn(() => ({ select: () => ({ single: async () => ({ data: { id: "lead-1" }, error: null }) }) }));
 
 vi.mock("@/lib/supabase/service", () => ({
   createServiceClient: () => ({ from: () => ({ insert }) }),
+}));
+// after() needs a live request; here it is recorded, so a test can see the admin email was queued.
+const later = vi.hoisted(() => ({ calls: 0 }));
+vi.mock("next/server", async (original) => ({
+  ...(await original<typeof import("next/server")>()),
+  after: () => {
+    later.calls += 1;
+  },
 }));
 // The shared rate limit table is tested in the rate-limit module; here each run counts in memory.
 const limiter = vi.hoisted(() => ({ down: false }));
@@ -35,12 +44,16 @@ function submit(fields: Record<string, unknown>, ip = "198.51.100.7") {
 }
 
 describe("POST /api/contact honeypot", () => {
-  beforeEach(() => insert.mockClear());
+  beforeEach(() => {
+    insert.mockClear();
+    later.calls = 0;
+  });
 
-  it("saves a message when the hidden field is empty", async () => {
+  it("saves a message when the hidden field is empty, and queues the admin email", async () => {
     const res = await submit({ _honey: "" });
     expect(res.status).toBe(200);
     expect(insert).toHaveBeenCalledOnce();
+    expect(later.calls).toBe(1);
   });
 
   it("answers success but saves nothing when a bot fills the hidden field", async () => {

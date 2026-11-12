@@ -1,6 +1,7 @@
 import "server-only";
 import { checkPaidNotActive } from "@/modules/billing";
-import { createNotifyDeps, isAlertSecret, runAlertChecks } from "./dal";
+import { runScheduledServiceCheck } from "@/modules/system-status";
+import { createNotifyDeps, isAlertSecret, runAlertChecks, writeServiceAlerts } from "./dal";
 import { notifyAdmins, type NotifyDeps } from "./service";
 
 /**
@@ -15,6 +16,11 @@ export async function handleAlertsRequest(req: Request, deps?: NotifyDeps): Prom
   const opened = await runAlertChecks();
   // Needs Stripe, so it runs here rather than in pg_cron (2026-10-15). A failure never stops the emails.
   await checkPaidNotActive().catch((error) => console.error("[admin/alerts] paid_not_active check failed", error instanceof Error ? error.message : String(error)));
+  // The outside services too (keys, credit, Stripe), saved for System status; a broken one opens an alert that the
+  // emails below send. A failure here never stops the emails either.
+  const services = await runScheduledServiceCheck()
+    .then((status) => writeServiceAlerts(status.services))
+    .catch((error) => console.error("[admin/alerts] service check failed", error instanceof Error ? error.message : String(error)));
   const emails = await notifyAdmins(deps ?? createNotifyDeps());
-  return Response.json({ opened: opened.length, ...emails });
+  return Response.json({ opened: opened.length, serviceAlerts: services ?? null, ...emails });
 }

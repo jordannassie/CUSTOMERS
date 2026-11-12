@@ -37,33 +37,25 @@ export async function allRows<T>(what: string, page: (from: number, to: number) 
 
 export const unique = (ids: (string | null)[]) => [...new Set(ids.filter((id): id is string => id !== null))];
 
-/** Login email of each user id; auth users are not readable through PostgREST. */
+/** Login email of each user id, from auth.users through one database call per 200 ids (migration 092). It used to page
+ * through every user with auth.admin.listUsers, which grew slower with every signup. */
 export async function emailsOf(userIds: string[]): Promise<Map<string, string>> {
-  const wanted = new Set(userIds);
-  const emails = new Map<string, string>();
-  if (wanted.size === 0) return emails;
-  for (let page = 1; ; page++) {
-    const { data, error } = await createServiceClient().auth.admin.listUsers({
-      page,
-      perPage: PAGE,
-    });
+  const ids = unique(userIds);
+  const rows = await inChunks(ids, async (chunk) => {
+    const { data, error } = await createServiceClient().rpc("admin_user_emails", { p_ids: chunk });
     if (error) fail("owner emails", error);
-    for (const u of data.users) if (wanted.has(u.id) && u.email) emails.set(u.id, u.email);
-    if (data.users.length < PAGE || emails.size === wanted.size) return emails;
-  }
+    return data;
+  });
+  return new Map(rows.filter((r) => r.email).map((r) => [r.id, r.email]));
 }
 
-/** Users whose login email contains the search text, for the admin search boxes. Auth users are not in PostgREST. */
+/** Users whose login email contains the search text, for the admin search boxes (at most 500). */
 export async function userIdsByEmail(search: string): Promise<string[]> {
-  const needle = search.toLowerCase();
-  const ids: string[] = [];
-  if (!needle) return ids;
-  for (let page = 1; ; page++) {
-    const { data, error } = await createServiceClient().auth.admin.listUsers({ page, perPage: PAGE });
-    if (error) fail("users by email", error);
-    for (const u of data.users) if (u.email?.toLowerCase().includes(needle)) ids.push(u.id);
-    if (data.users.length < PAGE) return ids;
-  }
+  const needle = search.trim();
+  if (!needle) return [];
+  const { data, error } = await createServiceClient().rpc("admin_user_ids_by_email", { p_search: needle, p_limit: 500 });
+  if (error) fail("users by email", error);
+  return data.map((r) => r.id);
 }
 
 /** A PostgREST `in` list; an empty one matches nothing (a random id stands in, as `in.()` is refused). */

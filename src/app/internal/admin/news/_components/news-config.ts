@@ -67,15 +67,15 @@ export function getTodayWeekday(): Weekday {
 const CATEGORY_TONES: Record<string, BadgeTone> = {
   "AI Search": "tint",
   "AEO": "tint",
-  "Brand Visibility": "good",
-  "Competitor Intelligence": "mid",
-  "Client Reporting": "mid",
+  "Brand Visibility": "secondary",
+  "Competitor Intelligence": "secondary",
+  "Client Reporting": "secondary",
   "Agency Tools": "tint",
-  "Platform Update": "low",
+  "Platform Update": "secondary",
   "AI Content": "secondary",
   "AI Tools": "tint",
   "AI Marketing": "tint",
-  "New Features": "low",
+  "New Features": "secondary",
 };
 
 export function categoryTone(cat: string): BadgeTone {

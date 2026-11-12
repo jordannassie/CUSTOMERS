@@ -23,6 +23,19 @@ export function isAdminEmail(email: string | null, adminEmails: string[], emailC
   return emailConfirmed && !!email && adminEmails.includes(email.toLowerCase());
 }
 
+/** Where an admin confirms a sign-in with their authenticator app (ADMIN_REQUIRE_MFA). Outside /internal/admin, whose
+ * layout would send them straight back here. */
+export const ADMIN_VERIFY_PATH = "/admin-verify";
+
+export function adminVerifyPathFor(next: string): string {
+  return `${ADMIN_VERIFY_PATH}?next=${encodeURIComponent(next)}`;
+}
+
+/** True when admins must use a second factor and this session has not: its token says aal1 (password only). */
+export function needsSecondFactor(required: boolean, aal: unknown): boolean {
+  return required && aal !== "aal2";
+}
+
 
 /** How long after opening a reset link the "Set new password" form stays open. */
 export const RECOVERY_WINDOW_SECONDS = 60 * 60;

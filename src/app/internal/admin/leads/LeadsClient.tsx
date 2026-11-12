@@ -6,6 +6,7 @@ import { cn } from "cn";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { appFetch } from "@/lib/session-expired";
+import { LEADS_CHANGED } from "../_components/admin-nav";
 import AdminPageHeader from "../_components/page-header";
 import { LeadDetail } from "./_components/lead-detail";
 import { LeadListEmpty, LeadListError, LeadPagination, LeadRows } from "./_components/lead-list";
@@ -23,13 +24,16 @@ async function requestLeads(q: LeadsQuery): Promise<LeadsResponse> {
   });
   const res = await appFetch(`/api/internal/admin/leads?${params}`);
   if (!res.ok) {
-    const data = await res.json().catch(() => ({}));
-    throw new Error(data.error ?? `HTTP ${res.status}`);
+    throw new Error(
+      res.status === 401 || res.status === 403
+        ? "Your admin session has ended. Log in again to see the leads."
+        : "Something went wrong on our side. Try again in a moment.",
+    );
   }
   return res.json();
 }
 
-export default function LeadsClient() {
+export default function LeadsClient({ admins }: { admins: string[] }) {
   const [leads,      setLeads]      = useState<Lead[]>([]);
   const [total,      setTotal]      = useState(0);
   const [pages,      setPages]      = useState(1);
@@ -56,7 +60,7 @@ export default function LeadsClient() {
   }
 
   function showLoadError(err: unknown) {
-    setLoadError(err instanceof Error ? err.message : "Failed to load leads.");
+    setLoadError(err instanceof Error && !/fetch|network/i.test(err.message) ? err.message : "Check your internet connection and try again.");
     setLoading(false);
   }
 
@@ -133,12 +137,14 @@ export default function LeadsClient() {
           setSelected((prev) =>
             prev?.id === lead.id ? { ...prev, read_at: new Date().toISOString() } : prev
           );
+          window.dispatchEvent(new Event(LEADS_CHANGED));
         }
       } catch { /* ignore */ }
     }
   }
 
   function updateLead(id: string, updates: Partial<Lead>) {
+    if ("read_at" in updates) window.dispatchEvent(new Event(LEADS_CHANGED));
     setLeads((prev) => prev.map((l) => l.id === id ? { ...l, ...updates } : l));
     setSelected((prev) => prev?.id === id ? { ...prev, ...updates } as Lead : prev);
   }
@@ -198,7 +204,7 @@ export default function LeadsClient() {
 
         {selected && (
           <div className="flex min-w-0 flex-1 flex-col overflow-hidden bg-surface">
-            <LeadDetail lead={selected} onUpdate={updateLead} onClose={() => setSelected(null)} />
+            <LeadDetail lead={selected} admins={admins} onUpdate={updateLead} onClose={() => setSelected(null)} />
           </div>
         )}
       </div>

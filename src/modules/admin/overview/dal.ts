@@ -63,7 +63,7 @@ export async function loadOverview(
   const { monthStart, lastMonthStart, lastMonthSameTime } = monthBounds(now);
   const [monthIso, lastMonthIso, sameTimeIso] = [monthStart, lastMonthStart, lastMonthSameTime].map((d) => d.toISOString());
 
-  const [agencies, trials, paying, businesses, usage, revenue, signups, failed, openAlerts, history, overdueScans] = await Promise.all([
+  const [agencies, trials, paying, businesses, revenue, signups, failed, openAlerts, history, overdueScans] = await Promise.all([
     db.from("agencies").select("id", { count: "exact", head: true }).in("is_test", testFlags).neq("status", "deleted"),
     // Running trials only: an unfinished signup (no subscription, no trial end) and an ended trial are left out.
     db
@@ -82,7 +82,6 @@ export async function loadOverview(
       .select("id, agencies!inner(is_test)", { count: "exact", head: true })
       .is("deleted_at", null)
       .in("agencies.is_test", testFlags),
-    loadUsageCostSince(monthStart, includeTest, now),
     revenueSince(stripe, monthStart),
     db
       .from("agencies")
@@ -118,8 +117,8 @@ export async function loadOverview(
     businesses: businesses.count ?? 0,
     agenciesAtMonthStart: history.agenciesAtMonthStart,
     revenue,
-    creditsUsed: usage.totals.credits,
-    aiCostUsd: usage.totals.costUsd,
+    creditsUsed: history.thisMonth.credits,
+    aiCostUsd: history.thisMonth.costUsd,
     recentSignups: signups.data.map((a) => ({
       id: a.id,
       name: a.name,
@@ -141,8 +140,8 @@ export async function loadOverview(
     vsLastMonth: {
       agencies: countChange(agencies.count ?? 0, history.agenciesAtMonthStart, monthStart),
       trialsStarted: history.trialsStarted,
-      credits: percentChange(usage.totals.credits, history.lastMonth.credits),
-      aiCost: percentChange(usage.totals.costUsd, history.lastMonth.costUsd),
+      credits: percentChange(history.thisMonth.credits, history.lastMonth.credits),
+      aiCost: percentChange(history.thisMonth.costUsd, history.lastMonth.costUsd),
       revenue:
         revenue.state === "ok" && history.lastMonthRevenue !== null ? percentChange(revenue.cents, history.lastMonthRevenue) : null,
     },
@@ -226,6 +225,8 @@ async function loadHistory(
     // Capped at the last day of last month, so a short month never pulls in this month's 1st.
     lastMonth: sumDays(usage.byDay, t.lastMonthStart, new Date(Math.min(t.lastMonthSameTime.getTime(), Date.parse(t.monthIso) - 1))),
     lastMonthRevenue,
+    // One usage report from last month's 1st covers this month too, so it is read once, not twice.
+    thisMonth: sumDays(usage.byDay, new Date(t.monthIso), t.now),
     spark: lastDays(usage.byDay, t.now),
   };
 }

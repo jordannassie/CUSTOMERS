@@ -31,11 +31,11 @@ export const STATUS_LABELS: Record<Status, string> = {
   declined: "Declined",
 };
 
-const STATUS_VARIANTS: Record<Status, "tint" | "mid" | "secondary" | "good"> = {
+const STATUS_VARIANTS: Record<Status, "tint" | "secondary"> = {
   new: "tint",
-  reviewing: "mid",
+  reviewing: "secondary",
   planned: "secondary",
-  shipped: "good",
+  shipped: "secondary",
   declined: "secondary",
 };
 

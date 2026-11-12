@@ -4,10 +4,10 @@ import { THIN_MARGIN, type ModelMargin, type Verdict } from "@/modules/admin";
 import { count, money, percent } from "./format";
 
 // The app's pill colours (src/components/app/pills.ts): grey when fine, blue when thin, red only when losing money.
-const VERDICT: Record<Verdict, { label: string; badge: "low" | "tint" | "secondary"; bar: string }> = {
+const VERDICT: Record<Verdict, { label: string; badge: "mid" | "tint" | "secondary"; bar: string }> = {
   profitable: { label: "Profitable", badge: "secondary", bar: "bg-primary" },
   thin: { label: "Thin margin", badge: "tint", bar: "bg-primary" },
-  losing: { label: "Losing money", badge: "low", bar: "bg-low" },
+  losing: { label: "Losing money", badge: "mid", bar: "bg-mid" },
   no_data: { label: "No checks yet", badge: "secondary", bar: "bg-competitor-3" },
 };
 
@@ -21,10 +21,13 @@ const DOT: Record<ModelMargin["model"], string> = {
 export default function MarginCheck({
   models,
   creditPrice,
+  creditBasis = null,
   otherCost,
 }: {
   models: ModelMargin[];
   creditPrice: number | null;
+  /** Where that price comes from, like "the 2,000 credits top-up". */
+  creditBasis?: string | null;
   otherCost: number;
 }) {
   return (
@@ -36,7 +39,7 @@ export default function MarginCheck({
         <p className="mt-1 text-[length:calc(13px*var(--px,1))] text-muted-foreground">
           {creditPrice === null
             ? "No active plan has a price, so there is no credit price to compare with."
-            : `Every check costs the customer 1 credit, worth at least ${money(creditPrice)} on the cheapest plan. The bar shows how much of that the AI call costs us. Under ${percent(THIN_MARGIN)} margin is flagged.`}
+            : `Every check costs the customer 1 credit, worth at least ${money(creditPrice)}${creditBasis ? `, the price on ${creditBasis}` : ""}, the cheapest way to buy credits. The bar shows how much of that the AI call costs us. Under ${percent(THIN_MARGIN)} margin is flagged.`}
         </p>
       </header>
       <ul className="divide-y divide-border">
@@ -80,14 +83,14 @@ function ModelRow({ m, creditPrice }: { m: ModelMargin; creditPrice: number | nu
         </div>
         <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-[length:calc(13px*var(--px,1))] sm:grid-cols-4">
           <Fact label="Cost per check" value={money(m.costPerCheck)} />
-          <Fact label="Cost per API call" value={money(m.costPerCall)} />
+          <Fact label="Cost per AI request" value={money(m.costPerCall)} />
           <Fact label="Checks" value={count(m.checks)} />
           <Fact label="Answered from cache" value={m.checks > 0 ? percent(m.cached / m.checks) : ""} />
         </dl>
       </div>
 
       <div className="flex items-baseline gap-2 lg:block lg:text-right">
-        <p className={cn("tabular text-[length:calc(24px*var(--px,1))] font-semibold tracking-[-0.02em]", m.verdict === "losing" && "text-low-text")}>
+        <p className={cn("tabular text-[length:calc(24px*var(--px,1))] font-semibold tracking-[-0.02em]", m.verdict === "losing" && "text-mid-text")}>
           {percent(m.margin) || "-"}
         </p>
         <p className="text-[length:calc(12px*var(--px,1))] text-muted-foreground">margin</p>

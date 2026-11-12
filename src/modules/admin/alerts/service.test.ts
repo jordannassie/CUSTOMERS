@@ -36,17 +36,31 @@ describe("alertWording", () => {
   const webhook = { kind: "webhook_failures", message: "36 Stripe webhook events failed in the last hour. Customers may not get their credits or plan changes." };
 
   it("keeps an alert seen in the last hour as it is", () => {
-    expect(alertWording({ ...webhook, lastSeenAt: "2026-10-14T11:30:00Z" }, now)).toEqual({ message: webhook.message, stale: false });
+    expect(alertWording({ ...webhook, lastSeenAt: "2026-10-14T11:30:00Z" }, now)).toEqual({
+      message: "36 payment updates from Stripe failed in the last hour. Customers may not get their credits or plan changes.",
+      stale: false,
+    });
   });
 
   it("stops saying 'in the last hour' once the events stopped, and says nothing new since", () => {
     expect(alertWording({ ...webhook, lastSeenAt: "2026-10-11T18:30:00Z" }, now)).toEqual({
-      message: "36 Stripe webhook events failed in one hour. Customers may not get their credits or plan changes.",
+      message: "36 payment updates from Stripe failed in one hour. Customers may not get their credits or plan changes.",
       stale: true,
     });
     expect(alertWording({ kind: "provider_errors", message: "Errors in the last hour from Anthropic.", lastSeenAt: "2026-10-14T07:45:00Z" }, now).message).toBe(
-      "Errors in one hour from Anthropic.",
+      "Errors in one hour from Claude.",
     );
+  });
+
+  it("names the AI tools and the worker in plain words", () => {
+    const at = { lastSeenAt: "2026-10-14T11:30:00Z" };
+    expect(alertWording({ ...at, kind: "provider_errors", message: "Errors in the last hour from openai, perplexity." }, now).message).toBe(
+      "Errors in the last hour from ChatGPT, Perplexity.",
+    );
+    expect(alertWording({ ...at, kind: "stuck_jobs", message: "2 scans are stuck for over 30 minutes. Check that the worker is running." }, now).message).toBe(
+      "2 scans are stuck for over 30 minutes. Check Scan worker and Automatic scans on the System status page.",
+    );
+    expect(alertWording({ ...at, kind: "service_check:anthropic", message: "Anthropic (Claude) is not working." }, now).message).toBe("Claude is not working.");
   });
 
   it("leaves alerts that are not about the last hour alone, however old", () => {
@@ -65,8 +79,8 @@ describe("serviceAlertChanges (Settings checks open and close alerts)", () => {
       svc("firecrawl", "data", "error", "Unexpected answer (418)."),
     ]);
     expect(raise).toEqual([
-      { kind: "service_check:anthropic", severity: "critical", serviceId: "anthropic", message: "anthropic is not working. The key was rejected (401). Found by the Settings check." },
-      { kind: "service_check:job_settings", severity: "critical", serviceId: "job_settings", message: "job_settings is not working. Scheduled and retried scans can't start. Found by the Settings check." },
+      { kind: "service_check:anthropic", severity: "critical", serviceId: "anthropic", message: "anthropic is not working. The key was rejected (401). Found by the System status check." },
+      { kind: "service_check:job_settings", severity: "critical", serviceId: "job_settings", message: "job_settings is not working. Scheduled and retried scans can't start. Found by the System status check." },
       expect.objectContaining({ kind: "service_check:firecrawl", severity: "warning" }),
     ]);
   });
@@ -100,7 +114,7 @@ describe("foldClaudeAlerts (one Claude alert while it is unavailable)", () => {
     expect(kinds).toEqual(["claude_unavailable", "webhook_failures"]);
   });
 
-  it("folds the Settings check of the Anthropic key in, keeping its urgency", () => {
+  it("folds the System status check of the Anthropic key in, keeping its urgency", () => {
     const keyCheck = { ...alert("service_check:anthropic", "Anthropic (Claude) is not working. The key was rejected (401)."), severity: "critical" as const };
     const folded = foldClaudeAlerts([alert("claude_unavailable"), keyCheck, alert("service_check:openai")]);
     expect(folded.map((a) => [a.kind, a.severity])).toEqual([

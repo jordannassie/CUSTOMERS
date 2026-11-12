@@ -3,7 +3,7 @@
 import { refresh } from "next/cache";
 import { AuthError, authFailure, requireAdmin, type ActionResult, type SessionUser } from "@/modules/auth";
 import { accountRestoredEmail, sendSafely } from "@/modules/account";
-import { PERIOD_GRACE_MS } from "@/modules/billing";
+import { PERIOD_GRACE_MS, type PauseOutcome } from "@/modules/billing";
 import { adminAdjustCredits, extendTrialGrant } from "@/modules/credits";
 import { auditedChange, changed, PartialChangeError, unchanged, type AuditedResult } from "../dal";
 import { changeStatus, ownerEmail, readAgencyState, setTestFlag, setTrialEnd, statusBeforeSuspend, type AgencyState } from "./dal";
@@ -131,9 +131,25 @@ export async function suspendAgency(input: unknown): Promise<Done> {
     if (!isBillingStatus(r.state.status)) return { ok: false, status: 409, error: "This agency is already suspended or deleted." };
 
     const previous = r.state.status;
-    return await audited<Done>("agency.suspend", agencyId, { reason, previous_status: previous }, async () =>
-      (await changeStatus(agencyId, previous, "suspended")) ? changed(DONE) : unchanged(CHANGED, MOVED_ON),
-    );
+    // Billing stops with access: Stripe stops charging while suspended (billing/pause-billing.ts). A canceled plan has
+    // nothing left to charge.
+    const subscriptionId = previous !== "canceled" ? r.state.subscriptionId : null;
+    const stripe = subscriptionId ? adminStripeClient() : null;
+    return await audited<Done>("agency.suspend", agencyId, { reason, previous_status: previous, pauses_billing: !!stripe }, async () => {
+      let billing: PauseOutcome = "nothing_in_stripe";
+      if (stripe && subscriptionId) {
+        try {
+          billing = await stripe.setBillingPaused(subscriptionId, true);
+        } catch (error) {
+          const message = error instanceof Error ? error.message : "unknown error";
+          return unchanged({ ok: false, status: 502, error: `We couldn't pause billing in Stripe, so the agency was not suspended. Stripe said: ${message}` }, `Stripe refused: ${message}`);
+        }
+      }
+      if (await changeStatus(agencyId, previous, "suspended")) return changed(DONE);
+      // The agency moved on meanwhile, so billing goes back to how it was.
+      if (stripe && subscriptionId && billing === "paused") await stripe.setBillingPaused(subscriptionId, false).catch(() => undefined);
+      return unchanged(CHANGED, MOVED_ON);
+    });
   } catch (error) {
     return authFailure(error);
   }
@@ -161,10 +177,23 @@ export async function unsuspendAgency(input: unknown): Promise<Done> {
       }
     }
     const next = fromStripe ?? statusAfterUnsuspend(await statusBeforeSuspend(agencyId));
-    const details = { reason, new_status: next, status_from_stripe: fromStripe !== null };
-    return await audited<Done>("agency.unsuspend", agencyId, details, async () =>
-      (await changeStatus(agencyId, "suspended", next)) ? changed(DONE) : unchanged(CHANGED, MOVED_ON),
-    );
+    // Billing starts again with access; a subscription canceled meanwhile has nothing to resume.
+    const resume = stripe && r.state.subscriptionId && next !== "canceled" ? { stripe, id: r.state.subscriptionId } : null;
+    const details = { reason, new_status: next, status_from_stripe: fromStripe !== null, resumes_billing: !!resume };
+    return await audited<Done>("agency.unsuspend", agencyId, details, async () => {
+      let billing: PauseOutcome = "nothing_in_stripe";
+      if (resume) {
+        try {
+          billing = await resume.stripe.setBillingPaused(resume.id, false);
+        } catch (error) {
+          const message = error instanceof Error ? error.message : "unknown error";
+          return unchanged({ ok: false, status: 502, error: `We couldn't restart billing in Stripe, so the agency is still suspended. Stripe said: ${message}` }, `Stripe refused: ${message}`);
+        }
+      }
+      if (await changeStatus(agencyId, "suspended", next)) return changed(DONE);
+      if (resume && billing === "resumed") await resume.stripe.setBillingPaused(resume.id, true).catch(() => undefined);
+      return unchanged(CHANGED, MOVED_ON);
+    });
   } catch (error) {
     return authFailure(error);
   }

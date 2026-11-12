@@ -30,14 +30,17 @@ export async function runScanNow(input: unknown): Promise<ActionResult<{ jobId: 
   }
 
   const parsed = runScanInput.safeParse(input);
-  if (!parsed.success) return { ok: false, status: 400, error: "Pick a business from the list." };
+  if (!parsed.success) {
+    const reasonMissing = parsed.error.issues.some((i) => i.path[0] === "reason");
+    return { ok: false, status: 400, error: reasonMissing ? "Say why, in at least 3 characters." : "Pick a business from the list.", ...(reasonMissing && { field: "reason" }) };
+  }
 
-  const { businessId } = parsed.data;
+  const { businessId, reason } = parsed.data;
   try {
     const result = await auditedChange<ActionResult<{ jobId: string }>>(
       "business.run_scan",
       { type: "business", id: businessId },
-      {},
+      { reason },
       async () => {
         const queued = await enqueueScan(businessId);
         if (!queued.ok) return unchanged({ ok: false, ...REFUSED[queued.reason] }, queued.reason);

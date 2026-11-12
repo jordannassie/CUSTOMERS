@@ -17,13 +17,16 @@ describe("usage and cost rules (B-67)", () => {
     expect(periodStart(new Date("2026-09-27T15:30:00Z"), "month").toISOString()).toBe("2026-09-01T00:00:00.000Z");
   });
 
-  it("uses the cheapest active plan's credit price and ignores plans with no price", () => {
+  it("uses the cheapest credit price across plans and top-ups, ignoring offers with no price", () => {
     const plans = [
-      { priceCents: 14900, monthlyCredits: 1200 },
-      { priceCents: 24900, monthlyCredits: 2500 },
-      { priceCents: null, monthlyCredits: null },
+      { name: "the Starter plan", priceCents: 14900, credits: 1200 },
+      { name: "the Pro plan", priceCents: 24900, credits: 2500 },
+      { name: "the Custom plan", priceCents: null, credits: null },
     ];
-    expect(lowestCreditPrice(plans)).toBeCloseTo(0.0996, 4);
+    expect(lowestCreditPrice(plans)?.usd).toBeCloseTo(0.0996, 4);
+    // The 2,000 credit top-up ($180) is cheaper per credit than any plan, so it sets the floor (was left out before).
+    const withTopups = [...plans, { name: "the 500 credits top-up", priceCents: 5000, credits: 500 }, { name: "the 2,000 credits top-up", priceCents: 18000, credits: 2000 }];
+    expect(lowestCreditPrice(withTopups)).toEqual({ usd: 0.09, name: "the 2,000 credits top-up" });
     expect(lowestCreditPrice([])).toBeNull();
   });
 
@@ -36,6 +39,27 @@ describe("usage and cost rules (B-67)", () => {
     [null, "no_data"],
   ] as const)("calls a %s margin %s", (margin, verdict) => {
     expect(verdictFor(margin)).toBe(verdict);
+  });
+
+  it("counts only paid credits as revenue, and grouped rows by their number of calls", () => {
+    // From the database: grouped rows, one with 3 calls, and trial credits marked as not paid.
+    const report = buildReport({
+      from: new Date("2026-09-26T00:00:00Z"),
+      to: new Date("2026-09-26T12:00:00Z"),
+      creditPriceUsd: 0.1,
+      captures: [
+        { agencyId: "a1", provider: "openai", paid: true, credits: 6, createdAt: "2026-09-26" },
+        { agencyId: "a1", provider: "openai", paid: false, credits: 4, createdAt: "2026-09-26" },
+      ],
+      usage: [{ agencyId: "a1", usageType: "ai_visibility_check", provider: "openai", cached: false, costUsd: 0.3, events: 10, createdAt: "2026-09-26" }],
+      agencies: new Map([["a1", { name: "North", isTest: false }]]),
+    });
+    expect(report.totals).toMatchObject({ credits: 10, freeCredits: 4, checks: 10, cached: 0 });
+    // Revenue is 6 paid credits at $0.10 = $0.60 against $0.30 of AI: 50%, not the 70% that counting trial credits gave.
+    expect(report.totals.margin).toBeCloseTo(0.5, 6);
+    expect(report.byAgency[0].margin).toBeCloseTo(0.5, 6);
+    expect(report.byModel[0]).toMatchObject({ credits: 10, checks: 10 });
+    expect(report.byModel[0].costPerCheck).toBeCloseTo(0.03, 6);
   });
 
   it("splits credits and cost by day, model and agency, and counts cache hits", () => {

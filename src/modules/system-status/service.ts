@@ -79,10 +79,10 @@ export const PROBES: Probe[] = [
 
 export type ProbeDeps = { fetch?: typeof fetch; timeoutMs?: number };
 
-export type ProbeResult = Pick<ServiceStatus, "state" | "detail">;
+export type ProbeResult = Pick<ServiceStatus, "state" | "detail" | "fix">;
 
 export async function runProbe(probe: Probe, key: string | undefined, deps: ProbeDeps = {}): Promise<ProbeResult> {
-  if (!key) return { state: "not_configured", detail: "No key is set." };
+  if (!key) return { state: "not_configured", detail: "Not connected: no key is set on this site.", fix: `Add the ${probe.name} key in Netlify (Site configuration, Environment variables), then redeploy.` };
 
   const doFetch = deps.fetch ?? fetch;
   const { url, headers } = probe.request(key, deps);
@@ -106,10 +106,12 @@ export async function runProbe(probe: Probe, key: string | undefined, deps: Prob
 
 function classifyFailure(probe: Probe, status: number, body: string): ProbeResult {
   if (probe.acceptsError?.(status, body)) return { state: "ok", detail: "Connected. The key can send email only." };
-  if (status === 401 || status === 403) return { state: "error", detail: `The key was rejected (${status}).` };
+  if (status === 401 || status === 403) {
+    return { state: "error", detail: `${probe.name} turned down our key, so nothing that uses it works.`, fix: `Replace the ${probe.name} key in Netlify and redeploy (it answered ${status}).` };
+  }
   if (status === 429) return { state: "unknown", detail: "Too many requests right now. Try again in a minute." };
-  if (status >= 500) return { state: "error", detail: `${probe.name} is having problems (${status}).` };
-  return { state: "error", detail: `Unexpected answer (${status}).` };
+  if (status >= 500) return { state: "error", detail: `${probe.name} is having problems on its side. It usually clears by itself.`, fix: `Check ${probe.name}'s status page if it lasts (it answered ${status}).` };
+  return { state: "error", detail: `${probe.name} gave an unexpected answer.`, fix: `Tell the developer: the check answered ${status}.` };
 }
 
 export function stripeMode(key: string | undefined): ServiceStatus["mode"] {

@@ -7,13 +7,12 @@ export function TestBadge() {
 }
 
 // One set of words for a scan on the Scans and Business pages. Older runs without a job map onto the same five.
-// The app's pill colours (src/components/app/pills.ts): blue for a scan still going, red only for a failure, grey
-// for the rest.
-export const SCAN_STATUS: Record<ScanStatus, { label: string; variant: "low" | "tint" | "secondary" }> = {
+// A failure is a warning, in the light orange the dashboard uses for warnings; every other status is grey.
+export const SCAN_STATUS: Record<ScanStatus, { label: string; variant: "mid" | "secondary" }> = {
   queued: { label: "Waiting", variant: "secondary" },
-  running: { label: "Running", variant: "tint" },
+  running: { label: "Running", variant: "secondary" },
   done: { label: "Done", variant: "secondary" },
-  failed: { label: "Failed", variant: "low" },
+  failed: { label: "Failed", variant: "mid" },
   skipped: { label: "Skipped", variant: "secondary" },
 };
 

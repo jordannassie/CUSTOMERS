@@ -2,7 +2,9 @@ import { ChevronLeft, ChevronRight, Inbox } from "lucide-react";
 import { cn } from "cn";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { looksLikeCode, withoutCode } from "@/lib/submitted-text";
 import AdminEmpty from "../../_components/admin-empty";
+import { SpamBadge } from "../../_components/submitted-code";
 import { INTEREST_LABELS, formatDate, statusLabel, statusVariant, type Lead } from "./lead-types";
 
 export function LeadListEmpty({ filtered }: { filtered: boolean }) {
@@ -24,7 +26,7 @@ export function LeadListEmpty({ filtered }: { filtered: boolean }) {
 export function LeadListError({ message, onRetry }: { message: string; onRetry: () => void }) {
   return (
     <div role="alert" className="m-4 rounded-md bg-low-bg px-4 py-3 text-low-text">
-      <p className="text-[length:calc(14px*var(--px,1))] font-medium">Failed to load leads</p>
+      <p className="text-[length:calc(14px*var(--px,1))] font-medium">The leads didn&apos;t load</p>
       <p className="mt-1 text-[length:calc(13px*var(--px,1))]">{message}</p>
       <Button type="button" variant="outline" size="sm" className="mt-3" onClick={onRetry}>
         Retry
@@ -46,7 +48,9 @@ export function LeadRows({
 }) {
   return (
     <ul className="flex flex-col divide-y divide-border">
-      {leads.map((lead) => (
+      {leads.map((lead) => {
+        const spam = looksLikeCode(lead.name, lead.company, lead.message, lead.website, lead.page_path);
+        return (
         <li key={lead.id}>
           <button
             type="button"
@@ -69,10 +73,12 @@ export function LeadRows({
                 )}
                 <div className="min-w-0">
                   <p className={cn("truncate text-[length:calc(14px*var(--px,1))]", lead.read_at ? "text-foreground" : "font-semibold")}>
-                    {lead.name}
+                    {withoutCode(lead.name) || "No name"}
                   </p>
                   <p className="truncate text-[length:calc(12px*var(--px,1))] text-muted-foreground" title={lead.email}>{lead.email}</p>
-                  {lead.company && <p className="truncate text-[length:calc(12px*var(--px,1))] text-muted-foreground" title={lead.company}>{lead.company}</p>}
+                  {lead.company && withoutCode(lead.company) && (
+                    <p className="truncate text-[length:calc(12px*var(--px,1))] text-muted-foreground">{withoutCode(lead.company)}</p>
+                  )}
                 </div>
               </div>
               <div className="flex shrink-0 flex-col items-end gap-1">
@@ -81,12 +87,15 @@ export function LeadRows({
                   {formatDate(lead.created_at, true)}
                 </span>
                 <Badge variant={statusVariant(lead.status)}>{statusLabel(lead.status)}</Badge>
+                {spam && <SpamBadge />}
+                {lead.replied_at && <Badge variant="secondary">Replied</Badge>}
               </div>
             </div>
-            {!compact && <p className="mt-2 line-clamp-1 w-full pl-4 text-left text-[length:calc(12px*var(--px,1))] text-muted-foreground">{lead.message}</p>}
+            {!compact && <p className="mt-2 line-clamp-1 w-full pl-4 text-left text-[length:calc(12px*var(--px,1))] text-muted-foreground">{withoutCode(lead.message)}</p>}
           </button>
         </li>
-      ))}
+        );
+      })}
     </ul>
   );
 }

@@ -1,15 +1,16 @@
 import {
+  Activity,
   AppWindow,
   Building2,
   Clapperboard,
   Coins,
+  History,
   Inbox,
   LayoutDashboard,
   Lightbulb,
   MessageSquareText,
   Newspaper,
   ScanSearch,
-  Settings,
   Store,
   type LucideIcon,
 } from "lucide-react";
@@ -29,13 +30,16 @@ export const MAIN_ITEMS: AdminNavItem[] = [
   { label: "Businesses", href: `${BASE}/businesses`, icon: Store },
   { label: "Scans", href: `${BASE}/scans`, icon: ScanSearch },
   { label: "Usage and cost", href: `${BASE}/usage`, icon: Coins },
-  { label: "Settings", href: `${BASE}/settings`, icon: Settings },
+  // Was "Settings": nothing there is set, it shows whether each service works (admin review 2026-11-12).
+  { label: "System status", href: `${BASE}/settings`, icon: Activity },
 ];
 
 // Kept outside the main menu (D-07, D-35).
 export const EXTRA_ITEMS: AdminNavItem[] = [
   { label: "Leads", href: `${BASE}/leads`, icon: Inbox },
   { label: "Feature requests", href: `${BASE}/feature-requests`, icon: Lightbulb },
+  // Every admin action across the admin, newest first (it used to show only per agency).
+  { label: "Admin activity", href: `${BASE}/activity`, icon: History },
   { label: "LinkedIn studio", href: `${BASE}/news`, icon: Newspaper },
   // Public site extras merged from main: the /apps directory, its reviews and /ads orders.
   { label: "Apps", href: `${BASE}/apps`, icon: AppWindow },

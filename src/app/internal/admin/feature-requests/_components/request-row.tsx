@@ -1,6 +1,8 @@
 import { ChevronDown } from "lucide-react";
 import { cn } from "cn";
 import { Button } from "@/components/ui/button";
+import { looksLikeCode, withoutCode } from "@/lib/submitted-text";
+import { CodeNotice, SpamBadge } from "../../_components/submitted-code";
 import { STATUS_LABELS, StatusBadge, formatDate, type FeatureRequest, type Status } from "./request-parts";
 
 interface Props {
@@ -13,6 +15,9 @@ interface Props {
 
 export function RequestRow({ req, expanded, saving, onToggle, onStatus }: Props) {
   const panelId = `feature-request-${req.id}`;
+  const spam = looksLikeCode(req.title, req.description, req.pageContext);
+  const title = withoutCode(req.title) || "No title";
+  const page = req.pageContext ? withoutCode(req.pageContext) || "-" : "-";
   return (
     <li>
       <button
@@ -24,17 +29,18 @@ export function RequestRow({ req, expanded, saving, onToggle, onStatus }: Props)
       >
         <span className="grid min-w-0 flex-1 gap-1 md:grid-cols-[1fr_calc(180px*var(--px,1))_calc(190px*var(--px,1))] md:items-center md:gap-3">
           <span className="min-w-0">
-            <span className="block truncate text-[length:calc(14px*var(--px,1))] font-medium" title={req.title}>{req.title}</span>
+            <span className="block truncate text-[length:calc(14px*var(--px,1))] font-medium" title={title}>{title}</span>
             <span className="block truncate text-[length:calc(13px*var(--px,1))] text-text-hint">
               {req.email}
               {req.businessName && `, ${req.businessName}`}
             </span>
           </span>
-          <span className="truncate text-[length:calc(13px*var(--px,1))] text-text-hint" title={req.pageContext ?? "-"}>{req.pageContext ?? "-"}</span>
+          <span className="truncate text-[length:calc(13px*var(--px,1))] text-text-hint" title={page}>{page}</span>
           <span className="text-[length:calc(13px*var(--px,1))] text-text-hint">{formatDate(req.createdAt, true)}</span>
         </span>
         {/* Fixed width so the date column lines up whatever the badge says. */}
-        <span className="flex shrink-0 items-center justify-end gap-3 md:w-32">
+        <span className="flex shrink-0 flex-wrap items-center justify-end gap-2 md:min-w-32">
+          {spam && <SpamBadge />}
           <StatusBadge status={req.status} />
           <ChevronDown
             aria-hidden
@@ -48,13 +54,18 @@ export function RequestRow({ req, expanded, saving, onToggle, onStatus }: Props)
 
       {expanded && (
         <div id={panelId} className="border-t border-border bg-muted px-4 py-4">
+          {spam && (
+            <div className="mb-4">
+              <CodeNotice what="request" original={{ Title: req.title, Page: req.pageContext, Description: req.description }} />
+            </div>
+          )}
           <p className="mb-2 text-[length:calc(12px*var(--px,1))] font-medium text-muted-foreground">Description</p>
-          <p className="mb-5 text-[length:calc(14px*var(--px,1))] leading-relaxed whitespace-pre-wrap">{req.description}</p>
+          <p className="mb-5 text-[length:calc(14px*var(--px,1))] leading-relaxed whitespace-pre-wrap">{withoutCode(req.description) || "No description"}</p>
 
           <div className="mb-5 flex flex-wrap gap-x-4 gap-y-1 text-[length:calc(13px*var(--px,1))] text-muted-foreground">
             <Meta label="User" value={req.email} />
             {req.businessName && <Meta label="Business" value={req.businessName} />}
-            {req.pageContext && <Meta label="Page" value={req.pageContext} />}
+            {req.pageContext && <Meta label="Page" value={page} />}
             <Meta label="Submitted" value={formatDate(req.createdAt, true)} />
           </div>
 

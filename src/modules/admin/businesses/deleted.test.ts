@@ -90,7 +90,7 @@ describe("admin businesses: deleted ones", () => {
           .single(),
       )
     ).id;
-    expect(await runScanNow({ businessId: deletedId })).toEqual({
+    expect(await runScanNow({ businessId: deletedId, reason: "Support ticket 42" })).toEqual({
       ok: false,
       status: 409,
       error: "This business was deleted, so it can't be scanned.",
@@ -125,7 +125,7 @@ describe("admin businesses: deleted ones", () => {
           .single(),
       )
     ).id;
-    expect(await runScanNow({ businessId: liveId })).toMatchObject({ ok: false, status: 409 });
+    expect(await runScanNow({ businessId: liveId, reason: "Support ticket 42" })).toMatchObject({ ok: false, status: 409 });
 
     const { count } = await service
       .from("scan_jobs")

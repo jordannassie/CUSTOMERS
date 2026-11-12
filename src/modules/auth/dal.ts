@@ -6,7 +6,7 @@ import { loginPathFor } from "@/lib/safe-next";
 import { createClient } from "@/lib/supabase/server";
 import { AuthError } from "./errors";
 import { isAuthUnavailable } from "@/lib/supabase/auth-errors";
-import { blockedPathFor, isAdminEmail, isAgencyPaused, isRecentRecovery, parseAdminEmails } from "./service";
+import { adminVerifyPathFor, blockedPathFor, isAdminEmail, isAgencyPaused, isRecentRecovery, needsSecondFactor, parseAdminEmails } from "./service";
 
 export type SessionUser = { id: string; email: string | null };
 export type CurrentAgency = { id: string; name: string; status: string; isTest: boolean };
@@ -33,12 +33,16 @@ const loadUser = cache(async (): Promise<VerifiedUser | null> => {
 
 // The signed-in user from the session token. getClaims() checks its signature locally against the project's published
 // key (cached), like proxy.ts, instead of a round trip to Supabase Auth on every page and action.
-const claimsUser = cache(async (): Promise<SessionUser | null> => {
+const sessionClaims = cache(async () => {
   const supabase = await createClient();
   const { data, error } = await supabase.auth.getClaims();
   if (error && isAuthUnavailable(error)) throw new AuthError("unavailable", { cause: error });
-  const claims = data?.claims;
-  if (error || !claims?.sub) return null;
+  return error ? null : (data?.claims ?? null);
+});
+
+const claimsUser = cache(async (): Promise<SessionUser | null> => {
+  const claims = await sessionClaims();
+  if (!claims?.sub) return null;
   return { id: claims.sub, email: typeof claims.email === "string" && claims.email ? claims.email : null };
 });
 
@@ -92,10 +96,24 @@ export async function requireAgency(
 }
 
 export async function requireAdmin(options: GuardOptions = {}): Promise<SessionUser> {
+  const user = await requireAdminPassword(options);
+  // With ADMIN_REQUIRE_MFA on, a password alone is not enough: the session must have passed the app code (aal2).
+  if (!(await adminNeedsSecondFactor())) return user;
+  if (options.next !== undefined) redirect(adminVerifyPathFor(options.next));
+  throw new AuthError("second_factor");
+}
+
+/** An admin by email who may not have entered the app code yet: only for the page and actions that ask for it. */
+export async function requireAdminPassword(options: GuardOptions = {}): Promise<SessionUser> {
   const user = await requireUser(options);
   if (await isAdmin(user)) return user;
   if (options.next !== undefined) redirect("/dashboard");
   throw new AuthError("forbidden");
+}
+
+/** Whether this session still has to enter the authenticator app code (always false with ADMIN_REQUIRE_MFA off). */
+export async function adminNeedsSecondFactor(): Promise<boolean> {
+  return needsSecondFactor(env.ADMIN_REQUIRE_MFA === "true", (await sessionClaims())?.aal);
 }
 
 // For showing admin-only links; access checks still go through requireAdmin().

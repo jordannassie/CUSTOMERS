@@ -2,13 +2,13 @@ import "server-only";
 import { requireAdmin } from "@/modules/auth";
 import { createServiceClient } from "@/lib/supabase/service";
 import { allRows, inChunks } from "../businesses/dal";
-import { SCAN_STATUSES, type ScanStatus } from "./schema";
-import { durationMs, jobModels, sumBy } from "./service";
+import { SCAN_STATUSES, type ScanListQuery, type ScanStatus } from "./schema";
+import { durationMs, jobModels } from "./service";
 
-export const SCAN_LIST_LIMIT = 100;
-// visibility_results has one row per check; a page of 100 jobs stays well under this many IDs per query.
-const RUN_CHUNK = 100;
-const PAGE = 1000;
+/** Scans a page; the list used to stop at the newest 100 with no way further back. */
+export const SCAN_PAGE_SIZE = 50;
+/** Kept for the "Showing the newest" note in older screens; the list is paged now. */
+export const SCAN_LIST_LIMIT = SCAN_PAGE_SIZE;
 
 export type AdminScanRow = {
   id: string;
@@ -31,31 +31,65 @@ export type AdminScanRow = {
 
 export type AdminScanList = {
   rows: AdminScanRow[];
+  /** Per status, with the date, agency and test filters applied. */
   counts: Record<ScanStatus | "all", number>;
+  total: number;
+  page: number;
+  pages: number;
+  /** The agency filtered to, for the "Agency: … ×" chip. */
+  agencyName: string | null;
 };
 
-/** Newest scan jobs first, optionally one status only, with what each cost us in AI calls. */
-export async function listScanJobs(status: ScanStatus | undefined): Promise<AdminScanList> {
+type Filters = Omit<ScanListQuery, "status" | "page">;
+
+const nextDay = (d: string) => new Date(Date.parse(`${d}T00:00:00Z`) + 86_400_000).toISOString();
+
+/** The date, agency and test filters on any scan_jobs query that embeds agencies (inner join when filtering on it). */
+function filtered<Q extends { gte: (c: string, v: string) => Q; lt: (c: string, v: string) => Q; eq: (c: string, v: string | boolean) => Q }>(
+  query: Q,
+  f: Filters,
+): Q {
+  let q = query;
+  if (f.from) q = q.gte("created_at", `${f.from}T00:00:00.000Z`);
+  if (f.to) q = q.lt("created_at", nextDay(f.to));
+  if (f.agency) q = q.eq("agency_id", f.agency);
+  if (f.business) q = q.eq("business_id", f.business);
+  if (f.test !== "all") q = q.eq("agencies.is_test", f.test === "test");
+  return q;
+}
+
+/** One page of scan jobs, newest first, with filters, and what each cost us in AI calls. */
+export async function listScanJobs(query: ScanListQuery): Promise<AdminScanList> {
   await requireAdmin();
   const db = createServiceClient();
+  const { status, page, ...f } = query;
+  // An inner join only when filtering on the agency's test flag: a job whose agency is gone still lists otherwise.
+  const agencies = f.test === "all" ? "agencies(name, is_test)" : "agencies!inner(name, is_test)";
 
-  let query = db
-    .from("scan_jobs")
-    .select(
-      "id, status, business_id, agency_id, attempts, credits_charged, error, created_at, locked_at, finished_at, businesses(name, models), agencies(name, is_test)",
-    )
-    .order("created_at", { ascending: false })
-    .limit(SCAN_LIST_LIMIT);
-  if (status) query = query.eq("status", status);
+  let list = filtered(
+    db
+      .from("scan_jobs")
+      .select(
+        `id, status, business_id, agency_id, attempts, credits_charged, error, created_at, locked_at, finished_at, businesses(name, models), ${agencies}`,
+        { count: "exact" },
+      ),
+    f,
+  );
+  if (status) list = list.eq("status", status);
+  const from = (page - 1) * SCAN_PAGE_SIZE;
 
-  const [jobs, counts] = await Promise.all([query, countByStatus()]);
+  const [jobs, counts, agency] = await Promise.all([
+    list.order("created_at", { ascending: false }).order("id").range(from, from + SCAN_PAGE_SIZE - 1),
+    countByStatus(f),
+    f.agency ? db.from("agencies").select("name").eq("id", f.agency).maybeSingle() : null,
+  ]);
   if (jobs.error) throw new Error(`Scans: ${jobs.error.message}`);
 
-  const [runs, questions] = await Promise.all([
+  const [runs, questions, cost] = await Promise.all([
     runsOfJobs(jobs.data.map((j) => j.id)),
     activeQuestions([...new Set(jobs.data.map((j) => j.business_id))]),
+    costOfJobs(jobs.data.map((j) => j.id)),
   ]);
-  const cost = await costOfRuns(runs.map((r) => r.id));
   const runByJob = new Map(runs.map((r) => [r.scan_job_id!, r]));
 
   const rows = jobs.data.map((j): AdminScanRow => {
@@ -70,7 +104,7 @@ export async function listScanJobs(status: ScanStatus | undefined): Promise<Admi
       isTest: j.agencies?.is_test ?? false,
       models: jobModels(run?.provider ?? null, j.businesses?.models ?? []),
       creditsCharged: j.credits_charged,
-      costUsd: run ? (cost.get(run.id) ?? 0) : null,
+      costUsd: run ? (cost.get(j.id) ?? 0) : null,
       // The run times the scan itself; a job that never got a run (skipped) falls back to the job times.
       durationMs: run ? durationMs(run.started_at, run.completed_at) : durationMs(j.locked_at, j.finished_at),
       createdAt: j.created_at,
@@ -79,13 +113,15 @@ export async function listScanJobs(status: ScanStatus | undefined): Promise<Admi
       scanCredits: (questions.get(j.business_id) ?? 0) * (j.businesses?.models.length ?? 0),
     };
   });
-  return { rows, counts };
+  const total = jobs.count ?? 0;
+  return { rows, counts, total, page, pages: Math.max(1, Math.ceil(total / SCAN_PAGE_SIZE)), agencyName: agency?.data?.name ?? null };
 }
 
-async function countByStatus(): Promise<AdminScanList["counts"]> {
+async function countByStatus(f: Filters): Promise<AdminScanList["counts"]> {
   const db = createServiceClient();
+  const agencies = f.test === "all" ? "id" : "id, agencies!inner(is_test)";
   const results = await Promise.all(
-    SCAN_STATUSES.map((s) => db.from("scan_jobs").select("id", { count: "exact", head: true }).eq("status", s)),
+    SCAN_STATUSES.map((s) => filtered(db.from("scan_jobs").select(agencies, { count: "exact", head: true }), f).eq("status", s)),
   );
   const counts = { all: 0 } as AdminScanList["counts"];
   SCAN_STATUSES.forEach((s, i) => {
@@ -126,22 +162,35 @@ async function runsOfJobs(jobIds: string[]) {
   return data;
 }
 
-// Real AI cost of each run: the sum of its checks' cost_usd (cache hits cost 0).
-async function costOfRuns(runIds: string[]): Promise<Map<string, number>> {
-  const rows: { run_id: string; cost_usd: number | null }[] = [];
-  for (let i = 0; i < runIds.length; i += RUN_CHUNK) {
-    const chunk = runIds.slice(i, i + RUN_CHUNK);
-    for (let from = 0; ; from += PAGE) {
-      const { data, error } = await createServiceClient()
-        .from("visibility_results")
-        .select("run_id, cost_usd")
-        .in("run_id", chunk)
-        .order("id")
-        .range(from, from + PAGE - 1);
-      if (error) throw new Error(`Scans: ${error.message}`);
-      rows.push(...data);
-      if (data.length < PAGE) break;
-    }
-  }
-  return sumBy(rows, (r) => r.run_id, (r) => r.cost_usd);
+// Real AI cost of each job from the usage log, the same source as Usage and cost and the Overview (migration 092), so
+// the three pages agree. It includes the scan's other AI work (reading names, explanations), not only the checks.
+async function costOfJobs(jobIds: string[]): Promise<Map<string, number>> {
+  if (jobIds.length === 0) return new Map();
+  const { data, error } = await createServiceClient().rpc("admin_scan_costs", { p_job_ids: jobIds });
+  if (error) throw new Error(`Scans: ${error.message}`);
+  return new Map(data.map((r) => [r.scan_job_id, Number(r.cost_usd)]));
+}
+
+export type ScanFilterOptions = {
+  agencies: { id: string; name: string }[];
+  businesses: { id: string; name: string; agencyId: string | null }[];
+};
+
+// Enough for every agency and business today; the lists are for picking one, so they stay light (id and name).
+const OPTION_LIMIT = 1000;
+
+/** The agencies and businesses the Scans page can filter to, by name. */
+export async function listScanFilterOptions(): Promise<ScanFilterOptions> {
+  await requireAdmin();
+  const db = createServiceClient();
+  const [agencies, businesses] = await Promise.all([
+    db.from("agencies").select("id, name").neq("status", "deleted").order("name").limit(OPTION_LIMIT),
+    db.from("businesses").select("id, name, agency_id").is("deleted_at", null).order("name").limit(OPTION_LIMIT),
+  ]);
+  if (agencies.error) throw new Error(`Scans: ${agencies.error.message}`);
+  if (businesses.error) throw new Error(`Scans: ${businesses.error.message}`);
+  return {
+    agencies: agencies.data.map((a) => ({ id: a.id, name: a.name })),
+    businesses: businesses.data.map((b) => ({ id: b.id, name: b.name, agencyId: b.agency_id })),
+  };
 }

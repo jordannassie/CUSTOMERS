@@ -1,4 +1,5 @@
 import "server-only";
+import { notifyAdminsOfLead } from "@/modules/feedback";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/database.types";
 import { getVideoAdPackage, type VideoAdPackageId } from "./packages";
@@ -60,8 +61,13 @@ export async function mirrorLead(svc: SupabaseClient<Database>, input: {
     page_path: "/ads",
   };
 
-  const { error } = existing
-    ? await svc.from("contact_submissions").update(shared).eq("id", existing.id)
-    : await svc.from("contact_submissions").insert({ ...shared, notes, status: "new" });
-  return !error;
+  if (existing) {
+    const { error } = await svc.from("contact_submissions").update(shared).eq("id", existing.id);
+    return !error;
+  }
+  const { data: created, error } = await svc.from("contact_submissions").insert({ ...shared, notes, status: "new" }).select("id").single();
+  if (error || !created) return false;
+  // A paid order is a lead like any other: admins get the same email, once per order (admin review 2026-11-12).
+  await notifyAdminsOfLead({ id: created.id, ...shared });
+  return true;
 }

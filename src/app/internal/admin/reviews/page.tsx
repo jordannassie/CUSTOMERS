@@ -37,7 +37,7 @@ export default async function AdminReviewsPage({ searchParams }: { searchParams:
         <p role="alert" className="rounded-md border border-border bg-low-bg px-4 py-3 text-[length:calc(14px*var(--px,1))] text-low-text">{raw.error}</p>
       )}
       {queue.unavailable && (
-        <p className="rounded-md border border-border bg-mid-bg px-4 py-3 text-[length:calc(14px*var(--px,1))] text-mid-text">
+        <p className="rounded-md bg-primary-tint px-4 py-3 text-[length:calc(14px*var(--px,1))] text-foreground">
           The review tables are not in this database yet (migration 074).
         </p>
       )}

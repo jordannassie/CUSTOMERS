@@ -41,6 +41,7 @@ const stripeWith = (revenueSince: AdminStripeClient["revenueSince"]): AdminStrip
   mode: "stripe",
   extendTrial: async () => {},
   subscriptionStatus: async () => null,
+  setBillingPaused: async () => "nothing_in_stripe",
   revenueSince,
 });
 

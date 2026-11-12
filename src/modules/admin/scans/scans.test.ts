@@ -14,6 +14,7 @@ vi.mock("next/cache", () => ({ refresh: vi.fn() }));
 
 const { retryScan } = await import("./actions");
 const { listScanJobs } = await import("./dal");
+const { scanListQuery } = await import("./schema");
 
 // Below anything the worker tests queue, so their claims reach these jobs last.
 const LOW_PRIORITY = -1_000_000;
@@ -73,7 +74,7 @@ describe("admin Scans (B-67)", () => {
       ])
       .throwOnError();
     const { jobId } = await failedJob();
-    const list = await listScanJobs("failed");
+    const list = await listScanJobs(scanListQuery.parse({ status: "failed", agency: agency.agencyId }));
     const row = list.rows.find((r) => r.id === jobId);
     expect(row).toMatchObject({
       status: "failed",
@@ -87,6 +88,17 @@ describe("admin Scans (B-67)", () => {
     });
     expect(list.rows.every((r) => r.status === "failed")).toBe(true);
     expect(list.counts.failed).toBeGreaterThanOrEqual(1);
+    expect(list.agencyName).toBe("Scans test");
+
+    // The filters (admin review 2026-11-12): real agencies only leaves the test agency out; dates bound the list.
+    const real = await listScanJobs(scanListQuery.parse({ status: "failed", agency: agency.agencyId, test: "real" }));
+    expect(real.rows).toEqual([]);
+    expect(real.counts.all).toBe(0);
+    const today = new Date().toISOString().slice(0, 10);
+    expect((await listScanJobs(scanListQuery.parse({ agency: agency.agencyId, from: today }))).rows.map((r) => r.id)).toContain(jobId);
+    expect((await listScanJobs(scanListQuery.parse({ agency: agency.agencyId, to: "2020-01-01" }))).total).toBe(0);
+    // A value that does not parse is no filter.
+    expect(scanListQuery.parse({ from: "yesterday", test: "maybe", page: "-3" })).toEqual({ page: 1, test: "all" });
     await service.from("scan_jobs").delete().eq("id", jobId);
   });
 
@@ -123,7 +135,7 @@ describe("admin Scans (B-67)", () => {
     const { jobId } = await failedJob();
     expect(await retryScan({ jobId })).toMatchObject({ ok: false, status: 403 });
     expect((await readJob(jobId)).status).toBe("failed");
-    await expect(listScanJobs(undefined)).rejects.toThrow();
+    await expect(listScanJobs(scanListQuery.parse({}))).rejects.toThrow();
     expect(await auditRows(jobId)).toEqual([]);
 
     await signInAs(session, "scans-admin", { admin: true });

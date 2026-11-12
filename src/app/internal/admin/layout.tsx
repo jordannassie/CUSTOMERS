@@ -2,6 +2,8 @@ import { SessionWatcher } from "@/app/_components/session-watcher";
 import { SkipLink } from "@/components/app/SkipLink";
 import AdminNav from "./_components/admin-nav";
 import AdminTopBar from "./_components/admin-top-bar";
+import { headers } from "next/headers";
+import { safeNextPath } from "@/lib/safe-next";
 import { requireAdmin } from "@/modules/auth";
 
 export const metadata = { title: { default: "Admin", template: "%s | Admin" }, robots: { index: false } };
@@ -12,7 +14,9 @@ export const instant = false;
 
 // Pages still call requireAdmin() themselves: layouts do not re-render on navigation.
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
-  const admin = await requireAdmin({ next: "/internal/admin" });
+  // The page being opened (set by proxy.ts), so signing in or entering the app code comes back to it, not the Overview.
+  const opened = safeNextPath((await headers()).get("x-admin-path"), "/internal/admin");
+  const admin = await requireAdmin({ next: opened.startsWith("/internal/admin") ? opened : "/internal/admin" });
 
   // The app's frame (AppShell, 2026-11-10): the menu on the grey frame, then a white rounded window with a top bar.
   return (

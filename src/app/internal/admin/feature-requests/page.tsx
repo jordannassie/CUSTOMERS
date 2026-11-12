@@ -17,42 +17,20 @@ export default async function AdminFeatureRequestsPage({ searchParams }: Props) 
   const result = await listFeatureRequests();
   const fetchError = "error" in result ? { message: result.error } : null;
 
-  // Show migration instructions
+  // Any read error lands here, so the admin gets a plain next step; the database message is folded away for a
+  // developer. The table comes from migrations 014 and 016.
   if (fetchError) {
     return (
       <div className="mx-auto flex w-full max-w-[calc(1200px*var(--px,1))] flex-col gap-4 px-4 py-4 sm:px-6 sm:py-5">
         <AdminPageHeader title="Feature requests" subtitle="Ideas people sent with Suggest a feature in the app." />
-        <div className="rounded-md border border-border bg-mid-bg p-4 text-mid-text sm:p-6">
-          <p className="mb-2 text-[length:calc(14px*var(--px,1))] font-semibold">Table not yet created on production</p>
-          <p className="mb-4 text-[length:calc(13px*var(--px,1))]">
-            Run the SQL below in your{" "}
-            <a href="https://app.supabase.com" target="_blank" rel="noreferrer" className="underline">
-              Supabase SQL Editor
-            </a>{" "}
-            to create the <code className="rounded-sm bg-surface px-1">feature_requests</code> table:
-          </p>
-          <pre className="overflow-x-auto rounded-md border border-border bg-surface p-4 text-[length:calc(12px*var(--px,1))] leading-relaxed whitespace-pre-wrap text-foreground">
-{`create table if not exists public.feature_requests (
-  id          uuid        primary key default gen_random_uuid(),
-  user_id     uuid        not null references auth.users(id) on delete cascade,
-  business_id uuid        references public.businesses(id) on delete set null,
-  title       text        not null check (char_length(trim(title)) >= 1 and char_length(title) <= 200),
-  description text        not null check (char_length(trim(description)) >= 1 and char_length(description) <= 2000),
-  page_context text,
-  status      text        not null default 'new'
-                          check (status in ('new','reviewing','planned','shipped','declined')),
-  created_at  timestamptz not null default now()
-);
-create index if not exists feature_requests_user_id_idx    on public.feature_requests (user_id);
-create index if not exists feature_requests_status_idx     on public.feature_requests (status);
-create index if not exists feature_requests_created_at_idx on public.feature_requests (created_at desc);
-alter table public.feature_requests enable row level security;
-create policy "feature_requests_select_own" on public.feature_requests
-  for select to authenticated using (user_id = auth.uid());`}
-          </pre>
-          <p className="mt-3 text-[length:calc(13px*var(--px,1))]">After running, refresh this page.</p>
+        <div role="alert" className="flex flex-col gap-2 rounded-md bg-low-bg px-4 py-3 text-[length:calc(13px*var(--px,1))] text-low-text">
+          <p className="text-[length:calc(14px*var(--px,1))] font-medium">Feature requests didn&apos;t load</p>
+          <p>Refresh the page to try again. If it keeps happening, send the technical details to the developer.</p>
+          <details>
+            <summary className="w-fit cursor-pointer font-medium">Technical details</summary>
+            <p className="mt-1 font-mono text-[length:calc(12px*var(--px,1))] break-all whitespace-pre-wrap">{fetchError.message}</p>
+          </details>
         </div>
-        <p className="text-[length:calc(13px*var(--px,1))] text-text-hint">Error: {fetchError.message}</p>
       </div>
     );
   }

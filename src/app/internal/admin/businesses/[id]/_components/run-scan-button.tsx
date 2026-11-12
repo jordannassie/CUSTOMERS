@@ -15,7 +15,7 @@ type Props = {
   /** What a full scan charges (active questions times models), and whose credits it uses. */
   credits: number;
   agencyName: string | null;
-  runScanNow: (input: { businessId: string }) => Promise<ActionResult<{ jobId: string }>>;
+  runScanNow: (input: { businessId: string; reason: string }) => Promise<ActionResult<{ jobId: string }>>;
 };
 
 export default function RunScanButton({ businessId, active, blocked, credits, agencyName, runScanNow }: Props) {
@@ -23,10 +23,10 @@ export default function RunScanButton({ businessId, active, blocked, credits, ag
   const [confirming, setConfirming] = useState(false);
   const [message, setMessage] = useState<{ tone: "ok" | "error"; text: string } | null>(null);
 
-  function run() {
+  function run(reason: string) {
     setMessage(null);
     startTransition(async () => {
-      const result = await runScanNow({ businessId });
+      const result = await runScanNow({ businessId, reason });
       setMessage(
         result.ok
           ? { tone: "ok", text: "Scan queued. It runs within about a minute." }
@@ -53,6 +53,7 @@ export default function RunScanButton({ businessId, active, blocked, credits, ag
         title="Run a scan now?"
         message={scanCostMessage(credits, agencyName)}
         confirmLabel="Run scan"
+        askReason
         onConfirm={run}
       />
     </div>

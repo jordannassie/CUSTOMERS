@@ -184,7 +184,7 @@ export default function AgencyActions({ agency, stripeConnected, maxCredits, max
           key="unsuspend"
           {...card("unsuspend")}
           title="Suspension"
-          note="Lets the owner log in again and restarts scheduled scans."
+          note="Lets the owner log in again, restarts scheduled scans and starts charging the plan again in Stripe."
           openLabel="Unsuspend"
           submitLabel="Unsuspend agency"
           pendingLabel="Unsuspending…"
@@ -196,7 +196,7 @@ export default function AgencyActions({ agency, stripeConnected, maxCredits, max
           key="suspend"
           {...card("suspend")}
           title="Suspension"
-          note="Blocks the owner from logging in and stops scheduled scans. Stripe billing carries on."
+          note="Blocks the owner from logging in, stops scheduled scans and pauses billing in Stripe, so they are not charged while suspended."
           openLabel="Suspend"
           submitLabel="Suspend agency"
           pendingLabel="Suspending…"

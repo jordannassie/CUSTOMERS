@@ -65,7 +65,7 @@ export default function AgenciesList({ list, status, search }: { list: AdminAgen
                   <TableHead className={`${STICKY} bg-muted`}>Agency</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Businesses</TableHead>
-                  <TableHead className="text-right">Credits (plan / top-up)</TableHead>
+                  <TableHead>Credits (plan / top-up)</TableHead>
                   <TableHead>Trial ends</TableHead>
                   <TableHead>Signed up</TableHead>
                 </TableRow>
@@ -89,7 +89,7 @@ export default function AgenciesList({ list, status, search }: { list: AdminAgen
                       <span className="tabular-nums">{r.businesses}</span>
                       <span className="block truncate text-text-hint" title={r.planMix || "No plan yet"}>{r.planMix || "No plan yet"}</span>
                     </TableCell>
-                    <TableCell className="text-right">
+                    <TableCell>
                       <CreditsCell row={r} />
                     </TableCell>
                     <TableCell>{trialEnd(r) ?? <span className="text-text-hint">None</span>}</TableCell>
@@ -151,11 +151,11 @@ function StatusCell({ row }: { row: AdminAgencyRow }) {
 
 function CreditsCell({ row }: { row: AdminAgencyRow }) {
   return (
-    <span className="flex flex-col items-end tabular-nums">
+    <span className="flex flex-col items-start tabular-nums">
       <span>
         {credits(row.credits.plan)} / {credits(row.credits.topup)}
       </span>
-      {row.credits.overdraft > 0 && <span className="text-low-text">{credits(row.credits.overdraft)} overdrawn</span>}
+      {row.credits.overdraft > 0 && <span className="font-medium text-mid-text">{credits(row.credits.overdraft)} overdrawn</span>}
     </span>
   );
 }

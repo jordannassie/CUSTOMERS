@@ -52,7 +52,7 @@ async function LiveUsage({ searchParams }: Props) {
         </AdminEmpty>
       ) : (
         <>
-          <MarginCheck models={report.byModel} creditPrice={report.creditPriceUsd} otherCost={report.otherCostUsd} />
+          <MarginCheck models={report.byModel} creditPrice={report.creditPriceUsd} creditBasis={report.creditPriceBasis} otherCost={report.otherCostUsd} />
           <ByDay days={report.byDay} />
           <ByAgency agencies={report.byAgency} />
         </>
@@ -84,10 +84,12 @@ function Filters({ days, includeTest }: { days: PeriodDays; includeTest: boolean
 
 function Summary({ report }: { report: UsageCostReport }) {
   const { totals, creditPriceUsd } = report;
+  // Free credits (trial, promo, admin) cost us AI but bring in nothing, so they are left out of what credits are worth.
+  const paid = totals.credits - totals.freeCredits;
   const figures = [
-    { label: "Credits used", value: count(totals.credits) },
+    { label: "Credits used", value: count(totals.credits), note: totals.freeCredits > 0 ? `${count(totals.freeCredits)} of them free` : undefined },
     { label: "Real AI cost", value: money(totals.costUsd) },
-    { label: "Credits worth at least", value: creditPriceUsd === null ? "" : money(totals.credits * creditPriceUsd) },
+    { label: "Paid credits worth at least", value: creditPriceUsd === null ? "" : money(paid * creditPriceUsd) },
     { label: "Margin", value: percent(totals.margin), bad: totals.margin !== null && totals.margin < 0 },
     { label: "Answered from cache", value: percent(totals.cacheHitRate), note: `${count(totals.cached)} of ${count(totals.checks)} checks` },
   ];

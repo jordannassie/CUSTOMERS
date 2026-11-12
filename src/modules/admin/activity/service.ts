@@ -1,0 +1,62 @@
+import { z } from "zod";
+
+// The Admin activity page (admin review 2026-11-12): every admin action from admin_audit_log, in plain words. Pure.
+
+/** What each logged action did, as the page says it. Unknown ones read from their code ("lead.update" -> "Lead update"). */
+export const ACTION_LABELS: Record<string, string> = {
+  "agency.adjust_credits": "Changed credits",
+  "agency.extend_trial": "Extended trial",
+  "agency.suspend": "Suspended",
+  "agency.unsuspend": "Unsuspended",
+  "agency.restore": "Restored account",
+  "agency.mark_test": "Changed test flag",
+  "stripe.topup_refund": "Top-up refunded in Stripe",
+  "business.run_scan": "Ran a scan",
+  "business.restore": "Restored business",
+  "scan_job.retry": "Retried a scan",
+  "system_alert.resolve": "Resolved an alert",
+  "lead.update": "Updated a lead",
+  "feature_request.update": "Updated a feature request",
+};
+
+export function actionLabel(action: string): string {
+  if (ACTION_LABELS[action]) return ACTION_LABELS[action];
+  const words = action.replace(/[._]+/g, " ").trim();
+  return words.charAt(0).toUpperCase() + words.slice(1);
+}
+
+/** The areas to filter by: the part of an action before the dot. */
+export const ACTIVITY_AREAS = ["agency", "business", "scan_job", "system_alert", "lead", "feature_request", "stripe"] as const;
+export type ActivityArea = (typeof ACTIVITY_AREAS)[number];
+export const AREA_LABELS: Record<ActivityArea, string> = {
+  agency: "Agencies",
+  business: "Businesses",
+  scan_job: "Scans",
+  system_alert: "Alerts",
+  lead: "Leads",
+  feature_request: "Feature requests",
+  stripe: "Stripe",
+};
+
+// Like every admin list: a value that does not parse is no filter.
+export const activityQuery = z.object({
+  page: z.coerce.number().int().min(1).max(10_000).catch(1),
+  area: z.enum(ACTIVITY_AREAS).optional().catch(undefined),
+  failed: z.enum(["1"]).optional().catch(undefined),
+});
+export type ActivityQuery = z.infer<typeof activityQuery>;
+
+/** Where a logged change can be opened, or null when the page has nowhere to send the admin. */
+export function targetHref(type: string | null, id: string | null): string | null {
+  if (!id) return null;
+  if (type === "agency") return `/internal/admin/agencies/${id}`;
+  if (type === "business") return `/internal/admin/businesses/${id}`;
+  return null;
+}
+
+/** The reason an admin typed, from the row's details, if any. */
+export function reasonOf(details: unknown): string | null {
+  if (!details || typeof details !== "object" || Array.isArray(details)) return null;
+  const reason = (details as Record<string, unknown>).reason;
+  return typeof reason === "string" && reason.trim() ? reason.trim() : null;
+}

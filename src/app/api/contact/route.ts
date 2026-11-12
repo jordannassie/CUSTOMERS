@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from "next/server";
-import { contactInput, contactProblem, contactTopic, hashIp, saveContactMessage } from "@/modules/feedback";
+import { after, NextRequest, NextResponse } from "next/server";
+import { contactInput, contactProblem, contactTopic, hashIp, notifyAdminsOfLead, saveContactMessage } from "@/modules/feedback";
 import { checkRateLimit, clientIp } from "@/modules/rate-limit";
 import { CONTACT_EMAIL } from "@/components/legal/LegalPage";
 
@@ -31,9 +31,14 @@ export async function POST(request: NextRequest) {
   const problem = contactProblem(input);
   if (problem) return NextResponse.json({ error: problem }, { status: 400 });
 
-  const saved = await saveContactMessage({ ...input, topic: contactTopic(input.interest, input.topic), ipHash: hashIp(ip) });
+  const topic = contactTopic(input.interest, input.topic);
+  const saved = await saveContactMessage({ ...input, topic, ipHash: hashIp(ip) });
   if (!saved.ok) {
     return NextResponse.json({ error: `We couldn't send your message. Try again, or ${EMAIL_US}.` }, { status: 500 });
   }
+  // Admins hear about the lead by email; after() sends it once the visitor already has their answer.
+  after(() =>
+    notifyAdminsOfLead({ id: saved.id, name: input.name, email: input.email, company: input.company, topic, source: input.source, message: input.message }),
+  );
   return NextResponse.json({ success: true });
 }

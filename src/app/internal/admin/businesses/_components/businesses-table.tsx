@@ -4,7 +4,8 @@ import { Badge } from "@/components/ui/badge";
 import AdminEmpty from "../../_components/admin-empty";
 import { ScanStatusBadge, TestBadge } from "../../_components/badges";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ADMIN_PAGE_SIZE, type AdminBusinessList, type AdminBusinessRow } from "@/modules/admin";
+import { ADMIN_PAGE_SIZE, BUSINESS_FILTERS, type AdminBusinessList, type AdminBusinessRow, type BusinessFilter } from "@/modules/admin";
+import FilterTabs from "../../_components/filter-tabs";
 import Pagination from "../../_components/pagination";
 import SearchBox from "../../_components/search-box";
 import { DeletedBadge, ModelList, deletedNote, frequencyLabel } from "./scan-parts";
@@ -15,15 +16,36 @@ const href = (id: string) => `${BASE}/${id}`;
 // The first column stays put while the rest of the table scrolls sideways.
 const STICKY = "sticky left-0 z-10 bg-surface";
 
-export default function BusinessesTable({ list, search }: { list: AdminBusinessList; search: string }) {
+const TAB_LABELS: Record<BusinessFilter, string> = {
+  all: "All",
+  live: "Live",
+  setup: "Being set up",
+  deleted: "Deleted",
+  test: "Test agencies",
+};
+
+function tabHref(filter: BusinessFilter, search: string): string {
+  const params = new URLSearchParams();
+  if (search) params.set("q", search);
+  if (filter !== "all") params.set("filter", filter);
+  const qs = params.toString();
+  return qs ? `${BASE}?${qs}` : BASE;
+}
+
+export default function BusinessesTable({ list, search, filter = "all" }: { list: AdminBusinessList; search: string; filter?: BusinessFilter }) {
   const { rows, total, deleted, scanning } = list;
   return (
     <div className="flex flex-col gap-4">
       <SearchBox id="businesses-search" label="Search" placeholder="Business, agency or owner email" />
+      <FilterTabs
+        label="Filter businesses"
+        active={filter}
+        tabs={BUSINESS_FILTERS.map((f) => ({ key: f, label: TAB_LABELS[f], href: tabHref(f, search) }))}
+      />
       {rows.length === 0 ? (
-        search ? (
-          <AdminEmpty icon={Store} title="No businesses match this search">
-            Check the spelling, or search part of the business name, agency name or owner email.
+        search || filter !== "all" ? (
+          <AdminEmpty icon={Store} title="No businesses match">
+            Check the spelling, search part of the business name, agency name or owner email, or pick All.
           </AdminEmpty>
         ) : (
           <AdminEmpty icon={Store} title="No businesses yet">
@@ -33,7 +55,7 @@ export default function BusinessesTable({ list, search }: { list: AdminBusinessL
       ) : (
         <Rows rows={rows} summary={summary(total, deleted, scanning, search)} />
       )}
-      <Pagination base={BASE} params={{ q: search || undefined }} page={list.page} pages={list.pages} total={total} pageSize={ADMIN_PAGE_SIZE} noun="businesses" />
+      <Pagination base={BASE} params={{ q: search || undefined, filter: filter === "all" ? undefined : filter }} page={list.page} pages={list.pages} total={total} pageSize={ADMIN_PAGE_SIZE} noun="businesses" />
     </div>
   );
 }

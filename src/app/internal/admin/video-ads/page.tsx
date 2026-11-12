@@ -26,8 +26,8 @@ export default async function VideoAdOrdersPage() {
         }
       />
       {unavailable && (
-        <p className="rounded-md border border-border bg-mid-bg px-4 py-3 text-[length:calc(14px*var(--px,1))] text-mid-text">
-          The video_ad_orders table is not in this database yet (migration 071). Until then, read the briefs in Leads.
+        <p className="rounded-md bg-primary-tint px-4 py-3 text-[length:calc(14px*var(--px,1))] text-foreground">
+          Orders can&apos;t be listed on this site yet because its database hasn&apos;t been updated for them. Until then, read the briefs in Leads.
         </p>
       )}
       {orders.length === 0 && !unavailable && (
@@ -39,7 +39,7 @@ export default async function VideoAdOrdersPage() {
             <div className="flex flex-wrap items-center gap-2">
               <span className="font-medium capitalize">{order.packageId}</span>
               <span>{money(order.amountCents / 100)}</span>
-              <Badge variant={order.status === "brief_submitted" ? "good" : "mid"}>
+              <Badge variant={order.status === "brief_submitted" ? "secondary" : "tint"}>
                 {order.status === "brief_submitted" ? "Brief sent" : "Paid, brief pending"}
               </Badge>
             </div>
@@ -54,7 +54,7 @@ export default async function VideoAdOrdersPage() {
             {order.creativeInstructions ? (
               <p className="mt-2 break-words whitespace-pre-wrap text-muted-foreground">{order.creativeInstructions}</p>
             ) : (
-              <p className="mt-2 text-[length:calc(13px*var(--px,1))] text-mid-text">Brief not sent yet.</p>
+              <p className="mt-2 text-[length:calc(13px*var(--px,1))] text-muted-foreground">Brief not sent yet.</p>
             )}
             {order.assetUrl && <p className="mt-2 text-[length:calc(13px*var(--px,1))] break-all text-primary">{order.assetUrl}</p>}
           </li>

@@ -23,6 +23,9 @@ vi.mock("next/navigation", () => ({
   },
 }));
 vi.mock("./_components/admin-nav", () => ({ default: () => null }));
+// The page being opened, as proxy.ts passes it (x-admin-path); empty unless a test sets it.
+const opened = vi.hoisted(() => ({ path: null as string | null }));
+vi.mock("next/headers", () => ({ headers: async () => new Headers(opened.path ? { "x-admin-path": opened.path } : {}) }));
 
 const { default: AdminLayout, instant } = await import("./layout");
 
@@ -51,6 +54,15 @@ describe("admin layout guard (B-64)", () => {
   it("sends a signed-out visitor to login and back", async () => {
     current = anonClient();
     await expect(AdminLayout({ children: null })).rejects.toThrow("REDIRECT /login?next=%2Finternal%2Fadmin");
+  });
+
+  it("comes back to the admin page that was opened, never to a page outside the admin", async () => {
+    current = anonClient();
+    opened.path = "/internal/admin/scans?status=failed";
+    await expect(AdminLayout({ children: null })).rejects.toThrow("REDIRECT /login?next=%2Finternal%2Fadmin%2Fscans%3Fstatus%3Dfailed");
+    opened.path = "https://evil.example/internal/admin";
+    await expect(AdminLayout({ children: null })).rejects.toThrow("REDIRECT /login?next=%2Finternal%2Fadmin");
+    opened.path = null;
   });
 
   it("sends a signed-in non-admin to their dashboard", async () => {

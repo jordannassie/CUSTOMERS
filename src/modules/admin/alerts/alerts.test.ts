@@ -236,7 +236,7 @@ describe("Settings service checks (syncServiceAlerts)", () => {
     expect(await syncServiceAlerts([probe("error")])).toBe(1);
     expect(await syncServiceAlerts([probe("error")])).toBe(1);
     expect(await openOf(kind)).toEqual([
-      expect.objectContaining({ severity: "critical", message: "Vitest probe is not working. The key was rejected (401). Found by the Settings check." }),
+      expect.objectContaining({ severity: "critical", message: "Vitest probe is not working. The key was rejected (401). Found by the System status check." }),
     ]);
 
     // Unknown (a timeout) leaves it open; a passing check closes it.

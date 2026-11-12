@@ -6,12 +6,23 @@ import { RefreshCw } from "lucide-react";
 import { cn } from "cn";
 import { Button } from "@/components/ui/button";
 
-export default function RecheckButton() {
+/** Runs every check live now (the page otherwise shows the last saved check, at most 15 minutes old). */
+export default function RecheckButton({ recheck }: { recheck: () => Promise<unknown> }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
 
   return (
-    <Button variant="outline" size="sm" disabled={pending} onClick={() => startTransition(() => router.refresh())}>
+    <Button
+      variant="outline"
+      size="sm"
+      disabled={pending}
+      onClick={() =>
+        startTransition(async () => {
+          await recheck();
+          router.refresh();
+        })
+      }
+    >
       <RefreshCw aria-hidden className={cn(pending && "motion-safe:animate-spin")} />
       {pending ? "Checking" : "Check again"}
     </Button>

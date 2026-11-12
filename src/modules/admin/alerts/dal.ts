@@ -49,12 +49,17 @@ export async function markAlertResolved(alertId: string): Promise<{ kind: string
 }
 
 /**
- * Opens an alert for each service the Settings check found broken and closes the alerts of those it found working
- * (serviceAlertChanges). A failed write is logged, never thrown: the Settings page still shows the live result.
+ * Opens an alert for each service the System status check found broken and closes the alerts of those it found working
+ * (serviceAlertChanges). A failed write is logged, never thrown: the System status page still shows the live result.
  * Returns how many services have an open alert from this check.
  */
 export async function syncServiceAlerts(services: ServiceCheck[], db: Db = createServiceClient()): Promise<number> {
   await requireAdmin();
+  return writeServiceAlerts(services, db);
+}
+
+/** The same alert writes for the 15-minute job (no signed-in user; its route checks the worker secret). */
+export async function writeServiceAlerts(services: ServiceCheck[], db: Db = createServiceClient()): Promise<number> {
   const { raise, resolve } = serviceAlertChanges(services);
   const results = await Promise.all([
     ...raise.map((a) =>

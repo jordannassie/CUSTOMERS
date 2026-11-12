@@ -50,7 +50,7 @@ export function AgencyBilling({ plans }: { plans: PublicPlan[] }) {
               <Link href="/pricing">See full pricing</Link>
             </Button>
             <Button asChild size="lg" variant="outline">
-              <Link href="/contact?interest=agency">Ask about a custom plan</Link>
+              <Link href="/contact?interest=agency&from=agency">Ask about a custom plan</Link>
             </Button>
           </div>
         </div>

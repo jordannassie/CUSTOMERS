@@ -21,8 +21,14 @@ const PROTECTED = [
 ];
 const AUTH_PAGES = ["/login", "/signup"];
 
+/** The admin page being opened, for the admin layout's sign-in checks to come back to (set here, never trusted from the browser). */
+const ADMIN_PATH_HEADER = "x-admin-path";
+
 export async function proxy(request: NextRequest) {
-  let response = NextResponse.next({ request });
+  const headers = new Headers(request.headers);
+  headers.delete(ADMIN_PATH_HEADER);
+  if (request.nextUrl.pathname.startsWith("/internal/admin")) headers.set(ADMIN_PATH_HEADER, `${request.nextUrl.pathname}${request.nextUrl.search}`);
+  let response = NextResponse.next({ request: { headers } });
 
   const supabase = createServerClient(env.NEXT_PUBLIC_SUPABASE_URL, env.NEXT_PUBLIC_SUPABASE_ANON_KEY, {
     cookies: {
@@ -31,7 +37,7 @@ export async function proxy(request: NextRequest) {
       },
       setAll(cookiesToSet) {
         cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
-        response = NextResponse.next({ request });
+        response = NextResponse.next({ request: { headers } });
         cookiesToSet.forEach(({ name, value, options }) => response.cookies.set(name, value, options));
       },
     },

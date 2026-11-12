@@ -4,6 +4,7 @@ export {
   countUnreadLeads,
   listFeatureRequests,
   listLeads,
+  notifyAdminsOfLead,
   saveContactMessage,
   saveFeatureRequest,
   setFeatureRequestStatus,

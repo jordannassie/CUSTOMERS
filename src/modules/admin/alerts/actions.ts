@@ -3,7 +3,8 @@
 import { refresh } from "next/cache";
 import { authFailure, requireAdmin, type ActionResult } from "@/modules/auth";
 import { auditedChange, changed, unchanged } from "../dal";
-import { markAlertResolved } from "./dal";
+import { getSystemStatus } from "@/modules/system-status";
+import { markAlertResolved, syncServiceAlerts } from "./dal";
 import { resolveAlertInput } from "./schema";
 
 /** "Resolve" on an open alert (B-69): needs a reason, which goes into the history row written before the change (BUG-278). */
@@ -28,6 +29,19 @@ export async function resolveAlert(input: unknown): Promise<ActionResult<{ alert
     );
     if (result.ok) refresh();
     return result;
+  } catch (error) {
+    return authFailure(error);
+  }
+}
+
+/** "Check again" on System status: checks every service live now, saves it, and opens or closes their alerts. */
+export async function recheckServices(): Promise<ActionResult<{ checkedAt: string }>> {
+  try {
+    await requireAdmin();
+    const status = await getSystemStatus();
+    await syncServiceAlerts(status.services);
+    refresh();
+    return { ok: true, data: { checkedAt: status.checkedAt } };
   } catch (error) {
     return authFailure(error);
   }

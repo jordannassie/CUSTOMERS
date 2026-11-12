@@ -13,16 +13,33 @@ import { appFetch } from "@/lib/session-expired";
 
 const LOGO = "/images/logos/logo-black-sidebar.png";
 
-function useUnreadLeads(pathname: string): number {
+/** Fired by the Leads page when a lead is read or marked unread, so the badge updates at once. */
+export const LEADS_CHANGED = "admin:leads-changed";
+const UNREAD_EVERY_MS = 2 * 60 * 1000;
+
+// Once when the admin opens, then every 2 minutes, on returning to the tab and when Leads changes one. It used to ask
+// on every page switch: an extra server round trip per click, competing with the page itself (2026-11-12).
+function useUnreadLeads(): number {
   const [count, setCount] = useState(0);
   useEffect(() => {
-    appFetch("/api/internal/admin/leads?count=1")
-      .then((r) => (r.ok ? r.json() : null))
-      .then((d) => {
-        if (typeof d?.count === "number") setCount(d.count);
-      })
-      .catch(() => {});
-  }, [pathname]);
+    const load = () =>
+      appFetch("/api/internal/admin/leads?count=1")
+        .then((r) => (r.ok ? r.json() : null))
+        .then((d) => {
+          if (typeof d?.count === "number") setCount(d.count);
+        })
+        .catch(() => {});
+    const onVisible = () => document.visibilityState === "visible" && load();
+    load();
+    const timer = window.setInterval(load, UNREAD_EVERY_MS);
+    window.addEventListener(LEADS_CHANGED, load);
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      window.clearInterval(timer);
+      window.removeEventListener(LEADS_CHANGED, load);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, []);
   return count;
 }
 
@@ -71,7 +88,7 @@ function NavLink({
 
 function NavBody({ adminEmail, onNavigate }: { adminEmail: string; onNavigate?: () => void }) {
   const pathname = usePathname();
-  const unread = useUnreadLeads(pathname);
+  const unread = useUnreadLeads();
 
   return (
     <div className="flex flex-1 flex-col px-3 pb-3">
