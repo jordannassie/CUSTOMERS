@@ -40,6 +40,8 @@ export const env = createEnv({
     STRIPE_PRICE_STARTER_MONTHLY: optional,
     STRIPE_PRICE_GROWTH_MONTHLY: optional,
     STRIPE_PRICE_PRO_MONTHLY: optional,
+    // The live Customer Portal configuration (bpc_...). Unset: Stripe uses the account's default portal settings.
+    STRIPE_PORTAL_CONFIGURATION: z.string().startsWith("bpc_").optional(),
 
     RESEND_API_KEY: optional,
     EMAIL_FROM: optional,
@@ -103,6 +105,7 @@ export const env = createEnv({
     STRIPE_PRICE_STARTER_MONTHLY: process.env.STRIPE_PRICE_STARTER_MONTHLY,
     STRIPE_PRICE_GROWTH_MONTHLY: process.env.STRIPE_PRICE_GROWTH_MONTHLY,
     STRIPE_PRICE_PRO_MONTHLY: process.env.STRIPE_PRICE_PRO_MONTHLY,
+    STRIPE_PORTAL_CONFIGURATION: process.env.STRIPE_PORTAL_CONFIGURATION,
     RESEND_API_KEY: process.env.RESEND_API_KEY,
     EMAIL_FROM: process.env.EMAIL_FROM,
     EMAIL_UNSUBSCRIBE_SECRET: process.env.EMAIL_UNSUBSCRIBE_SECRET,

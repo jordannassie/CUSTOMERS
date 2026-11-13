@@ -40,6 +40,7 @@
     "question-library:seed": "vitest run --reporter=verbose --project question-library scripts/seed-question-library.ts",
     "question-library:tag": "vitest run --reporter=verbose --project question-library scripts/tag-question-library.ts",
     "seed:test-agency": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/seed-test-agency.ts",
+    "admin:mfa-reset": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/admin-mfa-reset.ts",
     "stripe:catalog-sync": "vitest run --project dev scripts/dev/stripe-catalog-sync.dev.ts",
     "stripe:catalog-check": "vitest run --project dev scripts/dev/stripe-catalog-check.dev.ts",
     "vault:local": "bash scripts/dev/setup-local-vault.sh",

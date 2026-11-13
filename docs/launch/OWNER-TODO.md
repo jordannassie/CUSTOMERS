@@ -27,21 +27,24 @@ Everything left that code cannot do: settings in outside services, money, decisi
 - [ ] **Admin two-step login (J+D, M6).** It is off on the preview.
   1. Supabase, live project, then Authentication, then Multi-Factor. Turn on **Authenticator app (TOTP)**.
   2. Netlify environment variables: `ADMIN_REQUIRE_MFA=true` for production, then redeploy.
-  3. Each admin logs in once. The app opens `/admin-verify` with a QR code; scan it with Google Authenticator or 1Password.
+  3. Each admin logs in once. The app opens `/admin-verify` with a QR code; scan it with Google Authenticator or 1Password. Set it up on two devices.
+  4. Lost phone: the developer runs `npm run admin:mfa-reset -- --env <live env file> --email <admin email>` (dry run), then again with `--apply`. The admin signs in and scans a new code.
 - [ ] **Launch Kit checkout (J).** The $97 buttons on `/start-ai-business` are disabled.
   1. Stripe, then Product catalogue, then add "AI Business Launch Kit", one-off $97.
   2. Stripe, then Payment links, then create one for it and copy the link.
   3. Netlify: `NEXT_PUBLIC_LAUNCH_KIT_PAYMENT_LINK=<link>`, then redeploy. The buttons turn on by themselves.
 - [ ] **Stripe live account (J, D-40, F-17, F-56).** This needs Jordan's own Stripe account in his LLC.
   1. Create the products and monthly prices for Starter, Growth and Pro at the prices in D-21, plus the top-up packs (D-22).
-  2. Developers, then Webhooks, then add the endpoint `https://<live domain>/api/stripe/webhook`. Use the events listed in `docs/launch/RUNBOOK.md`, and copy its signing secret.
-  3. Netlify production variables: `STRIPE_SECRET_KEY`, `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_STARTER_MONTHLY`, `STRIPE_PRICE_GROWTH_MONTHLY`, `STRIPE_PRICE_PRO_MONTHLY`.
-  4. Sales tax (BILL-02): Stripe, then Tax. Add the registrations, then tell D to turn on automatic tax.
-  5. Run the Stripe test-clock checks in sandbox: trial end, failed renewal and refund (DEMO-AND-GO-LIVE-PLAN 2.1).
+  2. Settings, then Billing, then Customer portal: save the settings once in live mode (cards, invoices, cancel). Copy its ID (`bpc_...`) into Netlify as `STRIPE_PORTAL_CONFIGURATION`. Without saving them the portal errors in live mode.
+  3. Developers, then Webhooks, then add the endpoint `https://<live domain>/api/stripe/webhook`. Use the events listed in `docs/launch/RUNBOOK.md`, and copy its signing secret.
+  4. Netlify production variables: `STRIPE_SECRET_KEY`, `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_STARTER_MONTHLY`, `STRIPE_PRICE_GROWTH_MONTHLY`, `STRIPE_PRICE_PRO_MONTHLY`.
+  5. Sales tax (BILL-02): Stripe, then Tax. Add the registrations, then tell D to turn on automatic tax.
+  6. Run the Stripe test-clock checks in sandbox: trial end, failed renewal and refund (DEMO-AND-GO-LIVE-PLAN 2.1).
 - [ ] **New API keys in Jordan's name (J, B-01, SEC-01).** Create new keys for OpenAI, Anthropic, Perplexity, Google Places and Firecrawl. Put them in the Netlify production variables (`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `PERPLEXITY_API_KEY`, `GOOGLE_PLACES_API_KEY`, `FIRECRAWL_API_KEY`). Then delete the old keys at each provider.
 - [ ] **Google Places quota (J, BUG-260).** Place Details is capped at 100 a day.
   1. Google Cloud console, then APIs and services, then Places API (New), then Quotas.
   2. Raise "Place Details requests per day" to at least 2,000. Keep a budget alert under Billing.
+- [ ] **Uptime monitor (D).** Better Stack free plan: monitor `https://<domain>/api/health` (answers 200 when the app reaches its database, 503 when not), `/` and `/login`, every 3 minutes, alerts by email. It also keeps one server warm.
 - [ ] **Branch protection (J, F-05).** GitHub, then the repo's Settings, then Branches. Add a rule for `main` and one for `mvp`: require a pull request, and require the Lint, Typecheck, Unit tests and Build checks.
 
 ## 3. Decisions for Jordan
@@ -96,7 +99,7 @@ Follow `docs/launch/RUNBOOK.md` (54 steps). In short:
 
 1. Back up live.
 2. Repair the migration history (F-11).
-3. Apply migrations 021 to 093.
+3. Apply migrations 021 to 094. Then check the grants landed: `select has_table_privilege('service_role', 'public.scan_jobs', 'select');` returns true. 094 is what gives the app access to every table 021 to 093 create.
 4. Set the Netlify production variables and the Vault secrets.
 5. Switch Stripe to live.
 6. Run `enqueue_due_scans(true)`.

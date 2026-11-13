@@ -10,6 +10,7 @@ const AUTH_CALL = /\b(require(User|Agency|Admin|AdminPassword)|activeUser)\s*\(/
 // Reachable without a login on purpose. Each entry says how it protects itself.
 const PUBLIC: Record<string, string> = {
   "src/app/api/contact/route.ts": "public contact form, validated input",
+  "src/app/api/health/route.ts": "public uptime check, a one-row database read, returns only ok true or false",
   "src/app/api/public/compare/route.ts": "public free compare tool",
   "src/app/apps/go/[slug]/[[...source]]/route.ts": "public outbound app redirect, slug lookup only",
   "src/app/newsletter/go/[placement]/route.ts": "public newsletter signup redirect, placement lookup only",
