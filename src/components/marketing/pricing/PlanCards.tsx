@@ -36,7 +36,7 @@ function whenToPickTop(plans: PublicPlan[]): string | null {
   const prev = plans[plans.length - 2];
   const reasons = [
     top.maxCompetitors && top.maxCompetitors !== prev.maxCompetitors ? `compare up to ${top.maxCompetitors} competitors` : null,
-    top.monthlyCredits > prev.monthlyCredits ? "check more questions every day" : null,
+    top.monthlyCredits > prev.monthlyCredits ? `get ${formatCount(top.monthlyCredits)} credits a month for more checks` : null,
   ].filter((reason): reason is string => reason !== null);
   return reasons.length > 0 ? `Pick ${top.name} to ${reasons.join(" or to ")}.` : null;
 }

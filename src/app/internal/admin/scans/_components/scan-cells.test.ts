@@ -19,6 +19,11 @@ describe("Real cost cell (admin audit 2026-11-12)", () => {
     expect(costCell({ ...base, isTest: true })).toMatchObject({ text: "$0.00", title: expect.stringContaining("sample answers") });
   });
 
+  it("explains a cost on a scan that charged no credits", () => {
+    expect(costCell({ ...base, costUsd: 0.07, creditsCharged: 0 })).toMatchObject({ text: "$0.07", title: expect.stringContaining("No credits were charged") });
+    expect(costCell({ ...base, costUsd: 0.07, creditsCharged: 12 }).title).toBeUndefined();
+  });
+
   it("shows a dash for a scan that never ran or is still going", () => {
     expect(costCell({ ...base, hasRun: false, status: "skipped" }).text).toBe("");
     expect(costCell({ ...base, status: "running" }).text).toBe("");
@@ -58,5 +63,18 @@ describe("Scans address", () => {
     expect(hasFilters(scanListQuery.parse({ status: "done" }))).toBe(true);
     const all = scanListQuery.parse({ status: "done", test: "test", from: "2026-11-01", agency: "6f1c2b8e-0b7a-4c55-9d0c-1a2b3c4d5e6f" });
     expect(scansHref(all, CLEAR_FILTERS)).toBe("/internal/admin/scans?status=done");
+  });
+});
+
+describe("Scans date range in the URL (admin audit 2026-11-12)", () => {
+  it("turns a back-to-front range round instead of showing nothing", () => {
+    expect(scanListQuery.parse({ from: "2026-11-10", to: "2026-10-01" })).toMatchObject({ from: "2026-10-01", to: "2026-11-10" });
+    expect(scanListQuery.parse({ from: "2026-10-01", to: "2026-11-10" })).toMatchObject({ from: "2026-10-01", to: "2026-11-10" });
+  });
+
+  it("drops a day that does not exist", () => {
+    expect(scanListQuery.parse({ from: "2026-02-30" }).from).toBeUndefined();
+    expect(scanListQuery.parse({ from: "2026-13-01" }).from).toBeUndefined();
+    expect(scanListQuery.parse({ from: "2028-02-29" }).from).toBe("2028-02-29");
   });
 });

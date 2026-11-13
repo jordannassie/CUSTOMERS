@@ -1,5 +1,7 @@
-export type Period = "24h" | "48h" | "7d";
-export type Weekday = "monday" | "tuesday" | "wednesday" | "thursday" | "friday";
+// One list of periods and weekdays, shared with the news routes (types only, so nothing server-side reaches the browser).
+import type { NewsPeriod as Period, Weekday } from "@/modules/news";
+
+export type { Period, Weekday };
 export type BadgeTone = "tint" | "good" | "mid" | "low" | "secondary" | "outline";
 
 export interface WeekdayDef {

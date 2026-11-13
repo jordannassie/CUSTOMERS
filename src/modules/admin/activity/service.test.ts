@@ -6,6 +6,8 @@ describe("admin activity (admin review 2026-11-12)", () => {
     expect(actionLabel("agency.adjust_credits")).toBe("Changed credits");
     expect(actionLabel("scan_job.retry")).toBe("Retried a scan");
     expect(actionLabel("billing.manual_refund")).toBe("Billing manual refund");
+    expect(actionLabel("app_review.reject")).toBe("Rejected a review");
+    expect(actionLabel("app.save")).toBe("Saved an AI app");
   });
 
   it("links each kind of target to where an admin can open it", () => {
@@ -17,6 +19,8 @@ describe("admin activity (admin review 2026-11-12)", () => {
     expect(targetHref("feature_request", "f1")).toBe("/internal/admin/feature-requests");
     expect(targetHref("system_alert", "s1")).toBeNull();
     expect(targetHref("agency", null)).toBeNull();
+    expect(targetHref("app", "canva")).toBe("/internal/admin/apps");
+    expect(targetHref("app_review", "r1")).toBe("/internal/admin/reviews?review=r1");
   });
 
   it("finds the reason the admin typed", () => {

@@ -1,6 +1,7 @@
 import "server-only";
 import { timingSafeEqual } from "node:crypto";
 import { env } from "@/lib/env";
+import { devFlag } from "@/lib/dev-flag";
 import { createServiceClient } from "@/lib/supabase/service";
 import { scanCheckCount } from "@/modules/scanning";
 
@@ -208,5 +209,5 @@ export async function postToWorker(): Promise<boolean> {
 
 /** Local dev only: never in production, where a stray flag would run scans inside a web request. */
 export function runWorkerInProcess(): boolean {
-  return env.WORKER_IN_PROCESS === "true" && env.NODE_ENV !== "production";
+  return devFlag("WORKER_IN_PROCESS");
 }

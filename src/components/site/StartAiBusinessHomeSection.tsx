@@ -14,13 +14,13 @@ export default function StartAiBusinessHomeSection() {
           <p className="text-[length:calc(11px*var(--px,1))] font-semibold uppercase tracking-wider text-[#0866F5] mb-3">
             For entrepreneurs
           </p>
-          <h2 className="text-[length:calc(32px*var(--px,1))] sm:text-[length:calc(40px*var(--px,1))] font-bold text-[#171717] leading-[1.1] tracking-tight">
+          <h2 className="text-[length:calc(32px*var(--px,1))] sm:text-[length:calc(40px*var(--px,1))] font-bold text-foreground leading-[1.1] tracking-tight">
             Start your own AI business.
           </h2>
-          <p className="mt-3 text-[length:calc(18px*var(--px,1))] font-medium text-[#171717] max-w-[calc(560px*var(--px,1))]">
+          <p className="mt-3 text-[length:calc(18px*var(--px,1))] font-medium text-foreground max-w-[calc(560px*var(--px,1))]">
             Help local businesses get discovered in ChatGPT and AI search.
           </p>
-          <p className="mt-4 text-[length:calc(15px*var(--px,1))] leading-7 text-[#6B6B67] max-w-[calc(560px*var(--px,1))]">
+          <p className="mt-4 text-[length:calc(15px*var(--px,1))] leading-7 text-muted-foreground max-w-[calc(560px*var(--px,1))]">
             Learn how to find local businesses that are being overlooked by AI search,
             show them the opportunity, and sell a simple monthly AI visibility service.
             Get the offer, the scripts, and a plan to start signing monthly clients.
@@ -33,7 +33,7 @@ export default function StartAiBusinessHomeSection() {
             <ArrowRight size={14} aria-hidden="true" />
           </Link>
         </div>
-        <div className="rounded-2xl overflow-hidden border border-[#E5E5E1] shadow-[0_12px_40px_rgba(23,23,23,0.08)]">
+        <div className="rounded-2xl overflow-hidden border border-border shadow-[0_12px_40px_rgba(23,23,23,0.08)]">
           <Image
             src={LAUNCH_KIT_AD_IMAGE}
             alt="A business owner checking how AI search recommends local companies"

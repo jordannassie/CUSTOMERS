@@ -73,21 +73,27 @@ export default function AgenciesList({ list, status, search }: { list: AdminAgen
               <TableBody>
                 {rows.map((r) => (
                   <TableRow key={r.id}>
-                    <TableCell className={`${STICKY} max-w-[calc(260px*var(--px,1))] min-w-44 whitespace-normal`}>
-                      <span className="flex items-start gap-2">
-                        <Link href={href(r.id)} className="line-clamp-2 min-w-0 break-words font-medium text-primary hover:underline" title={r.name}>
-                          {r.name}
-                        </Link>
-                        {r.isTest && <TestBadge />}
-                      </span>
-                      <span className="block truncate text-text-hint" title={r.ownerEmail ?? "Owner email unknown"}>{r.ownerEmail ?? "Owner email unknown"}</span>
+                    <TableCell className={`${STICKY} whitespace-normal`}>
+                      {/* A width on the content, not the cell: an auto-width table ignores max-width on cells, so a long
+                          owner email pushed the table past 1440px (admin audit 2026-11-12). */}
+                      <div className="w-[calc(230px*var(--px,1))]">
+                        <span className="flex items-start gap-2">
+                          <Link href={href(r.id)} className="line-clamp-2 min-w-0 break-words font-medium text-primary hover:underline" title={r.name}>
+                            {r.name}
+                          </Link>
+                          {r.isTest && <TestBadge />}
+                        </span>
+                        <span className="block truncate text-text-hint" title={r.ownerEmail ?? "Owner email unknown"}>{r.ownerEmail ?? "Owner email unknown"}</span>
+                      </div>
                     </TableCell>
                     <TableCell>
                       <StatusCell row={r} />
                     </TableCell>
-                    <TableCell className="max-w-[calc(200px*var(--px,1))]">
-                      <span className="tabular-nums">{r.businesses}</span>
-                      <span className="block truncate text-text-hint" title={r.planMix || "No plan yet"}>{r.planMix || "No plan yet"}</span>
+                    <TableCell>
+                      <div className="w-[calc(170px*var(--px,1))]">
+                        <span className="tabular-nums">{r.businesses}</span>
+                        <span className="block truncate text-text-hint" title={r.planMix || "No plan yet"}>{r.planMix || "No plan yet"}</span>
+                      </div>
                     </TableCell>
                     <TableCell>
                       <CreditsCell row={r} />

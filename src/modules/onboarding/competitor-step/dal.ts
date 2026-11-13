@@ -1,6 +1,7 @@
 import "server-only";
 import { cachedPlaceId, placeIdKey, rememberPlaceId } from "../place-id-cache";
 import { env } from "@/lib/env";
+import { devFlag } from "@/lib/dev-flag";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { maxCompetitors } from "@/modules/entitlements";
@@ -31,7 +32,7 @@ import { forDisplay, withDistance } from "../branches";
 // Split from onboarding/dal.ts, which re-exports it.
 
 export function liveCompetitorPlaces(): CompetitorPlaces {
-  if (env.PLACES_FIXTURES === "true" && env.NODE_ENV !== "production") return fixturePlaces;
+  if (devFlag("PLACES_FIXTURES")) return fixturePlaces;
   if (env.GOOGLE_PLACES_API_KEY) return createCompetitorPlaces(env.GOOGLE_PLACES_API_KEY);
   return {
     search: async () => {

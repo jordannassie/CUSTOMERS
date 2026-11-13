@@ -6,6 +6,7 @@ import { matchingAnswers, type FocusAnswer } from "../answers";
 import { checkMatches, type Focus, type FocusCheck } from "../focus";
 import { withFixOptions } from "../fix-options";
 import { readFixTexts } from "../reads/dal";
+import { realCitations } from "@/lib/cited-links";
 
 // "See the answers" from Compare (?site=, ?named=): the answers themselves, read only when a link asks for them.
 // Callers check the business is the agency's first.
@@ -31,7 +32,7 @@ type Row = {
 
 /** The same fields the filter on the list uses, so the answers shown are exactly the ones that keep a question. */
 function focusCheck(row: Row): FocusCheck {
-  const cited = Array.isArray(row.cited_sources) ? row.cited_sources : [];
+  const cited = Array.isArray(row.cited_sources) ? realCitations(row.cited_sources) : [];
   const hosts = cited.flatMap((c) => (c && typeof c === "object" && typeof c.url === "string" ? [hostOf(c.url)] : [])).filter((h): h is string => !!h);
   const named = Array.isArray(row.competitors_mentioned) ? row.competitors_mentioned : [];
   return {

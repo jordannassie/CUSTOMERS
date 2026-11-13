@@ -110,7 +110,7 @@ export function LeadDetail({
         <div className="flex flex-col gap-1">
           <h2 className="text-[length:calc(15px*var(--px,1))] font-semibold text-foreground">{withoutCode(lead.name) || "No name"}</h2>
           <div className="flex flex-wrap items-center gap-2">
-            <a href={`mailto:${lead.email}`} className="min-w-0 text-[length:calc(13px*var(--px,1))] break-all text-primary hover:underline">{lead.email}</a>
+            <a href={`mailto:${lead.email}`} className="min-w-0 text-[length:calc(13px*var(--px,1))] wrap-anywhere text-primary hover:underline">{lead.email}</a>
             <CopyButton text={lead.email} label="Copy email" />
           </div>
           {/* Labelled, so a short company or phone ("Co", "123") never reads as a stray word (admin audit 2026-11-12). */}
@@ -174,6 +174,10 @@ export function LeadDetail({
               );
             })}
           </div>
+          {/* The list says "Opened" for a New lead someone has read; say the same here, so the two agree. */}
+          {leadStage(lead) === "opened" && (
+            <p className="text-[length:calc(12px*var(--px,1))] text-text-hint">Opened, not answered yet. It stays New until you mark it Contacted.</p>
+          )}
         </Field>
 
         <LeadFollowUp key={lead.id} lead={lead} admins={admins} saving={saving} save={patch} draft={draft} onDraft={onDraft} />

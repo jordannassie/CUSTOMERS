@@ -1,18 +1,16 @@
-// From the live site's hero (2026-11-12): the AI apps as logo chips, the same five as the live site. Logos are the
-// live site's files, used as they are.
+// The AI apps we check, as logo chips. The live site also showed Gemini and Google AI, which we don't check (D-34),
+// so they are left out. Logos are the live site's files, used as they are.
 const AI_ICONS = "https://wsxusvapciexemfvtadm.supabase.co/storage/v1/object/public/STORAGE/images/icons/New%20AI%20Icons";
 const APPS = [
   { name: "ChatGPT", logo: "/icons/ai-platforms/chatgpt.svg" },
   { name: "Claude", logo: `${AI_ICONS}/Claude.svg` },
   { name: "Perplexity", logo: `${AI_ICONS}/Perplexity.svg` },
-  { name: "Gemini", logo: `${AI_ICONS}/Gemini.svg` },
-  { name: "Google AI", logo: `${AI_ICONS}/GoogleAI.svg` },
 ];
 
 /** The AI apps as logo chips. */
 export function AppChips() {
   return (
-    <ul className="flex flex-wrap gap-2" aria-label="AI apps">
+    <ul className="flex flex-wrap gap-2" aria-label="AI apps we check">
       {APPS.map((app) => (
         <li
           key={app.name}

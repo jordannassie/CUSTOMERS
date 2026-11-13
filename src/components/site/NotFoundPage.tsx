@@ -17,7 +17,7 @@ export function NotFoundPage({ embedded = false }: { embedded?: boolean }) {
             <Link href="/">Go to the homepage</Link>
           </Button>
           <Button asChild size="lg" variant="outline">
-            <Link href="/dashboard">Open your dashboard</Link>
+            <Link href="/dashboard">Log in to your dashboard</Link>
           </Button>
         </>
       }

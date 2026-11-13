@@ -62,7 +62,7 @@ export default function ScansList({ list, query, options }: { list: AdminScanLis
                   <TableRow key={row.id} data-job={row.id} data-status={row.status}>
                     <TableCell className="px-2">
                       {/* A width on the content, not the cell: an auto-width table ignores max-width on cells. */}
-                      <div className="w-[calc(180px*var(--px,1))]">
+                      <div className="w-[calc(150px*var(--px,1))]">
                         <BusinessCell row={row} />
                       </div>
                     </TableCell>
@@ -70,7 +70,8 @@ export default function ScansList({ list, query, options }: { list: AdminScanLis
                       <ScanStatusBadge status={row.status} />
                     </TableCell>
                     <TableCell className="px-2">
-                      <ModelList models={row.models} className="w-[calc(150px*var(--px,1))]" />
+                      {/* One model per line: three side by side pushed the table past 1440px (admin audit 2026-11-12). */}
+                      <ModelList models={row.models} className="w-[calc(92px*var(--px,1))]" />
                     </TableCell>
                     <TableCell className="px-2 tabular text-right">{row.creditsCharged}</TableCell>
                     <TableCell className="px-2 tabular text-right">
@@ -83,7 +84,7 @@ export default function ScansList({ list, query, options }: { list: AdminScanLis
                       <span className="block w-[calc(110px*var(--px,1))]">{formatDate(row.createdAt, true)}</span>
                     </TableCell>
                     <TableCell className="px-2">
-                      <Outcome row={row} clamp className="w-[calc(250px*var(--px,1))]" />
+                      <Outcome row={row} clamp className="w-[calc(200px*var(--px,1))]" />
                     </TableCell>
                   </TableRow>
                 ))}

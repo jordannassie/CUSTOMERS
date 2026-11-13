@@ -1,17 +1,11 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Loader2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { FormError } from "./form-error";
+import { cardDigits, DECLINE_MESSAGE, FixtureCardFields, INVALID_MESSAGE, TEST_CARD } from "@/components/billing/FixtureCardFields";
+import { FormError, PayButton } from "@/app/(app)/_stripe/form-bits";
 import type { BuyAction, FixtureAction } from "./topup-checkout";
 
-// Dev and Playwright only (STRIPE_CHECKOUT_FIXTURES): stands in for Stripe's card fields and answers
-// Stripe's own test card numbers the way Stripe does, so the flow is tested without calling Stripe.
-const SUCCESS = "4242424242424242";
-const DECLINE = "4000000000000002";
+// Dev and Playwright only (STRIPE_CHECKOUT_FIXTURES).
 
 type Props = {
   packId: string;
@@ -32,9 +26,9 @@ export function FixtureTopupForm({ packId, label, buy, completeFixture, onPaid }
     startTransition(async () => {
       const session = await buy({ packId });
       if (!session.ok) return setError(session.error);
-      const card = number.replace(/\s/g, "");
-      if (card === DECLINE) return setError("Your card was declined. Nothing was charged. Try another card.");
-      if (card !== SUCCESS) return setError("Your card number is incomplete or not valid.");
+      const card = cardDigits(number);
+      if (card === TEST_CARD.decline) return setError(DECLINE_MESSAGE);
+      if (card !== TEST_CARD.success) return setError(INVALID_MESSAGE);
       const paid = await completeFixture({ sessionId: session.data.sessionId, packId });
       if (!paid.ok) return setError(paid.error);
       onPaid(session.data.sessionId);
@@ -42,24 +36,12 @@ export function FixtureTopupForm({ packId, label, buy, completeFixture, onPaid }
   }
 
   return (
-    <form onSubmit={submit} className="flex flex-col gap-4">
-      <p className="rounded-md bg-mid-bg px-3 py-2 text-[length:calc(13px*var(--px,1))] text-mid-text">Test mode. No real card is used and Stripe is not called.</p>
-      <div className="flex flex-col gap-1.5">
-        <Label htmlFor="card-number">Card number</Label>
-        <Input
-          id="card-number"
-          inputMode="numeric"
-          autoComplete="off"
-          value={number}
-          onChange={(e) => setNumber(e.target.value)}
-          placeholder="4242 4242 4242 4242"
-        />
-      </div>
-      <FormError message={error} />
-      <Button type="submit" disabled={pending || !number.trim()} className="self-start">
-        {pending && <Loader2 className="animate-spin" aria-hidden="true" />}
-        {label}
-      </Button>
-    </form>
+    <FixtureCardFields
+      number={number}
+      onNumber={setNumber}
+      onSubmit={submit}
+      error={<FormError message={error} />}
+      actions={<PayButton label={label} pending={pending} disabled={!number.trim()} />}
+    />
   );
 }

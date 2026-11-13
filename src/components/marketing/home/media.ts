@@ -11,9 +11,9 @@ export const TEAM_PHOTO = `${LIVE}/people/15f9dc67-664b-4bf6-bb85-6d3f09ace1d0.p
 const banner = (n: string) => `${LIVE}/banners/banner1/ChatGPT%20Image%20Aug%2026,%202026,%2012_26_${n}.png`;
 
 export const BANNERS = [
-  { src: banner("18%20PM%20(6)"), industry: "Hair salon", alt: "A hair salon owner gets a new booking that came from an AI answer" },
+  { src: banner("17%20PM%20(1)"), industry: "Hair salon", alt: "A hair salon owner gets a new booking that came from an AI answer" },
   { src: banner("17%20PM%20(2)"), industry: "Dental practice", alt: "A dentist gets a new patient request that came from an AI answer" },
-  { src: banner("17%20PM%20(1)"), industry: "Fitness studio", alt: "A gym owner gets a new member sign-up that came from an AI answer" },
+  { src: banner("18%20PM%20(6)"), industry: "Fitness studio", alt: "A gym owner gets a new member sign-up that came from an AI answer" },
   { src: banner("18%20PM%20(7)"), industry: "Auto repair", alt: "A mechanic gets a service booking that came from an AI answer" },
 ] as const;
 

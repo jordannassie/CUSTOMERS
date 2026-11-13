@@ -57,8 +57,10 @@ export function OverviewSummary({
           <div className="flex flex-col gap-0.5">
             <h2 className="text-[length:calc(14px*var(--px,1))] font-semibold tracking-[-0.01em]">Visibility at each scan</h2>
             <p className="text-xs text-muted-foreground">
-              Share of each scan&apos;s answers that named each business, last {days} days.
+              Share of each scan&apos;s answers that named each business, last {days} days. The number by each name is its latest scan.
               {timeline.length > 1 && " Pick a name to hide or show its line."}
+              {/* The range moves only the chart and the answer counts (D-63); say so, so 7 days never reads as a new score. */}
+              {days !== 30 && " Your score, share of AI picks and the list beside this stay on the last 30 days."}
             </p>
           </div>
           <ScanChart timeline={timeline} lines={compete?.lines ?? []} days={days} earlier={compete?.earlierScans ?? false} nextScan={nextScan} />

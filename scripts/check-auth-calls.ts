@@ -5,7 +5,7 @@ import { join, relative } from "node:path";
 
 const ROOT = join(import.meta.dirname, "..");
 // activeUser (src/modules/onboarding/guard.ts) calls requireUser() first, then refuses a paused agency.
-const AUTH_CALL = /\b(require(User|Agency|Admin)|activeUser)\s*\(/;
+const AUTH_CALL = /\b(require(User|Agency|Admin|AdminPassword)|activeUser)\s*\(/;
 
 // Reachable without a login on purpose. Each entry says how it protects itself.
 const PUBLIC: Record<string, string> = {

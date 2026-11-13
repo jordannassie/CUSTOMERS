@@ -48,7 +48,7 @@ export async function listAdminActivity(query: ActivityQuery): Promise<ActivityL
     const outcome = (r.outcome as ActivityOutcome) ?? "done";
     const target = targets.get(`${r.target_type}:${r.target_id}`);
     // An alert's kind is also on the row once resolved, so a purged alert still has a name.
-    const name = target?.name ?? (r.target_type === "system_alert" ? alertName(detailText(r.details, "kind")) : null);
+    const name = target?.name ?? fallbackName(r.target_type, r.details);
     return {
       id: r.id,
       label: actionLabel(r.action),
@@ -56,7 +56,7 @@ export async function listAdminActivity(query: ActivityQuery): Promise<ActivityL
       problem: describeProblem(outcome, r.details),
       // Only Stripe webhooks write without an admin; any other row lost its admin when that account was deleted.
       by: r.action.startsWith("stripe.") ? "Stripe" : r.admin_user_id ? (emails.get(r.admin_user_id) ?? "A removed admin") : "A removed admin",
-      target: { name, href: name ? targetHref(r.target_type, r.target_id, target?.businessId) : null, kind: r.target_type },
+      target: { name, href: name ? targetHref(r.target_type, r.target_id, target?.businessId ?? detailText(r.details, "business_id")) : null, kind: r.target_type },
       reason: reasonOf(r.details, r.action),
       outcome,
       at: r.created_at,
@@ -67,6 +67,17 @@ export async function listAdminActivity(query: ActivityQuery): Promise<ActivityL
 }
 
 type Target = { name: string; businessId?: string };
+
+/** A name from the row itself when its target is gone: an alert's kind, a retried scan's business. */
+function fallbackName(type: string | null, details: unknown): string | null {
+  if (type === "system_alert") return alertName(detailText(details, "kind"));
+  if (type === "scan_job") {
+    const business = detailText(details, "business");
+    return business ? `Scan of ${business}` : null;
+  }
+  // Reviews and apps keep their name on the row (admin audit 2026-11-12).
+  return detailText(details, "name");
+}
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /** The name of what each row changed, keyed "type:id": agencies, businesses, leads, scans, requests and alerts. */

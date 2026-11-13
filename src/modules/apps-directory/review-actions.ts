@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { auditedChange, changed, unchanged } from "@/modules/admin";
 import { requireAdmin, requireUser } from "@/modules/auth";
 import { DIRECTORY_CATALOG } from "./catalog";
 import { listDirectoryOverrides } from "./dal";
@@ -108,13 +109,22 @@ export async function moderateAppReviewAction(formData: FormData): Promise<void>
   const peers = await peersFor(review.slug, review.id);
   const signals = spamSignals(review, peers);
   const note = [blankToNull(parsed.data.note), signals.length ? `Signals: ${signals.join(", ")}` : null].filter(Boolean).join(" ");
-  const saved = await setReviewStatus({
-    review,
-    status: statusAfterDecision(parsed.data.decision),
-    actorId: admin.id,
-    action: eventForDecision(parsed.data.decision),
-    note: note || null,
-  });
+  // Each decision goes into Admin activity too, with the history row written first (admin audit 2026-11-12).
+  const saved = await auditedChange<Awaited<ReturnType<typeof setReviewStatus>>>(
+    `app_review.${parsed.data.decision}`,
+    { type: "app_review", id: review.id },
+    { name: `${review.title} (${review.slug})`, ...(blankToNull(parsed.data.note) && { reason: blankToNull(parsed.data.note) }) },
+    async () => {
+      const result = await setReviewStatus({
+        review,
+        status: statusAfterDecision(parsed.data.decision),
+        actorId: admin.id,
+        action: eventForDecision(parsed.data.decision),
+        note: note || null,
+      });
+      return result.ok ? changed(result) : unchanged(result, "update failed");
+    },
+  );
   if (!saved.ok) redirect(`/internal/admin/reviews?review=${review.id}&error=${encodeURIComponent(saved.unavailable ? "Apply migration 074 before moderating reviews." : "Could not update that review.")}`);
   refresh(review.slug);
   redirect("/internal/admin/reviews");

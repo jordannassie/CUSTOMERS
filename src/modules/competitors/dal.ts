@@ -2,6 +2,7 @@ import "server-only";
 import { providerErrorKind } from "@/lib/provider-error-kind";
 import { cache } from "react";
 import { env } from "@/lib/env";
+import { devFlag } from "@/lib/dev-flag";
 import { requestNow } from "@/lib/request-now";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
@@ -23,7 +24,7 @@ import { colorOrder } from "@/lib/series-colors";
 
 // Fixture mode is refused in production so a stray flag can never show made-up businesses to users.
 function liveSignals(): FetchSignals {
-  if (env.PLACES_FIXTURES === "true" && env.NODE_ENV !== "production") return fixtureSignals;
+  if (devFlag("PLACES_FIXTURES")) return fixtureSignals;
   if (env.GOOGLE_PLACES_API_KEY) return createPlaceSignals(env.GOOGLE_PLACES_API_KEY);
   return async () => {
     throw new PlacesUnavailable("GOOGLE_PLACES_API_KEY is not set");

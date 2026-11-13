@@ -27,9 +27,16 @@ const notScanning = (b: Business) => (b.deleted_at ? "deleted" : b.status === "p
  * The next scheduled scan. A date already past means the scan was due and has not run (on a preview site the
  * schedule only scans test agencies until go-live), so it says "Due since" in the warning colour, never a plain date.
  */
-function NextScan({ business: b }: { business: Business }) {
+function NextScan({ business: b, trialEnded }: { business: Business; trialEnded: boolean }) {
   if (!scansOn(b)) return <Hint>None while {notScanning(b)}</Hint>;
   if (!b.next_scan_at) return <Hint>Not scheduled</Hint>;
+  if (trialEnded) {
+    return (
+      <span>
+        {formatDate(b.next_scan_at, true)} <Hint>(trial ended, skipped unless the agency has credits)</Hint>
+      </span>
+    );
+  }
   if (new Date(b.next_scan_at) <= new Date()) {
     return (
       <span className="text-mid-text" title="The scan was due then and has not run yet.">
@@ -42,6 +49,9 @@ function NextScan({ business: b }: { business: Business }) {
 
 export default function Profile({ detail }: { detail: NonNullable<AdminBusinessDetail> }) {
   const { business: b, plan, agency } = detail;
+  const trialEnded = agency?.displayStatus === "trial_ended";
+  // A business plan still "trialing" under an agency whose trial has ended is not on a trial any more.
+  const planStatus = plan && trialEnded && plan.status === "trialing" ? "Trial ended" : plan ? planStatusLabel(plan.status) : "";
   // The neighborhood or area leads when set: "East Austin, Austin, TX, US". A row of its own would leave the grid uneven.
   const location = [b.primary_area, b.primary_city, b.primary_region, b.primary_country].filter(Boolean).join(", ");
 
@@ -53,11 +63,11 @@ export default function Profile({ detail }: { detail: NonNullable<AdminBusinessD
     ["Services", b.services.length ? b.services.join(", ") : "None"],
     ["Other names", b.aliases.length ? b.aliases.join(", ") : "None"],
     ["Status", b.deleted_at ? deletedNote(b.deleted_at, b.purge_after) : (STATUS[b.status] ?? b.status)],
-    ["Plan", plan ? `${plan.name ?? "Unknown plan"}, ${planStatusLabel(plan.status).toLowerCase()}` : "No plan"],
-    ["Agency status", agency ? agencyStatusLabel(agency.status) : "No agency"],
+    ["Plan", plan ? `${plan.name ?? "Unknown plan"}, ${planStatus.toLowerCase()}` : "No plan"],
+    ["Agency status", agency ? agencyStatusLabel(agency.displayStatus) : "No agency"],
     ["Scan frequency", scansOn(b) ? frequencyLabel(b.scan_frequency) : <Hint key="frequency">None while {notScanning(b)}</Hint>],
     ["Models", <ModelList key="models" models={b.models} />],
-    ["Next scan", <NextScan key="next" business={b} />],
+    ["Next scan", <NextScan key="next" business={b} trialEnded={trialEnded} />],
     ["Added", formatDate(b.created_at)],
     [
       "Business ID",

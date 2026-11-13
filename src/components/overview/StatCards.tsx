@@ -142,6 +142,8 @@ function MiniBar({ value, max, you }: { value: number; max: number; you: boolean
   const width = max > 0 && value > 0 ? Math.max((value / max) * 100, 8) : 0;
   return (
     <span className="flex items-center gap-1.5">
+      {/* Each bar says whose it is (audit 2026-11-12: two bare numbers read as unlabelled). */}
+      <span className="w-[calc(30px*var(--px,1))] shrink-0 text-[length:calc(10.5px*var(--px,1))] text-muted-foreground">{you ? "You" : "Rivals"}</span>
       <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
         <span className={cn("block h-full rounded-full", you ? "bg-primary" : "bg-muted-foreground/40")} style={{ width: `${width}%` }} />
       </span>

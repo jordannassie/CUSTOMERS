@@ -1,13 +1,16 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Image from "next/image";
+import Image, { getImageProps } from "next/image";
 import { Pause, Play, Volume2, VolumeX } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Section } from "../section";
 import { MR_DIRECT_DESK, MR_DIRECT_VIDEO } from "./media";
 
 type State = "idle" | "loading" | "playing" | "paused" | "failed";
+
+// The stored still is a 2 MB PNG; the poster goes through the image optimizer so the browser gets a small WebP.
+const POSTER = getImageProps({ src: MR_DIRECT_DESK, alt: "", width: 896, height: 504 }).props.src;
 
 // The live site's Mr. Direct video. The file is a 15 MB HEVC .mov, so it only loads once the section is near the
 // screen, and browsers that can't decode HEVC (Firefox, some Chrome builds) see the still picture and a note instead.
@@ -60,7 +63,7 @@ export function VideoSection() {
       <div className="relative mx-auto aspect-video max-w-[896px] overflow-hidden rounded-xl border border-border bg-muted">
         <video
           ref={ref}
-          poster={MR_DIRECT_DESK}
+          poster={POSTER}
           loop
           muted
           playsInline

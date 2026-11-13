@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { authErrorResponse, requireAdmin } from "@/modules/auth";
-import { askNewsModel } from "@/modules/news";
+import { askNewsModel, firstIssue, newsArticleInput, type Weekday } from "@/modules/news";
 
 export const maxDuration = 90;
-
-type Weekday = "monday" | "tuesday" | "wednesday" | "thursday" | "friday";
 
 const WEEKDAY_WRITING_ANGLE: Record<Weekday, string> = {
   monday:    "Share a verified AI search development and explain clearly what it means for the agency's clients — what has changed, why it matters for brand visibility, and what they should do next.",
@@ -62,36 +60,13 @@ export async function POST(request: NextRequest) {
   try { await requireAdmin(); }
   catch (error) { return authErrorResponse(error); }
 
-  let body: {
-    headline?:            unknown;
-    whatIsNew?:           unknown;
-    whatItHelpsDo?:       unknown;
-    businessOpportunity?: unknown;
-    howToTryIt?:          unknown;
-    sourceUrl?:           unknown;
-    sourceName?:          unknown;
-    category?:            unknown;
-    bestFor?:             unknown;
-    weekday?:             unknown;
-  };
+  let body: unknown;
   try { body = await request.json(); }
   catch { return NextResponse.json({ error: "Invalid request body." }, { status: 400 }); }
 
-  const headline            = typeof body.headline            === "string" ? body.headline.trim()            : "";
-  const whatIsNew           = typeof body.whatIsNew           === "string" ? body.whatIsNew.trim()           : "";
-  const whatItHelpsDo       = typeof body.whatItHelpsDo       === "string" ? body.whatItHelpsDo.trim()       : "";
-  const businessOpportunity = typeof body.businessOpportunity === "string" ? body.businessOpportunity.trim() : "";
-  const howToTryIt          = typeof body.howToTryIt          === "string" ? body.howToTryIt.trim()          : "";
-  const sourceUrl           = typeof body.sourceUrl           === "string" ? body.sourceUrl.trim()           : "";
-  const sourceName          = typeof body.sourceName          === "string" ? body.sourceName.trim()          : "";
-  const category            = typeof body.category            === "string" ? body.category.trim()            : "AI Search";
-  const bestFor             = typeof body.bestFor             === "string" ? body.bestFor.trim()             : "";
-  const weekday: Weekday    = (
-    ["monday", "tuesday", "wednesday", "thursday", "friday"].includes(body.weekday as string)
-      ? body.weekday : "monday"
-  ) as Weekday;
-
-  if (!headline) return NextResponse.json({ error: "Headline is required." }, { status: 400 });
+  const input = newsArticleInput.safeParse(body ?? {});
+  if (!input.success) return NextResponse.json({ error: firstIssue(input.error) }, { status: 400 });
+  const { headline, whatIsNew, whatItHelpsDo, businessOpportunity, howToTryIt, sourceUrl, sourceName, category, bestFor, weekday } = input.data;
 
   const writingAngle = WEEKDAY_WRITING_ANGLE[weekday];
 

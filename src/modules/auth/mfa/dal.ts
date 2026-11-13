@@ -30,7 +30,7 @@ export async function startAppEnrollment(): Promise<Enrollment> {
     return {
       ok: false,
       error: OFF.test(error?.message ?? "")
-        ? "Authenticator apps are switched off in Supabase Auth, so this can't be set up yet. Ask the developer to turn on TOTP under Authentication, Multi-Factor."
+        ? "Authenticator apps are switched off for this site, so this can't be set up yet. Ask the developer to turn them on."
         : "We couldn't start setting up the app. Try again in a moment.",
     };
   }

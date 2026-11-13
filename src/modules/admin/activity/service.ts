@@ -17,6 +17,11 @@ export const ACTION_LABELS: Record<string, string> = {
   "system_alert.resolve": "Resolved an alert",
   "lead.update": "Updated a lead",
   "feature_request.update": "Updated a feature request",
+  "app_review.approve": "Approved a review",
+  "app_review.reject": "Rejected a review",
+  "app_review.remove": "Removed a review",
+  "app.save": "Saved an AI app",
+  "app.remove": "Reset an AI app to its built-in values",
 };
 
 export function actionLabel(action: string): string {
@@ -26,7 +31,7 @@ export function actionLabel(action: string): string {
 }
 
 /** The areas to filter by: the part of an action before the dot. */
-export const ACTIVITY_AREAS = ["agency", "business", "scan_job", "system_alert", "lead", "feature_request", "stripe"] as const;
+export const ACTIVITY_AREAS = ["agency", "business", "scan_job", "system_alert", "lead", "feature_request", "app_review", "app", "stripe"] as const;
 export type ActivityArea = (typeof ACTIVITY_AREAS)[number];
 export const AREA_LABELS: Record<ActivityArea, string> = {
   agency: "Agencies",
@@ -35,6 +40,8 @@ export const AREA_LABELS: Record<ActivityArea, string> = {
   system_alert: "Alerts",
   lead: "Leads",
   feature_request: "Feature requests",
+  app_review: "App reviews",
+  app: "AI apps",
   stripe: "Stripe",
 };
 
@@ -66,6 +73,8 @@ export function targetHref(type: string | null, id: string | null, businessId?: 
     case "app_review":
     case "review":
       return `/internal/admin/reviews?review=${encodeURIComponent(id)}`;
+    case "app":
+      return "/internal/admin/apps";
     default:
       return null;
   }

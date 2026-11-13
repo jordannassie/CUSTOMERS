@@ -3,7 +3,7 @@ import "server-only";
 // (website_facts, migration 077). Before reading, a check claims the row (insert only), so two clicks at once, in two
 // tabs or from the panel and the Opportunities card, never read the same site twice. A read that fails frees the claim.
 // Only an address the user typed or the AI answers cited is read. Nothing from Google is read or kept (D-73).
-import { env } from "@/lib/env";
+import { devFlag } from "@/lib/dev-flag";
 import { hostOf } from "@/lib/site-type";
 import { createServiceClient } from "@/lib/supabase/service";
 import { readCompetitorWebsite } from "@/modules/onboarding/server";
@@ -75,7 +75,7 @@ export async function checkWebsite(
   now = new Date(),
 ): Promise<CheckResult> {
   // Fixture mode is refused in production, as for auto-fill (onboarding/dal.ts).
-  const fixtures = env.ONBOARDING_FIXTURES === "true" && env.NODE_ENV !== "production";
+  const fixtures = devFlag("ONBOARDING_FIXTURES");
   const db = createServiceClient();
   const [competitor, standing, business] = await Promise.all([
     db

@@ -54,7 +54,8 @@ export async function loadUsageReport(agencyId: string, now: Date): Promise<Usag
   ]);
   for (const r of [agencyRow, businessRows, recentJobs]) if (r.error) throw new Error(`Usage: ${r.error.message}`);
   const businesses = businessRows.data!;
-  const names = new Map(businesses.map((b) => [b.id, b.name]));
+  // A removed business keeps its name in the history, marked, so it never reads as one still in the account.
+  const names = new Map(businesses.map((b) => [b.id, b.deleted_at === null ? b.name : `${b.name} (removed)`]));
 
   const [jobBusiness, providers, questionCounts, historyCaptures, reused] = await Promise.all([
     businessOfHolds(unique(monthCaptures.map((c) => c.holdId))),

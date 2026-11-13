@@ -1,11 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { authErrorResponse, requireAdmin } from "@/modules/auth";
-import { askNewsModel } from "@/modules/news";
+import { askNewsModel, newsSearchInput, type NewsPeriod as Period, type Weekday } from "@/modules/news";
 
 export const maxDuration = 60;
 
-type Period   = "24h" | "48h" | "7d";
-type Weekday  = "monday" | "tuesday" | "wednesday" | "thursday" | "friday";
 
 const PERIOD_LABELS: Record<Period, string> = {
   "24h": "last 24 hours",
@@ -94,17 +92,11 @@ export async function POST(request: NextRequest) {
   try { await requireAdmin(); }
   catch (error) { return authErrorResponse(error); }
 
-  let body: { period?: unknown; weekday?: unknown };
+  let body: unknown;
   try { body = await request.json(); }
   catch { body = {}; }
-
-  const period: Period = (["24h", "48h", "7d"].includes(body.period as string)
-    ? body.period : "24h") as Period;
-
-  const weekday: Weekday = (
-    ["monday", "tuesday", "wednesday", "thursday", "friday"].includes(body.weekday as string)
-      ? body.weekday : "monday"
-  ) as Weekday;
+  // A bad or missing period or weekday falls back to the default, so this parse always succeeds.
+  const { period, weekday } = newsSearchInput.parse(body && typeof body === "object" ? body : {});
 
   const periodLabel = PERIOD_LABELS[period];
   const angle       = WEEKDAY_ANGLES[weekday];

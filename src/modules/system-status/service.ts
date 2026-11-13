@@ -143,8 +143,25 @@ export function timeAgo(then: Date, now: Date): string {
   return ago(Math.round(hours / 24), "day");
 }
 
-/** How recent a credit error must be to mark the provider out of credit; a top-up clears it within the hour. */
-export const OUT_OF_CREDIT_WINDOW_MINUTES = 60;
+/**
+ * How far back a credit error still counts. Checks for a provider can run only at a weekly scan, so a one-hour window
+ * let Perplexity read "Working" for weeks while every scan's Perplexity checks failed (preview audit, 2026-11-12).
+ * The error now holds until a real check from that provider succeeds after it.
+ */
+export const OUT_OF_CREDIT_LOOKBACK_DAYS = 14;
+
+/**
+ * The providers whose latest credit error came after their latest successful check. `lastError` and `lastSuccess`
+ * map a provider to an ISO time; a provider with no success since its error is still out of credit. Pure.
+ */
+export function stillOutOfCredit(lastError: ReadonlyMap<string, string>, lastSuccess: ReadonlyMap<string, string>): Set<string> {
+  const out = new Set<string>();
+  for (const [provider, failedAt] of lastError) {
+    const workedAt = lastSuccess.get(provider);
+    if (!workedAt || Date.parse(workedAt) <= Date.parse(failedAt)) out.add(provider);
+  }
+  return out;
+}
 
 const OUT_OF_CREDIT_DETAIL: Record<string, string> = {
   anthropic:

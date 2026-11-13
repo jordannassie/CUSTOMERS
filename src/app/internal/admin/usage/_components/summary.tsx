@@ -29,7 +29,7 @@ export default function Summary({ report }: { report: UsageCostReport }) {
             value={money(totals.costUsd)}
             note={
               <>
-                <span className="block">Paid checks: {money(totals.paidCheckCostUsd)}</span>
+                <span className="block">Paid checks, estimated: {money(totals.paidCheckCostUsd)}</span>
                 <span className="block">Free trials and other AI work: {money(restCost)}</span>
               </>
             }
@@ -62,8 +62,9 @@ export default function Summary({ report }: { report: UsageCostReport }) {
       </div>
       {totals.margin !== null && (
         <p className="text-[length:calc(13px*var(--px,1))] text-muted-foreground">
-          Margin on paid checks compares paid credits with what their checks cost us. After all AI cost also counts free
-          trial checks and other AI work, which bring in nothing.
+          Margin on paid checks compares paid credits with what their checks cost us. That cost is an estimate: each paid
+          credit at the average cost of a check by that AI in the period, so it can differ a little between periods. After
+          all AI cost also counts free trial checks and other AI work, which bring in nothing.
         </p>
       )}
     </div>

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { PROBES, runProbe, stripeMode, timeAgo, withCreditStatus, workerStatus, type Probe } from "./service";
+import { PROBES, runProbe, stillOutOfCredit, stripeMode, timeAgo, withCreditStatus, workerStatus, type Probe } from "./service";
 
 const probe = (id: string): Probe => PROBES.find((p) => p.id === id)!;
 
@@ -146,5 +146,22 @@ describe("withCreditStatus", () => {
     const missing = { ...ok, state: "not_configured" as const, detail: "No key is set." };
     expect(withCreditStatus([openai], new Set(["anthropic"]))).toEqual([openai]);
     expect(withCreditStatus([missing], new Set(["anthropic"]))).toEqual([missing]);
+  });
+});
+
+describe("stillOutOfCredit", () => {
+  const failed = new Map([["perplexity", "2026-11-09T13:00:00Z"]]);
+
+  it("keeps a provider out of credit while nothing has worked since the error, even weeks later", () => {
+    expect(stillOutOfCredit(failed, new Map())).toEqual(new Set(["perplexity"]));
+    expect(stillOutOfCredit(failed, new Map([["perplexity", "2026-11-01T10:00:00Z"]]))).toEqual(new Set(["perplexity"]));
+  });
+
+  it("clears it once a check from that provider succeeds after the error (a top-up worked)", () => {
+    expect(stillOutOfCredit(failed, new Map([["perplexity", "2026-11-12T09:00:00Z"]]))).toEqual(new Set());
+  });
+
+  it("only judges providers that had a credit error", () => {
+    expect(stillOutOfCredit(new Map(), new Map([["openai", "2026-11-12T09:00:00Z"]]))).toEqual(new Set());
   });
 });

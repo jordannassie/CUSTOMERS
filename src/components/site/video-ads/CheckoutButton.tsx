@@ -9,7 +9,7 @@ const variants = {
   primary:
     "bg-[#0866F5] text-white hover:bg-[#0757D4] shadow-sm",
   outline:
-    "bg-white text-[#171717] border border-[#E5E5E1] hover:bg-[#F5F5F2]",
+    "bg-white text-foreground border border-border hover:bg-muted",
 } as const;
 
 export function CheckoutButton({
@@ -67,7 +67,7 @@ export function CheckoutButton({
         {pending ? null : <ArrowRight size={16} aria-hidden="true" />}
       </button>
       {error ? (
-        <p className="mt-2 text-[length:calc(13px*var(--px,1))] text-[#991B1B]" role="alert">
+        <p className="mt-2 text-[length:calc(13px*var(--px,1))] text-low-text" role="alert">
           {error}
         </p>
       ) : null}

@@ -7,10 +7,10 @@ export function AdsPricing({ checkoutReady }: { checkoutReady: boolean }) {
     <section id="pricing" className="scroll-mt-28 py-20 sm:py-24">
       <div className="mx-auto max-w-[calc(1120px*var(--px,1))] px-4 sm:px-6">
         <div className="mx-auto mb-12 max-w-2xl text-center">
-          <h2 className="text-[length:calc(32px*var(--px,1))] font-bold tracking-tight text-[#171717] sm:text-[length:calc(40px*var(--px,1))]">
-            Professional AI Ads. Simple Pricing.
+          <h2 className="text-[length:calc(32px*var(--px,1))] font-bold tracking-tight text-foreground sm:text-[length:calc(40px*var(--px,1))]">
+            Professional AI Ads. Simple pricing.
           </h2>
-          <p className="mt-4 text-[length:calc(16px*var(--px,1))] leading-relaxed text-[#777773]">
+          <p className="mt-4 text-[length:calc(16px*var(--px,1))] leading-relaxed text-muted-foreground">
             One-time purchase. No subscription for video ads.
           </p>
         </div>
@@ -21,20 +21,20 @@ export function AdsPricing({ checkoutReady }: { checkoutReady: boolean }) {
               className={`flex flex-col rounded-2xl bg-white p-7 ${
                 pack.featured
                   ? "border-2 border-[#0866F5] shadow-lg shadow-blue-500/10"
-                  : "border border-[#E5E5E1]"
+                  : "border border-border"
               }`}
             >
               {pack.featured ? (
                 <p className="mb-4 text-[length:calc(11px*var(--px,1))] font-bold uppercase tracking-widest text-[#0866F5]">Start here</p>
               ) : (
-                <p className="mb-4 text-[length:calc(11px*var(--px,1))] font-bold uppercase tracking-widest text-[#A3A3A0]">One-time</p>
+                <p className="mb-4 text-[length:calc(11px*var(--px,1))] font-bold uppercase tracking-widest text-text-hint">One-time</p>
               )}
-              <h3 className="text-[length:calc(20px*var(--px,1))] font-bold text-[#171717]">{pack.name}</h3>
-              <p className="mt-2 text-[length:calc(40px*var(--px,1))] font-bold tabular-nums tracking-tight text-[#171717]">{pack.priceLabel}</p>
-              <p className="mt-1 text-[length:calc(13px*var(--px,1))] text-[#777773]">One-time payment</p>
+              <h3 className="text-[length:calc(20px*var(--px,1))] font-bold text-foreground">{pack.name}</h3>
+              <p className="mt-2 text-[length:calc(40px*var(--px,1))] font-bold tabular-nums tracking-tight text-foreground">{pack.priceLabel}</p>
+              <p className="mt-1 text-[length:calc(13px*var(--px,1))] text-muted-foreground">One-time payment</p>
               <ul className="mt-6 flex flex-1 flex-col gap-3">
                 {pack.features.map((feature) => (
-                  <li key={feature} className="flex items-start gap-2 text-[length:calc(14px*var(--px,1))] text-[#171717]">
+                  <li key={feature} className="flex items-start gap-2 text-[length:calc(14px*var(--px,1))] text-foreground">
                     <Check size={16} className="mt-0.5 shrink-0 text-[#0866F5]" aria-hidden="true" />
                     {feature}
                   </li>
