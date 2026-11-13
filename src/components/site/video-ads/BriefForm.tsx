@@ -71,9 +71,9 @@ export function BriefForm({
 
   if (done) {
     return (
-      <div className="rounded-2xl border border-[#E5E5E1] bg-white p-8" role="status">
-        <h1 className="text-[length:calc(32px*var(--px,1))] font-bold tracking-tight text-[#171717]">We have your order.</h1>
-        <p className="mt-4 text-[length:calc(16px*var(--px,1))] leading-relaxed text-[#777773]">
+      <div className="rounded-2xl border border-border bg-white p-8" role="status">
+        <h1 className="text-[length:calc(32px*var(--px,1))] font-bold tracking-tight text-foreground">We have your order.</h1>
+        <p className="mt-4 text-[length:calc(16px*var(--px,1))] leading-relaxed text-muted-foreground">
           Payment for the {packageName} package ({priceLabel}) is confirmed, and your brief is saved.
           We&apos;ll confirm your production timeline when your order is accepted.
         </p>
@@ -85,14 +85,14 @@ export function BriefForm({
   }
 
   return (
-    <form onSubmit={onSubmit} className="rounded-2xl border border-[#E5E5E1] bg-white p-6 sm:p-8">
-      <h1 className="text-[length:calc(32px*var(--px,1))] font-bold tracking-tight text-[#171717]">Tell us about your brand.</h1>
-      <p className="mt-3 text-[length:calc(15px*var(--px,1))] leading-relaxed text-[#777773]">
+    <form onSubmit={onSubmit} className="rounded-2xl border border-border bg-white p-6 sm:p-8">
+      <h1 className="text-[length:calc(32px*var(--px,1))] font-bold tracking-tight text-foreground">Tell us about your brand.</h1>
+      <p className="mt-3 text-[length:calc(15px*var(--px,1))] leading-relaxed text-muted-foreground">
         Payment for {packageName} ({priceLabel}) is confirmed. This brief is how we make the video.
       </p>
       <div className="mt-8 flex flex-col gap-4">
         {FIELDS.map((field) => (
-          <label key={field.name} className="flex flex-col gap-1.5 text-[length:calc(13px*var(--px,1))] font-semibold text-[#171717]">
+          <label key={field.name} className="flex flex-col gap-1.5 text-[length:calc(13px*var(--px,1))] font-semibold text-foreground">
             {field.label}
             <input
               name={field.name}
@@ -100,32 +100,32 @@ export function BriefForm({
               autoComplete={"autoComplete" in field ? field.autoComplete : undefined}
               required
               defaultValue={field.name === "customerName" ? defaultName : field.name === "email" ? defaultEmail : undefined}
-              className="rounded-xl border border-[#8F8F8A] px-3 py-2.5 text-[length:calc(15px*var(--px,1))] font-normal text-[#171717] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0866F5]"
+              className="rounded-xl border border-input px-3 py-2.5 text-[length:calc(15px*var(--px,1))] font-normal text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0866F5]"
             />
           </label>
         ))}
-        <label className="flex flex-col gap-1.5 text-[length:calc(13px*var(--px,1))] font-semibold text-[#171717]">
+        <label className="flex flex-col gap-1.5 text-[length:calc(13px*var(--px,1))] font-semibold text-foreground">
           Creative instructions
           <textarea
             name="creativeInstructions"
             required
             minLength={10}
             rows={5}
-            className="rounded-xl border border-[#8F8F8A] px-3 py-2.5 text-[length:calc(15px*var(--px,1))] font-normal text-[#171717] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0866F5]"
+            className="rounded-xl border border-input px-3 py-2.5 text-[length:calc(15px*var(--px,1))] font-normal text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0866F5]"
           />
         </label>
-        <label className="flex flex-col gap-1.5 text-[length:calc(13px*var(--px,1))] font-semibold text-[#171717]">
+        <label className="flex flex-col gap-1.5 text-[length:calc(13px*var(--px,1))] font-semibold text-foreground">
           Link to product assets (optional)
           <input
             name="assetUrl"
             type="url"
-            className="rounded-xl border border-[#8F8F8A] px-3 py-2.5 text-[length:calc(15px*var(--px,1))] font-normal text-[#171717] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0866F5]"
+            className="rounded-xl border border-input px-3 py-2.5 text-[length:calc(15px*var(--px,1))] font-normal text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0866F5]"
           />
         </label>
         <input name="_honey" tabIndex={-1} autoComplete="off" className="hidden" aria-hidden="true" />
       </div>
       {error ? (
-        <p className="mt-4 text-[length:calc(14px*var(--px,1))] text-[#991B1B]" role="alert">
+        <p className="mt-4 text-[length:calc(14px*var(--px,1))] text-low-text" role="alert">
           {error}
         </p>
       ) : null}

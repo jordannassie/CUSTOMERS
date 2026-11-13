@@ -6,10 +6,11 @@ import { jobSettingsStatus, schedulesStatus, type CronJob } from "./schedules";
 import type { Json } from "@/types/database.types";
 import type { ServiceStatus, SystemStatus } from "./schema";
 import {
-  OUT_OF_CREDIT_WINDOW_MINUTES,
+  OUT_OF_CREDIT_LOOKBACK_DAYS,
   PROBES,
   WORKER_OVERDUE_MINUTES,
   runProbe,
+  stillOutOfCredit,
   stripeMode,
   withCreditStatus,
   workerStatus,
@@ -81,18 +82,38 @@ async function checkServices(deps: ProbeDeps): Promise<SystemStatus> {
 }
 
 // The messages real calls log: Anthropic's "credit balance is too low", OpenAI's "exceeded your current quota",
-// Perplexity's "requires paid credits", and the background jobs' "credit" kind (modules/ai). Never reads a key; only
-// provider names come back.
+// Perplexity's "requires paid credits", and the background jobs' "credit" kind (modules/ai). A provider stays out of
+// credit until one of its checks succeeds after the error. Never reads a key; only provider names and times come back.
 async function providersOutOfCredit(now: Date): Promise<Set<string>> {
-  const since = new Date(now.getTime() - OUT_OF_CREDIT_WINDOW_MINUTES * 60_000).toISOString();
-  const { data, error } = await createServiceClient()
+  const db = createServiceClient();
+  const since = new Date(now.getTime() - OUT_OF_CREDIT_LOOKBACK_DAYS * 86_400_000).toISOString();
+  const { data, error } = await db
     .from("provider_errors")
-    .select("provider")
+    .select("provider, created_at")
     .gte("created_at", since)
     .or("message.ilike.%credit balance%,message.ilike.%exceeded your current quota%,message.ilike.%insufficient_quota%,message.ilike.%paid credits%")
+    .order("created_at", { ascending: false })
     .limit(50);
   if (error) return new Set();
-  return new Set((data ?? []).map((r) => r.provider));
+  const lastError = new Map<string, string>();
+  for (const r of data ?? []) if (!lastError.has(r.provider)) lastError.set(r.provider, r.created_at);
+
+  // One small read per provider in error (three at most): a live, non-cached answer saved after the error.
+  const lastSuccess = new Map<string, string>();
+  await Promise.all(
+    [...lastError].map(async ([provider, failedAt]) => {
+      const { data: worked } = await db
+        .from("visibility_results")
+        .select("created_at")
+        .eq("provider", provider)
+        .eq("cached", false)
+        .eq("is_sample", false)
+        .gt("created_at", failedAt)
+        .limit(1);
+      if (worked?.[0]) lastSuccess.set(provider, worked[0].created_at);
+    }),
+  );
+  return stillOutOfCredit(lastError, lastSuccess);
 }
 
 /** pg_cron's jobs and their last runs, and the Vault settings they need (BUG-108). Never reads a secret's value. */

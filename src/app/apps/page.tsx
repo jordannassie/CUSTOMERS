@@ -61,7 +61,7 @@ async function AppsPageContent({ searchParams }: { searchParams: SearchParams })
   return (
     <>
       <Header />
-      <main className="min-h-screen bg-[#FAFAF8]">
+      <main className="min-h-screen bg-background">
         <script type="application/ld+json" dangerouslySetInnerHTML={jsonLdHtml(itemList)} />
         <AppsBrowse query={query} result={result} ratings={ratings} embedSrc={env.NEXT_PUBLIC_BEEHIIV_EMBED_SRC} formId={env.NEXT_PUBLIC_BEEHIIV_FORM_ID} />
       </main>

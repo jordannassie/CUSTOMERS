@@ -76,6 +76,10 @@ describe("the saved report", () => {
   it("downloads under a readable name with the report's date", () => {
     expect(pdfFileName("Cheezious", "2026-10-28T10:00:00.000Z")).toBe("Cheezious AI visibility report 2026-10-28.pdf");
     expect(pdfFileName('Joe\'s Plumbing / Heating: "24h"', "2026-10-28")).toBe("Joe's Plumbing Heating 24h AI visibility report 2026-10-28.pdf");
+    // Storage percent-encodes anything outside ASCII into the saved name (audit 2026-11-12).
+    expect(pdfFileName("Brian\u2019s Coffee Spot", "2026-11-10")).toBe("Brian's Coffee Spot AI visibility report 2026-11-10.pdf");
+    expect(pdfFileName("Devoci\u00f3n \u2014 Brooklyn", "2026-11-10")).toBe("Devocion - Brooklyn AI visibility report 2026-11-10.pdf");
+    expect(pdfFileName("\u0686\u06cc\u0632", "2026-11-10")).toBe("Business AI visibility report 2026-11-10.pdf");
     expect(pdfFileName("///", "2026-10-28")).toBe("Business AI visibility report 2026-10-28.pdf");
   });
 });

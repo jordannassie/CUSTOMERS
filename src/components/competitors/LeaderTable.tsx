@@ -9,6 +9,7 @@ import { CompetitorWebsite, type SaveWebsiteAction } from "./CompetitorWebsite";
 import { HeatCell, ScoreRing } from "./Marks";
 import { Sparkline } from "./Sparkline";
 import { PILL_BOX, PILL_CLASS } from "@/components/app/pills";
+import { ScrollX } from "@/components/ui/scroll-x";
 
 /** A website named in a reason ("AI used yelp.com when it picked them"), for its icon. */
 const SITE_IN_TEXT = /\b((?:[a-z0-9-]+\.)+[a-z]{2,})\b/i;
@@ -43,7 +44,7 @@ export function LeaderTable({
     // relative: the sr-only text is absolutely placed, and would otherwise widen the whole page on a phone.
     // No fixed min width (mockup-ui): the table fits its card, and narrower screens hide the less needed columns with
     // CSS only, so every row keeps the same cells (e2e reads Score as the 3rd cell and Status as the second to last).
-    <div className="relative overflow-x-auto">
+    <ScrollX>
       <table className="w-full border-collapse text-[length:calc(13px*var(--px,1))]" data-testid="leaderboard">
         <thead className="bg-muted">
           <tr className="border-b border-border">
@@ -140,7 +141,7 @@ export function LeaderTable({
           ))}
         </tbody>
       </table>
-    </div>
+    </ScrollX>
   );
 }
 

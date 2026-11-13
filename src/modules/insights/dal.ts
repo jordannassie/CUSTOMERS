@@ -13,6 +13,7 @@ import { markExplained, recordExplainFallback, saveExplanation, type SaveOutcome
 import { fillOpportunity, hasPlaceValues, liveLookup, referencedCompetitors, usageCostUsd, usesBusinessValues } from "./service";
 import { templateWriter } from "./template-writer";
 import { createExplanationWriter } from "./writer";
+import { realCitations } from "@/lib/cited-links";
 
 /**
  * An opportunity with Google values filled in. usesGoogle: the text shows some, so attribution is due. googleValues:
@@ -98,7 +99,7 @@ async function loadSources(runId: string, deps: ExplainDeps) {
       question: c.question ?? "",
       businessMentioned: c.business_mentioned,
       competitorsMentioned: c.competitors_mentioned,
-      citations: c.cited_sources,
+      citations: realCitations(c.cited_sources),
     })),
     alsoNamed: also?.names ?? [],
     siteFacts: facts.data?.data ?? null,

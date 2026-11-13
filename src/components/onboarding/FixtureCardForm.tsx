@@ -3,17 +3,10 @@
 import { useState, useTransition } from "react";
 import type { ActionResult } from "@/modules/auth";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { cardDigits, DECLINE_MESSAGE, FixtureCardFields, INVALID_MESSAGE, TEST_CARD } from "@/components/billing/FixtureCardFields";
 import { StepActions, StepError } from "./StepBits";
 
-// Dev and Playwright only (STRIPE_CHECKOUT_FIXTURES): stands in for Stripe's card fields and answers
-// Stripe's own test card numbers the way Stripe does, so the flow is tested without calling Stripe.
-const SUCCESS = "4242424242424242";
-const DECLINE = "4000000000000002";
-const BANK_CHECK = "4000002500003155";
-
-export const DECLINED = "Your card was declined.";
+// Dev and Playwright only (STRIPE_CHECKOUT_FIXTURES): the card step's stand-in for Stripe's card fields.
 const BANK_FAILED = "We couldn't confirm this card with your bank. Try again or use another card.";
 
 type Props = {
@@ -34,11 +27,11 @@ export function FixtureCardForm({ businessId, start, onAccepted }: Props) {
     startTransition(async () => {
       const session = await start({ businessId });
       if (!session.ok) return setError(session.error);
-      const card = number.replace(/\s/g, "");
-      if (card === SUCCESS) return onAccepted();
-      if (card === DECLINE) return setError(`${DECLINED} Nothing was charged. Try another card.`);
-      if (card === BANK_CHECK) return setBankCheck(true);
-      setError("Your card number is incomplete or not valid.");
+      const card = cardDigits(number);
+      if (card === TEST_CARD.success) return onAccepted();
+      if (card === TEST_CARD.decline) return setError(DECLINE_MESSAGE);
+      if (card === TEST_CARD.bankCheck) return setBankCheck(true);
+      setError(INVALID_MESSAGE);
     });
   }
 
@@ -65,21 +58,12 @@ export function FixtureCardForm({ businessId, start, onAccepted }: Props) {
   }
 
   return (
-    <form onSubmit={submit} className="flex flex-col gap-4">
-      <p className="rounded-md bg-mid-bg px-3 py-2 text-[length:calc(13px*var(--px,1))] text-mid-text">Test mode. No real card is used and Stripe is not called.</p>
-      <div className="flex flex-col gap-1.5">
-        <Label htmlFor="card-number">Card number</Label>
-        <Input
-          id="card-number"
-          inputMode="numeric"
-          autoComplete="off"
-          value={number}
-          onChange={(e) => setNumber(e.target.value)}
-          placeholder="4242 4242 4242 4242"
-        />
-      </div>
-      <StepError message={error} />
-      <StepActions backHref="/onboarding/models" pending={pending} label="Start free trial" disabled={!number.trim()} />
-    </form>
+    <FixtureCardFields
+      number={number}
+      onNumber={setNumber}
+      onSubmit={submit}
+      error={<StepError message={error} />}
+      actions={<StepActions backHref="/onboarding/models" pending={pending} label="Start free trial" disabled={!number.trim()} />}
+    />
   );
 }

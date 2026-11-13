@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import ContactForm from "@/components/site/ContactForm";
 import { CONTACT_EMAIL } from "@/components/legal/LegalPage";
@@ -31,9 +32,9 @@ export default function ContactPage() {
       <Header />
       <main className="flex-1 bg-background">
         <section className="mx-auto max-w-[calc(1120px*var(--px,1))] px-4 pt-12 pb-16 sm:px-6 sm:pt-20 sm:pb-22">
-          <div className="mb-10 overflow-hidden rounded-md border border-border">
-            {/* eslint-disable-next-line @next/next/no-img-element -- a wide photo from storage, shown once at its own size */}
-            <img src={TEAM_PHOTO} alt="The Customers.Direct team" className="max-h-[calc(400px*var(--px,1))] w-full object-cover object-top" />
+          <div className="relative mb-10 aspect-square max-h-[calc(400px*var(--px,1))] w-full overflow-hidden rounded-md border border-border">
+            {/* Resized and compressed by next/image: the stored PNG is about 2.3 MB. */}
+            <Image src={TEAM_PHOTO} alt="The Customers.Direct team" fill priority sizes="(min-width: 1120px) 1088px, 100vw" className="object-cover object-top" />
           </div>
           <div className="flex max-w-[60ch] flex-col items-start gap-5 sm:flex-row sm:items-center">
             <MrDirectAvatar priority className="size-24 shrink-0 border-4 border-primary sm:size-28" />

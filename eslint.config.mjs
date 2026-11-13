@@ -43,15 +43,6 @@ const LEGACY_SUPABASE_IN_COMPONENTS = [
   "src/components/geo/ResetPasswordForm.tsx",
 ];
 
-const LEGACY_SERVICE_CLIENT = [
-  "src/app/api/contact/route.ts",
-  "src/app/api/internal/admin/feature-requests/[[]id]/route.ts",
-  "src/app/api/internal/admin/leads/route.ts",
-  "src/app/api/stripe/webhook/route.ts",
-  "src/app/internal/admin/feature-requests/page.tsx",
-  "src/app/internal/admin/page.tsx",
-];
-
 // The service role key skips RLS, so only a module's dal.ts may create that client (B-15).
 const NO_SERVICE_CLIENT = {
   paths: [{ name: "@/lib/supabase/service", message: "The service role client is only for dal.ts files." }],
@@ -143,15 +134,14 @@ const eslintConfig = defineConfig([
     rules: { "no-restricted-imports": "off" },
   },
   {
-    files: LEGACY_SERVICE_CLIENT,
-    rules: { "no-restricted-imports": ["warn", NO_SERVICE_CLIENT] },
-  },
-  {
     files: LEGACY_SUPABASE_IN_COMPONENTS,
     rules: { "boundaries/dependencies": ["warn", dependencyOptions] },
   },
   {
-    files: ["src/app/**/*.{ts,tsx}", "src/modules/**/*.{ts,tsx}"],
+    // src/components/ui is shadcn's generated code and is left as it comes. AuthForm.tsx (328 lines) warns until
+    // the auth forms move into modules/auth.
+    files: ["src/app/**/*.{ts,tsx}", "src/modules/**/*.{ts,tsx}", "src/components/**/*.{ts,tsx}"],
+    ignores: ["src/components/ui/**"],
     plugins: { local },
     rules: {
       "max-lines": ["warn", { max: 250 }],

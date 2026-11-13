@@ -33,9 +33,18 @@ export function reportRow(businessId: string, snapshot: ReportSnapshot, now: Dat
 /** Where one report's PDF is stored in the private bucket. */
 export const pdfStoragePath = (businessId: string, reportId: string) => `${businessId}/${reportId}.pdf`;
 
-/** "Cheezious AI visibility report 2026-10-28.pdf", without characters a file name cannot hold. */
+/**
+ * "Cheezious AI visibility report 2026-10-28.pdf", without characters a file name cannot hold. Plain ASCII only:
+ * storage percent-encodes anything else into the saved name ("Brian%E2%80%99s", audit 2026-11-12), so curly quotes
+ * turn straight and accents drop ("Devoción" saves as "Devocion").
+ */
 export function pdfFileName(businessName: string, preparedAt: string): string {
   const name = businessName
+    .replace(/[\u2018\u2019\u201B\u2032]/g, "'")
+    .replace(/[\u201C\u201D\u201F\u2033]/g, " ")
+    .replace(/[\u2013\u2014]/g, "-")
+    .normalize("NFKD")
+    .replace(/[^\x20-\x7E]/g, "")
     .replace(/[\\/:*?"<>|\p{Cc}]+/gu, " ")
     .replace(/\s+/g, " ")
     .trim()

@@ -81,8 +81,10 @@ function StepProgress({ steps, index, label, className }: { steps: FrameStep[]; 
   return (
     <div className={className} data-testid="step-progress">
       <div className="flex min-w-0 items-baseline justify-between gap-3">
+        {/* A page outside the shown steps (the agency step when adding a second business) has no number: it read
+            "Step 0 of 5" (audit 2026-11-12). */}
         <p className="shrink-0 text-[length:calc(13px*var(--px,1))] font-medium tabular-nums">
-          Step {index + 1} of {steps.length}
+          {index >= 0 ? `Step ${index + 1} of ${steps.length}` : `${steps.length} steps`}
         </p>
         <p className="min-w-0 truncate text-[length:calc(13px*var(--px,1))] text-muted-foreground" title={label}>
           {label}

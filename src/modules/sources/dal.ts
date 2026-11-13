@@ -7,6 +7,7 @@ import { answerNames } from "./names";
 import { actionKeys, sourceRows, type ListedSite, type SiteRow } from "./rows";
 import { sourcesView, type SourceCheck, type SourcesView } from "./service";
 import { TOOL_LABELS } from "./tools";
+import { realCitations } from "@/lib/cited-links";
 
 export type SourcesPage = Omit<SourcesView, "sites"> & {
   place: string | null;
@@ -53,7 +54,7 @@ export async function getSources(businessId: string, tool: ProviderId | null = n
       const mentioned = r.business_mentioned === true;
       checks.push({
         provider: r.provider!,
-        citations: r.cited_sources,
+        citations: realCitations(r.cited_sources),
         checkedAt: r.checked_at!,
         // The score's answer key: a cached answer repeats the text it reused, so it counts once.
         answerKey: r.answer_key!,

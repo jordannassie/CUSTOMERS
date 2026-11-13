@@ -89,7 +89,8 @@ export function ActionCard({
           </span>
         </span>
         <Badge variant={impact.variant} className="font-medium">
-          {impact.text}
+          {/* "High impact": the report's pills are priority, a different measure (audit 2026-11-12). */}
+          {impact.text} impact
         </Badge>
       </div>
       <h3 className="text-[length:calc(13.5px*var(--px,1))] leading-snug font-semibold">

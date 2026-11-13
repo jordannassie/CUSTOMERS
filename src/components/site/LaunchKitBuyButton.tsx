@@ -5,7 +5,7 @@ type Variant = "blue" | "dark" | "blueWide";
 
 const variants: Record<Variant, string> = {
   blue: "bg-[#0866F5] hover:bg-[#0757D4] text-white rounded-xl px-6 py-3.5 text-[length:calc(15px*var(--px,1))]",
-  dark: "bg-[#171717] hover:bg-[#2A2A2A] text-white rounded-xl px-6 py-4 text-[length:calc(16px*var(--px,1))] w-full",
+  dark: "bg-foreground hover:bg-foreground/90 text-white rounded-xl px-6 py-4 text-[length:calc(16px*var(--px,1))] w-full",
   blueWide:
     "bg-[#0866F5] hover:bg-[#0757D4] text-white rounded-full px-8 py-3.5 text-[length:calc(15px*var(--px,1))] w-full",
 };
@@ -28,7 +28,7 @@ export default function LaunchKitBuyButton({
         <button type="button" disabled className={`${className} opacity-60 cursor-not-allowed`}>
           {label}
         </button>
-        <p className="mt-2 text-[length:calc(13px*var(--px,1))] text-[#737370]">Stripe payment link will be connected here.</p>
+        <p className="mt-2 text-[length:calc(13px*var(--px,1))] text-text-hint">Checkout opens soon.</p>
       </div>
     );
   }

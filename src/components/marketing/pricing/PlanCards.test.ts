@@ -31,7 +31,7 @@ describe("PlanCards (DB-007)", () => {
   });
 
   it("says when to pick the bigger plan", () => {
-    expect(html).toContain("Pick Pro to compare up to 10 competitors or to check more questions every day.");
+    expect(html).toContain("Pick Pro to compare up to 10 competitors or to get 2,500 credits a month for more checks.");
   });
 
   it("leaves the line out for a single plan", () => {

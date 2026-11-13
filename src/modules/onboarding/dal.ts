@@ -1,6 +1,7 @@
 import "server-only";
 import { providerErrorKind } from "@/lib/provider-error-kind";
 import { env } from "@/lib/env";
+import { devFlag } from "@/lib/dev-flag";
 import { liveAiClients, type UsageContext } from "@/modules/ai/server";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
@@ -19,7 +20,7 @@ import type { AutofillResult } from "./schema";
 
 // Fixture modes are refused in production so a stray flag can never show made-up data to users.
 // PLACES_FIXTURES covers the competitor step, ONBOARDING_FIXTURES auto-fill and question picking.
-export const onboardingFixtures = () => env.ONBOARDING_FIXTURES === "true" && env.NODE_ENV !== "production";
+export const onboardingFixtures = () => devFlag("ONBOARDING_FIXTURES");
 
 // A missing key turns that source off; auto-fill then works with whatever is left. Claude reads the site, with
 // OpenAI as the backup (D-84); the usage context charges the cost record to the user's business.

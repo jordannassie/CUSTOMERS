@@ -7,7 +7,7 @@ import LaunchKitBottom from "@/components/site/launch-kit/LaunchKitBottom";
 import { launchKitIntroVideoExists } from "@/components/site/launch-kit/LaunchKitVideo";
 import { LAUNCH_KIT_AD_IMAGE } from "@/config/launch-kit-assets";
 
-const title = "Get the AI Business Launch Kit for $97 | Customers.Direct";
+const title = "Get the AI business launch kit for $97";
 const description =
   "One-time $97 kit with training, scripts, templates, and a first-client plan to help local businesses get found in ChatGPT and AI search.";
 
@@ -17,7 +17,7 @@ export const metadata: Metadata = {
   alternates: { canonical: "/start-ai-business" },
   openGraph: {
     type: "website",
-    title,
+    title: `${title} | Customers.Direct`,
     description,
     url: "https://customers.direct/start-ai-business",
     images: [{ url: LAUNCH_KIT_AD_IMAGE }],

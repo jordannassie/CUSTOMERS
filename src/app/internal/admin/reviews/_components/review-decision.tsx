@@ -7,11 +7,15 @@ import { Label } from "@/components/ui/label";
 import { moderateAppReviewAction } from "@/modules/apps-directory/review-actions";
 import ConfirmDialog from "../../_components/confirm-dialog";
 
-/** Approve, Reject or Remove one review, with a note for its history. Remove asks first (admin audit 2026-11-12). */
+/**
+ * Approve, Reject or Remove one review, with a note for its history. Reject and Remove ask first (admin audit
+ * 2026-11-12); Approve is one click, since it only puts the review on /apps and can be undone with Reject.
+ */
 export function ReviewDecision({ reviewId, title }: { reviewId: string; title: string }) {
   const form = useRef<HTMLFormElement>(null);
   const removeButton = useRef<HTMLButtonElement>(null);
-  const [confirming, setConfirming] = useState(false);
+  const rejectButton = useRef<HTMLButtonElement>(null);
+  const [confirming, setConfirming] = useState<"reject" | "remove" | null>(null);
 
   return (
     <form ref={form} action={moderateAppReviewAction} className="mt-4 flex flex-col gap-3">
@@ -25,14 +29,23 @@ export function ReviewDecision({ reviewId, title }: { reviewId: string; title: s
       </p>
       <div className="flex flex-wrap gap-2">
         <Button name="decision" value="approve">Approve</Button>
-        <Button name="decision" value="reject" variant="outline">Reject</Button>
-        <Button type="button" variant="destructive" onClick={() => setConfirming(true)}>Remove</Button>
-        {/* The real Remove, sent only from the confirm dialog. */}
+        <Button type="button" variant="outline" onClick={() => setConfirming("reject")}>Reject</Button>
+        <Button type="button" variant="destructive" onClick={() => setConfirming("remove")}>Remove</Button>
+        {/* The real Reject and Remove, sent only from the confirm dialog. */}
+        <button ref={rejectButton} type="submit" name="decision" value="reject" hidden aria-hidden tabIndex={-1} />
         <button ref={removeButton} type="submit" name="decision" value="remove" hidden aria-hidden tabIndex={-1} />
       </div>
       <ConfirmDialog
-        open={confirming}
-        onOpenChange={setConfirming}
+        open={confirming === "reject"}
+        onOpenChange={(open) => setConfirming(open ? "reject" : null)}
+        title="Reject this review?"
+        message={`"${title}" goes back to the writer, who can edit it and send it again. It does not show on /apps meanwhile.`}
+        confirmLabel="Reject review"
+        onConfirm={() => form.current?.requestSubmit(rejectButton.current)}
+      />
+      <ConfirmDialog
+        open={confirming === "remove"}
+        onOpenChange={(open) => setConfirming(open ? "remove" : null)}
         title="Remove this review?"
         message={`"${title}" comes off /apps for good. The writer cannot edit it back; they would have to write a new one.`}
         confirmLabel="Remove review"

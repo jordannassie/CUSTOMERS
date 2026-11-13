@@ -1,16 +1,19 @@
 import Link from "next/link";
 import { Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Logo } from "@/components/marketing/Logo";
+import { AccountExitButton } from "@/components/site/AccountExitButton";
 import { deletionWaitDays } from "@/modules/account";
 
 export const metadata = { title: "Account deleted", robots: { index: false } };
 
 // Shown right after deleting an account, and to anyone who logs in to a deleted one (requireAgency).
-// Static: it shows no account data.
+// Static apart from the Log out or Log in button, which streams in (AccountExitButton).
 export default function AccountDeletedPage() {
   const days = deletionWaitDays();
   return (
-    <main className="flex min-h-screen items-center justify-center bg-background px-4 py-16">
+    <main className="flex min-h-screen flex-col items-center justify-center gap-8 bg-background px-4 py-16">
+      <Logo className="h-8 w-auto" />
       <div className="w-full max-w-md rounded-lg border border-border bg-card p-8 text-center">
         <Trash2 className="mx-auto size-10 text-low" aria-hidden="true" />
         <h1 className="mt-4 text-xl font-semibold text-foreground">This account was deleted</h1>
@@ -23,11 +26,7 @@ export default function AccountDeletedPage() {
           <Button asChild>
             <Link href="/contact?topic=support">Contact us</Link>
           </Button>
-          <form action="/auth/signout" method="post">
-            <Button type="submit" variant="outline" className="w-full">
-              Log out
-            </Button>
-          </form>
+          <AccountExitButton />
         </div>
       </div>
     </main>

@@ -5,6 +5,7 @@ import { getBalance } from "@/modules/credits";
 import { emailsOf, readCaptures, unique } from "../dal";
 import { latestResults, newestFinished } from "../results/dal";
 import { explainScanError } from "../../scans/error-text";
+import { displayStatus } from "../../agencies/service";
 import { isActive, runScanCheck, startOfMonthUtc, sumBy, toScanState, type ScanState } from "../service";
 
 // Everything about one business for the admin detail page (B-66). Each read checks admin access itself (BUG-286).
@@ -61,7 +62,7 @@ export async function loadBusinessDetail(id: string, now = new Date()) {
     business.agency_id
       ? db
           .from("agencies")
-          .select("id, name, owner_user_id, is_test, status")
+          .select("id, name, owner_user_id, is_test, status, trial_ends_at, stripe_subscription_id")
           .eq("id", business.agency_id)
           .maybeSingle()
       : Promise.resolve({ data: null, error: null }),
@@ -172,6 +173,11 @@ export async function loadBusinessDetail(id: string, now = new Date()) {
           name: agencyRow.name,
           isTest: agencyRow.is_test,
           status: agencyRow.status,
+          // The same status the agencies list shows: a trial past its end reads "Trial ended", not "On trial".
+          displayStatus: displayStatus(
+            { status: agencyRow.status, hasSubscription: agencyRow.stripe_subscription_id !== null, trialEndsAt: agencyRow.trial_ends_at },
+            now,
+          ),
         }
       : null,
     plan: sub ? { name: sub.plans?.name ?? null, status: sub.status } : null,

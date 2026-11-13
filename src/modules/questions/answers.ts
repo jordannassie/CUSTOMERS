@@ -3,6 +3,7 @@ import type { ProviderId } from "@/modules/scanning";
 import { MODEL_LABELS } from "./service";
 import type { SiteAction } from "@/modules/sources";
 import type { MatchedFix } from "./skipped";
+import { realCitations } from "@/lib/cited-links";
 
 // "See the answers" on the Questions page (BUG-089): what each AI said the last time it was asked, and whether
 // that answer named the business. Pure, so every case is unit tested. Only the fields the dialog shows leave here.
@@ -88,7 +89,7 @@ function sitesOf(value: unknown): AnswerSite[] {
   if (!Array.isArray(value)) return [];
   const seen = new Set<string>();
   const out: AnswerSite[] = [];
-  for (const c of value) {
+  for (const c of realCitations(value)) {
     const url = c && typeof c === "object" && typeof c.url === "string" ? (c.url as string) : null;
     const host = url ? hostOf(url) : null;
     if (!url || !host || seen.has(host) || !/^https?:/i.test(url)) continue;

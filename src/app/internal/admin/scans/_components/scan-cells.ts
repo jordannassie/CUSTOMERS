@@ -5,12 +5,20 @@ import { money, plural } from "../../_components/format";
 
 export type CostCell = { text: string; muted: boolean; title?: string };
 
+export const FREE_BUT_COST =
+  "No credits were charged, but the AI work around this scan (reading business names, writing fixes) still cost this.";
+
 /**
  * "$0.48"; "Not recorded" when the scan ran but nothing was logged (it used to read "$0.00", which looked real);
  * "$0.00" for a test agency, which uses saved sample answers; empty (a dash) when it never ran or is still going.
  */
-export function costCell(row: Pick<AdminScanRow, "hasRun" | "costUsd" | "isTest" | "status">): CostCell {
-  if (row.costUsd !== null) return { text: money(row.costUsd), muted: false };
+export function costCell(row: Pick<AdminScanRow, "hasRun" | "costUsd" | "isTest" | "status"> & { creditsCharged?: number }): CostCell {
+  if (row.costUsd !== null) {
+    // A scan can charge nothing (answers reused from the last scan, a failed check) and still cost us the AI work
+    // around it, such as reading business names and writing fixes (admin audit 2026-11-12).
+    const freeButCost = row.creditsCharged === 0 && row.costUsd > 0;
+    return { text: money(row.costUsd), muted: false, ...(freeButCost && { title: FREE_BUT_COST }) };
+  }
   if (!row.hasRun) return { text: "", muted: true };
   if (row.isTest) return { text: "$0.00", muted: true, title: "Test agencies use saved sample answers, so their scans cost nothing." };
   if (row.status === "running" || row.status === "queued") return { text: "", muted: true };

@@ -61,7 +61,7 @@ export function BannerRotation() {
               key={b.src}
               type="button"
               onClick={() => setActive(i)}
-              aria-label={`Show ${b.industry.toLowerCase()} picture`}
+              aria-label={`Show picture ${i + 1} of ${BANNERS.length}: ${b.industry.toLowerCase()}`}
               aria-current={i === active}
               className="grid size-11 place-items-center rounded-full"
             >

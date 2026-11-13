@@ -4,6 +4,7 @@ import { refresh } from "next/cache";
 import { authFailure, requireAdmin, type ActionResult } from "@/modules/auth";
 import { retryFailedJob } from "@/modules/jobs";
 import { auditedChange, changed, unchanged } from "../dal";
+import { scanJobBusiness } from "./name/dal";
 import { retryScanInput } from "./schema";
 
 const REFUSED = {
@@ -28,10 +29,12 @@ export async function retryScan(input: unknown): Promise<ActionResult<{ jobId: s
 
   const { jobId } = parsed.data;
   try {
+    // The business name goes on the history row, so it still says which scan once the job itself is gone.
+    const business = await scanJobBusiness(jobId);
     const result = await auditedChange<ActionResult<{ jobId: string }>>(
       "scan_job.retry",
       { type: "scan_job", id: jobId },
-      {},
+      business ? { business: business.name, business_id: business.id } : {},
       async () => {
         const outcome = await retryFailedJob(jobId);
         if (outcome !== "queued") return unchanged({ ok: false, ...REFUSED[outcome] }, outcome);

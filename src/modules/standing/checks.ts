@@ -2,6 +2,7 @@
 // already saved (visibility_results), so nothing here asks an AI or a website again.
 import { z } from "zod";
 import { hostOf } from "@/lib/site-type";
+import { realCitations } from "@/lib/cited-links";
 
 export type StandingCheck = {
   provider: string;
@@ -33,7 +34,7 @@ const citations = z.array(z.object({ url: z.string() }));
 
 export function toCheck(row: StandingRow): StandingCheck {
   const named = mentions.safeParse(row.competitors_mentioned);
-  const cited = citations.safeParse(row.cited_sources);
+  const cited = citations.safeParse(realCitations(row.cited_sources));
   const sites = new Set<string>();
   const urls = new Set<string>();
   for (const c of cited.success ? cited.data : []) {

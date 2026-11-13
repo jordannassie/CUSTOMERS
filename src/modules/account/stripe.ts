@@ -1,5 +1,5 @@
 import "server-only";
-import { env } from "@/lib/env";
+import { devFlag } from "@/lib/dev-flag";
 import { getStripe, isStripeConfigured } from "@/modules/billing";
 
 /** The one Stripe call deleting an account makes. Injected, so tests and Playwright never reach Stripe. */
@@ -10,7 +10,7 @@ export type AccountStripeClient = {
 };
 
 // Same flag as checkout and top-ups (B-41, B-43); refused in production so it can never stand in for Stripe there.
-const fixtures = () => env.STRIPE_CHECKOUT_FIXTURES === "true" && env.NODE_ENV !== "production";
+const fixtures = () => devFlag("STRIPE_CHECKOUT_FIXTURES");
 
 const fixtureClient: AccountStripeClient = {
   mode: "fixture",

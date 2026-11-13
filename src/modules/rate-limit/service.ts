@@ -31,6 +31,8 @@ export const LIMITS = {
   video_ad_checkout: { max: 10, windowMs: HOUR },
   // Each signup, view or click writes a row (newsletter, anyone can call it).
   newsletter: { max: 60, windowMs: HOUR },
+  // Each "Get started" or review click in the AI apps directory writes a row (apps/go, anyone can call it).
+  app_click: { max: 120, windowMs: HOUR },
 } satisfies Record<string, Limit>;
 
 export type Bucket = keyof typeof LIMITS;

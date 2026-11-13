@@ -2,6 +2,7 @@ import "server-only";
 import { randomUUID } from "node:crypto";
 import type Stripe from "stripe";
 import { env } from "@/lib/env";
+import { devFlag } from "@/lib/dev-flag";
 import { getStripe, isStripeConfigured } from "./stripe";
 
 /** The one Stripe call the card step makes. Injected, so tests and Playwright never reach Stripe. */
@@ -10,7 +11,7 @@ export type CheckoutClient = {
 };
 
 // Refused in production so a stray flag can never let someone skip paying.
-export const checkoutFixtures = () => env.STRIPE_CHECKOUT_FIXTURES === "true" && env.NODE_ENV !== "production";
+export const checkoutFixtures = () => devFlag("STRIPE_CHECKOUT_FIXTURES");
 
 export const FIXTURE_CLIENT_SECRET = "cs_fixture_secret";
 

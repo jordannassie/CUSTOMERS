@@ -42,8 +42,11 @@ describe("admin activity wording (admin audit 2026-11-12)", () => {
 
   it("names alerts as the Overview does", () => {
     expect(alertName("failed_scans")).toBe("Failed scans alert");
-    expect(alertName("service_check:stripe")).toBe("Service check alert");
-    expect(alertName("resolve_test")).toBe("An alert");
+    expect(alertName("service_check:stripe")).toBe("Stripe check alert");
+    expect(alertName("service_check:openai")).toBe("OpenAI check alert");
+    expect(alertName("service_check")).toBe("Service check alert");
+    // An unknown kind reads from its code, never a bare "An alert" (admin audit 2026-11-12).
+    expect(alertName("resolve_test")).toBe("Resolve test alert");
     expect(alertName(null)).toBe("An alert");
     expect(detailText({ kind: "stuck_jobs" }, "kind")).toBe("stuck_jobs");
     expect(detailText([], "kind")).toBeNull();

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import Link from "next/link";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
@@ -39,6 +39,14 @@ export function ScanSettingsForm({ businessId, models, frequency, activeQuestion
   function toggle(id: ModelId) {
     setChosen((list) => (list.includes(id) ? list.filter((m) => m !== id) : MODELS.map((m) => m.id).filter((m) => m === id || list.includes(m))));
   }
+
+  // Leaving with unsaved changes asks first, like any form that would lose typing.
+  useEffect(() => {
+    if (!dirty) return;
+    const warn = (e: BeforeUnloadEvent) => e.preventDefault();
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [dirty]);
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -114,7 +122,13 @@ export function ScanSettingsForm({ businessId, models, frequency, activeQuestion
         {/* Below the estimate, so on a phone the credit effect is seen before the button. */}
         <div className="flex flex-col gap-3 border-t border-border p-5 md:col-span-2">
           <FormError message={error} />
-          <Button type="submit" className="w-fit" disabled={pending || !dirty}>
+          {/* The server needs at least one (schema .min(1)); say why the button is off instead of letting it fail. */}
+          {chosen.length === 0 && (
+            <p className="text-sm text-muted-foreground" data-testid="no-models">
+              Pick at least one AI model to save.
+            </p>
+          )}
+          <Button type="submit" className="w-fit" disabled={pending || !dirty || chosen.length === 0}>
             {pending && <Loader2 className="animate-spin" aria-hidden="true" />}
             Save AI checks
           </Button>

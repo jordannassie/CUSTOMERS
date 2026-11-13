@@ -1,4 +1,4 @@
-import { MessageSquareText } from "lucide-react";
+import { MessageSquareText, SearchX } from "lucide-react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { requireAdmin } from "@/modules/auth";
@@ -99,6 +99,12 @@ export default async function AdminReviewsPage({ searchParams }: { searchParams:
       )}
 
       {selected && <ReviewDetail review={selected} appName={appName(apps, selected.slug)} signals={signals} events={events} />}
+      {/* A link to a review that is gone said nothing at all; say so, like Leads (admin audit 2026-11-12). */}
+      {selectedId && !selected && (
+        <AdminEmpty icon={SearchX} title="Review not found">
+          This link points to a review that is not here any more. Pick one from the list.
+        </AdminEmpty>
+      )}
     </div>
   );
 }

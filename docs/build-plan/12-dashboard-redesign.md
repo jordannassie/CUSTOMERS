@@ -1,6 +1,6 @@
 # Dashboard redesign (B-94 to B-102)
 
-Brief: `docs/customers-direct-redesign-brief.md`. Decisions: D-86. Branch: `mvp-bugs-fixes` (the user's choice, 2026-10-27; changes left uncommitted for review).
+Brief: `docs/customers-direct-redesign-brief.md`. Decisions: D-86. Branch: `mvp-bugs-fixes` (the user's choice, 2026-10-27). Built and committed in aab4dc8, merged into `release/go-live`.
 
 | Task | What the user sees |
 |---|---|

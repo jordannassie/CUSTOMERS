@@ -10,16 +10,16 @@ const BENEFITS = [
 
 export default function LaunchKitBottom() {
   return (
-    <section className="bg-white border-t border-[#E5E5E1]">
+    <section className="bg-white border-t border-border">
       <div className="max-w-[calc(1120px*var(--px,1))] mx-auto px-4 sm:px-6 py-12 sm:py-16 grid lg:grid-cols-2 gap-4 sm:gap-6">
-        <div className="rounded-3xl bg-[#EFF6FF] border border-[#BFDBFE] p-6 sm:p-8 flex flex-col">
+        <div className="rounded-3xl bg-primary-tint border border-[#BFDBFE] p-6 sm:p-8 flex flex-col">
           <p className="inline-flex self-start text-[length:calc(11px*var(--px,1))] font-semibold uppercase tracking-wider text-[#0866F5] bg-white border border-[#BFDBFE] rounded-full px-3 py-1">
             Get started today
           </p>
-          <h2 className="mt-4 text-[length:calc(28px*var(--px,1))] sm:text-[length:calc(32px*var(--px,1))] font-bold tracking-tight text-[#171717]">
+          <h2 className="mt-4 text-[length:calc(28px*var(--px,1))] sm:text-[length:calc(32px*var(--px,1))] font-bold tracking-tight text-foreground">
             Start your AI business for only $97.
           </h2>
-          <p className="mt-3 text-[length:calc(15px*var(--px,1))] text-[#6B6B67]">
+          <p className="mt-3 text-[length:calc(15px*var(--px,1))] text-muted-foreground">
             One-time payment. Instant access. No monthly fees.
           </p>
           <div className="mt-6">
@@ -29,8 +29,8 @@ export default function LaunchKitBottom() {
             {BENEFITS.map((item) => (
               <div key={item.label} className="text-center">
                 <item.icon size={18} className="mx-auto text-[#0866F5]" aria-hidden="true" />
-                <p className="mt-2 text-[length:calc(12px*var(--px,1))] font-semibold text-[#171717]">{item.label}</p>
-                <p className="text-[length:calc(11px*var(--px,1))] text-[#6B6B67]">{item.detail}</p>
+                <p className="mt-2 text-[length:calc(12px*var(--px,1))] font-semibold text-foreground">{item.label}</p>
+                <p className="text-[length:calc(11px*var(--px,1))] text-muted-foreground">{item.detail}</p>
               </div>
             ))}
           </div>

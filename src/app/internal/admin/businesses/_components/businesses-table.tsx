@@ -101,7 +101,7 @@ function Rows({ rows }: { rows: AdminBusinessRow[] }) {
                   </span>
                 )}
               </TableCell>
-              <TableCell>{planText(r) ?? hint(r.deleted ? "None" : "No plan")}</TableCell>
+              <TableCell>{planText(r) ?? hint("No plan")}</TableCell>
               <TableCell>{frequencyText(r) ?? hint("None")}</TableCell>
               <TableCell>
                 <ModelList models={r.models} />

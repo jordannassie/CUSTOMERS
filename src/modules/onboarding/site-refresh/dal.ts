@@ -2,6 +2,7 @@ import "server-only";
 // Re-reads a business's website after a scan when its saved facts are over a month old (MVP_SPEC 7.1). Runs in the
 // scan worker, so it imports only the scraper, the extractor and the service client (worker-bundle.test.ts).
 import { env } from "@/lib/env";
+import { devFlag } from "@/lib/dev-flag";
 import { createServiceClient } from "@/lib/supabase/service";
 import { liveAiClients } from "@/modules/ai/server";
 import type { Json } from "@/types/database.types";
@@ -49,7 +50,7 @@ export async function refreshStaleSiteFacts(runId: string, now = new Date()): Pr
     | { domain: string | null; has_website: boolean | null; owner_user_id: string; places_id: string | null; is_chain: boolean; agencies: { is_test: boolean } }
     | undefined;
   // Test agencies never spend real Firecrawl or AI calls (D-61); fixture mode has nothing real to read.
-  const fixtures = env.ONBOARDING_FIXTURES === "true" && env.NODE_ENV !== "production";
+  const fixtures = devFlag("ONBOARDING_FIXTURES");
   if (!run || !b?.domain || b.has_website === false || b.agencies.is_test || fixtures) return "skipped";
   if (env.GOOGLE_PLACES_API_KEY && needsListing({ domain: b.domain, hasWebsite: b.has_website, placesId: b.places_id, chain: b.is_chain })) {
     await relinkListing(db, run.business_id, b.domain, createPlacesSearch(env.GOOGLE_PLACES_API_KEY));

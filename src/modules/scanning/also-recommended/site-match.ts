@@ -3,12 +3,13 @@
 // business's icon. Pure.
 import { z } from "zod";
 import { coreName } from "../mention-text";
+import { realCitations } from "@/lib/cited-links";
 
 const cited = z.array(z.object({ url: z.string() }).passthrough());
 
 /** The hosts of the sites an answer cited ("www.Barton-Bean.com/menu" gives "barton-bean.com"). */
 export function citedHosts(value: unknown): string[] {
-  const parsed = cited.safeParse(value);
+  const parsed = cited.safeParse(realCitations(value));
   if (!parsed.success) return [];
   const hosts: string[] = [];
   for (const { url } of parsed.data) {

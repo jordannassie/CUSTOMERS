@@ -149,7 +149,8 @@ export function SitesTable({ businessId, rows, answers, moreSites, add }: Props)
       <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border px-4 py-3 text-xs text-text-hint sm:px-4">
         <span>
           Showing {shown.length} of {matching.length}.
-          {moreSites > 0 && (
+          {/* Counted over every site, not per filter, so it shows only under All (audit 2026-11-12). */}
+          {moreSites > 0 && filter === "all" && (
             <span data-testid="more-sites">
               {" "}
               {moreSites} more {moreSites === 1 ? "site was" : "sites were"} used less often.

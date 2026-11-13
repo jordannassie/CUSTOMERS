@@ -98,13 +98,14 @@ export function LeadRows({
                   <p className={cn("truncate text-[length:calc(14px*var(--px,1))]", lead.read_at ? "text-foreground" : "font-semibold")}>
                     {withoutCode(lead.name) || "No name"}
                   </p>
-                  {/* Wraps instead of being cut off on a phone (admin audit 2026-11-12). */}
-                  <p className="text-[length:calc(12px*var(--px,1))] break-all text-muted-foreground">{lead.email}</p>
+                  {/* Wraps instead of being cut off on a phone, but only at the "@" or a dot when it can, never mid-word
+                      when it fits (admin audit 2026-11-12). */}
+                  <p className="text-[length:calc(12px*var(--px,1))] wrap-anywhere text-muted-foreground">{lead.email}</p>
                   {lead.company && withoutCode(lead.company) && (
                     <p className="truncate text-[length:calc(12px*var(--px,1))] text-muted-foreground">{withoutCode(lead.company)}</p>
                   )}
                   {lead.handled_by && (
-                    <p className="text-[length:calc(12px*var(--px,1))] break-all text-text-hint">Handled by {lead.handled_by}</p>
+                    <p className="text-[length:calc(12px*var(--px,1))] wrap-anywhere text-text-hint">Handled by {lead.handled_by}</p>
                   )}
                 </div>
               </div>

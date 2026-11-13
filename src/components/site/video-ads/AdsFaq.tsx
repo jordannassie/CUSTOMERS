@@ -29,19 +29,19 @@ export function AdsFaq() {
   return (
     <section id="faq" className="scroll-mt-28 py-20 sm:py-24">
       <div className="mx-auto max-w-[calc(760px*var(--px,1))] px-4 sm:px-6">
-        <h2 className="text-center text-[length:calc(32px*var(--px,1))] font-bold tracking-tight text-[#171717] sm:text-[length:calc(40px*var(--px,1))]">
+        <h2 className="text-center text-[length:calc(32px*var(--px,1))] font-bold tracking-tight text-foreground sm:text-[length:calc(40px*var(--px,1))]">
           FAQ
         </h2>
         <div className="mt-10 flex flex-col gap-3">
           {FAQ.map((item) => (
-            <details key={item.q} className="group rounded-2xl border border-[#E5E5E1] bg-white px-5 py-4">
-              <summary className="cursor-pointer list-none text-[length:calc(16px*var(--px,1))] font-semibold text-[#171717] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0866F5]">
+            <details key={item.q} className="group rounded-2xl border border-border bg-white px-5 py-4">
+              <summary className="cursor-pointer list-none text-[length:calc(16px*var(--px,1))] font-semibold text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0866F5]">
                 <span className="flex items-center justify-between gap-4">
                   {item.q}
                   <span className="text-[#0866F5] motion-safe:group-open:rotate-45" aria-hidden="true">+</span>
                 </span>
               </summary>
-              <p className="pt-3 text-[length:calc(15px*var(--px,1))] leading-relaxed text-[#777773]">{item.a}</p>
+              <p className="pt-3 text-[length:calc(15px*var(--px,1))] leading-relaxed text-muted-foreground">{item.a}</p>
             </details>
           ))}
         </div>

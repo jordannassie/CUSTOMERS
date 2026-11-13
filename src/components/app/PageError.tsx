@@ -1,0 +1,19 @@
+"use client";
+
+import { PageContainer } from "@/components/app/PageContainer";
+import { Button } from "@/components/ui/button";
+
+/** What a dashboard page shows when it fails to load: what is safe, and a way to try again. */
+export function PageError({ title = "This page could not load", safe, retry }: { title?: string; safe: string; retry: () => void }) {
+  return (
+    <PageContainer>
+      <div role="alert" className="rounded-md border border-border bg-surface p-8 text-center">
+        <h1 className="text-lg font-semibold tracking-[-0.02em]">{title}</h1>
+        <p className="mt-2 text-sm text-muted-foreground">{safe} Try again, and contact support if it keeps happening.</p>
+        <Button className="mt-5" onClick={() => retry()}>
+          Try again
+        </Button>
+      </div>
+    </PageContainer>
+  );
+}

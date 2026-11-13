@@ -1,13 +1,16 @@
 import Link from "next/link";
 import { PauseCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Logo } from "@/components/marketing/Logo";
+import { AccountExitButton } from "@/components/site/AccountExitButton";
 
 export const metadata = { title: "Account paused", robots: { index: false } };
 
-// Where requireAgency() sends a suspended or deleted agency. Static: it shows no account data.
+// Where requireAgency() sends a suspended or deleted agency. Static apart from the Log out or Log in button (AccountExitButton).
 export default function AccountPausedPage() {
   return (
-    <main className="flex min-h-screen items-center justify-center bg-background px-4 py-16">
+    <main className="flex min-h-screen flex-col items-center justify-center gap-8 bg-background px-4 py-16">
+      <Logo className="h-8 w-auto" />
       <div className="w-full max-w-md rounded-lg border border-border bg-card p-8 text-center">
         <PauseCircle className="mx-auto size-10 text-mid" aria-hidden="true" />
         <h1 className="mt-4 text-xl font-semibold text-foreground">Your account is paused</h1>
@@ -18,11 +21,7 @@ export default function AccountPausedPage() {
           <Button asChild>
             <Link href="/contact?topic=support">Contact support</Link>
           </Button>
-          <form action="/auth/signout" method="post">
-            <Button type="submit" variant="outline" className="w-full">
-              Log out
-            </Button>
-          </form>
+          <AccountExitButton />
         </div>
       </div>
     </main>

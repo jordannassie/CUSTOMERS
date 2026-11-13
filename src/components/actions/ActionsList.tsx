@@ -75,7 +75,7 @@ export function ActionsList({
                 <div className="grid gap-x-4 gap-y-2 lg:grid-cols-[5.5rem_minmax(0,1fr)_minmax(0,13rem)_7rem_4.5rem_11rem] lg:items-start">
                   {/* On a phone the impact, column and date share one line above the fix. */}
                   <span className="flex flex-wrap items-center gap-1.5">
-                    <Badge variant={IMPACT[item.impact].variant}>{IMPACT[item.impact].text}</Badge>
+                    <Badge variant={IMPACT[item.impact].variant}>{IMPACT[item.impact].text} impact</Badge>
                     <Badge variant={STATUS_BADGE[item.status]} className="lg:hidden">
                       {STATUS_TEXT[item.status]}
                     </Badge>

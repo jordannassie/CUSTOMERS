@@ -122,6 +122,17 @@ const ALERT_KINDS: Record<string, string> = {
 export function alertName(kind: string | null | undefined): string {
   if (!kind) return "An alert";
   if (ALERT_KINDS[kind]) return ALERT_KINDS[kind];
-  if (kind.startsWith("service_check")) return "Service check alert";
-  return "An alert";
+  // "service_check:perplexity" -> "Perplexity check alert"; any other kind reads from its code, never a bare "An alert".
+  if (kind.startsWith("service_check")) {
+    const service = kind.split(":")[1];
+    return service ? `${SERVICE_NAMES[service] ?? words(service)} check alert` : "Service check alert";
+  }
+  return `${words(kind)} alert`;
 }
+
+const SERVICE_NAMES: Record<string, string> = { openai: "OpenAI", anthropic: "Claude", perplexity: "Perplexity" };
+
+const words = (code: string) => {
+  const text = code.replace(/[._:-]+/g, " ").trim();
+  return text.charAt(0).toUpperCase() + text.slice(1);
+};

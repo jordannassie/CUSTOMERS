@@ -10,7 +10,7 @@ AI could see", never "the reason", since we cannot see inside the AI tools. [Bac
 ---
 
 ### B-85 Standing facts from saved answers (Phase A1)
-- [ ] Done (built in the working tree on `mvp-bugs-fixes`, not committed yet)
+- [x] Done (committed in a2549eb and fa7138d, merged into `release/go-live` in 02f73d3)
 
 Phase 11 · M · Depends on: B-50, B-51 · Blocked by Jordan: no · MVP_SPEC 7.1, 7.2, D-63, D-73 · Branch: `task/B-85-standing-facts` → `mvp`
 
@@ -29,7 +29,7 @@ Phase 11 · M · Depends on: B-50, B-51 · Blocked by Jordan: no · MVP_SPEC 7.1
 ---
 
 ### B-86 Competitors page: "See why" (Phase A2)
-- [ ] Done (built, not committed)
+- [x] Done (committed in a2549eb and fa7138d, merged into `release/go-live` in 02f73d3)
 
 Phase 11 · M · Depends on: B-85 · Blocked by Jordan: no · MVP_SPEC 8.1, D-73 · Branch: `task/B-86-see-why` → `mvp`
 
@@ -43,7 +43,7 @@ Phase 11 · M · Depends on: B-85 · Blocked by Jordan: no · MVP_SPEC 8.1, D-73
 ---
 
 ### B-87 Questions page: who won each question (Phase A3)
-- [ ] Done (built, not committed)
+- [x] Done (committed in a2549eb and fa7138d, merged into `release/go-live` in 02f73d3)
 
 Phase 11 · S · Depends on: B-85 · Blocked by Jordan: no · MVP_SPEC 5.3, 8.1 · Branch: `task/B-87-question-winners` → `mvp`
 
@@ -54,7 +54,7 @@ Phase 11 · S · Depends on: B-85 · Blocked by Jordan: no · MVP_SPEC 5.3, 8.1 
 ---
 
 ### B-88 Opportunities grouped by where you fix them (Phase A4)
-- [ ] Done (built, not committed)
+- [x] Done (committed in a2549eb and fa7138d, merged into `release/go-live` in 02f73d3)
 
 Phase 11 · S · Depends on: B-52 · Blocked by Jordan: no · MVP_SPEC 7.3, 8.1 · Branch: `task/B-88-fixes-by-place` → `mvp`
 
@@ -67,7 +67,7 @@ Phase 11 · S · Depends on: B-52 · Blocked by Jordan: no · MVP_SPEC 7.3, 8.1 
 ---
 
 ### B-89 Overview: why the leading competitor is ahead (Phase A5)
-- [ ] Done (built, not committed)
+- [x] Done (committed in a2549eb and fa7138d, merged into `release/go-live` in 02f73d3)
 
 Phase 11 · S · Depends on: B-86 · Blocked by Jordan: no · MVP_SPEC 8.1 · Branch: `task/B-89-overview-why` → `mvp`
 
@@ -77,7 +77,7 @@ Phase 11 · S · Depends on: B-86 · Blocked by Jordan: no · MVP_SPEC 8.1 · Br
 ---
 
 ### B-90 The likely reason in the report, PDF and weekly email (Phase A6)
-- [ ] Done (built, not committed)
+- [x] Done (committed in a2549eb and fa7138d, merged into `release/go-live` in 02f73d3)
 
 Phase 11 · S · Depends on: B-85, B-89 · Blocked by Jordan: no · MVP_SPEC 8.2, 9, D-73 · Branch: `task/B-90-shared-summary` → `mvp`
 
@@ -90,7 +90,7 @@ Phase 11 · S · Depends on: B-85, B-89 · Blocked by Jordan: no · MVP_SPEC 8.2
 ---
 
 ### B-91 Check competitor websites, on request (Phase B)
-- [ ] Done (built in the working tree on `mvp-bugs-fixes`; migration 077 (first numbered 071; renumbered after release/go-live took 071 to 076) applied to local dev and the test database, not live)
+- [x] Done (committed and merged into `release/go-live` in 02f73d3; migration 077 is not applied to live yet)
 
 Phase 11 · L · Depends on: B-86 · Blocked by Jordan: no (D-85, MVP_SPEC 7.1 updated) · Branch: `task/B-91-competitor-sites` → `mvp`
 
@@ -126,7 +126,7 @@ named them, named you), and the pages of their site AI used (`standing/gap.ts`, 
 ---
 
 ### B-93 Comparison page: "Bean House vs you"
-- [ ] Done (built in the working tree on `mvp-bugs-fixes`, not committed yet)
+- [x] Done (committed in a2549eb and fa7138d, merged into `release/go-live` in 02f73d3)
 
 Phase 11 · M · Depends on: B-86, B-91 · Blocked by Jordan: no · MVP_SPEC 8.1, D-73, D-85 · Branch: `task/B-93-compare-page` → `mvp`
 
