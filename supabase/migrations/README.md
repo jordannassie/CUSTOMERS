@@ -179,4 +179,7 @@ On live these may already exist from main; if live's history records 024-029 for
 - `090_count_reused_answers_once.sql` (BUG-287: new server-only view `visibility_results_unique`, the counted answers with no copies from a Run scan that reused the cache and no rows of a scan still running; `visibility_checks_30d` and `visibility_checks_all` re-created over it with the same columns. Apply with the app version that reads it; its type was added to `database.types.ts` with the same columns as `visibility_results_counted`)
 - `091_close_function_execute.sql` (SEC-11: revokes EXECUTE on every function in public from PUBLIC, anon and authenticated whatever built the database, keeps the service role's grants, and fails if anything is still open. `npm run db:ohio` checks this on every run with `scripts/check-function-grants.sql`; run that query on live before go-live)
 
+- `092_admin_speed.sql` (admin review 2026-11-12: admin totals added up in SQL functions, the `service_status_snapshots` table for System status, lead notes)
+- `093_admin_audit_fixes.sql` (D-91: replaces two read-only admin functions from 092; no table changes)
+- `094_data_api_grants.sql` (F-09: explicit select, insert, update and delete grants for every table and view 021 to 093 create. Supabase stopped default grants on existing projects on 2026-10-30, so without it every new table answers "permission denied" on live. After the push, check one: `select has_table_privilege('service_role', 'public.scan_jobs', 'select');` returns true)
 Any file added after 043 joins this list.

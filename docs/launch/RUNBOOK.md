@@ -42,6 +42,7 @@ Needed in production (the build passes without them, but a feature breaks):
 | `STRIPE_SECRET_KEY` | Stripe app key, restricted, live mode | Stripe (Jordan's account) |
 | `STRIPE_WEBHOOK_SECRET` | Checks webhook signatures | Stripe, live webhook endpoint |
 | `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Card form and top-ups in the browser | Stripe, live mode |
+| `STRIPE_PORTAL_CONFIGURATION` (optional) | The live Customer Portal settings to open (`bpc_...`). Save the portal settings in live mode first, or the portal errors | Stripe, Settings, Billing, Customer portal |
 | `RESEND_API_KEY` | Sends email, sending only key | Resend |
 | `EMAIL_FROM` | Sender, for example `Customers.Direct <hello@mail.customers.direct>` | Resend, verified domain |
 | `EMAIL_UNSUBSCRIBE_SECRET` | Signs unsubscribe links, at least 32 characters. Changing it breaks old links | Make one (random) |

@@ -176,3 +176,16 @@ async function checkWorker(now: Date): Promise<ServiceStatus> {
     ...workerStatus({ lastFinishedAt: last.data?.finished_at ?? null, overdueJobs: overdue.count ?? 0 }, now),
   };
 }
+
+/**
+ * The public uptime check (/api/health): true when the database answers a one-row read within 5 s. Reads no customer
+ * data and says nothing about which part failed, so it is safe to leave open.
+ */
+export async function pingDatabase(): Promise<boolean> {
+  try {
+    const { error } = await createServiceClient().from("plans").select("id").limit(1).abortSignal(AbortSignal.timeout(5_000));
+    return !error;
+  } catch {
+    return false;
+  }
+}

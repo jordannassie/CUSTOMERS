@@ -1,4 +1,5 @@
 import "server-only";
+import { env } from "@/lib/env";
 import { getStripe, isStripeConfigured } from "../stripe";
 import { stripePlanChangeClient, type PlanChangeStripe } from "../plan-change/client";
 import type { PlanChangeData } from "../plan-change/dal";
@@ -38,8 +39,12 @@ export type PortalClient = {
 const stripePortal: PortalClient = {
   mode: "stripe",
   async createSession(customer, returnUrl) {
-    // No configuration ID: Stripe uses the account's default portal settings (branding, invoices, card updates).
-    const session = await getStripe().billingPortal.sessions.create({ customer, return_url: returnUrl });
+    // With STRIPE_PORTAL_CONFIGURATION the live settings are named; without it Stripe uses the account's default ones.
+    const configuration = env.STRIPE_PORTAL_CONFIGURATION;
+    const started = Date.now();
+    const session = await getStripe().billingPortal.sessions.create({ customer, return_url: returnUrl, ...(configuration && { configuration }) });
+    // One line per open, so a slow portal shows in the host logs as Stripe's time or ours.
+    console.info(`[billing/portal] Stripe session in ${Date.now() - started} ms`);
     return session.url;
   },
 };

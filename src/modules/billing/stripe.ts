@@ -10,6 +10,9 @@ export function createStripeClient(apiKey: string): Stripe {
   return new Stripe(apiKey, {
     apiVersion: STRIPE_API_VERSION,
     maxNetworkRetries: 2,
+    // Stripe's default wait is 80 s per try; a stuck call then held "Manage card and invoices" for about 20 s or more
+    // (preview audit, 2026-11-13). 15 s still covers every normal call; a timeout is retried like a network error.
+    timeout: 15_000,
     appInfo: { name: "customers-direct" },
   });
 }
