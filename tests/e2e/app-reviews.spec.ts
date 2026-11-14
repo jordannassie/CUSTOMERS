@@ -12,6 +12,8 @@ test("app detail shows an empty Customers.Direct rating and a review form gate",
   expect(json ?? "").not.toContain("aggregateRating");
 
   await page.getByRole("link", { name: "Write a review" }).first().click();
-  await expect(page.getByRole("heading", { name: "Write a review" })).toBeVisible();
+  // The dev server compiles the review page on its first visit, which can take far longer than an assertion's 5s.
+  await page.waitForURL((url) => url.pathname === "/apps/chatgpt/review", { timeout: 60_000 });
+  await expect(page.getByRole("heading", { name: "Write a review" })).toBeVisible({ timeout: 60_000 });
   await expect(page.getByRole("link", { name: "Log in to write a review" })).toBeVisible();
 });
