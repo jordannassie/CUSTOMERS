@@ -37,6 +37,11 @@ export async function canRunScanJob(agencyId: string, businessId: string): Promi
   return rules.canStartScan(agency, { ...business, hasOpenScan: false });
 }
 
+/** A test agency (D-61): sample answers, admin-added credits. Scan screens word their credit messages for it. */
+export async function isTestAgency(agencyId: string): Promise<boolean> {
+  return (await loadAgencyFacts(agencyId)).isTest === true;
+}
+
 export async function canSpendTopUps(agencyId: string): Promise<Entitlement> {
   return rules.canSpendTopUps(await loadAgencyFacts(agencyId));
 }

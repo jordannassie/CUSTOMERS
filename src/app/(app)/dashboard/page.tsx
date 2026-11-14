@@ -57,7 +57,8 @@ export default async function OverviewPage({ searchParams }: { searchParams: Pro
   const tools = overview.models.map((m) => m.label).join(", ");
   const meta = [
     sources?.place,
-    trends ? `${trends.rows.length} customer ${trends.rows.length === 1 ? "question" : "questions"}` : null,
+    // Every active question, the count the Questions page shows; your own ones are named apart (MVP test, 2026-11-14).
+    trends ? questionCount(trends.rows.length, trends.own.length) : null,
     tools,
     overview.lastCheckedAt ? `Last scan ${shortDay(overview.lastCheckedAt)}` : "No scans yet",
   ].filter(Boolean);
@@ -88,7 +89,16 @@ export default async function OverviewPage({ searchParams }: { searchParams: Pro
                 </Button>
               </>
             )}
-            {score && scanStatus.ok && <RunScanButton businessId={business.id} initial={scanStatus.data} start={startScan} className="h-8 px-3 text-[length:calc(13px*var(--px,1))]" />}
+            {/* On a phone Run scan comes first, full width, with its note right under it (QA round 2, item 16). */}
+            {score && scanStatus.ok && (
+              <RunScanButton
+                businessId={business.id}
+                initial={scanStatus.data}
+                start={startScan}
+                className="h-8 px-3 text-[length:calc(13px*var(--px,1))] max-md:order-first max-md:h-10 max-md:w-full"
+                noteClassName="max-md:order-first"
+              />
+            )}
           </div>
         }
       />
@@ -163,3 +173,10 @@ export default async function OverviewPage({ searchParams }: { searchParams: Pro
 }
 
 const shortDay = (iso: string) => new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+
+/** "12 customer questions", or "12 customer questions, 2 your own" when some are the user's own (not in the score). */
+function questionCount(suggested: number, own: number): string {
+  const total = suggested + own;
+  const all = `${total} customer ${total === 1 ? "question" : "questions"}`;
+  return own > 0 ? `${all}, ${own} your own` : all;
+}

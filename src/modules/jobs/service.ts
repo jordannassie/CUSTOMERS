@@ -1,4 +1,5 @@
 import { NO_SAMPLE_ANSWERS } from "@/modules/scanning";
+import { ABANDONED_ERROR, isAbandonedJob } from "@/lib/scan-job-staleness";
 import type { LatestJob } from "./dal";
 
 // What the Run scan button shows (B-29, MVP_SPEC 6.4). Pure, so the states are unit tested.
@@ -28,6 +29,9 @@ export type ScanStatus = {
 /** Test mode with no sample answers of the business's own trade and city (BUG-072, D-61). */
 export const NO_SAMPLE_ANSWERS_TEXT = `${NO_SAMPLE_ANSWERS}. Test mode only has sample answers for some trades and cities, so this scan could not run.`;
 
+/** A scan the worker never finished (lib/scan-job-staleness.ts): it no longer blocks Run scan. */
+export const ABANDONED_TEXT = "Your last scan never finished, so it was stopped. You were only charged for answers we got. Run a new scan to check again.";
+
 /** Every check failed because the AI tools were not answering: the job is not retried (BUG-285, worker.ts). */
 export const NOT_ANSWERING_TEXT =
   "The AI tools were not answering, so this scan could not finish. No credits were used. The next scheduled scan will try again.";
@@ -39,22 +43,26 @@ export function scanStatusView(
   canStart: { allowed: boolean; reason: string },
   now = new Date(),
 ): ScanStatus {
-  const scanning = job?.status === "queued" || job?.status === "running";
+  // Abandoned (the worker never finished it): shown as a failed scan, so Run scan is offered again (MVP test 2026-11-14).
+  const abandoned = !!job && isAbandonedJob(job, now);
+  const scanning = !abandoned && (job?.status === "queued" || job?.status === "running");
   // A skipped scan reads as one that did not run: the screen shows its reason like a failure's.
-  const finished = job?.status === "done" ? "done" : job?.status === "failed" || job?.status === "skipped" ? "failed" : null;
+  const finished =
+    job?.status === "done" ? "done" : abandoned || job?.status === "failed" || job?.status === "skipped" ? "failed" : null;
   return {
     scanning,
     retrying: job?.status === "queued" && !!job.error,
-    stalled: !!job && isStalled(job, now),
+    stalled: scanning && isStalled(job!, now),
     lastResult: finished,
     lastFinishedAt: finished ? job!.finishedAt : null,
     blockedReason: scanning || canStart.allowed ? null : canStart.reason,
-    failedReason: finished === "failed" ? failedReason(job?.error) : null,
+    failedReason: abandoned ? ABANDONED_TEXT : finished === "failed" ? failedReason(job?.error) : null,
   };
 }
 
 function failedReason(error: string | null | undefined): string | null {
   if (error?.includes(NO_SAMPLE_ANSWERS)) return NO_SAMPLE_ANSWERS_TEXT;
+  if (error?.startsWith(ABANDONED_ERROR)) return ABANDONED_TEXT;
   if (error?.startsWith(NOT_ANSWERING_TEXT)) return NOT_ANSWERING_TEXT;
   return null;
 }

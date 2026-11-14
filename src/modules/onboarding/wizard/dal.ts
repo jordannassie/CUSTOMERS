@@ -6,6 +6,7 @@ import type { AutofillClients, AutofillRequest } from "../autofill";
 import { runBusinessAutofill } from "../dal";
 import { DUPLICATE_BUSINESS_TEXT, DuplicateBusinessError, duplicateBusiness } from "../duplicates";
 import { autofillDone, insertDraft, keepActiveBusiness, websiteTaken } from "./draft/dal";
+import { signupPlan } from "./plan/dal";
 import { restartIfAnotherBusiness } from "./restart/dal";
 import type { AutofillResult } from "../schema";
 import { needsCard, nextStepNumber, type PlanId, type StepSlug, type WizardState } from "./steps";
@@ -67,6 +68,8 @@ export async function saveAgency(userId: string, name: string, plan: PlanId | nu
     .select("id")
     .single();
   if (error) throw new Error(`Could not save agency: ${error.message}`);
+  // No ?plan= (the confirmation link was opened in another browser): use the plan kept on the account at sign-up.
+  plan ??= await signupPlan(userId);
   // agencies has no plan column yet, so the pricing page choice waits in app_metadata for the card step (B-41).
   if (plan) {
     const { error: planError } = await service.auth.admin.updateUserById(userId, { app_metadata: { selected_plan: plan } });

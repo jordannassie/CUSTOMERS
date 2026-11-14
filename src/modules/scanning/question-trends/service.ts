@@ -9,7 +9,8 @@ import { averagePlace, placeOf, type AveragePlace, type Place } from "./places";
 export const TREND_WEEKS = 6;
 export const MOVER_DAYS = 28;
 export const MAX_MOVERS = 3;
-const MOVER_SLACK_DAYS = 3;
+/** How far back "the scan before" is looked for: the Questions page's TREND_LOOKBACK_DAYS (questions/history.ts). */
+const PREVIOUS_SCAN_LOOKBACK_DAYS = 62;
 // The average place covers the same 30 days as the score.
 const PLACE_DAYS = 30;
 // Scans at least this far apart are different weeks.
@@ -32,6 +33,8 @@ export type QuestionTrends = {
   rows: TrendRow[];
   /** The user's own questions, shown apart like the score does (BUG-129). */
   own: TrendRow[];
+  /** Some question has a scan before its latest one, so "moved" can be judged at all. */
+  comparable: boolean;
   better: Mover[];
   worse: Mover[];
   /** Only with SHOW_POSITION: the average list item over the last 30 days' weekly scans, suggested questions. */
@@ -95,19 +98,30 @@ export function questionTrends(
   };
   const all = questions.map(rowOf);
 
-  // Largest change over the last 4 weeks: the latest weekly scan against the earliest one in the window. A few days'
-  // slack keeps the scan made 4 weeks ago, which runs a little later in the day than 28 days back.
-  const since = now.getTime() - (MOVER_DAYS + MOVER_SLACK_DAYS) * 86_400_000;
+  // Each question's latest scan against the scan before it, the same rule as the Questions page's up and down arrows
+  // (questions/history.ts trendOf), so the two never disagree (MVP test, 2026-11-14). Every scan counts here, not one
+  // per week, and the scan before is looked for as far back as the Questions page looks.
+  const since = now.getTime() - PREVIOUS_SCAN_LOOKBACK_DAYS * 86_400_000;
+  const runAt = new Map(runs.map((r) => [r.id, r.at]));
   const movers: Mover[] = [];
-  for (const row of all) {
-    const inWindow = row.cells.flatMap((cell, i) => (cell && scans[i].at.getTime() >= since ? [{ cell, at: scans[i].at }] : []));
-    if (inWindow.length < 2) continue;
-    const first = inWindow[0];
-    const last = inWindow[inWindow.length - 1];
-    const change = rate(last.cell) - rate(first.cell);
+  let comparable = false;
+  for (const q of questions) {
+    const scansOfQuestion = [...new Set(counted.filter((c) => c.promptId === q.id).map((c) => c.runId))]
+      .flatMap((id) => {
+        const at = runAt.get(id);
+        return at && at.getTime() >= since ? [{ id, at }] : [];
+      })
+      .sort((a, b) => a.at.getTime() - b.at.getTime());
+    if (scansOfQuestion.length < 2) continue;
+    comparable = true;
+    const before = scansOfQuestion[scansOfQuestion.length - 2];
+    const latest = scansOfQuestion[scansOfQuestion.length - 1];
+    const then = tally(grouped.get(key(before.id, q.id)) ?? []);
+    const nowTally = tally(grouped.get(key(latest.id, q.id)) ?? []);
+    if (!then || !nowTally) continue;
+    const change = rate(nowTally) - rate(then);
     if (Math.abs(change) < 1e-9) continue;
-    const pick = ({ named, checked }: Tally) => ({ named, checked });
-    movers.push({ id: row.id, prompt: row.prompt, own: row.own, now: pick(last.cell), then: pick(first.cell), thenAt: first.at, change });
+    movers.push({ id: q.id, prompt: q.prompt, own: q.own, now: nowTally, then, thenAt: before.at, change });
   }
   const byPrompt = (a: Mover, b: Mover) => a.prompt.localeCompare(b.prompt);
 
@@ -118,6 +132,7 @@ export function questionTrends(
     scans,
     rows: all.filter((r) => !r.own),
     own: all.filter((r) => r.own),
+    comparable,
     better: movers.filter((m) => m.change > 0).sort((a, b) => b.change - a.change || byPrompt(a, b)).slice(0, MAX_MOVERS),
     worse: movers.filter((m) => m.change < 0).sort((a, b) => a.change - b.change || byPrompt(a, b)).slice(0, MAX_MOVERS),
   };

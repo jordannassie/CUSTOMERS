@@ -10,7 +10,12 @@ export type Calibration = {
   agreement: Partial<Record<ProviderId, number>>;
 };
 
-// Stays null until B-76 records a real result; the panel then shows nothing about it.
+// Stays null until B-76 records a real result, and while it is null no screen says anything about calibration (the
+// "How is this calculated?" panel leaves the section out). To fill it after B-76: a person asks the same 10 questions
+// in the real ChatGPT, Claude and Perplexity apps, notes which businesses each names, and compares them with our saved
+// answers; put the date and the percent that matched per AI here, for example
+// { checkedOn: "2026-12-01", agreement: { openai: 80, anthropic: 75, perplexity: 85 } }, and save the sheet in
+// evals/results/.
 export const CALIBRATION: Calibration | null = null;
 
 export type MethodInput = {

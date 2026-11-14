@@ -329,3 +329,14 @@
     display: none;
   }
 }
+
+/* iOS Safari zooms the page when a focused field's text is under 16px. On phones every text field is 16px, whatever
+   size its own classes set (QA round 2, item 12). Unlayered, so it wins over Tailwind's utility layer; desktop keeps
+   each field's own size. */
+@media (max-width: 767.98px) {
+  input:not([type="checkbox"], [type="radio"], [type="range"], [type="color"], [type="file"], [type="hidden"]),
+  textarea,
+  select {
+    font-size: 16px;
+  }
+}

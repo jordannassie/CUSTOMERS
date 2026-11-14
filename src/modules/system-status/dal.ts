@@ -1,4 +1,5 @@
 import "server-only";
+import { cache } from "react";
 import { requireAdmin } from "@/modules/auth";
 import { env } from "@/lib/env";
 import { createServiceClient } from "@/lib/supabase/service";
@@ -11,6 +12,9 @@ import {
   WORKER_OVERDUE_MINUTES,
   runProbe,
   stillOutOfCredit,
+  EMAIL_FAILURE_WINDOW_HOURS,
+  withEmailFailures,
+  type EmailFailures,
   stripeMode,
   withCreditStatus,
   workerStatus,
@@ -64,7 +68,7 @@ async function checkAndSave(deps: ProbeDeps): Promise<SystemStatus> {
 async function checkServices(deps: ProbeDeps): Promise<SystemStatus> {
   const now = new Date();
 
-  const [probes, worker, jobs, outOfCredit] = await Promise.all([
+  const [probes, worker, jobs, outOfCredit, emailFailures] = await Promise.all([
     Promise.all(
       PROBES.map(async (probe): Promise<ServiceStatus> => {
         const key = KEYS[probe.id];
@@ -76,9 +80,27 @@ async function checkServices(deps: ProbeDeps): Promise<SystemStatus> {
     checkWorker(now),
     checkSchedules(now),
     providersOutOfCredit(now),
+    recentEmailFailures(now),
   ]);
 
-  return { checkedAt: now.toISOString(), services: [...withCreditStatus(probes, outOfCredit), worker, ...jobs] };
+  const services = withEmailFailures(withCreditStatus(probes, outOfCredit), emailFailures);
+  return { checkedAt: now.toISOString(), services: [...services, worker, ...jobs] };
+}
+
+// Emails that could not go out in the last day (send.ts logs them as failed, a missing setting included), so the
+// Resend row says so even when its key works (MVP test, 2026-11-14). Only the count and the newest reason come back.
+async function recentEmailFailures(now: Date): Promise<EmailFailures> {
+  const since = new Date(now.getTime() - EMAIL_FAILURE_WINDOW_HOURS * 3_600_000).toISOString();
+  const { data, count, error } = await createServiceClient()
+    .from("email_log")
+    .select("error", { count: "exact" })
+    .eq("status", "failed")
+    // email_log keeps one time per row, sent_at, also for a send that failed.
+    .gte("sent_at", since)
+    .order("sent_at", { ascending: false })
+    .limit(1);
+  if (error) return { count: 0, latest: null };
+  return { count: count ?? 0, latest: data[0]?.error ?? null };
 }
 
 // The messages real calls log: Anthropic's "credit balance is too low", OpenAI's "exceeded your current quota",
@@ -189,3 +211,20 @@ export async function pingDatabase(): Promise<boolean> {
     return false;
   }
 }
+
+/**
+ * Whether scheduled scans run for this agency now: always for a test agency; for customers only once they are switched
+ * on at launch (enqueue_due_scans(true), the admin's "Automatic scans"). Pages that promise "weekly scans" or forecast
+ * scheduled scans read it, so they never promise scans that will not run (QA round 2). Callers check the user may see
+ * this agency. If the setting can't be read, it says they run, the old wording. Once per request.
+ */
+export const scheduledScansRun = cache(async (agencyId: string): Promise<boolean> => {
+  const db = createServiceClient();
+  const [agency, settings] = await Promise.all([
+    db.from("agencies").select("is_test").eq("id", agencyId).maybeSingle(),
+    db.rpc("job_settings_status").maybeSingle(),
+  ]);
+  if (agency.data?.is_test) return true;
+  if (settings.error || !settings.data) return true;
+  return settings.data.scheduled_scans_include_real;
+});

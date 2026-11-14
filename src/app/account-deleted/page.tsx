@@ -1,9 +1,12 @@
+import { Suspense } from "react";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/marketing/Logo";
 import { AccountExitButton } from "@/components/site/AccountExitButton";
 import { deletionWaitDays } from "@/modules/account";
+import { getCurrentAgency } from "@/modules/auth";
 
 export const metadata = { title: "Account deleted", robots: { index: false } };
 
@@ -13,6 +16,9 @@ export default function AccountDeletedPage() {
   const days = deletionWaitDays();
   return (
     <main className="flex min-h-screen flex-col items-center justify-center gap-8 bg-background px-4 py-16">
+      <Suspense fallback={null}>
+        <LeaveIfNotDeleted />
+      </Suspense>
       <Logo className="h-8 w-auto" />
       <div className="w-full max-w-md rounded-lg border border-border bg-card p-8 text-center">
         <Trash2 className="mx-auto size-10 text-low" aria-hidden="true" />
@@ -31,4 +37,13 @@ export default function AccountDeletedPage() {
       </div>
     </main>
   );
+}
+
+
+// A signed-in user whose account is not deleted has nothing to read here: send them to their dashboard (MVP test
+// 2026-11-14). Signed out (right after deleting) or deleted, the page stays.
+async function LeaveIfNotDeleted() {
+  const agency = await getCurrentAgency();
+  if (agency && agency.status !== "deleted") redirect("/dashboard");
+  return null;
 }

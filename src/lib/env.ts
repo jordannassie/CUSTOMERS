@@ -22,6 +22,8 @@ export const env = createEnv({
     // Background AI jobs (auto-fill, questions, name extraction, explanations, question library) run on Claude and
     // fall back to OpenAI when Claude fails. "false" turns the backup off. FAST stands in for Haiku, SMART for Sonnet.
     AI_FALLBACK_ENABLED: flag,
+    // F-39, D-74: scheduled scans read business names through Anthropic's Message Batches API at half price. Off by default.
+    NAME_EXTRACTION_BATCH: flag,
     AI_FALLBACK_MODEL_FAST: z.string().trim().min(1).default("gpt-4.1-mini"),
     AI_FALLBACK_MODEL_SMART: z.string().trim().min(1).default("gpt-4.1"),
     PERPLEXITY_API_KEY: optional,
@@ -92,6 +94,7 @@ export const env = createEnv({
     OPENAI_NEWS_MODEL: process.env.OPENAI_NEWS_MODEL,
     ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY,
     AI_FALLBACK_ENABLED: process.env.AI_FALLBACK_ENABLED,
+    NAME_EXTRACTION_BATCH: process.env.NAME_EXTRACTION_BATCH,
     AI_FALLBACK_MODEL_FAST: process.env.AI_FALLBACK_MODEL_FAST,
     AI_FALLBACK_MODEL_SMART: process.env.AI_FALLBACK_MODEL_SMART,
     PERPLEXITY_API_KEY: process.env.PERPLEXITY_API_KEY,

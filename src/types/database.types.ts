@@ -619,6 +619,7 @@ export type Database = {
           scan_frequency: string
           services: string[]
           status: string
+          street_address: string | null
           updated_at: string
         }
         Insert: {
@@ -657,6 +658,7 @@ export type Database = {
           scan_frequency?: string
           services?: string[]
           status?: string
+          street_address?: string | null
           updated_at?: string
         }
         Update: {
@@ -695,6 +697,7 @@ export type Database = {
           scan_frequency?: string
           services?: string[]
           status?: string
+          street_address?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -1177,6 +1180,50 @@ export type Database = {
             columns: ["business_id"]
             isOneToOne: false
             referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      name_extraction_batches: {
+        Row: {
+          attempts: number
+          batch_id: string | null
+          collected_at: string | null
+          error: string | null
+          id: string
+          result_ids: string[]
+          run_id: string
+          status: string
+          submitted_at: string
+        }
+        Insert: {
+          attempts?: number
+          batch_id?: string | null
+          collected_at?: string | null
+          error?: string | null
+          id?: string
+          result_ids: string[]
+          run_id: string
+          status?: string
+          submitted_at?: string
+        }
+        Update: {
+          attempts?: number
+          batch_id?: string | null
+          collected_at?: string | null
+          error?: string | null
+          id?: string
+          result_ids?: string[]
+          run_id?: string
+          status?: string
+          submitted_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "name_extraction_batches_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "visibility_runs"
             referencedColumns: ["id"]
           },
         ]

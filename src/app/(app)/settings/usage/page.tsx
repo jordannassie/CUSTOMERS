@@ -7,6 +7,9 @@ import { Breakdown } from "@/components/usage/Breakdown";
 import { ForecastCard } from "@/components/usage/ForecastCard";
 import { count, day, monthName } from "@/components/usage/format";
 import { ScanHistory } from "@/components/usage/ScanHistory";
+import { CreditHistory } from "@/components/usage/CreditHistory";
+import { requireAgency } from "@/modules/auth";
+import { getCreditHistory } from "@/modules/credit-history";
 import { getUsageReport, type ModelKey } from "@/modules/usage";
 import { BUY_CREDITS_HREF } from "@/modules/workspace";
 import { PageHeader } from "@/components/app/PageHeader";
@@ -21,9 +24,18 @@ const MODEL_DOT: Record<ModelKey, string> = {
 };
 
 // MVP_SPEC 8.2, D-33: where credits went, what is left, and whether they last to renewal.
-export default async function UsagePage() {
-  const report = await getUsageReport({ next: "/settings/usage" });
+type Props = { searchParams: Promise<{ history?: string | string[] }> };
+
+const historyHref = (page: number) => (page > 1 ? `/settings/usage?history=${page}#credit-history-heading` : "/settings/usage#credit-history-heading");
+
+export default async function UsagePage({ searchParams }: Props) {
+  const [report, { agency }, params] = await Promise.all([
+    getUsageReport({ next: "/settings/usage" }),
+    requireAgency({ next: "/settings/usage" }),
+    searchParams,
+  ]);
   const { month } = report;
+  const history = await getCreditHistory(agency.id, Number(typeof params.history === "string" ? params.history : 1));
 
   return (
     <PageContainer>
@@ -78,6 +90,10 @@ export default async function UsagePage() {
 
       <div className="mt-4">
         <ScanHistory scans={report.scans} />
+      </div>
+
+      <div className="mt-4">
+        <CreditHistory {...history} href={historyHref} />
       </div>
     </PageContainer>
   );

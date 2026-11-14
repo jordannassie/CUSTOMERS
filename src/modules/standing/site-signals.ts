@@ -2,7 +2,7 @@
 // (robots.txt, business details in the page code, FAQ, reviews, hours, a form, how much it says). Step 2: for each
 // question they win, whether their site says what the question asks and yours doesn't. Both sides are read the same way;
 // "on the pages we read", never "missing from your site" (BUG-115).
-import { claimsAskedBy, meaningWords } from "@/lib/site-claims";
+import { claimLabel, claimsAskedBy, meaningWords, usableQuote } from "@/lib/site-claims";
 import type { Fact } from "./reasons";
 
 export type SignalSet = {
@@ -153,14 +153,16 @@ export function questionFacts(
     const asked = claimsAskedBy(question);
     const claim = theirs.claims.find((c) => (asked as string[]).includes(c.key) && !yourClaims.has(c.key));
     if (claim) {
+      const label = claimLabel(claim.key, claim.label);
+      const quote = usableQuote(claim.quote, label, claim.key);
       facts.push({
-        title: `Their website says ${claim.label}`,
-        action: `If it's true for you, say "${claim.label}" on your website, near the services it applies to.`,
-        match: claim.label.split(/\s+/).filter((w) => w.length > 3),
+        title: `Their website says ${label}`,
+        action: `If it's true for you, say "${label}" on your website, near the services it applies to.`,
+        match: label.split(/\s+/).filter((w) => w.length > 3),
         key: `web:claim:${claim.key}`,
         basis: "website",
-        detail: `AI named them more often on "${question}". We didn't find it on the pages we read of yours. Theirs: "${claim.quote}"`,
-        text: `AI named them more often on "${question}", and their website says ${claim.label} ("${claim.quote}"). We didn't find it on the pages we read of yours.`,
+        detail: `AI named them more often on "${question}". We didn't find it on the pages we read of yours.${quote ? ` Theirs: "${quote}"` : ""}`,
+        text: `AI named them more often on "${question}", and their website says ${label}${quote ? ` ("${quote}")` : ""}. We didn't find it on the pages we read of yours.`,
         where: "website",
         weight: 5.5,
       });

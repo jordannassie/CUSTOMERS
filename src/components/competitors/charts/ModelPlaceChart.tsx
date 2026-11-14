@@ -16,13 +16,18 @@ function place(row: Row, series: Series[]) {
   return { yours, scored, leader, rank, of: scored.length };
 }
 
+const ordinal = (n: number) => `${n}${n % 100 >= 11 && n % 100 <= 13 ? "th" : ["th", "st", "nd", "rd"][n % 10] ?? "th"}`;
+
+// Your place among the businesses you track on this AI, never a rank in AI itself (D-63): "2nd of 4 tracked".
 function summary(p: ReturnType<typeof place>): string {
   if (p.yours === null || p.rank === null) return "No checks yet";
   if (!p.leader) return `${p.yours}%, no competitor scored`;
+  if (p.yours === 0 && p.leader.v === 0) return "Not named yet, nor any business you track";
   const gap = p.leader.v - p.yours;
-  if (gap < 0) return `#${p.rank} of ${p.of} · ${-gap} pts ahead of ${p.leader.s.name}`;
-  if (gap === 0) return `#${p.rank} of ${p.of} · level with ${p.leader.s.name}`;
-  return `#${p.rank} of ${p.of} · ${gap} pts behind ${p.leader.s.name}`;
+  const where = `${ordinal(p.rank)} of ${p.of} tracked`;
+  if (gap < 0) return `${where} · ${-gap} pts ahead of ${p.leader.s.name}`;
+  if (gap === 0) return `${where} · level with ${p.leader.s.name}`;
+  return `${where} · ${gap} pts behind ${p.leader.s.name}`;
 }
 
 /**

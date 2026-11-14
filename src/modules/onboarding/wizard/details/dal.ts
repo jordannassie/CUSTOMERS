@@ -34,7 +34,7 @@ export async function loadDetailsStep(userId: string, businessId: string): Promi
   const supabase = await createClient();
   const { data: b, error } = await supabase
     .from("businesses")
-    .select("name, domain, has_website, industry, description, services, aliases, primary_city, primary_region, primary_country, primary_area, phone, onboarding_step, places_id")
+    .select("name, domain, has_website, industry, description, services, aliases, primary_city, primary_region, primary_country, primary_area, phone, street_address, onboarding_step, places_id")
     .eq("id", businessId)
     .eq("owner_user_id", userId)
     .maybeSingle();
@@ -53,7 +53,7 @@ export async function loadDetailsStep(userId: string, businessId: string): Promi
     country: b.primary_country ?? "",
     area: b.primary_area ?? "",
     phone: b.phone ?? "",
-    address: "",
+    address: b.street_address ?? "",
   };
   let refill: ReturnType<typeof refillDetails> = { details: saved, industryText: null };
   if (!confirmed) {
@@ -90,6 +90,7 @@ export async function saveDetails(
       primary_country: countryCode(input.country) || null,
       ...(input.area === undefined ? {} : { primary_area: input.area }),
       phone: input.phone || null,
+      ...(input.address === undefined ? {} : { street_address: input.address || null }),
       onboarding_step: nextStepNumber(current, "details"),
     })
     .eq("id", input.businessId)

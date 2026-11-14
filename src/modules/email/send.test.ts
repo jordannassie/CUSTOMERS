@@ -126,3 +126,27 @@ describe("sendEmail", () => {
     expect(send).not.toHaveBeenCalled();
   });
 });
+
+// MVP test 2026-11-14: a missing setting threw before anything was logged, so admins never saw the lost email.
+describe("sendEmail with a missing setting", () => {
+  it("logs the email as failed, naming the setting, then still throws", async () => {
+    const { rows, deps } = setup();
+    const noSecret = { ...deps, settings: { ...deps.settings, unsubscribeSecret: null } };
+
+    await expect(sendEmail(input({ type: "weekly_report" }), noSecret)).rejects.toThrow(/EMAIL_UNSUBSCRIBE_SECRET/);
+    expect(rows).toEqual([
+      expect.objectContaining({ type: "weekly_report", status: "failed", error: expect.stringMatching(/^Email is not configured/) }),
+    ]);
+  });
+
+  it("still throws the setting's error when the log write itself fails", async () => {
+    const { deps } = setup();
+    const errorLog = vi.spyOn(console, "error").mockImplementation(() => {});
+    const store = { ...deps.store, record: async () => Promise.reject(new Error("db down")) };
+    const noSecret = { ...deps, store, settings: { ...deps.settings, unsubscribeSecret: null } };
+
+    await expect(sendEmail(input({ type: "weekly_report" }), noSecret)).rejects.toThrow(/EMAIL_UNSUBSCRIBE_SECRET/);
+    expect(errorLog).toHaveBeenCalled();
+    errorLog.mockRestore();
+  });
+});

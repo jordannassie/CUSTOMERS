@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { NO_SAMPLE_ANSWERS_TEXT, NOT_ANSWERING_TEXT, STALLED_QUEUED_MINUTES, STALLED_RUNNING_MINUTES, scanStatusView } from "./service";
+import { ABANDONED_ERROR } from "@/lib/scan-job-staleness";
+import { ABANDONED_TEXT, NO_SAMPLE_ANSWERS_TEXT, NOT_ANSWERING_TEXT, STALLED_QUEUED_MINUTES, STALLED_RUNNING_MINUTES, scanStatusView } from "./service";
 
 const ok = { allowed: true, reason: "" };
 const broke = { allowed: false, reason: "You're out of credits. Buy a top-up or upgrade." };
@@ -83,5 +84,25 @@ describe("scanStatusView", () => {
       expect(view({ status: "queued", finishedAt: null })).toBe(false);
       expect(scanStatusView(null, ok, now).stalled).toBe(false);
     });
+  });
+});
+
+describe("scanStatusView with an abandoned scan (MVP test, 2026-11-14)", () => {
+  const now = new Date("2026-11-14T12:00:00Z");
+  const longAgo = new Date(now.getTime() - 3 * 60 * 60 * 1000).toISOString();
+
+  it("shows a queued scan no worker ran for hours as failed, with Run scan offered again", () => {
+    const view = scanStatusView({ status: "queued", finishedAt: null, runAfter: longAgo }, ok, now);
+    expect(view).toMatchObject({ scanning: false, stalled: false, lastResult: "failed", failedReason: ABANDONED_TEXT, blockedReason: null });
+  });
+
+  it("does the same for a running scan that went quiet for hours, and keeps a live one scanning", () => {
+    expect(scanStatusView({ status: "running", finishedAt: null, lockedAt: longAgo }, ok, now)).toMatchObject({ scanning: false, lastResult: "failed" });
+    expect(scanStatusView({ status: "running", finishedAt: null, lockedAt: now.toISOString() }, ok, now)).toMatchObject({ scanning: true });
+  });
+
+  it("explains a job the cleanup already ended", () => {
+    const view = scanStatusView({ status: "failed", finishedAt: longAgo, error: ABANDONED_ERROR }, ok, now);
+    expect(view.failedReason).toBe(ABANDONED_TEXT);
   });
 });

@@ -48,6 +48,9 @@ export const detailsStepInput = z.object({
   // Neighborhood or area, optional: empty saves null; left as it is when not sent.
   area: areaText.optional(),
   phone: text(30).regex(/^[0-9+().\s-]*$/),
+  // Street address, optional (MVP_SPEC 3.1, F-34): empty saves null; left as it is when not sent. Google may pre-fill
+  // it, but it is saved only as the user confirms it (D-73).
+  address: text(200).optional(),
 });
 
 export const questionsStepInput = z.object({

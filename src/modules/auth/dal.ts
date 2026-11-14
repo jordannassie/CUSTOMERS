@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { env } from "@/lib/env";
 import { loginPathFor } from "@/lib/safe-next";
 import { createClient } from "@/lib/supabase/server";
+import { adminEmailConfirmed } from "./admin-email/dal";
 import { AuthError } from "./errors";
 import { isAuthUnavailable } from "@/lib/supabase/auth-errors";
 import { adminVerifyPathFor, blockedPathFor, isAdminEmail, isAgencyPaused, isRecentRecovery, needsSecondFactor, parseAdminEmails } from "./service";
@@ -16,19 +17,14 @@ export type CurrentAgency = { id: string; name: string; status: string; isTest: 
 // every caller gets AuthError "unavailable" (503): pages show their error boundary, never the login page.
 export type GuardOptions = { next?: string };
 
-type VerifiedUser = { user: SessionUser; emailConfirmed: boolean };
-
-// The full user from Supabase Auth (a network call), for the admin check only: it needs the confirmed flag, which the
-// session token does not carry. The confirmed flag stays here so SessionUser keeps only what screens need.
-const loadUser = cache(async (): Promise<VerifiedUser | null> => {
+// The full user from Supabase Auth (a network call), only for a signed-in user with no agency (getCurrentUser: a new
+// sign-up or a deleted account). The admin check asks admin-email/dal.ts instead.
+const loadUser = cache(async (): Promise<SessionUser | null> => {
   const supabase = await createClient();
   const { data, error } = await supabase.auth.getUser();
   if (error && isAuthUnavailable(error)) throw new AuthError("unavailable", { cause: error });
   if (error || !data.user) return null;
-  return {
-    user: { id: data.user.id, email: data.user.email ?? null },
-    emailConfirmed: !!data.user.email_confirmed_at,
-  };
+  return { id: data.user.id, email: data.user.email ?? null };
 });
 
 // The signed-in user from the session token. getClaims() checks its signature locally against the project's published
@@ -65,7 +61,7 @@ export const getCurrentUser = cache(async (): Promise<SessionUser | null> => {
   if (!user) return null;
   if (await agencyOf(user.id)) return user;
   const verified = await loadUser();
-  return verified && verified.user.id === user.id ? user : null;
+  return verified && verified.id === user.id ? user : null;
 });
 
 export const getCurrentAgency = cache(async (): Promise<CurrentAgency | null> => {
@@ -141,12 +137,12 @@ export function adminEmails(): string[] {
 }
 
 // Only ADMIN_EMAILS is trusted, and only for a confirmed address: anyone can sign up with an
-// admin's address before the real owner does. Profile fields are not an admin source.
+// admin's address before the real owner does. Profile fields are not an admin source. The address comes from the
+// signature-checked session token; whether it is confirmed is asked of Supabase Auth by user id and kept for a few
+// minutes (admin-email/dal.ts), instead of an Auth round trip on every admin request (perf fix #4, 2026-11-13).
 async function isAdmin(user: SessionUser): Promise<boolean> {
   const admins = parseAdminEmails(env.ADMIN_EMAILS);
   // Most users are not on the list, so Supabase Auth is only asked about an address that is.
-  if (!isAdminEmail(user.email, admins, true)) return false;
-  const verified = await loadUser();
-  const confirmed = !!verified && verified.user.id === user.id && verified.emailConfirmed;
-  return isAdminEmail(verified?.user.email ?? null, admins, confirmed);
+  if (!user.email || !isAdminEmail(user.email, admins, true)) return false;
+  return isAdminEmail(user.email, admins, await adminEmailConfirmed(user.id, user.email));
 }

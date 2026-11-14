@@ -1,6 +1,7 @@
 import "server-only";
 import { cache } from "react";
 import { createServiceClient } from "@/lib/supabase/service";
+import { readBusiness, readCompetitors } from "@/modules/business-reads";
 import { SCORE_WINDOW_DAYS } from "../scoring";
 import { alsoRecommendedNames, type AlsoRecommendedList } from "./names";
 import { citedHosts, siteForName } from "./site-match";
@@ -17,15 +18,8 @@ export async function loadAlsoRecommended(agencyId: string, businessId: string, 
 const loadOnce = cache(async (agencyId: string, businessId: string, nowMs: number): Promise<AlsoRecommendedList | null> => {
   const now = new Date(nowMs);
   const db = createServiceClient();
-  const [business, competitors] = await Promise.all([
-    db
-      .from("businesses")
-      .select("name, domain, aliases, phone, has_website, primary_city")
-      .eq("id", businessId)
-      .eq("agency_id", agencyId)
-      .maybeSingle(),
-    db.from("business_competitors").select("name, aliases, domain, phone, city").eq("business_id", businessId),
-  ]);
+  // Shared with the Overview's other sections (perf fix #3).
+  const [business, competitors] = await Promise.all([readBusiness(businessId, agencyId), readCompetitors(businessId)]);
   for (const r of [business, competitors]) if (r.error) throw new Error(`Also recommended: ${r.error.message}`);
   if (!business.data) return null;
   const b = business.data;

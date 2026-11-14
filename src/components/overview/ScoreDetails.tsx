@@ -29,7 +29,7 @@ export function ScoreDetails({ panel }: { panel: MethodPanel }) {
   return (
     <Sheet>
       <SheetTrigger asChild>
-        <Button variant="link" className="h-auto p-0">
+        <Button variant="link" className="h-auto min-h-6 p-0">
           How is this calculated?
         </Button>
       </SheetTrigger>

@@ -53,6 +53,16 @@ Do this after the library is approved (B-32), since the pools are chosen from it
 
 Before labelling, run the picker by hand on 20 to 50 businesses and read the output (principle 1). After the first run, check any perfect score or sudden jump by hand (principle 11).
 
+## Labelling with a spreadsheet (B-33)
+
+1. Export after the library is approved (B-32): `LABEL_SUITE=question-picking npm run label:export`. It lists every template of each business's industry. By default the businesses come from the local database; better, write your own 20 to 30 public businesses in a CSV with columns `case_id,industry,services,description,city,region` (services separated by `|`) and pass it with `LABEL_BUSINESSES_CSV=path/to/businesses.csv`. The sheet is written to `evals/results/labelling/question-picking.csv` (git-ignored).
+2. Open it in Google Sheets or Excel. Put `yes` in `acceptable` for each template a real customer of that business could ask, following the guide above (15 to 25 per business, never fewer than 12). Leave the others empty.
+3. Download it back as CSV to the same path (or pass `LABEL_CSV=path/to/file.csv` in the next step).
+4. Import: `LABEL_SUITE=question-picking LABELLER="Your name" npm run label:import`. It adds the labelled rows to `dataset.v1.jsonl` with your name and today's date, keeps rows already there, skips empty ones, and refuses the whole sheet if a row would not load in this suite. You can label in several sittings.
+5. Record who labelled and when under "Labelling" below, then run the fast suite: `npx vitest run --project evals evals/question-picking`. The paid suite runs in `eval-ai.yml`.
+
+The scripts never call a model and never fill a label themselves: every label comes from the person (MVP_SPEC 25, principle 6).
+
 ## Labelling
 
 Who labelled the cases and when: not yet labelled. The dataset must come from a person; B-33 stays open until it is done.

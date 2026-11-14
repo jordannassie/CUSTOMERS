@@ -18,6 +18,9 @@ export function placeAmongTracked(rows: LeaderRow[]): TrackedPlace | null {
   const you = rows.find((r) => r.isYou);
   if (!you || you.score === null) return null;
   const others = rows.filter((r) => !r.isYou && r.score !== null && !r.collecting);
+  // Nobody named yet: everyone at 0 is a tie with no leader, so no place is claimed ("#1, you lead" was wrong; MVP
+  // test, 2026-11-14). The report then says AI named none of the tracked businesses.
+  if (you.score === 0 && others.every((r) => r.score === 0)) return null;
   const ahead = others.filter((r) => r.score! > you.score!).sort((a, b) => b.score! - a.score!);
   return { place: ahead.length + 1, of: others.length + 1, leader: ahead[0] ?? null, above: ahead.at(-1) ?? null };
 }

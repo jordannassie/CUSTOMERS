@@ -90,6 +90,7 @@ export function DetailsForm({
         country: v.country,
         area: v.area,
         phone: v.phone,
+        address: v.address,
       });
       if (!result.ok) return setError(result.error);
       clearAutofill(businessId);
@@ -202,6 +203,9 @@ export function DetailsForm({
         </Field>
         <Field id="phone" label="Phone" optional>
           <Input id="phone" type="tel" value={v.phone} onChange={set("phone")} maxLength={30} className="h-11 text-base" autoComplete="tel" />
+        </Field>
+        <Field id="address" label="Street address" optional className="sm:col-span-2" hint="Write it the way it appears on your Google listing and website. AI trusts a business whose details match everywhere.">
+          <Input id="address" value={v.address} onChange={set("address")} maxLength={200} className="h-11 text-base" autoComplete="street-address" />
         </Field>
       </div>
 

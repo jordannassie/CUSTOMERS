@@ -81,7 +81,17 @@ async function Detail({ id }: { id: string }) {
       />
 
       <StatGrid>
-        <StatTile label="Plan credits left" value={credits(balance.plan)} />
+        {/* Left on the plan grants: a mid-month upgrade grants a prorated amount, and scans use them, so it is rarely the
+            plan total. Credit changes below lists every grant and expiry (QA round 2, item 8). */}
+        <StatTile
+          label="Plan credits left"
+          value={credits(balance.plan)}
+          note={balance.held > 0 ? `${credits(balance.held)} held for a scan that is running` : undefined}
+        >
+          <a href="#section-credit-changes" className="inline-flex min-h-6 items-center text-xs text-primary hover:underline">
+            See every grant and expiry
+          </a>
+        </StatTile>
         <StatTile label="Top-up credits left" value={credits(balance.topup)} />
         <StatTile label="Overdrawn" value={credits(balance.overdraft)} tone={balance.overdraft > 0 ? "bad" : undefined} />
         {/* The badge says Deleted; this tile says when, and until when it can come back (admin audit 2026-11-12). */}

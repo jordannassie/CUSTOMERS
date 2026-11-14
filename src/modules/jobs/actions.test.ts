@@ -14,6 +14,8 @@ vi.mock("@/lib/supabase/server", () => ({
 }));
 
 const { getScanStatus, startScan } = await import("./actions");
+const { REASONS } = await import("@/modules/entitlements");
+const { recentScanWarning } = await import("./recent-scan");
 
 afterAll(deleteTestUsers);
 
@@ -75,8 +77,17 @@ describe("startScan", () => {
     expect(await jobsFor(businessId)).toHaveLength(1);
   });
 
-  it("explains 0 credits and queues nothing", async () => {
+  it("tells a test agency at 0 credits that an admin adds them, and that its rescans are charged in full (MVP test)", async () => {
     const { businessId } = await signedInBusiness(0);
+    expect(await startScan({ businessId })).toMatchObject({ ok: false, status: 403, error: REASONS.testOutOfCredits });
+    expect(await getScanStatus({ businessId })).toMatchObject({ ok: true, data: { blockedReason: REASONS.testOutOfCredits } });
+    expect(recentScanWarning(true)).toMatch(/sample answers, so every scan uses credits in full/);
+  });
+
+  it("explains 0 credits and queues nothing", async () => {
+    const { agencyId, businessId } = await signedInBusiness(0);
+    // A customer's wording; a test agency's is checked below.
+    await service.from("agencies").update({ is_test: false }).eq("id", agencyId).throwOnError();
     expect(await startScan({ businessId })).toEqual({
       ok: false,
       status: 403,
@@ -110,6 +121,7 @@ describe("startScan", () => {
 
   it("asks before scanning again within 20 hours of the last scan, and queues once confirmed (2026-10-15, D-24)", async () => {
     const { agencyId, businessId } = await signedInBusiness(100);
+    await service.from("agencies").update({ is_test: false }).eq("id", agencyId).throwOnError();
     const prompts = ["One?", "Two?"].map((prompt) => ({ business_id: businessId, prompt }));
     await service.from("tracked_prompts").insert(prompts).throwOnError();
     const finished = new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString();

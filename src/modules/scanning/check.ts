@@ -11,6 +11,7 @@ import { storeExtraction } from "./extract-store";
 import { mergeMentions } from "./mention-merge";
 import { detectMentions, type MentionTarget } from "./mentions";
 import { CHECK_MODELS } from "./providers/models";
+import { NO_WEB_REASON, isNoWebAnswer } from "./no-web";
 import { ProviderError, retriedInside, type ProviderErrorKind } from "./providers/request";
 import type { CheckInput, CheckLocation, ProviderId, RunCheck } from "./providers/types";
 import { insertExtractionUsage, recordProviderError, saveCheckResult } from "./runs/dal";
@@ -28,6 +29,11 @@ export type CheckContext = {
   isTest: boolean;
   runner: RunCheck | null;
   extractNames: ExtractNames | null;
+  /**
+   * Scheduled scans with name batches on (F-39, name-batches/): an answer with no saved names is queued for the batch
+   * instead of a live extraction, and saved now with text-only mentions. Left out, names are read live as before.
+   */
+  deferNames?: (checkId: string, answer: string) => void;
 };
 
 /**
@@ -56,7 +62,7 @@ export async function runOneCheck(task: CheckTask, ctx: CheckContext): Promise<C
   // errors into a miss or an uncached answer (cache.ts), so a database error is never logged as the AI's (BUG-281).
   let answer: CheckAnswer;
   try {
-    answer = await answerWithOneRetry(input, ctx);
+    answer = await answerWithOneRetry(input, ctx, task.provider);
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     // Recorded answers are not provider calls, so test agencies never count toward the error spike alert (B-69).
@@ -66,11 +72,18 @@ export async function runOneCheck(task: CheckTask, ctx: CheckContext): Promise<C
     const kind = err instanceof ProviderError ? err.kind : undefined;
     return { ok: false, error: `${task.provider}: ${message}`, reason: message, ...(outage ? { outage } : {}), ...(kind ? { kind } : {}) };
   }
+  // An answer saved before the no-web rule can still come back from the cache: it fails here the same way, uncharged.
+  if (isNoWebAnswer(answer.answerText, answer.citations)) {
+    return { ok: false, error: `${task.provider}: ${NO_WEB_REASON}`, reason: NO_WEB_REASON, kind: "search" };
+  }
   // Outside the try: a database error here throws out of the scan like saveCheckResult's, and the worker runs the job
   // again. The answer is normally cached by then, so the retry asks no model.
   if (!ctx.isTest) await recordCheckUsage({ accountUserId: ctx.ownerUserId, businessId: ctx.businessId, input, answer, runId: ctx.runId });
 
-  const extraction = await namesFor(input, answer, ctx);
+  const extraction =
+    ctx.deferNames && !readStoredExtraction(answer.extractedNames)
+      ? (ctx.deferNames(task.checkId, answer.answerText), null)
+      : await namesFor(input, answer, ctx);
   const matched = extraction ? matchNames(extraction.names, ctx.business, ctx.competitors) : null;
   const detected = detectMentions(answer.answerText, ctx.business, ctx.competitors);
   const mentions = mergeMentions(answer.answerText, detected, matched);
@@ -102,8 +115,9 @@ export async function runOneCheck(task: CheckTask, ctx: CheckContext): Promise<C
 // A timeout or an unfinished search often clears in seconds; one more try beats failing the check (BUG-083). Rate
 // limits, server and network errors were already tried again inside the provider call (withRetries), so they are not
 // wrapped in a second round. A check that still fails is not charged (D-53).
-async function answerWithOneRetry(input: CheckInput, ctx: CheckContext): Promise<CheckAnswer> {
-  const ask = () => (ctx.isTest ? recordedAnswer(input, ctx.runner!) : checkWithCache(input, ctx.runner!));
+async function answerWithOneRetry(input: CheckInput, ctx: CheckContext, provider: ProviderId): Promise<CheckAnswer> {
+  const runner = searchedOrFail(ctx.runner!, provider);
+  const ask = () => (ctx.isTest ? recordedAnswer(input, runner) : checkWithCache(input, runner));
   try {
     return await ask();
   } catch (err) {
@@ -153,3 +167,17 @@ async function namesFor(input: CheckInput, answer: CheckAnswer, ctx: CheckContex
 }
 
 const errorText = (err: unknown) => (err instanceof Error ? err.message : String(err));
+
+/**
+ * A "no web access" answer with no sources fails as a search failure (QA round 2, no-web.ts): it is tried once more,
+ * like an unfinished search, never reaches the answer cache, and a check that still fails is not charged (D-53).
+ */
+function searchedOrFail(runner: RunCheck, provider: ProviderId): RunCheck {
+  return async (input) => {
+    const result = await runner(input);
+    if (isNoWebAnswer(result.answerText, result.citations)) {
+      throw new ProviderError({ provider, kind: "search", attempts: 1, message: `${provider} ${NO_WEB_REASON}` });
+    }
+    return result;
+  };
+}

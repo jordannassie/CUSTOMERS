@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { bestQuote, claimsAskedBy, meaningWords, siteClaims, siteWords, tidyQuote, quoteAround } from "./site-claims";
+import { bestQuote, claimLabel, claimsAskedBy, meaningWords, siteClaims, siteWords, tidyQuote, quoteAround, usableQuote } from "./site-claims";
 
 describe("siteClaims", () => {
   it("quotes the plain sentence that makes the claim, without page formatting", () => {
@@ -65,5 +65,20 @@ describe("quoteAround", () => {
   });
   it("drops invisible spaces", () => {
     expect(quoteAround("DELIVERY\u200B PICK-UP", "pick-up")).toBe("Delivery pick-up");
+  });
+});
+
+describe("claim label and quote for display (MVP test, 2026-11-14)", () => {
+  it("uses the fixed label for a claim, never a stored copy", () => {
+    expect(claimLabel("years", "years")).toBe("years in business");
+    expect(claimLabel("unknown", "kept as stored")).toBe("kept as stored");
+  });
+
+  it("drops a quote that only repeats the label or key, or is too short to read", () => {
+    expect(usableQuote("years", "years in business", "years")).toBeNull();
+    expect(usableQuote("prices", "prices", "prices")).toBeNull();
+    expect(usableQuote("same day", "same-day service", "same_day")).toBeNull();
+    expect(usableQuote("Serving Austin since 1998.", "years in business", "years")).toBe("Serving Austin since 1998.");
+    expect(usableQuote(null, "prices")).toBeNull();
   });
 });

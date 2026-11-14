@@ -17,6 +17,8 @@ import type { ProviderFailures, ProviderId, RunCheck } from "./providers/types";
 import { loadRecordedAnswers, recordedAnswers, RECORDED_ANSWERS_DIR } from "./recorded";
 import { checkTasks, isProvider, locationOf, PROVIDERS, scanBlocker } from "./scan-tasks";
 import { nextScanAt } from "./schedule";
+import { liveNameBatchClient, liveNameBatchStore, nameBatchesEnabled } from "./name-batches/dal";
+import { batchesNames, submitNames, type NameBatchClient, type NameBatchStore } from "./name-batches/service";
 import {
   finishRun,
   findOrCreateRun,
@@ -47,6 +49,8 @@ export type ScanDeps = {
   now: () => Date;
   /** Where the Claude outage is kept (an open admin alert); tests pass one in memory. */
   claudeOutage: OutageStore;
+  /** Name batches for scheduled scans (F-39); tests pass fakes, null turns them off. Live: NAME_EXTRACTION_BATCH. */
+  nameBatches: { client: NameBatchClient; store: NameBatchStore } | null;
 };
 
 export type ScanOutcome =
@@ -104,7 +108,10 @@ export async function runScan(jobId: string, overrides: Partial<ScanDeps> = {}):
   const models = target.business.models.filter(isProvider);
   const run = await findOrCreateRun({ jobId, businessId: job.businessId, provider: models.join(",") });
   const saved = await listSavedCheckIds(run.id);
-  const ctx = await checkContext(target, run.id, overrides);
+  // Scheduled scans may read names later in one half-price batch (F-39); Run scan always reads them live.
+  const batching = nameBatching(job.priority, target.isTest, overrides);
+  const deferred: { checkId: string; answer: string }[] = [];
+  const ctx = await checkContext(target, run.id, overrides, batching ? (checkId, answer) => deferred.push({ checkId, answer }) : undefined);
 
   const capture = captureBatcher((checkIds) => captureCredits(holdId, checkIds));
   const errors: string[] = [];
@@ -148,6 +155,12 @@ export async function runScan(jobId: string, overrides: Partial<ScanDeps> = {}):
     runTask,
   );
   if (askClaude) await gate.finish();
+  // The answers are saved with text-only mentions; a later worker run adds the names. A failed submit only keeps those.
+  if (batching && deferred.length > 0) {
+    await submitNames(run.id, deferred, batching.client, batching.store).catch((err) =>
+      console.error(`scan ${jobId}: could not queue the name batch: ${err instanceof Error ? err.message : err}`),
+    );
+  }
   const charged = capture.charged();
   const skipped = skippedAtStart + gate.skipped();
   if (skipped > 0) failures.anthropic = { failed: failures.anthropic?.failed ?? 0, reason: CLAUDE_SKIPPED, skipped };
@@ -182,13 +195,21 @@ export async function runScan(jobId: string, overrides: Partial<ScanDeps> = {}):
   };
 }
 
-async function checkContext(target: ScanTargetRow, runId: string, overrides: Partial<ScanDeps>) {
+function nameBatching(priority: number, isTest: boolean, overrides: Partial<ScanDeps>): ScanDeps["nameBatches"] {
+  if (overrides.nameBatches !== undefined) return overrides.nameBatches && batchesNames({ enabled: true, priority, isTest }) ? overrides.nameBatches : null;
+  if (!batchesNames({ enabled: nameBatchesEnabled(), priority, isTest })) return null;
+  const client = liveNameBatchClient();
+  return client ? { client, store: liveNameBatchStore } : null;
+}
+
+async function checkContext(target: ScanTargetRow, runId: string, overrides: Partial<ScanDeps>, deferNames?: CheckContext["deferNames"]) {
   const { business, competitors, isTest } = target;
   let checkRunner = overrides.checkRunner ?? liveCheckRunner;
   let extractNames = overrides.extractNames !== undefined ? overrides.extractNames : liveNameExtractor();
   if (isTest) {
     // Test agencies never reach a live model, whatever was passed in (D-61).
-    const recorded = recordedAnswers(await loadRecordedAnswers(overrides.recordedDir ?? RECORDED_ANSWERS_DIR), business.industry);
+    const subject = { business: business.name, competitors: competitors.map((c) => c.name), kind: business.industry };
+    const recorded = recordedAnswers(await loadRecordedAnswers(overrides.recordedDir ?? RECORDED_ANSWERS_DIR), business.industry, subject);
     checkRunner = recorded.runCheck;
     extractNames = recorded.extractNames;
   }
@@ -201,6 +222,7 @@ async function checkContext(target: ScanTargetRow, runId: string, overrides: Par
     location: locationOf(business),
     isTest,
     extractNames,
+    ...(deferNames ? { deferNames } : {}),
   };
   const runners = new Map(PROVIDERS.map((p) => [p, checkRunner(p)]));
   return {

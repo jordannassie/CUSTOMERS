@@ -1,5 +1,6 @@
 // Pure rules for saving and serving the version 2 report (D-90, D-92): the saved row's title, the PDF's storage path
 // and file name, and how each report fix becomes an Actions row.
+import { OPEN_FIX_STATUSES } from "@/lib/fix-status";
 import type { ReportArea, ReportFix, ReportSnapshot } from "../snapshot-schema";
 
 export const PDF_BUCKET = "reports";
@@ -86,4 +87,28 @@ export function fixActionRow(businessId: string, fix: ReportFix) {
     source: "report",
     dedupe_key: fixDedupeKey(fix),
   };
+}
+
+/** What an earlier report's fix says when the latest report no longer flags it: no old count is left on show. */
+export const NO_LONGER_FLAGGED = "The latest report no longer flags this. AI used it less in the last 30 days.";
+
+type SavedFix = { id: string; dedupe_key: string | null; status: string; evidence: string | null; impact: string | null };
+
+/**
+ * The open report fixes in Actions whose evidence or impact differ from the latest report: brought up to its numbers,
+ * or marked as no longer flagged. Done and dismissed fixes are the owner's record and stay as they are. Pure.
+ */
+export function refreshedFixes(saved: SavedFix[], fixes: ReportFix[]): { id: string; set: { evidence: string; impact?: ReportFix["impact"] } }[] {
+  const latest = new Map(fixes.map((f) => [fixDedupeKey(f), f]));
+  const out: { id: string; set: { evidence: string; impact?: ReportFix["impact"] } }[] = [];
+  for (const row of saved) {
+    if (!row.dedupe_key || !OPEN_FIX_STATUSES.includes(row.status)) continue;
+    const fix = latest.get(row.dedupe_key);
+    if (fix) {
+      if (row.evidence !== fix.evidence || row.impact !== fix.impact) out.push({ id: row.id, set: { evidence: fix.evidence, impact: fix.impact } });
+    } else if (row.evidence !== NO_LONGER_FLAGGED) {
+      out.push({ id: row.id, set: { evidence: NO_LONGER_FLAGGED } });
+    }
+  }
+  return out;
 }

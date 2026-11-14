@@ -43,7 +43,7 @@ export function PanelHead({ title, help, right, link }: { title: string; help?: 
       </h2>
       {right && <div className="text-xs text-text-hint">{right}</div>}
       {link && (
-        <Link href={link.href} className="text-[length:calc(12.5px*var(--px,1))] font-medium text-primary hover:underline">
+        <Link href={link.href} className="inline-flex min-h-6 items-center text-[length:calc(12.5px*var(--px,1))] font-medium text-primary hover:underline">
           {link.text}
         </Link>
       )}
@@ -56,7 +56,7 @@ export function HelpTip({ label, text }: { label: string; text: string }) {
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <button type="button" aria-label={label} className="inline-flex size-4 items-center justify-center rounded-full text-text-hint hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none">
+        <button type="button" aria-label={label} className="-m-1 inline-flex size-6 items-center justify-center rounded-full text-text-hint hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none">
           <CircleHelp className="size-3.5" aria-hidden="true" />
         </button>
       </TooltipTrigger>

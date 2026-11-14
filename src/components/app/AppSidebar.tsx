@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import Link from "next/link";
+import { HoverPrefetchLink } from "@/components/app/HoverPrefetchLink";
 import { usePathname } from "next/navigation";
 import { LogOut, ShieldCheck } from "lucide-react";
 import { cn } from "cn";
@@ -51,9 +51,9 @@ export function AppSidebar({
     <div className="flex min-h-full flex-col px-3 pb-3">
       {/* The logo centred, level with the window's top bar, from a copy trimmed of the file's empty margins. */}
       <div className="mt-2 mb-2 flex h-12 shrink-0 items-center justify-center">
-        <Link href="/dashboard" onClick={onNavigate} aria-label="Customers.Direct, go to Overview" className="rounded-sm outline-none focus-visible:ring-3 focus-visible:ring-ring/50">
+        <HoverPrefetchLink href="/dashboard" onClick={onNavigate} aria-label="Customers.Direct, go to Overview" className="rounded-sm outline-none focus-visible:ring-3 focus-visible:ring-ring/50">
           <Image src="/images/logos/logo-black-sidebar.png" alt="" width={640} height={89} loading="eager" className="h-5 w-auto" />
-        </Link>
+        </HoverPrefetchLink>
       </div>
 
       {settingUp ? (
@@ -82,7 +82,7 @@ export function AppSidebar({
               const active = isNavActive(item, pathname);
               const Icon = item.icon;
               return (
-                <Link
+                <HoverPrefetchLink
                   key={item.href}
                   href={item.href}
                   onClick={onNavigate}
@@ -94,7 +94,7 @@ export function AppSidebar({
                     aria-hidden="true"
                   />
                   {item.label}
-                </Link>
+                </HoverPrefetchLink>
               );
             })}
           </div>
@@ -105,10 +105,10 @@ export function AppSidebar({
         {usage && <UsageWidget {...usage} />}
         <div className="flex flex-col gap-0.5 border-t border-border pt-2.5">
           {isAdmin && (
-            <Link href="/internal/admin" onClick={onNavigate} className={FOOTER_ITEM}>
+            <HoverPrefetchLink href="/internal/admin" onClick={onNavigate} className={FOOTER_ITEM}>
               <ShieldCheck aria-hidden="true" />
               Admin
-            </Link>
+            </HoverPrefetchLink>
           )}
           <SuggestFeatureDialog businessId={activeBusinessId} triggerClassName={FOOTER_ITEM} suggest={suggestFeature} />
           <form action="/auth/signout" method="post">

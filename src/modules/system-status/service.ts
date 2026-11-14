@@ -181,3 +181,26 @@ export function withCreditStatus(services: ServiceStatus[], outOfCredit: Readonl
       : s,
   );
 }
+
+/** How far back the System status counts emails that could not go out. */
+export const EMAIL_FAILURE_WINDOW_HOURS = 24;
+
+export type EmailFailures = { count: number; latest: string | null };
+
+/**
+ * Marks the Resend row as not working when emails failed in the last day, with how many and the newest reason (a
+ * missing EMAIL_FROM, a rejected domain). The alerts job then opens an admin alert, as for any service down. A row
+ * that is not set up keeps that state, with the count added. Pure.
+ */
+export function withEmailFailures(services: ServiceStatus[], failures: EmailFailures): ServiceStatus[] {
+  if (failures.count === 0) return services;
+  const what = `${failures.count} ${failures.count === 1 ? "email" : "emails"} could not be sent in the last ${EMAIL_FAILURE_WINDOW_HOURS} hours.`;
+  const why = failures.latest ? ` Latest reason: ${failures.latest.slice(0, 160)}` : "";
+  return services.map((s) =>
+    s.id !== "resend"
+      ? s
+      : s.state === "not_configured"
+        ? { ...s, detail: `${s.detail} ${what}` }
+        : { ...s, state: "error", detail: `${what}${why}`, fix: "Check EMAIL_FROM and RESEND_API_KEY in Netlify, and the sending domain in Resend." },
+  );
+}

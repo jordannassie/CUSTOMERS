@@ -17,3 +17,22 @@ export function readBranding(value: unknown): Branding {
   const b = parsed.success ? parsed.data : {};
   return { accent: b.accent ?? DEFAULT_ACCENT, contactEmail: b.contactEmail ?? null, bookingUrl: b.bookingUrl ?? null };
 }
+
+/**
+ * True when the agency has no real name to show a client: empty, or only the start of the owner's email ("admin" for
+ * admin@agency.com), which is what people type when they skip the name (QA round 2: PDFs said "Prepared by admin").
+ */
+export function isPlaceholderAgencyName(name: string | null, ownerEmail: string | null): boolean {
+  const n = (name ?? "").trim().toLowerCase();
+  if (!n) return true;
+  const email = (ownerEmail ?? "").trim().toLowerCase();
+  if (!email) return false;
+  const local = email.split("@")[0];
+  // "admin" for cd.admin@gmail.com too: any piece of the email's start between dots, dashes, plus signs or underscores.
+  return n === email || n === local || local.split(/[._+-]/).includes(n);
+}
+
+/** The name a report shows as its author: the agency's own name, else the business's, never an email's start. */
+export function reportAgencyName(name: string | null, ownerEmail: string | null, businessName: string): string {
+  return isPlaceholderAgencyName(name, ownerEmail) ? businessName : name!.trim();
+}

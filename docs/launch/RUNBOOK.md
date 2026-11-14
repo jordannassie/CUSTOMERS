@@ -57,6 +57,7 @@ Optional:
 | `ALERT_DAILY_COST_USD` | Alert when the day's AI cost passes this amount (F-63) | Off |
 | `WORKER_TIME_BUDGET_SECONDS` | How long one worker run keeps taking jobs | 600 |
 | `OPENAI_NEWS_MODEL` | Model for admin news | `gpt-4o` |
+| `NAME_EXTRACTION_BATCH` | `true`: scheduled scans read business names through Anthropic's Message Batches at half price (F-39, migration 097); names arrive on a later worker run, mentions use text detection until then. Turn on only after a watched trial night | Off |
 | `DELETION_WAIT_DAYS` | Days before a deleted account or business is removed for good (B-77). The Privacy page shows this number | 30 |
 | `STRIPE_PRICE_STARTER_MONTHLY`, `STRIPE_PRICE_GROWTH_MONTHLY`, `STRIPE_PRICE_PRO_MONTHLY` | Old pricing config only; real price IDs live in the `plans` table | Unset |
 
@@ -108,6 +109,7 @@ All are additive (D-43), so the current live site keeps working while they run. 
   - 035: `npm run db:types` against live gives an empty diff.
   - `npm run check:rls` passes and `select tablename from pg_tables where schemaname = 'public' and not rowsecurity;` returns no rows.
 - [ ] **Dev**: if a migration fails, stop. Do not retry by hand. Read the error, fix it in a new migration on a branch, and restore from step 2 only if data was damaged.
+- [ ] **Dev**: the approved question library (B-32) is in a migration and was applied with the push: `select count(*) from question_library where version = 1;` is about 400. If B-32 is not approved yet, onboarding still works with questions the AI writes; note it in the launch note.
 - [ ] **Dev**: run `supabase/cleanup/places-cleanup.sql` (step 1 preview, then step 2) with approval (B-79, `places-compliance.md`).
 
 ## 5. Supabase Vault secrets

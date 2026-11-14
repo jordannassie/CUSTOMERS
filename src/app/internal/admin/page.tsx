@@ -71,12 +71,26 @@ async function Overview({ searchParams }: Props) {
 
       <StatGrid>
         {/* Small pictures like the app Overview's (StatVisuals): each draws only the numbers written beside it. */}
+        {/* One definition with the Agencies page (QA round 2, item 7): not deleted, and not a test agency unless test
+            agencies are included. Its "Customers" tab lists exactly the agencies counted here. */}
         <StatTile
-          label="Agencies"
+          label={includeTest ? "Agencies, test included" : "Customer agencies"}
           value={credits(o.agencies)}
           note={<Change change={o.vsLastMonth.agencies} />}
           visual={<TwoBars yours={o.agencies} theirs={o.agenciesAtMonthStart} labels={["Now", "1st"]} />}
-        />
+        >
+          {includeTest ? (
+            <span className="text-xs text-text-hint">Every agency that is not deleted.</span>
+          ) : (
+            <Link
+              href="/internal/admin/agencies?status=customers"
+              className="inline-flex min-h-6 items-center text-xs text-primary hover:underline"
+              data-testid="overview-agencies-link"
+            >
+              Not test, not deleted. See them
+            </Link>
+          )}
+        </StatTile>
         {/* The number is what the bars draw (admin audit 2026-11-12: "0" sat next to a tall bar of trials started). */}
         <StatTile
           label="Trials started this month"

@@ -143,3 +143,70 @@ describe("runOneCheck when the provider fails", () => {
     expect(db.insertCheckUsage).not.toHaveBeenCalled();
   });
 });
+
+// QA round 2, item 4: an answer that says it has no web access and cites nothing is a failed check.
+describe("runOneCheck when the AI answers without the web", () => {
+  const refusal: CheckResult = { ...answer, answerText: "I don't have access to current, real-time information about coffee shops in Testville." };
+
+  it("tries once more, then fails without saving, caching or charging the answer", async () => {
+    const run = vi.fn<RunCheck>(async () => refusal);
+    const outcome = await runOneCheck(task, ctx(run));
+
+    expect(run).toHaveBeenCalledTimes(2);
+    expect(outcome).toMatchObject({ ok: false, kind: "search" });
+    expect(db.upsertCachedAnswer).not.toHaveBeenCalled();
+    expect(db.insertCheckUsage).not.toHaveBeenCalled();
+    expect(db.saveCheckResult).not.toHaveBeenCalled();
+  });
+
+  it("keeps the answer when the second try looks things up", async () => {
+    const run = vi.fn<RunCheck>().mockResolvedValueOnce(refusal).mockResolvedValueOnce(answer);
+    const outcome = await runOneCheck(task, ctx(run));
+
+    expect(outcome).toEqual({ ok: true, cached: false });
+    expect(db.saveCheckResult).toHaveBeenCalledTimes(1);
+  });
+
+  it("fails a refusal saved in the cache before this rule, without asking the model or charging", async () => {
+    db.findCachedAnswer.mockResolvedValue({
+      answer: refusal.answerText,
+      citations: [],
+      extractedNames: null,
+      model: "claude-haiku-4-5",
+      createdAt: CACHED_AT,
+    });
+    const run = vi.fn<RunCheck>(async () => answer);
+    const outcome = await runOneCheck(task, ctx(run));
+
+    expect(run).not.toHaveBeenCalled();
+    expect(outcome).toMatchObject({ ok: false, kind: "search" });
+    expect(db.insertCheckUsage).not.toHaveBeenCalled();
+    expect(db.saveCheckResult).not.toHaveBeenCalled();
+  });
+});
+
+// F-39: a scheduled scan with name batches on queues answers instead of reading names live.
+describe("runOneCheck with deferred names", () => {
+  it("queues a new answer for the batch and saves it with text-only mentions", async () => {
+    const deferNames = vi.fn();
+    const outcome = await runOneCheck(task, { ...ctx(vi.fn<RunCheck>(async () => answer)), deferNames });
+    expect(outcome).toEqual({ ok: true, cached: false });
+    expect(deferNames).toHaveBeenCalledWith("c1", answer.answerText);
+    expect(extractNames).not.toHaveBeenCalled();
+    expect(saved().extractedNames).toBeNull();
+  });
+
+  it("uses names already saved on a cached answer instead of queueing it", async () => {
+    db.findCachedAnswer.mockResolvedValue({
+      answer: answer.answerText,
+      citations: [],
+      extractedNames: { promptVersion: "extract-names.v1", model: "claude-haiku-4-5", names: [{ name: "Bean There Coffee", position: 1 }] },
+      model: "claude-haiku-4-5",
+      createdAt: CACHED_AT,
+    });
+    const deferNames = vi.fn();
+    await runOneCheck(task, { ...ctx(vi.fn<RunCheck>(async () => answer)), deferNames });
+    expect(deferNames).not.toHaveBeenCalled();
+    expect(saved().extractedNames).not.toBeNull();
+  });
+});

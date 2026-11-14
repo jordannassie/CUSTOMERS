@@ -3,8 +3,9 @@ import "server-only";
 // done, queued again with backoff, or failed. The host entry point only checks the secret and calls this.
 import { claimExplanation, explainAfterScan, runsToSweep, unexplainedRunOfJob } from "@/modules/insights/server";
 import { refreshStaleSiteFacts } from "@/modules/onboarding/server";
-import { ALREADY_FINISHED, isMissingSample, NO_SAMPLE_ANSWERS, runScan, type ScanOutcome } from "@/modules/scanning";
+import { ALREADY_FINISHED, collectLiveNameBatches, isMissingSample, NO_SAMPLE_ANSWERS, runScan, type ScanOutcome } from "@/modules/scanning";
 import { claimScanJobs, finishJob, isWorkerSecret, workerTimeBudgetMs, type ClaimedJob, type JobUpdate } from "./dal";
+import { abandonStaleJobs } from "./abandoned/dal";
 import { NOT_ANSWERING_TEXT } from "./service";
 
 export const CLAIM_LIMIT = 10;
@@ -29,6 +30,10 @@ export type WorkerDeps = {
   unexplainedRun?: (jobId: string) => Promise<string | null>;
   /** Recently finished runs left without fixes, and the claim that keeps two workers from explaining one twice. */
   sweep?: { find: (now: Date, limit: number) => Promise<string[]>; claim: (runId: string, now: Date) => Promise<boolean> };
+  /** Fails scans the worker abandoned two hours ago or more, so they stop blocking Run scan (abandoned/dal.ts). */
+  abandon?: (now: Date) => Promise<number>;
+  /** Collects finished name batches of earlier scheduled scans (F-39); returns 0 at once while switched off. */
+  collectNames?: (now: Date) => Promise<number>;
 };
 
 export type WorkerSummary = {
@@ -59,6 +64,8 @@ const liveDeps: WorkerDeps = {
   },
   unexplainedRun: unexplainedRunOfJob,
   sweep: { find: runsToSweep, claim: claimExplanation },
+  abandon: (now) => abandonStaleJobs(null, now),
+  collectNames: collectLiveNameBatches,
 };
 
 /** How a job ends after one attempt. A thrown error is treated like a scan where every check failed. */
@@ -93,6 +100,9 @@ export async function runWorker(budgetMs: number, deps: WorkerDeps = liveDeps): 
   const started = deps.now().getTime();
   const remaining = () => budgetMs - (deps.now().getTime() - started);
   const summary: WorkerSummary = { claimed: 0, done: 0, retrying: 0, failed: 0, skipped: 0, lost: 0, stoppedForTime: false, explainsDeferred: 0, swept: 0 };
+  // Before claiming: a scan no worker finished for two hours is failed, uncharged, instead of blocking Run scan forever.
+  if (deps.abandon) await deps.abandon(deps.now()).catch((err) => console.error(`scan worker: could not end abandoned scans: ${errorText(err)}`));
+  if (deps.collectNames) await deps.collectNames(deps.now()).catch((err) => console.error(`scan worker: could not collect name batches: ${errorText(err)}`));
 
   while (true) {
     if (deps.now().getTime() - started >= budgetMs * CLAIM_CUTOFF) {

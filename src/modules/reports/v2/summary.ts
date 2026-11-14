@@ -21,6 +21,8 @@ export function headline(a: Analysis): string {
   if (!top) return first;
   if (top.mentions > a.named) return `${first} ${top.name} was named in ${top.mentions}.`;
   if (top.mentions === a.named && top.mentions > 0) return `${first} ${top.name} was named in ${top.mentions} too.`;
+  // Everyone at 0 is not a lead (MVP test, 2026-11-14).
+  if (a.named === 0) return `${first} AI did not name any business you track either.`;
   return `${first} That is more than any business you track.`;
 }
 

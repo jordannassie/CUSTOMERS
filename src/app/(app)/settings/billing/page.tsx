@@ -13,6 +13,7 @@ import {
   removeBusiness,
   upgradeBusiness,
 } from "@/modules/billing";
+import { canAddBusiness } from "@/modules/entitlements";
 import { ADD_BUSINESS_PATH } from "@/modules/onboarding";
 import { BILLING_HREF, BUY_CREDITS_HREF, CHOOSE_PLAN_HREF, SUPPORT_HREF } from "@/modules/workspace";
 import { PlanBill } from "./_components/plan-bill";
@@ -30,7 +31,10 @@ type Props = { searchParams: Promise<{ portal?: string | string[]; synced?: stri
 export default async function BillingPage({ searchParams }: Props) {
   const { agency } = await requireAgency({ next: BILLING_HREF });
   const params = await searchParams;
-  const loaded = await loadBillingPage(agency.id, { repair: params.synced === undefined });
+  const [loaded, canAdd] = await Promise.all([
+    loadBillingPage(agency.id, { repair: params.synced === undefined }),
+    canAddBusiness(agency.id),
+  ]);
   // Saved again from Stripe (BUG-121): load once more with fresh reads.
   if (loaded === "resynced") redirect(`${BILLING_HREF}?synced=1`);
   const view = loaded;
@@ -60,7 +64,8 @@ export default async function BillingPage({ searchParams }: Props) {
               <PlanBill
                 view={view}
                 supportHref={SUPPORT_HREF}
-                addBusinessHref={ADD_BUSINESS_PATH}
+                // Hidden when another business can't be added (the trial's limit, a cancelled plan): MVP test 2026-11-14.
+                addBusinessHref={canAdd.allowed ? ADD_BUSINESS_PATH : null}
                 actions={{ upgrade: upgradeBusiness, downgrade: downgradeBusiness, remove: removeBusiness, add: addBusiness, keep: keepBusinessPlan }}
               />
               <div className="grid items-start gap-4 lg:grid-cols-2">

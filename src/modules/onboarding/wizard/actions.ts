@@ -1,6 +1,7 @@
 "use server";
 
 import { refresh } from "next/cache";
+import { redirect } from "next/navigation";
 import { after } from "next/server";
 import { OTHER_LABEL_HINT } from "@/lib/other-label";
 import { authFailure, getCurrentAgency, type ActionResult } from "@/modules/auth";
@@ -188,6 +189,8 @@ export async function startCardStep(input: unknown): Promise<ActionResult<{ clie
   const parsed = businessOnly.safeParse(input);
   if (!parsed.success) return notFound;
   const result = await startCardCheckout(user, parsed.data.businessId, cardReturnUrl());
+  // A test agency needs no card: the card step page now shows "Setting up" and moves on to the first scan.
+  if (!result.ok && "testAgency" in result) redirect(stepPath("card"));
   return result.ok ? { ok: true, data: { clientSecret: result.clientSecret } } : result;
 }
 

@@ -7,6 +7,7 @@ import { requestNow } from "@/lib/request-now";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { requireAgency } from "@/modules/auth";
+import { readBusiness, readCompetitors } from "@/modules/business-reads";
 import { maxCompetitors } from "@/modules/entitlements";
 import { limitMessage, placeIdForName } from "@/modules/onboarding/server";
 import { loadAlsoRecommended, loadScoreReport, recountAfterNamesChange, type ScoreReport } from "@/modules/scanning";
@@ -108,16 +109,12 @@ export async function loadCompetitorsBase(
   report: ScoreReport;
   signals: (fetchSignals: FetchSignals, onlyCompetitorId?: string) => Promise<SignalRow[]>;
 } | null> {
-  const db = createServiceClient();
   const [report, also, business, rows, limit] = await Promise.all([
     loadScoreReport(agencyId, businessId, now, chartDays ? { charts, chartDays, historyDays: 2 * chartDays } : { charts }),
     loadAlsoRecommended(agencyId, businessId, now),
-    db.from("businesses").select("name, places_id, is_chain").eq("id", businessId).eq("agency_id", agencyId).maybeSingle(),
-    db
-      .from("business_competitors")
-      .select("id, name, domain, places_id, place_id, created_at, checked_from")
-      .eq("business_id", businessId)
-      .order("created_at"),
+    // Shared with the Overview's other sections (perf fix #3).
+    readBusiness(businessId, agencyId),
+    readCompetitors(businessId),
     maxCompetitors(businessId),
   ]);
   for (const r of [business, rows]) if (r.error) throw new Error(`Competitors: ${r.error.message}`);
@@ -210,12 +207,11 @@ export async function getPickedInstead(businessId: string): Promise<PickedInstea
  * Reads saved answers and fixes only; no Google call (D-73).
  */
 export async function loadPicked(agencyId: string, businessId: string, now: Date): Promise<PickedInstead | null | "none-tracked"> {
-  const db = createServiceClient();
   const [report, also, business, rows, inputs] = await Promise.all([
     loadScoreReport(agencyId, businessId, now),
     loadAlsoRecommended(agencyId, businessId, now),
-    db.from("businesses").select("name, places_id").eq("id", businessId).eq("agency_id", agencyId).maybeSingle(),
-    db.from("business_competitors").select("name, places_id, place_id, created_at, checked_from").eq("business_id", businessId).order("created_at"),
+    readBusiness(businessId, agencyId),
+    readCompetitors(businessId),
     loadWhyInputs(agencyId, businessId, now.getTime()),
   ]);
   for (const r of [business, rows]) if (r.error) throw new Error(`Competitors: ${r.error.message}`);

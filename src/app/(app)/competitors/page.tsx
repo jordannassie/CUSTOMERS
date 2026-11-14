@@ -169,8 +169,8 @@ function Kpis({ kpis, rows }: { kpis: TableKpis; rows: TableRow[] }) {
     <KpiStrip testId="competitor-kpis">
       <KpiTile
         label="Your rank"
-        value={kpis.rank ? `#${kpis.rank.place}` : "No score yet"}
-        sub={kpis.rank ? `of ${kpis.rank.of} tracked businesses` : undefined}
+        value={kpis.rank ? `#${kpis.rank.place}` : kpis.nobodyNamed ? "Not named yet" : "No score yet"}
+        sub={kpis.rank ? `of ${kpis.rank.of} tracked businesses` : kpis.nobodyNamed ? "AI named none of these businesses yet" : undefined}
         trend={you?.spark}
         testId="kpi-rank"
       />

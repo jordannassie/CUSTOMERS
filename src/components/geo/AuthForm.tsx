@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { createClient } from "@/lib/supabase/browser";
+import { createClient, googleSignInEnabled } from "@/lib/supabase/browser";
 import { appUrl } from "@/lib/app-url";
 import { safeNextPath } from "@/lib/safe-next";
 import { loginNotice } from "@/modules/auth/callback";
@@ -34,6 +34,11 @@ const GoogleIcon = () => (
 // The page the visitor asked for before being sent to log in (BUG-009). A plan picked on the pricing
 // page (?plan=) is carried into onboarding, which keeps it for the card step (MVP_SPEC 3.1 step 0).
 // A new account goes straight to setup: /dashboard only redirected there, one more server trip (2026-10-23).
+function pickedPlan(): "starter" | "pro" | null {
+  const plan = new URLSearchParams(window.location.search).get("plan");
+  return plan === "starter" || plan === "pro" ? plan : null;
+}
+
 function nextFromUrl(signup = false) {
   const params = new URLSearchParams(window.location.search);
   const plan = params.get("plan");
@@ -82,6 +87,11 @@ export default function AuthForm({ defaultMode = "login", errorParam = "", notic
     setError(null);
     setLinkNotice(null);
     setLoading("google");
+    if (!(await googleSignInEnabled())) {
+      setGoogle({ kind: "google", title: "Google sign-in isn't available right now.", text: "Log in with your email instead." });
+      setLoading(null);
+      return;
+    }
     const supabase = createClient();
     const next = nextFromUrl();
     // The configured address, so the OAuth redirect URI matches what is registered in Google Cloud Console and
@@ -119,6 +129,8 @@ export default function AuthForm({ defaultMode = "login", errorParam = "", notic
         password,
         options: {
           emailRedirectTo: `${siteBase}/auth/callback?from=signup&next=${encodeURIComponent(nextFromUrl(true))}`,
+          // Kept on the account too, so the plan survives a confirmation link opened in another browser (agency step).
+          ...(pickedPlan() && { data: { selected_plan: pickedPlan() } }),
         },
       });
       setLoading(null);

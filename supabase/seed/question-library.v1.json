@@ -3343,6 +3343,66 @@
         "hair loss treatment"
       ],
       "intent": "comparison"
+    },
+    {
+      "industry": "restaurant",
+      "template": "Where can I get the best barbecue in {city}?",
+      "tags": [
+        "bbq",
+        "barbecue"
+      ],
+      "intent": "best",
+      "source": "manual-draft"
+    },
+    {
+      "industry": "restaurant",
+      "template": "Which barbecue restaurant in {city} do locals recommend most?",
+      "tags": [
+        "bbq",
+        "barbecue"
+      ],
+      "intent": "reviews",
+      "source": "manual-draft"
+    },
+    {
+      "industry": "restaurant",
+      "template": "Which restaurant in {city} is best for a sit-down family dinner?",
+      "tags": [
+        "family restaurant",
+        "dinner"
+      ],
+      "intent": "best",
+      "source": "manual-draft"
+    },
+    {
+      "industry": "restaurant",
+      "template": "Which sit-down restaurants in {city} can seat a table for four tonight?",
+      "tags": [
+        "dinner reservations"
+      ],
+      "intent": "urgent",
+      "source": "manual-draft"
+    },
+    {
+      "industry": "restaurant",
+      "template": "Where can I get a good sit-down dinner in {city} without spending too much?",
+      "tags": [
+        "dinner",
+        "casual dining"
+      ],
+      "intent": "price",
+      "source": "manual-draft"
+    },
+    {
+      "industry": "restaurant",
+      "template": "For a relaxed dinner in {city}, is a barbecue spot or a steakhouse the better choice?",
+      "tags": [
+        "bbq",
+        "barbecue",
+        "steakhouse"
+      ],
+      "intent": "comparison",
+      "source": "manual-draft"
     }
   ]
 }

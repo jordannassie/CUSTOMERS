@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { MAX_SITES, answersText, citedHosts, mentionsYou, sourcesView, uniqueAnswers, type SourceCheck } from "./service";
+import { MAX_SITES, answersText, citedHosts, mentionsYou, sourcesView, type SourceCheck } from "./service";
 
 const OWN = "beantherecoffee.example";
 const ctx = { ownDomain: OWN, businessName: "Bean There Coffee" };
@@ -29,13 +29,14 @@ describe("citedHosts", () => {
   });
 });
 
-describe("uniqueAnswers", () => {
-  it("counts a cached answer once, like the score", () => {
+describe("answers counted like the score (MVP test, 2026-11-14)", () => {
+  it("counts every answer, a reused one included, so sites match the Overview and Compare", () => {
     const a = check("openai", ["https://yelp.com"], 20, { answerKey: "k1" });
     const again = check("openai", ["https://yelp.com"], 21, { answerKey: "k1" });
     const other = check("openai", ["https://yelp.com"], 21, { answerKey: "k2" });
-    expect(uniqueAnswers([a, again, other])).toEqual([a, other]);
-    expect(sourcesView([a, again, other], ctx).answers).toBe(2);
+    const view = sourcesView([a, again, other], ctx);
+    expect(view.answers).toBe(3);
+    expect(view.sites[0]).toMatchObject({ host: "yelp.com", answers: 3 });
   });
 });
 

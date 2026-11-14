@@ -99,7 +99,7 @@ export default async function ReportsPage({ searchParams }: Props) {
               save={saveSnapshot}
               remove={removeSnapshot}
             />
-            <ReportBranding agencyName={page.agencyName} logoSrc={page.logoSrc} branding={page.branding} save={saveReportBranding} />
+            <ReportBranding agencyName={page.agencyName} agencyNameSet={page.agencyNameSet} logoSrc={page.logoSrc} branding={page.branding} save={saveReportBranding} />
           </aside>
         </div>
       </div>

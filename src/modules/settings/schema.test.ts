@@ -39,4 +39,10 @@ describe("business profile input", () => {
     expect(businessProfileInput.parse({ ...profile, area: "" }).area).toBeNull();
     expect(businessProfileInput.safeParse({ ...profile, area: "x".repeat(81) }).success).toBe(false);
   });
+
+  it("takes the street address, leaves it out when not sent, and refuses one over 200 characters (F-34)", () => {
+    expect(businessProfileInput.parse({ ...profile, address: " 1200 E 6th St " }).address).toBe("1200 E 6th St");
+    expect(businessProfileInput.parse(profile).address).toBeUndefined();
+    expect(businessProfileInput.safeParse({ ...profile, address: "x".repeat(201) }).success).toBe(false);
+  });
 });

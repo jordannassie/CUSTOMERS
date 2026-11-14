@@ -5,7 +5,7 @@ import type { Database } from "@/types/database.types";
 
 // Typed wrappers over the credit SQL functions (B-13, MVP_SPEC 4.2). Credits never change any other way.
 
-export type GrantSource = "plan" | "topup" | "trial" | "promo" | "refund";
+export type GrantSource = "plan" | "topup" | "trial" | "promo" | "refund" | "admin";
 
 export type CreditBalance = Pick<
   Database["public"]["Views"]["agency_credit_balance"]["Row"],

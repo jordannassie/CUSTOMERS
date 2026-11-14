@@ -2,6 +2,7 @@ import "server-only";
 // Database access for "why competitors win" (B-51). The worker runs explainAfterScan with the service
 // role (no user session); the page reads through getLiveOpportunities, which checks the agency first.
 import { createServiceClient } from "@/lib/supabase/service";
+import { readBusiness, readCompetitors } from "@/modules/business-reads";
 import { aiUsageMetadata, liveAiClients } from "@/modules/ai/server";
 import { requireAgency } from "@/modules/auth";
 import { fetchPlaceSignals } from "@/modules/competitors/server";
@@ -59,7 +60,8 @@ async function loadSources(runId: string, deps: ExplainDeps) {
       .single(),
     db.from("business_competitors").select("id, name, places_id, place_id").eq("business_id", businessId).order("created_at"),
     db
-      .from("visibility_results")
+      // The counted answers, so a "no web access" answer saved before migration 095 is not read as "not named".
+      .from("visibility_results_counted")
       .select("provider, question, business_mentioned, competitors_mentioned, cited_sources, tracked_prompt_id")
       .eq("run_id", runId)
       .order("id"),
@@ -95,9 +97,10 @@ async function loadSources(runId: string, deps: ExplainDeps) {
       must("load the checks", checks).map((c) => ({ ...c, questionId: c.tracked_prompt_id ?? "none" })),
       must("load the questions", questions),
     ).scored.map((c) => ({
-      provider: c.provider,
+      // The view types every column as nullable; the table behind it never leaves these empty.
+      provider: c.provider ?? "",
       question: c.question ?? "",
-      businessMentioned: c.business_mentioned,
+      businessMentioned: c.business_mentioned === true,
       competitorsMentioned: c.competitors_mentioned,
       citations: realCitations(c.cited_sources),
     })),
@@ -163,7 +166,8 @@ export async function getLiveOpportunities(
 ): Promise<LiveOpportunity[] | null> {
   const { agency } = await requireAgency({ next: "/actions" });
   const db = createServiceClient();
-  const business = await db.from("businesses").select("places_id").eq("id", businessId).eq("agency_id", agency.id).maybeSingle();
+  // Shared with the Overview's other sections (perf fix #3).
+  const business = await readBusiness(businessId, agency.id);
   if (business.error) throw new Error(`Insights: could not load the business: ${business.error.message}`);
   if (!business.data) return null;
 
@@ -181,12 +185,7 @@ export async function getLiveOpportunities(
   // Only this business's own competitors: an id typed into a fix's text must never read another account's listing.
   const ids = referencedCompetitors(rows);
   const competitors =
-    ids.size > 0
-      ? must(
-          "load competitors",
-          await db.from("business_competitors").select("id, places_id, place_id").eq("business_id", businessId).in("id", [...ids]),
-        )
-      : [];
+    ids.size > 0 ? must("load competitors", await readCompetitors(businessId)).filter((c) => ids.has(c.id)) : [];
   const placeOf = new Map(competitors.map((c) => [c.id, c.places_id ?? c.place_id]));
   const businessPlace = usesBusinessValues(rows) ? business.data.places_id : null;
   const signals = google ? await signalsFor([businessPlace, ...placeOf.values()], fetchSignals) : new Map();

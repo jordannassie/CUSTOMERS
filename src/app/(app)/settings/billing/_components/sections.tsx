@@ -16,7 +16,10 @@ const STATUS: Record<string, { label: string; variant: "tint" | "good" | "low" |
 };
 
 export function PlanStatus({ view, keep }: { view: BillingView; keep: ChangeAction }) {
-  const status = STATUS[view.status] ?? { label: "Active", variant: "secondary" as const };
+  // A paid plan that was cancelled is still on until its end date, but no longer "Active" with a monthly price
+  // (MVP test 2026-11-14): the notice below says when it ends.
+  const ending = view.status === "active" && view.cancelAt !== null;
+  const status = ending ? { label: "Ending", variant: "secondary" as const } : (STATUS[view.status] ?? { label: "Active", variant: "secondary" as const });
   const billed = view.onPlan.filter((b) => !b.notCharged);
   // What the businesses are charged now, which can be an older amount than the plan's price (D-93).
   const monthly = billed.reduce((sum, b) => sum + b.priceCents, 0);
@@ -37,7 +40,7 @@ export function PlanStatus({ view, keep }: { view: BillingView; keep: ChangeActi
             through.
           </span>
         )}
-        {view.status === "active" && monthly > 0 && (
+        {view.status === "active" && !ending && monthly > 0 && (
           <span className="text-muted-foreground">
             {billed.length === 1 ? "1 business" : `${billed.length} businesses`} for {formatUsd(monthly)} a month.
           </span>

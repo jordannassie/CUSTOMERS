@@ -42,7 +42,7 @@ export function TopActions({ items, total, wait = null }: { items: ActionItem[];
                   <Icon className="size-3.5" />
                 </span>
                 <span className="flex min-w-0 flex-col gap-0.5">
-                  <Link href={fixHref(a.id)} className="truncate text-[length:calc(13px*var(--px,1))] font-medium hover:underline">
+                  <Link href={fixHref(a.id)} className="block min-h-6 truncate py-0.5 text-[length:calc(13px*var(--px,1))] font-medium hover:underline">
                     {a.title}
                   </Link>
                   <span className="truncate text-xs text-muted-foreground" title={why ?? undefined}>
@@ -67,7 +67,7 @@ export function QuestionsMoved({ trends }: { trends: QuestionTrends | null }) {
   return (
     <Panel title="Questions that moved" right={moved.length > 0 ? "Since the scan before" : undefined} link={{ href: "/questions", text: "All questions" }} testId="questions-moved">
       {moved.length === 0 ? (
-        <Empty>{trends && trends.scans.length > 1 ? "No question moved since the scan before." : "Changes show after your second scan."}</Empty>
+        <Empty>{trends?.comparable ? "No question moved since the scan before." : "Changes show after your second scan."}</Empty>
       ) : (
         <ul className="flex flex-col">
           {moved.map((m) => {
@@ -79,7 +79,7 @@ export function QuestionsMoved({ trends }: { trends: QuestionTrends | null }) {
                   <span className="sr-only">{up ? "Up" : "Down"}</span>
                 </span>
                 <span className="flex min-w-0 flex-col gap-0.5">
-                  <Link href={`/questions?q=${m.id}`} className="truncate text-[length:calc(13px*var(--px,1))] font-medium hover:underline" title={m.prompt}>
+                  <Link href={`/questions?q=${m.id}`} className="block min-h-6 truncate py-0.5 text-[length:calc(13px*var(--px,1))] font-medium hover:underline" title={m.prompt}>
                     {m.prompt}
                   </Link>
                   <span className="flex flex-wrap items-center gap-x-1.5 text-xs text-text-hint tabular-nums">

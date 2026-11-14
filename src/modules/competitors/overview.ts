@@ -20,6 +20,8 @@ export type OverviewCompete = {
    * business's share (largest first, named as on the chart, you always included) for the Overview's donut.
    */
   share: { percent: number; rank: number; of: number; parts: SharePart[] } | null;
+  /** Why there is no share: no competitor tracked, or competitors tracked but AI named none of the businesses yet. */
+  shareMissing: "no_competitors" | "nobody_named" | null;
   /** Answers that cited your own website, as the report counts them; null without the score's answers. */
   ownSite: { cited: number; answers: number; hasSite: boolean } | null;
   /** The sites AI used most, counted like the report's "Where AI looks"; null without the score's answers. */
@@ -128,6 +130,7 @@ export function overviewCompete(view: CompetitorsView, report: ScoreReport, stan
     : null;
 
   return {
+    shareMissing: share ? null : tracksAny ? "nobody_named" : "no_competitors",
     stand,
     share,
     ownSite,

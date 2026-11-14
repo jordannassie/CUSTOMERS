@@ -18,6 +18,12 @@ test.skip(
   "Skipped: no local test database. Run scripts/test-db-reset.sh to create .env.test.local.",
 );
 
+// Phones open Actions on the List (QA round 2, item 13); these tests read the board's columns, so they start on the
+// board on every project, as a user who picked Board would (the choice is kept in localStorage).
+test.beforeEach(async ({ page }) => {
+  await page.addInitScript(() => window.localStorage.setItem("actions-view", "board"));
+});
+
 const db = hasDb
   ? createClient(
       local.NEXT_PUBLIC_SUPABASE_URL!,

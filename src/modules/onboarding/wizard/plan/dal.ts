@@ -72,3 +72,15 @@ export async function saveDraftPlan(userId: string, businessId: string, planId: 
   if (error) throw new Error(`Could not change the plan: ${error.message}`);
   return { ok: true };
 }
+
+/**
+ * The plan picked on the pricing page, kept in user_metadata by the sign-up form. The agency step falls back to it when
+ * the confirmation link was opened in another browser and ?plan= was lost (MVP test, 2026-11-14). Only a known plan
+ * id counts; the person can set user_metadata themselves, so it is a preference, never an entitlement.
+ */
+export async function signupPlan(userId: string): Promise<PlanId | null> {
+  const { data, error } = await createServiceClient().auth.admin.getUserById(userId);
+  if (error) return null;
+  const plan: unknown = data.user.user_metadata?.selected_plan;
+  return typeof plan === "string" && isPlanId(plan) ? plan : null;
+}

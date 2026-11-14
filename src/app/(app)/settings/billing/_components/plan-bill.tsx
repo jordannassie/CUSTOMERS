@@ -8,7 +8,7 @@ import { LocalDate } from "@/components/ui/local-date";
 
 export type PlanActions = { upgrade: ChangeAction; downgrade: ChangeAction; remove: ChangeAction; add: ChangeAction; keep: ChangeAction };
 
-type Props = { view: BillingView; actions: PlanActions; addBusinessHref: string; supportHref: string };
+type Props = { view: BillingView; actions: PlanActions; addBusinessHref: string | null; supportHref: string };
 
 // The plan read like a bill: one line per business with its price, then the next charge as the total.
 export function PlanBill({ view, actions, addBusinessHref, supportHref }: Props) {
@@ -76,15 +76,17 @@ export function PlanBill({ view, actions, addBusinessHref, supportHref }: Props)
         </div>
       )}
 
-      <div className="border-t border-border px-4 py-3">
-        <Link
-          href={addBusinessHref}
-          className="inline-flex items-center gap-1.5 text-[length:calc(13px*var(--px,1))] font-medium text-primary underline-offset-4 hover:underline"
-        >
-          <Plus className="size-3.5" aria-hidden="true" />
-          Set up another business
-        </Link>
-      </div>
+      {addBusinessHref && (
+        <div className="border-t border-border px-4 py-3">
+          <Link
+            href={addBusinessHref}
+            className="inline-flex items-center gap-1.5 text-[length:calc(13px*var(--px,1))] font-medium text-primary underline-offset-4 hover:underline"
+          >
+            <Plus className="size-3.5" aria-hidden="true" />
+            Set up another business
+          </Link>
+        </div>
+      )}
 
       <NextCharge view={view} supportHref={supportHref} />
     </section>

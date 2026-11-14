@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { PROBES, runProbe, stillOutOfCredit, stripeMode, timeAgo, withCreditStatus, workerStatus, type Probe } from "./service";
+import { PROBES, runProbe, stillOutOfCredit, stripeMode, timeAgo, withCreditStatus, withEmailFailures, workerStatus, type Probe } from "./service";
 
 const probe = (id: string): Probe => PROBES.find((p) => p.id === id)!;
 
@@ -163,5 +163,32 @@ describe("stillOutOfCredit", () => {
 
   it("only judges providers that had a credit error", () => {
     expect(stillOutOfCredit(new Map(), new Map([["openai", "2026-11-12T09:00:00Z"]]))).toEqual(new Set());
+  });
+});
+
+describe("withEmailFailures", () => {
+  const resend = { id: "resend", name: "Resend (email)", group: "data" as const, state: "ok" as const, detail: "Connected. The key works." };
+  const other = { ...resend, id: "stripe", name: "Stripe" };
+
+  it("leaves every row alone when no email failed", () => {
+    expect(withEmailFailures([resend, other], { count: 0, latest: null })).toEqual([resend, other]);
+  });
+
+  it("marks Resend as not working with the count and the newest reason", () => {
+    const [row, untouched] = withEmailFailures([resend, other], { count: 3, latest: "Email is not configured. Set EMAIL_FROM." });
+    expect(row).toMatchObject({
+      state: "error",
+      detail: "3 emails could not be sent in the last 24 hours. Latest reason: Email is not configured. Set EMAIL_FROM.",
+    });
+    expect(row.fix).toMatch(/EMAIL_FROM/);
+    expect(untouched).toEqual(other);
+  });
+
+  it("keeps a row that is not set up as not set up, with the count added", () => {
+    const off = { ...resend, state: "not_configured" as const, detail: "Not set up." };
+    expect(withEmailFailures([off], { count: 1, latest: null })[0]).toMatchObject({
+      state: "not_configured",
+      detail: "Not set up. 1 email could not be sent in the last 24 hours.",
+    });
   });
 });

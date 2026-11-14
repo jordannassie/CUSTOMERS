@@ -59,7 +59,7 @@ export function Help({ text }: { text: string }) {
       <TooltipTrigger asChild>
         <button
           type="button"
-          className="inline-flex size-4 items-center justify-center rounded-full text-text-hint outline-none hover:text-muted-foreground focus-visible:ring-3 focus-visible:ring-ring/50"
+          className="-m-1 inline-flex size-6 items-center justify-center rounded-full text-text-hint outline-none hover:text-muted-foreground focus-visible:ring-3 focus-visible:ring-ring/50"
           aria-label={`About this: ${text}`}
         >
           <CircleHelp className="size-3.5" aria-hidden="true" />

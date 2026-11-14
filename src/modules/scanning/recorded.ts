@@ -9,6 +9,7 @@ import { orderedNames, type ExtractNames } from "./extract";
 import { EXTRACT_NAMES_VERSION } from "./prompts/extract-names.v1";
 import { CHECK_MODELS } from "./providers/models";
 import { ProviderError } from "./providers/request";
+import { genericSampleAnswer, type SampleSubject } from "./generic-sample";
 import { NO_SAMPLE_ANSWERS, noRecordedAnswers } from "./sample-answers";
 import type { ProviderId, RunCheck } from "./providers/types";
 
@@ -56,7 +57,7 @@ export async function loadRecordedAnswers(dir = RECORDED_ANSWERS_DIR): Promise<R
  * `kind`: the business's industry ("coffee_shop", "Bookstore"). Added to every question before matching, so a
  * question that names no trade ("Where's the best place to get cold brew?") still gets its own trade's answer.
  */
-export function recordedAnswers(answers: RecordedAnswer[], kind?: string | null): RecordedAnswers {
+export function recordedAnswers(answers: RecordedAnswer[], kind?: string | null, subject?: SampleSubject): RecordedAnswers {
   const hint = kind ? ` ${kind.replace(/_/g, " ")}` : "";
   const byProvider = new Map<ProviderId, RecordedAnswer[]>();
   for (const a of answers) byProvider.set(a.provider, [...(byProvider.get(a.provider) ?? []), a]);
@@ -70,8 +71,10 @@ export function recordedAnswers(answers: RecordedAnswer[], kind?: string | null)
         throw new ProviderError({ provider, kind: "client", attempts: 1, message: noRecordedAnswers(provider) });
       }
       const pool = narrowed(all, kind, input.location.city);
-      if (pool.length === 0) throw new ProviderError({ provider, kind: "client", attempts: 1, message: NO_SAMPLE_ANSWERS });
-      const answer = closestAnswer(pool, `${input.question}${hint}`);
+      // No recording of this trade and city: a sample built from the business itself (generic-sample.ts).
+      const answer =
+        pool.length > 0 ? closestAnswer(pool, `${input.question}${hint}`) : subject ? generic(subject, input.question, provider, input.location.city) : null;
+      if (!answer) throw new ProviderError({ provider, kind: "client", attempts: 1, message: NO_SAMPLE_ANSWERS });
       return {
         answerText: answer.answerText,
         citations: answer.citations,
@@ -81,6 +84,12 @@ export function recordedAnswers(answers: RecordedAnswer[], kind?: string | null)
         latencyMs: 0,
       };
     };
+
+  const generic = (s: SampleSubject, question: string, provider: ProviderId, city: string | null | undefined) => {
+    const sample = genericSampleAnswer(s, question, provider, city);
+    namesByAnswer.set(sample.answerText, sample.names);
+    return sample;
+  };
 
   const extractNames: ExtractNames = async (answerText) => {
     const names = namesByAnswer.get(answerText);

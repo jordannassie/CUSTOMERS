@@ -150,7 +150,7 @@ test("Reports shows the report's numbers and adds its fixes to Actions; the shar
   await expect(page.getByTestId("fact-score")).toContainText("/100");
   await expect(page.getByTestId("fact-named")).toContainText("of 36");
   await expect(page.getByTestId("fact-rank")).toContainText("#");
-  await expect(page.getByTestId("fact-fixes")).toContainText("Also added to Actions");
+  await expect(page.getByTestId("fact-fixes")).toContainText("Each is also in Actions");
   await expect(page.getByTestId("report-period")).toContainText("Covers");
   await expect(page.getByTestId("saved-report").first()).toContainText("Latest report");
   await expect(page.getByTestId("copy-email-summary")).toBeVisible();

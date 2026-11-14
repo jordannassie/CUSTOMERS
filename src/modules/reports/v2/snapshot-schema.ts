@@ -45,8 +45,17 @@ export const fixSchema = z.object({
   wording: z.enum(["ai", "template"]),
 });
 
+/**
+ * Which counting rules built a report. Raise it when the way answers or sources are counted changes, so a saved report
+ * (and the Actions text taken from it) is rebuilt instead of showing the old numbers for up to a week (QA round 2:
+ * Google Maps links stopped counting as Google, answers with no web access stopped counting).
+ */
+// 3: no place or "you lead" when nobody is named; Sources counts every answer of the scored questions (MVP test).
+export const REPORT_COUNTING = 3;
+
 export const reportSnapshotSchema = z.object({
   version: z.literal(2),
+  counting: z.number().optional(),
   preparedAt: z.string(),
   period: z.object({ start: z.string(), end: z.string(), days: z.number() }),
   agency: z.object({

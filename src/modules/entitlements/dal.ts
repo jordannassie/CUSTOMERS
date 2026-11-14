@@ -1,9 +1,14 @@
 import "server-only";
+import { cache } from "react";
 import { getBalance } from "@/modules/credits";
 import { createServiceClient } from "@/lib/supabase/service";
+import { isAbandonedJob } from "@/lib/scan-job-staleness";
 import type { AgencyFacts, BusinessFacts, PlanLimits } from "./service";
 
 // Loads the facts the rules need. Callers check the user may see this agency or business first.
+// Each loader runs once per page render (React's cache): the Overview's scan button and its competitor limit both ask
+// (perf fix #3). Outside a render (Server Actions, the scan worker) React's cache does nothing, so a check that gates
+// a write always reads fresh.
 
 // A business with no subscription item yet gets the smallest plan's limits, unless it is still being set up with a
 // plan chosen: then it gets that plan's, so a Pro pick can add Pro's competitors and questions during setup.
@@ -28,7 +33,7 @@ function countOf(what: string, result: Result<unknown>): number {
   return result.count ?? 0;
 }
 
-export async function loadAgencyFacts(agencyId: string): Promise<AgencyFacts> {
+export const loadAgencyFacts = cache(async (agencyId: string): Promise<AgencyFacts> => {
   const db = createServiceClient();
   const [agency, businesses, balance] = await Promise.all([
     db.from("agencies").select("id, status, trial_ends_at, stripe_subscription_id, is_test").eq("id", agencyId).single(),
@@ -50,8 +55,9 @@ export async function loadAgencyFacts(agencyId: string): Promise<AgencyFacts> {
     trialOver: row.status === "trialing" && row.trial_ends_at !== null && Date.parse(row.trial_ends_at) < Date.now(),
     // Same line as the admin list's "signup unfinished" (admin/agencies displayStatus).
     planStarted: row.status !== "trialing" || row.trial_ends_at !== null || row.stripe_subscription_id !== null || row.is_test,
+    isTest: row.is_test,
   };
-}
+});
 
 /**
  * Whether this business is one of the agency's set-up businesses, the ones loadAgencyFacts counts. A draft
@@ -68,18 +74,14 @@ export async function isCountedBusiness(agencyId: string, businessId: string): P
   return countOf("business", result) > 0;
 }
 
-export async function loadBusinessFacts(businessId: string): Promise<BusinessFacts> {
+export const loadBusinessFacts = cache(async (businessId: string): Promise<BusinessFacts> => {
   const db = createServiceClient();
   const [business, subscription, questions, competitors, openJobs, onPlan] = await Promise.all([
     db.from("businesses").select("id, agency_id, owner_user_id, status, requested_plan_id").eq("id", businessId).single(),
     db.from("business_subscriptions").select("plan_id").eq("business_id", businessId).maybeSingle(),
     db.from("tracked_prompts").select("id", { count: "exact", head: true }).eq("business_id", businessId).eq("active", true),
     db.from("business_competitors").select("id", { count: "exact", head: true }).eq("business_id", businessId),
-    db
-      .from("scan_jobs")
-      .select("id", { count: "exact", head: true })
-      .eq("business_id", businessId)
-      .in("status", ["queued", "running"]),
+    db.from("scan_jobs").select("status, run_after, locked_at").eq("business_id", businessId).in("status", ["queued", "running"]),
     // The same rule the schedule uses (enqueue_due_scans, set_next_scan_at), so the app and the database agree.
     db.rpc("scan_job_business_on_plan", { p_business_id: businessId }),
   ]);
@@ -98,10 +100,11 @@ export async function loadBusinessFacts(businessId: string): Promise<BusinessFac
     maxCompetitors: plan.max_competitors,
     activeQuestionCount: countOf("questions", questions),
     competitorCount: countOf("competitors", competitors),
-    hasOpenScan: countOf("scan jobs", openJobs) > 0,
+    // An abandoned job (the worker never finished it) no longer blocks Run scan; startScan marks it failed first.
+    hasOpenScan: (check("scan jobs", openJobs) ?? []).some((j) => !isAbandonedJob({ status: j.status, runAfter: j.run_after, lockedAt: j.locked_at })),
     onPlan: check("plan status", onPlan) !== false,
   };
-}
+});
 
 /**
  * The plan a draft business was set up for: the new-business plan picker's choice, else the pricing page's choice kept

@@ -60,10 +60,11 @@ describe("questionTrends", () => {
     expect(t.own.map((r) => r.id)).toEqual(["q3"]);
   });
 
-  it("names the questions that moved most over the last 4 weeks", () => {
+  it("compares each question's latest scan with the scan before, like the Questions page (MVP test, 2026-11-14)", () => {
     const t = questionTrends([q1, q2, mine], runs, saved, NOW);
-    expect(t.better).toEqual([{ ...q1, now: { named: 3, checked: 3 }, then: { named: 0, checked: 3 }, thenAt: daysAgo(28), change: 1 }]);
-    expect(t.worse.map((m) => [m.id, m.now, m.then])).toEqual([["q2", { named: 0, checked: 3 }, { named: 2, checked: 3 }]]);
+    expect(t.comparable).toBe(true);
+    expect(t.better).toEqual([{ ...q1, now: { named: 3, checked: 3 }, then: { named: 2, checked: 3 }, thenAt: daysAgo(7), change: expect.closeTo(1 / 3) }]);
+    expect(t.worse.map((m) => [m.id, m.now, m.then])).toEqual([["q2", { named: 0, checked: 3 }, { named: 1, checked: 2 }]]);
   });
 
   it("leaves out paused questions, scans older than the window for movers, and has nothing before any scan", () => {
@@ -75,7 +76,7 @@ describe("questionTrends", () => {
     const old = questionTrends([q1], [run("x", 70), run("y", 63)], [...checks("x", "q1", []), ...checks("y", "q1", ["openai"])], NOW);
     expect(old.rows[0].cells.map((c) => c?.change)).toEqual([null, "up"]);
     expect(old.better).toEqual([]);
-    expect(questionTrends([q1], [], [], NOW)).toEqual({ scans: [], rows: [{ ...q1, cells: [] }], own: [], better: [], worse: [] });
+    expect(questionTrends([q1], [], [], NOW)).toEqual({ scans: [], rows: [{ ...q1, cells: [] }], own: [], comparable: false, better: [], worse: [] });
   });
 
   it("counts a scan only for the weeks it has answers, and one AI once", () => {

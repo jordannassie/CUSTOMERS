@@ -97,17 +97,6 @@ export function citedHosts(citations: unknown): string[] {
 
 const isModel = (p: string): p is ProviderId => (MODEL_ORDER as string[]).includes(p);
 
-/** Each answer once, the way the score counts them (BUG-129): a cached answer saved again is the same answer. */
-export function uniqueAnswers(checks: SourceCheck[]): SourceCheck[] {
-  const seen = new Set<string>();
-  return checks.filter((c) => {
-    if (!c.answerKey) return true;
-    if (seen.has(c.answerKey)) return false;
-    seen.add(c.answerKey);
-    return true;
-  });
-}
-
 export function mentionsYou(kind: SubKind, answers: number, withoutYou: number): MentionsYou {
   if (kind === "own") return "own";
   if (kind === "competitor") return "competitor";
@@ -119,7 +108,9 @@ type Tally = { answers: number; withoutYou: number; models: Set<ProviderId>; nam
 
 export function sourcesView(allChecks: SourceCheck[], ctx: SourcesContext): SourcesView {
   const { ownDomain, tool = null } = ctx;
-  const unique = uniqueAnswers(allChecks);
+  // Every answer counts, as in the score (scanning/scoring.ts): a reused answer saved again is another answer the AI
+  // gave, so site counts and their "of N answers" match the Overview, Compare, Actions and the report.
+  const unique = allChecks;
   // Competitor sites come from every answer, so switching the tool filter never changes a site's kind.
   const you = ctx.businessName ?? null;
   const aiNamed = [...new Set(unique.flatMap((c) => c.names ?? []))].filter((n) => n !== you);

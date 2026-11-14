@@ -9,11 +9,14 @@ import { BrandingForm, type SaveBrandingAction } from "./BrandingForm";
  */
 export function ReportBranding({
   agencyName,
+  agencyNameSet = true,
   logoSrc,
   branding,
   save,
 }: {
   agencyName: string;
+  /** False when no agency name is saved yet: the PDF then uses the business's name, and this says so. */
+  agencyNameSet?: boolean;
   logoSrc: string | null;
   branding: { accent: string; contactEmail: string | null; bookingUrl: string | null };
   save: SaveBrandingAction;
@@ -35,11 +38,15 @@ export function ReportBranding({
           </div>
           <span className="min-w-0 text-sm font-medium break-words">{agencyName}</span>
         </div>
-        <p className="text-xs text-muted-foreground">
-          {logoSrc ? "Your agency name and logo appear on the PDF cover." : "Add your agency logo to show it on the PDF cover."}
+        <p className="text-xs text-muted-foreground" data-testid="branding-name-note">
+          {!agencyNameSet
+            ? "No agency name yet, so the PDF uses the business name. Add your agency name in Settings."
+            : logoSrc
+              ? "Your agency name and logo appear on the PDF cover."
+              : "Add your agency logo to show it on the PDF cover."}
         </p>
-        <Button asChild variant="outline" size="sm" className="w-fit">
-          <Link href="/settings#agency">{logoSrc ? "Change logo in Settings" : "Add logo in Settings"}</Link>
+        <Button asChild variant="outline" size="sm" className="w-fit min-h-6">
+          <Link href="/settings#agency">{!agencyNameSet ? "Add agency name in Settings" : logoSrc ? "Change logo in Settings" : "Add logo in Settings"}</Link>
         </Button>
       </div>
       <BrandingForm initial={branding} save={save} />

@@ -1,6 +1,7 @@
 // The Actions board (dashboard redesign, 2026-10-27): five columns, where each fix is applied, and one fix never added
 // twice. Actions are the saved opportunities (migration 078), so the scan's fixes keep arriving as Suggested. Pure.
 import { byImpactThenRank, rankOf } from "@/lib/fix-order";
+import type { ActionEffect } from "../effect/service";
 import { WHERE_LABEL, whereOf, type Where } from "@/lib/fix-where";
 import { WHERE_ORDER, competitorsIn } from "../where";
 import { splitSteps } from "../service";
@@ -134,12 +135,14 @@ export type ActionItem = {
   source: "scan" | "comparison" | "sources" | "manual" | "report";
   createdAt: string;
   completedAt: string | null;
+  /** For a done action: waiting for scans, or the change since (B-98); null otherwise. */
+  effect: ActionEffect | null;
   dueDate: string | null;
   assignedToYou: boolean;
   about: { id: string; name: string }[];
 };
 
-const toImpact = (i: string): ActionItem["impact"] => (i === "high" || i === "low" ? i : "medium");
+export const toImpact = (i: string): ActionItem["impact"] => (i === "high" || i === "low" ? i : "medium");
 const clean = (t: string | null | undefined) => (t?.trim() ? t.trim() : null);
 
 export type FixPlaceInput = {
@@ -187,6 +190,7 @@ export function toActionItems(rows: ActionRow[], competitors: { id: string; name
         source: (SOURCES.has(r.source ?? "") ? r.source : "scan") as ActionItem["source"],
         createdAt: r.created_at,
         completedAt: r.completed_at ?? null,
+        effect: null,
         dueDate: r.due_date ?? null,
         assignedToYou: !!you && r.assignee_id === you,
         about: competitorsIn(text, names).map((n) => competitors.find((c) => c.name === n)!),
@@ -243,4 +247,4 @@ export function statusUpdate(status: ActionStatus, now: Date) {
 }
 
 /** What "Add to Actions" shows once added: "In Actions · To do". */
-export type ActionState = { id: string; status: ActionStatus };
+export type ActionState = { id: string; status: ActionStatus; impact?: ActionItem["impact"] };

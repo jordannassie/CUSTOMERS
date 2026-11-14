@@ -3,8 +3,8 @@
 import { refresh } from "next/cache";
 import { AuthError, authFailure, requireAdmin, type ActionResult, type SessionUser } from "@/modules/auth";
 import { accountRestoredEmail, sendSafely } from "@/modules/account";
-import { PERIOD_GRACE_MS, type PauseOutcome } from "@/modules/billing";
-import { adminAdjustCredits, extendTrialGrant } from "@/modules/credits";
+import { PERIOD_GRACE_MS, TRIAL_CREDITS, type PauseOutcome } from "@/modules/billing";
+import { adminAdjustCredits, extendTrialGrant, grantCredits } from "@/modules/credits";
 import { auditedChange, changed, PartialChangeError, unchanged, type AuditedResult } from "../dal";
 import { changeStatus, ownerEmail, readAgencyState, setTestFlag, setTrialEnd, statusBeforeSuspend, type AgencyState } from "./state/dal";
 import { adjustCreditsInput, extendTrialInput, markTestInput, reasonInput } from "./schema";
@@ -237,8 +237,11 @@ export async function markAgencyTest(input: unknown): Promise<Done> {
     if (!r.ok) return r;
     if (r.state.isTest === isTest) return { ok: false, status: 409, error: isTest ? "Already a test agency." : "Already a real agency." };
 
-    return await audited<Done>("agency.mark_test", agencyId, { reason, is_test: isTest }, async () => {
+    // No card step (D-61) means no trial credits: a test agency gets the trial amount once, keyed so it never repeats.
+    const starter = isTest ? TRIAL_CREDITS : 0;
+    return await audited<Done>("agency.mark_test", agencyId, { reason, is_test: isTest, starter_credits: starter }, async () => {
       await setTestFlag(agencyId, isTest);
+      if (isTest) await grantCredits({ agencyId, source: "admin", sourceId: `test_agency_start:${agencyId}`, amount: starter, expiresAt: null });
       return changed(DONE);
     });
   } catch (error) {

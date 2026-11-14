@@ -13,6 +13,7 @@ import { compareHref } from "@/lib/compare-href";
 import { fixCardId } from "@/lib/fix-where";
 import { STATUS_TEXT, type ActionItem, type ActionStatus } from "@/modules/opportunities/board/service";
 import { IMPACT, Moves, SHORT_DAY } from "./ActionCard";
+import { ActionEffectNote } from "./ActionEffectNote";
 import { PILL_VARIANT } from "@/components/app/pills";
 
 const ORDER: ActionStatus[] = ["todo", "in_progress", "suggested", "done", "dismissed"];
@@ -86,7 +87,7 @@ export function ActionsList({
                       type="button"
                       aria-expanded={expanded}
                       onClick={() => setOpen(expanded ? null : item.id)}
-                      className="flex items-start gap-1.5 text-left text-sm font-semibold outline-none hover:underline focus-visible:underline"
+                      className="flex min-h-6 items-start gap-1.5 text-left text-sm font-semibold outline-none hover:underline focus-visible:underline"
                     >
                       <ChevronDown className={cn("mt-0.5 size-4 shrink-0 text-muted-foreground transition-transform", expanded && "rotate-180")} aria-hidden="true" />
                       {item.title}
@@ -118,6 +119,7 @@ export function ActionsList({
                 </div>
                 {expanded && (
                   <div className="mt-3 flex flex-col gap-3 border-t border-border pt-3 text-[length:calc(13px*var(--px,1))] lg:ml-[calc(5.5rem+1rem)]">
+                    {item.status === "done" && <ActionEffectNote effect={item.effect} />}
                     {item.evidence && <p className="whitespace-pre-line">{item.evidence}</p>}
                     {item.usesGoogle && <GoogleAttribution what="Review counts and ratings" />}
                     {item.googleHidden && (

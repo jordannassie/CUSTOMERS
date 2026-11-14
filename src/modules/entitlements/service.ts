@@ -20,6 +20,8 @@ export type AgencyFacts = {
    * "trialing", or it is a test agency (D-61, no card step). False while the first business is still being set up.
    */
   planStarted: boolean;
+  /** A test agency (D-61): its scans use sample answers, and only an admin adds its credits. */
+  isTest?: boolean;
 };
 
 export type BusinessFacts = {
@@ -47,6 +49,7 @@ export const REASONS = {
   ok: "",
   trialBusinessLimit: `Your trial includes ${TRIAL_MAX_BUSINESSES} businesses. Upgrade to add more.`,
   outOfCredits: "You're out of credits. Buy a top-up or upgrade.",
+  testOutOfCredits: "This test account has no credits left. An admin can add more in Admin, Agencies.",
   scanAlreadyQueued: "A scan is already running. You can start another when it finishes.",
   notYourBusiness: "This business is not in your account.",
   pastDue: "Your last payment didn't go through. Update your card to continue.",
@@ -125,6 +128,8 @@ export function canStartScan(agency: AgencyFacts, business: BusinessFacts): Enti
   // M1: a business taken off the plan keeps its data but is never scanned again, with top-ups or without.
   if (!business.onPlan) return deny(REASONS.offPlan);
   // D-54: no new scan at 0 or below.
+  // The worker saves this exact text on a skipped job; scan_job_settle_failure (migration 069) matches it to try again
+  // at the next 02:00 run, so a test agency's wording is swapped in only where it is shown (jobs/actions.ts).
   if (agency.balance <= 0) return deny(REASONS.outOfCredits);
   if (business.hasOpenScan) return deny(REASONS.scanAlreadyQueued);
   return allow;

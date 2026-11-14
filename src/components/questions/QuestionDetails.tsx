@@ -45,7 +45,7 @@ export function QuestionDetails({ question, businessName, state, controls }: Pro
       ) : (
         <>
           <TabsPrimitive.Root
-            defaultValue={state.answers[0].model}
+            defaultValue={state.answers[0].id}
             orientation="vertical"
             className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] lg:items-start"
             data-testid="answers"
@@ -56,8 +56,8 @@ export function QuestionDetails({ question, businessName, state, controls }: Pro
             </div>
             {state.answers.map((a) => (
               <TabsPrimitive.Content
-                key={a.model}
-                value={a.model}
+                key={a.id}
+                value={a.id}
                 data-testid="answer"
                 data-model={a.model}
                 className="min-w-0 rounded-lg border border-border bg-surface outline-none focus-visible:ring-3 focus-visible:ring-ring/50 lg:sticky lg:top-0"

@@ -24,8 +24,10 @@ export const reasonInput = base;
 
 export const markTestInput = base.extend({ isTest: z.boolean() });
 
-// Display statuses (service.ts displayStatus), so "On trial" counts only trials that are still running.
+// Display statuses (service.ts displayStatus), so "On trial" counts only trials that are still running. "customers" is
+// every agency that is neither a test agency nor deleted: the same set the admin Overview counts (QA round 2, item 7).
 export const AGENCY_FILTERS = [
+  "customers",
   "trialing",
   "trial_ended",
   "signup_unfinished",

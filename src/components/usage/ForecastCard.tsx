@@ -32,7 +32,11 @@ export function ForecastCard({ forecast: f, buyCreditsHref }: Props) {
 
   let headline: string;
   let detail: string;
-  if (f.scans === 0) {
+  if (!f.autoScans) {
+    // Before launch customers' scheduled scans are off; only Run scan uses credits (QA round 2).
+    headline = "Automatic scans start at launch";
+    detail = `Until then, only scans you start with Run scan use credits. You have ${count(Math.max(0, f.available))}.`;
+  } else if (f.scans === 0) {
     headline = "No scans scheduled";
     detail = `Nothing is scheduled to run ${before(f)}, so no credits will be used.`;
   } else if (short) {

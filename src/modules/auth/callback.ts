@@ -35,8 +35,14 @@ function cancelledByUser(params: URLSearchParams): boolean {
  */
 export function callbackFailurePath(flow: CallbackFlow, stage: CallbackStage, params: URLSearchParams, usedCode = false): string {
   switch (flow) {
-    case "signup":
-      return `/login?error=${stage === "exchange" && usedCode ? "signup_confirmed" : "signup_link_invalid"}`;
+    case "signup": {
+      if (!(stage === "exchange" && usedCode)) return "/login?error=signup_link_invalid";
+      // The link was opened in another browser: the email is confirmed, so after logging in the person goes on to
+      // where the link was going, with the plan picked on the pricing page (?plan= inside next; MVP test, 2026-11-14).
+      const next = params.get("next");
+      const keep = next && next.startsWith("/") && !next.startsWith("//") ? `&next=${encodeURIComponent(next)}` : "";
+      return `/login?error=signup_confirmed${keep}`;
+    }
     case "recovery":
       return "/login?error=reset_link_invalid";
     case "email_change":

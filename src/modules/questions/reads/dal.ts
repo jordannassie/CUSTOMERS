@@ -2,7 +2,8 @@ import "server-only";
 import { loadLastScanFailures, scanNoticeText } from "@/modules/overview";
 import { CHECK_MODELS, type ProviderId } from "@/modules/scanning";
 import { createServiceClient } from "@/lib/supabase/service";
-import { latestAnswers, type QuestionAnswer } from "../answers";
+import { windowAnswers, type QuestionAnswer } from "../answers";
+import { HISTORY_WINDOW_DAYS } from "../history";
 import type { HistoryRow } from "../history";
 import { askedInScan, checkKey, failedChecks, type ScanQuestion } from "../last-scan";
 import { type FixText } from "../skipped";
@@ -92,13 +93,16 @@ export async function readLastScan(businessId: string, models: ProviderId[], que
   };
 }
 
-// Enough rows to find the newest answer from every model, even after a few scans with one model failing.
-const ANSWER_ROWS = 30;
+// More than 30 days of daily scans on three AIs ever give one question.
+const ANSWER_ROWS = 120;
 
 /** "Orange, CA" for the guide sites' fix. */
 export const placeOf = (city: string | null, region: string | null) => [city, region].filter(Boolean).join(", ") || null;
 
-/** The latest answer per model for one question (BUG-089); null when the question is not this agency's. */
+/**
+ * Every answer of the last 30 days for one question, newest first, from the same rows its "Answers, 30 days" counts;
+ * null when the question is not this agency's.
+ */
 export async function loadQuestionAnswers(agencyId: string, businessId: string, questionId: string): Promise<QuestionAnswer[] | null> {
   const db = createServiceClient();
   const [business, question, fixes] = await Promise.all([
@@ -108,16 +112,19 @@ export async function loadQuestionAnswers(agencyId: string, businessId: string, 
   ]);
   for (const r of [business, question]) if (r.error) throw new Error(`Questions: ${r.error.message}`);
   if (!business.data || !question.data) return null;
-  // The rows that count: never sample answers once the agency is real (migration 044).
+  // The rows the 30-day count uses (readHistory): counted, each reused answer once, inside the same window.
+  const since = new Date(Date.now() - HISTORY_WINDOW_DAYS * 86_400_000).toISOString();
   const { data, error } = await db
-    .from("visibility_results_counted")
-    .select("provider, created_at, business_mentioned, competitors_mentioned, answer_text, cached, extracted_names, cited_sources")
+    .from("visibility_results_unique")
+    .select("id, provider, created_at, business_mentioned, competitors_mentioned, answer_text, cached, extracted_names, cited_sources")
     .eq("business_id", businessId)
     .eq("tracked_prompt_id", questionId)
+    .gt("created_at", since)
     .order("created_at", { ascending: false })
     .limit(ANSWER_ROWS);
   if (error) throw new Error(`Questions: could not load answers: ${error.message}`);
   const rows = data.map((r) => ({
+    id: r.id ?? undefined,
     provider: r.provider ?? "",
     created_at: r.created_at ?? "",
     business_mentioned: r.business_mentioned ?? false,
@@ -129,7 +136,7 @@ export async function loadQuestionAnswers(agencyId: string, businessId: string, 
   }));
   // "Why you were skipped" opens the saved fix for a site the answer used, or offers to add one.
   const b = business.data;
-  return withFixOptions(latestAnswers(rows, b.models.filter(isModel)), fixes, {
+  return withFixOptions(windowAnswers(rows, b.models.filter(isModel)), fixes, {
     ownDomain: b.domain,
     place: placeOf(b.primary_city, b.primary_region),
     question: () => question.data!.prompt,

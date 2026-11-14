@@ -1,7 +1,7 @@
 import type { NextRequest } from "next/server";
 import { requireUser } from "@/modules/auth";
 import { checkRateLimit } from "@/modules/rate-limit";
-import { fetchSiteIcon, iconQuery } from "@/modules/site-icons";
+import { fetchSiteIcon, iconQuery, keepIcon, keptIcon, type SiteIconResult } from "@/modules/site-icons";
 
 // A website's icon for the app's lists (Sources, Compare, the leaderboard): GET /api/icon?domain=yelp.com. Signed-in
 // users only. It asks Google's and DuckDuckGo's favicon services, then the site's own home page and the icons it
@@ -22,11 +22,20 @@ export async function GET(request: NextRequest): Promise<Response> {
   }
   const parsed = iconQuery.safeParse({ domain: request.nextUrl.searchParams.get("domain") ?? "" });
   if (!parsed.success) return new Response(null, { status: 400, headers: NO_STORE });
+  const domain = parsed.data.domain;
+  // An icon this server already fetched makes no outside request, so it needs no allowance (perf plan #6).
+  const kept = keptIcon(domain);
+  if (kept) return respond(kept);
   // Each icon can mean several outside requests, so a user gets a generous hourly allowance, not an open relay.
   const limit = await checkRateLimit("site_icon", userId);
   if (limit !== "allowed") return new Response(null, { status: 429, headers: NO_STORE });
 
-  const icon = await fetchSiteIcon(parsed.data.domain);
+  const icon = await fetchSiteIcon(domain);
+  keepIcon(domain, icon);
+  return respond(icon);
+}
+
+function respond(icon: SiteIconResult): Response {
   // A failed ask is a 204, not a 503: the image falls back to the letter all the same, without a "Failed to load
   // resource" error in the browser console for every unreachable site (mockup-ui shows icons on every page).
   if (icon.kind === "failed") return new Response(null, { status: 204, headers: NO_STORE });

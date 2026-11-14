@@ -7,7 +7,7 @@ import { INDUSTRIES, INDUSTRY_LABELS, isIndustry } from "@/lib/industries";
 import { isVagueOtherLabel, OTHER_LABEL_HINT } from "@/lib/other-label";
 import type { ActionResult } from "@/modules/auth";
 import type { SettingsBusiness } from "@/modules/settings";
-import { ALIASES_MAX, AREA_MAX, PHONE_MAX, SERVICES_MAX } from "@/modules/settings/schema";
+import { ADDRESS_MAX, ALIASES_MAX, AREA_MAX, PHONE_MAX, SERVICES_MAX } from "@/modules/settings/schema";
 import { aliasesProblem, aliasExample, normalizeWebsite, parseServices, phoneProblem, PROFILE_FIELDS, servicesProblem, type ProfileField } from "@/modules/settings/service";
 import { Button } from "@/components/ui/button";
 import { CountrySelect } from "@/components/ui/country-select";
@@ -38,6 +38,7 @@ export function BusinessProfileForm({ business, save }: { business: SettingsBusi
     country: business.country,
     area: business.area,
     phone: business.phone,
+    address: business.address,
   };
   const [form, setForm] = useState(initial);
   const [saved, setSaved] = useState(initial);
@@ -191,6 +192,9 @@ export function BusinessProfileForm({ business, save }: { business: SettingsBusi
           </Row>
           <Row label="Phone" htmlFor="profile-phone" error={fields.errors.phone}>
             <Input {...field("phone")} maxLength={PHONE_MAX} type="tel" autoComplete="tel" {...fields.fieldProps("phone")} />
+          </Row>
+          <Row label="Street address" htmlFor="profile-address" hint="The same as on your Google listing and website.">
+            <Input {...field("address")} maxLength={ADDRESS_MAX} autoComplete="street-address" />
           </Row>
         </div>
 

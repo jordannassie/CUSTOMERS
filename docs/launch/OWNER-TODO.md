@@ -82,14 +82,24 @@ Answer each in `docs/DECISIONS.md`, or tell D, who records it.
 
 ## 5. Labelling and AI checks (people, about 1 to 2 weeks)
 
-How to label: each suite's `evals/<suite>/README.md`. Copy `dataset.v1.jsonl.example` to `dataset.v1.jsonl` and fill in the correct answer for each case by hand, never from the model being tested. Run `npm run evals`, then `npm run evals:ai`, and save the result in `evals/results/`.
+How to label: a spreadsheet per suite, no code needed. The developer runs the export, the person fills the label column in Google Sheets or Excel, the developer runs the import. Full steps in each suite's `evals/<suite>/README.md` ("Labelling with a spreadsheet"). The scripts never call a model and never fill a label themselves.
 
-- [ ] B-24 mention detection: 150 to 200 answers, "named or not" (`evals/mention-detection`).
-- [ ] B-25 "also recommended" names (`evals/entity-extraction`).
-- [ ] B-32 question library review, about 40 templates per industry (`evals/prompt-templates`).
-- [ ] B-33 question picking (`evals/question-picking`).
-- [ ] B-34 auto-fill, 30 to 50 businesses (`evals/business-autofill`).
-- [ ] B-51 "why competitors win" (`evals/why-competitors-win`).
+- Export: `LABEL_SUITE=<suite> npm run label:export` writes `evals/results/labelling/<suite>.csv` (git-ignored).
+- Import: `LABEL_SUITE=<suite> LABELLER="Your name" npm run label:import` writes `evals/<suite>/dataset.v1.jsonl`, checked by the suite's own reader.
+- Then `npm run evals` (free), and `npm run evals:ai` (paid) to save a baseline in `evals/results/` (B-75).
+
+- [ ] B-24 mention detection, 150 to 200 cases: `LABEL_SUITE=mention-detection LABEL_COUNT=100 npm run label:export`, fill `mentioned` (yes or no) and `position`.
+- [ ] B-25 "also recommended" names, 50 to 100 answers: `LABEL_SUITE=entity-extraction LABEL_COUNT=80 npm run label:export`, fill `names` (separated by `|`, or `none`).
+- [ ] B-32 question library review, 405 draft templates (about 40 per industry, 6 restaurant ones added by hand for sit-down and BBQ places). **Until this is done the library is empty and onboarding uses questions the AI writes itself, which are weaker** (a sit-down BBQ restaurant got "fast food" questions in testing).
+  1. Developer: `npm run question-library:review` writes `evals/results/question-library/review.csv`, one row per template with automatic flags to check first (unclear intent, another industry's words, brand names, near duplicates, "near me", hand-added), and prints templates per industry and intent.
+  2. Reviewer: in Google Sheets or Excel, set `action` on every row: `keep`, `edit` (fill `new_template`, `new_tags` with `|` between tags, or `new_intent`) or `delete`. Add a new template as a new row with no `id`, `action` = `add`, and `industry`, `intent`, `template`, `tags`. Download it back as CSV to the same path.
+  3. Developer: `npm run question-library:import-review` applies the sheet to `supabase/seed/question-library.v1.json` and runs the B-32 checks. The file stays a draft. Repeat steps 1 to 3 until the reviewer is happy.
+  4. Reviewer approves: in the file set `"status": "approved"` and `"review": { "reviewer": "<name>", "reviewedAt": "<YYYY-MM-DD>" }`. Developer runs `npm run question-library:validate`, then `npm run question-library:seed` to load it on the local stack and checks onboarding picks from it.
+  5. Developer: `npm run question-library:migration` writes `supabase/migrations/NNN_question_library_v1.sql` from the approved file (it refuses a draft), adds it to `supabase/migrations/README.md`, and commits both, so the library reaches live with the other migrations on go-live day (the seed script refuses the live database on purpose).
+  6. New industries such as car dealer need a code change first (the industry list in `src/lib/industries.ts` feeds onboarding and the auto-fill prompt, decision D-62), then templates for them.
+- [ ] B-33 question picking, after B-32: `LABEL_SUITE=question-picking LABEL_BUSINESSES_CSV=businesses.csv npm run label:export` with 20 to 30 public businesses, mark `acceptable` yes per template (15 to 25 per business).
+- [ ] B-34 auto-fill, 30 to 50 businesses: `LABEL_SUITE=business-autofill LABEL_DOMAINS="a.com,b.com" npm run label:export`, fill what the website and Google state. Decide D-73 first (Google values kept in the repo).
+- [ ] B-51 "why competitors win": a developer saves 20 to 40 writer outputs as `cases.jsonl` (paid run), then `LABEL_SUITE=why-competitors-win LABEL_CASES_FILE=cases.jsonl npm run label:export`; grade the 4 checks pass or fail.
 - [ ] B-75 save a baseline for every suite in `evals/results/`.
 - [ ] B-76 ask 10 questions in the real ChatGPT, Claude and Perplexity apps and compare them with our saved answers. Write the result in `evals/results/`.
 

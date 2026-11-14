@@ -7,7 +7,8 @@ import type { ReportSnapshot } from "../snapshot-schema";
 export const SECTIONS = [
   { key: "summary", title: "Summary", label: "Summary" },
   { key: "knows", title: "What AI knows about you", label: "What AI knows about you" },
-  { key: "behind", title: "Why you are behind", label: "Why you are behind" },
+  // "Who AI names instead", not "Why you are behind": it reads true when you lead or nobody is named yet (MVP test).
+  { key: "behind", title: "Who AI names instead", label: "Who AI names instead" },
   { key: "plan", title: "Action plan and where to fix", label: "Action plan" },
   { key: "roadmap", title: "90 day roadmap", label: "90 day roadmap" },
   { key: "method", title: "Method and glossary", label: "Method and glossary" },
