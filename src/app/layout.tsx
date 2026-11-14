@@ -2,11 +2,12 @@ import type { Metadata } from "next";
 import React from "react";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-
-const BRAND_ICON =
-  "https://wsxusvapciexemfvtadm.supabase.co/storage/v1/object/public/STORAGE/images/logos/Customerdirectlogo.jpg";
-const LOGO_URL =
-  "https://wsxusvapciexemfvtadm.supabase.co/storage/v1/object/public/STORAGE/images/people/heroimage.png";
+import { Toaster } from "@/components/ui/sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { DEV_MEASURE_GUARD } from "@/lib/dev/measure-guard";
+import { env } from "@/lib/env";
+import { SITE_NAME, SITE_URL } from "@/lib/site-metadata";
+import { jsonLdHtml } from "@/lib/json-ld";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -18,54 +19,26 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-const siteUrl = "https://customers.direct";
+const defaultTitle = "Customers.Direct: see if AI recommends your business";
+const description =
+  "Check whether ChatGPT, Claude and Perplexity recommend your business for the questions local customers ask, see why competitors win, and get steps to fix it.";
 
+// Link preview images come from opengraph-image.tsx and the favicon from icon.tsx.
 export const metadata: Metadata = {
-  metadataBase: new URL(siteUrl),
-  title: {
-    default: "Customers.Direct: AI sends customers directly to your business",
-    template: "%s | Customers.Direct",
-  },
-  description:
-    "Customers.Direct checks whether ChatGPT, Claude and Perplexity recommend your business, shows why competitors win, and gives you steps to fix it.",
-  icons: {
-    icon: BRAND_ICON,
-    shortcut: BRAND_ICON,
-    apple: BRAND_ICON,
-  },
-  openGraph: {
-    type: "website",
-    siteName: "Customers.Direct",
-    url: siteUrl,
-    title: "Customers.Direct: AI sends customers directly to your business",
-    description:
-      "Customers.Direct checks whether ChatGPT, Claude and Perplexity recommend your business, shows why competitors win, and gives you steps to fix it.",
-    images: [
-      {
-        url: LOGO_URL,
-        width: 1200,
-        height: 630,
-        alt: "Customers.Direct: AI sends customers directly to your business",
-      },
-    ],
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "Customers.Direct: AI sends customers directly to your business",
-    description:
-      "Customers.Direct checks whether ChatGPT, Claude and Perplexity recommend your business, shows why competitors win, and gives you steps to fix it.",
-    images: [LOGO_URL],
-  },
+  metadataBase: new URL(SITE_URL),
+  title: { default: defaultTitle, template: `%s | ${SITE_NAME}` },
+  description,
+  openGraph: { type: "website", siteName: SITE_NAME, url: "/", title: defaultTitle, description },
+  twitter: { card: "summary_large_image", title: defaultTitle, description },
 };
 
 const organizationJsonLd = {
   "@context": "https://schema.org",
   "@type": "Organization",
-  name: "Customers.Direct",
-  url: siteUrl,
-  logo: LOGO_URL,
-  description:
-    "Customers.Direct checks whether ChatGPT, Claude and Perplexity recommend your business, shows why competitors win, and gives you steps to fix it.",
+  name: SITE_NAME,
+  url: SITE_URL,
+  logo: `${SITE_URL}/images/logos/logo-black.png`,
+  description,
   sameAs: [
     "https://www.instagram.com/customersdirect",
     "https://www.facebook.com/profile.php?id=61592851422075",
@@ -76,15 +49,21 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html
       lang="en"
+      // globals.css sets smooth scrolling; this keeps route changes jumping straight to the top (Next 16).
+      data-scroll-behavior="smooth"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <head>
+        {env.NODE_ENV === "development" && <script dangerouslySetInnerHTML={{ __html: DEV_MEASURE_GUARD }} />}
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
+          dangerouslySetInnerHTML={jsonLdHtml(organizationJsonLd)}
         />
       </head>
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        <TooltipProvider>{children}</TooltipProvider>
+        <Toaster />
+      </body>
     </html>
   );
 }

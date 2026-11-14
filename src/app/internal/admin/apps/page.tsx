@@ -1,49 +1,66 @@
-import { requireAdmin } from "@/lib/admin/require";
+import { AppWindow } from "lucide-react";
+import { requireAdmin } from "@/modules/auth";
 import { DIRECTORY_CATALOG } from "@/modules/apps-directory/catalog";
-import { listDirectoryOverrides, listRecentClicks } from "@/modules/apps-directory/dal";
-import { mergeCatalog } from "@/modules/apps-directory/service";
+import { listClickTotals, listDirectoryOverrides, listRecentClicks } from "@/modules/apps-directory/dal";
 import { APP_CATEGORIES } from "@/modules/apps-directory/types";
-import { AppsAdminForm } from "./AppsAdminForm";
+import AdminEmpty from "../_components/admin-empty";
+import { formatDate, plural } from "../_components/format";
+import AdminPageHeader from "../_components/page-header";
+import { adminApps, appName, clickWords } from "./_components/admin-apps";
+import { AppsAdmin } from "./_components/apps-admin";
 
-export const metadata = { title: "AI apps | Admin", robots: { index: false } };
+export const metadata = { title: "AI apps" };
 
 export default async function AdminAppsPage() {
-  await requireAdmin();
-  const overrides = await listDirectoryOverrides();
-  const clicks = await listRecentClicks();
-  const apps = mergeCatalog(DIRECTORY_CATALOG, overrides.apps).sort((a, b) => a.name.localeCompare(b.name));
+  await requireAdmin({ next: "/internal/admin/apps" });
+  const [overrides, clicks, totals] = await Promise.all([listDirectoryOverrides(), listRecentClicks(), listClickTotals()]);
+  const apps = adminApps(DIRECTORY_CATALOG, overrides.apps);
 
   return (
-    <div className="max-w-4xl p-6 sm:p-8">
-      <h1 className="text-[24px] font-bold text-[#111827]">AI apps directory</h1>
-      <p className="mt-2 text-[14px] text-[#6B7280]">
-        Saving an app stores it in directory_apps and overrides the built-in catalog for that slug. Leave affiliate URL empty unless a partnership is approved.
-      </p>
-      {overrides.unavailable ? (
-        <p className="mt-4 rounded-xl border border-[#FDE68A] bg-[#FFFBEB] px-4 py-3 text-[14px] text-[#92400E]">
-          The directory tables are not available yet. Apply migration 025. The public page still uses the built-in catalog.
+    <div className="mx-auto flex w-full max-w-[calc(1200px*var(--px,1))] flex-col gap-4 px-4 py-4 sm:px-6 sm:py-5">
+      <AdminPageHeader
+        title="AI apps"
+        subtitle="The apps on /apps. Saving an app here replaces its built-in values. Leave the affiliate link empty unless a partnership is approved."
+      />
+      {overrides.unavailable && (
+        <p className="rounded-md bg-primary-tint px-4 py-3 text-[length:calc(14px*var(--px,1))] text-foreground">
+          The directory tables are not in this database yet (migration 072). The public page still uses the built-in list.
         </p>
-      ) : null}
-      <AppsAdminForm categoryHint={APP_CATEGORIES.map((category) => category.id).join(", ")} />
-      <ul className="mt-8 flex flex-col gap-2">
-        {apps.map((app) => (
-          <li key={app.slug} className="rounded-xl border border-[#E2E8F0] bg-white px-4 py-3 text-[14px] text-[#111827]">
-            <span className="font-semibold">{app.name}</span>
-            <span className="text-[#6B7280]"> · {app.slug} · {app.categories.join(", ")}</span>
-            {app.affiliateUrl ? <span className="text-[#0866F5]"> · affiliate</span> : null}
-          </li>
-        ))}
-      </ul>
-      <h2 className="mt-10 text-[18px] font-semibold text-[#111827]">Recent clicks</h2>
-      {clicks.unavailable || clicks.clicks.length === 0 ? (
-        <p className="mt-2 text-[14px] text-[#6B7280]">No clicks stored yet.</p>
-      ) : (
-        <ul className="mt-3 flex flex-col gap-1 text-[13px] text-[#374151]">
-          {clicks.clicks.map((click) => (
-            <li key={`${click.slug}-${click.createdAt}`}>{click.createdAt.slice(0, 16).replace("T", " ")} · {click.slug} · {click.source} · {click.destination}</li>
-          ))}
-        </ul>
       )}
+      <AppsAdmin apps={apps} categoryHint={APP_CATEGORIES.map((category) => category.id).join(", ")} />
+
+      {totals.length > 0 && (
+        <section className="flex flex-col gap-3">
+          <h2 className="text-[length:calc(16px*var(--px,1))] font-semibold">Clicks in the last 30 days</h2>
+          <ul className="flex flex-col divide-y divide-border rounded-md border border-border bg-card text-[length:calc(13px*var(--px,1))]">
+            {totals.map((t) => (
+              <li key={t.slug} className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 px-4 py-2">
+                <span className="font-medium">{appName(apps, t.slug)}</span>
+                <span className="text-muted-foreground">
+                  {plural(t.views, "page view", "page views")}, {plural(t.visits, "website visit", "website visits")},{" "}
+                  {plural(t.reviews, "review visit", "review visits")}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      <section className="flex flex-col gap-3">
+        <h2 className="text-[length:calc(16px*var(--px,1))] font-semibold">Recent clicks</h2>
+        {clicks.unavailable || clicks.clicks.length === 0 ? (
+          <AdminEmpty icon={AppWindow} title="No clicks yet">Clicks on the /apps pages show here.</AdminEmpty>
+        ) : (
+          <ul className="flex flex-col gap-1 text-[length:calc(13px*var(--px,1))]">
+            {clicks.clicks.map((click) => (
+              <li key={`${click.slug}-${click.createdAt}`} className="break-words">
+                <span className="text-muted-foreground">{formatDate(click.createdAt, true)}</span>{" "}
+                <span className="font-medium">{appName(apps, click.slug)}</span>: {clickWords(click.source, click.destination)}
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
     </div>
   );
 }

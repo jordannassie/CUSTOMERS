@@ -1,13 +1,22 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { NextResponse, type NextRequest } from "next/server";
+import type { EmailOtpType } from "@supabase/supabase-js";
+import { z } from "zod";
+import { appUrl } from "@/lib/app-url";
 import { env } from "@/lib/env";
+import { safeNextPath } from "@/lib/safe-next";
+import { callbackFailurePath, callbackFlow, type CallbackStage } from "@/modules/auth";
+
+// Email links built from {{ .TokenHash }} (a template change on the hosted project) work on any device, since they
+// need no code verifier cookie from the browser that asked for them (ACC-04).
+const otpType = z.enum(["signup", "invite", "magiclink", "recovery", "email_change", "email"]);
 
 /**
  * OAuth / magic-link callback.
  *
  * Uses `next/headers` cookies() for reading (recommended for Route Handlers in
- * Next.js App Router — more reliable than request.cookies on Netlify serverless
+ * Next.js App Router; more reliable than request.cookies on Netlify serverless
  * because it handles chunked cookies and avoids header-size truncation).
  *
  * Writes Set-Cookie headers directly onto the redirect response so the
@@ -17,32 +26,42 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const code = searchParams.get("code");
 
-  // On Netlify the internal request.url host ≠ the public-facing domain.
-  const forwardedHost  = request.headers.get("x-forwarded-host");
-  const forwardedProto = request.headers.get("x-forwarded-proto") ?? "https";
-  const baseUrl =
-    env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ??
-    (forwardedHost ? `${forwardedProto}://${forwardedHost}` : new URL(request.url).origin);
+  // The configured address: on Netlify the internal request.url host is not the public one, and a forwarded host
+  // header can be changed by whoever sends the request (BUG-283).
+  const baseUrl = appUrl();
 
-  // Supabase sends error_code / error when the provider-side exchange fails
+  // Signup confirmation, password reset and email change links come here too. Each failure gets its own wording, so
+  // none of them says "Google sign-in failed", and a cancelled Google sign-in says so (callbackFlow).
+  const flow = callbackFlow(searchParams);
+  const fail = (stage: CallbackStage, usedCode = false) =>
+    `${baseUrl}${callbackFailurePath(flow, stage, searchParams, usedCode)}`;
+
+  // Supabase sends error_code / error when the provider-side exchange fails, or the email link expired
   const providerError = searchParams.get("error_code") ?? searchParams.get("error");
   if (providerError) {
     console.error("[auth/callback] provider error:", providerError);
-    return NextResponse.redirect(`${baseUrl}/login?error=oauth_provider_error`);
-  }
-
-  if (!code) {
-    console.error("[auth/callback] no code in request");
-    return NextResponse.redirect(`${baseUrl}/login?error=missing_oauth_code`);
+    return NextResponse.redirect(fail("provider"));
   }
 
   // Determine where to redirect after a successful login
-  const next     = searchParams.get("next") ?? "/dashboard";
-  const safePath = next.startsWith("/") ? next : "/dashboard";
+  const safePath = safeNextPath(searchParams.get("next"));
+
+  const tokenHash = searchParams.get("token_hash");
+  const type = otpType.safeParse(searchParams.get("type"));
+
+  if (!code && !(tokenHash && type.success)) {
+    // The first of the two email change links only confirms one address; Supabase sends a message, not a code.
+    if (searchParams.get("message")) return NextResponse.redirect(`${baseUrl}${safePath}`);
+    console.error("[auth/callback] no code in request");
+    return NextResponse.redirect(fail("missing"));
+  }
 
   // Build both responses up-front so we can attach cookies to whichever we return
   const successResponse = NextResponse.redirect(`${baseUrl}${safePath}`);
-  const errorResponse   = NextResponse.redirect(`${baseUrl}/login?error=oauth_callback_failed`);
+  // A signup link with a code opened in another browser than the one that signed up: Supabase has already confirmed
+  // the email, but the session cannot be made here (PKCE), so the user just needs to log in. A token hash that does
+  // not verify is an expired or used link, which needs a new email instead (callbackFailurePath).
+  const errorResponse = NextResponse.redirect(fail("exchange", Boolean(code)));
 
   // Read cookies via next/headers (canonical for App Router Route Handlers)
   const cookieStore = await cookies();
@@ -69,7 +88,9 @@ export async function GET(request: NextRequest) {
     }
   );
 
-  const { error } = await supabase.auth.exchangeCodeForSession(code);
+  const { error } = code
+    ? await supabase.auth.exchangeCodeForSession(code)
+    : await supabase.auth.verifyOtp({ token_hash: tokenHash!, type: type.data as EmailOtpType });
 
   if (error) {
     console.error("[auth/callback] exchangeCodeForSession failed:", error.message);

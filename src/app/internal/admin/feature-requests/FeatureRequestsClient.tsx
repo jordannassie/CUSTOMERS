@@ -1,186 +1,132 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { Inbox } from "lucide-react";
+import { toast } from "sonner";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { appFetch } from "@/lib/session-expired";
+import AdminEmpty from "../_components/admin-empty";
+import FilterTabs, { replaceQuery } from "../_components/filter-tabs";
+import AdminPageHeader from "../_components/page-header";
+import { RequestRow } from "./_components/request-row";
+import { FEATURE_FILTERS, STATUS_LABELS, matchesSearch, type FeatureFilter, type FeatureRequest, type Status } from "./_components/request-parts";
 
-type Status = "new" | "reviewing" | "planned" | "shipped" | "declined";
+const BASE = "/internal/admin/feature-requests";
 
-interface FeatureRequest {
-  id: string;
-  userId: string;
-  businessId: string | null;
-  title: string;
-  description: string;
-  pageContext: string | null;
-  status: string;
-  createdAt: string;
-  email: string;
-  businessName: string | null;
-}
-
-const STATUS_LABELS: Record<Status, string> = {
-  new:       "New",
-  reviewing: "Reviewing",
-  planned:   "Planned",
-  shipped:   "Shipped",
-  declined:  "Declined",
-};
-
-const STATUS_COLORS: Record<Status, string> = {
-  new:       "bg-[#EFF6FF] text-[#0866F5] border-[#BFDBFE]",
-  reviewing: "bg-[#FFFBEB] text-[#D97706] border-[#FDE68A]",
-  planned:   "bg-[#F0FDF4] text-[#15803D] border-[#BBF7D0]",
-  shipped:   "bg-[#F5F3FF] text-[#7C3AED] border-[#DDD6FE]",
-  declined:  "bg-[#FEF2F2] text-[#DC2626] border-[#FECACA]",
-};
-
-function fmt(iso: string) {
-  return new Date(iso).toLocaleDateString("en-US", {
-    month: "short", day: "numeric", year: "numeric",
-  });
-}
-
-function StatusBadge({ status }: { status: string }) {
-  const s = (status in STATUS_COLORS ? status : "new") as Status;
-  return (
-    <span className={`inline-block text-[10px] font-bold px-2.5 py-0.5 rounded-full border uppercase tracking-wide ${STATUS_COLORS[s]}`}>
-      {STATUS_LABELS[s]}
-    </span>
-  );
-}
-
-export default function FeatureRequestsClient({ requests: initial }: { requests: FeatureRequest[] }) {
+export default function FeatureRequestsClient({
+  requests: initial,
+  filter: initialFilter,
+  search: initialSearch,
+  capped,
+}: {
+  requests: FeatureRequest[];
+  filter: FeatureFilter;
+  /** ?q= from the address. */
+  search: string;
+  /** The list holds the newest `capped` requests only, so older ones are not shown. */
+  capped: number | null;
+}) {
   const [requests, setRequests] = useState<FeatureRequest[]>(initial);
   const [expanded, setExpanded] = useState<string | null>(null);
   const [updating, setUpdating] = useState<string | null>(null);
-  const [filter, setFilter] = useState<Status | "all">("all");
+  const [filter, setFilter] = useState<FeatureFilter>(initialFilter);
+  const [search, setSearch] = useState(initialSearch);
 
-  const filtered = filter === "all" ? requests : requests.filter((r) => r.status === filter);
+  // The tab counts follow the search, so they always add up to what the list can show.
+  const found = requests.filter((r) => matchesSearch(r, search));
+  const filtered = filter === "all" ? found : found.filter((r) => r.status === filter);
+
+  function searchFor(text: string) {
+    setSearch(text);
+    replaceQuery("q", text.trim() || null);
+  }
+
+  function selectFilter(next: string) {
+    setFilter(next as FeatureFilter);
+    replaceQuery("status", next === "all" ? null : next);
+  }
 
   async function updateStatus(id: string, status: Status) {
     setUpdating(id);
     try {
-      const res = await fetch(`/api/internal/admin/feature-requests/${id}`, {
+      const res = await appFetch(`/api/internal/admin/feature-requests/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status }),
       });
-      if (res.ok) {
-        setRequests((prev) => prev.map((r) => r.id === id ? { ...r, status } : r));
-      }
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      setRequests((prev) => prev.map((r) => (r.id === id ? { ...r, status } : r)));
+    } catch {
+      toast.error("The status was not saved, so it is still what it was. Try again.");
     } finally {
       setUpdating(null);
     }
   }
 
   return (
-    <div>
-      {/* Filter pills */}
-      <div className="flex items-center gap-2 mb-5 flex-wrap">
-        {(["all", "new", "reviewing", "planned", "shipped", "declined"] as const).map((s) => {
-          const count = s === "all" ? requests.length : requests.filter((r) => r.status === s).length;
-          return (
-            <button
-              key={s}
-              type="button"
-              onClick={() => setFilter(s)}
-              className={`px-3 py-1 rounded-full text-[11px] font-semibold border transition-colors ${
-                filter === s
-                  ? "bg-[#0866F5] text-white border-[#0866F5]"
-                  : "text-[#6B7280] border-[#E2E8F0] hover:border-[#0866F5]/40 hover:text-[#0866F5]"
-              }`}
-            >
-              {s === "all" ? "All" : STATUS_LABELS[s]} ({count})
-            </button>
-          );
-        })}
-      </div>
+    <>
+      <AdminPageHeader
+        title="Feature requests"
+        subtitle="Ideas people sent with Suggest a feature in the app. Open one to read it and set where it stands."
+      />
 
-      {filtered.length === 0 && (
-        <div className="text-center py-16 text-[#9CA3AF] text-[13px]">
-          No feature requests yet.
+      <div className="flex flex-col gap-4">
+        <div className="flex w-full min-w-0 flex-col gap-1 sm:w-72">
+          <Label htmlFor="feature-search" className="text-[length:calc(13px*var(--px,1))]">Search</Label>
+          <Input
+            id="feature-search"
+            type="search"
+            value={search}
+            maxLength={200}
+            placeholder="Search title, text, email or business"
+            onChange={(e) => searchFor(e.target.value)}
+          />
         </div>
-      )}
 
-      <div className="space-y-2">
-        {filtered.map((req) => {
-          const isExpanded = expanded === req.id;
-          return (
-            <div
-              key={req.id}
-              className="bg-white border border-[#E2E8F0] rounded-2xl overflow-hidden"
-              style={{ boxShadow: "0 1px 4px rgba(0,0,0,0.04)" }}
-            >
-              {/* Row header */}
-              <div
-                className="grid items-center px-5 py-4 gap-3"
-                style={{ gridTemplateColumns: "1fr 180px 120px 100px 28px" }}
-              >
-                <div className="min-w-0">
-                  <p className="text-[13px] font-semibold text-[#111827] truncate">{req.title}</p>
-                  <p className="text-[11px] text-[#9CA3AF] mt-0.5 truncate">
-                    {req.email}
-                    {req.businessName && <> · {req.businessName}</>}
-                  </p>
-                </div>
-                <p className="text-[11px] text-[#9CA3AF] truncate hidden sm:block">
-                  {req.pageContext ?? "—"}
-                </p>
-                <p className="text-[11px] text-[#9CA3AF] hidden sm:block">{fmt(req.createdAt)}</p>
-                <div>
-                  <StatusBadge status={req.status} />
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setExpanded(isExpanded ? null : req.id)}
-                  className="text-[#9CA3AF] hover:text-[#374151] transition-colors"
-                  aria-label={isExpanded ? "Collapse" : "Expand"}
-                >
-                  {isExpanded ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
-                </button>
-              </div>
+        <FilterTabs
+          label="Filter by status"
+          active={filter}
+          onSelect={selectFilter}
+          tabs={FEATURE_FILTERS.map((s) => ({
+            key: s,
+            label: s === "all" ? "All" : STATUS_LABELS[s],
+            href: s === "all" ? BASE : `${BASE}?status=${s}`,
+            count: s === "all" ? found.length : found.filter((r) => r.status === s).length,
+          }))}
+        />
 
-              {/* Expanded detail */}
-              {isExpanded && (
-                <div className="border-t border-[#F1F5F9] px-5 py-4 bg-[#F8FAFD]">
-                  <p className="text-[11px] font-bold text-[#9CA3AF] uppercase tracking-wide mb-2">Description</p>
-                  <p className="text-[13px] text-[#374151] whitespace-pre-wrap mb-5 leading-relaxed">{req.description}</p>
+        {capped !== null && (
+          <p className="text-[length:calc(13px*var(--px,1))] text-muted-foreground" data-testid="feature-request-cap">
+            Showing the newest {capped} requests. Older ones are not listed or counted here.
+          </p>
+        )}
 
-                  <div className="flex flex-wrap gap-4 text-[11px] text-[#9CA3AF] mb-5">
-                    <span>User: <span className="text-[#374151] font-medium">{req.email}</span></span>
-                    {req.businessName && <span>Business: <span className="text-[#374151] font-medium">{req.businessName}</span></span>}
-                    {req.pageContext && <span>Page: <span className="text-[#374151] font-medium">{req.pageContext}</span></span>}
-                    <span>Submitted: <span className="text-[#374151] font-medium">{fmt(req.createdAt)}</span></span>
-                  </div>
-
-                  {/* Status changer */}
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-[11px] text-[#9CA3AF] mr-1">Update status:</span>
-                    {(Object.keys(STATUS_LABELS) as Status[]).map((s) => (
-                      <button
-                        key={s}
-                        type="button"
-                        disabled={req.status === s || updating === req.id}
-                        onClick={() => updateStatus(req.id, s)}
-                        className={`px-3 py-1 rounded-lg text-[11px] font-semibold border transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
-                          req.status === s
-                            ? "bg-[#0866F5] text-white border-[#0866F5]"
-                            : "text-[#6B7280] border-[#E2E8F0] hover:border-[#0866F5]/40 hover:text-[#0866F5]"
-                        }`}
-                      >
-                        {STATUS_LABELS[s]}
-                      </button>
-                    ))}
-                    {updating === req.id && (
-                      <span className="text-[11px] text-[#9CA3AF] ml-1">Saving…</span>
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
-          );
-        })}
+        {filtered.length === 0 ? (
+          requests.length === 0 ? (
+            <AdminEmpty icon={Inbox} title="No feature requests yet">
+              A request shows up here as soon as someone sends one with Suggest a feature.
+            </AdminEmpty>
+          ) : (
+            <AdminEmpty icon={Inbox} title="No requests match">
+              {search.trim() ? "Clear the search or pick All to see every request." : "Pick All to see every request."}
+            </AdminEmpty>
+          )
+        ) : (
+          <ul className="flex flex-col divide-y divide-border overflow-hidden rounded-md border border-border bg-surface">
+            {filtered.map((req) => (
+              <RequestRow
+                key={req.id}
+                req={req}
+                expanded={expanded === req.id}
+                saving={updating === req.id}
+                onToggle={() => setExpanded(expanded === req.id ? null : req.id)}
+                onStatus={(s) => updateStatus(req.id, s)}
+              />
+            ))}
+          </ul>
+        )}
       </div>
-    </div>
+    </>
   );
 }

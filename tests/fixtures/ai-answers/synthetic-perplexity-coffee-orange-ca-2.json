@@ -1,0 +1,25 @@
+{
+  "synthetic": true,
+  "provider": "perplexity",
+  "question": "Where can I find a quiet cafe to work from in Orange, CA?",
+  "answerText": "Top coffee picks in Orange, CA:\n- Plaza Pour House [1]\n- Rival Roasters [2]\n- Daily Grind Cafe [3]\n\nThese are based on local directory listings and reviews.",
+  "citations": [
+    {
+      "url": "https://plazapourhouse.example/",
+      "title": "Plaza Pour House"
+    },
+    {
+      "url": "https://rivalroasters.example/",
+      "title": "Rival Roasters"
+    },
+    {
+      "url": "https://www.yelp.com/search?find_desc=coffee&find_loc=Orange%2C%20CA",
+      "title": "Top coffee in Orange, CA"
+    }
+  ],
+  "names": [
+    "Plaza Pour House",
+    "Rival Roasters",
+    "Daily Grind Cafe"
+  ]
+}

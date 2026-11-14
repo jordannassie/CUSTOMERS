@@ -3,6 +3,7 @@ import { DIRECTORY_CATALOG } from "@/modules/apps-directory/catalog";
 import { listDirectoryOverrides, recordAppClick } from "@/modules/apps-directory/dal";
 import { destinationFor, isAllowedReviewUrl, utmFromReferer } from "@/modules/apps-directory/schema";
 import { mergeCatalog } from "@/modules/apps-directory/service";
+import { checkRateLimit, clientIp } from "@/modules/rate-limit";
 import type { AppSource } from "@/modules/apps-directory/types";
 
 function clickSource(value: string | undefined): AppSource {
@@ -20,10 +21,12 @@ export async function GET(request: NextRequest, context: { params: Promise<{ slu
   const reviewing = parts[0] === "review";
   const utm = utmFromReferer(request.headers.get("referer"));
   const from = clickSource(reviewing ? parts[1] : parts[0]);
+  // The visitor always goes on to the app; a burst of clicks from one address is just not counted.
+  const count = (await checkRateLimit("app_click", clientIp(request.headers))) === "allowed";
 
   if (reviewing) {
     if (!isAllowedReviewUrl(app.reviewUrl)) return NextResponse.redirect(new URL(`/apps/${app.slug}`, request.url));
-    await recordAppClick({
+    if (count) await recordAppClick({
       slug: app.slug,
       source: from,
       kind: "review",
@@ -35,7 +38,7 @@ export async function GET(request: NextRequest, context: { params: Promise<{ slu
   }
 
   const destination = destinationFor(app);
-  await recordAppClick({
+  if (count) await recordAppClick({
     slug: app.slug,
     source: from,
     kind: destination.kind,

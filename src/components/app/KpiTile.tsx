@@ -1,0 +1,50 @@
+import type { ReactNode } from "react";
+import { Sparkline } from "@/components/competitors/Sparkline";
+
+type KpiTileProps = {
+  label: string;
+  value: ReactNode;
+  sub?: ReactNode;
+  testId?: string;
+  /** The last scans, drawn as a small line to the right of the value (mockup-ui). Hidden with fewer than 2 scans. */
+  trend?: (number | null)[];
+  /** A change chip (PointsChange) shown on the context line. */
+  change?: ReactNode;
+};
+
+/** One number at the top of a page: a label, the value, an optional trend line, and one line of context. */
+// Values in plain text and trend lines in one blue, so the strip reads calmly (colour cleanup, 2026-11-10).
+export function KpiTile({ label, value, sub, testId, trend, change }: KpiTileProps) {
+  const showTrend = trend && trend.filter((v) => v !== null).length >= 2;
+  return (
+    <div className="flex min-w-0 flex-col gap-1 bg-surface px-4 pt-3 pb-2.5" data-testid={testId}>
+      <span className="text-xs text-muted-foreground">{label}</span>
+      <div className="flex items-end justify-between gap-2">
+        <span className="truncate text-[length:calc(20px*var(--px,1))] leading-tight font-semibold tracking-[-0.03em] tabular-nums">
+          {value}
+        </span>
+        {showTrend && (
+          // Hidden on a phone, where the value needs the whole tile.
+          <span className="hidden shrink-0 pb-1 sm:block">
+            <Sparkline values={trend} color="var(--chart-1)" />
+          </span>
+        )}
+      </div>
+      {(sub || change) && (
+        <span className="flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
+          {change}
+          {sub && <span className="truncate">{sub}</span>}
+        </span>
+      )}
+    </div>
+  );
+}
+
+/** The tiles joined into one bordered strip, hairlines between them (PromptWatch-style). */
+export function KpiStrip({ children, testId }: { children: ReactNode; testId?: string }) {
+  return (
+    <div className="grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-border bg-border lg:grid-cols-4" data-testid={testId}>
+      {children}
+    </div>
+  );
+}

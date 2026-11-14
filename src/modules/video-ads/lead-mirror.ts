@@ -1,5 +1,7 @@
 import "server-only";
-import { createServiceClient } from "@/lib/supabase/service";
+import { notifyAdminsOfLead } from "@/modules/feedback";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@/types/database.types";
 import { getVideoAdPackage, type VideoAdPackageId } from "./packages";
 
 type BriefCopy = {
@@ -29,8 +31,8 @@ export function briefLeadMessage(packageId: VideoAdPackageId, amountCents: numbe
   return lines.join("\n").slice(0, 5000);
 }
 
-/** Copies the order into Leads so an admin can read it before the orders table exists. */
-export async function mirrorLead(input: {
+/** Copies the order into Leads so an admin can read it before the orders table exists. dal.ts passes the client. */
+export async function mirrorLead(svc: SupabaseClient<Database>, input: {
   sessionId: string;
   name: string;
   email: string;
@@ -39,7 +41,6 @@ export async function mirrorLead(input: {
   message: string;
   mode: "payment" | "brief";
 }) {
-  const svc = createServiceClient();
   const notes = leadNoteKey(input.sessionId);
   const { data: existing, error: readError } = await svc
     .from("contact_submissions")
@@ -60,8 +61,13 @@ export async function mirrorLead(input: {
     page_path: "/ads",
   };
 
-  const { error } = existing
-    ? await svc.from("contact_submissions").update(shared).eq("id", existing.id)
-    : await svc.from("contact_submissions").insert({ ...shared, notes, status: "new" });
-  return !error;
+  if (existing) {
+    const { error } = await svc.from("contact_submissions").update(shared).eq("id", existing.id);
+    return !error;
+  }
+  const { data: created, error } = await svc.from("contact_submissions").insert({ ...shared, notes, status: "new" }).select("id").single();
+  if (error || !created) return false;
+  // A paid order is a lead like any other: admins get the same email, once per order (admin review 2026-11-12).
+  await notifyAdminsOfLead({ id: created.id, ...shared });
+  return true;
 }

@@ -76,11 +76,11 @@ export function PortfolioVideo({
     <figure className="mx-auto w-full">
       <div
         ref={frameRef}
-        className="relative aspect-[9/16] overflow-hidden rounded-2xl border border-[#E5E5E1] bg-[#171717] shadow-sm"
+        className="relative aspect-[9/16] overflow-hidden rounded-2xl border border-border bg-foreground shadow-sm"
       >
         {failed ? (
           <div className="absolute inset-0 flex items-center justify-center p-6 text-center" role="alert">
-            <p className="text-[14px] leading-relaxed text-white">
+            <p className="text-[length:calc(14px*var(--px,1))] leading-relaxed text-white">
               This video could not be loaded. Refresh the page to try again.
             </p>
           </div>
@@ -111,7 +111,7 @@ export function PortfolioVideo({
                 type="button"
                 onClick={togglePlay}
                 aria-label={playing ? `Pause ${title}` : `Play ${title}`}
-                className={`inline-flex items-center justify-center rounded-xl bg-white text-[#171717] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white ${compact ? "h-9 w-9" : "h-11 w-11"}`}
+                className={`inline-flex items-center justify-center rounded-xl bg-white text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white ${compact ? "h-9 w-9" : "h-11 w-11"}`}
               >
                 {playing ? <Pause size={compact ? 14 : 18} aria-hidden="true" /> : <Play size={compact ? 14 : 18} aria-hidden="true" />}
               </button>
@@ -129,8 +129,8 @@ export function PortfolioVideo({
       </div>
       {compact ? null : (
         <figcaption className="mt-4 text-center">
-          <p className="text-[15px] font-semibold text-[#171717]">{title}</p>
-          <p className="mt-1 text-[13px] leading-relaxed text-[#777773]">{note}</p>
+          <p className="text-[length:calc(15px*var(--px,1))] font-semibold text-foreground">{title}</p>
+          <p className="mt-1 text-[length:calc(13px*var(--px,1))] leading-relaxed text-muted-foreground">{note}</p>
         </figcaption>
       )}
     </figure>

@@ -1,0 +1,230 @@
+import "server-only";
+import { cache } from "react";
+import { requireAdmin } from "@/modules/auth";
+import { env } from "@/lib/env";
+import { createServiceClient } from "@/lib/supabase/service";
+import { jobSettingsStatus, schedulesStatus, type CronJob } from "./schedules";
+import type { Json } from "@/types/database.types";
+import type { ServiceStatus, SystemStatus } from "./schema";
+import {
+  OUT_OF_CREDIT_LOOKBACK_DAYS,
+  PROBES,
+  WORKER_OVERDUE_MINUTES,
+  runProbe,
+  stillOutOfCredit,
+  EMAIL_FAILURE_WINDOW_HOURS,
+  withEmailFailures,
+  type EmailFailures,
+  stripeMode,
+  withCreditStatus,
+  workerStatus,
+  type ProbeDeps,
+} from "./service";
+
+const KEYS: Record<string, string | undefined> = {
+  openai: env.OPENAI_API_KEY,
+  anthropic: env.ANTHROPIC_API_KEY,
+  perplexity: env.PERPLEXITY_API_KEY,
+  google_places: env.GOOGLE_PLACES_API_KEY,
+  firecrawl: env.FIRECRAWL_API_KEY,
+  resend: env.RESEND_API_KEY,
+  stripe: env.STRIPE_SECRET_KEY,
+};
+
+/** Checks every service live on each call (B-68); nothing here is cached. */
+/** Checks every service live now and saves the result for the System status page (B-68). Admins only. */
+export async function getSystemStatus(deps: ProbeDeps = {}): Promise<SystemStatus> {
+  await requireAdmin();
+  return checkAndSave(deps);
+}
+
+/**
+ * The same live check for the 15-minute alerts job (migration 037), which has no signed-in user: its route checks the
+ * worker secret first. Services are checked even when nobody opens the page, so a key that breaks overnight is
+ * seen (admin review 2026-11-12).
+ */
+export async function runScheduledServiceCheck(deps: ProbeDeps = {}): Promise<SystemStatus> {
+  return checkAndSave(deps);
+}
+
+/** The last saved check while it is younger than `maxAgeMs`, else null. Admins only; nothing outside is called. */
+export async function getSavedSystemStatus(maxAgeMs: number): Promise<SystemStatus | null> {
+  await requireAdmin();
+  const { data, error } = await createServiceClient().from("service_status_snapshots").select("checked_at, services").eq("id", "latest").maybeSingle();
+  if (error || !data || Date.now() - Date.parse(data.checked_at) > maxAgeMs) return null;
+  return { checkedAt: data.checked_at, services: data.services as unknown as ServiceStatus[] };
+}
+
+async function checkAndSave(deps: ProbeDeps): Promise<SystemStatus> {
+  const status = await checkServices(deps);
+  const { error } = await createServiceClient()
+    .from("service_status_snapshots")
+    .upsert({ id: "latest", checked_at: status.checkedAt, services: status.services as unknown as Json });
+  // A failed save only means the next visit checks live again.
+  if (error) console.error(`[system-status] could not save the check: ${error.message}`);
+  return status;
+}
+
+async function checkServices(deps: ProbeDeps): Promise<SystemStatus> {
+  const now = new Date();
+
+  const [probes, worker, jobs, outOfCredit, emailFailures] = await Promise.all([
+    Promise.all(
+      PROBES.map(async (probe): Promise<ServiceStatus> => {
+        const key = KEYS[probe.id];
+        const result = await runProbe(probe, key, deps);
+        const mode = probe.id === "stripe" ? stripeMode(key) : undefined;
+        return { id: probe.id, name: probe.name, group: probe.group, ...result, ...(mode && { mode }) };
+      }),
+    ),
+    checkWorker(now),
+    checkSchedules(now),
+    providersOutOfCredit(now),
+    recentEmailFailures(now),
+  ]);
+
+  const services = withEmailFailures(withCreditStatus(probes, outOfCredit), emailFailures);
+  return { checkedAt: now.toISOString(), services: [...services, worker, ...jobs] };
+}
+
+// Emails that could not go out in the last day (send.ts logs them as failed, a missing setting included), so the
+// Resend row says so even when its key works (MVP test, 2026-11-14). Only the count and the newest reason come back.
+async function recentEmailFailures(now: Date): Promise<EmailFailures> {
+  const since = new Date(now.getTime() - EMAIL_FAILURE_WINDOW_HOURS * 3_600_000).toISOString();
+  const { data, count, error } = await createServiceClient()
+    .from("email_log")
+    .select("error", { count: "exact" })
+    .eq("status", "failed")
+    // email_log keeps one time per row, sent_at, also for a send that failed.
+    .gte("sent_at", since)
+    .order("sent_at", { ascending: false })
+    .limit(1);
+  if (error) return { count: 0, latest: null };
+  return { count: count ?? 0, latest: data[0]?.error ?? null };
+}
+
+// The messages real calls log: Anthropic's "credit balance is too low", OpenAI's "exceeded your current quota",
+// Perplexity's "requires paid credits", and the background jobs' "credit" kind (modules/ai). A provider stays out of
+// credit until one of its checks succeeds after the error. Never reads a key; only provider names and times come back.
+async function providersOutOfCredit(now: Date): Promise<Set<string>> {
+  const db = createServiceClient();
+  const since = new Date(now.getTime() - OUT_OF_CREDIT_LOOKBACK_DAYS * 86_400_000).toISOString();
+  const { data, error } = await db
+    .from("provider_errors")
+    .select("provider, created_at")
+    .gte("created_at", since)
+    .or("message.ilike.%credit balance%,message.ilike.%exceeded your current quota%,message.ilike.%insufficient_quota%,message.ilike.%paid credits%")
+    .order("created_at", { ascending: false })
+    .limit(50);
+  if (error) return new Set();
+  const lastError = new Map<string, string>();
+  for (const r of data ?? []) if (!lastError.has(r.provider)) lastError.set(r.provider, r.created_at);
+
+  // One small read per provider in error (three at most): a live, non-cached answer saved after the error.
+  const lastSuccess = new Map<string, string>();
+  await Promise.all(
+    [...lastError].map(async ([provider, failedAt]) => {
+      const { data: worked } = await db
+        .from("visibility_results")
+        .select("created_at")
+        .eq("provider", provider)
+        .eq("cached", false)
+        .eq("is_sample", false)
+        .gt("created_at", failedAt)
+        .limit(1);
+      if (worked?.[0]) lastSuccess.set(provider, worked[0].created_at);
+    }),
+  );
+  return stillOutOfCredit(lastError, lastSuccess);
+}
+
+/** pg_cron's jobs and their last runs, and the Vault settings they need (BUG-108). Never reads a secret's value. */
+async function checkSchedules(now: Date): Promise<ServiceStatus[]> {
+  const schedules = { id: "schedules", name: "Scheduled jobs", group: "jobs" } as const;
+  const settings = { id: "job_settings", name: "Automatic scans", group: "jobs" } as const;
+  const svc = createServiceClient();
+  const [cron, vault] = await Promise.all([svc.rpc("cron_job_status"), svc.rpc("job_settings_status").maybeSingle()]);
+
+  const jobs: CronJob[] = (cron.data ?? []).map((j) => ({
+    name: j.job_name,
+    active: j.active,
+    lastRunAt: j.last_run_at,
+    lastStatus: j.last_status,
+  }));
+  return [
+    cron.error
+      ? { ...schedules, state: "unknown", detail: "Couldn't check the scheduled jobs right now. Try Check again." }
+      : { ...schedules, ...schedulesStatus(jobs, now) },
+    vault.error || !vault.data
+      ? { ...settings, state: "unknown", detail: "Couldn't check the automatic scan settings right now. Try Check again." }
+      : {
+          ...settings,
+          ...jobSettingsStatus({
+            workerUrlSet: vault.data.worker_url_set,
+            workerSecretSet: vault.data.worker_secret_set,
+            alertsUrlSet: vault.data.alerts_url_set,
+            emailJobsUrlSet: vault.data.email_jobs_url_set,
+            scheduledScansIncludeReal: vault.data.scheduled_scans_include_real,
+          }),
+        },
+  ];
+}
+
+async function checkWorker(now: Date): Promise<ServiceStatus> {
+  const base = { id: "worker", name: "Scan worker", group: "jobs" } as const;
+  const overdueBefore = new Date(now.getTime() - WORKER_OVERDUE_MINUTES * 60_000).toISOString();
+  const svc = createServiceClient();
+
+  const [last, overdue] = await Promise.all([
+    svc
+      .from("scan_jobs")
+      .select("finished_at")
+      .not("finished_at", "is", null)
+      .order("finished_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+    svc
+      .from("scan_jobs")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "queued")
+      .lt("run_after", overdueBefore),
+  ]);
+
+  if (last.error || overdue.error) {
+    return { ...base, state: "unknown", detail: "Could not read the scan queue from the database." };
+  }
+  return {
+    ...base,
+    ...workerStatus({ lastFinishedAt: last.data?.finished_at ?? null, overdueJobs: overdue.count ?? 0 }, now),
+  };
+}
+
+/**
+ * The public uptime check (/api/health): true when the database answers a one-row read within 5 s. Reads no customer
+ * data and says nothing about which part failed, so it is safe to leave open.
+ */
+export async function pingDatabase(): Promise<boolean> {
+  try {
+    const { error } = await createServiceClient().from("plans").select("id").limit(1).abortSignal(AbortSignal.timeout(5_000));
+    return !error;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Whether scheduled scans run for this agency now: always for a test agency; for customers only once they are switched
+ * on at launch (enqueue_due_scans(true), the admin's "Automatic scans"). Pages that promise "weekly scans" or forecast
+ * scheduled scans read it, so they never promise scans that will not run (QA round 2). Callers check the user may see
+ * this agency. If the setting can't be read, it says they run, the old wording. Once per request.
+ */
+export const scheduledScansRun = cache(async (agencyId: string): Promise<boolean> => {
+  const db = createServiceClient();
+  const [agency, settings] = await Promise.all([
+    db.from("agencies").select("is_test").eq("id", agencyId).maybeSingle(),
+    db.rpc("job_settings_status").maybeSingle(),
+  ]);
+  if (agency.data?.is_test) return true;
+  if (settings.error || !settings.data) return true;
+  return settings.data.scheduled_scans_include_real;
+});

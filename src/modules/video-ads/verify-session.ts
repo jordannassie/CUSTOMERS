@@ -1,6 +1,6 @@
 import "server-only";
 import type Stripe from "stripe";
-import { requireStripe } from "@/lib/stripe";
+import { getStripe } from "@/modules/billing";
 import { matchPaidPackage, type VideoAdPackage } from "./packages";
 
 export type PaidVideoAdSession = {
@@ -16,7 +16,7 @@ export async function loadPaidVideoAdSession(
 ): Promise<{ ok: true; session: PaidVideoAdSession } | { ok: false; reason: "not_found" | "unpaid" | "unavailable" }> {
   let stripe: Stripe;
   try {
-    stripe = requireStripe();
+    stripe = getStripe();
   } catch {
     return { ok: false, reason: "unavailable" };
   }

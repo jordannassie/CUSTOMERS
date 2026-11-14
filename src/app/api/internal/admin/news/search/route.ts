@@ -1,11 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireAdmin } from "@/lib/admin/require";
-import { env } from "@/lib/env";
+import { authErrorResponse, requireAdmin } from "@/modules/auth";
+import { askNewsModel, newsSearchInput, type NewsPeriod as Period, type Weekday } from "@/modules/news";
 
 export const maxDuration = 60;
 
-type Period   = "24h" | "48h" | "7d";
-type Weekday  = "monday" | "tuesday" | "wednesday" | "thursday" | "friday";
 
 const PERIOD_LABELS: Record<Period, string> = {
   "24h": "last 24 hours",
@@ -41,8 +39,6 @@ const WEEKDAY_ANGLES: Record<Weekday, { theme: string; focus: string; exclude: s
     exclude: "stories unrelated to agency operations or multi-client management workflows.",
   },
 };
-
-const NEWS_MODEL = env.OPENAI_NEWS_MODEL;
 
 export interface NewsStory {
   rank:                number;
@@ -91,63 +87,16 @@ const STORIES_SCHEMA = {
   additionalProperties: false,
 };
 
-function extractAndParseJson(raw: string): unknown {
-  let text = raw.trim();
-  if (text.startsWith("```")) {
-    const nl = text.indexOf("\n");
-    text = nl !== -1 ? text.slice(nl + 1) : text.slice(3);
-    const close = text.lastIndexOf("```");
-    if (close !== -1) text = text.slice(0, close);
-    text = text.trim();
-  }
-  const start = text.indexOf("{");
-  const end   = text.lastIndexOf("}");
-  if (start === -1 || end === -1 || end <= start) {
-    throw new Error(`No JSON object found. Preview: ${JSON.stringify(text.slice(0, 300))}`);
-  }
-  return JSON.parse(text.slice(start, end + 1));
-}
-
-function classifyOpenAIError(status: number, body: string): string {
-  if (status === 401) return "OpenAI authentication failed. Check your API key configuration.";
-  if (status === 429) return "OpenAI rate limit reached. Please try again in a moment.";
-  if (status === 503 || status === 502) return "OpenAI is temporarily unavailable. Please try again.";
-  try {
-    const parsed = JSON.parse(body) as { error?: { code?: string; message?: string } };
-    const code   = parsed?.error?.code    ?? "";
-    const msg    = parsed?.error?.message ?? "";
-    if (code === "model_not_found" || msg.includes("model"))
-      return `Model "${NEWS_MODEL}" not found. Set OPENAI_NEWS_MODEL to a compatible model.`;
-    if (code === "unsupported_value" || msg.toLowerCase().includes("tool"))
-      return `Web search is not supported for model "${NEWS_MODEL}". Try a different model via OPENAI_NEWS_MODEL.`;
-    if (msg) return `OpenAI error: ${msg.slice(0, 250)}`;
-  } catch { /* not JSON */ }
-  return `Search failed (HTTP ${status}). Please try again.`;
-}
 
 export async function POST(request: NextRequest) {
   try { await requireAdmin(); }
-  catch { return NextResponse.json({ error: "Unauthorized" }, { status: 401 }); }
+  catch (error) { return authErrorResponse(error); }
 
-  const apiKey = env.OPENAI_API_KEY;
-  if (!apiKey) {
-    return NextResponse.json(
-      { error: "OpenAI API key is not configured." },
-      { status: 503 }
-    );
-  }
-
-  let body: { period?: unknown; weekday?: unknown };
+  let body: unknown;
   try { body = await request.json(); }
   catch { body = {}; }
-
-  const period: Period = (["24h", "48h", "7d"].includes(body.period as string)
-    ? body.period : "24h") as Period;
-
-  const weekday: Weekday = (
-    ["monday", "tuesday", "wednesday", "thursday", "friday"].includes(body.weekday as string)
-      ? body.weekday : "monday"
-  ) as Weekday;
+  // A bad or missing period or weekday falls back to the default, so this parse always succeeds.
+  const { period, weekday } = newsSearchInput.parse(body && typeof body === "object" ? body : {});
 
   const periodLabel = PERIOD_LABELS[period];
   const angle       = WEEKDAY_ANGLES[weekday];
@@ -192,72 +141,18 @@ FOR EACH STORY, PROVIDE:
 
 Return a JSON object with a "stories" array.`;
 
-  let res: Response;
-  try {
-    res = await fetch("https://api.openai.com/v1/responses", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${apiKey}` },
-      body: JSON.stringify({
-        model: NEWS_MODEL,
-        tools: [{ type: "web_search" }],
-        text: {
-          format: {
-            type: "json_schema",
-            name: "news_stories",
-            strict: true,
-            schema: STORIES_SCHEMA,
-          },
-        },
-        input: prompt,
-      }),
-      signal: AbortSignal.timeout(55_000),
-    });
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    if (msg.includes("timeout") || msg.toLowerCase().includes("abort"))
-      return NextResponse.json({ error: "Search timed out. Please try again." }, { status: 504 });
-    console.error(`[news/search] fetch error: ${msg}`);
-    return NextResponse.json({ error: "Could not reach OpenAI. Please try again." }, { status: 502 });
-  }
-
-  if (!res.ok) {
-    const rawBody = await res.text();
-    console.error(`[news/search] OpenAI HTTP ${res.status} | preview=${rawBody.slice(0, 300)}`);
-    return NextResponse.json({ error: classifyOpenAIError(res.status, rawBody) }, { status: 502 });
-  }
-
-  const data = await res.json() as {
-    output?: Array<{ type: string; content?: Array<{ type: string; text: string }> }>;
-  };
-
-  const itemTypes: string[] = [];
-  let rawText = "";
-  let outputTextFound = false;
-
-  for (const item of (data.output ?? [])) {
-    itemTypes.push(item.type);
-    if (item.type === "message") {
-      for (const block of (item.content ?? [])) {
-        if (block.type === "output_text") { rawText += block.text; outputTextFound = true; }
-      }
-    }
-  }
-
-  if (!outputTextFound) {
-    console.error(`[news/search] No output_text | item_types=[${itemTypes.join(", ")}]`);
-    return NextResponse.json({
-      error: itemTypes.length === 0
-        ? "OpenAI returned an empty response. Please try again."
-        : `No text output (types: ${itemTypes.join(", ")}). Please try again.`,
-    }, { status: 502 });
-  }
-
-  let parsed: { stories?: unknown[] };
-  try {
-    parsed = extractAndParseJson(rawText) as { stories?: unknown[] };
-    if (!Array.isArray(parsed.stories)) throw new Error("'stories' is missing or not an array");
-  } catch (e) {
-    console.error(`[news/search] JSON parse failed: ${e} | preview=${rawText.slice(0, 400)}`);
+  const answer = await askNewsModel({
+    label: "news/search",
+    prompt,
+    schemaName: "news_stories",
+    schema: STORIES_SCHEMA,
+    timeoutMs: 55_000,
+    timeoutMessage: "Search timed out. Please try again.",
+  });
+  if (!answer.ok) return NextResponse.json({ error: answer.error }, { status: answer.status });
+  const parsed = answer.data as { stories?: unknown[] };
+  if (!Array.isArray(parsed.stories)) {
+    console.error("[news/search] 'stories' is missing or not an array");
     return NextResponse.json({ error: "AI returned an unexpected format. Please try again." }, { status: 502 });
   }
 

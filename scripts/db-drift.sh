@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # Fails when the local database (built from supabase/migrations) differs from the linked project (B-10).
-# Usage: supabase link --project-ref <ref>, supabase db reset --local, then npm run db:drift
+# Usage: supabase link --project-ref <ref>, npm test (rebuilds this worktree's local stack), then npm run db:drift
 set -euo pipefail
 cd "$(dirname "$0")/.."
+source scripts/test-db-env.sh
 
 facts() {
   supabase db query "$1" -f scripts/db-drift.sql --output-format json 2>/dev/null | jq -r '.rows[].k'

@@ -1,0 +1,24 @@
+{
+  "synthetic": true,
+  "provider": "perplexity",
+  "question": "Where can I find a quiet cafe to work from in Austin, TX?",
+  "answerText": "Top coffee picks in Austin, TX:\n- Eastside Espresso [1]\n- Congress Cup [2]\n\nThese are based on local directory listings and reviews.",
+  "citations": [
+    {
+      "url": "https://eastsideespresso.example/",
+      "title": "Eastside Espresso"
+    },
+    {
+      "url": "https://congresscup.example/",
+      "title": "Congress Cup"
+    },
+    {
+      "url": "https://www.yelp.com/search?find_desc=coffee&find_loc=Austin%2C%20TX",
+      "title": "Top coffee in Austin, TX"
+    }
+  ],
+  "names": [
+    "Eastside Espresso",
+    "Congress Cup"
+  ]
+}
