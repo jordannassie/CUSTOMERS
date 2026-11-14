@@ -7,7 +7,8 @@ import { getShareLink, ownsBusiness, type ShareLink } from "../dal";
 import { logoPath } from "../logo";
 import { listReports } from "../saved/dal";
 import type { SavedReport } from "../saved/service";
-import { readBranding, type Branding } from "../v2/branding";
+import { isPlaceholderAgencyName, readBranding, reportAgencyName, type Branding } from "../v2/branding";
+import { agencyOwnerEmail } from "../v2/owner/dal";
 import { currentReport, readReport, type SavedV2 } from "../v2/delivery/dal";
 import { emailSnapshot, type EmailSnapshot } from "../v2/email-text";
 import type { ReportFix, ReportSnapshot } from "../v2/snapshot-schema";
@@ -35,6 +36,8 @@ export type ReportsPage = {
   shown: ShownReport | "old" | "empty";
   share: ShareLink | null;
   agencyName: string;
+  /** False when the agency has no real name yet, so reports show the business's name instead (QA round 2). */
+  agencyNameSet: boolean;
   branding: Branding;
   /** The logo uploaded in Settings, shown on the branding card. */
   logoSrc: string | null;
@@ -70,19 +73,24 @@ export async function getReportsPage(businessId: string, reportId: string | null
   // The current report first: it may save a new row, which the list then shows.
   const report = reportId ? await readReport(businessId, reportId) : await currentReport(agency.id, businessId, now);
   if (report === null && reportId) return "missing";
-  const [reports, share, agencyRow] = await Promise.all([
+  const db = createServiceClient();
+  const [reports, share, agencyRow, businessRow] = await Promise.all([
     listReports(businessId),
     getShareLink(businessId, reportId),
-    createServiceClient().from("agencies").select("logo_url, report_branding").eq("id", agency.id).single(),
+    db.from("agencies").select("logo_url, report_branding, owner_user_id").eq("id", agency.id).single(),
+    db.from("businesses").select("name").eq("id", businessId).single(),
   ]);
   if (agencyRow.error) throw new Error(`Reports: could not read the agency: ${agencyRow.error.message}`);
+  if (businessRow.error) throw new Error(`Reports: could not read the business: ${businessRow.error.message}`);
+  const ownerEmail = await agencyOwnerEmail(agencyRow.data.owner_user_id);
   const logoUrl = logoPath(agencyRow.data.logo_url) ? agencyRow.data.logo_url : null;
   return {
     reports,
     selected: reportId,
     shown: report === "old" ? "old" : report === "empty" || report === null ? "empty" : shownOf(report),
     share,
-    agencyName: agency.name,
+    agencyName: reportAgencyName(agency.name, ownerEmail, businessRow.data.name),
+    agencyNameSet: !isPlaceholderAgencyName(agency.name, ownerEmail),
     branding: readBranding(agencyRow.data.report_branding),
     logoSrc: logoUrl,
   };

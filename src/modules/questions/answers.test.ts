@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { matchingAnswers, ANSWER_MAX_CHARS, latestAnswers, plainAnswer } from "./answers";
+import { matchingAnswers, ANSWER_MAX_CHARS, plainAnswer, windowAnswers } from "./answers";
 
 // BUG-089: the answer behind each result on the Questions page.
 const row = (provider: string, at: string, mentioned: boolean, text: string | null, competitors: unknown = []) => ({
@@ -10,26 +10,28 @@ const row = (provider: string, at: string, mentioned: boolean, text: string | nu
   answer_text: text,
 });
 
-describe("latestAnswers", () => {
-  it("keeps the newest answer per chosen model, in the business's model order", () => {
+describe("windowAnswers", () => {
+  it("lists every answer of the chosen models, newest first, the older ones from the same AI too (QA round 2)", () => {
     const rows = [
       row("perplexity", "2026-10-09T10:00:00Z", true, "1. **Mr. Rooter** - fast.", [{ name: "Pure Plumbing & Air", position: 2 }]),
       row("openai", "2026-10-09T09:00:00Z", false, "Try a few local plumbers."),
       row("openai", "2026-10-02T09:00:00Z", true, "Older answer."),
       row("anthropic", "2026-10-09T09:00:00Z", true, "Not a chosen model."),
     ];
-    const answers = latestAnswers(rows, ["openai", "perplexity"]);
+    const answers = windowAnswers(rows, ["openai", "perplexity"]);
     expect(answers.map((a) => [a.label, a.namedYou, a.text])).toEqual([
-      ["ChatGPT", false, "Try a few local plumbers."],
       ["Perplexity", true, "1. Mr. Rooter - fast."],
+      ["ChatGPT", false, "Try a few local plumbers."],
+      ["ChatGPT", true, "Older answer."],
     ]);
-    expect(answers[1].competitors).toEqual(["Pure Plumbing & Air"]);
+    expect(new Set(answers.map((a) => a.id)).size).toBe(3);
+    expect(answers[0].competitors).toEqual(["Pure Plumbing & Air"]);
     // No name finder list saved: the names could not be read.
-    expect(answers.map((a) => a.namesChecked)).toEqual([false, false]);
+    expect(answers.map((a) => a.namesChecked)).toEqual([false, false, false]);
   });
 
   it("lists the other businesses it named and the websites it used, each once", () => {
-    const [a] = latestAnswers(
+    const [a] = windowAnswers(
       [
         {
           ...row("openai", "2026-10-09T09:00:00Z", false, "Answer.", [{ name: "Bean Tires", position: 1 }]),
@@ -48,7 +50,7 @@ describe("latestAnswers", () => {
   });
 
   it("marks an answer served from the answer cache as reused (2026-10-16)", () => {
-    const answers = latestAnswers(
+    const answers = windowAnswers(
       [{ ...row("openai", "2026-10-09T09:00:00Z", false, "Cached."), cached: true }, row("perplexity", "2026-10-09T09:00:00Z", true, "Asked again.")],
       ["openai", "perplexity"],
     );
@@ -58,9 +60,9 @@ describe("latestAnswers", () => {
     ]);
   });
 
-  it("skips a check with no answer text, and gives nothing when a model has none", () => {
-    expect(latestAnswers([row("openai", "2026-10-09T09:00:00Z", false, null)], ["openai"])).toEqual([]);
-    expect(latestAnswers([], ["openai", "anthropic"])).toEqual([]);
+  it("keeps a counted check with no answer text, so the list matches the count, and gives nothing with no rows", () => {
+    expect(windowAnswers([row("openai", "2026-10-09T09:00:00Z", false, null)], ["openai"]).map((a) => a.text)).toEqual([""]);
+    expect(windowAnswers([], ["openai", "anthropic"])).toEqual([]);
   });
 });
 

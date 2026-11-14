@@ -20,7 +20,7 @@ const view = sourcesView(
 
 describe("sourceRows", () => {
   it("looks up every site with an Add to Actions button", () => {
-    expect(actionKeys(view).sort()).toEqual(["site:foodpanda.pk", "site:yelp.com"]);
+    expect(actionKeys(view).sort()).toEqual(["report:source:foodpanda", "report:source:yelp", "site:foodpanda.pk", "site:yelp.com"]);
   });
 
   it("shows sites already added as In Actions, with the column", () => {
@@ -33,5 +33,20 @@ describe("sourceRows", () => {
     expect(byHost["foodpanda.pk"]).toMatchObject({ cta: "improve", action: null, inActions: "in_progress" });
     expect(byHost["facebook.com"]).toMatchObject({ cta: "improve", action: null });
     expect(byHost["randomblog.com"]).toMatchObject({ cta: null, action: null });
+  });
+
+  it("finds a fix the report added (keyed by brand), shows it as In Actions and takes its impact (QA round 2)", () => {
+    const states = new Map([["report:source:yelp", { id: "a1", status: "done" as const, impact: "high" as const }]]);
+    const { listed } = sourceRows(view, { place: null, toolLabel: null }, states);
+    expect(listed.find((l) => l.host === "yelp.com")).toMatchObject({ inActions: "done", actionId: "a1", impact: "high" });
+  });
+
+  it("with two fixes for one site, shows the one furthest along, with its impact", () => {
+    const states = new Map([
+      ["site:foodpanda.pk", { id: "s1", status: "suggested" as const, impact: "low" as const }],
+      ["report:source:foodpanda", { id: "r1", status: "todo" as const, impact: "high" as const }],
+    ]);
+    const { listed } = sourceRows(view, { place: null, toolLabel: null }, states);
+    expect(listed.find((l) => l.host === "foodpanda.pk")).toMatchObject({ inActions: "todo", actionId: "r1", impact: "high" });
   });
 });

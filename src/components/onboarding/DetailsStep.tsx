@@ -24,6 +24,8 @@ export type DetailsInput = {
   /** Neighborhood or area; empty saves none. */
   area: string;
   phone: string;
+  /** Street address the user typed or confirmed; empty saves none (MVP_SPEC 3.1). */
+  address: string;
 };
 
 export type DetailsStepProps = {

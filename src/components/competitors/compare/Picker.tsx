@@ -21,7 +21,7 @@ export function Picker({ page, tab, track }: { page: ComparePage; tab: string; t
       <div className="flex flex-col gap-3 px-4 py-3.5">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <span className="text-xs text-muted-foreground">Compare {page.businessName} with</span>
-          <Link href="/competitors/manage" className="text-xs font-medium text-primary hover:underline">
+          <Link href="/competitors/manage" className="inline-flex min-h-6 items-center text-xs font-medium text-primary hover:underline">
             Manage tracked competitors
           </Link>
         </div>

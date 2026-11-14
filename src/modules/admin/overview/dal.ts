@@ -65,9 +65,21 @@ export async function loadOverview(
   const testFlags = includeTest ? [false, true] : [false];
   const { monthStart, lastMonthStart, lastMonthSameTime } = monthBounds(now);
   const [monthIso, lastMonthIso, sameTimeIso] = [monthStart, lastMonthStart, lastMonthSameTime].map((d) => d.toISOString());
-  const excludeCustomers = includeTest ? [] : await testCustomerIds(db);
+  // Only the two Stripe revenue calls need the test agencies' Stripe customers, so the database counts start at once
+  // instead of waiting for that read first (perf fix #4, 2026-11-13).
+  const excludeCustomers: Promise<string[]> = includeTest ? Promise.resolve([]) : testCustomerIds(db);
+  // One request, read twice: by the list and, as soon as it arrives, by the owner emails beside it.
+  const signupsQuery = Promise.resolve(
+    db
+      .from("agencies")
+      .select("id, name, owner_user_id, status, is_test, trial_ends_at, stripe_subscription_id, created_at")
+      // Same rule as the numbers above, so the list never shows agencies the counts leave out.
+      .in("is_test", testFlags)
+      .order("created_at", { ascending: false })
+      .limit(RECENT),
+  );
 
-  const [agencies, trials, paying, businesses, revenue, signups, failed, openAlerts, history, overdueScans] = await Promise.all([
+  const [agencies, trials, paying, businesses, revenue, signups, emails, failed, openAlerts, history, overdueScans] = await Promise.all([
     db.from("agencies").select("id", { count: "exact", head: true }).in("is_test", testFlags).neq("status", "deleted"),
     // Running trials only: an unfinished signup (no subscription, no trial end) and an ended trial are left out.
     db
@@ -86,14 +98,9 @@ export async function loadOverview(
       .select("id, agencies!inner(is_test)", { count: "exact", head: true })
       .is("deleted_at", null)
       .in("agencies.is_test", testFlags),
-    revenueSince(stripe, monthStart, excludeCustomers),
-    db
-      .from("agencies")
-      .select("id, name, owner_user_id, status, is_test, trial_ends_at, stripe_subscription_id, created_at")
-      // Same rule as the numbers above, so the list never shows agencies the counts leave out.
-      .in("is_test", testFlags)
-      .order("created_at", { ascending: false })
-      .limit(RECENT),
+    excludeCustomers.then((excluded) => revenueSince(stripe, monthStart, excluded)),
+    signupsQuery,
+    signupsQuery.then((r) => (r.error ? new Map<string, string>() : emailsOf(r.data.map((a) => a.owner_user_id)))),
     db
       .from("scan_jobs")
       // Test agencies are left out here like everywhere else on the Overview.
@@ -111,7 +118,6 @@ export async function loadOverview(
   }
   if (signups.error) fail("recent signups", signups.error);
   if (failed.error) fail("failed scans", failed.error);
-  const emails = await emailsOf(signups.data.map((a) => a.owner_user_id));
 
   return {
     monthStart: monthStart.toISOString(),
@@ -168,7 +174,7 @@ async function loadHistory(
     now: Date;
     testFlags: boolean[];
     includeTest: boolean;
-    excludeCustomers: string[];
+    excludeCustomers: Promise<string[]>;
   },
 ) {
   const started = (from: string, to: string) =>
@@ -190,7 +196,7 @@ async function loadHistory(
     started(t.monthIso, t.now.toISOString()),
     started(t.lastMonthIso, t.sameTimeIso),
     loadUsageCostSince(t.lastMonthStart, t.includeTest, t.now),
-    stripe ? stripe.revenueSince(t.lastMonthStart, t.lastMonthSameTime, t.excludeCustomers).catch(() => null) : null,
+    stripe ? t.excludeCustomers.then((excluded) => stripe.revenueSince(t.lastMonthStart, t.lastMonthSameTime, excluded)).catch(() => null) : null,
   ]);
   for (const [what, r] of [["agencies last month", atMonthStart], ["trials", startedNow], ["trials last month", startedBefore]] as const) {
     if (r.error) fail(what, r.error);

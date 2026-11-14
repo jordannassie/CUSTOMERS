@@ -13,7 +13,9 @@ import { STATUS, StatusBadge, credits, statusNote, trialText } from "./agency-pa
 const BASE = "/internal/admin/agencies";
 const href = (id: string) => `${BASE}/${id}`;
 const FILTERS: { status: AgencyFilter | undefined; label: string }[] = [
+  // "All" is every row, test and deleted included; "Customers" is the number on the admin Overview.
   { status: undefined, label: "All" },
+  { status: "customers", label: "Customers" },
   { status: "trialing", label: STATUS.trialing.label },
   { status: "trial_ended", label: STATUS.trial_ended.label },
   { status: "signup_unfinished", label: STATUS.signup_unfinished.label },
@@ -36,6 +38,7 @@ export default function AgenciesList({ list, status, search }: { list: AdminAgen
       <SearchBox id="agencies-search" label="Search" placeholder="Agency name or owner email" />
       <FilterTabs
         label="Filter by status"
+        scroll
         active={status ?? "all"}
         tabs={FILTERS.map((f) => ({
           key: f.status ?? "all",

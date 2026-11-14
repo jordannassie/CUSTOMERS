@@ -25,6 +25,7 @@ export function RunScanButton({
   initial,
   start,
   className,
+  noteClassName,
   label = "Run scan",
 }: {
   businessId: string;
@@ -32,6 +33,8 @@ export function RunScanButton({
   start: StartAction;
   /** Placement classes for the button itself, since the wrapper is `contents`. */
   className?: string;
+  /** Placement classes for the note under it, so it can follow the button when the button moves. */
+  noteClassName?: string;
   label?: string;
 }) {
   const [status, setStatus] = useState(initial);
@@ -125,6 +128,7 @@ export function RunScanButton({
           // Kept mounted (sr-only when empty) so the live region is in place before the first message.
           text ? "col-span-full -mt-1.5 basis-full text-left text-xs sm:order-last sm:text-right" : "sr-only",
           note?.tone === "error" ? "text-low-text" : "text-muted-foreground",
+          text && noteClassName,
         )}
       >
         {text}

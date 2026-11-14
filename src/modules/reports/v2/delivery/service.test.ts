@@ -1,7 +1,18 @@
 import { describe, expect, it } from "vitest";
 import { cheeziousSnapshot } from "../fixtures/cheezious";
 import type { ReportFix } from "../snapshot-schema";
-import { fixActionRow, fixCategory, fixDedupeKey, numberedSteps, pdfFileName, pdfStoragePath, reportRow, reportTitle } from "./service";
+import {
+  NO_LONGER_FLAGGED,
+  fixActionRow,
+  fixCategory,
+  fixDedupeKey,
+  numberedSteps,
+  pdfFileName,
+  pdfStoragePath,
+  refreshedFixes,
+  reportRow,
+  reportTitle,
+} from "./service";
 
 const BUSINESS = "7f3c2a9e-2d4b-4c1a-9a6e-1b2c3d4e5f60";
 const [first, second, third, fourth] = cheeziousSnapshot.fixes;
@@ -81,5 +92,32 @@ describe("the saved report", () => {
     expect(pdfFileName("Devoci\u00f3n \u2014 Brooklyn", "2026-11-10")).toBe("Devocion - Brooklyn AI visibility report 2026-11-10.pdf");
     expect(pdfFileName("\u0686\u06cc\u0632", "2026-11-10")).toBe("Business AI visibility report 2026-11-10.pdf");
     expect(pdfFileName("///", "2026-10-28")).toBe("Business AI visibility report 2026-10-28.pdf");
+  });
+});
+
+describe("refreshedFixes (QA round 2)", () => {
+  const [first, second] = cheeziousSnapshot.fixes;
+  const row = (fix: ReportFix, over: Partial<{ status: string; evidence: string | null; impact: string | null }> = {}) => ({
+    id: fix.key,
+    dedupe_key: fixDedupeKey(fix),
+    status: "open",
+    evidence: fix.evidence,
+    impact: fix.impact as string | null,
+    ...over,
+  });
+
+  it("brings an open fix's old numbers up to the latest report", () => {
+    const stale = row(first, { evidence: "Google was used in 52 answers and named you in 3.", impact: "low" });
+    expect(refreshedFixes([stale], [first])).toEqual([{ id: first.key, set: { evidence: first.evidence, impact: first.impact } }]);
+  });
+
+  it("leaves a fix that already matches, and done or dismissed fixes, as they are", () => {
+    const old = { evidence: "old numbers" };
+    expect(refreshedFixes([row(first), row(second, { ...old, status: "done" }), row(second, { ...old, status: "dismissed" })], [first, second])).toEqual([]);
+  });
+
+  it("marks an open fix the latest report no longer flags, so no old count stays on show", () => {
+    expect(refreshedFixes([row(second, { status: "todo" })], [first])).toEqual([{ id: second.key, set: { evidence: NO_LONGER_FLAGGED } }]);
+    expect(refreshedFixes([row(second, { evidence: NO_LONGER_FLAGGED })], [first])).toEqual([]);
   });
 });

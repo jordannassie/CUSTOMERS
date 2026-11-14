@@ -1,6 +1,6 @@
 import "server-only";
 import type { ReactElement } from "react";
-import { createEmailStore, getEmailSettings, type EmailSettings, type EmailStore } from "./dal";
+import { createEmailStore, getEmailSettings, type EmailLogRow, type EmailSettings, type EmailStore } from "./dal";
 import { renderEmail } from "./render";
 import { EmailProviderError, getEmailClient, type EmailClient } from "./resend";
 import { UNSUBSCRIBE_TOPICS, type EmailType, type UnsubscribeTopic } from "./schema";
@@ -38,22 +38,34 @@ function isUnsubscribeTopic(type: EmailType): type is UnsubscribeTopic {
  * missing configuration throws, since no email of that kind could ever go out.
  */
 export async function sendEmail(input: SendEmailInput, deps: Partial<SendEmailDeps> = {}): Promise<SendEmailResult> {
-  const client = deps.client ?? getEmailClient();
   const store = deps.store ?? createEmailStore();
-  const settings = deps.settings ?? getEmailSettings();
   const log = { type: input.type, agencyId: input.agencyId, to: input.to, idempotencyKey: input.idempotencyKey };
+  // A missing setting still throws, but is logged first, so admin System status shows the lost email (MVP test).
+  const configured = <T>(get: () => T): Promise<T> =>
+    Promise.resolve()
+      .then(get)
+      .catch(async (error: unknown) => {
+        await logConfigFailure(store, log, error);
+        throw error;
+      });
+  const client = deps.client ?? (await configured(getEmailClient));
+  const settings = deps.settings ?? (await configured(getEmailSettings));
 
   if (input.idempotencyKey && (await store.hasSent(input.idempotencyKey))) return { status: "skipped", reason: "duplicate" };
 
   let unsubscribe: { page: string; oneClick: string } | null = null;
   if (isUnsubscribeTopic(input.type)) {
     if (!input.agencyId) throw new Error(`A ${input.type} email needs an agency for its unsubscribe link.`);
-    if (!settings.unsubscribeSecret) throw new Error("Set EMAIL_UNSUBSCRIBE_SECRET to send emails with an unsubscribe link.");
+    const secret =
+      settings.unsubscribeSecret ??
+      (await configured<string>(() => {
+        throw new Error("Email is not configured. Set EMAIL_UNSUBSCRIBE_SECRET to send emails with an unsubscribe link.");
+      }));
     if (!(await store.wantsEmail(input.agencyId, input.type))) {
       await store.record({ ...log, status: "skipped", error: "unsubscribed" });
       return { status: "skipped", reason: "unsubscribed" };
     }
-    const token = signUnsubscribeToken(input.agencyId, input.type, settings.unsubscribeSecret);
+    const token = signUnsubscribeToken(input.agencyId, input.type, secret);
     unsubscribe = {
       page: unsubscribeUrl(settings.baseUrl, token),
       oneClick: `${settings.baseUrl.replace(/\/$/, "")}/api/email/unsubscribe?token=${encodeURIComponent(token)}`,
@@ -90,4 +102,12 @@ export async function sendEmail(input: SendEmailInput, deps: Partial<SendEmailDe
   }
   await store.record({ ...log, status: "sent", providerId });
   return { status: "sent", providerId };
+}
+
+/** Logs an email that could not go out for a missing setting. The message names the setting, never its value. */
+async function logConfigFailure(store: EmailStore, log: Omit<EmailLogRow, "status" | "error">, error: unknown): Promise<void> {
+  const message = error instanceof Error ? error.message : String(error);
+  await store.record({ ...log, status: "failed", error: message }).catch((e: unknown) => {
+    console.error(`[email] could not log a failed ${log.type} email: ${e instanceof Error ? e.message : String(e)}`);
+  });
 }

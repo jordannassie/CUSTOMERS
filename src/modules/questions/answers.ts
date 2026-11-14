@@ -9,6 +9,8 @@ import { realCitations } from "@/lib/cited-links";
 // that answer named the business. Pure, so every case is unit tested. Only the fields the dialog shows leave here.
 
 export type AnswerRecord = {
+  /** The saved check's id; it tells two answers from the same AI apart. */
+  id?: string;
   provider: string;
   created_at: string;
   business_mentioned: boolean;
@@ -24,6 +26,8 @@ export type AnswerRecord = {
 export type AnswerSite = { host: string; url: string };
 
 export type QuestionAnswer = {
+  /** Unique per answer, so the same AI can have several in the list. */
+  id: string;
   model: ProviderId;
   label: string;
   checkedAt: string;
@@ -101,6 +105,7 @@ function sitesOf(value: unknown): AnswerSite[] {
 
 function toAnswer(row: AnswerRecord, model: ProviderId): QuestionAnswer {
   return {
+    id: row.id ?? `${model}-${row.created_at}`,
     model,
     label: MODEL_LABELS[model],
     checkedAt: row.created_at,
@@ -109,17 +114,19 @@ function toAnswer(row: AnswerRecord, model: ProviderId): QuestionAnswer {
     others: otherNames(row.extracted_names, competitorNames(row.competitors_mentioned)),
     namesChecked: row.extracted_names != null,
     sites: sitesOf(row.cited_sources),
-    text: plainAnswer(row.answer_text!),
+    text: plainAnswer(row.answer_text ?? ""),
     reused: row.cached === true,
   };
 }
 
-/** The latest answer from each chosen model, in the business's model order. `rows` come newest first. */
-export function latestAnswers(rows: AnswerRecord[], models: ProviderId[]): QuestionAnswer[] {
-  return models.flatMap((model) => {
-    const row = rows.find((r) => r.provider === model && r.answer_text?.trim());
-    return row ? [toAnswer(row, model)] : [];
-  });
+/**
+ * Every answer the question's "Answers, 30 days" counts, newest first: the same rows (visibility_results_unique, the
+ * chosen models, the 30-day window), so the list and the number always agree (QA round 2: it said 4 and listed 3,
+ * the latest from each AI). `rows` come newest first and already within the window.
+ */
+export function windowAnswers(rows: AnswerRecord[], models: ProviderId[]): QuestionAnswer[] {
+  const chosen = new Set<string>(models);
+  return rows.flatMap((r) => (chosen.has(r.provider) ? [toAnswer(r, r.provider as ProviderId)] : []));
 }
 
 export type FocusAnswer = QuestionAnswer & { questionId: string; question: string };

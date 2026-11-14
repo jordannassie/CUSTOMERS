@@ -182,4 +182,6 @@ On live these may already exist from main; if live's history records 024-029 for
 - `092_admin_speed.sql` (admin review 2026-11-12: admin totals added up in SQL functions, the `service_status_snapshots` table for System status, lead notes)
 - `093_admin_audit_fixes.sql` (D-91: replaces two read-only admin functions from 092; no table changes)
 - `094_data_api_grants.sql` (F-09: explicit select, insert, update and delete grants for every table and view 021 to 093 create. Supabase stopped default grants on existing projects on 2026-10-30, so without it every new table answers "permission denied" on live. After the push, check one: `select has_table_privilege('service_role', 'public.scan_jobs', 'select');` returns true)
+- `095_no_web_answers_not_counted.sql` (QA round 2: `visibility_results_counted` leaves out answers that say the AI has no web access and cite nothing, the same rule as `src/modules/scanning/no-web.ts`; same columns and grants, no data changed)
+- `097_name_extraction_batches.sql` (F-39: table `name_extraction_batches` for half-price name extraction on scheduled scans; used only when `NAME_EXTRACTION_BATCH=true`. Service role only)
 Any file added after 043 joins this list.

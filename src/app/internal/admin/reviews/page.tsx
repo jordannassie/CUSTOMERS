@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { requireAdmin } from "@/modules/auth";
 import { DIRECTORY_CATALOG } from "@/modules/apps-directory/catalog";
 import { listDirectoryOverrides } from "@/modules/apps-directory/dal";
-import { getReview, listEvents, listModerationQueue, listReviewsByStatus, peersFor } from "@/modules/apps-directory/reviews/dal";
+import { countReviewsByStatus, getReview, listEvents, listModerationQueue, listReviewsByStatus, peersFor } from "@/modules/apps-directory/reviews/dal";
 import { spamSignals } from "@/modules/apps-directory/review-service";
 import type { StoredReview } from "@/modules/apps-directory/review-types";
 import AdminEmpty from "../_components/admin-empty";
@@ -27,10 +27,11 @@ export default async function AdminReviewsPage({ searchParams }: { searchParams:
   const raw = await searchParams;
   const tab = reviewTab(raw.status);
   const selectedId = typeof raw.review === "string" ? raw.review : "";
-  const [queue, decided, overrides] = await Promise.all([
+  const [queue, decided, overrides, counts] = await Promise.all([
     listModerationQueue(),
     tab === "pending" ? Promise.resolve([] as StoredReview[]) : listReviewsByStatus(tab),
     listDirectoryOverrides(),
+    countReviewsByStatus(),
   ]);
   const list = tab === "pending" ? queue.pending : decided;
   const selected = selectedId ? await getReview(selectedId) : null;
@@ -58,7 +59,8 @@ export default async function AdminReviewsPage({ searchParams }: { searchParams:
       <FilterTabs
         label="Filter by status"
         active={tab}
-        tabs={REVIEW_TABS.map((t) => ({ key: t, label: TAB_LABELS[t], href: tabHref(t), ...(t === "pending" && { count: queue.pending.length }) }))}
+        // Every tab shows its total (QA round 2, item 9); pending turns orange while any wait for a decision.
+        tabs={REVIEW_TABS.map((t) => ({ key: t, label: TAB_LABELS[t], href: tabHref(t), count: counts[t] ?? undefined, alert: t === "pending" }))}
       />
 
       <section className="flex flex-col gap-3">

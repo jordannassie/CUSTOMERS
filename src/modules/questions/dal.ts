@@ -7,6 +7,7 @@ import { env } from "@/lib/env";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { questionSummaries, loadStanding } from "@/modules/standing";
+import { scheduledScansRun } from "@/modules/system-status";
 import { focusMatches } from "./focus";
 import { readFocusAnswers } from "./focus-answers/dal";
 import { questionHistory, TREND_LOOKBACK_DAYS } from "./history";
@@ -60,7 +61,7 @@ export async function loadQuestionsPage(agencyId: string, businessId: string, no
   }));
   // A link from Compare counts what Compare counts: the suggested questions in the score, not your own or paused ones.
   const scored = new Map(records.filter((q) => q.active && !q.own).map((q) => [q.id, q.prompt]));
-  const [history, limit, standing, lastScan, focusAnswers] = await Promise.all([
+  const [history, limit, standing, lastScan, focusAnswers, autoScans] = await Promise.all([
     // The pips, the 30-day rate and the change since the scan before, from the same saved checks as the score.
     readHistory(businessId, now, TREND_LOOKBACK_DAYS),
     maxQuestions(businessId),
@@ -73,6 +74,8 @@ export async function loadQuestionsPage(agencyId: string, businessId: string, no
       ownDomain: business.data.domain,
       place: placeOf(business.data.primary_city, business.data.primary_region),
     }),
+    // Before launch, customers' scheduled scans are off: the page then says when they start, not "Weekly scans".
+    scheduledScansRun(agencyId),
   ]);
   const answered = standing ? [...standing.checks, ...standing.ownChecks] : [];
   const summaries = standing ? questionSummaries(answered, standing.you.domain, standing.competitors) : undefined;
@@ -83,6 +86,7 @@ export async function loadQuestionsPage(agencyId: string, businessId: string, no
     industry: business.data.industry,
     models,
     frequency: FREQUENCIES.includes(business.data.scan_frequency) ? (business.data.scan_frequency as ScanFrequency) : "weekly",
+    autoScans,
     questions: records,
     history: questionHistory(history, { now, models }),
     limit: limit.limit,

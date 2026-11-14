@@ -3,7 +3,9 @@
 import { after } from "next/server";
 import { authFailure, requireAgency, type ActionResult } from "@/modules/auth";
 import { getBalance } from "@/modules/credits";
-import { REASONS, canStartScan } from "@/modules/entitlements";
+import { REASONS, canStartScan, isTestAgency } from "@/modules/entitlements";
+import { isAbandonedJob } from "@/lib/scan-job-staleness";
+import { abandonStaleJobs } from "./abandoned/dal";
 import { businessAgencyId, insertManualJob, lastDoneScanAt, latestJob, postToWorker, runWorkerInProcess, scanCost, workerTimeBudgetMs } from "./dal";
 import { overdraftNeeded, scanCreditCheck, type StartScanResult } from "./overdraft";
 import { recentScanNeeded, scannedRecently } from "./recent-scan";
@@ -40,16 +42,23 @@ export async function startScan(input: unknown): Promise<StartScanResult> {
   const parsed = startScanInput.safeParse(input);
   if (!parsed.success) return { ok: false, status: 400, error: "We couldn't start the scan. Try again." };
 
+  // A scan the worker abandoned holds the one-active-job slot: end it first (uncharged) so a new one can start.
+  await abandonStaleJobs(businessId);
   const allowed = await canStartScan(agencyId, businessId);
   if (!allowed.allowed) {
     const status = allowed.reason === REASONS.scanAlreadyQueued ? 409 : 403;
-    return { ok: false, status, error: allowed.reason };
+    return { ok: false, status, error: await shownReason(allowed.reason, agencyId) };
   }
-  const [balance, cost, lastDone] = await Promise.all([getBalance(agencyId), scanCost(businessId), lastDoneScanAt(businessId)]);
+  const [balance, cost, lastDone, isTest] = await Promise.all([
+    getBalance(agencyId),
+    scanCost(businessId),
+    lastDoneScanAt(businessId),
+    isTestAgency(agencyId),
+  ]);
   const credits = scanCreditCheck(balance.balance ?? 0, cost);
-  if (credits.kind === "refuse") return { ok: false, status: 403, error: REASONS.outOfCredits };
+  if (credits.kind === "refuse") return { ok: false, status: 403, error: isTest ? REASONS.testOutOfCredits : REASONS.outOfCredits };
   // Asked before the overdraft question: a user who decides not to scan again never needs that one.
-  if (scannedRecently(lastDone) && !parsed.data.confirmRecent) return recentScanNeeded(cost);
+  if (scannedRecently(lastDone) && !parsed.data.confirmRecent) return recentScanNeeded(cost, isTest);
   if (credits.kind === "warn" && !parsed.data.confirmOverdraft) return overdraftNeeded(credits);
   // Two clicks can both pass the check above; the one-active-job index lets only one insert through.
   if (!(await insertManualJob(agencyId, businessId))) {
@@ -71,9 +80,15 @@ export async function getScanStatus(input: unknown): Promise<ActionResult<ScanSt
   if (job?.status === "queued" && new Date(job.runAfter) <= new Date() && runWorkerInProcess()) {
     after(() => runWorker(workerTimeBudgetMs()).then(() => undefined));
   }
-  const scanning = job?.status === "queued" || job?.status === "running";
-  const allowed = scanning ? { allowed: true, reason: "" } : await canStartScan(agencyId, businessId);
+  const scanning = (job?.status === "queued" || job?.status === "running") && !isAbandonedJob(job);
+  const can = scanning ? { allowed: true, reason: "" } : await canStartScan(agencyId, businessId);
+  const allowed = can.allowed ? can : { ...can, reason: await shownReason(can.reason, agencyId) };
   return { ok: true, data: scanStatusView(job, allowed) };
+}
+
+/** A test agency at 0 credits cannot buy a top-up (D-61): the screen says an admin adds them instead. */
+async function shownReason(reason: string, agencyId: string): Promise<string> {
+  return reason === REASONS.outOfCredits && (await isTestAgency(agencyId)) ? REASONS.testOutOfCredits : reason;
 }
 
 // A failed trigger is not the user's problem: the job stays queued and the every-minute schedule runs it.

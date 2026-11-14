@@ -18,6 +18,7 @@ const item = (id: string, over: Partial<ActionItem> = {}): ActionItem => ({
   source: "scan",
   createdAt: "2026-10-27T10:00:00.000Z",
   completedAt: null,
+  effect: null,
   dueDate: null,
   assignedToYou: false,
   about: [],

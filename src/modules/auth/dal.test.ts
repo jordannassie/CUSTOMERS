@@ -16,6 +16,19 @@ vi.mock("@/lib/env", async (importOriginal) => {
     env: new Proxy(env, { get: (target, key) => (key === "ADMIN_EMAILS" ? adminEnv.emails : Reflect.get(target, key)) }),
   };
 });
+// The admin check asks Supabase Auth whether an address is confirmed through admin-email/dal.ts. Tests with a made-up
+// user set the answer; the others ask the local Auth server for real.
+const adminConfirm = vi.hoisted(() => ({ override: null as boolean | null, calls: 0, down: false }));
+vi.mock("./admin-email/dal", async (importOriginal) => {
+  const real = await importOriginal<typeof import("./admin-email/dal")>();
+  return {
+    adminEmailConfirmed: async (id: string, address: string) => {
+      adminConfirm.calls++;
+      if (adminConfirm.down) throw new (await import("./errors")).AuthError("unavailable");
+      return adminConfirm.override ?? real.adminEmailConfirmed(id, address);
+    },
+  };
+});
 vi.mock("next/navigation", () => ({
   redirect: (url: string) => {
     throw new Error(`REDIRECT ${url}`);
@@ -145,45 +158,6 @@ describe("signed in", () => {
   });
 });
 
-// An address in ADMIN_EMAILS is only trusted once its owner has confirmed it.
-describe("unconfirmed admin address", () => {
-  const adminAddress = "owner@example.test";
-  function sessionFor(emailConfirmedAt: string | null) {
-    const user = { id: randomUUID(), email: adminAddress, email_confirmed_at: emailConfirmedAt };
-    // The session token names the user; only the admin check asks Supabase Auth whether the address is confirmed.
-    const claims = { sub: user.id, email: adminAddress };
-    // No agency yet, so the user is also confirmed with Supabase Auth (getCurrentUser).
-    const noRows = { select: () => noRows, eq: () => noRows, maybeSingle: async () => ({ data: null, error: null }) };
-    return {
-      auth: {
-        getClaims: async () => ({ data: { claims }, error: null }),
-        getUser: async () => ({ data: { user }, error: null }),
-      },
-      from: () => noRows,
-    } as unknown as SupabaseClient<Database>;
-  }
-
-  beforeEach(() => {
-    adminEnv.emails = adminAddress;
-  });
-  afterAll(() => {
-    adminEnv.emails = "";
-  });
-
-  it("is not an admin until the email is confirmed", async () => {
-    current = sessionFor(null);
-    await expect(requireAdmin()).rejects.toMatchObject({ reason: "forbidden", status: 403 });
-    await expect(requireAdmin({ next: "/internal/admin" })).rejects.toThrow("REDIRECT /dashboard");
-    expect(await isCurrentUserAdmin()).toBe(false);
-  });
-
-  it("is an admin once confirmed", async () => {
-    current = sessionFor(new Date().toISOString());
-    expect(await requireAdmin()).toMatchObject({ email: adminAddress });
-    expect(await isCurrentUserAdmin()).toBe(true);
-  });
-});
-
 // E2E-0929 BUG-4 and BUG-5: a slow or failing auth server is not a sign-out.
 describe("auth server unavailable", () => {
   let outage: "none" | "network" | "gateway" = "none";
@@ -211,6 +185,7 @@ describe("auth server unavailable", () => {
 
   afterEach(() => {
     adminEnv.emails = "";
+    adminConfirm.down = false;
   });
 
   // The session token is checked locally against the project's published key, so pages keep working.
@@ -219,10 +194,12 @@ describe("auth server unavailable", () => {
     expect(await requireUser({ next: "/questions" })).toEqual({ id: userId, email });
   });
 
-  // The admin check asks Supabase Auth whether the address is confirmed, so it can still meet the outage.
+  // The admin check asks Supabase Auth whether the address is confirmed (admin-email/dal.ts, which turns an outage into
+  // "unavailable"), so it can still meet the outage.
   it.each(["network", "gateway"] as const)("the admin check gives a 503, never a 401 or a login redirect, on a %s failure", async (kind) => {
     adminEnv.emails = email;
     outage = kind;
+    adminConfirm.down = true;
     const unavailable = { name: "AuthError", reason: "unavailable", status: 503 };
     await expect(requireAdmin()).rejects.toMatchObject(unavailable);
     await expect(requireAdmin({ next: "/internal/admin" })).rejects.toMatchObject(unavailable);
@@ -232,6 +209,7 @@ describe("auth server unavailable", () => {
   it("an action turns it into a retryable message", async () => {
     adminEnv.emails = email;
     outage = "network";
+    adminConfirm.down = true;
     const result = await requireAdmin().then(
       () => null,
       (error: unknown) => authFailure(error),

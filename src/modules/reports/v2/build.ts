@@ -10,7 +10,7 @@ import { behindSection } from "./behind";
 import { detectIssues, toFixes, topIssues } from "./issues";
 import { knowsSection } from "./knows";
 import { buildRoadmap } from "./roadmap";
-import { reportSnapshotSchema, type ReportSnapshot } from "./snapshot-schema";
+import { REPORT_COUNTING, reportSnapshotSchema, type ReportSnapshot } from "./snapshot-schema";
 import { summarySection } from "./summary";
 import { list, longDate, noLongDashes, percent } from "./text";
 
@@ -101,6 +101,7 @@ export function buildReportSnapshot(input: BuildInput): ReportSnapshot {
 
   const snapshot: ReportSnapshot = {
     version: 2,
+    counting: REPORT_COUNTING,
     preparedAt: input.now.toISOString(),
     period,
     agency: input.agency,

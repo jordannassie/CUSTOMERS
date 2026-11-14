@@ -21,7 +21,7 @@ export function ListedFirst({ businessId, listed, add }: Props) {
     <SectionCard
       title="Get listed here first"
       aside={
-        <Link href="/actions" className="text-[length:calc(12.5px*var(--px,1))] font-medium text-primary hover:underline">
+        <Link href="/actions" className="inline-flex min-h-6 items-center text-[length:calc(12.5px*var(--px,1))] font-medium text-primary hover:underline">
           Open Actions
         </Link>
       }

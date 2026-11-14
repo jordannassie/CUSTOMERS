@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import Link from "next/link";
 import { cn } from "cn";
 
@@ -23,21 +24,31 @@ export default function FilterTabs({
   active,
   onSelect,
   disabled,
+  scroll = false,
 }: {
   label: string;
   tabs: FilterTab[];
   active: string;
   onSelect?: (key: string) => void;
   disabled?: boolean;
+  /** On phones, one row that scrolls sideways instead of wrapping (Agencies, which has 11 tabs; QA round 2, item 16). */
+  scroll?: boolean;
 }) {
+  const row = useRef<HTMLElement>(null);
+  // A scrolling row opens with the chosen filter in view, not cut off at the right edge.
+  useEffect(() => {
+    if (!scroll) return;
+    row.current?.querySelector('[aria-current="page"]')?.scrollIntoView({ block: "nearest", inline: "nearest" });
+  }, [scroll, active]);
   return (
-    // Wraps on phones instead of scrolling, so no filter is ever hidden off the edge.
-    <nav aria-label={label}>
-      <ul className="flex w-full flex-wrap gap-0.5 rounded-md border border-border bg-muted p-1">
+    // Wraps on phones by default, so no filter is hidden off the edge; `scroll` keeps one row that scrolls sideways
+    // below sm instead, and wraps again from sm.
+    <nav ref={row} aria-label={label} className={cn(scroll && "max-sm:-mx-4 max-sm:overflow-x-auto max-sm:px-4 max-sm:[scrollbar-width:none]")}>
+      <ul className={cn("flex gap-0.5 rounded-md border border-border bg-muted p-1", scroll ? "w-max sm:w-full sm:flex-wrap" : "w-full flex-wrap")}>
         {tabs.map((t) => {
           const current = t.key === active;
           return (
-            <li key={t.key} className="flex-auto">
+            <li key={t.key} className={scroll ? "flex-none sm:flex-auto" : "flex-auto"}>
               <Link
                 href={t.href}
                 scroll={false}

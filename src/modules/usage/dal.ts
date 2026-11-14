@@ -2,6 +2,7 @@ import "server-only";
 import { requireAgency } from "@/modules/auth";
 import { getBalance, readCaptures, type CreditCapture } from "@/modules/credits";
 import { scanCheckCount } from "@/modules/scanning";
+import { scheduledScansRun } from "@/modules/system-status";
 import { createServiceClient } from "@/lib/supabase/service";
 import {
   MODEL_LABELS,
@@ -24,7 +25,8 @@ export type UsageReport = {
   month: { startsAt: string; used: number };
   byBusiness: { id: string | null; name: string; credits: number }[];
   byModel: { model: ModelKey; label: string; credits: number }[];
-  forecast: Omit<Forecast, "endsAt" | "runsOutAt"> & { endsAt: string; runsOutAt: string | null };
+  /** `autoScans`: false before launch for a customer, so nothing scheduled is forecast and the card says so. */
+  forecast: Omit<Forecast, "endsAt" | "runsOutAt"> & { endsAt: string; runsOutAt: string | null; autoScans: boolean };
   /** `reused`: checks answered from the shared cache (H1); free (D-24, 2026-10-20). */
   scans: { id: string; businessName: string; status: string; at: string; credits: number; reused: number }[];
 };
@@ -40,7 +42,7 @@ export async function loadUsageReport(agencyId: string, now: Date): Promise<Usag
   const db = createServiceClient();
   const monthStart = startOfMonthUtc(now);
 
-  const [balance, monthCaptures, agencyRow, businessRows, recentJobs] = await Promise.all([
+  const [balance, monthCaptures, agencyRow, businessRows, recentJobs, autoScans] = await Promise.all([
     getBalance(agencyId),
     readCaptures(agencyId, { since: monthStart }),
     db.from("agencies").select("status, trial_ends_at, current_period_end").eq("id", agencyId).single(),
@@ -51,6 +53,8 @@ export async function loadUsageReport(agencyId: string, now: Date): Promise<Usag
       .eq("agency_id", agencyId)
       .order("created_at", { ascending: false })
       .limit(HISTORY_LIMIT),
+    // Before launch customers' scheduled scans are off, so they are not forecast (QA round 2).
+    scheduledScansRun(agencyId),
   ]);
   for (const r of [agencyRow, businessRows, recentJobs]) if (r.error) throw new Error(`Usage: ${r.error.message}`);
   const businesses = businessRows.data!;
@@ -90,7 +94,7 @@ export async function loadUsageReport(agencyId: string, now: Date): Promise<Usag
     },
     now,
   );
-  const outlook = forecast(schedules, balance.balance ?? 0, window, now);
+  const outlook = forecast(autoScans ? schedules : [], balance.balance ?? 0, window, now);
 
   return {
     balance: {
@@ -107,7 +111,7 @@ export async function loadUsageReport(agencyId: string, now: Date): Promise<Usag
       credits: t.credits,
     })),
     byModel: byModel.map((t) => ({ model: t.key as ModelKey, label: MODEL_LABELS[t.key as ModelKey], credits: t.credits })),
-    forecast: { ...outlook, endsAt: outlook.endsAt.toISOString(), runsOutAt: outlook.runsOutAt?.toISOString() ?? null },
+    forecast: { ...outlook, endsAt: outlook.endsAt.toISOString(), runsOutAt: outlook.runsOutAt?.toISOString() ?? null, autoScans },
     scans: recentJobs.data!.map((j) => ({
       id: j.id,
       businessName: names.get(j.business_id) ?? "Deleted business",

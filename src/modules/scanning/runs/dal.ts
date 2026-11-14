@@ -16,16 +16,16 @@ function must<T>(what: string, result: { data: T | null; error: { message: strin
   return result.data;
 }
 
-export type ScanJobRow = { id: string; agencyId: string; businessId: string; holdId: string | null };
+export type ScanJobRow = { id: string; agencyId: string; businessId: string; holdId: string | null; priority: number }; // 0: scheduled scan
 
 export async function loadScanJob(jobId: string): Promise<ScanJobRow> {
   const result = await createServiceClient()
     .from("scan_jobs")
-    .select("id, agency_id, business_id, hold_id")
+    .select("id, agency_id, business_id, hold_id, priority")
     .eq("id", jobId)
     .single();
   const row = must("load the scan job", result);
-  return { id: row.id, agencyId: row.agency_id, businessId: row.business_id, holdId: row.hold_id };
+  return { id: row.id, agencyId: row.agency_id, businessId: row.business_id, holdId: row.hold_id, priority: row.priority };
 }
 
 export type ScanTargetRow = {

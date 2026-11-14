@@ -1,3 +1,4 @@
+import { ABANDONED_ERROR } from "@/lib/scan-job-staleness";
 import { REASONS } from "@/modules/entitlements";
 import { MODEL_LABELS } from "../usage-cost/service";
 
@@ -43,6 +44,11 @@ const SKIPS: Record<string, { summary: string; noRetry?: string }> = {
     noRetry: "Retrying won't help until the business is back on the plan.",
   },
   [REASONS.outOfCredits]: { summary: "Skipped: the agency was out of credits. Retry once it has more credits." },
+  [REASONS.testOutOfCredits]: { summary: "Skipped: this test agency had no credits. Add credits on its agency page, then retry." },
+  [ABANDONED_ERROR]: {
+    summary:
+      "Stopped: no worker finished this scan within 2 hours, so it was ended and its unused credits went back. Check the scan worker on System status, then retry.",
+  },
   [REASONS.scanAlreadyQueued]: { summary: "Skipped: this business already had a scan waiting or running." },
   [CLAUDE_SKIPPED]: { summary: "Skipped: Claude was unavailable, and it is the only AI tool this business checks. Retry once Claude is back." },
 };

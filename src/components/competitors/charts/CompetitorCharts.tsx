@@ -38,7 +38,7 @@ export function ShareAndModelCards({ charts }: { charts: CompetitorChartsView })
       </SectionCard>
       <SectionCard
         title="Your place on each AI"
-        help="For each AI tool: where you and your top competitors sit on one line (further right is better), your rank on that tool and the gap to its leader."
+        help="For each AI tool: where you and your top competitors sit on one line (further right is better), your place among the businesses you track and the gap to the one AI named most."
         bodyClassName="flex flex-col justify-center"
       >
         <ModelPlaceChart view={charts} />

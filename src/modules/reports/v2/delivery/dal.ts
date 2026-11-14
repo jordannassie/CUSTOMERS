@@ -6,10 +6,11 @@ import { createServiceClient } from "@/lib/supabase/service";
 import type { Json } from "@/types/database.types";
 import { ownsBusiness } from "../../dal";
 import { logoPath } from "../../logo";
-import { readBranding } from "../branding";
+import { readBranding, reportAgencyName } from "../branding";
 import { loadReportSnapshot } from "../dal";
-import { parseSnapshot, type ReportFix, type ReportSnapshot } from "../snapshot-schema";
-import { fixActionRow, fixDedupeKey, reportRow } from "./service";
+import { agencyOwnerEmail } from "../owner/dal";
+import { REPORT_COUNTING, parseSnapshot, type ReportFix, type ReportSnapshot } from "../snapshot-schema";
+import { fixActionRow, fixDedupeKey, refreshedFixes, reportRow } from "./service";
 
 export type SavedV2 = { id: string; snapshot: ReportSnapshot };
 
@@ -29,14 +30,23 @@ export async function readReport(businessId: string, reportId: string): Promise<
 
 /**
  * Adds the report's fixes to Actions as suggestions (D-92), each once per business: a fix whose key is already there
- * (in any column, done or dismissed too) is left as the owner has it.
+ * (in any column, done or dismissed too) keeps the owner's column, assignee and date. Its evidence and impact are facts
+ * from the answers, so an open one is brought up to this report's numbers (QA round 2: Actions said "Google was used
+ * in 52 answers" from an old report while Sources, counting the same answers today, had no Google at all).
  */
 export async function syncFixActions(businessId: string, fixes: ReportFix[]): Promise<number> {
-  if (fixes.length === 0) return 0;
   const db = createServiceClient();
-  const keys = fixes.map(fixDedupeKey);
-  const { data, error } = await db.from("opportunities").select("dedupe_key").eq("business_id", businessId).in("dedupe_key", keys);
+  const { data, error } = await db
+    .from("opportunities")
+    .select("id, dedupe_key, status, evidence, impact")
+    .eq("business_id", businessId)
+    .eq("source", "report");
   if (error) throw new Error(`Reports: could not read Actions: ${error.message}`);
+  for (const change of refreshedFixes(data, fixes)) {
+    const updated = await db.from("opportunities").update(change.set).eq("id", change.id);
+    if (updated.error) throw new Error(`Reports: could not update a fix in Actions: ${updated.error.message}`);
+  }
+  if (fixes.length === 0) return 0;
   const known = new Set(data.map((r) => r.dedupe_key));
   const rows = fixes.filter((f) => !known.has(fixDedupeKey(f))).map((f) => fixActionRow(businessId, f));
   if (rows.length === 0) return 0;
@@ -93,11 +103,19 @@ const RECENT = 5;
 // The 30 days a report covers move on without new answers too, so a paused business gets a fresh one each week.
 const MAX_AGE_MS = 7 * 86_400_000;
 
-/** The agency's name, logo and branding as a report would show them now. */
-async function agencyLook(agencyId: string): Promise<ReportSnapshot["agency"] | null> {
-  const { data, error } = await createServiceClient().from("agencies").select("name, logo_url, report_branding").eq("id", agencyId).maybeSingle();
-  if (error) throw new Error(`Reports: could not read the agency: ${error.message}`);
-  return data && { name: data.name, logoPath: logoPath(data.logo_url), ...readBranding(data.report_branding) };
+/** The agency's name, logo and branding as a report would show them now (the same name rule as the report). */
+async function agencyLook(agencyId: string, businessId: string): Promise<ReportSnapshot["agency"] | null> {
+  const db = createServiceClient();
+  const [agency, business] = await Promise.all([
+    db.from("agencies").select("name, logo_url, report_branding, owner_user_id").eq("id", agencyId).maybeSingle(),
+    db.from("businesses").select("name").eq("id", businessId).maybeSingle(),
+  ]);
+  if (agency.error) throw new Error(`Reports: could not read the agency: ${agency.error.message}`);
+  if (business.error) throw new Error(`Reports: could not read the business: ${business.error.message}`);
+  const data = agency.data;
+  if (!data) return null;
+  const name = reportAgencyName(data.name, await agencyOwnerEmail(data.owner_user_id), business.data?.name ?? data.name);
+  return { name, logoPath: logoPath(data.logo_url), ...readBranding(data.report_branding) };
 }
 
 const sameLook = (a: ReportSnapshot["agency"], b: ReportSnapshot["agency"]) =>
@@ -109,7 +127,7 @@ const sameLook = (a: ReportSnapshot["agency"], b: ReportSnapshot["agency"]) =>
  * it is now; otherwise a new one saved now. Callers check the business is the agency's.
  */
 export async function currentReport(agencyId: string, businessId: string, now: Date): Promise<SavedV2 | "empty" | null> {
-  const [latest, look] = await Promise.all([latestCountedAnswer(businessId), agencyLook(agencyId)]);
+  const [latest, look] = await Promise.all([latestCountedAnswer(businessId), agencyLook(agencyId, businessId)]);
   if (!latest || !look) return saveReport(agencyId, businessId, now);
   const { data, error } = await createServiceClient()
     .from("reports")
@@ -122,7 +140,9 @@ export async function currentReport(agencyId: string, businessId: string, now: D
   if (error) throw new Error(`Reports: could not read saved reports: ${error.message}`);
   for (const row of data) {
     const snapshot = parseSnapshot(row.snapshot);
-    if (snapshot) return sameLook(snapshot.agency, look) ? { id: row.id, snapshot } : saveReport(agencyId, businessId, now);
+    // Built with older counting rules: rebuilt, so the report and Actions show today's numbers (REPORT_COUNTING).
+    const current = snapshot && sameLook(snapshot.agency, look) && snapshot.counting === REPORT_COUNTING;
+    if (snapshot) return current ? { id: row.id, snapshot } : saveReport(agencyId, businessId, now);
   }
   return saveReport(agencyId, businessId, now);
 }

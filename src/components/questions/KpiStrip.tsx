@@ -59,14 +59,21 @@ export function KpiStrip({ view }: { view: QuestionsView }) {
             </span>
           }
           sub={
-            <span
-              title={`${plural(k.active, "question", "questions")} × ${plural(models, "AI tool", "AI tools")}, checked ${FREQUENCY_WORDS[view.frequency]}. Each new answer uses 1 credit; answers reused from a recent scan are free.`}
-            >
-              <span className="capitalize">{FREQUENCY_WORDS[view.frequency]}</span> scans.{" "}
-              <Link href="/settings#checks" className="text-primary underline-offset-2 hover:underline">
-                Change
-              </Link>
-            </span>
+            view.autoScans ? (
+              <span
+                title={`${plural(k.active, "question", "questions")} × ${plural(models, "AI tool", "AI tools")}, checked ${FREQUENCY_WORDS[view.frequency]}. Each new answer uses 1 credit; answers reused from a recent scan are free.`}
+              >
+                <span className="capitalize">{FREQUENCY_WORDS[view.frequency]}</span> scans.{" "}
+                <Link href="/settings#checks" className="inline-flex min-h-6 items-center text-primary underline-offset-2 hover:underline">
+                  Change
+                </Link>
+              </span>
+            ) : (
+              // Before launch customers' scheduled scans are off, so no "Weekly scans" promise (QA round 2).
+              <span data-testid="auto-scans-off" title="Until then, scans run when you press Run scan.">
+                Automatic scans start at launch.
+              </span>
+            )
           }
         />
       </Strip>

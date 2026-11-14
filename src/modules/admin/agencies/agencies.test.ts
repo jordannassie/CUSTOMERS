@@ -226,12 +226,15 @@ describe("agency actions (B-65)", () => {
     expect(await auditRows("agency.restore")).toMatchObject([{ admin_user_id: adminId, details: { reason: REASON } }]);
   });
 
-  it("marks an agency as test and back", async () => {
+  it("marks an agency as test and back, giving it the trial's 150 credits once (MVP test, D-61)", async () => {
     await setAgency({ is_test: false });
     expect((await actions.markAgencyTest({ agencyId: agency.agencyId, isTest: true, reason: REASON })).ok).toBe(true);
     expect((await readAgency()).is_test).toBe(true);
     expect(await actions.markAgencyTest({ agencyId: agency.agencyId, isTest: true, reason: REASON })).toMatchObject({ ok: false });
-    expect(await auditRows("agency.mark_test")).toMatchObject([{ details: { reason: REASON, is_test: true } }]);
+    expect(await auditRows("agency.mark_test")).toMatchObject([{ details: { reason: REASON, is_test: true, starter_credits: 150 } }]);
+    for (const isTest of [false, true]) await actions.markAgencyTest({ agencyId: agency.agencyId, isTest, reason: REASON });
+    const grants = await service.from("credit_grants").select("amount, source_id").eq("agency_id", agency.agencyId).eq("source", "admin");
+    expect(grants.data).toEqual([{ amount: 150, source_id: `test_agency_start:${agency.agencyId}` }]);
   });
 
   it("lists the agency with owner, businesses and balance, and shows actions in its history", async () => {

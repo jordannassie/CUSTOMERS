@@ -74,6 +74,7 @@ describe("entitlements against the database", () => {
       trialOver: false,
       // A test agency has no card step (D-61), so its trial counts as started.
       planStarted: true,
+      isTest: true,
     });
   });
 

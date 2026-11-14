@@ -109,8 +109,10 @@ function standingLine(a: Analysis, reasons: number): string {
 export function behindSection(a: Analysis, top: Issue[]): Behind {
   const reasons = a.ahead.length > 0 ? behindReasons(a, top) : [];
   const names = a.ahead.slice(0, 2).map((r) => r.name);
-  const headline =
-    names.length === 0
+  const nobodyNamed = a.named === 0 && a.rivals.every((r) => r.mentions === 0);
+  const headline = nobodyNamed
+    ? "AI has not named you or any business you track yet"
+    : names.length === 0
       ? "No business you track is named more often than you"
       : `${list(names)} ${names.length === 1 ? "gives" : "give"} AI more to work with`;
   return { headline, line: standingLine(a, reasons.length), reasons, wins: winsLine(a) };

@@ -171,8 +171,8 @@ describe("loadQuestionsPage", () => {
   });
 });
 
-describe("loadQuestionAnswers (BUG-089)", () => {
-  it("gives the latest answer per model, and nothing for another agency", async () => {
+describe("loadQuestionAnswers (BUG-089, QA round 2)", () => {
+  it("lists every answer of the last 30 days, newest first, like the count; nothing for another agency", async () => {
     const owner = await createOwner(1);
     const other = await createOwner(1);
     const [questionId] = owner.questionIds;
@@ -188,10 +188,20 @@ describe("loadQuestionAnswers (BUG-089)", () => {
       competitors_mentioned: [],
       answer_text: text,
     });
-    await service.from("visibility_results").insert([result("openai", 30, "Older ChatGPT answer.", false), result("openai", 2, "Newest ChatGPT answer.", true)]).throwOnError();
+    await service
+      .from("visibility_results")
+      .insert([
+        result("openai", 31 * 24, "Outside the 30 days.", false),
+        result("openai", 30, "Older ChatGPT answer.", false),
+        result("openai", 2, "Newest ChatGPT answer.", true),
+      ])
+      .throwOnError();
 
     const answers = await loadQuestionAnswers(owner.agencyId, owner.businessId, questionId);
-    expect(answers?.map((a) => [a.model, a.text, a.namedYou])).toEqual([["openai", "Newest ChatGPT answer.", true]]);
+    expect(answers?.map((a) => [a.model, a.text, a.namedYou])).toEqual([
+      ["openai", "Newest ChatGPT answer.", true],
+      ["openai", "Older ChatGPT answer.", false],
+    ]);
     expect(await loadQuestionAnswers(other.agencyId, owner.businessId, questionId)).toBeNull();
     expect(await loadQuestionAnswers(owner.agencyId, owner.businessId, other.questionIds[0])).toBeNull();
   });

@@ -52,8 +52,9 @@ export default function Profile({ detail }: { detail: NonNullable<AdminBusinessD
   const trialEnded = agency?.displayStatus === "trial_ended";
   // A business plan still "trialing" under an agency whose trial has ended is not on a trial any more.
   const planStatus = plan && trialEnded && plan.status === "trialing" ? "Trial ended" : plan ? planStatusLabel(plan.status) : "";
-  // The neighborhood or area leads when set: "East Austin, Austin, TX, US". A row of its own would leave the grid uneven.
-  const location = [b.primary_area, b.primary_city, b.primary_region, b.primary_country].filter(Boolean).join(", ");
+  // The street address, then the neighborhood or area, lead when set: "12 Main St, East Austin, Austin, TX, US". A row of
+  // its own would leave the grid uneven.
+  const location = [b.street_address, b.primary_area, b.primary_city, b.primary_region, b.primary_country].filter(Boolean).join(", ");
 
   const rows: [string, React.ReactNode][] = [
     ["Website", b.domain ?? "No website"],

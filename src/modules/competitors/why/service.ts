@@ -1,6 +1,6 @@
 // "See why" on the Competitors page: the standing in one sentence and the saved fixes that are about this competitor.
 // Pure. The facts themselves come from the standing module, over answers the scans already saved.
-import { CLAIMS, meaningWords } from "@/lib/site-claims";
+import { CLAIMS, meaningWords, usableQuote } from "@/lib/site-claims";
 import type { Standing } from "@/modules/scanning";
 import { questionLine, serviceGaps, type CompetitorWhy, type Fact, type TheirWebsite, type YourSite } from "@/modules/standing";
 import type { FixLink, OpenFixRef } from "./fixes";
@@ -41,8 +41,8 @@ export type ServiceChip = {
 export type ClaimRow = {
   key: string;
   label: string;
-  them: { page: string; quote: string } | false;
-  you: { page: string; quote: string } | false | null;
+  them: { page: string; quote: string | null } | false;
+  you: { page: string; quote: string | null } | false | null;
 };
 
 /** One line of the website table: yes or no, a word count, or null when that side couldn't be checked. */
@@ -98,8 +98,9 @@ export function claimRows(theirs: TheirWebsite, yours: YourSite): ClaimRow[] {
       {
         key,
         label,
-        them: t ? { page: t.page, quote: t.quote } : false,
-        you: mine === null ? null : y ? { page: y.page, quote: y.quote } : false,
+        // A one-word stored "quote" ("years") is left out; the row still says which site makes the claim.
+        them: t ? { page: t.page, quote: usableQuote(t.quote, label, key) } : false,
+        you: mine === null ? null : y ? { page: y.page, quote: usableQuote(y.quote, label, key) } : false,
       },
     ];
   });

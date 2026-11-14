@@ -54,6 +54,9 @@ export function filterCondition(filter: AgencyFilter, nowIso: string): string {
       return "and(status.eq.trialing,trial_ends_at.is.null,stripe_subscription_id.is.null)";
     case "test":
       return "is_test.is.true";
+    case "customers":
+      // The admin Overview's "Customer agencies" (overview/dal.ts): not a test agency and not deleted.
+      return "and(is_test.is.false,status.neq.deleted)";
     default:
       return `status.eq.${filter}`;
   }

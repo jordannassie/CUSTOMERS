@@ -48,6 +48,8 @@ export type TableKpis = {
   gap: number | null;
   /** The business just above you, and the points to pass it. */
   next: { name: string; points: number; standing: LeaderRow["standing"] } | null;
+  /** You have a score but nobody (you included) was named, so there is no place or leader to show. */
+  nobodyNamed: boolean;
 };
 
 const round = (n: number | null | undefined) => (n === null || n === undefined ? null : Math.round(n));
@@ -85,7 +87,7 @@ export function leaderTable(view: CompetitorsView, report: ScoreReport, panels: 
 function kpisOf(rows: LeaderRow[]): TableKpis {
   const place = placeAmongTracked(rows);
   const you = rows.find((r) => r.isYou);
-  if (!place || !you) return { rank: null, leader: null, gap: null, next: null };
+  if (!place || !you) return { rank: null, leader: null, gap: null, next: null, nobodyNamed: you?.score === 0 };
   const leader = place.leader ?? you;
   const above = place.above;
   return {
@@ -93,5 +95,6 @@ function kpisOf(rows: LeaderRow[]): TableKpis {
     leader: { name: leader.isYou ? leader.name : namedAs(leader), score: leader.score!, isYou: leader.isYou, standing: leader.isYou ? null : leader.standing },
     gap: leader.score! - you.score!,
     next: above ? { name: namedAs(above), points: above.score! - you.score!, standing: above.standing } : null,
+    nobodyNamed: false,
   };
 }

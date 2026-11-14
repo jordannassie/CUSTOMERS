@@ -48,6 +48,8 @@ export type QuestionsView = {
   example: string;
   models: { id: ProviderId; label: string }[];
   frequency: ScanFrequency;
+  /** False before launch for a customer: "Automatic scans start at launch" instead of "Weekly scans" (QA round 2). */
+  autoScans: boolean;
   active: QuestionRow[];
   paused: QuestionRow[];
   /** Most active questions the plan allows; null when unlimited. */
@@ -79,6 +81,8 @@ export function questionsView(input: {
   industry?: string | null;
   models: ProviderId[];
   frequency: ScanFrequency;
+  /** False before launch for a customer: scheduled scans are off, so the page says when they start. Default true. */
+  autoScans?: boolean;
   questions: QuestionRecord[];
   /** Counts only; `history` gives the same counts with the pips in order, and wins when both are given. */
   results?: Map<string, ModelAppearance[]>;
@@ -126,6 +130,7 @@ export function questionsView(input: {
     example: exampleQuestion(input.city, input.industry ?? null),
     models: input.models.map((id) => ({ id, label: MODEL_LABELS[id] })),
     frequency: input.frequency,
+    autoScans: input.autoScans ?? true,
     active: rows.filter((r) => r.active),
     paused: rows.filter((r) => !r.active),
     limit: input.limit,

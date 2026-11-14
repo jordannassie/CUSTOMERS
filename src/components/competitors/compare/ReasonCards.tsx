@@ -80,7 +80,7 @@ export function ReasonCards({
             <p className="text-[length:calc(13.5px*var(--px,1))] leading-snug font-semibold">{c.title}</p>
             <p className="text-[length:calc(13px*var(--px,1))] leading-relaxed text-muted-foreground">{c.fact}</p>
             {c.answersHref && (
-              <Link href={c.answersHref} className="mt-1 inline-flex w-fit items-center gap-1 text-xs font-medium text-primary hover:underline">
+              <Link href={c.answersHref} className="mt-1 inline-flex min-h-6 w-fit items-center gap-1 text-xs font-medium text-primary hover:underline">
                 See the answers
                 <ArrowRight className="size-3" aria-hidden="true" />
               </Link>

@@ -22,6 +22,7 @@ export const SERVICES_MAX = 20;
 export const SERVICE_MAX_CHARS = 60;
 export const PHONE_MAX = 30;
 export const PHONE_PATTERN = /^[0-9+().\s-]*$/;
+export const ADDRESS_MAX = 200;
 
 export const businessProfileInput = z.object({
   businessId: z.uuid(),
@@ -36,6 +37,8 @@ export const businessProfileInput = z.object({
   // Left as it is when the form did not send one.
   area: areaText.optional(),
   phone: text(PHONE_MAX).regex(PHONE_PATTERN),
+  // Street address (MVP_SPEC 3.1, F-34). Left as it is when the form did not send one; empty clears it.
+  address: text(ADDRESS_MAX).optional(),
   website: text(253),
 });
 

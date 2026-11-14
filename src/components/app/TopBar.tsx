@@ -1,10 +1,10 @@
 "use client";
 
-import Link from "next/link";
+import { HoverPrefetchLink } from "@/components/app/HoverPrefetchLink";
 import { usePathname } from "next/navigation";
 import { Coins } from "lucide-react";
 import { cn } from "cn";
-import { activeNavItem } from "./nav";
+import { pageLabel } from "./nav";
 import { PageSearch } from "./PageSearch";
 import { SiteIcon } from "./SiteIcon";
 
@@ -17,16 +17,16 @@ type Props = {
 // mockup-ui: the desktop top bar. Where you are (business / page), page search, and the credit balance.
 export function TopBar({ businessName, businessDomain, creditsShort }: Props) {
   const pathname = usePathname();
-  const page = activeNavItem(pathname)?.label ?? null;
+  const page = pageLabel(pathname);
 
   return (
     <header className="sticky top-0 z-30 hidden h-12 shrink-0 items-center gap-3 rounded-t-xl border-b border-border bg-background/95 px-5 backdrop-blur-sm lg:flex">
       <nav aria-label="Breadcrumb" className="flex min-w-0 items-center gap-2 text-[length:calc(13px*var(--px,1))] whitespace-nowrap">
         {businessName && (
-          <Link href="/dashboard" className="flex min-w-0 items-center gap-2 rounded-md px-1.5 py-1 font-medium hover:bg-muted">
+          <HoverPrefetchLink href="/dashboard" className="flex min-w-0 items-center gap-2 rounded-md px-1.5 py-1 font-medium hover:bg-muted">
             <SiteIcon domain={businessDomain} name={businessName} size="sm" className="size-5 text-[length:calc(10px*var(--px,1))]" />
             <span className="truncate">{businessName}</span>
-          </Link>
+          </HoverPrefetchLink>
         )}
         {page && (
           <>
@@ -37,7 +37,7 @@ export function TopBar({ businessName, businessDomain, creditsShort }: Props) {
       </nav>
       <PageSearch />
       {creditsShort && (
-        <Link
+        <HoverPrefetchLink
           href="/settings/usage"
           data-testid="credits-top"
           className={cn(
@@ -47,7 +47,7 @@ export function TopBar({ businessName, businessDomain, creditsShort }: Props) {
         >
           <Coins className="size-3.5" aria-hidden="true" />
           {creditsShort.text}
-        </Link>
+        </HoverPrefetchLink>
       )}
     </header>
   );

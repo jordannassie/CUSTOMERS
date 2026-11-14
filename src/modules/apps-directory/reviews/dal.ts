@@ -231,3 +231,20 @@ export async function listReviewsByStatus(status: ReviewStatus | "all", limit = 
   if (error || !data) return [];
   return data.map((row) => mapReview(row as ReviewRow)).filter((review): review is StoredReview => Boolean(review));
 }
+
+/**
+ * How many reviews each admin tab holds (QA round 2, item 9): every status plus all, as head counts, so no tab is
+ * capped by the 50 or 100 rows a list loads. A failed count is null, and the tab then shows no number.
+ */
+export async function countReviewsByStatus(): Promise<Record<ReviewStatus | "all", number | null>> {
+  const svc = createServiceClient();
+  const statuses = ["pending", "published", "rejected", "removed"] as const;
+  const head = (status: ReviewStatus | null) => {
+    const query = svc.from("app_reviews").select("id", { count: "exact", head: true });
+    return status ? query.eq("status", status) : query;
+  };
+  const [all, ...each] = await Promise.all([head(null), ...statuses.map((s) => head(s))]);
+  const counts = { all: all.error ? null : (all.count ?? 0) } as Record<ReviewStatus | "all", number | null>;
+  statuses.forEach((status, i) => (counts[status] = each[i].error ? null : (each[i].count ?? 0)));
+  return counts;
+}

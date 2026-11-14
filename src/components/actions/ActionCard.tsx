@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Calendar, ChevronDown, CircleCheck, MoreHorizontal, UserRound } from "lucide-react";
+import { Calendar, ChevronDown, MoreHorizontal, UserRound } from "lucide-react";
 import { cn } from "cn";
 import { GoogleAttribution } from "@/components/onboarding/PlaceBits";
 import { CopyButton } from "@/components/opportunities/CopyButton";
@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { LocalDate } from "@/components/ui/local-date";
+import { ActionEffectNote, DoneOn } from "./ActionEffectNote";
 import { compareHref } from "@/lib/compare-href";
 import { fixCardId } from "@/lib/fix-where";
 import { ACTION_STATUSES, STATUS_TEXT, type ActionItem, type ActionStatus } from "@/modules/opportunities/board/service";
@@ -94,7 +95,7 @@ export function ActionCard({
         </Badge>
       </div>
       <h3 className="text-[length:calc(13.5px*var(--px,1))] leading-snug font-semibold">
-        <button type="button" className="text-left outline-none hover:underline focus-visible:underline" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
+        <button type="button" className="min-h-6 text-left outline-none hover:underline focus-visible:underline" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
           {item.title}
         </button>
       </h3>
@@ -153,13 +154,11 @@ export function ActionCard({
           <CopyButton text={item.claudePrompt} label="Copy prompt for Claude" copiedNote="Prompt copied. Paste it into Claude to get a draft." />
         </div>
       )}
+      {item.status === "done" && <ActionEffectNote effect={item.effect} />}
       <div className="mt-0.5 flex flex-wrap items-center justify-between gap-2">
         <span className="flex min-w-0 items-center gap-2 text-[length:calc(11.5px*var(--px,1))] text-text-hint tabular-nums">
           {item.status === "done" && item.completedAt ? (
-            <span className="flex items-center gap-1 text-muted-foreground" data-testid="action-done">
-              <CircleCheck className="size-3" aria-hidden="true" />
-              Done <LocalDate iso={item.completedAt} options={SHORT_DAY} />
-            </span>
+            <DoneOn iso={item.completedAt} />
           ) : (
             <span className="flex items-center gap-1">
               <Calendar className="size-3" aria-hidden="true" />

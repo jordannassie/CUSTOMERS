@@ -37,3 +37,13 @@ describe("setupLabel (step 6b)", () => {
     expect(setupLabel("/onboarding/website", "  ", "Tim Hortons")).toBe("A new business");
   });
 });
+
+describe("pageLabel", () => {
+  it("names Billing's own pages, and every other page by its menu item", async () => {
+    const { pageLabel } = await import("./nav");
+    expect(pageLabel("/settings/usage")).toBe("Usage");
+    expect(pageLabel("/settings/credits")).toBe("Buy credits");
+    expect(pageLabel("/settings/billing")).toBe("Billing");
+    expect(pageLabel("/questions")).toBe("Questions");
+  });
+});

@@ -1,6 +1,7 @@
 import "server-only";
 import { cache } from "react";
 import { createServiceClient } from "@/lib/supabase/service";
+import { readBusiness, readQuestions } from "@/modules/business-reads";
 import { loadChains, loadOwnChain } from "../chains/dal";
 import type { ProviderId } from "../providers/types";
 import {
@@ -37,15 +38,16 @@ const STRETCH_MS = 30 * DAY_MS;
 
 // React's cache lasts one server request: the Overview, its "Who AI picked instead" block and the business switcher
 // all score the active business, and the share page scores it twice, yet each read happens once.
-const scoreInputs = cache((agencyId: string, businessId: string) => {
-  const db = createServiceClient();
-  return Promise.all([
-    db.from("businesses").select("id, name, domain, models, primary_city").eq("id", businessId).eq("agency_id", agencyId).maybeSingle(),
-    db.from("business_competitors").select("name, city").eq("business_id", businessId).order("name"),
+// The business and its questions come from the readers every Overview section shares (perf fix #3); the competitors
+// stay a read of their own, in the database's name order.
+const scoreInputs = cache((agencyId: string, businessId: string) =>
+  Promise.all([
+    readBusiness(businessId, agencyId),
+    createServiceClient().from("business_competitors").select("name, city").eq("business_id", businessId).order("name"),
     // Stopped ones too, for past scores (step 9e); the screens list the active ones only.
-    db.from("tracked_prompts").select("id, prompt, source, active, inactive_since").eq("business_id", businessId).order("created_at"),
-  ]);
-});
+    readQuestions(businessId),
+  ]),
+);
 const windowChecks = cache((businessId: string, sinceMs: number) => readChecks(businessId, new Date(sinceMs)));
 const olderChecks = cache((businessId: string, fromMs: number, toMs: number) =>
   readOlderChecks(businessId, new Date(fromMs), new Date(toMs)),
@@ -68,6 +70,17 @@ export type ReportOptions = {
   chartDays?: number;
 };
 
+// One build per request for the same business, moment and options (perf fix #3): the Overview, "Who AI picked instead"
+// and the business switcher ask for the same report. Keyed by primitives only; each caller gets its own copy.
+const reportOnce = cache(
+  (agencyId: string, businessId: string, nowMs: number, historyDays: number | null, charts: boolean | null, chartDays: number | null) =>
+    buildScoreReport(agencyId, businessId, new Date(nowMs), {
+      ...(historyDays !== null && { historyDays }),
+      ...(charts !== null && { charts }),
+      ...(chartDays !== null && { chartDays }),
+    }),
+);
+
 // Callers check the user may see this agency first.
 export async function loadScoreReport(
   agencyId: string,
@@ -75,6 +88,12 @@ export async function loadScoreReport(
   now: Date,
   options: ReportOptions = {},
 ): Promise<ScoreReport | null> {
+  const { historyDays = null, charts = null, chartDays = null } = options;
+  const report = await reportOnce(agencyId, businessId, now.getTime(), historyDays, charts, chartDays);
+  return report ? structuredClone(report) : null;
+}
+
+async function buildScoreReport(agencyId: string, businessId: string, now: Date, options: ReportOptions): Promise<ScoreReport | null> {
   const [business, competitors, questions] = await scoreInputs(agencyId, businessId);
   for (const r of [business, competitors, questions]) if (r.error) throw new Error(`Scores: ${r.error.message}`);
   if (!business.data) return null;

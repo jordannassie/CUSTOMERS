@@ -119,6 +119,11 @@ describe("card step", () => {
     });
   });
 
+  it("moves on, instead of saying the trial started, when the agency became a test agency with the form open (MVP test)", async () => {
+    const { userId, email, businessId } = await draftAtModels({ isTest: true });
+    expect(await startCardCheckout({ id: userId, email }, businessId, "http://localhost/onboarding/card")).toEqual({ ok: false, testAgency: true });
+  });
+
   it("refuses another user's business and a signed-out caller", async () => {
     const owner = await draftAtModels();
     await draftAtModels();

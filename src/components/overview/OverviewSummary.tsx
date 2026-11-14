@@ -93,20 +93,23 @@ function Kpis({ compete, sources }: { compete: OverviewCompete | null; sources: 
         label="Share of AI picks"
         testId="kpi-share"
         value={compete?.share ? `${compete.share.percent}%` : <Word>Not yet</Word>}
-        sub={compete?.share ? placeText(compete.share) : "Track competitors to compare"}
+        sub={compete?.share ? placeText(compete.share) : compete?.shareMissing === "nobody_named" ? "AI named none of your tracked businesses yet" : "Track competitors to compare"}
         visual={<ShareDonut parts={parts} percent={compete?.share?.percent ?? null} />}
       />
       <StatRow
         icon={MessageSquareText}
         label="Answers that named you"
         testId="kpi-named"
-        value={period ? `${period.named} of ${period.answers}` : <Word>None yet</Word>}
+        value={period && period.answers > 0 ? `${period.named} of ${period.answers}` : <Word>None yet</Word>}
         sub={
           period && period.answers > 0 ? (
             <>
               {line.change}
               <span>{skippedText(period.named, period.answers)}</span>
             </>
+          ) : period ? (
+            // No scan in this range: "0 of 0" read like a broken number (MVP test, 2026-11-14).
+            `No answers in the last ${period.days} days`
           ) : undefined
         }
         visual={period && period.answers > 0 ? <AnswerDots named={period.named} total={period.answers} /> : undefined}

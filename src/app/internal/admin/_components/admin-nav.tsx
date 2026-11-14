@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
-import Link from "next/link";
+import { HoverPrefetchLink } from "@/components/app/HoverPrefetchLink";
 import { usePathname } from "next/navigation";
 import { ArrowLeft, Menu } from "lucide-react";
 import { cn } from "cn";
@@ -66,7 +66,7 @@ function NavLink({
   const active = !missing && isActiveItem(item, pathname);
   const Icon = item.icon;
   return (
-    <Link
+    <HoverPrefetchLink
       href={item.href}
       onClick={onNavigate}
       aria-current={active ? "page" : undefined}
@@ -86,7 +86,7 @@ function NavLink({
           <span className="sr-only"> unread, nobody has opened them yet</span>
         </span>
       ) : null}
-    </Link>
+    </HoverPrefetchLink>
   );
 }
 
@@ -126,10 +126,10 @@ function NavBody({ adminEmail, onNavigate }: { adminEmail: string; onNavigate?: 
         </div>
       </nav>
       <div className="mt-auto flex flex-col gap-1 border-t border-border pt-2.5">
-        <Link href="/dashboard" onClick={onNavigate} className={cn(ROW, ROW_IDLE)}>
+        <HoverPrefetchLink href="/dashboard" onClick={onNavigate} className={cn(ROW, ROW_IDLE)}>
           <ArrowLeft className="size-4 shrink-0 stroke-[1.75] text-muted-foreground" aria-hidden="true" />
           Back to dashboard
-        </Link>
+        </HoverPrefetchLink>
         {/* The whole address shows, on a second line if needed, instead of being cut off (admin audit 2026-11-12). */}
         <p className="px-2.5 text-[length:calc(11px*var(--px,1))] leading-snug text-text-hint">
           Signed in as <span className="block break-all text-muted-foreground">{adminEmail}</span>
@@ -142,14 +142,14 @@ function NavBody({ adminEmail, onNavigate }: { adminEmail: string; onNavigate?: 
 // The app's centred logo (the trimmed copy), with a small dark "Admin" tag beside it.
 function Logo() {
   return (
-    <Link
+    <HoverPrefetchLink
       href="/internal/admin"
       className="flex items-center gap-2 rounded-sm outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
       aria-label="Customers.Direct admin, go to Overview"
     >
       <Image src={LOGO} alt="" width={640} height={89} loading="eager" className="h-[calc(18px*var(--px,1))] w-auto" />
       <span className="rounded-sm bg-foreground px-1.5 text-[length:calc(11px*var(--px,1))] font-medium leading-5 text-background">Admin</span>
-    </Link>
+    </HoverPrefetchLink>
   );
 }
 

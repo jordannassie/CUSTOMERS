@@ -68,6 +68,16 @@ What to include: 30 to 50 real, public local businesses across the industries in
 
 Before labelling, run auto-fill by hand on 20 to 50 businesses and read the output (principle 1). After the first run, check any perfect score or sudden jump by hand (principle 11). Open question before labelling: labels read off Google Maps are Google content kept in the repo, which D-73 may not allow. Decide first (flagged in the B-34 pull request); the fallback is to label only from each business's own website and leave Google-only fields out of the grade.
 
+## Labelling with a spreadsheet (B-34)
+
+1. Export: `LABEL_SUITE=business-autofill LABEL_DOMAINS="site1.com,site2.com" npm run label:export` with 30 to 50 public business websites (without `LABEL_DOMAINS` it uses saved business domains from the local database). The sheet is written to `evals/results/labelling/business-autofill.csv` (git-ignored).
+2. Open it in Google Sheets or Excel. For each row, set `blocks_scanners` (yes or no) and fill the fields the sources state, following the guide above. Leave a field empty when neither source states it; services are separated by `|`. A row with an empty `blocks_scanners` is skipped.
+3. Download it back as CSV to the same path (or pass `LABEL_CSV=path/to/file.csv` in the next step).
+4. Import: `LABEL_SUITE=business-autofill LABELLER="Your name" npm run label:import`. It adds the labelled rows to `dataset.v1.jsonl` with your name and today's date, keeps rows already there, skips empty ones, and refuses the whole sheet if a row would not load in this suite. You can label in several sittings.
+5. Record who labelled and when under "Labelling" below, then run the fast suite: `npx vitest run --project evals evals/business-autofill`. The paid suite runs in `eval-ai.yml`.
+
+The scripts never call a model and never fill a label themselves: every label comes from the person (MVP_SPEC 25, principle 6).
+
 ## Labelling
 
 Who labelled the cases and when: not yet labelled. The dataset must come from a person; B-34 stays open until it is done.

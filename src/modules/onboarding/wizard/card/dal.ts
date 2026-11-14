@@ -97,11 +97,14 @@ export async function startCardCheckout(
   user: { id: string; email: string | null },
   businessId: string,
   returnUrl: string,
-): Promise<StartTrialResult | { ok: false; status: 404 | 409; error: string }> {
+): Promise<StartTrialResult | { ok: false; status: 404 | 409; error: string } | { ok: false; testAgency: true }> {
   // Read at once (2026-10-29); the agency is the user's own whatever the business.
   const [step, agency, planId] = await Promise.all([ownStep(user.id, businessId), loadAgency(user.id), draftPlanId(user.id, businessId)]);
   if (step === undefined) return { ok: false, status: 404, error: "Business not found." };
   if (!agency) return { ok: false, status: 409, error: "Add your agency name first." };
+  // Made a test agency while the card form was open (D-61): no card is needed, so setup goes on without one
+  // instead of reading "Your free trial has already started" (MVP test, 2026-11-14).
+  if (agency.isTest) return { ok: false, testAgency: true };
   // A second session would start a second subscription for the same agency.
   if (!needsCard(agency, false) || (await recovered(user, agency))) return { ok: false, status: 409, error: "Your free trial has already started." };
   if (!agency.trialAllowed) return { ok: false, status: 409, error: "You've already had your free trial. Contact us to start your plan." };

@@ -46,7 +46,13 @@ describe("leaderTable", () => {
       leader: { name: "Pizza Hut", score: 38, isYou: false, standing: "behind" },
       gap: 23,
       next: { name: "Domino's", points: 13, standing: "behind" },
+      nobodyNamed: false,
     });
+  });
+
+  it("claims no place or leader when nobody is named yet, you included (MVP test, 2026-11-14)", () => {
+    const zero = leaderTable({ ...view, leaderboard: [row("Cheezious", 0, { isYou: true, standing: null }), row("Pizza Hut", 0), row("Dampukh", 0)] } as CompetitorsView, report, []);
+    expect(zero.kpis).toEqual({ rank: null, leader: null, gap: null, next: null, nobodyNamed: true });
   });
 
   it("names a chain by its brand in the tiles, and its row by the branch you track", () => {

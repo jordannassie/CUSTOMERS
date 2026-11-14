@@ -4,6 +4,7 @@ import "server-only";
 // Callers check the user may see this agency first.
 import { cache } from "react";
 import { createServiceClient } from "@/lib/supabase/service";
+import { readBusiness, readCompetitors, readQuestions } from "@/modules/business-reads";
 import { yourWebsite } from "@/lib/your-website";
 import { SCORE_WINDOW_DAYS, splitByQuestion } from "@/modules/scanning";
 import { toCheck, type StandingCheck } from "./checks";
@@ -50,9 +51,10 @@ async function readRows(businessId: string, since: Date) {
 const load = cache(async (agencyId: string, businessId: string, nowMs: number): Promise<StandingData | null> => {
   const db = createServiceClient();
   const [business, competitors, questions, site] = await Promise.all([
-    db.from("businesses").select("name, domain, models").eq("id", businessId).eq("agency_id", agencyId).maybeSingle(),
-    db.from("business_competitors").select("id, name, domain").eq("business_id", businessId).order("created_at"),
-    db.from("tracked_prompts").select("id, prompt, source, active, inactive_since").eq("business_id", businessId),
+    // Shared with the Overview's other sections (perf fix #3).
+    readBusiness(businessId, agencyId),
+    readCompetitors(businessId),
+    readQuestions(businessId),
     db.from("business_site_facts").select("data").eq("business_id", businessId).maybeSingle(),
   ]);
   const b = must("the business", business);

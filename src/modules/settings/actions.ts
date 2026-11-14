@@ -50,7 +50,7 @@ export async function saveBusinessProfile(input: unknown): Promise<Result> {
     const field = profileFieldError(parsed.error.issues);
     return field ? { ok: false, status: 400, ...field } : { ok: false, status: 400, error: "Check the details and try again." };
   }
-  const { businessId, name, industry, services, aliases, city, region, country, area, phone, website } = parsed.data;
+  const { businessId, name, industry, services, aliases, city, region, country, area, phone, address, website } = parsed.data;
   const site = normalizeWebsite(website);
   if (!site.ok) return { ok: false, status: 400, error: "Enter a website like yourbusiness.com, or leave it empty.", field: "website" };
 
@@ -71,6 +71,7 @@ export async function saveBusinessProfile(input: unknown): Promise<Result> {
     ...(country === undefined ? {} : { primary_country: countryCode(country) || null }),
     ...(area === undefined ? {} : { primary_area: area }),
     phone: phone || null,
+    ...(address === undefined ? {} : { street_address: address || null }),
     domain: site.domain,
     has_website: site.domain !== null,
   });

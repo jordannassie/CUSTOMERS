@@ -37,6 +37,8 @@ const MATCH: Record<Filter, (r: SiteRow) => boolean> = {
 const EDGE = "first:pl-4 last:pr-4 sm:first:pl-[calc(18px*var(--px,1))] sm:last:pr-[calc(18px*var(--px,1))]";
 const KIND = "hidden xl:table-cell";
 const TOOLS = "hidden min-[1360px]:table-cell";
+// Below md each row is a card (QA round 2, item 14): the website and what it names on top, the next step under it.
+const CARD_CELL = "max-md:block max-md:p-0! max-md:whitespace-normal";
 
 type Props = { businessId: string; rows: SiteRow[]; answers: number; moreSites: number; add: AddToActions };
 
@@ -69,21 +71,25 @@ export function SitesTable({ businessId, rows, answers, moreSites, add }: Props)
       ) : (
         // Fits its card at every width: the businesses it names always sit under the website's name, and as the card
         // narrows kind, how often and the mentions move there too, so there is never a sideways scroll.
-        <Table data-testid="site-list" className="text-[length:calc(13px*var(--px,1))]">
-          <TableHeader className="border-t border-border">
+        <Table data-testid="site-list" className="text-[length:calc(13px*var(--px,1))] max-md:block">
+          <TableHeader className="border-t border-border max-md:hidden">
             <TableRow className="hover:bg-transparent">
               <TableHead className={EDGE}>Website</TableHead>
               <TableHead className={KIND}>Kind</TableHead>
               <TableHead className={TOOLS}>AI tools</TableHead>
               <TableHead className="hidden xl:table-cell">Answers</TableHead>
-              <TableHead className="hidden sm:table-cell">Mentions you</TableHead>
+              <TableHead className="hidden md:table-cell">Mentions you</TableHead>
               <TableHead className={cn(EDGE, "text-right")}>Next step</TableHead>
             </TableRow>
           </TableHeader>
-          <TableBody>
+          <TableBody className="max-md:block max-md:border-t max-md:border-border">
             {shown.map((r) => (
-              <TableRow key={r.host} data-testid="site-row" className={cn("border-muted", r.kind === "own" && "bg-primary-tint/60")}>
-                <TableCell className={cn(EDGE, "max-w-[calc(220px*var(--px,1))] sm:max-w-[calc(300px*var(--px,1))]")}>
+              <TableRow
+                key={r.host}
+                data-testid="site-row"
+                className={cn("border-muted max-md:flex max-md:flex-col max-md:gap-2 max-md:px-4 max-md:py-3", r.kind === "own" && "bg-primary-tint/60")}
+              >
+                <TableCell className={cn(EDGE, "max-w-[calc(220px*var(--px,1))] sm:max-w-[calc(300px*var(--px,1))]", CARD_CELL, "max-md:max-w-none")}>
                   <div className="flex min-w-0 items-center gap-2.5">
                     <SiteIcon domain={r.host} name={r.host} size="sm" />
                     <div className="min-w-0">
@@ -91,7 +97,7 @@ export function SitesTable({ businessId, rows, answers, moreSites, add }: Props)
                         href={`https://${r.host}`}
                         target="_blank"
                         rel="noopener noreferrer nofollow"
-                        className="group/link flex min-w-0 items-center gap-1.5 font-medium hover:text-primary"
+                        className="group/link flex min-h-6 min-w-0 items-center gap-1.5 font-medium hover:text-primary"
                       >
                         <span className="truncate group-hover/link:underline" title={r.host}>{r.host}</span>
                         <ExternalLink className="size-3 shrink-0 text-text-hint" aria-hidden="true" />
@@ -102,7 +108,7 @@ export function SitesTable({ businessId, rows, answers, moreSites, add }: Props)
                         <span className="xl:hidden">
                           {r.kindLabel} · {answersText(r.answers, answers)} ·{" "}
                         </span>
-                        <span className="sm:hidden">
+                        <span className="md:hidden">
                           {r.mentions === "own" || r.mentions === "competitor" ? MENTIONS_LABELS[r.mentions] : `Mentions you: ${MENTIONS_LABELS[r.mentions].toLowerCase()}`} ·{" "}
                         </span>
                         {r.names.length > 0 ? (
@@ -135,10 +141,10 @@ export function SitesTable({ businessId, rows, answers, moreSites, add }: Props)
                     </span>
                   </div>
                 </TableCell>
-                <TableCell className="hidden sm:table-cell">
+                <TableCell className="hidden md:table-cell">
                   <MentionsChip mentions={r.mentions} />
                 </TableCell>
-                <TableCell className={cn(EDGE, "text-right")}>
+                <TableCell className={cn(EDGE, "text-right", CARD_CELL, "max-md:text-left")}>
                   <RowCta row={r} businessId={businessId} add={add} />
                 </TableCell>
               </TableRow>

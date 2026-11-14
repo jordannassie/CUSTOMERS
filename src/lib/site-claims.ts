@@ -98,6 +98,24 @@ export function siteClaims(pages: { path: string; markdown: string }[]): SiteCla
   });
 }
 
+/** The label to show for a claim: always the fixed wording for its key ("years in business"), never a stored copy. */
+export function claimLabel(key: string, stored: string): string {
+  return CLAIMS.find((c) => c.key === key)?.label ?? stored;
+}
+
+/**
+ * A quote worth showing: at least 3 words and more than the label or key on its own. A one-word "quote" such as
+ * "years" or "prices" reads as broken text ("Their website says years ("years")", MVP test, 2026-11-14), so it is left
+ * out and the sentence stands without it.
+ */
+export function usableQuote(quote: string | null | undefined, label: string, key?: string): string | null {
+  const q = quote?.trim();
+  if (!q) return null;
+  const same = (a: string) => q.toLowerCase() === a.toLowerCase();
+  if (same(label) || (key !== undefined && same(key.replace(/_/g, " ")))) return null;
+  return q.split(/\s+/).length >= 3 ? q : null;
+}
+
 /** For display: a title's separators become commas and ALL CAPS reads as a sentence. The words stay theirs. */
 export function tidyQuote(quote: string): string {
   let t = quote

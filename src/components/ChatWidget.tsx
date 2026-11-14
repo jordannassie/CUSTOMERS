@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback, Suspense } from "react";
 import { BarChart3, Building2, Calendar, Check, ChevronLeft, MessageSquare, RotateCcw, X } from "lucide-react";
 import ContactForm, { type InterestValue } from "@/components/site/ContactForm";
 import { MrDirectAvatar } from "@/components/site/MrDirectAvatar";
+import { useDialogFocus } from "@/components/site/useDialogFocus";
 
 type Stage = "opening" | "form" | "done";
 
@@ -81,6 +82,10 @@ export default function ChatWidget() {
     setShowMsg(false);
   }, []);
 
+  // Escape closes it; focus moves in, stays in while it is open, and goes back to the launcher (F-13).
+  const close = useCallback(() => setOpen(false), []);
+  const panel = useDialogFocus<HTMLDivElement>(open, close);
+
   const handleChoice = useCallback((value: InterestValue) => {
     setInterest(value);
     setStage("form");
@@ -105,21 +110,23 @@ export default function ChatWidget() {
 
       {/* Only on wide screens, where it sits in the empty margin beside the content. */}
       {showMsg && !open && showLauncher && (
-        <div
-          className={`fixed bottom-20 right-6 z-50 hidden max-w-[calc(160px*var(--px,1))] cursor-pointer rounded-md border border-border bg-surface px-4 py-3 text-[length:calc(13px*var(--px,1))] text-foreground shadow-float min-[1400px]:block ${enter}`}
+        <button
+          type="button"
+          className={`fixed bottom-20 right-6 z-50 hidden max-w-[calc(160px*var(--px,1))] rounded-md border border-border bg-surface px-4 py-3 text-left text-[length:calc(13px*var(--px,1))] text-foreground shadow-float focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50 min-[1400px]:block ${enter}`}
           onClick={handleToggle}
-          role="button"
-          aria-label="Open chat"
+          aria-label={`${GREETING} Open chat`}
         >
           {GREETING}
-          <div className="absolute -bottom-[calc(5px*var(--px,1))] right-6 size-2.5 rotate-45 border-r border-b border-border bg-surface" />
-        </div>
+          <span aria-hidden="true" className="absolute -bottom-[calc(5px*var(--px,1))] right-6 size-2.5 rotate-45 border-r border-b border-border bg-surface" />
+        </button>
       )}
 
       {showLauncher && (
         <button
           onClick={handleToggle}
           aria-label={open ? "Close chat" : "Chat with Mr. Direct"}
+          aria-expanded={open}
+          aria-controls="mr-direct-chat"
           className={`fixed right-4 bottom-4 z-50 inline-flex h-11 items-center gap-2 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground shadow-float transition-colors duration-150 ease-out hover:bg-primary-hover focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:ring-offset-2 sm:right-6 sm:bottom-6 ${enter}`}
         >
           {open ? (
@@ -134,11 +141,14 @@ export default function ChatWidget() {
 
       {open && (
         <div
+          ref={panel}
+          id="mr-direct-chat"
           role="dialog"
-          aria-label="Chat with Mr. Direct"
+          aria-modal="true"
+          aria-labelledby="mr-direct-chat-title"
           className={[
             "fixed z-50 flex flex-col overflow-hidden border border-border bg-surface shadow-float",
-            "inset-x-0 bottom-0 max-h-[min(90dvh,90vh)] rounded-t-md",
+            "inset-x-0 bottom-0 max-h-[min(90dvh,90vh)] rounded-t-md pb-[env(safe-area-inset-bottom)]",
             "sm:bottom-20 sm:right-6 sm:left-auto sm:w-[calc(380px*var(--px,1))] sm:max-h-[80vh] sm:rounded-md",
             enter,
           ].join(" ")}
@@ -146,7 +156,7 @@ export default function ChatWidget() {
           <div className="flex shrink-0 items-center gap-3 border-b border-border px-4 py-3">
             <MrDirectAvatar alt="" className="size-10 shrink-0 border border-border bg-muted" />
             <div className="min-w-0 flex-1">
-              <p className="text-sm leading-tight font-semibold text-foreground">Mr. Direct</p>
+              <h2 id="mr-direct-chat-title" className="text-sm leading-tight font-semibold text-foreground">Mr. Direct</h2>
               <p className="text-xs text-muted-foreground">Customers.Direct team, replies within 24 hours</p>
             </div>
             {stage !== "opening" && (
@@ -154,7 +164,7 @@ export default function ChatWidget() {
                 <RotateCcw className="size-4" aria-hidden="true" />
               </button>
             )}
-            <button onClick={() => setOpen(false)} aria-label="Close chat" className={iconButton}>
+            <button onClick={close} aria-label="Close chat" className={iconButton}>
               <X className="size-[calc(18px*var(--px,1))]" aria-hidden="true" />
             </button>
           </div>
@@ -174,7 +184,7 @@ export default function ChatWidget() {
                     <button
                       key={choice.value}
                       onClick={() => handleChoice(choice.value)}
-                      className="flex w-full items-center gap-3 rounded-md border border-border bg-surface px-4 py-3 text-left text-sm font-medium text-foreground transition-colors duration-150 ease-out hover:border-primary/40 hover:bg-primary-tint focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+                      className="flex min-h-11 w-full items-center gap-3 rounded-md border border-border bg-surface px-4 py-3 text-left text-sm font-medium text-foreground transition-colors duration-150 ease-out hover:border-primary/40 hover:bg-primary-tint focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
                     >
                       <span className="shrink-0 text-muted-foreground">{choice.icon}</span>
                       {choice.label}

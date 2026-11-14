@@ -58,6 +58,15 @@ export function activeNavItem(pathname: string): NavItem | null {
   return APP_NAV.find((item) => isNavActive(item, pathname)) ?? null;
 }
 
+// Pages under Billing's menu item that have their own name (MVP test 2026-11-14: Usage read "Billing").
+const PAGE_NAMES: Record<string, string> = { "/settings/usage": "Usage", "/settings/credits": "Buy credits" };
+
+/** The page name for the breadcrumb: its own name when it has one, else its menu item's. */
+export function pageLabel(pathname: string): string | null {
+  const own = Object.entries(PAGE_NAMES).find(([path]) => under(pathname, path));
+  return own?.[1] ?? activeNavItem(pathname)?.label ?? null;
+}
+
 // The first scan runs on the business just finished, which is already the active one (step 6b).
 const FIRST_SCAN = "/onboarding/first-scan";
 

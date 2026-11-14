@@ -1,8 +1,9 @@
 import "server-only";
 import { requireAgency } from "@/modules/auth";
 import { actionStates, type ActionStatus } from "@/modules/opportunities";
-import type { ProviderId } from "@/modules/scanning";
+import { splitByQuestion, type ProviderId } from "@/modules/scanning";
 import { createServiceClient } from "@/lib/supabase/service";
+import { readBusiness, readCompetitors, readQuestions } from "@/modules/business-reads";
 import { answerNames } from "./names";
 import { actionKeys, sourceRows, type ListedSite, type SiteRow } from "./rows";
 import { sourcesView, type SourceCheck, type SourcesView } from "./service";
@@ -25,24 +26,27 @@ const DAY_MS = 86_400_000;
 export async function getSources(businessId: string, tool: ProviderId | null = null, now = new Date()): Promise<SourcesPage | null> {
   const { agency } = await requireAgency({ next: "/sources" });
   const db = createServiceClient();
-  // Read together; the competitors are only used once the business turns out to be the agency's.
-  const [{ data: business, error }, { data: competitors, error: rivalsError }] = await Promise.all([
-    db.from("businesses").select("id, name, domain, primary_city, primary_region, models").eq("id", businessId).eq("agency_id", agency.id).maybeSingle(),
-    db.from("business_competitors").select("id, name, domain, aliases").eq("business_id", businessId),
+  // Read together; the competitors are only used once the business turns out to be the agency's. Both are shared with
+  // the Overview's other sections (perf fix #3).
+  const [{ data: business, error }, { data: competitors, error: rivalsError }, { data: questions, error: questionsError }] = await Promise.all([
+    readBusiness(businessId, agency.id),
+    readCompetitors(businessId),
+    readQuestions(businessId),
   ]);
   if (error) throw new Error(`Sources: could not read the business: ${error.message}`);
   if (!business) return null;
   if (rivalsError || !competitors) throw new Error(`Sources: could not read competitors: ${rivalsError?.message}`);
+  if (questionsError || !questions) throw new Error(`Sources: could not read questions: ${questionsError?.message}`);
 
   // Only the AI tools the business uses, like the score: answers from a tool it turned off no longer count.
   const models = new Set((business.models as string[] | null) ?? []);
   const since = new Date(now.getTime() - WINDOW_DAYS * DAY_MS).toISOString();
-  const checks: SourceCheck[] = [];
+  const checks: (SourceCheck & { questionId: string })[] = [];
   for (let from = 0; ; from += PAGE) {
     const { data, error: readError } = await db
       // The rows that count (migration 044, BUG-075), keyed without their text (migration 088).
       .from("visibility_checks_all")
-      .select("id, provider, cited_sources, checked_at, business_mentioned, competitors_mentioned, extracted_names, answer_key")
+      .select("id, provider, question_id, cited_sources, checked_at, business_mentioned, competitors_mentioned, extracted_names, answer_key")
       .eq("business_id", businessId)
       .gt("checked_at", since)
       .order("checked_at")
@@ -56,7 +60,7 @@ export async function getSources(businessId: string, tool: ProviderId | null = n
         provider: r.provider!,
         citations: realCitations(r.cited_sources),
         checkedAt: r.checked_at!,
-        // The score's answer key: a cached answer repeats the text it reused, so it counts once.
+        questionId: r.question_id ?? "none",
         answerKey: r.answer_key!,
         mentioned,
         names: answerNames(r.extracted_names, r.competitors_mentioned, mentioned, business.name),
@@ -65,7 +69,12 @@ export async function getSources(businessId: string, tool: ProviderId | null = n
     if (data.length < PAGE) break;
   }
 
-  const view = sourcesView(checks, { ownDomain: business.domain, businessName: business.name, competitors, tool });
+  // The fields the matching uses, as before the shared read (perf fix #3).
+  const tracked = competitors.map((c) => ({ id: c.id, name: c.name, domain: c.domain, aliases: c.aliases }));
+  // The answers the score counts (MVP test, 2026-11-14): its questions, every answer, so "used in 66 of 180 answers"
+  // here matches the Overview, Compare, Actions and the report, which all count the score's answers.
+  const trackedQuestions = questions.map((q) => ({ id: q.id, source: q.source, active: q.active, inactiveSince: q.inactive_since, prompt: q.prompt }));
+  const view = sourcesView(splitByQuestion(checks, trackedQuestions).scored, { ownDomain: business.domain, businessName: business.name, competitors: tracked, tool });
   const place = [business.primary_city, business.primary_region].filter(Boolean).join(", ") || null;
   // Which sites are already in Actions only changes a button's label, so the page still loads if that read fails.
   const states = await actionStates(businessId, actionKeys(view)).catch((e: unknown) => {

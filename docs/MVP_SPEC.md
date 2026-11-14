@@ -142,7 +142,7 @@ Rules for the extraction prompt:
 
 ### 4.2 Credits (D-19, D-22 to D-25, D-53 to D-57)
 
-- 1 check = 1 credit, any model, always with web search. Cached answers (5.4) still cost 1 credit.
+- 1 check = 1 credit, any model, always with web search. An answer reused from the cache (5.4) is free (D-24, 2026-10-20). Test agencies use sample answers that skip the cache, so each of their checks costs 1 credit (D-61).
 - **Credits are grants.** Every grant is its own row (13): plan renewal, top-up, trial, promo, admin adjustment, refund. Each has `amount`, `remaining`, `expires_at` (null = never) and `source`.
   - Plan grants expire at the end of the billing period.
   - Top-up grants never expire, but can only be spent while the agency has an active plan or trial.

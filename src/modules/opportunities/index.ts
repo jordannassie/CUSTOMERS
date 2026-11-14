@@ -16,5 +16,6 @@ export {
 } from "./board/service";
 export { getActionsExtras, type ActionsExtras } from "./dal";
 export type { ChecklistItem, ChecklistKey } from "./checklist";
+export type { ActionEffect } from "./effect/service";
 export type { Impact, OpportunityItem, Status } from "./service";
 export { WHERE_ORDER, type Where } from "./where";

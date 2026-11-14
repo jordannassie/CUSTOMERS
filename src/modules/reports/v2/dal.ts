@@ -10,9 +10,10 @@ import { pointsChange } from "@/modules/overview";
 import { loadScoreReport, SCORE_WINDOW_DAYS } from "@/modules/scanning";
 import { ASSISTANTS, loadStanding } from "@/modules/standing";
 import { logoPath } from "../logo";
-import { readBranding } from "./branding";
+import { readBranding, reportAgencyName } from "./branding";
 import { buildReportSnapshot, pooledScore } from "./build";
 import { pickExcerpts } from "./excerpts/dal";
+import { agencyOwnerEmail } from "./owner/dal";
 import { buildRoadmap } from "./roadmap";
 import { reportSnapshotSchema, type ReportSnapshot } from "./snapshot-schema";
 import { liveFixWordingWriter } from "./wording/dal";
@@ -38,17 +39,18 @@ export async function loadReportSnapshot(agencyId: string, businessId: string, n
       .eq("agency_id", agencyId)
       .is("deleted_at", null)
       .maybeSingle(),
-    db.from("agencies").select("name, logo_url, is_test, status, report_branding").eq("id", agencyId).maybeSingle(),
+    db.from("agencies").select("name, logo_url, is_test, status, report_branding, owner_user_id").eq("id", agencyId).maybeSingle(),
   ]);
   const business = must("the business", businessRead);
   const agency = must("the agency", agencyRead);
   if (!business || !agency) return null;
 
-  const [report, competitors, standing] = await Promise.all([
+  const [report, competitors, standing, ownerEmail] = await Promise.all([
     // 30 days before the window too, for the change on the previous 30 days (DB-012).
     loadScoreReport(agencyId, businessId, now, { historyDays: SCORE_WINDOW_DAYS }),
     loadCompetitorsPage(agencyId, businessId, now, noSignals),
     loadStanding(agencyId, businessId, now),
+    agencyOwnerEmail(agency.owner_user_id),
   ]);
   if (!report?.overall || !competitors || !standing || standing.checks.length === 0) return null;
 
@@ -75,7 +77,7 @@ export async function loadReportSnapshot(agencyId: string, businessId: string, n
     now,
     days: SCORE_WINDOW_DAYS,
     agency: {
-      name: agency.name,
+      name: reportAgencyName(agency.name, ownerEmail, business.name),
       logoPath: logoPath(agency.logo_url),
       ...brand,
     },

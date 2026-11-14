@@ -7,6 +7,7 @@ import { PageHeader } from "@/components/app/PageHeader";
 import { SegmentedControl } from "@/components/ui/segmented-control";
 import { Select } from "@/components/ui/select";
 import { WHERE_LABEL, fixCardId, type Where } from "@/lib/fix-where";
+import { PHONE_QUERY, useMediaQuery, useStoredChoice } from "@/lib/use-media-query";
 import type { ActionResult } from "@/modules/auth";
 import {
   OPEN_ACTION_STATUSES,
@@ -43,6 +44,8 @@ const DONE_NOTE: Partial<Record<ActionStatus, string>> = {
  * (mockup-ui), so the filters and the Board or List switch sit beside the title; `children` go between the header
  * and the board.
  */
+const VIEWS = ["board", "list"] as const;
+
 export function ActionsBoard({
   businessId,
   initialItems,
@@ -82,7 +85,12 @@ export function ActionsBoard({
     publishOpenCount(businessId, items.filter((i) => OPEN_ACTION_STATUSES.includes(i.status)).length);
   }, [businessId, items]);
   useEffect(() => () => publishOpenCount(businessId, null), [businessId]);
-  const [view, setView] = useState<"board" | "list">("board");
+  // Phones open on the List (QA round 2, item 13): three board columns do not fit 375px. A view the user picks wins,
+  // and is kept in this browser, so a reload keeps it.
+  const [stored, setStored] = useStoredChoice("actions-view", VIEWS);
+  const [picked, setPicked] = useState<"board" | "list" | null>(null);
+  const phone = useMediaQuery(PHONE_QUERY);
+  const view = picked ?? stored ?? (phone ? "list" : "board");
   const [impact, setImpact] = useState<Impact | "all">("all");
   const [place, setPlace] = useState<WhereFilter | "all">("all");
   const [busy, setBusy] = useState<string | null>(null);
@@ -159,7 +167,10 @@ export function ActionsBoard({
             <SegmentedControl
               aria-label="View"
               value={view}
-              onValueChange={(v) => setView(v as "board" | "list")}
+              onValueChange={(v) => {
+                setPicked(v as "board" | "list");
+                setStored(v as "board" | "list");
+              }}
               options={[
                 { value: "board", label: "Board" },
                 { value: "list", label: "List" },
@@ -178,7 +189,7 @@ export function ActionsBoard({
                 aria-pressed={place === c.place}
                 onClick={() => setPlace(place === c.place ? "all" : c.place)}
                 className={cn(
-                  "h-[calc(22px*var(--px,1))] rounded-sm border px-2 text-xs font-medium tabular-nums transition-colors",
+                  "h-[calc(24px*var(--px,1))] min-h-6 rounded-sm border px-2 text-xs font-medium tabular-nums transition-colors",
                   place === c.place ? "border-primary bg-primary text-primary-foreground" : "border-border bg-surface text-foreground hover:bg-muted",
                 )}
               >

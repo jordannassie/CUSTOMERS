@@ -15,7 +15,7 @@ const COLS = "grid grid-cols-[calc(64px*var(--px,1))_minmax(0,1fr)_auto] items-c
 const preview = (text: string) => text.replace(/[*#_`>|]/g, "").replace(/\s+/g, " ").trim();
 
 /**
- * Each AI's latest answer as a row (mockup-ui, PromptWatch-style): whether it named you, the start of the answer with its
+ * Every answer of the last 30 days as a row, newest first (mockup-ui, PromptWatch-style): whether it named you, the start of the answer with its
  * AI under it, the businesses it named and the date. Each row is a tab; the picked one opens in the details pane beside the list.
  */
 export function AnswerRows({ answers, businessName }: { answers: QuestionAnswer[]; businessName: string }) {
@@ -27,13 +27,13 @@ export function AnswerRows({ answers, businessName }: { answers: QuestionAnswer[
         <span className="hidden sm:block">Businesses</span>
         <span className="text-right">Date</span>
       </div>
-      <TabsPrimitive.List aria-label="Answers from each AI" className="flex flex-col">
+      <TabsPrimitive.List aria-label="Answers from the last 30 days" className="flex flex-col">
         {answers.map((a) => {
           const named = [...(a.namedYou ? [businessName] : []), ...a.competitors, ...a.others];
           return (
             <TabsPrimitive.Trigger
-              key={a.model}
-              value={a.model}
+              key={a.id}
+              value={a.id}
               aria-label={`${a.label} ${a.namedYou ? "named you" : "not named"}`}
               className={cn(
                 COLS,

@@ -1,7 +1,11 @@
 import "server-only";
 import { createServiceClient } from "@/lib/supabase/service";
+import { readBusiness } from "@/modules/business-reads";
 import { isOwnQuestion } from "../scores/counted";
 import { questionTrends, TREND_WEEKS, weeklyScans, type QuestionTrends, type TrendCheck } from "./service";
+
+/** The newest scans always read, so a question's scan before its latest one is there even within the same week. */
+const RECENT_SCANS = 6;
 
 // Up or down per question: saved checks of the last weekly scans, read with the service role. Callers check the user
 // may see this agency first.
@@ -19,7 +23,8 @@ export async function loadQuestionTrends(
 ): Promise<QuestionTrends | null> {
   const db = createServiceClient();
   const [business, questions, runs] = await Promise.all([
-    db.from("businesses").select("id").eq("id", businessId).eq("agency_id", agencyId).maybeSingle(),
+    // The ownership check shares the Overview's business read (perf fix #3).
+    readBusiness(businessId, agencyId),
     // Paused and removed questions are hidden.
     db.from("tracked_prompts").select("id, prompt, source").eq("business_id", businessId).eq("active", true).is("removed_at", null).order("created_at"),
     db
@@ -34,10 +39,12 @@ export async function loadQuestionTrends(
   if (!business.data) return null;
 
   // Two spare weeks, in case a week's latest scan asked none of today's questions.
-  const candidates = weeklyScans(
-    runs.data!.map((r) => ({ id: r.id, at: new Date(r.started_at ?? r.created_at) })),
-    TREND_WEEKS + 2,
-  );
+  const allRuns = runs.data!.map((r) => ({ id: r.id, at: new Date(r.started_at ?? r.created_at) }));
+  const weekly = weeklyScans(allRuns, TREND_WEEKS + 2);
+  // Plus the latest scans, so "Questions that moved" compares each question's latest scan with the one before it, as
+  // the Questions page does (MVP test, 2026-11-14). The weekly table still keeps one scan a week (service.ts).
+  const latest = [...allRuns].sort((a, b) => b.at.getTime() - a.at.getTime()).slice(0, RECENT_SCANS);
+  const candidates = [...new Map([...weekly, ...latest].map((r) => [r.id, r])).values()].sort((a, b) => a.at.getTime() - b.at.getTime());
   const checks: TrendCheck[] = [];
   if (candidates.length) {
     for (let from = 0; ; from += PAGE) {

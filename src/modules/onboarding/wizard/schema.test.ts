@@ -25,6 +25,13 @@ describe("details step input", () => {
     expect(detailsStepInput.parse(details).area).toBeUndefined();
   });
 
+  it("takes the street address the user typed or confirmed, trimmed, and refuses one over 200 characters (F-34)", () => {
+    expect(detailsStepInput.parse({ ...details, address: "  1200 E 6th St " }).address).toBe("1200 E 6th St");
+    expect(detailsStepInput.parse({ ...details, address: "" }).address).toBe("");
+    expect(detailsStepInput.parse(details).address).toBeUndefined();
+    expect(detailsStepInput.safeParse({ ...details, address: "x".repeat(201) }).success).toBe(false);
+  });
+
   it("refuses a vague other label, so no questions are written from it", () => {
     for (const industry of ["Consultant", "Store", "Services", "other", "Small business"]) {
       expect(detailsStepInput.safeParse({ ...details, industry }).success, industry).toBe(false);

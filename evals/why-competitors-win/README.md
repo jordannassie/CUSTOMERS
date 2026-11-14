@@ -62,6 +62,16 @@ One JSON object per line in `dataset.v1.jsonl`. `dataset.v1.jsonl.example` shows
 
 After the first trusted run, check any perfect score or sudden jump by hand (principle 11), and turn every real production failure into a new case (principle 12).
 
+## Labelling with a spreadsheet (B-51)
+
+1. A developer first saves 20 to 40 writer outputs as a JSONL file of `{"id", "input", "output"}` per line: `input` from `buildExplainInput` for a saved scan, `output` the Sonnet explanation for it (a paid writer run; never written by hand). Then: `LABEL_SUITE=why-competitors-win LABEL_CASES_FILE=path/to/cases.jsonl npm run label:export`. The sheet is written to `evals/results/labelling/why-competitors-win.csv` (git-ignored).
+2. Open it in Google Sheets or Excel. Read `facts` and `reasons` for each row and grade `grounded`, `specific`, `actionable` and `no_invented_numbers` as pass or fail, following the guide above. Grade all 4 or none.
+3. Download it back as CSV to the same path (or pass `LABEL_CSV=path/to/file.csv` in the next step).
+4. Import: `LABEL_SUITE=why-competitors-win LABELLER="Your name" LABEL_CASES_FILE=path/to/cases.jsonl npm run label:import`. It adds the labelled rows to `dataset.v1.jsonl` with your name and today's date, keeps rows already there, skips empty ones, and refuses the whole sheet if a row would not load in this suite. You can label in several sittings.
+5. Record who labelled and when under "Labelling" below, then run the fast suite: `npx vitest run --project evals evals/why-competitors-win`. The paid suite runs in `eval-ai.yml`.
+
+The scripts never call a model and never fill a label themselves: every label comes from the person (MVP_SPEC 25, principle 6).
+
 ## Labelling
 
 Who labelled the cases and when: not yet labelled. The dataset must come from a person; B-51 stays open until it is done and the grader is calibrated.

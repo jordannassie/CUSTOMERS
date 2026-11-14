@@ -44,6 +44,16 @@ What to include: 50 to 100 real answers from the three check models across sever
 
 Before labelling, read 20 to 50 real answers by hand (principle 1). After the first run, check any perfect score or sudden jump by hand (principle 11).
 
+## Labelling with a spreadsheet (B-25)
+
+1. Export: `LABEL_SUITE=entity-extraction LABEL_COUNT=80 npm run label:export`. It reads saved real answers read-only from the local database by default (`LABEL_ENV_FILE` to read another; the live project needs `LABEL_FROM_LIVE=1`). The sheet is written to `evals/results/labelling/entity-extraction.csv` (git-ignored).
+2. Open it in Google Sheets or Excel. Fill `names` with every business the answer names, separated by `|`, following the guide above. Write `none` for an answer that names no business. Leave a row empty to skip it.
+3. Download it back as CSV to the same path (or pass `LABEL_CSV=path/to/file.csv` in the next step).
+4. Import: `LABEL_SUITE=entity-extraction LABELLER="Your name" npm run label:import`. It adds the labelled rows to `dataset.v1.jsonl` with your name and today's date, keeps rows already there, skips empty ones, and refuses the whole sheet if a row would not load in this suite. You can label in several sittings.
+5. Record who labelled and when under "Labelling" below, then run the fast suite: `npx vitest run --project evals evals/entity-extraction`. The paid suite runs in `eval-ai.yml`.
+
+The scripts never call a model and never fill a label themselves: every label comes from the person (MVP_SPEC 25, principle 6).
+
 ## Labelling
 
 Who labelled the cases and when: not yet labelled. The dataset must come from a person; B-25 stays open until it is done.

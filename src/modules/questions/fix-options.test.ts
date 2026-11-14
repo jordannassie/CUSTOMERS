@@ -3,6 +3,7 @@ import type { QuestionAnswer } from "./answers";
 import { withFixOptions } from "./fix-options";
 
 const answer = (over: Partial<QuestionAnswer>): QuestionAnswer => ({
+  id: "a1",
   model: "openai",
   label: "ChatGPT",
   checkedAt: "2026-10-20T10:00:00Z",

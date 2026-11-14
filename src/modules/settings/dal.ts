@@ -26,6 +26,8 @@ export type SettingsBusiness = {
   /** Neighborhood or area, "" when not set. */
   area: string;
   phone: string;
+  /** Street address, "" when not set (MVP_SPEC 3.1). */
+  address: string;
   website: string;
   models: ModelId[];
   frequency: Frequency;
@@ -51,7 +53,7 @@ export async function getSettings(options: GuardOptions = {}): Promise<SettingsV
     supabase.from("agencies").select("name, logo_url").eq("id", agency.id).single(),
     supabase
       .from("businesses")
-      .select("id, status, name, industry, services, aliases, primary_city, primary_region, primary_country, primary_area, phone, domain, models, scan_frequency")
+      .select("id, status, name, industry, services, aliases, primary_city, primary_region, primary_country, primary_area, phone, street_address, domain, models, scan_frequency")
       .eq("agency_id", agency.id)
       .is("deleted_at", null)
       .order("created_at", { ascending: false }),
@@ -91,6 +93,7 @@ export async function getSettings(options: GuardOptions = {}): Promise<SettingsV
       country: countryCode(row.primary_country),
       area: row.primary_area ?? "",
       phone: row.phone ?? "",
+      address: row.street_address ?? "",
       website: row.domain ?? "",
       models: row.models.filter((m): m is ModelId => (MODEL_IDS as readonly string[]).includes(m)),
       frequency: (FREQUENCIES as readonly string[]).includes(row.scan_frequency) ? (row.scan_frequency as Frequency) : "weekly",
@@ -110,6 +113,7 @@ export type ProfileUpdate = {
   primary_country?: string | null;
   primary_area?: string | null;
   phone: string | null;
+  street_address?: string | null;
   domain: string | null;
   /** Kept in step with the website: mention rules are stricter without one (D-08). */
   has_website: boolean;

@@ -4,9 +4,11 @@ import "server-only";
 import { createServiceClient } from "@/lib/supabase/service";
 import { OPEN_FIX_STATUSES } from "@/lib/fix-status";
 import { requireAgency } from "@/modules/auth";
+import { readCompetitors } from "@/modules/business-reads";
 import { getLiveOpportunities } from "@/modules/insights";
+import { loadEffects } from "../effect/dal";
 import { MAX_OPEN_ADDED_ACTIONS } from "../schema";
-import { ADDED_SOURCES, actionRow, statusUpdate, toActionItems, toActionStatus, type ActionItem, type ActionState, type ActionStatus, type NewAction } from "./service";
+import { ADDED_SOURCES, actionRow, statusUpdate, toActionItems, toActionStatus, toImpact, type ActionItem, type ActionState, type ActionStatus, type NewAction } from "./service";
 
 /**
  * Every action of one of the agency's businesses; null when it is not theirs. `google`: fill in Google's values,
@@ -14,14 +16,17 @@ import { ADDED_SOURCES, actionRow, statusUpdate, toActionItems, toActionStatus, 
  */
 export async function getActionsBoard(businessId: string, { google = false }: { google?: boolean } = {}): Promise<{ items: ActionItem[] } | null> {
   const { user } = await requireAgency({ next: "/actions" });
-  const db = createServiceClient();
-  const [live, rivals] = await Promise.all([
-    getLiveOpportunities(businessId, undefined, { google }),
-    db.from("business_competitors").select("id, name").eq("business_id", businessId).order("created_at"),
-  ]);
+  // The competitors are shared with the Overview's other sections (perf fix #3).
+  const [live, rivals] = await Promise.all([getLiveOpportunities(businessId, undefined, { google }), readCompetitors(businessId)]);
   if (rivals.error) throw new Error(`Actions: could not read competitors: ${rivals.error.message}`);
   if (!live) return null;
-  return { items: toActionItems(live, rivals.data, user.id) };
+  // Only the fields the board shows: the shared rows carry more (phone, Places ids) that must not reach the browser.
+  const competitors = (rivals.data ?? []).map((c) => ({ id: c.id, name: c.name }));
+  const items = toActionItems(live, competitors, user.id);
+  // Done actions show what changed in the scans since (B-98).
+  const done = items.flatMap((i) => (i.status === "done" && i.completedAt ? [{ id: i.id, completedAt: i.completedAt }] : []));
+  const effects = await loadEffects(businessId, done);
+  return { items: items.map((i) => ({ ...i, effect: effects.get(i.id) ?? null })) };
 }
 
 async function ownsBusiness(agencyId: string, businessId: string): Promise<boolean> {
@@ -79,11 +84,11 @@ export async function actionStates(businessId: string, keys: string[]): Promise<
   if (unique.length === 0) return new Map();
   const { data, error } = await createServiceClient()
     .from("opportunities")
-    .select("id, status, dedupe_key")
+    .select("id, status, impact, dedupe_key")
     .eq("business_id", businessId)
     .in("dedupe_key", unique);
   if (error) throw new Error(`Actions: could not read added fixes: ${error.message}`);
-  return new Map(data.map((r) => [r.dedupe_key!, { id: r.id, status: toActionStatus(r.status) }]));
+  return new Map(data.map((r) => [r.dedupe_key!, { id: r.id, status: toActionStatus(r.status), impact: toImpact(r.impact) }]));
 }
 
 /** False when the action is not one of this agency's. */

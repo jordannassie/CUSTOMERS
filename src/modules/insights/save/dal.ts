@@ -3,6 +3,7 @@ import "server-only";
 // role after a scan; the pages read fixesState after checking the business is the agency's.
 import { providerErrorKind } from "@/lib/provider-error-kind";
 import { createServiceClient } from "@/lib/supabase/service";
+import { readBusiness } from "@/modules/business-reads";
 import { requireAgency } from "@/modules/auth";
 import type { Explanation, OpportunityDraft } from "../explain";
 import { fallbackMessage, fixesPending, saveFor } from "./service";
@@ -103,7 +104,8 @@ export async function loadFixesState(businessId: string, now = new Date()): Prom
 
 /** The fixes state of one of the agency's businesses; null when it is not theirs. */
 export async function agencyFixesState(agencyId: string, businessId: string): Promise<FixesState | null> {
-  const { data, error } = await createServiceClient().from("businesses").select("id").eq("id", businessId).eq("agency_id", agencyId).maybeSingle();
+  // The ownership check shares the Overview's business read (perf fix #3).
+  const { data, error } = await readBusiness(businessId, agencyId);
   if (error) throw new Error(`Insights: could not load the business: ${error.message}`);
   return data ? loadFixesState(businessId) : null;
 }

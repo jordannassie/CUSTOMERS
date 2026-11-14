@@ -4,6 +4,7 @@ export { ALREADY_FINISHED, runScan, scanCheckCount, type ScanDeps, type ScanOutc
 export { detectMentions, type MentionTarget } from "./mentions";
 export { isMissingSample, NO_SAMPLE_ANSWERS } from "./sample-answers";
 export { liveCheckRunner } from "./runs/dal";
+export { collectLiveNameBatches } from "./name-batches/dal";
 export { CHECK_MODELS } from "./providers/models";
 export type { CheckResult, ProviderId } from "./providers/types";
 export { loadScoreReport, type ScoreReport } from "./scores/dal";

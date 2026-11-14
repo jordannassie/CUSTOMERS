@@ -15,13 +15,16 @@ import { ScrollX } from "@/components/ui/scroll-x";
 const SITE_IN_TEXT = /\b((?:[a-z0-9-]+\.)+[a-z]{2,})\b/i;
 
 const TH = "px-3 py-2.5 text-left text-xs font-medium whitespace-nowrap text-muted-foreground";
-const TD = "px-3 py-3 align-middle";
+// Below md each row is a card (QA round 2, item 14): the cells stack and wrap, so nothing needs a sideways scroll.
+const TD = "px-3 py-3 align-middle max-md:p-0";
 
 /**
  * The Competitors leaderboard as a table (dashboard redesign, mockup-ui look): rank, the business, its score as a
  * ring, the last scans, the weekly change, each AI tool as a heat cell, the main likely reason, the standing and
  * Compare. Wide, so it scrolls inside its own box on a phone, never the page. Only the AI tools this business uses get
  * a column. The score stays the third cell and the standing the second to last (e2e tests read them by position).
+ * On a phone the same rows turn into cards with CSS only: the business on top, then score, each AI tool, the standing
+ * and Compare, then the reason, so the cells and their order never change.
  *
  * `ownDomain`: your business's website, for your row's icon. `website`: lets a competitor with no known website get one
  * typed in right here ("Add website", saved as your own entry, D-73), so its logo shows (2026-10-30).
@@ -45,8 +48,8 @@ export function LeaderTable({
     // No fixed min width (mockup-ui): the table fits its card, and narrower screens hide the less needed columns with
     // CSS only, so every row keeps the same cells (e2e reads Score as the 3rd cell and Status as the second to last).
     <ScrollX>
-      <table className="w-full border-collapse text-[length:calc(13px*var(--px,1))]" data-testid="leaderboard">
-        <thead className="bg-muted">
+      <table className="w-full border-collapse text-[length:calc(13px*var(--px,1))] max-md:block" data-testid="leaderboard">
+        <thead className="bg-muted max-md:hidden">
           <tr className="border-b border-border">
             <th className={cn(TH, "hidden w-10 pr-0 sm:table-cell")}>#</th>
             <th className={TH}>Business</th>
@@ -64,16 +67,19 @@ export function LeaderTable({
             </th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-border">
+        <tbody className="divide-y divide-border max-md:block">
           {rows.map((r) => (
             <tr
               key={`${r.isYou}-${r.name}`}
-              className={cn("transition-colors", r.isYou ? "bg-primary-tint/40" : "hover:bg-muted/40")}
+              className={cn(
+                "transition-colors max-md:flex max-md:flex-wrap max-md:items-center max-md:gap-x-3 max-md:gap-y-2 max-md:px-3 max-md:py-3",
+                r.isYou ? "bg-primary-tint/40" : "hover:bg-muted/40",
+              )}
               data-you={r.isYou || undefined}
               data-testid="leader-row"
             >
               <td className={cn(TD, "hidden pr-0 text-xs text-text-hint tabular-nums sm:table-cell")}>{r.rank ?? ""}</td>
-              <td className={cn(TD, "max-w-[calc(240px*var(--px,1))] min-w-[calc(110px*var(--px,1))] sm:min-w-[calc(150px*var(--px,1))]")}>
+              <td className={cn(TD, "max-w-[calc(240px*var(--px,1))] min-w-[calc(110px*var(--px,1))] sm:min-w-[calc(150px*var(--px,1))] max-md:block max-md:max-w-none max-md:basis-full")}>
                 <Business row={r} ownDomain={ownDomain} website={website} />
               </td>
               <td className={TD}>
@@ -106,14 +112,15 @@ export function LeaderTable({
                 </td>
               )}
               {tools.map((t) => (
-                <td key={t.id} className={cn(TD, "hidden text-center md:table-cell lg:hidden xl:table-cell")}>
+                <td key={t.id} className={cn(TD, "hidden text-center max-md:inline-flex max-md:items-center max-md:gap-1.5 md:table-cell lg:hidden xl:table-cell")}>
+                  <span className="text-xs text-muted-foreground md:hidden">{t.label}</span>
                   <HeatCell value={r.byModel[t.id]} />
                 </td>
               ))}
-              <td className={cn(TD, "hidden max-w-[calc(220px*var(--px,1))] min-w-[calc(100px*var(--px,1))] xl:table-cell")}>
+              <td className={cn(TD, "hidden max-w-[calc(220px*var(--px,1))] min-w-[calc(100px*var(--px,1))] max-md:order-last max-md:block max-md:max-w-none max-md:basis-full md:hidden xl:table-cell")}>
                 <Reason row={r} />
               </td>
-              <td className={cn(TD, "hidden whitespace-nowrap sm:table-cell")}>
+              <td className={cn(TD, "hidden whitespace-nowrap max-md:block sm:table-cell")}>
                 {r.standing ? (
                   <span className={cn(PILL_BOX, r.standing === "behind" ? PILL_CLASS.attention : PILL_CLASS.plain)} data-testid="standing">
                     {STANDING_TEXT[r.standing]}
@@ -124,7 +131,7 @@ export function LeaderTable({
                   </span>
                 ) : null}
               </td>
-              <td className={cn(TD, "pl-1 text-right sm:pl-3")}>
+              <td className={cn(TD, "pl-1 text-right sm:pl-3 max-md:ml-auto")}>
                 {r.competitorId && (
                   <Link
                     href={compareHref(r.competitorId)}

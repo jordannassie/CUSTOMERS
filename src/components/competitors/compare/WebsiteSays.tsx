@@ -7,6 +7,9 @@ import type { ClaimRow, ServiceChip } from "@/modules/competitors";
 import { QuoteBox, QuoteRow, Said, useOpenRows } from "./QuoteRows";
 import { PILL_VARIANT } from "@/components/app/pills";
 
+/** "home page", "/menu page": where a claim was found when its quote is too short to show. */
+const onPage = (page: string) => (page === "/" ? "home page" : `${page} page`);
+
 const sentence = (label: string) => label.charAt(0).toUpperCase() + label.slice(1);
 
 type Yours = ServiceChip["yours"];
@@ -128,14 +131,21 @@ function Claims({ name, rows }: { name: string; rows: ClaimRow[] }) {
               </span>
             }
           >
-            <Said who={name} tone="them" about={r.label} quote={r.them ? r.them.quote : null} page={r.them ? r.them.page : undefined} fallback="Not found on their pages." />
+            <Said
+              who={name}
+              tone="them"
+              about={r.label}
+              quote={r.them ? r.them.quote : null}
+              page={r.them ? r.them.page : undefined}
+              fallback={r.them ? `Mentioned on their ${onPage(r.them.page)}.` : "Not found on their pages."}
+            />
             <Said
               who="You"
               tone="you"
               about={r.label}
               quote={r.you ? r.you.quote : null}
               page={r.you ? r.you.page : undefined}
-              fallback={r.you === null ? "We haven't read your website the same way yet." : "Not found on the pages we read of yours."}
+              fallback={r.you === null ? "We haven't read your website the same way yet." : r.you ? `Mentioned on your ${onPage(r.you.page)}.` : "Not found on the pages we read of yours."}
             />
           </QuoteRow>
         );

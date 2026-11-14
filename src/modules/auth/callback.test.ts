@@ -28,6 +28,13 @@ describe("callbackFailurePath", () => {
 
   it("says the email is confirmed when a signup code fails in another browser", () => {
     expect(callbackFailurePath("signup", "exchange", params("from=signup&code=x"), true)).toBe("/login?error=signup_confirmed");
+    // The plan picked on the pricing page rides along in next, so another browser keeps it after logging in.
+    expect(callbackFailurePath("signup", "exchange", params("from=signup&code=x&next=%2Fonboarding%3Fplan%3Dpro"), true)).toBe(
+      "/login?error=signup_confirmed&next=%2Fonboarding%3Fplan%3Dpro",
+    );
+    expect(callbackFailurePath("signup", "exchange", params("from=signup&code=x&next=%2F%2Fevil.example"), true)).toBe(
+      "/login?error=signup_confirmed",
+    );
   });
 
   it("gives reset and email change links their own messages", () => {
