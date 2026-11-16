@@ -269,7 +269,8 @@
   animation: marqueeLeft 40s linear infinite;
   will-change: transform;
 }
-.marquee-scroll:hover {
+.marquee-scroll:hover,
+.marquee-scroll:focus-within {
   animation-play-state: paused;
 }
 

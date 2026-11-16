@@ -5,6 +5,17 @@ import type { DirectoryApp } from "@/modules/apps-directory/types";
 import type { NativeSummary } from "@/modules/apps-directory/review-types";
 import { AppCard } from "./AppCard";
 
+// The moving row (owner, 2026-11-16): the featured six first, then the other business apps. Developer and hosting tools
+// (GitHub, Vercel, Supabase...) stay on /apps; a local business owner is not looking for them here.
+const NOT_ON_HOME = new Set(["development", "infrastructure", "security"]);
+const STRIP_SIZE = 20;
+
+export function homeStripApps(): DirectoryApp[] {
+  const featured = HOME_FEATURED_SLUGS.map((slug) => DIRECTORY_CATALOG.find((app) => app.slug === slug)).filter((app): app is DirectoryApp => Boolean(app));
+  const rest = DIRECTORY_CATALOG.filter((app) => !featured.includes(app) && !app.categories.some((c) => NOT_ON_HOME.has(c)));
+  return [...featured, ...rest].slice(0, STRIP_SIZE);
+}
+
 const PILLS = [
   { label: "All", href: "/apps" },
   { label: "AI Search", href: "/apps?category=ai-search" },
@@ -16,10 +27,21 @@ const PILLS = [
 ];
 
 export function HomeAppsSection({ ratings = {} }: { ratings?: Record<string, NativeSummary> }) {
-  const featured = HOME_FEATURED_SLUGS.map((slug) => DIRECTORY_CATALOG.find((app) => app.slug === slug)).filter((app): app is DirectoryApp => Boolean(app));
+  const apps = homeStripApps();
+  const row = (copy?: boolean) => (
+    // The second copy makes the loop seamless; it is hidden from screen readers and keyboard (inert).
+    <ul aria-hidden={copy || undefined} inert={copy || undefined} className={`flex shrink-0 gap-3 pr-3 ${copy ? "motion-reduce:hidden" : ""}`}>
+      {apps.map((app) => (
+        <li key={app.slug} className="w-[calc(196px*var(--px,1))] shrink-0">
+          <AppCard app={app} source="homepage" badge={app.topPick} layout="home" native={ratings[app.slug]} />
+        </li>
+      ))}
+    </ul>
+  );
   return (
-    <section id="ai-apps" className="border-b border-[#EEEEEA] bg-background px-4 py-12 sm:py-14">
-      <div className="mx-auto max-w-[calc(1240px*var(--px,1))]">
+    <section id="ai-apps" className="border-b border-[#EEEEEA] bg-background py-12 sm:py-14">
+      {/* Same width as the other home sections (Section in marketing/section.tsx). */}
+      <div className="mx-auto max-w-[calc(1120px*var(--px,1))] px-4 sm:px-6">
         <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
           <div>
             <h2 className="text-[length:calc(28px*var(--px,1))] font-bold tracking-tight text-foreground sm:text-[length:calc(34px*var(--px,1))]">Discover the best AI tools</h2>
@@ -54,10 +76,13 @@ export function HomeAppsSection({ ratings = {} }: { ratings?: Record<string, Nat
         </div>
 
         <h3 className="mb-3 mt-6 text-[length:calc(16px*var(--px,1))] font-semibold text-foreground">Featured AI Tools</h3>
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
-          {featured.map((app) => (
-            <AppCard key={app.slug} app={app} source="homepage" badge={app.topPick} layout="home" native={ratings[app.slug]} />
-          ))}
+        {/* Moves like the question strip; stops under the pointer or keyboard focus. With reduced motion it is a row
+            that scrolls by hand. py-2: room for the card shadow and hover lift inside the clipped scroller. */}
+        <div className="-mx-4 overflow-hidden px-4 py-2 sm:-mx-6 sm:px-6 motion-reduce:overflow-x-auto">
+          <div className="marquee-scroll flex w-max" style={{ animationDuration: `${apps.length * 3}s` }}>
+            {row()}
+            {row(true)}
+          </div>
         </div>
       </div>
     </section>
