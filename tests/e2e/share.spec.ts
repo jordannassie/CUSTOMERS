@@ -220,8 +220,8 @@ test("a snapshot link keeps opening its own report after new answers come in", a
     .from("visibility_results")
     .insert({ run_id: run.id, business_id: owner.businessId, tracked_prompt_id: question.id, provider: "openai", business_mentioned: false, competitors_mentioned: [], cached: false, answer_text: "new answer" })
     .throwOnError();
-  expect(await openLink(page, frozen)).toContain(`/${reportId}.pdf`);
-  expect(await openLink(page, live)).not.toContain(`/${reportId}.pdf`);
+  expect(await openLink(page, frozen)).toContain(`/${reportId}-v2.pdf`);
+  expect(await openLink(page, live)).not.toContain(`/${reportId}-v2.pdf`);
   await expectPdf(page, frozen);
 
   // Deleting the snapshot stops its link. Opening the live link saved a newer report (D-90), so pick the snapshot's
