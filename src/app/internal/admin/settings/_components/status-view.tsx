@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { cn } from "cn";
 import { Badge } from "@/components/ui/badge";
 import { statusSummary, type ServiceStatus, type StatusState, type SystemStatus } from "@/modules/system-status";
@@ -46,11 +45,8 @@ export default function StatusView({ status, openAlerts = 0, recheck }: { status
             </p>
             {openAlerts > 0 && (
               <p className="mt-1 text-[length:calc(13px*var(--px,1))] text-muted-foreground" data-testid="service-alerts-note">
-                {openAlerts === 1 ? "An alert is open" : `${openAlerts} alerts are open`} on the{" "}
-                <Link href="/internal/admin" className="text-primary hover:underline">
-                  Overview
-                </Link>{" "}
-                until the check passes again.
+                {openAlerts === 1 ? "An alert is open" : `${openAlerts} alerts are open`} in the alert bell at the top until the check
+                passes again.
               </p>
             )}
           </div>

@@ -29,6 +29,7 @@ export {
 export { agencyFilter, AGENCY_FILTERS, MAX_CREDIT_CHANGE, MAX_TRIAL_DAYS, type AgencyFilter } from "./agencies/schema";
 export { adminStripeConnected } from "./agencies/stripe";
 export { loadOverview, type AdminOverview } from "./overview/dal";
+export { loadAlertBell, type AlertBell, type ServiceProblem } from "./overview/bell/dal";
 export { displayStatus } from "./agencies/service";
 export { aiCostShare, type MonthChange, type Revenue } from "./overview/service";
 export { recheckServices, resolveAlert } from "./alerts/actions";

@@ -6,8 +6,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import AdminPageHeader from "./_components/page-header";
 import { ReportSkeleton } from "./_components/skeletons";
 import { StatGrid, StatTile } from "./_components/stat";
-import { alertWording, includeTestFilter, isServiceCheckKind, loadOverview, resolveAlert } from "@/modules/admin";
-import { requestNow } from "@/lib/request-now";
+import { includeTestFilter, loadOverview } from "@/modules/admin";
 import { requireAdmin } from "@/modules/auth";
 import { formatDate } from "./_components/format";
 import { credits } from "./agencies/_components/agency-parts";
@@ -15,7 +14,6 @@ import Sparkline from "./_overview/sparkline";
 import { TenSquares, TwoBars } from "@/components/overview/StatVisuals";
 import MoneyPanel from "./_overview/money-panel";
 import { FailedScans, RecentSignups } from "./_overview/lists";
-import OpenAlerts from "./_overview/open-alerts";
 
 // The admin layout's title template only reaches pages below it, so its own page names the pattern itself.
 export const metadata = { title: { absolute: "Overview | Admin" } };
@@ -40,17 +38,7 @@ async function Overview({ searchParams }: Props) {
   // "Industries with no question library" is hidden for now (owner, 2026-11-16); _overview/library-gaps.tsx and
   // loadLibraryGaps stay for when it comes back.
   const o = await loadOverview(undefined, undefined, { includeTest });
-  const now = requestNow();
-  const alerts = o.openAlerts.map((a) => ({
-    ...a,
-    ...alertWording(a, now),
-    started: formatDate(a.createdAt, true),
-    lastSeen: formatDate(a.lastSeenAt, true),
-    serviceCheck: isServiceCheckKind(a.kind),
-  }));
-  const overdue = o.overdueScans
-    ? { count: o.overdueScans.count, businesses: o.overdueScans.businesses.map((b) => ({ ...b, due: formatDate(b.dueAt) })) }
-    : null;
+  // Open alerts and overdue scans live in the header's alert bell now (owner, 2026-11-16), on every admin page.
   return (
     <>
       <AdminPageHeader
@@ -66,9 +54,6 @@ async function Overview({ searchParams }: Props) {
           </Link>
         }
       />
-
-      {/* Problems come first while there are any, as one slim bar; an empty list sits at the bottom. */}
-      {(alerts.length > 0 || overdue) && <OpenAlerts rows={alerts} resolve={resolveAlert} overdue={overdue} />}
 
       <StatGrid>
         {/* Small pictures like the app Overview's (StatVisuals): each draws only the numbers written beside it. */}
@@ -132,8 +117,6 @@ async function Overview({ searchParams }: Props) {
         <FailedScans rows={o.recentFailedScans} includeTest={includeTest} />
       </div>
 
-
-      {alerts.length === 0 && !overdue && <OpenAlerts rows={alerts} resolve={resolveAlert} />}
     </>
   );
 }

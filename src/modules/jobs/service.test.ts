@@ -105,4 +105,11 @@ describe("scanStatusView with an abandoned scan (MVP test, 2026-11-14)", () => {
     const view = scanStatusView({ status: "failed", finishedAt: longAgo, error: ABANDONED_ERROR }, ok, now);
     expect(view.failedReason).toBe(ABANDONED_TEXT);
   });
+
+  it("says what to add for a business the worker could not scan, never to try again later (2026-11-16)", () => {
+    const skipped = (error: string) => scanStatusView({ status: "skipped", finishedAt: "2026-11-16T10:00:00Z", error }, ok).failedReason;
+    expect(skipped("This business has no active questions.")).toMatch(/^This business has no questions to ask yet\. Add at least one/);
+    expect(skipped("Add the business city before scanning.")).toBe("Add the business city in Settings, then run a scan.");
+    expect(skipped("Choose at least one AI model to check.")).toMatch(/under AI checks in Settings/);
+  });
 });

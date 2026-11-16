@@ -38,6 +38,8 @@ async function createAgency(businesses: number, drafts = 0): Promise<Agency> {
   }));
   const made = rows.length ? await service.from("businesses").insert(rows).select("id") : { data: [], error: null };
   if (made.error) throw made.error;
+  // One question each: a business with none cannot be scanned (REASONS.noQuestions, 2026-11-16).
+  if (made.data.length) await service.from("tracked_prompts").insert(made.data.map((b) => ({ business_id: b.id, prompt: "Who is the best bakery?" }))).throwOnError();
   // One at a time: migration 067 allows one wizard draft per agency, and these have no onboarding_step, like seeds.
   for (let i = 0; i < drafts; i++) {
     const draft = await service

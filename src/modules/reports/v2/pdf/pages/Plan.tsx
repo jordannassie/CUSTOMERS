@@ -47,16 +47,17 @@ function FixRow({ ctx, fix }: { ctx: ReportCtx; fix: ReportSnapshot["fixes"][num
   );
 }
 
-function AreaCard({ ctx, area, textLines }: { ctx: ReportCtx; area: ReportSnapshot["areas"][number]; textLines: number }) {
+function AreaCard({ ctx, area, textLines, compact }: { ctx: ReportCtx; area: ReportSnapshot["areas"][number]; textLines: number; compact: boolean }) {
+  // Compact with more than 4 cards, so a full set of whole texts still fits the page under the table.
   return (
-    <Card style={{ width: "49%", paddingHorizontal: 12, paddingTop: 10, paddingBottom: 11, marginBottom: 8 }}>
+    <Card style={{ width: "49%", paddingHorizontal: 12, paddingTop: compact ? 8 : 10, paddingBottom: compact ? 8 : 11, marginBottom: compact ? 6 : 8 }}>
       <View style={[s.row, { justifyContent: "space-between", alignItems: "flex-start", marginBottom: 4 }]}>
         <Text style={[{ fontSize: 11, fontWeight: 600, flex: 1, paddingRight: 8 }, lines(1)]}>{area.label}</Text>
         {area.fixes.length > 0 ? (
           <Text style={{ fontSize: 9, fontWeight: 700, color: ctx.accent, paddingTop: 1.5 }}>{fixList(area.fixes)}</Text>
         ) : null}
       </View>
-      <Text style={[{ fontSize: 9.75, color: COLORS.secondary, lineHeight: 1.45 }, lines(textLines)]}>{area.text}</Text>
+      <Text style={[{ fontSize: compact ? 9.25 : 9.75, color: COLORS.secondary, lineHeight: compact ? 1.35 : 1.45 }, lines(textLines)]}>{area.text}</Text>
     </Card>
   );
 }
@@ -99,7 +100,7 @@ export function Plan({ ctx }: { ctx: ReportCtx }) {
           <SubHead minPresenceAhead={80}>Where to make the changes</SubHead>
           <View style={[s.row, { flexWrap: "wrap", justifyContent: "space-between" }]}>
             {areas.map((area) => (
-              <AreaCard key={area.area + area.label} ctx={ctx} area={area} textLines={areaLines} />
+              <AreaCard key={area.area + area.label} ctx={ctx} area={area} textLines={areaLines} compact={areas.length > 4} />
             ))}
           </View>
         </>

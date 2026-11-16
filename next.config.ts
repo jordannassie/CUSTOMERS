@@ -27,6 +27,8 @@ const CUT_PAGES = [
 
 const nextConfig: NextConfig = {
   cacheComponents: true,
+  // Development only: the "N" badge sat over the sidebars' signed-in rows at the bottom left (2026-11-16).
+  devIndicators: { position: "bottom-right" },
   // Inlined as process.env.NEXT_PUBLIC_SITE_URL / _APP_URL in server, edge and browser code alike, so the values
   // filled in above reach env.ts everywhere. Unset keys are left out, and Next then inlines nothing for them.
   env: BUILD_URLS,

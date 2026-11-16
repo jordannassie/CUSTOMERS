@@ -2,10 +2,12 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import type { Resolve } from "../_overview/open-alerts";
+import { AlertBell, type AlertBellData } from "./alert-bell";
 import { EXTRA_ITEMS, MAIN_ITEMS, isActiveItem, usePageMissing } from "./nav-items";
 
-// The window's top bar, like the app's (TopBar): where you are, as Admin / page.
-export default function AdminTopBar() {
+// The window's top bar, like the app's (TopBar): where you are, as Admin / page, and the alert bell on the right.
+export default function AdminTopBar({ bell, resolve }: { bell: AlertBellData; resolve: Resolve }) {
   const pathname = usePathname();
   const missing = usePageMissing(pathname);
   const page = missing ? "Page not found" : ([...MAIN_ITEMS, ...EXTRA_ITEMS].find((item) => isActiveItem(item, pathname))?.label ?? null);
@@ -22,6 +24,9 @@ export default function AdminTopBar() {
           </>
         )}
       </nav>
+      <div className="ml-auto">
+        <AlertBell data={bell} resolve={resolve} />
+      </div>
     </header>
   );
 }

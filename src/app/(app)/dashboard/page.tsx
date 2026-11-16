@@ -140,7 +140,8 @@ export default async function OverviewPage({ searchParams }: { searchParams: Pro
                   start={startScan}
                   label={scanStatus.data.lastResult === null ? "Run first scan" : "Run scan"}
                 />
-                {!scanStatus.data.scanning && (
+                {/* No cost line when there is nothing to ask: Run scan says what to add instead. */}
+                {!scanStatus.data.scanning && overview.scanCredits > 0 && (
                   <p className="text-xs text-muted-foreground tabular-nums" data-testid="scan-cost">
                     Takes about a minute and uses about {overview.scanCredits} {overview.scanCredits === 1 ? "credit" : "credits"}.
                   </p>
@@ -164,10 +165,6 @@ export default async function OverviewPage({ searchParams }: { searchParams: Pro
         </>
       )}
 
-      <p className="max-w-prose text-[length:calc(11.5px*var(--px,1))] text-text-hint">
-        Scores come from asking each AI your customers&apos; questions with web search and your location. Answers in the ChatGPT, Claude and Perplexity apps
-        can differ. No one can guarantee AI recommendations.
-      </p>
     </div>
   );
 }

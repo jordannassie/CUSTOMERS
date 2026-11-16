@@ -39,6 +39,8 @@ export async function setup(status = "trialing") {
       .throwOnError();
     businesses.push(data.id);
   }
+  // One question each: a business with none cannot be scanned (entitlements REASONS.noQuestions, 2026-11-16).
+  await service.from("tracked_prompts").insert(businesses.map((id) => ({ business_id: id, prompt: "Who is the best one near me?" }))).throwOnError();
   return { agencyId: agency.id, email, businesses, customer: fx.id("cus") };
 }
 

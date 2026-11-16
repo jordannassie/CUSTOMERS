@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
-import { ArrowDown, ArrowUp, ChevronRight, FileText, Globe, MapPin, Share2, Star } from "lucide-react";
+import { ArrowDown, ArrowUp, ChevronRight, Equal, FileText, Flag, Globe, MapPin, Share2, Star, type LucideIcon } from "lucide-react";
 import { cn } from "cn";
 import { SiteIcon } from "@/components/app/SiteIcon";
 import { fixHref } from "@/lib/fix-where";
@@ -67,7 +67,7 @@ export function QuestionsMoved({ trends }: { trends: QuestionTrends | null }) {
   return (
     <Panel title="Questions that moved" right={moved.length > 0 ? "Since the scan before" : undefined} link={{ href: "/questions", text: "All questions" }} testId="questions-moved">
       {moved.length === 0 ? (
-        <Empty>{trends?.comparable ? "No question moved since the scan before." : "Changes show after your second scan."}</Empty>
+        <NothingMoved trends={trends} day={day} />
       ) : (
         <ul className="flex flex-col">
           {moved.map((m) => {
@@ -98,6 +98,47 @@ export function QuestionsMoved({ trends }: { trends: QuestionTrends | null }) {
         </ul>
       )}
     </Panel>
+  );
+}
+
+/**
+ * The empty card (owner, 2026-11-16: one grey line looked broken). After one scan it says where things start, with
+ * the first scan's own numbers; once scans can be compared and nothing changed, it says so and since when.
+ */
+function NothingMoved({ trends, day }: { trends: QuestionTrends | null; day: (d: Date) => string }) {
+  const scans = trends?.scans ?? [];
+  const latest = (trends?.rows ?? []).map((r) => r.cells.at(-1)).filter((c) => c != null);
+  const named = latest.filter((c) => c.named > 0).length;
+  if (trends?.comparable) {
+    const before = scans.at(-2);
+    return (
+      <EmptyState icon={Equal} title={before ? `Nothing moved since ${day(before.at)}` : "Nothing moved since your last scan"}>
+        Each question got the same result as last time. When AI starts or stops naming you for one, it shows here.
+      </EmptyState>
+    );
+  }
+  const first = scans.at(-1);
+  return (
+    <EmptyState icon={Flag} title="Your starting point is set">
+      {first && latest.length > 0
+        ? `Your first scan on ${day(first.at)} named you in ${named} of ${latest.length} ${latest.length === 1 ? "question" : "questions"}. `
+        : ""}
+      After your next scan, the questions that went up or down show here.
+    </EmptyState>
+  );
+}
+
+function EmptyState({ icon: Icon, title, children }: { icon: LucideIcon; title: string; children: ReactNode }) {
+  return (
+    <div className="flex items-start gap-3.5 px-4 py-5" data-testid="questions-moved-empty">
+      <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary-tint text-primary" aria-hidden="true">
+        <Icon className="size-[18px] stroke-[1.75]" />
+      </span>
+      <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+        <p className="text-[length:calc(13.5px*var(--px,1))] font-semibold text-foreground">{title}</p>
+        <p className="max-w-[70ch] text-[length:calc(12.5px*var(--px,1))] leading-relaxed text-muted-foreground">{children}</p>
+      </div>
+    </div>
   );
 }
 

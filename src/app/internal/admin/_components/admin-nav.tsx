@@ -4,12 +4,15 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import { HoverPrefetchLink } from "@/components/app/HoverPrefetchLink";
 import { usePathname } from "next/navigation";
-import { ArrowLeft, Menu } from "lucide-react";
+import { Menu } from "lucide-react";
 import { cn } from "cn";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { EXTRA_ITEMS, MAIN_ITEMS, isActiveItem, usePageMissing, type AdminNavItem } from "./nav-items";
 import { appFetch } from "@/lib/session-expired";
+import type { Resolve } from "../_overview/open-alerts";
+import { AdminAccount } from "./admin-account";
+import { AlertBell, type AlertBellData } from "./alert-bell";
 
 const LOGO = "/images/logos/logo-black-sidebar.png";
 
@@ -125,15 +128,8 @@ function NavBody({ adminEmail, onNavigate }: { adminEmail: string; onNavigate?: 
           </ul>
         </div>
       </nav>
-      <div className="mt-auto flex flex-col gap-1 border-t border-border pt-2.5">
-        <HoverPrefetchLink href="/dashboard" onClick={onNavigate} className={cn(ROW, ROW_IDLE)}>
-          <ArrowLeft className="size-4 shrink-0 stroke-[1.75] text-muted-foreground" aria-hidden="true" />
-          Back to dashboard
-        </HoverPrefetchLink>
-        {/* The whole address shows, on a second line if needed, instead of being cut off (admin audit 2026-11-12). */}
-        <p className="px-2.5 text-[length:calc(11px*var(--px,1))] leading-snug text-text-hint">
-          Signed in as <span className="block break-all text-muted-foreground">{adminEmail}</span>
-        </p>
+      <div className="mt-auto border-t border-border pt-2.5">
+        <AdminAccount email={adminEmail} onNavigate={onNavigate} />
       </div>
     </div>
   );
@@ -153,7 +149,7 @@ function Logo() {
   );
 }
 
-export default function AdminNav({ adminEmail }: { adminEmail: string }) {
+export default function AdminNav({ adminEmail, bell, resolve }: { adminEmail: string; bell: AlertBellData; resolve: Resolve }) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -168,6 +164,8 @@ export default function AdminNav({ adminEmail }: { adminEmail: string }) {
 
       <header className="sticky top-0 z-40 flex h-14 items-center justify-between border-b border-border bg-surface px-4 lg:hidden">
         <Logo />
+        <div className="flex items-center gap-1">
+        <AlertBell data={bell} resolve={resolve} />
         <Sheet open={open} onOpenChange={setOpen}>
           <SheetTrigger asChild>
             <Button variant="ghost" size="icon" aria-label="Open admin menu">
@@ -179,6 +177,7 @@ export default function AdminNav({ adminEmail }: { adminEmail: string }) {
             <NavBody adminEmail={adminEmail} onNavigate={() => setOpen(false)} />
           </SheetContent>
         </Sheet>
+        </div>
       </header>
     </>
   );

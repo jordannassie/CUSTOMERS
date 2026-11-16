@@ -66,6 +66,8 @@ export const REASONS = {
   offPlan: "This business is off your plan.",
   trialOver: "Your free trial has ended. Scans start again once your first payment goes through.",
   setupUnfinished: "Finish setting up your first business to start your free trial. Then you can buy credits.",
+  noQuestions: "Add at least one question on the Questions page, then run a scan.",
+  noModels: "Choose at least one AI model under AI checks in Settings, then run a scan.",
 } as const;
 
 const credits = (n: number) => `${n} ${n === 1 ? "credit" : "credits"}`;
@@ -149,6 +151,10 @@ export function canStartScan(agency: AgencyFacts, business: BusinessFacts): Enti
   if (!blocked.allowed) return blocked;
   // M1: a business taken off the plan keeps its data but is never scanned again, with top-ups or without.
   if (!business.onPlan) return deny(REASONS.offPlan);
+  // Nothing to ask: the worker would skip it every time (2026-11-16, a business set up with no questions), so Run scan
+  // says what to add instead of failing.
+  if (business.activeQuestionCount === 0) return deny(REASONS.noQuestions);
+  if (business.checksPerScan === 0) return deny(REASONS.noModels);
   // D-54: no new scan at 0 or below.
   // The worker saves this exact text on a skipped job; scan_job_settle_failure (migration 069) matches it to try again
   // at the next 02:00 run, so a test agency's wording is swapped in only where it is shown (jobs/actions.ts).

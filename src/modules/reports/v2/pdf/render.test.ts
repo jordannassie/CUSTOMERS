@@ -124,7 +124,9 @@ describe("renderReportPdf, other snapshots", () => {
     expect(pages[8]).toContain("Page 9 of 9");
   });
 
-  it("keeps the page count when every long field is far longer than usual", { timeout: SLOW }, async () => {
+  // No text is cut short with "…" (owner, 2026-11-16): far longer text than usual wraps whole, and the report takes
+  // more pages, with the contents page drawn again so its page numbers stay right. Usual text still fits 10 pages.
+  it("never cuts a long field short: it wraps whole and the report takes more pages", { timeout: SLOW }, async () => {
     const long = (n: number) => "Answers named other places with far more detail than yours ".repeat(n).trim();
     const snap = clone();
     snap.summary.headline = long(3);
@@ -157,8 +159,13 @@ describe("renderReportPdf, other snapshots", () => {
     const result = await renderReport(snap);
     if (PDF_OUT) writeFileSync(PDF_OUT.replace(/\.pdf$/, "-long.pdf"), result.pdf);
     const pages = await readPdf(result.pdf);
-    expect(result.redrawn).toBe(false);
-    expect(pages).toHaveLength(10);
+    const all = pages.join(" ");
+    expect(all).not.toContain("…");
+    // The last words of a long fix title and of a fix's steps are there, not cut off.
+    expect(squash(all)).toContain(squash(long(2)));
+    expect(pages.length).toBeGreaterThan(10);
+    expect(result.redrawn).toBe(true);
+    expect(result.pages.method).toBeLessThanOrEqual(pages.length);
   });
 
   it("draws a report with missing optional data", { timeout: SLOW }, async () => {

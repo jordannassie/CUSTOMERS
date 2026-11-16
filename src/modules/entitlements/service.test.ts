@@ -19,7 +19,8 @@ const business = (over: Partial<BusinessFacts> = {}): BusinessFacts => ({
   planName: "Starter",
   maxQuestions: 25,
   maxCompetitors: 5,
-  activeQuestionCount: 0,
+  // One question by default: a business with none cannot be scanned (REASONS.noQuestions).
+  activeQuestionCount: 1,
   competitorCount: 0,
   checksPerScan: 1,
   hasOpenScan: false,
@@ -137,6 +138,11 @@ describe("canStartScan", () => {
       allowed: false,
       reason: "You're out of credits. Buy a top-up or upgrade.",
     });
+  });
+
+  it("says what to add when there is nothing to ask, before any credit check (2026-11-16)", () => {
+    expect(canStartScan(agency({ balance: 0 }), business({ activeQuestionCount: 0, checksPerScan: 0 })).reason).toBe(REASONS.noQuestions);
+    expect(canStartScan(agency(), business({ activeQuestionCount: 3, checksPerScan: 0 })).reason).toBe(REASONS.noModels);
   });
 
   it("needs the whole scan covered, not just 1 credit (D-54, 2026-11-16)", () => {

@@ -24,7 +24,8 @@ beforeEach(() => {
 });
 
 /** A signed-in owner of a test agency with one business. */
-async function signedInBusiness(credits: number) {
+/** `questions`: the business's active questions; one by default, since a business with none cannot be scanned. */
+async function signedInBusiness(credits: number, questions: string[] = ["Best bakery near me?"]) {
   const agency = await createTestAgency(credits);
   const password = `pw-${randomUUID()}`;
   const { data: user, error } = await service.auth.admin.updateUserById(agency.ownerUserId, { password });
@@ -35,6 +36,7 @@ async function signedInBusiness(credits: number) {
     .select("id")
     .single();
   if (businessError) throw businessError;
+  if (questions.length) await service.from("tracked_prompts").insert(questions.map((prompt) => ({ business_id: business.id, prompt }))).throwOnError();
 
   const client = createSupabaseClient(env.NEXT_PUBLIC_SUPABASE_URL, env.NEXT_PUBLIC_SUPABASE_ANON_KEY, { auth: { persistSession: false } });
   const signIn = await client.auth.signInWithPassword({ email: user.user.email!, password });
@@ -101,7 +103,7 @@ describe("startScan", () => {
   });
 
   it("refuses a scan the credits do not fully cover, and queues nothing (D-54, 2026-11-16)", async () => {
-    const { agencyId, businessId } = await signedInBusiness(5);
+    const { agencyId, businessId } = await signedInBusiness(5, []);
     await service.from("agencies").update({ is_test: false }).eq("id", agencyId).throwOnError();
     // 3 questions on the default 3 models: 9 credits against 5.
     const prompts = ["One?", "Two?", "Three?"].map((prompt) => ({ business_id: businessId, prompt }));
@@ -117,7 +119,7 @@ describe("startScan", () => {
   });
 
   it("asks before scanning again within 20 hours of the last scan, and queues once confirmed (2026-10-15, D-24)", async () => {
-    const { agencyId, businessId } = await signedInBusiness(100);
+    const { agencyId, businessId } = await signedInBusiness(100, []);
     await service.from("agencies").update({ is_test: false }).eq("id", agencyId).throwOnError();
     const prompts = ["One?", "Two?"].map((prompt) => ({ business_id: businessId, prompt }));
     await service.from("tracked_prompts").insert(prompts).throwOnError();

@@ -76,5 +76,10 @@ export const s = StyleSheet.create({
   divider: { borderBottomWidth: 1, borderBottomColor: COLORS.divider },
 });
 
-/** Clamp a text block to a number of lines, ending with an ellipsis, so long AI wording never pushes a card off a page. */
-export const lines = (maxLines: number) => ({ maxLines, textOverflow: "ellipsis" as const });
+/**
+ * How many lines the layout plans for a text block. Text is never cut short with "…" any more (owner, 2026-11-16: a
+ * report must read whole): a longer text wraps, its row or card grows, and a section that runs over gets another page
+ * (render.ts then draws the contents again with the real page numbers). Kept at every call so the plan stays visible.
+ */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export const lines = (plannedLines: number) => ({});

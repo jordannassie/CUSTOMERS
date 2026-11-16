@@ -60,8 +60,18 @@ export function scanStatusView(
   };
 }
 
+// The worker's skip texts for a business it cannot scan (scanning/scan-tasks scanBlocker): said plainly, since trying
+// again in a few minutes would not help.
+const NOTHING_TO_ASK: [string, string][] = [
+  ["This business has no active questions", "This business has no questions to ask yet. Add at least one on the Questions page, then run a scan."],
+  ["Add the business city before scanning", "Add the business city in Settings, then run a scan."],
+  ["Choose at least one AI model to check", "Choose at least one AI model under AI checks in Settings, then run a scan."],
+];
+
 function failedReason(error: string | null | undefined): string | null {
   if (error?.includes(NO_SAMPLE_ANSWERS)) return NO_SAMPLE_ANSWERS_TEXT;
+  const blocked = NOTHING_TO_ASK.find(([start]) => error?.startsWith(start));
+  if (blocked) return blocked[1];
   if (error?.startsWith(ABANDONED_ERROR)) return ABANDONED_TEXT;
   if (error?.startsWith(NOT_ANSWERING_TEXT)) return NOT_ANSWERING_TEXT;
   return null;
