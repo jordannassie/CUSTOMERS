@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { ExternalLink, Globe } from "lucide-react";
 import { PageContainer } from "@/components/app/PageContainer";
 import { PageHeader } from "@/components/app/PageHeader";
-import { ShowGoogle } from "@/components/app/ShowGoogle";
+import { AutoGoogle } from "@/components/app/AutoGoogle";
 import { CompareTabs } from "@/components/competitors/compare/CompareTabs";
 import { Trend } from "@/components/competitors/compare/PairTrend";
 import { Picker } from "@/components/competitors/compare/Picker";
@@ -50,9 +50,9 @@ export default async function ComparePage({ searchParams }: { searchParams: Prom
   const [page, nextScan] = await Promise.all([getComparePage(business.id, competitorId), getNextScan(business.id, compareHref(competitorId, tab))]);
   if (!page) redirect("/competitors");
   const data = page.selected;
-  // Google is asked about the two of you only after "Show Google details" (?google=1), on the Google tab: its table and
-  // the Google reasons with their fixes (2026-10-27; no longer repeated on the Summary tab).
-  const signals = data && params.google === "1" ? data.loadSignals() : null;
+  // Google is asked about the two of you only when the Google tab is opened (?google=1, or a link straight to the tab):
+  // its table and the Google reasons with their fixes. Opening the tab loads them by itself (AutoGoogle, 2026-11-16).
+  const signals = data && (params.google === "1" || tab === "google") ? data.loadSignals() : null;
   const askGoogle = (t: string) => `${compareHref(data?.panel.competitorId, t)}&google=1`;
   // Once their website is checked, the button opens it; before, it goes to the Website tab to check it.
   const visit = data?.panel.website.checked ? siteHref(data.panel.website.domain) : null;
@@ -170,7 +170,7 @@ export default async function ComparePage({ searchParams }: { searchParams: Prom
                         </Suspense>
                       </div>
                     ) : (
-                      <ShowGoogle href={askGoogle("google")} text="Your Google listing next to theirs: reviews, rating, opening days and category, live from Google." />
+                      <AutoGoogle href={askGoogle("google")} />
                     )}
                   </div>
                 ),

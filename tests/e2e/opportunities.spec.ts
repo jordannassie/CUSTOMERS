@@ -72,6 +72,7 @@ async function seed(page: Page, { hasWebsite, opportunities }: Seed): Promise<st
           impact: "low",
           category: "content",
           evidence: "AI named you in 1 of 6 answers.",
+          evidence_data: { counting: 2 },
           recommended_action: "1. Add a short FAQ.\n2. Mention your city.",
         },
         {
@@ -80,7 +81,8 @@ async function seed(page: Page, { hasWebsite, opportunities }: Seed): Promise<st
           impact: "high",
           category: "reviews_reputation",
           evidence: `Bean House was named in 5 of 6 AI answers. On Google, Bean House has {competitor.${rival.id}.review_count} reviews and you have {business.review_count}.`,
-          // Written by today's counting rules (src/lib/fix-counting.ts SCAN_FIX_COUNTING), so the live numbers show.
+          // Every row: one bulk insert sends the same columns for all, and evidence_data is not null. Written by today's
+          // counting rules (src/lib/fix-counting.ts SCAN_FIX_COUNTING), so the live numbers show.
           evidence_data: { counting: 2 },
           description: "AI assistants lean on review counts to decide which local businesses are trusted.",
           recommended_action: "1. Ask every happy customer for a Google review.\n2. Reply to every new review.",
@@ -91,6 +93,7 @@ async function seed(page: Page, { hasWebsite, opportunities }: Seed): Promise<st
           impact: "medium",
           category: "service_page",
           evidence: "We read your website and did not find your phone number.",
+          evidence_data: { counting: 2 },
           recommended_action: "1. Give each service its own section.\n2. Put your phone number in the footer.",
           claude_prompt: "Help me improve the services page for Sunrise Coffee Bar (sunrise-coffee.example) in Springfield. Leave a clear gap marked [fill in] for every fact I have not given you, and do not invent any details.",
         },
