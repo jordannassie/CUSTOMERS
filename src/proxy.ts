@@ -92,5 +92,10 @@ export const config = {
         { type: "header", key: "purpose", value: "prefetch" },
       ],
     },
+    // The sign-in pages run here on prefetches too. A signed-in visitor's "Log in" or "Start free trial" link then
+    // prefetches the redirect and goes straight to the dashboard, instead of showing the login page first and
+    // redirecting after it loaded (owner, 2026-11-16).
+    { source: "/login" },
+    { source: "/signup" },
   ],
 };
