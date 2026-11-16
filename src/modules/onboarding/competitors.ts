@@ -4,6 +4,8 @@ import { businessKind } from "./business-kind";
 import { isIndustry, type Industry } from "@/lib/industries";
 import { FAR_M, forDisplay, nearestBranches, sameChain, withDistance } from "./branches";
 import type { CompetitorCandidate, CompetitorPlaces, Origin } from "./competitor-places";
+import { widerSuggestions } from "./competitor-fallback";
+import { mergeAliases, nameKey } from "./competitor-aliases";
 
 export const MAX_SUGGESTIONS = 10;
 export const MAX_LOOKUP_RESULTS = 5;
@@ -41,6 +43,7 @@ export const COMPETITOR_NOTES = {
   noCategory: "Add your industry in the business details so we can suggest competitors. You can still add them by name below.",
   unavailable: "We couldn't load suggestions from Google right now. You can add competitors by name below.",
   noneFound: "We didn't find similar businesses nearby. Add the ones you compete with by name below.",
+  wider: "Nothing similar came up right next to you, so these are the closest we found further away.",
 } as const;
 
 export function limitMessage(limit: number): string {
@@ -121,54 +124,26 @@ export async function discoverCompetitors(b: BusinessForSearch, places: Competit
   if (!query) return { suggestions: [], note: COMPETITOR_NOTES.noCategory };
   let found: CompetitorCandidate[];
   try {
-    // Near the business and of its own Google type (BUG-085); a fast food place with no listing of its own keeps to
-    // fast food places. One extra result covers the business itself.
+    // Near and of its own Google type (BUG-085); fast food with no listing keeps to fast food. +1 covers itself.
     const orType = kindForSearch(b, origin).takeaway ? "fast_food_restaurant" : null;
     found = sameTypeFirst(await places.search(query, SEARCH_PAGE, origin, true, orType), origin?.primaryType ?? orType);
   } catch {
     return { suggestions: [], note: COMPETITOR_NOTES.unavailable };
   }
-  // One branch per chain: the nearest, plus any in the business's own neighbourhood; none from another area.
+  // One branch per chain, nearest first; nothing found widens the search (competitor-fallback.ts).
   const suggestions = forDisplay(withoutOwnBusiness(nearestBranches(withDistance(found, origin)), b, MAX_SUGGESTIONS), b.country);
-  return { suggestions, note: suggestions.length ? null : COMPETITOR_NOTES.noneFound };
+  if (suggestions.length) return { suggestions, note: null };
+  const own = (list: CompetitorCandidate[]) => withoutOwnBusiness(list, b, MAX_SUGGESTIONS);
+  const wider = await widerSuggestions(places, { term: searchTerm(b, origin)!, query, region: b.region?.trim() || null, origin, country: b.country, own }).catch(() => []);
+  return { suggestions: wider, note: wider.length ? COMPETITOR_NOTES.wider : COMPETITOR_NOTES.noneFound };
 }
 
 /** `aliases`: other names to keep with it, like the long Google name when the short brand was taken (2026-10-15). */
 export type ConfirmedCompetitor = { name: string; placesId: string | null; aliases?: string[] };
 export type SavedCompetitorRow = { id: string; name: string; aliases?: string[] };
 
-const ALIASES_MAX = 10;
-
-/** The saved other names plus new ones, once each and never the name itself, up to the column's limit. */
-export function mergeAliases(saved: string[], added: string[], name: string): string[] {
-  const seen = new Set([nameKey(name)]);
-  const out: string[] = [];
-  for (const alias of [...saved, ...added]) {
-    const text = alias.trim();
-    if (!text || seen.has(nameKey(text))) continue;
-    seen.add(nameKey(text));
-    out.push(text);
-  }
-  return out.slice(0, ALIASES_MAX);
-}
-
-// Matches the unique index on (business_id, lower(name)).
-export const nameKey = (name: string) => name.trim().toLowerCase();
-
-/** One entry per name and per place, first one wins. */
-export function dedupeConfirmed(list: ConfirmedCompetitor[]): ConfirmedCompetitor[] {
-  const names = new Set<string>();
-  const placeIds = new Set<string>();
-  const out: ConfirmedCompetitor[] = [];
-  for (const c of list) {
-    const name = c.name.trim();
-    if (!name || names.has(nameKey(name)) || (c.placesId && placeIds.has(c.placesId))) continue;
-    names.add(nameKey(name));
-    if (c.placesId) placeIds.add(c.placesId);
-    out.push(c.aliases?.length ? { name, placesId: c.placesId, aliases: c.aliases } : { name, placesId: c.placesId });
-  }
-  return out;
-}
+// The other-names helpers live in competitor-aliases.ts (split to keep this file under the size limit, 2026-11-16).
+export { dedupeConfirmed, mergeAliases, nameKey } from "./competitor-aliases";
 
 export type SavePlan = {
   remove: string[];

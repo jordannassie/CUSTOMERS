@@ -8,6 +8,7 @@ import { requireAgency } from "@/modules/auth";
 import type { Explanation, OpportunityDraft } from "../explain";
 import { fallbackMessage, fixesPending, saveFor } from "./service";
 import { trackedWording } from "../tracked-wording";
+import { SCAN_FIX_COUNTING } from "@/lib/fix-counting";
 
 export type SaveOutcome = "saved" | "superseded";
 
@@ -37,7 +38,8 @@ export async function saveExplanation(businessId: string, runId: string, explana
   // The AI's order, kept so the lists show its fixes the way it ranked them (lib/fix-order.ts). The rules have none:
   // their fixes come after the AI's within an impact.
   const rankOf = new Map(explanation.drafts.map((d, i) => [d, i]));
-  const evidenceData = (d: OpportunityDraft) => (explanation.source === "ai" ? { rank: rankOf.get(d) ?? null } : {});
+  // counting: which counting rules wrote the numbers (lib/fix-counting.ts), so a later rule change can say so.
+  const evidenceData = (d: OpportunityDraft) => ({ ...(explanation.source === "ai" ? { rank: rankOf.get(d) ?? null } : {}), counting: SCAN_FIX_COUNTING });
   const text = (d: OpportunityDraft) => ({
     title: trackedWording(d.title),
     description: trackedWording(d.description),

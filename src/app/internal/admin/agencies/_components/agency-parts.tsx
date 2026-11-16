@@ -10,6 +10,7 @@ export const STATUS: Record<string, { label: string; variant: Variant }> = {
   // Display statuses (modules/admin displayStatus): a trial that never reached Stripe, or one past its end.
   trial_ended: { label: "Trial ended", variant: "secondary" },
   signup_unfinished: { label: "Signup not finished", variant: "secondary" },
+  test_account: { label: "Test account", variant: "secondary" },
   active: { label: "Paying", variant: "secondary" },
   past_due: { label: "Payment failed", variant: "mid" },
   canceled: { label: "Canceled", variant: "secondary" },

@@ -2,6 +2,7 @@ import "server-only";
 import { createServiceClient } from "@/lib/supabase/service";
 import { loadOverview } from "@/modules/overview";
 import { loadAlsoRecommended, loadScoreReport } from "@/modules/scanning";
+import { aiProvidersOutOfCredit } from "@/modules/system-status";
 import { namedMostText, scanProgress, type FirstScanSummary, type ModelProgress } from "./service";
 
 export async function isAgencyBusiness(agencyId: string, businessId: string): Promise<boolean> {
@@ -22,10 +23,11 @@ export async function isAgencyBusiness(agencyId: string, businessId: string): Pr
 /** Answers saved so far by the business's latest scan, per model, with the question each model is on. */
 export async function loadFirstScanProgress(businessId: string): Promise<ModelProgress[]> {
   const db = createServiceClient();
-  const [business, questions, job] = await Promise.all([
+  const [business, questions, job, outOfCredit] = await Promise.all([
     db.from("businesses").select("models").eq("id", businessId).single(),
     db.from("tracked_prompts").select("prompt").eq("business_id", businessId).eq("active", true).order("created_at"),
     db.from("scan_jobs").select("id").eq("business_id", businessId).order("created_at", { ascending: false }).limit(1).maybeSingle(),
+    aiProvidersOutOfCredit().catch(() => new Set<string>()),
   ]);
   for (const r of [business, questions, job]) if (r.error) throw new Error(`First scan progress: ${r.error.message}`);
 
@@ -39,7 +41,7 @@ export async function loadFirstScanProgress(businessId: string): Promise<ModelPr
     if (saved.error) throw new Error(`First scan progress: ${saved.error.message}`);
     for (const r of saved.data) done.set(r.provider, (done.get(r.provider) ?? 0) + 1);
   }
-  return scanProgress(business.data!.models ?? [], questions.data!.map((q) => q.prompt), done);
+  return scanProgress(business.data!.models ?? [], questions.data!.map((q) => q.prompt), done, outOfCredit);
 }
 
 /** The score, the business AI named most and the first fix, for the screen after the first scan. */

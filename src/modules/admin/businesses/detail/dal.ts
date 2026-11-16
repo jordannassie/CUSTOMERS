@@ -175,7 +175,7 @@ export async function loadBusinessDetail(id: string, now = new Date()) {
           status: agencyRow.status,
           // The same status the agencies list shows: a trial past its end reads "Trial ended", not "On trial".
           displayStatus: displayStatus(
-            { status: agencyRow.status, hasSubscription: agencyRow.stripe_subscription_id !== null, trialEndsAt: agencyRow.trial_ends_at },
+            { status: agencyRow.status, hasSubscription: agencyRow.stripe_subscription_id !== null, trialEndsAt: agencyRow.trial_ends_at, isTest: agencyRow.is_test },
             now,
           ),
         }

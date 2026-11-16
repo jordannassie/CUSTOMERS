@@ -4,6 +4,7 @@ import { createServiceClient } from "@/lib/supabase/service";
 import { saveActiveBusiness } from "@/modules/workspace";
 import { duplicateBusiness, type DuplicateKind } from "../../duplicates";
 import { stepNumber } from "../steps";
+import { splitCityState } from "@/lib/place-label";
 
 // The website step's draft business (MVP_SPEC 3.1 step 3): made once per agency, found again on a double submit or a
 // second tab, and never read again from the website or Google when nothing about it changed. Callers check the
@@ -35,7 +36,7 @@ export async function insertDraft(d: NewDraft): Promise<InsertDraftResult> {
       name: d.name,
       domain: d.domain,
       has_website: d.hasWebsite,
-      ...(d.hasWebsite ? {} : { primary_city: d.city }),
+      ...(d.hasWebsite ? {} : cityAndState(d.city)),
       owner_user_id: d.userId,
       agency_id: d.agencyId,
       status: "onboarding",
@@ -114,4 +115,11 @@ export async function keepActiveBusiness(userId: string): Promise<void> {
   if (latest.error) throw new Error(`Could not load businesses: ${latest.error.message}`);
   if (!latest.data) return;
   await saveActiveBusiness(userId, latest.data.id);
+}
+
+/** "Austin, TX" in the no-website city box becomes the city and its state (2026-11-16). */
+export function cityAndState(typed: string | null): { primary_city: string | null; primary_region?: string } {
+  if (!typed) return { primary_city: typed };
+  const { city, region } = splitCityState(typed, null);
+  return region ? { primary_city: city, primary_region: region } : { primary_city: city };
 }

@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { AddCompetitor, type LookupAction } from "./AddCompetitor";
 import { CompetitorLocationNote } from "./CompetitorLocationNote";
 import { FullName, withBrand, type BrandedPick } from "./PickedBrand";
+import { topSuggestions } from "./top-suggestions";
 import { PickerPhoneBar } from "./PickerPhoneBar";
 import { GoogleAttribution, PlaceRating } from "./PlaceBits";
 import { SuggestionRow } from "./SuggestionRow";
@@ -42,6 +43,8 @@ export type CompetitorPickerProps = {
   saveLabel?: string;
   /** The wizard's previous step. On desktop, Back and Save then sit in a row under the list like every other step. */
   backHref?: string;
+  /** Onboarding: with nothing saved yet, tick this many top suggestions (MVP gap 1); the user can untick them. */
+  preselect?: number;
 };
 
 type Ref = { name: string; placesId: string | null };
@@ -55,8 +58,9 @@ const sameList = (a: Picked[], b: Picked[]) => a.length === b.length && a.every(
 export function CompetitorPicker(props: CompetitorPickerProps) {
   const { businessId, limit, limitText, suggestions, note, locationNote, lookup, save, onSaved, saveLabel = "Save competitors", backHref } = props;
   const router = useRouter();
-  const [picked, setPicked] = useState<Picked[]>(() => props.saved.map((s) => ({ ...s })));
-  const [lastSaved, setLastSaved] = useState<Picked[]>(picked);
+  const first = props.saved.length || !props.preselect ? null : topSuggestions(suggestions, Math.min(props.preselect, limit ?? props.preselect));
+  const [picked, setPicked] = useState<Picked[]>(() => first ?? props.saved.map((s) => ({ ...s })));
+  const [lastSaved, setLastSaved] = useState<Picked[]>(() => props.saved.map((s) => ({ ...s })));
   const [limitHit, setLimitHit] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -187,8 +191,10 @@ export function CompetitorPicker(props: CompetitorPickerProps) {
               ))}
             </ul>
           ) : (
-            <p className="mt-3 text-sm text-muted-foreground">
-              Nothing picked yet. We&apos;ll check whether AI recommends these businesses instead of you.
+            <p className="mt-3 text-sm text-muted-foreground" data-testid="no-competitors-picked">
+              {onSaved
+                ? "Nothing picked yet. Without competitors we can't show who AI recommends instead of you. You can add them later in Competitors."
+                : "Nothing picked yet. We'll check whether AI recommends these businesses instead of you."}
             </p>
           )}
           {picked.some((p) => p.live) ? <GoogleAttribution className="mt-3" /> : null}
@@ -242,4 +248,3 @@ export function CompetitorPicker(props: CompetitorPickerProps) {
     </div>
   );
 }
-

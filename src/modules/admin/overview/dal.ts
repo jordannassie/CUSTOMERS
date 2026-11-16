@@ -133,7 +133,7 @@ export async function loadOverview(
       id: a.id,
       name: a.name,
       ownerEmail: emails.get(a.owner_user_id) ?? null,
-      status: displayStatus({ status: a.status, hasSubscription: a.stripe_subscription_id !== null, trialEndsAt: a.trial_ends_at }, now),
+      status: displayStatus({ status: a.status, hasSubscription: a.stripe_subscription_id !== null, trialEndsAt: a.trial_ends_at, isTest: a.is_test }, now),
       isTest: a.is_test,
       createdAt: a.created_at,
     })),

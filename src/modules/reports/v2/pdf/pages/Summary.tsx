@@ -4,6 +4,7 @@ import type { ReportCtx } from "../context";
 import { LEVEL_LABEL, plural } from "../format";
 import { BigNumber, Card, NumCircle, SectionHead, SubHead } from "../primitives";
 import { COLORS, lines, s } from "../theme";
+import { rankTile } from "../rank-tile";
 
 function Kpi({
   label,
@@ -43,16 +44,9 @@ function scoreNote(ctx: ReportCtx): { text: string; problem: boolean } {
 }
 
 function KpiRow({ ctx }: { ctx: ReportCtx }) {
-  const { score, named, rank, ownSite } = ctx.snapshot;
+  const { score, named, ownSite } = ctx.snapshot;
   const change = scoreNote(ctx);
-  const leader = rank?.leader;
-  const rankNote = !rank
-    ? "No tracked business was named"
-    : rank.position === 1
-      ? "You lead the tracked businesses"
-      : leader
-        ? `Leader: ${leader.name}, ${leader.score}`
-        : "Leader not known";
+  const rankKpi = rankTile(ctx.snapshot);
   return (
     <View style={[s.row, { gap: 9, marginBottom: 18 }]}>
       <Kpi
@@ -70,11 +64,7 @@ function KpiRow({ ctx }: { ctx: ReportCtx }) {
         note={`In ${named.questions} of ${named.questionsAsked} questions`}
         problem={named.answers === 0}
       />
-      <Kpi
-        label={rank ? `Rank among ${rank.of} tracked` : "Rank among tracked"}
-        value={rank ? `#${rank.position}` : "None"}
-        note={rankNote}
-      />
+      <Kpi label={rankKpi.label} value={rankKpi.value} note={rankKpi.note} />
       {ownSite.hasSite ? (
         <Kpi
           label="Your website used"

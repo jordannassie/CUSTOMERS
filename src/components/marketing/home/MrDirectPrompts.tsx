@@ -69,7 +69,9 @@ export function MrDirectPrompts() {
         </Lead>
       </div>
 
-      <div className="mt-10 -mx-4 overflow-hidden px-4 sm:-mx-6 sm:px-6">
+      {/* py-1: the scroller clips its overflow, and with no room around the chips their top and bottom borders were cut
+          off (home page, 2026-11-16). */}
+      <div className="mt-10 -mx-4 overflow-hidden px-4 py-1 sm:-mx-6 sm:px-6">
         <div className="marquee-scroll flex w-max motion-reduce:w-full">
           <QuestionChips />
           <QuestionChips copy />

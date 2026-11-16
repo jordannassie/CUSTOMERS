@@ -3,15 +3,21 @@
 import { useEffect, useRef, useState } from "react";
 import { Pause, Play, Volume2, VolumeX } from "lucide-react";
 
+/** How long the loading shimmer may run before the tile settles on its still frame and play button. */
+const LOADING_MS = 4000;
+
 export function PortfolioVideo({
   src,
   title,
   note,
+  poster,
   compact = false,
 }: {
   src: string;
   title: string;
   note: string;
+  /** A still frame shown until the video plays (web.dev: a poster is the placeholder). */
+  poster?: string;
   compact?: boolean;
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -22,6 +28,15 @@ export function PortfolioVideo({
   const [playing, setPlaying] = useState(false);
   const [muted, setMuted] = useState(true);
   const [failed, setFailed] = useState(false);
+  // iPhone Safari, data saver and reduced motion never fire loadeddata until play, so the shimmer must not wait for it
+  // forever: it stops after LOADING_MS and the tile shows its still frame and a play button (/ads, 2026-11-16).
+  const [settled, setSettled] = useState(false);
+
+  useEffect(() => {
+    if (!seen || ready) return;
+    const timer = window.setTimeout(() => setSettled(true), LOADING_MS);
+    return () => window.clearTimeout(timer);
+  }, [seen, ready]);
 
   useEffect(() => {
     const node = frameRef.current;
@@ -94,7 +109,9 @@ export function PortfolioVideo({
               muted
               loop
               preload={seen ? "metadata" : "none"}
+              poster={poster}
               aria-label={title}
+              onLoadedMetadata={() => setReady(true)}
               onLoadedData={() => setReady(true)}
               onError={() => {
                 if (seen) setFailed(true);
@@ -103,8 +120,19 @@ export function PortfolioVideo({
               onPause={() => setPlaying(false)}
               onClick={togglePlay}
             />
-            {ready ? null : (
-              <div className="pointer-events-none absolute inset-0 animate-pulse bg-[#2A2A2A]" aria-hidden="true" />
+            {ready || poster ? null : seen && !settled ? (
+              <div className="pointer-events-none absolute inset-0 animate-pulse bg-foreground/90" aria-hidden="true" />
+            ) : (
+              <button
+                type="button"
+                onClick={togglePlay}
+                aria-label={`Play ${title}`}
+                className="absolute inset-0 flex items-center justify-center bg-foreground/90 text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-white"
+              >
+                <span className="inline-flex size-12 items-center justify-center rounded-full bg-white/15">
+                  <Play size={20} aria-hidden="true" />
+                </span>
+              </button>
             )}
             <div className={`absolute inset-x-0 bottom-0 flex gap-2 bg-gradient-to-t from-black/70 to-transparent ${compact ? "p-2" : "p-3"}`}>
               <button

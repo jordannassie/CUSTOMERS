@@ -10,6 +10,7 @@ export function CompetitorsStep(props: Omit<CompetitorPickerProps, "onSaved" | "
     <CompetitorPicker
       {...props}
       saveLabel="Continue"
+      preselect={3}
       backHref="/onboarding/details"
       onSaved={() => router.push("/onboarding/questions")}
     />

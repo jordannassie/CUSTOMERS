@@ -38,7 +38,9 @@ export function CheckoutForm<T extends { clientSecret: string }>(props: Props<T>
           return r.data.clientSecret;
         }
         setOwnError(r.error);
-        throw new Error(r.error);
+        // The error view replaces the card form, so Stripe never needs this value. Rejecting left an unhandled
+        // rejection in the browser on every failed start (MVP test, 2026-11-16); a promise that never settles does not.
+        return new Promise<string>(() => {});
       }),
     [session],
   );

@@ -19,6 +19,7 @@ import { softwareReviewJsonLd } from "@/modules/apps-directory/review-service";
 import { NewsletterSignup } from "@/components/site/NewsletterSignup";
 import { env } from "@/lib/env";
 import { jsonLdHtml } from "@/lib/json-ld";
+import { pageMetadata } from "@/lib/site-metadata";
 
 type Params = Promise<{ slug: string }>;
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
@@ -44,13 +45,8 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
   const description = summary.summary.count > 0
     ? `${app.description} ${summary.summary.count} Customers.Direct reviews.`
     : app.description;
-  const canonical = `https://customers.direct/apps/${app.slug}`;
-  return {
-    title,
-    description,
-    alternates: { canonical },
-    openGraph: { title: `${title} | Customers.Direct`, description, url: canonical },
-  };
+  // The shared helper adds the site's link preview image, which this page had none of (MVP test, 2026-11-16).
+  return pageMetadata({ title, description, path: `/apps/${app.slug}` });
 }
 
 async function AppDetailPageContent({ params, searchParams }: { params: Params; searchParams: SearchParams }) {

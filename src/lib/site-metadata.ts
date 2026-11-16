@@ -36,6 +36,10 @@ export const PRIVATE_PATHS = [
   "/r/",
   "/api/",
   "/auth/",
+  // Click-tracking redirects and the paid brief form: nothing to index, and a crawler visit would count as a click.
+  "/apps/go/",
+  "/newsletter/go/",
+  "/ads/brief",
 ];
 
 export function sitemapEntries(lastModified: Date): MetadataRoute.Sitemap {

@@ -7,7 +7,8 @@ import { LibraryNotLoadableError, toSeedRows } from "./service";
 import { validateLibrary } from "./validate";
 
 const example = JSON.parse(readFileSync("tests/fixtures/question-library.example.json", "utf8"));
-const approved = { ...example, status: "approved", review: { reviewer: "A Reviewer", reviewedAt: "2026-09-27" } };
+// Approved files start at version 2: version 1 is the unreviewed draft trial (DRAFT_LIBRARY_VERSION).
+const approved = { ...example, version: 2, status: "approved", review: { reviewer: "A Reviewer", reviewedAt: "2026-09-27" } };
 const withTemplate = (t: object) => ({ ...example, templates: [{ ...example.templates[0], ...t }] });
 
 describe("validateLibrary", () => {
@@ -60,13 +61,22 @@ describe("toSeedRows", () => {
       template: "Which dentist in {city} offers emergency appointments?",
       tags: ["emergency dental care"],
       intent: "urgent",
-      version: 1,
+      version: 2,
       active: true,
     });
   });
 
   it.each(["example", "draft"])("refuses a %s file", (status) => {
     expect(() => toSeedRows({ ...approved, status })).toThrow(LibraryNotLoadableError);
+  });
+
+  it("loads an unreviewed draft only when asked, as version 1, and an approved file must come after it", () => {
+    const draft = { ...approved, status: "draft", review: null };
+    const rows = toSeedRows(draft, { draft: true });
+    expect(rows).toHaveLength(3);
+    expect(rows.every((r) => r.version === 1 && r.active)).toBe(true);
+    expect(() => toSeedRows(draft)).toThrow(LibraryNotLoadableError);
+    expect(() => toSeedRows({ ...approved, version: 1 })).toThrow(/version 2 or later/);
   });
 
   it("refuses an invalid approved file", () => {

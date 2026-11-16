@@ -1,7 +1,7 @@
 import "server-only";
 import { checkPaidNotActive } from "@/modules/billing";
 import { runScheduledServiceCheck } from "@/modules/system-status";
-import { createNotifyDeps, isAlertSecret, runAlertChecks, writeServiceAlerts } from "./dal";
+import { closeRecoveredAlerts, createNotifyDeps, isAlertSecret, runAlertChecks, writeServiceAlerts } from "./dal";
 import { notifyAdmins, type NotifyDeps } from "./service";
 
 /**
@@ -21,6 +21,8 @@ export async function handleAlertsRequest(req: Request, deps?: NotifyDeps): Prom
   const services = await runScheduledServiceCheck()
     .then((status) => writeServiceAlerts(status.services))
     .catch((error) => console.error("[admin/alerts] service check failed", error instanceof Error ? error.message : String(error)));
+  // Alerts whose problem is gone close themselves: Claude answering again, or a spike quiet for a day (recovered.ts).
+  const closed = await closeRecoveredAlerts();
   const emails = await notifyAdmins(deps ?? createNotifyDeps());
-  return Response.json({ opened: opened.length, serviceAlerts: services ?? null, ...emails });
+  return Response.json({ opened: opened.length, serviceAlerts: services ?? null, closed, ...emails });
 }

@@ -51,7 +51,7 @@ export function filterCondition(filter: AgencyFilter, nowIso: string): string {
     case "trial_ended":
       return `and(status.eq.trialing,trial_ends_at.lte.${nowIso})`;
     case "signup_unfinished":
-      return "and(status.eq.trialing,trial_ends_at.is.null,stripe_subscription_id.is.null)";
+      return "and(status.eq.trialing,trial_ends_at.is.null,stripe_subscription_id.is.null,is_test.is.false)";
     case "test":
       return "is_test.is.true";
     case "customers":
@@ -150,7 +150,7 @@ export async function listAgencies(
       name: a.name,
       ownerEmail: emails.get(a.owner_user_id) ?? null,
       status: a.status,
-      displayStatus: displayStatus({ status: a.status, hasSubscription: a.stripe_subscription_id !== null, trialEndsAt: a.trial_ends_at }, now),
+      displayStatus: displayStatus({ status: a.status, hasSubscription: a.stripe_subscription_id !== null, trialEndsAt: a.trial_ends_at, isTest: a.is_test }, now),
       isTest: a.is_test,
       businesses: businessCount.get(a.id) ?? 0,
       planMix: planMix(plansOf.get(a.id) ?? []),

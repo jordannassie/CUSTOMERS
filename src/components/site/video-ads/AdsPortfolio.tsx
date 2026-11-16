@@ -15,7 +15,7 @@ export function AdsPortfolio() {
         </div>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
           {PORTFOLIO_VIDEOS.map((video) => (
-            <PortfolioVideo key={video.id} src={video.src} title={video.title} note={video.note} compact />
+            <PortfolioVideo key={video.id} src={video.src} title={video.title} note={video.note} poster={video.poster} compact />
           ))}
         </div>
         <p className="mx-auto mt-8 max-w-xl text-center text-[length:calc(13px*var(--px,1))] leading-relaxed text-muted-foreground">

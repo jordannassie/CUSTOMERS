@@ -46,11 +46,13 @@ export function planMix(plans: string[]): string {
 // checkout (no subscription, no trial end), and a trial whose end has passed while Stripe has not moved it on.
 // Only a trialing agency can be either; deleted, suspended and the rest show as they are.
 export function displayStatus(
-  a: { status: string; hasSubscription: boolean; trialEndsAt: string | null },
+  a: { status: string; hasSubscription: boolean; trialEndsAt: string | null; isTest?: boolean },
   now = new Date(),
 ): string {
   if (a.status !== "trialing") return a.status;
-  if (!a.hasSubscription && !a.trialEndsAt) return "signup_unfinished";
+  // A test agency skips the card step (D-61), so it never gets a trial or a subscription: it is a test account, not an
+  // unfinished signup (MVP test, 2026-11-16).
+  if (!a.hasSubscription && !a.trialEndsAt) return a.isTest ? "test_account" : "signup_unfinished";
   if (a.trialEndsAt && new Date(a.trialEndsAt) <= now) return "trial_ended";
   return a.status;
 }

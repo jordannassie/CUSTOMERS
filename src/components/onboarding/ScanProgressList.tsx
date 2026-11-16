@@ -23,6 +23,8 @@ export function ScanProgressList({
     <ul className="rounded-md border border-border bg-surface" data-testid="first-scan-models">
       {models.map((model, i) => {
         const saved = progress?.get(model.id);
+        // Out of credit: every check fails, so never show it as running (2026-11-16).
+        const off = saved?.unavailable ?? null;
         return (
           <li key={model.id} className="flex flex-col gap-2.5 border-b border-border px-4 py-3.5 last:border-b-0">
             <div className="flex items-center justify-between gap-3">
@@ -31,7 +33,11 @@ export function ScanProgressList({
                 {model.label}
               </span>
               <span className="text-[length:calc(13px*var(--px,1))] text-muted-foreground">
-                {state === "done" ? (
+                {off ? (
+                  <span className="text-low-text" data-testid="first-scan-unavailable">
+                    {state === "done" ? "Not checked" : `${off}, not checked`}
+                  </span>
+                ) : state === "done" ? (
                   <Check aria-label="Done" className="size-4 text-good" />
                 ) : state === "waiting" ? (
                   "Not started"
@@ -47,7 +53,7 @@ export function ScanProgressList({
               </span>
             </div>
             <div className="h-1 overflow-hidden rounded-xs bg-border" aria-hidden>
-              {state === "done" ? (
+              {off ? null : state === "done" ? (
                 <div className="h-full w-full bg-primary" />
               ) : state !== "running" ? null : saved && saved.done > 0 ? (
                 <div
@@ -61,7 +67,12 @@ export function ScanProgressList({
                 />
               )}
             </div>
-            {state === "running" && saved?.asking && (
+            {off && state !== "done" && (
+              <p className="text-[length:calc(13px*var(--px,1))] text-muted-foreground">
+                {model.label} can&apos;t answer until its account is topped up. Failed checks use no credits.
+              </p>
+            )}
+            {!off && state === "running" && saved?.asking && (
               <p className="truncate text-[length:calc(13px*var(--px,1))] text-muted-foreground" data-testid="first-scan-asking">
                 Asking {model.label}: {saved.asking}
               </p>

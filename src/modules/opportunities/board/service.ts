@@ -1,10 +1,10 @@
-// The Actions board (dashboard redesign, 2026-10-27): five columns, where each fix is applied, and one fix never added
-// twice. Actions are the saved opportunities (migration 078), so the scan's fixes keep arriving as Suggested. Pure.
+// The Actions board (2026-10-27): five columns, where each fix is applied, one fix never added twice. Pure.
 import { byImpactThenRank, rankOf } from "@/lib/fix-order";
 import type { ActionEffect } from "../effect/service";
 import { WHERE_LABEL, whereOf, type Where } from "@/lib/fix-where";
 import { WHERE_ORDER, competitorsIn } from "../where";
 import { splitSteps } from "../service";
+import { OLDER_COUNT_NOTE, fromOlderCount } from "@/lib/fix-counting";
 
 export const ACTION_STATUSES = ["suggested", "todo", "in_progress", "done", "dismissed"] as const;
 /** Board statuses still to do; the database side is OPEN_FIX_STATUSES in src/lib/fix-status.ts. */
@@ -181,7 +181,7 @@ export function toActionItems(rows: ActionRow[], competitors: { id: string; name
         status: toActionStatus(r.status),
         place,
         whereToApply,
-        evidence: clean(r.evidence),
+        evidence: fromOlderCount(r) ? OLDER_COUNT_NOTE : clean(r.evidence),
         whyItMatters: clean(r.description),
         steps: splitSteps(r.recommended_action),
         claudePrompt: clean(r.claude_prompt),

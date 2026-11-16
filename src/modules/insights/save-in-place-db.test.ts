@@ -2,6 +2,7 @@ import { afterAll, describe, expect, it, vi } from "vitest";
 import { addRun, deleteTestUsers, fixtureSignals, seed, service } from "./insights.test-helpers";
 import { templateWriter } from "./template-writer";
 import { explainAfterScan } from "./dal";
+import { SCAN_FIX_COUNTING } from "@/lib/fix-counting";
 
 // Plan 4.1 and 4.2 against the local database: a fix the next scan suggests again keeps its row (id, created_at), so
 // ?fix= links hold and the weekly email does not list it as new; the AI's order is saved as evidence_data.rank.
@@ -60,6 +61,7 @@ describe("saving a scan's fixes in place", () => {
     expect(after.get(before[0].title)?.description).toBe("The AI's text.");
     // Rules added alongside have no rank, so they list after the AI's fixes of the same impact.
     const added = [...after.values()].filter((r) => !before.some((b) => b.id === r.id));
-    for (const row of added) expect(row.evidence_data).toEqual({});
+    // No AI rank on fixed-rules fixes; only the counting version they were written with (lib/fix-counting.ts).
+    for (const row of added) expect(row.evidence_data).toEqual({ counting: SCAN_FIX_COUNTING });
   });
 });

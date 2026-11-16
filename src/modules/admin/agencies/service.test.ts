@@ -88,6 +88,10 @@ describe("displayStatus (admin status wording)", () => {
   it("calls a trial with no subscription and no trial end an unfinished signup", () => {
     expect(displayStatus({ status: "trialing", hasSubscription: false, trialEndsAt: null }, NOW)).toBe("signup_unfinished");
   });
+  it("calls a test agency without a card a test account, not an unfinished signup (D-61)", () => {
+    expect(displayStatus({ status: "trialing", hasSubscription: false, trialEndsAt: null, isTest: true }, NOW)).toBe("test_account");
+    expect(displayStatus({ status: "trialing", hasSubscription: false, trialEndsAt: null, isTest: false }, NOW)).toBe("signup_unfinished");
+  });
   it("calls a trial whose end has passed ended, with or without a subscription", () => {
     expect(displayStatus({ ...trial, trialEndsAt: daysAgo(1) }, NOW)).toBe("trial_ended");
     expect(displayStatus({ ...trial, hasSubscription: false, trialEndsAt: daysAgo(1) }, NOW)).toBe("trial_ended");

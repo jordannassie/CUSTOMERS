@@ -133,7 +133,7 @@ export async function loadAgencyDetail(agencyId: string, now = new Date()): Prom
       id: a.id,
       name: a.name,
       status: a.status,
-      displayStatus: displayStatus({ status: a.status, hasSubscription: a.stripe_subscription_id !== null, trialEndsAt: a.trial_ends_at }, now),
+      displayStatus: displayStatus({ status: a.status, hasSubscription: a.stripe_subscription_id !== null, trialEndsAt: a.trial_ends_at, isTest: a.is_test }, now),
       isTest: a.is_test,
       trialEndsAt: a.trial_ends_at,
       currentPeriodEnd: a.current_period_end,

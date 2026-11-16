@@ -5,13 +5,19 @@ describe("scanProgress", () => {
   it("gives each model its count and the next question it is asking", () => {
     const progress = scanProgress(["openai", "anthropic"], ["q1", "q2", "q3"], new Map([["openai", 2]]));
     expect(progress).toEqual([
-      { id: "openai", done: 2, total: 3, asking: "q3" },
-      { id: "anthropic", done: 0, total: 3, asking: "q1" },
+      { id: "openai", done: 2, total: 3, asking: "q3", unavailable: null },
+      { id: "anthropic", done: 0, total: 3, asking: "q1", unavailable: null },
     ]);
   });
 
   it("asks nothing once a model has every answer", () => {
-    expect(scanProgress(["openai"], ["q1"], new Map([["openai", 4]]))).toEqual([{ id: "openai", done: 1, total: 1, asking: null }]);
+    expect(scanProgress(["openai"], ["q1"], new Map([["openai", 4]]))).toEqual([{ id: "openai", done: 1, total: 1, asking: null, unavailable: null }]);
+  });
+
+  it("shows an AI that is out of credit as not checked, never as asking (2026-11-16)", () => {
+    const progress = scanProgress(["openai", "perplexity"], ["q1", "q2"], new Map([["openai", 1]]), new Set(["perplexity"]));
+    expect(progress[1]).toEqual({ id: "perplexity", done: 0, total: 2, asking: null, unavailable: "Out of credit" });
+    expect(progress[0].unavailable).toBeNull();
   });
 });
 

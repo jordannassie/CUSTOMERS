@@ -14,6 +14,7 @@ import { questionBasisChanged, rebuildQuestionsForIndustry, savedQuestionBasis }
 import { refillDetails } from "../refill";
 import type { DetailsStepInput } from "../schema";
 import { nextStepNumber, stepNumber } from "../steps";
+import { splitCityState } from "@/lib/place-label";
 
 // Step 4 (MVP_SPEC 3.1): what the details form starts from, and saving what the user confirmed.
 
@@ -77,6 +78,7 @@ export async function saveDetails(
   const current = await ownDraftStep(userId, input.businessId);
   if (current === undefined) return false;
   const [before, location] = await Promise.all([savedQuestionBasis(input.businessId), savedLocation(input.businessId)]);
+  const place = splitCityState(input.city, input.state || null);
   const { error } = await createServiceClient()
     .from("businesses")
     .update({
@@ -85,8 +87,9 @@ export async function saveDetails(
       description: input.description || null,
       services: input.services,
       ...(input.aliases === undefined ? {} : { aliases: input.aliases }),
-      primary_city: input.city,
-      primary_region: input.state || null,
+      // "Austin, TX" with no state chosen: saved as the city and its state, never "Austin, TX, TX" in questions.
+      primary_city: place.city,
+      primary_region: place.region,
       primary_country: countryCode(input.country) || null,
       ...(input.area === undefined ? {} : { primary_area: input.area }),
       phone: input.phone || null,

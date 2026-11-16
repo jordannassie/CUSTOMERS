@@ -7,6 +7,7 @@ import { adminEmails, requireAdmin } from "@/modules/auth";
 import { createLogEmailClient, sendEmail } from "@/modules/email";
 import type { Database } from "@/types/database.types";
 import { foldClaudeAlerts, serviceAlertChanges, type NotifyDeps, type OpenAlert, type ServiceCheck } from "./service";
+import { CLAUDE_KINDS, QUIET_KINDS, recoveredAlertIds } from "./recovered";
 
 // system_alerts has RLS with no policies, so every read and write here uses the service role (B-69).
 type Db = SupabaseClient<Database>;
@@ -132,4 +133,34 @@ export function createNotifyDeps(db: Db = createServiceClient(), overrides: Part
     now: () => new Date(),
     ...overrides,
   };
+}
+
+/**
+ * Closes the alerts whose problem is gone (recovered.ts): Claude answering again, or a spike with nothing new for a
+ * day. Run by the 15-minute job. Returns how many it closed; a failed read or write is logged, never thrown.
+ */
+export async function closeRecoveredAlerts(now = new Date(), db: Db = createServiceClient()): Promise<number> {
+  const [open, claude] = await Promise.all([
+    db.from("system_alerts").select("id, kind, last_seen_at").is("resolved_at", null).in("kind", [...CLAUDE_KINDS, ...QUIET_KINDS]),
+    db
+      .from("visibility_results")
+      .select("created_at")
+      .eq("provider", "anthropic")
+      .eq("cached", false)
+      .eq("is_sample", false)
+      .order("created_at", { ascending: false })
+      .limit(1),
+  ]);
+  if (open.error || claude.error) {
+    console.error(`[admin/alerts] could not check recovered alerts: ${(open.error ?? claude.error)!.message}`);
+    return 0;
+  }
+  const ids = recoveredAlertIds(open.data, claude.data[0]?.created_at ?? null, now);
+  if (ids.length === 0) return 0;
+  const { error } = await db.from("system_alerts").update({ resolved_at: now.toISOString() }).in("id", ids).is("resolved_at", null);
+  if (error) {
+    console.error(`[admin/alerts] could not close recovered alerts: ${error.message}`);
+    return 0;
+  }
+  return ids.length;
 }

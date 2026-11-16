@@ -5,11 +5,10 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { createClient, googleSignInEnabled } from "@/lib/supabase/browser";
-import { appUrl } from "@/lib/app-url";
-import { safeNextPath } from "@/lib/safe-next";
 import { loginNotice } from "@/modules/auth/callback";
-import { AuthAlert, AuthCard, AuthField, AuthLogo, authLinkClass } from "./auth-bits";
+import { AuthAlert, AuthCard, AuthField, AuthLogo, GoogleIcon, authLinkClass } from "./auth-bits";
+import { logInWithEmail, signUpWithEmail, startGoogleSignIn, type AuthFailure } from "./auth-flow";
+import { AuthNotices } from "./auth-notices";
 
 const MIN_PASSWORD = 8;
 
@@ -22,29 +21,6 @@ interface AuthFormProps {
   linkError?: string;
 }
 
-const GoogleIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 48 48" aria-hidden="true">
-    <path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3c-1.6 4.7-6.1 8-11.3 8-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.1 8 3l5.7-5.7C34.6 6.1 29.6 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.7-.4-3.5z" />
-    <path fill="#FF3D00" d="m6.3 14.7 6.6 4.8C14.6 15.9 18.9 13 24 13c3.1 0 5.8 1.1 8 3l5.7-5.7C34.6 6.1 29.6 4 24 4c-7.4 0-13.8 4.1-17.1 10.2z" />
-    <path fill="#4CAF50" d="M24 44c5.5 0 10.4-1.9 14.2-5.1l-6.6-5.4C29.6 35.5 27 36 24 36c-5.2 0-9.6-3.3-11.3-7.9l-6.6 5.1C9.9 39.6 16.4 44 24 44z" />
-    <path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.3-2.2 4.2-4.1 5.5l6.6 5.4C41.5 35.9 44 30.4 44 24c0-1.3-.1-2.7-.4-3.5z" />
-  </svg>
-);
-
-// The page the visitor asked for before being sent to log in (BUG-009). A plan picked on the pricing
-// page (?plan=) is carried into onboarding, which keeps it for the card step (MVP_SPEC 3.1 step 0).
-// A new account goes straight to setup: /dashboard only redirected there, one more server trip (2026-10-23).
-function pickedPlan(): "starter" | "pro" | null {
-  const plan = new URLSearchParams(window.location.search).get("plan");
-  return plan === "starter" || plan === "pro" ? plan : null;
-}
-
-function nextFromUrl(signup = false) {
-  const params = new URLSearchParams(window.location.search);
-  const plan = params.get("plan");
-  const fallback = plan === "starter" || plan === "pro" ? `/onboarding?plan=${plan}` : signup ? "/onboarding" : undefined;
-  return safeNextPath(params.get("next"), fallback);
-}
 
 export default function AuthForm({ defaultMode = "login", errorParam = "", notice, linkError }: AuthFormProps) {
   const router = useRouter();
@@ -87,25 +63,21 @@ export default function AuthForm({ defaultMode = "login", errorParam = "", notic
     setError(null);
     setLinkNotice(null);
     setLoading("google");
-    if (!(await googleSignInEnabled())) {
-      setGoogle({ kind: "google", title: "Google sign-in isn't available right now.", text: "Log in with your email instead." });
+    const failed = await startGoogleSignIn();
+    if (failed) {
+      setGoogle({ kind: "google", ...failed });
       setLoading(null);
+    }
+  }
+
+  function showFailure(f: AuthFailure) {
+    if (f.passwordError) {
+      setPasswordError(f.passwordError);
+      passwordRef.current?.focus();
       return;
     }
-    const supabase = createClient();
-    const next = nextFromUrl();
-    // The configured address, so the OAuth redirect URI matches what is registered in Google Cloud Console and
-    // Supabase, and the PKCE code-verifier cookie is on the right domain. The page's own address only in development.
-    const siteBase = appUrl();
-    const callbackUrl = `${siteBase}/auth/callback?next=${encodeURIComponent(next)}`;
-    const { error: oauthError } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: { redirectTo: callbackUrl },
-    });
-    if (oauthError) {
-      setGoogle({ kind: "google", title: "Google sign-in didn't start.", text: "This is usually temporary." });
-      setLoading(null);
-    }
+    setError(f.error ?? null);
+    setInvalid(f.invalid ?? null);
   }
 
   async function handleEmailAuth(e: React.FormEvent) {
@@ -120,63 +92,11 @@ export default function AuthForm({ defaultMode = "login", errorParam = "", notic
       return;
     }
     setLoading("email");
-    const supabase = createClient();
-
-    if (isSignup) {
-      const siteBase = appUrl();
-      const { data, error: signupError } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          emailRedirectTo: `${siteBase}/auth/callback?from=signup&next=${encodeURIComponent(nextFromUrl(true))}`,
-          // Kept on the account too, so the plan survives a confirmation link opened in another browser (agency step).
-          ...(pickedPlan() && { data: { selected_plan: pickedPlan() } }),
-        },
-      });
-      setLoading(null);
-      if (signupError) {
-        const msg = signupError.message.toLowerCase();
-        if (msg.includes("already registered") || msg.includes("already been registered") || msg.includes("user already")) {
-          setError("An account with this email already exists. Try logging in instead.");
-          setInvalid("email");
-        } else if (msg.includes("password")) {
-          setPasswordError("Password must be at least 8 characters.");
-          passwordRef.current?.focus();
-        } else {
-          setError("We couldn't create your account. Try again.");
-        }
-        return;
-      }
-      // With email confirmation off, signUp already returns a session. One navigation: the page it opens is read
-      // with the new session's cookie, so a refresh after it only fetched the same page again.
-      if (data.session) {
-        router.push(nextFromUrl(true));
-        return;
-      }
-      setMessage("Check your email to confirm your account.");
-      return;
-    }
-
-    const { error: loginError } = await supabase.auth.signInWithPassword({ email, password });
+    const result = isSignup ? await signUpWithEmail(email, password) : await logInWithEmail(email, password);
     setLoading(null);
-    if (loginError) {
-      const msg = loginError.message.toLowerCase();
-      // Checked first: "Email not confirmed" would otherwise read as a wrong password.
-      if (loginError.code === "email_not_confirmed" || msg.includes("not confirmed")) {
-        setError("Confirm your email first. Open the link we sent you, then log in.");
-        setInvalid("email");
-      } else if (msg.includes("invalid") || msg.includes("credentials") || msg.includes("password") || msg.includes("email")) {
-        setError("Email or password is incorrect.");
-        setInvalid("both");
-      } else if (msg.includes("not found") || msg.includes("no user")) {
-        setError("No account found with that email.");
-        setInvalid("email");
-      } else {
-        setError("We couldn't log you in. Try again.");
-      }
-      return;
-    }
-    router.push(nextFromUrl());
+    if (result.kind === "failed") return showFailure(result.failure);
+    if (result.kind === "confirm") return setMessage("Check your email to confirm your account.");
+    router.push(result.next);
   }
 
   const alertId = "auth-alert";
@@ -216,38 +136,7 @@ export default function AuthForm({ defaultMode = "login", errorParam = "", notic
               : "Log in to your Customers.Direct dashboard."}
           </p>
 
-          {google && (
-            <div className="mb-4">
-              <AuthAlert tone="warning">
-                <p className="font-semibold">{google.title}</p>
-                <p className="mt-1">
-                  {google.text}{" "}
-                  <button type="button" onClick={handleGoogle} className="font-semibold underline hover:no-underline">
-                    Retry with Google
-                  </button>{" "}
-                  or{" "}
-                  <Link href="/contact?topic=support" prefetch={false} className="font-semibold underline hover:no-underline">
-                    contact support
-                  </Link>.
-                </p>
-              </AuthAlert>
-            </div>
-          )}
-          {linkNotice && (
-            <div className="mb-4">
-              <AuthAlert tone={linkNotice.tone}>
-                {linkNotice.text}
-                {linkNotice.link && (
-                  <>
-                    {" "}
-                    <Link href={linkNotice.link.href} prefetch={false} className="font-semibold underline hover:no-underline">
-                      {linkNotice.link.label}
-                    </Link>
-                  </>
-                )}
-              </AuthAlert>
-            </div>
-          )}
+          <AuthNotices google={google} linkNotice={linkNotice} onRetryGoogle={handleGoogle} />
 
           <Button type="button" variant="outline" size="lg" onClick={handleGoogle} disabled={loading !== null} className="w-full bg-surface">
             {loading === "google" ? <Loader2 className="animate-spin text-muted-foreground" aria-hidden="true" /> : <GoogleIcon />}

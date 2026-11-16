@@ -3,6 +3,8 @@ export type PortfolioExample = {
   src: string;
   title: string;
   note: string;
+  /** A still frame for the tile until it plays; add one per real video (web.dev lazy loading video guidance). */
+  poster?: string;
 };
 
 const SAMPLE_SRC =

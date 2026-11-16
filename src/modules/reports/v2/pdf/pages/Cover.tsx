@@ -4,6 +4,7 @@ import { city, engineList, formatDate, initials, plural } from "../format";
 import { SECTIONS } from "../layout";
 import { BigNumber, Card } from "../primitives";
 import { COLORS, lines, s } from "../theme";
+import { rankTile } from "../rank-tile";
 
 function Logo({ ctx }: { ctx: ReportCtx }) {
   const box = { width: 35, height: 35, borderRadius: 6 };
@@ -47,7 +48,7 @@ export function Cover({ ctx }: { ctx: ReportCtx }) {
   const coverage = `${snap.coverage.questions} ${plural(snap.coverage.questions, "question")}, ${
     snap.coverage.engines.length
   } AI ${plural(snap.coverage.engines.length, "engine")}, ${snap.coverage.answers} ${plural(snap.coverage.answers, "answer")}`;
-  const rank = snap.rank;
+  const rankStat = rankTile(snap);
   // Long names step down so two lines still leave room for the contents list.
   const nameSize = snap.business.name.length <= 14 ? 58 : snap.business.name.length <= 20 ? 46 : 36;
 
@@ -86,10 +87,7 @@ export function Cover({ ctx }: { ctx: ReportCtx }) {
 
       <View style={[s.row, { gap: 13, marginTop: 6 }]}>
         <Stat label="Visibility score" value={String(snap.score.value)} unit="/100" problem={snap.score.value === 0} />
-        <Stat
-          label={rank ? `Rank among ${rank.of} tracked` : "Rank among tracked"}
-          value={rank ? `#${rank.position}` : "None"}
-        />
+        <Stat label={rankStat.label} value={rankStat.value} />
         <Stat label="Fixes in the action plan" value={String(snap.fixes.length)} />
       </View>
 

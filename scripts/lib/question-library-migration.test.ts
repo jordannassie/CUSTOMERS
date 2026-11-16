@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { libraryMigrationSql, nextMigrationNumber } from "./question-library-migration";
 
 const approved = {
-  version: 1,
+  version: 2,
   status: "approved",
   promptVersion: "test",
   model: "test",
@@ -24,9 +24,9 @@ describe("nextMigrationNumber", () => {
 describe("libraryMigrationSql", () => {
   it("inserts every approved template once, with quotes escaped and tags trimmed and lower-cased", () => {
     const out = libraryMigrationSql(approved, "096", "supabase/seed/question-library.v1.json");
-    expect(out).toContain("-- Migration 096: question library version 1, 2 templates, approved by A Person on 2026-11-14");
-    expect(out).toContain("('dentist', 'Who''s the best dentist in {city}?', array['general', 'family dentistry']::text[], 'best', 1)");
-    expect(out).toContain("('plumber', 'Which plumber in {city} can come today?', array['emergency']::text[], 'urgent', 1)");
+    expect(out).toContain("-- Migration 096: question library version 2, 2 templates, approved by A Person on 2026-11-14");
+    expect(out).toContain("('dentist', 'Who''s the best dentist in {city}?', array['general', 'family dentistry']::text[], 'best', 2)");
+    expect(out).toContain("('plumber', 'Which plumber in {city} can come today?', array['emergency']::text[], 'urgent', 2)");
     expect(out).toMatch(/where not exists \(\s+select 1\s+from public\.question_library q/);
     expect(out).not.toMatch(/create table/i);
   });

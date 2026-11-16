@@ -5,7 +5,7 @@ import { canAddBusiness } from "@/modules/entitlements";
 import type { AutofillClients, AutofillRequest } from "../autofill";
 import { runBusinessAutofill } from "../dal";
 import { DUPLICATE_BUSINESS_TEXT, DuplicateBusinessError, duplicateBusiness } from "../duplicates";
-import { autofillDone, insertDraft, keepActiveBusiness, websiteTaken } from "./draft/dal";
+import { autofillDone, cityAndState, insertDraft, keepActiveBusiness, websiteTaken } from "./draft/dal";
 import { signupPlan } from "./plan/dal";
 import { restartIfAnotherBusiness } from "./restart/dal";
 import type { AutofillResult } from "../schema";
@@ -118,7 +118,7 @@ export async function startBusiness(
   const typed =
     "domain" in request
       ? { domain: request.domain, has_website: true }
-      : { domain: null, has_website: false, name: request.name, primary_city: request.city };
+      : { domain: null, has_website: false, name: request.name, ...cityAndState(request.city) };
   let draft = state.draft;
   if (!draft) {
     const allowed = await canAddBusiness(agencyId);

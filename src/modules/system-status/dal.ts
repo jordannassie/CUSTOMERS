@@ -106,6 +106,15 @@ async function recentEmailFailures(now: Date): Promise<EmailFailures> {
 // The messages real calls log: Anthropic's "credit balance is too low", OpenAI's "exceeded your current quota",
 // Perplexity's "requires paid credits", and the background jobs' "credit" kind (modules/ai). A provider stays out of
 // credit until one of its checks succeeds after the error. Never reads a key; only provider names and times come back.
+/**
+ * The AI providers out of credit now (their latest credit error came after their latest working check), for screens a
+ * customer sees: the first scan shows such an AI as not checked instead of running (2026-11-16). Reads provider names
+ * and times only, so it needs no admin check.
+ */
+export async function aiProvidersOutOfCredit(now = new Date()): Promise<Set<string>> {
+  return providersOutOfCredit(now);
+}
+
 async function providersOutOfCredit(now: Date): Promise<Set<string>> {
   const db = createServiceClient();
   const since = new Date(now.getTime() - OUT_OF_CREDIT_LOOKBACK_DAYS * 86_400_000).toISOString();

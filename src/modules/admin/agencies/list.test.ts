@@ -43,10 +43,11 @@ describe("admin agencies list and detail", () => {
 
   it("shows an unfinished signup and an ended trial as such, and leaves both out of On trial", async () => {
     const search = await named();
-    await setAgency({ status: "trialing", trial_ends_at: null, stripe_subscription_id: null });
+    // A real agency: a test agency with no card is a "Test account", never an unfinished signup (D-61, 2026-11-16).
+    await setAgency({ status: "trialing", trial_ends_at: null, stripe_subscription_id: null, is_test: false });
     const unfinished = await listAgencies({ filter: "signup_unfinished", search });
     expect(unfinished.rows).toEqual([expect.objectContaining({ id: agency.agencyId, status: "trialing", displayStatus: "signup_unfinished" })]);
-    expect(unfinished.counts).toMatchObject({ all: 1, signup_unfinished: 1, trialing: 0, trial_ended: 0, test: 1 });
+    expect(unfinished.counts).toMatchObject({ all: 1, signup_unfinished: 1, trialing: 0, trial_ended: 0, test: 0 });
 
     await setAgency({ trial_ends_at: new Date(Date.now() - DAY).toISOString(), stripe_subscription_id: `sub_${randomUUID()}` });
     expect(ids(await listAgencies({ filter: "trial_ended", search }))).toEqual([agency.agencyId]);
