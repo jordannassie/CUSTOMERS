@@ -278,6 +278,8 @@ test("active: upgrade, remove at renewal, cancel and keep, and the portal", asyn
   await expect(line(page, "Harbor Dental").getByTestId("pending-change")).toHaveCount(0);
   await expect(page.getByTestId("next-charge")).toHaveText("$398");
   await line(page, "Harbor Dental").getByRole("button", { name: "Remove", exact: true }).click();
+  // Wait for the preview, as the first removal does: a click before it loads was lost on a slow CI run (2026-11-13).
+  await expect(before.getByTestId("change-preview")).toContainText(/Harbor Dental stays on your plan until/);
   await before.getByRole("button", { name: "Remove anyway" }).click();
   await expect(before).toHaveCount(0);
   await expect(page.getByTestId("next-charge")).toHaveText("$249");

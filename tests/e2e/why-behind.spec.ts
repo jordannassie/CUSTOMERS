@@ -272,7 +272,7 @@ test("Competitors names the leader's top reason, and Compare shows every fact wi
   await expect(page.getByTestId("share-of-voice-chart")).toContainText("Bean House leads with 67%");
   // Your place on each AI: a line per AI tool with your rank there and the gap to its leader (2026-11-10).
   const places = page.getByTestId("model-place-chart").getByTestId("model-place");
-  await expect(places.first()).toContainText(/#\d of \d · .*Bean House/);
+  await expect(places.first()).toContainText(/\d(st|nd|rd|th) of \d tracked · .*Bean House/);
   // Donut: hovering a row shows that business in the middle; you are back when the pointer leaves.
   const donut = page.getByTestId("share-of-voice-chart");
   await donut.getByTestId("share-row").filter({ hasText: "Bean House" }).hover();
@@ -359,16 +359,18 @@ test("Questions show who AI named and the sites it used, and the answers list th
   // The row names the business AI named most and the sites it used without you (dashboard redesign, Questions).
   await expect(summary).toContainText(/Top pick:\s*Bean House/, { timeout: 60_000 });
   await expect(summary).toContainText(/Sites AI used when it skipped you:\s*yelp.com, beanhouse.example/);
-  // The question opens in place, with each AI's answer in a tab.
+  // The question opens in place with every answer of the last 30 days as a tab, newest first (QA round 2, item 3:
+  // the count and the list match), so at least one per AI.
   const row = page.getByTestId("question-row").filter({ has: summary });
   await row.getByTestId("question-text").click();
   const details = row.getByTestId("question-details");
-  await expect(details.getByRole("tab")).toHaveCount(3, { timeout: 30_000 });
+  await expect(details.getByRole("tab").nth(2)).toBeVisible({ timeout: 30_000 });
+  await details.getByRole("tab", { name: /ChatGPT/ }).first().click();
   const answer = details.getByTestId("answer");
   await expect(answer.getByTestId("answer-named")).toContainText("Bean House");
   await expect(answer.getByTestId("answer-named")).toContainText("Blue Door Coffee");
   await expect(answer.getByTestId("answer-sites")).toContainText("yelp.com");
-  await details.getByRole("tab", { name: /Claude/ }).click();
+  await details.getByRole("tab", { name: /Claude/ }).first().click();
   await expect(details.getByRole("tabpanel")).toHaveAttribute(
     "data-model",
     "anthropic",

@@ -260,7 +260,7 @@ test("Run scan short of credits: a warning first, and nothing starts until Run s
   expect(await jobs()).toBe(1);
 });
 
-test("Run scan again within 20 hours: asks first and says reused answers are free (2026-10-15, D-24)", async ({ page }) => {
+test("Run scan again within 20 hours: asks first and says how credits are used (2026-10-15, D-24)", async ({ page }) => {
   const business = await seedBusiness(page);
   await page.getByRole("button", { name: "Run first scan" }).click();
   await expect(page.getByTestId("score-summary")).toBeVisible({ timeout: 60_000 });
@@ -271,8 +271,11 @@ test("Run scan again within 20 hours: asks first and says reused answers are fre
   await run.click();
   const dialog = page.getByTestId("recent-scan-dialog");
   await expect(dialog.getByRole("heading", { name: "Scan again?" })).toBeVisible();
+  // This spec's agency is a test agency (sample answers, which skip the answer cache), so the dialog says every scan
+  // is charged in full (MVP test fix M2, 2026-11-14). A real agency's wording, "Reused answers don't use credits", is
+  // covered by src/modules/jobs/actions.test.ts.
   await expect(dialog.getByTestId("recent-scan-message")).toHaveText(
-    "You scanned in the last 20 hours, so most answers will be the same as last time. Reused answers don't use credits.",
+    "You scanned in the last 20 hours. This test account uses sample answers, so every scan uses credits in full.",
   );
   await dialog.getByRole("button", { name: "Not now" }).click();
   await expect(dialog).toHaveCount(0);

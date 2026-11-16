@@ -67,6 +67,14 @@ async function seedBusiness(page: Page): Promise<string> {
 type Seed = { provider: (typeof MODELS)[number]; urls: string[]; mentioned?: boolean; competitors?: string[] };
 
 async function seedChecks(businessId: string, checks: Seed[]) {
+  // Sources counts the answers the score counts: answers to an active suggested question (H2, 2026-11-14), so each
+  // seeded answer belongs to one, as a real scan's answers do.
+  const { data: question } = await db
+    .from("tracked_prompts")
+    .insert({ business_id: businessId, prompt: "Best coffee shop in Orange, CA?", source: "library" })
+    .select("id")
+    .single()
+    .throwOnError();
   const { data: run } = await db
     .from("visibility_runs")
     .insert({ business_id: businessId, provider: "scan", status: "completed" })
@@ -80,6 +88,7 @@ async function seedChecks(businessId: string, checks: Seed[]) {
         run_id: run.id,
         business_id: businessId,
         provider: c.provider,
+        tracked_prompt_id: question.id,
         created_at: new Date(Date.now() - HOUR).toISOString(),
         business_mentioned: c.mentioned ?? false,
         competitors_mentioned: (c.competitors ?? []).map((name, p) => ({ name, position: p + 2 })),
