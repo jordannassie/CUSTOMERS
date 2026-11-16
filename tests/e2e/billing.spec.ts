@@ -220,7 +220,7 @@ test("trial: a third saved business shows the trial limit instead of a price", a
   });
   await page.getByRole("button", { name: "Add on Starter, $149 a month" }).click();
   const dialog = page.getByTestId("change-dialog");
-  await expect(dialog.getByRole("alert")).toContainText("Your trial includes 2 businesses.");
+  await expect(dialog.getByRole("alert")).toContainText("Your trial includes 2 businesses, and deleted ones still count.");
   await expect(dialog.getByRole("button", { name: "Add to plan" })).toHaveCount(0);
   await expect(dialog.getByRole("button", { name: "Try again" })).toHaveCount(0);
 });

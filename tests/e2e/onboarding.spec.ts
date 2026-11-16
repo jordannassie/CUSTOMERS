@@ -3,6 +3,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { parseEnv } from "node:util";
 import { createClient } from "@supabase/supabase-js";
 import { expect, test, type Page } from "@playwright/test";
+import { clearPreselected } from "./competitor-picks";
 
 // B-36 end to end against the local Supabase stack. The dev server runs with ONBOARDING_FIXTURES and
 // PLACES_FIXTURES (playwright.config.ts), so auto-fill, competitors and questions never call a provider.
@@ -84,6 +85,7 @@ test("the whole wizard: plan carried through, auto-filled, resumable, live estim
   await visible(page, "Continue").click();
 
   await slow(page.getByRole("heading", { name: "Who do you compete with?" })).toBeVisible();
+  await clearPreselected(page);
   await page.getByRole("checkbox").filter({ visible: true }).first().check();
   await visible(page, "Continue").click();
   await slow(page.getByRole("heading", { name: "What do your customers ask AI?" })).toBeVisible();

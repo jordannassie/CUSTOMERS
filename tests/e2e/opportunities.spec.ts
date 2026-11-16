@@ -80,6 +80,8 @@ async function seed(page: Page, { hasWebsite, opportunities }: Seed): Promise<st
           impact: "high",
           category: "reviews_reputation",
           evidence: `Bean House was named in 5 of 6 AI answers. On Google, Bean House has {competitor.${rival.id}.review_count} reviews and you have {business.review_count}.`,
+          // Written by today's counting rules (src/lib/fix-counting.ts SCAN_FIX_COUNTING), so the live numbers show.
+          evidence_data: { counting: 2 },
           description: "AI assistants lean on review counts to decide which local businesses are trusted.",
           recommended_action: "1. Ask every happy customer for a Google review.\n2. Reply to every new review.",
         },

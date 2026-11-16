@@ -152,7 +152,7 @@ test("a trial with 2 set-up businesses keeps its draft and says to upgrade at th
   const { user, draftId } = await trialWithDraft(page, 2, { name: "Harbor Dental", domain: "harbor-dental.example" });
   await signIn(page, user, "/onboarding/models");
   await page.waitForURL("**/onboarding/models");
-  await expect(page.getByTestId("upgrade-note")).toContainText("Your trial includes 2 businesses. Upgrade to add more.");
+  await expect(page.getByTestId("upgrade-note")).toContainText("Your trial includes 2 businesses, and deleted ones still count. Choose a plan to add more.");
   await expect(page.getByTestId("upgrade-note")).toContainText("This business is saved.");
   await expect(page.getByRole("button", { name: "Finish setup" })).toHaveCount(0);
   expect(await statusOf(draftId)).toBe("onboarding");

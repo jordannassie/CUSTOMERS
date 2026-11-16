@@ -37,7 +37,6 @@ const DASH_ALLOW: Record<string, string> = {
   "src/modules/onboarding/autofill-safety.ts": "matches the dashes in page titles",
   "src/modules/onboarding/competitor-location/service.test.ts": "asserts the notes have no long dash",
   "src/modules/billing/plan-change/copy.test.ts": "asserts the sentences have no long dash",
-  "src/modules/jobs/overdraft.test.ts": "asserts the warning has no long dash",
   "src/lib/writing-rules.ts": "the long dash check for AI-written text",
 };
 const WORD_ALLOW: Record<string, string> = {

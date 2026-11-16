@@ -3,6 +3,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { parseEnv } from "node:util";
 import { createClient } from "@supabase/supabase-js";
 import { expect, test, type Page } from "@playwright/test";
+import { clearPreselected } from "./competitor-picks";
 
 // Back from every setup step, then Continue again, with and without changes (2026-10-16), against the local stack in
 // fixture mode like onboarding.spec.ts: never an error page, one business, competitors and questions as expected.
@@ -90,6 +91,7 @@ test("Back from every step, then Continue again: one business, questions rebuilt
   await slow(page.locator("#name")).toHaveValue("Sunrise Coffee Bar & Roastery");
   await visible(page, "Continue").click();
   await at(page, "competitors");
+  await clearPreselected(page);
   await page.getByRole("checkbox").filter({ visible: true }).first().check();
   await visible(page, "Continue").click();
   await at(page, "questions");
@@ -180,6 +182,7 @@ test("a double click on each Continue saves once: one business, one competitor l
   await slow(page.locator("#name")).toHaveValue("Sunrise Coffee Bar & Roastery");
   await visible(page, "Continue").dblclick();
   await at(page, "competitors");
+  await clearPreselected(page);
   await page.getByRole("checkbox").filter({ visible: true }).first().check();
   await visible(page, "Continue").dblclick();
   await at(page, "questions");

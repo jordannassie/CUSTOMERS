@@ -3,6 +3,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { parseEnv } from "node:util";
 import { createClient } from "@supabase/supabase-js";
 import { expect, test, type Page } from "@playwright/test";
+import { clearPreselected } from "./competitor-picks";
 
 // Competitors follow the business's location (2026-10-16), in fixture mode like onboarding-back.spec.ts: set up in
 // Austin, pick an Austin and a Dallas business and one by name, go Back and move to Dallas. The Austin pick is removed
@@ -82,6 +83,7 @@ test("moving from Austin to Dallas removes the Austin pick and says so once", as
   await visible(page, "Continue").click();
   await at(page, "competitors");
   await expect(page.getByTestId("competitors-moved")).toHaveCount(0);
+  await clearPreselected(page);
   // BUG-090: one visible Continue at every width, never the phone bar's and the desktop one together.
   const start = page.viewportSize()!;
   const widths = info.project.name === "mobile" ? [start.width] : [1440, 1024, 900, 768, 640];
