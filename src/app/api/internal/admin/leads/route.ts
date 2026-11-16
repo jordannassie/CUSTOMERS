@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auditedChange, changed, unchanged } from "@/modules/admin";
 import { adminEmails, AuthError, authErrorResponse, requireAdmin } from "@/modules/auth";
-import { countUnreadLeads, getLead, leadsQuery, leadUpdateInput, listLeads, updateLead } from "@/modules/feedback";
+import { z } from "zod";
+import { countUnreadLeads, deleteLead, getLead, leadsQuery, leadUpdateInput, listLeads, updateLead } from "@/modules/feedback";
 
 // GET /api/internal/admin/leads?page&search&interest&source&status&unread=1&replied=yes|no&handler&count=1, or ?id= for one lead
 export async function GET(req: NextRequest) {
@@ -80,4 +81,30 @@ export async function PATCH(req: NextRequest) {
     console.error("[admin/leads] audited update failed:", error instanceof Error ? error.message : error);
     return NextResponse.json({ error: "Update failed." }, { status: 500 });
   }
+}
+
+// DELETE /api/internal/admin/leads?id= removes a lead for good (owner, 2026-11-16). The admin history keeps that it
+// was deleted, never the person's name, email or message.
+export async function DELETE(req: NextRequest) {
+  try {
+    await requireAdmin();
+  } catch (error) {
+    return authErrorResponse(error);
+  }
+  const parsed = z.uuid().safeParse(new URL(req.url).searchParams.get("id"));
+  if (!parsed.success) return NextResponse.json({ error: "id required." }, { status: 400 });
+
+  const id = parsed.data;
+  try {
+    const gone = await auditedChange("lead.delete", { type: "lead", id }, {}, async () => {
+      const result = await deleteLead(id);
+      return result.ok && result.found ? changed(true) : unchanged(false, result.ok ? "not found" : "delete failed");
+    });
+    if (!gone) return NextResponse.json({ error: "Delete failed." }, { status: 500 });
+  } catch (error) {
+    if (error instanceof AuthError) return authErrorResponse(error);
+    console.error("[admin/leads] audited delete failed:", error instanceof Error ? error.message : error);
+    return NextResponse.json({ error: "Delete failed." }, { status: 500 });
+  }
+  return NextResponse.json({ success: true });
 }

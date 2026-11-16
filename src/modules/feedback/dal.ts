@@ -89,6 +89,13 @@ export async function setFeatureRequestStatus(id: string, status: (typeof FEATUR
   return error ? { ok: false } : { ok: true };
 }
 
+/** Removes a feature request for good (owner, 2026-11-16); `found` is false when it was already gone. */
+export async function deleteFeatureRequest(id: string): Promise<{ ok: boolean; found: boolean }> {
+  const { data, error } = await createServiceClient().from("feature_requests").delete().eq("id", id).select("id");
+  if (error) console.error("[feature-requests] delete error:", error.message);
+  return { ok: !error, found: (data?.length ?? 0) > 0 };
+}
+
 export type FeatureRequestRow = {
   id: string;
   userId: string;

@@ -64,6 +64,18 @@ export default function FeatureRequestsClient({
     }
   }
 
+  async function deleteRequest(id: string): Promise<boolean> {
+    const res = await appFetch(`/api/internal/admin/feature-requests/${id}`, { method: "DELETE" }).catch(() => null);
+    if (!res?.ok) {
+      toast.error("The feature request was not deleted. Try again.");
+      return false;
+    }
+    setRequests((prev) => prev.filter((r) => r.id !== id));
+    setExpanded(null);
+    toast.success("Feature request deleted.");
+    return true;
+  }
+
   return (
     <>
       <AdminPageHeader
@@ -122,6 +134,7 @@ export default function FeatureRequestsClient({
                 saving={updating === req.id}
                 onToggle={() => setExpanded(expanded === req.id ? null : req.id)}
                 onStatus={(s) => updateStatus(req.id, s)}
+                onDelete={() => deleteRequest(req.id)}
               />
             ))}
           </ul>

@@ -17,6 +17,8 @@ export const ACTION_LABELS: Record<string, string> = {
   "system_alert.resolve": "Resolved an alert",
   "lead.update": "Updated a lead",
   "feature_request.update": "Updated a feature request",
+  "lead.delete": "Deleted a lead",
+  "feature_request.delete": "Deleted a feature request",
   "app_review.approve": "Approved a review",
   "app_review.reject": "Rejected a review",
   "app_review.remove": "Removed a review",

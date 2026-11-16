@@ -121,7 +121,7 @@ async function openLink(page: Page, link: string) {
   expect(headers["referrer-policy"]).toBe("no-referrer");
   expect(headers["cache-control"]).toContain("no-store");
   const location = headers["location"];
-  expect(location).toMatch(/\/storage\/v1\/object\/sign\/reports\/[0-9a-f-]{36}\/[0-9a-f-]{36}\.pdf\?token=/);
+  expect(location).toMatch(/\/storage\/v1\/object\/sign\/reports\/[0-9a-f-]{36}\/[0-9a-f-]{36}-v2\.pdf\?token=/);
   return location;
 }
 

@@ -164,6 +164,12 @@ export default function LeadsClient({
                 onDraft={(text) => setDraft(selected.id, text)}
                 onUpdate={updateLead}
                 onClose={() => go(view, null)}
+                onDeleted={() => {
+                  // The unread count in the menu and the list both change.
+                  window.dispatchEvent(new Event(LEADS_CHANGED));
+                  go(view, null);
+                  refresh();
+                }}
               />
             ) : notFound ? (
               <LeadNotFound onClose={() => go(view, null)} />

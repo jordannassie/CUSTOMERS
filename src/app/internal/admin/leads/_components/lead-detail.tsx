@@ -7,6 +7,7 @@ import { cn } from "cn";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { appFetch } from "@/lib/session-expired";
+import DeleteRecord from "../../_components/delete-record";
 import { looksLikeCode, websiteHref, withoutCode } from "@/lib/submitted-text";
 import { CodeNotice } from "../../_components/submitted-code";
 import { LeadFollowUp } from "./lead-followup";
@@ -47,6 +48,7 @@ export function LeadDetail({
   onDraft,
   onUpdate,
   onClose,
+  onDeleted,
 }: {
   lead: Lead;
   admins: string[];
@@ -55,10 +57,23 @@ export function LeadDetail({
   onDraft: (text: string | null) => void;
   onUpdate: (id: string, updates: Partial<Lead>) => void;
   onClose: () => void;
+  /** After the lead is deleted: the page closes it and loads the list again. */
+  onDeleted: () => void;
 }) {
   const [saving, setSaving] = useState(false);
   // The Status button that is on: an opened lead is still New, a replied one Contacted.
   const currentStatus = stageStatus(leadStage(lead));
+
+  async function remove(): Promise<boolean> {
+    const res = await appFetch(`/api/internal/admin/leads?id=${encodeURIComponent(lead.id)}`, { method: "DELETE" }).catch(() => null);
+    if (!res?.ok) {
+      toast.error("The lead was not deleted. Try again.");
+      return false;
+    }
+    toast.success("Lead deleted.");
+    onDeleted();
+    return true;
+  }
 
   async function patch(payload: Record<string, unknown>): Promise<boolean> {
     setSaving(true);
@@ -197,6 +212,7 @@ export function LeadDetail({
           >
             {lead.read_at ? "Mark as unread" : "Mark as read"}
           </Button>
+          <DeleteRecord what="lead" onDelete={remove} disabled={saving} />
         </div>
       </div>
     </div>

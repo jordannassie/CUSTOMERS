@@ -1,6 +1,7 @@
 // The only file other modules may import from (eslint-plugin-boundaries).
 export { suggestFeature } from "./actions";
 export {
+  deleteFeatureRequest,
   listFeatureRequests,
   notifyAdminsOfLead,
   saveContactMessage,
@@ -8,7 +9,7 @@ export {
   setFeatureRequestStatus,
   type FeatureRequestRow,
 } from "./dal";
-export { countUnreadLeads, getLead, listLeads, oldLeadValuesInUse, updateLead, type AdminLead, type LeadFilters } from "./leads/dal";
+export { countUnreadLeads, deleteLead, getLead, listLeads, oldLeadValuesInUse, updateLead, type AdminLead, type LeadFilters } from "./leads/dal";
 export { leadStage, NO_HANDLER, searchPattern, stageStatus, type LeadStage } from "./lead-rules";
 export {
   contactInput,

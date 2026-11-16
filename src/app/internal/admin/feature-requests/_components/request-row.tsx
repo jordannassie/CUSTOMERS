@@ -3,6 +3,7 @@ import { ChevronDown } from "lucide-react";
 import { cn } from "cn";
 import { Button } from "@/components/ui/button";
 import { looksLikeCode, withoutCode } from "@/lib/submitted-text";
+import DeleteRecord from "../../_components/delete-record";
 import { CodeNotice, SpamBadge } from "../../_components/submitted-code";
 import { STATUS_LABELS, StatusBadge, formatDate, type FeatureRequest, type Status } from "./request-parts";
 
@@ -12,9 +13,11 @@ interface Props {
   saving: boolean;
   onToggle: () => void;
   onStatus: (status: Status) => void;
+  /** True when it was deleted. */
+  onDelete: () => Promise<boolean>;
 }
 
-export function RequestRow({ req, expanded, saving, onToggle, onStatus }: Props) {
+export function RequestRow({ req, expanded, saving, onToggle, onStatus, onDelete }: Props) {
   const panelId = `feature-request-${req.id}`;
   const spam = looksLikeCode(req.title, req.description, req.pageContext);
   const title = withoutCode(req.title) || "No title";
@@ -97,6 +100,9 @@ export function RequestRow({ req, expanded, saving, onToggle, onStatus }: Props)
               );
             })}
             {saving && <span className="ml-1 text-[length:calc(13px*var(--px,1))] text-text-hint">Saving…</span>}
+            <span className="ml-auto">
+              <DeleteRecord what="feature request" onDelete={onDelete} disabled={saving} />
+            </span>
           </div>
         </div>
       )}

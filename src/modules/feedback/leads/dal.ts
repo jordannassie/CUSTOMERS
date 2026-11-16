@@ -125,3 +125,10 @@ export async function updateLead(
   }
   return { ok: true, updates };
 }
+
+/** Removes a lead for good (owner, 2026-11-16); `found` is false when it was already gone. */
+export async function deleteLead(id: string): Promise<{ ok: boolean; found: boolean }> {
+  const { data, error } = await createServiceClient().from("contact_submissions").delete().eq("id", id).select("id");
+  if (error) console.error("[admin/leads] delete error:", error.message);
+  return { ok: !error, found: (data?.length ?? 0) > 0 };
+}

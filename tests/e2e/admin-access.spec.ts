@@ -97,4 +97,33 @@ test("an admin sees the admin overview", async ({ page }, testInfo) => {
   await page.goto("/internal/admin");
   await expect(page).toHaveURL((url) => url.pathname === "/internal/admin");
   await expect(page.getByRole("heading", { level: 1, name: "Overview" })).toBeVisible();
+
+  // Leads and feature requests can be deleted, after one confirm (2026-11-16).
+  const tag = randomUUID().slice(0, 8);
+  const { data: lead } = await db
+    .from("contact_submissions")
+    .insert({ name: `E2E Delete ${tag}`, email: `e2e-delete-${tag}@example.test`, message: "Please delete this lead" })
+    .select("id")
+    .single()
+    .throwOnError();
+  await page.goto(`/internal/admin/leads?lead=${lead.id}`);
+  await expect(page.getByRole("heading", { name: `E2E Delete ${tag}` })).toBeVisible({ timeout: 60_000 });
+  await page.getByTestId("delete-record").click();
+  await page.getByTestId("confirm-dialog").getByRole("button", { name: "Delete lead" }).click();
+  await expect(page.getByText("Lead deleted.")).toBeVisible({ timeout: 60_000 });
+  expect((await db.from("contact_submissions").select("id").eq("id", lead.id)).data).toEqual([]);
+
+  const { data: request } = await db
+    .from("feature_requests")
+    .insert({ user_id: userIds.at(-1)!, title: `E2E Delete request ${tag}`, description: "Please delete this request" })
+    .select("id")
+    .single()
+    .throwOnError();
+  await page.goto("/internal/admin/feature-requests");
+  const row = page.locator("main li").filter({ hasText: `E2E Delete request ${tag}` });
+  await row.getByRole("button").first().click();
+  await row.getByTestId("delete-record").click();
+  await page.getByTestId("confirm-dialog").getByRole("button", { name: "Delete feature request" }).click();
+  await expect(row).toHaveCount(0, { timeout: 60_000 });
+  expect((await db.from("feature_requests").select("id").eq("id", request.id)).data).toEqual([]);
 });
