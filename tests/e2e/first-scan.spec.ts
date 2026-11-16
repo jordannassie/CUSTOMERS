@@ -122,18 +122,15 @@ test("finish setup: a short progress screen, a summary, then the dashboard with 
   await expect(page.getByTestId("no-score")).toHaveCount(0);
 });
 
-test("short of credits: the first scan waits for Run scan anyway, then runs into the overdraft (D-54)", async ({ page }) => {
+test("short of credits: the first scan does not start and says what it needs (D-54, 2026-11-16)", async ({ page }) => {
   const { businessId } = await seedAtModelsStep(page, { amount: 5 });
   await finishSetup(page);
   await page.waitForURL("**/onboarding/first-scan");
-  await slow(page.getByTestId("first-scan-overdraft")).toHaveText(
-    "This scan uses 9 credits and you have 5. It will still finish, and the 4 extra credits come out of your next renewal or top-up.",
+  await slow(page.getByRole("heading", { level: 1, name: "Your first scan didn't run" })).toBeVisible();
+  await expect(page.getByTestId("first-scan-problem")).toHaveText(
+    "This scan needs 9 credits and this test account has 5. An admin can add more in Admin, Agencies.",
   );
-  const jobs = async () => (await db.from("scan_jobs").select("id").eq("business_id", businessId)).data?.length ?? 0;
-  expect(await jobs()).toBe(0);
-  await page.getByRole("button", { name: "Run scan anyway" }).click();
-  await slow(page.getByRole("heading", { level: 1, name: "Your first scan is done" })).toBeVisible();
-  expect(await jobs()).toBe(1);
+  expect((await db.from("scan_jobs").select("id").eq("business_id", businessId)).data?.length ?? 0).toBe(0);
 });
 
 test("a failed first scan shows Try again, never an empty dashboard, and the retry opens the score", async ({ page }) => {

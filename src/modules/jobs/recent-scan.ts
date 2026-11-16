@@ -2,6 +2,9 @@
 // cache (cache.ts, H1) and are free (D-24, 2026-10-20), so the user is told the results will mostly repeat; the scan
 // history shows how many were reused. The window matches the cache's (BUG-199). Pure, so it is unit tested.
 
+import type { ActionResult } from "@/modules/auth";
+import type { ScanStatus } from "./service";
+
 export const RECENT_SCAN_HOURS = 20;
 
 /** True when the last finished scan is less than 20 hours old, so its answers can still be reused. */
@@ -25,4 +28,15 @@ export type RecentScanNeeded = { ok: false; status: 428; error: string; recentSc
 
 export function recentScanNeeded(cost: number, isTest = false): RecentScanNeeded {
   return { ok: false, status: 428, error: recentScanWarning(isTest), recentScan: { cost } };
+}
+
+/**
+ * Run scan's answers. A new scan needs its whole cost in credits (D-54 as changed on 2026-11-16, entitlements
+ * canStartScan), so there is no overdraft to confirm any more; only "scan again so soon?" waits for a yes.
+ */
+export type StartScanResult = ActionResult<ScanStatus> | RecentScanNeeded;
+
+/** True when startScan stopped to ask whether to scan again so soon after the last scan. */
+export function needsRecentScanConfirm(result: StartScanResult): result is RecentScanNeeded {
+  return !result.ok && "recentScan" in result;
 }

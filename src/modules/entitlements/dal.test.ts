@@ -70,6 +70,7 @@ describe("entitlements against the database", () => {
       id: agency.agencyId,
       status: "trialing",
       businessCount: 2,
+      trialBusinessesUsed: 2,
       balance: 40,
       trialOver: false,
       // A test agency has no card step (D-61), so its trial counts as started.
@@ -104,13 +105,28 @@ describe("entitlements against the database", () => {
     expect(await canAddBusiness(agency.agencyId)).toEqual({ allowed: false, reason: REASONS.trialBusinessLimit });
   });
 
-  it("never counts a draft still being set up, or a deleted business (D-16)", async () => {
+  it("never counts a draft still being set up (D-16), deleted or not", async () => {
     const agency = await createAgency(1, 2);
+    const { error } = await service
+      .from("businesses")
+      .insert({ owner_user_id: userIds.at(-1)!, agency_id: agency.agencyId, name: "Gone draft", status: "onboarding", deleted_at: new Date().toISOString() });
+    if (error) throw error;
+    expect(await loadAgencyFacts(agency.agencyId)).toMatchObject({ businessCount: 1, trialBusinessesUsed: 1 });
+    expect(await canAddBusiness(agency.agencyId)).toEqual({ allowed: true, reason: "" });
+  });
+
+  it("keeps a deleted set-up business in the trial count, so delete and add cannot pass 2 (2026-11-16)", async () => {
+    const agency = await createAgency(1);
     const { error } = await service
       .from("businesses")
       .insert({ owner_user_id: userIds.at(-1)!, agency_id: agency.agencyId, name: "Gone", status: "active", deleted_at: new Date().toISOString() });
     if (error) throw error;
-    expect((await loadAgencyFacts(agency.agencyId)).businessCount).toBe(1);
+    expect(await loadAgencyFacts(agency.agencyId)).toMatchObject({ businessCount: 1, trialBusinessesUsed: 2 });
+    expect(await canAddBusiness(agency.agencyId)).toEqual({ allowed: false, reason: REASONS.trialBusinessLimit });
+    expect(await canFinishDraft(agency.agencyId)).toEqual({ allowed: false, reason: REASONS.trialBusinessLimit });
+
+    // On a paid plan the trial limit is gone.
+    await service.from("agencies").update({ status: "active" }).eq("id", agency.agencyId).throwOnError();
     expect(await canAddBusiness(agency.agencyId)).toEqual({ allowed: true, reason: "" });
   });
 

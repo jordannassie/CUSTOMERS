@@ -199,6 +199,16 @@ describe("runScan (B-26)", () => {
       reason: REASONS.outOfCredits,
     });
   });
+
+  it("skips a scheduled scan the balance does not fully cover, holding nothing (D-54, 2026-11-16)", async () => {
+    // 36 checks against 10 credits: stored as the plain out-of-credits text, so the 02:00 run tries again (069).
+    const short = await createScanAgency({ credits: 10 });
+    const job = await newJob(await createScanBusiness(short));
+    expect(await runScan(job, runners())).toEqual({ status: "skipped", reason: REASONS.outOfCredits });
+    const { data: held } = await service.from("scan_jobs").select("hold_id").eq("id", job).single();
+    expect(held!.hold_id).toBeNull();
+    expect(await balance(short.agencyId)).toBe(10);
+  });
 });
 
 describe("scan helpers", () => {

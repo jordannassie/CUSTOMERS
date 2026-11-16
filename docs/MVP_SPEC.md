@@ -159,7 +159,8 @@ Rules for the extraction prompt:
 
 **Running out mid-scan (D-54)**
 - A scan may start only if the balance is above 0.
-- Once started it always finishes. The hold may push the balance below zero, at most by the cost of that one scan (overdraft).
+- A new scan starts only when the balance covers all of it, one credit per question per AI (owner, 2026-11-16; migration 098). Short of that, Run scan is off and says how many credits the scan needs; a scheduled scan is skipped and tried again at the next 02:00 run.
+- Once started it always finishes. Only a started scan that is retried with more checks, or credits taken back while it runs, can push the balance below zero (overdraft), and the next grant settles it.
 - A negative balance is paid off automatically from the next grant (renewal or top-up).
 - While the balance is 0 or less, no new scan starts (manual: "Not enough credits"; scheduled: skipped, email sent).
 

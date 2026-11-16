@@ -130,7 +130,7 @@ describe("website step", () => {
     expect(await startBusiness(userId, { domain: COFFEE_DOMAIN }, coffee())).toEqual({
       ok: false,
       status: 403,
-      error: "Your trial includes 2 businesses. Upgrade to add more.",
+      error: "Your trial includes 2 businesses, and deleted ones still count. Choose a plan to add more.",
     });
   });
 });

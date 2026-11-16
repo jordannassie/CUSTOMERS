@@ -68,7 +68,10 @@ describe("capture_credits (E2E-0929)", () => {
   it("follows capture_credit: replays charge nothing, overdraft past zero, closed and used-up holds refuse", async () => {
     const agency = await createAgency();
     await topup(agency, 2);
-    const hold = await holdCredits(agency.agencyId, 5, await newScanJob(agency));
+    // A new scan needs the full 2; retried with more checks, the started scan's hold grows to 5 (D-54).
+    const job = await newScanJob(agency);
+    await holdCredits(agency.agencyId, 2, job);
+    const hold = await holdCredits(agency.agencyId, 5, job);
     const [a, b, c] = [randomUUID(), randomUUID(), randomUUID()];
 
     expect(await captureCredit(hold, a)).toBe(true);

@@ -119,7 +119,7 @@ describe("plan change actions with a session", () => {
     expect(await addBusiness({ businessId: three.ids[2], planId: "starter" })).toEqual({
       ok: false,
       status: 403,
-      error: "Your trial includes 2 businesses. Upgrade to add more.",
+      error: "Your trial includes 2 businesses, and deleted ones still count. Choose a plan to add more.",
     });
   });
 });

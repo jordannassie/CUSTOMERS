@@ -89,11 +89,22 @@ describe("credit functions (B-13)", () => {
     expect(await balanceOf(agency)).toBe(0);
   });
 
-  it("finishes a scan past zero, blocks the next, and a top-up pays off the overdraft first", async () => {
+  it("starts a new scan only when the balance covers all of it (D-54, 2026-11-16)", async () => {
+    const agency = await createAgency(2);
+    await topup(agency, 5);
+    await expect(holdCredits(agency.agencyId, 36, await newScanJob(agency, 0))).rejects.toBeInstanceOf(InsufficientCreditsError);
+    expect(await balanceOf(agency)).toBe(5);
+    await expect(holdCredits(agency.agencyId, 5, await newScanJob(agency, 1))).resolves.toEqual(expect.any(String));
+  });
+
+  it("finishes a started scan past zero, blocks the next, and a top-up pays off the overdraft first", async () => {
     const agency = await createAgency(2);
     await topup(agency, 5);
 
-    const hold = await holdCredits(agency.agencyId, 36, await newScanJob(agency, 0));
+    // Started with 5 covered; retried after questions were added, its hold grows to 36 and it still finishes (D-54).
+    const job = await newScanJob(agency, 0);
+    await holdCredits(agency.agencyId, 5, job);
+    const hold = await holdCredits(agency.agencyId, 36, job);
     for (let i = 0; i < 36; i++) await captureCredit(hold, randomUUID());
     await releaseHold(hold);
 

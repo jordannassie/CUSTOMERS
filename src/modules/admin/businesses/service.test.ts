@@ -84,9 +84,9 @@ describe("Run scan now readiness (admin audit 2026-11-12)", () => {
 
   it("warns about too few credits, with the balance and what the scan needs", () => {
     expect(runScanCheck({ ...ready, balance: 4 }, explain).warnings).toEqual([
-      "Acme has 4 credits and this scan needs about 10 credits. It still runs, and the balance goes below zero.",
+      "Acme has 4 credits and this scan needs about 10 credits. A scan starts only when the credits cover all of it, so it is skipped and nothing is charged. Add credits first.",
     ]);
-    expect(runScanCheck({ ...ready, balance: 0 }, explain).warnings[0]).toMatch(/^Acme has 0 credits and this scan needs about 10 credits\. With no credits the scan is skipped/);
+    expect(runScanCheck({ ...ready, balance: 0 }, explain).warnings[0]).toMatch(/^Acme has 0 credits and this scan needs about 10 credits\. A scan starts only when the credits cover all of it/);
   });
 
   it("says why the last scan failed or was skipped", () => {

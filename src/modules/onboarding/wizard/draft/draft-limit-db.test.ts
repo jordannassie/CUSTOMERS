@@ -19,7 +19,7 @@ vi.mock("@/lib/supabase/server", () => ({
 const actions = await import("../actions");
 const { loadWizardState, saveAgency, startBusiness } = await import("../dal");
 
-const TRIAL_LIMIT = "Your trial includes 2 businesses. Upgrade to add more.";
+const TRIAL_LIMIT = "Your trial includes 2 businesses, and deleted ones still count. Choose a plan to add more.";
 
 async function trialWith(setUp: number) {
   const email = `vitest-draft-limit-${randomUUID()}@example.test`;

@@ -1,6 +1,6 @@
 import { randomBytes, randomUUID } from "node:crypto";
 import { afterAll, describe, expect, it, vi } from "vitest";
-import { captureCredit, grantCredits, releaseHold } from "@/modules/credits";
+import { captureCredit, grantCredits, holdCredits, releaseHold } from "@/modules/credits";
 import { addBusiness, createAgency, deleteTestUsers, fakeMail, grantPlan, service, spend } from "./notifications.test-helpers";
 
 // B-62 against the local database `npm test` rebuilds: low credits, the weekly report and the welcome email,
@@ -44,13 +44,12 @@ describe("low credits", () => {
     expect(mail.sent[0]).toMatchObject({ to: a.email, subject: "You've used 80% of your credits" });
     expect(mail.sent[0].text).toContain("You've used 85 of your 100 credits");
 
-    // A running scan's hold is not spent yet: 15 left, 20 held, 15 captured so far.
-    const hold = await spend(a, business, 20, 15, false);
+    // A running scan holds the last 15 (a new scan needs its full cost, D-54) and has charged all of them.
+    const hold = await spend(a, business, 15, 15, false);
     expect(await run()).toMatchObject({ sent: 1 });
     expect(mail.sent[1].subject).toBe("You're out of credits");
 
-    // The scan finishes past the end of the balance (D-54): already told it ran out, so no second email.
-    for (let i = 0; i < 5; i++) await captureCredit(hold, randomUUID());
+    // The scan finishes: already told it ran out, so no second email.
     await releaseHold(hold);
     expect(await run()).toMatchObject({ sent: 0 });
     expect(mail.sent).toHaveLength(2);
@@ -72,8 +71,13 @@ describe("low credits", () => {
     const a = await createAgency();
     const business = await addBusiness(a, "Overdrawn Plumbing");
     const periodKey = await grantPlan(a.agencyId, 10);
-    // One scan holds 12 with 10 left and finishes past the end of the balance (D-54).
-    await spend(a, business, 12, 12);
+    // A scan starts with its 10 covered, is retried with more questions (its hold grows to 12) and finishes past the
+    // end of the balance (D-54: a started scan always finishes).
+    const hold = await spend(a, business, 10, 0, false);
+    const { data: job } = await service.from("scan_jobs").select("id").eq("hold_id", hold).single().throwOnError();
+    await holdCredits(a.agencyId, 12, job.id);
+    for (let i = 0; i < 12; i++) await captureCredit(hold, randomUUID());
+    await releaseHold(hold);
     const mail = fakeMail();
     expect(await runLowCredits(deps([a.agencyId], mail.send))).toMatchObject({ sent: 1 });
     expect(mail.sent[0].subject).toBe("Your credit balance is below zero");

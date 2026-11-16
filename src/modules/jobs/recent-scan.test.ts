@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { needsRecentScanConfirm } from "./overdraft";
-import { recentScanNeeded, recentScanWarning, scannedRecently } from "./recent-scan";
+import { needsRecentScanConfirm, recentScanNeeded, recentScanWarning, scannedRecently } from "./recent-scan";
 
 // 2026-10-15 (D-24): Run scan asks first when the business was scanned in the last 20 hours, the answer cache's age.
 describe("rescan within 20 hours", () => {

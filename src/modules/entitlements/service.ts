@@ -8,6 +8,11 @@ export type AgencyFacts = {
   status: string;
   /** Set-up (not "onboarding"), not deleted businesses: drafts never count toward the trial limit (D-16). */
   businessCount: number;
+  /**
+   * Set-up businesses, deleted ones included: what the trial limit counts. A trial covers 2 businesses in total, so
+   * deleting one after scanning it does not free a place for a third (owner, 2026-11-16). Drafts still never count.
+   */
+  trialBusinessesUsed: number;
   /** agency_credit_balance.balance: unexpired grants minus holds minus overdraft. */
   balance: number;
   /**
@@ -33,6 +38,8 @@ export type BusinessFacts = {
   maxCompetitors: number | null;
   activeQuestionCount: number;
   competitorCount: number;
+  /** Credits one scan holds: one per active question per chosen AI (scanning/scan-tasks checkTasks). */
+  checksPerScan: number;
   /** A queued or running scan job exists (D-55 allows one). */
   hasOpenScan: boolean;
   /**
@@ -47,7 +54,7 @@ export const TRIAL_MAX_BUSINESSES = 2;
 
 export const REASONS = {
   ok: "",
-  trialBusinessLimit: `Your trial includes ${TRIAL_MAX_BUSINESSES} businesses. Upgrade to add more.`,
+  trialBusinessLimit: `Your trial includes ${TRIAL_MAX_BUSINESSES} businesses, and deleted ones still count. Choose a plan to add more.`,
   outOfCredits: "You're out of credits. Buy a top-up or upgrade.",
   testOutOfCredits: "This test account has no credits left. An admin can add more in Admin, Agencies.",
   scanAlreadyQueued: "A scan is already running. You can start another when it finishes.",
@@ -60,6 +67,21 @@ export const REASONS = {
   trialOver: "Your free trial has ended. Scans start again once your first payment goes through.",
   setupUnfinished: "Finish setting up your first business to start your free trial. Then you can buy credits.",
 } as const;
+
+const credits = (n: number) => `${n} ${n === 1 ? "credit" : "credits"}`;
+
+/**
+ * A balance above 0 that does not cover the whole scan. A new scan needs every check covered (D-54 as changed on
+ * 2026-11-16: no overdraft for new scans). Shown on screen; the worker stores REASONS.outOfCredits instead.
+ */
+export function notEnoughCredits(needed: number, balance: number, isTest = false): string {
+  return isTest
+    ? `This scan needs ${credits(needed)} and this test account has ${balance}. An admin can add more in Admin, Agencies.`
+    : `This scan needs ${credits(needed)} and you have ${balance}. Buy a top-up or upgrade.`;
+}
+
+/** True for notEnoughCredits text. */
+export const isCreditShortfall = (reason: string) => reason.startsWith("This scan needs ");
 
 const allow: Entitlement = { allowed: true, reason: REASONS.ok };
 const deny = (reason: string): Entitlement => ({ allowed: false, reason });
@@ -98,7 +120,7 @@ export function canEditTracking(agency: Pick<AgencyFacts, "status">): Entitlemen
 export function canAddBusiness(agency: AgencyFacts): Entitlement {
   const blocked = statusBlock(agency.status);
   if (blocked) return blocked;
-  if (agency.status === "trialing" && agency.businessCount >= TRIAL_MAX_BUSINESSES) {
+  if (agency.status === "trialing" && agency.trialBusinessesUsed >= TRIAL_MAX_BUSINESSES) {
     return deny(REASONS.trialBusinessLimit);
   }
   return allow;
@@ -111,7 +133,7 @@ export function canAddBusiness(agency: AgencyFacts): Entitlement {
  */
 export function canFinishDraft(agency: AgencyFacts): Entitlement {
   if (agency.status === "past_due" || agency.status === "unpaid") return deny(REASONS.pastDue);
-  if (agency.status === "trialing" && agency.businessCount >= TRIAL_MAX_BUSINESSES) {
+  if (agency.status === "trialing" && agency.trialBusinessesUsed >= TRIAL_MAX_BUSINESSES) {
     return deny(REASONS.trialBusinessLimit);
   }
   return allow;
@@ -131,6 +153,8 @@ export function canStartScan(agency: AgencyFacts, business: BusinessFacts): Enti
   // The worker saves this exact text on a skipped job; scan_job_settle_failure (migration 069) matches it to try again
   // at the next 02:00 run, so a test agency's wording is swapped in only where it is shown (jobs/actions.ts).
   if (agency.balance <= 0) return deny(REASONS.outOfCredits);
+  // The whole scan must be covered (hold_credits, migration 098, checks the same under the agency lock).
+  if (agency.balance < business.checksPerScan) return deny(notEnoughCredits(business.checksPerScan, agency.balance, agency.isTest));
   if (business.hasOpenScan) return deny(REASONS.scanAlreadyQueued);
   return allow;
 }

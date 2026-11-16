@@ -44,7 +44,8 @@ const SKIPS: Record<string, { summary: string; noRetry?: string }> = {
     summary: "Skipped: this business is off the agency's plan.",
     noRetry: "Retrying won't help until the business is back on the plan.",
   },
-  [REASONS.outOfCredits]: { summary: "Skipped: the agency was out of credits. Retry once it has more credits." },
+  // Also a balance that did not cover the whole scan (D-54, 2026-11-16): the worker stores the same text for both.
+  [REASONS.outOfCredits]: { summary: "Skipped: the agency didn't have enough credits for the whole scan. Retry once it has more credits." },
   [REASONS.testOutOfCredits]: { summary: "Skipped: this test agency had no credits. Add credits on its agency page, then retry." },
   [ABANDONED_ERROR]: {
     summary:

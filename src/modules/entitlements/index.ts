@@ -16,8 +16,9 @@ export async function canAddBusiness(agencyId: string, options: { businessId?: s
     loadAgencyFacts(agencyId),
     options.businessId ? isCountedBusiness(agencyId, options.businessId) : Promise.resolve(false),
   ]);
-  const businessCount = counted ? Math.max(0, facts.businessCount - 1) : facts.businessCount;
-  return rules.canAddBusiness({ ...facts, businessCount });
+  // A set-up business being put on the plan is already in both counts, so it is not counted twice.
+  const less = (n: number) => (counted ? Math.max(0, n - 1) : n);
+  return rules.canAddBusiness({ ...facts, businessCount: less(facts.businessCount), trialBusinessesUsed: less(facts.trialBusinessesUsed) });
 }
 
 /** Call before setup finishes a draft: a trial with 2 set-up businesses cannot turn a third one on. */
@@ -34,7 +35,10 @@ export async function canStartScan(agencyId: string, businessId: string): Promis
 /** The worker's check right before holdCredits (B-26): the claimed job is itself the open scan, so it is not counted. */
 export async function canRunScanJob(agencyId: string, businessId: string): Promise<Entitlement> {
   const [agency, business] = await Promise.all([loadAgencyFacts(agencyId), loadBusinessFacts(businessId)]);
-  return rules.canStartScan(agency, { ...business, hasOpenScan: false });
+  const result = rules.canStartScan(agency, { ...business, hasOpenScan: false });
+  // The worker saves this text on the skipped job; scan_job_settle_failure (migration 069) matches the exact
+  // out-of-credits text to try again at the next 02:00 run, so a shortfall is stored as that text too.
+  return !result.allowed && rules.isCreditShortfall(result.reason) ? { allowed: false, reason: rules.REASONS.outOfCredits } : result;
 }
 
 /** A test agency (D-61): sample answers, admin-added credits. Scan screens word their credit messages for it. */

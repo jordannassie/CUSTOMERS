@@ -5,8 +5,7 @@ import { Clock, Loader2, RefreshCw } from "lucide-react";
 import { cn } from "cn";
 import { Button } from "@/components/ui/button";
 import type { ScanStatus, StartScanResult } from "@/modules/jobs";
-import { needsOverdraftConfirm, needsRecentScanConfirm } from "@/modules/jobs/overdraft";
-import { OverdraftDialog } from "./OverdraftDialog";
+import { needsRecentScanConfirm } from "@/modules/jobs/recent-scan";
 import { RecentScanDialog } from "./RecentScanDialog";
 import { latestScanStatus, subscribeScans, watchScan } from "./scan-watch";
 
@@ -40,11 +39,9 @@ export function RunScanButton({
   const [status, setStatus] = useState(initial);
   const [note, setNote] = useState<Note>(initial.blockedReason ? { text: initial.blockedReason, tone: "muted" } : null);
   const [pending, startTransition] = useTransition();
-  // The server's warning when the scan costs more than the balance (D-54); the scan waits for a confirm.
-  const [overdraft, setOverdraft] = useState<string | null>(null);
-  // Asked first when the business was scanned in the last 20 hours (2026-10-15, D-24); a yes carries into the overdraft one.
+  // Asked when the business was scanned in the last 20 hours (2026-10-15, D-24). A scan the credits do not cover is
+  // refused with its reason (D-54, 2026-11-16), so there is no overdraft to confirm.
   const [recent, setRecent] = useState<string | null>(null);
-  const [recentConfirmed, setRecentConfirmed] = useState(false);
 
   // ScanWatcher in the app shell asks for the status while a scan runs (and toasts when it ends, on any page); this
   // button only shows what it hears.
@@ -78,20 +75,15 @@ export function RunScanButton({
   const blocked = !scanning && status.blockedReason !== null;
   const text = note?.text ?? (scanning ? (status.retrying ? RETRYING : stalled ? STALLED : "Results appear in about a minute.") : "");
 
-  function run(confirm: { overdraft?: boolean; recent?: boolean } = {}) {
+  function run(confirmRecent = false) {
     if (scanning) return setNote({ text: ALREADY_RUNNING, tone: "muted" });
     setNote(null);
-    setOverdraft(null);
     setRecent(null);
-    const confirmRecent = confirm.recent ?? (confirm.overdraft ? recentConfirmed : false);
-    setRecentConfirmed(confirmRecent);
     startTransition(async () => {
-      const input = { businessId, ...(confirm.overdraft ? { confirmOverdraft: true } : {}), ...(confirmRecent ? { confirmRecent: true } : {}) };
-      const result = await start(input).catch(() => null);
+      const result = await start({ businessId, ...(confirmRecent ? { confirmRecent: true } : {}) }).catch(() => null);
       if (!result) return setNote({ text: "Could not start the scan. Check your connection and try again.", tone: "error" });
       if (result.ok) return setStatus(result.data);
       if (needsRecentScanConfirm(result)) return setRecent(result.error);
-      if (needsOverdraftConfirm(result)) return setOverdraft(result.error);
       if (result.status === 409) {
         setStatus((s) => ({ ...s, scanning: true }));
         return setNote({ text: ALREADY_RUNNING, tone: "muted" });
@@ -133,8 +125,7 @@ export function RunScanButton({
       >
         {text}
       </p>
-      <RecentScanDialog message={recent} onConfirm={() => run({ recent: true })} onCancel={() => setRecent(null)} />
-      <OverdraftDialog message={overdraft} onConfirm={() => run({ overdraft: true })} onCancel={() => setOverdraft(null)} />
+      <RecentScanDialog message={recent} onConfirm={() => run(true)} onCancel={() => setRecent(null)} />
     </div>
   );
 }

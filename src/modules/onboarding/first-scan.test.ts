@@ -103,13 +103,4 @@ describe("firstScanCopy", () => {
   it("says a scan that stopped before any answer didn't run, not that it didn't finish", () => {
     expect(firstScanCopy("not-run", facts)).toEqual({ heading: "Your first scan didn't run", intro: "We haven't checked Bean House yet." });
   });
-
-  it("asks before a scan that costs more than the balance, without claiming it runs (D-54)", () => {
-    const copy = firstScanCopy("confirm", facts);
-    expect(copy).toEqual({
-      heading: "Your first scan needs more credits than you have",
-      intro: "We're ready to check Bean House with ChatGPT, Claude and Perplexity.",
-    });
-    expect(copy.intro).not.toMatch(/asking/);
-  });
 });

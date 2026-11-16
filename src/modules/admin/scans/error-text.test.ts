@@ -100,7 +100,7 @@ describe("explainScanError", () => {
   });
 
   it("still allows Retry for a skip that a retry can fix", () => {
-    expect(explainScanError(REASONS.outOfCredits)).toMatchObject({ summary: expect.stringMatching(/^Skipped: the agency was out of credits/), noRetry: null });
+    expect(explainScanError(REASONS.outOfCredits)).toMatchObject({ summary: expect.stringMatching(/^Skipped: the agency didn't have enough credits for the whole scan/), noRetry: null });
     expect(explainScanError("Claude unavailable, skipped")).toMatchObject({ summary: expect.stringMatching(/^Skipped: Claude was unavailable/), noRetry: null });
     expect(explainScanError("Every check failed: timeout")?.noRetry).toBeUndefined();
   });

@@ -13,6 +13,8 @@ import type { AgencyFacts, BusinessFacts, PlanLimits } from "./service";
 // A business with no subscription item yet gets the smallest plan's limits, unless it is still being set up with a
 // plan chosen: then it gets that plan's, so a Pro pick can add Pro's competitors and questions during setup.
 const FALLBACK_PLAN_ID = "starter";
+// The AIs a scan asks, as in scanning/scan-tasks PROVIDERS (not imported: scanning imports this module).
+const SCAN_MODELS = new Set(["openai", "anthropic", "perplexity"]);
 const SELECTABLE_PLANS = new Set(["starter", "pro"]);
 
 type Result<T> = { data: T; error: { message: string } | null; count?: number | null };
@@ -35,7 +37,7 @@ function countOf(what: string, result: Result<unknown>): number {
 
 export const loadAgencyFacts = cache(async (agencyId: string): Promise<AgencyFacts> => {
   const db = createServiceClient();
-  const [agency, businesses, balance] = await Promise.all([
+  const [agency, businesses, everSetUp, balance] = await Promise.all([
     db.from("agencies").select("id, status, trial_ends_at, stripe_subscription_id, is_test").eq("id", agencyId).single(),
     // D-16: only set-up businesses count. A draft still being set up never blocks finishing it or starting it again.
     db
@@ -44,6 +46,9 @@ export const loadAgencyFacts = cache(async (agencyId: string): Promise<AgencyFac
       .eq("agency_id", agencyId)
       .neq("status", "onboarding")
       .is("deleted_at", null),
+    // The trial limit counts deleted set-up businesses too (owner, 2026-11-16). A deleted business stays in the table
+    // for DELETION_WAIT_DAYS (30 by default) before it is purged, well past the 7-day trial.
+    db.from("businesses").select("id", { count: "exact", head: true }).eq("agency_id", agencyId).neq("status", "onboarding"),
     getBalance(agencyId),
   ]);
   const row = found("agency", agency);
@@ -51,6 +56,7 @@ export const loadAgencyFacts = cache(async (agencyId: string): Promise<AgencyFac
     id: row.id,
     status: row.status,
     businessCount: countOf("business count", businesses),
+    trialBusinessesUsed: countOf("trial business count", everSetUp),
     balance: balance.balance ?? 0,
     trialOver: row.status === "trialing" && row.trial_ends_at !== null && Date.parse(row.trial_ends_at) < Date.now(),
     // Same line as the admin list's "signup unfinished" (admin/agencies displayStatus).
@@ -77,7 +83,7 @@ export async function isCountedBusiness(agencyId: string, businessId: string): P
 export const loadBusinessFacts = cache(async (businessId: string): Promise<BusinessFacts> => {
   const db = createServiceClient();
   const [business, subscription, questions, competitors, openJobs, onPlan] = await Promise.all([
-    db.from("businesses").select("id, agency_id, owner_user_id, status, requested_plan_id").eq("id", businessId).single(),
+    db.from("businesses").select("id, agency_id, owner_user_id, status, requested_plan_id, models").eq("id", businessId).single(),
     db.from("business_subscriptions").select("plan_id").eq("business_id", businessId).maybeSingle(),
     db.from("tracked_prompts").select("id", { count: "exact", head: true }).eq("business_id", businessId).eq("active", true),
     db.from("business_competitors").select("id", { count: "exact", head: true }).eq("business_id", businessId),
@@ -99,6 +105,7 @@ export const loadBusinessFacts = cache(async (businessId: string): Promise<Busin
     maxQuestions: plan.max_questions,
     maxCompetitors: plan.max_competitors,
     activeQuestionCount: countOf("questions", questions),
+    checksPerScan: countOf("questions", questions) * new Set((row.models ?? []).filter((m) => SCAN_MODELS.has(m))).size,
     competitorCount: countOf("competitors", competitors),
     // An abandoned job (the worker never finished it) no longer blocks Run scan; startScan marks it failed first.
     hasOpenScan: (check("scan jobs", openJobs) ?? []).some((j) => !isAbandonedJob({ status: j.status, runAfter: j.run_after, lockedAt: j.locked_at })),

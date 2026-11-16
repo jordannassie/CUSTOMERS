@@ -240,24 +240,14 @@ test("Run scan: the score appears when the scan finishes, without a reload", asy
   await expect(page.getByRole("link", { name: "Share" })).toHaveAttribute("href", "/reports?share=1");
 });
 
-test("Run scan short of credits: a warning first, and nothing starts until Run scan anyway (D-54)", async ({ page }) => {
+test("Run scan short of credits: refused with what it needs, and nothing starts (D-54, 2026-11-16)", async ({ page }) => {
   const business = await seedBusiness(page, 5);
-  await page.getByRole("button", { name: "Run first scan" }).click();
-  const dialog = page.getByTestId("overdraft-dialog");
-  await expect(dialog.getByRole("heading", { name: "This scan needs more credits than you have" })).toBeVisible();
-  await expect(dialog.getByTestId("overdraft-message")).toHaveText(
-    "This scan uses 9 credits and you have 5. It will still finish, and the 4 extra credits come out of your next renewal or top-up.",
+  // 3 questions on 3 AIs: 9 credits against 5. A new scan needs its whole cost, so Run scan is off with the reason.
+  await expect(page.getByRole("button", { name: "Run first scan" })).toBeDisabled();
+  await expect(page.locator(`#run-scan-note-${business.id}`)).toHaveText(
+    "This scan needs 9 credits and this test account has 5. An admin can add more in Admin, Agencies.",
   );
-  await expect(dialog.getByRole("link", { name: "Buy credits" })).toHaveAttribute("href", "/settings/credits");
-  const jobs = async () => (await db.from("scan_jobs").select("id").eq("business_id", business.id)).data?.length ?? 0;
-  await dialog.getByRole("button", { name: "Cancel" }).click();
-  await expect(dialog).toHaveCount(0);
-  expect(await jobs()).toBe(0);
-
-  await page.getByRole("button", { name: "Run first scan" }).click();
-  await dialog.getByRole("button", { name: "Run scan anyway" }).click();
-  await expect(page.getByTestId("score-summary")).toBeVisible({ timeout: 60_000 });
-  expect(await jobs()).toBe(1);
+  expect((await db.from("scan_jobs").select("id").eq("business_id", business.id)).data?.length ?? 0).toBe(0);
 });
 
 test("Run scan again within 20 hours: asks first and says how credits are used (2026-10-15, D-24)", async ({ page }) => {

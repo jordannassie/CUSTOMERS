@@ -100,8 +100,9 @@ describe("startScan", () => {
     expect(await jobsFor(businessId)).toEqual([]);
   });
 
-  it("asks before a scan that costs more than the balance, and queues it once confirmed (D-54)", async () => {
-    const { businessId } = await signedInBusiness(5);
+  it("refuses a scan the credits do not fully cover, and queues nothing (D-54, 2026-11-16)", async () => {
+    const { agencyId, businessId } = await signedInBusiness(5);
+    await service.from("agencies").update({ is_test: false }).eq("id", agencyId).throwOnError();
     // 3 questions on the default 3 models: 9 credits against 5.
     const prompts = ["One?", "Two?", "Three?"].map((prompt) => ({ business_id: businessId, prompt }));
     const inserted = await service.from("tracked_prompts").insert(prompts);
@@ -109,14 +110,10 @@ describe("startScan", () => {
 
     expect(await startScan({ businessId })).toEqual({
       ok: false,
-      status: 402,
-      error: "This scan uses 9 credits and you have 5. It will still finish, and the 4 extra credits come out of your next renewal or top-up.",
-      overdraft: { cost: 9, balance: 5 },
+      status: 403,
+      error: "This scan needs 9 credits and you have 5. Buy a top-up or upgrade.",
     });
     expect(await jobsFor(businessId)).toEqual([]);
-
-    expect(await startScan({ businessId, confirmOverdraft: true })).toMatchObject({ ok: true, data: { scanning: true } });
-    expect(await jobsFor(businessId)).toEqual([{ status: "queued", priority: 100 }]);
   });
 
   it("asks before scanning again within 20 hours of the last scan, and queues once confirmed (2026-10-15, D-24)", async () => {

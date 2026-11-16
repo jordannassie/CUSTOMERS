@@ -1,18 +1,6 @@
 import { describe, expect, it } from "vitest";
-import {
-  fitsPlan,
-  canAddBusiness,
-  canBuyTopUps,
-  canFinishDraft,
-  canEditTracking,
-  canSpendTopUps,
-  canStartScan,
-  maxCompetitors,
-  maxQuestions,
-  REASONS,
-  type AgencyFacts,
-  type BusinessFacts,
-} from "./service";
+import { fitsPlan, canAddBusiness, canBuyTopUps, canFinishDraft, canEditTracking, canSpendTopUps, canStartScan } from "./service";
+import { maxCompetitors, maxQuestions, REASONS, type AgencyFacts, type BusinessFacts } from "./service";
 
 const agency = (over: Partial<AgencyFacts> = {}): AgencyFacts => ({
   id: "agency-1",
@@ -22,6 +10,7 @@ const agency = (over: Partial<AgencyFacts> = {}): AgencyFacts => ({
   trialOver: false,
   planStarted: true,
   ...over,
+  trialBusinessesUsed: over.trialBusinessesUsed ?? over.businessCount ?? 1,
 });
 
 const business = (over: Partial<BusinessFacts> = {}): BusinessFacts => ({
@@ -32,6 +21,7 @@ const business = (over: Partial<BusinessFacts> = {}): BusinessFacts => ({
   maxCompetitors: 5,
   activeQuestionCount: 0,
   competitorCount: 0,
+  checksPerScan: 1,
   hasOpenScan: false,
   onPlan: true,
   ...over,
@@ -95,12 +85,17 @@ describe("canAddBusiness", () => {
   it("stops a trial agency at 2 businesses", () => {
     expect(canAddBusiness(agency({ status: "trialing", businessCount: 2 }))).toEqual({
       allowed: false,
-      reason: "Your trial includes 2 businesses. Upgrade to add more.",
+      reason: "Your trial includes 2 businesses, and deleted ones still count. Choose a plan to add more.",
     });
   });
 
-  it("has no business limit on a paid plan", () => {
-    expect(canAddBusiness(agency({ status: "active", businessCount: 40 })).allowed).toBe(true);
+  it("has no business limit on a paid plan, deleted ones included", () => {
+    expect(canAddBusiness(agency({ status: "active", businessCount: 40, trialBusinessesUsed: 45 })).allowed).toBe(true);
+  });
+
+  it("counts a deleted business toward the trial, so deleting one frees no place (2026-11-16)", () => {
+    const used = { status: "trialing", businessCount: 1, trialBusinessesUsed: 2 };
+    expect([canAddBusiness(agency(used)).reason, canFinishDraft(agency(used)).reason]).toEqual([REASONS.trialBusinessLimit, REASONS.trialBusinessLimit]);
   });
 
   it.each(blockedStatuses)("blocks a %s agency", (status, reason) => {
@@ -117,7 +112,7 @@ describe("canFinishDraft", () => {
   it("stops a trial with 2 set-up businesses from turning on a third", () => {
     expect(canFinishDraft(agency({ status: "trialing", businessCount: 2 }))).toEqual({
       allowed: false,
-      reason: "Your trial includes 2 businesses. Upgrade to add more.",
+      reason: "Your trial includes 2 businesses, and deleted ones still count. Choose a plan to add more.",
     });
   });
 
@@ -142,6 +137,13 @@ describe("canStartScan", () => {
       allowed: false,
       reason: "You're out of credits. Buy a top-up or upgrade.",
     });
+  });
+
+  it("needs the whole scan covered, not just 1 credit (D-54, 2026-11-16)", () => {
+    const scan = business({ checksPerScan: 30 });
+    expect(canStartScan(agency({ balance: 30 }), scan).allowed).toBe(true);
+    expect(canStartScan(agency({ balance: 12 }), scan).reason).toBe("This scan needs 30 credits and you have 12. Buy a top-up or upgrade.");
+    expect(canStartScan(agency({ balance: 12, isTest: true }), scan).reason).toMatch(/^This scan needs 30 credits and this test account has 12\./);
   });
 
   it("blocks a second scan while one is queued or running", () => {

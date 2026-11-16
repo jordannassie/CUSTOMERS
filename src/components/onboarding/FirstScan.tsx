@@ -5,7 +5,6 @@ import { Loader2, RotateCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { ActionResult } from "@/modules/auth";
 import type { ScanStatus, StartScanResult } from "@/modules/jobs";
-import { needsOverdraftConfirm } from "@/modules/jobs/overdraft";
 import {
   CREDITS_LATE,
   FIRST_SCAN_FAILED,
@@ -18,7 +17,6 @@ import {
 } from "@/modules/onboarding/first-scan";
 import type { FirstScanSummary, ModelProgress } from "@/modules/onboarding";
 import { FirstScanResult } from "./FirstScanResult";
-import { OverdraftNotice } from "./OverdraftNotice";
 import { ScanProgressList } from "./ScanProgressList";
 
 type ScanAction = (input: unknown) => Promise<ActionResult<ScanStatus>>;
@@ -72,18 +70,14 @@ export function FirstScan(props: Props) {
     setPhase("failed");
   }
 
-  // `confirmOverdraft` once the user has seen that the scan costs more than the balance (D-54).
-  function run(confirmOverdraft = false) {
+  // A scan the credits do not fully cover is refused with its reason, shown as the problem (D-54, 2026-11-16).
+  function run() {
     setProblem(null);
     setPhase("scanning");
     startTransition(async () => {
       // The first scan never asks "Scan again?" (that is for Run scan within 24 hours of a finished scan).
-      const result = await start({ businessId, confirmRecent: true, ...(confirmOverdraft ? { confirmOverdraft } : {}) }).catch(() => null);
+      const result = await start({ businessId, confirmRecent: true }).catch(() => null);
       if (!result) return fail(NO_CONNECTION);
-      if (needsOverdraftConfirm(result)) {
-        setProblem(result.error);
-        return setPhase("confirm");
-      }
       // 409: a scan is already on its way (a second tab, or a double start), so just wait for it.
       if (!result.ok && result.status !== 409) return fail(result.error);
     });
@@ -188,7 +182,7 @@ export function FirstScan(props: Props) {
           state={
             phase === "done"
               ? "done"
-              : waiting || phase === "confirm" || notRun || (stalled && !anyAnswers)
+              : waiting || notRun || (stalled && !anyAnswers)
                 ? "waiting"
                 : failed || paused || stalled
                   ? "stopped"
@@ -210,8 +204,6 @@ export function FirstScan(props: Props) {
                 </Button>
               </div>
             </>
-          ) : phase === "confirm" ? (
-            <OverdraftNotice message={problem ?? ""} pending={pending} onConfirm={() => run(true)} />
           ) : waiting ? (
             <p className="flex items-center gap-2 text-sm text-muted-foreground" data-testid="first-scan-credits">
               <Loader2 aria-hidden className="size-4 animate-spin" />

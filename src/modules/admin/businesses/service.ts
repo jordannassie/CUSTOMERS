@@ -108,13 +108,10 @@ export function runScanCheck(f: ScanReadiness, explain: (error: string) => strin
 
   const warnings: string[] = [];
   const agency = f.agency?.name || "The agency";
-  if (f.balance !== null && f.balance <= 0) {
+  // A scan starts only when the credits cover all of it (D-54, 2026-11-16), so short of that the worker skips it.
+  if (f.balance !== null && f.balance < credits) {
     warnings.push(
-      `${agency} has ${count(f.balance, "credit", "credits")} and this scan needs about ${count(credits, "credit", "credits")}. With no credits the scan is skipped and nothing is charged. Add credits first.`,
-    );
-  } else if (f.balance !== null && f.balance < credits) {
-    warnings.push(
-      `${agency} has ${count(f.balance, "credit", "credits")} and this scan needs about ${count(credits, "credit", "credits")}. It still runs, and the balance goes below zero.`,
+      `${agency} has ${count(f.balance, "credit", "credits")} and this scan needs about ${count(credits, "credit", "credits")}. A scan starts only when the credits cover all of it, so it is skipped and nothing is charged. Add credits first.`,
     );
   }
   const last = f.lastScan;
