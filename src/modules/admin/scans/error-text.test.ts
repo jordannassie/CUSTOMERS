@@ -11,17 +11,28 @@ describe("explainScanError", () => {
     expect(explainScanError("  ")).toBeNull();
   });
 
-  it("explains an AI tool out of credit, keeping the original as technical details", () => {
+  it("explains an AI tool out of credit, with what the tool said and no code or JSON", () => {
     const result = explainScanError(PERPLEXITY_CREDIT);
     expect(result?.summary).toBe(
       "Perplexity is out of credit. Add credit to the Perplexity account, then retry the scan. No check could run, so no credits were used.",
     );
-    expect(result?.technical).toBe(PERPLEXITY_CREDIT);
+    expect(result?.details).toBe(
+      'Perplexity said: "The Agent API requires paid credits. Add paid credit at https://console.perplexity.ai to upgrade your organization."',
+    );
   });
 
-  it("never shows status codes, JSON or provider ids in the summary", () => {
-    const { summary } = explainScanError(PERPLEXITY_CREDIT)!;
+  it("never shows status codes, JSON, error types or provider ids", () => {
+    const { summary, details } = explainScanError(PERPLEXITY_CREDIT)!;
     expect(summary).not.toMatch(/403|\{|"|perplexity:/);
+    expect(details).not.toMatch(/403|\{|restricted_api_key|returned|perplexity:/);
+  });
+
+  it("keeps a plain message sent without JSON, and drops one that reads like code", () => {
+    expect(explainScanError("Every check failed: openai: openai returned 401: Incorrect API key provided")?.details).toBe(
+      'ChatGPT said: "Incorrect API key provided."',
+    );
+    expect(explainScanError("Every check failed: anthropic: anthropic returned 500: {}")?.details).toBeNull();
+    expect(explainScanError("Every check failed: perplexity: perplexity did not answer within 60000 ms")?.details).toBeNull();
   });
 
   it("says the same thing once when every tool failed the same way", () => {
@@ -40,7 +51,7 @@ describe("explainScanError", () => {
     ["perplexity: perplexity did not answer within 60000 ms", "Perplexity took too long to answer. Retry it in a few minutes."],
     ["openai: openai request failed", "We couldn't reach ChatGPT. Retry it in a few minutes."],
     ["perplexity is not set up (no API key)", "Perplexity isn't connected on this site, so its checks couldn't run."],
-    ["openai: openai returned 400: bad request", "The ChatGPT check failed. If it fails again, send the technical details to the developer."],
+    ["openai: openai returned 400: bad request", "The ChatGPT check failed. If it fails again, let the developer know which scan it was."],
   ])("explains %s", (part, sentence) => {
     expect(explainScanError(`Every check failed: ${part}`)?.summary).toBe(`${sentence} No check could run, so no credits were used.`);
   });
@@ -62,27 +73,27 @@ describe("explainScanError", () => {
 
   it("explains a failed scan even when no AI tool is named", () => {
     expect(explainScanError("Every check failed: timeout")).toEqual({
-      summary: "No check in this scan could run, so no credits were used. Retry it. If it fails again, send the technical details to the developer.",
-      technical: "Every check failed: timeout",
+      summary: "No check in this scan could run, so no credits were used. Retry it. If it fails again, let the developer know which scan it was.",
+      details: null,
     });
   });
 
-  it("keeps a plain skipped reason as it is, with no technical details", () => {
-    expect(explainScanError("The business is paused.")).toEqual({ summary: "The business is paused.", technical: null });
+  it("keeps a plain skipped reason as it is, with no details", () => {
+    expect(explainScanError("The business is paused.")).toEqual({ summary: "The business is paused.", details: null });
   });
 
   it("hides a crash message behind a plain sentence", () => {
     const raw = "TypeError: Cannot read properties of undefined (reading 'id')";
     expect(explainScanError(raw)).toEqual({
-      summary: "The scan stopped because of an unexpected problem. Retry it. If it fails again, send the technical details to the developer.",
-      technical: raw,
+      summary: "The scan stopped because of an unexpected problem. Retry it. If it fails again, let the developer know which scan it was.",
+      details: null,
     });
   });
 
-  it("says what happened to the agency for a skip, not the customer's message, and keeps the stored text", () => {
+  it("says what happened to the agency for a skip, not the customer's message", () => {
     expect(explainScanError(REASONS.trialOver)).toEqual({
       summary: "Skipped: the agency's free trial ended and it has not paid yet.",
-      technical: REASONS.trialOver,
+      details: null,
       noRetry: "Retrying won't help. Scans start again on their own once the agency pays.",
     });
     expect(explainScanError(REASONS.pastDue)?.noRetry).toMatch(/won't help/);

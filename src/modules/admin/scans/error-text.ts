@@ -4,13 +4,14 @@ import { MODEL_LABELS } from "../usage-cost/service";
 
 // Turns the error text a scan job stores (scan_jobs.error) into plain words for the admin pages. The stored text is
 // written for developers: "Every check failed: perplexity: perplexity returned 403: {...json...}". Admins see what
-// went wrong and what to do; the original stays available as the technical details. Pure.
+// went wrong and what to do, plus what each AI tool said in its own words. Status codes, JSON and error types are
+// never shown (owner, 2026-11-16); the full text stays in scan_jobs.error for a developer. Pure.
 
 export type ScanErrorText = {
   /** One or two plain sentences: what happened and the next step. */
   summary: string;
-  /** The stored text, unchanged, for a developer. Null when the summary already is the stored text. */
-  technical: string | null;
+  /** What each AI tool said, in its own words ("Perplexity said: ..."). Null when there is nothing readable. */
+  details: string | null;
   /** Why Retry is not offered, when retrying cannot change the outcome (a skip for billing). Null otherwise. */
   noRetry?: string | null;
 };
@@ -19,7 +20,7 @@ export type ScanErrorText = {
 const CLAUDE_SKIPPED = "Claude unavailable, skipped";
 
 // A skipped scan stores the reason the customer sees ("Your free trial has ended..."). Admins read what happened to
-// the agency instead, and whether Retry can help (admin audit 2026-11-12). The stored text stays as technical details.
+// the agency instead, and whether Retry can help (admin audit 2026-11-12). The stored text stays in scan_jobs.error.
 const SKIPS: Record<string, { summary: string; noRetry?: string }> = {
   [REASONS.trialOver]: {
     summary: "Skipped: the agency's free trial ended and it has not paid yet.",
@@ -62,11 +63,11 @@ const NO_SAMPLE_ANSWERS = "No sample answers for this kind of business";
 
 // The same phrases the System status page uses to spot an account out of credit (system-status/dal.ts).
 const OUT_OF_CREDIT = /credit balance|exceeded your current quota|insufficient_quota|paid credit|returned 402/i;
-// Signs that a text was written for a developer, not a person.
+// Signs that a text was written for a developer, not a person. Such text is never shown.
 const TECHNICAL = /returned \d{3}|[{}[\]]|\bError:|\bat \S+ \(|\bundefined\b|\bnull\b|ECONN|ETIMEDOUT|fetch failed|\bpgrst|\bsql\b/i;
 
 const RETRY_LATER = "Retry it in a few minutes.";
-const ASK_DEVELOPER = "If it fails again, send the technical details to the developer.";
+const ASK_DEVELOPER = "If it fails again, let the developer know which scan it was.";
 
 /** What one AI tool's error means, as a sentence. */
 function explainProvider(provider: Provider, text: string): string {
@@ -99,17 +100,39 @@ function providerParts(text: string): { provider: Provider; text: string }[] {
 
 const unique = (sentences: string[]) => [...new Set(sentences)].join(" ");
 
+/** The sentence an AI tool sent back, from its JSON ("error": { "message": ... }) or plain text after the code. */
+function toolMessage(text: string): string | null {
+  const quoted = /"message"\s*:\s*"((?:[^"\\]|\\.)*)"/.exec(text);
+  let message = quoted ? quoted[1].replace(/\\(["\\/])/g, "$1").replace(/\\n/g, " ") : null;
+  if (!message) {
+    const after = /returned \d{3}:\s*([\s\S]+)$/.exec(text)?.[1];
+    message = after && !TECHNICAL.test(after) ? after : null;
+  }
+  const clean = message?.replace(/\s+/g, " ").trim().replace(/[;.]*$/, ".");
+  return clean && clean.length > 3 && !TECHNICAL.test(clean) ? clean.slice(0, 300) : null;
+}
+
+/** One line per AI tool that said something readable. */
+function toolDetails(parts: { provider: Provider; text: string }[]): string | null {
+  const lines = parts.flatMap((p) => {
+    const said = toolMessage(p.text);
+    return said ? [`${MODEL_LABELS[p.provider]} said: "${said}"`] : [];
+  });
+  return lines.length ? [...new Set(lines)].join("\n") : null;
+}
+
 export function explainScanError(raw: string | null | undefined): ScanErrorText | null {
   const text = raw?.trim();
   if (!text) return null;
 
   const skip = SKIPS[text];
-  if (skip) return { summary: skip.summary, technical: text, noRetry: skip.noRetry ?? null };
+  if (skip) return { summary: skip.summary, details: null, noRetry: skip.noRetry ?? null };
 
   if (text.startsWith(NOT_ANSWERING)) {
-    const reasons = providerParts(text).map((p) => explainProvider(p.provider, p.text));
+    const parts = providerParts(text);
+    const reasons = parts.map((p) => explainProvider(p.provider, p.text));
     const lead = "The AI tools weren't answering, so the scan stopped. No credits were used, and the next scheduled scan will try again.";
-    return { summary: reasons.length ? `${lead} ${unique(reasons)}` : lead, technical: text };
+    return { summary: reasons.length ? `${lead} ${unique(reasons)}` : lead, details: toolDetails(parts) };
   }
 
   const parts = providerParts(text);
@@ -117,14 +140,14 @@ export function explainScanError(raw: string | null | undefined): ScanErrorText 
     const reasons = unique(parts.map((p) => explainProvider(p.provider, p.text)));
     // The cause first: in a tight table cell the first line is the one that has to say what to do.
     const tail = text.startsWith(EVERY_CHECK_FAILED) ? " No check could run, so no credits were used." : "";
-    return { summary: `${reasons}${tail}`, technical: text };
+    return { summary: `${reasons}${tail}`, details: toolDetails(parts) };
   }
 
   if (text.startsWith(EVERY_CHECK_FAILED)) {
-    return { summary: `No check in this scan could run, so no credits were used. Retry it. ${ASK_DEVELOPER}`, technical: text };
+    return { summary: `No check in this scan could run, so no credits were used. Retry it. ${ASK_DEVELOPER}`, details: null };
   }
 
   // Skipped scans store a plain reason already ("The business is paused."); keep it as it is.
-  if (!TECHNICAL.test(text)) return { summary: text, technical: null };
-  return { summary: `The scan stopped because of an unexpected problem. Retry it. ${ASK_DEVELOPER}`, technical: text };
+  if (!TECHNICAL.test(text)) return { summary: text, details: null };
+  return { summary: `The scan stopped because of an unexpected problem. Retry it. ${ASK_DEVELOPER}`, details: null };
 }
