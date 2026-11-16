@@ -81,7 +81,7 @@ describe("the saved report", () => {
   });
 
   it("stores its PDF under the business, by report id", () => {
-    expect(pdfStoragePath(BUSINESS, "r1")).toBe(`${BUSINESS}/r1.pdf`);
+    expect(pdfStoragePath(BUSINESS, "r1")).toBe(`${BUSINESS}/r1-v2.pdf`);
   });
 
   it("downloads under a readable name with the report's date", () => {

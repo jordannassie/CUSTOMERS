@@ -209,8 +209,8 @@ describe("snapshots", () => {
     expect(frozen.data.path).not.toBe(live.data.path);
 
     await service.from("visibility_results").update({ business_mentioned: false, created_at: new Date().toISOString() }).eq("business_id", owner.businessId).throwOnError();
-    expect(await sharedPdfUrl(tokenOf(frozen.data.path))).toContain(`/${saved.data.id}.pdf`);
-    expect(await sharedPdfUrl(tokenOf(live.data.path))).not.toContain(`/${saved.data.id}.pdf`);
+    expect(await sharedPdfUrl(tokenOf(frozen.data.path))).toContain(`/${saved.data.id}-v2.pdf`);
+    expect(await sharedPdfUrl(tokenOf(live.data.path))).not.toContain(`/${saved.data.id}-v2.pdf`);
     // Only the kept snapshot is listed, not the report saved automatically for the live link.
     expect((await listReports(owner.businessId)).map((r) => r.id)).toEqual([saved.data.id]);
   });
@@ -223,7 +223,7 @@ describe("snapshots", () => {
     const link = await createShareLink({ businessId: owner.businessId, reportId: saved.data.id });
     if (!link.ok) throw new Error("create failed");
     const path = await reportPdfPath(owner.businessId, saved.data.id);
-    expect(path).toBe(`${owner.businessId}/${saved.data.id}.pdf`);
+    expect(path).toBe(`${owner.businessId}/${saved.data.id}-v2.pdf`);
 
     expect(await removeSnapshot({ businessId: owner.businessId, reportId: saved.data.id })).toEqual({ ok: true, data: null });
     expect(await sharedPdfUrl(tokenOf(link.data.path))).toBeNull();

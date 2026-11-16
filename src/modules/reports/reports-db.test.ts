@@ -53,7 +53,7 @@ describe("share links", () => {
     expect(tokenOf(first.path)).toMatch(/^[A-Za-z0-9_-]{43}$/);
 
     const url = await sharedPdfUrl(tokenOf(first.path));
-    expect(url).toMatch(new RegExp(`/storage/v1/object/sign/reports/${owner.businessId}/[0-9a-f-]{36}\\.pdf\\?token=`));
+    expect(url).toMatch(new RegExp(`/storage/v1/object/sign/reports/${owner.businessId}/[0-9a-f-]{36}-v2\\.pdf\\?token=`));
     // Inline: no download file name on a share link.
     expect(url).not.toContain("download=");
     const file = await fetch(url!);
@@ -78,7 +78,7 @@ describe("share links", () => {
     expect(one!.split("?")[0]).toBe(two!.split("?")[0]);
     const { data: rows } = await service.from("reports").select("id, pdf_path").eq("business_id", owner.businessId).throwOnError();
     expect(rows).toHaveLength(1);
-    expect(rows[0].pdf_path).toBe(`${owner.businessId}/${rows[0].id}.pdf`);
+    expect(rows[0].pdf_path).toBe(`${owner.businessId}/${rows[0].id}-v2.pdf`);
   });
 
   it("stops opening while the agency is suspended or deleted, and opens again when it is reinstated (B9)", async () => {

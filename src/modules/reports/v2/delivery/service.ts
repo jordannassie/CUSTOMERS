@@ -31,8 +31,14 @@ export function reportRow(businessId: string, snapshot: ReportSnapshot, now: Dat
   };
 }
 
-/** Where one report's PDF is stored in the private bucket. */
-export const pdfStoragePath = (businessId: string, reportId: string) => `${businessId}/${reportId}.pdf`;
+/**
+ * The PDF layout's version. A stored PDF drawn with an older layout is drawn again from the report's frozen snapshot
+ * on its next open, so a layout fix reaches reports saved before it. 2: text is never cut short with "…" (2026-11-16).
+ */
+export const PDF_LAYOUT_VERSION = 2;
+
+/** Where one report's PDF is stored in the private bucket, for the current layout. */
+export const pdfStoragePath = (businessId: string, reportId: string) => `${businessId}/${reportId}-v${PDF_LAYOUT_VERSION}.pdf`;
 
 /**
  * "Cheezious AI visibility report 2026-10-28.pdf", without characters a file name cannot hold. Plain ASCII only:

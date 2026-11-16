@@ -17,8 +17,9 @@ async function logoBytes(path: string | null): Promise<Buffer | null> {
 }
 
 /**
- * Where the report's PDF is stored, drawing and uploading it the first time. "old" for a version 1 row, which has no
- * PDF; null when the report is not this business's.
+ * Where the report's PDF is stored, drawing and uploading it the first time, and again when the stored one was drawn
+ * with an older layout (PDF_LAYOUT_VERSION): the numbers come from the same frozen snapshot, only the layout is new.
+ * "old" for a version 1 row, which has no PDF; null when the report is not this business's.
  */
 export async function reportPdfPath(businessId: string, reportId: string): Promise<string | "old" | null> {
   const db = createServiceClient();
@@ -32,15 +33,17 @@ export async function reportPdfPath(businessId: string, reportId: string): Promi
   if (!row) return null;
   const snapshot = parseSnapshot(row.snapshot);
   if (!snapshot) return "old";
-  if (row.pdf_path) return row.pdf_path;
+  const path = pdfStoragePath(businessId, reportId);
+  if (row.pdf_path === path) return path;
 
   const pdf = await renderReportPdf(snapshot, { logo: await logoBytes(snapshot.agency.logoPath) });
-  const path = pdfStoragePath(businessId, reportId);
   // upsert: two first opens at once both draw it; the second upload replaces the first with the same file.
   const upload = await db.storage.from(PDF_BUCKET).upload(path, pdf, { contentType: "application/pdf", upsert: true });
   if (upload.error) throw new Error(`Reports: could not store the PDF: ${upload.error.message}`);
   const saved = await db.from("reports").update({ pdf_path: path }).eq("id", reportId).eq("business_id", businessId);
   if (saved.error) throw new Error(`Reports: could not save where the PDF is: ${saved.error.message}`);
+  // The older layout's file is no longer used; a failed removal only leaves an unused file behind.
+  if (row.pdf_path && row.pdf_path !== path) await db.storage.from(PDF_BUCKET).remove([row.pdf_path]).catch(() => undefined);
   return path;
 }
 
