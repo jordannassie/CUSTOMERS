@@ -84,9 +84,18 @@ export function toSignals(body: unknown): PlaceSignals {
 const RETRY_DELAY_MS = 800;
 // Still refused after the retry: its request limit is used up, so no lookup is tried for a while. Every page used to
 // wait for a refusal and a retry per business while the limit was spent (2026-10-27). Only this status is kept, in
-// memory, never any Google content (D-73).
-export const LIMITED_PAUSE_MS = 10 * 60 * 1000;
+// memory, never any Google content (D-73). The pause is as long as Google asks (Retry-After), else a minute: it was 10
+// minutes, and each server copy kept its own, so a page worked on one load and failed on the next well after Google
+// answered again (owner, 2026-11-17).
+export const LIMITED_PAUSE_MS = 60 * 1000;
+const MAX_PAUSE_MS = 10 * 60 * 1000;
 let limitedUntil = 0;
+
+/** How long to pause after a refusal: Google's Retry-After (seconds), kept between 1 second and 10 minutes. */
+export function pauseAfter(res: Pick<Response, "headers">): number {
+  const seconds = Number(res.headers.get("retry-after"));
+  return Number.isFinite(seconds) && seconds > 0 ? Math.min(Math.max(seconds * 1000, 1000), MAX_PAUSE_MS) : LIMITED_PAUSE_MS;
+}
 
 /** For tests: forget a pause. */
 export function resetPlacesPause(): void {
@@ -120,7 +129,7 @@ export function createPlaceSignals(
       throw new PlacesUnavailable(err instanceof Error ? err.message : "Places could not be reached");
     }
     if (res.status === 404) return null;
-    if (res.status === 429) limitedUntil = now() + LIMITED_PAUSE_MS;
+    if (res.status === 429) limitedUntil = now() + pauseAfter(res);
     if (!res.ok) throw new PlacesUnavailable(`Places returned ${res.status}`, res.status === 429);
     return toSignals(await res.json().catch(() => null));
   };

@@ -6,6 +6,7 @@ import { GoogleAttribution, PlaceRating } from "@/components/onboarding/PlaceBit
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { headToHead, hoursText, matchedNone, reviewsText, websiteAction, websiteLabel, websiteShown, type SignalRow } from "@/modules/competitors";
 import { CompetitorWebsite, type SaveWebsiteAction } from "./CompetitorWebsite";
+import { LinkListing, type ListingActions } from "./LinkListing";
 
 // Google could not be reached or its daily limit was used up: one quiet note above the table, and a short word in
 // each row it affects, instead of the same long sentence in every row (2026-10-14).
@@ -22,8 +23,22 @@ const PICK_BRANCH = "/actions#pick-branch";
 /** "Add website" needs both; the PDF report passes neither and shows the saved websites only. */
 type WebsiteEdit = { businessId: string; save: SaveWebsiteAction };
 
-export function SignalsTable({ rows, pickBranch = false, edit = null }: { rows: SignalRow[]; pickBranch?: boolean; edit?: WebsiteEdit | null }) {
-  if (matchedNone(rows) && !pickBranch) {
+/** "Link Google listing" on rows with none (owner, 2026-11-17); the PDF report passes nothing. */
+type ListingLink = { businessId: string; actions: ListingActions };
+
+export function SignalsTable({
+  rows,
+  pickBranch = false,
+  edit = null,
+  listing = null,
+}: {
+  rows: SignalRow[];
+  pickBranch?: boolean;
+  edit?: WebsiteEdit | null;
+  listing?: ListingLink | null;
+}) {
+  // With "Link Google listing" the rows are shown, each with its link, instead of a sentence with nothing to do.
+  if (matchedNone(rows) && !pickBranch && !listing) {
     return (
       <p className="text-sm text-muted-foreground" data-testid="signals-none">
         None of these businesses matched a Google listing yet.
@@ -91,7 +106,7 @@ export function SignalsTable({ rows, pickBranch = false, edit = null }: { rows: 
                 ) : (
                   <>
                     <TableCell colSpan={2}>
-                      <NoSignals row={row} pickBranch={pickBranch} />
+                      <NoSignals row={row} pickBranch={pickBranch} listing={listing} />
                     </TableCell>
                     <TableCell>
                       <WebsiteCell row={row} edit={edit} />
@@ -121,7 +136,7 @@ export function SignalsTable({ rows, pickBranch = false, edit = null }: { rows: 
               </>
             ) : (
               <>
-                <NoSignals row={row} pickBranch={pickBranch} />
+                <NoSignals row={row} pickBranch={pickBranch} listing={listing} />
                 <WebsiteCell row={row} edit={edit} />
               </>
             )}
@@ -134,12 +149,21 @@ export function SignalsTable({ rows, pickBranch = false, edit = null }: { rows: 
   );
 }
 
-function NoSignals({ row, pickBranch }: { row: SignalRow; pickBranch: boolean }) {
+function NoSignals({ row, pickBranch, listing }: { row: SignalRow; pickBranch: boolean; listing: ListingLink | null }) {
   if (row.isYou && row.status === "missing" && pickBranch) {
     return (
       <Link href={PICK_BRANCH} className="text-[length:calc(13px*var(--px,1))] font-medium text-primary hover:underline" data-testid="signals-pick-branch">
         Pick your branch on Google
       </Link>
+    );
+  }
+  // No listing (none picked at setup, a new website cleared it, or a competitor added by name): link one here.
+  if (row.status === "missing" && listing && (row.isYou || row.competitorId)) {
+    return (
+      <span className="flex flex-wrap items-center gap-x-2 gap-y-1" data-testid="signals-no-listing">
+        <Hint>No Google listing linked</Hint>
+        <LinkListing target={{ businessId: listing.businessId, competitorId: row.isYou ? undefined : row.competitorId! }} name={row.name} actions={listing.actions} />
+      </span>
     );
   }
   return <Hint>{STATUS_NOTE[row.status as keyof typeof STATUS_NOTE]}</Hint>;

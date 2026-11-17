@@ -4,18 +4,23 @@ import { HoverPrefetchLink } from "@/components/app/HoverPrefetchLink";
 import { usePathname } from "next/navigation";
 import { Coins } from "lucide-react";
 import { cn } from "cn";
+import type { AppAlert } from "@/modules/workspace";
+import { AppAlertBell } from "./AppAlertBell";
 import { pageLabel } from "./nav";
 import { PageSearch } from "./PageSearch";
 import { SiteIcon } from "./SiteIcon";
+import { TestModePill } from "./TestModePill";
 
 type Props = {
   businessName: string | null;
   businessDomain: string | null;
   creditsShort: { text: string; empty: boolean } | null;
+  alerts: AppAlert[];
+  testMode: boolean;
 };
 
-// mockup-ui: the desktop top bar. Where you are (business / page), page search, and the credit balance.
-export function TopBar({ businessName, businessDomain, creditsShort }: Props) {
+// mockup-ui: the desktop top bar. Where you are (business / page), page search, the credit balance and the alert bell.
+export function TopBar({ businessName, businessDomain, creditsShort, alerts, testMode }: Props) {
   const pathname = usePathname();
   const page = pageLabel(pathname);
 
@@ -34,6 +39,7 @@ export function TopBar({ businessName, businessDomain, creditsShort }: Props) {
             <span className="text-muted-foreground" aria-current="page">{page}</span>
           </>
         )}
+        {testMode && <TestModePill />}
       </nav>
       <PageSearch />
       {creditsShort && (
@@ -49,6 +55,8 @@ export function TopBar({ businessName, businessDomain, creditsShort }: Props) {
           {creditsShort.text}
         </HoverPrefetchLink>
       )}
+      {/* Last on the right, where the admin top bar has it (owner, 2026-11-17). */}
+      <AppAlertBell alerts={alerts} />
     </header>
   );
 }

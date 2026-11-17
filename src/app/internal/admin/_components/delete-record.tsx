@@ -6,8 +6,9 @@ import { Button } from "@/components/ui/button";
 import ConfirmDialog from "./confirm-dialog";
 
 /**
- * Delete for a lead or a feature request (owner, 2026-11-16): asks once, says it cannot be undone, then runs `onDelete`
- * (true when it was deleted). Admin activity keeps a note that it was deleted, never what it said.
+ * Delete for a lead or a feature request (owner, 2026-11-16): asks once, says it cannot be undone (in as few words as
+ * possible, owner 2026-11-17), then runs `onDelete` (true when it was deleted). Admin activity keeps a note that it was
+ * deleted, never what it said.
  */
 export default function DeleteRecord({ what, onDelete, disabled = false }: { what: string; onDelete: () => Promise<boolean>; disabled?: boolean }) {
   const [open, setOpen] = useState(false);
@@ -30,7 +31,7 @@ export default function DeleteRecord({ what, onDelete, disabled = false }: { wha
         open={open}
         onOpenChange={setOpen}
         title={`Delete this ${what}?`}
-        message={`It is removed for good and can't be brought back. Admin activity keeps a note that you deleted it, not what it said.`}
+        message="This can't be undone."
         confirmLabel={`Delete ${what}`}
         onConfirm={run}
       />

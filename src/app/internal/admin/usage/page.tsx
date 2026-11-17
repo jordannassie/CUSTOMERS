@@ -5,6 +5,7 @@ import { requireAdmin } from "@/modules/auth";
 import { getUsageCost, includeTestFilter, PERIODS, periodFilter, type PeriodDays } from "@/modules/admin";
 import ByAgency from "./_components/by-agency";
 import ByDay from "./_components/by-day";
+import KeptCard from "./_components/kept";
 import MarginCheck from "./_components/margin-check";
 import Summary from "./_components/summary";
 import AdminEmpty from "../_components/admin-empty";
@@ -24,7 +25,7 @@ export default function AdminUsagePage({ searchParams }: Props) {
     <div className="mx-auto flex w-full max-w-[calc(1200px*var(--px,1))] flex-col gap-4 px-4 py-4 sm:px-6 sm:py-5">
       <AdminPageHeader
         title="Usage and cost"
-        subtitle="How many credits customers used, and what the AI companies charged us for the same period."
+        subtitle="How many credits customers used, what the AI and other services charged us for the same period, and what we keep."
       />
       <Suspense fallback={<ReportSkeleton label="Loading usage and cost" />}>
         <LiveUsage searchParams={searchParams} />
@@ -45,6 +46,8 @@ async function LiveUsage({ searchParams }: Props) {
     <div className="flex flex-col gap-6">
       <Filters days={days} includeTest={includeTest} />
       <Summary report={report} />
+      {/* The whole bill, not only the AI (owner, 2026-11-17): what Stripe collected less every per-use cost. */}
+      {report.kept && <KeptCard kept={report.kept} services={report.services} />}
       {empty ? (
         <AdminEmpty icon={Coins} title="No credits used and no AI cost in this period">
           Pick a longer period, or wait for the next scheduled scans.

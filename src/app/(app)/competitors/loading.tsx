@@ -1,5 +1,5 @@
-import { CompetitorsSkeleton } from "@/components/app/PageSkeletons";
+import { CompetitorsSkeleton } from "@/components/app/LayoutSkeletons";
 
-export default function CompetitorsLoading() {
+export default function Loading() {
   return <CompetitorsSkeleton />;
 }

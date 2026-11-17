@@ -11,7 +11,7 @@ import { Loader2 } from "lucide-react";
  * Google tab uses no Google lookup. Then the page loads again with ?google=1, which shows the values. "Shown" means the
  * panel has a size, not that it is scrolled into view: on a long page the tab opens below the fold (preview, 2026-11-16).
  */
-export function AutoGoogle({ href }: { href: string }) {
+export function AutoGoogle({ href, when = "shown" }: { href: string; when?: "shown" | "visible" }) {
   const router = useRouter();
   const box = useRef<HTMLDivElement>(null);
 
@@ -19,18 +19,32 @@ export function AutoGoogle({ href }: { href: string }) {
     const el = box.current;
     if (!el) return;
     let asked = false;
+    const go = () => {
+      asked = true;
+      router.replace(href, { scroll: false });
+    };
+    // "visible" (the Competitors page, owner 2026-11-17, D-87): asks once the section scrolls near the screen, so a
+    // visit that never reaches it uses no Google lookup.
+    if (when === "visible") {
+      const seen = new IntersectionObserver((entries) => {
+        if (asked || !entries.some((e) => e.isIntersecting)) return;
+        seen.disconnect();
+        go();
+      }, { rootMargin: "200px 0px" });
+      seen.observe(el);
+      return () => seen.disconnect();
+    }
     const ask = () => {
       // A hidden panel (display: none) has no boxes; it gets one as soon as its tab is opened.
       if (asked || el.getClientRects().length === 0) return;
-      asked = true;
       shown.disconnect();
-      router.replace(href, { scroll: false });
+      go();
     };
     const shown = new ResizeObserver(ask);
     shown.observe(el);
     ask();
     return () => shown.disconnect();
-  }, [href, router]);
+  }, [href, router, when]);
 
   return (
     <div ref={box} role="status" className="flex items-center gap-2.5 rounded-md border border-dashed border-border p-4 text-sm text-muted-foreground" data-testid="google-loading">

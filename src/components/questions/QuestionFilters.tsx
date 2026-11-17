@@ -13,7 +13,7 @@ const AI_LABELS: Record<string, string> = { openai: "ChatGPT", anthropic: "Claud
  * The list's toolbar: All, Named you, Never named, Getting worse; a box to filter by words; the topic chips in use;
  * and the chip of a link that narrowed the list.
  */
-export function QuestionFilters() {
+export function QuestionFilters({ end }: { end?: React.ReactNode }) {
   const { view, focus, filter, setFilter, topic, setTopic, query, setQuery, showPaused } = useQuestions();
   const rows = [...view.active, ...(showPaused ? view.paused : [])].filter((r) => r.matches);
   const counts = filterCounts(rows, topic);
@@ -35,7 +35,7 @@ export function QuestionFilters() {
         </div>
       )}
       <div className="flex flex-col gap-2.5 xl:flex-row xl:items-center xl:justify-between">
-        <div className="flex flex-col gap-2.5 md:flex-row md:items-center">
+        <div className="flex flex-col gap-2.5 md:flex-row md:items-center md:flex-1">
           <SegmentedControl
             aria-label="Show questions"
             value={filter}
@@ -54,6 +54,8 @@ export function QuestionFilters() {
               className="h-full min-w-0 flex-1 bg-transparent text-[length:calc(13px*var(--px,1))] text-foreground outline-none placeholder:text-text-hint"
             />
           </label>
+          {/* Add question, on the right of the bar (owner, 2026-11-17). */}
+          {end && <div className="md:ml-auto">{end}</div>}
         </div>
         {topics.length > 0 && (
           <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label="Topic">

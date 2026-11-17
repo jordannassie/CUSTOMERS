@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import { questionsHref } from "@/lib/questions-href";
-import { questionsCsv, csvCell } from "./csv";
 import { filterCounts, inFilter, namedPercent, questionKpis, skippedSites, topicsOf, topPick, visibleRows } from "./list";
 import type { QuestionRow } from "./service";
 
@@ -66,35 +65,6 @@ describe("numbers and row facts", () => {
     expect(skippedSites({ summary }, 2)).toEqual(["yelp.com", "bbb.org"]);
     expect(skippedSites({ summary: { ...summary, you: 6 } })).toEqual([]);
     expect(topPick({ summary: null })).toBeNull();
-  });
-});
-
-describe("CSV", () => {
-  it("writes the visible rows with each AI as x of N", () => {
-    const r = row("a", {
-      text: 'Best "cheap" pizza, in Orange?',
-      topic: "Price",
-      named: 1,
-      answers: 4,
-      results: [
-        { model: "openai", label: "ChatGPT", appeared: 1, checks: 2, pips: [false, true], failedLastScan: false },
-        { model: "anthropic", label: "Claude", appeared: 0, checks: 0, pips: [], failedLastScan: false },
-      ],
-      summary: { answers: 4, you: 1, named: [{ name: "Slice Theory", answers: 3, tracked: false }], sitesWithoutYou: [] },
-    });
-    const csv = questionsCsv([r], [
-      { id: "openai", label: "ChatGPT" },
-      { id: "anthropic", label: "Claude" },
-    ]);
-    expect(csv.split("\r\n")).toEqual([
-      "Question,Topic,Status,Named you (%),ChatGPT (named you),Claude (named you),Top pick",
-      '"Best ""cheap"" pizza, in Orange?",Price,Active,25,1 of 2,Not checked yet,Slice Theory',
-    ]);
-  });
-
-  it("keeps a cell from running as a formula", () => {
-    expect(csvCell("=HYPERLINK(1)")).toBe("'=HYPERLINK(1)");
-    expect(csvCell(null)).toBe("");
   });
 });
 

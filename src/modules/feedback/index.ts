@@ -1,6 +1,7 @@
 // The only file other modules may import from (eslint-plugin-boundaries).
 export { suggestFeature } from "./actions";
 export {
+  countNewFeatureRequests,
   deleteFeatureRequest,
   listFeatureRequests,
   notifyAdminsOfLead,

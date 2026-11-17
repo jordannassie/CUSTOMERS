@@ -13,14 +13,21 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import type { AppAlert } from "@/modules/workspace";
+import { AppAlertBell } from "./AppAlertBell";
 import { AppBanners, type AppBanner } from "./AppBanners";
 import { AppSidebar, type AppSidebarProps } from "./AppSidebar";
 import { ScanWatcher, type ScanStatusAction } from "./ScanWatcher";
 import { SkipLink } from "./SkipLink";
+import { TestModePill } from "./TestModePill";
 import { TopBar } from "./TopBar";
 
 type AppShellProps = AppSidebarProps & {
   banners: AppBanner[];
+  /** The alert bell's list, on the desktop top bar and the phone header. */
+  alerts: AppAlert[];
+  /** A test agency (D-61): a Test mode pill in the top bar, instead of a bar on every page. */
+  testMode: boolean;
   /** Short balance for the phone top bar, so credits stay visible there too. */
   creditsShort: { text: string; empty: boolean } | null;
   /** Asked while a scan runs, so its end is announced on any app page. */
@@ -30,6 +37,8 @@ type AppShellProps = AppSidebarProps & {
 
 export function AppShell({
   banners,
+  alerts,
+  testMode,
   creditsShort,
   getScanStatus,
   children,
@@ -60,6 +69,8 @@ export function AppShell({
             businessName={names[sidebar.activeBusinessId] ?? null}
             businessDomain={sidebar.businesses.find((b) => b.id === sidebar.activeBusinessId)?.domain ?? null}
             creditsShort={creditsShort}
+            alerts={alerts}
+            testMode={testMode}
           />
           <header className="sticky top-0 z-40 flex h-14 items-center gap-2 border-b border-border bg-surface px-2 lg:hidden">
             <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
@@ -96,6 +107,7 @@ export function AppShell({
                 className="h-7 w-auto"
               />
             </Link>
+            {testMode && <TestModePill />}
             {creditsShort && (
               <span
                 data-testid="credits-short"
@@ -109,6 +121,7 @@ export function AppShell({
                 {creditsShort.text}
               </span>
             )}
+            <AppAlertBell alerts={alerts} />
           </header>
 
           <AppBanners banners={banners} />

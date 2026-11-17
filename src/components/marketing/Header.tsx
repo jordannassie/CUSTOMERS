@@ -1,15 +1,14 @@
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
 import { MrDirectAvatar } from "@/components/site/MrDirectAvatar";
 import { Logo } from "./Logo";
-import { MobileMenu } from "./MobileMenu";
-import { LOGIN_HREF, NAV_LINKS, TRIAL_HREF, TRIAL_LABEL } from "./nav";
+import { HeaderAccount, HeaderMobileMenu } from "./HeaderAccount";
+import { NAV_LINKS } from "./nav";
 
 export default function Header() {
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-background">
       <div className="mx-auto flex h-16 max-w-[calc(1120px*var(--px,1))] items-center gap-8 px-4 sm:px-6">
-        <Logo preload />
+        <Logo preload trimmed className="h-6 w-auto" />
 
         <nav aria-label="Main" className="hidden flex-1 lg:block">
           <ul className="flex items-center gap-1">
@@ -35,16 +34,11 @@ export default function Header() {
           >
             <MrDirectAvatar alt="" className="size-9 border border-border" />
           </Link>
-          <Button asChild variant="ghost">
-            <Link href={LOGIN_HREF}>Log in</Link>
-          </Button>
-          <Button asChild>
-            <Link href={TRIAL_HREF}>{TRIAL_LABEL}</Link>
-          </Button>
+          <HeaderAccount />
         </div>
 
         <div className="ml-auto lg:hidden">
-          <MobileMenu />
+          <HeaderMobileMenu />
         </div>
       </div>
     </header>

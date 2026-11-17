@@ -22,7 +22,7 @@ type State = {
   setShowPaused: (v: boolean) => void;
   openId: string | null;
   toggle: (id: string) => void;
-  /** The rows the list shows now, the ones Export CSV writes. */
+  /** The rows the list shows now. */
   shown: { active: QuestionRow[]; paused: QuestionRow[] };
   /** How many rows the filters chose from. */
   total: number;
@@ -38,7 +38,7 @@ export function useQuestions(): State {
   return state;
 }
 
-// The Questions page's list state, shared by the header (Export CSV), the filters, the list and its footer.
+// The Questions page's list state, shared by the filters, the list and its footer.
 export function QuestionsProvider({
   view,
   focus,

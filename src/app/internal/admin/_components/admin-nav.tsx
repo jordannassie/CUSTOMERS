@@ -18,15 +18,17 @@ const LOGO = "/images/logos/logo-black-sidebar.png";
 
 /** Fired by the Leads page when a lead is read or marked unread, so the badge updates at once. */
 export const LEADS_CHANGED = "admin:leads-changed";
+/** Fired by the Feature requests page when one changes status or is deleted (owner, 2026-11-17). */
+export const FEATURE_REQUESTS_CHANGED = "admin:feature-requests-changed";
 const UNREAD_EVERY_MS = 2 * 60 * 1000;
 
-// Once when the admin opens, then every 2 minutes, on returning to the tab and when Leads changes one. It used to ask
+// Once when the admin opens, then every 2 minutes, on returning to the tab and when its page changes one. It used to ask
 // on every page switch: an extra server round trip per click, competing with the page itself (2026-11-12).
-function useUnreadLeads(): number {
+function useMenuCount(url: string, changed: string): number {
   const [count, setCount] = useState(0);
   useEffect(() => {
     const load = () =>
-      appFetch("/api/internal/admin/leads?count=1")
+      appFetch(url)
         .then((r) => (r.ok ? r.json() : null))
         .then((d) => {
           if (typeof d?.count === "number") setCount(d.count);
@@ -35,16 +37,19 @@ function useUnreadLeads(): number {
     const onVisible = () => document.visibilityState === "visible" && load();
     load();
     const timer = window.setInterval(load, UNREAD_EVERY_MS);
-    window.addEventListener(LEADS_CHANGED, load);
+    window.addEventListener(changed, load);
     document.addEventListener("visibilitychange", onVisible);
     return () => {
       window.clearInterval(timer);
-      window.removeEventListener(LEADS_CHANGED, load);
+      window.removeEventListener(changed, load);
       document.removeEventListener("visibilitychange", onVisible);
     };
-  }, []);
+  }, [url, changed]);
   return count;
 }
+
+/** What a menu count means, said on hover and to screen readers. */
+type Badge = { count: number; title: string; spoken: string };
 
 // The same row style as the app's sidebar (AppSidebar): 32px tall, 16px icon, a light blue tint on the page you are on.
 const ROW =
@@ -63,7 +68,7 @@ function NavLink({
   pathname: string;
   /** The page is the admin's Page not found, so no item is marked. */
   missing: boolean;
-  badge?: number;
+  badge?: Badge;
   onNavigate?: () => void;
 }) {
   const active = !missing && isActiveItem(item, pathname);
@@ -77,16 +82,16 @@ function NavLink({
     >
       <Icon className={cn("size-4 shrink-0 stroke-[1.75]", active ? "text-primary" : "text-muted-foreground")} aria-hidden="true" />
       <span className="truncate" title={item.label}>{item.label}</span>
-      {badge ? (
+      {badge?.count ? (
         <span
-          title="Unread leads: nobody has opened them yet"
+          title={badge.title}
           className={cn(
             "tabular ml-auto rounded-sm px-1.5 text-[length:calc(11px*var(--px,1))] font-medium leading-5",
             active ? "bg-surface text-primary" : "bg-primary-tint text-primary-hover",
           )}
         >
-          {badge > 99 ? "99+" : badge}
-          <span className="sr-only"> unread, nobody has opened them yet</span>
+          {badge.count > 99 ? "99+" : badge.count}
+          <span className="sr-only"> {badge.spoken}</span>
         </span>
       ) : null}
     </HoverPrefetchLink>
@@ -96,7 +101,12 @@ function NavLink({
 function NavBody({ adminEmail, onNavigate }: { adminEmail: string; onNavigate?: () => void }) {
   const pathname = usePathname();
   const missing = usePageMissing(pathname);
-  const unread = useUnreadLeads();
+  const unread = useMenuCount("/api/internal/admin/leads?count=1", LEADS_CHANGED);
+  const newRequests = useMenuCount("/api/internal/admin/feature-requests", FEATURE_REQUESTS_CHANGED);
+  const badges: Record<string, Badge> = {
+    Leads: { count: unread, title: "Unread leads: nobody has opened them yet", spoken: "unread, nobody has opened them yet" },
+    "Feature requests": { count: newRequests, title: "New feature requests: not reviewed yet", spoken: "new, not reviewed yet" },
+  };
 
   return (
     <div className="flex flex-1 flex-col px-3 pb-3">
@@ -120,7 +130,7 @@ function NavBody({ adminEmail, onNavigate }: { adminEmail: string; onNavigate?: 
                   item={item}
                   pathname={pathname}
                   missing={missing}
-                  badge={item.label === "Leads" ? unread : undefined}
+                  badge={badges[item.label]}
                   onNavigate={onNavigate}
                 />
               </li>
@@ -143,8 +153,8 @@ function Logo() {
       className="flex items-center gap-2 rounded-sm outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
       aria-label="Customers.Direct admin, go to Overview"
     >
-      <Image src={LOGO} alt="" width={640} height={89} loading="eager" className="h-[calc(18px*var(--px,1))] w-auto" />
-      <span className="rounded-sm bg-foreground px-1.5 text-[length:calc(11px*var(--px,1))] font-medium leading-5 text-background">Admin</span>
+      {/* No Admin tag (owner, 2026-11-17): the account card at the bottom already says this is admin. */}
+      <Image src={LOGO} alt="" width={640} height={89} loading="eager" className="h-5 w-auto" />
     </HoverPrefetchLink>
   );
 }
@@ -156,7 +166,7 @@ export default function AdminNav({ adminEmail, bell, resolve }: { adminEmail: st
     <>
       {/* The app's frame (AppShell): the menu on the grey frame, no divider, level with the window's top bar. */}
       <aside className="scroll-quiet sticky top-0 hidden h-dvh w-[calc(212px*var(--px,1))] shrink-0 flex-col overflow-y-auto lg:flex">
-        <div className="mt-2 mb-2 flex h-12 shrink-0 items-center justify-center px-3">
+        <div className="mt-2 mb-2 flex h-12 shrink-0 items-center px-5.5">
           <Logo />
         </div>
         <NavBody adminEmail={adminEmail} />

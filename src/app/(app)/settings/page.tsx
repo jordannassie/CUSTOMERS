@@ -13,7 +13,8 @@ import { changeEmail, changePassword, deleteAccount, deleteBusiness, getAccountV
 import { EMAIL_LINK_INVALID_TEXT, EMAIL_LINK_PARAM } from "@/modules/auth";
 import { getMyEmailPreferences, saveEmailPreferences } from "@/modules/email";
 import { ADD_BUSINESS_PATH } from "@/modules/onboarding";
-import { BILLING_HREF } from "@/modules/workspace";
+import { TRIAL_MAX_BUSINESSES } from "@/modules/entitlements";
+import { BILLING_HREF, getWorkspace } from "@/modules/workspace";
 import { getSettings, saveAgencyName, saveBusinessProfile, saveScanSettings, uploadAgencyLogo } from "@/modules/settings";
 import { PageHeader } from "@/components/app/PageHeader";
 
@@ -27,10 +28,13 @@ type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 export default async function SettingsPage({ searchParams }: { searchParams: SearchParams }) {
   // An email change link that did not work comes back here (auth/callback), not to the login page.
   const emailLinkFailed = (await searchParams)[EMAIL_LINK_PARAM] === "invalid";
-  const [{ agency, business, activeQuestions, plan }, account] = await Promise.all([
+  const [{ agency, business, activeQuestions, plan }, account, workspace] = await Promise.all([
     getSettings({ next: "/settings" }),
     getAccountView({ next: "/settings" }),
+    getWorkspace({ next: "/settings" }),
   ]);
+  // Every set-up business can be deleted from here, not only the open one (owner, 2026-11-17); a draft is not listed.
+  const deletable = workspace.businesses.filter((b) => b.status !== "onboarding").map(({ id, name, domain }) => ({ id, name, domain }));
   // Only an agency has email settings: the weekly report goes to its owner (EMAIL-01).
   const emails = agency ? await getMyEmailPreferences() : null;
 
@@ -117,7 +121,7 @@ export default async function SettingsPage({ searchParams }: { searchParams: Sea
         />
       </SettingsSection>
 
-      {(business || account.agencyName) && (
+      {(deletable.length > 0 || account.agencyName) && (
         <SettingsSection
           id="danger"
           title="Delete"
@@ -125,10 +129,12 @@ export default async function SettingsPage({ searchParams }: { searchParams: Sea
           description={`Deleted data is kept for ${account.waitDays} days in case you change your mind, then removed for good.`}
         >
           <DangerZone
-            business={business && { id: business.id, name: business.name }}
+            businesses={deletable}
+            activeBusinessId={workspace.activeBusinessId}
             agencyName={account.agencyName}
             waitDays={account.waitDays}
             trialing={account.trialing}
+            trialLimit={TRIAL_MAX_BUSINESSES}
             deleteBusiness={deleteBusiness}
             deleteAccount={deleteAccount}
           />

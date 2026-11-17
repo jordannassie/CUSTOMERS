@@ -2,3 +2,4 @@
 export { aiProvidersOutOfCredit, getSavedSystemStatus, getSystemStatus, pingDatabase, runScheduledServiceCheck, scheduledScansRun } from "./dal";
 export type { ServiceStatus, StatusState, SystemStatus } from "./schema";
 export { statusSummary, type StatusSummary } from "./summary";
+export { PLACES_LIMITED } from "./service";

@@ -24,6 +24,9 @@ type Props = {
   className?: string;
   "aria-invalid"?: boolean;
   "aria-describedby"?: string;
+  /** For a select with no visible label (the alert bell's filters). */
+  "aria-label"?: string;
+  "data-testid"?: string;
 };
 
 export const SELECT_TRIGGER_CLASS = `flex h-11 w-full min-w-0 items-center justify-between gap-2 rounded-lg border border-input bg-surface px-3 text-left text-base outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:opacity-50 data-placeholder:text-muted-foreground md:text-sm ${INVALID_CLASS}`;

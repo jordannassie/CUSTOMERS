@@ -300,21 +300,28 @@ test("active: upgrade, remove at renewal, cancel and keep, and the portal", asyn
   await expect(page.getByTestId("portal-fixture")).toBeVisible();
 });
 
-test("trial banner: days, credits and the charge date, then no charge after cancelling (B-45)", async ({ page }) => {
+test("trial notice in the alert bell: days, credits and the charge date, then no charge after cancelling (B-45)", async ({ page }) => {
   const { ends } = await logIn(page, {
     status: "trialing",
     endsInDays: 5,
     trialCredits: 100,
     businesses: [{ name: "Northside Plumbing", planId: "starter" }],
   });
-  const banner = page.locator('[data-kind="trial"]');
-  await expect(banner).toHaveText(`Your free trial has 5 days and 100 trial credits left. Your card will be charged on ${dayOf(ends)}.`);
+  // The trial notice is in the alert bell, not a bar (owner, 2026-11-17).
+  const bell = page.getByTestId("alert-bell").filter({ visible: true });
+  const box = page.getByTestId("alert-bell-menu");
+  await bell.click();
+  await expect(box).toContainText(`Your free trial has 5 days and 100 trial credits left. Your card will be charged on ${dayOf(ends)}.`);
+  await page.keyboard.press("Escape");
 
   await cancelAnyway(page, "Cancel plan", "Your card won't be charged.", "Cancel anyway");
-  await expect(banner).toContainText(`Your free trial has 5 days and 100 trial credits left. Your trial ends on ${dayOf(ends)}. You won't be charged.`);
-  await expect(banner.getByRole("link", { name: "Keep my plan" })).toHaveAttribute("href", "/settings/billing");
+  await bell.click();
+  await expect(box).toContainText(`Your free trial has 5 days and 100 trial credits left. Your trial ends on ${dayOf(ends)}. You won't be charged.`);
+  await expect(box.getByRole("link", { name: "Keep my plan" })).toHaveAttribute("href", "/settings/billing");
+  await page.keyboard.press("Escape");
   await page.goto("/dashboard");
-  await expect(banner).toContainText("You won't be charged.");
+  await bell.click();
+  await expect(box).toContainText("You won't be charged.");
 });
 
 test("ended trial: results stay readable and the banner says scans are off (B-45)", async ({ page }) => {

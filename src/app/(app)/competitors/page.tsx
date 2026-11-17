@@ -5,7 +5,7 @@ import { GitCompareArrows, Settings2 } from "lucide-react";
 import { KpiStrip, KpiTile } from "@/components/app/KpiTile";
 import { PageContainer } from "@/components/app/PageContainer";
 import { PageHeader } from "@/components/app/PageHeader";
-import { ShowGoogle } from "@/components/app/ShowGoogle";
+import { AutoGoogle } from "@/components/app/AutoGoogle";
 import { PointsChange } from "@/components/overview/PointsChange";
 import { AlsoRecommended } from "@/components/competitors/AlsoRecommended";
 import { ShareAndModelCards, VisibilityTrendCard } from "@/components/competitors/charts/CompetitorCharts";
@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { compareHref } from "@/lib/compare-href";
 import { answersText, getCompetitorsPage, saveCompetitorWebsite, trackCompetitor, type SignalRow, type TableKpis, type TableRow } from "@/modules/competitors";
+import { linkListing, searchListings } from "@/modules/onboarding";
 import { getNextScan } from "@/modules/overview";
 import { getWorkspace } from "@/modules/workspace";
 
@@ -58,7 +59,7 @@ export default async function CompetitorsPage({ searchParams }: { searchParams: 
           actions={
             <div className="flex flex-wrap items-center gap-2">
               <Button asChild variant="outline">
-                <Link href={MANAGE}>
+                <Link prefetch={false} href={MANAGE}>
                   <Settings2 aria-hidden />
                   Manage list <span className="text-muted-foreground tabular-nums" data-testid="tracked-count">({tracked})</span>
                 </Link>
@@ -127,7 +128,8 @@ export default async function CompetitorsPage({ searchParams }: { searchParams: 
               <GoogleSignals rows={page.loadSignals()} pickBranch={view.pickBranch} businessId={business.id} />
             </Suspense>
           ) : (
-            <ShowGoogle href="/competitors?google=1" text="Ratings, review counts, categories and hours for you and each competitor, live from Google." />
+            // Loads by itself once this section scrolls into view (owner, 2026-11-17, D-87): no button to press.
+            <AutoGoogle href="/competitors?google=1" when="visible" />
           )}
         </SectionCard>
 
@@ -201,7 +203,14 @@ function Kpis({ kpis, rows }: { kpis: TableKpis; rows: TableRow[] }) {
 }
 
 async function GoogleSignals({ rows, pickBranch, businessId }: { rows: Promise<SignalRow[]>; pickBranch: boolean; businessId: string }) {
-  return <SignalsTable rows={await rows} pickBranch={pickBranch} edit={{ businessId, save: saveCompetitorWebsite }} />;
+  return (
+    <SignalsTable
+      rows={await rows}
+      pickBranch={pickBranch}
+      edit={{ businessId, save: saveCompetitorWebsite }}
+      listing={{ businessId, actions: { search: searchListings, link: linkListing } }}
+    />
+  );
 }
 
 function SignalsLoading({ rows }: { rows: number }) {

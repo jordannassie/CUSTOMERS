@@ -8,8 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { appFetch } from "@/lib/session-expired";
 import DeleteRecord from "../../_components/delete-record";
-import { looksLikeCode, websiteHref, withoutCode } from "@/lib/submitted-text";
-import { CodeNotice } from "../../_components/submitted-code";
+import { websiteHref, withoutCode } from "@/lib/submitted-text";
 import { LeadFollowUp } from "./lead-followup";
 import { STATUS_OPTIONS, formatDate, interestLabel, leadStage, sourceLabel, stageStatus, type Lead } from "./lead-types";
 
@@ -116,12 +115,6 @@ export function LeadDetail({
       </div>
 
       <div className="flex flex-1 flex-col gap-5 overflow-y-auto px-5 py-5">
-        {looksLikeCode(lead.name, lead.company, lead.message, lead.website, lead.page_path) && (
-          <CodeNotice
-            what="message"
-            original={{ Name: lead.name, Company: lead.company, Website: lead.website, Page: lead.page_path, Message: lead.message }}
-          />
-        )}
         <div className="flex flex-col gap-1">
           <h2 className="text-[length:calc(15px*var(--px,1))] font-semibold text-foreground">{withoutCode(lead.name) || "No name"}</h2>
           <div className="flex flex-wrap items-center gap-2">

@@ -112,6 +112,13 @@ export type FeatureRequestRow = {
   agencyName: string | null;
 };
 
+/** New feature requests nobody has reviewed yet, for the admin menu's badge like Leads' (owner, 2026-11-17). */
+export async function countNewFeatureRequests(): Promise<number | null> {
+  const { count, error } = await createServiceClient().from("feature_requests").select("id", { count: "exact", head: true }).eq("status", "new");
+  if (error) console.error("[admin/feature-requests] count error:", error.message);
+  return error ? null : (count ?? 0);
+}
+
 /** The admin list, newest first, with each sender's email; `error` when the table cannot be read. */
 export async function listFeatureRequests(): Promise<{ requests: FeatureRequestRow[] } | { error: string }> {
   const db = createServiceClient();

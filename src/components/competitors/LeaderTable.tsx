@@ -134,6 +134,8 @@ export function LeaderTable({
               <td className={cn(TD, "pl-1 text-right sm:pl-3 max-md:ml-auto")}>
                 {r.competitorId && (
                   <Link
+                    // One per competitor, rarely all opened: no request for each until it is clicked (2026-11-17).
+                    prefetch={false}
                     href={compareHref(r.competitorId)}
                     // Each row's link says whom it compares: a list of links all named "Compare" is no help to a screen reader.
                     aria-label={`Compare with ${r.name}`}

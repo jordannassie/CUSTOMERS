@@ -5,7 +5,7 @@ import { X } from "lucide-react";
 import { cn } from "cn";
 import { HIDE_LABEL, noticeKey, useHiddenNotices } from "./hide-notice";
 
-/** The × on a warning: hides it for 15 minutes in this browser. */
+/** The × on a warning: hides it for an hour in this browser. */
 export function HideButton({ onClick, className }: { onClick: () => void; className?: string }) {
   return (
     <button
@@ -26,7 +26,7 @@ export function HideButton({ onClick, className }: { onClick: () => void; classN
 
 /**
  * A page warning (a scan that could not finish, AIs that could not be checked, ...) with an × that hides it for
- * 15 minutes. `id` names the kind of warning; the words are part of the key, so a new message always shows.
+ * an hour. `id` names the kind of warning; the words are part of the key, so a new message always shows.
  */
 export function HideableNotice({
   id,

@@ -43,6 +43,7 @@ const stripeWith = (revenueSince: AdminStripeClient["revenueSince"]): AdminStrip
   subscriptionStatus: async () => null,
   setBillingPaused: async () => "nothing_in_stripe",
   revenueSince,
+  collectedSince: async () => ({ cents: 0, feeCents: 0, charges: 0 }),
 });
 
 beforeAll(async () => {

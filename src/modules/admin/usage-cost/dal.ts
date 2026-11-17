@@ -1,6 +1,9 @@
 import "server-only";
 import { requireAdmin } from "@/modules/auth";
 import { createServiceClient } from "@/lib/supabase/service";
+import { adminStripeClient } from "../agencies/stripe";
+import { testCustomerIds } from "../overview/sources/dal";
+import { keptOf, type Kept } from "./kept";
 import {
   buildReport,
   lowestCreditPrice,
@@ -19,10 +22,30 @@ const ID_CHUNK = 200;
 
 export type UsageCostOptions = { days: PeriodDays; includeTest: boolean };
 
-/** Credits used and real AI cost for the period, by day, model and agency. Test agencies are left out unless asked. */
+/**
+ * Credits used and real AI cost for the period, by day, model and agency, and what we keep after Stripe and the other
+ * paid services (2026-11-17). Test agencies, and their Stripe charges, are left out unless asked.
+ */
 export async function getUsageCost(options: UsageCostOptions): Promise<UsageCostReport> {
   await requireAdmin();
-  return loadUsageCost(options, new Date());
+  const now = new Date();
+  const report = await loadUsageCost(options, now);
+  return { ...report, kept: await keptFor(report, options.includeTest, now) };
+}
+
+async function keptFor(report: UsageCostReport, includeTest: boolean, now: Date): Promise<Kept> {
+  const aiCostUsd = report.totals.costUsd;
+  const servicesUsd = report.services.reduce((t, s) => t + s.costUsd, 0);
+  const stripe = adminStripeClient();
+  if (!stripe) return { state: "not_connected", aiCostUsd, servicesUsd };
+  if (stripe.mode === "fixture") return { state: "fixture", aiCostUsd, servicesUsd };
+  try {
+    const excluded = includeTest ? [] : await testCustomerIds(createServiceClient());
+    return keptOf(await stripe.collectedSince(new Date(report.from), now, excluded), aiCostUsd, servicesUsd);
+  } catch (error) {
+    console.error("Usage and cost: Stripe payments could not be read", error);
+    return { state: "error", aiCostUsd, servicesUsd };
+  }
 }
 
 // Callers check admin access first.

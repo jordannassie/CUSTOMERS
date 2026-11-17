@@ -6,9 +6,11 @@ import { viewerTimeZone } from "@/lib/viewer-time-zone";
 import { AppShell } from "@/components/app/AppShell";
 import { AppShellSkeleton, PageSkeleton } from "@/components/app/AppShellSkeleton";
 import { suggestFeature } from "@/modules/feedback";
-import { getScanStatus } from "@/modules/jobs";
+import { getScanStatus, scanProblems } from "@/modules/jobs";
 import { draftLabel, draftStep, stepPath } from "@/modules/onboarding";
 import {
+  appAlerts,
+  barBanner,
   BUY_CREDITS_HREF,
   getWorkspace,
   pickBanners,
@@ -43,6 +45,18 @@ async function AppFrame({ children }: { children: React.ReactNode }) {
   // An unfinished draft is never lost: the switcher links back to the step where it stopped.
   const draft = workspace.businesses.find((b) => b.status === "onboarding");
   const widget = usage && account ? { ...usageWidget(usage, account, now), buyCreditsHref: BUY_CREDITS_HREF } : null;
+  const timeZone = await viewerTimeZone();
+  const banners = usage && account ? pickBanners(usage, account, now, timeZone) : [];
+  const live = workspace.businesses.filter((b) => b.status !== "onboarding");
+  // The bell: the account notices and each business whose newest scan did not run (owner, 2026-11-17).
+  const alerts = appAlerts(
+    banners,
+    await scanProblems(live.map((b) => b.id), now).catch(() => []),
+    Object.fromEntries(live.map((b) => [b.id, b.name])),
+    active.id,
+    now,
+    timeZone,
+  );
 
   return (
     <AppShell
@@ -58,7 +72,10 @@ async function AppFrame({ children }: { children: React.ReactNode }) {
       switcherScores={switcherScores}
       usage={widget}
       isAdmin={workspace.isAdmin}
-      banners={usage && account ? pickBanners(usage, account, now, await viewerTimeZone()) : []}
+      // One bar at most, for a problem that stops scans; the rest is in the bell (owner, 2026-11-17).
+      banners={[barBanner(banners)].filter((b) => b !== null)}
+      alerts={alerts}
+      testMode={account?.isTest ?? false}
       creditsShort={usage ? shortBalance(usage.balance) : null}
       getScanStatus={getScanStatus}
     >

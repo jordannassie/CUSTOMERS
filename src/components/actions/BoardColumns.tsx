@@ -24,7 +24,8 @@ const EMPTY: Record<ActionStatus, string> = {
   dismissed: "No dismissed actions",
 };
 
-function ColumnHead({ status, count }: { status: ActionStatus; count: number }) {
+/** A column's icon, name and count: the board's columns and the list's sections (owner, 2026-11-17). */
+export function ColumnHead({ status, count }: { status: ActionStatus; count: number }) {
   const { icon: Icon, className } = STATUS_ICON[status];
   return (
     <>

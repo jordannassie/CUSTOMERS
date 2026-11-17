@@ -1,7 +1,10 @@
+import { meteredFetch } from "@/modules/service-costs";
+
 // One HTTP call per source with a hard timeout, for Google Places and Firecrawl. A busy (429) or failing (5xx) answer
 // is tried once more after a short pause: a passing limit often clears (2026-10-14). A used-up daily quota does not,
 // and the caller then says the source is unavailable rather than that nothing was found. Timeouts and network errors
 // are not retried: auto-fill is interactive, so the caller falls back to whatever the other source found.
+// Each answered Places or Firecrawl call is recorded with what it cost, for the admin Usage and cost page (2026-11-17).
 export type HttpDeps = { fetch?: typeof fetch; timeoutMs?: number; retryDelayMs?: number };
 
 const RETRY_DELAY_MS = 800;
@@ -24,7 +27,7 @@ export async function postJson(
   body: unknown,
   deps: HttpDeps = {},
 ): Promise<JsonResponse> {
-  const doFetch = deps.fetch ?? fetch;
+  const doFetch = deps.fetch ?? meteredFetch();
   return onceMore(async () => {
     const res = await doFetch(url, {
       method: "POST",
@@ -45,7 +48,7 @@ function parseBody(text: string): unknown {
 }
 
 export async function getJson(url: string, headers: Record<string, string>, deps: HttpDeps = {}): Promise<JsonResponse> {
-  const doFetch = deps.fetch ?? fetch;
+  const doFetch = deps.fetch ?? meteredFetch();
   return onceMore(async () => {
     const res = await doFetch(url, { headers, signal: AbortSignal.timeout(deps.timeoutMs ?? SOURCE_TIMEOUT_MS) });
     return { status: res.status, body: parseBody(await res.text()) };

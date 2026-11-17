@@ -2,9 +2,8 @@ import { addToActions } from "@/modules/opportunities";
 import { notFound, redirect } from "next/navigation";
 import { PageContainer } from "@/components/app/PageContainer";
 import { PageHeader } from "@/components/app/PageHeader";
-import { AddQuestionForm } from "@/components/questions/AddQuestionForm";
+import { AddQuestionDialog } from "@/components/questions/AddQuestionForm";
 import { FocusAnswers } from "@/components/questions/FocusAnswers";
-import { HeaderActions } from "@/components/questions/HeaderActions";
 import { KpiStrip } from "@/components/questions/KpiStrip";
 import { QuestionsProvider } from "@/components/questions/QuestionsProvider";
 import { QuestionTable } from "@/components/questions/QuestionTable";
@@ -58,7 +57,6 @@ export default async function QuestionsPage({ searchParams }: { searchParams: Se
               </>
             }
             description={<>What we ask {asked} for you on every scan, and what each one answered.</>}
-            actions={<HeaderActions />}
           />
 
           {/* Which AIs the last scan could not check, so a gap in the list is never read as "not asked" (BUG-074). */}
@@ -71,16 +69,21 @@ export default async function QuestionsPage({ searchParams }: { searchParams: Se
 
           <SummaryBars view={view} />
 
-          <QuestionTable limitMessage={limitMessage} actions={actions} />
-
-          <AddQuestionForm
-            businessId={view.businessId}
-            example={view.example}
-            activeCount={view.active.length}
-            models={view.models.length}
-            frequency={view.frequency}
+          {/* Add question sits at the end of the list's toolbar and opens a box (owner, 2026-11-17). */}
+          <QuestionTable
             limitMessage={limitMessage}
-            add={addQuestion}
+            actions={actions}
+            add={
+              <AddQuestionDialog
+                businessId={view.businessId}
+                example={view.example}
+                activeCount={view.active.length}
+                models={view.models.length}
+                frequency={view.frequency}
+                limitMessage={limitMessage}
+                add={addQuestion}
+              />
+            }
           />
         </div>
       </QuestionsProvider>

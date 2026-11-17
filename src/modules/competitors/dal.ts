@@ -1,8 +1,4 @@
 import "server-only";
-import { providerErrorKind } from "@/lib/provider-error-kind";
-import { cache } from "react";
-import { env } from "@/lib/env";
-import { devFlag } from "@/lib/dev-flag";
 import { requestNow } from "@/lib/request-now";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
@@ -11,8 +7,13 @@ import { readBusiness, readCompetitors } from "@/modules/business-reads";
 import { maxCompetitors } from "@/modules/entitlements";
 import { limitMessage, placeIdForName } from "@/modules/onboarding/server";
 import { loadAlsoRecommended, loadScoreReport, recountAfterNamesChange, type ScoreReport } from "@/modules/scanning";
-import { fixtureSignals } from "./place-fixtures";
-import { createPlaceSignals, PlacesUnavailable, type FetchSignals } from "./places";
+import { mapLimit } from "@/lib/map-limit";
+import { PlacesUnavailable, type FetchSignals } from "./places";
+import { fetchPlaceSignals, signalsForRequest } from "./live/dal";
+
+export { fetchPlaceSignals };
+
+const PLACES_AT_ONCE = 3;
 import { pickedInstead, type PickedInstead } from "./picked";
 import { competitorChartsView, pickShares } from "./charts";
 import { competitorsView, signalRows, type CompetitorsView, type SignalResult, type SignalRow } from "./service";
@@ -22,34 +23,6 @@ import { whyCard, type WhyPanel } from "./why/service";
 import { leaderTable } from "./table";
 import { overviewCompete, type OverviewCompete } from "./overview";
 import { colorOrder } from "@/lib/series-colors";
-
-// Fixture mode is refused in production so a stray flag can never show made-up businesses to users.
-function liveSignals(): FetchSignals {
-  if (devFlag("PLACES_FIXTURES")) return fixtureSignals;
-  if (env.GOOGLE_PLACES_API_KEY) return createPlaceSignals(env.GOOGLE_PLACES_API_KEY);
-  return async () => {
-    throw new PlacesUnavailable("GOOGLE_PLACES_API_KEY is not set");
-  };
-}
-
-// React's cache lives for one server request only, which is all Google allows us to keep (D-73).
-const signalsForRequest = cache(async (placeId: string) => {
-  try {
-    return await liveSignals()(placeId);
-  } catch (err) {
-    // Feeds the provider error spike alert (MVP_SPEC 22); a missing key is a setup gap, not a Google outage.
-    // A paused lookup asked nothing; the refusal that started the pause was recorded already.
-    if (env.GOOGLE_PLACES_API_KEY && !(err instanceof PlacesUnavailable && err.paused)) await recordPlacesError(err);
-    throw err;
-  }
-});
-
-async function recordPlacesError(err: unknown): Promise<void> {
-  const message = `Live lookup failed: ${err instanceof Error ? err.message : String(err)}`.slice(0, 500);
-  // One row per kind of failure an hour, with a count (migration 058): a used-up quota no longer writes one per visit.
-  const { error } = await createServiceClient().rpc("record_provider_error", { p_provider: "google_places", p_kind: providerErrorKind(message), p_message: message });
-  if (error) console.error(`Could not record the Places error: ${error.message}`);
-}
 
 /** The first saved answer checked for a competitor: since it was added, or earlier once saved answers were checked again. */
 function countedFrom(r: { created_at: string; checked_from: string | null }): Date {
@@ -63,8 +36,6 @@ function countedFrom(r: { created_at: string; checked_from: string | null }): Da
  */
 export const CHART_DAYS = 30;
 
-/** Live Google signals for one place id; kept in memory for the request only (D-73). */
-export const fetchPlaceSignals: FetchSignals = (placeId) => signalsForRequest(placeId);
 
 /**
  * The Competitors page for one of the signed-in agency's businesses; null when it is not theirs. The Google table
@@ -142,12 +113,11 @@ export async function loadCompetitorsBase(
   const signals = async (fetchSignals: FetchSignals, onlyCompetitorId?: string): Promise<SignalRow[]> => {
     const shown = onlyCompetitorId ? competitors.filter((c) => c.id === onlyCompetitorId) : competitors;
     const placeIds = [...new Set([you.placesId, ...shown.map((c) => c.placesId)].filter((id) => id !== null))];
-    const results = await Promise.all(
-      placeIds.map(async (id): Promise<[string, SignalResult]> => [
-        id,
-        await fetchSignals(id).catch((e) => (e instanceof PlacesUnavailable && e.limited ? ("limited" as const) : ("error" as const))),
-      ]),
-    );
+    // Three at a time: you and every competitor at once tripped Google's per-minute limit (owner, 2026-11-17).
+    const results = await mapLimit(placeIds, PLACES_AT_ONCE, async (id): Promise<[string, SignalResult]> => [
+      id,
+      await fetchSignals(id).catch((e) => (e instanceof PlacesUnavailable && e.limited ? ("limited" as const) : ("error" as const))),
+    ]);
     return signalRows(you, shown, new Map(results));
   };
   return { view, report, signals };

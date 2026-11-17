@@ -65,7 +65,7 @@ export function AlsoRecommended({ businessId, names, answers, track, manageHref,
       {error.limit ? (
         <>
           {" "}
-          <Link href={manageHref} className="font-medium underline">
+          <Link prefetch={false} href={manageHref} className="font-medium underline">
             Manage list
           </Link>
         </>

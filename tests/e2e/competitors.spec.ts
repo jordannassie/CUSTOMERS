@@ -188,10 +188,9 @@ test("leaderboard, Google side by side, and tracking a business AI keeps naming"
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
   await expect(page.getByTestId("kpi-leader")).toContainText("Bean House");
 
-  // Google is asked only when the owner presses "Show Google details" (2026-10-27).
+  // Google is asked once its section scrolls into view, with no button (owner, 2026-11-17, D-87).
   await expect(page.getByTestId("signals-highlight")).toHaveCount(0);
-  await expect(page.getByTestId("show-google")).toBeVisible();
-  await page.getByTestId("show-google-button").click();
+  await page.getByTestId("google-loading").scrollIntoViewIfNeeded();
   await page.waitForURL((url) => url.pathname === "/competitors" && url.searchParams.get("google") === "1");
   await expect(page.getByTestId("signals-highlight")).toHaveText(
     "Bean House: 320 Google reviews, 4.7 stars. You: 12 reviews, 4.2 stars",

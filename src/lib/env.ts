@@ -33,6 +33,8 @@ export const env = createEnv({
     // Dev and Playwright only: auto-fill and question picking answer from fixtures, never Firecrawl, Google or Claude.
     ONBOARDING_FIXTURES: flag,
     FIRECRAWL_API_KEY: optional,
+    // USD per Firecrawl credit, for the admin cost page: the plan's price over its credits. Default: Hobby, $19 for 5,000.
+    FIRECRAWL_USD_PER_CREDIT: z.coerce.number().nonnegative().default(0.0038),
     // Search Intelligence stays on hold until D-06 is decided.
 
     STRIPE_SECRET_KEY: optional,
@@ -102,6 +104,7 @@ export const env = createEnv({
     PLACES_FIXTURES: process.env.PLACES_FIXTURES,
     ONBOARDING_FIXTURES: process.env.ONBOARDING_FIXTURES,
     FIRECRAWL_API_KEY: process.env.FIRECRAWL_API_KEY,
+    FIRECRAWL_USD_PER_CREDIT: process.env.FIRECRAWL_USD_PER_CREDIT,
     STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY,
     STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET,
     STRIPE_CHECKOUT_FIXTURES: process.env.STRIPE_CHECKOUT_FIXTURES,

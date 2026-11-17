@@ -11,3 +11,4 @@ export const NAV_LINKS = [
 export const LOGIN_HREF = "/login";
 export const TRIAL_HREF = "/signup";
 export const TRIAL_LABEL = "Start free trial";
+export const DASHBOARD_HREF = "/dashboard";

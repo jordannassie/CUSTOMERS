@@ -12,9 +12,9 @@ import { useQuestions } from "./QuestionsProvider";
 // Named (ring), question, each AI, top picks, recent checks, menu. The header and every row share it.
 const GRID = "lg:grid-cols-[calc(84px*var(--px,1))_minmax(0,1fr)_calc(96px*var(--px,1))_calc(80px*var(--px,1))_calc(112px*var(--px,1))_calc(36px*var(--px,1))] lg:gap-x-4";
 
-type Props = { limitMessage: string | null; actions: QuestionActions };
+type Props = { limitMessage: string | null; actions: QuestionActions; /** The Add question button, at the end of the toolbar. */ add: React.ReactNode };
 
-export function QuestionTable({ limitMessage, actions }: Props) {
+export function QuestionTable({ limitMessage, actions, add }: Props) {
   const { view, shown, total, showPaused, setShowPaused, setFilter, setTopic, setQuery, focus } = useQuestions();
   const router = useRouter();
   const count = shown.active.length + shown.paused.length;
@@ -28,14 +28,17 @@ export function QuestionTable({ limitMessage, actions }: Props) {
         <MessageSquarePlus className="size-5 text-text-hint" aria-hidden="true" />
         <h2 className="text-[length:calc(15px*var(--px,1))] font-semibold tracking-[-0.01em]">{paused > 0 ? "All your questions are paused" : "No questions yet"}</h2>
         <p className="text-[length:calc(13px*var(--px,1))] text-muted-foreground">
-          {paused > 0 ? "Scans check nothing until you resume a question or add a new one." : "Add a question below and the next scan will check it."}
+          {paused > 0 ? "Scans check nothing until you resume a question or add a new one." : "Add a question and the next scan will check it."}
         </p>
-        {paused > 0 && (
-          <Button type="button" variant="outline" size="sm" onClick={() => setShowPaused(true)}>
-            <Eye aria-hidden="true" />
-            Show paused ({paused})
-          </Button>
-        )}
+        <div className="flex flex-wrap gap-2">
+          {add}
+          {paused > 0 && (
+            <Button type="button" variant="outline" size="sm" onClick={() => setShowPaused(true)}>
+              <Eye aria-hidden="true" />
+              Show paused ({paused})
+            </Button>
+          )}
+        </div>
       </div>
     );
   }
@@ -45,7 +48,7 @@ export function QuestionTable({ limitMessage, actions }: Props) {
       <h2 id="questions-list-title" className="sr-only">
         Your questions
       </h2>
-      <QuestionFilters />
+      <QuestionFilters end={add} />
       {noneYet && (
         <p className="border-b border-border bg-muted/60 px-4 py-2 text-[length:calc(13px*var(--px,1))] text-muted-foreground" data-testid="no-answers-yet">
           No answers yet. Results show here after your next scan.

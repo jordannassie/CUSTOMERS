@@ -13,6 +13,14 @@ export type Probe = {
   request: (key: string, deps: ProbeDeps) => RequestSpec;
   /** A non-2xx answer that still proves the key is valid. */
   acceptsError?: (status: number, body: string) => boolean;
+  /** What a 429 means for this service when it is not a passing burst (Google Places: the key's quota is used up). */
+  limited?: { detail: string; fix: string };
+};
+
+/** A refused Places lookup: the same words in System status and in the alert a customer's lookup opens (2026-11-17). */
+export const PLACES_LIMITED = {
+  detail: "Google's request limit for this key is used up, so customers can't see Google ratings, reviews and hours.",
+  fix: "Raise the Places API (New) quota in Google Cloud Console (APIs and Services, Quotas), or wait for it to reset.",
 };
 
 // Google's own documented example place; an ID-only Place Details call is a free SKU.
@@ -50,6 +58,8 @@ export const PROBES: Probe[] = [
       url: `https://places.googleapis.com/v1/places/${SAMPLE_PLACE_ID}`,
       headers: { "x-goog-api-key": key, "x-goog-fieldmask": "id" },
     }),
+    // One call every 15 minutes is never a burst: a refusal means the quota is used up, and opens an alert.
+    limited: PLACES_LIMITED,
   },
   {
     id: "firecrawl",
@@ -109,6 +119,7 @@ function classifyFailure(probe: Probe, status: number, body: string): ProbeResul
   if (status === 401 || status === 403) {
     return { state: "error", detail: `${probe.name} turned down our key, so nothing that uses it works.`, fix: `Replace the ${probe.name} key in Netlify and redeploy (it answered ${status}).` };
   }
+  if (status === 429 && probe.limited) return { state: "error", ...probe.limited };
   if (status === 429) return { state: "unknown", detail: "Too many requests right now. Try again in a minute." };
   if (status >= 500) return { state: "error", detail: `${probe.name} is having problems on its side. It usually clears by itself.`, fix: `Check ${probe.name}'s status page if it lasts (it answered ${status}).` };
   return { state: "error", detail: `${probe.name} gave an unexpected answer.`, fix: `Tell the developer: the check answered ${status}.` };

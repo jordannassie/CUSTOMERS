@@ -35,6 +35,20 @@ export async function listOpenAlerts(db: Db = createServiceClient()): Promise<Op
   return foldClaudeAlerts(data.map(toOpenAlert)).sort((a, b) => rank[a.severity] - rank[b.severity]);
 }
 
+/** Alerts resolved in the last `days` days, newest first, for the bell's Resolved status (owner, 2026-11-17). */
+export async function listResolvedAlerts(db: Db = createServiceClient(), days = 7): Promise<(OpenAlert & { resolvedAt: string })[]> {
+  await requireAdmin();
+  const since = new Date(Date.now() - days * 86_400_000).toISOString();
+  const { data, error } = await db
+    .from("system_alerts")
+    .select(`${OPEN_ALERT_COLUMNS}, resolved_at`)
+    .gte("resolved_at", since)
+    .order("resolved_at", { ascending: false })
+    .limit(30);
+  if (error) throw new Error(`Could not load resolved alerts: ${error.message}`);
+  return data.map((r) => ({ ...toOpenAlert(r), resolvedAt: r.resolved_at! }));
+}
+
 /** Marks an open alert resolved. Null when it does not exist or was already resolved. */
 export async function markAlertResolved(alertId: string): Promise<{ kind: string; message: string } | null> {
   await requireAdmin();

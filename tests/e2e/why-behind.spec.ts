@@ -293,7 +293,10 @@ test("Competitors names the leader's top reason, and Compare shows every fact wi
   // Never wider than the screen, at 390px too: the tab row scrolls on its own.
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
 
-  // Why ahead or behind (the first tab): every likely reason as a card, biggest first, with what to do and where.
+  // Compare opens on its first tab, Website (owner, 2026-11-17).
+  await expect(compare.getByTestId("compare-tab-website")).toHaveAttribute("aria-selected", "true");
+  // Why ahead or behind: every likely reason as a card, biggest first, with what to do and where.
+  await compare.getByTestId("compare-tab-summary").click();
   const reasons = compare.getByTestId("tab-summary").getByTestId("reason-card");
   await expect(reasons.first()).toContainText("AI used yelp.com when it picked them");
   const yelp = reasons.filter({ hasText: "AI used yelp.com when it picked them" });
@@ -453,7 +456,7 @@ test("Each reason says what to do and where; a reason with a saved fix moves tha
   const businessId = await seed(page, "/competitors");
   const bean = await competitorId(businessId, "Bean House");
   const scanFix = await db.from("opportunities").select("id").eq("business_id", businessId).eq("title", "Check your Yelp listing").single().throwOnError();
-  await page.goto(`/competitors/compare?with=${bean}`);
+  await page.goto(`/competitors/compare?with=${bean}&tab=summary`);
   const reasons = page.getByTestId("tab-summary").getByTestId("reason-card");
   const yelp = reasons.filter({ hasText: "AI used yelp.com when it picked them" });
   await expect(yelp.getByTestId("reason-basis")).toHaveText("Based on 9 answers", { timeout: 60_000 });
@@ -535,11 +538,12 @@ test("Check their website: on Compare's Website tab only, read once, compared si
   const bean = await competitorId(businessId, "Bean House");
   // An old link to the Websites tab lands on Compare's Website tab (D-86).
   await page.goto(`/competitors/${bean}?tab=websites`);
-  await page.waitForURL((url) => url.pathname === "/competitors/compare" && url.searchParams.get("with") === bean && url.searchParams.get("tab") === "website", {
+  // Website is Compare's first tab, so its address needs no ?tab= (owner, 2026-11-17).
+  await page.waitForURL((url) => url.pathname === "/competitors/compare" && url.searchParams.get("with") === bean && url.searchParams.get("tab") === null, {
     timeout: 60_000,
   });
   await expect(page.getByTestId("compare-tab-website")).toHaveAttribute("aria-selected", "true");
-  await expect(page.getByRole("link", { name: "Check their website" })).toHaveAttribute("href", `/competitors/compare?with=${bean}&tab=website`);
+  await expect(page.getByRole("link", { name: "Check their website" })).toHaveAttribute("href", `/competitors/compare?with=${bean}`);
   const tab = page.getByTestId("tab-websites");
   // Found from the AI answers that cited it, so the owner only presses the button.
   await expect(tab.getByTestId("check-website")).toContainText("beanhouse.example", { timeout: 60_000 });
@@ -638,7 +642,7 @@ test("Compare's Website tab says what is known of each competitor's website, and
 test("See the answers on a Compare reason opens the answers it counts, not an empty list", async ({ page }, info) => {
   const businessId = await seed(page, "/competitors");
   const bean = await competitorId(businessId, "Bean House");
-  await page.goto(`/competitors/compare?with=${bean}`);
+  await page.goto(`/competitors/compare?with=${bean}&tab=summary`);
   const yelp = page.getByTestId("tab-summary").getByTestId("reason-card").filter({ hasText: "AI used yelp.com when it picked them" });
   await expect(yelp.getByTestId("reason-basis")).toHaveText("Based on 9 answers", { timeout: 60_000 });
   await yelp.getByRole("link", { name: "See the answers" }).click();
@@ -700,12 +704,12 @@ test("Google on Compare loads when its tab opens: the table, and a message when 
   await expect(tab.getByTestId("google-reasons")).toHaveCount(0);
   await expect(tab.getByTestId("google-loading")).toHaveCount(0);
 
-  // With no Google listing linked for you, it says so instead of showing nothing.
+  // With no Google listing linked for you, it says it is yours that is missing, with a way to link it (2026-11-17).
   await db.from("businesses").update({ places_id: null }).eq("id", businessId).throwOnError();
   // A link straight to the Google tab loads it at once.
   await page.goto(`/competitors/compare?with=${grind}&tab=google`);
-  await expect(tab.getByTestId("google-unavailable")).toContainText(
-    "Google details aren't available for both of you. A business needs a Google listing linked.",
-    { timeout: 60_000 },
-  );
+  const missing = tab.getByTestId("google-missing-side");
+  await expect(missing).toHaveCount(1, { timeout: 60_000 });
+  await expect(missing).toContainText("Your business has no Google listing linked.");
+  await expect(missing.getByTestId("link-listing")).toBeVisible();
 });

@@ -43,7 +43,7 @@ export function QuestionsTab({ panel }: { panel: WhyPanel }) {
               return (
                 <tr key={q.questionId} data-testid="compare-question">
                   <td className={cn(ROW, "break-words")}>
-                    <Link href={`/questions?q=${q.questionId}`} className="hover:text-primary hover:underline">
+                    <Link prefetch={false} href={`/questions?q=${q.questionId}`} className="hover:text-primary hover:underline">
                       {q.question}
                     </Link>
                   </td>
@@ -95,7 +95,7 @@ export function WhereLookedTab({ panel }: { panel: WhyPanel }) {
                   <td className={cn(ROW, "font-medium break-all")}>
                     <span className="flex items-center gap-2">
                       <SiteIcon domain={d.host} name={d.host} size="sm" />
-                      <Link href={`/questions?site=${encodeURIComponent(d.host)}`} className="min-w-0 hover:underline">
+                      <Link prefetch={false} href={`/questions?site=${encodeURIComponent(d.host)}`} className="min-w-0 hover:underline">
                         {d.host}
                       </Link>
                     </span>

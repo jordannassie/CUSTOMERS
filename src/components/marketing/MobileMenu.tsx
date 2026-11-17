@@ -11,9 +11,12 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { LOGIN_HREF, NAV_LINKS, TRIAL_HREF, TRIAL_LABEL } from "./nav";
+import { DASHBOARD_HREF, LOGIN_HREF, NAV_LINKS, TRIAL_HREF, TRIAL_LABEL } from "./nav";
 
-export function MobileMenu() {
+/** "unknown" while the header still checks the session: no account buttons yet, rather than the wrong ones. */
+export type MenuAccount = "signed-in" | "signed-out" | "unknown";
+
+export function MobileMenu({ account }: { account: MenuAccount }) {
   const [open, setOpen] = useState(false);
   const close = () => setOpen(false);
 
@@ -44,18 +47,29 @@ export function MobileMenu() {
             ))}
           </ul>
         </nav>
-        <div className="mt-auto flex flex-col gap-2 border-t border-border p-4">
-          <Button asChild size="lg">
-            <Link href={TRIAL_HREF} onClick={close}>
-              {TRIAL_LABEL}
-            </Link>
-          </Button>
-          <Button asChild variant="outline" size="lg">
-            <Link href={LOGIN_HREF} onClick={close}>
-              Log in
-            </Link>
-          </Button>
-        </div>
+        {account === "signed-in" && (
+          <div className="mt-auto flex flex-col gap-2 border-t border-border p-4">
+            <Button asChild size="lg">
+              <Link href={DASHBOARD_HREF} onClick={close}>
+                Dashboard
+              </Link>
+            </Button>
+          </div>
+        )}
+        {account === "signed-out" && (
+          <div className="mt-auto flex flex-col gap-2 border-t border-border p-4">
+            <Button asChild size="lg">
+              <Link href={TRIAL_HREF} onClick={close}>
+                {TRIAL_LABEL}
+              </Link>
+            </Button>
+            <Button asChild variant="outline" size="lg">
+              <Link href={LOGIN_HREF} onClick={close}>
+                Log in
+              </Link>
+            </Button>
+          </div>
+        )}
       </SheetContent>
     </Sheet>
   );

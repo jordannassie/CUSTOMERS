@@ -89,10 +89,9 @@ test("buying a pack pays back a negative balance first, then shows the new balan
   });
   await page.waitForTimeout(6_000);
   expect(calls).toBeLessThanOrEqual(1);
-  // E2E agencies are test agencies, so the test mode banner always shows (D-61); no other banner may.
-  const banners = page.getByTestId("app-banners").locator("[data-kind]");
-  await expect(banners).toHaveCount(1);
-  await expect(banners).toHaveAttribute("data-kind", "test_mode");
+  // Paid back and above zero: the out of credits bar is gone, and test mode is a pill, not a bar (owner, 2026-11-17).
+  await expect(page.getByTestId("app-banners")).toHaveCount(0);
+  await expect(page.getByTestId("test-mode-pill").filter({ visible: true })).toBeVisible();
 });
 
 test("the usage page's button opens the packs, and a cancelled plan cannot buy", async ({ page }) => {

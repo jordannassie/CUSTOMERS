@@ -4,6 +4,9 @@ import { env } from "@/lib/env";
 import { extendSubscriptionTrial, getStripe, isStripeConfigured, setSubscriptionPaused, subscriptionAgencyStatus, type PauseOutcome } from "@/modules/billing";
 import type { BillingStatus } from "./service";
 
+/** Money collected in a period, in cents, after refunds; `feeCents` is what Stripe kept for processing it. */
+export type Collected = { cents: number; feeCents: number; charges: number };
+
 /** The Stripe calls the admin makes. Injected, so tests and Playwright never reach Stripe. */
 export type AdminStripeClient = {
   mode: "stripe" | "fixture";
@@ -13,6 +16,8 @@ export type AdminStripeClient = {
    * Stripe customers in `excludeCustomers` (test agencies') are left out.
    */
   revenueSince(since: Date, until?: Date, excludeCustomers?: string[]): Promise<number>;
+  /** The same money, with what Stripe kept as fees and how many charges it was (admin Usage and cost, 2026-11-17). */
+  collectedSince(since: Date, until?: Date, excludeCustomers?: string[]): Promise<Collected>;
   /**
    * The status the subscription has in Stripe now ("canceled" when Stripe has no such subscription), or null when
    * there is nothing to go on (fixtures, or a first payment still in progress).
@@ -31,6 +36,9 @@ const fixtureClient: AdminStripeClient = {
   async revenueSince() {
     return 0;
   },
+  async collectedSince() {
+    return { cents: 0, feeCents: 0, charges: 0 };
+  },
   async subscriptionStatus() {
     return null;
   },
@@ -44,21 +52,27 @@ const fixtureClient: AdminStripeClient = {
  * on each visit (admin review 2026-11-12). The end is rounded down to 5 minutes, so repeat visits hit the cache. The
  * left-out customers are part of the cache key, so the Overview with and without test agencies are cached apart.
  */
-async function collectedCents(sinceIso: string, untilIso: string | null, excluded: string[]): Promise<number> {
+async function collected(sinceIso: string, untilIso: string | null, excluded: string[]): Promise<Collected> {
   "use cache";
   cacheLife({ stale: 60, revalidate: 300, expire: 900 });
   let cents = 0;
+  let feeCents = 0;
+  let charges = 0;
   const created = { gte: Math.floor(Date.parse(sinceIso) / 1000), ...(untilIso && { lt: Math.floor(Date.parse(untilIso) / 1000) }) };
-  // Charges cover both plan invoices and one-time top-ups.
+  // Charges cover both plan invoices and one-time top-ups. The balance transaction carries Stripe's real fee, which a
+  // refund does not give back (2026-11-17: the cost page counts it).
   const skip = new Set(excluded);
-  for await (const charge of getStripe().charges.list({ created, limit: 100 })) {
+  for await (const charge of getStripe().charges.list({ created, limit: 100, expand: ["data.balance_transaction"] })) {
     const customer = typeof charge.customer === "string" ? charge.customer : (charge.customer?.id ?? null);
     if (customer && skip.has(customer)) continue;
     if (charge.paid && charge.status === "succeeded" && charge.currency === "usd") {
       cents += charge.amount - charge.amount_refunded;
+      charges += 1;
+      const bt = charge.balance_transaction;
+      if (bt && typeof bt !== "string") feeCents += bt.fee;
     }
   }
-  return cents;
+  return { cents, feeCents, charges };
 }
 
 const FIVE_MINUTES = 5 * 60 * 1000;
@@ -67,8 +81,9 @@ const roundDown = (d: Date) => new Date(Math.floor(d.getTime() / FIVE_MINUTES) *
 const stripeClient: AdminStripeClient = {
   mode: "stripe",
   extendTrial: extendSubscriptionTrial,
-  revenueSince: (since, until, excludeCustomers = []) =>
-    collectedCents(since.toISOString(), until ? roundDown(until) : null, [...excludeCustomers].sort()),
+  revenueSince: async (since, until, excludeCustomers = []) =>
+    (await collected(since.toISOString(), until ? roundDown(until) : null, [...excludeCustomers].sort())).cents,
+  collectedSince: (since, until, excludeCustomers = []) => collected(since.toISOString(), until ? roundDown(until) : null, [...excludeCustomers].sort()),
   subscriptionStatus: subscriptionAgencyStatus,
   setBillingPaused: setSubscriptionPaused,
 };

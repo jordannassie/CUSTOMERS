@@ -15,6 +15,7 @@ import { fillOpportunity, hasPlaceValues, liveLookup, referencedCompetitors, usa
 import { templateWriter } from "./template-writer";
 import { createExplanationWriter } from "./writer";
 import { realCitations } from "@/lib/cited-links";
+import { mapLimit } from "@/lib/map-limit";
 
 /**
  * An opportunity with Google values filled in. usesGoogle: the text shows some, so attribution is due. googleValues:
@@ -41,7 +42,8 @@ function must<T>(what: string, result: { data: T | null; error: { message: strin
 
 async function signalsFor(placeIds: (string | null)[], fetchSignals: FetchSignals): Promise<Map<string, Signals | null>> {
   const ids = [...new Set(placeIds.filter((id): id is string => id !== null))];
-  const pairs = await Promise.all(ids.map(async (id) => [id, await fetchSignals(id).catch(() => null)] as const));
+  // Three at a time, like the Competitors table, so one page never asks Google in a burst (owner, 2026-11-17).
+  const pairs = await mapLimit(ids, 3, async (id) => [id, await fetchSignals(id).catch(() => null)] as const);
   return new Map(pairs);
 }
 

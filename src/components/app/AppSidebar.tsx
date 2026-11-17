@@ -2,7 +2,8 @@
 
 import Image from "next/image";
 import { HoverPrefetchLink } from "@/components/app/HoverPrefetchLink";
-import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import { LogOut, ShieldCheck } from "lucide-react";
 import { cn } from "cn";
 import { BusinessSwitcher, type SwitchBusinessAction, type SwitcherBusiness, type SwitcherDraft, type SwitcherScoresAction } from "./BusinessSwitcher";
@@ -44,13 +45,36 @@ export function AppSidebar({
   onNavigate,
 }: AppSidebarProps & { onNavigate?: () => void }) {
   const pathname = usePathname();
+  const router = useRouter();
+  // The item clicked is highlighted at once, not only when the address changes, so two items are never lit together
+  // while the next page loads (owner, 2026-11-17). Once the address moves on, it decides again.
+  const [clicked, setClicked] = useState<{ href: string; from: string } | null>(null);
+  const current = clicked && clicked.from === pathname ? clicked.href : pathname;
+
+  // Each menu page's loading screen is fetched once, when the browser is idle, so a click shows the right one at once
+  // instead of a general one or nothing (owner, 2026-11-17). For these pages Next fetches only down to their
+  // loading.js, never the page itself, and keeps what it fetched: asking again after each page change only fetches
+  // the page just left, which Next skips while it is open (the Overview, where the app starts).
+  useEffect(() => {
+    const hrefs = APP_NAV_GROUPS.flatMap((group) => group.items.map((item) => item.href));
+    const run = () => hrefs.forEach((href) => router.prefetch(href));
+    // Safari has no requestIdleCallback: a short wait does the same there.
+    if (typeof window.requestIdleCallback === "function") {
+      const id = window.requestIdleCallback(run, { timeout: 4000 });
+      return () => window.cancelIdleCallback(id);
+    }
+    const id = setTimeout(run, 1500);
+    return () => clearTimeout(id);
+  }, [router, pathname]);
+
   // While another business is set up, the switcher's business is not the one on screen (BUG-092).
   const settingUp = pathname.startsWith("/onboarding");
 
   return (
     <div className="flex min-h-full flex-col px-3 pb-3">
-      {/* The logo centred, level with the window's top bar, from a copy trimmed of the file's empty margins. */}
-      <div className="mt-2 mb-2 flex h-12 shrink-0 items-center justify-center">
+      {/* The logo level with the window's top bar, its left edge in line with the menu's icons (owner, 2026-11-17:
+          not centred), from a copy trimmed of the file's empty margins. */}
+      <div className="mt-2 mb-2 flex h-12 shrink-0 items-center px-2.5">
         <HoverPrefetchLink href="/dashboard" onClick={onNavigate} aria-label="Customers.Direct, go to Overview" className="rounded-sm outline-none focus-visible:ring-3 focus-visible:ring-ring/50">
           <Image src="/images/logos/logo-black-sidebar.png" alt="" width={640} height={89} loading="eager" className="h-5 w-auto" />
         </HoverPrefetchLink>
@@ -79,13 +103,17 @@ export function AppSidebar({
           <div key={group.label ?? "top"} className="flex flex-col gap-0.5">
             {group.label && <p className={GROUP_LABEL}>{group.label}</p>}
             {group.items.map((item) => {
-              const active = isNavActive(item, pathname);
+              const active = isNavActive(item, current);
               const Icon = item.icon;
               return (
                 <HoverPrefetchLink
                   key={item.href}
                   href={item.href}
-                  onClick={onNavigate}
+                  onClick={(event) => {
+                    // A click that opens a new tab leaves this page as it is.
+                    if (!(event.metaKey || event.ctrlKey || event.shiftKey || event.button === 1)) setClicked({ href: item.href, from: pathname });
+                    onNavigate?.();
+                  }}
                   aria-current={active ? "page" : undefined}
                   className={cn(ROW, active ? "bg-primary-tint font-medium text-primary" : ROW_IDLE)}
                 >

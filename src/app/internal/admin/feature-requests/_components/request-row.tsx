@@ -4,7 +4,7 @@ import { cn } from "cn";
 import { Button } from "@/components/ui/button";
 import { looksLikeCode, withoutCode } from "@/lib/submitted-text";
 import DeleteRecord from "../../_components/delete-record";
-import { CodeNotice, SpamBadge } from "../../_components/submitted-code";
+import { SpamBadge } from "../../_components/submitted-code";
 import { STATUS_LABELS, StatusBadge, formatDate, type FeatureRequest, type Status } from "./request-parts";
 
 interface Props {
@@ -60,11 +60,6 @@ export function RequestRow({ req, expanded, saving, onToggle, onStatus, onDelete
 
       {expanded && (
         <div id={panelId} className="border-t border-border bg-muted px-4 py-4">
-          {spam && (
-            <div className="mb-4">
-              <CodeNotice what="request" original={{ Title: req.title, Page: req.pageContext, Description: req.description }} />
-            </div>
-          )}
           <p className="mb-2 text-[length:calc(12px*var(--px,1))] font-medium text-muted-foreground">Description</p>
           <p className="mb-5 text-[length:calc(14px*var(--px,1))] leading-relaxed whitespace-pre-wrap">{withoutCode(req.description) || "No description"}</p>
 

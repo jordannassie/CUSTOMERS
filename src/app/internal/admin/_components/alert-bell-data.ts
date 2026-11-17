@@ -26,6 +26,14 @@ export async function alertBellData(): Promise<AlertBellData> {
       when: shortWhen(a.lastSeenAt, now),
       serviceCheck: isServiceCheckKind(a.kind),
     })),
+    resolved: bell.resolvedAlerts.map((a) => ({
+      id: a.id,
+      kind: a.kind,
+      severity: a.severity,
+      message: alertWording(a, now).message,
+      when: shortWhen(a.resolvedAt, now),
+      serviceCheck: isServiceCheckKind(a.kind),
+    })),
     services: bell.services,
     overdue: bell.overdueScans
       ? { count: bell.overdueScans.count, businesses: bell.overdueScans.businesses.map((b) => ({ ...b, due: formatDate(b.dueAt) })) }

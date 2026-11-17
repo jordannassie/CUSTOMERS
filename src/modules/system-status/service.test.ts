@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { PROBES, runProbe, stillOutOfCredit, stripeMode, timeAgo, withCreditStatus, withEmailFailures, workerStatus, type Probe } from "./service";
+import { PLACES_LIMITED, PROBES, runProbe, stillOutOfCredit, stripeMode, timeAgo, withCreditStatus, withEmailFailures, workerStatus, type Probe } from "./service";
 
 const probe = (id: string): Probe => PROBES.find((p) => p.id === id)!;
 
@@ -71,6 +71,9 @@ describe("runProbe", () => {
   it("shows red when the service is down and unknown when rate limited or unreachable", async () => {
     expect((await runProbe(probe("openai"), "k", { fetch: respond(503) })).state).toBe("error");
     expect((await runProbe(probe("openai"), "k", { fetch: respond(429) })).state).toBe("unknown");
+    // One Places call every 15 minutes is never a burst: a refusal is the quota used up, red with the fix, so the
+    // check opens an alert (owner, 2026-11-17).
+    expect(await runProbe(probe("google_places"), "k", { fetch: respond(429) })).toEqual({ state: "error", ...PLACES_LIMITED });
     const offline = vi.fn<typeof fetch>(async () => {
       throw new TypeError("fetch failed");
     });

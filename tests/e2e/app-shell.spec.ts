@@ -128,15 +128,19 @@ test("usage widget: normal plan", async ({ page }) => {
   await expect(widget).toContainText("620 of 1,200 credits used");
   await expect(widget).toContainText("Renews in 12 days");
   await expect(widget.getByRole("link", { name: "Buy credits" })).toHaveCount(0);
-  // E2E agencies are test agencies, so the test mode banner always shows (D-61); no other banner may.
-  const banners = page.getByTestId("app-banners").locator("[data-kind]");
-  await expect(banners).toHaveCount(1);
-  await expect(banners).toHaveAttribute("data-kind", "test_mode");
+  // E2E agencies are test agencies (D-61): a Test mode pill in the top bar, and no bar, since nothing stops scans
+  // (owner, 2026-11-17: bars only for problems that stop scans).
+  await expect(page.getByTestId("test-mode-pill").filter({ visible: true })).toHaveText(/Test mode/);
+  await expect(page.getByTestId("app-banners")).toHaveCount(0);
 });
 
 test("usage widget: trial", async ({ page }) => {
   await logIn(page, { status: "trialing", grant: 100, spend: 36, days: 5 });
-  await expect(page.locator("[data-kind=trial]")).toContainText("Your free trial has 5 days and 64 trial credits left. Your card will be charged on");
+  // Trial days left are in the alert bell, not a bar (owner, 2026-11-17).
+  await expect(page.getByTestId("app-banners")).toHaveCount(0);
+  await page.getByTestId("alert-bell").filter({ visible: true }).click();
+  await expect(page.getByTestId("alert-bell-menu")).toContainText("Your free trial has 5 days and 64 trial credits left. Your card will be charged on");
+  await page.keyboard.press("Escape");
   const widget = (await openNav(page)).getByTestId("usage-widget");
   await expect(widget).toContainText("Trial: 5 days left, 64 of 100 credits left");
 });

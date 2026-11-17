@@ -11,6 +11,7 @@ import FilterTabs, { replaceQuery } from "../_components/filter-tabs";
 import AdminPageHeader from "../_components/page-header";
 import { RequestRow } from "./_components/request-row";
 import { FEATURE_FILTERS, STATUS_LABELS, matchesSearch, type FeatureFilter, type FeatureRequest, type Status } from "./_components/request-parts";
+import { FEATURE_REQUESTS_CHANGED } from "../_components/admin-nav";
 
 const BASE = "/internal/admin/feature-requests";
 
@@ -57,6 +58,7 @@ export default function FeatureRequestsClient({
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       setRequests((prev) => prev.map((r) => (r.id === id ? { ...r, status } : r)));
+      window.dispatchEvent(new Event(FEATURE_REQUESTS_CHANGED));
     } catch {
       toast.error("The status was not saved, so it is still what it was. Try again.");
     } finally {
@@ -71,6 +73,7 @@ export default function FeatureRequestsClient({
       return false;
     }
     setRequests((prev) => prev.filter((r) => r.id !== id));
+    window.dispatchEvent(new Event(FEATURE_REQUESTS_CHANGED));
     setExpanded(null);
     toast.success("Feature request deleted.");
     return true;

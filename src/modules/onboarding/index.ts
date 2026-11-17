@@ -2,6 +2,8 @@
 export { autofillBusiness, confirmBusinessPlace, lookupCompetitorByName, saveCompetitorList } from "./actions";
 export type { CompetitorCandidate } from "./competitor-places";
 export { pickBranch, searchBranches } from "./branch/actions";
+export { linkListing, searchListings } from "./listing/actions";
+export type { ListingChoice, ListingSearch } from "./listing/service";
 export type { BranchChoice, BranchSearch } from "./branch/service";
 export { limitMessage } from "./competitors";
 export type { CompetitorStep, SavedCompetitor } from "./dal";

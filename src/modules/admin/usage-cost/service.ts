@@ -1,3 +1,5 @@
+import { isServiceRow, serviceCosts, type Kept, type ServiceCost } from "./kept";
+
 // Pure rules for admin Usage and cost (B-67, MVP_SPEC 9.1): credits from credit_transactions, real AI cost
 // from usage_events, and whether each model still earns more per credit than it costs (D-23).
 
@@ -73,6 +75,10 @@ export type UsageCostReport = {
   byDay: { day: string; credits: number; costUsd: number }[];
   byModel: ModelMargin[];
   otherCostUsd: number;
+  /** Paid services that are not AI tools (Google Places, Firecrawl): never in the AI totals above. */
+  services: ServiceCost[];
+  /** What we keep after Stripe, AI and services; filled in by the Usage and cost page only (it asks Stripe). */
+  kept: Kept | null;
   byAgency: { id: string | null; name: string; isTest: boolean; credits: number; costUsd: number; margin: number | null }[];
 };
 
@@ -123,7 +129,9 @@ export function buildReport(input: {
   usage: UsageRow[];
   agencies: Map<string, AgencyInfo>;
 }): UsageCostReport {
-  const { captures, usage, creditPriceUsd: price } = input;
+  const { captures, creditPriceUsd: price } = input;
+  // AI costs only: Google Places and Firecrawl rows are counted on their own (services).
+  const usage = input.usage.filter((u) => !isServiceRow(u));
   const revenue = (credits: number) => (price === null ? 0 : credits * price);
   const paidOnly = captures.filter((c) => c.paid !== false);
   const providerOf = (c: Capture) => c.provider ?? (c.checkId ? input.checkProvider?.get(c.checkId) : undefined) ?? null;
@@ -214,6 +222,8 @@ export function buildReport(input: {
     byDay,
     byModel,
     otherCostUsd: costUsd - checkCost,
+    services: serviceCosts(input.usage),
+    kept: null,
     byAgency,
   };
 }

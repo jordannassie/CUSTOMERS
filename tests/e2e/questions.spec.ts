@@ -139,7 +139,6 @@ test("each question shows how often each AI recommended the business, and the cr
   await expect(page.getByTestId("active-count")).toHaveText("2 of 25");
   // 2 questions x 3 models x 4.3 weekly scans (MVP_SPEC 4.3).
   await expect(page.getByTestId("credit-estimate")).toContainText("About 26 credits a month");
-  await expect(page.getByTestId("add-effect")).toHaveText("About 13 more credits a month: 26 now, about 39 with this question.");
   // Named share over 30 days, and the four filters with their counts.
   // 3 of 5 answers named the business.
   await expect(best.getByTestId("question-named")).toContainText("60%");
@@ -154,6 +153,7 @@ test("each question shows how often each AI recommended the business, and the cr
 test("add, pause, resume and remove a question", async ({ page }) => {
   await seed(page, [{ prompt: "What is the best coffee shop in Orange?" }]);
 
+  await page.getByTestId("open-add-question").click();
   await page.getByLabel("Add your own question").fill("  which cafe in orange has the best cold brew ");
   await addForm(page).getByRole("button", { name: "Add question" }).click();
   // The toast closes after a few seconds, so it is checked first.
@@ -162,6 +162,9 @@ test("add, pause, resume and remove a question", async ({ page }) => {
   await expect(added).toBeVisible(ACTION);
   await expect(added).toContainText("Added by you");
   await expect(page.getByTestId("active-count")).toHaveText("2 of 25");
+  // The box closes once the question is added, and opens empty again.
+  await expect(page.getByLabel("Add your own question")).toHaveCount(0);
+  await page.getByTestId("open-add-question").click();
   await expect(page.getByLabel("Add your own question")).toHaveValue("");
 
   // The same question again is refused.
@@ -169,6 +172,7 @@ test("add, pause, resume and remove a question", async ({ page }) => {
   await addForm(page).getByRole("button", { name: "Add question" }).click();
   await expect(page.getByRole("alert").filter({ hasText: "You already track this question." })).toBeVisible(ACTION);
   await page.getByLabel("Add your own question").fill("");
+  await page.keyboard.press("Escape");
 
   await openMenu(page, added);
   await page.getByRole("menuitem", { name: "Pause" }).click();
@@ -218,11 +222,13 @@ test("at 25 active questions: the limit message, and no way to add or resume", a
     { prompt: "Which coffee shop in Orange opens earliest?", active: false },
   ]);
   await expect(page.getByTestId("active-count")).toHaveText("25 of 25");
+  await page.getByTestId("open-add-question").click();
   await expect(page.getByTestId("question-limit")).toHaveText(
     "You have 25 active questions, the most your plan allows. Pause or remove one to add another.",
   );
   await expect(page.getByLabel("Add your own question")).toBeDisabled();
   await expect(addForm(page).getByRole("button", { name: "Add question" })).toBeDisabled();
+  await page.keyboard.press("Escape");
 
   await showPaused(page);
   const paused = page.getByTestId("paused-questions").getByTestId("question-row");
@@ -234,6 +240,7 @@ test("at 25 active questions: the limit message, and no way to add or resume", a
   await openMenu(page, questionRow(page, "Question number 25 about"));
   await page.getByRole("menuitem", { name: "Pause" }).click();
   await expect(page.getByTestId("active-count")).toHaveText("24 of 25", ACTION);
+  await page.getByTestId("open-add-question").click();
   await expect(page.getByTestId("question-limit")).toHaveCount(0);
   await expect(page.getByLabel("Add your own question")).toBeEnabled();
 });

@@ -4,3 +4,5 @@ export { queueSkippedScans, resetStuckJobs, retryFailedJob, type RetryResult } f
 export { getScanStatus, startScan } from "./actions";
 export type { ScanStatus } from "./service";
 export type { RecentScanNeeded, StartScanResult } from "./recent-scan";
+export { scanProblems } from "./dal";
+export type { ScanProblem } from "./problems";

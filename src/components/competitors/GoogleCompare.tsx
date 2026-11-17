@@ -3,20 +3,54 @@ import { GoogleAttribution } from "@/components/onboarding/PlaceBits";
 import { compareCount, compareRating, openDays, sideOf, type Compare, type RatingCompare } from "@/lib/google-compare";
 import type { SignalRow } from "@/modules/competitors";
 import { RetryButton } from "@/components/app/RetryButton";
+import { LinkListing, type ListingActions } from "./LinkListing";
 
 /** Them and you on Google, the leader of each line in bold green. Live values for this view only (D-73). */
-export async function GoogleTable({ name, competitorId, signals }: { name: string; competitorId: string; signals: Promise<SignalRow[]> }) {
+export async function GoogleTable({
+  name,
+  competitorId,
+  signals,
+  listing = null,
+}: {
+  name: string;
+  competitorId: string;
+  signals: Promise<SignalRow[]>;
+  /** "Link Google listing" for a side with none (owner, 2026-11-17). */
+  listing?: { businessId: string; actions: ListingActions } | null;
+}) {
   const rows = await signals;
-  const theirs = rows.find((r) => r.competitorId === competitorId)?.signals ?? null;
-  const yours = rows.find((r) => r.isYou)?.signals ?? null;
+  const theirRow = rows.find((r) => r.competitorId === competitorId) ?? null;
+  const yourRow = rows.find((r) => r.isYou) ?? null;
+  const theirs = theirRow?.signals ?? null;
+  const yours = yourRow?.signals ?? null;
   if (!theirs || !yours) {
-    const failed = rows.some((r) => (r.isYou || r.competitorId === competitorId) && (r.status === "error" || r.status === "limited"));
+    const failed = [theirRow, yourRow].some((r) => r?.status === "error" || r?.status === "limited");
+    if (failed) {
+      return (
+        <div className="flex flex-col items-start gap-2" data-testid="google-unavailable">
+          <p className="text-sm text-muted-foreground">Google details could not be loaded just now.</p>
+          <RetryButton />
+        </div>
+      );
+    }
+    // Say which side has no listing, and let the owner link it, instead of "both of you" (owner, 2026-11-17).
+    const missing = [
+      ...(yourRow && !yours ? [{ label: "Your business", name: yourRow.name, competitorId: undefined }] : []),
+      ...(theirRow && !theirs ? [{ label: name, name, competitorId }] : []),
+    ];
     return (
-      <div className="flex flex-col items-start gap-2" data-testid="google-unavailable">
-        <p className="text-sm text-muted-foreground">
-          {failed ? "Google details could not be loaded just now." : "Google details aren't available for both of you. A business needs a Google listing linked."}
-        </p>
-        {failed && <RetryButton />}
+      <div className="flex flex-col items-start gap-3" data-testid="google-unavailable">
+        <p className="text-sm text-muted-foreground">To compare you on Google, both businesses need a Google listing linked.</p>
+        <ul className="flex flex-col gap-2">
+          {missing.map((m) => (
+            <li key={m.label} className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm" data-testid="google-missing-side">
+              <span>
+                {m.label} has no Google listing linked.
+              </span>
+              {listing && <LinkListing target={{ businessId: listing.businessId, competitorId: m.competitorId }} name={m.name} actions={listing.actions} />}
+            </li>
+          ))}
+        </ul>
       </div>
     );
   }

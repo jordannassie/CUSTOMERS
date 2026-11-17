@@ -31,7 +31,7 @@ export function OwnSiteStatus({ host, cited, toolLabel }: Props) {
   }
   if (cited > 0) return null;
   const lead = `${toolLabel ?? "AI"} never used your website (${host}) in the last 30 days.`;
-  // A warning, so it can be hidden for 15 minutes like the others (HideableNotice).
+  // A warning, so it can be hidden for an hour like the others (HideableNotice).
   return (
     <HideableNotice
       id="own-site-unused"

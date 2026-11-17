@@ -16,6 +16,7 @@ export { explainScanError, type ScanErrorText } from "./scans/error-text";
 export { getUsageCost } from "./usage-cost/dal";
 export { includeTestFilter, periodFilter } from "./usage-cost/schema";
 export { PERIODS, THIN_MARGIN, type ModelMargin, type PeriodDays, type UsageCostReport, type Verdict } from "./usage-cost/service";
+export type { Kept, ServiceCost } from "./usage-cost/kept";
 export { listAgencies, type AdminAgencyList, type AdminAgencyRow } from "./agencies/dal";
 export { loadAgencyDetail, loadAgencyName, type AdminAgencyDetail } from "./agencies/detail/dal";
 export {

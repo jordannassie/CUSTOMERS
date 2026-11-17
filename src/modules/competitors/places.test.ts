@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { beforeEach } from "vitest";
-import { createPlaceSignals, LIMITED_PAUSE_MS, PlacesUnavailable, resetPlacesPause } from "./places";
+import { createPlaceSignals, LIMITED_PAUSE_MS, pauseAfter, PlacesUnavailable, resetPlacesPause } from "./places";
 
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
 const ID = "ChIJN1t_tDeuEmsRUsoyG83frY4";
@@ -30,7 +30,7 @@ describe("Google details for the competitors page", () => {
 describe("after Google's request limit is used up", () => {
   beforeEach(() => resetPlacesPause());
 
-  it("asks nothing for 10 minutes, so pages stop waiting on refusals, then asks again", async () => {
+  it("asks nothing for a minute, so pages stop waiting on refusals, then asks again", async () => {
     let calls = 0;
     const busy = (async () => {
       calls += 1;
@@ -47,5 +47,21 @@ describe("after Google's request limit is used up", () => {
     t += LIMITED_PAUSE_MS + 1;
     await signals(ID).catch(() => null);
     expect(calls).toBe(4);
+  });
+});
+
+describe("how long the pause after a refusal lasts (owner, 2026-11-17)", () => {
+  const res = (retryAfter?: string) => ({ headers: new Headers(retryAfter === undefined ? {} : { "retry-after": retryAfter }) });
+
+  it("is a minute when Google says nothing, never the old 10 minutes", () => {
+    expect(LIMITED_PAUSE_MS).toBe(60_000);
+    expect(pauseAfter(res())).toBe(60_000);
+    expect(pauseAfter(res("soon"))).toBe(60_000);
+  });
+
+  it("follows Google's Retry-After, kept between 1 second and 10 minutes", () => {
+    expect(pauseAfter(res("5"))).toBe(5_000);
+    expect(pauseAfter(res("0.2"))).toBe(1_000);
+    expect(pauseAfter(res("3600"))).toBe(600_000);
   });
 });

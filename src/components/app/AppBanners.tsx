@@ -56,7 +56,7 @@ function groupByTone(banners: AppBanner[]): AppBanner[][] {
 const WIDE_PAGES = ["/actions"];
 
 // Global slot above every app page: trial, past due, out of credits, plan ended, suspended. Each has an × that hides
-// it for 15 minutes in this browser (hide-notice.ts).
+// it for an hour in this browser (hide-notice.ts).
 export function AppBanners({ banners: all }: { banners: AppBanner[] }) {
   const pathname = usePathname();
   const keyOf = (b: AppBanner) => noticeKey(`banner-${b.kind}`, b.message);

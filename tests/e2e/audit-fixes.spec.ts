@@ -83,6 +83,7 @@ test("two adds at once at 24 of 25 questions save only one (BUG-279)", async ({ 
   await second.goto("/questions");
   for (const [page, text] of [[first, "Which cafe in Orange has the best cold brew"], [second, "Where can I get oat milk lattes in Orange"]] as const) {
     await expect(page.getByRole("heading", { level: 1, name: "Questions" })).toBeVisible({ timeout: 60_000 });
+    await page.getByTestId("open-add-question").click();
     await page.getByLabel("Add your own question").fill(text);
   }
   const form = (page: Page) => page.getByRole("form", { name: "Add a question" }).getByRole("button", { name: "Add question" });
@@ -93,6 +94,7 @@ test("two adds at once at 24 of 25 questions save only one (BUG-279)", async ({ 
   const { count } = await db.from("tracked_prompts").select("id", { count: "exact", head: true }).eq("business_id", owner.businessId).eq("active", true);
   expect(count).toBe(25);
   await first.reload();
+  await first.getByTestId("open-add-question").click();
   await expect(first.getByTestId("question-limit")).toBeVisible(ACTION);
   await shot(first, "questions-at-limit", testInfo);
   await context.close();

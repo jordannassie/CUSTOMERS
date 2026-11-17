@@ -3,7 +3,7 @@ import { requireAdmin } from "@/modules/auth";
 import { createServiceClient } from "@/lib/supabase/service";
 import { getSavedSystemStatus } from "@/modules/system-status";
 import { stripeDashboardPage } from "../../agencies/detail/recent/dal";
-import { listOpenAlerts } from "../../alerts/dal";
+import { listOpenAlerts, listResolvedAlerts } from "../../alerts/dal";
 import { alertLinks, serviceCheckKind, type AlertLink, type OpenAlert } from "../../alerts/service";
 import { loadOverdueScans, type OverdueScans } from "../sources/dal";
 
@@ -11,7 +11,13 @@ import { loadOverdueScans, type OverdueScans } from "../sources/dal";
  * raised for "not working"; "not set up" closes it, yet Resend unset still fails every email). */
 export type ServiceProblem = { id: string; name: string; state: "error" | "not_configured" | "unknown"; detail: string };
 
-export type AlertBell = { openAlerts: (OpenAlert & { links: AlertLink[] })[]; overdueScans: OverdueScans | null; services: ServiceProblem[] };
+export type AlertBell = {
+  openAlerts: (OpenAlert & { links: AlertLink[] })[];
+  /** Resolved in the last 7 days: the bell's Resolved status (owner, 2026-11-17). */
+  resolvedAlerts: (OpenAlert & { resolvedAt: string })[];
+  overdueScans: OverdueScans | null;
+  services: ServiceProblem[];
+};
 
 // The bell reads System status's last saved check, never a new one: that check calls every provider.
 const SAVED_CHECK_MAX_AGE_MS = 24 * 60 * 60 * 1000;
@@ -25,8 +31,9 @@ const PROBLEM_STATES = new Set(["error", "not_configured", "unknown"]);
 export async function loadAlertBell(): Promise<AlertBell> {
   await requireAdmin();
   const db = createServiceClient();
-  const [alerts, overdueScans, status] = await Promise.all([
+  const [alerts, resolvedAlerts, overdueScans, status] = await Promise.all([
     listOpenAlerts(db),
+    listResolvedAlerts(db).catch(() => []),
     loadOverdueScans(db, new Date(), [false]),
     getSavedSystemStatus(SAVED_CHECK_MAX_AGE_MS).catch(() => null),
   ]);
@@ -34,5 +41,5 @@ export async function loadAlertBell(): Promise<AlertBell> {
   const services = (status?.services ?? [])
     .filter((s) => PROBLEM_STATES.has(s.state) && !alerted.has(serviceCheckKind(s.id)))
     .map((s) => ({ id: s.id, name: s.name, state: s.state as ServiceProblem["state"], detail: s.detail }));
-  return { openAlerts: alerts.map((a) => ({ ...a, links: alertLinks(a.kind, stripeDashboardPage("webhooks")) })), overdueScans, services };
+  return { openAlerts: alerts.map((a) => ({ ...a, links: alertLinks(a.kind, stripeDashboardPage("webhooks")) })), resolvedAlerts, overdueScans, services };
 }

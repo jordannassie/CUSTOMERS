@@ -22,6 +22,7 @@ import { compareHref } from "@/lib/compare-href";
 import { siteHref } from "@/lib/site-href";
 import { checkCompetitorWebsite, getComparePage, saveCompetitorWebsite, trackCompetitor } from "@/modules/competitors";
 import { actionStates, addToActions, moveActionTo } from "@/modules/opportunities";
+import { linkListing, searchListings } from "@/modules/onboarding";
 import { getNextScan } from "@/modules/overview";
 import { getWorkspace } from "@/modules/workspace";
 
@@ -113,32 +114,38 @@ export default async function ComparePage({ searchParams }: { searchParams: Prom
               key={data.panel.competitorId}
               initial={tab}
               panels={{
-                summary: (
-                  <div className="flex flex-col gap-5" data-testid="tab-summary">
-                    <section className="flex flex-col gap-3">
-                      <div className="flex flex-col gap-0.5">
-                        <h3 className="text-[length:calc(14px*var(--px,1))] font-semibold tracking-[-0.01em]">{reasonsHeading(data.standing, data.collecting)}</h3>
-                        <p className="text-xs text-muted-foreground">Facts from AI answers in the last 30 days and what we read, biggest first. Each comes with its fix.</p>
-                      </div>
-                      <ReasonCards
-                        name={data.title}
-                        businessId={business.id}
-                        cards={data.cards}
-                        states={states}
-                        add={addToActions}
-                        move={moveActionTo}
-                        answers={data.panel.why.answers}
-                        standing={data.collecting ? null : data.standing}
-                      />
-                    </section>
-                    {/* When you lead, where you are ahead comes first. */}
-                    <section className={cn("flex flex-col gap-3", data.standing === "ahead" && "order-first")}>
-                      <h3 className="text-[length:calc(14px*var(--px,1))] font-semibold tracking-[-0.01em]">Where you are ahead</h3>
-                      <LeadCards leads={data.leads} standing={data.collecting ? null : data.standing} />
-                    </section>
-                    <p className="text-xs text-text-hint">We can&apos;t see inside the AI tools, so these are likely reasons, each backed by the facts shown.</p>
-                  </div>
-                ),
+                // Only what there is evidence for (owner, 2026-11-17): "Why they are ahead" when a reason has the
+                // facts, "Where you are ahead" when a lead does, both when both do, and no tab at all when neither does.
+                summary:
+                  data.cards.length === 0 && data.leads.length === 0 ? null : (
+                    <div className="flex flex-col gap-5" data-testid="tab-summary">
+                      {data.cards.length > 0 && (
+                        <section className="flex flex-col gap-3">
+                          <div className="flex flex-col gap-0.5">
+                            <h3 className="text-[length:calc(14px*var(--px,1))] font-semibold tracking-[-0.01em]">{reasonsHeading(data.standing, data.collecting)}</h3>
+                            <p className="text-xs text-muted-foreground">Facts from AI answers in the last 30 days and what we read, biggest first. Each comes with its fix.</p>
+                          </div>
+                          <ReasonCards
+                            name={data.title}
+                            businessId={business.id}
+                            cards={data.cards}
+                            states={states}
+                            add={addToActions}
+                            move={moveActionTo}
+                            answers={data.panel.why.answers}
+                            standing={data.collecting ? null : data.standing}
+                          />
+                        </section>
+                      )}
+                      {/* When you lead, where you are ahead comes first. */}
+                      {data.leads.length > 0 && (
+                        <section className={cn("flex flex-col gap-3", data.standing === "ahead" && "order-first")}>
+                          <h3 className="text-[length:calc(14px*var(--px,1))] font-semibold tracking-[-0.01em]">Where you are ahead</h3>
+                          <LeadCards leads={data.leads} standing={data.collecting ? null : data.standing} />
+                        </section>
+                      )}
+                    </div>
+                  ),
                 questions: <QuestionsTab panel={data.panel} />,
                 sources: <WhereLookedTab panel={data.panel} />,
                 website: (
@@ -151,7 +158,12 @@ export default async function ComparePage({ searchParams }: { searchParams: Prom
                         {/* The table stays narrow so the two columns sit close; the fix cards below use the full width. */}
                         <div className="max-w-xl">
                           <Suspense fallback={<Skeleton className="h-40 w-full" />}>
-                            <GoogleTable name={data.branch} competitorId={data.panel.competitorId} signals={signals} />
+                            <GoogleTable
+                              name={data.branch}
+                              competitorId={data.panel.competitorId}
+                              signals={signals}
+                              listing={{ businessId: business.id, actions: { search: searchListings, link: linkListing } }}
+                            />
                           </Suspense>
                         </div>
                         {/* Where they beat you on Google, each with its fix: only here, not again on the Summary tab. */}

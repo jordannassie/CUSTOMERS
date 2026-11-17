@@ -76,7 +76,7 @@ export function FocusAnswers() {
                     <div className="overflow-hidden rounded-lg border border-border bg-surface">
                       <AnswerPanel answer={a} businessName={view.businessName} when="Answered" />
                     </div>
-                    <Link href={questionsHref({ q: a.questionId })} className="text-[length:calc(13px*var(--px,1))] font-medium text-primary hover:underline">
+                    <Link prefetch={false} href={questionsHref({ q: a.questionId })} className="text-[length:calc(13px*var(--px,1))] font-medium text-primary hover:underline">
                       Open this question
                     </Link>
                   </div>

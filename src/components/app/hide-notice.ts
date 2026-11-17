@@ -2,10 +2,10 @@
 
 import { useCallback, useSyncExternalStore } from "react";
 
-// Warnings can be hidden for a while and come back on their own (2026-11-10, the user's call). The time is kept in
+// Warnings can be hidden for a while and come back on their own (2026-11-10, the user's call; an hour since 2026-11-17). The time is kept in
 // this browser only: a hidden warning shows again after HIDE_FOR_MS, on another device, or when its words change.
-export const HIDE_FOR_MS = 15 * 60 * 1000;
-export const HIDE_LABEL = "Hide for 15 minutes";
+export const HIDE_FOR_MS = 60 * 60 * 1000;
+export const HIDE_LABEL = "Hide for an hour";
 
 const PREFIX = "cd-hidden:";
 // Used when the browser blocks storage (a private window), so the × still works until the page reloads.

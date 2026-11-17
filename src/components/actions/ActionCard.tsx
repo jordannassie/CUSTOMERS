@@ -137,11 +137,11 @@ export function ActionCard({
           {item.about.map((c, i) => (
             <span key={c.id}>
               {i > 0 && ", "}
-              <Link href={compareHref(c.id)} className="text-primary hover:underline">
+              <Link prefetch={false} href={compareHref(c.id)} className="text-primary hover:underline">
                 {c.name}
               </Link>{" "}
               (
-              <Link href={`/questions?${new URLSearchParams({ named: c.name })}`} className="text-primary hover:underline" data-testid="action-named-answers">
+              <Link prefetch={false} href={`/questions?${new URLSearchParams({ named: c.name })}`} className="text-primary hover:underline" data-testid="action-named-answers">
                 see answers
               </Link>
               )

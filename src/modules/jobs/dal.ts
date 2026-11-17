@@ -4,6 +4,7 @@ import { env } from "@/lib/env";
 import { devFlag } from "@/lib/dev-flag";
 import { createServiceClient } from "@/lib/supabase/service";
 import { scanCheckCount } from "@/modules/scanning";
+import { scanProblem, type ProblemJob, type ScanProblem } from "./problems";
 
 // scan_jobs access for the worker (B-27, MVP_SPEC 6.3). Service role: the worker runs with no user session.
 
@@ -210,4 +211,19 @@ export async function postToWorker(): Promise<boolean> {
 /** Local dev only: never in production, where a stray flag would run scans inside a web request. */
 export function runWorkerInProcess(): boolean {
   return devFlag("WORKER_IN_PROCESS");
+}
+
+/** The newest scan of each business, kept when it went wrong (the app's alert bell). The ids are the signed-in agency's own. */
+export async function scanProblems(businessIds: string[], now = new Date()): Promise<ScanProblem[]> {
+  if (businessIds.length === 0) return [];
+  const { data, error } = await createServiceClient()
+    .from("scan_jobs")
+    .select("id, business_id, status, finished_at, error, run_after, locked_at")
+    .in("business_id", businessIds)
+    .order("created_at", { ascending: false })
+    .limit(Math.min(500, Math.max(50, businessIds.length * 20)));
+  if (error) throw new Error(`Could not load the scan alerts: ${error.message}`);
+  const newest = new Map<string, ProblemJob>();
+  for (const job of data) if (!newest.has(job.business_id)) newest.set(job.business_id, job);
+  return [...newest.values()].flatMap((job) => scanProblem(job, now) ?? []);
 }

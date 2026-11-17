@@ -79,7 +79,7 @@ export function QuestionsMoved({ trends }: { trends: QuestionTrends | null }) {
                   <span className="sr-only">{up ? "Up" : "Down"}</span>
                 </span>
                 <span className="flex min-w-0 flex-col gap-0.5">
-                  <Link href={`/questions?q=${m.id}`} className="block min-h-6 truncate py-0.5 text-[length:calc(13px*var(--px,1))] font-medium hover:underline" title={m.prompt}>
+                  <Link prefetch={false} href={`/questions?q=${m.id}`} className="block min-h-6 truncate py-0.5 text-[length:calc(13px*var(--px,1))] font-medium hover:underline" title={m.prompt}>
                     {m.prompt}
                   </Link>
                   <span className="flex flex-wrap items-center gap-x-1.5 text-xs text-text-hint tabular-nums">

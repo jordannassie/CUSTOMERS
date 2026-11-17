@@ -3,7 +3,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 // Loading states shaped like each loaded page (DESIGN.md), so nothing jumps when the data arrives.
 
-function Frame({ children }: { children: React.ReactNode }) {
+export function Frame({ children }: { children: React.ReactNode }) {
   return (
     <div role="status" aria-label="Loading" className="mx-auto flex w-full max-w-[calc(1200px*var(--px,1))] flex-col gap-4 px-4 py-4 sm:px-6 sm:py-5">
       {children}
@@ -11,7 +11,7 @@ function Frame({ children }: { children: React.ReactNode }) {
   );
 }
 
-function Header({ actions = 0, lines = 1 }: { actions?: number; lines?: number }) {
+export function Header({ actions = 0, lines = 1 }: { actions?: number; lines?: number }) {
   return (
     <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
       <div className="flex flex-col gap-2">
@@ -31,11 +31,11 @@ function Header({ actions = 0, lines = 1 }: { actions?: number; lines?: number }
   );
 }
 
-function Box({ className, children }: { className?: string; children?: React.ReactNode }) {
+export function Box({ className, children }: { className?: string; children?: React.ReactNode }) {
   return <div className={cn("flex flex-col gap-4 rounded-md border border-border bg-surface p-5", className)}>{children}</div>;
 }
 
-function Bars({ rows, label = "w-24" }: { rows: number; label?: string }) {
+export function Bars({ rows, label = "w-24" }: { rows: number; label?: string }) {
   return (
     <div className="flex flex-col gap-4">
       {Array.from({ length: rows }, (_, i) => (
@@ -48,7 +48,7 @@ function Bars({ rows, label = "w-24" }: { rows: number; label?: string }) {
   );
 }
 
-function Rows({ rows, height = "h-12" }: { rows: number; height?: string }) {
+export function Rows({ rows, height = "h-12" }: { rows: number; height?: string }) {
   return (
     <div className="flex flex-col divide-y divide-border">
       {Array.from({ length: rows }, (_, i) => (
@@ -86,45 +86,6 @@ export function OverviewSkeleton() {
         <Skeleton className="h-5 w-32" />
         <Rows rows={3} height="h-6" />
       </Box>
-    </Frame>
-  );
-}
-
-export function CompetitorsSkeleton() {
-  return (
-    <Frame>
-      <Header actions={1} />
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_calc(340px*var(--px,1))]">
-        <Box>
-          <Skeleton className="h-5 w-48" />
-          <Rows rows={5} height="h-6" />
-        </Box>
-        <Box>
-          <Skeleton className="h-5 w-44" />
-          <Rows rows={2} height="h-10" />
-        </Box>
-      </div>
-      <Box>
-        <Skeleton className="h-5 w-40" />
-        <Rows rows={5} height="h-8" />
-      </Box>
-    </Frame>
-  );
-}
-
-export function OpportunitiesSkeleton() {
-  return (
-    <Frame>
-      <Header />
-      <Skeleton className="h-11 w-full sm:h-8 sm:w-80" />
-      {Array.from({ length: 3 }, (_, i) => (
-        <Box key={i}>
-          <Skeleton className="h-5 w-24" />
-          <Skeleton className="h-6 w-full max-w-md" />
-          <Skeleton className="h-16 max-w-[calc(720px*var(--px,1))]" />
-          <Skeleton className="h-9 w-64" />
-        </Box>
-      ))}
     </Frame>
   );
 }

@@ -124,7 +124,7 @@ function AllNamed({ question, answers, businessName }: { question: QuestionRow; 
             return (
               <li key={n.name}>
                 {id ? (
-                  <Link href={compareHref(id, "questions")} className={cn(className, "hover:border-primary/40 hover:text-primary")}>
+                  <Link prefetch={false} href={compareHref(id, "questions")} className={cn(className, "hover:border-primary/40 hover:text-primary")}>
                     {body}
                   </Link>
                 ) : (
@@ -136,7 +136,7 @@ function AllNamed({ question, answers, businessName }: { question: QuestionRow; 
       </ul>
       )}
       {pick?.competitorId && (
-        <Link href={compareHref(pick.competitorId, "questions")} className="inline-flex w-fit items-center gap-1 text-[length:calc(13px*var(--px,1))] font-medium text-primary hover:underline">
+        <Link prefetch={false} href={compareHref(pick.competitorId, "questions")} className="inline-flex w-fit items-center gap-1 text-[length:calc(13px*var(--px,1))] font-medium text-primary hover:underline">
           Compare with {pick.name}
           <ArrowRight className="size-3.5" aria-hidden="true" />
         </Link>
