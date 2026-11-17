@@ -1,5 +1,5 @@
 import { ABANDONED_ERROR } from "@/lib/scan-job-staleness";
-import { REASONS } from "@/modules/entitlements";
+import { accountHoldReason, REASONS } from "@/modules/entitlements";
 import { MODEL_LABELS } from "../usage-cost/service";
 
 // Turns the error text a scan job stores (scan_jobs.error) into plain words for the admin pages. The stored text is
@@ -120,6 +120,26 @@ function toolDetails(parts: { provider: Provider; text: string }[]): string | nu
     return said ? [`${MODEL_LABELS[p.provider]} said: "${said}"`] : [];
   });
   return lines.length ? [...new Set(lines)].join("\n") : null;
+}
+
+// The agency's account as it is now (entitlements accountHoldReason), in admin words: why Run scan and Retry are off.
+// The worker skips such a scan without charging, so the buttons say so first instead of queueing it (BUG-299).
+const HOLDS: Record<string, string> = {
+  [REASONS.trialOver]: "The agency's free trial has ended and it has not paid yet, so a scan would be skipped. Scans start again on their own once it pays.",
+  [REASONS.pastDue]: "The agency's last payment didn't go through, so a scan would be skipped until it updates its card.",
+  [REASONS.canceled]: "The agency's plan has ended, so a scan would be skipped until it picks a plan again.",
+  [REASONS.paused]: "The agency's account is paused, so a scan would be skipped until it is turned back on.",
+};
+
+/** Why no scan can run for the agency right now, or null when it can. `reason` is accountHoldReason's answer. */
+export function accountHoldNote(reason: string | null): string | null {
+  if (!reason) return null;
+  return HOLDS[reason] ?? "The agency's account can't scan right now, so a scan would be skipped.";
+}
+
+/** The same for an agency row as it is now (status and trial end), or null without one. */
+export function agencyHoldNote(agency: { status: string; trial_ends_at: string | null } | null): string | null {
+  return agency ? accountHoldNote(accountHoldReason(agency.status, agency.trial_ends_at)) : null;
 }
 
 export function explainScanError(raw: string | null | undefined): ScanErrorText | null {

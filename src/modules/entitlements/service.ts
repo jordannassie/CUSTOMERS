@@ -95,6 +95,17 @@ function statusBlock(status: string): Entitlement | null {
   return deny(REASONS.paused);
 }
 
+/**
+ * Why the account cannot scan or spend credits right now, from its status and trial end alone (the same rule as
+ * canSpendTopUps), or null when it can. Admin screens use it to say a scan would be skipped before anyone queues one
+ * (BUG-299).
+ */
+export function accountHoldReason(status: string, trialEndsAt: string | null, now = Date.now()): string | null {
+  const blocked = statusBlock(status);
+  if (blocked) return blocked.reason;
+  return status === "trialing" && trialEndsAt !== null && Date.parse(trialEndsAt) < now ? REASONS.trialOver : null;
+}
+
 /** Top-up credits are spendable only with an active plan or trial (MVP_SPEC 4.2, D-57, F-20). */
 export function canSpendTopUps(agency: AgencyFacts): Entitlement {
   return statusBlock(agency.status) ?? (agency.trialOver ? deny(REASONS.trialOver) : allow);

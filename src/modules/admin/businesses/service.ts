@@ -1,5 +1,8 @@
 // Pure rules for the admin Businesses pages (B-66, MVP_SPEC 9.1).
 
+import { accountHoldReason } from "@/modules/entitlements";
+import { accountHoldNote } from "../scans/error-text";
+
 // Above the default 0 the schedule uses, so a support rescan is claimed before routine jobs (MVP_SPEC 6.4).
 // One above the app's Run scan (100): the job row has no source column, so the value is what marks an admin scan.
 export const ADMIN_SCAN_PRIORITY = 101;
@@ -73,7 +76,8 @@ export function runFailures(value: unknown): Record<string, { failed: number; re
 
 export type ScanReadiness = {
   deleted: boolean;
-  agency: { name: string; status: string } | null;
+  /** The agency's status and trial end: a trial past its end can't scan until the first payment (BUG-299). */
+  agency: { name: string; status: string; trialEndsAt: string | null } | null;
   status: string;
   city: string | null;
   activeQuestions: number;
@@ -126,6 +130,8 @@ function scanBlocker(f: ScanReadiness, models: number): string | null {
   if (f.deleted) return "This business was deleted, so it can't be scanned.";
   if (!f.agency) return "No agency, so there are no credits to scan with.";
   if (f.agency.status === "deleted") return "This account was deleted. Restore it before running a scan.";
+  const hold = accountHoldNote(accountHoldReason(f.agency.status, f.agency.trialEndsAt));
+  if (hold) return hold;
   if (f.status === "onboarding") return "This business is still being set up, so it has no plan or questions to scan yet.";
   if (f.status === "paused") return "This business is paused, so a scan would be skipped.";
   if (f.activeQuestions === 0) return "This business has no active questions, so a scan has nothing to ask.";

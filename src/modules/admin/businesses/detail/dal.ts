@@ -193,7 +193,7 @@ export async function loadBusinessDetail(id: string, now = new Date()) {
     runScan: runScanCheck(
       {
         deleted: business.deleted_at !== null,
-        agency: agencyRow ? { name: agencyRow.name, status: agencyRow.status } : null,
+        agency: agencyRow ? { name: agencyRow.name, status: agencyRow.status, trialEndsAt: agencyRow.trial_ends_at } : null,
         status: business.status,
         city: business.primary_city,
         activeQuestions,

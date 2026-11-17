@@ -69,4 +69,4 @@ export async function fitsPlan(businessId: string, planId: string): Promise<Enti
   return rules.fitsPlan(business, plan);
 }
 
-export { canEditTracking, REASONS, TRIAL_MAX_BUSINESSES, type Entitlement, type LimitEntitlement } from "./service";
+export { accountHoldReason, canEditTracking, REASONS, TRIAL_MAX_BUSINESSES, type Entitlement, type LimitEntitlement } from "./service";

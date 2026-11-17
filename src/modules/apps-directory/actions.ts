@@ -4,10 +4,15 @@ import { revalidatePath } from "next/cache";
 import { auditedChange, changed, unchanged } from "@/modules/admin";
 import { requireAdmin } from "@/modules/auth";
 import { deleteDirectoryApp, saveDirectoryApp } from "./dal";
-import { directoryAppSchema, directorySlugSchema, parseCategoryList } from "./schema";
+import { directoryAppSchema, directorySlugSchema, parseCategoryList, unknownCategories } from "./schema";
 
 export async function saveDirectoryAppAction(formData: FormData): Promise<{ error?: string }> {
   await requireAdmin();
+  // An unknown category id was dropped without a word and the form still said Saved (button sweep 2026-11-17).
+  const unknown = unknownCategories(String(formData.get("categories") ?? ""));
+  if (unknown.length > 0) {
+    return { error: `${unknown.join(", ")} ${unknown.length === 1 ? "is not a category id" : "are not category ids"}. Use the ids listed under Categories.` };
+  }
   const parsed = directoryAppSchema.safeParse({
     slug: formData.get("slug"),
     name: formData.get("name"),

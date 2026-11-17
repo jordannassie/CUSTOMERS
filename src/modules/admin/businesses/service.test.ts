@@ -57,7 +57,7 @@ describe("admin businesses rules (B-66)", () => {
 describe("Run scan now readiness (admin audit 2026-11-12)", () => {
   const ready: ScanReadiness = {
     deleted: false,
-    agency: { name: "Acme", status: "active" },
+    agency: { name: "Acme", status: "active", trialEndsAt: null },
     status: "active",
     city: "Austin",
     activeQuestions: 5,
@@ -80,6 +80,18 @@ describe("Run scan now readiness (admin audit 2026-11-12)", () => {
     expect(blocked({ city: null })).toMatch(/no city/);
     expect(blocked({ agency: null })).toMatch(/No agency/);
     expect(blocked({ deleted: true })).toMatch(/deleted/);
+  });
+
+  it("is off when the agency's account can't scan now, as the worker would skip it (BUG-299)", () => {
+    const blocked = (agency: ScanReadiness["agency"]) => runScanCheck({ ...ready, agency }, explain).blocked;
+    expect(blocked({ name: "Acme", status: "trialing", trialEndsAt: "2020-01-01T00:00:00Z" })).toBe(
+      "The agency's free trial has ended and it has not paid yet, so a scan would be skipped. Scans start again on their own once it pays.",
+    );
+    expect(blocked({ name: "Acme", status: "trialing", trialEndsAt: "2999-01-01T00:00:00Z" })).toBeNull();
+    expect(blocked({ name: "Acme", status: "trialing", trialEndsAt: null })).toBeNull();
+    expect(blocked({ name: "Acme", status: "past_due", trialEndsAt: null })).toMatch(/last payment didn't go through/);
+    expect(blocked({ name: "Acme", status: "canceled", trialEndsAt: null })).toMatch(/plan has ended/);
+    expect(blocked({ name: "Acme", status: "suspended", trialEndsAt: null })).toMatch(/paused/);
   });
 
   it("warns about too few credits, with the balance and what the scan needs", () => {

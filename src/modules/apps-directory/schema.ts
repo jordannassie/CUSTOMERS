@@ -35,6 +35,11 @@ export function parseCategoryList(value: string): AppCategoryId[] {
   return ids.filter(isCategoryId);
 }
 
+/** Typed category ids that are not real ones, so the admin form can say so instead of dropping them quietly. */
+export function unknownCategories(value: string): string[] {
+  return value.split(",").map((part) => part.trim()).filter((id) => id && !isCategoryId(id));
+}
+
 const OWN_HOSTS = new Set(["customers.direct", "www.customers.direct", "localhost"]);
 
 export function utmFromReferer(referer: string | null): {

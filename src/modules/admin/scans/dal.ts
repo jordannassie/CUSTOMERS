@@ -3,7 +3,7 @@ import { requireAdmin } from "@/modules/auth";
 import { createServiceClient } from "@/lib/supabase/service";
 import { allRows, inChunks } from "../businesses/dal";
 import { readPage } from "../paging";
-import { explainScanError } from "./error-text";
+import { agencyHoldNote, explainScanError } from "./error-text";
 import { SCAN_STATUSES, type ScanListQuery, type ScanStatus } from "./schema";
 import { jobModels, partialNote, replacedBy, retryState, scanTiming } from "./service";
 
@@ -81,7 +81,7 @@ export async function listScanJobs(query: ScanListQuery): Promise<AdminScanList>
   const db = createServiceClient();
   const { status, page, ...f } = query;
   // An inner join only when filtering on the agency's test flag: a job whose agency is gone still lists otherwise.
-  const agencies = f.test === "all" ? "agencies(name, is_test)" : "agencies!inner(name, is_test)";
+  const agencies = f.test === "all" ? "agencies(name, is_test, status, trial_ends_at)" : "agencies!inner(name, is_test, status, trial_ends_at)";
   // A fresh query for each read: readPage may read twice when the page is past the end.
   const pageOf = (from: number, to: number) => {
     let list = filtered(
@@ -123,7 +123,8 @@ export async function listScanJobs(query: ScanListQuery): Promise<AdminScanList>
       error: j.error,
       businessDeleted: !j.businesses || j.businesses.deleted_at !== null,
       newer: stopped ? replacedBy(j.created_at, newest.newest.get(j.business_id), newest.active.get(j.business_id)) : null,
-      blocked: stopped ? (explainScanError(j.error)?.noRetry ?? null) : null,
+      // A skip that retrying can't fix, or an account that can't scan now (BUG-299: a trial that ended since).
+      blocked: stopped ? (explainScanError(j.error)?.noRetry ?? agencyHoldNote(j.agencies)) : null,
     });
     return {
       id: j.id,

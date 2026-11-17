@@ -102,7 +102,10 @@ export function RemoveDialog({ question, open, onOpenChange, pending, fewer, sco
         <DialogHeader>
           <DialogTitle>Remove this question?</DialogTitle>
           <DialogDescription>
-            “{question.text}” and its past results will be deleted.{scoreNote} To stop checking it for now, pause it instead.
+            {/* Removing keeps the past answers (deleteQuestion only sets removed_at), so the dialog no longer says they
+                are deleted (button sweep 2026-11-17). */}
+            “{question.text}” leaves your list and is no longer checked.{scoreNote} Saved reports keep its past answers. To
+            stop checking it for now, pause it instead.
           </DialogDescription>
         </DialogHeader>
         {question.active && <p className="text-sm text-muted-foreground">{fewer}.</p>}

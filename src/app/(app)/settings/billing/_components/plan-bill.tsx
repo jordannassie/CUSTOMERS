@@ -76,7 +76,13 @@ export function PlanBill({ view, actions, addBusinessHref, supportHref }: Props)
         </div>
       )}
 
-      {addBusinessHref && (
+      {/* A plan that is ending takes no new business (button sweep 2026-11-17): keep the plan first. */}
+      {addBusinessHref && view.cancelAt !== null && (
+        <p className="border-t border-border px-4 py-3 text-[length:calc(13px*var(--px,1))] text-muted-foreground">
+          Your plan is ending. Keep your plan to add another business.
+        </p>
+      )}
+      {addBusinessHref && view.cancelAt === null && (
         <div className="border-t border-border px-4 py-3">
           <Link
             href={addBusinessHref}

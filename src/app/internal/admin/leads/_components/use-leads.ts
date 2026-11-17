@@ -101,7 +101,17 @@ export function useOpenLead(leadId: string | null, inList: Lead | undefined, ini
     setExtra((prev) => (prev?.lead?.id === id ? { id, lead: { ...prev.lead, ...updates } } : prev));
   }
 
-  const unreadId = selected && !selected.read_at ? selected.id : null;
+  // Marked read once per opening: a lead that was read when it opened, or was marked read here, is not marked read
+  // again while it stays open, so "Mark as unread" sticks. Opening another lead, or closing it, starts over.
+  const selectedId = selected?.id ?? null;
+  const unread = Boolean(selected && !selected.read_at);
+  const unreadId = selectedId && unread ? selectedId : null;
+  useEffect(() => {
+    marked.current.clear();
+  }, [selectedId]);
+  useEffect(() => {
+    if (selectedId && !unread) marked.current.add(selectedId);
+  }, [selectedId, unread]);
   useEffect(() => {
     if (!unreadId || marked.current.has(unreadId)) return;
     marked.current.add(unreadId);
