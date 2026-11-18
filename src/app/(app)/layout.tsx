@@ -7,6 +7,7 @@ import { AppShell } from "@/components/app/AppShell";
 import { AppShellSkeleton, PageSkeleton } from "@/components/app/AppShellSkeleton";
 import { suggestFeature } from "@/modules/feedback";
 import { getScanStatus, scanProblems } from "@/modules/jobs";
+import { lastScanNotices } from "@/modules/overview";
 import { draftLabel, draftStep, stepPath } from "@/modules/onboarding";
 import {
   appAlerts,
@@ -48,15 +49,14 @@ async function AppFrame({ children }: { children: React.ReactNode }) {
   const timeZone = await viewerTimeZone();
   const banners = usage && account ? pickBanners(usage, account, now, timeZone) : [];
   const live = workspace.businesses.filter((b) => b.status !== "onboarding");
-  // The bell: the account notices and each business whose newest scan did not run (owner, 2026-11-17).
-  const alerts = appAlerts(
-    banners,
-    await scanProblems(live.map((b) => b.id), now).catch(() => []),
-    Object.fromEntries(live.map((b) => [b.id, b.name])),
-    active.id,
-    now,
-    timeZone,
-  );
+  // The bell: the account notices, each business whose newest scan did not run (owner, 2026-11-17), and each whose
+  // last scan left an AI unchecked. A failed read is logged and leaves that part out, never the whole app frame.
+  const ids = live.map((b) => b.id);
+  const [problems, notices] = await Promise.all([
+    scanProblems(ids, now).catch((error) => (console.error("[bell] scan alerts failed:", error instanceof Error ? error.message : error), [])),
+    lastScanNotices(ids).catch((error) => (console.error("[bell] AI check alerts failed:", error instanceof Error ? error.message : error), [])),
+  ]);
+  const alerts = appAlerts(banners, problems, Object.fromEntries(live.map((b) => [b.id, b.name])), active.id, now, timeZone, notices);
 
   return (
     <AppShell

@@ -56,3 +56,28 @@ describe("the one bar across the top (owner, 2026-11-17)", () => {
     expect(barBanner([banner({ kind: "ended", tone: "warning" })])?.kind).toBe("ended");
   });
 });
+
+describe("AI checks a finished scan missed (2026-11-18)", () => {
+  const notice = "In the last scan, Perplexity couldn't be checked. We'll try again in the next scan. Failed checks are never charged.";
+  const names = { b1: "Brian's Coffee Spot", b2: "Second Cafe" };
+
+  it("shows the Overview's notice in the bell, linked for the open business", () => {
+    const alerts = appAlerts([], [], names, "b1", now, "UTC", [
+      { businessId: "b1", runId: "r1", at: "2026-11-17T09:15:00Z", text: notice },
+      { businessId: "b2", runId: "r2", at: "2026-11-16T09:15:00Z", text: notice },
+    ]);
+    expect(alerts.map((a) => [a.id, a.title, a.severity, a.when])).toEqual([
+      ["coverage:r1", "Some AI checks didn't run for Brian's Coffee Spot", "medium", "09:15"],
+      ["coverage:r2", "Some AI checks didn't run for Second Cafe", "medium", "Nov 16"],
+    ]);
+    expect(alerts[0]).toMatchObject({ text: notice, link: { label: "Open Overview", href: "/dashboard" } });
+    expect(alerts[1].link).toBeNull();
+  });
+
+  it("is left out when that business's scan did not run at all: that alert says more", () => {
+    const alerts = appAlerts([], [{ businessId: "b1", jobId: "j1", reason: "Your last scan didn't finish.", at: null }], names, "b1", now, "UTC", [
+      { businessId: "b1", runId: "r1", at: null, text: notice },
+    ]);
+    expect(alerts.map((a) => a.id)).toEqual(["scan:j1"]);
+  });
+});

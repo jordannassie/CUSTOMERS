@@ -1,7 +1,7 @@
 import type { Banner } from "./service";
 
-// The app's alert bell (owner, 2026-11-17): the account notices the banners show, and each business whose newest
-// scan did not run, as one list with a level (Critical, High, Medium) like the admin bell's. Pure.
+// The app's alert bell (owner, 2026-11-17): the account notices the banners show, each business whose newest scan did
+// not run, and each whose last scan left an AI unchecked (2026-11-18), as one list with a level (Critical, High, Medium) like the admin bell's. Pure.
 
 export type AppAlertIcon = "account" | "card" | "credits" | "trial" | "test" | "scan";
 
@@ -18,6 +18,9 @@ export type AppAlert = {
 
 /** A scan that went wrong (jobs scanProblems), with the business it belongs to. */
 export type ScanAlertInput = { businessId: string; jobId: string; reason: string; at: string | null };
+
+/** A scan that ran but left an AI unchecked (overview lastScanNotices), with the notice the Overview shows. */
+export type CoverageAlertInput = { businessId: string; runId: string; at: string | null; text: string };
 
 const BANNER: Record<Banner["kind"], { title: string; icon: AppAlertIcon }> = {
   suspended: { title: "Account paused", icon: "account" },
@@ -56,6 +59,7 @@ export function appAlerts(
   activeBusinessId: string,
   now: Date,
   timeZone: string,
+  coverage: CoverageAlertInput[] = [],
 ): AppAlert[] {
   // Test mode is how the account is set up, not an alert: the top bar shows it as a pill instead.
   const account = banners.filter((b) => b.kind !== "test_mode").map(
@@ -82,5 +86,21 @@ export function appAlerts(
       link: s.businessId === activeBusinessId ? { label: "Open Overview", href: "/dashboard" } : null,
     }),
   );
-  return [...account, ...scan];
+  // A finished scan that missed an AI: the bell said "No alerts" while the Overview showed "Perplexity couldn't be
+  // checked". Left out where the scan itself did not run: that alert already says more.
+  const failedScan = new Set(scans.map((s) => s.businessId));
+  const missed = coverage
+    .filter((c) => !failedScan.has(c.businessId))
+    .map(
+      (c): AppAlert => ({
+        id: `coverage:${c.runId}`,
+        severity: "medium",
+        icon: "scan",
+        title: `Some AI checks didn't run for ${names[c.businessId] ?? "a business"}`,
+        text: c.text,
+        when: c.at ? shortWhen(c.at, now, timeZone) : null,
+        link: c.businessId === activeBusinessId ? { label: "Open Overview", href: "/dashboard" } : null,
+      }),
+    );
+  return [...account, ...scan, ...missed];
 }

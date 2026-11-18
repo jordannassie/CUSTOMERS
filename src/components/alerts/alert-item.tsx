@@ -40,7 +40,7 @@ export function AlertItem({ alert, status, onOpen, actions }: { alert: BellAlert
       </span>
       <div className="flex min-w-0 flex-1 flex-col gap-1 text-[length:calc(12.5px*var(--px,1))]">
         <div className="flex items-baseline justify-between gap-2">
-          <p className={cn("truncate text-[length:calc(13px*var(--px,1))] font-semibold", status === "resolved" ? "text-muted-foreground" : "text-foreground")}>{title}</p>
+          <p className={cn("line-clamp-2 min-w-0 text-[length:calc(13px*var(--px,1))] font-semibold", status === "resolved" ? "text-muted-foreground" : "text-foreground")}>{title}</p>
           {when && <span className="shrink-0 text-[length:calc(11px*var(--px,1))] text-text-hint tabular-nums">{when}</span>}
         </div>
         <div className="flex items-center gap-2 text-[length:calc(11.5px*var(--px,1))]">
