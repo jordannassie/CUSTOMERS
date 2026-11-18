@@ -63,7 +63,6 @@ export default function MoneyPanel({
             {aiCostChange && <p className="text-[length:calc(13px*var(--px,1))] text-text-hint">{aiCostChange}</p>}
             {aiCostSpark && <Sparkline points={aiCostSpark} label="Real AI cost per day" format={money} />}
             <p className="text-[length:calc(13px*var(--px,1))] text-text-hint">
-              What OpenAI, Anthropic and Perplexity charged us.{" "}
               <Link href="/internal/admin/usage?days=month" className="text-primary hover:underline">
                 See by model
               </Link>
@@ -87,7 +86,7 @@ export default function MoneyPanel({
           </div>
           <p className="text-[length:calc(14px*var(--px,1))]">
             {share === null
-              ? "No revenue to compare with yet, so there is no margin to show."
+              ? "No revenue yet, so no margin."
               : share >= 1
                 ? `AI costs more than we take in: ${money(aiCostUsd)} against ${money(revenueUsd!)}.`
                 : costShareText(share)}

@@ -23,7 +23,7 @@ export default function AdminActivityPage({ searchParams }: Props) {
     <div className="mx-auto flex w-full max-w-[calc(1200px*var(--px,1))] flex-col gap-4 px-4 py-4 sm:px-6 sm:py-5">
       <AdminPageHeader
         title="Admin activity"
-        subtitle="Every change an admin made, newest first, with the reason they gave. Changes that did not go through say why."
+        subtitle="Every admin change, newest first, with its reason."
       />
       <Suspense fallback={<ListSkeleton label="Loading admin activity" />}>
         <Activity searchParams={searchParams} />

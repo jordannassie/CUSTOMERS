@@ -15,7 +15,7 @@ export default function AdminScansPage({ searchParams }: Props) {
     <div className="mx-auto flex w-full max-w-[calc(1200px*var(--px,1))] flex-col gap-4 px-4 py-4 sm:px-6 sm:py-5">
       <AdminPageHeader
         title="Scans"
-        subtitle="Every scan job, newest first. Real cost is what the AI tools billed us for each scan, taken from the same log as Usage and cost."
+        subtitle="Every scan, newest first, with what the AI tools billed us."
       />
       <Suspense fallback={<ListSkeleton label="Loading scans" />}>
         <LiveScans searchParams={searchParams} />

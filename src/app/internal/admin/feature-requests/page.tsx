@@ -22,7 +22,7 @@ export default async function AdminFeatureRequestsPage({ searchParams }: Props) 
   if (fetchError) {
     return (
       <div className="mx-auto flex w-full max-w-[calc(1200px*var(--px,1))] flex-col gap-4 px-4 py-4 sm:px-6 sm:py-5">
-        <AdminPageHeader title="Feature requests" subtitle="Ideas people sent with Suggest a feature in the app." />
+        <AdminPageHeader title="Feature requests" subtitle="Ideas sent with Suggest a feature." />
         <div role="alert" className="flex flex-col gap-2 rounded-md bg-low-bg px-4 py-3 text-[length:calc(13px*var(--px,1))] text-low-text">
           <p className="text-[length:calc(14px*var(--px,1))] font-medium">Feature requests didn&apos;t load</p>
           <p>Refresh the page to try again. If it keeps happening, send the technical details to the developer.</p>

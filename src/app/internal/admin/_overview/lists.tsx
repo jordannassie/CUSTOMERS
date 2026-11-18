@@ -53,7 +53,7 @@ export function FailedScans({ rows, includeTest }: { rows: AdminOverview["recent
     <div className="flex min-w-0 flex-col gap-2">
       <Section title="Recent failed scans">
         {rows.length === 0 ? (
-          <Empty>{includeTest ? "No failed scans. Nothing to retry." : "No failed scans for real agencies. Nothing to retry."}</Empty>
+          <Empty>No failed scans.</Empty>
         ) : (
           <ul className={list}>
             {rows.map((j) => (

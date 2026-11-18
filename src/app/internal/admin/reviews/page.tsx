@@ -45,7 +45,7 @@ export default async function AdminReviewsPage({ searchParams }: { searchParams:
     <div className="mx-auto flex w-full max-w-[calc(1200px*var(--px,1))] flex-col gap-4 px-4 py-4 sm:px-6 sm:py-5">
       <AdminPageHeader
         title="App reviews"
-        subtitle="Reviews of apps on /apps. New ones stay pending until approved here. Treat high and low ratings the same way."
+        subtitle="Approve or reject reviews of apps on /apps, high and low ratings alike."
       />
       {typeof raw.error === "string" && (
         <p role="alert" className="rounded-md border border-border bg-low-bg px-4 py-3 text-[length:calc(14px*var(--px,1))] text-low-text">{raw.error}</p>

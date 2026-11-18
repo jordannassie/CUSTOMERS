@@ -27,16 +27,14 @@ export default function LibraryGaps({ loaded, rows }: { loaded: boolean; rows: L
       {/* An empty library would list every industry; one note says what is actually wrong. */}
       {!loaded ? (
         <Empty>
-          The question library is empty on this site, so every business gets questions Claude writes for it. Ask the
-          developer to load the question library.
+          The question library is empty, so Claude writes every business&apos;s questions. Ask the developer to load it.
         </Empty>
       ) : rows.length === 0 ? (
         <Empty>Every business&apos;s industry has a question library.</Empty>
       ) : (
         <div className="flex flex-col gap-2">
           <p className="text-[length:calc(13px*var(--px,1))] text-muted-foreground">
-            Claude writes these businesses&apos; questions directly. Labels typed under Other are counted however they were spelled. The ones at the top are
-            the best candidates for a new library or industry.
+            Industries with no library, so Claude writes their questions. The top ones are the best to add next.
           </p>
           <ul className={listClass} data-testid="library-gaps">
             {shown.map((g) => (

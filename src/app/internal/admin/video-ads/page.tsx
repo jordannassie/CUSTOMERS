@@ -21,15 +21,14 @@ export default async function VideoAdOrdersPage() {
         title="Video ad orders"
         subtitle={
           <>
-            One-time AI video ad orders from /ads. Paid briefs also show in{" "}
-            <Link href="/internal/admin/leads?source=video_ad" className="font-medium text-primary hover:underline">Leads</Link>{" "}
-            with the source AI video ads page.
+            One-time orders from /ads. Their briefs are also in{" "}
+            <Link href="/internal/admin/leads?source=video_ad" className="font-medium text-primary hover:underline">Leads</Link>.
           </>
         }
       />
       {unavailable && (
         <p className="rounded-md bg-primary-tint px-4 py-3 text-[length:calc(14px*var(--px,1))] text-foreground">
-          Orders can&apos;t be listed on this site yet because its database hasn&apos;t been updated for them. Until then, read the briefs in Leads.
+          Orders can&apos;t be listed here until the database is updated. Read the briefs in Leads for now.
         </p>
       )}
       {orders.length === 0 && !unavailable && (

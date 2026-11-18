@@ -20,7 +20,7 @@ export default async function AdminAppsPage() {
     <div className="mx-auto flex w-full max-w-[calc(1200px*var(--px,1))] flex-col gap-4 px-4 py-4 sm:px-6 sm:py-5">
       <AdminPageHeader
         title="AI apps"
-        subtitle="The apps on /apps. Saving an app here replaces its built-in values. Leave the affiliate link empty unless a partnership is approved."
+        subtitle="The apps listed on /apps. Add an affiliate link only for an approved partnership."
       />
       {overrides.unavailable && (
         <p className="rounded-md bg-primary-tint px-4 py-3 text-[length:calc(14px*var(--px,1))] text-foreground">

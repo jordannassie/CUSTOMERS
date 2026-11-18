@@ -16,7 +16,7 @@ export default async function AgencyRecent({ agencyId, deleted }: { agencyId: st
   const recent = await loadAgencyRecent(agencyId);
   if (!recent) return null;
   const { lastDays, scans, lastRun, allTimeCredits } = recent;
-  const free = lastDays.freeCredits > 0 ? ` ${credits(lastDays.freeCredits)} of them free (trial, promo or admin).` : "";
+  const free = lastDays.freeCredits > 0 ? `, ${credits(lastDays.freeCredits)} free` : "";
   return (
     <div className="flex flex-col gap-8">
       {/* Three across from sm, so a full date fits on one line next to the sidebar. */}
@@ -27,14 +27,14 @@ export default async function AgencyRecent({ agencyId, deleted }: { agencyId: st
         {/* Each number says what it counts (QA round 2, item 8): credits are what scans charged, the cost is every AI
             call, scans and the rest, so "0 credits, $0.01" with no scans reads as setup work, not a miscount. */}
         <StatTile
-          label={`Credits used by scans, last ${lastDays.days} days`}
+          label={`Credits used, last ${lastDays.days} days`}
           value={credits(lastDays.credits)}
-          note={`${credits(allTimeCredits)} since sign-up.${free}`}
+          note={`${credits(allTimeCredits)} in total${free}`}
         />
         <StatTile
-          label={`Real AI cost, last ${lastDays.days} days`}
+          label={`AI cost, last ${lastDays.days} days`}
           value={money(lastDays.costUsd) || "$0.00"}
-          note={`Scans ${money(lastDays.checkCostUsd) || "$0.00"}. Setup and other AI work ${money(lastDays.otherCostUsd) || "$0.00"}.`}
+          note={`${money(lastDays.checkCostUsd) || "$0.00"} on scans`}
         />
         {/* Done or failed only: a skipped or waiting scan did not run, and the list below shows those anyway. */}
         <StatTile
@@ -44,7 +44,7 @@ export default async function AgencyRecent({ agencyId, deleted }: { agencyId: st
         />
       </dl>
 
-      <Section title="Recent scans" note={scans.length > 0 ? "Newest first, by the time each scan started" : undefined}>
+      <Section title="Recent scans">
         {scans.length === 0 ? (
           <Empty>{deleted ? "This account never ran a scan." : "This agency has not run a scan yet."}</Empty>
         ) : (

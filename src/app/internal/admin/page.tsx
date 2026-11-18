@@ -43,7 +43,7 @@ async function Overview({ searchParams }: Props) {
     <>
       <AdminPageHeader
         title="Overview"
-        subtitle={`This month so far, since ${formatDate(o.monthStart)}. ${includeTest ? "Test agencies are counted." : "Test agencies are not counted."}`}
+        subtitle={`This month, since ${formatDate(o.monthStart)}.`}
         actions={
           <Link
             href={includeTest ? "/internal/admin" : "/internal/admin?test=1"}
@@ -73,7 +73,7 @@ async function Overview({ searchParams }: Props) {
               className="inline-flex min-h-6 items-center text-xs text-primary hover:underline"
               data-testid="overview-agencies-link"
             >
-              Not test, not deleted. See them
+              See them
             </Link>
           )}
         </StatTile>
@@ -81,7 +81,7 @@ async function Overview({ searchParams }: Props) {
         <StatTile
           label="Trials started this month"
           value={credits(o.vsLastMonth.trialsStarted.thisMonth)}
-          note={`${credits(o.vsLastMonth.trialsStarted.lastMonth)} by this day last month. ${credits(o.activeTrials)} on trial now.`}
+          note={`${credits(o.vsLastMonth.trialsStarted.lastMonth)} last month. ${credits(o.activeTrials)} on trial now.`}
           visual={<TwoBars yours={o.vsLastMonth.trialsStarted.thisMonth} theirs={o.vsLastMonth.trialsStarted.lastMonth} labels={["This", "Last"]} />}
         />
         {/* The squares sit under the words: beside them, a phone tile broke "businesses" mid-word (admin audit 2026-11-12). */}

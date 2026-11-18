@@ -23,6 +23,16 @@ function titleOf(a: { kind: string; serviceCheck: boolean; message: string }): s
   return service ? `${service} not working` : alertKindLabel(a.kind, a.serviceCheck);
 }
 
+/**
+ * A System status alert's text without what the title and link already say: "Perplexity is not working." under the
+ * title "Perplexity not working", and "Found by the System status check." above "Open System status" (2026-11-18).
+ */
+export function bellText(a: { serviceCheck: boolean; message: string }): string {
+  if (!a.serviceCheck) return a.message;
+  const text = a.message.replace(/^.+? is not working\.\s*/, "").replace(/\s*Found by the System status check\.\s*$/, "").trim();
+  return text || a.message;
+}
+
 /** Every open alert, the overdue scans, the services System status shows as broken, and what was resolved lately. */
 function bellAlerts(data: AlertBellData): BellAlert[] {
   const overdue: BellAlert[] = data.overdue
@@ -38,14 +48,14 @@ function bellAlerts(data: AlertBellData): BellAlert[] {
       ]
     : [];
   const open = data.rows.map(
-    (a): BellAlert => ({ id: a.id, severity: LEVEL[a.severity], icon: iconFor(a.kind), title: titleOf(a), when: a.when, text: a.message, link: a.links[0] }),
+    (a): BellAlert => ({ id: a.id, severity: LEVEL[a.severity], icon: iconFor(a.kind), title: titleOf(a), when: a.when, text: bellText(a), link: a.links[0] }),
   );
   // Services System status shows as broken or not set up: no Resolve, they clear once the service works.
   const services = data.services.map(
     (s): BellAlert => ({ id: `service:${s.id}`, severity: SERVICE_LEVEL[s.state], icon: iconFor(`service_check:${s.id}`), title: `${s.name} ${SERVICE_TITLE[s.state]}`, text: s.detail, link: SYSTEM_STATUS }),
   );
   const resolved = data.resolved.map(
-    (a): BellAlert => ({ id: `resolved:${a.id}`, severity: LEVEL[a.severity], icon: iconFor(a.kind), title: titleOf(a), when: a.when, text: a.message, resolved: true }),
+    (a): BellAlert => ({ id: `resolved:${a.id}`, severity: LEVEL[a.severity], icon: iconFor(a.kind), title: titleOf(a), when: a.when, text: bellText(a), resolved: true }),
   );
   return [...overdue, ...open, ...services, ...resolved];
 }

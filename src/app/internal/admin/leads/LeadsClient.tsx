@@ -103,9 +103,7 @@ export default function LeadsClient({
         title="Leads"
         subtitle={
           <>
-            Messages from the contact page, the chat widget, the agency page and paid AI video ad briefs. A lead is New
-            until someone opens it, and Contacted once you mark it as replied. The number in the menu counts unread
-            leads, the ones nobody has opened yet.
+            Messages from the contact page, chat, agency page and video ad briefs.
           </>
         }
         actions={

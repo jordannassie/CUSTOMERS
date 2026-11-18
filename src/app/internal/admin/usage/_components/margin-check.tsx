@@ -34,12 +34,12 @@ export default function MarginCheck({
     <section aria-labelledby="margin-check" className="rounded-md border border-border bg-surface">
       <header className="border-b border-border px-5 py-4">
         <h2 id="margin-check" className="text-[length:calc(16px*var(--px,1))] font-semibold">
-          Is each model still profitable?
+          Margin by AI model
         </h2>
         <p className="mt-1 text-[length:calc(13px*var(--px,1))] text-muted-foreground">
           {creditPrice === null
             ? "No active plan has a price, so there is no credit price to compare with."
-            : `Each check with a new answer costs the customer 1 credit. Answers reused from the cache are free. A credit is worth at least ${unitPrice(creditPrice)}${creditBasis ? `, the price on ${creditBasis}` : ""}, the cheapest way to buy credits. The bar shows how much of that the AI costs us. A margin under ${percent(THIN_MARGIN)} is flagged.`}
+            : `What 1 credit costs us against its lowest price, ${unitPrice(creditPrice)}${creditBasis ? ` (${creditBasis})` : ""}. Under ${percent(THIN_MARGIN)} is flagged.`}
         </p>
       </header>
       <ul className="divide-y divide-border">
@@ -49,9 +49,8 @@ export default function MarginCheck({
       </ul>
       {otherCost > 0 && (
         <p className="border-t border-border px-5 py-3 text-[length:calc(13px*var(--px,1))] text-muted-foreground">
-          Other AI work (explanations of why competitors win, reading business names, auto-fill and writing questions) cost{" "}
-          <span className="tabular font-medium text-foreground">{money(otherCost)}</span> in this period. It is in the totals above, not in
-          the cost per credit.
+          Other AI work (explanations, auto-fill, questions): <span className="tabular font-medium text-foreground">{money(otherCost)}</span>,
+          not in the cost per credit.
         </p>
       )}
     </section>

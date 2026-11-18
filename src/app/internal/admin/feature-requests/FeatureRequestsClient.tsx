@@ -83,7 +83,7 @@ export default function FeatureRequestsClient({
     <>
       <AdminPageHeader
         title="Feature requests"
-        subtitle="Ideas people sent with Suggest a feature in the app. Open one to read it and set where it stands."
+        subtitle="Ideas sent with Suggest a feature."
       />
 
       <div className="flex flex-col gap-4">

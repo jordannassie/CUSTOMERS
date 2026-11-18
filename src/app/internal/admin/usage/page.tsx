@@ -25,7 +25,7 @@ export default function AdminUsagePage({ searchParams }: Props) {
     <div className="mx-auto flex w-full max-w-[calc(1200px*var(--px,1))] flex-col gap-4 px-4 py-4 sm:px-6 sm:py-5">
       <AdminPageHeader
         title="Usage and cost"
-        subtitle="How many credits customers used, what the AI and other services charged us for the same period, and what we keep."
+        subtitle="Credits used, what each service cost us, and what we keep."
       />
       <Suspense fallback={<ReportSkeleton label="Loading usage and cost" />}>
         <LiveUsage searchParams={searchParams} />

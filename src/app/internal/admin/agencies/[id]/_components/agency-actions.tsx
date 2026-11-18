@@ -20,7 +20,7 @@ export function wholeNumberError(value: FormDataEntryValue | null, max: number, 
 const DAY = 24 * 60 * 60 * 1000;
 
 // Test agencies still make some paid AI calls (admin audit 2026-11-12): only scans use saved answers.
-const TEST_SETUP_AI = "Set-up steps like writing questions and filling in business details still use AI.";
+const TEST_SETUP_AI = "Setup still uses real AI.";
 
 // Same rule as the server's extendedTrialEnd: days are added to the later of the trial end and now.
 function newTrialEnd(current: string | null, days: number): string | null {
@@ -71,7 +71,7 @@ export default function AgencyActions({ agency, stripeConnected, maxCredits, max
       <ActionCard
         title="Credits"
         {...card("credits")}
-        note="Added credits never expire and count with plan credits. Removing more than the agency has leaves it overdrawn."
+        note="Added credits never expire. Removing more than it has leaves it overdrawn."
         openLabel="Add or remove credits"
         submitLabel="Save credit change"
         pendingLabel="Saving…"
@@ -126,7 +126,7 @@ export default function AgencyActions({ agency, stripeConnected, maxCredits, max
       <ActionCard
         title="Trial"
         {...card("trial")}
-        note="Moves the trial end in Stripe, so the first charge moves with it."
+        note="Moves the trial end and the first charge in Stripe."
         openLabel="Extend trial"
         submitLabel="Extend trial"
         pendingLabel="Extending…"
@@ -178,7 +178,7 @@ export default function AgencyActions({ agency, stripeConnected, maxCredits, max
           key="restore"
           {...card("restore")}
           title="Restore account"
-          note="Brings back a deleted account and its data. The owner picks a plan again, because deleting canceled their subscription."
+          note="Brings back a deleted account and its data. The owner picks a plan again."
           openLabel="Restore account"
           submitLabel="Restore account"
           pendingLabel="Restoring…"
@@ -191,7 +191,7 @@ export default function AgencyActions({ agency, stripeConnected, maxCredits, max
           key="unsuspend"
           {...card("unsuspend")}
           title="Suspension"
-          note="Lets the owner log in again, restarts scheduled scans and starts charging the plan again in Stripe."
+          note="Lets the owner log in, and restarts scans and billing."
           openLabel="Unsuspend"
           submitLabel="Unsuspend agency"
           pendingLabel="Unsuspending…"
@@ -203,7 +203,7 @@ export default function AgencyActions({ agency, stripeConnected, maxCredits, max
           key="suspend"
           {...card("suspend")}
           title="Suspension"
-          note="Blocks the owner from logging in, stops scheduled scans and pauses billing in Stripe, so they are not charged while suspended."
+          note="Blocks login and pauses scans and billing."
           openLabel="Suspend"
           submitLabel="Suspend agency"
           pendingLabel="Suspending…"
@@ -218,8 +218,8 @@ export default function AgencyActions({ agency, stripeConnected, maxCredits, max
         {...card("test")}
         note={
           agency.isTest
-            ? `Scans for test agencies use saved sample answers, so they cost nothing. ${TEST_SETUP_AI} Test agencies are left out of the Overview numbers.`
-            : `Marks this as a test agency: its scans use saved sample answers and cost nothing, and it is left out of the Overview numbers. ${TEST_SETUP_AI}`
+            ? `Scans use free sample answers. Left out of the Overview numbers. ${TEST_SETUP_AI}`
+            : `Scans would use free sample answers, and it would be left out of the Overview numbers. ${TEST_SETUP_AI}`
         }
         openLabel={agency.isTest ? "Mark as real" : "Mark as test"}
         submitLabel={agency.isTest ? "Mark as real" : "Mark as test"}

@@ -16,8 +16,7 @@ export function LeadListEmpty({ filtered }: { filtered: boolean }) {
         </AdminEmpty>
       ) : (
         <AdminEmpty icon={Inbox} title="No leads yet" className="w-full border-0">
-          A lead shows up here as soon as someone sends the contact form, the chat widget or the agency page form, or
-          sends a brief for a paid AI video ad.
+          New messages from the contact form, chat, agency page and video ad briefs show here.
         </AdminEmpty>
       )}
     </div>

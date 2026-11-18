@@ -18,7 +18,7 @@ export default function RestoreBusiness({ businessId, blocked, restoreBusiness }
     <div className="rounded-md border border-border bg-surface" data-testid="restore-business">
       <ActionCard
         title="Restore business"
-        note="Brings back the business with its questions, competitors and results. Share links stay off, and its plan still ends as scheduled, so the owner picks a plan again to keep scanning it."
+        note="Brings back its questions, competitors and results. Share links stay off and its plan still ends as scheduled."
         openLabel="Restore business"
         submitLabel="Restore business"
         pendingLabel="Restoring…"

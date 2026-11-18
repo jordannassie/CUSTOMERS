@@ -65,8 +65,7 @@ export default function ByAgency({ agencies }: { agencies: UsageCostReport["byAg
           By agency
         </h2>
         <p className="mt-1 text-[length:calc(13px*var(--px,1))] text-muted-foreground">
-          Highest real AI cost first. Margin compares the agency&apos;s paid credits, at the lowest credit price, with all its
-          real AI cost. Free trial credits bring in nothing, so they are not counted as income.
+          Highest AI cost first. Margin: paid credits against AI cost.
         </p>
       </header>
 

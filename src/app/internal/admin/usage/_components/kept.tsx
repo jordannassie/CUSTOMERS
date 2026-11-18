@@ -4,9 +4,9 @@ import type { Kept, ServiceCost } from "@/modules/admin";
 import { money, percent, plural } from "./format";
 
 const NO_STRIPE: Record<Exclude<Kept["state"], "ok">, string> = {
-  not_connected: "Stripe is not connected, so the money collected can't be shown. The costs below are still counted.",
-  fixture: "Stripe runs in test mode here, with no real payments, so the money collected can't be shown. The costs below are still counted.",
-  error: "Stripe could not be reached just now, so the money collected can't be shown. The costs below are still counted.",
+  not_connected: "Stripe isn't connected, so payments can't be shown.",
+  fixture: "Stripe is in test mode here, so there are no real payments.",
+  error: "Stripe couldn't be reached just now. Try again in a minute.",
 };
 
 /**
@@ -24,10 +24,6 @@ export default function KeptCard({ kept, services }: { kept: Kept; services: Ser
           <h2 id="kept-heading" className="text-[length:calc(16px*var(--px,1))] font-semibold">
             What we keep
           </h2>
-          <p className="mt-1 text-[length:calc(13px*var(--px,1))] text-muted-foreground">
-            The money customers paid in this period, less everything we pay per use: Stripe&apos;s fees, the AI tools and the other
-            services.
-          </p>
         </div>
         {ok && kept.margin !== null && (
           <Badge variant={losing ? "mid" : "secondary"} data-testid="kept-margin">
@@ -42,22 +38,22 @@ export default function KeptCard({ kept, services }: { kept: Kept; services: Ser
         {ok && (
           <Line
             label="Collected from customers"
-            note={kept.charges > 0 ? `${plural(kept.charges, "payment", "payments")} through Stripe, after refunds` : "No payments in this period"}
+            note={kept.charges > 0 ? `${plural(kept.charges, "payment", "payments")}, after refunds` : "No payments in this period"}
             value={money(kept.collectedUsd)}
           />
         )}
-        {ok && <Line label="Stripe fees" note="What Stripe kept for processing those payments" value={minus(kept.stripeFeesUsd)} />}
-        <Line label="AI tools" note="ChatGPT, Claude and Perplexity checks, and the AI work behind explanations and setup" value={minus(kept.aiCostUsd)} />
+        {ok && <Line label="Stripe fees" value={minus(kept.stripeFeesUsd)} />}
+        <Line label="AI tools" note="Checks, explanations and setup" value={minus(kept.aiCostUsd)} />
         {services.map((s) => (
           <Line
             key={s.key}
             label={s.label}
             note={
               s.calls === 0
-                ? "Not used in this period"
+                ? "Not used"
                 : s.key === "firecrawl"
-                  ? `${plural(s.calls, "page", "pages")} read, 1 credit each at your plan's price`
-                  : `${plural(s.calls, "call", "calls")}, at Google's list price`
+                  ? `${plural(s.calls, "page", "pages")} read`
+                  : `${plural(s.calls, "call", "calls")}, at list price`
             }
             value={minus(s.costUsd)}
           />
@@ -71,9 +67,7 @@ export default function KeptCard({ kept, services }: { kept: Kept; services: Ser
       </dl>
 
       <p className="border-t border-border px-5 py-3 text-[length:calc(12.5px*var(--px,1))] text-muted-foreground">
-        Google is counted at list price: its free calls each month (1,000 to 10,000 per kind of call) are not taken off, so its real
-        bill can be lower. Monthly plans that don&apos;t grow with use (hosting, database, email) are not in this card. Payments come in
-        when customers buy, and credits are used over time, so a short period can look better or worse than it is.
+        Not counted: hosting, database and email plans, or Google&apos;s free monthly calls.
       </p>
     </section>
   );
@@ -82,12 +76,12 @@ export default function KeptCard({ kept, services }: { kept: Kept; services: Ser
 // A cost, as a deduction: "-$12.40". toLocaleString gives "-$" for negatives, the same style.
 const minus = (usd: number) => (usd > 0 ? money(-usd) : money(0));
 
-function Line({ label, note, value }: { label: string; note: string; value: string }) {
+function Line({ label, note, value }: { label: string; note?: string; value: string }) {
   return (
     <div className="flex items-baseline justify-between gap-4 px-5 py-3">
       <div className="min-w-0">
         <dt className="font-medium">{label}</dt>
-        <p className="mt-0.5 text-[length:calc(12.5px*var(--px,1))] text-muted-foreground">{note}</p>
+        {note && <p className="mt-0.5 text-[length:calc(12.5px*var(--px,1))] text-muted-foreground">{note}</p>}
       </div>
       <dd className="tabular shrink-0 font-medium">{value}</dd>
     </div>

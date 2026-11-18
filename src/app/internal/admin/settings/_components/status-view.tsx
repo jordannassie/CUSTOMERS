@@ -40,13 +40,11 @@ export default function StatusView({ status, openAlerts = 0, recheck }: { status
             </h2>
             {summary.offNote && <p className="mt-1 text-[length:calc(13px*var(--px,1))] text-muted-foreground">{summary.offNote}</p>}
             <p className="mt-1 text-[length:calc(13px*var(--px,1))] text-muted-foreground">
-              Checked at <span className="tabular">{checkedAt}</span> UTC. Every service is checked every 15 minutes. To check
-              now, use Check again.
+              Checked at <span className="tabular">{checkedAt}</span> UTC, every 15 minutes.
             </p>
             {openAlerts > 0 && (
               <p className="mt-1 text-[length:calc(13px*var(--px,1))] text-muted-foreground" data-testid="service-alerts-note">
-                {openAlerts === 1 ? "An alert is open" : `${openAlerts} alerts are open`} in the alert bell at the top until the check
-                passes again.
+                {openAlerts === 1 ? "1 open alert" : `${openAlerts} open alerts`} in the bell.
               </p>
             )}
           </div>

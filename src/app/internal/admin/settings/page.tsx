@@ -17,7 +17,7 @@ export default async function AdminSettingsPage() {
       <div className="flex flex-col gap-6">
         <AdminPageHeader
           title="System status"
-          subtitle="Whether every service the app depends on is connected and working. Keys are changed in Netlify and Supabase."
+          subtitle="Whether each service the app uses is working. Keys are set in Netlify and Supabase."
         />
 
         <Suspense fallback={<StatusSkeleton />}>

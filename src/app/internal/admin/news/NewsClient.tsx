@@ -125,7 +125,7 @@ export default function NewsClient({ initialPeriod }: { initialPeriod: Period })
     <div className="mx-auto flex w-full max-w-[calc(1200px*var(--px,1))] flex-col gap-4 px-4 py-4 sm:px-6 sm:py-5">
       <AdminPageHeader
         title="LinkedIn studio"
-        subtitle="Turn AI search news into LinkedIn posts that help agencies win and serve clients."
+        subtitle="Turn AI search news into LinkedIn posts for agencies."
       />
 
       <WeekdayCards selected={weekday} today={todayBadge} onChange={handleWeekdayChange} disabled={isBusy} />
